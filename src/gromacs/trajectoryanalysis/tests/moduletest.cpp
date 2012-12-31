@@ -93,7 +93,7 @@ class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 };
 
 AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
-        AbstractTrajectoryAnalysisModuleTestFixture *parent)
+    AbstractTrajectoryAnalysisModuleTestFixture *parent)
     : parent_(*parent), bDatasetsIncluded_(false)
 {
     cmdline_.append("module");
@@ -196,7 +196,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
     if (!impl_->outputDatasets_.empty())
     {
         TestReferenceChecker dataChecker(
-                rootChecker.checkCompound("OutputData", "Data"));
+            rootChecker.checkCompound("OutputData", "Data"));
         Impl::DatasetNames::const_iterator dataset;
         for (dataset = impl_->outputDatasets_.begin();
              dataset != impl_->outputDatasets_.end();
@@ -205,7 +205,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
             const char *name = dataset->c_str();
             AbstractAnalysisData &dataset = module.datasetFromName(name);
             AnalysisDataTestFixture::addReferenceCheckerModule(
-                    dataChecker, name, &dataset);
+                dataChecker, name, &dataset);
         }
     }
 
@@ -218,7 +218,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
     if (!impl_->outputFiles_.empty())
     {
         TestReferenceChecker outputChecker(
-                rootChecker.checkCompound("OutputFiles", "Files"));
+            rootChecker.checkCompound("OutputFiles", "Files"));
         Impl::OutputFileList::const_iterator outfile;
         for (outfile = impl_->outputFiles_.begin();
              outfile != impl_->outputFiles_.end();

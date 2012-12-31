@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -34,11 +34,11 @@ extern "C" {
 /* Currently identifiable CPU Vendors */
 enum gmx_cpuid_vendor
 {
-    GMX_CPUID_VENDOR_CANNOTDETECT,   /* Should only be used if something fails */
-    GMX_CPUID_VENDOR_UNKNOWN,
-    GMX_CPUID_VENDOR_INTEL,
-    GMX_CPUID_VENDOR_AMD,
-    GMX_CPUID_NVENDORS
+GMX_CPUID_VENDOR_CANNOTDETECT,   /* Should only be used if something fails */
+GMX_CPUID_VENDOR_UNKNOWN,
+GMX_CPUID_VENDOR_INTEL,
+GMX_CPUID_VENDOR_AMD,
+GMX_CPUID_NVENDORS
 };
 
 
@@ -129,7 +129,7 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS];
 
 /* Abstract data type with CPU detection information. Set by gmx_cpuid_init(). */
 typedef struct gmx_cpuid *
-gmx_cpuid_t;
+    gmx_cpuid_t;
 
 
 /* Fill the data structure by using CPU detection instructions.

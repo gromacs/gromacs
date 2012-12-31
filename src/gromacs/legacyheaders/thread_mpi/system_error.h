@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -35,7 +35,7 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/** \file 
+/** \file
   * \brief A C++11 compatible system_error class for reporting exceptions
   *
   * This header contains class definitions for system_error.
@@ -51,11 +51,11 @@ files.
 
 namespace tMPI
 {
-    /*! \brief Subset of the C++11 system_error class 
+/*! \brief Subset of the C++11 system_error class
 
-      Only contains the errno-based constructor. */
-    class system_error : public std::runtime_error
-    {
+  Only contains the errno-based constructor. */
+class system_error : public std::runtime_error
+{
     public:
         typedef int error_code;
 
@@ -65,13 +65,13 @@ namespace tMPI
         system_error(error_code ec) ;
 
         /*! \brief Returns the error code */
-        const error_code& code() const 
+        const error_code& code() const
         {
             return ec_;
         }
     private:
         error_code ec_;
-    };
+};
 }
 
 #endif /* __cplusplus */

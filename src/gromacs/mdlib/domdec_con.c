@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -32,20 +32,23 @@
 #include "gmx_omp_nthreads.h"
 #include "macros.h"
 
-typedef struct {
+typedef struct
+{
     int nsend;
     int *a;
     int a_nalloc;
     int nrecv;
 } gmx_specatsend_t;
 
-typedef struct {
+typedef struct
+{
     int *ind;
     int nalloc;
     int n;
 } ind_req_t;
 
-typedef struct gmx_domdec_specat_comm {
+typedef struct gmx_domdec_specat_comm
+{
     /* The number of indices to receive during the setup */
     int  nreq[DIM][2][2];
     /* The atoms to send */
@@ -70,7 +73,8 @@ typedef struct gmx_domdec_specat_comm {
     ind_req_t *ireq;
 } gmx_domdec_specat_comm_t;
 
-typedef struct gmx_domdec_constraints {
+typedef struct gmx_domdec_constraints
+{
     int  *molb_con_offset;
     int  *molb_ncon_mol;
     /* The fully local and connected constraints */
@@ -99,9 +103,9 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     ivec vis;
     int  is;
     gmx_bool bPBC,bScrew;
-    
+
     n = spac->at_end;
-    for(d=dd->ndim-1; d>=0; d--)
+    for (d=dd->ndim-1; d>=0; d--)
     {
         dim = dd->dim[d];
         if (dd->nc[dim] > 2)
@@ -116,17 +120,17 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
             dd_sendrecv2_rvec(dd,d,
                               f+n+n1,n0,vbuf              ,spas[0].nsend,
                               f+n   ,n1,vbuf+spas[0].nsend,spas[1].nsend);
-            for(dir=0; dir<2; dir++)
+            for (dir=0; dir<2; dir++)
             {
-                bPBC   = ((dir == 0 && dd->ci[dim] == 0) || 
+                bPBC   = ((dir == 0 && dd->ci[dim] == 0) ||
                           (dir == 1 && dd->ci[dim] == dd->nc[dim]-1));
                 bScrew = (bPBC && dd->bScrewPBC && dim == XX);
-                
+
                 spas = &spac->spas[d][dir];
                 /* Sum the buffer into the required forces */
                 if (!bPBC || (!bScrew && fshift == NULL))
                 {
-                    for(i=0; i<spas->nsend; i++)
+                    for (i=0; i<spas->nsend; i++)
                     {
                         rvec_inc(f[spas->a[i]],*vbuf);
                         vbuf++;
@@ -140,7 +144,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                     if (!bScrew)
                     {
                         /* Sum and add to shift forces */
-                        for(i=0; i<spas->nsend; i++)
+                        for (i=0; i<spas->nsend; i++)
                         {
                             rvec_inc(f[spas->a[i]],*vbuf);
                             rvec_inc(fshift[is],*vbuf);
@@ -148,9 +152,9 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                         }
                     }
                     else
-                    {	    
+                    {
                         /* Rotate the forces */
-                        for(i=0; i<spas->nsend; i++)
+                        for (i=0; i<spas->nsend; i++)
                         {
                             f[spas->a[i]][XX] += (*vbuf)[XX];
                             f[spas->a[i]][YY] -= (*vbuf)[YY];
@@ -178,7 +182,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                 (dd->ci[dim] == 0 ||
                  dd->ci[dim] == dd->nc[dim]-1))
             {
-                for(i=0; i<spas->nsend; i++)
+                for (i=0; i<spas->nsend; i++)
                 {
                     /* Rotate the force */
                     f[spas->a[i]][XX] += spac->vbuf[i][XX];
@@ -188,7 +192,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
             }
             else
             {
-                for(i=0; i<spas->nsend; i++)
+                for (i=0; i<spas->nsend; i++)
                 {
                     rvec_inc(f[spas->a[i]],spac->vbuf[i]);
                 }
@@ -208,10 +212,10 @@ void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift)
 void dd_clear_f_vsites(gmx_domdec_t *dd,rvec *f)
 {
     int i;
-    
+
     if (dd->vsite_comm)
     {
-        for(i=dd->vsite_comm->at_start; i<dd->vsite_comm->at_end; i++)
+        for (i=dd->vsite_comm->at_start; i<dd->vsite_comm->at_end; i++)
         {
             clear_rvec(f[i]);
         }
@@ -225,23 +229,23 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     rvec *x,*vbuf,*rbuf;
     int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dim,dir,i;
     gmx_bool bPBC,bScrew=FALSE;
-    rvec shift={0,0,0};
-    
+    rvec shift= {0,0,0};
+
     nvec = 1;
     if (x1)
     {
         nvec++;
     }
-    
+
     n = spac->at_start;
-    for(d=0; d<dd->ndim; d++)
+    for (d=0; d<dd->ndim; d++)
     {
         dim = dd->dim[d];
         if (dd->nc[dim] > 2)
         {
             /* Pulse the grid forward and backward */
             vbuf = spac->vbuf;
-            for(dir=0; dir<2; dir++)
+            for (dir=0; dir<2; dir++)
             {
                 if (dir == 0 && dd->ci[dim] == 0)
                 {
@@ -253,7 +257,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                 {
                     bPBC = TRUE;
                     bScrew = (dd->bScrewPBC && dim == XX);
-                    for(i=0; i<DIM; i++)
+                    for (i=0; i<DIM; i++)
                     {
                         shift[i] = -box[dim][i];
                     }
@@ -264,14 +268,14 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                     bScrew = FALSE;
                 }
                 spas = &spac->spas[d][dir];
-                for(v=0; v<nvec; v++)
+                for (v=0; v<nvec; v++)
                 {
                     x = (v == 0 ? x0 : x1);
                     /* Copy the required coordinates to the send buffer */
                     if (!bPBC)
                     {
                         /* Only copy */
-                        for(i=0; i<spas->nsend; i++)
+                        for (i=0; i<spas->nsend; i++)
                         {
                             copy_rvec(x[spas->a[i]],*vbuf);
                             vbuf++;
@@ -280,7 +284,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                     else if (!bScrew)
                     {
                         /* Shift coordinates */
-                        for(i=0; i<spas->nsend; i++)
+                        for (i=0; i<spas->nsend; i++)
                         {
                             rvec_add(x[spas->a[i]],shift,*vbuf);
                             vbuf++;
@@ -289,7 +293,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                     else
                     {
                         /* Shift and rotate coordinates */
-                        for(i=0; i<spas->nsend; i++)
+                        for (i=0; i<spas->nsend; i++)
                         {
                             (*vbuf)[XX] =               x[spas->a[i]][XX] + shift[XX];
                             (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY] + shift[YY];
@@ -320,13 +324,13 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                                   spac->vbuf      ,2*ns0,rbuf+2*nr1,2*nr0);
                 /* Split the buffer into the two vectors */
                 nn = n;
-                for(dir=1; dir>=0; dir--)
+                for (dir=1; dir>=0; dir--)
                 {
                     nr = spas[dir].nrecv;
-                    for(v=0; v<2; v++)
+                    for (v=0; v<2; v++)
                     {
                         x = (v == 0 ? x0 : x1);
-                        for(i=0; i<nr; i++)
+                        for (i=0; i<nr; i++)
                         {
                             copy_rvec(*rbuf,x[nn+i]);
                             rbuf++;
@@ -342,7 +346,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
             spas = &spac->spas[d][0];
             /* Copy the required coordinates to the send buffer */
             vbuf = spac->vbuf;
-            for(v=0; v<nvec; v++)
+            for (v=0; v<nvec; v++)
             {
                 x = (v == 0 ? x0 : x1);
                 if (dd->bScrewPBC && dim == XX &&
@@ -351,17 +355,17 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                     /* Here we only perform the rotation, the rest of the pbc
                      * is handled in the constraint or viste routines.
                      */
-                    for(i=0; i<spas->nsend; i++)
+                    for (i=0; i<spas->nsend; i++)
                     {
                         (*vbuf)[XX] =               x[spas->a[i]][XX];
                         (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY];
                         (*vbuf)[ZZ] = box[ZZ][ZZ] - x[spas->a[i]][ZZ];
                         vbuf++;
-                    }	  
+                    }
                 }
                 else
                 {
-                    for(i=0; i<spas->nsend; i++)
+                    for (i=0; i<spas->nsend; i++)
                     {
                         copy_rvec(x[spas->a[i]],*vbuf);
                         vbuf++;
@@ -382,10 +386,10 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                                  spac->vbuf,2*spas->nsend,rbuf,2*spas->nrecv);
                 /* Split the buffer into the two vectors */
                 nr = spas[0].nrecv;
-                for(v=0; v<2; v++)
+                for (v=0; v<2; v++)
                 {
                     x = (v == 0 ? x0 : x1);
-                    for(i=0; i<nr; i++)
+                    for (i=0; i<nr; i++)
                     {
                         copy_rvec(*rbuf,x[n+i]);
                         rbuf++;
@@ -429,14 +433,14 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 {
     gmx_domdec_constraints_t *dc;
     int i;
-    
+
     dc = dd->constraints;
-    
-    for(i=0; i<dc->ncon; i++)
+
+    for (i=0; i<dc->ncon; i++)
     {
         dc->gc_req[dc->con_gl[i]] = 0;
     }
-  
+
     if (dd->constraint_comm)
     {
         gmx_hash_clear_and_optimize(dc->ga2la);
@@ -446,7 +450,7 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 {
     int i;
-    
+
     if (dd->vsite_comm)
     {
         gmx_hash_clear_and_optimize(dd->ga2la_vsite);
@@ -462,17 +466,17 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                                       const char *specat_type,
                                       const char *add_err)
 {
-    int  nsend[2],nlast,nsend_zero[2]={0,0},*nsend_ptr;
+    int  nsend[2],nlast,nsend_zero[2]= {0,0},*nsend_ptr;
     int  d,dim,ndir,dir,nr,ns,i,nrecv_local,n0,start,indr,ind,buf[2];
     int  nat_tot_specat,nat_tot_prev,nalloc_old;
     gmx_bool bPBC,bFirst;
     gmx_specatsend_t *spas;
-    
+
     if (debug)
     {
         fprintf(debug,"Begin setup_specat_communication for %s\n",specat_type);
     }
-    
+
     /* nsend[0]: the number of atoms requested by this node only,
      *           we communicate this for more efficients checks
      * nsend[1]: the total number of requested atoms
@@ -480,7 +484,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
     nsend[0] = ireq->n;
     nsend[1] = nsend[0];
     nlast    = nsend[1];
-    for(d=dd->ndim-1; d>=0; d--)
+    for (d=dd->ndim-1; d>=0; d--)
     {
         /* Pulse the grid forward and backward */
         dim = dd->dim[d];
@@ -494,9 +498,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         {
             ndir = 2;
         }
-        for(dir=0; dir<ndir; dir++)
+        for (dir=0; dir<ndir; dir++)
         {
-            if (!bPBC && 
+            if (!bPBC &&
                 dd->nc[dim] > 2 &&
                 ((dir == 0 && dd->ci[dim] == dd->nc[dim] - 1) ||
                  (dir == 1 && dd->ci[dim] == 0)))
@@ -528,11 +532,11 @@ static int setup_specat_communication(gmx_domdec_t *dd,
     {
         fprintf(debug,"Communicated the counts\n");
     }
-    
+
     /* Search for the requested atoms and communicate the indices we have */
     nat_tot_specat = at_start;
     nrecv_local = 0;
-    for(d=0; d<dd->ndim; d++)
+    for (d=0; d<dd->ndim; d++)
     {
         bFirst = (d == 0);
         /* Pulse the grid forward and backward */
@@ -545,14 +549,14 @@ static int setup_specat_communication(gmx_domdec_t *dd,
             ndir = 1;
         }
         nat_tot_prev = nat_tot_specat;
-        for(dir=ndir-1; dir>=0; dir--)
+        for (dir=ndir-1; dir>=0; dir--)
         {
             if (nat_tot_specat > spac->bSendAtom_nalloc)
             {
                 nalloc_old = spac->bSendAtom_nalloc;
                 spac->bSendAtom_nalloc = over_alloc_dd(nat_tot_specat);
                 srenew(spac->bSendAtom,spac->bSendAtom_nalloc);
-                for(i=nalloc_old; i<spac->bSendAtom_nalloc; i++)
+                for (i=nalloc_old; i<spac->bSendAtom_nalloc; i++)
                 {
                     spac->bSendAtom[i] = FALSE;
                 }
@@ -568,7 +572,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
             start = nlast - nr;
             spas->nsend = 0;
             nsend[0] = 0;
-            for(i=0; i<nr; i++)
+            for (i=0; i<nr; i++)
             {
                 indr = ireq->ind[start+i];
                 ind = -1;
@@ -609,7 +613,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
             }
             nlast = start;
             /* Clear the local flags */
-            for(i=0; i<spas->nsend; i++)
+            for (i=0; i<spas->nsend; i++)
             {
                 spac->bSendAtom[spas->a[i]] = FALSE;
             }
@@ -625,7 +629,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                         dd->neighbor[d][dir],buf[1],buf[0]);
                 if (gmx_debug_at)
                 {
-                    for(i=0; i<spas->nsend; i++)
+                    for (i=0; i<spas->nsend; i++)
                     {
                         fprintf(debug," %d",spac->ibuf[i]+1);
                     }
@@ -646,7 +650,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                             dd->gatindex+nat_tot_specat,spas->nrecv);
             nat_tot_specat += spas->nrecv;
         }
-        
+
         /* Allocate the x/f communication buffers */
         ns = spac->spas[d][0].nsend;
         nr = spac->spas[d][0].nrecv;
@@ -665,14 +669,14 @@ static int setup_specat_communication(gmx_domdec_t *dd,
             spac->vbuf2_nalloc = over_alloc_dd(vbuf_fac*nr);
             srenew(spac->vbuf2,spac->vbuf2_nalloc);
         }
-        
+
         /* Make a global to local index for the communication atoms */
-        for(i=nat_tot_prev; i<nat_tot_specat; i++)
+        for (i=nat_tot_prev; i<nat_tot_specat; i++)
         {
             gmx_hash_change_or_set(ga2la_specat,dd->gatindex[i],i);
         }
     }
-    
+
     /* Check that in the end we got the number of atoms we asked for */
     if (nrecv_local != ireq->n)
     {
@@ -682,7 +686,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                     ireq->n,nrecv_local,nat_tot_specat-at_start);
             if (gmx_debug_at)
             {
-                for(i=0; i<ireq->n; i++)
+                for (i=0; i<ireq->n; i++)
                 {
                     ind = gmx_hash_get_minone(ga2la_specat,ireq->ind[i]);
                     fprintf(debug," %s%d",
@@ -694,7 +698,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
         }
         fprintf(stderr,"\nDD cell %d %d %d: Neighboring cells do not have atoms:",
                 dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
-        for(i=0; i<ireq->n; i++)
+        for (i=0; i<ireq->n; i++)
         {
             if (gmx_hash_get_minone(ga2la_specat,ireq->ind[i]) < 0)
             {
@@ -708,15 +712,15 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                   specat_type,add_err,
                   dd->bGridJump ? " or use the -rcon option of mdrun" : "");
     }
-    
+
     spac->at_start = at_start;
     spac->at_end   = nat_tot_specat;
-    
+
     if (debug)
     {
         fprintf(debug,"Done setup_specat_communication\n");
     }
-    
+
     return nat_tot_specat;
 }
 
@@ -731,7 +735,7 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
 {
     int a1_gl,a2_gl,a_loc,i,coni,b;
     const t_iatom *iap;
-  
+
     if (dc->gc_req[con_offset+con] == 0)
     {
         /* Add this non-home constraint to the list */
@@ -788,10 +792,10 @@ static void walk_out(int con,int con_offset,int a,int offset,int nrec,
         /* Temporarily mark with -2, we get the index later */
         gmx_hash_set(dc->ga2la,offset+a,-2);
     }
-    
+
     if (nrec > 0)
     {
-        for(i=at2con->index[a]; i<at2con->index[a+1]; i++)
+        for (i=at2con->index[a]; i<at2con->index[a+1]; i++)
         {
             coni = at2con->a[i];
             if (coni != con)
@@ -843,14 +847,14 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
     nral = NRAL(F_SETTLE);
 
-    for(cg=cg_start; cg<cg_end; cg++)
+    for (cg=cg_start; cg<cg_end; cg++)
     {
         if (GET_CGINFO_SETTLE(cginfo[cg]))
         {
-            for(a=dd->cgindex[cg]; a<dd->cgindex[cg+1]; a++)
+            for (a=dd->cgindex[cg]; a<dd->cgindex[cg+1]; a++)
             {
                 a_gl = dd->gatindex[a];
-                
+
                 gmx_mtop_atomnr_to_molblock_ind(alook,a_gl,&mb,&molnr,&a_mol);
                 molb = &mtop->molblock[mb];
 
@@ -864,7 +868,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                     bAssign = FALSE;
                     nlocal = 0;
-                    for(sa=0; sa<nral; sa++)
+                    for (sa=0; sa<nral; sa++)
                     {
                         a_glsa = offset + ia1[settle*(1+nral)+1+sa];
                         a_gls[sa] = a_glsa;
@@ -889,7 +893,7 @@ static void atoms_to_settles(gmx_domdec_t *dd,
 
                         ils_local->iatoms[ils_local->nr++] = ia1[settle*4];
 
-                        for(sa=0; sa<nral; sa++)
+                        for (sa=0; sa<nral; sa++)
                         {
                             if (ga2la_get_home(ga2la,a_gls[sa],&a_locs[sa]))
                             {
@@ -935,26 +939,26 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
     int nhome,cg,a,a_gl,a_mol,a_loc,b_lo,offset,mb,molnr,b_mol,i,con,con_offset;
     gmx_domdec_constraints_t *dc;
     gmx_domdec_specat_comm_t *dcc;
-    
+
     dc  = dd->constraints;
     dcc = dd->constraint_comm;
-    
+
     ga2la  = dd->ga2la;
 
     alook = gmx_mtop_atomlookup_init(mtop);
 
     nhome = 0;
-    for(cg=0; cg<dd->ncg_home; cg++)
+    for (cg=0; cg<dd->ncg_home; cg++)
     {
         if (GET_CGINFO_CONSTR(cginfo[cg]))
         {
-            for(a=dd->cgindex[cg]; a<dd->cgindex[cg+1]; a++)
+            for (a=dd->cgindex[cg]; a<dd->cgindex[cg+1]; a++)
             {
                 a_gl = dd->gatindex[a];
-        
+
                 gmx_mtop_atomnr_to_molblock_ind(alook,a_gl,&mb,&molnr,&a_mol);
                 molb = &mtop->molblock[mb];
-        
+
                 ncon1 = mtop->moltype[molb->type].ilist[F_CONSTR].nr/NRAL(F_SETTLE);
 
                 ia1 = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
@@ -966,11 +970,11 @@ static void atoms_to_constraints(gmx_domdec_t *dd,
                  */
                 con_offset =
                     dc->molb_con_offset[mb] + molnr*dc->molb_ncon_mol[mb];
-            
+
                 /* The global atom number offset for this molecule */
                 offset = a_gl - a_mol;
                 at2con = &at2con_mt[molb->type];
-                for(i=at2con->index[a_mol]; i<at2con->index[a_mol+1]; i++)
+                for (i=at2con->index[a_mol]; i<at2con->index[a_mol+1]; i++)
                 {
                     con = at2con->a[i];
                     iap = constr_iatomptr(ncon1,ia1,ia2,con);
@@ -1050,9 +1054,9 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
     gmx_hash_t ga2la_specat;
     int at_end,i,j;
     t_iatom *iap;
-    
+
     dc = dd->constraints;
-    
+
     ilc_local = &il_local[F_CONSTR];
     ils_local = &il_local[F_SETTLE];
 
@@ -1096,8 +1100,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
          */
         t0_set = ((at2con_mt != NULL && dc->nthread > 1) ? 1 : 0);
 
-#pragma omp parallel for num_threads(dc->nthread) schedule(static)
-        for(thread=0; thread<dc->nthread; thread++)
+        #pragma omp parallel for num_threads(dc->nthread) schedule(static)
+        for (thread=0; thread<dc->nthread; thread++)
         {
             if (at2con_mt && thread == 0)
             {
@@ -1140,7 +1144,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         }
 
         /* Combine the generate settles and requested indices */
-        for(thread=1; thread<dc->nthread; thread++)
+        for (thread=1; thread<dc->nthread; thread++)
         {
             t_ilist *ilst;
             ind_req_t *ireqt;
@@ -1154,7 +1158,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                     ils_local->nalloc = over_alloc_large(ils_local->nr + ilst->nr);
                     srenew(ils_local->iatoms,ils_local->nalloc);
                 }
-                for(ia=0; ia<ilst->nr; ia++)
+                for (ia=0; ia<ilst->nr; ia++)
                 {
                     ils_local->iatoms[ils_local->nr+ia] = ilst->iatoms[ia];
                 }
@@ -1167,7 +1171,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                 ireq->nalloc = over_alloc_large(ireq->n+ireqt->n);
                 srenew(ireq->ind,ireq->nalloc);
             }
-            for(ia=0; ia<ireqt->n; ia++)
+            for (ia=0; ia<ireqt->n; ia++)
             {
                 ireq->ind[ireq->n+ia] = ireqt->ind[ia];
             }
@@ -1180,7 +1184,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         }
     }
 
-    if (dd->constraint_comm) {
+    if (dd->constraint_comm)
+    {
         int nral1;
 
         at_end =
@@ -1188,15 +1193,15 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
                                        dd->constraints->ga2la,
                                        at_start,2,
                                        "constraint"," or lincs-order");
-        
+
         /* Fill in the missing indices */
         ga2la_specat = dd->constraints->ga2la;
 
         nral1 = 1 + NRAL(F_CONSTR);
-        for(i=0; i<ilc_local->nr; i+=nral1)
+        for (i=0; i<ilc_local->nr; i+=nral1)
         {
             iap = ilc_local->iatoms + i;
-            for(j=1; j<nral1; j++)
+            for (j=1; j<nral1; j++)
             {
                 if (iap[j] < 0)
                 {
@@ -1206,10 +1211,10 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
         }
 
         nral1 = 1 + NRAL(F_SETTLE);
-        for(i=0; i<ils_local->nr; i+=nral1)
+        for (i=0; i<ils_local->nr; i+=nral1)
         {
             iap = ils_local->iatoms + i;
-            for(j=1; j<nral1; j++)
+            for (j=1; j<nral1; j++)
             {
                 if (iap[j] < 0)
                 {
@@ -1222,7 +1227,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
     {
         at_end = at_start;
     }
-    
+
     return at_end;
 }
 
@@ -1235,26 +1240,27 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
     t_ilist *lilf;
     t_iatom *iatoms;
     int  at_end;
-    
+
     spac         = dd->vsite_comm;
     ireq         = &spac->ireq[0];
     ga2la_specat = dd->ga2la_vsite;
-    
+
     ireq->n = 0;
     /* Loop over all the home vsites */
-    for(ftype=0; ftype<F_NRE; ftype++)
+    for (ftype=0; ftype<F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {
             nral = NRAL(ftype);
             lilf = &lil[ftype];
-            for(i=0; i<lilf->nr; i+=1+nral)
+            for (i=0; i<lilf->nr; i+=1+nral)
             {
                 iatoms = lilf->iatoms + i;
                 /* Check if we have the other atoms */
-                for(j=1; j<1+nral; j++)
+                for (j=1; j<1+nral; j++)
                 {
-                    if (iatoms[j] < 0) {
+                    if (iatoms[j] < 0)
+                    {
                         /* This is not a home atom,
                          * we need to ask our neighbors.
                          */
@@ -1279,21 +1285,21 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
             }
         }
     }
-    
+
     at_end = setup_specat_communication(dd,ireq,dd->vsite_comm,ga2la_specat,
                                         at_start,1,"vsite","");
-    
+
     /* Fill in the missing indices */
-    for(ftype=0; ftype<F_NRE; ftype++)
+    for (ftype=0; ftype<F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_VSITE)
         {
             nral = NRAL(ftype);
             lilf = &lil[ftype];
-            for(i=0; i<lilf->nr; i+=1+nral)
+            for (i=0; i<lilf->nr; i+=1+nral)
             {
                 iatoms = lilf->iatoms + i;
-                for(j=1; j<1+nral; j++)
+                for (j=1; j<1+nral; j++)
                 {
                     if (iatoms[j] < 0)
                     {
@@ -1303,7 +1309,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
             }
         }
     }
-    
+
     return at_end;
 }
 
@@ -1325,20 +1331,20 @@ void init_domdec_constraints(gmx_domdec_t *dd,
     gmx_domdec_constraints_t *dc;
     gmx_molblock_t *molb;
     int mb,ncon,c,a;
-    
+
     if (debug)
     {
         fprintf(debug,"Begin init_domdec_constraints\n");
     }
-    
+
     snew(dd->constraints,1);
     dc = dd->constraints;
-    
+
     snew(dc->molb_con_offset,mtop->nmolblock);
     snew(dc->molb_ncon_mol,mtop->nmolblock);
-    
+
     ncon = 0;
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         dc->molb_con_offset[mb] = ncon;
@@ -1347,11 +1353,11 @@ void init_domdec_constraints(gmx_domdec_t *dd,
             mtop->moltype[molb->type].ilist[F_CONSTRNC].nr/3;
         ncon += molb->nmol*dc->molb_ncon_mol[mb];
     }
-    
+
     if (ncon > 0)
     {
         snew(dc->gc_req,ncon);
-        for(c=0; c<ncon; c++)
+        for (c=0; c<ncon; c++)
         {
             dc->gc_req[c] = 0;
         }
@@ -1373,17 +1379,17 @@ void init_domdec_vsites(gmx_domdec_t *dd,int n_intercg_vsite)
 {
     int i;
     gmx_domdec_constraints_t *dc;
-    
+
     if (debug)
     {
         fprintf(debug,"Begin init_domdec_vsites\n");
     }
-    
+
     /* Use a hash table for the global to local index.
      * The number of keys is a rough estimate, it will be optimized later.
      */
     dd->ga2la_vsite = gmx_hash_init(min(n_intercg_vsite/20,
                                         n_intercg_vsite/(2*dd->nnodes)));
-    
+
     dd->vsite_comm = specat_comm_init(1);
 }

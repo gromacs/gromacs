@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -121,7 +121,9 @@ int tMPI_Error(tMPI_Comm comm, int tmpi_errno)
 int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
 {
     if (errorcode<0 || errorcode>=N_TMPI_ERR)
+    {
         errorcode=TMPI_ERR_UNKNOWN;
+    }
 
 #if ! (defined( _WIN32 ) || defined( _WIN64 ) )
     strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
@@ -132,8 +134,8 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
     return TMPI_SUCCESS;
 }
 
-int tMPI_Create_errhandler(tMPI_Errhandler_fn *function, 
-                           tMPI_Errhandler *errhandler) 
+int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
+                           tMPI_Errhandler *errhandler)
 {
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Create_errhandler(%p, %p)", function, errhandler);
@@ -144,7 +146,7 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
     *errhandler=(tMPI_Errhandler)malloc(sizeof(struct tmpi_errhandler_));
     if (!*errhandler)
     {
-        fprintf(stderr, "tMPI fatal error (%s), bailing out\n", 
+        fprintf(stderr, "tMPI fatal error (%s), bailing out\n",
                 tmpi_errmsg[TMPI_ERR_MALLOC]);
         abort();
     }

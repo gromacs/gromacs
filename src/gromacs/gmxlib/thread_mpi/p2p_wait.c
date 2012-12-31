@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -73,7 +73,9 @@ int tMPI_Wait(tMPI_Request *request, tMPI_Status *status)
     tMPI_Trace_print("tMPI_Wait(%p, %p)", request, status);
 #endif
     if (!request || !(*request))
+    {
         return TMPI_SUCCESS;
+    }
 
     rq=*request;
     /* fix the pointers */
@@ -84,9 +86,12 @@ int tMPI_Wait(tMPI_Request *request, tMPI_Status *status)
     do
     {
         if (tMPI_Test_single(cur, rq))
+        {
             break;
+        }
         tMPI_Wait_process_incoming(cur);
-    } while(TRUE);
+    }
+    while (TRUE);
 
     rq->ev=NULL; /* we won't be using that envelope any more */
     ret=rq->error;
@@ -116,7 +121,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
     tMPI_Trace_print("tMPI_Test(%p, %p, %p)", request, flag, status);
 #endif
     if (!request || !(*request))
+    {
         return TMPI_SUCCESS;
+    }
 
     rq=*request;
     /* fix the pointers */
@@ -125,7 +132,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
 
     /* and check our request */
     if (tMPI_Test_single(cur, rq))
+    {
         *flag=TRUE;
+    }
 
     ret=rq->error;
 
@@ -161,9 +170,9 @@ int tMPI_Test(tMPI_Request *request, int *flag, tMPI_Status *status)
 /* test multiple requests by first making a linked list of them, and then
    checking for their completion. Used in tMPI_{Test|Wait}{all|any|some}
 
-   wait = whether to wait for incoming events 
+   wait = whether to wait for incoming events
    blocking = whether to block until all reqs are completed */
-static void tMPI_Test_multi_req(struct tmpi_thread *cur, 
+static void tMPI_Test_multi_req(struct tmpi_thread *cur,
                                 int count, tMPI_Request *array_of_requests,
                                 tmpi_bool wait, tmpi_bool blocking)
 {
@@ -171,13 +180,15 @@ static void tMPI_Test_multi_req(struct tmpi_thread *cur,
     struct tmpi_req_ *first=NULL, *last=NULL;
 
     /* construct the list of requests */
-    for(i=0;i<count;i++)
+    for (i=0; i<count; i++)
     {
         struct tmpi_req_ *curr=array_of_requests[i];
         if (curr)
         {
             if (!first)
+            {
                 first=curr;
+            }
             /* fix the pointers */
             if (!last)
             {
@@ -190,7 +201,7 @@ static void tMPI_Test_multi_req(struct tmpi_thread *cur,
             {
                 /* we connect to the last */
                 curr->next=NULL;
-                curr->prev=last; 
+                curr->prev=last;
                 last->next=curr;
                 last=curr;
             }
@@ -200,10 +211,15 @@ static void tMPI_Test_multi_req(struct tmpi_thread *cur,
     do
     {
         if (tMPI_Test_multi(cur, first, NULL))
+        {
             break;
+        }
         if (wait)
+        {
             tMPI_Wait_process_incoming(cur);
-    } while(blocking && wait);
+        }
+    }
+    while (blocking && wait);
 }
 
 
@@ -219,13 +235,13 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Waitall(%d, %p, %p)", count, array_of_requests, 
-                       array_of_statuses);
+    tMPI_Trace_print("tMPI_Waitall(%d, %p, %p)", count, array_of_requests,
+                     array_of_statuses);
 #endif
     tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, TRUE);
 
     /* deallocate the now finished requests */
-    for(i=0;i<count;i++)
+    for (i=0; i<count; i++)
     {
         if (array_of_requests[i])
         {
@@ -235,7 +251,7 @@ int tMPI_Waitall(int count, tMPI_Request *array_of_requests,
             }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;
@@ -259,15 +275,17 @@ int tMPI_Testall(int count, tMPI_Request *array_of_requests,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Testall(%d, %p, %p, %p)", count, array_of_requests, 
-                       flag, array_of_statuses);
+    tMPI_Trace_print("tMPI_Testall(%d, %p, %p, %p)", count, array_of_requests,
+                     flag, array_of_statuses);
 #endif
     tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, TRUE);
 
     if (flag)
+    {
         *flag=1;
+    }
     /* deallocate the possibly finished requests */
-    for(i=0;i<count;i++)
+    for (i=0; i<count; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
 
@@ -278,7 +296,7 @@ int tMPI_Testall(int count, tMPI_Request *array_of_requests,
             }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;
@@ -286,8 +304,10 @@ int tMPI_Testall(int count, tMPI_Request *array_of_requests,
         else
         {
             if (flag)
+            {
                 *flag=0;
-        } 
+            }
+        }
 
     }
 
@@ -309,23 +329,25 @@ int tMPI_Waitany(int count, tMPI_Request *array_of_requests, int *index,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Waitany(%d, %p, %p, %p)", count, array_of_requests, 
-                       index, status);
+    tMPI_Trace_print("tMPI_Waitany(%d, %p, %p, %p)", count, array_of_requests,
+                     index, status);
 #endif
 
     tMPI_Test_multi_req(cur, count, array_of_requests, TRUE, FALSE);
 
     /* deallocate the possibly finished requests */
-    for(i=0;i<count;i++)
+    for (i=0; i<count; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
         {
             tMPI_Set_status(array_of_requests[i], status);
             if (index)
+            {
                 *index=i;
+            }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;
@@ -353,29 +375,37 @@ int tMPI_Testany(int count, tMPI_Request *array_of_requests, int *index,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Testany(%d, %p, %p %p, %p)", count, 
+    tMPI_Trace_print("tMPI_Testany(%d, %p, %p %p, %p)", count,
                      array_of_requests, flag, index, status);
 #endif
 
     tMPI_Test_multi_req(cur, count, array_of_requests, FALSE, FALSE);
 
     if (flag)
+    {
         *flag=0;
+    }
     if (index)
+    {
         *index=TMPI_UNDEFINED;
+    }
     /* deallocate the possibly finished requests */
-    for(i=0;i<count;i++)
+    for (i=0; i<count; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
         {
             tMPI_Set_status(array_of_requests[i], status);
             if (index)
+            {
                 *index=i;
+            }
             if (flag)
+            {
                 *flag=1;
+            }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;
@@ -404,15 +434,15 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Waitsome(%d, %p, %p, %p, %p)", incount, 
-                     array_of_requests, outcount, array_of_indices, 
+    tMPI_Trace_print("tMPI_Waitsome(%d, %p, %p, %p, %p)", incount,
+                     array_of_requests, outcount, array_of_indices,
                      array_of_statuses);
 #endif
     tMPI_Test_multi_req(cur, incount, array_of_requests, TRUE, FALSE);
 
     (*outcount)=0;
     /* deallocate the possibly finished requests */
-    for(i=0;i<incount;i++)
+    for (i=0; i<incount; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
         {
@@ -424,7 +454,7 @@ int tMPI_Waitsome(int incount, tMPI_Request *array_of_requests,
             }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;
@@ -449,15 +479,15 @@ int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Testsome(%d, %p, %p, %p, %p)", incount, 
-                     array_of_requests, outcount, array_of_indices, 
+    tMPI_Trace_print("tMPI_Testsome(%d, %p, %p, %p, %p)", incount,
+                     array_of_requests, outcount, array_of_indices,
                      array_of_statuses);
 #endif
     tMPI_Test_multi_req(cur, incount, array_of_requests, FALSE, TRUE);
 
     (*outcount)=0;
     /* deallocate the possibly finished requests */
-    for(i=0;i<incount;i++)
+    for (i=0; i<incount; i++)
     {
         if (array_of_requests[i] && array_of_requests[i]->finished)
         {
@@ -469,7 +499,7 @@ int tMPI_Testsome(int incount, tMPI_Request *array_of_requests,
             }
             if (array_of_requests[i]->error != TMPI_SUCCESS)
             {
-                ret=TMPI_ERR_IN_STATUS; 
+                ret=TMPI_ERR_IN_STATUS;
             }
             tMPI_Return_req(rql, array_of_requests[i]);
             array_of_requests[i]=TMPI_REQUEST_NULL;

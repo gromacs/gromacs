@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -63,16 +63,16 @@ extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
  */
 
 extern int fflib_search_file_end(const char *ffdir,
-				 const char *file_end,
-				 gmx_bool bFatalError,
-				 char ***filenames);
+                                 const char *file_end,
+                                 gmx_bool bFatalError,
+                                 char ***filenames);
 /* Search for files ending on file_end in the force field directory fflib.
  * fflib should be in the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
 extern int fflib_search_file_in_dirend(const char *filename,const char *dirend,
-				       char ***dirnames);
+                                       char ***dirnames);
 /* Search for files with name filename in subdirectories with names
  * ending on dirend.
  * Return the number of files and the directory names in dirnames.
@@ -90,4 +90,4 @@ extern FILE *fflib_open(const char *file);
 }
 #endif
 
-#endif	/* _fflibutil_h */
+#endif  /* _fflibutil_h */

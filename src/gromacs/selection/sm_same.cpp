@@ -112,22 +112,25 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
 static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p same selection method. */
-static gmx_ana_selparam_t smparams_same_int[] = {
+static gmx_ana_selparam_t smparams_same_int[] =
+{
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_ATOMVAL},
     {"as", {INT_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Parameters for the \p same selection method. */
-static gmx_ana_selparam_t smparams_same_str[] = {
+static gmx_ana_selparam_t smparams_same_str[] =
+{
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_ATOMVAL},
     {"as", {STR_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Help text for the \p same selection method. */
-static const char *help_same[] = {
+static const char *help_same[] =
+{
     "EXTENDING SELECTIONS[PAR]",
 
     "[TT]same KEYWORD as ATOM_EXPR[tt][PAR]",
@@ -138,7 +141,8 @@ static const char *help_same[] = {
 };
 
 /*! \internal \brief Selection method data for the \p same method. */
-gmx_ana_selmethod_t sm_same = {
+gmx_ana_selmethod_t sm_same =
+{
     "same", GROUP_VALUE, 0,
     asize(smparams_same_int), smparams_same_int,
     &init_data_same,
@@ -159,7 +163,8 @@ gmx_ana_selmethod_t sm_same = {
  * never sees this method; _gmx_selelem_custom_init_same() replaces sm_same
  * with this method in cases where it is required.
  */
-static gmx_ana_selmethod_t sm_same_str = {
+static gmx_ana_selmethod_t sm_same_str =
+{
     "same", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_same_str), smparams_same_str,
     &init_data_same,
@@ -230,9 +235,9 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     {
         gmx::SelectionParserParameterList kwparams;
         gmx::SelectionParserValueListPointer values(
-                new gmx::SelectionParserValueList(asparam->values()));
+            new gmx::SelectionParserValueList(asparam->values()));
         kwparams.push_back(
-                gmx::SelectionParserParameter::create(NULL, move(values)));
+            gmx::SelectionParserParameter::create(NULL, move(values)));
 
         /* Create a second keyword evaluation element for the keyword given as
          * the first parameter, evaluating the keyword in the group given by the
@@ -273,8 +278,8 @@ init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
         GMX_THROW(gmx::InvalidInputError(
-                    "The 'same' selection keyword combined with a "
-                    "non-keyword does not make sense"));
+                      "The 'same' selection keyword combined with a "
+                      "non-keyword does not make sense"));
     }
 }
 
@@ -378,7 +383,7 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         if (d->bSorted)
         {
             /* If we are sorted, we can do a simple linear scan. */
-            while (i < d->nas && d->as.i[i] < d->val.i[j]) ++i;
+            while (i < d->nas && d->as.i[i] < d->val.i[j]) { ++i; }
         }
         else
         {
@@ -407,7 +412,7 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             int tmpval = d->val.i[j];
             ++j;
-            while (j < g->isize && d->val.i[j] == tmpval) ++j;
+            while (j < g->isize && d->val.i[j] == tmpval) { ++j; }
         }
         else
         {
@@ -507,7 +512,7 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             const char *tmpval = d->val.s[j];
             ++j;
-            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0) ++j;
+            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0) { ++j; }
         }
         else
         {

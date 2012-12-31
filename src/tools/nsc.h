@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -41,13 +41,13 @@
 
 
 extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
-			int  densit, int mode,
-			real *value_of_area, real **at_area,
-			real *value_of_vol,
-			real **lidots, int *nu_dots,
-			atom_id index[],int ePBC,matrix box);
+                        int  densit, int mode,
+                        real *value_of_area, real **at_area,
+                        real *value_of_vol,
+                        real **lidots, int *nu_dots,
+                        atom_id index[],int ePBC,matrix box);
 
-/* 
+/*
     User notes :
 The input requirements :
   The arrays with atom coordinates and radii are thought to start
@@ -56,7 +56,7 @@ The input requirements :
   is its radius.
 
   PLEASE TAKE INTO ACCOUNT THAT THE RADII GIVEN HERE ARE DIRECTLY
-  USED FOR SURFACE CALCULATION. NSC does not increment with a probe 
+  USED FOR SURFACE CALCULATION. NSC does not increment with a probe
   radius.
 
   The user can define any number of dots. The program selects a
@@ -79,9 +79,9 @@ Example : flag = FLAG_VOLUME | FLAG_ATOM_AREA | FLAG_DOTS
           The routine calculates the area, volume and the dot surface. The
           program allocates arrays for the atomwise areas and for the surface
           dots. The addresses are returned in the pointers to pointers to
-          real. 
+          real.
           This variant is not recommended because normally the dot surface
-          is needed for low point density (e.g.42) at which area and volume 
+          is needed for low point density (e.g.42) at which area and volume
           are inaccurate. The sign "|" is used as binary AND !
 
           flag = FLAG_VOLUME | FLAG_ATOM_AREA
@@ -102,7 +102,7 @@ overall area value is returned in every mode.
 All files calling NSC should include nsc.h !!
 
 
-Example for calling NSC (contents of user file): 
+Example for calling NSC (contents of user file):
 
   ...
 #include "nsc.h"

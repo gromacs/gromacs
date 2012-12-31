@@ -109,7 +109,7 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "This output format is not implemented"));
+                      "This output format is not implemented"));
     }
 }
 

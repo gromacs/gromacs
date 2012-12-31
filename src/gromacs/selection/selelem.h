@@ -328,7 +328,8 @@ class SelectionTreeElement
          */
         int                                 flags;
         //! Data required by the evaluation function.
-        union {
+        union
+        {
             /*! \brief Index group data for several element types.
              *
              *  - \ref SEL_CONST : if the value type is \ref GROUP_VALUE,
@@ -340,7 +341,8 @@ class SelectionTreeElement
              */
             gmx_ana_index_t                 cgrp;
             //! Data for \ref SEL_EXPRESSION and \ref SEL_MODIFIER elements.
-            struct {
+            struct
+            {
                 //! Pointer the the method used in this expression.
                 struct gmx_ana_selmethod_t *method;
                 //! Pointer to the data allocated by the method's \p init_data (see sel_datafunc()).
@@ -353,7 +355,8 @@ class SelectionTreeElement
             //! Operation type for \ref SEL_BOOLEAN elements.
             e_boolean_t                     boolt;
             //! Operation type for \ref SEL_ARITHMETIC elements.
-            struct {
+            struct
+            {
                 //! Operation type.
                 e_arithmetic_t              type;
                 //! String representation.
@@ -362,7 +365,8 @@ class SelectionTreeElement
             //! Associated selection parameter for \ref SEL_SUBEXPRREF elements.
             struct gmx_ana_selparam_t      *param;
             //! The string/number used to reference the group.
-            struct {
+            struct
+            {
                 //! Name of the referenced external group.
                 char                       *name;
                 //! If \a name is NULL, the index number of the referenced group.

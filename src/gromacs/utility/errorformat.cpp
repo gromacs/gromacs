@@ -118,7 +118,7 @@ void printFatalErrorFooter(FILE *fp)
 {
     std::fprintf(fp, "\n");
     std::fprintf(fp, "For more information and tips for troubleshooting, please check the GROMACS\n"
-                     "website at http://www.gromacs.org/Documentation/Errors");
+                 "website at http://www.gromacs.org/Documentation/Errors");
     std::fprintf(fp, "\n-------------------------------------------------------\n");
 }
 

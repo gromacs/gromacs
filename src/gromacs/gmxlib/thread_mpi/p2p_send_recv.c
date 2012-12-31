@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -73,8 +73,8 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Send(%p, %d, %p, %d, %d, %p)", buf, count, 
-                       datatype, dest, tag, comm);
+    tMPI_Trace_print("tMPI_Send(%p, %d, %p, %d, %d, %p)", buf, count,
+                     datatype, dest, tag, comm);
 #endif
     if (!comm)
     {
@@ -100,7 +100,7 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
 
 
 int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
-             int tag, tMPI_Comm comm, tMPI_Status *status)
+              int tag, tMPI_Comm comm, tMPI_Status *status)
 {
     struct envelope *rev;
     struct tmpi_thread *recv_src=0;
@@ -111,8 +111,8 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Recv(%p, %d, %p, %d, %d, %p, %p)", buf, count, 
-                       datatype, source, tag, comm, status);
+    tMPI_Trace_print("tMPI_Recv(%p, %d, %p, %d, %d, %p, %p)", buf, count,
+                     datatype, source, tag, comm, status);
 #endif
     if (!comm)
     {
@@ -124,12 +124,12 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
         recv_src=tMPI_Get_thread(comm, source);
         if (!recv_src)
         {
-            return tMPI_Error(comm, TMPI_ERR_RECV_SRC); 
+            return tMPI_Error(comm, TMPI_ERR_RECV_SRC);
         }
     }
 
-    rev=tMPI_Post_match_recv(cur, comm, recv_src, buf, count, datatype, tag, 
-                            FALSE);
+    rev=tMPI_Post_match_recv(cur, comm, recv_src, buf, count, datatype, tag,
+                             FALSE);
     tMPI_Req_init(&req, rev);
     tMPI_Wait_single(cur, &req);
 
@@ -146,7 +146,7 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
 
 int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
                   int dest, int sendtag, void *recvbuf, int recvcount,
-                  tMPI_Datatype recvtype, int source, int recvtag, 
+                  tMPI_Datatype recvtype, int source, int recvtag,
                   tMPI_Comm comm, tMPI_Status *status)
 {
     struct envelope *rev, *sev;
@@ -160,9 +160,9 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Sendrecv(%p, %d, %p, %d, %d, %p, %d, %p, %d, %d, %p, %p)", 
-                       sendbuf, sendcount, sendtype, dest, sendtag, recvbuf,
-                       recvcount, recvtype, source, recvtag, comm, status);
+    tMPI_Trace_print("tMPI_Sendrecv(%p, %d, %p, %d, %d, %p, %d, %p, %d, %d, %p, %p)",
+                     sendbuf, sendcount, sendtype, dest, sendtag, recvbuf,
+                     recvcount, recvtype, source, recvtag, comm, status);
 #endif
     if (!comm)
     {
@@ -171,7 +171,7 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     send_dst=tMPI_Get_thread(comm, dest);
     if (!send_dst)
     {
-        return tMPI_Error(comm, TMPI_ERR_SEND_DEST); 
+        return tMPI_Error(comm, TMPI_ERR_SEND_DEST);
     }
     if (source!=TMPI_ANY_SOURCE)
     {
@@ -182,13 +182,13 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
         }
     }
 
-   /* we first prepare to send */
-    sev=tMPI_Post_send(cur, comm, send_dst, sendbuf, sendcount, 
-                      sendtype, sendtag, FALSE);
+    /* we first prepare to send */
+    sev=tMPI_Post_send(cur, comm, send_dst, sendbuf, sendcount,
+                       sendtype, sendtag, FALSE);
     tMPI_Req_init(&sreq, sev);
     /* the we prepare to receive */
-    rev=tMPI_Post_match_recv(cur, comm, recv_src, recvbuf, recvcount, 
-                            recvtype, recvtag, FALSE);
+    rev=tMPI_Post_match_recv(cur, comm, recv_src, recvbuf, recvcount,
+                             recvtype, recvtag, FALSE);
     tMPI_Req_init(&rreq, rev);
 
     /* fix the pointers */
@@ -201,9 +201,12 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     do
     {
         if (tMPI_Test_multi(cur, &sreq, NULL))
+        {
             break;
+        }
         tMPI_Wait_process_incoming(cur);
-    } while(TRUE);
+    }
+    while (TRUE);
 
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_stop(cur, TMPIFN_Sendrecv);
@@ -212,7 +215,9 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     tMPI_Set_status(&rreq, status);
     ret=sreq.error;
     if (rreq.error != TMPI_SUCCESS)
+    {
         ret=rreq.error;
+    }
 
     return ret;
 }
@@ -236,8 +241,8 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Isend(%p, %d, %p, %d, %d, %p, %p)", buf, count, 
-                       datatype, dest, tag, comm, request);
+    tMPI_Trace_print("tMPI_Isend(%p, %d, %p, %d, %d, %p, %p)", buf, count,
+                     datatype, dest, tag, comm, request);
 #endif
     if (!comm)
     {
@@ -257,7 +262,7 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
 #ifdef TMPI_PROFILE
     tMPI_Profile_count_stop(cur, TMPIFN_Isend);
 #endif
-    return ev->error;    
+    return ev->error;
 }
 
 
@@ -274,8 +279,8 @@ int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source,
     tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
-    tMPI_Trace_print("tMPI_Irecv(%p, %d, %p, %d, %d, %p, %p)", buf, count, 
-                       datatype, source, tag, comm, request);
+    tMPI_Trace_print("tMPI_Irecv(%p, %d, %p, %d, %d, %p, %p)", buf, count,
+                     datatype, source, tag, comm, request);
 #endif
     if (!comm)
     {

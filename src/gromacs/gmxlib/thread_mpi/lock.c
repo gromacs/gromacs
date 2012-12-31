@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -66,7 +66,7 @@ void tMPI_Lock_init(tMPI_Lock_t *lock)
 
 void tMPI_Lock_lock(tMPI_Lock_t *lock)
 {
-    while(tMPI_Spinlock_trylock(&(lock->lock)))
+    while (tMPI_Spinlock_trylock(&(lock->lock)))
     {
         TMPI_YIELD_WAIT(lock);
     }

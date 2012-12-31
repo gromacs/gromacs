@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -38,16 +38,16 @@ files.
 
 #ifdef THREAD_MPI_OPS
 
-/* cpp wizardry follows... 
+/* cpp wizardry follows...
 
-This file is #included directly from thread_mpi.c, and constructs 
-MPI_Reduce operators. 
+This file is #included directly from thread_mpi.c, and constructs
+MPI_Reduce operators.
 
 What this does is create the min, max, sum, prod, etc. functions for a given
-datatype (pre-defined as TYPE, with identifier name TYPENM) and puts pointers 
-to these functions in an array called oplist_TYPENM. 
+datatype (pre-defined as TYPE, with identifier name TYPENM) and puts pointers
+to these functions in an array called oplist_TYPENM.
 
-gmx_thread_mpi_reduce.c includes this file once for each type used by MPI, 
+gmx_thread_mpi_reduce.c includes this file once for each type used by MPI,
 and thus builds up a set of arrays of function pointers, that then get used
 in the mpi_datatype_ structure. This way, each operation/datatype entry
 that makes sense can be extracted easily. Note that we don't (yet) support
@@ -68,7 +68,7 @@ static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
     int i; \
     for(i=0;i<count;i++) \
         d[i]=(TYPE)(fn(a[i],b[i])); \
-}  
+}
 
 #define FN(tp,fname,fn) FNr(tp,fname,fn)
 
@@ -83,7 +83,7 @@ static void tMPI_##tp##_##fname  (void *dest, void *src_a, void *src_b, \
     int i; \
     for(i=0;i<count;i++) \
         d[i]=(TYPE)(a[i] operator b[i]); \
-}  
+}
 
 #define OPFN(tp,fname,operator) OPFNr(tp,fname,operator)
 
@@ -103,7 +103,7 @@ OPFN(TYPENM,band,&)
 OPFN(TYPENM,lor,||)
 OPFN(TYPENM,bor,|)
 OPFN(TYPENM,bxor,^)
-#define XOR(a, b)  ( (!a) ^ (!b) ) 
+#define XOR(a, b)  ( (!a) ^ (!b) )
 FN(TYPENM,lxor,XOR)
 #undef XOR
 #endif
@@ -111,7 +111,8 @@ FN(TYPENM,lxor,XOR)
 #define OPARRAYr(tp) oplist_##tp
 #define OPARRAY(tp) OPARRAYr(tp)
 
-tMPI_Op_fn OPARRAY(TYPENM)[] = {
+tMPI_Op_fn OPARRAY(TYPENM)[] =
+{
     FNAME(TYPENM,max),
     FNAME(TYPENM,min),
     FNAME(TYPENM,sum),

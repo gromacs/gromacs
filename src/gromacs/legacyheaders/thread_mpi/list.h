@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -41,16 +41,16 @@ files.
 #include "atomic.h"
 
 
-/** \file 
+/** \file
  *
- * \brief Lock-free list data structures. 
- * 
+ * \brief Lock-free list data structures.
+ *
 */
 
 
 #ifdef __cplusplus
-extern "C" 
-{  
+extern "C"
+{
 #endif
 #if 0
 } /* Avoids screwing up auto-indentation */
@@ -60,16 +60,16 @@ extern "C"
 /**  Lock-free single-ended stack (FIFO)
 
   Is a list with push, pop and detach operations */
-typedef struct 
+typedef struct
 {
-    tMPI_Atomic_ptr_t head;          /**< Pointer to the top stack element. */
+tMPI_Atomic_ptr_t head;          /**< Pointer to the top stack element. */
 } tMPI_Stack;
 
 /**  A single element in stack */
 typedef struct tMPI_Stack_element
 {
-    struct tMPI_Stack_element *next; /**< Pointer to the next stack element. */
-    void *data;                      /**< Pointer to data. */
+struct tMPI_Stack_element *next; /**< Pointer to the next stack element. */
+void *data;                      /**< Pointer to data. */
 } tMPI_Stack_element;
 
 
@@ -94,17 +94,17 @@ tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st);
 /**  Lock-free double-ended queue (FIFO)
 
   Is a list with enqueue and dequeue operations */
-typedef struct 
+typedef struct
 {
-    tMPI_Atomic_ptr_t head, tail;
+tMPI_Atomic_ptr_t head, tail;
 } tMPI_Queue;
 
 /**  A single element in a queue */
 typedef struct tMPI_Queue_element
 {
-    struct tMPI_Queue_element *next; /**< Pointer to the next queue element. */
-    struct tMPI_Queue_element *prev; /**< Pointer to the prev queue element. */
-    void *data;                      /**< Pointer to data. */
+struct tMPI_Queue_element *next; /**< Pointer to the next queue element. */
+struct tMPI_Queue_element *prev; /**< Pointer to the prev queue element. */
+void *data;                      /**< Pointer to data. */
 } tMPI_Queue_element;
 
 /**  Initialize a queue */
@@ -126,14 +126,14 @@ tMPI_Queue_element *tMPI_Queue_dequeue(tMPI_Queue *q);
 /**  Lock-free circular doubly linked list */
 typedef struct
 {
-    tMPI_Atomic_ptr_t head;
+tMPI_Atomic_ptr_t head;
 } tMPI_List;
 
 /**  Lock-free circular doubly linked list */
 typedef struct tMPI_List_element
 {
-    struct tMPI_List_element *next, *prev;
-    void *data;
+struct tMPI_List_element *next, *prev;
+void *data;
 } tMPI_List_element;
 
 /**  Initialize a list */
@@ -148,7 +148,7 @@ tMPI_List_element* tMPI_List_prev(tMPI_List *l,
                                   tMPI_List_element *le);
 
 void tMPI_List_add(tMPI_List *l, tMPI_List_element *le);
-void tMPI_List_insert(tMPI_List *l, tMPI_List_element *after, 
+void tMPI_List_insert(tMPI_List *l, tMPI_List_element *after,
                       tMPI_List_element *le);
 void tMPI_List_remove(tMPI_List *l, tMPI_List_element *le);
 #endif

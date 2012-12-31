@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -45,8 +45,8 @@ extern "C" {
 #endif
 
 /* NOTE: the terminology is:
-   incoming signals (provided by the operating system, or transmitted from 
-   other nodes) lead to stop conditions. These stop conditions should be 
+   incoming signals (provided by the operating system, or transmitted from
+   other nodes) lead to stop conditions. These stop conditions should be
    checked for and acted on by the outer loop of the simulation */
 
 /* the stop conditions. They are explicitly allowed to be compared against
@@ -59,7 +59,7 @@ typedef enum
     gmx_stop_cond_abort  /* stop now. (this should never be seen) */
 } gmx_stop_cond_t;
 
-/* Our names for the stop conditions. 
+/* Our names for the stop conditions.
    These must match the number given in gmx_stop_cond_t.*/
 extern const char *gmx_stop_cond_name[];
 
@@ -77,7 +77,7 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond);
 /* get the signal name that lead to the current stop condition. */
 const char *gmx_get_signal_name(void);
 
-/* check whether we received a USR1 signal. 
+/* check whether we received a USR1 signal.
    The condition is reset once a TRUE value is returned, so this function
    only returns TRUE once for a single signal. */
 gmx_bool gmx_got_usr_signal(void);
@@ -88,4 +88,4 @@ gmx_bool gmx_got_usr_signal(void);
 #endif
 
 
-#endif	/* _sighandler_h */
+#endif  /* _sighandler_h */

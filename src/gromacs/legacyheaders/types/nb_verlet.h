@@ -44,12 +44,14 @@ extern "C" {
 #endif
 
 /*! Nonbonded NxN kernel types: plain C, SSE/AVX, GPU CUDA, GPU emulation, etc */
-enum { nbkNotSet = 0, 
-       nbk4x4_PlainC, 
-       nbk4xN_X86_SIMD128,
-       nbk4xN_X86_SIMD256,
-       nbk8x8x8_CUDA,
-       nbk8x8x8_PlainC };
+enum {
+    nbkNotSet = 0,
+    nbk4x4_PlainC,
+    nbk4xN_X86_SIMD128,
+    nbk4xN_X86_SIMD256,
+    nbk8x8x8_CUDA,
+    nbk8x8x8_PlainC
+};
 
 /* Atom locality indicator: local, non-local, all, used for calls to:
    gridding, pair-search, force calculation, x/f buffer operations */
@@ -70,14 +72,16 @@ enum { eintLocal = 0, eintNonlocal = 1 };
 
 enum { enbvClearFNo, enbvClearFYes };
 
-typedef struct {
+typedef struct
+{
     nbnxn_pairlist_set_t nbl_lists;   /* pair list(s)                       */
     nbnxn_atomdata_t     *nbat;       /* atom data                          */
     int                  kernel_type; /* non-bonded kernel - see enum above */
 } nonbonded_verlet_group_t;
 
 /* non-bonded data structure with Verlet-type cut-off */
-typedef struct {
+typedef struct
+{
     nbnxn_search_t           nbs;   /* n vs n atom pair searching data          */
     int                      ngrp;  /* number of interaction groups             */
     nonbonded_verlet_group_t grp[2];/* local and non-local interaction group    */

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -49,13 +49,13 @@ files.
 
 typedef struct tMPI_Atomic
 {
-    volatile int value;   
+    volatile int value;
 }
 tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    volatile void* value;   
+    volatile void* value;
 }
 tMPI_Atomic_ptr_t;
 

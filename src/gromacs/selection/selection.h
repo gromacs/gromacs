@@ -504,7 +504,7 @@ class SelectionPosition
         int atomCount() const
         {
             return sel_->rawPositions_.m.mapb.index[i_ + 1]
-                 - sel_->rawPositions_.m.mapb.index[i_];
+                   - sel_->rawPositions_.m.mapb.index[i_];
         }
         //! Return atom indices that make up this position.
         ConstArrayRef<int> atomIndices() const

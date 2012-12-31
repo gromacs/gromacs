@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -45,7 +45,7 @@
 #include "rdgroup.h"
 #include "statutil.h"
 #include "gmxfio.h"
-#include "vec.h" 
+#include "vec.h"
 #include "typedefs.h"
 #include "network.h"
 #include "filenm.h"
@@ -62,11 +62,11 @@
 #include "copyrite.h"
 #include "macros.h"
 
-static void pull_print_x_grp(FILE *out,gmx_bool bRef,ivec dim,t_pullgrp *pgrp) 
+static void pull_print_x_grp(FILE *out,gmx_bool bRef,ivec dim,t_pullgrp *pgrp)
 {
     int m;
-    
-    for(m=0; m<DIM; m++)
+
+    for (m=0; m<DIM; m++)
     {
         if (dim[m])
         {
@@ -75,12 +75,12 @@ static void pull_print_x_grp(FILE *out,gmx_bool bRef,ivec dim,t_pullgrp *pgrp)
     }
 }
 
-static void pull_print_x(FILE *out,t_pull *pull,double t) 
+static void pull_print_x(FILE *out,t_pull *pull,double t)
 {
     int g;
-  
+
     fprintf(out, "%.4f", t);
-    
+
     if (PULL_CYL(pull))
     {
         for (g=1; g<1+pull->ngrp; g++)
@@ -102,17 +102,17 @@ static void pull_print_x(FILE *out,t_pull *pull,double t)
     fprintf(out,"\n");
 }
 
-static void pull_print_f(FILE *out,t_pull *pull,double t) 
+static void pull_print_f(FILE *out,t_pull *pull,double t)
 {
     int g,d;
-    
+
     fprintf(out, "%.4f", t);
-    
-    for(g=1; g<1+pull->ngrp; g++)
+
+    for (g=1; g<1+pull->ngrp; g++)
     {
         if (pull->eGeom == epullgPOS)
         {
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 if (pull->dim[d])
                 {
@@ -134,21 +134,21 @@ void pull_print_output(t_pull *pull, gmx_large_int_t step, double time)
     {
         pull_print_x(pull->out_x,pull,time);
     }
-    
+
     if ((pull->nstfout != 0) && (step % pull->nstfout == 0))
     {
         pull_print_f(pull->out_f,pull,time);
     }
 }
 
-static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv, 
+static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
                            gmx_bool bCoord, unsigned long Flags)
 {
     FILE *fp;
     int  nsets,g,m;
     char **setname,buf[10];
-    
-    if(Flags & MD_APPENDFILES)
+
+    if (Flags & MD_APPENDFILES)
     {
         fp = gmx_fio_fopen(fn,"a+");
     }
@@ -165,10 +165,10 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
             xvgr_header(fp,"Pull force","Time (ps)","Force (kJ/mol/nm)",
                         exvggtXNY,oenv);
         }
-        
+
         snew(setname,(1+pull->ngrp)*DIM);
         nsets = 0;
-        for(g=0; g<1+pull->ngrp; g++)
+        for (g=0; g<1+pull->ngrp; g++)
         {
             if (pull->grp[g].nat > 0 &&
                 (g > 0 || (bCoord && !PULL_CYL(pull))))
@@ -177,7 +177,7 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
                 {
                     if (PULL_CYL(pull))
                     {
-                        for(m=0; m<DIM; m++)
+                        for (m=0; m<DIM; m++)
                         {
                             if (pull->dim[m])
                             {
@@ -187,7 +187,7 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
                             }
                         }
                     }
-                    for(m=0; m<DIM; m++)
+                    for (m=0; m<DIM; m++)
                     {
                         if (pull->dim[m])
                         {
@@ -210,13 +210,13 @@ static FILE *open_pull_out(const char *fn,t_pull *pull,const output_env_t oenv,
         {
             xvgr_legend(fp,nsets,(const char**)setname,oenv);
         }
-        for(g=0; g<nsets; g++)
+        for (g=0; g<nsets; g++)
         {
             sfree(setname[g]);
         }
         sfree(setname);
     }
-    
+
     return fp;
 }
 
@@ -227,13 +227,13 @@ static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
 {
     int i,ii,m,start,end;
     double wmass,inv_wm;
-    
+
     start = md->start;
     end   = md->homenr + start;
-    
+
     inv_wm = pgrp->wscale*pgrp->invtm;
-    
-    for(i=0; i<pgrp->nat_loc; i++)
+
+    for (i=0; i<pgrp->nat_loc; i++)
     {
         ii = pgrp->ind_loc[i];
         wmass = md->massT[ii];
@@ -241,8 +241,8 @@ static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
         {
             wmass *= pgrp->weight_loc[i];
         }
-    
-        for(m=0; m<DIM; m++)
+
+        for (m=0; m<DIM; m++)
         {
             f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
         }
@@ -255,8 +255,8 @@ static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
 {
     int i;
     t_pullgrp *pgrp;
-    
-    for(i=1; i<pull->ngrp+1; i++)
+
+    for (i=1; i<pull->ngrp+1; i++)
     {
         pgrp = &(pull->grp[i]);
         apply_forces_grp(pgrp,md,ga2la,pgrp->f,1,f);
@@ -283,7 +283,7 @@ static double max_pull_distance2(const t_pull *pull,const t_pbc *pbc)
 
     if (pull->eGeom != epullgDIRPBC)
     {
-        for(m=0; m<pbc->ndim_ePBC; m++)
+        for (m=0; m<pbc->ndim_ePBC; m++)
         {
             if (pull->dim[m] != 0)
             {
@@ -291,7 +291,7 @@ static double max_pull_distance2(const t_pull *pull,const t_pbc *pbc)
             }
         }
     }
-    
+
     return 0.25*max_d2;
 }
 
@@ -301,26 +301,26 @@ static void get_pullgrps_dr(const t_pull *pull,const t_pbc *pbc,int g,double t,
 {
     t_pullgrp *pref,*pgrp;
     int       m;
-    dvec      xrefr,dref={0,0,0};
+    dvec      xrefr,dref= {0,0,0};
     double    dr2;
-    
+
     pgrp = &pull->grp[g];
-    
+
     copy_dvec(xref,xrefr);
 
     if (pull->eGeom == epullgDIRPBC)
     {
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             dref[m] = (pgrp->init[0] + pgrp->rate*t)*pull->grp[g].vec[m];
         }
         /* Add the reference position, so we use the correct periodic image */
         dvec_inc(xrefr,dref);
     }
-  
+
     pbc_dx_d(pbc, xg, xrefr, dr);
     dr2 = 0;
-    for(m=0; m<DIM; m++)
+    for (m=0; m<DIM; m++)
     {
         dr[m] *= pull->dim[m];
         dr2 += dr[m]*dr[m];
@@ -360,20 +360,20 @@ static void get_pullgrp_dr(const t_pull *pull,const t_pbc *pbc,int g,double t,
 void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
                           dvec dr,dvec dev)
 {
-    static gmx_bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety, 
+    static gmx_bool bWarned=FALSE; /* TODO: this should be fixed for thread-safety,
                                   but is fairly benign */
     t_pullgrp *pgrp;
     int       m;
     dvec      ref;
     double    drs,inpr;
-    
+
     pgrp = &pull->grp[g];
-    
+
     get_pullgrp_dr(pull,pbc,g,t,dr);
-    
+
     if (pull->eGeom == epullgPOS)
     {
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             ref[m] = pgrp->init[m] + pgrp->rate*t*pgrp->vec[m];
         }
@@ -382,60 +382,60 @@ void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
     {
         ref[0] = pgrp->init[0] + pgrp->rate*t;
     }
-    
+
     switch (pull->eGeom)
     {
-    case epullgDIST:
-        /* Pull along the vector between the com's */
-        if (ref[0] < 0 && !bWarned)
-        {
-            fprintf(stderr,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
-            bWarned = TRUE;
-        }
-        drs = dnorm(dr);
-        if (drs == 0)
-        {
-            /* With no vector we can not determine the direction for the force,
-             * so we set the force to zero.
-             */
-            dev[0] = 0;
-        }
-        else
-        {
-            /* Determine the deviation */
-            dev[0] = drs - ref[0];
-        }
-        break;
-    case epullgDIR:
-    case epullgDIRPBC:
-    case epullgCYL:
-        /* Pull along vec */
-        inpr = 0;
-        for(m=0; m<DIM; m++)
-        {
-            inpr += pgrp->vec[m]*dr[m];
-        }
-        dev[0] = inpr - ref[0];
-        break;
-    case epullgPOS:
-        /* Determine the difference of dr and ref along each dimension */
-        for(m=0; m<DIM; m++)
-        {
-            dev[m] = (dr[m] - ref[m])*pull->dim[m];
-        }
-        break;
+        case epullgDIST:
+            /* Pull along the vector between the com's */
+            if (ref[0] < 0 && !bWarned)
+            {
+                fprintf(stderr,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
+                bWarned = TRUE;
+            }
+            drs = dnorm(dr);
+            if (drs == 0)
+            {
+                /* With no vector we can not determine the direction for the force,
+                 * so we set the force to zero.
+                 */
+                dev[0] = 0;
+            }
+            else
+            {
+                /* Determine the deviation */
+                dev[0] = drs - ref[0];
+            }
+            break;
+        case epullgDIR:
+        case epullgDIRPBC:
+        case epullgCYL:
+            /* Pull along vec */
+            inpr = 0;
+            for (m=0; m<DIM; m++)
+            {
+                inpr += pgrp->vec[m]*dr[m];
+            }
+            dev[0] = inpr - ref[0];
+            break;
+        case epullgPOS:
+            /* Determine the difference of dr and ref along each dimension */
+            for (m=0; m<DIM; m++)
+            {
+                dev[m] = (dr[m] - ref[m])*pull->dim[m];
+            }
+            break;
     }
 }
 
 void clear_pull_forces(t_pull *pull)
 {
     int i;
-    
+
     /* Zeroing the forces is only required for constraint pulling.
      * It can happen that multiple constraint steps need to be applied
      * and therefore the constraint forces need to be accumulated.
      */
-    for(i=0; i<1+pull->ngrp; i++)
+    for (i=0; i<1+pull->ngrp; i++)
     {
         clear_dvec(pull->grp[i].f);
         pull->grp[i].f_scal = 0;
@@ -446,7 +446,7 @@ void clear_pull_forces(t_pull *pull)
 static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                           rvec *x, rvec *v,
                           gmx_bool bMaster, tensor vir,
-                          double dt, double t) 
+                          double dt, double t)
 {
 
     dvec *r_ij;  /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
@@ -459,14 +459,14 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     double lambda, rm, mass, invdt=0;
     gmx_bool bConverged_all,bConverged=FALSE;
     int niter=0,g,ii,j,m,max_iter=100;
-    double q,a,b,c;  /* for solving the quadratic equation, 
+    double q,a,b,c;  /* for solving the quadratic equation,
                         see Num. Recipes in C ed 2 p. 184 */
     dvec *dr;        /* correction for group i */
     dvec ref_dr;     /* correction for group j */
     dvec f;          /* the pull force */
     dvec tmp,tmp3;
     t_pullgrp *pdyna,*pgrp,*pref;
-    
+
     snew(r_ij,pull->ngrp+1);
     if (PULL_CYL(pull))
     {
@@ -478,17 +478,17 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     }
     snew(dr,pull->ngrp+1);
     snew(rinew,pull->ngrp+1);
-    
-    /* copy the current unconstrained positions for use in iterations. We 
+
+    /* copy the current unconstrained positions for use in iterations. We
        iterate until rinew[i] and rjnew[j] obey the constraints. Then
        rinew - pull.x_unc[i] is the correction dr to group i */
-    for(g=1; g<1+pull->ngrp; g++)
+    for (g=1; g<1+pull->ngrp; g++)
     {
         copy_dvec(pull->grp[g].xp,rinew[g]);
     }
     if (PULL_CYL(pull))
     {
-        for(g=1; g<1+pull->ngrp; g++)
+        for (g=1; g<1+pull->ngrp; g++)
         {
             copy_dvec(pull->dyna[g].xp,rjnew[g]);
         }
@@ -497,9 +497,9 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     {
         copy_dvec(pull->grp[0].xp,rjnew[0]);
     }
-    
+
     /* Determine the constraint directions from the old positions */
-    for(g=1; g<1+pull->ngrp; g++)
+    for (g=1; g<1+pull->ngrp; g++)
     {
         get_pullgrp_dr(pull,pbc,g,t,r_ij[g]);
         /* Store the difference vector at time t for printing */
@@ -509,35 +509,39 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
             fprintf(debug,"Pull group %d dr %f %f %f\n",
                     g,r_ij[g][XX],r_ij[g][YY],r_ij[g][ZZ]);
         }
-        
+
         if (pull->eGeom == epullgDIR || pull->eGeom == epullgDIRPBC)
         {
             /* Select the component along vec */
             a = 0;
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 a += pull->grp[g].vec[m]*r_ij[g][m];
             }
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 r_ij[g][m] = a*pull->grp[g].vec[m];
             }
         }
     }
-    
+
     bConverged_all = FALSE;
     while (!bConverged_all && niter < max_iter)
     {
         bConverged_all = TRUE;
 
         /* loop over all constraints */
-        for(g=1; g<1+pull->ngrp; g++)
+        for (g=1; g<1+pull->ngrp; g++)
         {
             pgrp = &pull->grp[g];
             if (PULL_CYL(pull))
+            {
                 pref = &pull->dyna[g];
+            }
             else
+            {
                 pref = &pull->grp[0];
+            }
 
             /* Get the current difference vector */
             get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[PULL_CYL(pull) ? g : 0],
@@ -545,7 +549,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 
             if (pull->eGeom == epullgPOS)
             {
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     ref[m] = pgrp->init[m] + pgrp->rate*t*pgrp->vec[m];
                 }
@@ -557,89 +561,89 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 ref[1] = 0;
                 ref[2] = 0;
             }
-            
+
             if (debug)
             {
                 fprintf(debug,"Pull group %d, iteration %d\n",g,niter);
             }
-            
+
             rm = 1.0/(pull->grp[g].invtm + pref->invtm);
-            
+
             switch (pull->eGeom)
             {
-            case epullgDIST:
-                if (ref[0] <= 0)
-                {
-                    gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref[0]);
-                }
-                
-                a = diprod(r_ij[g],r_ij[g]); 
-                b = diprod(unc_ij,r_ij[g])*2;
-                c = diprod(unc_ij,unc_ij) - dsqr(ref[0]);
-                
-                if (b < 0)
-                {
-                    q = -0.5*(b - sqrt(b*b - 4*a*c));
-                    lambda = -q/a;
-                }
-                else
-                {
-                    q = -0.5*(b + sqrt(b*b - 4*a*c));
-                    lambda = -c/q;
-                }
-                
-                if (debug)
-                {
-                    fprintf(debug,
-                            "Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n",
-                            a,b,c,lambda);
-                }
-                
-                /* The position corrections dr due to the constraints */
-                dsvmul(-lambda*rm*pgrp->invtm, r_ij[g],  dr[g]);
-                dsvmul( lambda*rm*pref->invtm, r_ij[g], ref_dr);
-                break;
-            case epullgDIR:
-            case epullgDIRPBC:
-            case epullgCYL:
-                /* A 1-dimensional constraint along a vector */
-                a = 0;
-                for(m=0; m<DIM; m++)
-                {
-                    vec[m] = pgrp->vec[m];
-                    a += unc_ij[m]*vec[m];
-                }
-                /* Select only the component along the vector */
-                dsvmul(a,vec,unc_ij);
-                lambda = a - ref[0];
-                if (debug)
-                {
-                    fprintf(debug,"Pull inpr %e lambda: %e\n",a,lambda);
-                }
-                
-                /* The position corrections dr due to the constraints */
-                dsvmul(-lambda*rm*pull->grp[g].invtm, vec, dr[g]);
-                dsvmul( lambda*rm*       pref->invtm, vec,ref_dr);
-                break;
-            case epullgPOS:
-                for(m=0; m<DIM; m++)
-                {
-                    if (pull->dim[m])
+                case epullgDIST:
+                    if (ref[0] <= 0)
                     {
-                        lambda = r_ij[g][m] - ref[m];
-                        /* The position corrections dr due to the constraints */
-                        dr[g][m]  = -lambda*rm*pull->grp[g].invtm;
-                        ref_dr[m] =  lambda*rm*pref->invtm;
+                        gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref[0]);
+                    }
+
+                    a = diprod(r_ij[g],r_ij[g]);
+                    b = diprod(unc_ij,r_ij[g])*2;
+                    c = diprod(unc_ij,unc_ij) - dsqr(ref[0]);
+
+                    if (b < 0)
+                    {
+                        q = -0.5*(b - sqrt(b*b - 4*a*c));
+                        lambda = -q/a;
                     }
                     else
                     {
-                        dr[g][m]  = 0;
-                        ref_dr[m] = 0;
+                        q = -0.5*(b + sqrt(b*b - 4*a*c));
+                        lambda = -c/q;
                     }
-                }
-                break;
+
+                    if (debug)
+                    {
+                        fprintf(debug,
+                                "Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n",
+                                a,b,c,lambda);
+                    }
+
+                    /* The position corrections dr due to the constraints */
+                    dsvmul(-lambda*rm*pgrp->invtm, r_ij[g],  dr[g]);
+                    dsvmul( lambda*rm*pref->invtm, r_ij[g], ref_dr);
+                    break;
+                case epullgDIR:
+                case epullgDIRPBC:
+                case epullgCYL:
+                    /* A 1-dimensional constraint along a vector */
+                    a = 0;
+                    for (m=0; m<DIM; m++)
+                    {
+                        vec[m] = pgrp->vec[m];
+                        a += unc_ij[m]*vec[m];
+                    }
+                    /* Select only the component along the vector */
+                    dsvmul(a,vec,unc_ij);
+                    lambda = a - ref[0];
+                    if (debug)
+                    {
+                        fprintf(debug,"Pull inpr %e lambda: %e\n",a,lambda);
+                    }
+
+                    /* The position corrections dr due to the constraints */
+                    dsvmul(-lambda*rm*pull->grp[g].invtm, vec, dr[g]);
+                    dsvmul( lambda*rm*       pref->invtm, vec,ref_dr);
+                    break;
+                case epullgPOS:
+                    for (m=0; m<DIM; m++)
+                    {
+                        if (pull->dim[m])
+                        {
+                            lambda = r_ij[g][m] - ref[m];
+                            /* The position corrections dr due to the constraints */
+                            dr[g][m]  = -lambda*rm*pull->grp[g].invtm;
+                            ref_dr[m] =  lambda*rm*pref->invtm;
+                        }
+                        else
+                        {
+                            dr[g][m]  = 0;
+                            ref_dr[m] = 0;
+                        }
+                    }
+                    break;
             }
-            
+
             /* DEBUG */
             if (debug)
             {
@@ -648,7 +652,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 get_pullgrps_dr(pull,pbc,g,t,dr[g]   ,ref_dr  ,-1,tmp3);
                 fprintf(debug,
                         "Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
-                        rinew[g][0],rinew[g][1],rinew[g][2], 
+                        rinew[g][0],rinew[g][1],rinew[g][2],
                         rjnew[j][0],rjnew[j][1],rjnew[j][2], dnorm(tmp));
                 if (pull->eGeom == epullgPOS)
                 {
@@ -671,50 +675,50 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                         "Pull cor %10.7f %10.7f %10.7f\n",
                         dr[g][0],dr[g][1],dr[g][2]);
             } /* END DEBUG */
-            
+
             /* Update the COMs with dr */
             dvec_inc(rinew[g],                     dr[g]);
             dvec_inc(rjnew[PULL_CYL(pull) ? g : 0],ref_dr);
         }
-        
+
         /* Check if all constraints are fullfilled now */
-        for(g=1; g<1+pull->ngrp; g++)
+        for (g=1; g<1+pull->ngrp; g++)
         {
             pgrp = &pull->grp[g];
-            
+
             get_pullgrps_dr(pull,pbc,g,t,rinew[g],rjnew[PULL_CYL(pull) ? g : 0],
                             -1,unc_ij);
-            
+
             switch (pull->eGeom)
             {
-            case epullgDIST:
-                bConverged = fabs(dnorm(unc_ij) - ref[0]) < pull->constr_tol;
-                break;
-            case epullgDIR:
-            case epullgDIRPBC:
-            case epullgCYL:
-                for(m=0; m<DIM; m++)
-                {
-                    vec[m] = pgrp->vec[m];
-                }
-                inpr = diprod(unc_ij,vec);
-                dsvmul(inpr,vec,unc_ij);
-                bConverged =
-                    fabs(diprod(unc_ij,vec) - ref[0]) < pull->constr_tol;
-                break;
-            case epullgPOS:
-                bConverged = TRUE;
-                for(m=0; m<DIM; m++)
-                {
-                    if (pull->dim[m] && 
-                        fabs(unc_ij[m] - ref[m]) >= pull->constr_tol)
+                case epullgDIST:
+                    bConverged = fabs(dnorm(unc_ij) - ref[0]) < pull->constr_tol;
+                    break;
+                case epullgDIR:
+                case epullgDIRPBC:
+                case epullgCYL:
+                    for (m=0; m<DIM; m++)
                     {
-                        bConverged = FALSE;
+                        vec[m] = pgrp->vec[m];
                     }
-                }
-                break;
+                    inpr = diprod(unc_ij,vec);
+                    dsvmul(inpr,vec,unc_ij);
+                    bConverged =
+                        fabs(diprod(unc_ij,vec) - ref[0]) < pull->constr_tol;
+                    break;
+                case epullgPOS:
+                    bConverged = TRUE;
+                    for (m=0; m<DIM; m++)
+                    {
+                        if (pull->dim[m] &&
+                            fabs(unc_ij[m] - ref[m]) >= pull->constr_tol)
+                        {
+                            bConverged = FALSE;
+                        }
+                    }
+                    break;
             }
-            
+
             if (!bConverged)
             {
                 if (debug)
@@ -727,7 +731,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 bConverged_all = FALSE;
             }
         }
-        
+
         niter++;
         /* if after all constraints are dealt with and bConverged is still TRUE
            we're finished, if not we do another iteration */
@@ -736,22 +740,22 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     {
         gmx_fatal(FARGS,"Too many iterations for constraint run: %d",niter);
     }
-    
+
     /* DONE ITERATING, NOW UPDATE COORDINATES AND CALC. CONSTRAINT FORCES */
-    
+
     if (v)
     {
         invdt = 1/dt;
     }
-    
+
     /* update the normal groups */
-    for(g=1; g<1+pull->ngrp; g++)
+    for (g=1; g<1+pull->ngrp; g++)
     {
         pgrp = &pull->grp[g];
         /* get the final dr and constraint force for group i */
         dvec_sub(rinew[g],pgrp->xp,dr[g]);
         /* select components of dr */
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             dr[g][m] *= pull->dim[m];
         }
@@ -759,84 +763,85 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
         dvec_inc(pgrp->f,f);
         switch (pull->eGeom)
         {
-        case epullgDIST:
-            for(m=0; m<DIM; m++)
-            {
-                pgrp->f_scal += r_ij[g][m]*f[m]/dnorm(r_ij[g]);
-            }
-            break;
-        case epullgDIR:
-        case epullgDIRPBC:
-        case epullgCYL:
-            for(m=0; m<DIM; m++)
-            {
-                pgrp->f_scal += pgrp->vec[m]*f[m];
-            }
-            break;
-        case epullgPOS:
-            break;
+            case epullgDIST:
+                for (m=0; m<DIM; m++)
+                {
+                    pgrp->f_scal += r_ij[g][m]*f[m]/dnorm(r_ij[g]);
+                }
+                break;
+            case epullgDIR:
+            case epullgDIRPBC:
+            case epullgCYL:
+                for (m=0; m<DIM; m++)
+                {
+                    pgrp->f_scal += pgrp->vec[m]*f[m];
+                }
+                break;
+            case epullgPOS:
+                break;
         }
-        
-        if (vir && bMaster) {
+
+        if (vir && bMaster)
+        {
             /* Add the pull contribution to the virial */
-            for(j=0; j<DIM; j++)
+            for (j=0; j<DIM; j++)
             {
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     vir[j][m] -= 0.5*f[j]*r_ij[g][m];
                 }
             }
         }
-        
+
         /* update the atom positions */
         copy_dvec(dr[g],tmp);
-        for(j=0;j<pgrp->nat_loc;j++)
+        for (j=0; j<pgrp->nat_loc; j++)
         {
             ii = pgrp->ind_loc[j];
             if (pgrp->weight_loc)
             {
-                dsvmul(pgrp->wscale*pgrp->weight_loc[j],dr[g],tmp); 
+                dsvmul(pgrp->wscale*pgrp->weight_loc[j],dr[g],tmp);
             }
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 x[ii][m] += tmp[m];
             }
             if (v)
             {
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     v[ii][m] += invdt*tmp[m];
                 }
             }
         }
     }
-    
+
     /* update the reference groups */
     if (PULL_CYL(pull))
     {
         /* update the dynamic reference groups */
-        for(g=1; g<1+pull->ngrp; g++)
+        for (g=1; g<1+pull->ngrp; g++)
         {
             pdyna = &pull->dyna[g];
             dvec_sub(rjnew[g],pdyna->xp,ref_dr);
             /* select components of ref_dr */
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 ref_dr[m] *= pull->dim[m];
             }
-            
-            for(j=0;j<pdyna->nat_loc;j++)
+
+            for (j=0; j<pdyna->nat_loc; j++)
             {
                 /* reset the atoms with dr, weighted by w_i */
-                dsvmul(pdyna->wscale*pdyna->weight_loc[j],ref_dr,tmp); 
+                dsvmul(pdyna->wscale*pdyna->weight_loc[j],ref_dr,tmp);
                 ii = pdyna->ind_loc[j];
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     x[ii][m] += tmp[m];
                 }
                 if (v)
                 {
-                    for(m=0; m<DIM; m++)
+                    for (m=0; m<DIM; m++)
                     {
                         v[ii][m] += invdt*tmp[m];
                     }
@@ -848,35 +853,35 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     {
         pgrp = &pull->grp[0];
         /* update the reference group */
-        dvec_sub(rjnew[0],pgrp->xp, ref_dr); 
+        dvec_sub(rjnew[0],pgrp->xp, ref_dr);
         /* select components of ref_dr */
-        for(m=0;m<DIM;m++)
+        for (m=0; m<DIM; m++)
         {
             ref_dr[m] *= pull->dim[m];
         }
-        
+
         copy_dvec(ref_dr,tmp);
-        for(j=0; j<pgrp->nat_loc;j++)
+        for (j=0; j<pgrp->nat_loc; j++)
         {
             ii = pgrp->ind_loc[j];
             if (pgrp->weight_loc)
             {
-                dsvmul(pgrp->wscale*pgrp->weight_loc[j],ref_dr,tmp); 
+                dsvmul(pgrp->wscale*pgrp->weight_loc[j],ref_dr,tmp);
             }
-            for(m=0; m<DIM; m++)
+            for (m=0; m<DIM; m++)
             {
                 x[ii][m] += tmp[m];
             }
             if (v)
             {
-                for(m=0; m<DIM; m++)
+                for (m=0; m<DIM; m++)
                 {
                     v[ii][m] += invdt*tmp[m];
                 }
             }
         }
     }
-    
+
     /* finished! I hope. Give back some memory */
     sfree(r_ij);
     sfree(rinew);
@@ -894,90 +899,90 @@ static void do_pull_pot(int ePull,
     double    ndr,invdr;
     real      k,dkdl;
     t_pullgrp *pgrp;
-    
+
     /* loop over the groups that are being pulled */
     *V    = 0;
     *dVdl = 0;
-    for(g=1; g<1+pull->ngrp; g++)
+    for (g=1; g<1+pull->ngrp; g++)
     {
         pgrp = &pull->grp[g];
         get_pullgrp_distance(pull,pbc,g,t,pgrp->dr,dev);
-        
+
         k    = (1.0 - lambda)*pgrp->k + lambda*pgrp->kB;
         dkdl = pgrp->kB - pgrp->k;
-        
+
         switch (pull->eGeom)
         {
-        case epullgDIST:
-            ndr   = dnorm(pgrp->dr);
-            invdr = 1/ndr;
-            if (ePull == epullUMBRELLA)
-            {
-                pgrp->f_scal  =       -k*dev[0];
-                *V           += 0.5*   k*dsqr(dev[0]);
-                *dVdl        += 0.5*dkdl*dsqr(dev[0]);
-            }
-            else
-            {
-                pgrp->f_scal  =   -k;
-                *V           +=    k*ndr;
-                *dVdl        += dkdl*ndr;
-            }
-            for(m=0; m<DIM; m++)
-            {
-                pgrp->f[m]    = pgrp->f_scal*pgrp->dr[m]*invdr;
-            }
-            break;
-        case epullgDIR:
-        case epullgDIRPBC:
-        case epullgCYL:
-            if (ePull == epullUMBRELLA)
-            {
-                pgrp->f_scal  =       -k*dev[0];
-                *V           += 0.5*   k*dsqr(dev[0]);
-                *dVdl        += 0.5*dkdl*dsqr(dev[0]);
-            }
-            else
-            {
-                ndr = 0;
-                for(m=0; m<DIM; m++)
-                {
-                    ndr += pgrp->vec[m]*pgrp->dr[m];
-                }
-                pgrp->f_scal  =   -k;
-                *V           +=    k*ndr;
-                *dVdl        += dkdl*ndr;
-            }
-            for(m=0; m<DIM; m++)
-            {
-                pgrp->f[m]    = pgrp->f_scal*pgrp->vec[m];
-            }
-            break;
-        case epullgPOS:
-            for(m=0; m<DIM; m++)
-            {
+            case epullgDIST:
+                ndr   = dnorm(pgrp->dr);
+                invdr = 1/ndr;
                 if (ePull == epullUMBRELLA)
                 {
-                    pgrp->f[m]  =       -k*dev[m];
-                    *V         += 0.5*   k*dsqr(dev[m]);
-                    *dVdl      += 0.5*dkdl*dsqr(dev[m]);
+                    pgrp->f_scal  =       -k*dev[0];
+                    *V           += 0.5*   k*dsqr(dev[0]);
+                    *dVdl        += 0.5*dkdl*dsqr(dev[0]);
                 }
                 else
                 {
-                    pgrp->f[m]  =   -k*pull->dim[m];
-                    *V         +=    k*pgrp->dr[m]*pull->dim[m];
-                    *dVdl      += dkdl*pgrp->dr[m]*pull->dim[m];
+                    pgrp->f_scal  =   -k;
+                    *V           +=    k*ndr;
+                    *dVdl        += dkdl*ndr;
                 }
-            }
-            break;
+                for (m=0; m<DIM; m++)
+                {
+                    pgrp->f[m]    = pgrp->f_scal*pgrp->dr[m]*invdr;
+                }
+                break;
+            case epullgDIR:
+            case epullgDIRPBC:
+            case epullgCYL:
+                if (ePull == epullUMBRELLA)
+                {
+                    pgrp->f_scal  =       -k*dev[0];
+                    *V           += 0.5*   k*dsqr(dev[0]);
+                    *dVdl        += 0.5*dkdl*dsqr(dev[0]);
+                }
+                else
+                {
+                    ndr = 0;
+                    for (m=0; m<DIM; m++)
+                    {
+                        ndr += pgrp->vec[m]*pgrp->dr[m];
+                    }
+                    pgrp->f_scal  =   -k;
+                    *V           +=    k*ndr;
+                    *dVdl        += dkdl*ndr;
+                }
+                for (m=0; m<DIM; m++)
+                {
+                    pgrp->f[m]    = pgrp->f_scal*pgrp->vec[m];
+                }
+                break;
+            case epullgPOS:
+                for (m=0; m<DIM; m++)
+                {
+                    if (ePull == epullUMBRELLA)
+                    {
+                        pgrp->f[m]  =       -k*dev[m];
+                        *V         += 0.5*   k*dsqr(dev[m]);
+                        *dVdl      += 0.5*dkdl*dsqr(dev[m]);
+                    }
+                    else
+                    {
+                        pgrp->f[m]  =   -k*pull->dim[m];
+                        *V         +=    k*pgrp->dr[m]*pull->dim[m];
+                        *dVdl      += dkdl*pgrp->dr[m]*pull->dim[m];
+                    }
+                }
+                break;
         }
-        
+
         if (vir)
         {
             /* Add the pull contribution to the virial */
-            for(j=0; j<DIM; j++)
+            for (j=0; j<DIM; j++)
             {
-                for(m=0;m<DIM;m++)
+                for (m=0; m<DIM; m++)
                 {
                     vir[j][m] -= 0.5*pgrp->f[j]*pgrp->dr[m];
                 }
@@ -987,81 +992,96 @@ static void do_pull_pot(int ePull,
 }
 
 real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-		    t_commrec *cr, double t, real lambda,
-		    rvec *x, rvec *f, tensor vir, real *dvdlambda)
+                    t_commrec *cr, double t, real lambda,
+                    rvec *x, rvec *f, tensor vir, real *dvdlambda)
 {
-  real V,dVdl;
+    real V,dVdl;
 
-  pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
+    pull_calc_coms(cr,pull,md,pbc,t,x,NULL);
 
-  do_pull_pot(ePull,pull,pbc,t,lambda,
-	      &V,pull->bVirial && MASTER(cr) ? vir : NULL,&dVdl);
+    do_pull_pot(ePull,pull,pbc,t,lambda,
+                &V,pull->bVirial && MASTER(cr) ? vir : NULL,&dVdl);
 
-  /* Distribute forces over pulled groups */
-  apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
+    /* Distribute forces over pulled groups */
+    apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
 
-  if (MASTER(cr)) {
-    *dvdlambda += dVdl;
-  }
+    if (MASTER(cr))
+    {
+        *dvdlambda += dVdl;
+    }
 
-  return (MASTER(cr) ? V : 0.0);
+    return (MASTER(cr) ? V : 0.0);
 }
 
 void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-		     t_commrec *cr, double dt, double t,
-		     rvec *x, rvec *xp, rvec *v, tensor vir)
+                     t_commrec *cr, double dt, double t,
+                     rvec *x, rvec *xp, rvec *v, tensor vir)
 {
-  pull_calc_coms(cr,pull,md,pbc,t,x,xp);
+    pull_calc_coms(cr,pull,md,pbc,t,x,xp);
 
-  do_constraint(pull,md,pbc,xp,v,pull->bVirial && MASTER(cr),vir,dt,t);
+    do_constraint(pull,md,pbc,xp,v,pull->bVirial && MASTER(cr),vir,dt,t);
 }
 
 static void make_local_pull_group(gmx_ga2la_t ga2la,
-				  t_pullgrp *pg,int start,int end)
+                                  t_pullgrp *pg,int start,int end)
 {
-  int i,ii;
+    int i,ii;
 
-  pg->nat_loc = 0;
-  for(i=0; i<pg->nat; i++) {
-    ii = pg->ind[i];
-    if (ga2la) {
-      if (!ga2la_get_home(ga2la,ii,&ii)) {
-        ii = -1;
-      }
+    pg->nat_loc = 0;
+    for (i=0; i<pg->nat; i++)
+    {
+        ii = pg->ind[i];
+        if (ga2la)
+        {
+            if (!ga2la_get_home(ga2la,ii,&ii))
+            {
+                ii = -1;
+            }
+        }
+        if (ii >= start && ii < end)
+        {
+            /* This is a home atom, add it to the local pull group */
+            if (pg->nat_loc >= pg->nalloc_loc)
+            {
+                pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
+                srenew(pg->ind_loc,pg->nalloc_loc);
+                if (pg->epgrppbc == epgrppbcCOS || pg->weight)
+                {
+                    srenew(pg->weight_loc,pg->nalloc_loc);
+                }
+            }
+            pg->ind_loc[pg->nat_loc] = ii;
+            if (pg->weight)
+            {
+                pg->weight_loc[pg->nat_loc] = pg->weight[i];
+            }
+            pg->nat_loc++;
+        }
     }
-    if (ii >= start && ii < end) {
-      /* This is a home atom, add it to the local pull group */
-      if (pg->nat_loc >= pg->nalloc_loc) {
-	pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
-	srenew(pg->ind_loc,pg->nalloc_loc);
-	if (pg->epgrppbc == epgrppbcCOS || pg->weight) {
-	  srenew(pg->weight_loc,pg->nalloc_loc);
-	}
-      }
-      pg->ind_loc[pg->nat_loc] = ii;
-      if (pg->weight) {
-	  pg->weight_loc[pg->nat_loc] = pg->weight[i];
-      }
-      pg->nat_loc++;
-    }
-  }
 }
 
 void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 {
-  gmx_ga2la_t ga2la;
-  int g;
-  
-  if (dd) {
-    ga2la = dd->ga2la;
-  } else {
-    ga2la = NULL;
-  }
+    gmx_ga2la_t ga2la;
+    int g;
 
-  if (pull->grp[0].nat > 0)
-    make_local_pull_group(ga2la,&pull->grp[0],md->start,md->start+md->homenr);
-  for(g=1; g<1+pull->ngrp; g++)
-    make_local_pull_group(ga2la,&pull->grp[g],md->start,md->start+md->homenr);
+    if (dd)
+    {
+        ga2la = dd->ga2la;
+    }
+    else
+    {
+        ga2la = NULL;
+    }
+
+    if (pull->grp[0].nat > 0)
+    {
+        make_local_pull_group(ga2la,&pull->grp[0],md->start,md->start+md->homenr);
+    }
+    for (g=1; g<1+pull->ngrp; g++)
+    {
+        make_local_pull_group(ga2la,&pull->grp[g],md->start,md->start+md->homenr);
+    }
 }
 
 static void init_pull_group_index(FILE *fplog,t_commrec *cr,
@@ -1069,133 +1089,173 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
                                   int g,t_pullgrp *pg,ivec pulldims,
                                   gmx_mtop_t *mtop,t_inputrec *ir, real lambda)
 {
-  int i,ii,d,nfrozen,ndim;
-  real m,w,mbd;
-  double tmass,wmass,wwmass;
-  gmx_bool bDomDec;
-  gmx_ga2la_t ga2la=NULL;
-  gmx_groups_t *groups;
-  gmx_mtop_atomlookup_t alook;
-  t_atom *atom;
+    int i,ii,d,nfrozen,ndim;
+    real m,w,mbd;
+    double tmass,wmass,wwmass;
+    gmx_bool bDomDec;
+    gmx_ga2la_t ga2la=NULL;
+    gmx_groups_t *groups;
+    gmx_mtop_atomlookup_t alook;
+    t_atom *atom;
 
-  bDomDec = (cr && DOMAINDECOMP(cr));
-  if (bDomDec) {
-    ga2la = cr->dd->ga2la;
-  }
+    bDomDec = (cr && DOMAINDECOMP(cr));
+    if (bDomDec)
+    {
+        ga2la = cr->dd->ga2la;
+    }
 
-  if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
-    /* There are no masses in the integrator.
-     * But we still want to have the correct mass-weighted COMs.
-     * So we store the real masses in the weights.
-     * We do not set nweight, so these weights do not end up in the tpx file.
-     */
-    if (pg->nweight == 0) {
-      snew(pg->weight,pg->nat);
+    if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
+    {
+        /* There are no masses in the integrator.
+         * But we still want to have the correct mass-weighted COMs.
+         * So we store the real masses in the weights.
+         * We do not set nweight, so these weights do not end up in the tpx file.
+         */
+        if (pg->nweight == 0)
+        {
+            snew(pg->weight,pg->nat);
+        }
     }
-  }
 
-  if (cr && PAR(cr)) {
-    pg->nat_loc    = 0;
-    pg->nalloc_loc = 0;
-    pg->ind_loc    = NULL;
-    pg->weight_loc = NULL;
-  } else {
-    pg->nat_loc = pg->nat;
-    pg->ind_loc = pg->ind;
-    if (pg->epgrppbc == epgrppbcCOS) {
-      snew(pg->weight_loc,pg->nat);
-    } else {
-      pg->weight_loc = pg->weight;
+    if (cr && PAR(cr))
+    {
+        pg->nat_loc    = 0;
+        pg->nalloc_loc = 0;
+        pg->ind_loc    = NULL;
+        pg->weight_loc = NULL;
     }
-  }
+    else
+    {
+        pg->nat_loc = pg->nat;
+        pg->ind_loc = pg->ind;
+        if (pg->epgrppbc == epgrppbcCOS)
+        {
+            snew(pg->weight_loc,pg->nat);
+        }
+        else
+        {
+            pg->weight_loc = pg->weight;
+        }
+    }
 
-  groups = &mtop->groups;
+    groups = &mtop->groups;
 
-  alook = gmx_mtop_atomlookup_init(mtop);
+    alook = gmx_mtop_atomlookup_init(mtop);
 
-  nfrozen = 0;
-  tmass  = 0;
-  wmass  = 0;
-  wwmass = 0;
-  for(i=0; i<pg->nat; i++) {
-    ii = pg->ind[i];
-    gmx_mtop_atomnr_to_atom(alook,ii,&atom);
-    if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
-      pg->ind_loc[pg->nat_loc++] = ii;
-    if (ir->opts.nFreeze) {
-      for(d=0; d<DIM; d++)
-	if (pulldims[d] && ir->opts.nFreeze[ggrpnr(groups,egcFREEZE,ii)][d])
-	  nfrozen++;
+    nfrozen = 0;
+    tmass  = 0;
+    wmass  = 0;
+    wwmass = 0;
+    for (i=0; i<pg->nat; i++)
+    {
+        ii = pg->ind[i];
+        gmx_mtop_atomnr_to_atom(alook,ii,&atom);
+        if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
+        {
+            pg->ind_loc[pg->nat_loc++] = ii;
+        }
+        if (ir->opts.nFreeze)
+        {
+            for (d=0; d<DIM; d++)
+                if (pulldims[d] && ir->opts.nFreeze[ggrpnr(groups,egcFREEZE,ii)][d])
+                {
+                    nfrozen++;
+                }
+        }
+        if (ir->efep == efepNO)
+        {
+            m = atom->m;
+        }
+        else
+        {
+            m = (1 - lambda)*atom->m + lambda*atom->mB;
+        }
+        if (pg->nweight > 0)
+        {
+            w = pg->weight[i];
+        }
+        else
+        {
+            w = 1;
+        }
+        if (EI_ENERGY_MINIMIZATION(ir->eI))
+        {
+            /* Move the mass to the weight */
+            w *= m;
+            m = 1;
+            pg->weight[i] = w;
+        }
+        else if (ir->eI == eiBD)
+        {
+            if (ir->bd_fric)
+            {
+                mbd = ir->bd_fric*ir->delta_t;
+            }
+            else
+            {
+                if (groups->grpnr[egcTC] == NULL)
+                {
+                    mbd = ir->delta_t/ir->opts.tau_t[0];
+                }
+                else
+                {
+                    mbd = ir->delta_t/ir->opts.tau_t[groups->grpnr[egcTC][ii]];
+                }
+            }
+            w *= m/mbd;
+            m = mbd;
+            pg->weight[i] = w;
+        }
+        tmass  += m;
+        wmass  += m*w;
+        wwmass += m*w*w;
     }
-    if (ir->efep == efepNO) {
-      m = atom->m;
-    } else {
-      m = (1 - lambda)*atom->m + lambda*atom->mB;
-    }
-    if (pg->nweight > 0) {
-      w = pg->weight[i];
-    } else {
-      w = 1;
-    }
-    if (EI_ENERGY_MINIMIZATION(ir->eI)) {
-      /* Move the mass to the weight */
-      w *= m;
-      m = 1;
-      pg->weight[i] = w;
-    } else if (ir->eI == eiBD) {
-      if (ir->bd_fric) {
-	mbd = ir->bd_fric*ir->delta_t;
-      } else {
-	if (groups->grpnr[egcTC] == NULL) {
-	  mbd = ir->delta_t/ir->opts.tau_t[0];
-	} else {
-	  mbd = ir->delta_t/ir->opts.tau_t[groups->grpnr[egcTC][ii]];
-	}
-      }
-      w *= m/mbd;
-      m = mbd;
-      pg->weight[i] = w;
-    }
-    tmass  += m;
-    wmass  += m*w;
-    wwmass += m*w*w;
-  }
 
-  gmx_mtop_atomlookup_destroy(alook);
+    gmx_mtop_atomlookup_destroy(alook);
 
-  if (wmass == 0) {
-    gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",
-	      pg->weight ? " weighted" : "",g);
-  }
-  if (fplog) {
-    fprintf(fplog,
-	    "Pull group %d: %5d atoms, mass %9.3f",g,pg->nat,tmass);
-    if (pg->weight || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
-      fprintf(fplog,", weighted mass %9.3f",wmass*wmass/wwmass);
+    if (wmass == 0)
+    {
+        gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",
+                  pg->weight ? " weighted" : "",g);
     }
-    if (pg->epgrppbc == epgrppbcCOS) {
-      fprintf(fplog,", cosine weighting will be used");
+    if (fplog)
+    {
+        fprintf(fplog,
+                "Pull group %d: %5d atoms, mass %9.3f",g,pg->nat,tmass);
+        if (pg->weight || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD)
+        {
+            fprintf(fplog,", weighted mass %9.3f",wmass*wmass/wwmass);
+        }
+        if (pg->epgrppbc == epgrppbcCOS)
+        {
+            fprintf(fplog,", cosine weighting will be used");
+        }
+        fprintf(fplog,"\n");
     }
-    fprintf(fplog,"\n");
-  }
-  
-  if (nfrozen == 0) {
-    /* A value > 0 signals not frozen, it is updated later */
-    pg->invtm  = 1.0;
-  } else {
-    ndim = 0;
-    for(d=0; d<DIM; d++)
-      ndim += pulldims[d]*pg->nat;
-    if (fplog && nfrozen > 0 && nfrozen < ndim) {
-      fprintf(fplog,
-	      "\nWARNING: In pull group %d some, but not all of the degrees of freedom\n"
-	      "         that are subject to pulling are frozen.\n"
-	      "         For pulling the whole group will be frozen.\n\n",
-	      g);
+
+    if (nfrozen == 0)
+    {
+        /* A value > 0 signals not frozen, it is updated later */
+        pg->invtm  = 1.0;
     }
-    pg->invtm  = 0.0;
-    pg->wscale = 1.0;
-  }
+    else
+    {
+        ndim = 0;
+        for (d=0; d<DIM; d++)
+        {
+            ndim += pulldims[d]*pg->nat;
+        }
+        if (fplog && nfrozen > 0 && nfrozen < ndim)
+        {
+            fprintf(fplog,
+                    "\nWARNING: In pull group %d some, but not all of the degrees of freedom\n"
+                    "         that are subject to pulling are frozen.\n"
+                    "         For pulling the whole group will be frozen.\n\n",
+                    g);
+        }
+        pg->invtm  = 0.0;
+        pg->wscale = 1.0;
+    }
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
@@ -1206,17 +1266,17 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     t_pullgrp *pgrp;
     int       g,start=0,end=0,m;
     gmx_bool      bCite;
-    
+
     pull = ir->pull;
-    
+
     pull->ePBC = ir->ePBC;
     switch (pull->ePBC)
     {
-    case epbcNONE: pull->npbcdim = 0; break;
-    case epbcXY:   pull->npbcdim = 2; break;
-    default:       pull->npbcdim = 3; break;
+        case epbcNONE: pull->npbcdim = 0; break;
+        case epbcXY:   pull->npbcdim = 2; break;
+        default:       pull->npbcdim = 3; break;
     }
-    
+
     if (fplog)
     {
         fprintf(fplog,"\nWill apply %s COM pulling in geometry '%s'\n",
@@ -1232,7 +1292,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
                     pull->ngrp,pull->ngrp==1 ? "" : "s");
         }
         bCite = FALSE;
-        for(g=0; g<pull->ngrp+1; g++)
+        for (g=0; g<pull->ngrp+1; g++)
         {
             if (pull->grp[g].nat > 1 &&
                 pull->grp[g].pbcatom < 0)
@@ -1247,7 +1307,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
             please_cite(fplog,"Engin2010");
         }
     }
-    
+
     /* We always add the virial contribution,
      * except for geometry = direction_periodic where this is impossible.
      */
@@ -1260,7 +1320,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         }
         pull->bVirial = FALSE;
     }
-    
+
     if (cr && PARTDECOMP(cr))
     {
         pd_at_range(cr,&start,&end);
@@ -1270,7 +1330,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
     pull->dbuf_cyl=NULL;
     pull->bRefAt = FALSE;
     pull->cosdim = -1;
-    for(g=0; g<pull->ngrp+1; g++)
+    for (g=0; g<pull->ngrp+1; g++)
     {
         pgrp = &pull->grp[g];
         pgrp->epgrppbc = epgrppbcNONE;
@@ -1279,7 +1339,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
             /* Determine if we need to take PBC into account for calculating
              * the COM's of the pull groups.
              */
-            for(m=0; m<pull->npbcdim; m++)
+            for (m=0; m<pull->npbcdim; m++)
             {
                 if (pull->dim[m] && pgrp->nat > 1)
                 {
@@ -1316,8 +1376,8 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
             pgrp->invtm  = 0;
             pgrp->wscale = 1;
         }
-    }      
-    
+    }
+
     /* if we use dynamic reference groups, do some initialising for them */
     if (PULL_CYL(pull))
     {
@@ -1327,7 +1387,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,const t_filenm fnm[],
         }
         snew(pull->dyna,pull->ngrp+1);
     }
-    
+
     /* Only do I/O when we are doing dynamics and if we are the MASTER */
     pull->out_x = NULL;
     pull->out_f = NULL;

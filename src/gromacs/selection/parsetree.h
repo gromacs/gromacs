@@ -86,10 +86,10 @@ class SelectionParserValue;
 
 //! Container for a list of SelectionParserValue objects.
 typedef std::list<SelectionParserValue>
-        SelectionParserValueList;
+SelectionParserValueList;
 //! Smart pointer type for managing a SelectionParserValueList.
 typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
-        SelectionParserValueListPointer;
+SelectionParserValueListPointer;
 
 /*! \internal \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
@@ -227,16 +227,19 @@ class SelectionParserValue
         //! String value for \a type ::STR_VALUE.
         std::string             str;
         //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
-        union {
+        union
+        {
             //! The integer value/range (\a type ::INT_VALUE).
-            struct {
+            struct
+            {
                 //! Beginning of the range.
                 int             i1;
                 //! End of the range; equals \a i1 for a single integer.
                 int             i2;
             }                   i;
             //! The real value/range (\a type ::REAL_VALUE).
-            struct {
+            struct
+            {
                 //! Beginning of the range.
                 real            r1;
                 //! End of the range; equals \a r1 for a single number.
@@ -265,10 +268,10 @@ class SelectionParserParameter;
 
 //! Container for a list of SelectionParserParameter objects.
 typedef std::list<SelectionParserParameter>
-        SelectionParserParameterList;
+SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
 typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
-        SelectionParserParameterListPointer;
+SelectionParserParameterListPointer;
 
 /*! \internal \brief
  * Describes a parsed method parameter.
@@ -282,7 +285,7 @@ class SelectionParserParameter
         static SelectionParserParameterListPointer createList()
         {
             return SelectionParserParameterListPointer(
-                    new SelectionParserParameterList);
+                       new SelectionParserParameterList);
         }
         /*! \brief
          * Allocates and initializes a parsed method parameter.

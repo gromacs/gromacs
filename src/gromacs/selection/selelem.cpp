@@ -55,7 +55,7 @@
  * \returns   Pointer to a string that corresponds to \p sel->type.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p sel->type is not one of the valid values.
  */
 const char *
@@ -162,8 +162,8 @@ void SelectionTreeElement::freeValues()
         {
             case STR_VALUE:
                 GMX_RELEASE_ASSERT(v.nalloc != 0,
-                        "SEL_ALLOCDATA should only be set for allocated "
-                        "STR_VALUE values");
+                                   "SEL_ALLOCDATA should only be set for allocated "
+                                   "STR_VALUE values");
                 for (int i = 0; i < n; ++i)
                 {
                     sfree(v.u.s[i]);
@@ -243,12 +243,12 @@ void SelectionTreeElement::mempoolReserve(int count)
     {
         case INT_VALUE:
             v.u.i = static_cast<int *>(
-                    _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.i)*count));
+                        _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.i)*count));
             break;
 
         case REAL_VALUE:
             v.u.r = static_cast<real *>(
-                    _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.r)*count));
+                        _gmx_sel_mempool_alloc(mempool, sizeof(*v.u.r)*count));
             break;
 
         case GROUP_VALUE:
@@ -452,7 +452,9 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
         {
             const gmx_ana_index_t *g = sel.v.u.g;
             if (!g || g->isize == 0)
+            {
                 g = &sel.u.cgrp;
+            }
             fprintf(fp, " (%d atoms)", g->isize);
         }
     }

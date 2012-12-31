@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -77,9 +77,9 @@ static void calc_x_av_stddev(int n,rvec *x,rvec av,rvec stddev)
     clear_dvec(s1);
     clear_dvec(s2);
 
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             s1[d] += x[i][d];
             s2[d] += x[i][d]*x[i][d];
@@ -89,7 +89,7 @@ static void calc_x_av_stddev(int n,rvec *x,rvec av,rvec stddev)
     dsvmul(1.0/n,s1,s1);
     dsvmul(1.0/n,s2,s2);
 
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         av[d]     = s1[d];
         stddev[d] = sqrt(s2[d] - s1[d]*s1[d]);
@@ -144,7 +144,7 @@ void get_nsgrid_boundaries(int nboundeddim,matrix box,
     }
 
     vol = 1;
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         if (d < nboundeddim)
         {
@@ -207,8 +207,8 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
     rvec av,stddev;
     rvec izones_size;
     real inv_r_ideal,size,add_tric,radd;
-    
-    for(i=0; (i<DIM); i++)
+
+    for (i=0; (i<DIM); i++)
     {
         if (debug)
         {
@@ -232,12 +232,12 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
     }
 
     clear_rvec(grid->cell_offset);
-    for(i=0; (i<DIM); i++)
+    for (i=0; (i<DIM); i++)
     {
         /* Initial settings, for DD might change below */
         grid->cell_offset[i] = izones_x0[i];
         size = izones_size[i];
-        
+
         bDD = dd && (dd->nc[i] > 1);
         if (!bDD)
         {
@@ -262,7 +262,7 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
                     radd = 0;
                 }
             }
-            
+
             /* With DD we only need a grid of one DD cell size + rlist */
             if (bDDRect)
             {
@@ -276,13 +276,13 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
             /* Check if the cell boundary in this direction is
              * perpendicular to the Cartesian axis.
              */
-            for(j=i+1; j<grid->npbcdim; j++)
+            for (j=i+1; j<grid->npbcdim; j++)
             {
                 if (box[j][i] != 0)
                 {
                     /* Correct the offset for the home cell location */
                     grid->cell_offset[i] += izones_x0[j]*box[j][i]/box[j][j];
-                    
+
                     /* Correct the offset and size for the off-diagonal
                      * displacement of opposing DD cell corners.
                      */
@@ -360,11 +360,11 @@ static void set_grid_sizes(matrix box,rvec izones_x0,rvec izones_x1,real rlist,
 t_grid *init_grid(FILE *fplog,t_forcerec *fr)
 {
     int  d,m;
-    char *ptr;   
+    char *ptr;
     t_grid *grid;
-    
+
     snew(grid,1);
-    
+
     grid->npbcdim = ePBC2npbcdim(fr->ePBC);
 
     if (fr->ePBC == epbcXY && fr->nwall == 2)
@@ -375,7 +375,7 @@ t_grid *init_grid(FILE *fplog,t_forcerec *fr)
     {
         grid->nboundeddim = grid->npbcdim;
     }
-    
+
     if (debug)
     {
         fprintf(debug,"The coordinates are bounded in %d dimensions\n",
@@ -407,63 +407,68 @@ t_grid *init_grid(FILE *fplog,t_forcerec *fr)
 
 void done_grid(t_grid *grid)
 {
-  grid->nr      = 0;
-  clear_ivec(grid->n);
-  grid->ncells  = 0;
-  sfree(grid->cell_index);
-  sfree(grid->a);
-  sfree(grid->index);
-  sfree(grid->nra);
-  grid->cells_nalloc = 0;
-  sfree(grid->dcx2);
-  sfree(grid->dcy2);
-  sfree(grid->dcz2);
-  grid->dc_nalloc = 0;
+    grid->nr      = 0;
+    clear_ivec(grid->n);
+    grid->ncells  = 0;
+    sfree(grid->cell_index);
+    sfree(grid->a);
+    sfree(grid->index);
+    sfree(grid->nra);
+    grid->cells_nalloc = 0;
+    sfree(grid->dcx2);
+    sfree(grid->dcy2);
+    sfree(grid->dcz2);
+    grid->dc_nalloc = 0;
 
-  if (debug) 
-    fprintf(debug,"Successfully freed memory for grid pointers.");
+    if (debug)
+    {
+        fprintf(debug,"Successfully freed memory for grid pointers.");
+    }
 }
 
 int xyz2ci_(int nry,int nrz,int x,int y,int z)
 /* Return the cell index */
 {
-  return (nry*nrz*x+nrz*y+z);
+    return (nry*nrz*x+nrz*y+z);
 }
 
 void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
 /* Return x,y and z from the cell index */
 {
-  int ci;
+    int ci;
 
-  range_check_mesg(i,0,grid->nr,range_warn);
+    range_check_mesg(i,0,grid->nr,range_warn);
 
-  ci = grid->cell_index[i];
-  *x  = ci / (grid->n[YY]*grid->n[ZZ]);
-  ci -= (*x)*grid->n[YY]*grid->n[ZZ];
-  *y  = ci / grid->n[ZZ];
-  ci -= (*y)*grid->n[ZZ];
-  *z  = ci;
+    ci = grid->cell_index[i];
+    *x  = ci / (grid->n[YY]*grid->n[ZZ]);
+    ci -= (*x)*grid->n[YY]*grid->n[ZZ];
+    *y  = ci / grid->n[ZZ];
+    ci -= (*y)*grid->n[ZZ];
+    *z  = ci;
 }
 
 static int ci_not_used(ivec n)
 {
-  /* Return an improbable value */
-  return xyz2ci(n[YY],n[ZZ],3*n[XX],3*n[YY],3*n[ZZ]);
+    /* Return an improbable value */
+    return xyz2ci(n[YY],n[ZZ],3*n[XX],3*n[YY],3*n[ZZ]);
 }
 
 static void set_grid_ncg(t_grid *grid,int ncg)
 {
-  int nr_old,i;
+    int nr_old,i;
 
-  grid->nr = ncg;
-  if (grid->nr+1 > grid->nr_alloc) {
-    nr_old = grid->nr_alloc;
-    grid->nr_alloc = over_alloc_dd(grid->nr) + 1;
-    srenew(grid->cell_index,grid->nr_alloc);
-    for(i=nr_old; i<grid->nr_alloc; i++)
-      grid->cell_index[i] = 0;
-    srenew(grid->a,grid->nr_alloc);
-  }
+    grid->nr = ncg;
+    if (grid->nr+1 > grid->nr_alloc)
+    {
+        nr_old = grid->nr_alloc;
+        grid->nr_alloc = over_alloc_dd(grid->nr) + 1;
+        srenew(grid->cell_index,grid->nr_alloc);
+        for (i=nr_old; i<grid->nr_alloc; i++)
+        {
+            grid->cell_index[i] = 0;
+        }
+        srenew(grid->a,grid->nr_alloc);
+    }
 }
 
 void grid_first(FILE *fplog,t_grid *grid,
@@ -471,138 +476,157 @@ void grid_first(FILE *fplog,t_grid *grid,
                 int ePBC,matrix box,rvec izones_x0,rvec izones_x1,
                 real rlistlong,real grid_density)
 {
-  int    i,m;
-  ivec   cx;
+    int    i,m;
+    ivec   cx;
 
-  set_grid_sizes(box,izones_x0,izones_x1,rlistlong,dd,ddbox,grid,grid_density);
+    set_grid_sizes(box,izones_x0,izones_x1,rlistlong,dd,ddbox,grid,grid_density);
 
-  grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
+    grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
-  if (grid->ncells+1 > grid->cells_nalloc) { 
-    /* Allocate double the size so we have some headroom */
-    grid->cells_nalloc = 2*grid->ncells;
-    srenew(grid->nra,  grid->cells_nalloc+1);
-    srenew(grid->index,grid->cells_nalloc+1);
-    
-    if (fplog)
-      fprintf(fplog,"Grid: %d x %d x %d cells\n",
-	      grid->n[XX],grid->n[YY],grid->n[ZZ]);
-  }
-  
-  m = max(grid->n[XX],max(grid->n[YY],grid->n[ZZ]));
-  if (m > grid->dc_nalloc) {
-    /* Allocate with double the initial size for box scaling */
-    grid->dc_nalloc = 2*m;
-    srenew(grid->dcx2,grid->dc_nalloc);
-    srenew(grid->dcy2,grid->dc_nalloc);
-    srenew(grid->dcz2,grid->dc_nalloc);
-  }
+    if (grid->ncells+1 > grid->cells_nalloc)
+    {
+        /* Allocate double the size so we have some headroom */
+        grid->cells_nalloc = 2*grid->ncells;
+        srenew(grid->nra,  grid->cells_nalloc+1);
+        srenew(grid->index,grid->cells_nalloc+1);
 
-  grid->nr = 0;
-  for(i=0; (i<grid->ncells); i++) {
-    grid->nra[i] = 0;
-  }
+        if (fplog)
+            fprintf(fplog,"Grid: %d x %d x %d cells\n",
+                    grid->n[XX],grid->n[YY],grid->n[ZZ]);
+    }
+
+    m = max(grid->n[XX],max(grid->n[YY],grid->n[ZZ]));
+    if (m > grid->dc_nalloc)
+    {
+        /* Allocate with double the initial size for box scaling */
+        grid->dc_nalloc = 2*m;
+        srenew(grid->dcx2,grid->dc_nalloc);
+        srenew(grid->dcy2,grid->dc_nalloc);
+        srenew(grid->dcz2,grid->dc_nalloc);
+    }
+
+    grid->nr = 0;
+    for (i=0; (i<grid->ncells); i++)
+    {
+        grid->nra[i] = 0;
+    }
 }
 
 static void calc_bor(int cg0,int cg1,int ncg,int CG0[2],int CG1[2])
 {
-  if (cg1 > ncg) {
-    CG0[0]=cg0;
-    CG1[0]=ncg;
-    CG0[1]=0;
-    CG1[1]=cg1-ncg;
-  }
-  else {
-    CG0[0]=cg0;
-    CG1[0]=cg1;
-    CG0[1]=0;
-    CG1[1]=0;
-  }
-  if (debug) {
-    int m;
-    
-    fprintf(debug,"calc_bor: cg0=%d, cg1=%d, ncg=%d\n",cg0,cg1,ncg);
-    for(m=0; (m<2); m++)
-      fprintf(debug,"CG0[%d]=%d, CG1[%d]=%d\n",m,CG0[m],m,CG1[m]);
-  }
+    if (cg1 > ncg)
+    {
+        CG0[0]=cg0;
+        CG1[0]=ncg;
+        CG0[1]=0;
+        CG1[1]=cg1-ncg;
+    }
+    else
+    {
+        CG0[0]=cg0;
+        CG1[0]=cg1;
+        CG0[1]=0;
+        CG1[1]=0;
+    }
+    if (debug)
+    {
+        int m;
+
+        fprintf(debug,"calc_bor: cg0=%d, cg1=%d, ncg=%d\n",cg0,cg1,ncg);
+        for (m=0; (m<2); m++)
+        {
+            fprintf(debug,"CG0[%d]=%d, CG1[%d]=%d\n",m,CG0[m],m,CG1[m]);
+        }
+    }
 
 }
 
 void calc_elemnr(FILE *fplog,t_grid *grid,int cg0,int cg1,int ncg)
 {
-  int    CG0[2],CG1[2];
-  int    *cell_index=grid->cell_index;
-  int    *nra=grid->nra;
-  int    i,m,ncells;
-  int    ci,not_used;
+    int    CG0[2],CG1[2];
+    int    *cell_index=grid->cell_index;
+    int    *nra=grid->nra;
+    int    i,m,ncells;
+    int    ci,not_used;
 
-  ncells=grid->ncells;
-  if(ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
-
-  not_used = ci_not_used(grid->n);
-
-  calc_bor(cg0,cg1,ncg,CG0,CG1);
-  for(m=0; (m<2); m++)
-    for(i=CG0[m]; (i<CG1[m]); i++) {
-      ci = cell_index[i];
-      if (ci != not_used) {
-          range_check_mesg(ci,0,ncells,range_warn);
-	nra[ci]++;
-      }
+    ncells=grid->ncells;
+    if (ncells<=0)
+    {
+        gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
     }
+
+    not_used = ci_not_used(grid->n);
+
+    calc_bor(cg0,cg1,ncg,CG0,CG1);
+    for (m=0; (m<2); m++)
+        for (i=CG0[m]; (i<CG1[m]); i++)
+        {
+            ci = cell_index[i];
+            if (ci != not_used)
+            {
+                range_check_mesg(ci,0,ncells,range_warn);
+                nra[ci]++;
+            }
+        }
 }
 
 void calc_ptrs(t_grid *grid)
 {
-  int *index = grid->index;
-  int *nra   = grid->nra;
-  int ix,iy,iz,ci,nr;
-  int nnra,ncells;
+    int *index = grid->index;
+    int *nra   = grid->nra;
+    int ix,iy,iz,ci,nr;
+    int nnra,ncells;
 
-  ncells=grid->ncells;
-  if(ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
-  
-  ci=nr=0;
-  for(ix=0; (ix < grid->n[XX]); ix++)
-    for(iy=0; (iy < grid->n[YY]); iy++) 
-      for(iz=0; (iz < grid->n[ZZ]); iz++,ci++) {
-          range_check_mesg(ci,0,ncells,range_warn);
-	index[ci] = nr;
-	nnra      = nra[ci];
-	nr       += nnra;
-	nra[ci]   = 0;
-      }
+    ncells=grid->ncells;
+    if (ncells<=0)
+    {
+        gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
+    }
+
+    ci=nr=0;
+    for (ix=0; (ix < grid->n[XX]); ix++)
+        for (iy=0; (iy < grid->n[YY]); iy++)
+            for (iz=0; (iz < grid->n[ZZ]); iz++,ci++)
+            {
+                range_check_mesg(ci,0,ncells,range_warn);
+                index[ci] = nr;
+                nnra      = nra[ci];
+                nr       += nnra;
+                nra[ci]   = 0;
+            }
 }
 
 void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
 {
-  int    CG0[2],CG1[2];
-  int    i,m;
-  int    ci,not_used,ind,ncells;
-  int    *cell_index = grid->cell_index;
-  int    *nra        = grid->nra;
-  int    *index      = grid->index;
-  int    *a          = grid->a;
+    int    CG0[2],CG1[2];
+    int    i,m;
+    int    ci,not_used,ind,ncells;
+    int    *cell_index = grid->cell_index;
+    int    *nra        = grid->nra;
+    int    *index      = grid->index;
+    int    *a          = grid->a;
 
-  ncells=grid->ncells;
-  if (ncells <= 0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
-
-  not_used = ci_not_used(grid->n);
-
-  calc_bor(cg0,cg1,ncg,CG0,CG1);
-  for(m=0; (m<2); m++)
-    for(i=CG0[m]; (i<CG1[m]); i++) {
-      ci     = cell_index[i];
-      if (ci != not_used) {
-          range_check_mesg(ci,0,ncells,range_warn);
-	ind    = index[ci]+nra[ci]++;
-	range_check_mesg(ind,0,grid->nr,range_warn);
-	a[ind] = i;
-      }
+    ncells=grid->ncells;
+    if (ncells <= 0)
+    {
+        gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
     }
+
+    not_used = ci_not_used(grid->n);
+
+    calc_bor(cg0,cg1,ncg,CG0,CG1);
+    for (m=0; (m<2); m++)
+        for (i=CG0[m]; (i<CG1[m]); i++)
+        {
+            ci     = cell_index[i];
+            if (ci != not_used)
+            {
+                range_check_mesg(ci,0,ncells,range_warn);
+                ind    = index[ci]+nra[ci]++;
+                range_check_mesg(ind,0,grid->nr,range_warn);
+                a[ind] = i;
+            }
+        }
 }
 
 void fill_grid(FILE *log,
@@ -616,7 +640,7 @@ void fill_grid(FILE *log,
     int    zone,ccg0,ccg1,cg,d,not_used;
     ivec   shift0,useall,b0,b1,ind;
     gmx_bool   bUse;
-    
+
     if (cg0 == -1)
     {
         /* We have already filled the grid up to grid->ncg,
@@ -633,7 +657,7 @@ void fill_grid(FILE *log,
     nrx = grid->n[XX];
     nry = grid->n[YY];
     nrz = grid->n[ZZ];
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         if (grid->cell_size[d] > 0)
         {
@@ -645,18 +669,18 @@ void fill_grid(FILE *log,
         }
     }
     copy_rvec(grid->cell_offset,offset);
-    
+
     if (debug)
     {
         fprintf(debug,"Filling grid from %d to %d\n",cg0,cg1);
     }
-    
+
     debug_gmx();
     if (dd_zones == NULL)
     {
         for (cg=cg0; cg<cg1; cg++)
         {
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
                 /* With pbc we should be done here.
@@ -677,7 +701,7 @@ void fill_grid(FILE *log,
     }
     else
     {
-        for(zone=0; zone<dd_zones->n; zone++)
+        for (zone=0; zone<dd_zones->n; zone++)
         {
             ccg0 = dd_zones->cg_range[zone];
             ccg1 = dd_zones->cg_range[zone+1];
@@ -687,7 +711,7 @@ void fill_grid(FILE *log,
             }
 
             /* Determine the ns grid cell limits for this DD zone */
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 shift0[d] = dd_zones->shift[zone][d];
                 useall[d] = (shift0[d] == 0 || d >= grid->npbcdim);
@@ -717,11 +741,11 @@ void fill_grid(FILE *log,
                     }
                 }
             }
-            
+
             not_used = ci_not_used(grid->n);
-            
+
             /* Put all the charge groups of this DD zone on the grid */
-            for(cg=ccg0; cg<ccg1; cg++)
+            for (cg=ccg0; cg<ccg1; cg++)
             {
                 if (cell_index[cg] == -1)
                 {
@@ -729,9 +753,9 @@ void fill_grid(FILE *log,
                     cell_index[cg] = NSGRID_SIGNAL_MOVED_FAC*grid->ncells;
                     continue;
                 }
-                
+
                 bUse = TRUE;
-                for(d=0; d<DIM; d++)
+                for (d=0; d<DIM; d++)
                 {
                     ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
                     /* Here we have to correct for rounding problems,
@@ -742,7 +766,8 @@ void fill_grid(FILE *log,
                      * for cells on the edge if charge groups are beyond
                      * the grid and if so, store them in the closest cell.
                      */
-                    if (ind[d] < b0[d]) {
+                    if (ind[d] < b0[d])
+                    {
                         ind[d] = b0[d];
                     }
                     else if (ind[d] >= b1[d])
@@ -782,81 +807,93 @@ void fill_grid(FILE *log,
 
 void check_grid(FILE *log,t_grid *grid)
 {
-  int ix,iy,iz,ci,cci,nra;
+    int ix,iy,iz,ci,cci,nra;
 
-  if(grid->ncells<=0) 
-    gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
-  
-  ci=0;
-  cci=0;
-  for(ix=0; (ix<grid->n[XX]); ix++)
-    for(iy=0; (iy<grid->n[YY]); iy++)
-      for(iz=0; (iz<grid->n[ZZ]); iz++,ci++) {
-	if (ci > 0) {
-	  nra=grid->index[ci]-grid->index[cci];
-	  if (nra != grid->nra[cci]) 
-	    gmx_fatal(FARGS,"nra=%d, grid->nra=%d, cci=%d",
-			nra,grid->nra[cci],cci);
-	}
-	cci=xyz2ci(grid->n[YY],grid->n[ZZ],ix,iy,iz);
-	range_check_mesg(cci,0,grid->ncells,range_warn);
-	
-	if (cci != ci) 
-	  gmx_fatal(FARGS,"ci = %d, cci = %d",ci,cci);
-      }
+    if (grid->ncells<=0)
+    {
+        gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
+    }
+
+    ci=0;
+    cci=0;
+    for (ix=0; (ix<grid->n[XX]); ix++)
+        for (iy=0; (iy<grid->n[YY]); iy++)
+            for (iz=0; (iz<grid->n[ZZ]); iz++,ci++)
+            {
+                if (ci > 0)
+                {
+                    nra=grid->index[ci]-grid->index[cci];
+                    if (nra != grid->nra[cci])
+                        gmx_fatal(FARGS,"nra=%d, grid->nra=%d, cci=%d",
+                                  nra,grid->nra[cci],cci);
+                }
+                cci=xyz2ci(grid->n[YY],grid->n[ZZ],ix,iy,iz);
+                range_check_mesg(cci,0,grid->ncells,range_warn);
+
+                if (cci != ci)
+                {
+                    gmx_fatal(FARGS,"ci = %d, cci = %d",ci,cci);
+                }
+            }
 }
 
 void print_grid(FILE *log,t_grid *grid)
 {
-  int i,nra,index;
-  int ix,iy,iz,ci;
+    int i,nra,index;
+    int ix,iy,iz,ci;
 
-  fprintf(log,"nr:        %d\n",grid->nr);
-  fprintf(log,"nrx:       %d\n",grid->n[XX]);
-  fprintf(log,"nry:       %d\n",grid->n[YY]);
-  fprintf(log,"nrz:       %d\n",grid->n[ZZ]);
-  fprintf(log,"ncg_ideal: %d\n",grid->ncg_ideal);
-  fprintf(log,"    i  cell_index\n");
-  for(i=0; (i<grid->nr); i++)
-    fprintf(log,"%5d  %5d\n",i,grid->cell_index[i]);
-  fprintf(log,"cells\n");
-  fprintf(log," ix iy iz   nr  index  cgs...\n");
-  ci=0;
-  for(ix=0; (ix<grid->n[XX]); ix++)
-    for(iy=0; (iy<grid->n[YY]); iy++)
-      for(iz=0; (iz<grid->n[ZZ]); iz++,ci++) {
-	index=grid->index[ci];
-	nra=grid->nra[ci];
-	fprintf(log,"%3d%3d%3d%5d%5d",ix,iy,iz,nra,index);
-	for(i=0; (i<nra); i++)
-	  fprintf(log,"%5d",grid->a[index+i]);
-	fprintf(log,"\n");
-      }
-  fflush(log);
+    fprintf(log,"nr:        %d\n",grid->nr);
+    fprintf(log,"nrx:       %d\n",grid->n[XX]);
+    fprintf(log,"nry:       %d\n",grid->n[YY]);
+    fprintf(log,"nrz:       %d\n",grid->n[ZZ]);
+    fprintf(log,"ncg_ideal: %d\n",grid->ncg_ideal);
+    fprintf(log,"    i  cell_index\n");
+    for (i=0; (i<grid->nr); i++)
+    {
+        fprintf(log,"%5d  %5d\n",i,grid->cell_index[i]);
+    }
+    fprintf(log,"cells\n");
+    fprintf(log," ix iy iz   nr  index  cgs...\n");
+    ci=0;
+    for (ix=0; (ix<grid->n[XX]); ix++)
+        for (iy=0; (iy<grid->n[YY]); iy++)
+            for (iz=0; (iz<grid->n[ZZ]); iz++,ci++)
+            {
+                index=grid->index[ci];
+                nra=grid->nra[ci];
+                fprintf(log,"%3d%3d%3d%5d%5d",ix,iy,iz,nra,index);
+                for (i=0; (i<nra); i++)
+                {
+                    fprintf(log,"%5d",grid->a[index+i]);
+                }
+                fprintf(log,"\n");
+            }
+    fflush(log);
 }
 
 void mv_grid(t_commrec *cr,t_grid *grid)
 {
-  int i,start,nr;
-  int cur=cr->nodeid;
-  int *ci,*cgindex;
+    int i,start,nr;
+    int cur=cr->nodeid;
+    int *ci,*cgindex;
 #define next ((cur+1) % (cr->nnodes-cr->npmenodes))
 
-  ci = grid->cell_index;
-  cgindex = pd_cgindex(cr);
-  for(i=0; (i<cr->nnodes-1); i++) {
-    start = cgindex[cur];
-    nr    = cgindex[cur+1] - start;
-    gmx_tx(cr,GMX_LEFT,&(ci[start]),nr*sizeof(*ci));
-    
-    start = cgindex[next];
-    nr    = cgindex[next+1] - start;
-    gmx_rx(cr,GMX_RIGHT,&(ci[start]),nr*sizeof(*ci));
-    
-    gmx_tx_wait(cr, GMX_LEFT);
-    gmx_rx_wait(cr, GMX_RIGHT);
-    
-    cur=next;
-  }
+    ci = grid->cell_index;
+    cgindex = pd_cgindex(cr);
+    for (i=0; (i<cr->nnodes-1); i++)
+    {
+        start = cgindex[cur];
+        nr    = cgindex[cur+1] - start;
+        gmx_tx(cr,GMX_LEFT,&(ci[start]),nr*sizeof(*ci));
+
+        start = cgindex[next];
+        nr    = cgindex[next+1] - start;
+        gmx_rx(cr,GMX_RIGHT,&(ci[start]),nr*sizeof(*ci));
+
+        gmx_tx_wait(cr, GMX_LEFT);
+        gmx_rx_wait(cr, GMX_RIGHT);
+
+        cur=next;
+    }
 }
 

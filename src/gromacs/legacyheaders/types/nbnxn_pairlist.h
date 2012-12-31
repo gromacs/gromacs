@@ -45,7 +45,8 @@ extern "C" {
  * to avoid cache invalidation of the real contents
  * of the struct by writes to neighboring memory.
  */
-typedef struct {
+typedef struct
+{
     int dummy[16];
 } gmx_cache_protect_t;
 
@@ -63,7 +64,8 @@ typedef void nbnxn_alloc_t(void **ptr,size_t nbytes);
  */
 typedef void nbnxn_free_t(void *ptr);
 
-typedef struct {
+typedef struct
+{
     int      cj;    /* The j-cluster                    */
     unsigned excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
@@ -74,7 +76,8 @@ typedef struct {
 #define NBNXN_CI_DO_COUL(subc)  (1<<(9+3*(subc)))
 
 /* Simple pair-list i-unit */
-typedef struct {
+typedef struct
+{
     int ci;             /* i-cluster             */
     int shift;          /* Shift vector index plus possible flags */
     int cj_ind_start;   /* Start index into cj   */
@@ -82,29 +85,34 @@ typedef struct {
 } nbnxn_ci_t;
 
 /* Grouped pair-list i-unit */
-typedef struct {
+typedef struct
+{
     int sci;            /* i-super-cluster       */
     int shift;          /* Shift vector index plus possible flags */
     int cj4_ind_start;  /* Start index into cj4  */
     int cj4_ind_end;    /* End index into cj4    */
 } nbnxn_sci_t;
 
-typedef struct {
+typedef struct
+{
     unsigned imask;        /* The i-cluster interactions mask for 1 warp  */
     int excl_ind;          /* Index into the exclusion array for 1 warp   */
 } nbnxn_im_ei_t;
 
-typedef struct {
+typedef struct
+{
     int cj[4];             /* The 4 j-clusters                            */
     nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
 } nbnxn_cj4_t;
 
-typedef struct {
+typedef struct
+{
     unsigned pair[32];     /* Exclusion bits for one warp,                *
                             * each unsigned has bit for 4*8 i clusters    */
 } nbnxn_excl_t;
 
-typedef struct {
+typedef struct
+{
     gmx_cache_protect_t cp0;
 
     nbnxn_alloc_t *alloc;
@@ -141,7 +149,8 @@ typedef struct {
     gmx_cache_protect_t cp1;
 } nbnxn_pairlist_t;
 
-typedef struct {
+typedef struct
+{
     int          nnbl;      /* number of lists */
     nbnxn_pairlist_t **nbl; /* lists */
     gmx_bool     bCombined; /* TRUE if lists get combined into one (the 1st) */
@@ -154,7 +163,8 @@ typedef struct {
 
 enum { nbatXYZ, nbatXYZQ, nbatX4, nbatX8 };
 
-typedef struct {
+typedef struct
+{
     real *f;      /* f, size natoms*fstride                             */
     real *fshift; /* Shift force array, size SHIFTS*DIM                 */
     int  nV;      /* The size of *Vvdw and *Vc                          */
@@ -168,7 +178,8 @@ typedef struct {
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */
 enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
 
-typedef struct {
+typedef struct
+{
     nbnxn_alloc_t *alloc;
     nbnxn_free_t  *free;
     int  ntype;      /* The number of different atom types                 */

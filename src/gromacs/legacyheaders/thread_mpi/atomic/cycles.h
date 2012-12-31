@@ -52,7 +52,7 @@ static __inline tmpi_cycles_t tmpi_cycles_read(void)
     unsigned int ui;
     return __rdtscp(&ui);
 #else
-	return __rdtsc();
+    return __rdtsc();
 #endif
 }
 #endif

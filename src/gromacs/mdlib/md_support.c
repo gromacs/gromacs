@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -71,7 +71,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
         gmx_sumli_sim(cr->ms->nsim, buf, cr->ms);
 
         steps_out=-1;
-        for(s=0; s<cr->ms->nsim; s++)
+        for (s=0; s<cr->ms->nsim; s++)
         {
             /* find the smallest positive number */
             if (buf[s]>= 0 && ((steps_out < 0) || (buf[s]<steps_out)) )
@@ -82,7 +82,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
         sfree(buf);
 
         /* if we're the limiting simulation, don't do anything */
-        if (steps_out>=0 && steps_out<nsteps) 
+        if (steps_out>=0 && steps_out<nsteps)
         {
             char strbuf[255];
             snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
@@ -105,7 +105,7 @@ int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
     gmx_sumi_sim(ms->nsim,buf,ms);
     bPos   = TRUE;
     bEqual = TRUE;
-    for(s=0; s<ms->nsim; s++)
+    for (s=0; s<ms->nsim; s++)
     {
         bPos   = bPos   && (buf[s] > 0);
         bEqual = bEqual && (buf[s] == buf[0]);
@@ -119,7 +119,7 @@ int multisim_min(const gmx_multisim_t *ms,int nmin,int n)
         else
         {
             /* Find the least common multiple */
-            for(d=2; d<nmin; d++)
+            for (d=2; d<nmin; d++)
             {
                 s = 0;
                 while (s < ms->nsim && d % buf[s] == 0)
@@ -185,19 +185,19 @@ void init_global_signals(globsig_t *gs,const t_commrec *cr,
         gs->nstms = 1;
     }
 
-    for(i=0; i<eglsNR; i++)
+    for (i=0; i<eglsNR; i++)
     {
         gs->sig[i] = 0;
         gs->set[i] = 0;
     }
 }
 
-void copy_coupling_state(t_state *statea,t_state *stateb, 
-                         gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts) 
+void copy_coupling_state(t_state *statea,t_state *stateb,
+                         gmx_ekindata_t *ekinda,gmx_ekindata_t *ekindb, t_grpopts* opts)
 {
-    
+
     /* MRS note -- might be able to get rid of some of the arguments.  Look over it when it's all debugged */
-    
+
     int i,j,nc;
 
     /* Make sure we have enough space for x and v */
@@ -212,10 +212,10 @@ void copy_coupling_state(t_state *statea,t_state *stateb,
     stateb->ngtc       = statea->ngtc;
     stateb->nnhpres    = statea->nnhpres;
     stateb->veta       = statea->veta;
-    if (ekinda) 
+    if (ekinda)
     {
         copy_mat(ekinda->ekin,ekindb->ekin);
-        for (i=0; i<stateb->ngtc; i++) 
+        for (i=0; i<stateb->ngtc; i++)
         {
             ekindb->tcstat[i].T = ekinda->tcstat[i].T;
             ekindb->tcstat[i].Th = ekinda->tcstat[i].Th;
@@ -232,10 +232,10 @@ void copy_coupling_state(t_state *statea,t_state *stateb,
     copy_mat(statea->box_rel,stateb->box_rel);
     copy_mat(statea->boxv,stateb->boxv);
 
-    for (i = 0; i<stateb->ngtc; i++) 
-    { 
+    for (i = 0; i<stateb->ngtc; i++)
+    {
         nc = i*opts->nhchainlength;
-        for (j=0; j<opts->nhchainlength; j++) 
+        for (j=0; j<opts->nhchainlength; j++)
         {
             stateb->nosehoover_xi[nc+j]  = statea->nosehoover_xi[nc+j];
             stateb->nosehoover_vxi[nc+j] = statea->nosehoover_vxi[nc+j];
@@ -243,10 +243,10 @@ void copy_coupling_state(t_state *statea,t_state *stateb,
     }
     if (stateb->nhpres_xi != NULL)
     {
-        for (i = 0; i<stateb->nnhpres; i++) 
+        for (i = 0; i<stateb->nnhpres; i++)
         {
             nc = i*opts->nhchainlength;
-            for (j=0; j<opts->nhchainlength; j++) 
+            for (j=0; j<opts->nhchainlength; j++)
             {
                 stateb->nhpres_xi[nc+j]  = statea->nhpres_xi[nc+j];
                 stateb->nhpres_vxi[nc+j] = statea->nhpres_vxi[nc+j];
@@ -258,42 +258,42 @@ void copy_coupling_state(t_state *statea,t_state *stateb,
 real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state, t_extmass *MassQ)
 {
     real quantity = 0;
-    switch (ir->etc) 
+    switch (ir->etc)
     {
-    case etcNO:
-        break;
-    case etcBERENDSEN:
-        break;
-    case etcNOSEHOOVER:
-        quantity = NPT_energy(ir,state,MassQ);                
-        break;
-    case etcVRESCALE:
-        quantity = vrescale_energy(&(ir->opts),state->therm_integral);
-        break;
-    default:
-        break;
+        case etcNO:
+            break;
+        case etcBERENDSEN:
+            break;
+        case etcNOSEHOOVER:
+            quantity = NPT_energy(ir,state,MassQ);
+            break;
+        case etcVRESCALE:
+            quantity = vrescale_energy(&(ir->opts),state->therm_integral);
+            break;
+        default:
+            break;
     }
     return quantity;
 }
 
-void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir, 
-                     t_forcerec *fr, gmx_ekindata_t *ekind, 
-                     t_state *state, t_state *state_global, t_mdatoms *mdatoms, 
+void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inputrec *ir,
+                     t_forcerec *fr, gmx_ekindata_t *ekind,
+                     t_state *state, t_state *state_global, t_mdatoms *mdatoms,
                      t_nrnb *nrnb, t_vcm *vcm, gmx_wallcycle_t wcycle,
-                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir, 
-                     tensor pres, rvec mu_tot, gmx_constr_t constr, 
+                     gmx_enerdata_t *enerd,tensor force_vir, tensor shake_vir, tensor total_vir,
+                     tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs,gmx_bool bInterSimGS,
-                     matrix box, gmx_mtop_t *top_global, real *pcurr, 
+                     matrix box, gmx_mtop_t *top_global, real *pcurr,
                      int natoms, gmx_bool *bSumEkinhOld, int flags)
 {
     int  i,gsi;
     real gs_buf[eglsNR];
     tensor corr_vir,corr_pres,shakeall_vir;
     gmx_bool bEner,bPres,bTemp, bVV;
-    gmx_bool bRerunMD, bStopCM, bGStat, bIterate, 
-        bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
+    gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
+             bFirstIterate,bReadEkin,bEkinAveVel,bScaleEkin, bConstrain;
     real ekin,temp,prescorr,enercorr,dvdlcorr;
-    
+
     /* translate CGLO flags to gmx_booleans */
     bRerunMD = flags & CGLO_RERUNMD;
     bStopCM = flags & CGLO_STOPCM;
@@ -310,21 +310,21 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
-    
+
     bEkinAveVel = (ir->eI==eiVV || (ir->eI==eiVVAK && bPres) || bReadEkin);
-    
-    /* in initalization, it sums the shake virial in vv, and to 
+
+    /* in initalization, it sums the shake virial in vv, and to
        sums ekinh_old in leapfrog (or if we are calculating ekinh_old) for other reasons */
 
     /* ########## Kinetic energy  ############## */
-    
-    if (bTemp) 
+
+    if (bTemp)
     {
         /* Non-equilibrium MD: this is parallellized, but only does communication
          * when there really is NEMD.
          */
-        
-        if (PAR(cr) && (ekind->bNEMD)) 
+
+        if (PAR(cr) && (ekind->bNEMD))
         {
             accumulate_u(cr,&(ir->opts),ekind);
         }
@@ -333,12 +333,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         {
             restore_ekinstate_from_state(cr,ekind,&state_global->ekinstate);
         }
-        else 
+        else
         {
 
             calc_ke_part(state,&(ir->opts),mdatoms,ekind,nrnb,bEkinAveVel,bIterate);
         }
-        
+
         debug_gmx();
     }
 
@@ -353,8 +353,8 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     {
         if (!bGStat)
         {
-            /* We will not sum ekinh_old,                                                            
-             * so signal that we still have to do it.                                                
+            /* We will not sum ekinh_old,
+             * so signal that we still have to do it.
              */
             *bSumEkinhOld = TRUE;
 
@@ -363,12 +363,12 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         {
             if (gs != NULL)
             {
-                for(i=0; i<eglsNR; i++)
+                for (i=0; i<eglsNR; i++)
                 {
                     gs_buf[i] = gs->sig[i];
                 }
             }
-            if (PAR(cr)) 
+            if (PAR(cr))
             {
                 wallcycle_start(wcycle,ewcMoveE);
                 global_stat(fplog,gstat,cr,enerd,force_vir,shake_vir,mu_tot,
@@ -390,7 +390,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                     /* Communicate the signals form the master to the others */
                     gmx_bcast(eglsNR*sizeof(gs_buf[0]),gs_buf,cr);
                 }
-                for(i=0; i<eglsNR; i++)
+                for (i=0; i<eglsNR; i++)
                 {
                     if (bInterSimGS || gs_simlocal[i])
                     {
@@ -412,7 +412,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
             *bSumEkinhOld = FALSE;
         }
     }
-    
+
     if (!ekind->bNEMD && debug && bTemp && (vcm->nr > 0))
     {
         correct_ekin(debug,
@@ -420,7 +420,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      state->v,vcm->group_p[0],
                      mdatoms->massT,mdatoms->tmass,ekind->ekin);
     }
-    
+
     /* Do center of mass motion removal */
     if (bStopCM)
     {
@@ -436,55 +436,55 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
     }
 
-    if (bTemp) 
+    if (bTemp)
     {
         /* Sum the kinetic energies of the groups & calc temp */
         /* compute full step kinetic energies if vv, or if vv-avek and we are computing the pressure with IR_NPT_TROTTER */
-        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).  
-           Leap with AveVel is not supported; it's not clear that it will actually work.  
-           bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy. 
+        /* three maincase:  VV with AveVel (md-vv), vv with AveEkin (md-vv-avek), leap with AveEkin (md).
+           Leap with AveVel is not supported; it's not clear that it will actually work.
+           bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
-           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.  
+           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
            If FALSE, we go ahead and erase over it.
-        */ 
+        */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts),ekind,&(enerd->term[F_DKDL]),
                                        bEkinAveVel,bIterate,bScaleEkin);
- 
+
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
-    
+
     /* ##########  Long range energy information ###### */
-    
-    if (bEner || bPres || bConstrain) 
+
+    if (bEner || bPres || bConstrain)
     {
         calc_dispcorr(fplog,ir,fr,0,top_global->natoms,box,state->lambda[efptVDW],
                       corr_pres,corr_vir,&prescorr,&enercorr,&dvdlcorr);
     }
-    
-    if (bEner && bFirstIterate) 
+
+    if (bEner && bFirstIterate)
     {
         enerd->term[F_DISPCORR] = enercorr;
         enerd->term[F_EPOT] += enercorr;
         enerd->term[F_DVDL_VDW] += dvdlcorr;
     }
-    
+
     /* ########## Now pressure ############## */
-    if (bPres || bConstrain) 
+    if (bPres || bConstrain)
     {
-        
+
         m_add(force_vir,shake_vir,total_vir);
-        
+
         /* Calculate pressure and apply LR correction if PPPM is used.
          * Use the box from last timestep since we already called update().
          */
-        
+
         enerd->term[F_PRES] = calc_pres(fr->ePBC,ir->nwall,box,ekind->ekin,total_vir,pres);
-        
+
         /* Calculate long range corrections to pressure and energy */
-        /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT], 
-           and computes enerd->term[F_DISPCORR].  Also modifies the 
+        /* this adds to enerd->term[F_PRES] and enerd->term[F_ETOT],
+           and computes enerd->term[F_DISPCORR].  Also modifies the
            total_vir and pres tesors */
-        
+
         m_add(total_vir,corr_vir,total_vir);
         m_add(pres,corr_pres,pres);
         enerd->term[F_PDISPCORR] = prescorr;
@@ -493,7 +493,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         /* calculate temperature using virial */
         enerd->term[F_VTEMP] = calc_temp(trace(total_vir),ir->opts.nrdf[0]);
 
-    }    
+    }
 }
 
 void check_nst_param(FILE *fplog,t_commrec *cr,
@@ -523,7 +523,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
             if (fepvals->delta_lambda!=0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
-                for (i=0;i<efptNR;i++)
+                for (i=0; i<efptNR; i++)
                 {
                     if (i!= efptFEP)
                     {
@@ -539,17 +539,17 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
                 frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i=0;i<efptNR;i++)
+                for (i=0; i<efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                                              frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
                 }
             }
         }
         else if (rerun_fr->bFepState)
         {
             state_global->fep_state = rerun_fr->fep_state;
-            for (i=0;i<efptNR;i++)
+            for (i=0; i<efptNR; i++)
             {
                 state_global->lambda[i] = fepvals->all_lambda[i][fep_state];
             }
@@ -567,22 +567,22 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
                 /* interpolate between this state and the next */
                 /* this assumes that the initial lambda corresponds to lambda==0, which is verified in grompp */
                 frac = (frac*fepvals->n_lambda)-fep_state;
-                for (i=0;i<efptNR;i++)
+                for (i=0; i<efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + (fepvals->all_lambda[i][fep_state]) +
-                        frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
+                                              frac*(fepvals->all_lambda[i][fep_state+1]-fepvals->all_lambda[i][fep_state]);
                 }
             }
             else
             {
-                for (i=0;i<efptNR;i++)
+                for (i=0; i<efptNR; i++)
                 {
                     state_global->lambda[i] = lam0[i] + frac;
                 }
             }
         }
     }
-    for (i=0;i<efptNR;i++)
+    for (i=0; i<efptNR; i++)
     {
         state->lambda[i] = state_global->lambda[i];
     }
@@ -609,7 +609,7 @@ static int lcd4(int i1,int i2,int i3,int i4)
     {
         gmx_incons("All 4 inputs for determininig nstglobalcomm are <= 0");
     }
-    
+
     while (nst > 1 && ((i1 > 0 && i1 % nst != 0)  ||
                        (i2 > 0 && i2 % nst != 0)  ||
                        (i3 > 0 && i3 % nst != 0)  ||

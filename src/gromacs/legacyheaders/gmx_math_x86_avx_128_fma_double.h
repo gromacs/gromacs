@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -59,20 +59,20 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
     const __m128d three  = _mm_set1_pd(3.0);
     const __m128  halff  = _mm_set1_ps(0.5f);
     const __m128  threef = _mm_set1_ps(3.0f);
-    
+
     __m128 xf,luf;
     __m128d lu1,lu2;
-    
+
     /* Do first N-R step in float for 2x throughput */
     xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1),_mm_cvtpd_ps(x2),_MM_SHUFFLE(1,0,1,0));
     luf = _mm_rsqrt_ps(xf);
-    
+
     luf = _mm_mul_ps(_mm_mul_ps(halff,luf),_mm_nmacc_ps(_mm_mul_ps(luf,luf),xf,threef));
 
-    
+
     lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf,luf,_MM_SHUFFLE(3,2,3,2)));
     lu1 = _mm_cvtps_pd(luf);
-    
+
     *invsqrt1 = _mm_mul_pd(_mm_mul_pd(half,lu1),_mm_nmacc_pd(_mm_mul_pd(lu1,lu1),x1,three));
     *invsqrt2 = _mm_mul_pd(_mm_mul_pd(half,lu2),_mm_nmacc_pd(_mm_mul_pd(lu2,lu2),x2,three));
 }

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -59,7 +59,7 @@ files.
 
 
 int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
-                void* recvbuf, int recvcount, tMPI_Datatype recvtype, 
+                void* recvbuf, int recvcount, tMPI_Datatype recvtype,
                 int root, tMPI_Comm comm)
 {
     int synct;
@@ -69,11 +69,11 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+    tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Gather(%p, %d, %p, %p, %d, %p, %d, %p)",
-                     sendbuf, sendcount, sendtype, 
+                     sendbuf, sendcount, sendtype,
                      recvbuf, recvcount, recvtype, root, comm);
 #endif
 
@@ -94,18 +94,20 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         if (sendbuf!=TMPI_IN_PLACE)
         {
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
-                                sendtype->size*sendcount, 
-                                recvtype->size*recvcount, 
-                                sendbuf, 
+                                sendtype->size*sendcount,
+                                recvtype->size*recvcount,
+                                sendbuf,
                                 (char*)recvbuf+myrank*recvcount*recvtype->size,
                                 &ret);
         }
-        for(i=0;i<comm->grp.N;i++)
+        for (i=0; i<comm->grp.N; i++)
+        {
             cev->met[myrank].read_data[i]=FALSE;
+        }
         cev->met[myrank].read_data[myrank]=TRUE;
 
         /* wait for data availability as long as there are xfers to be done */
-        while(n_remaining>0)
+        while (n_remaining>0)
         {
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
             tMPI_Profile_wait_start(cur);
@@ -115,18 +117,20 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
             tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
 #endif
             /* now check all of them */
-            for(i=0;i<comm->grp.N;i++)
+            for (i=0; i<comm->grp.N; i++)
             {
                 if ( !cev->met[myrank].read_data[i] &&
-                    (tMPI_Atomic_get(&(cev->met[i].current_sync))== synct))
+                     (tMPI_Atomic_get(&(cev->met[i].current_sync))== synct))
                 {
-                    tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHER_TAG, recvtype, 
+                    tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHER_TAG, recvtype,
                                    recvcount*recvtype->size,
                                    (char*)recvbuf+i*recvcount*recvtype->size,
                                    &ret);
                     tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                     if (ret!=TMPI_SUCCESS)
+                    {
                         return ret;
+                    }
                     cev->met[myrank].read_data[i]=TRUE;
                     n_remaining--;
                 }
@@ -141,13 +145,13 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         }
 
         /* first set up the data just to root. */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype, 
+        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype,
                         sendcount*sendtype->size, sendbuf, 1, synct, root);
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur,TMPIFN_Gather); 
+    tMPI_Profile_count_stop(cur,TMPIFN_Gather);
 #endif
     return ret;
 }
@@ -168,7 +172,7 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
     struct tmpi_thread *cur=tMPI_Get_current();
 
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_start(cur); 
+    tMPI_Profile_count_start(cur);
 #endif
 #ifdef TMPI_TRACE
     tMPI_Trace_print("tMPI_Gatherv(%p, %d, %p, %p, %p, %p, %p, %d, %p)",
@@ -193,19 +197,21 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         if (sendbuf!=TMPI_IN_PLACE)
         {
             tMPI_Coll_root_xfer(comm, sendtype, recvtype,
-                                sendtype->size*sendcount, 
-                                recvtype->size*recvcounts[myrank], 
-                                sendbuf, 
-                                (char*)recvbuf+displs[myrank]*recvtype->size, 
+                                sendtype->size*sendcount,
+                                recvtype->size*recvcounts[myrank],
+                                sendbuf,
+                                (char*)recvbuf+displs[myrank]*recvtype->size,
                                 &ret);
         }
-        for(i=0;i<comm->grp.N;i++)
+        for (i=0; i<comm->grp.N; i++)
+        {
             cev->met[myrank].read_data[i]=FALSE;
+        }
         cev->met[myrank].read_data[myrank]=TRUE;
 
         /* wait for data availability as long as there are xfers to be done */
-        while(n_remaining>0)
-        {            
+        while (n_remaining>0)
+        {
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
             tMPI_Profile_wait_start(cur);
 #endif
@@ -213,10 +219,10 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
 #if defined(TMPI_PROFILE) && defined(TMPI_CYCLE_COUNT)
             tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
 #endif
-            for(i=0;i<comm->grp.N;i++)
+            for (i=0; i<comm->grp.N; i++)
             {
                 if ( !cev->met[myrank].read_data[i] &&
-                    (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct) )
+                     (tMPI_Atomic_get(&(cev->met[i].current_sync))==synct) )
                 {
                     tMPI_Event_process( &(cev->met[myrank]).recv_ev, 1) ;
                     tMPI_Mult_recv(comm, cev, i, 0, TMPI_GATHERV_TAG, recvtype,
@@ -224,7 +230,9 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                                    (char*)recvbuf+displs[i]*recvtype->size,
                                    &ret);
                     if (ret!=TMPI_SUCCESS)
+                    {
                         return ret;
+                    }
                     cev->met[myrank].read_data[i]=TRUE;
                     n_remaining--;
                 }
@@ -239,14 +247,14 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         }
 
         /* first set up the data just to root. */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype, 
+        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype,
                         sendcount*sendtype->size, sendbuf, 1, synct, root);
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
 
 #ifdef TMPI_PROFILE
-    tMPI_Profile_count_stop(cur, TMPIFN_Gatherv); 
+    tMPI_Profile_count_stop(cur, TMPIFN_Gatherv);
 #endif
     return ret;
 }

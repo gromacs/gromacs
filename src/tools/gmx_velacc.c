@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
@@ -67,15 +67,22 @@ static void index_atom2mol(int *n,atom_id *index,t_block *mols)
     i = 0;
     nmol = 0;
     mol = 0;
-    while (i < nat) {
-        while (index[i] > mols->index[mol]) {
+    while (i < nat)
+    {
+        while (index[i] > mols->index[mol])
+        {
             mol++;
             if (mol >= mols->nr)
+            {
                 gmx_fatal(FARGS,"Atom index out of range: %d",index[i]+1);
+            }
         }
-        for(j=mols->index[mol]; j<mols->index[mol+1]; j++) {
+        for (j=mols->index[mol]; j<mols->index[mol+1]; j++)
+        {
             if (i >= nat || index[i] != j)
+            {
                 gmx_fatal(FARGS,"The index group does not consist of whole molecules");
+            }
             i++;
         }
         index[nmol++] = mol;
@@ -86,21 +93,27 @@ static void index_atom2mol(int *n,atom_id *index,t_block *mols)
     *n = nmol;
 }
 
-static void precalc(t_topology top,real normm[]){
+static void precalc(t_topology top,real normm[])
+{
 
     real mtot;
     int i,j,k,l;
 
-    for(i=0;i<top.mols.nr;i++){
+    for (i=0; i<top.mols.nr; i++)
+    {
         k=top.mols.index[i];
         l=top.mols.index[i+1];
         mtot=0.0;
 
-        for(j=k;j<l;j++)
+        for (j=k; j<l; j++)
+        {
             mtot+=top.atoms.atom[j].m;
+        }
 
-        for(j=k;j<l;j++)
+        for (j=k; j<l; j++)
+        {
             normm[j]=top.atoms.atom[j].m/mtot;
+        }
 
     }
 
@@ -116,8 +129,10 @@ static void calc_spectrum(int n,real c[],real dt,const char *fn,
     real nu,omega,recip_fac;
 
     snew(data,n*2);
-    for(i=0; (i<n); i++)
+    for (i=0; (i<n); i++)
+    {
         data[i] = c[i];
+    }
 
     if ((status = gmx_fft_init_1d_real(&fft,n,GMX_FFT_FLAG_NONE)) != 0)
     {
@@ -145,7 +160,7 @@ static void calc_spectrum(int n,real c[],real dt,const char *fn,
      * 1e7 is to convert nanometer to cm
      */
     recip_fac = bRecip ? (1e7/SPEED_OF_LIGHT) : 1.0;
-    for(i=0; (i<n); i+=2) 
+    for (i=0; (i<n); i+=2)
     {
         nu = i/(2*dt);
         omega = nu*recip_fac;
@@ -161,7 +176,8 @@ static void calc_spectrum(int n,real c[],real dt,const char *fn,
 
 int gmx_velacc(int argc,char *argv[])
 {
-    const char *desc[] = {
+    const char *desc[] =
+    {
         "[TT]g_velacc[tt] computes the velocity autocorrelation function.",
         "When the [TT]-m[tt] option is used, the momentum autocorrelation",
         "function is calculated.[PAR]",
@@ -173,15 +189,22 @@ int gmx_velacc(int argc,char *argv[])
         "and that the time interval between data collection points is",
         "much shorter than the time scale of the autocorrelation."
     };
-  
+
     static gmx_bool bMass=FALSE,bMol=FALSE,bRecip=TRUE;
-    t_pargs pa[] = {
-        { "-m", FALSE, etBOOL, {&bMass},
-          "Calculate the momentum autocorrelation function" },
-        { "-recip", FALSE, etBOOL, {&bRecip},
-          "Use cm^-1 on X-axis instead of 1/ps for spectra." },
-        { "-mol", FALSE, etBOOL, {&bMol},
-          "Calculate the velocity acf of molecules" }
+    t_pargs pa[] =
+    {
+        {
+            "-m", FALSE, etBOOL, {&bMass},
+            "Calculate the momentum autocorrelation function"
+        },
+        {
+            "-recip", FALSE, etBOOL, {&bRecip},
+            "Use cm^-1 on X-axis instead of 1/ps for spectra."
+        },
+        {
+            "-mol", FALSE, etBOOL, {&bMol},
+            "Calculate the velocity acf of molecules"
+        }
     };
 
     t_topology top;
@@ -193,7 +216,7 @@ int gmx_velacc(int argc,char *argv[])
     atom_id    *index;
     char       *grpname;
     char       title[256];
-    /* t0, t1 are the beginning and end time respectively. 
+    /* t0, t1 are the beginning and end time respectively.
      * dt is the time step, mass is temp variable for atomic mass.
      */
     real       t0,t1,dt,mass;
@@ -204,12 +227,13 @@ int gmx_velacc(int argc,char *argv[])
     real       **c1;
     real             *normm=NULL;
     output_env_t oenv;
-  
+
 #define NHISTO 360
-    
-    t_filenm  fnm[] = {
+
+    t_filenm  fnm[] =
+    {
         { efTRN, "-f",    NULL,   ffREAD  },
-        { efTPS, NULL,    NULL,   ffOPTRD }, 
+        { efTPS, NULL,    NULL,   ffOPTRD },
         { efNDX, NULL,    NULL,   ffOPTRD },
         { efXVG, "-o",    "vac",  ffWRITE },
         { efXVG, "-os",   "spectrum", ffOPTWR }
@@ -224,52 +248,72 @@ int gmx_velacc(int argc,char *argv[])
     parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
                       NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL,&oenv);
 
-    if (bMol || bMass) {
+    if (bMol || bMass)
+    {
         bTPS = ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
     }
 
-    if (bTPS) {
+    if (bTPS)
+    {
         bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
                            TRUE);
         get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
-    } else
+    }
+    else
+    {
         rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
+    }
 
-    if (bMol) {
+    if (bMol)
+    {
         if (!bTop)
+        {
             gmx_fatal(FARGS,"Need a topology to determine the molecules");
+        }
         snew(normm,top.atoms.nr);
         precalc(top,normm);
         index_atom2mol(&gnx,index,&top.mols);
     }
-  
+
     /* Correlation stuff */
     snew(c1,gnx);
-    for(i=0; (i<gnx); i++)
+    for (i=0; (i<gnx); i++)
+    {
         c1[i]=NULL;
-  
+    }
+
     read_first_frame(oenv,&status,ftp2fn(efTRN,NFILE,fnm),&fr,TRX_NEED_V);
     t0=fr.time;
-      
+
     n_alloc=0;
     counter=0;
-    do {
-        if (counter >= n_alloc) {
+    do
+    {
+        if (counter >= n_alloc)
+        {
             n_alloc+=100;
-            for(i=0; i<gnx; i++)
+            for (i=0; i<gnx; i++)
+            {
                 srenew(c1[i],DIM*n_alloc);
+            }
         }
         counter_dim=DIM*counter;
         if (bMol)
-            for(i=0; i<gnx; i++) {
+            for (i=0; i<gnx; i++)
+            {
                 clear_rvec(mv_mol);
                 k=top.mols.index[index[i]];
                 l=top.mols.index[index[i]+1];
-                for(j=k; j<l; j++) {
+                for (j=k; j<l; j++)
+                {
                     if (bMass)
+                    {
                         mass = top.atoms.atom[j].m;
+                    }
                     else
+                    {
                         mass = normm[j];
+                    }
                     mv_mol[XX] += mass*fr.v[j][XX];
                     mv_mol[YY] += mass*fr.v[j][YY];
                     mv_mol[ZZ] += mass*fr.v[j][ZZ];
@@ -279,11 +323,16 @@ int gmx_velacc(int argc,char *argv[])
                 c1[i][counter_dim+ZZ]=mv_mol[ZZ];
             }
         else
-            for(i=0; i<gnx; i++) {
+            for (i=0; i<gnx; i++)
+            {
                 if (bMass)
+                {
                     mass = top.atoms.atom[index[i]].m;
+                }
                 else
+                {
                     mass = 1;
+                }
                 c1[i][counter_dim+XX]=mass*fr.v[index[i]][XX];
                 c1[i][counter_dim+YY]=mass*fr.v[index[i]][YY];
                 c1[i][counter_dim+ZZ]=mass*fr.v[index[i]][ZZ];
@@ -292,30 +341,33 @@ int gmx_velacc(int argc,char *argv[])
         t1=fr.time;
 
         counter ++;
-    } while (read_next_frame(oenv,status,&fr));
-  
+    }
+    while (read_next_frame(oenv,status,&fr));
+
     close_trj(status);
 
     if (counter >= 4)
     {
-      /* Compute time step between frames */
-      dt = (t1-t0)/(counter-1);
-      do_autocorr(opt2fn("-o",NFILE,fnm), oenv,
-		  bMass ? 
-		  "Momentum Autocorrelation Function" :
-		  "Velocity Autocorrelation Function",
-		  counter,gnx,c1,dt,eacVector,TRUE);
+        /* Compute time step between frames */
+        dt = (t1-t0)/(counter-1);
+        do_autocorr(opt2fn("-o",NFILE,fnm), oenv,
+                    bMass ?
+                    "Momentum Autocorrelation Function" :
+                    "Velocity Autocorrelation Function",
+                    counter,gnx,c1,dt,eacVector,TRUE);
 
-      do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
+        do_view(oenv,opt2fn("-o",NFILE,fnm),"-nxy");
 
-      if (opt2bSet("-os",NFILE,fnm)) {
-        calc_spectrum(counter/2,(real *) (c1[0]),(t1-t0)/2,opt2fn("-os",NFILE,fnm),
-                      oenv,bRecip);
-        do_view(oenv,opt2fn("-os",NFILE,fnm),"-nxy");
-      }
+        if (opt2bSet("-os",NFILE,fnm))
+        {
+            calc_spectrum(counter/2,(real *) (c1[0]),(t1-t0)/2,opt2fn("-os",NFILE,fnm),
+                          oenv,bRecip);
+            do_view(oenv,opt2fn("-os",NFILE,fnm),"-nxy");
+        }
     }
-    else {
-      fprintf(stderr,"Not enough frames in trajectory - no output generated.\n");
+    else
+    {
+        fprintf(stderr,"Not enough frames in trajectory - no output generated.\n");
     }
 
     thanx(stderr);

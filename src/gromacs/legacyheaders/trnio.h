@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -50,7 +50,7 @@
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
-	
+
 #include "typedefs.h"
 #include "gmxfio.h"
 
@@ -58,27 +58,27 @@
 extern "C" {
 #endif
 
-typedef struct		/* This struct describes the order and the	*/
-  /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
+typedef struct      /* This struct describes the order and the  */
+/* sizes of the structs in a trjfile, sizes are given in bytes. */
 {
-  gmx_bool  bDouble;        /* Double precision?                            */
-  int	ir_size;	/* Backward compatibility		        */
-  int	e_size;		/* Backward compatibility		        */
-  int	box_size;	/* Non zero if a box is present			*/
-  int   vir_size;       /* Backward compatibility		        */
-  int   pres_size;      /* Backward compatibility		        */
-  int	top_size;	/* Backward compatibility		        */
-  int	sym_size;	/* Backward compatibility		        */
-  int	x_size;		/* Non zero if coordinates are present		*/
-  int	v_size;		/* Non zero if velocities are present		*/
-  int	f_size;		/* Non zero if forces are present		*/
+    gmx_bool  bDouble;        /* Double precision?                            */
+    int ir_size;    /* Backward compatibility               */
+    int e_size;     /* Backward compatibility               */
+    int box_size;   /* Non zero if a box is present         */
+    int   vir_size;       /* Backward compatibility             */
+    int   pres_size;      /* Backward compatibility             */
+    int top_size;   /* Backward compatibility               */
+    int sym_size;   /* Backward compatibility               */
+    int x_size;     /* Non zero if coordinates are present      */
+    int v_size;     /* Non zero if velocities are present       */
+    int f_size;     /* Non zero if forces are present       */
 
-  int	natoms;		/* The total number of atoms			*/
-  int	step;		/* Current step number				*/
-  int	nre;		/* Backward compatibility		        */
-  real	t;		/* Current time					*/
-  real	lambda;		/* Current value of lambda			*/
-  int	fep_state;  /* Current value of alchemical state */
+    int natoms;     /* The total number of atoms            */
+    int step;       /* Current step number              */
+    int nre;        /* Backward compatibility               */
+    real    t;      /* Current time                 */
+    real    lambda;     /* Current value of lambda          */
+    int fep_state;  /* Current value of alchemical state */
 } t_trnheader;
 
 t_fileio *open_trn(const char *fn,const char *mode);
@@ -93,7 +93,7 @@ gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn,gmx_bool *bOK);
  */
 
 void read_trnheader(const char *fn,t_trnheader *header);
-/* Read the header of a trn file from fn, and close the file afterwards. 
+/* Read the header of a trn file from fn, and close the file afterwards.
  */
 
 void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh);
@@ -105,30 +105,30 @@ gmx_bool is_trn(FILE *fp);
  */
 
 void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
-		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
+                rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
 gmx_bool fread_htrn(t_fileio *fio,t_trnheader *sh,
-		       rvec *box,rvec *x,rvec *v,rvec *f);
+                    rvec *box,rvec *x,rvec *v,rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
- 
+
 gmx_bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
-		      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
+                   rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
- 
+
 void write_trn(const char *fn,int step,real t,real lambda,
-		      rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
+               rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
 void read_trn(const char *fn,int *step,real *t,real *lambda,
-		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
-/* Read a single trn frame from file fn, which is closed afterwards 
+              rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
+/* Read a single trn frame from file fn, which is closed afterwards
  */
 
 #ifdef __cplusplus

@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
@@ -151,16 +151,17 @@ gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
 #ifdef DEBUG
 static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 {
-  rvec dOH1,dOH2,dHH;
-  int  m;
-  
-  for(m=0; (m<DIM); m++) {
-    dOH1[m]=x[OW1+m]-x[HW2+m];
-    dOH2[m]=x[OW1+m]-x[HW3+m];
-    dHH[m]=x[HW2+m]-x[HW3+m];
-  }
-  fprintf(fp,"%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
-	  title,OW1/DIM,HW2/DIM,HW3/DIM,norm(dOH1),norm(dOH2),norm(dHH));
+    rvec dOH1,dOH2,dHH;
+    int  m;
+
+    for (m=0; (m<DIM); m++)
+    {
+        dOH1[m]=x[OW1+m]-x[HW2+m];
+        dOH2[m]=x[OW1+m]-x[HW3+m];
+        dHH[m]=x[HW2+m]-x[HW3+m];
+    }
+    fprintf(fp,"%10s, OW1=%3d, HW2=%3d, HW3=%3d,  dOH1: %8.3f, dOH2: %8.3f, dHH: %8.3f\n",
+            title,OW1/DIM,HW2/DIM,HW3/DIM,norm(dOH1),norm(dOH2),norm(dHH));
 }
 #endif
 
@@ -178,7 +179,7 @@ void settle_proj(FILE *fp,
      * of derivatives of the coordinates.
      * Berk Hess 2008-1-10
      */
-    
+
     settleparam_t *p;
     real   imO,imH,dOH,dHH,invdOH,invdHH;
     matrix invmat;
@@ -205,14 +206,14 @@ void settle_proj(FILE *fp,
     dHH    = p->dHH;
     invdOH = p->invdOH;
     invdHH = p->invdHH;
-    
-    veta = vetavar->veta;     
+
+    veta = vetavar->veta;
     vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
 
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
-    
+
     for (i=0; i<nsettle; i++)
     {
         ow1 = iatoms[i*4+1];
@@ -220,18 +221,18 @@ void settle_proj(FILE *fp,
         hw3 = iatoms[i*4+3];
 
 
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
-            /* in the velocity case, these are the velocities, so we 
+            /* in the velocity case, these are the velocities, so we
                need to modify with the pressure control velocities! */
-            
+
             derm[0][m]  = vscale_nhc*der[ow1][m] + veta*x[ow1][m];
             derm[1][m]  = vscale_nhc*der[hw2][m] + veta*x[hw2][m];
             derm[2][m]  = vscale_nhc*der[hw3][m] + veta*x[hw3][m];
-            
+
         }
         /* 27 flops */
-        
+
         if (pbc == NULL)
         {
             rvec_sub(x[ow1],x[hw2],roh2);
@@ -248,34 +249,34 @@ void settle_proj(FILE *fp,
         svmul(invdOH,roh3,roh3);
         svmul(invdHH,rhh,rhh);
         /* 18 flops */
-        
+
         /* Determine the projections of der(modified) on the bonds */
         clear_rvec(dc);
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             dc[0] += (derm[0][m] - derm[1][m])*roh2[m];
             dc[1] += (derm[0][m] - derm[2][m])*roh3[m];
             dc[2] += (derm[1][m] - derm[2][m])*rhh [m];
         }
         /* 27 flops */
-        
+
         /* Determine the correction for the three bonds */
         mvmul(invmat,dc,fc);
         /* 15 flops */
-        
-        /* divide velocity by vscale_nhc for determining constrained velocities, since they 
+
+        /* divide velocity by vscale_nhc for determining constrained velocities, since they
            have not yet been multiplied */
         svmul(1.0/vscale_nhc,fc,fcv);
         /* 7? flops */
-        
+
         /* Subtract the corrections from derp */
-        for(m=0; m<DIM; m++)
+        for (m=0; m<DIM; m++)
         {
             derp[ow1][m] -= imO*( fcv[0]*roh2[m] + fcv[1]*roh3[m]);
             derp[hw2][m] -= imH*(-fcv[0]*roh2[m] + fcv[2]*rhh [m]);
             derp[hw3][m] -= imH*(-fcv[1]*roh3[m] - fcv[2]*rhh [m]);
         }
-        
+
         /* 45 flops */
 
         if (ow1 < calcvir_atom_end)
@@ -283,15 +284,15 @@ void settle_proj(FILE *fp,
             /* Determining r \dot m der is easy,
              * since fc contains the mass weighted corrections for der.
              */
-            
-            for(m=0; m<DIM; m++)
+
+            for (m=0; m<DIM; m++)
             {
-                for(m2=0; m2<DIM; m2++)
+                for (m2=0; m2<DIM; m2++)
                 {
                     vir_r_m_dder[m][m2] +=
                         dOH*roh2[m]*roh2[m2]*fcv[0] +
                         dOH*roh3[m]*roh3[m2]*fcv[1] +
-                        dHH*rhh [m]*rhh [m2]*fcv[2]; 
+                        dHH*rhh [m]*rhh [m2]*fcv[2];
                 }
             }
         }
@@ -326,35 +327,35 @@ void csettle(gmx_settledata_t settled,
     /*           S. Miyamoto et al., J. Comp. Chem., 13, 952 (1992). ** */
     /*                                                               ** */
     /* ***************************************************************** */
-    
+
     /* Initialized data */
     settleparam_t *p;
     real   wh,ra,rb,rc,irc2;
     real   mOs,mHs,invdts;
-    
+
     /* Local variables */
     real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
-    real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22, 
-        trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe, 
-        cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd, 
-        xb0, yb0, zb0, xc0, yc0, zc0, xa1;
+    real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22,
+         trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe,
+         cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd,
+         xb0, yb0, zb0, xc0, yc0, zc0, xa1;
     real ya1, za1, xb1, yb1;
-    real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3, 
-        xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d, 
-        za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
-        xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
+    real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3,
+         xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d,
+         za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d,
+         xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
     real t1,t2;
     real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
     real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
-    
+
     gmx_bool bOK;
-    
+
     int i, ow1, hw2, hw3;
 
-    rvec dx,sh_hw2={0,0,0},sh_hw3={0,0,0};
+    rvec dx,sh_hw2= {0,0,0},sh_hw3= {0,0,0};
     rvec doh2,doh3;
     int  is;
-    
+
     *error = -1;
 
     CalcVirAtomEnd *= 3;
@@ -365,267 +366,279 @@ void csettle(gmx_settledata_t settled,
     ra   = p->ra;
     rb   = p->rb;
     irc2 = p->irc2;
-    
+
     mOs    = p->mO / vetavar->rvscale;
     mHs    = p->mH / vetavar->rvscale;
     invdts = invdt / vetavar->rscale;
-    
+
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
-  for (i = 0; i < nsettle; ++i) {
-    bOK = TRUE;
-    /*    --- Step1  A1' ---      */
-    ow1 = iatoms[i*4+1] * 3;
-    hw2 = iatoms[i*4+2] * 3;
-    hw3 = iatoms[i*4+3] * 3;
-    if (pbc == NULL)
+    for (i = 0; i < nsettle; ++i)
     {
-        xb0 = b4[hw2 + XX] - b4[ow1 + XX];
-        yb0 = b4[hw2 + YY] - b4[ow1 + YY];
-        zb0 = b4[hw2 + ZZ] - b4[ow1 + ZZ];
-        xc0 = b4[hw3 + XX] - b4[ow1 + XX];
-        yc0 = b4[hw3 + YY] - b4[ow1 + YY];
-        zc0 = b4[hw3 + ZZ] - b4[ow1 + ZZ];
-        /* 6 flops */
-
-        rvec_sub(after+hw2,after+ow1,doh2);
-        rvec_sub(after+hw3,after+ow1,doh3);
-        /* 6 flops */
-    }
-    else
-    {
-        pbc_dx_aiuc(pbc,b4+hw2,b4+ow1,dx);
-        xb0 = dx[XX];
-        yb0 = dx[YY];
-        zb0 = dx[ZZ];
-        pbc_dx_aiuc(pbc,b4+hw3,b4+ow1,dx);
-        xc0 = dx[XX];
-        yc0 = dx[YY];
-        zc0 = dx[ZZ];
-
-        /* Tedious way of doing pbc */
-        is = pbc_dx_aiuc(pbc,after+hw2,after+ow1,doh2);
-        if (is == CENTRAL)
+        bOK = TRUE;
+        /*    --- Step1  A1' ---      */
+        ow1 = iatoms[i*4+1] * 3;
+        hw2 = iatoms[i*4+2] * 3;
+        hw3 = iatoms[i*4+3] * 3;
+        if (pbc == NULL)
         {
-            clear_rvec(sh_hw2);
+            xb0 = b4[hw2 + XX] - b4[ow1 + XX];
+            yb0 = b4[hw2 + YY] - b4[ow1 + YY];
+            zb0 = b4[hw2 + ZZ] - b4[ow1 + ZZ];
+            xc0 = b4[hw3 + XX] - b4[ow1 + XX];
+            yc0 = b4[hw3 + YY] - b4[ow1 + YY];
+            zc0 = b4[hw3 + ZZ] - b4[ow1 + ZZ];
+            /* 6 flops */
+
+            rvec_sub(after+hw2,after+ow1,doh2);
+            rvec_sub(after+hw3,after+ow1,doh3);
+            /* 6 flops */
         }
         else
         {
-            sh_hw2[XX] = after[hw2 + XX] - (after[ow1 + XX] + doh2[XX]);
-            sh_hw2[YY] = after[hw2 + YY] - (after[ow1 + YY] + doh2[YY]);
-            sh_hw2[ZZ] = after[hw2 + ZZ] - (after[ow1 + ZZ] + doh2[ZZ]);
-            rvec_dec(after+hw2,sh_hw2);
+            pbc_dx_aiuc(pbc,b4+hw2,b4+ow1,dx);
+            xb0 = dx[XX];
+            yb0 = dx[YY];
+            zb0 = dx[ZZ];
+            pbc_dx_aiuc(pbc,b4+hw3,b4+ow1,dx);
+            xc0 = dx[XX];
+            yc0 = dx[YY];
+            zc0 = dx[ZZ];
+
+            /* Tedious way of doing pbc */
+            is = pbc_dx_aiuc(pbc,after+hw2,after+ow1,doh2);
+            if (is == CENTRAL)
+            {
+                clear_rvec(sh_hw2);
+            }
+            else
+            {
+                sh_hw2[XX] = after[hw2 + XX] - (after[ow1 + XX] + doh2[XX]);
+                sh_hw2[YY] = after[hw2 + YY] - (after[ow1 + YY] + doh2[YY]);
+                sh_hw2[ZZ] = after[hw2 + ZZ] - (after[ow1 + ZZ] + doh2[ZZ]);
+                rvec_dec(after+hw2,sh_hw2);
+            }
+            is = pbc_dx_aiuc(pbc,after+hw3,after+ow1,doh3);
+            if (is == CENTRAL)
+            {
+                clear_rvec(sh_hw3);
+            }
+            else
+            {
+                sh_hw3[XX] = after[hw3 + XX] - (after[ow1 + XX] + doh3[XX]);
+                sh_hw3[YY] = after[hw3 + YY] - (after[ow1 + YY] + doh3[YY]);
+                sh_hw3[ZZ] = after[hw3 + ZZ] - (after[ow1 + ZZ] + doh3[ZZ]);
+                rvec_dec(after+hw3,sh_hw3);
+            }
         }
-        is = pbc_dx_aiuc(pbc,after+hw3,after+ow1,doh3);
-        if (is == CENTRAL)
+
+        /* Not calculating the center of mass using the oxygen position
+         * and the O-H distances, as done below, will make SETTLE
+         * the largest source of energy drift for simulations of water,
+         * as then the oxygen coordinate is multiplied by 0.89 at every step,
+         * which can then transfer a systematic rounding to the oxygen velocity.
+         */
+        xa1 = -(doh2[XX] + doh3[XX]) * wh;
+        ya1 = -(doh2[YY] + doh3[YY]) * wh;
+        za1 = -(doh2[ZZ] + doh3[ZZ]) * wh;
+
+        xcom = after[ow1 + XX] - xa1;
+        ycom = after[ow1 + YY] - ya1;
+        zcom = after[ow1 + ZZ] - za1;
+
+        xb1 = after[hw2 + XX] - xcom;
+        yb1 = after[hw2 + YY] - ycom;
+        zb1 = after[hw2 + ZZ] - zcom;
+        xc1 = after[hw3 + XX] - xcom;
+        yc1 = after[hw3 + YY] - ycom;
+        zc1 = after[hw3 + ZZ] - zcom;
+        /* 15 flops */
+
+        xakszd = yb0 * zc0 - zb0 * yc0;
+        yakszd = zb0 * xc0 - xb0 * zc0;
+        zakszd = xb0 * yc0 - yb0 * xc0;
+        xaksxd = ya1 * zakszd - za1 * yakszd;
+        yaksxd = za1 * xakszd - xa1 * zakszd;
+        zaksxd = xa1 * yakszd - ya1 * xakszd;
+        xaksyd = yakszd * zaksxd - zakszd * yaksxd;
+        yaksyd = zakszd * xaksxd - xakszd * zaksxd;
+        zaksyd = xakszd * yaksxd - yakszd * xaksxd;
+        /* 27 flops */
+
+        axlng = gmx_invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
+        aylng = gmx_invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
+        azlng = gmx_invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
+
+        trns11 = xaksxd * axlng;
+        trns21 = yaksxd * axlng;
+        trns31 = zaksxd * axlng;
+        trns12 = xaksyd * aylng;
+        trns22 = yaksyd * aylng;
+        trns32 = zaksyd * aylng;
+        trns13 = xakszd * azlng;
+        trns23 = yakszd * azlng;
+        trns33 = zakszd * azlng;
+        /* 24 flops */
+
+        xb0d = trns11 * xb0 + trns21 * yb0 + trns31 * zb0;
+        yb0d = trns12 * xb0 + trns22 * yb0 + trns32 * zb0;
+        xc0d = trns11 * xc0 + trns21 * yc0 + trns31 * zc0;
+        yc0d = trns12 * xc0 + trns22 * yc0 + trns32 * zc0;
+        /*
+        xa1d = trns11 * xa1 + trns21 * ya1 + trns31 * za1;
+        ya1d = trns12 * xa1 + trns22 * ya1 + trns32 * za1;
+        */
+        za1d = trns13 * xa1 + trns23 * ya1 + trns33 * za1;
+        xb1d = trns11 * xb1 + trns21 * yb1 + trns31 * zb1;
+        yb1d = trns12 * xb1 + trns22 * yb1 + trns32 * zb1;
+        zb1d = trns13 * xb1 + trns23 * yb1 + trns33 * zb1;
+        xc1d = trns11 * xc1 + trns21 * yc1 + trns31 * zc1;
+        yc1d = trns12 * xc1 + trns22 * yc1 + trns32 * zc1;
+        zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
+        /* 65 flops */
+
+        sinphi = za1d * gmx_invsqrt(ra*ra);
+        tmp    = 1.0 - sinphi * sinphi;
+        if (tmp <= 0)
         {
-            clear_rvec(sh_hw3);
+            bOK = FALSE;
         }
         else
         {
-            sh_hw3[XX] = after[hw3 + XX] - (after[ow1 + XX] + doh3[XX]);
-            sh_hw3[YY] = after[hw3 + YY] - (after[ow1 + YY] + doh3[YY]);
-            sh_hw3[ZZ] = after[hw3 + ZZ] - (after[ow1 + ZZ] + doh3[ZZ]);
-            rvec_dec(after+hw3,sh_hw3);
+            tmp2   = gmx_invsqrt(tmp);
+            cosphi = tmp*tmp2;
+            sinpsi = (zb1d - zc1d) * irc2 * tmp2;
+            tmp2   = 1.0 - sinpsi * sinpsi;
+            if (tmp2 <= 0)
+            {
+                bOK = FALSE;
+            }
+            else
+            {
+                cospsi = tmp2*gmx_invsqrt(tmp2);
+            }
         }
-    }
-    
-    /* Not calculating the center of mass using the oxygen position
-     * and the O-H distances, as done below, will make SETTLE
-     * the largest source of energy drift for simulations of water,
-     * as then the oxygen coordinate is multiplied by 0.89 at every step,
-     * which can then transfer a systematic rounding to the oxygen velocity.
-     */
-    xa1 = -(doh2[XX] + doh3[XX]) * wh;
-    ya1 = -(doh2[YY] + doh3[YY]) * wh;
-    za1 = -(doh2[ZZ] + doh3[ZZ]) * wh;
+        /* 46 flops */
 
-    xcom = after[ow1 + XX] - xa1;
-    ycom = after[ow1 + YY] - ya1;
-    zcom = after[ow1 + ZZ] - za1;
-    
-    xb1 = after[hw2 + XX] - xcom;
-    yb1 = after[hw2 + YY] - ycom;
-    zb1 = after[hw2 + ZZ] - zcom;
-    xc1 = after[hw3 + XX] - xcom;
-    yc1 = after[hw3 + YY] - ycom;
-    zc1 = after[hw3 + ZZ] - zcom;
-    /* 15 flops */
-    
-    xakszd = yb0 * zc0 - zb0 * yc0;
-    yakszd = zb0 * xc0 - xb0 * zc0;
-    zakszd = xb0 * yc0 - yb0 * xc0;
-    xaksxd = ya1 * zakszd - za1 * yakszd;
-    yaksxd = za1 * xakszd - xa1 * zakszd;
-    zaksxd = xa1 * yakszd - ya1 * xakszd;
-    xaksyd = yakszd * zaksxd - zakszd * yaksxd;
-    yaksyd = zakszd * xaksxd - xakszd * zaksxd;
-    zaksyd = xakszd * yaksxd - yakszd * xaksxd;
-    /* 27 flops */
-    
-    axlng = gmx_invsqrt(xaksxd * xaksxd + yaksxd * yaksxd + zaksxd * zaksxd);
-    aylng = gmx_invsqrt(xaksyd * xaksyd + yaksyd * yaksyd + zaksyd * zaksyd);
-    azlng = gmx_invsqrt(xakszd * xakszd + yakszd * yakszd + zakszd * zakszd);
-      
-    trns11 = xaksxd * axlng;
-    trns21 = yaksxd * axlng;
-    trns31 = zaksxd * axlng;
-    trns12 = xaksyd * aylng;
-    trns22 = yaksyd * aylng;
-    trns32 = zaksyd * aylng;
-    trns13 = xakszd * azlng;
-    trns23 = yakszd * azlng;
-    trns33 = zakszd * azlng;
-    /* 24 flops */
-    
-    xb0d = trns11 * xb0 + trns21 * yb0 + trns31 * zb0;
-    yb0d = trns12 * xb0 + trns22 * yb0 + trns32 * zb0;
-    xc0d = trns11 * xc0 + trns21 * yc0 + trns31 * zc0;
-    yc0d = trns12 * xc0 + trns22 * yc0 + trns32 * zc0;
-    /*
-    xa1d = trns11 * xa1 + trns21 * ya1 + trns31 * za1;
-    ya1d = trns12 * xa1 + trns22 * ya1 + trns32 * za1;
-    */
-    za1d = trns13 * xa1 + trns23 * ya1 + trns33 * za1;
-    xb1d = trns11 * xb1 + trns21 * yb1 + trns31 * zb1;
-    yb1d = trns12 * xb1 + trns22 * yb1 + trns32 * zb1;
-    zb1d = trns13 * xb1 + trns23 * yb1 + trns33 * zb1;
-    xc1d = trns11 * xc1 + trns21 * yc1 + trns31 * zc1;
-    yc1d = trns12 * xc1 + trns22 * yc1 + trns32 * zc1;
-    zc1d = trns13 * xc1 + trns23 * yc1 + trns33 * zc1;
-    /* 65 flops */
-        
-    sinphi = za1d * gmx_invsqrt(ra*ra);
-    tmp    = 1.0 - sinphi * sinphi;
-    if (tmp <= 0) {
-      bOK = FALSE;
-    } else {
-      tmp2   = gmx_invsqrt(tmp);
-      cosphi = tmp*tmp2;
-      sinpsi = (zb1d - zc1d) * irc2 * tmp2;
-      tmp2   = 1.0 - sinpsi * sinpsi;
-      if (tmp2 <= 0) {
-        bOK = FALSE;
-      } else {
-        cospsi = tmp2*gmx_invsqrt(tmp2);
-      }
-    }
-    /* 46 flops */
-    
-    if (bOK) {
-      ya2d =  ra * cosphi;
-      xb2d = -rc * cospsi;
-      t1   = -rb * cosphi;
-      t2   =  rc * sinpsi * sinphi;
-      yb2d =  t1 - t2;
-      yc2d =  t1 + t2;
-      /* 7 flops */
-      
-      /*     --- Step3  al,be,ga 		      --- */
-      alpa   = xb2d * (xb0d - xc0d) + yb0d * yb2d + yc0d * yc2d;
-      beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
-      gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
-      al2be2 = alpa * alpa + beta * beta;
-      tmp2   = (al2be2 - gama * gama);
-      sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) * gmx_invsqrt(al2be2*al2be2);
-      /* 47 flops */
-      
-      /*  --- Step4  A3' --- */
-      tmp2  = 1.0 - sinthe * sinthe;
-      costhe = tmp2*gmx_invsqrt(tmp2);
-      xa3d = -ya2d * sinthe;
-      ya3d = ya2d * costhe;
-      za3d = za1d;
-      xb3d = xb2d * costhe - yb2d * sinthe;
-      yb3d = xb2d * sinthe + yb2d * costhe;
-      zb3d = zb1d;
-      xc3d = -xb2d * costhe - yc2d * sinthe;
-      yc3d = -xb2d * sinthe + yc2d * costhe;
-      zc3d = zc1d;
-      /* 26 flops */
-      
-      /*    --- Step5  A3 --- */
-      xa3 = trns11 * xa3d + trns12 * ya3d + trns13 * za3d;
-      ya3 = trns21 * xa3d + trns22 * ya3d + trns23 * za3d;
-      za3 = trns31 * xa3d + trns32 * ya3d + trns33 * za3d;
-      xb3 = trns11 * xb3d + trns12 * yb3d + trns13 * zb3d;
-      yb3 = trns21 * xb3d + trns22 * yb3d + trns23 * zb3d;
-      zb3 = trns31 * xb3d + trns32 * yb3d + trns33 * zb3d;
-      xc3 = trns11 * xc3d + trns12 * yc3d + trns13 * zc3d;
-      yc3 = trns21 * xc3d + trns22 * yc3d + trns23 * zc3d;
-      zc3 = trns31 * xc3d + trns32 * yc3d + trns33 * zc3d;
-      /* 45 flops */
-      after[ow1] = xcom + xa3;
-      after[ow1 + 1] = ycom + ya3;
-      after[ow1 + 2] = zcom + za3;
-      after[hw2] = xcom + xb3;
-      after[hw2 + 1] = ycom + yb3;
-      after[hw2 + 2] = zcom + zb3;
-      after[hw3] = xcom + xc3;
-      after[hw3 + 1] = ycom + yc3;
-      after[hw3 + 2] = zcom + zc3;
-      /* 9 flops */
+        if (bOK)
+        {
+            ya2d =  ra * cosphi;
+            xb2d = -rc * cospsi;
+            t1   = -rb * cosphi;
+            t2   =  rc * sinpsi * sinphi;
+            yb2d =  t1 - t2;
+            yc2d =  t1 + t2;
+            /* 7 flops */
 
-      if (pbc != NULL)
-      {
-          rvec_inc(after+hw2,sh_hw2);
-          rvec_inc(after+hw3,sh_hw3);
-      }
+            /*     --- Step3  al,be,ga            --- */
+            alpa   = xb2d * (xb0d - xc0d) + yb0d * yb2d + yc0d * yc2d;
+            beta   = xb2d * (yc0d - yb0d) + xb0d * yb2d + xc0d * yc2d;
+            gama   = xb0d * yb1d - xb1d * yb0d + xc0d * yc1d - xc1d * yc0d;
+            al2be2 = alpa * alpa + beta * beta;
+            tmp2   = (al2be2 - gama * gama);
+            sinthe = (alpa * gama - beta * tmp2*gmx_invsqrt(tmp2)) * gmx_invsqrt(al2be2*al2be2);
+            /* 47 flops */
 
-      dax = xa3 - xa1;
-      day = ya3 - ya1;
-      daz = za3 - za1;
-      dbx = xb3 - xb1;
-      dby = yb3 - yb1;
-      dbz = zb3 - zb1;
-      dcx = xc3 - xc1;
-      dcy = yc3 - yc1;
-      dcz = zc3 - zc1;
-      /* 9 flops, counted with the virial */
+            /*  --- Step4  A3' --- */
+            tmp2  = 1.0 - sinthe * sinthe;
+            costhe = tmp2*gmx_invsqrt(tmp2);
+            xa3d = -ya2d * sinthe;
+            ya3d = ya2d * costhe;
+            za3d = za1d;
+            xb3d = xb2d * costhe - yb2d * sinthe;
+            yb3d = xb2d * sinthe + yb2d * costhe;
+            zb3d = zb1d;
+            xc3d = -xb2d * costhe - yc2d * sinthe;
+            yc3d = -xb2d * sinthe + yc2d * costhe;
+            zc3d = zc1d;
+            /* 26 flops */
 
-      if (v != NULL) {
-          v[ow1]     += dax*invdts;
-          v[ow1 + 1] += day*invdts;
-          v[ow1 + 2] += daz*invdts;
-          v[hw2]     += dbx*invdts;
-          v[hw2 + 1] += dby*invdts;
-          v[hw2 + 2] += dbz*invdts;
-          v[hw3]     += dcx*invdts;
-          v[hw3 + 1] += dcy*invdts;
-          v[hw3 + 2] += dcz*invdts;
-          /* 3*6 flops */
-      }
+            /*    --- Step5  A3 --- */
+            xa3 = trns11 * xa3d + trns12 * ya3d + trns13 * za3d;
+            ya3 = trns21 * xa3d + trns22 * ya3d + trns23 * za3d;
+            za3 = trns31 * xa3d + trns32 * ya3d + trns33 * za3d;
+            xb3 = trns11 * xb3d + trns12 * yb3d + trns13 * zb3d;
+            yb3 = trns21 * xb3d + trns22 * yb3d + trns23 * zb3d;
+            zb3 = trns31 * xb3d + trns32 * yb3d + trns33 * zb3d;
+            xc3 = trns11 * xc3d + trns12 * yc3d + trns13 * zc3d;
+            yc3 = trns21 * xc3d + trns22 * yc3d + trns23 * zc3d;
+            zc3 = trns31 * xc3d + trns32 * yc3d + trns33 * zc3d;
+            /* 45 flops */
+            after[ow1] = xcom + xa3;
+            after[ow1 + 1] = ycom + ya3;
+            after[ow1 + 2] = zcom + za3;
+            after[hw2] = xcom + xb3;
+            after[hw2 + 1] = ycom + yb3;
+            after[hw2 + 2] = zcom + zb3;
+            after[hw3] = xcom + xc3;
+            after[hw3 + 1] = ycom + yc3;
+            after[hw3 + 2] = zcom + zc3;
+            /* 9 flops */
 
-      if (ow1 < CalcVirAtomEnd) {
-          mdax = mOs*dax;
-          mday = mOs*day;
-          mdaz = mOs*daz;
-          mdbx = mHs*dbx;
-          mdby = mHs*dby;
-          mdbz = mHs*dbz;
-          mdcx = mHs*dcx;
-          mdcy = mHs*dcy;
-          mdcz = mHs*dcz;
-          vir_r_m_dr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
-          vir_r_m_dr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
-          vir_r_m_dr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
-          vir_r_m_dr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
-          vir_r_m_dr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
-          vir_r_m_dr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
-          vir_r_m_dr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
-          vir_r_m_dr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
-          vir_r_m_dr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
-	/* 3*24 - 9 flops */
-      }
-    } else {
-      *error = i;
-    }
+            if (pbc != NULL)
+            {
+                rvec_inc(after+hw2,sh_hw2);
+                rvec_inc(after+hw3,sh_hw3);
+            }
+
+            dax = xa3 - xa1;
+            day = ya3 - ya1;
+            daz = za3 - za1;
+            dbx = xb3 - xb1;
+            dby = yb3 - yb1;
+            dbz = zb3 - zb1;
+            dcx = xc3 - xc1;
+            dcy = yc3 - yc1;
+            dcz = zc3 - zc1;
+            /* 9 flops, counted with the virial */
+
+            if (v != NULL)
+            {
+                v[ow1]     += dax*invdts;
+                v[ow1 + 1] += day*invdts;
+                v[ow1 + 2] += daz*invdts;
+                v[hw2]     += dbx*invdts;
+                v[hw2 + 1] += dby*invdts;
+                v[hw2 + 2] += dbz*invdts;
+                v[hw3]     += dcx*invdts;
+                v[hw3 + 1] += dcy*invdts;
+                v[hw3 + 2] += dcz*invdts;
+                /* 3*6 flops */
+            }
+
+            if (ow1 < CalcVirAtomEnd)
+            {
+                mdax = mOs*dax;
+                mday = mOs*day;
+                mdaz = mOs*daz;
+                mdbx = mHs*dbx;
+                mdby = mHs*dby;
+                mdbz = mHs*dbz;
+                mdcx = mHs*dcx;
+                mdcy = mHs*dcy;
+                mdcz = mHs*dcz;
+                vir_r_m_dr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
+                vir_r_m_dr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
+                vir_r_m_dr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
+                vir_r_m_dr[YY][XX] -= b4[ow1+1]*mdax + (b4[ow1+1]+yb0)*mdbx + (b4[ow1+1]+yc0)*mdcx;
+                vir_r_m_dr[YY][YY] -= b4[ow1+1]*mday + (b4[ow1+1]+yb0)*mdby + (b4[ow1+1]+yc0)*mdcy;
+                vir_r_m_dr[YY][ZZ] -= b4[ow1+1]*mdaz + (b4[ow1+1]+yb0)*mdbz + (b4[ow1+1]+yc0)*mdcz;
+                vir_r_m_dr[ZZ][XX] -= b4[ow1+2]*mdax + (b4[ow1+2]+zb0)*mdbx + (b4[ow1+2]+zc0)*mdcx;
+                vir_r_m_dr[ZZ][YY] -= b4[ow1+2]*mday + (b4[ow1+2]+zb0)*mdby + (b4[ow1+2]+zc0)*mdcy;
+                vir_r_m_dr[ZZ][ZZ] -= b4[ow1+2]*mdaz + (b4[ow1+2]+zb0)*mdbz + (b4[ow1+2]+zc0)*mdcz;
+                /* 3*24 - 9 flops */
+            }
+        }
+        else
+        {
+            *error = i;
+        }
 #ifdef DEBUG
-    if (debug)
-    {
-        check_cons(debug,"settle",after,ow1,hw2,hw3);
-    }
+        if (debug)
+        {
+            check_cons(debug,"settle",after,ow1,hw2,hw3);
+        }
 #endif
-  }
+    }
 }

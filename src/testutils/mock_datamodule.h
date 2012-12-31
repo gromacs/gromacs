@@ -89,7 +89,7 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
 
 //! Smart pointer to manage an MockAnalysisDataModule object.
 typedef boost::shared_ptr<MockAnalysisDataModule>
-        MockAnalysisDataModulePointer;
+MockAnalysisDataModulePointer;
 
 } // namespace test
 } // namespace gmx

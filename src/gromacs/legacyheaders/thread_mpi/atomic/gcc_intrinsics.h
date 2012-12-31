@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -58,7 +58,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 }
 
 
-#if 0 
+#if 0
 /* these definitions are only used if there's no assembly versions for them:
    they're inefficient because they use compare-and-swap instead of just
    swap. */
@@ -68,7 +68,8 @@ static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
     do
     {
         oldval=a->value;
-    } while(__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
+    }
+    while (__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
 
     return oldval;
 }
@@ -79,7 +80,8 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
     do
     {
         oldval=a->value;
-    } while(__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
+    }
+    while (__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
 
     return oldval;
 }
@@ -87,7 +89,7 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 
 
 
-static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval, 
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
                                       void *newval)
 {
 #if !defined(__INTEL_COMPILER) && !defined(__CUDACC__)
@@ -96,8 +98,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
     /* the intel compilers need integer type arguments for compare_and_swap.
         on the platforms supported by icc, size_t is always the size of
         a pointer. */
-    return (__sync_bool_compare_and_swap( (size_t*)&(a->value), 
-                                          (size_t)oldval, 
+    return (__sync_bool_compare_and_swap( (size_t*)&(a->value),
+                                          (size_t)oldval,
                                           (size_t)newval) );
 #endif
 }

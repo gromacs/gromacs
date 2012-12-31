@@ -324,7 +324,7 @@ AnalysisDataStorage::Impl::extendBuffer(AnalysisDataStorage *storage,
     while (frames_.size() < newSize)
     {
         frames_.push_back(StoredFrame(
-            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
+                              new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -436,7 +436,7 @@ AnalysisDataStorageFrame::currentPoints() const
     }
     int firstColumn = (begin != end) ? begin - values_.begin() : 0;
     return AnalysisDataPointSetRef(header_, firstColumn,
-                AnalysisDataValuesRef(begin, end));
+                                   AnalysisDataValuesRef(begin, end));
 }
 
 

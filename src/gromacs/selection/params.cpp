@@ -231,7 +231,7 @@ place_child(const SelectionTreeElementPointer &root,
 
 /*! \brief
  * Comparison function for sorting integer ranges.
- * 
+ *
  * \param[in] a Pointer to the first range.
  * \param[in] b Pointer to the second range.
  * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
@@ -287,7 +287,7 @@ cmp_real_range(const void *a, const void *b)
 
 /*! \brief
  * Parses the values for a parameter that takes integer or real ranges.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
@@ -447,7 +447,7 @@ parse_values_range(const SelectionParserValueList &values,
 
 /*! \brief
  * Parses the values for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
@@ -631,7 +631,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
 
 /*! \brief
  * Parses an expression value for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
@@ -645,7 +645,7 @@ parse_values_varnum_expr(const SelectionParserValueList &values,
                          void *scanner)
 {
     GMX_RELEASE_ASSERT(values.size() == 1 && values.front().hasExpressionValue(),
-            "Called with an invalid type of value");
+                       "Called with an invalid type of value");
 
     SelectionTreeElementPointer child
         = add_child(root, param, values.front().expr, scanner);
@@ -912,7 +912,7 @@ parse_values_bool(const std::string &name,
                   gmx_ana_selparam_t *param, void *scanner)
 {
     GMX_ASSERT(param->val.type == NO_VALUE,
-            "Boolean parser called for non-boolean parameter");
+               "Boolean parser called for non-boolean parameter");
     if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
     {
         _gmx_selparser_error(scanner, "parameter takes only a yes/no/on/off/0/1 value");
@@ -955,7 +955,7 @@ parse_values_enum(const SelectionParserValueList &values,
                   void *scanner)
 {
     GMX_ASSERT(param->val.type == STR_VALUE,
-            "Enum parser called for non-string parameter");
+               "Enum parser called for non-string parameter");
     if (values.size() != 1)
     {
         _gmx_selparser_error(scanner, "a single value is required");
@@ -1027,7 +1027,7 @@ convert_const_values(SelectionParserValueList *values)
                     break;
                 default:
                     GMX_THROW(gmx::InternalError(
-                                "Unsupported constant expression value type"));
+                                  "Unsupported constant expression value type"));
             }
         }
     }

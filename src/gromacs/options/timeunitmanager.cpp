@@ -50,7 +50,8 @@ namespace
  *
  * These must correspond to the TimeUnit enum in the header!
  */
-const char *const g_timeUnits[] = {
+const char *const g_timeUnits[] =
+{
     "fs", "ps", "ns", "us", "ms",  "s", NULL
 };
 /*! \brief
@@ -58,7 +59,8 @@ const char *const g_timeUnits[] = {
  *
  * These must correspond to the TimeUnit enum in the header!
  */
-const double g_timeScaleFactors[] = {
+const double g_timeScaleFactors[] =
+{
     1e-3,    1,  1e3,  1e6,  1e9, 1e12
 };
 
@@ -94,8 +96,8 @@ const char *TimeUnitManager::timeUnitAsString() const
 double TimeUnitManager::timeScaleFactor() const
 {
     GMX_RELEASE_ASSERT(timeUnit_ >= 0
-        && (size_t)timeUnit_ < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
-        "Time unit index has become out-of-range");
+                       && (size_t)timeUnit_ < sizeof(g_timeScaleFactors)/sizeof(g_timeScaleFactors[0]),
+                       "Time unit index has become out-of-range");
     return g_timeScaleFactors[timeUnit_];
 }
 
@@ -107,9 +109,9 @@ double TimeUnitManager::inverseTimeScaleFactor() const
 void TimeUnitManager::addTimeUnitOption(Options *options, const char *name)
 {
     options->addOption(StringOption(name).enumValue(g_timeUnits)
-                           .defaultValue(g_timeUnits[timeUnit()])
-                           .storeEnumIndex(&timeUnit_)
-                           .description("Unit for time values"));
+                       .defaultValue(g_timeUnits[timeUnit()])
+                       .storeEnumIndex(&timeUnit_)
+                       .description("Unit for time values"));
 }
 
 namespace

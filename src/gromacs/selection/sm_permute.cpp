@@ -79,13 +79,15 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p permute selection modifier. */
-static gmx_ana_selparam_t smparams_permute[] = {
+static gmx_ana_selparam_t smparams_permute[] =
+{
     {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {NULL,       {INT_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
 /** Help text for the \p permute selection modifier. */
-static const char *help_permute[] = {
+static const char *help_permute[] =
+{
     "PERMUTING SELECTIONS[PAR]",
 
     "[TT]permute P1 ... PN[tt][PAR]",
@@ -104,7 +106,8 @@ static const char *help_permute[] = {
 };
 
 /** \internal Selection method data for the \p permute modifier. */
-gmx_ana_selmethod_t sm_permute = {
+gmx_ana_selmethod_t sm_permute =
+{
     "permute", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_permute), smparams_permute,
     &init_data_permute,
@@ -155,7 +158,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                      gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -240,7 +243,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                      gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);

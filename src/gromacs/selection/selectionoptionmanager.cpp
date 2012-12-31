@@ -168,7 +168,7 @@ SelectionOptionManager::Impl::Impl(SelectionCollection *collection)
 }
 
 void SelectionOptionManager::Impl::placeSelectionsInRequests(
-        const SelectionList &selections)
+    const SelectionList &selections)
 {
     if (requests_.empty())
     {
@@ -190,11 +190,11 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             {
                 int assigned = first - selections.begin();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Too few selections provided for '%s': "
-                                "Expected %d selections, but only %d left "
-                                "after assigning the first %d to other selections.",
-                                request.name().c_str(), request.count(),
-                                remaining, assigned)));
+                                                "Too few selections provided for '%s': "
+                                                "Expected %d selections, but only %d left "
+                                                "after assigning the first %d to other selections.",
+                                                request.name().c_str(), request.count(),
+                                                remaining, assigned)));
             }
             last = first + request.count();
         }
@@ -207,13 +207,13 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
                 const char *name = request.name().c_str();
                 const char *conflictName = nextRequest->name().c_str();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Ambiguous selections for '%s' and '%s': "
-                                "Any number of selections is acceptable for "
-                                "'%s', but you have requested subsequent "
-                                "selections to be assigned to '%s'. "
-                                "Resolution for such cases is not implemented, "
-                                "and may be impossible.",
-                                name, conflictName, name, conflictName)));
+                                                "Ambiguous selections for '%s' and '%s': "
+                                                "Any number of selections is acceptable for "
+                                                "'%s', but you have requested subsequent "
+                                                "selections to be assigned to '%s'. "
+                                                "Resolution for such cases is not implemented, "
+                                                "and may be impossible.",
+                                                name, conflictName, name, conflictName)));
             }
             last = selections.end();
         }
@@ -227,10 +227,10 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
         int remaining = selections.end() - last;
         int assigned = last - selections.begin();
         GMX_THROW(InvalidInputError(formatString(
-                        "Too many selections provided: "
-                        "Expected %d selections, but %d provided. "
-                        "Last %d selections could not be assigned to any option.",
-                        assigned, count, remaining)));
+                                        "Too many selections provided: "
+                                        "Expected %d selections, but %d provided. "
+                                        "Last %d selections could not be assigned to any option.",
+                                        assigned, count, remaining)));
     }
 }
 
@@ -278,7 +278,7 @@ SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
 
 void
 SelectionOptionManager::requestOptionDelayedParsing(
-        SelectionOptionStorage *storage)
+    SelectionOptionStorage *storage)
 {
     impl_->requests_.push_back(Impl::SelectionRequest(storage));
 }
@@ -329,8 +329,8 @@ SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in adding selections from file '%s'",
-                    filename.c_str()));
+                              "Error in adding selections from file '%s'",
+                              filename.c_str()));
         throw;
     }
 }

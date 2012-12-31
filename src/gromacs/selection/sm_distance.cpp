@@ -85,25 +85,29 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p distance selection method. */
-static gmx_ana_selparam_t smparams_distance[] = {
+static gmx_ana_selparam_t smparams_distance[] =
+{
     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
     {"from",   {POS_VALUE,  1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
 /** Parameters for the \p mindistance selection method. */
-static gmx_ana_selparam_t smparams_mindistance[] = {
+static gmx_ana_selparam_t smparams_mindistance[] =
+{
     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
     {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Parameters for the \p within selection method. */
-static gmx_ana_selparam_t smparams_within[] = {
+static gmx_ana_selparam_t smparams_within[] =
+{
     {NULL, {REAL_VALUE,  1, {NULL}}, NULL, 0},
     {"of", {POS_VALUE,  -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
 };
 
 /** Help text for the distance selection methods. */
-static const char *help_distance[] = {
+static const char *help_distance[] =
+{
     "DISTANCE-BASED SELECTION KEYWORDS[PAR]",
 
     "[TT]distance from POS [cutoff REAL][tt][BR]",
@@ -124,7 +128,8 @@ static const char *help_distance[] = {
 };
 
 /** \internal Selection method data for the \p distance method. */
-gmx_ana_selmethod_t sm_distance = {
+gmx_ana_selmethod_t sm_distance =
+{
     "distance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_distance), smparams_distance,
     &init_data_common,
@@ -139,7 +144,8 @@ gmx_ana_selmethod_t sm_distance = {
 };
 
 /** \internal Selection method data for the \p distance method. */
-gmx_ana_selmethod_t sm_mindistance = {
+gmx_ana_selmethod_t sm_mindistance =
+{
     "mindistance", REAL_VALUE, SMETH_DYNAMIC,
     asize(smparams_mindistance), smparams_mindistance,
     &init_data_common,
@@ -154,7 +160,8 @@ gmx_ana_selmethod_t sm_mindistance = {
 };
 
 /** \internal Selection method data for the \p within method. */
-gmx_ana_selmethod_t sm_within = {
+gmx_ana_selmethod_t sm_within =
+{
     "within", GROUP_VALUE, SMETH_DYNAMIC,
     asize(smparams_within), smparams_within,
     &init_data_common,

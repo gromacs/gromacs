@@ -158,29 +158,29 @@ MockAnalysisDataModule::Impl::startReferenceData(AbstractAnalysisData *data)
 
 void
 MockAnalysisDataModule::Impl::startReferenceFrame(
-        const AnalysisDataFrameHeader &header)
+    const AnalysisDataFrameHeader &header)
 {
     GMX_RELEASE_ASSERT(rootChecker_.get() != NULL,
                        "Root checker not set, but reference data used");
     EXPECT_TRUE(frameChecker_.get() == NULL);
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_.reset(new TestReferenceChecker(
-        rootChecker_->checkCompound("DataFrame",
-                                    formatString("Frame%d", frameIndex_).c_str())));
+                            rootChecker_->checkCompound("DataFrame",
+                                                        formatString("Frame%d", frameIndex_).c_str())));
     frameChecker_->checkReal(header.x(), "X");
 }
 
 
 void
 MockAnalysisDataModule::Impl::checkReferencePoints(
-        const AnalysisDataPointSetRef &points)
+    const AnalysisDataPointSetRef &points)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     if (frameChecker_.get() != NULL)
     {
         TestReferenceChecker checker(
-                frameChecker_->checkSequenceCompound("Y",
-                                                     points.columnCount()));
+            frameChecker_->checkSequenceCompound("Y",
+                                                 points.columnCount()));
         bool bAllColumns = (points.firstColumn() == 0
                             && points.columnCount() == columnCount_);
         if (checker.checkPresent(!bAllColumns, "FirstColumn"))
@@ -199,7 +199,7 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
 
 void
 MockAnalysisDataModule::Impl::finishReferenceFrame(
-        const AnalysisDataFrameHeader &header)
+    const AnalysisDataFrameHeader &header)
 {
     EXPECT_TRUE(frameChecker_.get() != NULL);
     EXPECT_EQ(frameIndex_, header.index());
@@ -244,8 +244,8 @@ void checkPoints(const AnalysisDataPointSetRef &points,
     {
         EXPECT_FLOAT_EQ(refPoints.y(points.firstColumn() + columnOffset + i),
                         points.y(i))
-            << "  Column: " << i << " (+" << points.firstColumn() << ") / "
-            << points.columnCount();
+                << "  Column: " << i << " (+" << points.firstColumn() << ") / "
+                << points.columnCount();
     }
 }
 
@@ -416,7 +416,8 @@ class StaticDataPointsStorageChecker
             {
                 int   index = frameIndex_ - past;
                 SCOPED_TRACE(formatString("Checking storage of frame %d", index));
-                ASSERT_NO_THROW({
+                ASSERT_NO_THROW(
+                {
                     AnalysisDataFrameRef frame = source_->getDataFrame(index);
                     ASSERT_TRUE(frame.isValid());
                     checkFrame(frame, data_->frame(index));
@@ -468,16 +469,16 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
             const AnalysisDataTestInputPointSet &points = frame.points(ps);
             EXPECT_CALL(*this, pointsAdded(_))
-                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
-                                                         points.size())));
+            .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
+                                                     points.size())));
         }
         EXPECT_CALL(*this, frameFinished(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -485,8 +486,8 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
 
 void
 MockAnalysisDataModule::setupStaticColumnCheck(
-        const AnalysisDataTestInput &data,
-        int firstcol, int n, AbstractAnalysisData *source)
+    const AnalysisDataTestInput &data,
+    int firstcol, int n, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -503,15 +504,15 @@ MockAnalysisDataModule::setupStaticColumnCheck(
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
             const AnalysisDataTestInputPointSet &points = frame.points(ps);
             EXPECT_CALL(*this, pointsAdded(_))
-                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
+            .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
         }
         EXPECT_CALL(*this, frameFinished(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -519,8 +520,8 @@ MockAnalysisDataModule::setupStaticColumnCheck(
 
 void
 MockAnalysisDataModule::setupStaticStorageCheck(
-        const AnalysisDataTestInput &data,
-        int storageCount, AbstractAnalysisData *source)
+    const AnalysisDataTestInput &data,
+    int storageCount, AbstractAnalysisData *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -533,17 +534,17 @@ MockAnalysisDataModule::setupStaticStorageCheck(
     using ::testing::Invoke;
 
     EXPECT_CALL(*this, dataStarted(source))
-        .WillOnce(Invoke(DataStorageRequester(storageCount)));
+    .WillOnce(Invoke(DataStorageRequester(storageCount)));
     for (int row = 0; row < data.frameCount(); ++row)
     {
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         EXPECT_CALL(*this, pointsAdded(_))
-            .WillOnce(Invoke(StaticDataPointsStorageChecker(source, &data, row,
-                                                            storageCount)));
+        .WillOnce(Invoke(StaticDataPointsStorageChecker(source, &data, row,
+                                                        storageCount)));
         EXPECT_CALL(*this, frameFinished(_))
-            .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
+        .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }
     EXPECT_CALL(*this, dataFinished());
 }
@@ -566,18 +567,18 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Invoke;
 
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
-        .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
+                            .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
+                             .After(dataStart)
+                             .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
+                            .After(dataStart)
+                            .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
+                              .After(dataStart)
+                              .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())
-        .After(frameStart, pointsAdd, frameFinish);
+    .After(frameStart, pointsAdd, frameFinish);
 }
 
 } // namespace test

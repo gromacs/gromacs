@@ -42,47 +42,47 @@ int gmx_dyecoupl(int argc, char *argv[])
 {
     const char *desc[] =
     {
-            "This tool extracts dye dynamics from trajectory files.",
-            "Currently, R and kappa^2 between dyes is extracted for (F)RET",
-            "simulations with assumed dipolar coupling as in the Foerster equation.",
-            "It further allows the calculation of R(t) and kappa^2(t), R and",
-            "kappa^2 histograms and averages, as well as the instantaneous FRET",
-            "efficiency E(t) for a specified Foerster radius R_0 (switch [TT]-R0[tt]).",
-            "The input dyes have to be whole (see res and mol pbc options",
-            "in [TT]trjconv[tt]).",
-            "The dye transition dipole moment has to be defined by at least",
-            "a single atom pair, however multiple atom pairs can be provided ",
-            "in the index file. The distance R is calculated on the basis of",
-            "the COMs of the given atom pairs.",
-            "The [TT]-pbcdist[tt] option calculates distances to the nearest periodic",
-            "image instead to the distance in the box. This works however only,"
-            "for periodic boundaries in all 3 dimensions.",
-            "The [TT]-norm[tt] option (area-) normalizes the histograms."
+        "This tool extracts dye dynamics from trajectory files.",
+        "Currently, R and kappa^2 between dyes is extracted for (F)RET",
+        "simulations with assumed dipolar coupling as in the Foerster equation.",
+        "It further allows the calculation of R(t) and kappa^2(t), R and",
+        "kappa^2 histograms and averages, as well as the instantaneous FRET",
+        "efficiency E(t) for a specified Foerster radius R_0 (switch [TT]-R0[tt]).",
+        "The input dyes have to be whole (see res and mol pbc options",
+        "in [TT]trjconv[tt]).",
+        "The dye transition dipole moment has to be defined by at least",
+        "a single atom pair, however multiple atom pairs can be provided ",
+        "in the index file. The distance R is calculated on the basis of",
+        "the COMs of the given atom pairs.",
+        "The [TT]-pbcdist[tt] option calculates distances to the nearest periodic",
+        "image instead to the distance in the box. This works however only,"
+        "for periodic boundaries in all 3 dimensions.",
+        "The [TT]-norm[tt] option (area-) normalizes the histograms."
     };
-    
-	static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
+
+    static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
     int histbins = 50;
     output_env_t oenv;
     real R0=-1;
 
     t_pargs pa[] =
     {
-            { "-pbcdist", FALSE, etBOOL, { &bPBCdist },"Distance R based on PBC" },
-            { "-norm", FALSE, etBOOL, { &bNormHist },"Normalize histograms" },
-            { "-bins", FALSE, etINT, {&histbins},"# of histogram bins" },
-            { "-R0", FALSE, etREAL, {&R0},"Foerster radius including kappa^2=2/3 in nm" }
+        { "-pbcdist", FALSE, etBOOL, { &bPBCdist },"Distance R based on PBC" },
+        { "-norm", FALSE, etBOOL, { &bNormHist },"Normalize histograms" },
+        { "-bins", FALSE, etINT, {&histbins},"# of histogram bins" },
+        { "-R0", FALSE, etREAL, {&R0},"Foerster radius including kappa^2=2/3 in nm" }
     };
 #define NPA asize(pa)
 
     t_filenm fnm[] =
     {
-            { efTRX, "-f", NULL, ffREAD },
-            { efNDX, NULL, NULL, ffREAD },
-            { efXVG, "-ot", "rkappa",ffOPTWR },
-            { efXVG, "-oe", "insteff",ffOPTWR },
-            { efDAT, "-o", "rkappa",ffOPTWR },
-            { efXVG, "-rhist","rhist", ffOPTWR },
-            { efXVG, "-khist", "khist", ffOPTWR }
+        { efTRX, "-f", NULL, ffREAD },
+        { efNDX, NULL, NULL, ffREAD },
+        { efXVG, "-ot", "rkappa",ffOPTWR },
+        { efXVG, "-oe", "insteff",ffOPTWR },
+        { efDAT, "-o", "rkappa",ffOPTWR },
+        { efXVG, "-rhist","rhist", ffOPTWR },
+        { efXVG, "-khist", "khist", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
@@ -117,7 +117,7 @@ int gmx_dyecoupl(int argc, char *argv[])
     const char *ieleg[1] = { "E\\sRET\\N(t)" };
 
     real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs=0., rmax, rmin, kmin = 0., kmax = 4.,
-            rrange, krange, rincr, kincr,Rfrac;
+                             rrange, krange, rincr, kincr,Rfrac;
     int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     CopyRight(stderr, argv[0]);
@@ -164,9 +164,9 @@ int gmx_dyecoupl(int argc, char *argv[])
 
     if (ndon == nacc)
     {
-        for (i=0;i<nacc;i++)
+        for (i=0; i<nacc; i++)
         {
-            if(accindex[i] != donindex[i])
+            if (accindex[i] != donindex[i])
             {
                 grident=FALSE;
                 break;
@@ -195,15 +195,19 @@ int gmx_dyecoupl(int argc, char *argv[])
         }
         else
         {
-            for (i = 0; i < ndon;i++)
+            for (i = 0; i < ndon; i++)
             {
                 if (donindex[i] >= natoms)
+                {
                     indexOK = FALSE;
+                }
             }
-            for (i = 0; i < nacc;i++)
+            for (i = 0; i < nacc; i++)
             {
                 if (accindex[i] >= natoms)
+                {
                     indexOK = FALSE;
+                }
             }
         }
 
@@ -218,18 +222,18 @@ int gmx_dyecoupl(int argc, char *argv[])
             if (bRKout)
             {
                 rkfp = xvgropen(out_xvgrkfile,
-                        "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
-                        "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
-                        oenv);
+                                "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
+                                "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
+                                oenv);
                 xvgr_legend(rkfp, 2, rkleg, oenv);
             }
 
             if (bInstEffout)
             {
                 iefp = xvgropen(out_xvginstefffile,
-                        "Instantaneous RET Efficiency",
-                        "Time (ps)", "RET Efficiency",
-                        oenv);
+                                "Instantaneous RET Efficiency",
+                                "Time (ps)", "RET Efficiency",
+                                oenv);
                 xvgr_legend(iefp, 1, ieleg, oenv);
             }
 
@@ -308,10 +312,14 @@ int gmx_dyecoupl(int argc, char *argv[])
                 rkcount++;
 
                 if (bRKout)
+                {
                     fprintf(rkfp, "%12.7f %12.7f %12.7f\n", fr.time, R, kappa2);
+                }
 
                 if (bDatout)
+                {
                     fprintf(datfp, "%12.7f %12.7f %12.7f\n", fr.time, R, kappa2);
+                }
 
                 if (bRhistout)
                 {
@@ -334,16 +342,23 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 bHaveNextFrame = read_next_frame(oenv, status, &fr);
-            } while (bHaveNextFrame);
+            }
+            while (bHaveNextFrame);
 
             if (bRKout)
+            {
                 ffclose(rkfp);
+            }
 
             if (bDatout)
+            {
                 ffclose(datfp);
+            }
 
             if (bInstEffout)
+            {
                 ffclose(iefp);
+            }
 
 
             if (bRhistout)
@@ -354,9 +369,13 @@ int gmx_dyecoupl(int argc, char *argv[])
                 for (i = 1; i < rkcount; i++)
                 {
                     if (rvalues[i] < rmin)
+                    {
                         rmin = rvalues[i];
+                    }
                     else if (rvalues[i] > rmax)
+                    {
                         rmax = rvalues[i];
+                    }
                 }
                 rmin -= histexpand;
                 rmax += histexpand;
@@ -372,13 +391,16 @@ int gmx_dyecoupl(int argc, char *argv[])
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
+                    {
                         rhist[i] /= rkcount * rrange/histbins;
+                    }
                     rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                            "R (nm)", "Normalized Probability", oenv);
-                } else
+                                    "R (nm)", "Normalized Probability", oenv);
+                }
+                else
                 {
                     rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                            "R (nm)", "Probability", oenv);
+                                    "R (nm)", "Probability", oenv);
                 }
                 xvgr_legend(rhfp, 1, rhleg, oenv);
                 for (i = 0; i < histbins; i++)
@@ -403,16 +425,19 @@ int gmx_dyecoupl(int argc, char *argv[])
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
+                    {
                         khist[i] /= rkcount * krange/histbins;
+                    }
                     khfp = xvgropen(out_xvgkhistfile,
-                            "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                            "\\f{Symbol}k\\f{}\\S2\\N",
-                            "Normalized Probability", oenv);
-                } else
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N",
+                                    "Normalized Probability", oenv);
+                }
+                else
                 {
                     khfp = xvgropen(out_xvgkhistfile,
-                            "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                            "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
                 }
                 xvgr_legend(khfp, 1, khleg, oenv);
                 for (i = 0; i < histbins; i++)
@@ -425,7 +450,7 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             printf("\nAverages:\n");
             printf("R_avg   = %8.4f nm\nKappa^2 = %8.4f\n", Rs / rkcount,
-                    kappa2s / rkcount);
+                   kappa2s / rkcount);
             if (R0>0)
             {
                 printf("E_RETavg   = %8.4f\n", insteffs / rkcount);

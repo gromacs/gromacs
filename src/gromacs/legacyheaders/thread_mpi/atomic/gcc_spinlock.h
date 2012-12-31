@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -36,7 +36,7 @@ files.
 */
 
 
-/* this is for newer versions of gcc that have built-in intrinsics. 
+/* this is for newer versions of gcc that have built-in intrinsics.
    These are the generic spinlocks:*/
 
 
@@ -71,7 +71,8 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 #else
     do
     {
-    } while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
+    }
+    while ( __sync_lock_test_and_set(&(x->lock), 1) == 1);
 #endif
 }
 
@@ -86,7 +87,7 @@ static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
 {
     __sync_lock_release(&(x->lock));
 }
- 
+
 static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *  x)
 {
     __sync_synchronize();
@@ -97,7 +98,8 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
 {
     do
     {
-    } while (x->lock == 1);
+    }
+    while (x->lock == 1);
     __sync_synchronize();
 }
 

@@ -50,13 +50,15 @@ extern "C" {
  * typedef struct gmx_hash *gmx_hash_t
  */
 
-typedef struct {
+typedef struct
+{
     int  key;
     int  val;
     int  next;
 } gmx_hash_e_t;
 
-typedef struct gmx_hash {
+typedef struct gmx_hash
+{
     int          mod;
     int          mask;
     int          nalloc;
@@ -71,7 +73,7 @@ static void gmx_hash_clear(gmx_hash_t hash)
 {
     int i;
 
-    for(i=0; i<hash->nalloc; i++)
+    for (i=0; i<hash->nalloc; i++)
     {
         hash->hash[i].key  = -1;
         hash->hash[i].next = -1;
@@ -152,12 +154,12 @@ static void gmx_hash_set(gmx_hash_t hash,int key,int value)
     int ind,ind_prev,i;
 
     ind = key & hash->mask;
-    
+
     if (hash->hash[ind].key >= 0)
     {
         /* Search the last entry in the linked list for this index */
         ind_prev = ind;
-        while(hash->hash[ind_prev].next >= 0)
+        while (hash->hash[ind_prev].next >= 0)
         {
             ind_prev = hash->hash[ind_prev].next;
         }
@@ -172,14 +174,14 @@ static void gmx_hash_set(gmx_hash_t hash,int key,int value)
         {
             hash->nalloc = over_alloc_dd(ind+1);
             srenew(hash->hash,hash->nalloc);
-            for(i=ind; i<hash->nalloc; i++)
+            for (i=ind; i<hash->nalloc; i++)
             {
                 hash->hash[i].key  = -1;
                 hash->hash[i].next = -1;
             }
         }
         hash->hash[ind_prev].next = ind;
-    
+
         hash->start_space_search = ind + 1;
     }
     hash->hash[ind].key = key;
@@ -234,11 +236,11 @@ static void gmx_hash_change_value(gmx_hash_t hash,int key,int value)
 
     ind = key & hash->mask;
     do
-    {        
+    {
         if (hash->hash[ind].key == key)
         {
             hash->hash[ind].val = value;
-            
+
             return;
         }
         ind = hash->hash[ind].next;
@@ -255,7 +257,7 @@ static void gmx_hash_change_or_set(gmx_hash_t hash,int key,int value)
 
     ind = key & hash->mask;
     do
-    {        
+    {
         if (hash->hash[ind].key == key)
         {
             hash->hash[ind].val = value;

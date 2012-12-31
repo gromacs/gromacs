@@ -143,12 +143,12 @@ update_adress_weights_atom(int                  cg0,
  */
 void
 update_adress_weights_atom_per_atom(int                  cg0,
-                           int                  cg1,
-                           t_block *            cgs,
-                           rvec                 x[],
-                           t_forcerec *         fr,
-                           t_mdatoms *          mdatoms,
-                           t_pbc *              pbc);
+                                    int                  cg1,
+                                    t_block *            cgs,
+                                    rvec                 x[],
+                                    t_forcerec *         fr,
+                                    t_mdatoms *          mdatoms,
+                                    t_pbc *              pbc);
 
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *

@@ -118,7 +118,7 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData *data,
 {
     module->dataStarted(data);
     bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
+                         && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
     for (int i = 0; i < data->frameCount(); ++i)
     {
         AnalysisDataFrameRef frame = data->getDataFrame(i);
@@ -233,7 +233,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
     }
 
     boost::shared_ptr<AnalysisDataProxy> proxy(
-            new AnalysisDataProxy(col, span, this));
+        new AnalysisDataProxy(col, span, this));
     proxy->addModule(module);
     addModule(proxy);
 }

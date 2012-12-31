@@ -91,12 +91,12 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
                                 const gmx_domdec_zones_t *zones,
                                 const int *atinfo,
                                 rvec *x,
-				int nb_kernel_type,
+                                int nb_kernel_type,
                                 nbnxn_atomdata_t *nbat);
 
 /* Add simple grid type information to the local super/sub grid */
 void nbnxn_grid_add_simple(nbnxn_search_t nbs,
-			   nbnxn_atomdata_t *nbat);
+                           nbnxn_atomdata_t *nbat);
 
 /* Return the number of x and y cells in the local grid */
 void nbnxn_get_ncells(nbnxn_search_t nbs,int *ncx,int *ncy);
@@ -120,14 +120,14 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
  * for the number of equally sized lists is below min_ci_balanced.
  */
 void nbnxn_make_pairlist(const nbnxn_search_t nbs,
-			 const nbnxn_atomdata_t *nbat,
-			 const t_blocka *excl,
-			 real rlist,
-			 int min_ci_balanced,
-			 nbnxn_pairlist_set_t *nbl_list,
-			 int iloc,
-			 int nb_kernel_type,
-			 t_nrnb *nrnb);
+                         const nbnxn_atomdata_t *nbat,
+                         const t_blocka *excl,
+                         real rlist,
+                         int min_ci_balanced,
+                         nbnxn_pairlist_set_t *nbl_list,
+                         int iloc,
+                         int nb_kernel_type,
+                         t_nrnb *nrnb);
 
 #ifdef __cplusplus
 }

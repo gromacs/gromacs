@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -59,19 +59,19 @@ init_warning(gmx_bool bAllowWarnings,int maxwarning);
  * a -maxwarn command line option.
  */
 
-void 
+void
 set_warning_line(warninp_t wi,const char *fn,int line);
 /* Set filename and linenumber for the warning */
-  
-int 
+
+int
 get_warning_line(warninp_t wi);
 /* Get linenumber for the warning */
-  
+
 
 const char *
 get_warning_file(warninp_t wi);
 /* Get filename for the warning */
-  
+
 void
 warning(warninp_t wi,const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
@@ -83,7 +83,7 @@ warning(warninp_t wi,const char *s);
  * otherwise warning_note should be called.
  */
 
-void 
+void
 warning_note(warninp_t wi,const char *s);
 /* Issue a note, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
@@ -92,14 +92,14 @@ warning_note(warninp_t wi,const char *s);
  * but 100% ok for other systems.
  */
 
-void 
+void
 warning_error(warninp_t wi,const char *s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
  * are printed, nwarn_error (local) is incremented.
  */
- 
-void 
+
+void
 check_warning_error(warninp_t wi,int f_errno,const char *file,int line);
 /* When warning_error has been called at least once gmx_fatal is called,
  * otherwise does nothing.
@@ -113,19 +113,19 @@ done_warning(warninp_t wi,int f_errno,const char *file,int line);
  * warnings were generatesd.
  * Frees the data structure pointed to by wi.
  */
-  
-void 
+
+void
 _too_few(warninp_t wi,const char *fn,int line);
 #define too_few(wi) _too_few(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Too few parameters' */
 
-void 
+void
 _incorrect_n_param(warninp_t wi,const char *fn,int line);
 #define incorrect_n_param(wi) _incorrect_n_param(wi,__FILE__,__LINE__)
 /* Issue a warning stating 'Incorrect number of parameters' */
-  
+
 #ifdef __cplusplus
-	   }
+}
 #endif
 
-#endif	/* _warninp_h */
+#endif  /* _warninp_h */

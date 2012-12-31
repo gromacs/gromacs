@@ -135,7 +135,8 @@ evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
            gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Help text for atom name selection keywords. */
-static const char *help_atomname[] = {
+static const char *help_atomname[] =
+{
     "ATOM NAME SELECTION KEYWORDS[PAR]",
 
     "[TT]name[tt] [TT]pdbname[tt] [TT]atomname[tt] [TT]pdbatomname[tt][PAR]",
@@ -155,7 +156,8 @@ static const char *help_atomname[] = {
 };
 
 /** \internal Selection method data for \p all selection keyword. */
-gmx_ana_selmethod_t sm_all = {
+gmx_ana_selmethod_t sm_all =
+{
     "all", GROUP_VALUE, 0,
     0, NULL,
     NULL,
@@ -169,7 +171,8 @@ gmx_ana_selmethod_t sm_all = {
 };
 
 /** \internal Selection method data for \p none selection keyword. */
-gmx_ana_selmethod_t sm_none = {
+gmx_ana_selmethod_t sm_none =
+{
     "none", GROUP_VALUE, 0,
     0, NULL,
     NULL,
@@ -183,7 +186,8 @@ gmx_ana_selmethod_t sm_none = {
 };
 
 /** \internal Selection method data for \p atomnr selection keyword. */
-gmx_ana_selmethod_t sm_atomnr = {
+gmx_ana_selmethod_t sm_atomnr =
+{
     "atomnr", INT_VALUE, 0,
     0, NULL,
     NULL,
@@ -197,7 +201,8 @@ gmx_ana_selmethod_t sm_atomnr = {
 };
 
 /** \internal Selection method data for \p resnr selection keyword. */
-gmx_ana_selmethod_t sm_resnr = {
+gmx_ana_selmethod_t sm_resnr =
+{
     "resnr", INT_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -211,7 +216,8 @@ gmx_ana_selmethod_t sm_resnr = {
 };
 
 /** \internal Selection method data for \p resindex selection keyword. */
-gmx_ana_selmethod_t sm_resindex = {
+gmx_ana_selmethod_t sm_resindex =
+{
     "resindex", INT_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -225,7 +231,8 @@ gmx_ana_selmethod_t sm_resindex = {
 };
 
 /** \internal Selection method data for \p molindex selection keyword. */
-gmx_ana_selmethod_t sm_molindex = {
+gmx_ana_selmethod_t sm_molindex =
+{
     "molindex", INT_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -239,7 +246,8 @@ gmx_ana_selmethod_t sm_molindex = {
 };
 
 /** \internal Selection method data for \p atomname selection keyword. */
-gmx_ana_selmethod_t sm_atomname = {
+gmx_ana_selmethod_t sm_atomname =
+{
     "atomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -254,7 +262,8 @@ gmx_ana_selmethod_t sm_atomname = {
 };
 
 /** \internal Selection method data for \p pdbatomname selection keyword. */
-gmx_ana_selmethod_t sm_pdbatomname = {
+gmx_ana_selmethod_t sm_pdbatomname =
+{
     "pdbatomname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -269,7 +278,8 @@ gmx_ana_selmethod_t sm_pdbatomname = {
 };
 
 /** \internal Selection method data for \p atomtype selection keyword. */
-gmx_ana_selmethod_t sm_atomtype = {
+gmx_ana_selmethod_t sm_atomtype =
+{
     "atomtype", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -283,7 +293,8 @@ gmx_ana_selmethod_t sm_atomtype = {
 };
 
 /** \internal Selection method data for \p resname selection keyword. */
-gmx_ana_selmethod_t sm_resname = {
+gmx_ana_selmethod_t sm_resname =
+{
     "resname", STR_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -297,7 +308,8 @@ gmx_ana_selmethod_t sm_resname = {
 };
 
 /** \internal Selection method data for \p chain selection keyword. */
-gmx_ana_selmethod_t sm_insertcode = {
+gmx_ana_selmethod_t sm_insertcode =
+{
     "insertcode", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
     NULL,
@@ -311,7 +323,8 @@ gmx_ana_selmethod_t sm_insertcode = {
 };
 
 /** \internal Selection method data for \p chain selection keyword. */
-gmx_ana_selmethod_t sm_chain = {
+gmx_ana_selmethod_t sm_chain =
+{
     "chain", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
     NULL,
@@ -325,7 +338,8 @@ gmx_ana_selmethod_t sm_chain = {
 };
 
 /** \internal Selection method data for \p mass selection keyword. */
-gmx_ana_selmethod_t sm_mass = {
+gmx_ana_selmethod_t sm_mass =
+{
     "mass", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -339,7 +353,8 @@ gmx_ana_selmethod_t sm_mass = {
 };
 
 /** \internal Selection method data for \p charge selection keyword. */
-gmx_ana_selmethod_t sm_charge = {
+gmx_ana_selmethod_t sm_charge =
+{
     "charge", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -353,7 +368,8 @@ gmx_ana_selmethod_t sm_charge = {
 };
 
 /** \internal Selection method data for \p chain selection keyword. */
-gmx_ana_selmethod_t sm_altloc = {
+gmx_ana_selmethod_t sm_altloc =
+{
     "altloc", STR_VALUE, SMETH_REQTOP | SMETH_CHARVAL,
     0, NULL,
     NULL,
@@ -367,7 +383,8 @@ gmx_ana_selmethod_t sm_altloc = {
 };
 
 /** \internal Selection method data for \p occupancy selection keyword. */
-gmx_ana_selmethod_t sm_occupancy = {
+gmx_ana_selmethod_t sm_occupancy =
+{
     "occupancy", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -381,7 +398,8 @@ gmx_ana_selmethod_t sm_occupancy = {
 };
 
 /** \internal Selection method data for \p betafactor selection keyword. */
-gmx_ana_selmethod_t sm_betafactor = {
+gmx_ana_selmethod_t sm_betafactor =
+{
     "betafactor", REAL_VALUE, SMETH_REQTOP,
     0, NULL,
     NULL,
@@ -395,44 +413,47 @@ gmx_ana_selmethod_t sm_betafactor = {
 };
 
 /** \internal Selection method data for \p x selection keyword. */
-gmx_ana_selmethod_t sm_x = {
+gmx_ana_selmethod_t sm_x =
+{
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_x,
 };
 
 /** \internal Selection method data for \p y selection keyword. */
-gmx_ana_selmethod_t sm_y = {
+gmx_ana_selmethod_t sm_y =
+{
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_y,
 };
 
 /** \internal Selection method data for \p z selection keyword. */
-gmx_ana_selmethod_t sm_z = {
+gmx_ana_selmethod_t sm_z =
+{
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_z,
 };
 
@@ -557,7 +578,7 @@ evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        while (top->mols.index[j + 1] <= g->index[i]) { ++j; }
         out->u.i[i] = j + 1;
     }
 }

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -39,7 +39,7 @@ files.
 /* get a pointer the next coll_env once it's ready */
 struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
 
-/* post the availability of data in a cev. 
+/* post the availability of data in a cev.
    cev         = the collective comm environment
    myrank      = my rank
    index       = the buffer index
@@ -48,12 +48,12 @@ struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
    busize      = the buffer size
    buf         = the buffer to xfer
    n_remaining = the number of remaining threads that need to transfer
-   synct       = the multicast sync number 
+   synct       = the multicast sync number
    dest        = -1 for all theads, or a specific rank number.
    */
-void tMPI_Post_multi(struct coll_env *cev, int myrank, int index, 
-                     int tag, tMPI_Datatype datatype, 
-                     size_t bufsize, void *buf, int n_remaining, 
+void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
+                     int tag, tMPI_Datatype datatype,
+                     size_t bufsize, void *buf, int n_remaining,
                      int synct, int dest);
 
 /* transfer data from cev->met[rank] to recvbuf */
@@ -62,15 +62,15 @@ void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
                     size_t recvsize, void *recvbuf, int *ret);
 
 /* do a root transfer (from root send buffer to root recv buffer) */
-void tMPI_Coll_root_xfer(tMPI_Comm comm, 
-                         tMPI_Datatype sendtype, tMPI_Datatype recvtype, 
-                         size_t sendsize, size_t recvsize, 
+void tMPI_Coll_root_xfer(tMPI_Comm comm,
+                         tMPI_Datatype sendtype, tMPI_Datatype recvtype,
+                         size_t sendsize, size_t recvsize,
                          void* sendbuf, void* recvbuf, int *ret);
 
 /* wait for other processes to copy data from my cev */
 void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
 /* wait for data to become available from a specific rank */
-void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev, 
+void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev,
                         int myrank);
 /*int rank, int myrank, int synct);*/
 

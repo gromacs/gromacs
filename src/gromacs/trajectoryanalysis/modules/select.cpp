@@ -277,7 +277,8 @@ Select::~Select()
 void
 Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
-    static const char *const desc[] = {
+    static const char *const desc[] =
+    {
         "[TT]g_select[tt] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
@@ -342,45 +343,45 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("os").filetype(eftPlot).outputFile()
-                           .store(&fnSize_).defaultBasename("size")
-                           .description("Number of positions in each selection"));
+                       .store(&fnSize_).defaultBasename("size")
+                       .description("Number of positions in each selection"));
     options->addOption(FileNameOption("oc").filetype(eftPlot).outputFile()
-                           .store(&fnFrac_).defaultBasename("cfrac")
-                           .description("Covered fraction for each selection"));
+                       .store(&fnFrac_).defaultBasename("cfrac")
+                       .description("Covered fraction for each selection"));
     options->addOption(FileNameOption("oi").filetype(eftGenericData).outputFile()
-                           .store(&fnIndex_).defaultBasename("index")
-                           .description("Indices selected by each selection"));
+                       .store(&fnIndex_).defaultBasename("index")
+                       .description("Indices selected by each selection"));
     options->addOption(FileNameOption("on").filetype(eftIndex).outputFile()
-                           .store(&fnNdx_).defaultBasename("index")
-                           .description("Index file from the selection"));
+                       .store(&fnNdx_).defaultBasename("index")
+                       .description("Index file from the selection"));
     options->addOption(FileNameOption("om").filetype(eftPlot).outputFile()
-                           .store(&fnMask_).defaultBasename("mask")
-                           .description("Mask for selected positions"));
+                       .store(&fnMask_).defaultBasename("mask")
+                       .description("Mask for selected positions"));
     options->addOption(FileNameOption("of").filetype(eftPlot).outputFile()
-                           .store(&fnOccupancy_).defaultBasename("occupancy")
-                           .description("Occupied fraction for selected positions"));
+                       .store(&fnOccupancy_).defaultBasename("occupancy")
+                       .description("Occupied fraction for selected positions"));
     options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile()
-                           .store(&fnPDB_).defaultBasename("occupancy")
-                           .description("PDB file with occupied fraction for selected positions"));
+                       .store(&fnPDB_).defaultBasename("occupancy")
+                       .description("PDB file with occupied fraction for selected positions"));
 
     selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
-        .required().multiValue()
-        .description("Selections to analyze"));
+                                 .required().multiValue()
+                                 .description("Selections to analyze"));
 
     options->addOption(BooleanOption("dump").store(&bDump_)
-        .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
+                       .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
     options->addOption(BooleanOption("norm").store(&bTotNorm_)
-        .description("Normalize by total number of positions with -os"));
+                       .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
-        .description("Normalize by covered fraction with -os"));
+                       .description("Normalize by covered fraction with -os"));
     const char *const cResNumberEnum[] = { "number", "index", NULL };
     options->addOption(StringOption("resnr").store(&resNumberType_)
-        .enumValue(cResNumberEnum).defaultEnumIndex(0)
-        .description("Residue number output type with -oi and -on"));
+                       .enumValue(cResNumberEnum).defaultEnumIndex(0)
+                       .description("Residue number output type with -oi and -on"));
     const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected", NULL };
     options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
-        .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
-        .description("Atoms to write with -ofpdb"));
+                       .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
+                       .description("Atoms to write with -ofpdb"));
 }
 
 void
@@ -406,7 +407,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!sel_[0].isDynamic() && (!fnMask_.empty() || !fnOccupancy_.empty()))
     {
         GMX_THROW(InconsistentInputError(
-                    "-om or -of are not meaningful with a static selection"));
+                      "-om or -of are not meaningful with a static selection"));
     }
     bResInd_ = (resNumberType_ == "index");
 
@@ -581,7 +582,7 @@ Select::writeOutput()
     if (!fnPDB_.empty())
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
-                "Topology should have been loaded or an error given earlier");
+                           "Topology should have been loaded or an error given earlier");
         t_atoms atoms;
         atoms = top_->topology()->atoms;
         t_pdbinfo *pdbinfo;
@@ -650,7 +651,7 @@ Select::writeOutput()
         else
         {
             GMX_RELEASE_ASSERT(false,
-                    "Mismatch between -pdbatoms enum values and implementation");
+                               "Mismatch between -pdbatoms enum values and implementation");
         }
     }
 }

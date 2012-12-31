@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -75,7 +75,7 @@
 extern "C" {
 #endif
 
-/* 
+/*
  * Memory (re)allocation can be VERY slow, especially with some
  * MPI libraries that replace the standard malloc and realloc calls.
  * To avoid slow memory allocation we use over_alloc to set the memory
@@ -87,16 +87,16 @@ extern "C" {
 #define OVER_ALLOC_FAC 1.19
 
 void set_over_alloc_dd(gmx_bool set);
-  /* Turns over allocation for variable size atoms/cg/top arrays on or off,
-   * default is off.
-   */
-  
+/* Turns over allocation for variable size atoms/cg/top arrays on or off,
+ * default is off.
+ */
+
 int over_alloc_dd(int n);
-  /* Returns n when domain decomposition over allocation is off.
-   * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
-   * This is to avoid frequent reallocation
-   * during domain decomposition in mdrun.
-   */
+/* Returns n when domain decomposition over allocation is off.
+ * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
+ * This is to avoid frequent reallocation
+ * during domain decomposition in mdrun.
+ */
 
 /* Over allocation for small data types: int, real etc. */
 #define over_alloc_small(n) (OVER_ALLOC_FAC*(n) + 8000)
@@ -122,7 +122,7 @@ char *gmx_step_str(gmx_large_int_t i,char *buf);
  */
 
 /* Functions to initiate and delete structures *
- * These functions are defined in gmxlib/typedefs.c 
+ * These functions are defined in gmxlib/typedefs.c
  */
 void init_block(t_block *block);
 void init_blocka(t_blocka *block);
@@ -170,17 +170,17 @@ void stupid_fill_blocka(t_blocka *grp, int natom);
 
 void init_t_atoms(t_atoms *atoms, int natoms, gmx_bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
- * set pdbinfo to NULL or allocate memory for it */  
+ * set pdbinfo to NULL or allocate memory for it */
 
 t_atoms *copy_t_atoms(t_atoms *src);
 /* copy an atoms struct from src to a new one */
-  
+
 void add_t_atoms(t_atoms *atoms,int natom_extra,int nres_extra);
 /* allocate extra space for more atoms and or residues */
- 
+
 void t_atoms_set_resinfo(t_atoms *atoms,int atom_ind,t_symtab *symtab,
-				const char *resname,int resnr,unsigned char ic,
-				int chainnum, char chainid);
+                         const char *resname,int resnr,unsigned char ic,
+                         int chainnum, char chainid);
 /* Set the residue name, number, insertion code and chain identifier
  * of atom index atom_ind.
  */
@@ -192,7 +192,7 @@ void free_t_atoms(t_atoms *atoms,gmx_bool bFreeNames);
  */
 
 t_atoms *mtop2atoms(gmx_mtop_t *mtop);
-/* generate a t_atoms struct for the system from gmx_mtop_t */ 
+/* generate a t_atoms struct for the system from gmx_mtop_t */
 
 real max_cutoff(real cutoff1,real cutoff2);
 /* Returns the maximum of the cut-off's, taking into account that 0=inf. */
@@ -202,4 +202,4 @@ real max_cutoff(real cutoff1,real cutoff2);
 #endif
 
 
-#endif	/* _typedefs_h */
+#endif  /* _typedefs_h */

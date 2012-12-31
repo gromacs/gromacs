@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -290,10 +290,10 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
     max_extfn = eax;
 
     p = str;
-    if(max_extfn>=0x80000005)
+    if (max_extfn>=0x80000005)
     {
         /* Get CPU brand string */
-        for(fn=0x80000002;fn<0x80000005;fn++)
+        for (fn=0x80000002; fn<0x80000005; fn++)
         {
             execute_x86cpuid(fn,0,&eax,&ebx,&ecx,&edx);
             memcpy(p,&eax,4);
@@ -306,7 +306,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
 
         /* Remove empty initial space */
         p = str;
-        while(isspace(*(p)))
+        while (isspace(*(p)))
         {
             p++;
         }
@@ -318,7 +318,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
     }
 
     /* Find basic CPU properties */
-    if(max_stdfn>=1)
+    if (max_stdfn>=1)
     {
         execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
 
@@ -358,7 +358,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
         cpuid->stepping = -1;
     }
 
-    if(max_extfn>=0x80000001)
+    if (max_extfn>=0x80000001)
     {
         execute_x86cpuid(0x80000001,0,&eax,&ebx,&ecx,&edx);
         cpuid->feature[GMX_CPUID_FEATURE_X86_LAHF_LM] = (ecx & (1 << 0))  != 0;
@@ -366,7 +366,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
         cpuid->feature[GMX_CPUID_FEATURE_X86_RDTSCP]  = (edx & (1 << 27)) != 0;
     }
 
-    if(max_extfn>=0x80000007)
+    if (max_extfn>=0x80000007)
     {
         execute_x86cpuid(0x80000007,0,&eax,&ebx,&ecx,&edx);
         cpuid->feature[GMX_CPUID_FEATURE_X86_NONSTOP_TSC]  = (edx & (1 << 8))  != 0;
@@ -390,7 +390,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
     execute_x86cpuid(0x80000000,0,&eax,&ebx,&ecx,&edx);
     max_extfn = eax;
 
-    if(max_extfn>=0x80000001)
+    if (max_extfn>=0x80000001)
     {
         execute_x86cpuid(0x80000001,0,&eax,&ebx,&ecx,&edx);
 
@@ -420,7 +420,7 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
     execute_x86cpuid(0x80000000,0,&eax,&ebx,&ecx,&edx);
     max_extfn = eax;
 
-    if(max_stdfn>=1)
+    if (max_stdfn>=1)
     {
         execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
         cpuid->feature[GMX_CPUID_FEATURE_X86_PDCM]    = (ecx & (1 << 15)) != 0;
@@ -429,14 +429,14 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         cpuid->feature[GMX_CPUID_FEATURE_X86_TDT]     = (ecx & (1 << 24)) != 0;
     }
 
-    if(max_stdfn>=7)
+    if (max_stdfn>=7)
     {
         execute_x86cpuid(0x7,0,&eax,&ebx,&ecx,&edx);
         cpuid->feature[GMX_CPUID_FEATURE_X86_AVX2]    = (ebx & (1 << 5))  != 0;
     }
 
     /* Check whether Hyper-Threading is enabled, not only supported */
-    if(cpuid->feature[GMX_CPUID_FEATURE_X86_HTT] && max_stdfn>=4)
+    if (cpuid->feature[GMX_CPUID_FEATURE_X86_HTT] && max_stdfn>=4)
     {
         execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
         max_logical_cores  = (ebx >> 16) & 0x0FF;
@@ -444,7 +444,7 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         max_physical_cores = ((eax >> 26) & 0x3F) + 1;
 
         /* Clear HTT flag if we only have 1 logical core per physical */
-        if(max_logical_cores/max_physical_cores < 2)
+        if (max_logical_cores/max_physical_cores < 2)
         {
             cpuid->feature[GMX_CPUID_FEATURE_X86_HTT] = 0;
         }
@@ -474,9 +474,9 @@ cpuid_check_vendor(void)
 
     vendorstring[12]='\0';
 
-    for(i=GMX_CPUID_VENDOR_UNKNOWN;i<GMX_CPUID_NVENDORS;i++)
+    for (i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
     {
-        if(!strncmp(vendorstring,gmx_cpuid_vendor_string[i],12))
+        if (!strncmp(vendorstring,gmx_cpuid_vendor_string[i],12))
         {
             vendor = i;
         }
@@ -498,14 +498,14 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 
     *pcpuid = cpuid;
 
-    for(i=0;i<GMX_CPUID_NFEATURES;i++)
+    for (i=0; i<GMX_CPUID_NFEATURES; i++)
     {
         cpuid->feature[i]=0;
     }
 
     cpuid->vendor = cpuid_check_vendor();
 
-    switch(cpuid->vendor)
+    switch (cpuid->vendor)
     {
         case GMX_CPUID_VENDOR_INTEL:
             cpuid_check_intel_x86(cpuid);
@@ -520,7 +520,7 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
             cpuid->model          = 0;
             cpuid->stepping       = 0;
 
-            for(i=0;i<GMX_CPUID_NFEATURES;i++)
+            for (i=0; i<GMX_CPUID_NFEATURES; i++)
             {
                 cpuid->feature[i]=0;
             }
@@ -574,9 +574,9 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
     n   -= c;
     str += c;
 
-    for(feature=GMX_CPUID_FEATURE_CANNOTDETECT;feature<GMX_CPUID_NFEATURES;feature++)
+    for (feature=GMX_CPUID_FEATURE_CANNOTDETECT; feature<GMX_CPUID_NFEATURES; feature++)
     {
-        if(gmx_cpuid_feature(cpuid,feature)==1)
+        if (gmx_cpuid_feature(cpuid,feature)==1)
         {
 #ifdef _MSC_VER
             _snprintf(str,n," %s",gmx_cpuid_feature_string[feature]);
@@ -608,32 +608,32 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
 
     tmpacc = GMX_CPUID_ACCELERATION_NONE;
 
-    if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_INTEL)
+    if (gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_INTEL)
     {
-        if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_AVX))
+        if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_AVX))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_AVX_256;
         }
-        else if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE4_1))
+        else if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE4_1))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
         }
-        else if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE2))
+        else if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE2))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
         }
     }
-    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_AMD)
+    else if (gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_AMD)
     {
-        if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_AVX))
+        if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_AVX))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_AVX_128_FMA;
         }
-        else if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE4_1))
+        else if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE4_1))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
         }
-        else if(gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE2))
+        else if (gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_SSE2))
         {
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
         }
@@ -659,7 +659,7 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     gmx_cpuid_formatstring(cpuid,str,1023);
     str[1023] = '\0';
 
-    if(log!=NULL)
+    if (log!=NULL)
     {
         fprintf(log,
                 "\nDetecting CPU-specific acceleration.\nPresent hardware specification:\n"
@@ -671,9 +671,9 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
                 gmx_cpuid_acceleration_string[compiled_acc]);
     }
 
-    if(rc!=0)
+    if (rc!=0)
     {
-        if(log!=NULL)
+        if (log!=NULL)
         {
             fprintf(log,"WARNING! Binary not matching hardware - you are likely losing performance.\n\n");
         }
@@ -701,8 +701,8 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
     int            core_shift_bits;
     int            smt_found;
 
-    if( gmx_cpuid_vendor(cpuid)!=GMX_CPUID_VENDOR_INTEL ||
-       gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
+    if ( gmx_cpuid_vendor(cpuid)!=GMX_CPUID_VENDOR_INTEL ||
+         gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
     {
         return GMX_CPUID_X86_SMT_DISABLED;
     }
@@ -711,7 +711,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
     execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
 
     /* Early CPUs that do not support function 11 do not support SMT either */
-    if(eax<0xB)
+    if (eax<0xB)
     {
         return GMX_CPUID_X86_SMT_DISABLED;
     }
@@ -727,7 +727,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
 
     /* Get x2APIC ID from each hardware thread */
     CPU_ZERO(&cpuset);
-    for(i=0;i<nproc;i++)
+    for (i=0; i<nproc; i++)
     {
         CPU_SET(i,&cpuset);
         sched_setaffinity(0,sizeof(cpu_set_t),&cpuset);
@@ -744,14 +744,14 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
      * the hardware thread bit.
      */
     smt_found  = 0;
-    for(i=1;i<nproc && smt_found==0;i++)
+    for (i=1; i<nproc && smt_found==0; i++)
     {
         smt_found = (apic_id[i]>>core_shift_bits == apic_id[0] >> core_shift_bits);
     }
 
     free(apic_id);
 
-    if(smt_found==1)
+    if (smt_found==1)
     {
         return GMX_CPUID_X86_SMT_ENABLED;
     }
@@ -763,7 +763,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
     /* Do the trivial stuff first. If Hyper-Threading isn't even supported it
      * cannot be enabled, no matter what OS detection we use!
      */
-    if(0==gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT))
+    if (0==gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT))
     {
         return GMX_CPUID_X86_SMT_DISABLED;
     }
@@ -789,7 +789,7 @@ main(int argc, char **argv)
     enum gmx_cpuid_acceleration   acc;
     int                           i,cnt;
 
-    if(argc<2)
+    if (argc<2)
     {
         fprintf(stdout,
                 "Usage:\n\n%s [flags]\n\n"
@@ -807,34 +807,34 @@ main(int argc, char **argv)
 
     gmx_cpuid_init(&cpuid);
 
-    if(!strncmp(argv[1],"-vendor",3))
+    if (!strncmp(argv[1],"-vendor",3))
     {
         printf("%s\n",gmx_cpuid_vendor_string[cpuid->vendor]);
     }
-    else if(!strncmp(argv[1],"-brand",3))
+    else if (!strncmp(argv[1],"-brand",3))
     {
         printf("%s\n",cpuid->brand);
     }
-    else if(!strncmp(argv[1],"-family",3))
+    else if (!strncmp(argv[1],"-family",3))
     {
         printf("%d\n",cpuid->family);
     }
-    else if(!strncmp(argv[1],"-model",3))
+    else if (!strncmp(argv[1],"-model",3))
     {
         printf("%d\n",cpuid->model);
     }
-    else if(!strncmp(argv[1],"-stepping",3))
+    else if (!strncmp(argv[1],"-stepping",3))
     {
         printf("%d\n",cpuid->stepping);
     }
-    else if(!strncmp(argv[1],"-features",3))
+    else if (!strncmp(argv[1],"-features",3))
     {
         cnt = 0;
-        for(i=0;i<GMX_CPUID_NFEATURES;i++)
+        for (i=0; i<GMX_CPUID_NFEATURES; i++)
         {
-            if(cpuid->feature[i]==1)
+            if (cpuid->feature[i]==1)
             {
-                if(cnt++ > 0)
+                if (cnt++ > 0)
                 {
                     printf(" ");
                 }
@@ -843,7 +843,7 @@ main(int argc, char **argv)
         }
         printf("\n");
     }
-    else if(!strncmp(argv[1],"-acceleration",3))
+    else if (!strncmp(argv[1],"-acceleration",3))
     {
         acc = gmx_cpuid_acceleration_suggest(cpuid);
         fprintf(stdout,"%s\n",gmx_cpuid_acceleration_string[acc]);

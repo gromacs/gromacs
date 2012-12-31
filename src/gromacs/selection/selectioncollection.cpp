@@ -135,7 +135,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
     {
         return false;
     }
-    while(endsWith(*line, "\\\n"))
+    while (endsWith(*line, "\\\n"))
     {
         line->resize(line->length() - 2);
         if (bInteractive)
@@ -229,7 +229,7 @@ SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
     bool bOk = false;
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
-                _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
+            _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bStdIn)
         {
             File &stdinFile(File::standardInput());
@@ -294,8 +294,8 @@ early_termination:
 
 
 void SelectionCollection::Impl::resolveExternalGroups(
-        const SelectionTreeElementPointer &root,
-        MessageStringCollector *errors)
+    const SelectionTreeElementPointer &root,
+    MessageStringCollector *errors)
 {
 
     if (root->type == SEL_GROUPREF)
@@ -379,18 +379,18 @@ SelectionCollection::initOptions(Options *options)
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos").enumValue(postypes)
-                           .store(&impl_->rpost_).defaultValue(postypes[0])
-                           .description("Selection reference positions"));
+                       .store(&impl_->rpost_).defaultValue(postypes[0])
+                       .description("Selection reference positions"));
     options->addOption(StringOption("seltype").enumValue(postypes)
-                           .store(&impl_->spost_).defaultValue(postypes[0])
-                           .description("Default selection output positions"));
+                       .store(&impl_->spost_).defaultValue(postypes[0])
+                       .description("Default selection output positions"));
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
     options->addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
-                           .enumValue(debug_levels)
-                           .defaultValue(debug_levels[impl_->debugLevel_])
-                           .storeEnumIndex(&impl_->debugLevel_)
-                           .description("Print out selection trees for debugging"));
+                       .enumValue(debug_levels)
+                       .defaultValue(debug_levels[impl_->debugLevel_])
+                       .storeEnumIndex(&impl_->debugLevel_)
+                       .description("Print out selection trees for debugging"));
 }
 
 
@@ -429,7 +429,7 @@ void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
-        "The number of atoms must be given if there is no topology");
+                       "The number of atoms must be given if there is no topology");
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
@@ -537,8 +537,8 @@ SelectionCollection::parseFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in parsing selections from file '%s'",
-                    filename.c_str()));
+                              "Error in parsing selections from file '%s'",
+                              filename.c_str()));
         throw;
     }
 }

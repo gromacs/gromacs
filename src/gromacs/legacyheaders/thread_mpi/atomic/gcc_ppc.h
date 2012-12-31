@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -39,7 +39,7 @@ files.
 /* NOTE:
 
  ***************************************************************************
-  this file is not used any more. gcc intrinsics take care of the atomics 
+  this file is not used any more. gcc intrinsics take care of the atomics
 ***************************************************************************
 
 */
@@ -72,14 +72,14 @@ tMPI_Spinlock_t;
 
 #define TMPI_HAVE_SWAP
 
-#define tMPI_Atomic_get(a)        ((a)->value) 
+#define tMPI_Atomic_get(a)        ((a)->value)
 #define tMPI_Atomic_set(a,i)     (((a)->value) = (i))
 
-#define tMPI_Atomic_ptr_get(a)    (void*)((a)->value) 
+#define tMPI_Atomic_ptr_get(a)    (void*)((a)->value)
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (void*)(i))
 
 
-#if (TMPI_GCC_VERSION >= 40100) 
+#if (TMPI_GCC_VERSION >= 40100)
 
 #include "gcc_intrinsics.h"
 
@@ -94,21 +94,21 @@ tMPI_Spinlock_t;
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
     int ret;
-    
+
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\tstwcx.  %3,0,%2 \n"
                           "\tbne-    1b\n"
                           : "=&r" (ret), "=m" (a->value)
                           : "r" (&(a->value)), "r" (b)
                           : "cc", "memory");
-   
+
     return ret;
 }
 
 static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     int ret;
-    
+
 #if (!defined(__PPC64__)) && (!defined(__ppc64))
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\tstwcx.  %3,0,%2 \n"
@@ -124,7 +124,7 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
                           : "r" (&(a->value)), "r" (b)
                           : "cc", "memory");
 #endif
-   
+
     return ret;
 }
 
@@ -133,7 +133,7 @@ static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     int prev;
-    
+
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\tcmpw    0,%0,%3 \n"
                           "\tbne     2f \n"
@@ -142,19 +142,19 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
                           "\tsync\n"
                           "2:\n"
                           : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval),
+                          "m" (a->value)
                           : "cc", "memory");
-    
+
     return prev==oldval;
 }
 
 
 static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
-                                        void *newval)
+                                      void *newval)
 {
     void *prev;
-   
+
 #if (!defined(__PPC64__)) && (!defined(__ppc64))
     __asm__ __volatile__ ("1:    lwarx   %0,0,%2 \n"
                           "\tcmpw    0,%0,%3 \n"
@@ -164,8 +164,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                           "\tsync\n"
                           "2:\n"
                           : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval),
+                          "m" (a->value)
                           : "cc", "memory");
 #else
     __asm__ __volatile__ ("1:    ldarx   %0,0,%2 \n"
@@ -176,8 +176,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
                           "\tsync\n"
                           "2:\n"
                           : "=&r" (prev), "=m" (a->value)
-                          : "r" (&a->value), "r" (oldval), "r" (newval), 
-                            "m" (a->value)
+                          : "r" (&a->value), "r" (oldval), "r" (newval),
+                          "m" (a->value)
                           : "cc", "memory");
 #endif
     return prev==oldval;
@@ -186,7 +186,7 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int t;
-    
+
     __asm__ __volatile__("1:     lwarx   %0,0,%2\n"
                          "\tadd     %0,%1,%0\n"
                          "\tstwcx.  %0,0,%2 \n"
@@ -203,9 +203,9 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     int t;
-    
+
     __asm__ __volatile__("\teieio\n"
-                         "1:     lwarx   %0,0,%2\n"                         
+                         "1:     lwarx   %0,0,%2\n"
                          "\tadd     %0,%1,%0\n"
                          "\tstwcx.  %0,0,%2 \n"
                          "\tbne-    1b\n"
@@ -213,8 +213,8 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
                          : "=&r" (t)
                          : "r" (i), "r" (&a->value)
                          : "cc", "memory");
-    
-    return (t - i);    
+
+    return (t - i);
 }
 
 
@@ -231,7 +231,7 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 {
     unsigned int tmp;
-    
+
     __asm__ __volatile__("\tb      1f\n"
                          "2:      lwzx    %0,0,%1\n"
                          "\tcmpwi   0,%0,0\n"
@@ -253,7 +253,7 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
     unsigned int old, t;
     unsigned int mask = 1;
     volatile unsigned int *p = &x->lock;
-    
+
     __asm__ __volatile__("\teieio\n"
                          "1:      lwarx   %0,0,%4 \n"
                          "\tor      %1,%0,%3 \n"
@@ -263,8 +263,8 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
                          : "=&r" (old), "=&r" (t), "=m" (*p)
                          : "r" (mask), "r" (p), "m" (*p)
                          : "cc", "memory");
-    
-    return (old & mask);    
+
+    return (old & mask);
 }
 
 
@@ -283,11 +283,11 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 
 static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
-    do 
+    do
     {
-        tMPI_Atomic_memory_barrier(); 
+        tMPI_Atomic_memory_barrier();
     }
-    while(tMPI_Spinlock_islocked(x));
+    while (tMPI_Spinlock_islocked(x));
 }
 
 

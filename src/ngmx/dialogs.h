@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gyas ROwers Mature At Cryogenic Speed
  */
@@ -41,50 +41,55 @@
 #include "manager.h"
 #include "logo.h"
 
-typedef struct {
-  gmx_bool  bMapped;
-  t_dlg *dlg;
+typedef struct
+{
+    gmx_bool  bMapped;
+    t_dlg *dlg;
 } t_dialogs;
 
 typedef enum { edExport, edBonds, edFilter, edNR } eDialogs;
-	 
-typedef enum {
-  emQuit, emHelp, emAbout, emNotImplemented, emNR
+
+typedef enum
+{
+    emQuit, emHelp, emAbout, emNotImplemented, emNR
 } eMBoxes;
 
-typedef enum {
-  eExpGromos, eExpPDB, eExpNR
+typedef enum
+{
+    eExpGromos, eExpPDB, eExpNR
 } eExport;
 
-typedef struct {
-  char         confout[256];	/* Export file			*/
-  int          ExpMode;		/* Export mode			*/
-  t_dlg        **dlgs;	        /* Temporary storage for dlgs	*/
-  int          which_mb;        /* Which mb is visible          */
-  t_dlg        **mboxes;        /* id for message boxes         */
-  t_filter     *filter; 	/* Filter for visibility etc.	*/
-  t_windata    *wd;		/* The main window		*/
-  t_pulldown   *pd;		/* The pull-down menu		*/
-  t_manager    *man;		/* The manager			*/
-  /*t_statrec    *sr;*/		/* The statistics dlg		*/
-  t_logo       *logo;           /* The gromacs logo             */
+typedef struct
+{
+    char         confout[256];  /* Export file          */
+    int          ExpMode;       /* Export mode          */
+    t_dlg        **dlgs;            /* Temporary storage for dlgs   */
+    int          which_mb;        /* Which mb is visible          */
+    t_dlg        **mboxes;        /* id for message boxes         */
+    t_filter     *filter;   /* Filter for visibility etc.   */
+    t_windata    *wd;       /* The main window      */
+    t_pulldown   *pd;       /* The pull-down menu       */
+    t_manager    *man;      /* The manager          */
+    /*t_statrec    *sr;*/       /* The statistics dlg       */
+    t_logo       *logo;           /* The gromacs logo             */
 } t_gmx;
 
-enum { 
-  IDNEW,IDOPEN,IDOPENED,IDCLOSE,IDIMPORT,IDEXPORT,IDDOEXPORT,IDQUIT,IDTERM,
-  IDEDITTOP,IDEDITCOORDS,IDEDITPARAMS,
-  IDGROMPP,IDRUNMD,IDDOGROMPP,IDGSTAT,IDDOGSTAT,IDDORUNMD,
-  IDFILTER,IDDOFILTER,
-  IDANIMATE,IDSHOWBOX,IDRMPBC,IDHYDROGEN,IDLABELSOFF,IDRESETVIEW,IDPHOTO,
-  IDDUMPWIN,IDDODUMP,
-  IDBONDOPTS,IDTHIN,IDFAT,IDVERYFAT,IDBALLS,
-  IDNOBOX,IDRECTBOX,IDTRIBOX,IDTOBOX,
-  IDBOND,IDANGLE,IDDIH,IDRMS,IDRDF,IDENERGIES,IDCORR,
-  IDHELP,IDABOUT,
-  
-  /* Last line specifies how many IDs there are */
-  IDMENUNR
-  };
+enum
+{
+    IDNEW,IDOPEN,IDOPENED,IDCLOSE,IDIMPORT,IDEXPORT,IDDOEXPORT,IDQUIT,IDTERM,
+    IDEDITTOP,IDEDITCOORDS,IDEDITPARAMS,
+    IDGROMPP,IDRUNMD,IDDOGROMPP,IDGSTAT,IDDOGSTAT,IDDORUNMD,
+    IDFILTER,IDDOFILTER,
+    IDANIMATE,IDSHOWBOX,IDRMPBC,IDHYDROGEN,IDLABELSOFF,IDRESETVIEW,IDPHOTO,
+    IDDUMPWIN,IDDODUMP,
+    IDBONDOPTS,IDTHIN,IDFAT,IDVERYFAT,IDBALLS,
+    IDNOBOX,IDRECTBOX,IDTRIBOX,IDTOBOX,
+    IDBOND,IDANGLE,IDDIH,IDRMS,IDRDF,IDENERGIES,IDCORR,
+    IDHELP,IDABOUT,
+
+    /* Last line specifies how many IDs there are */
+    IDMENUNR
+};
 
 extern void run_grompp(t_gmx *gmx);
 

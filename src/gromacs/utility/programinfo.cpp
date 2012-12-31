@@ -182,7 +182,7 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
                 if (g_partialProgramInfo.get() == NULL)
                 {
                     g_partialProgramInfo.reset(
-                            new ProgramInfo(realBinaryName, -argc, argv));
+                        new ProgramInfo(realBinaryName, -argc, argv));
                 }
                 return *g_partialProgramInfo;
             }

@@ -125,19 +125,25 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
 enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
 
 p_nbk_func_ener p_nbk_c_ener[coultNR] =
-{ nbnxn_kernel_ref_rf_ener,
-  nbnxn_kernel_ref_tab_ener,
-  nbnxn_kernel_ref_tab_twin_ener };
+{
+    nbnxn_kernel_ref_rf_ener,
+    nbnxn_kernel_ref_tab_ener,
+    nbnxn_kernel_ref_tab_twin_ener
+};
 
 p_nbk_func_ener p_nbk_c_energrp[coultNR] =
-{ nbnxn_kernel_ref_rf_energrp,
-  nbnxn_kernel_ref_tab_energrp,
-  nbnxn_kernel_ref_tab_twin_energrp};
+{
+    nbnxn_kernel_ref_rf_energrp,
+    nbnxn_kernel_ref_tab_energrp,
+    nbnxn_kernel_ref_tab_twin_energrp
+};
 
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
-{ nbnxn_kernel_ref_rf_noener,
-  nbnxn_kernel_ref_tab_noener,
-  nbnxn_kernel_ref_tab_twin_noener };
+{
+    nbnxn_kernel_ref_rf_noener,
+    nbnxn_kernel_ref_tab_noener,
+    nbnxn_kernel_ref_tab_twin_noener
+};
 
 void
 nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
@@ -174,8 +180,8 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         }
     }
 
-#pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
-    for(nb=0; nb<nnbl; nb++)
+    #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
+    for (nb=0; nb<nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
         real *fshift_p;
@@ -229,11 +235,11 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
             /* Calculate energy group contributions */
             int i;
 
-            for(i=0; i<out->nV; i++)
+            for (i=0; i<out->nV; i++)
             {
                 out->Vvdw[i] = 0;
             }
-            for(i=0; i<out->nV; i++)
+            for (i=0; i<out->nV; i++)
             {
                 out->Vc[i] = 0;
             }

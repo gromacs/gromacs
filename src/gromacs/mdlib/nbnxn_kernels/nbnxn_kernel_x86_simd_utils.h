@@ -12,16 +12,16 @@
  * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
  * a full list of developers and information, check out http://www.gromacs.org
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
  * later version.
  * As a special exception, you may use this file as part of a free software
  * library without restriction.  Specifically, if other files instantiate
  * templates or use macros or inline functions from this file, or you compile
  * this file and link it with other files to produce an executable, this
  * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * the GNU Lesser General Public License.
  *
  * In plain-speak: do not worry about classes/macros/templates either - only
  * changes to the library have to be LGPL, not an application linking with it.
@@ -117,9 +117,9 @@ gmx_mm128_invsqrt_ps_single(__m128 x)
 {
     const __m128 half  = _mm_set_ps(0.5,0.5,0.5,0.5);
     const __m128 three = _mm_set_ps(3.0,3.0,3.0,3.0);
-    
+
     __m128 lu = _mm_rsqrt_ps(x);
-    
+
     return _mm_mul_ps(half,_mm_mul_ps(_mm_sub_ps(three,_mm_mul_ps(_mm_mul_ps(lu,lu),x)),lu));
 }
 
@@ -154,9 +154,9 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 {
     const __m256 half  = _mm256_set_ps(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5);
     const __m256 three = _mm256_set_ps(3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0);
-    
+
     __m256 lu = _mm256_rsqrt_ps(x);
-    
+
     return _mm256_mul_ps(half,_mm256_mul_ps(_mm256_sub_ps(three,_mm256_mul_ps(_mm256_mul_ps(lu,lu),x)),lu));
 }
 
@@ -477,7 +477,7 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE,real *v,int *offset_jj)
      * the rapidly increases number of combinations of energy groups.
      * We add to a temporary buffer for 1 i-group vs 2 j-groups.
      */
-    for(jj=0; jj<(UNROLLJ/2); jj++)
+    for (jj=0; jj<(UNROLLJ/2); jj++)
     {
         gmx_mm_pr v_SSE;
 

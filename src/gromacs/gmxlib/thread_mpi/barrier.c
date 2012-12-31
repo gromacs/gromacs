@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -60,7 +60,7 @@ files.
 void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
 {
     barrier->threshold = count;
-    tMPI_Atomic_set(&(barrier->cycle), 0); 
+    tMPI_Atomic_set(&(barrier->cycle), 0);
     tMPI_Atomic_set(&(barrier->count),count);
     TMPI_YIELD_WAIT_DATA_INIT(barrier);
 }
@@ -71,10 +71,10 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
     int    cycle;
     int    status;
 
-    /* We don't need to lock or use atomic ops here, since the cycle index 
+    /* We don't need to lock or use atomic ops here, since the cycle index
      * cannot change until after the last thread has performed the check
-     * further down. Further, they cannot reach this point in the next 
-     * barrier iteration until all of them have been released, and that 
+     * further down. Further, they cannot reach this point in the next
+     * barrier iteration until all of them have been released, and that
      * happens after the cycle value has been updated.
      *
      * No synchronization == fast synchronization.
@@ -84,7 +84,7 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
     /* Decrement the count atomically and check if it is zero.
      * This will only be true for the last thread calling us.
      */
-    if( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
+    if ( tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
     {
         tMPI_Atomic_memory_barrier();
         tMPI_Atomic_set(&(barrier->count), barrier->threshold);
@@ -104,7 +104,7 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
             /*tMPI_Atomic_memory_barrier();*/
             TMPI_YIELD_WAIT(barrier);
         }
-        while( tMPI_Atomic_get( &(barrier->cycle) ) == cycle );
+        while ( tMPI_Atomic_get( &(barrier->cycle) ) == cycle );
         tMPI_Atomic_memory_barrier();
 
         status = 0;

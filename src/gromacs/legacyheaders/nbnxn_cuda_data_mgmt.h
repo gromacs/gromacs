@@ -111,7 +111,7 @@ wallclock_gpu_t * nbnxn_cuda_get_timings(nbnxn_cuda_ptr_t cu_nb)
 FUNC_QUALIFIER
 void nbnxn_cuda_reset_timings(nbnxn_cuda_ptr_t cu_nb) FUNC_TERM
 
-/*! Calculates the minimum size of proximity lists to improve SM load balance 
+/*! Calculates the minimum size of proximity lists to improve SM load balance
     with CUDA non-bonded kernels. */
 FUNC_QUALIFIER
 int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)

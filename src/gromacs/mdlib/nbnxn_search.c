@@ -175,7 +175,7 @@ static void nbs_cycle_clear(nbnxn_cycle_t *cc)
 {
     int i;
 
-    for(i=0; i<enbsCCnr; i++)
+    for (i=0; i<enbsCCnr; i++)
     {
         cc[i].count = 0;
         cc[i].c     = 0;
@@ -207,7 +207,7 @@ static void nbs_cycle_print(FILE *fp,const nbnxn_search_t nbs)
                     Mcyc_av(&nbs->cc[enbsCCcombine]));
         }
         fprintf(fp," s. th");
-        for(t=0; t<nbs->nthread_max; t++)
+        for (t=0; t<nbs->nthread_max; t++)
         {
             fprintf(fp," %4.1f",
                     Mcyc_av(&nbs->work[t].cc[enbsCCsearch]));
@@ -247,19 +247,19 @@ static int nbnxn_kernel_to_ci_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
-    case nbk4x4_PlainC:
-    case nbk4xN_X86_SIMD128:
-    case nbk4xN_X86_SIMD256:
-        return NBNXN_CPU_CLUSTER_I_SIZE;
-    case nbk8x8x8_CUDA:
-    case nbk8x8x8_PlainC:
-        /* The cluster size for super/sub lists is only set here.
-         * Any value should work for the pair-search and atomdata code.
-         * The kernels, of course, might require a particular value.
-         */
-        return NBNXN_GPU_CLUSTER_SIZE;
-    default:
-        gmx_incons("unknown kernel type");
+        case nbk4x4_PlainC:
+        case nbk4xN_X86_SIMD128:
+        case nbk4xN_X86_SIMD256:
+            return NBNXN_CPU_CLUSTER_I_SIZE;
+        case nbk8x8x8_CUDA:
+        case nbk8x8x8_PlainC:
+            /* The cluster size for super/sub lists is only set here.
+             * Any value should work for the pair-search and atomdata code.
+             * The kernels, of course, might require a particular value.
+             */
+            return NBNXN_GPU_CLUSTER_SIZE;
+        default:
+            gmx_incons("unknown kernel type");
     }
 
     return 0;
@@ -269,19 +269,19 @@ int nbnxn_kernel_to_cj_size(int nb_kernel_type)
 {
     switch (nb_kernel_type)
     {
-    case nbk4x4_PlainC:
-        return NBNXN_CPU_CLUSTER_I_SIZE;
-    case nbk4xN_X86_SIMD128:
-        /* Number of reals that fit in SIMD (128 bits = 16 bytes) */
-        return 16/sizeof(real);
-    case nbk4xN_X86_SIMD256:
-        /* Number of reals that fit in SIMD (256 bits = 32 bytes) */
-        return 32/sizeof(real);
-    case nbk8x8x8_CUDA:
-    case nbk8x8x8_PlainC:
-        return nbnxn_kernel_to_ci_size(nb_kernel_type);
-    default:
-        gmx_incons("unknown kernel type");
+        case nbk4x4_PlainC:
+            return NBNXN_CPU_CLUSTER_I_SIZE;
+        case nbk4xN_X86_SIMD128:
+            /* Number of reals that fit in SIMD (128 bits = 16 bytes) */
+            return 16/sizeof(real);
+        case nbk4xN_X86_SIMD256:
+            /* Number of reals that fit in SIMD (256 bits = 32 bytes) */
+            return 32/sizeof(real);
+        case nbk8x8x8_CUDA:
+        case nbk8x8x8_PlainC:
+            return nbnxn_kernel_to_ci_size(nb_kernel_type);
+        default:
+            gmx_incons("unknown kernel type");
     }
 
     return 0;
@@ -291,9 +291,9 @@ static int ci_to_cj(int na_cj_2log,int ci)
 {
     switch (na_cj_2log)
     {
-    case 2: return  ci;     break;
-    case 1: return (ci<<1); break;
-    case 3: return (ci>>1); break;
+        case 2: return  ci;     break;
+        case 1: return (ci<<1); break;
+        case 3: return (ci>>1); break;
     }
 
     return 0;
@@ -308,18 +308,18 @@ gmx_bool nbnxn_kernel_pairlist_simple(int nb_kernel_type)
 
     switch (nb_kernel_type)
     {
-    case nbk8x8x8_CUDA:
-    case nbk8x8x8_PlainC:
-        return FALSE;
+        case nbk8x8x8_CUDA:
+        case nbk8x8x8_PlainC:
+            return FALSE;
 
-    case nbk4x4_PlainC:
-    case nbk4xN_X86_SIMD128:
-    case nbk4xN_X86_SIMD256:
-        return TRUE;
+        case nbk4x4_PlainC:
+        case nbk4xN_X86_SIMD128:
+        case nbk4xN_X86_SIMD256:
+            return TRUE;
 
-    default:
-        gmx_incons("Invalid nonbonded kernel type passed!");
-        return FALSE;
+        default:
+            gmx_incons("Invalid nonbonded kernel type passed!");
+            return FALSE;
     }
 }
 
@@ -342,7 +342,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     {
         nbs->zones = zones;
 
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             if ((*n_dd_cells)[d] > 1)
             {
@@ -354,7 +354,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     }
 
     snew(nbs->grid,nbs->ngrid);
-    for(g=0; g<nbs->ngrid; g++)
+    for (g=0; g<nbs->ngrid; g++)
     {
         nbnxn_grid_init(&nbs->grid[g]);
     }
@@ -367,7 +367,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
 
     /* Initialize the work data structures for each thread */
     snew(nbs->work,nbs->nthread_max);
-    for(t=0; t<nbs->nthread_max; t++)
+    for (t=0; t<nbs->nthread_max; t++)
     {
         nbs->work[t].cxy_na           = NULL;
         nbs->work[t].cxy_na_nalloc    = 0;
@@ -379,7 +379,7 @@ void nbnxn_init_search(nbnxn_search_t * nbs_ptr,
     nbs->print_cycles = (getenv("GMX_NBNXN_CYCLE") != 0);
     nbs->search_count = 0;
     nbs_cycle_clear(nbs->cc);
-    for(t=0; t<nbs->nthread_max; t++)
+    for (t=0; t<nbs->nthread_max; t++)
     {
         nbs_cycle_clear(nbs->work[t].cc);
     }
@@ -449,7 +449,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
         srenew(grid->cxy_na,grid->cxy_nalloc);
         srenew(grid->cxy_ind,grid->cxy_nalloc+1);
     }
-    for(t=0; t<nbs->nthread_max; t++)
+    for (t=0; t<nbs->nthread_max; t++)
     {
         if (grid->ncx*grid->ncy+1 > nbs->work[t].cxy_na_nalloc)
         {
@@ -532,12 +532,12 @@ static void sort_atoms(int dim,gmx_bool Backwards,
     /* For small oversize factors clearing the whole area is fastest.
      * For large oversize we should clear the used elements after use.
      */
-    for(i=0; i<nsort; i++)
+    for (i=0; i<nsort; i++)
     {
         sort[i] = -1;
     }
     /* Sort the particles using a simple index sort */
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
         /* The cast takes care of float-point rounding effects below zero.
          * This code assumes particles are less than 1/SORT_GRID_OVERSIZE
@@ -569,9 +569,9 @@ static void sort_atoms(int dim,gmx_bool Backwards,
              * well-defined output order, independent of input order
              * to ensure binary reproducibility after restarts.
              */
-            while(sort[zi] >= 0 && ( x[a[i]][dim] >  x[sort[zi]][dim] ||
-                                    (x[a[i]][dim] == x[sort[zi]][dim] &&
-                                     a[i] > sort[zi])))
+            while (sort[zi] >= 0 && ( x[a[i]][dim] >  x[sort[zi]][dim] ||
+                                      (x[a[i]][dim] == x[sort[zi]][dim] &&
+                                       a[i] > sort[zi])))
             {
                 zi++;
             }
@@ -597,7 +597,7 @@ static void sort_atoms(int dim,gmx_bool Backwards,
     c = 0;
     if (!Backwards)
     {
-        for(zi=0; zi<nsort; zi++)
+        for (zi=0; zi<nsort; zi++)
         {
             if (sort[zi] >= 0)
             {
@@ -607,7 +607,7 @@ static void sort_atoms(int dim,gmx_bool Backwards,
     }
     else
     {
-        for(zi=nsort-1; zi>=0; zi--)
+        for (zi=nsort-1; zi>=0; zi--)
         {
             if (sort[zi] >= 0)
             {
@@ -643,7 +643,7 @@ static void calc_bounding_box(int na,int stride,const real *x,float *bb)
     zl = x[i+ZZ];
     zh = x[i+ZZ];
     i += stride;
-    for(j=1; j<na; j++)
+    for (j=1; j<na; j++)
     {
         xl = min(xl,x[i+XX]);
         xh = max(xh,x[i+XX]);
@@ -674,7 +674,7 @@ static void calc_bounding_box_x_x4(int na,const real *x,float *bb)
     yh = x[YY*PACK_X4];
     zl = x[ZZ*PACK_X4];
     zh = x[ZZ*PACK_X4];
-    for(j=1; j<na; j++)
+    for (j=1; j<na; j++)
     {
         xl = min(xl,x[j+XX*PACK_X4]);
         xh = max(xh,x[j+XX*PACK_X4]);
@@ -704,7 +704,7 @@ static void calc_bounding_box_x_x8(int na,const real *x,float *bb)
     yh = x[YY*PACK_X8];
     zl = x[ZZ*PACK_X8];
     zh = x[ZZ*PACK_X8];
-    for(j=1; j<na; j++)
+    for (j=1; j<na; j++)
     {
         xl = min(xl,x[j+XX*PACK_X8]);
         xh = max(xh,x[j+XX*PACK_X8]);
@@ -763,7 +763,7 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
     zl = x[i+ZZ];
     zh = x[i+ZZ];
     i += stride;
-    for(j=1; j<na; j++)
+    for (j=1; j<na; j++)
     {
         xl = min(xl,x[i+XX]);
         xh = max(xh,x[i+XX]);
@@ -797,7 +797,7 @@ static void calc_bounding_box_sse(int na,const float *x,float *bb)
     bb_0_SSE = _mm_load_ps(x);
     bb_1_SSE = bb_0_SSE;
 
-    for(i=1; i<na; i++)
+    for (i=1; i<na; i++)
     {
         x_SSE    = _mm_load_ps(x+i*NNBSBB_C);
         bb_0_SSE = _mm_min_ps(bb_0_SSE,x_SSE);
@@ -833,13 +833,13 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid,const float *bb)
     int    i,j,sc2,nc2,c2;
     __m128 min_SSE,max_SSE;
 
-    for(i=0; i<grid->ncx*grid->ncy; i++)
+    for (i=0; i<grid->ncx*grid->ncy; i++)
     {
         /* Starting bb in a column is expected to be 2-aligned */
         sc2 = grid->cxy_ind[i]>>1;
         /* For odd numbers skip the last bb here */
         nc2 = (grid->cxy_na[i]+3)>>(2+1);
-        for(c2=sc2; c2<sc2+nc2; c2++)
+        for (c2=sc2; c2<sc2+nc2; c2++)
         {
             min_SSE = _mm_min_ps(_mm_load_ps(bb+(c2*4+0)*NNBSBB_C),
                                  _mm_load_ps(bb+(c2*4+2)*NNBSBB_C));
@@ -851,7 +851,7 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid,const float *bb)
         if (((grid->cxy_na[i]+3)>>2) & 1)
         {
             /* Copy the last bb for odd bb count in this column */
-            for(j=0; j<NNBSBB_C; j++)
+            for (j=0; j<NNBSBB_C; j++)
             {
                 grid->bbj[(c2*2+0)*NNBSBB_C+j] = bb[(c2*4+0)*NNBSBB_C+j];
                 grid->bbj[(c2*2+1)*NNBSBB_C+j] = bb[(c2*4+1)*NNBSBB_C+j];
@@ -872,9 +872,9 @@ static void print_bbsizes_simple(FILE *fp,
     dvec ba;
 
     clear_dvec(ba);
-    for(c=0; c<grid->nc; c++)
+    for (c=0; c<grid->nc; c++)
     {
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             ba[d] += grid->bb[c*NNBSBB_B+NNBSBB_C+d] - grid->bb[c*NNBSBB_B+d];
         }
@@ -901,17 +901,17 @@ static void print_bbsizes_supersub(FILE *fp,
 
     clear_dvec(ba);
     ns = 0;
-    for(c=0; c<grid->nc; c++)
+    for (c=0; c<grid->nc; c++)
     {
 #ifdef NBNXN_BBXXXX
-        for(s=0; s<grid->nsubc[c]; s+=STRIDE_8BB)
+        for (s=0; s<grid->nsubc[c]; s+=STRIDE_8BB)
         {
             int cs_w,i,d;
 
             cs_w = (c*GPU_NSUBCELL + s)/STRIDE_8BB;
-            for(i=0; i<STRIDE_8BB; i++)
+            for (i=0; i<STRIDE_8BB; i++)
             {
-                for(d=0; d<DIM; d++)
+                for (d=0; d<DIM; d++)
                 {
                     ba[d] +=
                         grid->bb[cs_w*NNBSBB_XXXX+(DIM+d)*STRIDE_8BB+i] -
@@ -920,12 +920,12 @@ static void print_bbsizes_supersub(FILE *fp,
             }
         }
 #else
-        for(s=0; s<grid->nsubc[c]; s++)
+        for (s=0; s<grid->nsubc[c]; s++)
         {
             int cs,d;
 
             cs = c*GPU_NSUBCELL + s;
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 ba[d] +=
                     grid->bb[cs*NNBSBB_B+NNBSBB_C+d] -
@@ -963,14 +963,14 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
     *flags = 0;
 
     subc = 0;
-    for(s=a0; s<a1; s+=na_c)
+    for (s=a0; s<a1; s+=na_c)
     {
         /* Make lists for this (sub-)cell on atoms with and without LJ */
         n1 = 0;
         n2 = 0;
         haveQ = FALSE;
         a_lj_max = -1;
-        for(a=s; a<min(s+na_c,a1); a++)
+        for (a=s; a<min(s+na_c,a1); a++)
         {
             haveQ = haveQ || GET_CGINFO_HAS_Q(atinfo[order[a]]);
 
@@ -998,11 +998,11 @@ void sort_on_lj(nbnxn_atomdata_t *nbat,int na_c,
                  */
                 if (2*(a_lj_max - s) >= na_c)
                 {
-                    for(i=0; i<n1; i++)
+                    for (i=0; i<n1; i++)
                     {
                         order[a0+i] = sort1[i];
                     }
-                    for(j=0; j<n2; j++)
+                    for (j=0; j<n2; j++)
                     {
                         order[a0+n1+j] = sort2[j];
                     }
@@ -1044,7 +1044,7 @@ void fill_cell(const nbnxn_search_t nbs,
     }
 
     /* Now we have sorted the atoms, set the cell indices */
-    for(a=a0; a<a1; a++)
+    for (a=a0; a<a1; a++)
     {
         nbs->cell[nbs->a[a]] = a;
     }
@@ -1159,7 +1159,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
     }
 
     /* Sort the atoms within each x,y column in 3 dimensions */
-    for(cxy=cxy_start; cxy<cxy_end; cxy++)
+    for (cxy=cxy_start; cxy<cxy_end; cxy++)
     {
         cx = cxy/grid->ncy;
         cy = cxy - cx*grid->ncy;
@@ -1177,7 +1177,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
 
         /* Fill the ncz cells in this column */
         cfilled = grid->cxy_ind[cxy];
-        for(cz=0; cz<ncz; cz++)
+        for (cz=0; cz<ncz; cz++)
         {
             c  = grid->cxy_ind[cxy] + cz ;
 
@@ -1204,7 +1204,7 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         }
 
         /* Set the unused atom indices to -1 */
-        for(ind=na; ind<ncz*grid->na_sc; ind++)
+        for (ind=na; ind<ncz*grid->na_sc; ind++)
         {
             nbs->a[ash+ind] = -1;
         }
@@ -1245,7 +1245,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
     subdiv_z = GPU_NSUBCELL_Y*subdiv_y;
 
     /* Sort the atoms within each x,y column in 3 dimensions */
-    for(cxy=cxy_start; cxy<cxy_end; cxy++)
+    for (cxy=cxy_start; cxy<cxy_end; cxy++)
     {
         cx = cxy/grid->ncy;
         cy = cxy - cx*grid->ncy;
@@ -1262,7 +1262,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                    ncz*grid->na_sc*SGSF,sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
-        for(sub_z=0; sub_z<ncz*GPU_NSUBCELL_Z; sub_z++)
+        for (sub_z=0; sub_z<ncz*GPU_NSUBCELL_Z; sub_z++)
         {
             ash_z = ash + sub_z*subdiv_z;
             na_z  = min(subdiv_z,na-(ash_z-ash));
@@ -1292,7 +1292,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                        subdiv_y*SGSF,sort_work);
 #endif
 
-            for(sub_y=0; sub_y<GPU_NSUBCELL_Y; sub_y++)
+            for (sub_y=0; sub_y<GPU_NSUBCELL_Y; sub_y++)
             {
                 ash_y = ash_z + sub_y*subdiv_y;
                 na_y  = min(subdiv_y,na-(ash_y-ash));
@@ -1305,7 +1305,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                            subdiv_x*SGSF,sort_work);
 #endif
 
-                for(sub_x=0; sub_x<GPU_NSUBCELL_X; sub_x++)
+                for (sub_x=0; sub_x<GPU_NSUBCELL_X; sub_x++)
                 {
                     ash_x = ash_y + sub_x*subdiv_x;
                     na_x  = min(subdiv_x,na-(ash_x-ash));
@@ -1321,7 +1321,7 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         }
 
         /* Set the unused atom indices to -1 */
-        for(ind=na; ind<ncz*grid->na_sc; ind++)
+        for (ind=na; ind<ncz*grid->na_sc; ind++)
         {
             nbs->a[ash+ind] = -1;
         }
@@ -1340,14 +1340,14 @@ static void calc_column_indices(nbnxn_grid_t *grid,
     int  cx,cy;
 
     /* We add one extra cell for particles which moved during DD */
-    for(i=0; i<grid->ncx*grid->ncy+1; i++)
+    for (i=0; i<grid->ncx*grid->ncy+1; i++)
     {
         cxy_na[i] = 0;
     }
 
     n0 = a0 + (int)((thread+0)*(a1 - a0))/nthread;
     n1 = a0 + (int)((thread+1)*(a1 - a0))/nthread;
-    for(i=n0; i<n1; i++)
+    for (i=n0; i<n1; i++)
     {
         if (move == NULL || move[i] >= 0)
         {
@@ -1409,8 +1409,8 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 
     nthread = gmx_omp_nthreads_get(emntPairsearch);
 
-#pragma omp parallel for num_threads(nthread) schedule(static)
-    for(thread=0; thread<nthread; thread++)
+    #pragma omp parallel for num_threads(nthread) schedule(static)
+    for (thread=0; thread<nthread; thread++)
     {
         calc_column_indices(grid,a0,a1,x,move,thread,nthread,
                             nbs->cell,nbs->work[thread].cxy_na);
@@ -1420,7 +1420,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     ncz_max = 0;
     ncz = 0;
     grid->cxy_ind[0] = 0;
-    for(i=0; i<grid->ncx*grid->ncy+1; i++)
+    for (i=0; i<grid->ncx*grid->ncy+1; i++)
     {
         /* We set ncz_max at the beginning of the loop iso at the end
          * to skip i=grid->ncx*grid->ncy which are moved particles
@@ -1431,7 +1431,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
             ncz_max = ncz;
         }
         cxy_na_i = nbs->work[0].cxy_na[i];
-        for(thread=1; thread<nthread; thread++)
+        for (thread=1; thread<nthread; thread++)
         {
             cxy_na_i += nbs->work[thread].cxy_na[i];
         }
@@ -1458,9 +1458,9 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         if (gmx_debug_at)
         {
             i = 0;
-            for(cy=0; cy<grid->ncy; cy++)
+            for (cy=0; cy<grid->ncy; cy++)
             {
-                for(cx=0; cx<grid->ncx; cx++)
+                for (cx=0; cx<grid->ncx; cx++)
                 {
                     fprintf(debug," %2d",grid->cxy_ind[i+1]-grid->cxy_ind[i]);
                     i++;
@@ -1473,7 +1473,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     /* Make sure the work array for sorting is large enough */
     if (ncz_max*grid->na_sc*SGSF > nbs->work[0].sort_work_nalloc)
     {
-        for(thread=0; thread<nbs->nthread_max; thread++)
+        for (thread=0; thread<nbs->nthread_max; thread++)
         {
             nbs->work[thread].sort_work_nalloc =
                 over_alloc_large(ncz_max*grid->na_sc*SGSF);
@@ -1485,7 +1485,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     /* Now we know the dimensions we can fill the grid.
      * This is the first, unsorted fill. We sort the columns after this.
      */
-    for(i=a0; i<a1; i++)
+    for (i=a0; i<a1; i++)
     {
         /* At this point nbs->cell contains the local grid x,y indices */
         cxy = nbs->cell[i];
@@ -1495,14 +1495,14 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     /* Set the cell indices for the moved particles */
     n0 = grid->nc*grid->na_sc;
     n1 = grid->nc*grid->na_sc+grid->cxy_na[grid->ncx*grid->ncy];
-    for(i=n0; i<n1; i++)
+    for (i=n0; i<n1; i++)
     {
         nbs->cell[nbs->a[i]] = i;
     }
 
     /* Sort the super-cell columns along z into the sub-cells. */
-#pragma omp parallel for num_threads(nbs->nthread_max) schedule(static)
-    for(thread=0; thread<nbs->nthread_max; thread++)
+    #pragma omp parallel for num_threads(nbs->nthread_max) schedule(static)
+    for (thread=0; thread<nbs->nthread_max; thread++)
     {
         if (grid->bSimple)
         {
@@ -1530,7 +1530,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
     if (!grid->bSimple)
     {
         grid->nsubc_tot = 0;
-        for(i=0; i<grid->nc; i++)
+        for (i=0; i<grid->nc; i++)
         {
             grid->nsubc_tot += grid->nsubc[i];
         }
@@ -1672,9 +1672,9 @@ void nbnxn_put_on_grid_nonlocal(nbnxn_search_t nbs,
     int  zone,d;
     rvec c0,c1;
 
-    for(zone=1; zone<zones->n; zone++)
+    for (zone=1; zone<zones->n; zone++)
     {
-        for(d=0; d<DIM; d++)
+        for (d=0; d<DIM; d++)
         {
             c0[d] = zones->size[zone].bb_x0[d];
             c1[d] = zones->size[zone].bb_x1[d];
@@ -1726,12 +1726,12 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
     bbcz = grid->bbcz_simple;
     bb   = grid->bb_simple;
 
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
-    for(sc=0; sc<grid->nc; sc++)
+    #pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+    for (sc=0; sc<grid->nc; sc++)
     {
         int c,tx,na;
 
-        for(c=0; c<ncd; c++)
+        for (c=0; c<ncd; c++)
         {
             tx = sc*ncd + c;
 
@@ -1746,21 +1746,21 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
             {
                 switch (nbat->XFormat)
                 {
-                case nbatX4:
-                    /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
-                    calc_bounding_box_x_x4(na,nbat->x+tx*STRIDE_P4,
-                                           bb+tx*NNBSBB_B);
-                    break;
-                case nbatX8:
-                    /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
-                    calc_bounding_box_x_x8(na,nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
-                                           bb+tx*NNBSBB_B);
-                    break;
-                default:
-                    calc_bounding_box(na,nbat->xstride,
-                                      nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
-                                      bb+tx*NNBSBB_B);
-                    break;
+                    case nbatX4:
+                        /* PACK_X4==NBNXN_CPU_CLUSTER_I_SIZE, so this is simple */
+                        calc_bounding_box_x_x4(na,nbat->x+tx*STRIDE_P4,
+                                               bb+tx*NNBSBB_B);
+                        break;
+                    case nbatX8:
+                        /* PACK_X8>NBNXN_CPU_CLUSTER_I_SIZE, more complicated */
+                        calc_bounding_box_x_x8(na,nbat->x+X8_IND_A(tx*NBNXN_CPU_CLUSTER_I_SIZE),
+                                               bb+tx*NNBSBB_B);
+                        break;
+                    default:
+                        calc_bounding_box(na,nbat->xstride,
+                                          nbat->x+tx*NBNXN_CPU_CLUSTER_I_SIZE*nbat->xstride,
+                                          bb+tx*NNBSBB_B);
+                        break;
                 }
                 bbcz[tx*NNBSBB_D+0] = bb[tx*NNBSBB_B         +ZZ];
                 bbcz[tx*NNBSBB_D+1] = bb[tx*NNBSBB_B+NNBSBB_C+ZZ];
@@ -1810,13 +1810,13 @@ void nbnxn_set_atomorder(nbnxn_search_t nbs)
     grid = &nbs->grid[0];
 
     ao = 0;
-    for(cx=0; cx<grid->ncx; cx++)
+    for (cx=0; cx<grid->ncx; cx++)
     {
-        for(cy=0; cy<grid->ncy; cy++)
+        for (cy=0; cy<grid->ncy; cy++)
         {
             cxy = cx*grid->ncy + cy;
             j   = grid->cxy_ind[cxy]*grid->na_sc;
-            for(cz=0; cz<grid->cxy_na[cxy]; cz++)
+            for (cz=0; cz<grid->cxy_na[cxy]; cz++)
             {
                 nbs->a[j]     = ao;
                 nbs->cell[ao] = j;
@@ -1917,8 +1917,8 @@ static float subc_bb_dist2(int si,const float *bb_i_ci,
 
 /* SSE code for bb distance for bb format xyz0 */
 static float subc_bb_dist2_sse(int na_c,
-                              int si,const float *bb_i_ci,
-                              int csj,const float *bb_j_all)
+                               int si,const float *bb_i_ci,
+                               int csj,const float *bb_j_all)
 {
     const float *bb_i,*bb_j;
 
@@ -2059,10 +2059,10 @@ static gmx_bool subc_in_range_x(int na_c,
     int  i,j,i0,j0;
     real d2;
 
-    for(i=0; i<na_c; i++)
+    for (i=0; i<na_c; i++)
     {
         i0 = (si*na_c + i)*DIM;
-        for(j=0; j<na_c; j++)
+        for (j=0; j<na_c; j++)
         {
             j0 = (csj*na_c + j)*stride;
 
@@ -2257,10 +2257,10 @@ static void check_subcell_list_space_supersub(nbnxn_pairlist_t *nbl,
 
     if (ncj4_max > nbl->work->cj4_init)
     {
-        for(j4=nbl->work->cj4_init; j4<ncj4_max; j4++)
+        for (j4=nbl->work->cj4_init; j4<ncj4_max; j4++)
         {
             /* No i-subcells and no excl's in the list initially */
-            for(w=0; w<NWARP; w++)
+            for (w=0; w<NWARP; w++)
             {
                 nbl->cj4[j4].imei[w].imask    = 0U;
                 nbl->cj4[j4].imei[w].excl_ind = 0;
@@ -2276,7 +2276,7 @@ static void set_no_excls(nbnxn_excl_t *excl)
 {
     int t;
 
-    for(t=0; t<WARP_SIZE; t++)
+    for (t=0; t<WARP_SIZE; t++)
     {
         /* Turn all interaction bits on */
         excl->pair[t] = NBNXN_INT_MASK_ALL;
@@ -2362,8 +2362,8 @@ void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
 
     snew(nbl_list->nbl,nbl_list->nnbl);
     /* Execute in order to avoid memory interleaving between threads */
-#pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
-    for(i=0; i<nbl_list->nnbl; i++)
+    #pragma omp parallel for num_threads(nbl_list->nnbl) schedule(static)
+    for (i=0; i<nbl_list->nnbl; i++)
     {
         /* Allocate the nblist data structure locally on each thread
          * to optimize memory access for NUMA architectures.
@@ -2404,12 +2404,12 @@ static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
     fprintf(fp,"nbl average j cell list length %.1f\n",
             0.25*nbl->ncj/(double)nbl->nci);
 
-    for(s=0; s<SHIFTS; s++)
+    for (s=0; s<SHIFTS; s++)
     {
         cs[s] = 0;
     }
     npexcl = 0;
-    for(i=0; i<nbl->nci; i++)
+    for (i=0; i<nbl->nci; i++)
     {
         cs[nbl->ci[i].shift & NBNXN_CI_SHIFT] +=
             nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start;
@@ -2424,7 +2424,7 @@ static void print_nblist_statistics_simple(FILE *fp,const nbnxn_pairlist_t *nbl,
     }
     fprintf(fp,"nbl cell pairs, total: %d excl: %d %.1f%%\n",
             nbl->ncj,npexcl,100*npexcl/(double)nbl->ncj);
-    for(s=0; s<SHIFTS; s++)
+    for (s=0; s<SHIFTS; s++)
     {
         if (cs[s] > 0)
         {
@@ -2456,18 +2456,18 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
     fprintf(fp,"nbl average i sub cell list length %.1f\n",
             nbl->nci_tot/(0.25*nbl->ncj4));
 
-    for(si=0; si<=GPU_NSUBCELL; si++)
+    for (si=0; si<=GPU_NSUBCELL; si++)
     {
         c[si] = 0;
     }
-    for(i=0; i<nbl->nsci; i++)
+    for (i=0; i<nbl->nsci; i++)
     {
-        for(j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
+        for (j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
         {
-            for(j=0; j<4; j++)
+            for (j=0; j<4; j++)
             {
                 b = 0;
-                for(si=0; si<GPU_NSUBCELL; si++)
+                for (si=0; si<GPU_NSUBCELL; si++)
                 {
                     if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
                     {
@@ -2478,7 +2478,7 @@ static void print_nblist_statistics_supersub(FILE *fp,const nbnxn_pairlist_t *nb
             }
         }
     }
-    for(b=0; b<=GPU_NSUBCELL; b++)
+    for (b=0; b<=GPU_NSUBCELL; b++)
     {
         fprintf(fp,"nbl j-list #i-subcell %d %7d %4.1f\n",
                 b,c[b],100.0*c[b]/(double)(nbl->ncj4*NBNXN_GPU_JGROUP_SIZE));
@@ -2497,12 +2497,12 @@ static void print_supersub_nsp(const char *fn,
     sprintf(buf,"%s_%s.xvg",fn,NONLOCAL_I(iloc) ? "nl" : "l");
     fp = ffopen(buf,"w");
 
-    for(i=0; i<nbl->nci; i++)
+    for (i=0; i<nbl->nci; i++)
     {
         nsp = 0;
-        for(j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
+        for (j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
         {
-            for(p=0; p<NBNXN_GPU_JGROUP_SIZE*GPU_NSUBCELL; p++)
+            for (p=0; p<NBNXN_GPU_JGROUP_SIZE*GPU_NSUBCELL; p++)
             {
                 nsp += (nbl->cj4[j4].imei[0].imask >> p) & 1;
             }
@@ -2576,10 +2576,10 @@ static void set_self_and_newton_excls_supersub(nbnxn_pairlist_t *nbl,
     get_nbl_exclusions_2(nbl,cj4_ind,&excl[0],&excl[1]);
 
     /* Only minor < major bits set */
-    for(ej=0; ej<nbl->na_ci; ej++)
+    for (ej=0; ej<nbl->na_ci; ej++)
     {
         w = (ej>>2);
-        for(ei=ej; ei<nbl->na_ci; ei++)
+        for (ei=ej; ei<nbl->na_ci; ei++)
         {
             excl[w]->pair[(ej&(4-1))*nbl->na_ci+ei] &=
                 ~(1U << (sj_offset*GPU_NSUBCELL+si));
@@ -2666,14 +2666,14 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
             int i,j;
 
             cjf_gl = gridj->cell0 + cjf;
-            for(i=0; i<NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (i=0; i<NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                              (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                               sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                               sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjf_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -2708,14 +2708,14 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
             int i,j;
 
             cjl_gl = gridj->cell0 + cjl;
-            for(i=0; i<NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
+            for (i=0; i<NBNXN_CPU_CLUSTER_I_SIZE && !InRange; i++)
             {
-                for(j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
+                for (j=0; j<NBNXN_CPU_CLUSTER_I_SIZE; j++)
                 {
                     InRange = InRange ||
-                        (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
-                         sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
-                         sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
+                              (sqr(x_ci[i*STRIDE_XYZ+XX] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+XX]) +
+                               sqr(x_ci[i*STRIDE_XYZ+YY] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+YY]) +
+                               sqr(x_ci[i*STRIDE_XYZ+ZZ] - x_j[(cjl_gl*NBNXN_CPU_CLUSTER_I_SIZE+j)*STRIDE_XYZ+ZZ]) < rl2);
                 }
             }
             *ndistc += NBNXN_CPU_CLUSTER_I_SIZE*NBNXN_CPU_CLUSTER_I_SIZE;
@@ -2728,7 +2728,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 
     if (cjf <= cjl)
     {
-        for(cj=cjf; cj<=cjl; cj++)
+        for (cj=cjf; cj<=cjl; cj++)
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = gridj->cell0 + cj;
@@ -2794,7 +2794,7 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
 
     na_c = gridj->na_c;
 
-    for(cjo=0; cjo<gridj->nsubc[scj]; cjo++)
+    for (cjo=0; cjo<gridj->nsubc[scj]; cjo++)
     {
         cj4_ind   = (nbl->work->cj_ind >> 2);
         cj_offset = nbl->work->cj_ind - cj4_ind*NBNXN_GPU_JGROUP_SIZE;
@@ -2826,7 +2826,7 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
 
         npair = 0;
         /* We use a fixed upper-bound instead of ci1 to help optimization */
-        for(ci=0; ci<GPU_NSUBCELL; ci++)
+        for (ci=0; ci<GPU_NSUBCELL; ci++)
         {
             if (ci == ci1)
             {
@@ -2880,7 +2880,7 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
 #else
                 !subc_in_range_x
 #endif
-                                (na_c,ci_last,x_ci,cj_gl,stride,x,rl2))
+                (na_c,ci_last,x_ci,cj_gl,stride,x,rl2))
             {
                 imask &= ~(1U << (cj_offset*GPU_NSUBCELL+ci_last));
                 npair--;
@@ -2902,7 +2902,7 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
             }
 
             /* Copy the cluster interaction mask to the list */
-            for(w=0; w<NWARP; w++)
+            for (w=0; w<NWARP; w++)
             {
                 cj4->imei[w].imask |= imask;
             }
@@ -2983,7 +2983,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
 #endif
 
     /* Loop over the atoms in the i super-cell */
-    for(i=0; i<nbl->na_sc; i++)
+    for (i=0; i<nbl->na_sc; i++)
     {
         ai = nbs->a[ci*nbl->na_sc+i];
         if (ai >= 0)
@@ -2991,7 +2991,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
             si  = (i>>na_ci_2log);
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for(eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
+            for (eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
 
@@ -3115,7 +3115,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
     }
 
     /* Loop over the atoms in the i super-cell */
-    for(i=0; i<nbl->na_sc; i++)
+    for (i=0; i<nbl->na_sc; i++)
     {
         ai = nbs->a[sci*nbl->na_sc+i];
         if (ai >= 0)
@@ -3123,7 +3123,7 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
             si  = (i>>na_c_2log);
 
             /* Loop over the topology-based exclusions for this i-atom */
-            for(eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
+            for (eind=excl->index[ai]; eind<excl->index[ai+1]; eind++)
             {
                 aj = excl->a[eind];
 
@@ -3184,9 +3184,9 @@ static void set_sci_top_excls(const nbnxn_search_t nbs,
                         inner_i = i  - si*na_c;
                         inner_e = ge - se*na_c;
 
-/* Macro for getting the index of atom a within a cluster */
+                        /* Macro for getting the index of atom a within a cluster */
 #define AMODI(a)  ((a) & (NBNXN_CPU_CLUSTER_I_SIZE - 1))
-/* Macro for converting an atom number to a cluster number */
+                        /* Macro for converting an atom number to a cluster number */
 #define A2CI(a)   ((a) >> NBNXN_CPU_CLUSTER_I_SIZE_2LOG)
 
                         if (nbl_imask0(nbl,found) & (1U << (AMODI(found)*GPU_NSUBCELL + si)))
@@ -3274,7 +3274,7 @@ static void sort_cj_excl(nbnxn_cj_t *cj,int ncj,
 
     /* Make a list of the j-cells involving exclusions */
     jnew = 0;
-    for(j=0; j<ncj; j++)
+    for (j=0; j<ncj; j++)
     {
         if (cj[j].excl != NBNXN_INT_MASK_ALL)
         {
@@ -3285,14 +3285,14 @@ static void sort_cj_excl(nbnxn_cj_t *cj,int ncj,
     if (!((jnew == 0) ||
           (jnew == 1 && cj[0].excl != NBNXN_INT_MASK_ALL)))
     {
-        for(j=0; j<ncj; j++)
+        for (j=0; j<ncj; j++)
         {
             if (cj[j].excl == NBNXN_INT_MASK_ALL)
             {
                 work->cj[jnew++] = cj[j];
             }
         }
-        for(j=0; j<ncj; j++)
+        for (j=0; j<ncj; j++)
         {
             cj[j] = work->cj[j];
         }
@@ -3378,7 +3378,7 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         {
             nsp_cj4_p = nsp_cj4;
             nsp_cj4   = 0;
-            for(p=0; p<GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
+            for (p=0; p<GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
@@ -3500,9 +3500,9 @@ static void set_icell_bb_supersub(const float *bb,int ci,
 
 #ifdef NBNXN_BBXXXX
     ia = ci*(GPU_NSUBCELL>>STRIDE_8BB_2LOG)*NNBSBB_XXXX;
-    for(m=0; m<(GPU_NSUBCELL>>STRIDE_8BB_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
+    for (m=0; m<(GPU_NSUBCELL>>STRIDE_8BB_2LOG)*NNBSBB_XXXX; m+=NNBSBB_XXXX)
     {
-        for(i=0; i<STRIDE_8BB; i++)
+        for (i=0; i<STRIDE_8BB; i++)
         {
             bb_ci[m+0*STRIDE_8BB+i] = bb[ia+m+0*STRIDE_8BB+i] + shx;
             bb_ci[m+1*STRIDE_8BB+i] = bb[ia+m+1*STRIDE_8BB+i] + shy;
@@ -3514,7 +3514,7 @@ static void set_icell_bb_supersub(const float *bb,int ci,
     }
 #else
     ia = ci*GPU_NSUBCELL*NNBSBB_B;
-    for(i=0; i<GPU_NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
+    for (i=0; i<GPU_NSUBCELL*NNBSBB_B; i+=NNBSBB_B)
     {
         bb_ci[BBL_X] = bb[ia+BBL_X] + shx;
         bb_ci[BBL_Y] = bb[ia+BBL_Y] + shy;
@@ -3537,7 +3537,7 @@ static void icell_set_x_simple(int ci,
 
     ia = ci*NBNXN_CPU_CLUSTER_I_SIZE;
 
-    for(i=0; i<NBNXN_CPU_CLUSTER_I_SIZE; i++)
+    for (i=0; i<NBNXN_CPU_CLUSTER_I_SIZE; i++)
     {
         work->x_ci[i*STRIDE_XYZ+XX] = x[(ia+i)*stride+XX] + shx;
         work->x_ci[i*STRIDE_XYZ+YY] = x[(ia+i)*stride+YY] + shy;
@@ -3558,7 +3558,7 @@ static void icell_set_x_supersub(int ci,
     x_ci = work->x_ci;
 
     ia = ci*GPU_NSUBCELL*na_c;
-    for(i=0; i<GPU_NSUBCELL*na_c; i++)
+    for (i=0; i<GPU_NSUBCELL*na_c; i++)
     {
         x_ci[i*DIM + XX] = x[(ia+i)*stride + XX] + shx;
         x_ci[i*DIM + YY] = x[(ia+i)*stride + YY] + shy;
@@ -3579,13 +3579,13 @@ static void icell_set_x_supersub_sse8(int ci,
 
     x_ci = work->x_ci;
 
-    for(si=0; si<GPU_NSUBCELL; si++)
+    for (si=0; si<GPU_NSUBCELL; si++)
     {
-        for(i=0; i<na_c; i+=STRIDE_8BB)
+        for (i=0; i<na_c; i+=STRIDE_8BB)
         {
             io = si*na_c + i;
             ia = ci*GPU_NSUBCELL*na_c + io;
-            for(j=0; j<STRIDE_8BB; j++)
+            for (j=0; j<STRIDE_8BB; j++)
             {
                 x_ci[io*DIM + j + XX*STRIDE_8BB] = x[(ia+j)*stride+XX] + shx;
                 x_ci[io*DIM + j + YY*STRIDE_8BB] = x[(ia+j)*stride+YY] + shy;
@@ -3623,14 +3623,14 @@ static real nonlocal_vol2(const gmx_domdec_zones_t *zones,rvec ls,real r)
      * as small parts as possible.
      */
 
-    for(z=0; z<zones->n; z++)
+    for (z=0; z<zones->n; z++)
     {
         if (zones->shift[z][XX] + zones->shift[z][YY] + zones->shift[z][ZZ] == 1)
         {
             cl = 0;
             ca = 1;
             za = 1;
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 if (zones->shift[z][d] == 0)
                 {
@@ -3749,13 +3749,13 @@ static void print_nblist_ci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j;
 
-    for(i=0; i<nbl->nci; i++)
+    for (i=0; i<nbl->nci; i++)
     {
         fprintf(fp,"ci %4d  shift %2d  ncj %3d\n",
                 nbl->ci[i].ci,nbl->ci[i].shift,
                 nbl->ci[i].cj_ind_end - nbl->ci[i].cj_ind_start);
 
-        for(j=nbl->ci[i].cj_ind_start; j<nbl->ci[i].cj_ind_end; j++)
+        for (j=nbl->ci[i].cj_ind_start; j<nbl->ci[i].cj_ind_end; j++)
         {
             fprintf(fp,"  cj %5d  imask %x\n",
                     nbl->cj[j].cj,
@@ -3769,15 +3769,15 @@ static void print_nblist_sci_cj(FILE *fp,const nbnxn_pairlist_t *nbl)
 {
     int i,j4,j;
 
-    for(i=0; i<nbl->nsci; i++)
+    for (i=0; i<nbl->nsci; i++)
     {
         fprintf(fp,"ci %4d  shift %2d  ncj4 %2d\n",
                 nbl->sci[i].sci,nbl->sci[i].shift,
                 nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start);
 
-        for(j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
+        for (j4=nbl->sci[i].cj4_ind_start; j4<nbl->sci[i].cj4_ind_end; j4++)
         {
-            for(j=0; j<4; j++)
+            for (j=0; j<4; j++)
             {
                 fprintf(fp,"  sj %5d  imask %x\n",
                         nbl->cj4[j4].cj[j],
@@ -3802,7 +3802,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
     nsci  = nblc->nsci;
     ncj4  = nblc->ncj4;
     nexcl = nblc->nexcl;
-    for(i=0; i<nnbl; i++)
+    for (i=0; i<nnbl; i++)
     {
         nsci  += nbl[i]->nsci;
         ncj4  += nbl[i]->ncj4;
@@ -3833,8 +3833,8 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
     /* Each thread should copy its own data to the combined arrays,
      * as otherwise data will go back and forth between different caches.
      */
-#pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
-    for(n=0; n<nnbl; n++)
+    #pragma omp parallel for num_threads(gmx_omp_nthreads_get(emntPairsearch)) schedule(static)
+    for (n=0; n<nnbl; n++)
     {
         int sci_offset;
         int cj4_offset;
@@ -3849,7 +3849,7 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
         ci_offset   = nblc->nci_tot;
         excl_offset = nblc->nexcl;
 
-        for(i=0; i<n; i++)
+        for (i=0; i<n; i++)
         {
             sci_offset  += nbl[i]->nsci;
             cj4_offset  += nbl[i]->ncj4;
@@ -3859,27 +3859,27 @@ static void combine_nblists(int nnbl,nbnxn_pairlist_t **nbl,
 
         nbli = nbl[n];
 
-        for(i=0; i<nbli->nsci; i++)
+        for (i=0; i<nbli->nsci; i++)
         {
             nblc->sci[sci_offset+i]                = nbli->sci[i];
             nblc->sci[sci_offset+i].cj4_ind_start += cj4_offset;
             nblc->sci[sci_offset+i].cj4_ind_end   += cj4_offset;
         }
 
-        for(j4=0; j4<nbli->ncj4; j4++)
+        for (j4=0; j4<nbli->ncj4; j4++)
         {
             nblc->cj4[cj4_offset+j4] = nbli->cj4[j4];
             nblc->cj4[cj4_offset+j4].imei[0].excl_ind += excl_offset;
             nblc->cj4[cj4_offset+j4].imei[1].excl_ind += excl_offset;
         }
 
-        for(j4=0; j4<nbli->nexcl; j4++)
+        for (j4=0; j4<nbli->nexcl; j4++)
         {
             nblc->excl[excl_offset+j4] = nbli->excl[j4];
         }
     }
 
-    for(n=0; n<nnbl; n++)
+    for (n=0; n<nnbl; n++)
     {
         nblc->nsci    += nbl[n]->nsci;
         nblc->ncj4    += nbl[n]->ncj4;
@@ -4030,7 +4030,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     }
 
     /* Set the shift range */
-    for(d=0; d<DIM; d++)
+    for (d=0; d<DIM; d++)
     {
         /* Check if we need periodicity shifts.
          * Without PBC or with domain decomposition we don't need them.
@@ -4298,7 +4298,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                      gridi->na_c,nbat->xstride,nbat->x,
                                      nbl->work);
 
-                    for(cx=cxf; cx<=cxl; cx++)
+                    for (cx=cxf; cx<=cxl; cx++)
                     {
                         d2zx = d2z;
                         if (gridj->c0[XX] + cx*gridj->sx > bx1)
@@ -4328,7 +4328,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                             cyf_x = cyf;
                         }
 
-                        for(cy=cyf_x; cy<=cyl; cy++)
+                        for (cy=cyf_x; cy<=cyl; cy++)
                         {
                             c0 = gridj->cxy_ind[cx*gridj->ncy+cy];
                             c1 = gridj->cxy_ind[cx*gridj->ncy+cy+1];
@@ -4363,9 +4363,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * be within range.
                                  */
                                 cf = cs;
-                                while(cf > c0 &&
-                                      (bbcz_j[cf*NNBSBB_D+1] >= bz0 ||
-                                       d2xy + sqr(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
+                                while (cf > c0 &&
+                                       (bbcz_j[cf*NNBSBB_D+1] >= bz0 ||
+                                        d2xy + sqr(bbcz_j[cf*NNBSBB_D+1] - bz0) < rl2))
                                 {
                                     cf--;
                                 }
@@ -4374,9 +4374,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                  * be within range.
                                  */
                                 cl = cs;
-                                while(cl < c1-1 &&
-                                      (bbcz_j[cl*NNBSBB_D] <= bz1 ||
-                                       d2xy + sqr(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
+                                while (cl < c1-1 &&
+                                       (bbcz_j[cl*NNBSBB_D] <= bz1 ||
+                                        d2xy + sqr(bbcz_j[cl*NNBSBB_D] - bz1) < rl2))
                                 {
                                     cl++;
                                 }
@@ -4389,7 +4389,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                     int k;
                                     cf = c1;
                                     cl = -1;
-                                    for(k=c0; k<c1; k++)
+                                    for (k=c0; k<c1; k++)
                                     {
                                         if (box_dist2(bx0,bx1,by0,by1,bz0,bz1,
                                                       bb+k*NNBSBB_B) < rl2 &&
@@ -4426,51 +4426,51 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                 {
                                     switch (nb_kernel_type)
                                     {
-                                    case nbk4x4_PlainC:
-                                        check_subcell_list_space_simple(nbl,cl-cf+1);
+                                        case nbk4x4_PlainC:
+                                            check_subcell_list_space_simple(nbl,cl-cf+1);
 
-                                        make_cluster_list_simple(gridj,
-                                                                 nbl,ci,cf,cl,
-                                                                 (gridi == gridj && shift == CENTRAL),
-                                                                 nbat->x,
-                                                                 rl2,rbb2,
-                                                                 &ndistc);
-                                        break;
+                                            make_cluster_list_simple(gridj,
+                                                                     nbl,ci,cf,cl,
+                                                                     (gridi == gridj && shift == CENTRAL),
+                                                                     nbat->x,
+                                                                     rl2,rbb2,
+                                                                     &ndistc);
+                                            break;
 #ifdef NBNXN_SEARCH_SSE
-                                    case nbk4xN_X86_SIMD128:
-                                        check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
-                                        make_cluster_list_x86_simd128(gridj,
-                                                                      nbl,ci,cf,cl,
-                                                                      (gridi == gridj && shift == CENTRAL),
-                                                                      nbat->x,
-                                                                      rl2,rbb2,
-                                                                      &ndistc);
-                                        break;
+                                        case nbk4xN_X86_SIMD128:
+                                            check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
+                                            make_cluster_list_x86_simd128(gridj,
+                                                                          nbl,ci,cf,cl,
+                                                                          (gridi == gridj && shift == CENTRAL),
+                                                                          nbat->x,
+                                                                          rl2,rbb2,
+                                                                          &ndistc);
+                                            break;
 #ifdef GMX_X86_AVX_256
-                                    case nbk4xN_X86_SIMD256:
-                                        check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
-                                        make_cluster_list_x86_simd256(gridj,
-                                                                      nbl,ci,cf,cl,
-                                                                      (gridi == gridj && shift == CENTRAL),
-                                                                      nbat->x,
-                                                                      rl2,rbb2,
-                                                                      &ndistc);
-                                        break;
+                                        case nbk4xN_X86_SIMD256:
+                                            check_subcell_list_space_simple(nbl,ci_to_cj(na_cj_2log,cl-cf)+2);
+                                            make_cluster_list_x86_simd256(gridj,
+                                                                          nbl,ci,cf,cl,
+                                                                          (gridi == gridj && shift == CENTRAL),
+                                                                          nbat->x,
+                                                                          rl2,rbb2,
+                                                                          &ndistc);
+                                            break;
 #endif
 #endif
-                                    case nbk8x8x8_PlainC:
-                                    case nbk8x8x8_CUDA:
-                                        check_subcell_list_space_supersub(nbl,cl-cf+1);
-                                        for(cj=cf; cj<=cl; cj++)
-                                        {
-                                            make_cluster_list_supersub(nbs,gridi,gridj,
-                                                                       nbl,ci,cj,
-                                                                       (gridi == gridj && shift == CENTRAL && ci == cj),
-                                                                       nbat->xstride,nbat->x,
-                                                                       rl2,rbb2,
-                                                                       &ndistc);
-                                        }
-                                        break;
+                                        case nbk8x8x8_PlainC:
+                                        case nbk8x8x8_CUDA:
+                                            check_subcell_list_space_supersub(nbl,cl-cf+1);
+                                            for (cj=cf; cj<=cl; cj++)
+                                            {
+                                                make_cluster_list_supersub(nbs,gridi,gridj,
+                                                                           nbl,ci,cj,
+                                                                           (gridi == gridj && shift == CENTRAL && ci == cj),
+                                                                           nbat->xstride,nbat->x,
+                                                                           rl2,rbb2,
+                                                                           &ndistc);
+                                            }
+                                            break;
                                     }
                                     ncpcheck += cl - cf + 1;
                                 }
@@ -4572,18 +4572,18 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
         switch (nb_kernel_type)
         {
 #ifdef NBNXN_SEARCH_SSE
-        case nbk4xN_X86_SIMD128:
-            nbs->icell_set_x = icell_set_x_x86_simd128;
-            break;
+            case nbk4xN_X86_SIMD128:
+                nbs->icell_set_x = icell_set_x_x86_simd128;
+                break;
 #ifdef GMX_X86_AVX_256
-        case nbk4xN_X86_SIMD256:
-            nbs->icell_set_x = icell_set_x_x86_simd256;
-            break;
+            case nbk4xN_X86_SIMD256:
+                nbs->icell_set_x = icell_set_x_x86_simd256;
+                break;
 #endif
 #endif
-        default:
-            nbs->icell_set_x = icell_set_x_simple;
-            break;
+            default:
+                nbs->icell_set_x = icell_set_x_simple;
+                break;
         }
     }
     else
@@ -4617,12 +4617,12 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     }
 
     /* Clear all pair-lists */
-    for(th=0; th<nnbl; th++)
+    for (th=0; th<nnbl; th++)
     {
         clear_pairlist(nbl[th]);
     }
 
-    for(zi=0; zi<nzi; zi++)
+    for (zi=0; zi<nzi; zi++)
     {
         gridi = &nbs->grid[zi];
 
@@ -4635,7 +4635,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                 zj0++;
             }
         }
-        for(zj=zj0; zj<zj1; zj++)
+        for (zj=zj0; zj<zj1; zj++)
         {
             gridj = &nbs->grid[zj];
 
@@ -4646,8 +4646,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 
             nbs_cycle_start(&nbs->cc[enbsCCsearch]);
 
-#pragma omp parallel for num_threads(nnbl) schedule(static)
-            for(th=0; th<nnbl; th++)
+            #pragma omp parallel for num_threads(nnbl) schedule(static)
+            for (th=0; th<nnbl; th++)
             {
                 if (CombineNBLists && th > 0)
                 {
@@ -4670,7 +4670,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
             np_tot = 0;
             np_noq = 0;
             np_hlj = 0;
-            for(th=0; th<nnbl; th++)
+            for (th=0; th<nnbl; th++)
             {
                 inc_nrnb(nrnb,eNR_NBNXN_DIST2,nbs->work[th].ndistc);
 

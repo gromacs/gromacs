@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -76,12 +76,14 @@ int tMPI_Scan(void* sendbuf, void* recvbuf, int count,
                      sendbuf, recvbuf, count, datatype, op, comm);
 #endif
     if (count==0)
+    {
         return TMPI_SUCCESS;
+    }
     if (!recvbuf)
     {
         return tMPI_Error(comm, TMPI_ERR_BUF);
     }
-    if (sendbuf==TMPI_IN_PLACE) 
+    if (sendbuf==TMPI_IN_PLACE)
     {
         sendbuf=recvbuf;
     }

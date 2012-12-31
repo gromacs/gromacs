@@ -195,7 +195,8 @@ struct gmx_ana_poscalc_t
     gmx::PositionCalculationCollection::Impl *coll;
 };
 
-const char * const gmx::PositionCalculationCollection::typeEnumValues[] = {
+const char * const gmx::PositionCalculationCollection::typeEnumValues[] =
+{
     "atom",
     "res_com",       "res_cog",
     "mol_com",       "mol_cog",
@@ -217,7 +218,7 @@ const char * const gmx::PositionCalculationCollection::typeEnumValues[] = {
 static e_index_t
 index_type_for_poscalc(e_poscalc_t type)
 {
-    switch(type)
+    switch (type)
     {
         case POS_ATOM:    return INDEX_ATOM;
         case POS_RES:     return INDEX_RES;
@@ -637,7 +638,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
-        pc->type   = POS_ATOM; 
+        pc->type   = POS_ATOM;
         pc->flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
     }
     /* Set the POS_COMPLWHOLE flag if the calculation in fact always uses
@@ -1129,7 +1130,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                        gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
     int  i, bi, bj;
-    
+
     if (pc->bEval == true && !(pc->flags & POS_MASKONLY))
     {
         return;
@@ -1158,7 +1159,9 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         gmx_ana_indexmap_update(&p->m, g, true);
         if (pc->bEval)
+        {
             return;
+        }
     }
     if (!(pc->flags & POS_DYNAMIC))
     {
@@ -1248,59 +1251,59 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         bool bMass = pc->flags & POS_MASS;
         switch (pc->type)
         {
-        case POS_ATOM:
-            for (i = 0; i < pc->b.nra; ++i)
-            {
-                copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
-            }
-            if (p->v && fr->bV)
-            {
+            case POS_ATOM:
                 for (i = 0; i < pc->b.nra; ++i)
                 {
-                    copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                    copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
                 }
-            }
-            if (p->f && fr->bF)
-            {
-                for (i = 0; i < pc->b.nra; ++i)
+                if (p->v && fr->bV)
                 {
-                    copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                    for (i = 0; i < pc->b.nra; ++i)
+                    {
+                        copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                    }
                 }
-            }
-            break;
-        case POS_ALL:
-            gmx_calc_comg(top, fr->x, pc->b.nra, pc->b.a, bMass, p->x[0]);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
-            }
-            break;
-        case POS_ALL_PBC:
-            gmx_calc_comg_pbc(top, fr->x, pbc, pc->b.nra, pc->b.a, bMass, p->x[0]);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
-            }
-            break;
-        default:
-            gmx_calc_comg_blocka(top, fr->x, &pc->b, bMass, p->x);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg_blocka(top, fr->v, &pc->b, bMass, p->v);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_blocka(top, fr->f, &pc->b, bMass, p->f);
-            }
-            break;
+                if (p->f && fr->bF)
+                {
+                    for (i = 0; i < pc->b.nra; ++i)
+                    {
+                        copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                    }
+                }
+                break;
+            case POS_ALL:
+                gmx_calc_comg(top, fr->x, pc->b.nra, pc->b.a, bMass, p->x[0]);
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
+                }
+                break;
+            case POS_ALL_PBC:
+                gmx_calc_comg_pbc(top, fr->x, pbc, pc->b.nra, pc->b.a, bMass, p->x[0]);
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg(top, fr->v, pc->b.nra, pc->b.a, bMass, p->v[0]);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_f(top, fr->f, pc->b.nra, pc->b.a, bMass, p->f[0]);
+                }
+                break;
+            default:
+                gmx_calc_comg_blocka(top, fr->x, &pc->b, bMass, p->x);
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg_blocka(top, fr->v, &pc->b, bMass, p->v);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_blocka(top, fr->f, &pc->b, bMass, p->f);
+                }
+                break;
         }
     }
 }

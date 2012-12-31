@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -87,10 +87,15 @@ tMPI_Stack_element *tMPI_Stack_pop(tMPI_Stack *st)
     {
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
         if (head)
+        {
             next=head->next;
+        }
         else
+        {
             next=NULL;
-    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, next));
+        }
+    }
+    while (!tMPI_Atomic_ptr_cas(&(st->head), head, next));
 
     return head;
 }
@@ -101,7 +106,8 @@ tMPI_Stack_element *tMPI_Stack_detach(tMPI_Stack *st)
     do
     {
         head=(tMPI_Stack_element*)tMPI_Atomic_ptr_get( &(st->head) );
-    } while (!tMPI_Atomic_ptr_cas(&(st->head), head, NULL));
+    }
+    while (!tMPI_Atomic_ptr_cas(&(st->head), head, NULL));
 
     return head;
 }
@@ -130,7 +136,8 @@ void tMPI_Queue_enqueue(tMPI_Queue *q, tMPI_Queue_element *qe)
 
     do
     {
-    } while (!tMPI_Atomic_ptr_cas(&(q->head), head, next));
+    }
+    while (!tMPI_Atomic_ptr_cas(&(q->head), head, next));
 }
 #endif
 

@@ -63,7 +63,8 @@ namespace
 {
 
 //! Enum values for plot formats.
-const char *const g_plotFormats[] = {
+const char *const g_plotFormats[] =
+{
     "none", "xmgrace", "xmgr", NULL
 };
 
@@ -92,9 +93,9 @@ void
 AnalysisDataPlotSettings::addOptions(Options *options)
 {
     options->addOption(StringOption("xvg").enumValue(g_plotFormats)
-                           .defaultValue("xmgrace")
-                           .storeEnumIndex(&plotFormat_)
-                           .description("Plot formatting"));
+                       .defaultValue("xmgrace")
+                       .storeEnumIndex(&plotFormat_)
+                       .description("Plot formatting"));
 }
 
 
@@ -307,8 +308,8 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
                 = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
-                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                    : exvgNONE);
+                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                   : exvgNONE);
             output_env_t oenv;
             output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
@@ -397,7 +398,7 @@ AnalysisDataPlotModule::AnalysisDataPlotModule()
 }
 
 AnalysisDataPlotModule::AnalysisDataPlotModule(
-        const AnalysisDataPlotSettings &settings)
+    const AnalysisDataPlotSettings &settings)
     : AbstractPlotModule(settings)
 {
 }
@@ -432,7 +433,7 @@ AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule()
 
 
 AnalysisDataVectorPlotModule::AnalysisDataVectorPlotModule(
-        const AnalysisDataPlotSettings &settings)
+    const AnalysisDataPlotSettings &settings)
     : AbstractPlotModule(settings)
 {
     for (int i = 0; i < DIM; ++i)

@@ -132,7 +132,7 @@ AnalysisDataDisplacementModule::setMaxTime(real tmax)
 
 void
 AnalysisDataDisplacementModule::setMSDHistogram(
-        AnalysisDataBinAverageModulePointer histm)
+    AnalysisDataBinAverageModulePointer histm)
 {
     GMX_RELEASE_ASSERT(_impl->histm == NULL, "Can only set MSD histogram once");
     _impl->histm = histm.get();
@@ -217,12 +217,12 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
         _impl->ci = 0;
     }
 
-/*
-    for (int i = 0; i < _impl->nmax; ++i)
-    {
-        _impl->p[_impl->ci + i].bPres = false;
-    }
-*/
+    /*
+        for (int i = 0; i < _impl->nmax; ++i)
+        {
+            _impl->p[_impl->ci + i].bPres = false;
+        }
+    */
     _impl->nstored++;
     _impl->bFirst = false;
 }

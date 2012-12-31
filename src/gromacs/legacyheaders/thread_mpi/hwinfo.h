@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -56,7 +56,7 @@ int tMPI_Get_hw_nthreads(void);
 
 
 /*! \brief Determine the recommended number of hardware threads to run on
-           
+
 
     Returns the total number of cores and SMT threads to run on. This is
     equal to the number of hardware threads available, or 1 if the number

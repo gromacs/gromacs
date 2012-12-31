@@ -40,7 +40,8 @@
 extern "C" {
 #endif
 
-typedef struct {
+typedef struct
+{
     /* VdW */
     real rvdw;
     real sh_invrc6; /* For shifting the LJ potential */
@@ -54,7 +55,7 @@ typedef struct {
     /* Cut-off */
     real rlist;
     real rlistlong;
-    
+
     /* PME/Ewald */
     real ewaldcoeff;
     real sh_ewald;   /* For shifting the Ewald potential */

@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -58,8 +58,8 @@ files.
 
 
 /* once */
-int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param, 
-                int *was_first)
+int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param,
+              int *was_first)
 {
     int myrank;
     int ret=TMPI_SUCCESS;
@@ -81,20 +81,22 @@ int tMPI_Once(tMPI_Comm comm, void (*function)(void*), void *param,
 
     /* now do a compare-and-swap on the current_syncc */
     syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
-    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
-                                         If it is a later number, we can't 
+    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number.
+                                         If it is a later number, we can't
                                          have been the first to arrive here. */
         tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         function(param);
         if (was_first)
+        {
             *was_first=TRUE;
+        }
     }
     return ret;
 }
 
-void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param, 
+void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
                      int *was_first)
 {
     int myrank;
@@ -119,18 +121,20 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
     /* now do a compare-and-swap on the current_syncc */
     syncs=tMPI_Atomic_get( &(cev->coll.current_sync));
     tMPI_Atomic_memory_barrier_acq();
-    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number. 
-                                         If it is a later number, we can't 
-                                         have been the first to arrive here. 
+    if ((csync->syncs - syncs > 0) && /* check if sync was an earlier number.
+                                         If it is a later number, we can't
+                                         have been the first to arrive here.
                                          Calculating the difference instead
-                                         of comparing directly avoids ABA 
+                                         of comparing directly avoids ABA
                                          problems. */
         tMPI_Atomic_cas(&(cev->coll.current_sync), syncs, csync->syncs))
     {
         /* we're the first! */
         ret=function(param);
         if (was_first)
+        {
             *was_first=TRUE;
+        }
 
         /* broadcast the output data */
         cev->coll.res=ret;
@@ -149,7 +153,8 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
         {
             /*tMPI_Atomic_memory_barrier();*/
             syncs=tMPI_Atomic_get( &(cev->coll.current_sync) );
-        } while (csync->syncs - syncs > 0); /* difference again due to ABA 
+        }
+        while (csync->syncs - syncs > 0); /* difference again due to ABA
                                                problems */
         tMPI_Atomic_memory_barrier_acq();
         ret=cev->coll.res;

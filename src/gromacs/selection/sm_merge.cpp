@@ -83,14 +83,16 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the merging selection modifiers. */
-static gmx_ana_selparam_t smparams_merge[] = {
+static gmx_ana_selparam_t smparams_merge[] =
+{
     {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {NULL,       {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
     {"stride",   {INT_VALUE,  1, {NULL}}, NULL, SPAR_OPTIONAL},
 };
 
 /** Help text for the merging selection modifiers. */
-static const char *help_merge[] = {
+static const char *help_merge[] =
+{
     "MERGING SELECTIONS[PAR]",
 
     "[TT]POSEXPR merge POSEXPR [stride INT][tt][BR]",
@@ -116,7 +118,8 @@ static const char *help_merge[] = {
 };
 
 /** \internal Selection method data for the \p plus modifier. */
-gmx_ana_selmethod_t sm_merge = {
+gmx_ana_selmethod_t sm_merge =
+{
     "merge", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_merge), smparams_merge,
     &init_data_merge,
@@ -131,7 +134,8 @@ gmx_ana_selmethod_t sm_merge = {
 };
 
 /** \internal Selection method data for the \p plus modifier. */
-gmx_ana_selmethod_t sm_plus = {
+gmx_ana_selmethod_t sm_plus =
+{
     "plus", POS_VALUE, SMETH_MODIFIER,
     asize(smparams_merge)-1, smparams_merge,
     &init_data_merge,

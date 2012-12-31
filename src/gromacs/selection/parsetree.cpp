@@ -287,7 +287,7 @@ SelectionParserValue::SelectionParserValue(e_selvalue_t type)
 }
 
 SelectionParserValue::SelectionParserValue(
-        const SelectionTreeElementPointer &expr)
+    const SelectionTreeElementPointer &expr)
     : type(expr->v.type), expr(expr)
 {
     memset(&u, 0, sizeof(u));
@@ -298,11 +298,11 @@ SelectionParserValue::SelectionParserValue(
  */
 
 SelectionParserParameter::SelectionParserParameter(
-        const char *name,
-        SelectionParserValueListPointer values)
+    const char *name,
+    SelectionParserValueListPointer values)
     : name_(name != NULL ? name : ""),
       values_(values ? move(values)
-                     : SelectionParserValueListPointer(new SelectionParserValueList))
+              : SelectionParserValueListPointer(new SelectionParserValueList))
 {
 }
 
@@ -569,7 +569,7 @@ _gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
 {
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_ARITHMETIC));
     sel->v.type        = REAL_VALUE;
-    switch(op)
+    switch (op)
     {
         case '+': sel->u.arith.type = ARITH_PLUS; break;
         case '-': sel->u.arith.type = (right ? ARITH_MINUS : ARITH_NEG); break;
@@ -618,8 +618,8 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
     params.push_back(SelectionParserParameter::createFromExpression(name, right));
     // Create the parameter for the operator.
     params.push_back(
-            SelectionParserParameter::create(
-                "op", SelectionParserValue::createString(cmpop)));
+        SelectionParserParameter::create(
+            "op", SelectionParserValue::createString(cmpop)));
     if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
@@ -660,7 +660,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
     {
         // TODO: Would assert be better?
         GMX_THROW(gmx::InternalError(
-                "Keyword initialization called with non-keyword method"));
+                      "Keyword initialization called with non-keyword method"));
     }
 
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION));
@@ -678,7 +678,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
             case STR_VALUE:  kwmethod = &sm_keyword_str;  break;
             default:
                 GMX_THROW(gmx::InternalError(
-                        "Unknown type for keyword selection"));
+                              "Unknown type for keyword selection"));
         }
         /* Initialize the selection element */
         root.reset(new SelectionTreeElement(SEL_EXPRESSION));
@@ -689,7 +689,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
         }
         SelectionParserParameterList params;
         params.push_back(
-                SelectionParserParameter::createFromExpression(NULL, child));
+            SelectionParserParameter::createFromExpression(NULL, child));
         params.push_back(SelectionParserParameter::create(NULL, move(args)));
         if (!_gmx_sel_parse_params(params, root->u.expr.method->nparams,
                                    root->u.expr.method->param, root, scanner))
@@ -739,9 +739,9 @@ _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
                                const char *rpost, yyscan_t scanner)
 {
     GMX_RELEASE_ASSERT(method->type == STR_VALUE,
-            "String keyword method called for a non-string-valued method");
+                       "String keyword method called for a non-string-valued method");
     GMX_RELEASE_ASSERT(args && !args->empty(),
-            "String keyword matching method called without any values");
+                       "String keyword matching method called without any values");
     return init_keyword_internal(method, matchType, move(args), rpost, scanner);
 }
 
@@ -830,7 +830,7 @@ _gmx_sel_init_modifier(gmx_ana_selmethod_t *method,
     else
     {
         params->push_front(
-                SelectionParserParameter::createFromExpression(NULL, sel));
+            SelectionParserParameter::createFromExpression(NULL, sel));
         root = modifier;
     }
     /* Process the parameters */
@@ -1021,7 +1021,7 @@ _gmx_sel_init_selection(const char *name,
     {
         /* FIXME: Better handling of this error */
         GMX_THROW(gmx::InternalError(
-                "Each selection must evaluate to a position"));
+                      "Each selection must evaluate to a position"));
     }
 
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_ROOT));
@@ -1188,8 +1188,8 @@ _gmx_sel_append_selection(const SelectionTreeElementPointer &sel,
         if (sel->child->type != SEL_SUBEXPR)
         {
             gmx::SelectionDataPointer selPtr(
-                    new gmx::internal::SelectionData(
-                        sel.get(), _gmx_sel_lexer_pselstr(scanner)));
+                new gmx::internal::SelectionData(
+                    sel.get(), _gmx_sel_lexer_pselstr(scanner)));
             sc->sel.push_back(gmx::move(selPtr));
         }
     }
@@ -1226,7 +1226,9 @@ _gmx_sel_handle_empty_cmd(yyscan_t scanner)
     int                      i;
 
     if (!_gmx_sel_is_lexer_interactive(scanner))
+    {
         return;
+    }
 
     if (grps)
     {

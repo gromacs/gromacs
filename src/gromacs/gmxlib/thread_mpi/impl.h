@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -70,9 +70,9 @@ files.
 
 
 /**************************************************************************
-   
-  BASIC DEFINITIONS 
-   
+
+  BASIC DEFINITIONS
+
 **************************************************************************/
 
 
@@ -84,16 +84,16 @@ typedef int tmpi_bool;
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
 /**************************************************************************
-   
-   PRE-ALLOCATED COMMUNICATION BUFFERS 
-   
+
+   PRE-ALLOCATED COMMUNICATION BUFFERS
+
 **************************************************************************/
 
 
-/* Buffer structure for collective communications. Every thread structure 
-   has several of these ready to be used when the collective data 
-   transmission is small enough for double copying to occur (i.e. the size 
-   of the transmission is less than N*MAX_COPY_BUFFER_SIZE, where N is the 
+/* Buffer structure for collective communications. Every thread structure
+   has several of these ready to be used when the collective data
+   transmission is small enough for double copying to occur (i.e. the size
+   of the transmission is less than N*MAX_COPY_BUFFER_SIZE, where N is the
    number of receiving threads).  */
 struct copy_buffer
 {
@@ -125,32 +125,32 @@ struct copy_buffer_list
 
 
 /**************************************************************************
-   
-   POINT-TO-POINT COMMUNICATION DATA STRUCTURES 
-   
+
+   POINT-TO-POINT COMMUNICATION DATA STRUCTURES
+
 **************************************************************************/
 
-/* the message envelopes (as described in the MPI standard). 
+/* the message envelopes (as described in the MPI standard).
    These fully describes the message, and make each message unique (enough).
 
-   Transmitting data works by having the sender put a pointer to an envelope 
-   onto the receiver's new envelope list corresponding to the originating 
-   thread. 
+   Transmitting data works by having the sender put a pointer to an envelope
+   onto the receiver's new envelope list corresponding to the originating
+   thread.
    The sender then waits until the receiver finishes the transmission, while
-   matching all incoming new envelopes against its own list of receive 
+   matching all incoming new envelopes against its own list of receive
    envelopes.
 
    The receiver either directly matches its receiving envelope against
    all previously un-matched sending envelopes, or, if no suitable envelope
-   is found, it puts the receive envelope on a receive list. 
-   Once waiting for completion, the receiver matches against all incoming 
+   is found, it puts the receive envelope on a receive list.
+   Once waiting for completion, the receiver matches against all incoming
    new envelopes.  */
 
 /* the state of an individual point-to-point transmission */
 enum envelope_state
 {
     env_unmatched       = 0, /* the envelope has not had a match yet */
-    env_copying         = 1, /* busy copying (only used for send envelope 
+    env_copying         = 1, /* busy copying (only used for send envelope
                                 by receiver if using_cpbuf is true,
                                 but cb was still NULL).  */
     env_cb_available    = 2, /* the copy buffer is available. Set by
@@ -176,8 +176,8 @@ struct envelope
 
     tmpi_bool nonblock; /* whether the receiver is non-blocking */
 
-    /* state, values from enum_envelope_state .  
-       (there's a few busy-waits relying on this flag). 
+    /* state, values from enum_envelope_state .
+       (there's a few busy-waits relying on this flag).
        status=env_unmatched  is the initial state.*/
     tMPI_Atomic_t state;
 
@@ -190,7 +190,7 @@ struct envelope
     /* prev and next envelopes in the send/recv_envelope_list linked list  */
     struct envelope *prev,*next;
 
-    tmpi_bool send; /* whether this is a send envelope (if TRUE), or a receive 
+    tmpi_bool send; /* whether this is a send envelope (if TRUE), or a receive
                   envelope (if FALSE) */
 #ifdef USE_SEND_RECV_COPY_BUFFER
     tmpi_bool using_cb; /* whether a copy buffer is (going to be) used */
@@ -208,7 +208,7 @@ struct envelope
 
 /* singly linked lists of free send & receive envelopes belonging to a
    thread. */
-struct free_envelope_list 
+struct free_envelope_list
 {
     struct envelope *head_recv; /* the first element in the linked list */
     struct envelope *recv_alloc_head;  /* the allocated recv list */
@@ -220,26 +220,26 @@ struct send_envelope_list
     struct envelope *head_free; /* singly linked list with free send
                                    envelopes. A single-thread LIFO.*/
 #ifdef TMPI_LOCK_FREE_LISTS
-    tMPI_Atomic_ptr_t head_new; /* singly linked list with the new send 
-                                  envelopes (i.e. those that are put there by 
-                                  the sending thread, but not yet checked by 
-                                  the receiving thread). This is a lock-free 
+    tMPI_Atomic_ptr_t head_new; /* singly linked list with the new send
+                                  envelopes (i.e. those that are put there by
+                                  the sending thread, but not yet checked by
+                                  the receiving thread). This is a lock-free
                                   shared detachable list.*/
     tMPI_Atomic_ptr_t head_rts; /* singly linked list with free send
-                                   envelopes returned by the other thread. 
+                                   envelopes returned by the other thread.
                                    This is a lock-free shared LIFO.*/
 #else
-    struct envelope *head_new; /* singly linked list with the new send 
-                                  envelopes (i.e. those that are put there by 
-                                  the sending thread, but not yet checked by 
+    struct envelope *head_new; /* singly linked list with the new send
+                                  envelopes (i.e. those that are put there by
+                                  the sending thread, but not yet checked by
                                   the receiving thread). */
     struct envelope *head_rts; /* singly linked list with free send envelopes */
     tMPI_Spinlock_t lock_new; /* this locks head_new */
     tMPI_Spinlock_t lock_rts; /* this locks head_rts */
 #endif
-    struct envelope *head_old; /* the old send envelopes, in a circular doubly 
-                                  linked list. These have been checked by the 
-                                  receiving thread against the existing 
+    struct envelope *head_old; /* the old send envelopes, in a circular doubly
+                                  linked list. These have been checked by the
+                                  receiving thread against the existing
                                   recv_envelope_list. */
 
     struct envelope *alloc_head;  /* the allocated send list */
@@ -267,14 +267,14 @@ struct tmpi_req_
     tmpi_bool cancelled; /* whether the transmission was canceled */
 
     struct tmpi_req_ *next,*prev; /* next,prev request in linked list,
-                                     used in the req_list, but also in 
+                                     used in the req_list, but also in
                                      tMPI_Test_mult().  */
 };
 
 /* pre-allocated  request object list */
 struct req_list
 {
-    struct tmpi_req_ *head; /* pre-allocated singly linked list of requests. 
+    struct tmpi_req_ *head; /* pre-allocated singly linked list of requests.
                                (i.e. reqs->prev is undefined). */
     struct tmpi_req_ *alloc_head; /* the allocated block */
 };
@@ -296,7 +296,7 @@ struct req_list
 
 /**************************************************************************
 
-  MULTICAST COMMUNICATION DATA STRUCTURES 
+  MULTICAST COMMUNICATION DATA STRUCTURES
 
 **************************************************************************/
 
@@ -332,14 +332,14 @@ struct coll_env_thread
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     tmpi_bool using_cb; /* whether a copy buffer is (going to be) used */
     tMPI_Atomic_t buf_readcount; /* Number of threads reading from buf
-                                    while using_cpbuf is true, but cpbuf 
+                                    while using_cpbuf is true, but cpbuf
                                     is still NULL.  */
     tMPI_Atomic_ptr_t *cpbuf; /* copy_buffer pointers. */
     struct copy_buffer *cb; /* the copy buffer cpbuf points to */
 #endif
 
-    tMPI_Event send_ev; /* event associated with being the sending thread. 
-                           Triggered when last receiving thread is ready, 
+    tMPI_Event send_ev; /* event associated with being the sending thread.
+                           Triggered when last receiving thread is ready,
                            and the coll_env_thread is ready for re-use. */
     tMPI_Event recv_ev; /* event associated with being a receiving thread. */
 
@@ -358,7 +358,7 @@ struct coll_env_coll
     void *res; /* result data for once calls. */
 };
 
-/* the collective communication envelope. There's a few of these per 
+/* the collective communication envelope. There's a few of these per
    comm, and each one stands for one collective communication call.  */
 struct coll_env
 {
@@ -368,7 +368,7 @@ struct coll_env
     int N;
 };
 
-/* multicast synchronization data structure. There's one of these for 
+/* multicast synchronization data structure. There's one of these for
    each thread in each tMPI_Comm structure */
 struct coll_sync
 {
@@ -391,11 +391,11 @@ struct coll_sync
 
 /**************************************************************************
 
-  THREAD DATA STRUCTURES 
+  THREAD DATA STRUCTURES
 
 **************************************************************************/
 
-/* information about a running thread. This structure is put in a 
+/* information about a running thread. This structure is put in a
    globally available array; the envelope exchange, etc. are all done through
    the elements of this array.*/
 struct tmpi_thread
@@ -409,10 +409,10 @@ struct tmpi_thread
     /* the send envelopes posted by other threadas */
     struct send_envelope_list *evs;
     /* free send and receive envelopes */
-    struct free_envelope_list envelopes; 
+    struct free_envelope_list envelopes;
     /* number of finished send envelopes */
-    tMPI_Atomic_t ev_outgoing_received; 
-    /* the p2p communication events (incoming envelopes + finished send 
+    tMPI_Atomic_t ev_outgoing_received;
+    /* the p2p communication events (incoming envelopes + finished send
        envelopes generate events) */
     tMPI_Event p2p_event;
     TMPI_YIELD_WAIT_DATA /* data associated with waiting */
@@ -421,7 +421,7 @@ struct tmpi_thread
     /* collective communication structures: */
 #ifdef USE_COLLECTIVE_COPY_BUFFER
     /* copy buffer list for multicast communications */
-    struct copy_buffer_list cbl_multi; 
+    struct copy_buffer_list cbl_multi;
 #endif
 
     /* miscellaneous data: */
@@ -431,17 +431,17 @@ struct tmpi_thread
     /* the per-thread profile structure that keeps call counts & wait times. */
     struct tmpi_profile profile;
 #endif
-    /* The start function (or NULL, if a main()-style start function is to 
+    /* The start function (or NULL, if a main()-style start function is to
        be called) */
-    void (*start_fn)(void*); 
+    void (*start_fn)(void*);
     /* The main()-style start function */
     int (*start_fn_main)(int, char**);
     /* the argument to the start function, if it's not main()*/
-    void *start_arg; 
+    void *start_arg;
 
-    /* we copy these for each thread (providing these to main() is not 
-       required by the MPI standard, but it's convenient). Note that we copy, 
-       because some programs (like Gromacs) like to manipulate these. */    
+    /* we copy these for each thread (providing these to main() is not
+       required by the MPI standard, but it's convenient). Note that we copy,
+       because some programs (like Gromacs) like to manipulate these. */
     int argc;
     char **argv;
 };
@@ -453,7 +453,7 @@ struct tmpi_thread
 
 /**************************************************************************
 
-  ERROR HANDLER DATA STRUCTURES 
+  ERROR HANDLER DATA STRUCTURES
 
 **************************************************************************/
 
@@ -524,7 +524,7 @@ struct tmpi_global
 
 /**************************************************************************
 
-  COMMUNICATOR DATA STRUCTURES 
+  COMMUNICATOR DATA STRUCTURES
 
 **************************************************************************/
 
@@ -563,18 +563,18 @@ struct tmpi_comm_
     struct coll_sync *csync; /* list of multicast sync objecs */
 
     /* lists of globally shared send/receive buffers for tMPI_Reduce. */
-    tMPI_Atomic_ptr_t *reduce_sendbuf, *reduce_recvbuf; 
-    
-    /* mutex for communication object creation. Traditional mutexes are 
-       better here because communicator creation should not be done in 
-       time-critical sections of code.   */ 
+    tMPI_Atomic_ptr_t *reduce_sendbuf, *reduce_recvbuf;
+
+    /* mutex for communication object creation. Traditional mutexes are
+       better here because communicator creation should not be done in
+       time-critical sections of code.   */
     tMPI_Thread_mutex_t comm_create_lock;
-    tMPI_Thread_cond_t comm_create_prep; 
+    tMPI_Thread_cond_t comm_create_prep;
     tMPI_Thread_cond_t comm_create_finish;
 
     tMPI_Comm *new_comm; /* newly created communicators */
 
-    /* the split structure is shared among the comm threads and is 
+    /* the split structure is shared among the comm threads and is
        allocated & deallocated during tMPI_Comm_split */
     struct tmpi_split *split;
 
@@ -584,8 +584,8 @@ struct tmpi_comm_
 
     tMPI_Errhandler erh;
 
-    /* links for a global circular list of all comms that starts at 
-       TMPI_COMM_WORLD. Used to de-allocate the comm structures after 
+    /* links for a global circular list of all comms that starts at
+       TMPI_COMM_WORLD. Used to de-allocate the comm structures after
        tMPI_Finalize(). */
     struct tmpi_comm_ *next,*prev;
 
@@ -597,7 +597,7 @@ struct tmpi_comm_
 
 /* specific for tMPI_Split: */
 struct tmpi_split
-{ 
+{
     volatile int Ncol_init;
     volatile int Ncol_destroy;
     volatile tmpi_bool can_finish;
@@ -643,7 +643,7 @@ struct tmpi_datatype_component
 /* we don't support datatypes with holes (yet)  */
 struct tmpi_datatype_
 {
-    size_t size; /* full extent of type. */   
+    size_t size; /* full extent of type. */
     tMPI_Op_fn *op_functions; /* array of op functions for this datatype */
     int N_comp; /* number of components */
     struct tmpi_datatype_component *comps; /* the components */

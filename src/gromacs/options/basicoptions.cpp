@@ -73,7 +73,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                      "Expected 1 or %d values, got %d", length, values->size())));
+                                                 "Expected 1 or %d values, got %d", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);

@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -30,7 +30,7 @@ extern "C" {
 #endif
 
 typedef struct gmx_parallel_3dfft *
-gmx_parallel_3dfft_t;
+        gmx_parallel_3dfft_t;
 
 
 
@@ -41,7 +41,7 @@ gmx_parallel_3dfft_t;
  *
  *  The routine is optimized for small-to-medium size FFTs used for PME and
  *  PPPM algorithms, and do allocate extra workspace whenever it might improve
- *  performance. 
+ *  performance.
  *
  *  \param pfft_setup     Pointer to parallel 3dfft setup structure, previously
  *                        allocated or with automatic storage.
@@ -57,7 +57,7 @@ gmx_parallel_3dfft_t;
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
  *  \param nthreads       Run in parallel using n threads
- *    
+ *
  *  \return 0 or a standard error code.
  */
 int

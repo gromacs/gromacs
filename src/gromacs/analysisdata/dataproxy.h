@@ -60,7 +60,7 @@ namespace gmx
  * \ingroup module_analysisdata
  */
 class AnalysisDataProxy : public AbstractAnalysisData,
-                          public AnalysisDataModuleInterface
+    public AnalysisDataModuleInterface
 {
     public:
         /*! \brief

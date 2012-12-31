@@ -477,7 +477,7 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
     int        nalloc;
 
     GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
-            "Wrong allocation method called");
+                       "Wrong allocation method called");
     if (sel->mempool)
     {
         return;
@@ -502,10 +502,10 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
         if (sel->type == SEL_SUBEXPRREF)
         {
             GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
-                "Subexpression expected for subexpression reference");
+                               "Subexpression expected for subexpression reference");
             child = sel->child->child;
             GMX_RELEASE_ASSERT(child,
-                "Subexpression elements should always have a child element");
+                               "Subexpression elements should always have a child element");
         }
         nalloc = child->v.nr;
     }
@@ -535,9 +535,9 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
     int nalloc, isize;
 
     GMX_RELEASE_ASSERT(sel->v.type == POS_VALUE,
-            "Wrong allocation method called");
+                       "Wrong allocation method called");
     GMX_RELEASE_ASSERT(!(sel->flags & SEL_ATOMVAL),
-            "Per-atom evaluated positions not implemented");
+                       "Per-atom evaluated positions not implemented");
     if (sel->mempool)
     {
         return;
@@ -547,10 +547,10 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
     if (sel->type == SEL_SUBEXPRREF)
     {
         GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
-            "Subexpression expected for subexpression reference");
+                           "Subexpression expected for subexpression reference");
         child = sel->child->child;
         GMX_RELEASE_ASSERT(child,
-            "Subexpression elements should always have a child element");
+                           "Subexpression elements should always have a child element");
     }
     nalloc = child->v.u.p->nr;
     isize = child->v.u.p->m.b.nra;
@@ -808,7 +808,7 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
 
 /*! \brief
  * Extracts subexpressions of the selection chain.
- * 
+ *
  * \param   sel First selection in the whole selection chain.
  * \returns The new first element for the chain.
  *
@@ -966,7 +966,7 @@ reorder_boolean_static_children(const SelectionTreeElementPointer &sel)
     {
         // Add a dummy head element that precedes the first child.
         SelectionTreeElementPointer dummy(
-                new SelectionTreeElement(SEL_BOOLEAN));
+            new SelectionTreeElement(SEL_BOOLEAN));
         dummy->next = sel->child;
         SelectionTreeElementPointer prev  = dummy;
         SelectionTreeElementPointer child = dummy;
@@ -1810,7 +1810,7 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
     {
         sel->flags |= SEL_METHODINIT;
         sel->u.expr.method->init(top, sel->u.expr.method->nparams,
-                sel->u.expr.method->param, sel->u.expr.mdata);
+                                 sel->u.expr.method->param, sel->u.expr.mdata);
     }
     if (bAtomVal || !(sel->flags & SEL_OUTINIT))
     {
@@ -1827,11 +1827,11 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
         else
         {
             GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
-                    "Output initialization must be provided for "
-                    "position-valued selection methods");
+                               "Output initialization must be provided for "
+                               "position-valued selection methods");
             GMX_RELEASE_ASSERT(!(sel->flags & SEL_VARNUMVAL),
-                    "Output initialization must be provided for "
-                    "SMETH_VARNUMVAL selection methods");
+                               "Output initialization must be provided for "
+                               "SMETH_VARNUMVAL selection methods");
             alloc_selection_data(sel, isize, true);
             if ((sel->flags & SEL_DYNAMIC)
                 && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
@@ -2039,8 +2039,8 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
                 && sel->child->v.u.g->isize < gmin->isize)
             {
                 GMX_RELEASE_ASSERT(sel->child->type == SEL_CONST,
-                        "The first child should have already been evaluated "
-                        "to a constant expression");
+                                   "The first child should have already been evaluated "
+                                   "to a constant expression");
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, false);
                 if (sel->child->u.cgrp.nalloc_index > 0)
@@ -2054,7 +2054,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
                 else
                 {
                     GMX_RELEASE_ASSERT(sel->child->u.cgrp.index == sel->child->v.u.g->index,
-                            "If not allocated, the static group should equal the value");
+                                       "If not allocated, the static group should equal the value");
                     sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
@@ -2068,7 +2068,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
 
 /*! \brief
  * Evaluates the static parts of \p sel and analyzes the structure.
- * 
+ *
  * \param[in]     data Evaluation data.
  * \param[in,out] sel  Selection currently being evaluated.
  * \param[in]     g    Group for which \p sel should be evaluated.
@@ -2079,7 +2079,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
  * It does the single most complex task in the compiler: after all elements
  * have been processed, the \p gmin and \p gmax fields of \p t_compiler_data
  * have been properly initialized, enough memory has been allocated for
- * storing the value of each expression, and the static parts of the 
+ * storing the value of each expression, and the static parts of the
  * expressions have been evaluated.
  * The above is exactly true only for elements other than subexpressions:
  * another pass is required for subexpressions that are referred to more than

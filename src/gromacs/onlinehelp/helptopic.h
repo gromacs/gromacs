@@ -202,7 +202,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
  * \inlibraryapi
  */
 typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
-        CompositeHelpTopicPointer;
+CompositeHelpTopicPointer;
 //! \endcond
 
 /*! \libinternal \brief

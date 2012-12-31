@@ -400,7 +400,7 @@ static int
 grid_index(gmx_ana_nbsearch_t *d, const ivec cell)
 {
     return cell[XX] + cell[YY] * d->ncelldim[XX]
-        + cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
+           + cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
 }
 
 /*! \brief

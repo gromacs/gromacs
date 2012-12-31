@@ -12,16 +12,16 @@
  * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
  * a full list of developers and information, check out http://www.gromacs.org
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
  * later version.
  * As a special exception, you may use this file as part of a free software
  * library without restriction.  Specifically, if other files instantiate
  * templates or use macros or inline functions from this file, or you compile
  * this file and link it with other files to produce an executable, this
  * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * the GNU Lesser General Public License.
  *
  * In plain-speak: do not worry about classes/macros/templates either - only
  * changes to the library have to be LGPL, not an application linking with it.
@@ -71,21 +71,21 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
-                            (const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f
+(const nbnxn_pairlist_t     *nbl,
+ const nbnxn_atomdata_t     *nbat,
+ const interaction_const_t  *ic,
+ rvec                       *shift_vec,
+ real                       *f
 #ifdef CALC_SHIFTFORCES
-                             ,
-                             real                       *fshift
+ ,
+ real                       *fshift
 #endif
 #ifdef CALC_ENERGIES
-                             ,
-                             real                       *Vvdw,
-                             real                       *Vc
+ ,
+ real                       *Vvdw,
+ real                       *Vc
 #endif
-                            )
+)
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
@@ -193,7 +193,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     l_cj = nbl->cj;
 
     ninner = 0;
-    for(n=0; n<nbl->nci; n++)
+    for (n=0; n<nbl->nci; n++)
     {
         int i,d;
 
@@ -216,16 +216,16 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         Vvdw_ci = 0;
         Vc_ci   = 0;
 #else
-        for(i=0; i<UNROLLI; i++)
+        for (i=0; i<UNROLLI; i++)
         {
             egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
         }
 #endif
 #endif
 
-        for(i=0; i<UNROLLI; i++)
+        for (i=0; i<UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
@@ -250,7 +250,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #endif
 
-            for(i=0; i<UNROLLI; i++)
+            for (i=0; i<UNROLLI; i++)
             {
                 qi[i] = facel*q[ci*UNROLLI+i];
 
@@ -262,7 +262,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #else
                     Vc[0]
 #endif
-                        -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
+                    -= qi[i]*q[ci*UNROLLI+i]*Vc_sub_self;
                 }
 #endif
             }
@@ -295,7 +295,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             cjind++;
         }
 
-        for(; (cjind<cjind1); cjind++)
+        for (; (cjind<cjind1); cjind++)
         {
             if (half_LJ)
             {
@@ -320,9 +320,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-        for(i=0; i<UNROLLI; i++)
+        for (i=0; i<UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d=0; d<DIM; d++)
             {
                 f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
             }
@@ -331,9 +331,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         if (fshift != NULL)
         {
             /* Add i forces to shifted force list */
-            for(i=0; i<UNROLLI; i++)
+            for (i=0; i<UNROLLI; i++)
             {
-                for(d=0; d<DIM; d++)
+                for (d=0; d<DIM; d++)
                 {
                     fshift[ishf+d] += fi[i*FI_STRIDE+d];
                 }
@@ -347,7 +347,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         *Vc   += Vc_ci;
 #endif
 #endif
-	}
+    }
 
 #ifdef COUNT_PAIRS
     printf("atom pairs %d\n",npair);

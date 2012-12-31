@@ -98,7 +98,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
+        new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 
@@ -116,7 +116,7 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
     EXPECT_THROW(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
-            new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
+        new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
     EXPECT_NO_THROW(data.addModule(mod2));
 }
 
@@ -127,7 +127,8 @@ typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
 using gmx::test::END_OF_FRAME;
 using gmx::test::MPSTOP;
 //! Input data for gmx::AnalysisData tests.
-const real inputdata[] = {
+const real inputdata[] =
+{
     1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME
@@ -232,7 +233,8 @@ TEST_F(AnalysisDataTest, LimitedStorageWorks)
 }
 
 //! Input data for multipoint gmx::AnalysisData tests.
-const real multipointinputdata[] = {
+const real multipointinputdata[] =
+{
     1.0,  0.0, 1.0, 2.0, MPSTOP, 1.1, 2.1, 1.1, MPSTOP, 2.2, 1.2, 0.2, END_OF_FRAME,
     2.0,  1.0, 1.0, 1.0, MPSTOP, 2.1, 1.1, 0.1, MPSTOP, 1.2, 0.2, 1.2, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, MPSTOP, 3.1, 2.1, 1.1, MPSTOP, 0.2, 2.2, 1.2, END_OF_FRAME

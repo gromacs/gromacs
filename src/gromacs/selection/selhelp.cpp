@@ -64,7 +64,8 @@ struct CommonHelpText
 const char CommonHelpText::name[] = "selections";
 const char CommonHelpText::title[] =
     "Selection syntax and usage";
-const char *const CommonHelpText::text[] = {
+const char *const CommonHelpText::text[] =
+{
     "Selections are used to select atoms/molecules/residues for analysis.",
     "In contrast to traditional index files, selections can be dynamic, i.e.,",
     "select different atoms for different trajectory frames.[PAR]",
@@ -97,7 +98,8 @@ struct ArithmeticHelpText
 const char ArithmeticHelpText::name[] = "arithmetic";
 const char ArithmeticHelpText::title[] =
     "Arithmetic expressions in selections";
-const char *const ArithmeticHelpText::text[] = {
+const char *const ArithmeticHelpText::text[] =
+{
     "Basic arithmetic evaluation is supported for numeric expressions.",
     "Supported operations are addition, subtraction, negation, multiplication,",
     "division, and exponentiation (using ^).",
@@ -114,7 +116,8 @@ struct CmdLineHelpText
 const char CmdLineHelpText::name[] = "cmdline";
 const char CmdLineHelpText::title[] =
     "Specifying selections from command line";
-const char *const CmdLineHelpText::text[] = {
+const char *const CmdLineHelpText::text[] =
+{
     "If no selections are provided on the command line, you are prompted to",
     "type the selections interactively (a pipe can also be used to provide",
     "the selections in this case for most tools). While this works well for",
@@ -170,7 +173,8 @@ struct EvaluationHelpText
 const char EvaluationHelpText::name[] = "evaluation";
 const char EvaluationHelpText::title[] =
     "Selection evaluation and optimization";
-const char *const EvaluationHelpText::text[] = {
+const char *const EvaluationHelpText::text[] =
+{
     "Boolean evaluation proceeds from left to right and is short-circuiting",
     "i.e., as soon as it is known whether an atom will be selected, the",
     "remaining expressions are not evaluated at all.",
@@ -209,7 +213,8 @@ struct ExamplesHelpText
 const char ExamplesHelpText::name[] = "examples";
 const char ExamplesHelpText::title[] =
     "Selection examples";
-const char *const ExamplesHelpText::text[] = {
+const char *const ExamplesHelpText::text[] =
+{
     // TODO: Once there are more tools available, use examples that invoke
     // tools and explain what the selections do in those tools.
     "Below, examples of increasingly complex selections are given.[PAR]",
@@ -253,7 +258,8 @@ struct KeywordsHelpText
 const char KeywordsHelpText::name[] = "keywords";
 const char KeywordsHelpText::title[] =
     "Selection keywords";
-const char *const KeywordsHelpText::text[] = {
+const char *const KeywordsHelpText::text[] =
+{
     "The following selection keywords are currently available.",
     "For keywords marked with a star, additional help is available through",
     "a subtopic KEYWORD, where KEYWORD is the name of the keyword.",
@@ -269,7 +275,8 @@ struct LimitationsHelpText
 const char LimitationsHelpText::name[] = "limitations";
 const char LimitationsHelpText::title[] =
     "Selection limitations";
-const char *const LimitationsHelpText::text[] = {
+const char *const LimitationsHelpText::text[] =
+{
     "Some analysis programs may require a special structure for the input",
     "selections (e.g., [TT]g_angle[tt] requires the index group to be made",
     "of groups of three or four atoms).",
@@ -302,7 +309,8 @@ struct PositionsHelpText
 const char PositionsHelpText::name[] = "positions";
 const char PositionsHelpText::title[] =
     "Specifying positions in selections";
-const char *const PositionsHelpText::text[] = {
+const char *const PositionsHelpText::text[] =
+{
     "Possible ways of specifying positions in selections are:[PAR]",
 
     "1. A constant position can be defined as [TT][XX, YY, ZZ][tt], where",
@@ -355,7 +363,8 @@ struct SyntaxHelpText
 const char SyntaxHelpText::name[] = "syntax";
 const char SyntaxHelpText::title[] =
     "Selection syntax";
-const char *const SyntaxHelpText::text[] = {
+const char *const SyntaxHelpText::text[] =
+{
     "A set of selections consists of one or more selections, separated by",
     "semicolons. Each selection defines a set of positions for the analysis.",
     "Each selection can also be preceded by a string that gives a name for",
@@ -488,7 +497,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
          * data structure if an alias is defined for that method.
          */
         typedef std::vector<std::pair<std::string,
-                                      const gmx_ana_selmethod_t *> >
+                const gmx_ana_selmethod_t *> >
                 MethodList;
 
         /*! \brief
@@ -511,7 +520,7 @@ KeywordsHelpTopic::KeywordsHelpTopic()
     // methods, but this needs to be rewritten in any case if/when #652 is
     // implemented.
     boost::scoped_ptr<SelectionParserSymbolTable> symtab(
-            new SelectionParserSymbolTable);
+        new SelectionParserSymbolTable);
     gmx_ana_selmethod_register_defaults(symtab.get());
 
     SelectionParserSymbolIterator symbol
@@ -524,7 +533,7 @@ KeywordsHelpTopic::KeywordsHelpTopic()
         if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
             addSubTopic(HelpTopicPointer(
-                        new KeywordDetailsHelpTopic(symname, *method)));
+                            new KeywordDetailsHelpTopic(symname, *method)));
         }
         ++symbol;
     }
@@ -535,7 +544,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         GMX_THROW(NotImplementedError(
-                    "Selection help is not implemented for this output format"));
+                      "Selection help is not implemented for this output format"));
     }
     // TODO: The markup here is not really appropriate, and printKeywordList()
     // still prints raw text, but these are waiting for discussion of the
@@ -545,31 +554,31 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 
     // Print the list of keywords
     context.writeTextBlock(
-            "Keywords that select atoms by an integer property:[BR]"
-            "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
+        "Keywords that select atoms by an integer property:[BR]"
+        "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
     printKeywordList(context, INT_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that select atoms by a numeric property:[BR]"
-            "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
+        "Keywords that select atoms by a numeric property:[BR]"
+        "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
     printKeywordList(context, REAL_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that select atoms by a string property:[BR]"
-            "(use like \"name PATTERN [PATTERN] ...\")[BR]");
+        "Keywords that select atoms by a string property:[BR]"
+        "(use like \"name PATTERN [PATTERN] ...\")[BR]");
     printKeywordList(context, STR_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Additional keywords that directly select atoms:[BR]");
+        "Additional keywords that directly select atoms:[BR]");
     printKeywordList(context, GROUP_VALUE, false);
     context.writeTextBlock("[BR]");
 
     context.writeTextBlock(
-            "Keywords that directly evaluate to positions:[BR]"
-            "(see also \"positions\" subtopic)[BR]");
+        "Keywords that directly evaluate to positions:[BR]"
+        "(see also \"positions\" subtopic)[BR]");
     printKeywordList(context, POS_VALUE, false);
     context.writeTextBlock("[BR]");
 

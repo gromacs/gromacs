@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -81,23 +81,23 @@ void done_atomtype(gpp_atomtype_t at);
 /* Free the memory in the structure */
 
 int set_atomtype(int nt,gpp_atomtype_t at,t_symtab *tab,
-			t_atom *a,const char *name,t_param *nb,
-			int bondatomtype,
-			real radius,real vol,real surftens,int atomnumber,
-			real gb_radius, real S_hct);
+                 t_atom *a,const char *name,t_param *nb,
+                 int bondatomtype,
+                 real radius,real vol,real surftens,int atomnumber,
+                 real gb_radius, real S_hct);
 /* Set the values of an existing atom type nt. Returns nt on success or
-   NOTSET on error. */	
+   NOTSET on error. */
 
 int
 set_atomtype_gbparam(gpp_atomtype_t at, int i,
-		     real radius,real vol,real surftens,
-		     real gb_radius, real S_hct);
+                     real radius,real vol,real surftens,
+                     real gb_radius, real S_hct);
 
 int add_atomtype(gpp_atomtype_t at,t_symtab *tab,
-			t_atom *a,const char *name,t_param *nb,
-			int bondatomtype,
-			real radius,real vol,real surftens,real atomnumber,
-			real gb_radius, real S_hct);
+                 t_atom *a,const char *name,t_param *nb,
+                 int bondatomtype,
+                 real radius,real vol,real surftens,real atomnumber,
+                 real gb_radius, real S_hct);
 /* Add a complete new atom type to an existing atomtype structure. Returns
    the number of the atom type. */
 
@@ -105,9 +105,9 @@ void print_at (FILE * out, gpp_atomtype_t at);
 /* Print an atomtype record to a text file */
 
 void renum_atype(t_params plist[],gmx_mtop_t *mtop,
-			int *wall_atomtype,
-			gpp_atomtype_t at,gmx_bool bVerbose);
-			
+                 int *wall_atomtype,
+                 gpp_atomtype_t at,gmx_bool bVerbose);
+
 void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 /* Copy from one structure to another */
 
@@ -115,7 +115,7 @@ void copy_atomtype_atomtypes(gpp_atomtype_t atype,t_atomtypes *atypes);
 }
 #endif
 
-#endif	/* _gpp_atomtype_h */
+#endif  /* _gpp_atomtype_h */
 
 
 

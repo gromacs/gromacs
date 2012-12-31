@@ -151,7 +151,7 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "Subtopic listing is not implemented for this output format"));
+                      "Subtopic listing is not implemented for this output format"));
     }
     int maxNameLength = 0;
     Impl::SubTopicMap::const_iterator topic;

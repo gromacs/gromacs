@@ -250,12 +250,12 @@ class TestReferenceChecker
          *
          * The main use of this method is to assign meaning for missing
          * reference data.  Example use:
-\code
-if (checker.checkPresent(bHaveVelocities, "Velocities"))
-{
-    // <check the velocities>
-}
-\endcode
+        \code
+        if (checker.checkPresent(bHaveVelocities, "Velocities"))
+        {
+        // <check the velocities>
+        }
+        \endcode
          */
         bool checkPresent(bool bPresent, const char *id);
 

@@ -168,8 +168,8 @@ class StringKeywordMatchItem
                 if (!gmx::Regex::isSupported())
                 {
                     GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                                    "No regular expression support, "
-                                    "cannot match \"%s\"", str)));
+                                                         "No regular expression support, "
+                                                         "cannot match \"%s\"", str)));
                 }
                 regex_.reset(new gmx::Regex(str));
             }
@@ -222,65 +222,71 @@ struct t_methoddata_kwstr
 } // namespace
 
 /** Parameters for integer keyword evaluation. */
-static gmx_ana_selparam_t smparams_keyword_int[] = {
+static gmx_ana_selparam_t smparams_keyword_int[] =
+{
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL},
     {NULL, {INT_VALUE, -1, {NULL}}, NULL, SPAR_RANGES | SPAR_VARNUM},
 };
 
 /** Parameters for real keyword evaluation. */
-static gmx_ana_selparam_t smparams_keyword_real[] = {
+static gmx_ana_selparam_t smparams_keyword_real[] =
+{
     {NULL, {REAL_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL | SPAR_DYNAMIC},
     {NULL, {REAL_VALUE, -1, {NULL}}, NULL, SPAR_RANGES | SPAR_VARNUM},
 };
 
 /** Parameters for string keyword evaluation. */
-static gmx_ana_selparam_t smparams_keyword_str[] = {
+static gmx_ana_selparam_t smparams_keyword_str[] =
+{
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_ATOMVAL},
     {NULL, {STR_VALUE, -1, {NULL}}, NULL, SPAR_VARNUM},
 };
 
 /** \internal Selection method data for integer keyword evaluation. */
-gmx_ana_selmethod_t sm_keyword_int = {
+gmx_ana_selmethod_t sm_keyword_int =
+{
     "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_int), smparams_keyword_int,
     &init_data_kwint,
-     NULL,
+    NULL,
     &init_kwint,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_int,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
 /** \internal Selection method data for real keyword evaluation. */
-gmx_ana_selmethod_t sm_keyword_real = {
+gmx_ana_selmethod_t sm_keyword_real =
+{
     "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_real), smparams_keyword_real,
     &init_data_kwreal,
-     NULL,
+    NULL,
     &init_kwreal,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_real,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
 /** \internal Selection method data for string keyword evaluation. */
-gmx_ana_selmethod_t sm_keyword_str = {
+gmx_ana_selmethod_t sm_keyword_str =
+{
     "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_str), smparams_keyword_str,
     &init_data_kwstr,
-     NULL,
+    NULL,
     &init_kwstr,
-     NULL,
+    NULL,
     &free_data_kwstr,
-     NULL,
+    NULL,
     &evaluate_keyword_str,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -315,7 +321,8 @@ typedef struct
 } t_methoddata_kweval;
 
 /** Parameters for keyword evaluation in an arbitrary group. */
-static gmx_ana_selparam_t smparams_kweval[] = {
+static gmx_ana_selparam_t smparams_kweval[] =
+{
     {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
@@ -455,7 +462,7 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  */
 static void
 evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
     int                  n, i, j, jmin, jmax;
@@ -712,11 +719,11 @@ _gmx_sel_init_keyword_evaluator(gmx_ana_selmethod_t *method,
         || method->outinit || method->pupdate)
     {
         GMX_THROW(gmx::InternalError(
-                "Unsupported keyword method for arbitrary group evaluation"));
+                      "Unsupported keyword method for arbitrary group evaluation"));
     }
 
     gmx::SelectionTreeElementPointer sel(
-            new gmx::SelectionTreeElement(SEL_EXPRESSION));
+        new gmx::SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, method, scanner);
 
     t_methoddata_kweval  *data;

@@ -86,7 +86,8 @@ Angle::~Angle()
 void
 Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 {
-    static const char *const desc[] = {
+    static const char *const desc[] =
+    {
         "g_angle computes different types of angles between vectors.",
         "It supports both vectors defined by two positions and normals of",
         "planes defined by three positions.",
@@ -130,26 +131,26 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         */
     };
     static const char *const cGroup1TypeEnum[] =
-        { "angle", "dihedral", "vector", "plane", NULL };
+    { "angle", "dihedral", "vector", "plane", NULL };
     static const char *const cGroup2TypeEnum[] =
-        { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
+    { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
 
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("oav").filetype(eftPlot).outputFile()
-                           .store(&fnAverage_).defaultBasename("angaver")
-                           .description("Average angles as a function of time"));
+                       .store(&fnAverage_).defaultBasename("angaver")
+                       .description("Average angles as a function of time"));
     options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile()
-                           .store(&fnAll_).defaultBasename("angles")
-                           .description("All angles as a function of time"));
+                       .store(&fnAll_).defaultBasename("angles")
+                       .description("All angles as a function of time"));
     // TODO: Add histogram output.
 
     options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
-        .defaultEnumIndex(0).store(&g1type_)
-        .description("Type of analysis/first vector group"));
+                       .defaultEnumIndex(0).store(&g1type_)
+                       .description("Type of analysis/first vector group"));
     options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
-        .defaultEnumIndex(0).store(&g2type_)
-        .description("Type of second vector group"));
+                       .defaultEnumIndex(0).store(&g2type_)
+                       .description("Type of second vector group"));
 
     // TODO: Allow multiple angles to be computed in one invocation.
     // Most of the code already supports it, but requires a solution for
@@ -158,11 +159,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     // Again, most of the code already supports it, but it needs to be
     // considered how should -oall work, and additional checks should be added.
     sel1info_ = options->addOption(SelectionOption("group1")
-        .required().onlyStatic().storeVector(&sel1_)
-        .description("First analysis/vector selection"));
+                                   .required().onlyStatic().storeVector(&sel1_)
+                                   .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-        .onlyStatic().storeVector(&sel2_)
-        .description("Second analysis/vector selection"));
+                                   .onlyStatic().storeVector(&sel2_)
+                                   .description("Second analysis/vector selection"));
 }
 
 
@@ -222,7 +223,7 @@ Angle::checkSelections(const SelectionList &sel1,
     if (natoms2_ > 0 && sel1.size() != sel2.size())
     {
         GMX_THROW(InconsistentInputError(
-                    "-group1 and -group2 should specify the same number of selections"));
+                      "-group1 and -group2 should specify the same number of selections"));
     }
 
     for (size_t g = 0; g < sel1.size(); ++g)
@@ -232,24 +233,24 @@ Angle::checkSelections(const SelectionList &sel1,
         if (natoms1_ > 1 && na1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the first group not divisible by %d",
-                static_cast<int>(g + 1), natoms1_)));
+                                                 "Number of positions in selection %d in the first group not divisible by %d",
+                                                 static_cast<int>(g + 1), natoms1_)));
         }
         if (natoms2_ > 1 && na2 % natoms2_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the second group not divisible by %d",
-                static_cast<int>(g + 1), natoms2_)));
+                                                 "Number of positions in selection %d in the second group not divisible by %d",
+                                                 static_cast<int>(g + 1), natoms2_)));
         }
         if (natoms1_ > 0 && natoms2_ > 1 && na1 / natoms1_ != na2 / natoms2_)
         {
             GMX_THROW(InconsistentInputError(
-                      "Number of vectors defined by the two groups are not the same"));
+                          "Number of vectors defined by the two groups are not the same"));
         }
         if (g2type_[0] == 's' && sel2[g].posCount() != 1)
         {
             GMX_THROW(InconsistentInputError(
-                      "The second group should contain a single position with -g2 sphnorm"));
+                          "The second group should contain a single position with -g2 sphnorm"));
         }
     }
 }
@@ -327,7 +328,8 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
             svmul(0.5, xout, cout);
             rvec_add(x[0], cout, cout);
             break;
-        case 3: {
+        case 3:
+        {
             rvec v1, v2;
             if (pbc)
             {
@@ -400,7 +402,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     angle = gmx_angle(v1, v2);
                     break;
-                case 'd': {
+                case 'd':
+                {
                     rvec dx[3];
                     if (pbc)
                     {

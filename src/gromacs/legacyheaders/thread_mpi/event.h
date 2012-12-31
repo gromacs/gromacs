@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -44,22 +44,22 @@ files.
 
   \brief Event notification wait and signaling functions.
 
-   The event structure offers lightweight signaling and scheduler-yielding   
+   The event structure offers lightweight signaling and scheduler-yielding
    (but still spinning) waiting for waits of intermediate durations (i.e.
-   longer than appropriate for a spin lock but shorter than mutex_cond_wait(). 
-   These functions only take care of the waiting and signaling; the user is 
-   responsible for the handling of the actual event structures and condition 
+   longer than appropriate for a spin lock but shorter than mutex_cond_wait().
+   These functions only take care of the waiting and signaling; the user is
+   responsible for the handling of the actual event structures and condition
    variables.
 */
 
 /*! \brief Event notification structure.
 
    Structure for notifying one thread that something has happened, allowing
-   that thread to wait, and possibly give up its timeslice. This structure 
-   only takes care of the notification itself, and will not handle data 
-   about incoming events - that is left up to the user.  
-   
-   This structure allows notification of a single thread by any number of 
+   that thread to wait, and possibly give up its timeslice. This structure
+   only takes care of the notification itself, and will not handle data
+   about incoming events - that is left up to the user.
+
+   This structure allows notification of a single thread by any number of
    threads*/
 typedef struct tMPI_Event_t tMPI_Event;
 struct tMPI_Event_t
@@ -72,7 +72,7 @@ struct tMPI_Event_t
 
 
 /*! \brief Initialize the event object.
-    
+
     \param ev The event structure to be intialized. */
 void tMPI_Event_init(tMPI_Event *ev);
 
@@ -81,9 +81,9 @@ void tMPI_Event_init(tMPI_Event *ev);
     \param ev The event structure to be destroyed. */
 void tMPI_Event_destroy(tMPI_Event *ev);
 
-/*! \brief Wait for an event to occur. 
+/*! \brief Wait for an event to occur.
 
-   Sets the number of events that had occurred during the wait in N. 
+   Sets the number of events that had occurred during the wait in N.
    \param ev The event structure to wait on.
    \returns  The number of events that have occurred at function
              return time. */
@@ -93,7 +93,7 @@ int tMPI_Event_wait(tMPI_Event *ev);
 /*! \brief Signal an event, possibly waking an tMPI_Event_wait().
 
     \param ev  The event to signal. */
-void tMPI_Event_signal(tMPI_Event *ev); 
+void tMPI_Event_signal(tMPI_Event *ev);
 #else
 #define tMPI_Event_signal(ev) \
 { \
@@ -103,12 +103,12 @@ void tMPI_Event_signal(tMPI_Event *ev);
 #endif
 
 #ifdef DOXYGEN
-/*! \brief Signal processing of an event. 
-  
-  Each event that is handled by the receiver, must be processed through 
+/*! \brief Signal processing of an event.
+
+  Each event that is handled by the receiver, must be processed through
   tMPI_Event_process(). Unprocessed events will make tMPI_Event_wait() return
-  immediately. 
-  
+  immediately.
+
   \param ev  The event object.
   \param N   The number of processed events. */
 void tMPI_Event_process(tMPI_Event *ev, int N);

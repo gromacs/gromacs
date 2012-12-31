@@ -47,7 +47,8 @@ namespace gmx
  *
  * \ingroup module_options
  */
-enum OptionFileType {
+enum OptionFileType
+{
     eftUnknown,
     eftTopology,
     eftTrajectory,

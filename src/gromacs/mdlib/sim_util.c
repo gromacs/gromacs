@@ -107,7 +107,8 @@
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
 #if 0
-typedef struct gmx_timeprint {
+typedef struct gmx_timeprint
+{
 
 } t_gmx_timeprint;
 #endif
@@ -121,20 +122,20 @@ double
 gmx_gettime()
 {
 #ifdef HAVE_GETTIMEOFDAY
-	struct timeval t;
-	double seconds;
+    struct timeval t;
+    double seconds;
 
-	gettimeofday(&t,NULL);
+    gettimeofday(&t,NULL);
 
-	seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
+    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
 
-	return seconds;
+    return seconds;
 #else
-	double  seconds;
+    double  seconds;
 
-	seconds = time(NULL);
+    seconds = time(NULL);
 
-	return seconds;
+    return seconds;
 #endif
 }
 
@@ -175,7 +176,9 @@ void print_time(FILE *out,gmx_runtime_t *runtime,gmx_large_int_t step,
                 fprintf(out,", will finish %s",buf);
             }
             else
+            {
                 fprintf(out,", remaining runtime: %5d s          ",(int)dt);
+            }
         }
         else
         {
@@ -271,7 +274,7 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
             tmptime = (time_t) gmx_gettime();
             gmx_ctime_r(&tmptime,timebuf,STRLEN);
         }
-        for(i=0; timebuf[i]>=' '; i++)
+        for (i=0; timebuf[i]>=' '; i++)
         {
             time_string[i]=timebuf[i];
         }
@@ -283,14 +286,17 @@ void print_date_and_time(FILE *fplog,int nodeid,const char *title,
 
 static void sum_forces(int start,int end,rvec f[],rvec flr[])
 {
-  int i;
+    int i;
 
-  if (gmx_debug_at) {
-    pr_rvecs(debug,0,"fsr",f+start,end-start);
-    pr_rvecs(debug,0,"flr",flr+start,end-start);
-  }
-  for(i=start; (i<end); i++)
-    rvec_inc(f[i],flr[i]);
+    if (gmx_debug_at)
+    {
+        pr_rvecs(debug,0,"fsr",f+start,end-start);
+        pr_rvecs(debug,0,"flr",flr+start,end-start);
+    }
+    for (i=start; (i<end); i++)
+    {
+        rvec_inc(f[i],flr[i]);
+    }
 }
 
 /*
@@ -324,7 +330,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
     real t0;
     int  i,m;
 
-    for(m=0; (m<DIM); m++)
+    for (m=0; (m<DIM); m++)
     {
         if (Et[m].n > 0)
         {
@@ -346,8 +352,10 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
         {
             /* Convert the field strength from V/nm to MD-units */
             Ext[m] *= Ex[m].a[0]*FIELDFAC;
-            for(i=start; (i<start+homenr); i++)
+            for (i=start; (i<start+homenr); i++)
+            {
                 f[i][m] += charge[i]*Ext[m];
+            }
         }
         else
         {
@@ -362,35 +370,39 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 }
 
 static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
-			tensor vir_part,t_graph *graph,matrix box,
-			t_nrnb *nrnb,const t_forcerec *fr,int ePBC)
+                        tensor vir_part,t_graph *graph,matrix box,
+                        t_nrnb *nrnb,const t_forcerec *fr,int ePBC)
 {
-  int i,j;
-  tensor virtest;
+    int i,j;
+    tensor virtest;
 
-  /* The short-range virial from surrounding boxes */
-  clear_mat(vir_part);
-  calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part,ePBC==epbcSCREW,box);
-  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+    /* The short-range virial from surrounding boxes */
+    clear_mat(vir_part);
+    calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part,ePBC==epbcSCREW,box);
+    inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
 
-  /* Calculate partial virial, for local atoms only, based on short range.
-   * Total virial is computed in global_stat, called from do_md
-   */
-  f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
-  inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+    /* Calculate partial virial, for local atoms only, based on short range.
+     * Total virial is computed in global_stat, called from do_md
+     */
+    f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
+    inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
-  /* Add position restraint contribution */
-  for(i=0; i<DIM; i++) {
-    vir_part[i][i] += fr->vir_diag_posres[i];
-  }
+    /* Add position restraint contribution */
+    for (i=0; i<DIM; i++)
+    {
+        vir_part[i][i] += fr->vir_diag_posres[i];
+    }
 
-  /* Add wall contribution */
-  for(i=0; i<DIM; i++) {
-    vir_part[i][ZZ] += fr->vir_wall_z[i];
-  }
+    /* Add wall contribution */
+    for (i=0; i<DIM; i++)
+    {
+        vir_part[i][ZZ] += fr->vir_wall_z[i];
+    }
 
-  if (debug)
-    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+    if (debug)
+    {
+        pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+    }
 }
 
 static void posres_wrapper(FILE *fplog,
@@ -432,7 +444,7 @@ static void posres_wrapper(FILE *fplog,
 
     if ((ir->fepvals->n_lambda > 0) && (flags & GMX_FORCE_DHDL))
     {
-        for(i=0; i<enerd->n_lambda; i++)
+        for (i=0; i<enerd->n_lambda; i++)
         {
             real dvdl_dum,lambda_dum;
 
@@ -468,7 +480,7 @@ static void pull_potential_wrapper(FILE *fplog,
      * which is why we call pull_potential after calc_virial.
      */
     set_pbc(&pbc,ir->ePBC,box);
-    dvdl = 0; 
+    dvdl = 0;
     enerd->term[F_COM_PULL] +=
         pull_potential(ir->ePull,ir->pull,mdatoms,&pbc,
                        cr,t,lambda[efptRESTRAINT],x,f,vir_force,&dvdl);
@@ -486,15 +498,15 @@ static void pme_receive_force_ener(FILE *fplog,
                                    gmx_enerdata_t *enerd,
                                    t_forcerec *fr)
 {
-    real   e,v,dvdl;    
+    real   e,v,dvdl;
     float  cycles_ppdpme,cycles_seppme;
 
     cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
     dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
 
-    /* In case of node-splitting, the PP nodes receive the long-range 
+    /* In case of node-splitting, the PP nodes receive the long-range
      * forces, virial and energy from the PME nodes here.
-     */    
+     */
     wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
     dvdl = 0;
     gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
@@ -513,22 +525,24 @@ static void pme_receive_force_ener(FILE *fplog,
 }
 
 static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
-			       gmx_large_int_t step,real pforce,rvec *x,rvec *f)
+                               gmx_large_int_t step,real pforce,rvec *x,rvec *f)
 {
-  int  i;
-  real pf2,fn2;
-  char buf[STEPSTRSIZE];
+    int  i;
+    real pf2,fn2;
+    char buf[STEPSTRSIZE];
 
-  pf2 = sqr(pforce);
-  for(i=md->start; i<md->start+md->homenr; i++) {
-    fn2 = norm2(f[i]);
-    /* We also catch NAN, if the compiler does not optimize this away. */
-    if (fn2 >= pf2 || fn2 != fn2) {
-      fprintf(fp,"step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
-	      gmx_step_str(step,buf),
-	      ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
+    pf2 = sqr(pforce);
+    for (i=md->start; i<md->start+md->homenr; i++)
+    {
+        fn2 = norm2(f[i]);
+        /* We also catch NAN, if the compiler does not optimize this away. */
+        if (fn2 >= pf2 || fn2 != fn2)
+        {
+            fprintf(fp,"step %s  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
+                    gmx_step_str(step,buf),
+                    ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
+        }
     }
-  }
 }
 
 static void post_process_forces(FILE *fplog,
@@ -548,7 +562,7 @@ static void post_process_forces(FILE *fplog,
     {
         if (vsite)
         {
-            /* Spread the mesh force on virtual sites to the other particles... 
+            /* Spread the mesh force on virtual sites to the other particles...
              * This is parallellized. MPI communication is performed
              * if the constructing atoms aren't local.
              */
@@ -582,7 +596,7 @@ static void post_process_forces(FILE *fplog,
             }
         }
     }
-    
+
     if (fr->print_force >= 0)
     {
         print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
@@ -633,7 +647,7 @@ static void do_nb_verlet(t_forcerec *fr,
                              enerd->grpp.ener[egBHAMSR] :
                              enerd->grpp.ener[egLJSR]);
             break;
-        
+
         case nbk4xN_X86_SIMD128:
             nbnxn_kernel_x86_simd128(&nbvg->nbl_lists,
                                      nbvg->nbat, ic,
@@ -700,22 +714,22 @@ static void do_nb_verlet(t_forcerec *fr,
 }
 
 void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
-              t_inputrec *inputrec,
-              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-              gmx_localtop_t *top,
-              gmx_mtop_t *mtop,
-              gmx_groups_t *groups,
-              matrix box,rvec x[],history_t *hist,
-              rvec f[],
-              tensor vir_force,
-              t_mdatoms *mdatoms,
-              gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real *lambda,t_graph *graph,
-              t_forcerec *fr, interaction_const_t *ic,
-              gmx_vsite_t *vsite,rvec mu_tot,
-              double t,FILE *field,gmx_edsam_t ed,
-              gmx_bool bBornRadii,
-              int flags)
+                         t_inputrec *inputrec,
+                         gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                         gmx_localtop_t *top,
+                         gmx_mtop_t *mtop,
+                         gmx_groups_t *groups,
+                         matrix box,rvec x[],history_t *hist,
+                         rvec f[],
+                         tensor vir_force,
+                         t_mdatoms *mdatoms,
+                         gmx_enerdata_t *enerd,t_fcdata *fcd,
+                         real *lambda,t_graph *graph,
+                         t_forcerec *fr, interaction_const_t *ic,
+                         gmx_vsite_t *vsite,rvec mu_tot,
+                         double t,FILE *field,gmx_edsam_t ed,
+                         gmx_bool bBornRadii,
+                         int flags)
 {
     int     cg0,cg1,i,j;
     int     start,homenr;
@@ -756,7 +770,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
     bStateChanged = (flags & GMX_FORCE_STATECHANGED);
-    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE); 
+    bNS           = (flags & GMX_FORCE_NS) && (fr->bAllvsAll==FALSE);
     bFillGrid     = (bNS && bStateChanged);
     bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
     bDoLongRange  = (fr->bTwinRange && bNS && (flags & GMX_FORCE_DO_LR));
@@ -780,37 +794,44 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
     }
 
-    if (fr->ePBC != epbcNONE) { 
+    if (fr->ePBC != epbcNONE)
+    {
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
          */
         if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+        {
             calc_shifts(box,fr->shift_vec);
+        }
 
-        if (bCalcCGCM) { 
+        if (bCalcCGCM)
+        {
             put_atoms_in_box_omp(fr->ePBC,box,homenr,x);
             inc_nrnb(nrnb,eNR_SHIFTX,homenr);
-        } 
-        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
+        }
+        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
+        {
             unshift_self(graph,box,x);
         }
-    } 
+    }
 
     nbnxn_atomdata_copy_shiftvec(flags & GMX_FORCE_DYNAMICBOX,
-                                  fr->shift_vec,nbv->grp[0].nbat);
+                                 fr->shift_vec,nbv->grp[0].nbat);
 
 #ifdef GMX_MPI
-    if (!(cr->duty & DUTY_PME)) {
+    if (!(cr->duty & DUTY_PME))
+    {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
-         */    
+         */
 
         wallcycle_start(wcycle,ewcPP_PMESENDX);
 
         bBS = (inputrec->nwall == 2);
-        if (bBS) {
+        if (bBS)
+        {
             copy_mat(box,boxs);
             svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
         }
@@ -863,14 +884,14 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             nbv->grp[eintNonlocal].nbat == nbv->grp[eintLocal].nbat)
         {
             nbnxn_atomdata_set(nbv->grp[eintLocal].nbat,eatAll,
-                                nbv->nbs,mdatoms,fr->cginfo);
+                               nbv->nbs,mdatoms,fr->cginfo);
         }
         else
         {
             nbnxn_atomdata_set(nbv->grp[eintLocal].nbat,eatLocal,
-                                nbv->nbs,mdatoms,fr->cginfo);
+                               nbv->nbs,mdatoms,fr->cginfo);
             nbnxn_atomdata_set(nbv->grp[eintNonlocal].nbat,eatAll,
-                                nbv->nbs,mdatoms,fr->cginfo);
+                               nbv->nbs,mdatoms,fr->cginfo);
         }
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -933,7 +954,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
     }
 
-    /* Communicate coordinates and sum dipole if necessary + 
+    /* Communicate coordinates and sum dipole if necessary +
        do non-local pair search */
     if (DOMAINDECOMP(cr))
     {
@@ -950,7 +971,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_X_BUF_OPS);
             nbnxn_atomdata_copy_x_to_nbat_x(nbv->nbs,eatLocal,TRUE,x,
-                                             nbv->grp[eintNonlocal].nbat);
+                                            nbv->grp[eintNonlocal].nbat);
             wallcycle_sub_stop(wcycle, ewcsNB_X_BUF_OPS);
             wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
         }
@@ -984,7 +1005,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                                          eintNonlocal);
             }
             wallcycle_stop(wcycle,ewcNS);
-        } 
+        }
         else
         {
             wallcycle_start(wcycle,ewcMOVEX);
@@ -1006,7 +1027,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         }
 
         if (bUseGPU && !bDiffKernels)
-        { 
+        {
             wallcycle_start(wcycle,ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
@@ -1034,11 +1055,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         if (PAR(cr))
         {
             gmx_sumd(2*DIM,mu,cr);
-        } 
+        }
 
-        for(i=0; i<2; i++)
+        for (i=0; i<2; i++)
         {
-            for(j=0;j<DIM;j++)
+            for (j=0; j<DIM; j++)
             {
                 fr->mu_tot[i][j] = mu[i*DIM + j];
             }
@@ -1050,7 +1071,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
     else
     {
-        for(j=0; j<DIM; j++)
+        for (j=0; j<DIM; j++)
         {
             mu_tot[j] =
                 (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] +
@@ -1070,7 +1091,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             dd_force_flop_start(cr->dd,nrnb);
         }
     }
-    
+
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
@@ -1081,7 +1102,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     {
         /* Reset forces for which the virial is calculated separately:
          * PME/Ewald forces if necessary */
-        if (fr->bF_NoVirSum) 
+        if (fr->bF_NoVirSum)
         {
             if (flags & GMX_FORCE_VIRIAL)
             {
@@ -1107,11 +1128,11 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
         /* Clear the short- and long-range forces */
         clear_rvecs(fr->natoms_force_constr,f);
-        if(bSepLRF && do_per_step(step,inputrec->nstcalclr))
+        if (bSepLRF && do_per_step(step,inputrec->nstcalclr))
         {
             clear_rvecs(fr->natoms_force_constr,fr->f_twin);
         }
-        
+
         clear_rvec(fr->vir_diag_posres);
     }
     if (inputrec->ePull == epullCONSTRAINT)
@@ -1120,7 +1141,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
     }
 
     /* update QMMMrec, if necessary */
-    if(fr->bQMMM)
+    if (fr->bQMMM)
     {
         update_QMMMrec(cr,fr,x,mdatoms,box,top);
     }
@@ -1131,36 +1152,36 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                        f,enerd,lambda,fr);
     }
 
-    /* Compute the bonded and non-bonded energies and optionally forces */    
+    /* Compute the bonded and non-bonded energies and optionally forces */
     /* if we use the GPU turn off the nonbonded */
     do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
                       cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
                       x,hist,f, bSepLRF ? fr->f_twin : f,enerd,fcd,mtop,top,fr->born,
                       &(top->atomtypes),bBornRadii,box,
                       inputrec->fepvals,lambda,graph,&(top->excls),fr->mu_tot,
-                      ((nb_kernel_type == nbk8x8x8_CUDA || nb_kernel_type == nbk8x8x8_PlainC) 
-                        ? flags&~GMX_FORCE_NONBONDED : flags),
+                      ((nb_kernel_type == nbk8x8x8_CUDA || nb_kernel_type == nbk8x8x8_PlainC)
+                       ? flags&~GMX_FORCE_NONBONDED : flags),
                       &cycles_pme);
 
-    if(bSepLRF)
+    if (bSepLRF)
     {
         if (do_per_step(step,inputrec->nstcalclr))
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force_constr; i++)
+            for (i=0; i<fr->natoms_force_constr; i++)
             {
                 rvec_add(fr->f_twin[i],f[i],f[i]);
             }
         }
     }
-    
+
     if (!bUseOrEmulGPU)
     {
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
                      nrnb, wcycle);
     }
-        
+
 
     if (!bUseOrEmulGPU || bDiffKernels)
     {
@@ -1199,12 +1220,12 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             nbv->grp[aloc].nbl_lists.nnbl > 1)
         {
             nbnxn_atomdata_add_nbat_fshift_to_fshift(nbv->grp[aloc].nbat,
-                                                      fr->fshift);
+                                                     fr->fshift);
         }
     }
-    
+
     cycles_force += wallcycle_stop(wcycle,ewcFORCE);
-    
+
     if (ed)
     {
         do_flood(fplog,cr,x,f,ed,box,step,bNS);
@@ -1231,7 +1252,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
                              nrnb, wcycle);
                 cycles_force += wallcycle_stop(wcycle,ewcFORCE);
-            }            
+            }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
             wallcycle_sub_start(wcycle, ewcsNB_F_BUF_OPS);
             /* skip the reduction if there was no non-local work to do */
@@ -1277,7 +1298,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_stop(wcycle,ewcMOVEF);
         }
     }
- 
+
     if (bUseOrEmulGPU)
     {
         /* wait for local forces (or calculate in emulation mode) */
@@ -1295,7 +1316,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
         }
         else
-        {            
+        {
             wallcycle_start_nocount(wcycle,ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal,
                          DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
@@ -1313,7 +1334,7 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
         wallcycle_sub_stop(wcycle, ewcsNB_F_BUF_OPS);
         wallcycle_stop(wcycle, ewcNB_XF_BUF_OPS);
     }
-    
+
     if (DOMAINDECOMP(cr))
     {
         dd_force_flop_stop(cr->dd,nrnb);
@@ -1369,9 +1390,9 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
-        /* In case of node-splitting, the PP nodes receive the long-range 
+        /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
-         */    
+         */
         pme_receive_force_ener(fplog,bSepDVDL,cr,wcycle,enerd,fr);
     }
 
@@ -1381,27 +1402,27 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
                             top,box,x,f,vir_force,mdatoms,graph,fr,vsite,
                             flags);
     }
-    
+
     /* Sum the potential energy terms from group contributions */
     sum_epot(&(inputrec->opts),enerd);
 }
 
 void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
-              t_inputrec *inputrec,
-              gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-              gmx_localtop_t *top,
-              gmx_mtop_t *mtop,
-              gmx_groups_t *groups,
-              matrix box,rvec x[],history_t *hist,
-              rvec f[],
-              tensor vir_force,
-              t_mdatoms *mdatoms,
-              gmx_enerdata_t *enerd,t_fcdata *fcd,
-              real *lambda,t_graph *graph,
-              t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-              double t,FILE *field,gmx_edsam_t ed,
-              gmx_bool bBornRadii,
-              int flags)
+                        t_inputrec *inputrec,
+                        gmx_large_int_t step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+                        gmx_localtop_t *top,
+                        gmx_mtop_t *mtop,
+                        gmx_groups_t *groups,
+                        matrix box,rvec x[],history_t *hist,
+                        rvec f[],
+                        tensor vir_force,
+                        t_mdatoms *mdatoms,
+                        gmx_enerdata_t *enerd,t_fcdata *fcd,
+                        real *lambda,t_graph *graph,
+                        t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+                        double t,FILE *field,gmx_edsam_t ed,
+                        gmx_bool bBornRadii,
+                        int flags)
 {
     int    cg0,cg1,i,j;
     int    start,homenr;
@@ -1473,48 +1494,60 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         }
     }
 
-    if (fr->ePBC != epbcNONE) { 
+    if (fr->ePBC != epbcNONE)
+    {
         /* Compute shift vectors every step,
          * because of pressure coupling or box deformation!
          */
         if ((flags & GMX_FORCE_DYNAMICBOX) && bStateChanged)
+        {
             calc_shifts(box,fr->shift_vec);
+        }
 
-        if (bCalcCGCM) { 
+        if (bCalcCGCM)
+        {
             put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
-                    &(top->cgs),x,fr->cg_cm);
+                                     &(top->cgs),x,fr->cg_cm);
             inc_nrnb(nrnb,eNR_CGCM,homenr);
             inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
-        } 
-        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
+        }
+        else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph)
+        {
             unshift_self(graph,box,x);
         }
-    } 
-    else if (bCalcCGCM) {
+    }
+    else if (bCalcCGCM)
+    {
         calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
         inc_nrnb(nrnb,eNR_CGCM,homenr);
     }
 
-    if (bCalcCGCM) {
-        if (PAR(cr)) {
+    if (bCalcCGCM)
+    {
+        if (PAR(cr))
+        {
             move_cgcm(fplog,cr,fr->cg_cm);
         }
         if (gmx_debug_at)
+        {
             pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
+        }
     }
 
 #ifdef GMX_MPI
-    if (!(cr->duty & DUTY_PME)) {
+    if (!(cr->duty & DUTY_PME))
+    {
         /* Send particle coordinates to the pme nodes.
          * Since this is only implemented for domain decomposition
          * and domain decomposition does not use the graph,
          * we do not need to worry about shifting.
-         */    
+         */
 
         wallcycle_start(wcycle,ewcPP_PMESENDX);
 
         bBS = (inputrec->nwall == 2);
-        if (bBS) {
+        if (bBS)
+        {
             copy_mat(box,boxs);
             svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
         }
@@ -1543,11 +1576,11 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     }
 
     /* update adress weight beforehand */
-    if(bStateChanged && bDoAdressWF)
+    if (bStateChanged && bDoAdressWF)
     {
         /* need pbc for adress weight calculation with pbc_dx */
         set_pbc(&pbc,inputrec->ePBC,box);
-        if(fr->adress_site == eAdressSITEcog)
+        if (fr->adress_site == eAdressSITEcog)
         {
             update_adress_weights_cog(top->idef.iparams,top->idef.il,x,fr,mdatoms,
                                       inputrec->ePBC==epbcNONE ? NULL : &pbc);
@@ -1557,7 +1590,8 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
             update_adress_weights_com(fplog,cg0,cg1,&(top->cgs),x,fr,mdatoms,
                                       inputrec->ePBC==epbcNONE ? NULL : &pbc);
         }
-        else if (fr->adress_site == eAdressSITEatomatom){
+        else if (fr->adress_site == eAdressSITEatomatom)
+        {
             update_adress_weights_atom_per_atom(cg0,cg1,&(top->cgs),x,fr,mdatoms,
                                                 inputrec->ePBC==epbcNONE ? NULL : &pbc);
         }
@@ -1577,9 +1611,9 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
             {
                 gmx_sumd(2*DIM,mu,cr);
             }
-            for(i=0; i<2; i++)
+            for (i=0; i<2; i++)
             {
-                for(j=0;j<DIM;j++)
+                for (j=0; j<DIM; j++)
                 {
                     fr->mu_tot[i][j] = mu[i*DIM + j];
                 }
@@ -1591,7 +1625,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         }
         else
         {
-            for(j=0; j<DIM; j++)
+            for (j=0; j<DIM; j++)
             {
                 mu_tot[j] =
                     (1.0 - lambda[efptCOUL])*fr->mu_tot[0][j] + lambda[efptCOUL]*fr->mu_tot[1][j];
@@ -1616,7 +1650,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
         /* Do the actual neighbour searching and if twin range electrostatics
          * also do the calculation of long range forces and energies.
          */
-        for (i=0;i<efptNR;i++) {dvdlambda[i] = 0;}
+        for (i=0; i<efptNR; i++) {dvdlambda[i] = 0;}
         ns(fplog,fr,x,box,
            groups,&(inputrec->opts),top,mdatoms,
            cr,nrnb,lambda,dvdlambda,&enerd->grpp,bFillGrid,
@@ -1662,7 +1696,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
      * since that will interfere with the dynamic load balancing.
      */
     wallcycle_start(wcycle,ewcFORCE);
-    
+
     if (bDoForces)
     {
         /* Reset forces for which the virial is calculated separately:
@@ -1693,11 +1727,11 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 
         /* Clear the short- and long-range forces */
         clear_rvecs(fr->natoms_force_constr,f);
-        if(bSepLRF && do_per_step(step,inputrec->nstcalclr))
+        if (bSepLRF && do_per_step(step,inputrec->nstcalclr))
         {
             clear_rvecs(fr->natoms_force_constr,fr->f_twin);
         }
-        
+
         clear_rvec(fr->vir_diag_posres);
     }
     if (inputrec->ePull == epullCONSTRAINT)
@@ -1706,7 +1740,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     }
 
     /* update QMMMrec, if necessary */
-    if(fr->bQMMM)
+    if (fr->bQMMM)
     {
         update_QMMMrec(cr,fr,x,mdatoms,box,top);
     }
@@ -1720,7 +1754,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
     {
         /* Flat-bottomed position restraints always require full pbc */
-        if(!(bStateChanged && bDoAdressWF))
+        if (!(bStateChanged && bDoAdressWF))
         {
             set_pbc(&pbc,inputrec->ePBC,box);
         }
@@ -1743,18 +1777,18 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
                       flags,
                       &cycles_pme);
 
-    if(bSepLRF)
+    if (bSepLRF)
     {
         if (do_per_step(step,inputrec->nstcalclr))
         {
             /* Add the long range forces to the short range forces */
-            for(i=0; i<fr->natoms_force_constr; i++)
+            for (i=0; i<fr->natoms_force_constr; i++)
             {
                 rvec_add(fr->f_twin[i],f[i],f[i]);
             }
         }
     }
-    
+
     cycles_force = wallcycle_stop(wcycle,ewcFORCE);
 
     if (ed)
@@ -1870,7 +1904,7 @@ void do_force_cutsGROUP(FILE *fplog,t_commrec *cr,
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
     {
-        /* In case of node-splitting, the PP nodes receive the long-range 
+        /* In case of node-splitting, the PP nodes receive the long-range
          * forces, virial and energy from the PME nodes here.
          */
         pme_receive_force_ener(fplog,bSepDVDL,cr,wcycle,enerd,fr);
@@ -1923,26 +1957,26 @@ void do_force(FILE *fplog,t_commrec *cr,
                                 mdatoms,
                                 enerd, fcd,
                                 lambda, graph,
-                                fr, fr->ic, 
+                                fr, fr->ic,
                                 vsite, mu_tot,
                                 t, field, ed,
                                 bBornRadii,
                                 flags);
             break;
         case ecutsGROUP:
-             do_force_cutsGROUP(fplog, cr, inputrec,
-                                step, nrnb, wcycle,
-                                top, mtop,
-                                groups,
-                                box, x, hist,
-                                f, vir_force,
-                                mdatoms,
-                                enerd, fcd,
-                                lambda, graph,
-                                fr, vsite, mu_tot,
-                                t, field, ed,
-                                bBornRadii,
-                                flags);
+            do_force_cutsGROUP(fplog, cr, inputrec,
+                               step, nrnb, wcycle,
+                               top, mtop,
+                               groups,
+                               box, x, hist,
+                               f, vir_force,
+                               mdatoms,
+                               enerd, fcd,
+                               lambda, graph,
+                               fr, vsite, mu_tot,
+                               t, field, ed,
+                               bBornRadii,
+                               flags);
             break;
         default:
             gmx_incons("Invalid cut-off scheme passed!");
@@ -2004,9 +2038,9 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
     /* constrain the inital velocities at t-dt/2 */
     if (EI_STATE_VELOCITY(ir->eI) && ir->eI!=eiVV)
     {
-        for(i=start; (i<end); i++)
+        for (i=start; (i<end); i++)
         {
-            for(m=0; (m<DIM); m++)
+            for (m=0; (m<DIM); m++)
             {
                 /* Reverse the velocity */
                 state->v[i][m] = -state->v[i][m];
@@ -2014,9 +2048,9 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                 savex[i][m] = state->x[i][m] + dt*state->v[i][m];
             }
         }
-    /* Shake the positions at t=-dt with the positions at t=0
-     * as reference coordinates.
-         */
+        /* Shake the positions at t=-dt with the positions at t=0
+         * as reference coordinates.
+             */
         if (fplog)
         {
             char buf[STEPSTRSIZE];
@@ -2031,9 +2065,11 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
                   state->lambda[efptBONDED],&dvdl_dum,
                   state->v,NULL,nrnb,econqCoord,
                   ir->epc==epcMTTK,state->veta,state->veta);
-        
-        for(i=start; i<end; i++) {
-            for(m=0; m<DIM; m++) {
+
+        for (i=start; i<end; i++)
+        {
+            for (m=0; m<DIM; m++)
+            {
                 /* Re-reverse the velocities */
                 state->v[i][m] = -state->v[i][m];
             }
@@ -2044,150 +2080,159 @@ void do_constrain_first(FILE *fplog,gmx_constr_t constr,
 
 void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 {
-  double eners[2],virs[2],enersum,virsum,y0,f,g,h;
-  double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
-  double invscale,invscale2,invscale3;
-  int    ri0,ri1,ri,i,offstart,offset;
-  real   scale,*vdwtab,tabfactor,tmp;
+    double eners[2],virs[2],enersum,virsum,y0,f,g,h;
+    double r0,r1,r,rc3,rc9,ea,eb,ec,pa,pb,pc,pd;
+    double invscale,invscale2,invscale3;
+    int    ri0,ri1,ri,i,offstart,offset;
+    real   scale,*vdwtab,tabfactor,tmp;
 
-  fr->enershiftsix = 0;
-  fr->enershifttwelve = 0;
-  fr->enerdiffsix = 0;
-  fr->enerdifftwelve = 0;
-  fr->virdiffsix = 0;
-  fr->virdifftwelve = 0;
+    fr->enershiftsix = 0;
+    fr->enershifttwelve = 0;
+    fr->enerdiffsix = 0;
+    fr->enerdifftwelve = 0;
+    fr->virdiffsix = 0;
+    fr->virdifftwelve = 0;
 
-  if (eDispCorr != edispcNO) {
-    for(i=0; i<2; i++) {
-      eners[i] = 0;
-      virs[i]  = 0;
-    }
-    if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT)) {
-      if (fr->rvdw_switch == 0)
-	gmx_fatal(FARGS,
-		  "With dispersion correction rvdw-switch can not be zero "
-		  "for vdw-type = %s",evdw_names[fr->vdwtype]);
-
-      scale  = fr->nblists[0].table_elec_vdw.scale;
-      vdwtab = fr->nblists[0].table_vdw.data;
-
-      /* Round the cut-offs to exact table values for precision */
-      ri0 = floor(fr->rvdw_switch*scale);
-      ri1 = ceil(fr->rvdw*scale);
-      r0  = ri0/scale;
-      r1  = ri1/scale;
-      rc3 = r0*r0*r0;
-      rc9  = rc3*rc3*rc3;
-
-      if (fr->vdwtype == evdwSHIFT)
-      {
-          /* Determine the constant energy shift below rvdw_switch.
-           * Table has a scale factor since we have scaled it down to compensate
-           * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
-           */
-          fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
-          fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
-      }
-      /* Add the constant part from 0 to rvdw_switch.
-       * This integration from 0 to rvdw_switch overcounts the number
-       * of interactions by 1, as it also counts the self interaction.
-       * We will correct for this later.
-       */
-      eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
-      eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
-
-      invscale = 1.0/(scale);
-      invscale2 = invscale*invscale;
-      invscale3 = invscale*invscale2;
-
-      /* following summation derived from cubic spline definition,
-	Numerical Recipies in C, second edition, p. 113-116.  Exact
-	for the cubic spline.  We first calculate the negative of
-	the energy from rvdw to rvdw_switch, assuming that g(r)=1,
-	and then add the more standard, abrupt cutoff correction to
-	that result, yielding the long-range correction for a
-	switched function.  We perform both the pressure and energy
-	loops at the same time for simplicity, as the computational
-	cost is low. */
-
-      for (i=0;i<2;i++) {
-        enersum = 0.0; virsum = 0.0;
-        if (i==0)
+    if (eDispCorr != edispcNO)
+    {
+        for (i=0; i<2; i++)
         {
-            offstart = 0;
-            /* Since the dispersion table has been scaled down a factor 6.0 and the repulsion
-             * a factor 12.0 to compensate for the c6/c12 parameters inside nbfp[] being scaled
-             * up (to save flops in kernels), we need to correct for this.
+            eners[i] = 0;
+            virs[i]  = 0;
+        }
+        if ((fr->vdwtype == evdwSWITCH) || (fr->vdwtype == evdwSHIFT))
+        {
+            if (fr->rvdw_switch == 0)
+                gmx_fatal(FARGS,
+                          "With dispersion correction rvdw-switch can not be zero "
+                          "for vdw-type = %s",evdw_names[fr->vdwtype]);
+
+            scale  = fr->nblists[0].table_elec_vdw.scale;
+            vdwtab = fr->nblists[0].table_vdw.data;
+
+            /* Round the cut-offs to exact table values for precision */
+            ri0 = floor(fr->rvdw_switch*scale);
+            ri1 = ceil(fr->rvdw*scale);
+            r0  = ri0/scale;
+            r1  = ri1/scale;
+            rc3 = r0*r0*r0;
+            rc9  = rc3*rc3*rc3;
+
+            if (fr->vdwtype == evdwSHIFT)
+            {
+                /* Determine the constant energy shift below rvdw_switch.
+                 * Table has a scale factor since we have scaled it down to compensate
+                 * for scaling-up c6/c12 with the derivative factors to save flops in analytical kernels.
+                 */
+                fr->enershiftsix    = (real)(-1.0/(rc3*rc3)) - 6.0*vdwtab[8*ri0];
+                fr->enershifttwelve = (real)( 1.0/(rc9*rc3)) - 12.0*vdwtab[8*ri0 + 4];
+            }
+            /* Add the constant part from 0 to rvdw_switch.
+             * This integration from 0 to rvdw_switch overcounts the number
+             * of interactions by 1, as it also counts the self interaction.
+             * We will correct for this later.
              */
-            tabfactor = 6.0;
+            eners[0] += 4.0*M_PI*fr->enershiftsix*rc3/3.0;
+            eners[1] += 4.0*M_PI*fr->enershifttwelve*rc3/3.0;
+
+            invscale = 1.0/(scale);
+            invscale2 = invscale*invscale;
+            invscale3 = invscale*invscale2;
+
+            /* following summation derived from cubic spline definition,
+            Numerical Recipies in C, second edition, p. 113-116.  Exact
+            for the cubic spline.  We first calculate the negative of
+            the energy from rvdw to rvdw_switch, assuming that g(r)=1,
+            and then add the more standard, abrupt cutoff correction to
+            that result, yielding the long-range correction for a
+            switched function.  We perform both the pressure and energy
+            loops at the same time for simplicity, as the computational
+            cost is low. */
+
+            for (i=0; i<2; i++)
+            {
+                enersum = 0.0; virsum = 0.0;
+                if (i==0)
+                {
+                    offstart = 0;
+                    /* Since the dispersion table has been scaled down a factor 6.0 and the repulsion
+                     * a factor 12.0 to compensate for the c6/c12 parameters inside nbfp[] being scaled
+                     * up (to save flops in kernels), we need to correct for this.
+                     */
+                    tabfactor = 6.0;
+                }
+                else
+                {
+                    offstart = 4;
+                    tabfactor = 12.0;
+                }
+                for (ri=ri0; ri<ri1; ri++)
+                {
+                    r = ri*invscale;
+                    ea = invscale3;
+                    eb = 2.0*invscale2*r;
+                    ec = invscale*r*r;
+
+                    pa = invscale3;
+                    pb = 3.0*invscale2*r;
+                    pc = 3.0*invscale*r*r;
+                    pd = r*r*r;
+
+                    /* this "8" is from the packing in the vdwtab array - perhaps should be #define'ed? */
+                    offset = 8*ri + offstart;
+                    y0 = vdwtab[offset];
+                    f  = vdwtab[offset+1];
+                    g  = vdwtab[offset+2];
+                    h  = vdwtab[offset+3];
+
+                    enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
+                    virsum  += f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
+                }
+
+                enersum *= 4.0*M_PI*tabfactor;
+                virsum  *= 4.0*M_PI*tabfactor;
+                eners[i] -= enersum;
+                virs[i]  -= virsum;
+            }
+
+            /* now add the correction for rvdw_switch to infinity */
+            eners[0] += -4.0*M_PI/(3.0*rc3);
+            eners[1] +=  4.0*M_PI/(9.0*rc9);
+            virs[0]  +=  8.0*M_PI/rc3;
+            virs[1]  += -16.0*M_PI/(3.0*rc9);
+        }
+        else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER))
+        {
+            if (fr->vdwtype == evdwUSER && fplog)
+                fprintf(fplog,
+                        "WARNING: using dispersion correction with user tables\n");
+            rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
+            rc9  = rc3*rc3*rc3;
+            /* Contribution beyond the cut-off */
+            eners[0] += -4.0*M_PI/(3.0*rc3);
+            eners[1] +=  4.0*M_PI/(9.0*rc9);
+            if (fr->vdw_modifier==eintmodPOTSHIFT)
+            {
+                /* Contribution within the cut-off */
+                eners[0] += -4.0*M_PI/(3.0*rc3);
+                eners[1] +=  4.0*M_PI/(3.0*rc9);
+            }
+            /* Contribution beyond the cut-off */
+            virs[0]  +=  8.0*M_PI/rc3;
+            virs[1]  += -16.0*M_PI/(3.0*rc9);
         }
         else
         {
-            offstart = 4;
-            tabfactor = 12.0;
+            gmx_fatal(FARGS,
+                      "Dispersion correction is not implemented for vdw-type = %s",
+                      evdw_names[fr->vdwtype]);
         }
-	for (ri=ri0; ri<ri1; ri++) {
-          r = ri*invscale;
-          ea = invscale3;
-          eb = 2.0*invscale2*r;
-          ec = invscale*r*r;
-
-          pa = invscale3;
-          pb = 3.0*invscale2*r;
-          pc = 3.0*invscale*r*r;
-          pd = r*r*r;
-
-          /* this "8" is from the packing in the vdwtab array - perhaps should be #define'ed? */
-          offset = 8*ri + offstart;
-          y0 = vdwtab[offset];
-          f  = vdwtab[offset+1];
-          g  = vdwtab[offset+2];
-          h  = vdwtab[offset+3];
-
-          enersum += y0*(ea/3 + eb/2 + ec) + f*(ea/4 + eb/3 + ec/2) + g*(ea/5 + eb/4 + ec/3) + h*(ea/6 + eb/5 + ec/4);
-          virsum  += f*(pa/4 + pb/3 + pc/2 + pd) + 2*g*(pa/5 + pb/4 + pc/3 + pd/2) + 3*h*(pa/6 + pb/5 + pc/4 + pd/3);
-        }
-          
-        enersum *= 4.0*M_PI*tabfactor;
-        virsum  *= 4.0*M_PI*tabfactor;
-        eners[i] -= enersum;
-        virs[i]  -= virsum;
-      }
-
-      /* now add the correction for rvdw_switch to infinity */
-      eners[0] += -4.0*M_PI/(3.0*rc3);
-      eners[1] +=  4.0*M_PI/(9.0*rc9);
-      virs[0]  +=  8.0*M_PI/rc3;
-      virs[1]  += -16.0*M_PI/(3.0*rc9);
+        fr->enerdiffsix    = eners[0];
+        fr->enerdifftwelve = eners[1];
+        /* The 0.5 is due to the Gromacs definition of the virial */
+        fr->virdiffsix     = 0.5*virs[0];
+        fr->virdifftwelve  = 0.5*virs[1];
     }
-    else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER)) {
-      if (fr->vdwtype == evdwUSER && fplog)
-	fprintf(fplog,
-		"WARNING: using dispersion correction with user tables\n");
-      rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
-      rc9  = rc3*rc3*rc3;
-      /* Contribution beyond the cut-off */
-      eners[0] += -4.0*M_PI/(3.0*rc3);
-      eners[1] +=  4.0*M_PI/(9.0*rc9);
-      if (fr->vdw_modifier==eintmodPOTSHIFT) {
-          /* Contribution within the cut-off */
-          eners[0] += -4.0*M_PI/(3.0*rc3);
-          eners[1] +=  4.0*M_PI/(3.0*rc9);
-      }
-      /* Contribution beyond the cut-off */
-      virs[0]  +=  8.0*M_PI/rc3;
-      virs[1]  += -16.0*M_PI/(3.0*rc9);
-    } else {
-      gmx_fatal(FARGS,
-		"Dispersion correction is not implemented for vdw-type = %s",
-		evdw_names[fr->vdwtype]);
-    }
-    fr->enerdiffsix    = eners[0];
-    fr->enerdifftwelve = eners[1];
-    /* The 0.5 is due to the Gromacs definition of the virial */
-    fr->virdiffsix     = 0.5*virs[0];
-    fr->virdifftwelve  = 0.5*virs[1];
-  }
 }
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
@@ -2206,7 +2251,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
     clear_mat(virial);
     clear_mat(pres);
 
-    if (ir->eDispCorr != edispcNO) {
+    if (ir->eDispCorr != edispcNO)
+    {
         bCorrAll  = (ir->eDispCorr == edispcAllEner ||
                      ir->eDispCorr == edispcAllEnerPres);
         bCorrPres = (ir->eDispCorr == edispcEnerPres ||
@@ -2263,7 +2309,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
             /* The factor 2 is because of the Gromacs virial definition */
             spres = -2.0*invvol*svir*PRESFAC;
 
-            for(m=0; m<DIM; m++) {
+            for (m=0; m<DIM; m++)
+            {
                 virial[m][m] += svir;
                 pres[m][m] += spres;
             }
@@ -2273,7 +2320,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
         /* Can't currently control when it prints, for now, just print when degugging */
         if (debug)
         {
-            if (bCorrAll) {
+            if (bCorrAll)
+            {
                 fprintf(debug,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
                         avcsix,avctwelve);
             }
@@ -2302,80 +2350,96 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,
 }
 
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
-		  t_graph *graph,rvec x[])
+                  t_graph *graph,rvec x[])
 {
-  if (fplog)
-    fprintf(fplog,"Removing pbc first time\n");
-  calc_shifts(box,fr->shift_vec);
-  if (graph) {
-    mk_mshift(fplog,graph,fr->ePBC,box,x);
-    if (gmx_debug_at)
-      p_graph(debug,"do_pbc_first 1",graph);
-    shift_self(graph,box,x);
-    /* By doing an extra mk_mshift the molecules that are broken
-     * because they were e.g. imported from another software
-     * will be made whole again. Such are the healing powers
-     * of GROMACS.
-     */
-    mk_mshift(fplog,graph,fr->ePBC,box,x);
-    if (gmx_debug_at)
-      p_graph(debug,"do_pbc_first 2",graph);
-  }
-  if (fplog)
-    fprintf(fplog,"Done rmpbc\n");
+    if (fplog)
+    {
+        fprintf(fplog,"Removing pbc first time\n");
+    }
+    calc_shifts(box,fr->shift_vec);
+    if (graph)
+    {
+        mk_mshift(fplog,graph,fr->ePBC,box,x);
+        if (gmx_debug_at)
+        {
+            p_graph(debug,"do_pbc_first 1",graph);
+        }
+        shift_self(graph,box,x);
+        /* By doing an extra mk_mshift the molecules that are broken
+         * because they were e.g. imported from another software
+         * will be made whole again. Such are the healing powers
+         * of GROMACS.
+         */
+        mk_mshift(fplog,graph,fr->ePBC,box,x);
+        if (gmx_debug_at)
+        {
+            p_graph(debug,"do_pbc_first 2",graph);
+        }
+    }
+    if (fplog)
+    {
+        fprintf(fplog,"Done rmpbc\n");
+    }
 }
 
 static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
-			    gmx_mtop_t *mtop,rvec x[],
-			    gmx_bool bFirst)
+                            gmx_mtop_t *mtop,rvec x[],
+                            gmx_bool bFirst)
 {
-  t_graph *graph;
-  int mb,as,mol;
-  gmx_molblock_t *molb;
+    t_graph *graph;
+    int mb,as,mol;
+    gmx_molblock_t *molb;
 
-  if (bFirst && fplog)
-    fprintf(fplog,"Removing pbc first time\n");
-
-  snew(graph,1);
-  as = 0;
-  for(mb=0; mb<mtop->nmolblock; mb++) {
-    molb = &mtop->molblock[mb];
-    if (molb->natoms_mol == 1 ||
-	(!bFirst && mtop->moltype[molb->type].cgs.nr == 1)) {
-      /* Just one atom or charge group in the molecule, no PBC required */
-      as += molb->nmol*molb->natoms_mol;
-    } else {
-      /* Pass NULL iso fplog to avoid graph prints for each molecule type */
-      mk_graph_ilist(NULL,mtop->moltype[molb->type].ilist,
-		     0,molb->natoms_mol,FALSE,FALSE,graph);
-
-      for(mol=0; mol<molb->nmol; mol++) {
-	mk_mshift(fplog,graph,ePBC,box,x+as);
-
-	shift_self(graph,box,x+as);
-	/* The molecule is whole now.
-	 * We don't need the second mk_mshift call as in do_pbc_first,
-	 * since we no longer need this graph.
-	 */
-
-	as += molb->natoms_mol;
-      }
-      done_graph(graph);
+    if (bFirst && fplog)
+    {
+        fprintf(fplog,"Removing pbc first time\n");
     }
-  }
-  sfree(graph);
+
+    snew(graph,1);
+    as = 0;
+    for (mb=0; mb<mtop->nmolblock; mb++)
+    {
+        molb = &mtop->molblock[mb];
+        if (molb->natoms_mol == 1 ||
+            (!bFirst && mtop->moltype[molb->type].cgs.nr == 1))
+        {
+            /* Just one atom or charge group in the molecule, no PBC required */
+            as += molb->nmol*molb->natoms_mol;
+        }
+        else
+        {
+            /* Pass NULL iso fplog to avoid graph prints for each molecule type */
+            mk_graph_ilist(NULL,mtop->moltype[molb->type].ilist,
+                           0,molb->natoms_mol,FALSE,FALSE,graph);
+
+            for (mol=0; mol<molb->nmol; mol++)
+            {
+                mk_mshift(fplog,graph,ePBC,box,x+as);
+
+                shift_self(graph,box,x+as);
+                /* The molecule is whole now.
+                 * We don't need the second mk_mshift call as in do_pbc_first,
+                 * since we no longer need this graph.
+                 */
+
+                as += molb->natoms_mol;
+            }
+            done_graph(graph);
+        }
+    }
+    sfree(graph);
 }
 
 void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
-		       gmx_mtop_t *mtop,rvec x[])
+                       gmx_mtop_t *mtop,rvec x[])
 {
-  low_do_pbc_mtop(fplog,ePBC,box,mtop,x,TRUE);
+    low_do_pbc_mtop(fplog,ePBC,box,mtop,x,TRUE);
 }
 
 void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
-		 gmx_mtop_t *mtop,rvec x[])
+                 gmx_mtop_t *mtop,rvec x[])
 {
-  low_do_pbc_mtop(fplog,ePBC,box,mtop,x,FALSE);
+    low_do_pbc_mtop(fplog,ePBC,box,mtop,x,FALSE);
 }
 
 void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
@@ -2442,7 +2506,7 @@ void finish_run(FILE *fplog,t_commrec *cr,const char *confout,
 
             snew(nrnb_all,cr->nnodes);
             nrnb_all[0] = *nrnb;
-            for(s=1; s<cr->nnodes; s++)
+            for (s=1; s<cr->nnodes; s++)
             {
                 MPI_Recv(nrnb_all[s].n,eNRNB,MPI_DOUBLE,s,0,
                          cr->mpi_comm_mysim,&stat);
@@ -2497,8 +2561,10 @@ extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *l
     int i;
     t_lambda *fep = ir->fepvals;
 
-    if ((ir->efep==efepNO) && (ir->bSimTemp == FALSE)) {
-        for (i=0;i<efptNR;i++)  {
+    if ((ir->efep==efepNO) && (ir->bSimTemp == FALSE))
+    {
+        for (i=0; i<efptNR; i++)
+        {
             lambda[i] = 0.0;
             if (lam0)
             {
@@ -2506,32 +2572,39 @@ extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *l
             }
         }
         return;
-    } else {
+    }
+    else
+    {
         *fep_state = fep->init_fep_state; /* this might overwrite the checkpoint
                                              if checkpoint is set -- a kludge is in for now
                                              to prevent this.*/
-        for (i=0;i<efptNR;i++)
+        for (i=0; i<efptNR; i++)
         {
             /* overwrite lambda state with init_lambda for now for backwards compatibility */
             if (fep->init_lambda>=0) /* if it's -1, it was never initializd */
             {
                 lambda[i] = fep->init_lambda;
-                if (lam0) {
+                if (lam0)
+                {
                     lam0[i] = lambda[i];
                 }
             }
             else
             {
                 lambda[i] = fep->all_lambda[i][*fep_state];
-                if (lam0) {
+                if (lam0)
+                {
                     lam0[i] = lambda[i];
                 }
             }
         }
-        if (ir->bSimTemp) {
+        if (ir->bSimTemp)
+        {
             /* need to rescale control temperatures to match current state */
-            for (i=0;i<ir->opts.ngtc;i++) {
-                if (ir->opts.ref_t[i] > 0) {
+            for (i=0; i<ir->opts.ngtc; i++)
+            {
+                if (ir->opts.ref_t[i] > 0)
+                {
                     ir->opts.ref_t[i] = ir->simtempvals->temperatures[*fep_state];
                 }
             }
@@ -2542,7 +2615,7 @@ extern void initialize_lambdas(FILE *fplog,t_inputrec *ir,int *fep_state,real *l
     if (fplog != NULL)
     {
         fprintf(fplog,"Initial vector of lambda components:[ ");
-        for (i=0;i<efptNR;i++)
+        for (i=0; i<efptNR; i++)
         {
             fprintf(fplog,"%10.4f ",lambda[i]);
         }
@@ -2570,10 +2643,10 @@ void init_md(FILE *fplog,
     *t = *t0       = ir->init_t;
 
     *bSimAnn=FALSE;
-    for(i=0;i<ir->opts.ngtc;i++)
+    for (i=0; i<ir->opts.ngtc; i++)
     {
         /* set bSimAnn if any group is being annealed */
-        if(ir->opts.annealing[i]!=eannNO)
+        if (ir->opts.annealing[i]!=eannNO)
         {
             *bSimAnn = TRUE;
         }
@@ -2621,8 +2694,8 @@ void init_md(FILE *fplog,
 
     if (ir->bAdress)
     {
-      please_cite(fplog,"Fritsch12");
-      please_cite(fplog,"Junghans10");
+        please_cite(fplog,"Fritsch12");
+        please_cite(fplog,"Junghans10");
     }
     /* Initiate variables */
     clear_mat(force_vir);

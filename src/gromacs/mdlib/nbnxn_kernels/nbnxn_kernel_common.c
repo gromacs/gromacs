@@ -40,7 +40,7 @@ clear_f(const nbnxn_atomdata_t *nbat,real *f)
 {
     int i;
 
-    for(i=0; i<nbat->natoms*nbat->fstride; i++)
+    for (i=0; i<nbat->natoms*nbat->fstride; i++)
     {
         f[i] = 0;
     }
@@ -51,7 +51,7 @@ clear_fshift(real *fshift)
 {
     int i;
 
-    for(i=0; i<SHIFTS*DIM; i++)
+    for (i=0; i<SHIFTS*DIM; i++)
     {
         fshift[i] = 0;
     }
@@ -66,9 +66,9 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
     int nb;
     int i,j,ind,indr;
 
-    for(nb=0; nb<nlist; nb++)
+    for (nb=0; nb<nlist; nb++)
     {
-        for(i=0; i<nbat->nenergrp; i++)
+        for (i=0; i<nbat->nenergrp; i++)
         {
             /* Reduce the diagonal terms */
             ind = i*nbat->nenergrp + i;
@@ -76,7 +76,7 @@ reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
             Vc[ind]   += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
-            for(j=i+1; j<nbat->nenergrp; j++)
+            for (j=i+1; j<nbat->nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
                 ind  = i*nbat->nenergrp + j;

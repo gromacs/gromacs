@@ -1,6 +1,6 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
  *
@@ -11,7 +11,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -67,11 +67,11 @@ dd_sendrecv_rvec(const gmx_domdec_t *dd,
  */
 void
 dd_sendrecv2_rvec(const gmx_domdec_t *dd,
-		  int ddimind,
-		  rvec *buf_s_fw,int n_s_fw,
-		  rvec *buf_r_fw,int n_r_fw,
-		  rvec *buf_s_bw,int n_s_bw,
-		  rvec *buf_r_bw,int n_r_bw);
+                  int ddimind,
+                  rvec *buf_s_fw,int n_s_fw,
+                  rvec *buf_r_fw,int n_r_fw,
+                  rvec *buf_s_bw,int n_s_bw,
+                  rvec *buf_r_bw,int n_r_bw);
 
 
 /* The functions below perform the same operations as the MPI functions
@@ -109,4 +109,4 @@ dd_gatherv(gmx_domdec_t *dd,
 }
 #endif
 
-#endif	/* _domdec_network_h */
+#endif  /* _domdec_network_h */

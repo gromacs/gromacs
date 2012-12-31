@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -35,9 +35,9 @@ be called official thread_mpi. Details are found in the README & COPYING
 files.
 */
 
-/* PowerPC using xlC inline assembly. 
+/* PowerPC using xlC inline assembly.
  * Recent versions of xlC (>=7.0) _partially_ support GCC inline assembly
- * if you use the option -qasm=gcc but we have had to hack things a bit, in 
+ * if you use the option -qasm=gcc but we have had to hack things a bit, in
  * particular when it comes to clobbered variables. Since this implementation
  * _could_ be buggy, we have separated it from the known-to-be-working gcc
  * one above.
@@ -76,7 +76,7 @@ files.
 
 typedef struct tMPI_Atomic
 {
-    volatile int value __attribute__ ((aligned(64)));  
+    volatile int value __attribute__ ((aligned(64)));
 }
 tMPI_Atomic_t;
 
@@ -90,16 +90,16 @@ tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    volatile int lock __attribute__ ((aligned(64)));  
+    volatile int lock __attribute__ ((aligned(64)));
 }
 tMPI_Spinlock_t;
 
 
 
 
-#define tMPI_Atomic_get(a)   (int)((a)->value) 
+#define tMPI_Atomic_get(a)   (int)((a)->value)
 #define tMPI_Atomic_set(a,i)  (((a)->value) = (i))
-#define tMPI_Atomic_ptr_get(a)   ((a)->value) 
+#define tMPI_Atomic_ptr_get(a)   ((a)->value)
 #define tMPI_Atomic_ptr_set(a,i)  (((a)->value) = (i))
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
@@ -111,7 +111,7 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
     int ret;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
-    __eieio(); 
+    __eieio();
     ret=(__compare_and_swap(&(a->value), &oldval, newval));
     __isync();
     __fence(); /* and this one needs to be here to avoid aliasing issues */
@@ -142,8 +142,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
     volatile char* volatile* newv=newval;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
-    __eieio(); 
-#if (!defined (__LP64__) ) && (!defined(__powerpc64__) ) 
+    __eieio();
+#if (!defined (__LP64__) ) && (!defined(__powerpc64__) )
     ret=__compare_and_swap((int *)&(a->value), (int*)&oldv, (int)newv);
 #else
     ret=__compare_and_swaplp((long *)&(a->value), (long*)&oldv, (long)newv);
@@ -161,7 +161,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
 #ifdef TMPI_XLC_INTRINSICS
     int oldval, newval;
-    
+
     do
     {
         __fence();
@@ -170,7 +170,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
         newval = oldval + i;
     }
     /*while(!__compare_and_swap( &(a->value), &oldval, newval));*/
-    while(__check_lock_mp( (int*)&(a->value), oldval, newval));
+    while (__check_lock_mp( (int*)&(a->value), oldval, newval));
 
     /*__isync();*/
     __fence();
@@ -196,7 +196,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
 #ifdef TMPI_XLC_INTRINSICS
     int oldval,newval;
-    
+
     do
     {
         __fence();
@@ -205,7 +205,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
         newval = oldval + i;
     }
     /*while(__check_lock_mp((const int*)&(a->value), oldval, newval));*/
-    while(__check_lock_mp( (int*)&(a->value), oldval, newval));
+    while (__check_lock_mp( (int*)&(a->value), oldval, newval));
     /*while(!__compare_and_swap( &(a->value), &oldval, newval));*/
     /*__isync();*/
     __fence();
@@ -242,7 +242,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
     do
     {
     }
-    while(__check_lock_mp((int*)&(x->lock), 0, 1));
+    while (__check_lock_mp((int*)&(x->lock), 0, 1));
     tMPI_Atomic_memory_barrier_acq();
 }
 
@@ -280,7 +280,7 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
     do
     {
     }
-    while(spin_islocked(x));
+    while (spin_islocked(x));
 }
 
 

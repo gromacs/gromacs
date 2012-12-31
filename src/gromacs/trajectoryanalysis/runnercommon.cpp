@@ -153,7 +153,7 @@ TrajectoryAnalysisRunnerCommon::Impl::finishTrajectory()
  */
 
 TrajectoryAnalysisRunnerCommon::TrajectoryAnalysisRunnerCommon(
-        TrajectoryAnalysisSettings *settings)
+    TrajectoryAnalysisSettings *settings)
     : impl_(new Impl(settings))
 {
 }
@@ -171,39 +171,39 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
 
     // Add options for help.
     options->addOption(BooleanOption("h").store(&impl_->bHelp_)
-                           .description("Print help and quit"));
+                       .description("Print help and quit"));
     options->addOption(BooleanOption("hidden").store(&impl_->bShowHidden_)
-                           .hidden()
-                           .description("Show hidden options"));
+                       .hidden()
+                       .description("Show hidden options"));
     options->addOption(BooleanOption("quiet").store(&impl_->bQuiet_)
-                           .hidden()
-                           .description("Hide options in normal run"));
+                       .hidden()
+                       .description("Hide options in normal run"));
 
     // Add common file name arguments.
     options->addOption(FileNameOption("f")
-                           .filetype(eftTrajectory).inputFile()
-                           .store(&impl_->trjfile_)
-                           .defaultBasename("traj")
-                           .description("Input trajectory or single configuration"));
+                       .filetype(eftTrajectory).inputFile()
+                       .store(&impl_->trjfile_)
+                       .defaultBasename("traj")
+                       .description("Input trajectory or single configuration"));
     options->addOption(FileNameOption("s")
-                           .filetype(eftTopology).inputFile()
-                           .store(&impl_->topfile_)
-                           .defaultBasename("topol")
-                           .description("Input structure"));
+                       .filetype(eftTopology).inputFile()
+                       .store(&impl_->topfile_)
+                       .defaultBasename("topol")
+                       .description("Input structure"));
     options->addOption(FileNameOption("n")
-                           .filetype(eftIndex).inputFile()
-                           .store(&impl_->ndxfile_)
-                           .defaultBasename("index")
-                           .description("Extra index groups"));
+                       .filetype(eftIndex).inputFile()
+                       .store(&impl_->ndxfile_)
+                       .defaultBasename("index")
+                       .description("Extra index groups"));
     options->addOption(SelectionFileOption("sf"));
 
     // Add options for trajectory time control.
     options->addOption(DoubleOption("b").store(&impl_->startTime_).timeValue()
-                           .description("First frame (%t) to read from trajectory"));
+                       .description("First frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("e").store(&impl_->endTime_).timeValue()
-                           .description("Last frame (%t) to read from trajectory"));
+                       .description("Last frame (%t) to read from trajectory"));
     options->addOption(DoubleOption("dt").store(&impl_->deltaTime_).timeValue()
-                           .description("Only use frame if t MOD dt == first time (%t)"));
+                       .description("Only use frame if t MOD dt == first time (%t)"));
 
     // Add time unit option.
     settings.impl_->timeUnitManager.addTimeUnitOption(options, "tu");
@@ -215,12 +215,12 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserRmPBC))
     {
         options->addOption(BooleanOption("rmpbc").store(&settings.impl_->bRmPBC)
-                               .description("Make molecules whole for each frame"));
+                           .description("Make molecules whole for each frame"));
     }
     if (!settings.hasFlag(TrajectoryAnalysisSettings::efNoUserPBC))
     {
         options->addOption(BooleanOption("pbc").store(&settings.impl_->bPBC)
-                               .description("Use periodic boundary conditions for distance calculation"));
+                           .description("Use periodic boundary conditions for distance calculation"));
     }
 }
 
@@ -241,7 +241,7 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     }
 
     impl_->settings_.impl_->plotSettings.setTimeUnit(
-            impl_->settings_.impl_->timeUnitManager.timeUnit());
+        impl_->settings_.impl_->timeUnitManager.timeUnit());
 
     if (impl_->trjfile_.empty() && impl_->topfile_.empty())
     {
@@ -249,11 +249,17 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     }
 
     if (options->isSet("b"))
+    {
         setTimeValue(TBEGIN, impl_->startTime_);
+    }
     if (options->isSet("e"))
+    {
         setTimeValue(TEND, impl_->endTime_);
+    }
     if (options->isSet("dt"))
+    {
         setTimeValue(TDELTA, impl_->deltaTime_);
+    }
 
     return true;
 }
@@ -306,8 +312,8 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 
         snew(impl_->topInfo_.top_, 1);
         impl_->topInfo_.bTop_ = read_tps_conf(impl_->topfile_.c_str(), title,
-                impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
-                &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
+                                              impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
+                                              &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
         if (hasTrajectory()
             && !settings.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
@@ -366,8 +372,8 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         if (top.hasTopology() && impl_->fr->natoms > top.topology()->atoms.nr)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                      "Trajectory (%d atoms) does not match topology (%d atoms)",
-                      impl_->fr->natoms, top.topology()->atoms.nr)));
+                                                 "Trajectory (%d atoms) does not match topology (%d atoms)",
+                                                 impl_->fr->natoms, top.topology()->atoms.nr)));
         }
         // Check index groups if they have been initialized based on the topology.
         /*

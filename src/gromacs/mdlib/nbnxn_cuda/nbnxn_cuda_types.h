@@ -193,4 +193,4 @@ struct nbnxn_cuda
 }
 #endif
 
-#endif	/* NBNXN_CUDA_TYPES_H */
+#endif  /* NBNXN_CUDA_TYPES_H */

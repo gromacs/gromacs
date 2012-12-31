@@ -154,7 +154,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         *n_nonlin_vsite = 0;
     }
 
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb=0; mb<mtop->nmolblock; mb++)
     {
         nmol = mtop->molblock[mb].nmol;
 
@@ -164,11 +164,11 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         snew(con_m,atoms->nr);
         snew(vsite_m,atoms->nr);
 
-        for(ft=F_CONSTR; ft<=F_CONSTRNC; ft++)
+        for (ft=F_CONSTR; ft<=F_CONSTRNC; ft++)
         {
             il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-            for(i=0; i<il->nr; i+=1+NRAL(ft))
+            for (i=0; i<il->nr; i+=1+NRAL(ft))
             {
                 a1 = il->iatoms[i+1];
                 a2 = il->iatoms[i+2];
@@ -179,7 +179,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
         il = &mtop->moltype[mtop->molblock[mb].type].ilist[F_SETTLE];
 
-        for(i=0; i<il->nr; i+=1+NRAL(F_SETTLE))
+        for (i=0; i<il->nr; i+=1+NRAL(F_SETTLE))
         {
             a1 = il->iatoms[i+1];
             a2 = il->iatoms[i+2];
@@ -190,19 +190,19 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
         }
 
         /* Check for virtual sites, determine mass from constructing atoms */
-        for(ft=0; ft<F_NRE; ft++)
+        for (ft=0; ft<F_NRE; ft++)
         {
             if (IS_VSITE(ft))
             {
                 il = &mtop->moltype[mtop->molblock[mb].type].ilist[ft];
 
-                for(i=0; i<il->nr; i+=1+NRAL(ft))
+                for (i=0; i<il->nr; i+=1+NRAL(ft))
                 {
                     ip = &mtop->ffparams.iparams[il->iatoms[i]];
 
                     a1 = il->iatoms[i+1];
 
-                    for(j=1; j<NRAL(ft); j++)
+                    for (j=1; j<NRAL(ft); j++)
                     {
                         cam[j] = atoms->atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
@@ -218,46 +218,46 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
                         }
                     }
 
-                    switch(ft)
+                    switch (ft)
                     {
-                    case F_VSITE2:
-                        /* Exact except for ignoring constraints */
-                        vsite_m[a1] = (cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a))/(cam[1]*cam[2]);
-                        break;
-                    case F_VSITE3:
-                        /* Exact except for ignoring constraints */
-                        vsite_m[a1] = (cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b))/(cam[1]*cam[2]*cam[3]);
-                        break;
-                    default:
-                        /* Use the mass of the lightest constructing atom.
-                         * This is an approximation.
-                         * If the distance of the virtual site to the
-                         * constructing atom is less than all distances
-                         * between constructing atoms, this is a safe
-                         * over-estimate of the displacement of the vsite.
-                         * This condition holds for all H mass replacement
-                         * replacement vsite constructions, except for SP2/3
-                         * groups. In SP3 groups one H will have a F_VSITE3
-                         * construction, so even there the total drift
-                         * estimation shouldn't be far off.
-                         */
-                        assert(j>=1);
-                        vsite_m[a1] = cam[1];
-                        for(j=2; j<NRAL(ft); j++)
-                        {
-                            vsite_m[a1] = min(vsite_m[a1],cam[j]);
-                        }
-                        if (n_nonlin_vsite != NULL)
-                        {
-                            *n_nonlin_vsite += nmol;
-                        }
-                        break;
+                        case F_VSITE2:
+                            /* Exact except for ignoring constraints */
+                            vsite_m[a1] = (cam[2]*sqr(1-ip->vsite.a) + cam[1]*sqr(ip->vsite.a))/(cam[1]*cam[2]);
+                            break;
+                        case F_VSITE3:
+                            /* Exact except for ignoring constraints */
+                            vsite_m[a1] = (cam[2]*cam[3]*sqr(1-ip->vsite.a-ip->vsite.b) + cam[1]*cam[3]*sqr(ip->vsite.a) + cam[1]*cam[2]*sqr(ip->vsite.b))/(cam[1]*cam[2]*cam[3]);
+                            break;
+                        default:
+                            /* Use the mass of the lightest constructing atom.
+                             * This is an approximation.
+                             * If the distance of the virtual site to the
+                             * constructing atom is less than all distances
+                             * between constructing atoms, this is a safe
+                             * over-estimate of the displacement of the vsite.
+                             * This condition holds for all H mass replacement
+                             * replacement vsite constructions, except for SP2/3
+                             * groups. In SP3 groups one H will have a F_VSITE3
+                             * construction, so even there the total drift
+                             * estimation shouldn't be far off.
+                             */
+                            assert(j>=1);
+                            vsite_m[a1] = cam[1];
+                            for (j=2; j<NRAL(ft); j++)
+                            {
+                                vsite_m[a1] = min(vsite_m[a1],cam[j]);
+                            }
+                            if (n_nonlin_vsite != NULL)
+                            {
+                                *n_nonlin_vsite += nmol;
+                            }
+                            break;
                     }
                 }
             }
         }
 
-        for(a=0; a<atoms->nr; a++)
+        for (a=0; a<atoms->nr; a++)
         {
             at = &atoms->atom[a];
             /* We consider an atom constrained, #DOF=2, when it is
@@ -274,7 +274,7 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t *mtop,
 
     if (gmx_debug_at)
     {
-        for(a=0; a<natt; a++)
+        for (a=0; a<natt; a++)
         {
             fprintf(debug,"type %d: m %5.2f t %d q %6.3f con %d n %d\n",
                     a,att[a].mass,att[a].type,att[a].q,att[a].con,att[a].n);
@@ -323,12 +323,12 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
     drift_tot = 0;
 
     /* Loop over the different atom type pairs */
-    for(i=0; i<natt; i++)
+    for (i=0; i<natt; i++)
     {
         s2i = kT_fac/att[i].mass;
         ti  = att[i].type;
 
-        for(j=i; j<natt; j++)
+        for (j=i; j<natt; j++)
         {
             s2j = kT_fac/att[j].mass;
             tj = att[j].type;
@@ -381,9 +381,9 @@ static real ener_drift(const verletbuf_atomtype_t *att,int natt,
             s      = sqrt(s2);
 
             pot1 = sc_fac*
-                md/2*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp);
+                   md/2*((rsh*rsh + s2)*c_erfc - rsh*s*c_exp);
             pot2 = sc_fac*
-                dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc);
+                   dd/6*(s*(rsh*rsh + 2*s2)*c_exp - rsh*(rsh*rsh + 3*s2)*c_erfc);
             pot = pot1 + pot2;
 
             if (gmx_debug_at)
@@ -440,30 +440,30 @@ static real surface_frac(int cluster_size,real particle_distance,real rlist)
      */
     switch (cluster_size)
     {
-    case 1:
-        /* One particle: trivial */
-        area_rel = 1.0;
-        break;
-    case 2:
-        /* Two particles: two spheres at fractional distance 2*a */
-        area_rel = 1.0 + d;
-        break;
-    case 4:
-        /* We assume a perfect, symmetric tetrahedron geometry.
-         * The surface around a tetrahedron is too complex for a full
-         * analytical solution, so we use a Taylor expansion.
-         */
-        area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
-                                  sqrt(3)*d*d*(1.0 +
-                                               5.0/18.0*d*d +
-                                               7.0/45.0*d*d*d*d +
-                                               83.0/756.0*d*d*d*d*d*d)));
-        break;
-    default:
-        gmx_incons("surface_frac called with unsupported cluster_size");
-        area_rel = 1.0;
+        case 1:
+            /* One particle: trivial */
+            area_rel = 1.0;
+            break;
+        case 2:
+            /* Two particles: two spheres at fractional distance 2*a */
+            area_rel = 1.0 + d;
+            break;
+        case 4:
+            /* We assume a perfect, symmetric tetrahedron geometry.
+             * The surface around a tetrahedron is too complex for a full
+             * analytical solution, so we use a Taylor expansion.
+             */
+            area_rel = (1.0 + 1/M_PI*(6*acos(1/sqrt(3))*d +
+                                      sqrt(3)*d*d*(1.0 +
+                                                   5.0/18.0*d*d +
+                                                   7.0/45.0*d*d*d*d +
+                                                   83.0/756.0*d*d*d*d*d*d)));
+            break;
+        default:
+            gmx_incons("surface_frac called with unsupported cluster_size");
+            area_rel = 1.0;
     }
-        
+
     return area_rel/cluster_size;
 }
 
@@ -620,7 +620,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
             /* Set the masses to 1 as kT_fac is the full sigma^2,
              * but we divide by m in ener_drift().
              */
-            for(i=0; i<natt; i++)
+            for (i=0; i<natt; i++)
             {
                 att[i].mass = 1;
             }
@@ -631,7 +631,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
 
             /* Per group tau_t is not implemented yet, use the maximum */
             tau_t = ir->opts.tau_t[0];
-            for(i=1; i<ir->opts.ngtc; i++)
+            for (i=1; i<ir->opts.ngtc; i++)
             {
                 tau_t = max(tau_t,ir->opts.tau_t[i]);
             }
@@ -646,7 +646,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
     }
 
     mass_min = att[0].mass;
-    for(i=1; i<natt; i++)
+    for (i=1; i<natt; i++)
     {
         mass_min = min(mass_min,att[i].mass);
     }

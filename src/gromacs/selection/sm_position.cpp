@@ -93,18 +93,21 @@ evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
              gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for position keyword evaluation. */
-static gmx_ana_selparam_t smparams_keyword_pos[] = {
+static gmx_ana_selparam_t smparams_keyword_pos[] =
+{
     {NULL,   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
 };
 
 /** Parameters for the \p cog and \p com selection methods. */
-static gmx_ana_selparam_t smparams_com[] = {
+static gmx_ana_selparam_t smparams_com[] =
+{
     {"of",   {GROUP_VALUE, 1, {NULL}}, NULL, SPAR_DYNAMIC},
     {"pbc",  {NO_VALUE,    0, {NULL}}, NULL, 0},
 };
 
 /** \internal Selection method data for position keyword evaluation. */
-gmx_ana_selmethod_t sm_keyword_pos = {
+gmx_ana_selmethod_t sm_keyword_pos =
+{
     "kw_pos", POS_VALUE, SMETH_DYNAMIC | SMETH_VARNUMVAL,
     asize(smparams_keyword_pos), smparams_keyword_pos,
     &init_data_pos,
@@ -112,14 +115,15 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     &init_kwpos,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
 /** \internal Selection method data for the \p cog method. */
-gmx_ana_selmethod_t sm_cog = {
+gmx_ana_selmethod_t sm_cog =
+{
     "cog", POS_VALUE, SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
     &init_data_pos,
@@ -127,14 +131,15 @@ gmx_ana_selmethod_t sm_cog = {
     &init_cog,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
 /** \internal Selection method data for the \p com method. */
-gmx_ana_selmethod_t sm_com = {
+gmx_ana_selmethod_t sm_com =
+{
     "com", POS_VALUE, SMETH_REQTOP | SMETH_DYNAMIC | SMETH_SINGLEVAL,
     asize(smparams_com), smparams_com,
     &init_data_pos,
@@ -142,9 +147,9 @@ gmx_ana_selmethod_t sm_com = {
     &init_com,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"com of ATOM_EXPR [pbc]", 0, NULL},
 };
 

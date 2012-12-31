@@ -51,7 +51,8 @@ extern "C" {
 
 
 /* A pair-search grid struct for one domain decomposition zone */
-typedef struct {
+typedef struct
+{
     rvec c0;             /* The lower corner of the (local) grid        */
     rvec c1;             /* The upper corner of the (local) grid        */
     real atom_density;   /* The atom number density for the local grid  */
@@ -95,7 +96,8 @@ typedef struct {
 #ifdef NBNXN_SEARCH_SSE
 #define GMX_MM128_HERE
 #include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd128 {
+typedef struct nbnxn_x_ci_x86_simd128
+{
     /* The i-cluster coordinates for simple search */
     gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
     gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
@@ -106,7 +108,8 @@ typedef struct nbnxn_x_ci_x86_simd128 {
 #ifdef GMX_X86_AVX_256
 #define GMX_MM256_HERE
 #include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd256 {
+typedef struct nbnxn_x_ci_x86_simd256
+{
     /* The i-cluster coordinates for simple search */
     gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
     gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
@@ -118,7 +121,8 @@ typedef struct nbnxn_x_ci_x86_simd256 {
 #endif
 
 /* Working data for the actual i-supercell during pair search */
-typedef struct nbnxn_list_work {
+typedef struct nbnxn_list_work
+{
     gmx_cache_protect_t cp0; /* Protect cache between threads               */
 
     float *bb_ci;      /* The bounding boxes, pbc shifted, for each cluster */
@@ -164,7 +168,8 @@ static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 #endif
 
 /* Local cycle count struct for profiling */
-typedef struct {
+typedef struct
+{
     int          count;
     gmx_cycles_t c;
     gmx_cycles_t start;
@@ -174,7 +179,8 @@ typedef struct {
 enum { enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr };
 
 /* Thread-local work struct, contains part of nbnxn_grid_t */
-typedef struct {
+typedef struct
+{
     gmx_cache_protect_t cp0;
 
     int *cxy_na;
@@ -191,7 +197,8 @@ typedef struct {
 } nbnxn_search_work_t;
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
-typedef struct nbnxn_search {
+typedef struct nbnxn_search
+{
     int  ePBC;            /* PBC type enum                              */
     matrix box;           /* The periodic unit-cell                     */
 

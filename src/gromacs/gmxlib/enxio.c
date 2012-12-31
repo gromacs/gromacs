@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -47,13 +47,14 @@
 #include "xdrf.h"
 #include "macros.h"
 
-/* The source code in this file should be thread-safe. 
+/* The source code in this file should be thread-safe.
          Please keep it that way. */
 
 /* This number should be increased whenever the file format changes! */
 static const int enx_version = 5;
 
-const char *enx_block_id_name[] = {
+const char *enx_block_id_name[] =
+{
     "Averaged orientation restraints",
     "Instantaneous orientation restraints",
     "Orientation restraint order tensor(s)",
@@ -65,7 +66,8 @@ const char *enx_block_id_name[] = {
 
 
 /* Stuff for reading pre 4.1 energy files */
-typedef struct {
+typedef struct
+{
     gmx_bool     bOldFileOpen;   /* Is this an open old file? */
     gmx_bool     bReadFirstStep; /* Did we read the first step? */
     int      first_step;     /* First step in the energy file */
@@ -140,7 +142,7 @@ static void enxsubblock_free(t_enxsubblock *sb)
     {
         int i;
 
-        for(i=0;i<sb->sval_alloc;i++)
+        for (i=0; i<sb->sval_alloc; i++)
         {
             if (sb->sval[i])
             {
@@ -157,7 +159,7 @@ static void enxsubblock_free(t_enxsubblock *sb)
 static void enxsubblock_alloc(t_enxsubblock *sb)
 {
     /* allocate the appropriate amount of memory */
-    switch(sb->type)
+    switch (sb->type)
     {
         case xdr_datatype_float:
             if (sb->nr > sb->fval_alloc)
@@ -200,7 +202,7 @@ static void enxsubblock_alloc(t_enxsubblock *sb)
                 int i;
 
                 srenew(sb->sval, sb->nr);
-                for(i=sb->sval_alloc;i<sb->nr;i++)
+                for (i=sb->sval_alloc; i<sb->nr; i++)
                 {
                     sb->sval[i]=NULL;
                 }
@@ -225,7 +227,7 @@ static void enxblock_free(t_enxblock *eb)
     if (eb->nsub_alloc>0)
     {
         int i;
-        for(i=0;i<eb->nsub_alloc;i++)
+        for (i=0; i<eb->nsub_alloc; i++)
         {
             enxsubblock_free(&(eb->sub[i]));
         }
@@ -253,17 +255,17 @@ void init_enxframe(t_enxframe *fr)
 
 void free_enxframe(t_enxframe *fr)
 {
-  int b;
+    int b;
 
-  if (fr->e_alloc)
-  {
-    sfree(fr->ener);
-  }
-  for(b=0; b<fr->nblock_alloc; b++)
-  {
-      enxblock_free(&(fr->block[b]));
-  }
-  free(fr->block);
+    if (fr->e_alloc)
+    {
+        sfree(fr->ener);
+    }
+    for (b=0; b<fr->nblock_alloc; b++)
+    {
+        enxblock_free(&(fr->block[b]));
+    }
+    free(fr->block);
 }
 
 void add_blocks_enxframe(t_enxframe *fr, int n)
@@ -274,7 +276,7 @@ void add_blocks_enxframe(t_enxframe *fr, int n)
         int b;
 
         srenew(fr->block, n);
-        for(b=fr->nblock_alloc;b<fr->nblock;b++)
+        for (b=fr->nblock_alloc; b<fr->nblock; b++)
         {
             enxblock_init(&(fr->block[b]));
         }
@@ -291,10 +293,12 @@ t_enxblock *find_block_id_enxframe(t_enxframe *ef, int id, t_enxblock *prev)
     {
         starti=(prev - ef->block) + 1;
     }
-    for(i=starti; i<ef->nblock; i++)
+    for (i=starti; i<ef->nblock; i++)
     {
         if (ef->block[i].id == id)
+        {
             return &(ef->block[i]);
+        }
     }
     return NULL;
 }
@@ -307,10 +311,10 @@ void add_subblocks_enxblock(t_enxblock *eb, int n)
         int b;
 
         srenew(eb->sub, n);
-        for(b=eb->nsub_alloc; b<n; b++)
+        for (b=eb->nsub_alloc; b<n; b++)
         {
             enxsubblock_init(&(eb->sub[b]));
-        } 
+        }
         eb->nsub_alloc=n;
     }
 }
@@ -339,7 +343,7 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
     {
         snew(*nms,n);
     }
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
         nm = &(*nms)[i];
         if (bRead)
@@ -355,13 +359,13 @@ static void edr_strings(XDR *xdr,gmx_bool bRead,int file_version,
                 nm->unit = NULL;
             }
         }
-        if(!xdr_string(xdr,&(nm->name),STRLEN))
+        if (!xdr_string(xdr,&(nm->name),STRLEN))
         {
             gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
         if (file_version >= 2)
         {
-            if(!xdr_string(xdr,&(nm->unit),STRLEN))
+            if (!xdr_string(xdr,&(nm->unit),STRLEN))
             {
                 gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
             }
@@ -380,14 +384,14 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
     gmx_bool bRead = gmx_fio_getread(ef->fio);
     int  file_version;
     int  i;
-   
-    gmx_fio_checktype(ef->fio); 
+
+    gmx_fio_checktype(ef->fio);
 
     xdr = gmx_fio_getxdr(ef->fio);
-    
+
     if (!xdr_int(xdr,&magic))
     {
-        if(!bRead)
+        if (!bRead)
         {
             gmx_file("Cannot write energy names to file; maybe you are out of disk space?");
         }
@@ -429,7 +433,7 @@ void do_enxnms(ener_file_t ef,int *nre,gmx_enxnm_t **nms)
 }
 
 static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
-                       int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
+                           int nre_test,gmx_bool *bWrongPrecision,gmx_bool *bOK)
 {
     int  magic=-7777777;
     real first_real_to_check;
@@ -439,11 +443,11 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     int  ndisre=0;
     int  startb=0;
 #ifndef GMX_DOUBLE
-    xdr_datatype dtreal=xdr_datatype_float; 
+    xdr_datatype dtreal=xdr_datatype_float;
 #else
-    xdr_datatype dtreal=xdr_datatype_double; 
+    xdr_datatype dtreal=xdr_datatype_double;
 #endif
-    
+
     if (bWrongPrecision)
     {
         *bWrongPrecision = FALSE;
@@ -470,12 +474,12 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         /* Assume we are reading an old format */
         *file_version = 1;
         fr->t = first_real_to_check;
-        if (!gmx_fio_do_int(ef->fio, dum))   *bOK = FALSE;
+        if (!gmx_fio_do_int(ef->fio, dum)) { *bOK = FALSE; }
         fr->step = dum;
     }
     else
     {
-        if (!gmx_fio_do_int(ef->fio, magic))       *bOK = FALSE;
+        if (!gmx_fio_do_int(ef->fio, magic)) { *bOK = FALSE; }
         if (magic != -7777777)
         {
             enx_warning("Energy header magic number mismatch, this is not a GROMACS edr file");
@@ -483,24 +487,27 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             return FALSE;
         }
         *file_version = enx_version;
-        if (!gmx_fio_do_int(ef->fio, *file_version)) *bOK = FALSE;
+        if (!gmx_fio_do_int(ef->fio, *file_version)) { *bOK = FALSE; }
         if (*bOK && *file_version > enx_version)
         {
             gmx_fatal(FARGS,"reading tpx file (%s) version %d with version %d program",gmx_fio_getname(ef->fio),file_version,enx_version);
         }
-        if (!gmx_fio_do_double(ef->fio, fr->t))       *bOK = FALSE;
-        if (!gmx_fio_do_gmx_large_int(ef->fio, fr->step)) *bOK = FALSE;
-        if (!bRead && fr->nsum == 1) {
+        if (!gmx_fio_do_double(ef->fio, fr->t)) { *bOK = FALSE; }
+        if (!gmx_fio_do_gmx_large_int(ef->fio, fr->step)) { *bOK = FALSE; }
+        if (!bRead && fr->nsum == 1)
+        {
             /* Do not store sums of length 1,
              * since this does not add information.
              */
-            if (!gmx_fio_do_int(ef->fio, zero))      *bOK = FALSE;
-        } else {
-            if (!gmx_fio_do_int(ef->fio, fr->nsum))  *bOK = FALSE;
+            if (!gmx_fio_do_int(ef->fio, zero)) { *bOK = FALSE; }
+        }
+        else
+        {
+            if (!gmx_fio_do_int(ef->fio, fr->nsum)) { *bOK = FALSE; }
         }
         if (*file_version >= 3)
         {
-            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps)) *bOK = FALSE;
+            if (!gmx_fio_do_gmx_large_int(ef->fio, fr->nsteps)) { *bOK = FALSE; }
         }
         else
         {
@@ -508,26 +515,26 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
         }
         if (*file_version >= 5)
         {
-            if (!gmx_fio_do_double(ef->fio, fr->dt)) *bOK = FALSE;
+            if (!gmx_fio_do_double(ef->fio, fr->dt)) { *bOK = FALSE; }
         }
         else
         {
             fr->dt = 0;
         }
     }
-    if (!gmx_fio_do_int(ef->fio, fr->nre))     *bOK = FALSE;
+    if (!gmx_fio_do_int(ef->fio, fr->nre)) { *bOK = FALSE; }
     if (*file_version < 4)
     {
-        if (!gmx_fio_do_int(ef->fio, ndisre))  *bOK = FALSE;
+        if (!gmx_fio_do_int(ef->fio, ndisre)) { *bOK = FALSE; }
     }
     else
     {
         /* now reserved for possible future use */
-        if (!gmx_fio_do_int(ef->fio, dum))  *bOK = FALSE;
+        if (!gmx_fio_do_int(ef->fio, dum)) { *bOK = FALSE; }
     }
 
-    if (!gmx_fio_do_int(ef->fio, fr->nblock))  *bOK = FALSE;
-    if (fr->nblock < 0) *bOK=FALSE;
+    if (!gmx_fio_do_int(ef->fio, fr->nblock)) { *bOK = FALSE; }
+    if (fr->nblock < 0) { *bOK=FALSE; }
 
     if (ndisre!=0)
     {
@@ -579,11 +586,11 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
     }
 
     /* read block header info */
-    for(b=startb; b<fr->nblock; b++)
+    for (b=startb; b<fr->nblock; b++)
     {
         if (*file_version<4)
         {
-            /* blocks in old version files always have 1 subblock that 
+            /* blocks in old version files always have 1 subblock that
                consists of reals. */
             int nrint;
 
@@ -603,7 +610,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
                 }
             }
             nrint = fr->block[b].sub[0].nr;
-            
+
             if (!gmx_fio_do_int(ef->fio, nrint))
             {
                 *bOK = FALSE;
@@ -623,10 +630,12 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
 
             fr->block[b].nsub=nsub;
             if (bRead)
+            {
                 add_subblocks_enxblock(&(fr->block[b]), nsub);
+            }
 
             /* read/write type & size for each subblock */
-            for(i=0;i<nsub;i++)
+            for (i=0; i<nsub; i++)
             {
                 t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
                 int typenr=sub->type;
@@ -638,14 +647,14 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             }
         }
     }
-    if (!gmx_fio_do_int(ef->fio, fr->e_size))  *bOK = FALSE;
+    if (!gmx_fio_do_int(ef->fio, fr->e_size)) { *bOK = FALSE; }
 
     /* now reserved for possible future use */
-    if (!gmx_fio_do_int(ef->fio, dum))  *bOK = FALSE;
+    if (!gmx_fio_do_int(ef->fio, dum)) { *bOK = FALSE; }
 
     /* Do a dummy int to keep the format compatible with the old code */
-    if (!gmx_fio_do_int(ef->fio, dum))         *bOK = FALSE;
-    
+    if (!gmx_fio_do_int(ef->fio, dum)) { *bOK = FALSE; }
+
     if (*bOK && *file_version == 1 && nre_test < 0)
     {
 #if 0
@@ -654,7 +663,7 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             gmx_incons("Problem with reading old format energy files");
         }
 #endif
-        
+
         if (!ef->eo.bReadFirstStep)
         {
             ef->eo.bReadFirstStep = TRUE;
@@ -662,12 +671,12 @@ static gmx_bool do_eheader(ener_file_t ef,int *file_version,t_enxframe *fr,
             ef->eo.step_prev      = fr->step;
             ef->eo.nsum_prev      = 0;
         }
-        
+
         fr->nsum   = fr->step - ef->eo.first_step + 1;
         fr->nsteps = fr->step - ef->eo.step_prev;
         fr->dt     = 0;
     }
-	
+
     return *bOK;
 }
 
@@ -675,7 +684,7 @@ void free_enxnms(int n,gmx_enxnm_t *nms)
 {
     int i;
 
-    for(i=0; i<n; i++)
+    for (i=0; i<n; i++)
     {
         sfree(nms[i].name);
         sfree(nms[i].unit);
@@ -686,7 +695,7 @@ void free_enxnms(int n,gmx_enxnm_t *nms)
 
 void close_enx(ener_file_t ef)
 {
-    if(gmx_fio_close(ef->fio) != 0)
+    if (gmx_fio_close(ef->fio) != 0)
     {
         gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of disk space?");
     }
@@ -698,12 +707,12 @@ static gmx_bool empty_file(const char *fn)
     char dum;
     int  ret;
     gmx_bool bEmpty;
-    
+
     fp = gmx_fio_fopen(fn,"r");
     ret = fread(&dum,sizeof(dum),1,fp);
     bEmpty = feof(fp);
     gmx_fio_fclose(fp);
-    
+
     return bEmpty;
 }
 
@@ -719,21 +728,22 @@ ener_file_t open_enx(const char *fn,const char *mode)
 
     snew(ef,1);
 
-    if (mode[0]=='r') {
+    if (mode[0]=='r')
+    {
         ef->fio=gmx_fio_open(fn,mode);
         gmx_fio_checktype(ef->fio);
         gmx_fio_setprecision(ef->fio,FALSE);
         do_enxnms(ef,&nre,&nms);
         snew(fr,1);
         do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
-        if(!bOK)
+        if (!bOK)
         {
             gmx_file("Cannot read energy file header. Corrupt file?");
         }
 
         /* Now check whether this file is in single precision */
         if (!bWrongPrecision &&
-            ((fr->e_size && (fr->nre == nre) && 
+            ((fr->e_size && (fr->nre == nre) &&
               (nre*4*(long int)sizeof(float) == fr->e_size)) ) )
         {
             fprintf(stderr,"Opened %s as single precision energy file\n",fn);
@@ -746,18 +756,21 @@ ener_file_t open_enx(const char *fn,const char *mode)
             gmx_fio_setprecision(ef->fio,TRUE);
             do_enxnms(ef,&nre,&nms);
             do_eheader(ef,&file_version,fr,nre,&bWrongPrecision,&bOK);
-            if(!bOK)
+            if (!bOK)
             {
                 gmx_file("Cannot write energy file header; maybe you are out of disk space?");
             }
 
-            if (((fr->e_size && (fr->nre == nre) && 
-                            (nre*4*(long int)sizeof(double) == fr->e_size)) ))
+            if (((fr->e_size && (fr->nre == nre) &&
+                  (nre*4*(long int)sizeof(double) == fr->e_size)) ))
                 fprintf(stderr,"Opened %s as double precision energy file\n",
                         fn);
-            else {
+            else
+            {
                 if (empty_file(fn))
+                {
                     gmx_fatal(FARGS,"File %s is empty",fn);
+                }
                 else
                     gmx_fatal(FARGS,"Energy file %s not recognized, maybe different CPU?",
                               fn);
@@ -768,8 +781,10 @@ ener_file_t open_enx(const char *fn,const char *mode)
         sfree(fr);
         gmx_fio_rewind(ef->fio);
     }
-    else 
+    else
+    {
         ef->fio = gmx_fio_open(fn,mode);
+    }
 
     ef->framenr=0;
     ef->frametime=0;
@@ -786,15 +801,15 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
     int nstep_all;
     int ne,ns,i;
     double esum_all,eav_all;
-    
+
     if (fr->nsum > 0)
     {
         ne = 0;
         ns = 0;
-        for(i=0; i<fr->nre; i++)
+        for (i=0; i<fr->nre; i++)
         {
-            if (fr->ener[i].e    != 0) ne++;
-            if (fr->ener[i].esum != 0) ns++;
+            if (fr->ener[i].e    != 0) { ne++; }
+            if (fr->ener[i].esum != 0) { ns++; }
         }
         if (ne > 0 && ns == 0)
         {
@@ -802,22 +817,22 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
             fr->nsum = 0;
         }
     }
-    
+
     /* Convert old full simulation sums to sums between energy frames */
     nstep_all = fr->step - ener_old->first_step + 1;
     if (fr->nsum > 1 && fr->nsum == nstep_all && ener_old->nsum_prev > 0)
     {
         /* Set the new sum length: the frame step difference */
         fr->nsum = fr->step - ener_old->step_prev;
-        for(i=0; i<fr->nre; i++)
+        for (i=0; i<fr->nre; i++)
         {
             esum_all = fr->ener[i].esum;
             eav_all  = fr->ener[i].eav;
             fr->ener[i].esum = esum_all - ener_old->ener_prev[i].esum;
             fr->ener[i].eav  = eav_all  - ener_old->ener_prev[i].eav
-                - dsqr(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
-                       - esum_all/nstep_all)*
-                (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
+                               - dsqr(ener_old->ener_prev[i].esum/(nstep_all - fr->nsum)
+                                      - esum_all/nstep_all)*
+                               (nstep_all - fr->nsum)*nstep_all/(double)fr->nsum;
             ener_old->ener_prev[i].esum = esum_all;
             ener_old->ener_prev[i].eav  = eav_all;
         }
@@ -835,13 +850,13 @@ static void convert_full_sums(ener_old_t *ener_old,t_enxframe *fr)
             ener_old->nsum_prev = nstep_all;
         }
         /* Copy all sums to ener_prev */
-        for(i=0; i<fr->nre; i++)
+        for (i=0; i<fr->nre; i++)
         {
             ener_old->ener_prev[i].esum = fr->ener[i].esum;
             ener_old->ener_prev[i].eav  = fr->ener[i].eav;
         }
     }
-    
+
     ener_old->step_prev = fr->step;
 }
 
@@ -853,11 +868,11 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     real      tmp1,tmp2,rdum;
     char      buf[22];
     /*int       d_size;*/
-    
+
     bOK = TRUE;
     bRead = gmx_fio_getread(ef->fio);
     if (!bRead)
-    {  
+    {
         fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
         /*d_size = fr->ndisre*(sizeof(real)*2);*/
     }
@@ -896,7 +911,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     }
     /* Check sanity of this header */
     bSane = fr->nre > 0 ;
-    for(b=0; b<fr->nblock; b++)
+    for (b=0; b<fr->nblock; b++)
     {
         bSane = bSane || (fr->block[b].nsub > 0);
     }
@@ -911,7 +926,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
     if (bRead && fr->nre > fr->e_alloc)
     {
         srenew(fr->ener,fr->nre);
-        for(i=fr->e_alloc; (i<fr->nre); i++)
+        for (i=fr->e_alloc; (i<fr->nre); i++)
         {
             fr->ener[i].e    = 0;
             fr->ener[i].eav  = 0;
@@ -919,11 +934,11 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         }
         fr->e_alloc = fr->nre;
     }
-    
-    for(i=0; i<fr->nre; i++)
+
+    for (i=0; i<fr->nre; i++)
     {
         bOK = bOK && gmx_fio_do_real(ef->fio, fr->ener[i].e);
-        
+
         /* Do not store sums of length 1,
          * since this does not add information.
          */
@@ -933,14 +948,18 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
             tmp1 = fr->ener[i].eav;
             bOK = bOK && gmx_fio_do_real(ef->fio, tmp1);
             if (bRead)
+            {
                 fr->ener[i].eav = tmp1;
-            
+            }
+
             /* This is to save only in single precision (unless compiled in DP) */
             tmp2 = fr->ener[i].esum;
             bOK = bOK && gmx_fio_do_real(ef->fio, tmp2);
             if (bRead)
+            {
                 fr->ener[i].esum = tmp2;
-            
+            }
+
             if (file_version == 1)
             {
                 /* Old, unused real */
@@ -949,7 +968,7 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
             }
         }
     }
-    
+
     /* Here we can not check for file_version==1, since one could have
      * continued an old format simulation with a new one with mdrun -append.
      */
@@ -959,13 +978,13 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         convert_full_sums(&(ef->eo),fr);
     }
     /* read the blocks */
-    for(b=0; b<fr->nblock; b++)
+    for (b=0; b<fr->nblock; b++)
     {
         /* now read the subblocks. */
         int nsub=fr->block[b].nsub; /* shortcut */
         int i;
 
-        for(i=0;i<nsub;i++)
+        for (i=0; i<nsub; i++)
         {
             t_enxsubblock *sub=&(fr->block[b].sub[i]); /* shortcut */
 
@@ -979,10 +998,10 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
             switch (sub->type)
             {
                 case xdr_datatype_float:
-                    bOK1=gmx_fio_ndo_float(ef->fio, sub->fval, sub->nr); 
+                    bOK1=gmx_fio_ndo_float(ef->fio, sub->fval, sub->nr);
                     break;
                 case xdr_datatype_double:
-                    bOK1=gmx_fio_ndo_double(ef->fio, sub->dval, sub->nr); 
+                    bOK1=gmx_fio_ndo_double(ef->fio, sub->dval, sub->nr);
                     break;
                 case xdr_datatype_int:
                     bOK1=gmx_fio_ndo_int(ef->fio, sub->ival, sub->nr);
@@ -1002,15 +1021,15 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
             bOK = bOK && bOK1;
         }
     }
-    
-    if(!bRead)
+
+    if (!bRead)
     {
-        if( gmx_fio_flush(ef->fio) != 0)
+        if ( gmx_fio_flush(ef->fio) != 0)
         {
             gmx_file("Cannot write energy file; maybe you are out of disk space?");
         }
     }
-    
+
     if (!bOK)
     {
         if (bRead)
@@ -1024,9 +1043,9 @@ gmx_bool do_enx(ener_file_t ef,t_enxframe *fr)
         {
             gmx_fatal(FARGS,"could not write energies");
         }
-        return FALSE; 
+        return FALSE;
     }
-    
+
     return TRUE;
 }
 
@@ -1034,17 +1053,17 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
                         t_enxframe *fr)
 {
     int i;
-    
-    for(i=0; i<nre; i++)
+
+    for (i=0; i<nre; i++)
     {
         if (strcmp(enm[i].name,name) == 0)
         {
             return  fr->ener[i].e;
         }
     }
-    
+
     gmx_fatal(FARGS,"Could not find energy term named '%s'",name);
-    
+
     return 0;
 }
 
@@ -1052,95 +1071,105 @@ static real find_energy(const char *name, int nre, gmx_enxnm_t *enm,
 void get_enx_state(const char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
                    t_state *state)
 {
-  /* Should match the names in mdebin.c */
-  static const char *boxvel_nm[] = {
-  "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
-  "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
-  };
-  
-  static const char *pcouplmu_nm[] = {
-    "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
-    "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
-  };
-  static const char *baro_nm[] = {
-    "Barostat"
-  };
+    /* Should match the names in mdebin.c */
+    static const char *boxvel_nm[] =
+    {
+        "Box-Vel-XX", "Box-Vel-YY", "Box-Vel-ZZ",
+        "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
+    };
+
+    static const char *pcouplmu_nm[] =
+    {
+        "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
+        "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
+    };
+    static const char *baro_nm[] =
+    {
+        "Barostat"
+    };
 
 
-  int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
-  int ind1[] = { XX,YY,ZZ,XX,XX,YY };
-  int nre,nfr,i,j,ni,npcoupl;
-  char       buf[STRLEN];
-  const char *bufi;
-  gmx_enxnm_t *enm=NULL;
-  t_enxframe *fr;
-  ener_file_t in;
+    int ind0[] = { XX,YY,ZZ,YY,ZZ,ZZ };
+    int ind1[] = { XX,YY,ZZ,XX,XX,YY };
+    int nre,nfr,i,j,ni,npcoupl;
+    char       buf[STRLEN];
+    const char *bufi;
+    gmx_enxnm_t *enm=NULL;
+    t_enxframe *fr;
+    ener_file_t in;
 
-  in = open_enx(fn,"r");
-  do_enxnms(in,&nre,&enm);
-  snew(fr,1);
-  nfr = 0;
-  while ((nfr==0 || fr->t != t) && do_enx(in,fr)) {
-    nfr++;
-  }
-  close_enx(in);
-  fprintf(stderr,"\n");
-
-  if (nfr == 0 || fr->t != t)
-    gmx_fatal(FARGS,"Could not find frame with time %f in '%s'",t,fn);
-  
-  npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
-  if (ir->epc == epcPARRINELLORAHMAN) {
-    clear_mat(state->boxv);
-    for(i=0; i<npcoupl; i++) {
-      state->boxv[ind0[i]][ind1[i]] =
-	find_energy(boxvel_nm[i],nre,enm,fr);
+    in = open_enx(fn,"r");
+    do_enxnms(in,&nre,&enm);
+    snew(fr,1);
+    nfr = 0;
+    while ((nfr==0 || fr->t != t) && do_enx(in,fr))
+    {
+        nfr++;
     }
-    fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
-  }
+    close_enx(in);
+    fprintf(stderr,"\n");
 
-  if (ir->etc == etcNOSEHOOVER) 
-  {
-      char cns[20];
+    if (nfr == 0 || fr->t != t)
+    {
+        gmx_fatal(FARGS,"Could not find frame with time %f in '%s'",t,fn);
+    }
 
-      cns[0] = '\0';
+    npcoupl = TRICLINIC(ir->compress) ? 6 : 3;
+    if (ir->epc == epcPARRINELLORAHMAN)
+    {
+        clear_mat(state->boxv);
+        for (i=0; i<npcoupl; i++)
+        {
+            state->boxv[ind0[i]][ind1[i]] =
+                find_energy(boxvel_nm[i],nre,enm,fr);
+        }
+        fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
+    }
 
-      for(i=0; i<state->ngtc; i++) {
-          ni = groups->grps[egcTC].nm_ind[i];
-          bufi = *(groups->grpname[ni]);
-          for(j=0; (j<state->nhchainlength); j++) 
-          {
-              if (IR_NVT_TROTTER(ir))
-              {
-                  sprintf(cns,"-%d",j);
-              }
-              sprintf(buf,"Xi%s-%s",cns,bufi);
-              state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
-              sprintf(buf,"vXi%s-%s",cns,bufi);
-              state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
-          }
+    if (ir->etc == etcNOSEHOOVER)
+    {
+        char cns[20];
 
-      }
-      fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
+        cns[0] = '\0';
 
-      if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
-      {
-          for(i=0; i<state->nnhpres; i++) {
-              bufi = baro_nm[0]; /* All barostat DOF's together for now */
-              for(j=0; (j<state->nhchainlength); j++) 
-              {
-                  sprintf(buf,"Xi-%d-%s",j,bufi); 
-                  state->nhpres_xi[i] = find_energy(buf,nre,enm,fr);
-                  sprintf(buf,"vXi-%d-%s",j,bufi);
-                  state->nhpres_vxi[i] = find_energy(buf,nre,enm,fr);
-              }
-          }
-          fprintf(stderr,"\nREAD %d NOSE-HOOVER BAROSTAT Xi chains FROM %s\n\n",state->nnhpres,fn);
-      }
-  } 
+        for (i=0; i<state->ngtc; i++)
+        {
+            ni = groups->grps[egcTC].nm_ind[i];
+            bufi = *(groups->grpname[ni]);
+            for (j=0; (j<state->nhchainlength); j++)
+            {
+                if (IR_NVT_TROTTER(ir))
+                {
+                    sprintf(cns,"-%d",j);
+                }
+                sprintf(buf,"Xi%s-%s",cns,bufi);
+                state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
+                sprintf(buf,"vXi%s-%s",cns,bufi);
+                state->nosehoover_vxi[i] = find_energy(buf,nre,enm,fr);
+            }
 
-  free_enxnms(nre,enm);
-  free_enxframe(fr);
-  sfree(fr);
+        }
+        fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi chains FROM %s\n\n",state->ngtc,fn);
+
+        if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
+        {
+            for (i=0; i<state->nnhpres; i++)
+            {
+                bufi = baro_nm[0]; /* All barostat DOF's together for now */
+                for (j=0; (j<state->nhchainlength); j++)
+                {
+                    sprintf(buf,"Xi-%d-%s",j,bufi);
+                    state->nhpres_xi[i] = find_energy(buf,nre,enm,fr);
+                    sprintf(buf,"vXi-%d-%s",j,bufi);
+                    state->nhpres_vxi[i] = find_energy(buf,nre,enm,fr);
+                }
+            }
+            fprintf(stderr,"\nREAD %d NOSE-HOOVER BAROSTAT Xi chains FROM %s\n\n",state->nnhpres,fn);
+        }
+    }
+
+    free_enxnms(nre,enm);
+    free_enxframe(fr);
+    sfree(fr);
 }
 

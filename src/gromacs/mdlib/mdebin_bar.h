@@ -148,5 +148,5 @@ void mde_delta_h_coll_restore_energyhistory(t_mde_delta_h_coll *dhc,
 }
 #endif
 
-#endif	/* _mdebin_bar_h */
+#endif  /* _mdebin_bar_h */
 

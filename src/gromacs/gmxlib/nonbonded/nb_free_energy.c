@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
@@ -159,7 +159,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     rvdw                = fr->rvdw;
     sh_invrc6           = fr->ic->sh_invrc6;
 
-    if(fr->coulomb_modifier==eintmodPOTSWITCH || fr->vdw_modifier==eintmodPOTSWITCH)
+    if (fr->coulomb_modifier==eintmodPOTSWITCH || fr->vdw_modifier==eintmodPOTSWITCH)
     {
         rcutoff         = (fr->coulomb_modifier==eintmodPOTSWITCH) ? fr->rcoulomb : fr->rvdw;
         rcutoff2        = rcutoff*rcutoff;
@@ -208,7 +208,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     DLF[STATE_A] = -1;
     DLF[STATE_B] = 1;
 
-    for (i=0;i<NSTATES;i++)
+    for (i=0; i<NSTATES; i++)
     {
         lfac_coul[i]  = (lam_power==2 ? (1-LFC[i])*(1-LFC[i]) : (1-LFC[i]));
         dlfac_coul[i] = DLF[i]*lam_power/sc_r_power*(lam_power==2 ? (1-LFC[i]) : 1);
@@ -223,22 +223,22 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
     do_coultab = (icoul==GMX_NBKERNEL_ELEC_CUBICSPLINETABLE);
     do_vdwtab  = (ivdw==GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
-    
+
     do_tab = do_coultab || do_vdwtab;
-    
+
     /* we always use the combined table here */
     tab_elemsize = 12;
-    
-    for(n=0; (n<nri); n++)
+
+    for (n=0; (n<nri); n++)
     {
         is3              = 3*shift[n];
-        shX              = shiftvec[is3];  
+        shX              = shiftvec[is3];
         shY              = shiftvec[is3+1];
         shZ              = shiftvec[is3+2];
         nj0              = jindex[n];
-        nj1              = jindex[n+1];    
-        ii               = iinr[n];        
-        ii3              = 3*ii;           
+        nj1              = jindex[n+1];
+        ii               = iinr[n];
+        ii3              = 3*ii;
         ix               = shX + x[ii3+0];
         iy               = shY + x[ii3+1];
         iz               = shZ + x[ii3+2];
@@ -246,19 +246,19 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
         iqB              = facel*chargeB[ii];
         ntiA             = 2*ntype*typeA[ii];
         ntiB             = 2*ntype*typeB[ii];
-        vctot            = 0;              
+        vctot            = 0;
         vvtot            = 0;
-        fix              = 0;              
-        fiy              = 0;              
-        fiz              = 0;              
-        
-        for(k=nj0; (k<nj1); k++)
+        fix              = 0;
+        fiy              = 0;
+        fiz              = 0;
+
+        for (k=nj0; (k<nj1); k++)
         {
-            jnr              = jjnr[k];        
-            j3               = 3*jnr;          
-            dx               = ix - x[j3];      
-            dy               = iy - x[j3+1];      
-            dz               = iz - x[j3+2];      
+            jnr              = jjnr[k];
+            j3               = 3*jnr;
+            dx               = ix - x[j3];
+            dy               = iy - x[j3+1];
+            dz               = iz - x[j3+2];
             rsq              = dx*dx+dy*dy+dz*dz;
             rinv             = gmx_invsqrt(rsq);
             r                = rsq*rinv;
@@ -286,19 +286,20 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
             qq[STATE_A]      = iqA*chargeA[jnr];
             qq[STATE_B]      = iqB*chargeB[jnr];
 
-            for (i=0;i<NSTATES;i++)
+            for (i=0; i<NSTATES; i++)
             {
 
                 c6[i]              = nbfp[tj[i]];
                 c12[i]             = nbfp[tj[i]+1];
-                if((c6[i] > 0) && (c12[i] > 0))
+                if ((c6[i] > 0) && (c12[i] > 0))
                 {
                     /* c12 is stored scaled with 12.0 and c6 is scaled with 6.0 - correct for this */
                     sigma6[i]       = 0.5*c12[i]/c6[i];
                     sigma2[i]       = pow(sigma6[i],1.0/3.0);
                     /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
                        what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
-                    if (sigma6[i] < sigma6_min) { /* for disappearing coul and vdw with soft core at the same time */
+                    if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
+                    {
                         sigma6[i] = sigma6_min;
                         sigma2[i] = sigma2_min;
                     }
@@ -313,30 +314,34 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                     sigma_pow[i]    = sigma6[i];
                     sigma_powm2[i]  = sigma6[i]/sigma2[i];
                 }
-                else if (sc_r_power == 48.0) 
+                else if (sc_r_power == 48.0)
                 {
                     sigma_pow[i]    = sigma6[i]*sigma6[i];   /* sigma^12 */
                     sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^24 */
                     sigma_pow[i]    = sigma_pow[i]*sigma_pow[i]; /* sigma^48 */
-                    sigma_powm2[i]  = sigma_pow[i]/sigma2[i];                    
+                    sigma_powm2[i]  = sigma_pow[i]/sigma2[i];
                 }
-                else 
-                {    /* not really supported as input, but in here for testing the general case*/
+                else
+                {
+                    /* not really supported as input, but in here for testing the general case*/
                     sigma_pow[i]    = pow(sigma2[i],sc_r_power/2);
                     sigma_powm2[i]  = sigma_pow[i]/(sigma2[i]);
                 }
             }
 
             /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-            if ((c12[STATE_A] > 0) && (c12[STATE_B] > 0)) {
+            if ((c12[STATE_A] > 0) && (c12[STATE_B] > 0))
+            {
                 alpha_vdw_eff    = 0;
                 alpha_coul_eff   = 0;
-            } else {
+            }
+            else
+            {
                 alpha_vdw_eff    = alpha_vdw;
                 alpha_coul_eff   = alpha_coul;
             }
 
-            for (i=0;i<NSTATES;i++) 
+            for (i=0; i<NSTATES; i++)
             {
                 FscalC[i]    = 0;
                 FscalV[i]    = 0;
@@ -344,14 +349,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                 Vvdw[i]      = 0;
 
                 /* Only spend time on A or B state if it is non-zero */
-                if( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
+                if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
                 {
 
                     /* this section has to be inside the loop becaue of the dependence on sigma_pow */
                     rpinvC         = 1.0/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
                     rinvC          = pow(rpinvC,1.0/sc_r_power);
                     rC             = 1.0/rinvC;
-                    
+
                     rpinvV         = 1.0/(alpha_vdw_eff*lfac_vdw[i]*sigma_pow[i]+rp);
                     rinvV          = pow(rpinvV,1.0/sc_r_power);
                     rV             = 1.0/rinvV;
@@ -374,9 +379,9 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                         n1V        = tab_elemsize*n0;
                     }
 
-                    if(qq[i] != 0)
+                    if (qq[i] != 0)
                     {
-                        switch(icoul)
+                        switch (icoul)
                         {
                             case GMX_NBKERNEL_ELEC_COULOMB:
                             case GMX_NBKERNEL_ELEC_EWALD:
@@ -384,7 +389,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 Vcoul[i]   = qq[i]*rinvC;
                                 FscalC[i]  = Vcoul[i]*rpinvC;
                                 break;
-                                
+
                             case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                 /* reaction-field */
                                 Vcoul[i]   = qq[i]*(rinvC+krf*rC*rC-crf);
@@ -411,7 +416,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 break;
                         }
 
-                        if(fr->coulomb_modifier==eintmodPOTSWITCH)
+                        if (fr->coulomb_modifier==eintmodPOTSWITCH)
                         {
                             d                = rC-rswitch;
                             d                = (d>0.0) ? d : 0.0;
@@ -423,16 +428,16 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                             FscalC[i]        = FscalC[i]*sw + Vcoul[i]*dsw;
                         }
 
-                        if(bExactElecCutoff)
+                        if (bExactElecCutoff)
                         {
                             FscalC[i]        = (rC<rcoulomb) ? FscalC[i] : 0.0;
                             Vcoul[i]         = (rC<rcoulomb) ? Vcoul[i] : 0.0;
                         }
                     }
 
-                    if((c6[i] != 0) || (c12[i] != 0))
+                    if ((c6[i] != 0) || (c12[i] != 0))
                     {
-                        switch(ivdw)
+                        switch (ivdw)
                         {
                             case GMX_NBKERNEL_VDW_LENNARDJONES:
                                 /* cutoff LJ */
@@ -446,10 +451,10 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 }
                                 Vvdw6            = c6[i]*rinv6;
                                 Vvdw12           = c12[i]*rinv6*rinv6;
-                                if(fr->vdw_modifier==eintmodPOTSHIFT)
+                                if (fr->vdw_modifier==eintmodPOTSHIFT)
                                 {
                                     Vvdw[i]          = ( (Vvdw12-c12[i]*sh_invrc6*sh_invrc6)*(1.0/12.0)
-                                                        -(Vvdw6-c6[i]*sh_invrc6)*(1.0/6.0));
+                                                         -(Vvdw6-c6[i]*sh_invrc6)*(1.0/6.0));
                                 }
                                 else
                                 {
@@ -494,7 +499,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 break;
                         }
 
-                        if(fr->vdw_modifier==eintmodPOTSWITCH)
+                        if (fr->vdw_modifier==eintmodPOTSWITCH)
                         {
                             d                = rV-rswitch;
                             d                = (d>0.0) ? d : 0.0;
@@ -531,7 +536,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                     FF    = 0;
                 }
 
-                for (i=0;i<NSTATES;i++)
+                for (i=0; i<NSTATES; i++)
                 {
                     vctot      -= LFC[i]*qq[i]*VV;
                     Fscal      -= LFC[i]*qq[i]*FF;
@@ -540,7 +545,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
             }
 
             /* Assemble A and B states */
-            for (i=0;i<NSTATES;i++)
+            for (i=0; i<NSTATES; i++)
             {
                 vctot         += LFC[i]*Vcoul[i];
                 vvtot         += LFV[i]*Vvdw[i];
@@ -554,12 +559,12 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
             if (bDoForces)
             {
-                tx         = Fscal*dx;     
-                ty         = Fscal*dy;     
-                tz         = Fscal*dz;     
-                fix        = fix + tx;      
-                fiy        = fiy + ty;      
-                fiz        = fiz + tz;      
+                tx         = Fscal*dx;
+                ty         = Fscal*dy;
+                tz         = Fscal*dz;
+                fix        = fix + tx;
+                fiy        = fiy + ty;
+                fiz        = fiz + tz;
                 f[j3]      = f[j3]   - tx;
                 f[j3+1]    = f[j3+1] - ty;
                 f[j3+2]    = f[j3+2] - tz;
@@ -634,15 +639,16 @@ nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,real alph
     }
 
     /* Loop over state A(0) and B(1) */
-    for (i=0;i<2;i++)
+    for (i=0; i<2; i++)
     {
-        if((c6[i] > 0) && (c12[i] > 0))
+        if ((c6[i] > 0) && (c12[i] > 0))
         {
             sigma6[i]       = c12[i]/c6[i];
             sigma2[i]       = pow(c12[i]/c6[i],1.0/3.0);
             /* should be able to get rid of this ^^^ internal pow call eventually.  Will require agreement on
              what data to store externally.  Can't be fixed without larger scale changes, so not 4.6 */
-            if (sigma6[i] < sigma6_min) { /* for disappearing coul and vdw with soft core at the same time */
+            if (sigma6[i] < sigma6_min)   /* for disappearing coul and vdw with soft core at the same time */
+            {
                 sigma6[i] = sigma6_min;
                 sigma2[i] = sigma2_min;
             }
@@ -665,23 +671,27 @@ nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,real alph
             sigma_powm2[i]  = sigma_pow[i]/sigma2[i];
         }
         else
-        {    /* not really supported as input, but in here for testing the general case*/
+        {
+            /* not really supported as input, but in here for testing the general case*/
             sigma_pow[i]    = pow(sigma2[i],sc_r_power/2);
             sigma_powm2[i]  = sigma_pow[i]/(sigma2[i]);
         }
     }
 
     /* only use softcore if one of the states has a zero endstate - softcore is for avoiding infinities!*/
-    if ((c12[0] > 0) && (c12[1] > 0)) {
+    if ((c12[0] > 0) && (c12[1] > 0))
+    {
         alpha_vdw_eff    = 0;
         alpha_coul_eff   = 0;
-    } else {
+    }
+    else
+    {
         alpha_vdw_eff    = alpha_vdw;
         alpha_coul_eff   = alpha_coul;
     }
 
     /* Loop over A and B states again */
-    for (i=0;i<2;i++)
+    for (i=0; i<2; i++)
     {
         fscal_elec[i] = 0;
         fscal_vdw[i]  = 0;
@@ -689,7 +699,7 @@ nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,real alph
         vvdw[i]       = 0;
 
         /* Only spend time on A or B state if it is non-zero */
-        if( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
+        if ( (qq[i] != 0) || (c6[i] != 0) || (c12[i] != 0) )
         {
             /* Coulomb */
             rpinv            = 1.0/(alpha_coul_eff*lfac_coul[i]*sigma_pow[i]+rp);
@@ -752,7 +762,7 @@ nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,real alph
     dvdl_coul = 0;
     dvdl_vdw  = 0;
     fscal     = 0;
-    for (i=0;i<2;i++)
+    for (i=0; i<2; i++)
     {
         velecsum      += LFC[i]*velec[i];
         vvdwsum       += LFV[i]*vvdw[i];

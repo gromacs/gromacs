@@ -1,6 +1,6 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+This source code file is part of thread_mpi.
+Written by Sander Pronk, Erik Lindahl, and possibly others.
 
 Copyright (c) 2009, Sander Pronk, Erik Lindahl.
 All rights reserved.
@@ -65,7 +65,7 @@ struct tMPI_Thread_cond
     /* this works since Windows Vista: */
     CONDITION_VARIABLE cv;
 #else
-    /* this data structure and its algorithms are based on 
+    /* this data structure and its algorithms are based on
        'Strategies for Implementing POSIX Condition Variables on Win32'
        by
        Douglas C. Schmidt and Irfan Pyarali
@@ -76,7 +76,7 @@ struct tMPI_Thread_cond
     CRITICAL_SECTION wtr_lock; /* lock for Nwaiters */
     int Nrelease; /* number of threads to release in broadcast/signal */
     int cycle; /* cycle number so threads can't steal signals */
-    HANDLE ev; /* the event used to trigger WaitForSingleObject.  
+    HANDLE ev; /* the event used to trigger WaitForSingleObject.
                   Is a manual reset event.  */
 #endif
 };
@@ -85,9 +85,9 @@ struct tMPI_Thread_barrier
 {
 #if 0
     /* use this once Vista is the oldest supported windows version: */
-    CRITICAL_SECTION   cs;        /*!< Lock for the barrier                    
+    CRITICAL_SECTION   cs;        /*!< Lock for the barrier
                                     contents          */
-    CONDITION_VARIABLE cv;        /*!< Condition to signal barrier             
+    CONDITION_VARIABLE cv;        /*!< Condition to signal barrier
                                     completion */
 #else
     tMPI_Thread_mutex_t cs;   /*!< Lock for the barrier contents          */

@@ -41,20 +41,20 @@ extern "C" {
  */
 typedef struct
 {
-    int                flags;
-    t_blocka *         exclusions;
-    real *             lambda;
-    real *             dvdl;
+int                flags;
+t_blocka *         exclusions;
+real *             lambda;
+real *             dvdl;
 
-    /* pointers to tables */
-    t_forcetable *     table_elec;
-    t_forcetable *     table_vdw;
-    t_forcetable *     table_elec_vdw;
+/* pointers to tables */
+t_forcetable *     table_elec;
+t_forcetable *     table_vdw;
+t_forcetable *     table_elec_vdw;
 
-    /* potentials */
-    real *             energygrp_elec;
-    real *             energygrp_vdw;
-    real *             energygrp_polarization;
+/* potentials */
+real *             energygrp_elec;
+real *             energygrp_vdw;
+real *             energygrp_polarization;
 }
 nb_kernel_data_t;
 
@@ -90,27 +90,27 @@ nb_kernel_t(t_nblist *                nlist,
  * The interaction modifiers are described by the eintmod enum type, while
  * the kernel geometry is decided from the neighborlist geometry, which is
  * described by the enum gmx_nblist_kernel_geometry (again, see types/enums.h).
- * The 
+ * The
  *
- * Note that any particular implementation of kernels might not support all of 
+ * Note that any particular implementation of kernels might not support all of
  * these strings. In fact, some might not be supported by any architecture yet.
- * The whole point of using strings and hashes is that we do not have to define a 
+ * The whole point of using strings and hashes is that we do not have to define a
  * unique set of strings in a single place. Thus, as long as you implement a
  * corresponding kernel, you could in theory provide any string you want.
  */
 typedef struct nb_kernel_info
 {
-    nb_kernel_t *   kernelptr;
-    const char *    kernelname;
-    const char *    architecture;     /* e.g. "C", "SSE", "BlueGene", etc. */
+nb_kernel_t *   kernelptr;
+const char *    kernelname;
+const char *    architecture;     /* e.g. "C", "SSE", "BlueGene", etc. */
 
-    const char *    electrostatics;
-    const char *    electrostatics_modifier;
-    const char *    vdw;
-    const char *    vdw_modifier;
-    const char *    geometry;
-    const char *    other;  /* Any extra info you want/need to select a kernel */
-    const char *    vf;     /* "PotentialAndForce", "Potential", or "Force" */
+const char *    electrostatics;
+const char *    electrostatics_modifier;
+const char *    vdw;
+const char *    vdw_modifier;
+const char *    geometry;
+const char *    other;  /* Any extra info you want/need to select a kernel */
+const char *    vf;     /* "PotentialAndForce", "Potential", or "Force" */
 }
 nb_kernel_info_t;
 
