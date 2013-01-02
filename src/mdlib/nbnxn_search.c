@@ -3362,13 +3362,17 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
     {
         sort_cj_excl(nbl->cj+nbl->ci[nbl->nci].cj_ind_start,jlen,nbl->work);
 
-        if (nbl->ci[nbl->nci].shift & NBNXN_CI_HALF_LJ(0))
-        {
-            nbl->work->ncj_hlj += jlen;
-        }
-        else if (!(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_COUL(0)))
+        /* The counts below are used for non-bonded kernel counts
+         * and should therefore match the available kernel setups.
+         */
+        if (!(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_COUL(0)))
         {
             nbl->work->ncj_noq += jlen;
+        }
+        else if ((nbl->ci[nbl->nci].shift & NBNXN_CI_HALF_LJ(0)) ||
+                 !(nbl->ci[nbl->nci].shift & NBNXN_CI_DO_LJ(0)))
+        {
+            nbl->work->ncj_hlj += jlen;
         }
 
         nbl->nci++;
