@@ -236,18 +236,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
 }
 
-#define load_lj_pair_params2(nbfp,type,aj,c6_SSE,c12_SSE)                \
+#define load_lj_pair_params2(nbfp0,nbfp1,type,aj,c6_SSE,c12_SSE)        \
 {                                                                       \
-    __m128 clj_SSE[2*UNROLLJ],c6t_SSE[2],c12t_SSE[2];                     \
+    __m128 clj_SSE0[UNROLLJ],clj_SSE1[UNROLLJ],c6t_SSE[2],c12t_SSE[2];  \
     int p;                                                              \
                                                                         \
-    for(p=0; p<2*UNROLLJ; p++)                                            \
+    for(p=0; p<UNROLLJ; p++)                                            \
     {                                                                   \
         /* Here we load 4 aligned floats, but we need just 2 */         \
-        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
+        clj_SSE0[p] = _mm_load_ps(nbfp0+type[aj+p]*NBFP_STRIDE);        \
     }                                                                   \
-    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
-    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
+    for(p=0; p<UNROLLJ; p++)                                            \
+    {                                                                   \
+        /* Here we load 4 aligned floats, but we need just 2 */         \
+        clj_SSE1[p] = _mm_load_ps(nbfp1+type[aj+p]*NBFP_STRIDE);        \
+    }                                                                   \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE0[0],clj_SSE0[1],clj_SSE0[2],clj_SSE0[3],c6t_SSE[0],c12t_SSE[0]); \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE1[0],clj_SSE1[1],clj_SSE1[2],clj_SSE1[3],c6t_SSE[1],c12t_SSE[1]); \
                                                                         \
     GMX_2_MM_TO_M256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                     \
     GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
