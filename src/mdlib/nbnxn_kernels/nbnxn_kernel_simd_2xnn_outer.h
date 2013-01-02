@@ -35,7 +35,7 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* GMX_MM128_HERE or GMX_MM256_HERE should be set before including this file */
+/* GMX_MM256_HERE should be set before including this file */
 #include "gmx_simd_macros.h"
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
@@ -43,32 +43,17 @@
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
 #define UNROLLJ    (GMX_SIMD_WIDTH_HERE/2)
 
-#if defined GMX_MM128_HERE || defined GMX_DOUBLE
-#define STRIDE     4
-#endif
-#if defined GMX_MM256_HERE && !defined GMX_DOUBLE
+#if defined GMX_MM256_HERE
 #define STRIDE     4
 #endif 
 
-#ifdef GMX_MM128_HERE
-#ifndef GMX_DOUBLE
-/* SSE single precision 4x4 kernel */
-#define SUM_SIMD(x) SUM_SIMD4(x)
-#define TAB_FDV0
-#else
-/* SSE double precision 4x2 kernel */
-#define SUM_SIMD(x) (x[0]+x[1])
-#endif
-#endif
-
 #ifdef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
-/* AVX single precision 4x8 kernel */
+/* single precision 2x(4+4) kernel */
 #define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
 #define TAB_FDV0
 #else
-/* AVX double precision 4x4 kernel */
-#define SUM_SIMD(x) SUM_SIMD4(x)
+#error "unsupported kernel configuration"
 #endif
 #endif
 
@@ -167,7 +152,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
     int        nbfp_stride;
     int        n,ci,ci_sh;
     int        ish,ish3;
-    gmx_bool   half_LJ,do_coul;
+    gmx_bool   do_LJ,half_LJ,do_coul;
     int        sci,scix,sciy,sciz,sci2;
     int        cjind0,cjind1,cjind;
     int        ip,jp;
@@ -206,9 +191,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
     gmx_mm_pr  diag_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
     gmx_mm_pr  diag_SSE2 = _mm256_castsi256_ps( _mm256_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x00000000, 0x00000000, 0x00000000 ));
 
-#ifndef GMX_MM256_HERE
-    __m128i    zeroi_SSE = _mm_setzero_si128();
-#endif
 #ifdef GMX_X86_SSE4_1
     gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
 #endif
@@ -407,7 +389,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
     egps_jshift  = 2*nbat->neg_2log;
     egps_jmask   = (1<<egps_jshift) - 1;
     egps_jstride = (UNROLLJ>>1)*UNROLLJ;
-    /* Major division is over i-particles: divide nVS by 4 for i-stride */
+    /* Major division is over i-particle energy groups, determine the stride */
     Vstride_i    = nbat->nenergrp*(1<<nbat->neg_2log)*egps_jstride;
 #endif
 
@@ -420,9 +402,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
         ish3             = ish*3;
-        cjind0           = nbln->cj_ind_start;      
-        cjind1           = nbln->cj_ind_end;    
-        /* Currently only works super-cells equal to sub-cells */
+        cjind0           = nbln->cj_ind_start;
+        cjind1           = nbln->cj_ind_end;
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
@@ -441,8 +422,15 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
         sci             += (ci & 1)*(STRIDE>>1);
 #endif
 
-        half_LJ = (nbln->shift & NBNXN_CI_HALF_LJ(0));
+        /* We have 5 LJ/C combinations, but use only three inner loops,
+         * as the other combinations are unlikely and/or not much faster:
+         * inner half-LJ + C for half-LJ + C / no-LJ + C
+         * inner LJ + C      for full-LJ + C
+         * inner LJ          for full-LJ + no-C / half-LJ + no-C
+         */
+        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
+        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];
@@ -513,8 +501,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
         iz_SSE0          = gmx_add_pr(gmx_load2_hpr(x+sciz)  ,shZ_SSE);
         iz_SSE2          = gmx_add_pr(gmx_load2_hpr(x+sciz+2),shZ_SSE);
 
-        /* With half_LJ we currently always calculate Coulomb interactions */
-        if (do_coul || half_LJ)
+        if (do_coul)
         {
             gmx_mm_pr facel_SSE;
 

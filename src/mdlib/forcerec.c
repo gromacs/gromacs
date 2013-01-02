@@ -1433,7 +1433,7 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 #endif
         if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
-#ifdef GMX_NBNXN_SIMD_2XNN
+#ifdef GMX_NBNXN_SIMD_4XN
             *kernel_type = nbnxnk4xN_SIMD_4xN;
 #else
             gmx_fatal(FARGS,"SIMD 4xN kernels requested, but Gromacs has been compiled without support for these kernels");

@@ -108,7 +108,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     real       *nbfp_i;
     int        n,ci,ci_sh;
     int        ish,ishf;
-    gmx_bool   half_LJ,do_coul;
+    gmx_bool   do_LJ,half_LJ,do_coul;
     int        cjind0,cjind1,cjind;
     int        ip,jp;
 
@@ -213,8 +213,15 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
-        half_LJ = (nbln->shift & NBNXN_CI_HALF_LJ(0));
+        /* We have 5 LJ/C combinations, but use only three inner loops,
+         * as the other combinations are unlikely and/or not much faster:
+         * inner half-LJ + C for half-LJ + C / no-LJ + C
+         * inner LJ + C      for full-LJ + C
+         * inner LJ          for full-LJ + no-C / half-LJ + no-C
+         */
+        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
+        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
@@ -237,8 +244,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             }
         }
 
-        /* With half_LJ we currently always calculate Coulomb interactions */
-        if (do_coul || half_LJ)
+        if (do_coul)
         {
 #ifdef CALC_ENERGIES
             real Vc_sub_self;

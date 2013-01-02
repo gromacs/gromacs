@@ -52,22 +52,22 @@
 
 #ifdef GMX_MM128_HERE
 #ifndef GMX_DOUBLE
-/* SSE single precision 4x4 kernel */
+/* single precision 4x4 kernel */
 #define SUM_SIMD(x) SUM_SIMD4(x)
 #define TAB_FDV0
 #else
-/* SSE double precision 4x2 kernel */
+/* double precision 4x2 kernel */
 #define SUM_SIMD(x) (x[0]+x[1])
 #endif
 #endif
 
 #ifdef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
-/* AVX single precision 4x8 kernel */
+/* single precision 4x8 kernel */
 #define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
 #define TAB_FDV0
 #else
-/* AVX double precision 4x4 kernel */
+/* double precision 4x4 kernel */
 #define SUM_SIMD(x) SUM_SIMD4(x)
 #endif
 #endif
@@ -167,7 +167,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     int        nbfp_stride;
     int        n,ci,ci_sh;
     int        ish,ish3;
-    gmx_bool   half_LJ,do_coul;
+    gmx_bool   do_LJ,half_LJ,do_coul;
     int        sci,scix,sciy,sciz,sci2;
     int        cjind0,cjind1,cjind;
     int        ip,jp;
@@ -203,7 +203,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     __m128d    fix2_SSE,fiy2_SSE,fiz2_SSE;
 #endif
 
-#ifndef GMX_MM256_HERE
+#ifdef GMX_MM128_HERE
 #ifndef GMX_DOUBLE
     __m128i    mask0 = _mm_set_epi32( 0x0008, 0x0004, 0x0002, 0x0001 );
     __m128i    mask1 = _mm_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010 );
@@ -216,7 +216,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     __m128i    mask2 = _mm_set_epi32( 0x0020, 0x0020, 0x0010, 0x0010 );
     __m128i    mask3 = _mm_set_epi32( 0x0080, 0x0080, 0x0040, 0x0040 );
 #endif
-#else
+#endif
+#ifdef GMX_MM256_HERE
     /* AVX: use floating point masks, as there are no integer instructions */
 #ifndef GMX_DOUBLE
     gmx_mm_pr  mask0 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002, 0x0001 ));
@@ -230,7 +231,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #endif
 #endif
 
-#ifndef GMX_MM256_HERE
+#ifdef GMX_MM128_HERE
 #ifndef GMX_DOUBLE
     __m128     diag_SSE0 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
     __m128     diag_SSE1 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
@@ -246,7 +247,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     __m128d    diag1_SSE2 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
     __m128d    diag1_SSE3 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
 #endif
-#else /* GMX_MM256_HERE */
+#endif
+#ifdef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
     gmx_mm_pr  diag0_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
     gmx_mm_pr  diag0_SSE1 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
@@ -264,7 +266,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #endif
 #endif
 
-#ifndef GMX_MM256_HERE
+#ifdef GMX_MM128_HERE
     __m128i    zeroi_SSE = _mm_setzero_si128();
 #endif
 #ifdef GMX_X86_SSE4_1
@@ -475,7 +477,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     egps_jshift  = 2*nbat->neg_2log;
     egps_jmask   = (1<<egps_jshift) - 1;
     egps_jstride = (UNROLLJ>>1)*UNROLLJ;
-    /* Major division is over i-particles: divide nVS by 4 for i-stride */
+    /* Major division is over i-particle energy groups, determine the stride */
     Vstride_i    = nbat->nenergrp*(1<<nbat->neg_2log)*egps_jstride;
 #endif
 
@@ -488,9 +490,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 
         ish              = (nbln->shift & NBNXN_CI_SHIFT);
         ish3             = ish*3;
-        cjind0           = nbln->cj_ind_start;      
-        cjind1           = nbln->cj_ind_end;    
-        /* Currently only works super-cells equal to sub-cells */
+        cjind0           = nbln->cj_ind_start;
+        cjind1           = nbln->cj_ind_end;
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
@@ -509,8 +510,15 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
         sci             += (ci & 1)*(STRIDE>>1);
 #endif
 
-        half_LJ = (nbln->shift & NBNXN_CI_HALF_LJ(0));
+        /* We have 5 LJ/C combinations, but use only three inner loops,
+         * as the other combinations are unlikely and/or not much faster:
+         * inner half-LJ + C for half-LJ + C / no-LJ + C
+         * inner LJ + C      for full-LJ + C
+         * inner LJ          for full-LJ + no-C / half-LJ + no-C
+         */
+        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
+        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
 
 #ifdef ENERGY_GROUPS
         egps_i = nbat->energrp[ci];
@@ -585,8 +593,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
         iz_SSE2          = gmx_add_pr(gmx_load1_pr(x+sciz+2),shZ_SSE);
         iz_SSE3          = gmx_add_pr(gmx_load1_pr(x+sciz+3),shZ_SSE);
 
-        /* With half_LJ we currently always calculate Coulomb interactions */
-        if (do_coul || half_LJ)
+        if (do_coul)
         {
             iq_SSE0      = gmx_set1_pr(facel*q[sci]);
             iq_SSE1      = gmx_set1_pr(facel*q[sci+1]);
