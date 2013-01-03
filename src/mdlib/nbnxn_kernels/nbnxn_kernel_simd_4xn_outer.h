@@ -289,10 +289,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
     const real *tab_coul_V;
 #endif
 #ifdef GMX_MM256_HERE
-    int        ti0_array[2*UNROLLJ-1],*ti0;
-    int        ti1_array[2*UNROLLJ-1],*ti1;
-    int        ti2_array[2*UNROLLJ-1],*ti2;
-    int        ti3_array[2*UNROLLJ-1],*ti3;
+    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1],*ti0;
+    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1],*ti1;
+    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1],*ti2;
+    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1],*ti3;
 #endif
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_SSE;
@@ -376,11 +376,11 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 
 #ifdef CALC_COUL_TAB
 #ifdef GMX_MM256_HERE
-    /* Generate aligned table pointers */
-    ti0 = (int *)(((size_t)(ti0_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
-    ti1 = (int *)(((size_t)(ti1_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
-    ti2 = (int *)(((size_t)(ti2_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
-    ti3 = (int *)(((size_t)(ti3_array+UNROLLJ-1)) & (~((size_t)(UNROLLJ*sizeof(real)-1))));
+    /* Generate aligned table index pointers */
+    ti0 = (int *)(((size_t)(ti0_array+GMX_SIMD_WIDTH_HERE-1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int)-1))));
+    ti1 = (int *)(((size_t)(ti1_array+GMX_SIMD_WIDTH_HERE-1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int)-1))));
+    ti2 = (int *)(((size_t)(ti2_array+GMX_SIMD_WIDTH_HERE-1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int)-1))));
+    ti3 = (int *)(((size_t)(ti3_array+GMX_SIMD_WIDTH_HERE-1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int)-1))));
 #endif
 
     invtsp_SSE  = gmx_set1_pr(ic->tabq_scale);

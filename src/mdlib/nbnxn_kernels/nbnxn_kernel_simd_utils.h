@@ -298,7 +298,9 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
  * But AMD CPUs perform significantly worse with gcc than with icc.
  * Performance is improved a bit by using the extract function UNROLLJ times,
  * instead of doing an _mm_store_si128 for every i-particle.
- * With AVX this significantly deteriorates performance (8 extracts iso 4).
+ * This is only faster when we use FDV0 formatted tables, where we also need
+ * to multiple the index by 4, which we can done by a SIMD bit shift.
+ * With single precision AVX, 8 extracts is much slower than 1 store.
  * Because of this, the load_table_f macro always takes the ti parameter,
  * but it is only used with AVX.
  */
