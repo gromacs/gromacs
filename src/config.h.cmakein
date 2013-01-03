@@ -161,9 +161,6 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
-/* Use the PowerPC hardware 1/sqrt(x) */
-#cmakedefine GMX_POWERPC_INVSQRT
-
 /* Use sub-counters */
 #cmakedefine GMX_CYCLE_SUBCOUNTERS
 
