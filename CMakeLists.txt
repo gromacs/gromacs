@@ -166,6 +166,7 @@ IF( WIN32 AND NOT CYGWIN)
     SET(SHARED_LIBS_DEFAULT OFF)
   else()
     add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
+    set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
   endif()
 
   IF (GMX_PREFER_STATIC_LIBS)
@@ -1070,6 +1071,7 @@ if(NOT GMX_OPENMP)
     unset(OpenMP_LINKER_FLAGS CACHE)
     unset(OpenMP_SHARED_LINKER_FLAGS)
 endif()
+set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 
 ######################################
 # Output compiler and CFLAGS used
