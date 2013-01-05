@@ -55,7 +55,7 @@
  * \returns   Pointer to a string that corresponds to \p sel->type.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p sel->type is not one of the valid values.
  */
 const char *
@@ -162,8 +162,8 @@ void SelectionTreeElement::freeValues()
         {
             case STR_VALUE:
                 GMX_RELEASE_ASSERT(v.nalloc != 0,
-                        "SEL_ALLOCDATA should only be set for allocated "
-                        "STR_VALUE values");
+                                   "SEL_ALLOCDATA should only be set for allocated "
+                                   "STR_VALUE values");
                 for (int i = 0; i < n; ++i)
                 {
                     sfree(v.u.s[i]);
@@ -202,7 +202,7 @@ SelectionTreeElement::freeExpressionData()
     if (type == SEL_EXPRESSION || type == SEL_MODIFIER)
     {
         _gmx_selelem_free_method(u.expr.method, u.expr.mdata);
-        u.expr.mdata = NULL;
+        u.expr.mdata  = NULL;
         u.expr.method = NULL;
         /* Free position data */
         if (u.expr.pos)
@@ -300,7 +300,7 @@ void SelectionTreeElement::mempoolRelease()
  */
 void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t vtype)
+                       e_selvalue_t                            vtype)
 {
     GMX_RELEASE_ASSERT(sel->type != SEL_BOOLEAN || vtype == GROUP_VALUE,
                        "Boolean elements must have a group value");
@@ -452,7 +452,9 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
         {
             const gmx_ana_index_t *g = sel.v.u.g;
             if (!g || g->isize == 0)
+            {
                 g = &sel.u.cgrp;
+            }
             fprintf(fp, " (%d atoms)", g->isize);
         }
     }

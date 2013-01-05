@@ -109,7 +109,7 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
         // TODO: Implement once the situation with Redmine issue #969 is more
         // clear.
         GMX_THROW(NotImplementedError(
-                    "This output format is not implemented"));
+                          "This output format is not implemented"));
     }
 }
 
@@ -129,7 +129,7 @@ File &HelpWriterContext::outputFile() const
 
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 {
-    char *resultStr = check_tty(text.c_str());
+    char            *resultStr = check_tty(text.c_str());
     scoped_ptr_sfree resultGuard(resultStr);
     return std::string(resultStr);
 }
@@ -145,8 +145,8 @@ void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
     TextLineWrapper wrapper;
     wrapper.settings().setLineLength(78);
-    const char *program = ProgramInfo::getInstance().programName().c_str();
-    std::string newText = replaceAll(text, "[PROGRAM]", program);
+    const char     *program = ProgramInfo::getInstance().programName().c_str();
+    std::string     newText = replaceAll(text, "[PROGRAM]", program);
     outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
 }
 

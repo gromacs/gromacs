@@ -112,7 +112,7 @@ class SelectionOptionManager
          * through any public or library API.
          */
         void convertOptionValue(SelectionOptionStorage *storage,
-                                const std::string &value);
+                                const std::string      &value);
         /*! \brief
          * Adds a selection option for delayed user input.
          *
@@ -213,7 +213,7 @@ class SelectionOptionManager
  *
  * \inpublicapi
  */
-void setManagerForSelectionOptions(Options *options,
+void setManagerForSelectionOptions(Options                *options,
                                    SelectionOptionManager *manager);
 
 } // namespace gmx

@@ -66,8 +66,8 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
     std::vector<AnalysisDataValue>::const_iterator begin
         = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
-                AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-                AnalysisDataValuesRef(begin, begin + columnCount()));
+            AnalysisDataFrameHeader(index, xvalue(index), 0.0),
+            AnalysisDataValuesRef(begin, begin + columnCount()));
 }
 
 
@@ -117,7 +117,7 @@ AbstractAnalysisArrayData::setXAxis(real start, real step)
 {
     GMX_RELEASE_ASSERT(!bReady_, "X axis cannot be set after data is finished");
     xstart_ = start;
-    xstep_ = step;
+    xstep_  = step;
 }
 
 
@@ -138,8 +138,8 @@ AbstractAnalysisArrayData::valuesReady()
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         notifyFrameStart(header);
         notifyPointsAdd(AnalysisDataPointSetRef(header, 0,
-                            AnalysisDataValuesRef(valueIter,
-                                                  valueIter + columnCount())));
+                                                AnalysisDataValuesRef(valueIter,
+                                                                      valueIter + columnCount())));
         notifyFrameFinish(header);
     }
     notifyDataFinish();
@@ -148,7 +148,7 @@ AbstractAnalysisArrayData::valuesReady()
 
 void
 AbstractAnalysisArrayData::copyContents(const AbstractAnalysisArrayData *src,
-                                        AbstractAnalysisArrayData *dest)
+                                        AbstractAnalysisArrayData       *dest)
 {
     GMX_RELEASE_ASSERT(src->isAllocated(), "Source data must not be empty");
     GMX_RELEASE_ASSERT(!dest->isAllocated(),

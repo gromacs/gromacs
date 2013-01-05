@@ -132,8 +132,8 @@ int
 _gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
-                                  gmx_sel_lexer_t *state);
+    _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
+                                      gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);

@@ -95,14 +95,14 @@ class TestException : public GromacsException
  *
  * Typical usage in test code:
  * \code
-try
-{
+   try
+   {
     // some code that may throw a GromacsException
-}
-catch (const GromacsException &ex)
-{
+   }
+   catch (const GromacsException &ex)
+   {
     GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
-}
+   }
  * \endcode
  */
 #define GMX_THROW_WRAPPER_TESTEXCEPTION(e) \
@@ -112,4 +112,3 @@ catch (const GromacsException &ex)
 } // namespace gmx
 
 #endif
-

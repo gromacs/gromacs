@@ -82,11 +82,11 @@ class AnalysisDataDisplacementModule::Impl
         int                     ci;
 
         //! Maximum number of positions to store for a particle.
-        int                     max_store;
+        int                            max_store;
         //! The total number of positions ever stored (can be larger than \p max_store).
-        int                     nstored;
+        int                            nstored;
         //! Old values.
-        real                   *oldval;
+        real                          *oldval;
         //! The most recently calculated displacements.
         std::vector<AnalysisDataValue> currValues_;
 
@@ -222,7 +222,7 @@ AnalysisDataDisplacementModule::frameStarted(const AnalysisDataFrameHeader &head
     {
         _impl->p[_impl->ci + i].bPres = false;
     }
-*/
+ */
     _impl->nstored++;
     _impl->bFirst = false;
 }
@@ -283,7 +283,7 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             for (int d = 0; d < _impl->ndim; ++d)
             {
                 real displ = _impl->oldval[_impl->ci + j + d]
-                             - _impl->oldval[i + j + d];
+                    - _impl->oldval[i + j + d];
                 dist2 += displ * displ;
             }
             _impl->currValues_.push_back(AnalysisDataValue(dist2));

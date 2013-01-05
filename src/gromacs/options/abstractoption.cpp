@@ -52,7 +52,7 @@ namespace gmx
  */
 
 AbstractOptionStorage::AbstractOptionStorage(const AbstractOption &settings,
-                                             OptionFlags staticFlags)
+                                             OptionFlags           staticFlags)
     : flags_(settings.flags_ | staticFlags),
       minValueCount_(settings.minValueCount_),
       maxValueCount_(settings.maxValueCount_),
@@ -98,7 +98,7 @@ void AbstractOptionStorage::startSet()
         GMX_THROW(InvalidInputError("Option specified multiple times"));
     }
     clearSet();
-    bInSet_ = true;
+    bInSet_              = true;
     bSetValuesHadErrors_ = false;
 }
 

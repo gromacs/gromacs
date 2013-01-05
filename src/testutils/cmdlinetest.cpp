@@ -128,11 +128,26 @@ void CommandLine::append(const char *arg)
     impl_->argc_ = static_cast<int>(newSize);
 }
 
-int &CommandLine::argc() { return impl_->argc_; }
-char **CommandLine::argv() { return &impl_->argv_[0]; }
-int CommandLine::argc() const { return impl_->argc_; }
-const char *const *CommandLine::argv() const { return &impl_->argv_[0]; }
-const char *CommandLine::arg(int i) const { return impl_->argv_[i]; }
+int &CommandLine::argc()
+{
+    return impl_->argc_;
+}
+char **CommandLine::argv()
+{
+    return &impl_->argv_[0];
+}
+int CommandLine::argc() const
+{
+    return impl_->argc_;
+}
+const char *const *CommandLine::argv() const
+{
+    return &impl_->argv_[0];
+}
+const char *CommandLine::arg(int i) const
+{
+    return impl_->argv_[i];
+}
 
 std::string CommandLine::toString() const
 {
