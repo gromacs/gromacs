@@ -63,12 +63,12 @@ namespace gmx
 namespace
 {
 //! Mutex for updates to the global program info objects.
-tMPI::mutex g_programInfoMutex;
+tMPI::mutex                    g_programInfoMutex;
 //! Partially filled program info, needed to support set_program_name().
 boost::scoped_ptr<ProgramInfo> g_partialProgramInfo;
 //! Global program info; stores the object initialized with ProgramInfo::init().
 boost::scoped_ptr<ProgramInfo> g_programInfo;
-} // namespace
+}   // namespace
 
 /********************************************************************
  * ProgramInfo::Impl
@@ -109,11 +109,11 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
                      '/', '\\');
     }
-    programName_ = stripSuffixIfPresent(programName_, ".exe");
+    programName_          = stripSuffixIfPresent(programName_, ".exe");
     invariantProgramName_ = programName_;
 #ifdef GMX_BINARY_SUFFIX
     invariantProgramName_ =
-        stripSuffixIfPresent(invariantProgramName_, GMX_BINARY_SUFFIX);
+            stripSuffixIfPresent(invariantProgramName_, GMX_BINARY_SUFFIX);
 #endif
     if (realBinaryName == NULL)
     {
@@ -126,8 +126,8 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         {
             commandLine_.append(" ");
         }
-        const char *arg = argv[i];
-        bool bSpaces = (std::strchr(arg, ' ') != NULL);
+        const char *arg     = argv[i];
+        bool        bSpaces = (std::strchr(arg, ' ') != NULL);
         if (bSpaces)
         {
             commandLine_.append("'");

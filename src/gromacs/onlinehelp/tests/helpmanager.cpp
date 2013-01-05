@@ -62,11 +62,11 @@ class HelpTestBase : public gmx::test::StringTestBase
         HelpTestBase();
 
         gmx::test::TestFileManager tempFiles_;
-        MockHelpTopic           rootTopic_;
-        std::string             filename_;
-        gmx::File               helpFile_;
-        gmx::HelpWriterContext  context_;
-        gmx::HelpManager        manager_;
+        MockHelpTopic              rootTopic_;
+        std::string                filename_;
+        gmx::File                  helpFile_;
+        gmx::HelpWriterContext     context_;
+        gmx::HelpManager           manager_;
 };
 
 HelpTestBase::HelpTestBase()
@@ -95,9 +95,9 @@ TEST_F(HelpManagerTest, HandlesRootTopic)
 TEST_F(HelpManagerTest, HandlesSubTopics)
 {
     MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", "First topic text");
+            rootTopic_.addSubTopic("first", "First topic", "First topic text");
     MockHelpTopic &firstSub =
-        first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
+            first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
     rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
 
     using ::testing::_;
@@ -110,7 +110,7 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 TEST_F(HelpManagerTest, HandlesInvalidTopics)
 {
     MockHelpTopic &first =
-        rootTopic_.addSubTopic("first", "First topic", "First topic text");
+            rootTopic_.addSubTopic("first", "First topic", "First topic text");
     first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
     rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
 
@@ -127,14 +127,14 @@ TEST_F(HelpManagerTest, HandlesInvalidTopics)
 
 struct TestHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char TestHelpText::name[] = "testtopic";
-const char TestHelpText::title[] = "Topic title";
-const char *const TestHelpText::text[] = {
+const char        TestHelpText::name[]  = "testtopic";
+const char        TestHelpText::title[] = "Topic title";
+const char *const TestHelpText::text[]  = {
     "Test topic text.[PAR]",
     "Another paragraph of text."
 };
@@ -157,7 +157,7 @@ void HelpTopicFormattingTest::checkHelpFormatting()
 TEST_F(HelpTopicFormattingTest, FormatsSimpleTopic)
 {
     rootTopic_.addSubTopic(gmx::HelpTopicPointer(
-                new gmx::SimpleHelpTopic<TestHelpText>));
+                                   new gmx::SimpleHelpTopic<TestHelpText>));
     checkHelpFormatting();
 }
 

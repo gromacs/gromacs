@@ -108,8 +108,8 @@ class AnalysisDataPlotSettings
 
     private:
         const SelectionCollection *selections_;
-        TimeUnit                timeUnit_;
-        int                     plotFormat_;
+        TimeUnit                   timeUnit_;
+        int                        plotFormat_;
 };
 
 /*! \brief

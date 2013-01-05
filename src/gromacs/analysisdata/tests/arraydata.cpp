@@ -68,7 +68,7 @@ const real inputdata[] = {
 TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisArrayData data;
+    gmx::AnalysisArrayData           data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 
@@ -80,7 +80,7 @@ TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 TEST_F(AnalysisArrayDataTest, StorageWorks)
 {
     gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisArrayData data;
+    gmx::AnalysisArrayData           data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 

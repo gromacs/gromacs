@@ -10,16 +10,16 @@
  * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
  * a full list of developers and information, check out http://www.gromacs.org
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
  * later version.
  * As a special exception, you may use this file as part of a free software
  * library without restriction.  Specifically, if other files instantiate
  * templates or use macros or inline functions from this file, or you compile
  * this file and link it with other files to produce an executable, this
  * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * the GNU Lesser General Public License.
  *
  * In plain-speak: do not worry about classes/macros/templates either - only
  * changes to the library have to be LGPL, not an application linking with it.
@@ -196,9 +196,9 @@
 #define gmx_mul_pr        _mm256_mul_ps
 #define gmx_max_pr        _mm256_max_ps
 /* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x,y)  _mm256_cmp_ps(x,y,0x0c)
+#define gmx_cmpneq_pr(x, y)  _mm256_cmp_ps(x, y, 0x0c)
 /* Less-than (ordered, non-signaling)  */
-#define gmx_cmplt_pr(x,y) _mm256_cmp_ps(x,y,0x11)
+#define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
 #define gmx_and_pr        _mm256_and_ps
 #define gmx_or_pr         _mm256_or_ps
 #define gmx_andnot_pr     _mm256_andnot_ps
@@ -236,9 +236,9 @@
 #define gmx_mul_pr        _mm256_mul_pd
 #define gmx_max_pr        _mm256_max_pd
 /* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x,y)  _mm256_cmp_pd(x,y,0x0c)
+#define gmx_cmpneq_pr(x, y)  _mm256_cmp_pd(x, y, 0x0c)
 /* Less-than (ordered, non-signaling)  */
-#define gmx_cmplt_pr(x,y) _mm256_cmp_pd(x,y,0x11)
+#define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
 #define gmx_and_pr        _mm256_and_pd
 #define gmx_or_pr         _mm256_or_pd
 #define gmx_andnot_pr     _mm256_andnot_pd

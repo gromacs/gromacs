@@ -73,7 +73,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                      "Expected 1 or %d values, got %d", length, values->size())));
+                                                     "Expected 1 or %d values, got %d", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);
@@ -141,9 +141,9 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    long int ival = std::strtol(ptr, &endptr, 10);
+    long int    ival = std::strtol(ptr, &endptr, 10);
     if (errno == ERANGE
         || ival < std::numeric_limits<int>::min()
         || ival > std::numeric_limits<int>::max())
@@ -208,9 +208,9 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    double dval = std::strtod(ptr, &endptr);
+    double      dval = std::strtod(ptr, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + value
@@ -241,7 +241,7 @@ void DoubleOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double scale = factor / factor_;
+        double              scale = factor / factor_;
         ValueList::iterator i;
         for (i = values().begin(); i != values().end(); ++i)
         {
@@ -314,7 +314,7 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
     {
         enumIndexStore_ = settings.enumIndexStore_;
         const std::string *defaultValue = settings.defaultValue();
-        int match = -1;
+        int                match        = -1;
         for (int i = 0; settings.enumValues_[i] != NULL; ++i)
         {
             if (defaultValue != NULL && settings.enumValues_[i] == *defaultValue)
@@ -397,7 +397,7 @@ void StringOptionStorage::refreshValues()
         for (size_t i = 0; i < values().size(); ++i)
         {
             ValueList::const_iterator match =
-                std::find(allowed_.begin(), allowed_.end(), values()[i]);
+                    std::find(allowed_.begin(), allowed_.end(), values()[i]);
             GMX_ASSERT(match != allowed_.end(),
                        "Enum value not found (internal error)");
             enumIndexStore_[i] = static_cast<int>(match - allowed_.begin());

@@ -131,7 +131,7 @@ class TrajectoryAnalysisRunnerCommon
         //! Returns the topology information object.
         const TopologyInformation &topologyInformation() const;
         //! Returns the currently loaded frame.
-        t_trxframe &frame() const;
+        t_trxframe                &frame() const;
 
     private:
         class Impl;

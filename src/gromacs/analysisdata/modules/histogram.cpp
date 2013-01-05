@@ -134,7 +134,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
         else
         {
             firstEdge_     = settings.min_;
-            lastEdge_     = settings.max_;
+            lastEdge_      = settings.max_;
             if (settings.binCount_ > 0)
             {
                 binCount_ = settings.binCount_;
@@ -223,7 +223,7 @@ StaticAverageHistogram::StaticAverageHistogram(
 {
 }
 
-} // namespace
+}   // namespace
 
 
 /********************************************************************
@@ -274,9 +274,9 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
     }
 
     AverageHistogramPointer dest(
-        new StaticAverageHistogram(
-            histogramFromBins(xstart(), nbins, 2*xstep())
-                .integerBins(bIntegerBins)));
+            new StaticAverageHistogram(
+                    histogramFromBins(xstart(), nbins, 2*xstep())
+                        .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
@@ -547,7 +547,7 @@ BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 /********************************************************************
@@ -621,7 +621,7 @@ void
 AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     AnalysisDataStorageFrame &frame =
-        impl_->storage_.currentFrame(points.frameIndex());
+            impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         int bin = settings().findBin(points.y(i));
@@ -739,7 +739,7 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     if (bin != -1)
     {
         AnalysisDataStorageFrame &frame =
-            impl_->storage_.currentFrame(points.frameIndex());
+                impl_->storage_.currentFrame(points.frameIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
             frame.value(bin) += points.y(i);

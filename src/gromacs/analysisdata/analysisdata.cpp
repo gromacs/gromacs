@@ -74,7 +74,7 @@ class AnalysisDataHandleImpl
         AnalysisDataStorageFrame *currentFrame_;
 };
 
-} // namespace internal
+}   // namespace internal
 
 /********************************************************************
  * AnalysisData::Impl
@@ -223,7 +223,7 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
     GMX_RELEASE_ASSERT(impl_->currentFrame_ == NULL,
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_ =
-        &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+            &impl_->data_.impl_->storage_.startFrame(index, x, dx);
 }
 
 

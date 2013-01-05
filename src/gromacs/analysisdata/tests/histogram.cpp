@@ -63,7 +63,7 @@ namespace
 TEST(AnalysisHistogramSettingsTest, InitializesFromBins)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromBins(1.0, 5, 0.5));
+            gmx::histogramFromBins(1.0, 5, 0.5));
     EXPECT_FLOAT_EQ(1.0, settings.firstEdge());
     EXPECT_EQ(5, settings.binCount());
     EXPECT_FLOAT_EQ(0.5, settings.binWidth());
@@ -74,7 +74,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromBins)
 TEST(AnalysisHistogramSettingsTest, InitializesFromBinsWithIntegerBins)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromBins(1.0, 5, 0.5).integerBins());
+            gmx::histogramFromBins(1.0, 5, 0.5).integerBins());
     EXPECT_FLOAT_EQ(0.75, settings.firstEdge());
     EXPECT_EQ(5, settings.binCount());
     EXPECT_FLOAT_EQ(0.5, settings.binWidth());
@@ -85,7 +85,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromBinsWithIntegerBins)
 TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinCount)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromRange(1.0, 4.0).binCount(6));
+            gmx::histogramFromRange(1.0, 4.0).binCount(6));
     EXPECT_FLOAT_EQ(1.0, settings.firstEdge());
     EXPECT_FLOAT_EQ(4.0, settings.lastEdge());
     EXPECT_EQ(6, settings.binCount());
@@ -96,7 +96,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinCount)
 TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinWidth)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromRange(1.0, 4.0).binWidth(0.5));
+            gmx::histogramFromRange(1.0, 4.0).binWidth(0.5));
     EXPECT_FLOAT_EQ(1.0, settings.firstEdge());
     EXPECT_FLOAT_EQ(4.0, settings.lastEdge());
     EXPECT_FLOAT_EQ(0.5, settings.binWidth());
@@ -107,7 +107,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinWidth)
 TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinCountAndIntegerBins)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromRange(1.0, 4.0).binCount(7).integerBins());
+            gmx::histogramFromRange(1.0, 4.0).binCount(7).integerBins());
     EXPECT_FLOAT_EQ(0.75, settings.firstEdge());
     EXPECT_FLOAT_EQ(4.25, settings.lastEdge());
     EXPECT_EQ(7, settings.binCount());
@@ -118,7 +118,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinCountAndIntegerBi
 TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinWidthAndIntegerBins)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromRange(1.0, 4.0).binWidth(0.5).integerBins());
+            gmx::histogramFromRange(1.0, 4.0).binWidth(0.5).integerBins());
     EXPECT_FLOAT_EQ(0.75, settings.firstEdge());
     EXPECT_FLOAT_EQ(4.25, settings.lastEdge());
     EXPECT_FLOAT_EQ(0.5, settings.binWidth());
@@ -129,7 +129,7 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithBinWidthAndIntegerBi
 TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithRoundedRange)
 {
     gmx::AnalysisHistogramSettings settings(
-        gmx::histogramFromRange(1.2, 3.8).binWidth(0.5).roundRange());
+            gmx::histogramFromRange(1.2, 3.8).binWidth(0.5).roundRange());
     EXPECT_FLOAT_EQ(1.0, settings.firstEdge());
     EXPECT_FLOAT_EQ(4.0, settings.lastEdge());
     EXPECT_FLOAT_EQ(0.5, settings.binWidth());
@@ -156,12 +156,12 @@ const real simpleinputdata[] = {
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataSimpleHistogramModulePointer module(
-        new gmx::AnalysisDataSimpleHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
+            new gmx::AnalysisDataSimpleHistogramModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -177,7 +177,7 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(simpleinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataSimpleHistogramModulePointer module(
@@ -212,12 +212,12 @@ const real weightedinputdata[] = {
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataWeightedHistogramModulePointer module(
-        new gmx::AnalysisDataWeightedHistogramModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
+            new gmx::AnalysisDataWeightedHistogramModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -233,7 +233,7 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataWeightedHistogramModulePointer module(
@@ -261,12 +261,12 @@ typedef gmx::test::AnalysisDataTestFixture BinAverageModuleTest;
 TEST_F(BinAverageModuleTest, ComputesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataBinAverageModulePointer module(
-        new gmx::AnalysisDataBinAverageModule(
-                gmx::histogramFromRange(1.0, 3.0).binCount(4)));
+            new gmx::AnalysisDataBinAverageModule(
+                    gmx::histogramFromRange(1.0, 3.0).binCount(4)));
     data.addModule(module);
 
     ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
@@ -279,7 +279,7 @@ TEST_F(BinAverageModuleTest, ComputesCorrectly)
 TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
 {
     gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData data;
+    gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
     gmx::AnalysisDataBinAverageModulePointer module(
@@ -342,7 +342,7 @@ class MockAverageHistogram : public gmx::AbstractAverageHistogram
 TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
 {
     gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram data(
+    MockAverageHistogram             data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 
@@ -360,7 +360,7 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
 TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 {
     gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram data(
+    MockAverageHistogram             data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 
@@ -376,7 +376,7 @@ TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidthWithIntegerBins)
 {
     gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram data(
+    MockAverageHistogram             data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 

@@ -333,9 +333,9 @@ class TextLineWrapperSettings
  *
  * Typical usage:
  * \code
-gmx::TextLineWrapper wrapper;
-wrapper.settings().setLineLength(78);
-printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
+   gmx::TextLineWrapper wrapper;
+   wrapper.settings().setLineLength(78);
+   printf("%s\n", wrapper.wrapToString(textToWrap).c_str());
  * \endcode
  *
  * \inpublicapi
@@ -395,20 +395,20 @@ class TextLineWrapper
          * space.
          *
          * To iterate over lines in a string, use the following code:
-\code
-gmx::TextLineWrapper wrapper;
-// <set desired wrapping settings>
-size_t lineStart = 0;
-size_t length = input.length();
-while (lineStart < length)
-{
-    size_t nextLineStart = wrapper.findNextLine(input, lineStart);
-    std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
-    // <do something with the line>
-    lineStart = nextLineStart;
-}
-return result;
-\endcode
+           \code
+           gmx::TextLineWrapper wrapper;
+           // <set desired wrapping settings>
+           size_t lineStart = 0;
+           size_t length = input.length();
+           while (lineStart < length)
+           {
+           size_t nextLineStart = wrapper.findNextLine(input, lineStart);
+           std::string line = wrapper.formatLine(input, lineStart, nextLineStart));
+           // <do something with the line>
+           lineStart = nextLineStart;
+           }
+           return result;
+           \endcode
          *
          * Does not throw.
          */

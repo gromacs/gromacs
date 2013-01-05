@@ -84,7 +84,7 @@
 typedef struct gmx_ana_displpos_t
 {
     /** Stored position vector. */
-    rvec                 x;
+    rvec                     x;
     /** TRUE if there is something stored. */
     gmx_bool                 bPres;
 } gmx_ana_displpos_t;
@@ -105,13 +105,13 @@ struct gmx_ana_displ_t
     /** TRUE if no frames have been read. */
     gmx_bool                 bFirst;
     /** Stores the time of the first frame. */
-    real                 t0;
+    real                     t0;
     /** Stores the time interval between frames. */
-    real                 dt;
+    real                     dt;
     /** Stores the time of the current frame. */
-    real                 t;
+    real                     t;
     /** Stores the index in the store for the current positions. */
-    int                  ci;
+    int                      ci;
 
     /** Maximum number of positions to store for a particle. */
     int                  max_store;
