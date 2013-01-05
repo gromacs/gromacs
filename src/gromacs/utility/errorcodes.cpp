@@ -91,9 +91,9 @@ void standardErrorHandler(int retcode, const char *msg,
 //! Global error handler set with setFatalErrorHandler().
 ErrorHandlerFunc g_errorHandler = standardErrorHandler;
 //! Mutex for protecting access to g_errorHandler.
-tMPI::mutex handler_mutex;
+tMPI::mutex      handler_mutex;
 
-} // namespace
+}   // namespace
 
 const char *getErrorCodeString(int errorcode)
 {
@@ -107,7 +107,7 @@ const char *getErrorCodeString(int errorcode)
 ErrorHandlerFunc setFatalErrorHandler(ErrorHandlerFunc handler)
 {
     tMPI::lock_guard<tMPI::mutex> lock(handler_mutex);
-    ErrorHandlerFunc oldHandler = g_errorHandler;
+    ErrorHandlerFunc              oldHandler = g_errorHandler;
     g_errorHandler = handler;
     return oldHandler;
 }
@@ -129,7 +129,7 @@ void fatalError(int retcode, const char *msg, const char *file, int line)
     }
 }
 
-} // namespace internal
+}   // namespace internal
 //! \endcond
 
 } // namespace gmx

@@ -83,13 +83,13 @@ class AbstractTrajectoryAnalysisModuleTestFixture::Impl
 
         AbstractTrajectoryAnalysisModuleTestFixture    &parent_;
         TrajectoryAnalysisModulePointer                 module_;
-        TestReferenceData               data_;
-        CommandLine                     cmdline_;
-        TestFileManager                 tempFiles_;
-        DatasetNames                    moduleDatasets_;
-        DatasetNames                    outputDatasets_;
-        OutputFileList                  outputFiles_;
-        bool                            bDatasetsIncluded_;
+        TestReferenceData                               data_;
+        CommandLine                                     cmdline_;
+        TestFileManager                                 tempFiles_;
+        DatasetNames                                    moduleDatasets_;
+        DatasetNames                                    outputDatasets_;
+        OutputFileList                                  outputFiles_;
+        bool                                            bDatasetsIncluded_;
 };
 
 AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
@@ -195,14 +195,14 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
 
     if (!impl_->outputDatasets_.empty())
     {
-        TestReferenceChecker dataChecker(
+        TestReferenceChecker               dataChecker(
                 rootChecker.checkCompound("OutputData", "Data"));
         Impl::DatasetNames::const_iterator dataset;
         for (dataset = impl_->outputDatasets_.begin();
              dataset != impl_->outputDatasets_.end();
              ++dataset)
         {
-            const char *name = dataset->c_str();
+            const char           *name    = dataset->c_str();
             AbstractAnalysisData &dataset = module.datasetFromName(name);
             AnalysisDataTestFixture::addReferenceCheckerModule(
                     dataChecker, name, &dataset);
@@ -217,7 +217,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
 
     if (!impl_->outputFiles_.empty())
     {
-        TestReferenceChecker outputChecker(
+        TestReferenceChecker                 outputChecker(
                 rootChecker.checkCompound("OutputFiles", "Files"));
         Impl::OutputFileList::const_iterator outfile;
         for (outfile = impl_->outputFiles_.begin();

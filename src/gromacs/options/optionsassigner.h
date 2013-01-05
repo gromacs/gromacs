@@ -58,23 +58,23 @@ class Options;
  * to assign values to options in subsections within the Options object.
  * Typical use (without error handling):
  * \code
-gmx::options::Options options("name", "Title");
-// Set up options
+   gmx::options::Options options("name", "Title");
+   // Set up options
 
-gmx::options::OptionsAssigner assigner(&options);
-assigner.start();
-assigner.startOption("opt1");
-assigner.appendValue("3");
-assigner.finishOption();
-assigner.startSubSection("section");
-assigner.startOption("opt2"); // Now in the subsection
-assigner.appendValue("yes");
-assigner.finishOption();
-assigner.finishSubSection()
-assigner.startOption("opt3"); // Again in the main options
-assigner.appendValue("2");
-assigner.finishOption();
-assigner.finish();
+   gmx::options::OptionsAssigner assigner(&options);
+   assigner.start();
+   assigner.startOption("opt1");
+   assigner.appendValue("3");
+   assigner.finishOption();
+   assigner.startSubSection("section");
+   assigner.startOption("opt2"); // Now in the subsection
+   assigner.appendValue("yes");
+   assigner.finishOption();
+   assigner.finishSubSection()
+   assigner.startOption("opt3"); // Again in the main options
+   assigner.appendValue("2");
+   assigner.finishOption();
+   assigner.finish();
  * \endcode
  *
  * \inlibraryapi

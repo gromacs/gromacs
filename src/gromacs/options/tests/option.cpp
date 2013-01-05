@@ -53,7 +53,7 @@ namespace
 TEST(OptionsTest, FailsOnNonsafeStorage)
 {
     gmx::Options options(NULL, NULL);
-    int value = -1;
+    int          value = -1;
     using gmx::IntegerOption;
     ASSERT_THROW(options.addOption(IntegerOption("name").store(&value)
                                        .multiValue()),
@@ -62,7 +62,7 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
 
 TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
 {
-    gmx::Options options(NULL, NULL);
+    gmx::Options                options(NULL, NULL);
     std::string                 value;
     const char * const          allowed[] = { "none", "test", "value", NULL };
     using gmx::StringOption;

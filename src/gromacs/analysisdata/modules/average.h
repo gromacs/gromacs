@@ -94,7 +94,7 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
 typedef boost::shared_ptr<AnalysisDataAverageModule>
-        AnalysisDataAverageModulePointer;
+    AnalysisDataAverageModulePointer;
 
 /*! \brief
  * Data module for averaging of columns for each frame.
@@ -136,7 +136,7 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
 
 //! Smart pointer to manage an AnalysisDataFrameAverageModule object.
 typedef boost::shared_ptr<AnalysisDataFrameAverageModule>
-        AnalysisDataFrameAverageModulePointer;
+    AnalysisDataFrameAverageModulePointer;
 
 } // namespace gmx
 

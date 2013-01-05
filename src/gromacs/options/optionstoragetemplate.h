@@ -255,7 +255,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * derived classes if necessary, and refreshValues() should be called
          * if any changes are made.
          */
-        ValueList &values() { return *values_; }
+        ValueList       &values() { return *values_; }
         //! Provides derived classes access to the current list of values.
         const ValueList &values() const { return *values_; }
 
@@ -275,11 +275,11 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * and other storage locations are updated only when refreshValues() is
          * called.
          */
-        ValueList              *values_;
-        T                      *store_;
-        int                    *countptr_;
+        ValueList                   *values_;
+        T                           *store_;
+        int                         *countptr_;
         boost::scoped_ptr<ValueList> ownedValues_;
-        boost::scoped_ptr<T>    defaultValueIfSet_;
+        boost::scoped_ptr<T>         defaultValueIfSet_;
 
         // Copy and assign disallowed by base.
 };
@@ -327,7 +327,7 @@ OptionStorageTemplate<T>::OptionStorageTemplate(const OptionTemplate<T, U> &sett
         {
             values_->clear();
             int count = (settings.isVector() ?
-                            settings.maxValueCount_ : settings.minValueCount_);
+                         settings.maxValueCount_ : settings.minValueCount_);
             for (int i = 0; i < count; ++i)
             {
                 values_->push_back(store_[i]);

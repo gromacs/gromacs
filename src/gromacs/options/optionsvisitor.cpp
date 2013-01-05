@@ -56,7 +56,7 @@ OptionsIterator::OptionsIterator(const Options &options)
 
 void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 {
-    const Options::Impl::SubSectionList &subSectionList =
+    const Options::Impl::SubSectionList          &subSectionList =
         options_.impl_->subSections_;
     Options::Impl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
@@ -67,7 +67,7 @@ void OptionsIterator::acceptSubSections(OptionsVisitor *visitor) const
 
 void OptionsIterator::acceptOptions(OptionsVisitor *visitor) const
 {
-    const Options::Impl::OptionList &optionList =
+    const Options::Impl::OptionList          &optionList =
         options_.impl_->options_;
     Options::Impl::OptionList::const_iterator i;
     for (i = optionList.begin(); i != optionList.end(); ++i)
@@ -90,7 +90,7 @@ OptionsModifyingIterator::OptionsModifyingIterator(Options *options)
 
 void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visitor) const
 {
-    const Options::Impl::SubSectionList &subSectionList =
+    const Options::Impl::SubSectionList          &subSectionList =
         options_.impl_->subSections_;
     Options::Impl::SubSectionList::const_iterator i;
     for (i = subSectionList.begin(); i != subSectionList.end(); ++i)
@@ -101,7 +101,7 @@ void OptionsModifyingIterator::acceptSubSections(OptionsModifyingVisitor *visito
 
 void OptionsModifyingIterator::acceptOptions(OptionsModifyingVisitor *visitor) const
 {
-    const Options::Impl::OptionList &optionList =
+    const Options::Impl::OptionList          &optionList =
         options_.impl_->options_;
     Options::Impl::OptionList::const_iterator i;
     for (i = optionList.begin(); i != optionList.end(); ++i)

@@ -59,7 +59,7 @@ void assertHandler(const char *condition, const char *msg,
     std::abort();
 }
 
-} // namespace internal
+}   // namespace internal
 //! \endcond
 
 } // namespace gmx
