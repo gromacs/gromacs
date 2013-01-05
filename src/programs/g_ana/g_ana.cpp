@@ -45,7 +45,7 @@ int
 main(int argc, char *argv[])
 {
     const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("g_ana", argc, argv);
+            gmx::ProgramInfo::init("g_ana", argc, argv);
     // TODO: With the addition of ProgramInfo above, this no longer needs to
     // be here, so think where it would best go.
     CopyRight(stderr, argv[0]);

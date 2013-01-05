@@ -128,4 +128,3 @@ class Regex
 } // namespace gmx
 
 #endif
-

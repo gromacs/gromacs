@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
@@ -148,11 +148,11 @@ int gmx_wcmatch(const char *pattern, const char *str);
 
 /** Magic hash initialization number from Dan J. Bernstein. */
 extern const unsigned int
-gmx_string_hash_init;
+        gmx_string_hash_init;
 
 /*! \brief
  * Return a hash of the string according to Dan J. Bernsteins algorithm.
- * 
+ *
  * \param[in] s          String to calculate hash for.
  * \param[in] hash_init  Initial (or previous) hash value.
  * \returns   Updated hash value (hash_init combined with string hash).
@@ -166,7 +166,7 @@ gmx_string_hash_init;
  */
 unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init);
-    
+
 /** Return value for gmx_wcmatch() when there is no match. */
 #define GMX_NO_WCMATCH 1
 
@@ -182,11 +182,11 @@ char *gmx_strsep(char **stringp, const char *delim);
  * If \p bIndentFirst is FALSE, then the first line will not be indented, only
  * the lines that are created due to wapping.
  */
-char *wrap_lines(const char *buf,int line_width, int indent,
+char *wrap_lines(const char *buf, int line_width, int indent,
                  gmx_bool bIndentFirst);
 
 /** Implementation of the well-known Perl function split. */
-char **split(char sep,const char *str);
+char **split(char sep, const char *str);
 
 /*! \brief
  * Convert a string to gmx_large_int_t.
@@ -201,7 +201,7 @@ char **split(char sep,const char *str);
  *    errno is still set to ERANGE.
  */
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
-    
+
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
@@ -210,4 +210,4 @@ gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 }
 #endif
 
-#endif	/* _string2_h */
+#endif  /* _string2_h */

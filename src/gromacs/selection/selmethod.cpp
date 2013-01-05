@@ -386,14 +386,14 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             bOk = false;
         }
     } /* End of parameter loop */
-    /* Check parameters of existing methods */
+      /* Check parameters of existing methods */
     gmx::SelectionParserSymbolIterator symbol
         = symtab.beginIterator(gmx::SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab.endIterator())
     {
         gmx_ana_selmethod_t *method = symbol->methodValue();
-        gmx_ana_selparam_t  *param =
-            gmx_ana_selmethod_find_param(name, method);
+        gmx_ana_selparam_t  *param  =
+                gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
             report_param_error(fp, method->name, param->name, "error: name conflicts with another method or a keyword");
@@ -670,8 +670,8 @@ int
 gmx_ana_selmethod_register_defaults(gmx::SelectionParserSymbolTable *symtab)
 {
     size_t i;
-    int  rc;
-    bool bOk;
+    int    rc;
+    bool   bOk;
 
     bOk = true;
     for (i = 0; i < asize(smtable_def); ++i)

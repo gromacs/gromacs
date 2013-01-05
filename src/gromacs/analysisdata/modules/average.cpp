@@ -173,13 +173,13 @@ void
 AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
     AnalysisDataStorageFrame &frame =
-        impl_->storage_.currentFrame(points.frameIndex());
+            impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
         {
             const real y = points.y(i);
-            frame.value(0) += y;
+            frame.value(0)      += y;
             impl_->sampleCount_ += 1;
         }
     }
@@ -189,8 +189,8 @@ void
 AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
     AnalysisDataStorageFrame &frame =
-        impl_->storage_.currentFrame(header.index());
-    const int samples = impl_->sampleCount_;
+            impl_->storage_.currentFrame(header.index());
+    const int                 samples = impl_->sampleCount_;
     if (samples > 0)
     {
         frame.value(0) /= samples;

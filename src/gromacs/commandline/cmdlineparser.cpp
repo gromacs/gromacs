@@ -100,9 +100,9 @@ void CommandLineParser::parse(int *argc, char *argv[])
 void CommandLineParser::parse(std::vector<std::string> *commandLine)
 {
     ExceptionInitializer errors("Invalid command-line options");
-    std::string currentContext;
+    std::string          currentContext;
     // Start in the discard phase to skip options that can't be understood.
-    bool bDiscard = true;
+    bool                 bDiscard = true;
 
     impl_->assigner_.start();
     std::vector<std::string>::const_iterator arg;
@@ -125,7 +125,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                 currentContext.clear();
             }
             currentContext = "In command-line option " + *arg;
-            bDiscard = false;
+            bDiscard       = false;
             try
             {
                 const char *name = arg->c_str() + 1;

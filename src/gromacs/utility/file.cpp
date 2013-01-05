@@ -162,7 +162,7 @@ FILE *File::handle()
 void File::readBytes(void *buffer, size_t bytes)
 {
     errno = 0;
-    FILE *fp = handle();
+    FILE  *fp = handle();
     // TODO: Retry based on errno or something else?
     size_t bytesRead = std::fread(buffer, 1, bytes, fp);
     if (bytesRead != bytes)
@@ -170,11 +170,11 @@ void File::readBytes(void *buffer, size_t bytes)
         if (feof(fp))
         {
             GMX_THROW(FileIOError(
-                        formatString("Premature end of file\n"
-                                     "Attempted to read: %d bytes\n"
-                                     "Successfully read: %d bytes",
-                                     static_cast<int>(bytes),
-                                     static_cast<int>(bytesRead))));
+                              formatString("Premature end of file\n"
+                                           "Attempted to read: %d bytes\n"
+                                           "Successfully read: %d bytes",
+                                           static_cast<int>(bytes),
+                                           static_cast<int>(bytesRead))));
         }
         else
         {
@@ -188,10 +188,10 @@ bool File::readLine(std::string *line)
 {
     line->clear();
     const size_t bufsize = 256;
-    std::string result;
-    char buf[bufsize];
+    std::string  result;
+    char         buf[bufsize];
     buf[0] = '\0';
-    FILE *fp = handle();
+    FILE        *fp = handle();
     while (fgets(buf, bufsize, fp) != NULL)
     {
         size_t length = std::strlen(buf);
@@ -273,7 +273,7 @@ std::string File::readToString(const char *filename)
 {
     // Binary mode is required on Windows to be able to determine a size
     // that can be passed to fread().
-    File file(filename, "rb");
+    File  file(filename, "rb");
     FILE *fp = file.handle();
 
     if (std::fseek(fp, 0L, SEEK_END) != 0)

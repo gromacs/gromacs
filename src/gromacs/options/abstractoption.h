@@ -209,8 +209,8 @@ class AbstractOption
  *
  * This template is used as a base class like this:
  * \code
-class ConcreteOption : public OptionTemplate<int, ConcreteOption>
-{
+   class ConcreteOption : public OptionTemplate<int, ConcreteOption>
+   {
  * \endcode
  *
  * All public functions in this class return \c *this casted to a reference to
@@ -478,7 +478,7 @@ class OptionInfo
         explicit OptionInfo(AbstractOptionStorage *option);
 
         //! Returns the wrapped option storage object.
-        AbstractOptionStorage &option() { return option_; }
+        AbstractOptionStorage       &option() { return option_; }
         //! Returns the wrapped option storage object.
         const AbstractOptionStorage &option() const { return option_; }
         //! \endcond

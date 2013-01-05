@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * This file is part of Gromacs        Copyright (c) 1991-2004
  * David van der Spoel, Erik Lindahl, University of Groningen.
@@ -10,7 +10,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -44,16 +44,16 @@ extern "C" {
  */
 void
 nb_kernel400_sse2_double  (int *   nri,        int     iinr[],   int     jindex[],
-						   int     jjnr[],     int     shift[],  double   shiftvec[],
-						   double   fshift[],   int     gid[],    double   pos[],
-						   double   faction[],  double   charge[], double * facel,
-						   double * krf,        double * crf,      double   Vc[],
-						   int     type[],     int *   ntype,    double   vdwparam[],
-						   double   Vvdw[],     double * tabscale, double   VFtab[],
-						   double   invsqrta[], double   dvda[],   double * gbtabscale,
-						   double   GBtab[],    int *   nthreads, int *   count,
-						   void *  mtx,        int *   outeriter,int *   inneriter,
-						   double * work);
+                           int     jjnr[],     int     shift[],  double   shiftvec[],
+                           double   fshift[],   int     gid[],    double   pos[],
+                           double   faction[],  double   charge[], double * facel,
+                           double * krf,        double * crf,      double   Vc[],
+                           int     type[],     int *   ntype,    double   vdwparam[],
+                           double   Vvdw[],     double * tabscale, double   VFtab[],
+                           double   invsqrta[], double   dvda[],   double * gbtabscale,
+                           double   GBtab[],    int *   nthreads, int *   count,
+                           void *  mtx,        int *   outeriter, int *   inneriter,
+                           double * work);
 
 
 
@@ -72,16 +72,16 @@ nb_kernel400_sse2_double  (int *   nri,        int     iinr[],   int     jindex[
  */
 void
 nb_kernel400nf_sse2_double(int *   nri,        int     iinr[],   int     jindex[],
-                       int     jjnr[],     int     shift[],  double   shiftvec[],
-                       double   fshift[],   int     gid[],    double   pos[],
-                       double   faction[],  double   charge[], double * facel,
-                       double * krf,        double * crf,      double   Vc[],
-                       int     type[],     int *   ntype,    double   vdwparam[],
-                       double   Vvdw[],     double * tabscale, double   VFtab[],
-                       double   invsqrta[], double   dvda[],   double * gbtabscale,
-                       double   GBtab[],    int *   nthreads, int *   count,
-                       void *  mtx,        int *   outeriter,int *   inneriter,
-                       double * work);
+                           int     jjnr[],     int     shift[],  double   shiftvec[],
+                           double   fshift[],   int     gid[],    double   pos[],
+                           double   faction[],  double   charge[], double * facel,
+                           double * krf,        double * crf,      double   Vc[],
+                           int     type[],     int *   ntype,    double   vdwparam[],
+                           double   Vvdw[],     double * tabscale, double   VFtab[],
+                           double   invsqrta[], double   dvda[],   double * gbtabscale,
+                           double   GBtab[],    int *   nthreads, int *   count,
+                           void *  mtx,        int *   outeriter, int *   inneriter,
+                           double * work);
 
 
 

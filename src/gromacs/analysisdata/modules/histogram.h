@@ -179,7 +179,7 @@ inline AnalysisHistogramSettingsInitializer
 histogramFromBins(real start, int nbins, real binwidth)
 {
     return AnalysisHistogramSettingsInitializer()
-        .start(start).binCount(nbins).binWidth(binwidth);
+               .start(start).binCount(nbins).binWidth(binwidth);
 }
 
 
@@ -202,7 +202,7 @@ class AnalysisHistogramSettings
          * This constructor is not explicit to allow initialization of
          * histograms directly from AnalysisHistogramSettingsInitializer:
          * \code
-         gmx::AnalysisDataSimpleHistogramModule *hist =
+           gmx::AnalysisDataSimpleHistogramModule *hist =
             new gmx::AnalysisDataSimpleHistogramModule(
                 histogramFromRange(0.0, 5.0).binWidth(0.5));
          * \endcode
@@ -237,7 +237,7 @@ namespace internal
 
 class BasicHistogramImpl;
 
-} // namespace internal
+}   // namespace internal
 
 class AbstractAverageHistogram;
 

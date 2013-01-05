@@ -62,7 +62,7 @@ namespace
 class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
 {
     public:
-        virtual const char *name() const = 0;
+        virtual const char *name() const             = 0;
         virtual const char *shortDescription() const = 0;
 
         virtual int run(int argc, char *argv[]);
@@ -75,7 +75,7 @@ class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
 
 int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
 {
-    TrajectoryAnalysisModulePointer module(createModule());
+    TrajectoryAnalysisModulePointer     module(createModule());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.setPrintCopyright(false);
     return runner.run(argc, argv);
@@ -83,7 +83,7 @@ int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
 
 void AbstractTrajAnalysisCmdLineWrapper::writeHelp(const HelpWriterContext &context) const
 {
-    TrajectoryAnalysisModulePointer module(createModule());
+    TrajectoryAnalysisModulePointer     module(createModule());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);
 }
@@ -117,7 +117,7 @@ class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
         }
 };
 
-} // namespace
+}   // namespace
 
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {

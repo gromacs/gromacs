@@ -63,7 +63,7 @@ namespace gmx
  *
  * Avoid using directly as a type, use a typedef instead. Typical usage:
  * \code
-typedef gmx_unique_ptr<ExampleClass>::type ExampleClassPointer;
+   typedef gmx_unique_ptr<ExampleClass>::type ExampleClassPointer;
  * \endcode
  *
  * \ingroup module_utility

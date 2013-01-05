@@ -294,8 +294,8 @@ class AnalysisDataPointSetRef
          * The first element in \p values should correspond to \p firstColumn.
          */
         AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
-                                int firstColumn,
-                                const AnalysisDataValuesRef &values);
+                                int                            firstColumn,
+                                const AnalysisDataValuesRef   &values);
         /*! \brief
          * Constructs a point set reference from given values.
          *
@@ -305,7 +305,7 @@ class AnalysisDataPointSetRef
          * The first element in \p values should correspond to the first
          * column.
          */
-        AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
+        AnalysisDataPointSetRef(const AnalysisDataFrameHeader        &header,
                                 const std::vector<AnalysisDataValue> &values);
         /*! \brief
          * Constructs a point set reference to a subset of columns.
@@ -464,14 +464,14 @@ class AnalysisDataFrameRef
          * \param[in] values      Values for each column.
          */
         AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
-                             const AnalysisDataValuesRef &values);
+                             const AnalysisDataValuesRef   &values);
         /*! \brief
          * Constructs a frame reference from given values.
          *
          * \param[in] header      Header for the frame.
          * \param[in] values      Values for each column.
          */
-        AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader        &header,
                              const std::vector<AnalysisDataValue> &values);
         /*! \brief
          * Constructs a frame reference to a subset of columns.

@@ -116,8 +116,8 @@ class OptionsTypeVisitor : public OptionsVisitor
  * Typical use (loop over all options, iteratively descending into
  * subsections):
  * \code
-class Visitor : public gmx::OptionsVisitor
-{
+   class Visitor : public gmx::OptionsVisitor
+   {
     public:
         void visitSubSection(const Options &section)
         {
@@ -130,9 +130,9 @@ class Visitor : public gmx::OptionsVisitor
         {
             // Do something.
         }
-}
+   }
 
-Visitor().visitSubSection(options);
+   Visitor().visitSubSection(options);
  * \endcode
  *
  * \inlibraryapi

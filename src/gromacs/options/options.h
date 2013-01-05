@@ -63,18 +63,18 @@ class OptionsIterator;
  * Standard usage is to write a method that creates an Options that is owned by
  * the object, populates it with supported options, and then returns it:
  * \code
-// <as class attributes>
-using gmx::Options;
-Options      options("common", "Common Options");
-std::string  arg1;
-int          arg2;
+   // <as class attributes>
+   using gmx::Options;
+   Options      options("common", "Common Options");
+   std::string  arg1;
+   int          arg2;
 
-// <populating>
-using gmx::StringOption;
-using gmx::IntegerOption;
-options.addOption(StringOption("arg1").store(&arg1));
-options.addOption(IntegerOption("arg2").store(&arg2));
-return &options;
+   // <populating>
+   using gmx::StringOption;
+   using gmx::IntegerOption;
+   options.addOption(StringOption("arg1").store(&arg1));
+   options.addOption(IntegerOption("arg2").store(&arg2));
+   return &options;
  * \endcode
  * The caller of that method can then use a parser implementation such as
  * CommandLineParser to provide values for the options.

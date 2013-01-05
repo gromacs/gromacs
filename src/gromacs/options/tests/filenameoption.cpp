@@ -58,8 +58,8 @@ TEST(FileNameOptionTest, AddsMissingExtension)
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
-                        FileNameOption("f").store(&value)
-                            .filetype(gmx::eftTrajectory).outputFile()));
+                            FileNameOption("f").store(&value)
+                                .filetype(gmx::eftTrajectory).outputFile()));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -77,9 +77,9 @@ TEST(FileNameOptionTest, HandlesRequiredDefaultValueWithoutExtension)
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
-                        FileNameOption("f").store(&value).required()
-                            .filetype(gmx::eftGenericData).outputFile()
-                            .defaultBasename("testfile")));
+                            FileNameOption("f").store(&value).required()
+                                .filetype(gmx::eftGenericData).outputFile()
+                                .defaultBasename("testfile")));
     EXPECT_EQ("testfile.dat", value);
 
     gmx::OptionsAssigner assigner(&options);
@@ -95,9 +95,9 @@ TEST(FileNameOptionTest, HandlesOptionalDefaultValueWithoutExtension)
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
-                        FileNameOption("f").store(&value)
-                            .filetype(gmx::eftIndex).outputFile()
-                            .defaultBasename("testfile")));
+                            FileNameOption("f").store(&value)
+                                .filetype(gmx::eftIndex).outputFile()
+                                .defaultBasename("testfile")));
     EXPECT_TRUE(value.empty());
 
     gmx::OptionsAssigner assigner(&options);
@@ -115,12 +115,12 @@ TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
     gmx::Options           options(NULL, NULL);
     std::string            value;
     ASSERT_NO_THROW(options.addOption(
-                        FileNameOption("f").store(&value)
-                            .filetype(gmx::eftTrajectory).inputFile()));
-    TestFileManager tempFiles;
-    std::string filename(tempFiles.getTemporaryFilePath(".trr"));
+                            FileNameOption("f").store(&value)
+                                .filetype(gmx::eftTrajectory).inputFile()));
+    TestFileManager      tempFiles;
+    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string inputValue(filename.substr(0, filename.length() - 4));
+    std::string          inputValue(filename.substr(0, filename.length() - 4));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
