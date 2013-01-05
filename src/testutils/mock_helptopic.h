@@ -53,8 +53,8 @@ class MockHelpTopic : public AbstractCompositeHelpTopic
 {
     public:
         static MockHelpTopic &addSubTopic(
-                gmx::AbstractCompositeHelpTopic *parent,
-                const char *name, const char *title, const char *text);
+            gmx::AbstractCompositeHelpTopic *parent,
+            const char *name, const char *title, const char *text);
 
         MockHelpTopic(const char *name, const char *title, const char *text);
         virtual ~MockHelpTopic();

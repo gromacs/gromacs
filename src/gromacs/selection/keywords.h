@@ -71,18 +71,18 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags);
 /** Sets the string match type for string keyword evaluation. */
 void
 _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
-                                  gmx::SelectionStringMatchType matchType);
+                                  gmx::SelectionStringMatchType           matchType);
 
 /** Does custom processing for parameters of the \c same selection method. */
 int
-_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t **method,
+_gmx_selelem_custom_init_same(struct gmx_ana_selmethod_t                    **method,
                               const gmx::SelectionParserParameterListPointer &params,
-                              void *scanner);
+                              void                                           *scanner);
 
 /** Initializes a selection element for evaluating a keyword in a given group. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t *method,
+_gmx_sel_init_keyword_evaluator(struct gmx_ana_selmethod_t              *method,
                                 const gmx::SelectionParserParameterList &params,
-                                void *scanner);
+                                void                                    *scanner);
 
 #endif

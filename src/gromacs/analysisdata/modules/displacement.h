@@ -98,7 +98,7 @@ class AnalysisDataDisplacementModule : public AbstractAnalysisData,
 
 //! Smart pointer to manage an AnalysisDataDisplacementModule object.
 typedef boost::shared_ptr<AnalysisDataDisplacementModule>
-        AnalysisDataDisplacementModulePointer;
+    AnalysisDataDisplacementModulePointer;
 
 } // namespace gmx
 

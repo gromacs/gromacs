@@ -73,7 +73,7 @@ class TextTableFormatter::Impl
             //! Returns the title of the column.
             const std::string &title() const { return title_; }
             //! Returns the width of the column.
-            int width() const { return width_; }
+            int                width() const { return width_; }
             /*! \brief
              * Returns the first line offset for the current row.
              *
@@ -208,7 +208,7 @@ void TextTableFormatter::clear()
 void TextTableFormatter::addColumnLine(int index, const std::string &text)
 {
     Impl::ColumnData &column = impl_->columnData(index);
-    TextLineWrapper wrapper;
+    TextLineWrapper   wrapper;
     if (column.bWrap_)
     {
         wrapper.settings().setLineLength(column.width());
@@ -274,7 +274,7 @@ std::string TextTableFormatter::formatRow()
     for (int line = 0; line <= lastLine; ++line)
     {
         std::string lineResult;
-        size_t currentWidth = 0;
+        size_t      currentWidth = 0;
         for (column  = impl_->columns_.begin();
              column != impl_->columns_.end();
              ++column)
