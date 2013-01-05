@@ -93,15 +93,15 @@ struct gmx_ana_selcollection_t
     char                         **varstrs;
 
     /** Topology for the collection. */
-    t_topology                    *top;
+    t_topology                                        *top;
     /** Index group that contains all the atoms. */
-    struct gmx_ana_index_t         gall;
+    struct gmx_ana_index_t                             gall;
     /** Memory pool used for selection evaluation. */
-    struct gmx_sel_mempool_t      *mempool;
+    struct gmx_sel_mempool_t                          *mempool;
     //! Parser symbol table.
     boost::scoped_ptr<gmx::SelectionParserSymbolTable> symtab;
     //! Root of help topic tree (NULL is no help yet requested).
-    gmx::HelpTopicPointer          rootHelp;
+    gmx::HelpTopicPointer                              rootHelp;
 };
 
 namespace gmx
@@ -147,7 +147,7 @@ class SelectionCollection::Impl
          * underlying code is converted to C++.
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
-                                   MessageStringCollector *errors);
+                                   MessageStringCollector                 *errors);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;

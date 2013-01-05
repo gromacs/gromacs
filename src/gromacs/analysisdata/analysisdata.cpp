@@ -74,7 +74,7 @@ class AnalysisDataHandleImpl
         AnalysisDataStorageFrame *currentFrame_;
 };
 
-} // namespace internal
+}   // namespace internal
 
 /********************************************************************
  * AnalysisData::Impl
@@ -90,7 +90,7 @@ class AnalysisData::Impl
     public:
         //! Smart pointer type to manage a data handle implementation.
         typedef gmx_unique_ptr<internal::AnalysisDataHandleImpl>::type
-                HandlePointer;
+            HandlePointer;
         //! Shorthand for a list of data handles.
         typedef std::vector<HandlePointer> HandleList;
 

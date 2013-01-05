@@ -64,9 +64,9 @@ namespace gmx
  *
  * \inlibraryapi
  */
-void writeBasicHelpTopic(const HelpWriterContext &context,
+void writeBasicHelpTopic(const HelpWriterContext  &context,
                          const HelpTopicInterface &topic,
-                         const std::string &text);
+                         const std::string        &text);
 //! \endcond
 
 /*! \libinternal \brief
@@ -85,7 +85,7 @@ void writeBasicHelpTopic(const HelpWriterContext &context,
 class AbstractSimpleHelpTopic : public HelpTopicInterface
 {
     public:
-        virtual const char *name() const = 0;
+        virtual const char *name() const  = 0;
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
@@ -125,7 +125,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         AbstractCompositeHelpTopic();
         virtual ~AbstractCompositeHelpTopic();
 
-        virtual const char *name() const = 0;
+        virtual const char *name() const  = 0;
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
@@ -187,7 +187,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
          * implementation.
          */
         bool writeSubTopicList(const HelpWriterContext &context,
-                               const std::string &title) const;
+                               const std::string       &title) const;
 
     private:
         class Impl;
@@ -202,7 +202,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
  * \inlibraryapi
  */
 typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
-        CompositeHelpTopicPointer;
+    CompositeHelpTopicPointer;
 //! \endcond
 
 /*! \libinternal \brief
@@ -215,22 +215,22 @@ typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
  *
  * Typical use:
  * \code
-struct ExampleHelpText
-{
+   struct ExampleHelpText
+   {
     static const char name[];
     static const char title[];
     static const char *const text[];
-};
+   };
 
-const char ExampleHelpText::name[] = "example";
-const char ExampleHelpText::title[] =
+   const char ExampleHelpText::name[] = "example";
+   const char ExampleHelpText::title[] =
     "Example title";
-const char *const ExampleHelpText::text[] = {
+   const char *const ExampleHelpText::text[] = {
     "Text for the topic.",
     "More text for the topic."
-};
+   };
 
-typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
+   typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
  * \endcode
  *
  * \inlibraryapi
