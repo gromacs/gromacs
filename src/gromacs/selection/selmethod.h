@@ -30,7 +30,7 @@
  */
 /*! \page page_module_selection_custom Custom selection methods
  *
- * Custom selection methods are defined by creating a new instance of 
+ * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
  * the selection.
  * The structure contains callback pointers that define the actual behavior
@@ -137,7 +137,7 @@
  * \c gmx_ana_selparam_t structures.
  * The order of the parameters does not matter (except possibly for callback
  * implementation), with one important exception:
- * If the method evaluates to a \ref POS_VALUE, the first parameter should 
+ * If the method evaluates to a \ref POS_VALUE, the first parameter should
  * have \ref GROUP_VALUE and be the one that is used to calculate the
  * positions.
  *

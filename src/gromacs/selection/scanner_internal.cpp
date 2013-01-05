@@ -90,7 +90,7 @@ init_param_token(YYSTYPE *yylval, gmx_ana_selparam_t *param, bool bBoolNo)
     if (bBoolNo)
     {
         GMX_RELEASE_ASSERT(param->name != NULL,
-                "bBoolNo should only be set for a parameters with a name");
+                           "bBoolNo should only be set for a parameters with a name");
         snew(yylval->str, strlen(param->name) + 3);
         yylval->str[0] = 'n';
         yylval->str[1] = 'o';
@@ -180,7 +180,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 {
     if (state->nextparam)
     {
-        gmx_ana_selparam_t *param = state->nextparam;
+        gmx_ana_selparam_t *param   = state->nextparam;
         bool                bBoolNo = state->bBoolNo;
 
         if (state->neom > 0)
@@ -214,9 +214,9 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* Check if the identifier matches with a parameter name */
     if (state->msp >= 0)
     {
-        gmx_ana_selparam_t *param = NULL;
+        gmx_ana_selparam_t *param   = NULL;
         bool                bBoolNo = false;
-        int                 sp = state->msp;
+        int                 sp      = state->msp;
         while (!param && sp >= 0)
         {
             int             i;
@@ -238,7 +238,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
                     && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
                 {
-                    param = &state->mstack[sp]->param[i];
+                    param   = &state->mstack[sp]->param[i];
                     bBoolNo = true;
                     break;
                 }
@@ -256,7 +256,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             }
             if (sp < state->msp)
             {
-                state->neom = state->msp - sp - 1;
+                state->neom      = state->msp - sp - 1;
                 state->nextparam = param;
                 state->bBoolNo   = bBoolNo;
                 return END_OF_METHOD;
@@ -282,8 +282,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     if (symtype == gmx::SelectionParserSymbol::ReservedSymbol)
     {
         GMX_THROW(gmx::InternalError(gmx::formatString(
-                        "Mismatch between tokenizer and reserved symbol table (for '%s')",
-                        symbol->name().c_str())));
+                                         "Mismatch between tokenizer and reserved symbol table (for '%s')",
+                                         symbol->name().c_str())));
     }
     /* For variable symbols, return the type of the variable value */
     if (symtype == gmx::SelectionParserSymbol::VariableSymbol)
@@ -331,8 +331,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
      * some additional handling. */
     if (symtype == gmx::SelectionParserSymbol::PositionSymbol)
     {
-        state->bMatchOf = true;
-        yylval->str = strdup(symbol->name().c_str());
+        state->bMatchOf    = true;
+        yylval->str        = strdup(symbol->name().c_str());
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }
@@ -364,7 +364,7 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
     }
     /* Append the token to the stored string */
     strncpy(state->pselstr + state->pslen, str, len);
-    state->pslen += len;
+    state->pslen                += len;
     state->pselstr[state->pslen] = 0;
 }
 
@@ -427,7 +427,7 @@ _gmx_sel_free_lexer(yyscan_t scanner)
 }
 
 void
-_gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
+_gmx_sel_set_lexer_error_reporter(yyscan_t                     scanner,
                                   gmx::MessageStringCollector *errors)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);
@@ -435,7 +435,7 @@ _gmx_sel_set_lexer_error_reporter(yyscan_t scanner,
 }
 
 void
-_gmx_sel_lexer_set_exception(yyscan_t scanner,
+_gmx_sel_lexer_set_exception(yyscan_t                    scanner,
                              const boost::exception_ptr &ex)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(scanner);

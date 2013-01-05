@@ -70,7 +70,7 @@ class HelpManager
          * lifetime of this manager object.
          */
         HelpManager(const HelpTopicInterface &rootTopic,
-                    const HelpWriterContext &context);
+                    const HelpWriterContext  &context);
         ~HelpManager();
 
         /*! \brief

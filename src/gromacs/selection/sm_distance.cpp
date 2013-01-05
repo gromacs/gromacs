@@ -264,8 +264,8 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
-    int  b, i;
-    real n;
+    int                    b, i;
+    real                   n;
 
     out->nr = pos->g->isize;
     for (b = 0; b < pos->nr; ++b)

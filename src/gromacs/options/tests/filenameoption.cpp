@@ -117,10 +117,10 @@ TEST(FileNameOptionTest, AddsMissingExtensionBasedOnExistingFile)
     ASSERT_NO_THROW(options.addOption(
                         FileNameOption("f").store(&value)
                             .filetype(gmx::eftTrajectory).inputFile()));
-    TestFileManager tempFiles;
-    std::string filename(tempFiles.getTemporaryFilePath(".trr"));
+    TestFileManager      tempFiles;
+    std::string          filename(tempFiles.getTemporaryFilePath(".trr"));
     gmx::File::writeFileFromString(filename, "Dummy trajectory file");
-    std::string inputValue(filename.substr(0, filename.length() - 4));
+    std::string          inputValue(filename.substr(0, filename.length() - 4));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());

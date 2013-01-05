@@ -62,8 +62,8 @@ TEST(TimeUnitManagerTest, ScalesAssignedOptionValue)
 {
     gmx::TimeUnitManager manager;
 
-    gmx::Options options(NULL, NULL);
-    double value = 0.0;
+    gmx::Options         options(NULL, NULL);
+    double               value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
@@ -98,12 +98,12 @@ TEST(TimeUnitManagerTest, DoesNotScaleDefaultValues)
 {
     gmx::TimeUnitManager manager;
 
-    gmx::Options options(NULL, NULL);
-    double value = 1.5, value2 = 0.0;
+    gmx::Options         options(NULL, NULL);
+    double               value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW(options.addOption(DoubleOption("q").store(&value2).timeValue()
-                        .defaultValueIfSet(2.5)));
+                                          .defaultValueIfSet(2.5)));
 
     gmx::OptionsAssigner assigner(&options);
     EXPECT_NO_THROW(assigner.start());
@@ -123,8 +123,8 @@ TEST(TimeUnitManagerTest, ScalesUserInputWithMultipleSources)
 {
     gmx::TimeUnitManager manager;
 
-    gmx::Options options(NULL, NULL);
-    double value = 0.0;
+    gmx::Options         options(NULL, NULL);
+    double               value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
@@ -149,8 +149,8 @@ TEST(TimeUnitManagerTest, TimeUnitOptionWorks)
 {
     gmx::TimeUnitManager manager;
 
-    gmx::Options options(NULL, NULL);
-    double value = 0.0;
+    gmx::Options         options(NULL, NULL);
+    double               value = 0.0;
     using gmx::DoubleOption;
     ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
     ASSERT_NO_THROW(manager.addTimeUnitOption(&options, "tu"));

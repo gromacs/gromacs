@@ -49,8 +49,8 @@ typedef enum module_nth
     emntNR
 } module_nth_t;
 
-/*! Initializes the per-module thread count. It is compatible with tMPI, 
- *  thread-safety is ensured (for the features available with tMPI). 
+/*! Initializes the per-module thread count. It is compatible with tMPI,
+ *  thread-safety is ensured (for the features available with tMPI).
  *  This function should caled only once during the initialization of mdrun. */
 void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            int nthreads_hw_avail,
