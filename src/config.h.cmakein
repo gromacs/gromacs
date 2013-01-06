@@ -121,6 +121,9 @@
 /* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
 #cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
 
+/* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
+#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
