@@ -223,7 +223,7 @@ if(NOT DEFINED GMX_CPU_ACCELERATION)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Sparc64_HPC_ACE")
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX, Sparc64_HPC_ACE")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -848,28 +848,9 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
           message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
         endif()
     endif()
-
-elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
-# GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file
-    if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Configuring for BlueGene")
-    endif()
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
+    set(GMX_CPU_ACCELERATION_IBM_QPX 1)
     set(GMX_BLUEGENE 1)
-    if (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-        set(SHARED_LIBS_DEFAULT OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-        set(BUILD_SHARED_LIBS OFF CACHE BOOL "Shared libraries not compatible with BlueGene/L, disabled!" FORCE)
-    endif (${CMAKE_SYSTEM_NAME} STREQUAL "BlueGeneL")
-    set(GMX_SOFTWARE_INVSQRT OFF CACHE BOOL "Do not use software reciprocal square root on BlueGene" FORCE)
-    set(GMX_X11 OFF CACHE BOOL "X11 not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_THREAD_MPI OFF CACHE BOOL "Thread-MPI not compatible with BlueGene, disabled!" FORCE)
-    set(GMX_MPI ON CACHE BOOL "Use MPI on BlueGene" FORCE)
-# Access to /etc/passwd is not available on the back end of BlueGene,
-# despite being detected by CMake. This can cause linker warnings
-# about harmless things in src/gmxlib/string2.h.
-    set(HAVE_PWD_H OFF)
-# The automatic testing for endianness does not work for the BlueGene cross-compiler
-    set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
-    set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
     set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
