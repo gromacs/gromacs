@@ -101,6 +101,9 @@
 #if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
 #    include "nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
 #endif
+#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+#    include "nb_kernel_ibm_qpx/nb_kernel_ibm_qpx.h"
+#endif
 
 
 #ifdef GMX_THREAD_MPI
@@ -156,6 +159,9 @@ gmx_nonbonded_setup(FILE *         fplog,
 #endif
 #if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double,kernellist_sparc64_hpc_ace_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+                nb_kernel_list_add_kernels(kernellist_ibm_qpx,kernellist_ibm_qpx_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -225,6 +231,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 #if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
         /* No padding - see comment above */
         { "sparc64_hpc_ace_double", 1 },
+#endif
+#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+        { "ibm_qpx", 4 },
 #endif
         { "c", 1 },
     };
