@@ -223,7 +223,7 @@ if(NOT DEFINED GMX_CPU_ACCELERATION)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
+    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Sparc64_HPC_ACE")
 
 set(GMX_FFT_LIBRARY "fftw3" 
     CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
@@ -571,6 +571,7 @@ endif(GMX_X11)
 include(ThreadMPI)
 set(THREAD_MPI_LIB thread_mpi)
 if(GMX_THREAD_MPI)
+    test_tmpi_atomics(TMPI_ATOMICS)
     tmpi_get_source_list(THREAD_MPI_SRC)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
@@ -869,8 +870,10 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
 # The automatic testing for endianness does not work for the BlueGene cross-compiler
     set(GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP byte order (by default)" FORCE)
     set(GMX_IEEE754_BIG_ENDIAN_WORD_ORDER 1 CACHE INTERNAL "BlueGene has big endian FP word order (by default)" FORCE)
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
+    set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
 else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene")
+    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, BlueGene, Sparc64_HPC_ACE")
 endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
@@ -917,11 +920,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
     set(GMX_FFT_FFTW3 1)
 
-    if (NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND NOT ${FFTW}_HAVE_SIMD) 
+    if ((${GMX_CPU_ACCELERATION} MATCHES "SSE" OR ${GMX_CPU_ACCELERATION} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
       message(WARNING "The fftw library found is compiled without SIMD support, which makes it slow. Consider recompiling it or contact your admin")
     endif()
 
-    if(NOT ${GMX_CPU_ACCELERATION} STREQUAL "NONE" AND ${FFTW}_HAVE_AVX)
+    if((${GMX_CPU_ACCELERATION} MATCHES "SSE" OR ${GMX_CPU_ACCELERATION} MATCHES "AVX") AND ${FFTW}_HAVE_AVX)
         # If we're not doing CPU acceleration, we don't care about FFTW performance on x86 either
         message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
     endif()
