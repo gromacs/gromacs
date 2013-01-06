@@ -121,6 +121,9 @@
 /* AVX 256-bit was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
 
+/* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
+#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
