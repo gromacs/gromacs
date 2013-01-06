@@ -97,8 +97,6 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
     endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 
-test_tmpi_atomics(TMPI_ATOMICS)
-
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
