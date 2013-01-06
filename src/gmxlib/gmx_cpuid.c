@@ -62,7 +62,10 @@
  * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
  */
 #if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+/* OK, it is x86, but can we execute cpuid? */
+#if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)))
 #    define GMX_CPUID_X86
+#endif
 #endif
 
 /* Global constant character strings corresponding to our enumerated types */
@@ -72,7 +75,9 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "CannotDetect",
     "Unknown",
     "GenuineIntel",
-    "AuthenticAMD"
+    "AuthenticAMD",
+    "Fujitsu",
+    "IBM"
 };
 
 const char *
@@ -123,7 +128,8 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS] =
     "SSE2",
     "SSE4.1",
     "AVX_128_FMA",
-    "AVX_256"
+    "AVX_256",
+    "Sparc64 HPC-ACE"
 };
 
 /* Max length of brand string */
@@ -207,6 +213,10 @@ compiled_acc = GMX_CPUID_ACCELERATION_X86_SSE4_1;
 static const
 enum gmx_cpuid_acceleration
 compiled_acc = GMX_CPUID_ACCELERATION_X86_SSE2;
+#elif defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+static const
+enum gmx_cpuid_acceleration
+compiled_acc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
 #else
 static const
 enum gmx_cpuid_acceleration
@@ -312,7 +322,7 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
     if(max_extfn>=0x80000005)
     {
         /* Get CPU brand string */
-        for(fn=0x80000002;fn<0x80000005;fn++)
+        for(fn=0x80000002; fn<0x80000005; fn++)
         {
             execute_x86cpuid(fn,0,&eax,&ebx,&ecx,&edx);
             memcpy(p,&eax,4);
@@ -474,6 +484,48 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 
 
 
+
+static void
+chomp_substring_before_colon(const char *in, char *s, int maxlength)
+{
+    char *p;
+    strncpy(s,in,maxlength);
+    p = strchr(s,':');
+    if(p!=NULL)
+    {
+        *p='\0';
+        while(isspace(*(--p)) && (p>=s))
+        {
+            *p='\0';
+        }
+    }
+    else
+    {
+        *s='\0';
+    }
+}
+
+static void
+chomp_substring_after_colon(const char *in, char *s, int maxlength)
+{
+    char *p;
+    if( (p = strchr(in,':'))!=NULL)
+    {
+        p++;
+        while(isspace(*p)) p++;
+        strncpy(s,p,maxlength);
+        p = s+strlen(s);
+        while(isspace(*(--p)) && (p>=s))
+        {
+            *p='\0';
+        }
+    }
+    else
+    {
+        *s='\0';
+    }
+}
+
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
  */
@@ -484,6 +536,8 @@ cpuid_check_vendor(void)
     /* Register data used on x86 */
     unsigned int               eax,ebx,ecx,edx;
     char                       vendorstring[13];
+    FILE *                     fp;
+    char                       buffer[255],buffer2[255];
 
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
@@ -497,17 +551,39 @@ cpuid_check_vendor(void)
 
     vendorstring[12]='\0';
 
-    for(i=GMX_CPUID_VENDOR_UNKNOWN;i<GMX_CPUID_NVENDORS;i++)
+    for(i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
     {
         if(!strncmp(vendorstring,gmx_cpuid_vendor_string[i],12))
         {
             vendor = i;
         }
     }
+#elif defined(__linux__) || defined(__linux)
+    /* General Linux. Try to get CPU vendor from /proc/cpuinfo */
+    if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+    {
+        while( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer,sizeof(buffer),fp) != NULL))
+        {
+            chomp_substring_before_colon(buffer,buffer2,sizeof(buffer2));
+            /* Intel/AMD use "vendor_id", IBM "vendor". Fujitsu "manufacture". Add others if you have them! */
+            if( !strcmp(buffer2,"vendor_id") || !strcmp(buffer2,"vendor") || !strcmp(buffer2,"manufacture") )
+            {
+                chomp_substring_after_colon(buffer,buffer2,sizeof(buffer2));
+                for(i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
+                {
+                    /* Be liberal and accept if we find the vendor anywhere in string */
+                    if(strstr(buffer2,gmx_cpuid_vendor_string[i]))
+                    {
+                        vendor = i;
+                    }
+                }
+            }
+        }
+    }
+    fclose(fp);
 #else
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
 #endif
-    
     return vendor;
 }
 
@@ -519,41 +595,61 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 {
     gmx_cpuid_t cpuid;
     int i;
+    FILE *                     fp;
+    char                       buffer[255],buffer2[255];
+    int                        found_brand;
 
     cpuid = malloc(sizeof(*cpuid));
 
     *pcpuid = cpuid;
 
-    for(i=0;i<GMX_CPUID_NFEATURES;i++)
+    for(i=0; i<GMX_CPUID_NFEATURES; i++)
     {
         cpuid->feature[i]=0;
     }
-
     cpuid->vendor = cpuid_check_vendor();
 
     switch(cpuid->vendor)
     {
 #ifdef GMX_CPUID_X86
-        case GMX_CPUID_VENDOR_INTEL:
-            cpuid_check_intel_x86(cpuid);
-            break;
-        case GMX_CPUID_VENDOR_AMD:
-            cpuid_check_amd_x86(cpuid);
-            break;
+    case GMX_CPUID_VENDOR_INTEL:
+        cpuid_check_intel_x86(cpuid);
+        break;
+    case GMX_CPUID_VENDOR_AMD:
+        cpuid_check_amd_x86(cpuid);
+        break;
 #endif
-        default:
-            /* Could not find vendor */
-            strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
-            cpuid->family         = 0;
-            cpuid->model          = 0;
-            cpuid->stepping       = 0;
-
-            for(i=0;i<GMX_CPUID_NFEATURES;i++)
+    default:
+        /* Default value */
+        strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
+#if defined(__linux__) || defined(__linux)
+        /* General Linux. Try to get CPU type from /proc/cpuinfo */
+        if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+        {
+            found_brand = 0;
+            while( (found_brand==0) && (fgets(buffer,sizeof(buffer),fp) !=NULL))
             {
-                cpuid->feature[i]=0;
+                chomp_substring_before_colon(buffer,buffer2,sizeof(buffer2));
+                /* Intel uses "model name", Fujitsu and IBM "cpu". */
+                if( !strcmp(buffer2,"model name") || !strcmp(buffer2,"cpu"))
+                {
+                    chomp_substring_after_colon(buffer,cpuid->brand,GMX_CPUID_BRAND_MAXLEN);
+                    found_brand = 1;
+                }
             }
-            cpuid->feature[GMX_CPUID_FEATURE_CANNOTDETECT] = 1;
-            break;
+        }
+        fclose(fp);
+#endif
+        cpuid->family         = 0;
+        cpuid->model          = 0;
+        cpuid->stepping       = 0;
+
+        for(i=0; i<GMX_CPUID_NFEATURES; i++)
+        {
+            cpuid->feature[i]=0;
+        }
+        cpuid->feature[GMX_CPUID_FEATURE_CANNOTDETECT] = 1;
+        break;
     }
 
     return 0;
@@ -602,7 +698,7 @@ gmx_cpuid_formatstring       (gmx_cpuid_t              cpuid,
     n   -= c;
     str += c;
 
-    for(feature=GMX_CPUID_FEATURE_CANNOTDETECT;feature<GMX_CPUID_NFEATURES;feature++)
+    for(feature=GMX_CPUID_FEATURE_CANNOTDETECT; feature<GMX_CPUID_NFEATURES; feature++)
     {
         if(gmx_cpuid_feature(cpuid,feature)==1)
         {
@@ -666,7 +762,13 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
         }
     }
-
+    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_FUJITSU)
+    {
+        if(strstr(gmx_cpuid_brand(cpuid),"SPARC64"))
+        {
+            tmpacc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+        }
+    }
     return tmpacc;
 }
 
@@ -703,11 +805,11 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     {
         if(log!=NULL)
         {
-        fprintf(log,"\nBinary not matching hardware - you might be losing performance.\n"
-                "Acceleration most likely to fit this hardware: %s\n"
-                "Acceleration selected at GROMACS compile time: %s\n\n",
-                gmx_cpuid_acceleration_string[acc],
-                gmx_cpuid_acceleration_string[compiled_acc]);
+            fprintf(log,"\nBinary not matching hardware - you might be losing performance.\n"
+                    "Acceleration most likely to fit this hardware: %s\n"
+                    "Acceleration selected at GROMACS compile time: %s\n\n",
+                    gmx_cpuid_acceleration_string[acc],
+                    gmx_cpuid_acceleration_string[compiled_acc]);
         }
         printf("Compiled acceleration: %s (Gromacs could use %s on this machine, which is better)\n",
                gmx_cpuid_acceleration_string[compiled_acc],
@@ -731,7 +833,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
     int            smt_found;
 
     if( gmx_cpuid_vendor(cpuid)!=GMX_CPUID_VENDOR_INTEL ||
-       gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
+            gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
     {
         return GMX_CPUID_X86_SMT_DISABLED;
     }
@@ -756,7 +858,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
 
     /* Get x2APIC ID from each hardware thread */
     CPU_ZERO(&cpuset);
-    for(i=0;i<nproc;i++)
+    for(i=0; i<nproc; i++)
     {
         CPU_SET(i,&cpuset);
         sched_setaffinity(0,sizeof(cpu_set_t),&cpuset);
@@ -773,7 +875,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
      * the hardware thread bit.
      */
     smt_found  = 0;
-    for(i=1;i<nproc && smt_found==0;i++)
+    for(i=1; i<nproc && smt_found==0; i++)
     {
         smt_found = (apic_id[i]>>core_shift_bits == apic_id[0] >> core_shift_bits);
     }
@@ -801,7 +903,7 @@ gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
         return GMX_CPUID_X86_SMT_CANNOTDETECT;
     }
 #endif
-#else 
+#else
     /* not x86 */
     return GMX_CPUID_X86_SMT_CANNOTDETECT;
 #endif
@@ -863,7 +965,7 @@ main(int argc, char **argv)
     else if(!strncmp(argv[1],"-features",3))
     {
         cnt = 0;
-        for(i=0;i<GMX_CPUID_NFEATURES;i++)
+        for(i=0; i<GMX_CPUID_NFEATURES; i++)
         {
             if(cpuid->feature[i]==1)
             {

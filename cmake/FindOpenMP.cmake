@@ -85,6 +85,8 @@ function(_OPENMP_FLAG_CANDIDATES LANG)
     "-qsmp"
     #Portland Group, MIPSpro
     "-mp"
+    #Fujitsu fccpx, sparc64
+    "-Kopenmp"
   )
 
   set(OMP_FLAG_GNU "-fopenmp")
@@ -134,23 +136,23 @@ if(CMAKE_C_COMPILER_LOADED)
   else()
     _OPENMP_FLAG_CANDIDATES("C")
     include(CheckCSourceCompiles)
+
+    foreach(FLAG ${OpenMP_C_FLAG_CANDIDATES})
+      set(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      set(CMAKE_REQUIRED_FLAGS "${FLAG}")
+      unset(OpenMP_FLAG_DETECTED CACHE)
+      message(STATUS "Try OpenMP C flag = [${FLAG}]")
+      check_c_source_compiles("${OpenMP_C_TEST_SOURCE}" OpenMP_FLAG_DETECTED)
+      set(CMAKE_REQUIRED_FLAGS "${SAFE_CMAKE_REQUIRED_FLAGS}")
+      if(OpenMP_FLAG_DETECTED)
+        set(OpenMP_C_FLAGS_INTERNAL "${FLAG}")
+        break()
+      endif(OpenMP_FLAG_DETECTED)
+    endforeach(FLAG ${OpenMP_C_FLAG_CANDIDATES})
+
+    set(OpenMP_C_FLAGS "${OpenMP_C_FLAGS_INTERNAL}"
+      CACHE STRING "C compiler flags for OpenMP parallization")
   endif()
-
-  foreach(FLAG ${OpenMP_C_FLAG_CANDIDATES})
-    set(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    set(CMAKE_REQUIRED_FLAGS "${FLAG}")
-    unset(OpenMP_FLAG_DETECTED CACHE)
-    message(STATUS "Try OpenMP C flag = [${FLAG}]")
-    check_c_source_compiles("${OpenMP_C_TEST_SOURCE}" OpenMP_FLAG_DETECTED)
-    set(CMAKE_REQUIRED_FLAGS "${SAFE_CMAKE_REQUIRED_FLAGS}")
-    if(OpenMP_FLAG_DETECTED)
-      set(OpenMP_C_FLAGS_INTERNAL "${FLAG}")
-      break()
-    endif(OpenMP_FLAG_DETECTED)
-  endforeach(FLAG ${OpenMP_C_FLAG_CANDIDATES})
-
-  set(OpenMP_C_FLAGS "${OpenMP_C_FLAGS_INTERNAL}"
-    CACHE STRING "C compiler flags for OpenMP parallization")
 
   list(APPEND _OPENMP_REQUIRED_VARS OpenMP_C_FLAGS)
   unset(OpenMP_C_FLAG_CANDIDATES)
@@ -168,23 +170,23 @@ if(CMAKE_CXX_COMPILER_LOADED)
 
     # use the same source for CXX as C for now
     set(OpenMP_CXX_TEST_SOURCE ${OpenMP_C_TEST_SOURCE})
+
+    foreach(FLAG ${OpenMP_CXX_FLAG_CANDIDATES})
+      set(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+      set(CMAKE_REQUIRED_FLAGS "${FLAG}")
+      unset(OpenMP_FLAG_DETECTED CACHE)
+      message(STATUS "Try OpenMP CXX flag = [${FLAG}]")
+      check_cxx_source_compiles("${OpenMP_CXX_TEST_SOURCE}" OpenMP_FLAG_DETECTED)
+      set(CMAKE_REQUIRED_FLAGS "${SAFE_CMAKE_REQUIRED_FLAGS}")
+      if(OpenMP_FLAG_DETECTED)
+        set(OpenMP_CXX_FLAGS_INTERNAL "${FLAG}")
+        break()
+      endif(OpenMP_FLAG_DETECTED)
+    endforeach(FLAG ${OpenMP_CXX_FLAG_CANDIDATES})
+
+    set(OpenMP_CXX_FLAGS "${OpenMP_CXX_FLAGS_INTERNAL}"
+      CACHE STRING "C++ compiler flags for OpenMP parallization")
   endif()
-
-  foreach(FLAG ${OpenMP_CXX_FLAG_CANDIDATES})
-    set(SAFE_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
-    set(CMAKE_REQUIRED_FLAGS "${FLAG}")
-    unset(OpenMP_FLAG_DETECTED CACHE)
-    message(STATUS "Try OpenMP CXX flag = [${FLAG}]")
-    check_cxx_source_compiles("${OpenMP_CXX_TEST_SOURCE}" OpenMP_FLAG_DETECTED)
-    set(CMAKE_REQUIRED_FLAGS "${SAFE_CMAKE_REQUIRED_FLAGS}")
-    if(OpenMP_FLAG_DETECTED)
-      set(OpenMP_CXX_FLAGS_INTERNAL "${FLAG}")
-      break()
-    endif(OpenMP_FLAG_DETECTED)
-  endforeach(FLAG ${OpenMP_CXX_FLAG_CANDIDATES})
-
-  set(OpenMP_CXX_FLAGS "${OpenMP_CXX_FLAGS_INTERNAL}"
-    CACHE STRING "C++ compiler flags for OpenMP parallization")
 
   list(APPEND _OPENMP_REQUIRED_VARS OpenMP_CXX_FLAGS)
   unset(OpenMP_CXX_FLAG_CANDIDATES)
