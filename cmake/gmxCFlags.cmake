@@ -178,8 +178,9 @@ MACRO(gmx_c_flags)
     if (MSVC)
         # disable warnings for: 
         #      inconsistent dll linkage
+        #      forcing value to bool (for C++)
         GMX_TEST_CFLAG(CFLAGS_WARN "/wd4273" GMXC_CFLAGS)
-        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4273" GMXC_CXXFLAGS)
+        GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/wd4273 /wd4800" GMXC_CXXFLAGS)
     endif()
 
     if (CMAKE_C_COMPILER_ID MATCHES "Clang")
