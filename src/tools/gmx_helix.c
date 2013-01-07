@@ -118,14 +118,12 @@ int gmx_helix(int argc,char *argv[])
     "of the", 
     "helix in nm. This is simply the average rise (see above) times the",  
     "number of helical residues (see below).[BR]",
-    "[BB]5.[bb] Number of helical residues (file [TT]n-ahx.xvg[tt]). The title says",
-    "it all.[BR]",
-    "[BB]6.[bb] Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
-    "[BB]7.[bb] RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]",
+    "[BB]5.[bb] Helix dipole, backbone only (file [TT]dip-ahx.xvg[tt]).[BR]",
+    "[BB]6.[bb] RMS deviation from ideal helix, calculated for the C[GRK]alpha[grk]",
     "atoms only (file [TT]rms-ahx.xvg[tt]).[BR]",
-    "[BB]8.[bb] Average C[GRK]alpha[grk] - C[GRK]alpha[grk] dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
-    "[BB]9.[bb] Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).[BR]",
-    "[BB]10.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
+    "[BB]7.[bb] Average C[GRK]alpha[grk] - C[GRK]alpha[grk] dihedral angle (file [TT]phi-ahx.xvg[tt]).[BR]",
+    "[BB]8.[bb] Average [GRK]phi[grk] and [GRK]psi[grk] angles (file [TT]phipsi.xvg[tt]).[BR]",
+    "[BB]9.[bb] Ellipticity at 222 nm according to Hirst and Brooks.",
     "[PAR]"
   };
   static const char *ppp[efhNR+2] = { 
