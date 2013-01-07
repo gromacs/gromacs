@@ -134,7 +134,7 @@ int gmx_genpr(int argc,char *argv[])
   nfn     = opt2fn_null("-n",NFILE,fnm);
   
   if (( nfn == NULL ) && ( xfn == NULL))
-    gmx_fatal(FARGS,"no index file and no structure file suplied");
+    gmx_fatal(FARGS,"no index file and no structure file supplied");
       
   if ((disre_frac < 0) || (disre_frac >= 1))
     gmx_fatal(FARGS,"disre_frac should be between 0 and 1");
