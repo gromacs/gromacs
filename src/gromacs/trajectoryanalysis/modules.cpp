@@ -44,6 +44,7 @@
 #include "modules/angle.h"
 #include "modules/distance.h"
 #include "modules/rdf.h"
+#include "modules/rms.h"
 #include "modules/select.h"
 #include "modules/zleep.h"
 
@@ -124,9 +125,11 @@ class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
+    /* Let's try to use alphabetical order! */
     manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Rdf> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<Rms> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Zleep> >();
 }
