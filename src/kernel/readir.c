@@ -1621,7 +1621,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   CTYPE ("a value of -1 means: use rlist");
   RTYPE("verlet-buffer-drift", ir->verletbuf_drift,    0.005);
   CTYPE ("nblist cut-off");
-  RTYPE ("rlist",	ir->rlist,	-1);
+  RTYPE ("rlist",	ir->rlist,	1.0);
   CTYPE ("long-range cut-off for switched potentials");
   RTYPE ("rlistlong",	ir->rlistlong,	-1);
   ITYPE ("nstcalclr",	ir->nstcalclr,	-1);
@@ -1633,7 +1633,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("coulomb-modifier",	ir->coulomb_modifier,    eintmod_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rcoulomb-switch",	ir->rcoulomb_switch,	0.0);
-  RTYPE ("rcoulomb",	ir->rcoulomb,	-1);
+  RTYPE ("rcoulomb",	ir->rcoulomb,	1.0);
   CTYPE ("Relative dielectric constant for the medium and the reaction field");
   RTYPE ("epsilon-r",   ir->epsilon_r,  1.0);
   RTYPE ("epsilon-rf",  ir->epsilon_rf, 0.0);
@@ -1642,7 +1642,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   EETYPE("vdw-modifier",	ir->vdw_modifier,    eintmod_names);
   CTYPE ("cut-off lengths");
   RTYPE ("rvdw-switch",	ir->rvdw_switch,	0.0);
-  RTYPE ("rvdw",	ir->rvdw,	-1);
+  RTYPE ("rvdw",	ir->rvdw,	1.0);
   CTYPE ("Apply long range dispersion corrections for Energy and Pressure");
   EETYPE("DispCorr",    ir->eDispCorr,  edispc_names);
   CTYPE ("Extension of the potential lookup tables beyond the cut-off");
