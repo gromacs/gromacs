@@ -1043,23 +1043,32 @@ static void set_cpu_affinity(FILE *fplog,
         }
         else
         {
-            /* check if some threads failed to set their affinities */
+            /* check & warn if some threads failed to set their affinities */
             if (nth_affinity_set != nthread_local)
             {
-                char sbuf[STRLEN];
-                sbuf[0] = '\0';
+                char sbuf1[STRLEN], sbuf2[STRLEN];
+
+                /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
+                sbuf1[0] = sbuf2[0] = '\0';
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "In thread-MPI thread #%d", cr->nodeid);
+                sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
 #else /* GMX_LIB_MPI */
+                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-                sprintf(sbuf, "In MPI process #%d", cr->nodeid);
 #endif /* GMX_MPI */
+
+                if (nthread_local > 1)
+                {
+                    sprintf(sbuf2, "of %d/%d thread%s ",
+                            nthread_local - nth_affinity_set, nthread_local,
+                            (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                }
+
                 md_print_warn(NULL, fplog,
-                              "%s%d/%d thread%s failed to set their affinities. "
-                              "This can cause performance degradation!",
-                              sbuf, nthread_local - nth_affinity_set, nthread_local,
-                              (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                              "NOTE: %sAffinity setting %sfailed.\n"
+                              "      This can cause performance degradation!",
+                              sbuf1, sbuf2);
             }
         }
     }
