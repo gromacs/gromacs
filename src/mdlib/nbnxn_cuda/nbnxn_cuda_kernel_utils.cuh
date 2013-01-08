@@ -51,6 +51,9 @@
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
 
+/*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
+const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
+
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: OpenMM
  */

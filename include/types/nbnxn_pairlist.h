@@ -232,6 +232,8 @@ typedef struct {
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
     int  fstride;    /* stride for a coordinate in f (usually 3 or 4)      */
     real *x;         /* x and possibly q, size natoms*xstride              */
+    real *simd_4xn_diag;  /* indices to set the SIMD 4xN diagonal masks    */
+    real *simd_2xnn_diag; /* indices to set the SIMD 2x(N+N)diagonal masks */
     int  nout;       /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;  /* Output data structures               */
     int  nalloc;     /* Allocation size of all arrays (for x/f *x/fstride) */
