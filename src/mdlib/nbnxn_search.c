@@ -75,9 +75,11 @@
 #define BBU_Z  6
 
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
+/* We use SSE or AVX-128bit for bounding box calculations */
 
 #ifndef GMX_DOUBLE
+/* Single precision BBs + coordinates, we can also load coordinates using SSE */
 #define NBNXN_SEARCH_SSE_SINGLE
 #endif
 
@@ -94,7 +96,7 @@
 #define STRIDE_8BB        4
 #define STRIDE_8BB_2LOG   2
 
-#endif /* NBNXN_SEARCH_SSE */
+#endif /* NBNXN_SEARCH_BB_SSE */
 
 #ifdef GMX_NBNXN_SIMD
 
@@ -170,7 +172,7 @@
 #define NBNXN_INT_MASK_DIAG_J8_1  0x0080c0e0
 
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #define NBNXN_BBXXXX
 /* Size of bounding box corners quadruplet */
@@ -750,7 +752,7 @@ static void calc_bounding_box_x_x8(int na,const real *x,float *bb)
     bb[BBU_Z] = R2F_U(zh);
 }
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
 
 /* Packed coordinates, bb order xyz0 */
 static void calc_bounding_box_x_x4_halves(int na,const real *x,
@@ -810,7 +812,7 @@ static void calc_bounding_box_xxxx(int na,int stride,const real *x,float *bb)
     bb[5*STRIDE_8BB] = R2F_U(zh);
 }
 
-#endif /* NBNXN_SEARCH_SSE */
+#endif /* NBNXN_SEARCH_BB_SSE */
 
 #ifdef NBNXN_SEARCH_SSE_SINGLE
 
@@ -853,7 +855,7 @@ static void calc_bounding_box_xxxx_sse(int na,const float *x,
 
 #endif /* NBNXN_SEARCH_SSE_SINGLE */
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
 
 /* Combines pairs of consecutive bounding boxes */
 static void combine_bounding_box_pairs(nbnxn_grid_t *grid,const float *bb)
@@ -1087,7 +1089,7 @@ void fill_cell(const nbnxn_search_t nbs,
         offset = ((a0 - grid->cell0*grid->na_sc)>>grid->na_c_2log)*NNBSBB_B;
         bb_ptr = grid->bb + offset;
 
-#if defined GMX_DOUBLE && defined NBNXN_SEARCH_SSE
+#if defined GMX_DOUBLE && defined NBNXN_SEARCH_BB_SSE
         if (2*grid->na_cj == grid->na_c)
         {
             calc_bounding_box_x_x4_halves(na,nbat->x+X4_IND_A(a0),bb_ptr,
@@ -1550,7 +1552,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         }
     }
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
     if (grid->bSimple && nbat->XFormat == nbatX8)
     {
         combine_bounding_box_pairs(grid,grid->bb);
@@ -1823,7 +1825,7 @@ void nbnxn_grid_add_simple(nbnxn_search_t nbs,
         }
     }
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
     if (grid->bSimple && nbat->XFormat == nbatX8)
     {
         combine_bounding_box_pairs(grid,grid->bb_simple);
@@ -1961,7 +1963,7 @@ static float subc_bb_dist2(int si,const float *bb_i_ci,
     return d2;
 }
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
 
 /* SSE code for bb distance for bb format xyz0 */
 static float subc_bb_dist2_sse(int na_c,
@@ -2094,7 +2096,7 @@ static void subc_bb_dist2_sse_xxxx(const float *bb_j,
     }
 }
 
-#endif /* NBNXN_SEARCH_SSE */
+#endif /* NBNXN_SEARCH_BB_SSE */
 
 /* Plain C function which determines if any atom pair between two cells
  * is within distance sqrt(rl2).
@@ -2382,16 +2384,16 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
 
     snew(nbl->work,1);
 #ifdef NBNXN_BBXXXX
-    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL/STRIDE_8BB*NNBSBB_XXXX,32);
+    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL/STRIDE_8BB*NNBSBB_XXXX,NBNXN_MEM_ALIGN);
 #else
-    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL*NNBSBB_B,32);
+    snew_aligned(nbl->work->bb_ci,GPU_NSUBCELL*NNBSBB_B,NBNXN_MEM_ALIGN);
 #endif
-    snew_aligned(nbl->work->x_ci,NBNXN_NA_SC_MAX*DIM,32);
+    snew_aligned(nbl->work->x_ci,NBNXN_NA_SC_MAX*DIM,NBNXN_MEM_ALIGN);
 #ifdef GMX_NBNXN_SIMD
-    snew_aligned(nbl->work->x_ci_simd_4xn,1,32);
-    snew_aligned(nbl->work->x_ci_simd_2xnn,1,32);
+    snew_aligned(nbl->work->x_ci_simd_4xn,1,NBNXN_MEM_ALIGN);
+    snew_aligned(nbl->work->x_ci_simd_2xnn,1,NBNXN_MEM_ALIGN);
 #endif
-    snew_aligned(nbl->work->d2,GPU_NSUBCELL,32);
+    snew_aligned(nbl->work->d2,GPU_NSUBCELL,NBNXN_MEM_ALIGN);
 }
 
 void nbnxn_init_pairlist_set(nbnxn_pairlist_set_t *nbl_list,
@@ -3021,7 +3023,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
             ndirect++;
         }
     }
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
     else
     {
         while (cj_ind_first + ndirect <= cj_ind_last &&
@@ -3620,7 +3622,7 @@ static void icell_set_x_supersub(int ci,
     }
 }
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
 /* Copies PBC shifted super-cell packed atom coordinates to working array */
 static void icell_set_x_supersub_sse8(int ci,
                                       real shx,real shy,real shz,
@@ -4766,7 +4768,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     }
     else
     {
-#ifdef NBNXN_SEARCH_SSE
+#ifdef NBNXN_SEARCH_BB_SSE
         nbs->icell_set_x = icell_set_x_supersub_sse8;
 #else
         nbs->icell_set_x = icell_set_x_supersub;

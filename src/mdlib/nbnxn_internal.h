@@ -49,7 +49,17 @@ extern "C" {
 
 
 #ifdef GMX_X86_SSE2
-#define NBNXN_SEARCH_SSE
+/* Use 4-way SIMD for, always, single precision bounding box calculations */
+#define NBNXN_SEARCH_BB_SSE
+#endif
+
+
+#ifdef GMX_NBNXN_SIMD
+/* Memory alignment in bytes as required by SIMD aligned loads/stores */
+#define NBNXN_MEM_ALIGN  (GMX_NBNXN_SIMD_BITWIDTH/8)
+#else
+/* No alignment required, but set it so we can call the same routines */
+#define NBNXN_MEM_ALIGN  32
 #endif
 
 

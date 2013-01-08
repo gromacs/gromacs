@@ -188,12 +188,15 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
     gmx_mm_pr  mask0 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002, 0x0001 ));
     gmx_mm_pr  mask2 = _mm256_castsi256_ps(_mm256_set_epi32( 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 ));
 
-    gmx_mm_pr  diag_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
-    gmx_mm_pr  diag_SSE2 = _mm256_castsi256_ps( _mm256_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0xffffffff, 0x00000000, 0x00000000, 0x00000000 ));
-
-#ifdef GMX_X86_SSE4_1
-    gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
+    gmx_mm_pr diag_jmi_SSE;
+#if UNROLLI == UNROLLJ
+    gmx_mm_pr diag_SSE0,diag_SSE2;
+#else
+    gmx_mm_pr diag0_SSE0,diag0_SSE2;
+    gmx_mm_pr diag1_SSE0,diag1_SSE2;
 #endif
+
+    gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
 
     gmx_mm_pr  one_SSE=gmx_set1_pr(1.0);
     gmx_mm_pr  iq_SSE0=gmx_setzero_pr();
@@ -288,6 +291,29 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn,energrp)
 #define NBFP_STRIDE  2
 #endif
     nbfp_stride = NBFP_STRIDE;
+#endif
+
+    /* Load j-i for the first i */
+    diag_jmi_SSE = gmx_load_pr(nbat->simd_2xnn_diag);
+    /* Generate all the diagonal masks as comparison results */
+#if UNROLLI == UNROLLJ
+    diag_SSE0    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag_SSE2    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+#else
+#if 2*UNROLLI == UNROLLJ
+    diag0_SSE0 = gmx_cmplt_pr(diag_i_SSE,diag_j_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag0_SSE2 = gmx_cmplt_pr(diag_i_SSE,diag_j_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag1_SSE0 = gmx_cmplt_pr(diag_i_SSE,diag_j_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag_i_SSE = gmx_add_pr(diag_i_SSE,one_SSE);
+    diag1_SSE2 = gmx_cmplt_pr(diag_i_SSE,diag_j_SSE);
+#endif
 #endif
 
 #ifdef CALC_COUL_TAB
