@@ -65,8 +65,11 @@ extern "C" {
 /* With GPU kernels the cluster size is 8 atoms */
 #define NBNXN_GPU_CLUSTER_SIZE         8
 
-/* With GPU kernels we group cluster pairs in 4 to optimize memory usage */
-#define NBNXN_GPU_JGROUP_SIZE  4
+/* With GPU kernels we group cluster pairs in 4 to optimize memory usage.
+ * To change this, also change nbnxn_cj4_t in include/types/nbnxn_pairlist.h.
+ */
+#define NBNXN_GPU_JGROUP_SIZE       4
+#define NBNXN_GPU_JGROUP_SIZE_2LOG  2
 
 /* To avoid NaN when excluded atoms are at zero distance, we add a small
  * number to r^2. NBNXN_AVOID_SING_R2_INC^-3 should fit in real.

@@ -188,7 +188,7 @@ nbnxn_kernel_gpu_ref(const nbnxn_pairlist_t     *nbl,
             excl[0]           = &nbl->excl[nbl->cj4[cj4_ind].imei[0].excl_ind];
             excl[1]           = &nbl->excl[nbl->cj4[cj4_ind].imei[1].excl_ind];
 
-            for(jm=0; jm<4; jm++)
+            for(jm=0; jm<NBNXN_GPU_JGROUP_SIZE; jm++)
             {
                 cj               = nbl->cj4[cj4_ind].cj[jm];
 
