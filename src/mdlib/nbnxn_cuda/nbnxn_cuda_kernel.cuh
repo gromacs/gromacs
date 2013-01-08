@@ -230,7 +230,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
 #pragma unroll 4
 #endif
-            for (jm = 0; jm < 4; jm++)
+            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
                 if (imask & (255U << (jm * NCL_PER_SUPERCL)))
                 {

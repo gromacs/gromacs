@@ -51,15 +51,16 @@ extern "C" {
 #define GMX_NBNXN_SIMD
 
 #ifdef GMX_X86_AVX_256
-/* Comment out this define to use AVX-128 kernels with AVX-256 acceleration */
+/* Note that setting this to 128 will also work with AVX-256, but slower */
 #define GMX_NBNXN_SIMD_BITWIDTH  256
 #else
 #define GMX_NBNXN_SIMD_BITWIDTH  128
 #endif
 
 /* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
- * Currently the 2xNN SIMD kernels only make sense and are only implemented
- * with AVX-256 in single precision using a 4x4 cluster setup instead of 4x8.
+ * Currently the 2xNN SIMD kernels only make sense with:
+ *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
+ * 16-way SIMD: 4x8 setup, not used, but most of the kernel code is there
  */
 #define GMX_NBNXN_SIMD_4XN
 #if GMX_NBNXN_SIMD_BITWIDTH == 256 && !defined GMX_DOUBLE
@@ -81,17 +82,22 @@ typedef enum
     nbnxnkNR
 } nbnxn_kernel_type;
 
-/* Note that _mm_... intrinsics can be converted to either SSE or AVX
- * depending on compiler flags.
+/* Define the nbnxn kernel names for all different types defined above */
+static const char *nbnxn_kernel_name[nbnxnkNR] =
+{
+    "not set",
+    "plain C",
+#ifndef GMX_NBNXN_SIMD
+    "not available", "not available",
+#else
+#ifdef GMX_X86_SSE2
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+/* x86 SIMD intrinsics can be converted to either SSE or AVX depending
+ * on compiler flags. As we use nearly identical intrinsics, using an AVX
+ * compiler flag without an AVX macro effectively results in AVX kernels.
  * For gcc we check for __AVX__
  * At least a check for icc should be added (if there is a macro)
  */
-static const char *nbnxn_kernel_name[nbnxnkNR] =
-  { "not set", "plain C",
-#if !(defined GMX_X86_SSE2)
-    "not available", "not available",
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
 #if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
 #ifndef GMX_X86_SSE4_1
     "SSE2", "SSE2",
@@ -101,11 +107,17 @@ static const char *nbnxn_kernel_name[nbnxnkNR] =
 #else
     "AVX-128", "AVX-128",
 #endif
-#else
-    "AVX-256",  "AVX-256",
+#endif
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
+    "AVX-256", "AVX-256",
+#endif
+#else /* not GMX_X86_SSE2 */
+    "SIMD", "SIMD",
 #endif
 #endif
-    "CUDA", "plain C" };
+    "CUDA",
+    "plain C"
+};
 
 enum { ewaldexclTable, ewaldexclAnalytical };
 
