@@ -329,11 +329,6 @@ if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
 endif(GMX_SOFTWARE_INVSQRT)
 
-########################################################################
-#Process MPI settings
-########################################################################
-include(gmxManageMPI)
-
 #######################################################################
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
@@ -484,24 +479,41 @@ include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
 
+# Management of GROMACS options for specific toolchains should go
+# here. Because the initial settings for some of the main options have
+# already happened, but things like library detection and MPI compiler
+# feature detection have not, the docstrings for any over-rides of
+# GROMACS defaults or user settings will make sense. Also, any
+# toolchain-related reasons for choosing whether to detect various
+# things can be sorted out now, before the detection takes place.
 
+if(UNIX AND GMX_PREFER_STATIC_LIBS AND SHARED_LIBS_DEFAULT)
+    if(BUILD_SHARED_LIBS)
+        # Warn the user about the combination. But don't overwrite the request.
+        message(WARNING "Searching for static libraries requested, and building shared Gromacs libraries requested. This might cause problems linking later.")
+    elseif(NOT DEFINED BUILD_SHARED_LIBS)
+        # Change default to OFF. Don't warn if it's already off.
+        message(WARNING "Searching for static libraries requested, so the GROMACS libraries will also be built statically (BUILD_SHARED_LIBS=OFF)")
+        set(SHARED_LIBS_DEFAULT OFF)
+    endif()
+endif()
+
+# By now, all tool chains should have spoken up if they care about
+# the setting of SHARED_LIBS_DEFAULT.
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
+
+########################################################################
+#Process MPI settings
+########################################################################
+include(gmxManageMPI)
 
 ########################################################################
 # Find external packages                                               #
 ########################################################################
-SET(SHARED_LIBS_DEFAULT ON)
-if(UNIX)
-    if(GMX_PREFER_STATIC_LIBS)
-        # On Linux .a is the static library suffix, on Mac OS X .lib can also
-        # be used, so we'll add both to the preference list.
-        SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
-            message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
-        elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
-            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
-            set(SHARED_LIBS_DEFAULT OFF)
-        endif()
-    endif()
+if(UNIX AND GMX_PREFER_STATIC_LIBS)
+    # On Linux .a is the static library suffix, on Mac OS X .lib can also
+    # be used, so we'll add both to the preference list.
+    SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
 
 IF( WIN32 AND NOT CYGWIN)
