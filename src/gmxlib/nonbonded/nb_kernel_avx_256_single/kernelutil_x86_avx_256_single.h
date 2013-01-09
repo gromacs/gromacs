@@ -334,10 +334,10 @@ gmx_mm256_load_1rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
 {
     __m128 t1,t2,t3,t4;
     __m128i mask = _mm_set_epi32(0,-1,-1,-1);
-    t1             = _mm_maskload_ps(ptrA,mask);
-    t2             = _mm_maskload_ps(ptrB,mask);
-    t3             = _mm_maskload_ps(ptrC,mask);
-    t4             = _mm_maskload_ps(ptrD,mask);
+    t1             = gmx_mm_maskload_ps(ptrA,mask);
+    t2             = gmx_mm_maskload_ps(ptrB,mask);
+    t3             = gmx_mm_maskload_ps(ptrC,mask);
+    t4             = gmx_mm_maskload_ps(ptrD,mask);
     _MM_TRANSPOSE4_PS(t1,t2,t3,t4);
     *x1           = _mm256_castps128_ps256(t1);
     *y1           = _mm256_castps128_ps256(t2);
@@ -431,10 +431,10 @@ gmx_mm256_load_1rvec_8ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
     __m256 t1,t2,t3,t4,t5,t6,t7,t8;
     __m128i mask = _mm_set_epi32(0,-1,-1,-1);
 
-    t1             = gmx_mm256_set_m128(_mm_maskload_ps(ptrE,mask),_mm_maskload_ps(ptrA,mask)); /*  - zE yE xE |  - zA yA xA */
-    t2             = gmx_mm256_set_m128(_mm_maskload_ps(ptrF,mask),_mm_maskload_ps(ptrB,mask)); /*  - zF yF xF |  - zB yB xB */
-    t3             = gmx_mm256_set_m128(_mm_maskload_ps(ptrG,mask),_mm_maskload_ps(ptrC,mask)); /*  - zG yG xG |  - zC yC xC */
-    t4             = gmx_mm256_set_m128(_mm_maskload_ps(ptrH,mask),_mm_maskload_ps(ptrD,mask)); /*  - zH yH xH |  - zD yD xD */
+    t1             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrE,mask),gmx_mm_maskload_ps(ptrA,mask)); /*  - zE yE xE |  - zA yA xA */
+    t2             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrF,mask),gmx_mm_maskload_ps(ptrB,mask)); /*  - zF yF xF |  - zB yB xB */
+    t3             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrG,mask),gmx_mm_maskload_ps(ptrC,mask)); /*  - zG yG xG |  - zC yC xC */
+    t4             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrH,mask),gmx_mm_maskload_ps(ptrD,mask)); /*  - zH yH xH |  - zD yD xD */
 
     t5            = _mm256_unpacklo_ps(t1,t2); /* yF yE xF xE | yB yA xB xA */
     t6            = _mm256_unpacklo_ps(t3,t4); /* yH yG xH xG | yD yC xD xC */
@@ -594,20 +594,20 @@ gmx_mm256_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     t3          = _mm_shuffle_ps(t4,_mm256_castps256_ps128(z1),_MM_SHUFFLE(0,2,1,0)); /*  -  z1c y1c x1c */
     t4          = _mm_shuffle_ps(t4,_mm256_castps256_ps128(z1),_MM_SHUFFLE(0,3,3,2)); /*  -  z1d y1d x1d */
 
-    t5          = _mm_maskload_ps(ptrA,mask);
-    t6          = _mm_maskload_ps(ptrB,mask);
-    t7          = _mm_maskload_ps(ptrC,mask);
-    t8          = _mm_maskload_ps(ptrD,mask);
+    t5          = gmx_mm_maskload_ps(ptrA,mask);
+    t6          = gmx_mm_maskload_ps(ptrB,mask);
+    t7          = gmx_mm_maskload_ps(ptrC,mask);
+    t8          = gmx_mm_maskload_ps(ptrD,mask);
 
     t5          = _mm_sub_ps(t5,t1);
     t6          = _mm_sub_ps(t6,t2);
     t7          = _mm_sub_ps(t7,t3);
     t8          = _mm_sub_ps(t8,t4);
 
-    _mm_maskstore_ps(ptrA,mask,t5);
-    _mm_maskstore_ps(ptrB,mask,t6);
-    _mm_maskstore_ps(ptrC,mask,t7);
-    _mm_maskstore_ps(ptrD,mask,t8);
+    gmx_mm_maskstore_ps(ptrA,mask,t5);
+    gmx_mm_maskstore_ps(ptrB,mask,t6);
+    gmx_mm_maskstore_ps(ptrC,mask,t7);
+    gmx_mm_maskstore_ps(ptrD,mask,t8);
 }
 
 
@@ -762,10 +762,10 @@ gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     /* Construct a mask without executing any data loads */
     mask        = _mm_blend_epi16(_mm_setzero_si128(),_mm_cmpeq_epi16(_mm_setzero_si128(),_mm_setzero_si128()),0x3F);
 
-    tA          = gmx_mm256_set_m128(_mm_maskload_ps(ptrE,mask),_mm_maskload_ps(ptrA,mask));
-    tB          = gmx_mm256_set_m128(_mm_maskload_ps(ptrF,mask),_mm_maskload_ps(ptrB,mask));
-    tC          = gmx_mm256_set_m128(_mm_maskload_ps(ptrG,mask),_mm_maskload_ps(ptrC,mask));
-    tD          = gmx_mm256_set_m128(_mm_maskload_ps(ptrH,mask),_mm_maskload_ps(ptrD,mask));
+    tA          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrE,mask),gmx_mm_maskload_ps(ptrA,mask));
+    tB          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrF,mask),gmx_mm_maskload_ps(ptrB,mask));
+    tC          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrG,mask),gmx_mm_maskload_ps(ptrC,mask));
+    tD          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrH,mask),gmx_mm_maskload_ps(ptrD,mask));
     t1          = _mm256_unpacklo_ps(x1,y1); /* y1f x1f y1e x1e | y1b x1b y1a x1a */
     t2          = _mm256_unpackhi_ps(x1,y1); /* y1h x1h y1g x1g | y1d x1d y1c x1c */
 
@@ -779,14 +779,14 @@ gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tC          = _mm256_sub_ps(tC,t5);
     tD          = _mm256_sub_ps(tD,t6);
 
-    _mm_maskstore_ps(ptrA,mask,_mm256_castps256_ps128(tA));
-    _mm_maskstore_ps(ptrB,mask,_mm256_castps256_ps128(tB));
-    _mm_maskstore_ps(ptrC,mask,_mm256_castps256_ps128(tC));
-    _mm_maskstore_ps(ptrD,mask,_mm256_castps256_ps128(tD));
-    _mm_maskstore_ps(ptrE,mask,_mm256_extractf128_ps(tA,0x1));
-    _mm_maskstore_ps(ptrF,mask,_mm256_extractf128_ps(tB,0x1));
-    _mm_maskstore_ps(ptrG,mask,_mm256_extractf128_ps(tC,0x1));
-    _mm_maskstore_ps(ptrH,mask,_mm256_extractf128_ps(tD,0x1));
+    gmx_mm_maskstore_ps(ptrA,mask,_mm256_castps256_ps128(tA));
+    gmx_mm_maskstore_ps(ptrB,mask,_mm256_castps256_ps128(tB));
+    gmx_mm_maskstore_ps(ptrC,mask,_mm256_castps256_ps128(tC));
+    gmx_mm_maskstore_ps(ptrD,mask,_mm256_castps256_ps128(tD));
+    gmx_mm_maskstore_ps(ptrE,mask,_mm256_extractf128_ps(tA,0x1));
+    gmx_mm_maskstore_ps(ptrF,mask,_mm256_extractf128_ps(tB,0x1));
+    gmx_mm_maskstore_ps(ptrG,mask,_mm256_extractf128_ps(tC,0x1));
+    gmx_mm_maskstore_ps(ptrH,mask,_mm256_extractf128_ps(tD,0x1));
 }
 
 

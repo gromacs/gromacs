@@ -692,6 +692,9 @@ if(NOT GMX_SYSTEM_XDR)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_INTERNAL_XDR")
 endif(NOT GMX_SYSTEM_XDR)
 
+# include avx test source, used if the AVX flags are set below
+include(gmxTestAVXMaskload)
+
 # Process nonbonded accelerated kernels settings
 string(TOUPPER ${GMX_CPU_ACCELERATION} ${GMX_CPU_ACCELERATION})
 if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
@@ -850,6 +853,10 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
           message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
         endif()
     endif()
+
+    # Unfortunately gcc-4.5.2 and gcc-4.6.0 has a bug where they use the wrong datatype for the formal
+    # parameter of the mask for maskload/maskstore arguments. Check if this is present, since we can work around it.
+    gmx_test_avx_gcc_maskload_bug(${ACCELERATION_C_FLAGS} GMX_X86_AVX_GCC_MASKLOAD_BUG)
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "BLUEGENE")
 # GMX_CPU_ACCELERATION=BlueGene should be set in the Toolchain-BlueGene?-???.cmake file

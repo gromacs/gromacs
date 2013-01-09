@@ -227,10 +227,10 @@ gmx_mm_load_1rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const float *
 {
     __m128 t1,t2,t3,t4;
     __m128i mask = _mm_set_epi32(0,-1,-1,-1);
-    t1             = _mm_maskload_ps(ptrA,mask);
-    t2             = _mm_maskload_ps(ptrB,mask);
-    t3             = _mm_maskload_ps(ptrC,mask);
-    t4             = _mm_maskload_ps(ptrD,mask);
+    t1             = gmx_mm_maskload_ps(ptrA,mask);
+    t2             = gmx_mm_maskload_ps(ptrB,mask);
+    t3             = gmx_mm_maskload_ps(ptrC,mask);
+    t4             = gmx_mm_maskload_ps(ptrD,mask);
     _MM_TRANSPOSE4_PS(t1,t2,t3,t4);
     *x1           = t1;
     *y1           = t2;
