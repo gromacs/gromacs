@@ -1472,60 +1472,17 @@ static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
                               const gmx_hw_info_t *hwinfo,
                               gmx_bool use_cpu_acceleration,
-                              gmx_bool *bUseGPU,
+                              gmx_bool bUseGPU,
+                              gmx_bool bEmulateGPU,
                               const t_inputrec *ir,
                               int *kernel_type,
                               int *ewald_excl,
                               gmx_bool bDoNonbonded)
 {
-    gmx_bool bEmulateGPU, bGPU, bEmulateGPUEnvVarSet;
-    char gpu_err_str[STRLEN];
-
     assert(kernel_type);
 
     *kernel_type = nbnxnkNotSet;
     *ewald_excl  = ewaldexclTable;
-
-    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
-
-    /* if bUseGPU == NULL we don't want a GPU (e.g. hybrid mode kernel selection) */
-    bGPU = ((bUseGPU != NULL) && hwinfo->bCanUseGPU);
-
-    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. We will
-     * automatically switch to emulation if non-bonded calculations are
-     * turned off via GMX_NO_NONBONDED - this is the simple and elegant
-     * way to turn off GPU initialization, data movement, and cleanup. */
-    bEmulateGPU = (bEmulateGPUEnvVarSet || (!bDoNonbonded && bGPU));
-
-    /* Enable GPU mode when GPUs are available or GPU emulation is requested.
-     * The latter is useful to assess the performance one can expect by adding
-     * GPU(s) to the machine. The conditional below allows this even if mdrun
-     * is compiled without GPU acceleration support.
-     * Note that such a GPU acceleration performance assessment should be
-     * carried out by setting the GMX_EMULATE_GPU and GMX_NO_NONBONDED env. vars
-     * (and freezing the system as otherwise it would explode). */
-    if (bGPU || bEmulateGPUEnvVarSet)
-    {
-        if (bEmulateGPU)
-        {
-            bGPU = FALSE;
-        }
-        else
-        {
-            /* Each PP node will use the intra-node id-th device from the
-             * list of detected/selected GPUs. */
-            if (!init_gpu(cr->rank_pp_intranode, gpu_err_str, &hwinfo->gpu_info))
-            {
-                /* At this point the init should never fail as we made sure that
-                 * we have all the GPUs we need. If it still does, we'll bail. */
-                gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
-                          cr->nodeid,
-                          get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
-                          gpu_err_str);
-            }
-        }
-        *bUseGPU = bGPU;
-    }
 
     if (bEmulateGPU)
     {
@@ -1536,7 +1493,7 @@ static void pick_nbnxn_kernel(FILE *fp,
             md_print_warn(cr, fp, "Emulating a GPU run on the CPU (slow)");
         }
     }
-    else if (bGPU)
+    else if (bUseGPU)
     {
         *kernel_type = nbnxnk8x8x8_CUDA;
     }
@@ -1560,6 +1517,54 @@ static void pick_nbnxn_kernel(FILE *fp,
                 nbnxn_kernel_name[*kernel_type],
                 nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
                 nbnxn_kernel_to_cj_size(*kernel_type));
+    }
+}
+
+static void pick_nbnxn_resources(FILE *fp,
+                                 const t_commrec *cr,
+                                 const gmx_hw_info_t *hwinfo,
+                                 gmx_bool bDoNonbonded,
+                                 gmx_bool *bUseGPU,
+                                 gmx_bool *bEmulateGPU)
+{
+    gmx_bool bEmulateGPUEnvVarSet;
+    char gpu_err_str[STRLEN];
+
+    *bUseGPU = FALSE;
+
+    bEmulateGPUEnvVarSet = (getenv("GMX_EMULATE_GPU") != NULL);
+
+    /* Run GPU emulation mode if GMX_EMULATE_GPU is defined. We will
+     * automatically switch to emulation if non-bonded calculations are
+     * turned off via GMX_NO_NONBONDED - this is the simple and elegant
+     * way to turn off GPU initialization, data movement, and cleanup.
+     *
+     * GPU emulation can be useful to assess the performance one can expect by
+     * adding GPU(s) to the machine. The conditional below allows this even
+     * if mdrun is compiled without GPU acceleration support.
+     * Note that you should freezing the system as otherwise it will explode.
+     */
+    *bEmulateGPU = (bEmulateGPUEnvVarSet ||
+                    (!bDoNonbonded && hwinfo->bCanUseGPU));
+
+    /* Enable GPU mode when GPUs are available or no GPU emulation is requested.
+     */
+    if (hwinfo->bCanUseGPU && !(*bEmulateGPU))
+    {
+        /* Each PP node will use the intra-node id-th device from the
+         * list of detected/selected GPUs. */
+        if (!init_gpu(cr->rank_pp_intranode, gpu_err_str, &hwinfo->gpu_info))
+        {
+            /* At this point the init should never fail as we made sure that
+             * we have all the GPUs we need. If it still does, we'll bail. */
+            gmx_fatal(FARGS, "On node %d failed to initialize GPU #%d: %s",
+                      cr->nodeid,
+                      get_gpu_device_id(&hwinfo->gpu_info, cr->rank_pp_intranode),
+                      gpu_err_str);
+        }
+
+        /* Here we actually turn on hardware GPU acceleration */
+        *bUseGPU = TRUE;
     }
 }
 
@@ -1745,12 +1750,17 @@ static void init_nb_verlet(FILE *fp,
     nonbonded_verlet_t *nbv;
     int  i;
     char *env;
-    gmx_bool bHybridGPURun = FALSE;
+    gmx_bool bEmulateGPU, bHybridGPURun = FALSE;
 
     nbnxn_alloc_t *nb_alloc;
     nbnxn_free_t  *nb_free;
 
     snew(nbv, 1);
+
+    pick_nbnxn_resources(fp, cr, fr->hwinfo,
+                         fr->bNonbonded,
+                         &nbv->bUseGPU,
+                         &bEmulateGPU);
 
     nbv->nbs = NULL;
 
@@ -1764,7 +1774,7 @@ static void init_nb_verlet(FILE *fp,
         if (i == 0) /* local */
         {
             pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                              &nbv->bUseGPU,
+                              nbv->bUseGPU, bEmulateGPU,
                               ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
@@ -1776,7 +1786,7 @@ static void init_nb_verlet(FILE *fp,
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
                 pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                                  NULL,
+                                  FALSE, FALSE,
                                   ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
