@@ -46,6 +46,10 @@
 // #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
+// includes for the quick-port
+#include "gromacs/legacyheaders/rmpbc.h"
+
+
 
 namespace gmx
 {
@@ -75,10 +79,19 @@ class Rms : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Selection                                sel_[1];
+        Selection                                sel_;
         std::string                              fnRms_;
         AnalysisData                             data_;
         AnalysisDataAverageModulePointer         avem_;
+
+        // for the quick-port
+        t_topology *    pRefTop_;
+        int             topAtoms_;
+        rvec *          pRefX_;
+        // real *          pRefM_;
+
+        bool            bDoFit_;        // R+T fit. TODO: option for only trans. fit!
+        bool            bUnitWeights_;  // use 1 for mass weighting
 
         // Copy and assign disallowed by base.
 };

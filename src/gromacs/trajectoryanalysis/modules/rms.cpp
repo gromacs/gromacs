@@ -31,7 +31,7 @@
 /*! \internal \file
  * \brief
  * AGWIP
- * Implements gmx::analysismodules::Rdf.
+ * Implements gmx::analysismodules::Rms.
  *
  * \ingroup module_trajectoryanalysis
  */
@@ -54,6 +54,9 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "smalloc.h"
+#include "do_fit.h"
 
 namespace gmx
 {
@@ -80,7 +83,7 @@ Rms::~Rms()
 
 
 void
-Rms::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
+Rms::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
 {
     static const char *const desc[] = {
         "rms tool is rms."
@@ -88,14 +91,31 @@ Rms::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
     options->setDescription(concatenateStrings(desc));
 
-    options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnRms_).defaultBasename("rms")
-                           .description("RMS over time"));
+    options->addOption(FileNameOption("o")
+                       .description("Plot of RMS over time.")
+                       .filetype(eftPlot).outputFile()
+                       .store(&fnRms_).defaultBasename("rms"));
 
-    options->addOption(SelectionOption("select").required()
-                       .valueCount(1)
+    options->addOption(SelectionOption("select")
                        .description("Selection for rms calculation.")
-                       .store(sel_));
+                       .required()
+                       .valueCount(1)
+                       // .onlyStatic()
+                       .onlyAtoms()
+                       .store(&sel_));
+
+    options->addOption(BooleanOption("fit")
+                       .description("translational and rotational least squares fit.")
+                       .store(&bDoFit_));
+
+    options->addOption(BooleanOption("uw")
+                       .description("put weights to 1.")
+                       .defaultValue(FALSE)
+                       .store(&bUnitWeights_));
+
+    // topology with coords must be provided for use as reference in RMS calc.
+    settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
+    settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
 }
 
 void
@@ -105,12 +125,53 @@ Rms::optionsFinished(Options * options, TrajectoryAnalysisSettings * /*settings*
 
 void
 Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                       const TopologyInformation &top)
+                       const TopologyInformation &topInfo)
 {
     // here need to:
-    // * setup reference conf.
+    // * setup reference conformation from top file.
     // * save reference to topology for later calls to fitting functions.
+    matrix          box;
 
+
+    pRefTop_ = topInfo.topology();
+    topAtoms_ = pRefTop_->atoms.nr;
+    pRefX_ = NULL;
+    // pRefM_ = NULL;
+
+    // get coords for reference structure
+    (void) topInfo.getTopologyConf(&pRefX_, box);
+
+    // make reference structure whole
+    if (settings.hasRmPBC())
+    {
+        gmx_rmpbc_t     gpbc = NULL;
+
+        gpbc = gmx_rmpbc_init(&pRefTop_->idef, topInfo.ePBC(), pRefTop_->atoms.nr, box);
+        (void) gmx_rmpbc(gpbc, pRefTop_->atoms.nr, box, pRefX_);
+        (void) gmx_rmpbc_done(gpbc);
+    }
+
+    // // setup weights
+    // snew(pRefM_, pRefTop_->atoms.nr);
+    // bool bMass = FALSE;
+    // for(int i=0; i<pRefTop_->atoms.nr; i++)
+    // {
+    //     if (bUnitWeights_)
+    //         pRefM_[i] = 1.0;
+    //     else
+    //         pRefM_[i] = pRefTop_->atoms.atom[i].m;
+    //     bMass = bMass || (pRefTop_->atoms.atom[i].m != 0);
+    // }
+    // if (!bMass)
+    // {
+    //     fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
+    //     for(int i=0; i<pRefTop_->atoms.nr; i++)
+    //     {
+    //         pRefM_[i] = 1.0;
+    //     }
+    // }
+
+/* setup plot output file */
 #ifdef GMX_LIB_MPI
     if (!fnRms_.empty() && mpi::isMaster())
 #else
@@ -121,47 +182,114 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
             new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnRms_);
         plotm->setTitle("RMS");
-        plotm->setXLabel("time");
-        avem_.addModule(plotm);
+        plotm->setXAxisIsTime();
+        data_.addModule(plotm);
     }
 
-#ifdef GMX_LIB_MPI
-    if (mpi::isMaster())
-    {
-        fprintf(stderr, "master process: %d\n", getpid());
-    }
-    else
-    {
-        fprintf(stderr, "other process: %d\n", getpid());
-    }
-#endif
+    // also calc average
+    data_.addModule(avem_);
+
+// #ifdef GMX_LIB_MPI
+//     if (mpi::isMaster())
+//     {
+//         fprintf(stderr, "master process: %d\n", getpid());
+//     }
+//     else
+//     {
+//         fprintf(stderr, "other process: %d\n", getpid());
+//     }
+// #endif
 
 }
 
 void
-Rdf::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle  dh = pdata->dataHandle(data_);
-    const Selection    &sel = pdata->parallelSelection(sel_[0]);
-    const int           pos = sel.posCount();
+    const Selection    &sel = pdata->parallelSelection(sel_);
 
-    rvec                dx;
-    int                 dsamples;
+    const int                   selatoms = sel.atomCount();
+    const ConstArrayRef< int >  selAtomIndsArray = sel.atomIndices();
 
+    // atom_id *   selind;     // indicies of selected atoms (ref. to topology indexing)
+    rvec *      x;          // coordinates of selected atoms
+    rvec *      xp;         // coordinates of reference atoms corresponding to selected atoms
+    real *      m;          // masses of selected atoms
+
+    real        rms_val;
+
+    /* first put selection stuff in legacy format
+        so that we can use the old routines             */
+
+    // // selection indecies
+    // (void) snew(selind, selatoms);
+    // for(int i=0; i<selatoms; i++)
+    // {
+    //     selind[i] = (atom_id) selAtomIndsArray.at(i);
+    // }
+
+    // coords and masses
+    (void) snew(x, selatoms);
+    (void) snew(xp, selatoms);
+    (void) snew(m, selatoms);
+    for (int i=0; i<selatoms; i++)
+    {
+        const SelectionPosition &spi = sel.position(i);
+        const rvec &spix = spi.x();
+        const atom_id selindi = (atom_id) selAtomIndsArray.at(i);
+        for (int m=0; m<DIM; m++)
+        {
+            x[i][m]     = spix[m];
+            xp[i][m]    = pRefX_[selindi][m];
+        }
+
+        if (bUnitWeights_)
+            m[i] = 1.0;
+        else
+            m[i] = spi.mass();
+    }
+
+    if (bDoFit_)
+    {
+        /* translate (ie "reset") COM of reference and selected atoms */
+        (void) reset_x(selatoms, NULL,      // calc COM from same atoms as in selection
+                       selatoms, NULL,
+                       xp, m);
+        (void) reset_x(selatoms, NULL,      // calc COM from all atoms in selection
+                       selatoms, NULL,
+                       x, m);
+
+        /* rotate selection for least squares fit */
+        (void) do_fit(selatoms, m, xp, x);
+    }
+
+    rms_val = rmsdev(selatoms, m, x, xp);   // calc_similar_ind(FALSE, selatoms, NULL, m, x, xp);
+
+    /* write the result */
+    dh.startFrame(frnr, fr.time);
+    dh.setPoint(0, rms_val);
+    dh.finishFrame();
+
+    // release temp frame stuff
+    // (void) sfree(selind);
+    (void) sfree(x);
+    (void) sfree(xp);
+    (void) sfree(m);
 }
 
 
 void
-Rdf::finishAnalysis(int /*nframes*/)
+Rms::finishAnalysis(int /*nframes*/)
 {
 }
 
 
 void
-Rdf::writeOutput()
+Rms::writeOutput()
 {
-    fprintf(stderr, "Writing some output to stderr!\n");
+    fprintf(stderr, "Average RMS: %f\n", avem_->average(0));
+    fprintf(stderr, "Std. RMS:   %f\n", avem_->stddev(0));
 }
 
 } // namespace analysismodules
