@@ -158,43 +158,6 @@ endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
 ########################################################################
-# Fix stupid flags on Windows
-########################################################################
-SET(SHARED_LIBS_DEFAULT ON) 
-IF( WIN32 AND NOT CYGWIN)
-  if (NOT BUILD_SHARED_LIBS)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
-    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
-    SET(SHARED_LIBS_DEFAULT OFF)
-  else()
-    add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
-    set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
-  endif()
-
-  IF (GMX_PREFER_STATIC_LIBS)
-    #Only setting Debug and Release flags. Others configurations current not used.
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-    SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-    STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-    SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-    if(CMAKE_CXX_COMPILER_LOADED)
-        STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-        SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
-        STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-        SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
-    endif()
-  ENDIF()
-
-  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
-    if(BUILD_SHARED_LIBS)
-        STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-        SET(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} CACHE STRING "" FORCE)
-    endif()
-  ENDIF()
-ENDIF()
-
-
-########################################################################
 # User input options                                                   #
 ########################################################################
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
@@ -523,22 +486,71 @@ test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 ########################################################################
 # Find external packages                                               #
 ########################################################################
+SET(SHARED_LIBS_DEFAULT ON)
 if(UNIX)
     if(GMX_PREFER_STATIC_LIBS)
         # On Linux .a is the static library suffix, on Mac OS X .lib can also
         # be used, so we'll add both to the preference list.
         SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
-        if(SHARED_LIBS_DEFAULT)
-            if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
-                message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
-            elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
-                message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
-                set(SHARED_LIBS_DEFAULT OFF)
-            endif()
+        if(BUILD_SHARED_LIBS) #Warn the user about the combination. But don't overwrite the request.
+            message(WARNING "Static libraries requested, and shared Gromacs libraries requested.")
+        elseif(NOT DEFINED BUILD_SHARED_LIBS) #Change default to OFF. Don't warn if it's already off.
+            message(WARNING "Static libraries requested, the GROMACS libraries will also be build static (BUILD_SHARED_LIBS=OFF)")
+            set(SHARED_LIBS_DEFAULT OFF)
         endif()
     endif()
 endif()
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic with MPI, Windows)" ${SHARED_LIBS_DEFAULT})
+
+IF( WIN32 AND NOT CYGWIN)
+  SET(SHARED_LIBS_DEFAULT OFF) #becuase shared libs on Windows is still new - turning it off by default
+  if (NOT BUILD_SHARED_LIBS)
+      option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
+      if(NOT GMX_PREFER_STATIC_LIBS)
+          message(WARNING "Shared system libraries requested, and static Gromacs libraries requested.")
+      endif()
+  else()
+      option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" OFF)
+      if(GMX_PREFER_STATIC_LIBS)
+          #this combination segfaults (illigal passing of file handles)
+          message(FATAL_ERROR "Static system libraries requested, and shared Gromacs libraries requested.")
+      endif()
+      add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
+      set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
+  endif()
+  mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+
+  IF (GMX_PREFER_STATIC_LIBS)
+      #Only setting Debug and Release flags. Others configurations are current not used.
+      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+      STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+      if(CMAKE_CXX_COMPILER_LOADED)
+          STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+          STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+      endif()
+  ELSE()
+      STRING(REPLACE /MT /MD CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
+      STRING(REPLACE /MT /MD CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
+      if(CMAKE_CXX_COMPILER_LOADED)
+          STRING(REPLACE /MT /MD CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+          STRING(REPLACE /MT /MD CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
+      endif()
+  ENDIF()
+  SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
+  SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  if(CMAKE_CXX_COMPILER_LOADED)
+      SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
+      SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
+  endif()
+
+  IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
+    if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
+        STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
+        SET(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} CACHE STRING "" FORCE)
+    endif()
+  ENDIF()
+ENDIF()
+
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI)" ${SHARED_LIBS_DEFAULT})
 
 option(GMX_GSL "Add support for gsl" OFF)
 if (GMX_GSL)
