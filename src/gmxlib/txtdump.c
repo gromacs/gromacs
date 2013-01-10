@@ -563,6 +563,20 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
     if (fep->n_lambda > 0)
     {
         pr_indent(fp,indent);
+        fprintf(fp,"separate-dvdl%s\n",bMDPformat ? " = " : ":");
+        for(i=0; i<efptNR; i++)
+        {
+            fprintf(fp,"%18s = ",efpt_names[i]);
+            if (fep->separate_dvdl[i])
+            {
+                fprintf(fp,"  TRUE");
+            }
+            else
+            {
+                fprintf(fp,"  FALSE");
+            }
+            fprintf(fp,"\n");
+        }
         fprintf(fp,"all-lambdas%s\n",bMDPformat ? " = " : ":");
         for(i=0; i<efptNR; i++) {
             fprintf(fp,"%18s = ",efpt_names[i]);
