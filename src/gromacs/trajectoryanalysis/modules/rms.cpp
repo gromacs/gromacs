@@ -66,7 +66,7 @@ namespace analysismodules
 
 const char Rms::name[] = "rms";
 const char Rms::shortDescription[] =
-    "Calculate (best-fit) root mean square deviations.";
+    "Calculate (best-fit) RMS deviations.";
 
 Rms::Rms()
     : TrajectoryAnalysisModule(name, shortDescription),
@@ -86,7 +86,7 @@ void
 Rms::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
 {
     static const char *const desc[] = {
-        "rms tool is rms."
+        "rms calculates RMS deviation of atomic positions relative a reference structure."
     };
 
     options->setDescription(concatenateStrings(desc));
