@@ -101,6 +101,8 @@ extern const char *efep_names[efepNR+1];
 GMX_LIBGMX_EXPORT
 extern const char *efpt_names[efptNR+1];
 GMX_LIBGMX_EXPORT
+extern const char *efpt_singular_names[efptNR+1];
+GMX_LIBGMX_EXPORT
 extern const char *elamstats_names[elamstatsNR+1];
 GMX_LIBGMX_EXPORT
 extern const char *elmcmove_names[elmcmoveNR+1];

@@ -1491,54 +1491,53 @@ The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
 </dl></dd>
-<dt><b>init-lambda: (0)</b></dt>
-<dd>starting value for lambda (float).  Generally, this should only be used with slow growth.  In other cases, <b>init-lambda-state</b> should be specified instead.</dd>
-<dt><b>init-lambda-state: (0)</b></dt>
-<dd>starting value for the lambda state (integer).  Specified which columm of the lambda vector should be used.</dd>
+<dt><b>init-lambda: (-1)</b></dt>
+<dd>starting value for lambda (float).  Generally, this should only be used with slow growth (i.e. nonzero <b>delta-lambda</b>).  In other cases, <b>init-lambda-state</b> should be specified instead. Must be between 0 and 1.</dd>
 <dt><b>delta-lambda: (0)</b></dt>
 <dd>increment per time step for lambda</dd>
+<dt><b>init-lambda-state: (-1)</b></dt>
+<dd>starting value for the lambda state (integer).  Specifies which columm of the lambda vector (<b>coul-lambdas</b>, <b>vdw-lambdas</b>, <b>bonded-lambdas</b>, <b>restraint-lambdas</b>, <b>mass-lambdas</b>, <b>temperature-lambdas</b>, <b>fep-lambdas</b>) should be used. This is a zero-based index: <b>init-lambda-state</b> 0 means the first column, and so on.</dd>
 <dt><b>fep-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. 
+Values must be between 0 and 1.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
-all components of the lambda vector that are not specified will use <b>fep-lambdas</b>.</dd>
+all components of the lambda vector that are not specified will use <b>fep-lambdas</b> (including restraint-lambdas and therefore the pull code restraints).</dd>
 <dt><b>coul-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
-Only the electrostatic interactions are controlled with this component of the lambda vector.</dd>
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
+Only the electrostatic interactions are controlled with this component of the lambda vector (and only if the lambda=0 and lambda=1 states have differing electrostatic interactions).</dd>
 <dt><b>vdw-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the van der Waals interactions are controlled with this component of the lambda vector.</dd>
 <dt><b>bonded-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the bonded interactions are controlled with this component of the lambda vector.</dd>
 <dt><b>restraint-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
-Only the restraint interactions are controlled with this component of the lambda vector.</dd>
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
+Only the restraint interactions: dihedral restraints, and the pull code restraints are controlled with this component of the lambda vector. </dd>
 <dt><b>mass-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the particle masses are controlled with this component of the lambda vector.</dd>
 <dt><b>temperature-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the temperatures controlled with this component of the lambda vector.
 Note that these lambdas should not be used for replica exchange, only for simulated tempering.</dd>
 <dt><b>sc-alpha: (0)</b></dt>
-<dd>the soft-core parameter, a value of 0 results in linear interpolation of
-the LJ and Coulomb interactions</dd>
+<dd>the soft-core alpha parameter, a value of 0 results in linear interpolation of the LJ and Coulomb interactions</dd>
 <dt><b>sc-r-power: (6)</b></dt>
 <dd>the power of the radial term in the soft-core equation.  Possible values are 6 and 48. 6 is more standard, and is the default.  When 48 is used, then sc-alpha should generally be much lower (between 0.001 and 0.003).</dd>
 <dt><b>sc-coul: (no)</b></dt>
 <dd>Whether to apply the soft core free energy interations to the Columbic interaction. Default is no, as it is generally
 more efficient to turn of the Coulomic interactions linearly before turning off electrostatic interactions.</dd>
 <dt><b>sc-power: (0)</b></dt>
-<dd>the power for lambda in the soft-core function,
-only the values 1 and 2 are supported</dd>
+<dd>the power for lambda in the soft-core function, only the values 1 and 2 are supported</dd>
 <dt><b>sc-sigma: (0.3) [nm]</b></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
 to zero or a sigma smaller than <b>sc-sigma</b></dd>

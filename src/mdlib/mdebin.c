@@ -589,10 +589,12 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
             mde_delta_h_coll_init(md->dhc, ir);
         }
         md->fp_dhdl = NULL;
+        snew(md->dE,ir->fepvals->n_lambda);
     }
     else
     {
         md->fp_dhdl = fp_dhdl;
+        snew(md->dE,ir->fepvals->n_lambda);
     }
     if (ir->bSimTemp) {
         int i;
@@ -605,6 +607,66 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
     return md;
 }
 
+/* print a lambda vector to a string
+   fep = the inputrec's FEP input data
+   i = the index of the lambda vector
+   get_native_lambda = whether to print the native lambda
+   get_names = whether to print the names rather than the values
+   str = the pre-allocated string buffer to print to. */
+static void print_lambda_vector(t_lambda *fep, int i,
+                                gmx_bool get_native_lambda, gmx_bool get_names,
+                                char *str)
+{
+    size_t nps=0, np;
+    int j,k=0;
+    int Nsep=0;
+
+    for (j=0;j<efptNR;j++)
+    {
+        if (fep->separate_dvdl[j])
+            Nsep ++;
+    }
+    str[0]=0; /* reset the string */
+    if (Nsep > 1)
+    {
+        str += sprintf(str, "("); /* set the opening parenthesis*/
+    }
+    for (j=0;j<efptNR;j++)
+    {
+        if (fep->separate_dvdl[j])
+        {
+            double lam;
+            if (!get_names)
+            {
+                if (get_native_lambda && fep->init_lambda >= 0)
+                {
+                    str += sprintf(str,"%.4f", fep->init_lambda);
+                }
+                else
+                {
+                    str += sprintf(str,"%.4f", fep->all_lambda[j][i]);
+                }
+            }
+            else
+            {
+                str += sprintf(str,"%s", efpt_singular_names[j]);
+            }
+            /* print comma for the next item */
+            if (k<Nsep-1)
+            {
+                str += sprintf(str,", ");
+            }
+            k++;
+        }
+    }
+    if (Nsep > 1)
+    {
+        /* and add the closing parenthesis */
+        str += sprintf(str, ")");
+    }
+}
+
+
 extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
                        const output_env_t oenv)
 {
@@ -613,17 +675,26 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         *lambdastate="\\lambda state",*remain="remaining";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN];
     int  i,np,nps,nsets,nsets_de,nsetsbegin;
-    t_lambda *fep;
+    int n_lambda_terms=0;
+    t_lambda *fep=ir->fepvals; /* for simplicity */
+    t_expanded *expand=ir->expandedvals;
     char **setname;
-    char buf[STRLEN];
+    char buf[STRLEN], lambda_vec_str[STRLEN], lambda_name_str[STRLEN];
     int bufplace=0;
 
     int nsets_dhdl = 0;
     int s = 0;
     int nsetsextend;
+    gmx_bool write_pV = FALSE;
 
-    /* for simplicity */
-    fep = ir->fepvals;
+    /* count the number of different lambda terms */
+    for (i=0;i<efptNR;i++)
+    {
+        if (fep->separate_dvdl[i])
+        {
+            n_lambda_terms++;
+        }
+    }
 
     if (fep->n_lambda == 0)
     {
@@ -649,30 +720,36 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     }
     if (ir->efep != efepSLOWGROWTH)
     {
-        if (fep->n_lambda == 0)
+        if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
         {
-            sprintf(&(buf[bufplace]),"%s = %g",
-                    lambda,fep->init_lambda);
+            /* compatibility output */
+            sprintf(&(buf[bufplace]),"%s = %.4f", lambda,fep->init_lambda);
         }
         else
         {
-            sprintf(&(buf[bufplace]),"%s = %d",
-                    lambdastate,fep->init_fep_state);
+            print_lambda_vector(fep, fep->init_fep_state, TRUE, FALSE,
+                                lambda_vec_str);
+            print_lambda_vector(fep, fep->init_fep_state, TRUE, TRUE,
+                                lambda_name_str);
+            sprintf(&(buf[bufplace]),"%s %d: %s = %s",
+                    lambdastate,fep->init_fep_state,
+                    lambda_name_str, lambda_vec_str);
         }
     }
     xvgr_subtitle(fp,buf,oenv);
 
-    for (i=0;i<efptNR;i++)
-    {
-        if (fep->separate_dvdl[i]) {nsets_dhdl++;}
-    }
 
+    nsets_dhdl=0;
+    if (fep->dhdl_derivatives == edhdlderivativesYES)
+    {
+        nsets_dhdl = n_lambda_terms;
+    }
     /* count the number of delta_g states */
     nsets_de = fep->n_lambda;
 
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
-    if (fep->n_lambda>0 && ir->bExpanded)
+    if (fep->n_lambda>0 && (expand->elmcmove > elmcmoveNO))
     {
         nsets += 1;   /*add fep state for expanded ensemble */
     }
@@ -683,13 +760,18 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
     }
 
     nsetsextend = nsets;
-    if ((ir->epc!=epcNO) && (fep->n_lambda>0))
+    if ((ir->epc!=epcNO) && (fep->n_lambda>0) && (fep->init_lambda < 0))
     {
-        nsetsextend += 1; /* for PV term, other terms possible if required for the reduced potential (only needed with foreign lambda) */
+        nsetsextend += 1; /* for PV term, other terms possible if required for
+                             the reduced potential (only needed with foreign
+                             lambda, and only output when init_lambda is not
+                             set in order to maintain compatibility of the
+                             dhdl.xvg file) */
+        write_pV = TRUE;
     }
     snew(setname,nsetsextend);
 
-    if (ir->bExpanded)
+    if (expand->elmcmove > elmcmoveNO)
     {
         /* state for the fep_vals, if we have alchemical sampling */
         sprintf(buf,"%s","Thermodynamic state");
@@ -704,12 +786,30 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         s+=1;
     }
 
-    for (i=0;i<efptNR;i++)
+    if (fep->dhdl_derivatives == edhdlderivativesYES)
     {
-        if (fep->separate_dvdl[i]) {
-            sprintf(buf,"%s (%s)",dhdl,efpt_names[i]);
-            setname[s] = strdup(buf);
-            s+=1;
+        for (i=0;i<efptNR;i++)
+        {
+            if (fep->separate_dvdl[i]) {
+
+                if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
+                {
+                    /* compatibility output */
+                    sprintf(buf,"%s %s %.4f",dhdl,lambda, fep->init_lambda);
+                }
+                else
+                {
+                    double lam=fep->init_lambda;
+                    if (fep->init_lambda < 0)
+                    {
+                        lam=fep->all_lambda[i][fep->init_fep_state];
+                    }
+                    sprintf(buf,"%s %s = %.4f",dhdl, efpt_singular_names[i],
+                            lam);
+                }
+                setname[s] = strdup(buf);
+                s+=1;
+            }
         }
     }
 
@@ -719,7 +819,7 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
          * from this xvg legend.
          */
 
-        if (ir->bExpanded) {
+        if (expand->elmcmove > elmcmoveNO) {
             nsetsbegin = 1;  /* for including the expanded ensemble */
         } else {
             nsetsbegin = 0;
@@ -731,31 +831,33 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         }
         nsetsbegin += nsets_dhdl;
 
-        for(s=nsetsbegin; s<nsets; s++)
+        for(i=0; i<fep->n_lambda; i++)
         {
-            nps = sprintf(buf,"%s %s (",deltag,lambda);
-            for (i=0;i<efptNR;i++)
+            print_lambda_vector(fep, i, FALSE, FALSE, lambda_vec_str);
+            if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
             {
-                if (fep->separate_dvdl[i])
-                {
-                    np = sprintf(&buf[nps],"%g,",fep->all_lambda[i][s-(nsetsbegin)]);
-                    nps += np;
-                }
-            }
-            if (ir->bSimTemp)
-            {
-                /* print the temperature for this state if doing simulated annealing */
-                sprintf(&buf[nps],"T = %g (%s))",ir->simtempvals->temperatures[s-(nsetsbegin)],unit_temp_K);
+                /* for compatible dhdl.xvg files */
+                nps = sprintf(buf,"%s %s %s",deltag,lambda, lambda_vec_str);
             }
             else
             {
-                sprintf(&buf[nps-1],")");  /* -1 to overwrite the last comma */
+                nps = sprintf(buf,"%s %s to %s",deltag,lambda, lambda_vec_str);
+            }
+
+            if (ir->bSimTemp)
+            {
+                /* print the temperature for this state if doing simulated annealing */
+                sprintf(&buf[nps],"T = %g (%s)",
+                        ir->simtempvals->temperatures[s-(nsetsbegin)],
+                        unit_temp_K);
             }
             setname[s] = strdup(buf);
+            s++;
         }
-        if (ir->epc!=epcNO) {
+        if (write_pV) {
             np = sprintf(buf,"pV (%s)",unit_energy);
-            setname[nsetsextend-1] = strdup(buf);  /* the first entry after nsets */
+            setname[nsetsextend-1] = strdup(buf);  /* the first entry after
+                                                      nsets */
         }
 
         xvgr_legend(fp,nsetsextend,(const char **)setname,oenv);
@@ -805,7 +907,6 @@ void upd_mdebin(t_mdebin *md,
     real   eee[egNR];
     real   ecopy[F_NRE];
     double store_dhdl[efptNR];
-    double *dE=NULL;
     real   store_energy=0;
     real   tmp;
 
@@ -994,81 +1095,84 @@ void upd_mdebin(t_mdebin *md,
     /* BAR + thermodynamic integration values */
     if ((md->fp_dhdl || md->dhc) && bDoDHDL && (enerd->n_lambda > 0))
     {
-        snew(dE,enerd->n_lambda-1);
         for(i=0; i<enerd->n_lambda-1; i++) {
-            dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];  /* zero for simulated tempering */
+            /* zero for simulated tempering */
+            md->dE[i] = enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0];
             if (md->temperatures!=NULL)
             {
                 /* MRS: is this right, given the way we have defined the exchange probabilities? */
                 /* is this even useful to have at all? */
-                dE[i] += (md->temperatures[i]/md->temperatures[state->fep_state]-1.0)*enerd->term[F_EKIN];
+                md->dE[i] += (md->temperatures[i]/
+                          md->temperatures[state->fep_state]-1.0)*
+                            enerd->term[F_EKIN];
             }
         }
-    }
 
-    if (md->fp_dhdl && bDoDHDL)
-    {
-        fprintf(md->fp_dhdl,"%.4f",time);
-        /* the current free energy state */
-
-        /* print the current state if we are doing expanded ensemble */
-        if (expand->elmcmove > elmcmoveNO) {
-            fprintf(md->fp_dhdl," %4d",state->fep_state);
-        }
-        /* total energy (for if the temperature changes */
-        if (fep->bPrintEnergy)
+        if (md->fp_dhdl)
         {
+            fprintf(md->fp_dhdl,"%.4f",time);
+            /* the current free energy state */
+
+            /* print the current state if we are doing expanded ensemble */
+            if (expand->elmcmove > elmcmoveNO) {
+                fprintf(md->fp_dhdl," %4d",state->fep_state);
+            }
+            /* total energy (for if the temperature changes */
+            if (fep->bPrintEnergy)
+            {
+                store_energy = enerd->term[F_ETOT];
+                fprintf(md->fp_dhdl," %#.8g",store_energy);
+            }
+
+            if (fep->dhdl_derivatives == edhdlderivativesYES)
+            {
+                for (i=0;i<efptNR;i++)
+                {
+                    if (fep->separate_dvdl[i])
+                    {
+                        /* assumes F_DVDL is first */
+                        fprintf(md->fp_dhdl," %#.8g",enerd->term[F_DVDL+i]);
+                    }
+                }
+            }
+            for(i=0;i<fep->n_lambda;i++)
+            {
+                fprintf(md->fp_dhdl," %#.8g",md->dE[i]);
+            }
+            if ((md->epc!=epcNO)  && 
+                (enerd->n_lambda > 0) &&
+                (fep->init_lambda<0))
+            {
+                fprintf(md->fp_dhdl," %#.8g",pv);  /* PV term only needed when
+                                                      there are alternate state
+                                                      lambda and we're not in
+                                                      compatibility mode */
+            }
+            fprintf(md->fp_dhdl,"\n");
+            /* and the binary free energy output */
+        }
+        if (md->dhc && bDoDHDL)
+        {
+            int idhdl = 0;
+            for (i=0;i<efptNR;i++)
+            {
+                if (fep->separate_dvdl[i])
+                {
+                    /* assumes F_DVDL is first */
+                    store_dhdl[idhdl] = enerd->term[F_DVDL+i];
+                    idhdl+=1;
+                }
+            }
             store_energy = enerd->term[F_ETOT];
-            fprintf(md->fp_dhdl," %#.8g",store_energy);
+            /* store_dh is dE */
+            mde_delta_h_coll_add_dh(md->dhc,
+                                    (double)state->fep_state,
+                                    store_energy,
+                                    pv,
+                                    store_dhdl,
+                                    md->dE,
+                                    time);
         }
-
-        for (i=0;i<efptNR;i++)
-        {
-            if (fep->separate_dvdl[i])
-            {
-                fprintf(md->fp_dhdl," %#.8g",enerd->term[F_DVDL+i]); /* assumes F_DVDL is first */
-            }
-        }
-        for(i=1; i<enerd->n_lambda; i++)
-        {
-            fprintf(md->fp_dhdl," %#.8g",dE[i-1]);
-
-        }
-        if ((md->epc!=epcNO)  && (enerd->n_lambda > 0))
-        {
-            fprintf(md->fp_dhdl," %#.8g",pv);   /* PV term only needed when there are alternate state lambda */
-        }
-        fprintf(md->fp_dhdl,"\n");
-        /* and the binary free energy output */
-    }
-    if (md->dhc && bDoDHDL)
-    {
-        int idhdl = 0;
-        for (i=0;i<efptNR;i++)
-        {
-            if (fep->separate_dvdl[i])
-            {
-                store_dhdl[idhdl] = enerd->term[F_DVDL+i]; /* assumes F_DVDL is first */
-                idhdl+=1;
-            }
-        }
-        /* store_dh is dE */
-        mde_delta_h_coll_add_dh(md->dhc,
-                                (double)state->fep_state,
-                                store_energy,
-                                pv,
-                                (expand->elamstats>elamstatsNO),
-                                (fep->bPrintEnergy),
-                                (md->epc!=epcNO),
-                                idhdl,
-                                fep->n_lambda,
-                                store_dhdl,
-                                dE,
-                                time);
-    }
-    if ((md->fp_dhdl || md->dhc) && bDoDHDL && (enerd->n_lambda >0))
-    {
-        sfree(dE);
     }
 }
 
