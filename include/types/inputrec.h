@@ -133,7 +133,10 @@ typedef struct {
 
 typedef struct {
   int  nstdhdl;          /* The frequency for calculating dhdl           */
-  double init_lambda;    /* fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code)   */
+  double init_lambda;    /* fractional value of lambda (usually will use
+                            init_fep_state, this will only be for slow growth,
+                            and for legacy free energy code. Only has a
+                            valid value if positive)   */
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
   gmx_bool bPrintEnergy; /* Whether to print the energy in the dhdl           */

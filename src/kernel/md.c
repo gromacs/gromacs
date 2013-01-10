@@ -218,7 +218,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
 	real        vetanew = 0;
     int         lamnew=0;
     /* for FEP */
-    int         fep_state=0;
     int         nstfep;
     real        rate;
     double      cycles;
