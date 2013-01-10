@@ -673,6 +673,7 @@ AnalysisDataStorage::finishFrame(int index)
 void
 AnalysisDataStorage::finishDataStorage()
 {
+#ifdef GMX_LIB_MPI
     if (impl_->parallelDataMPI_)
     {
         using mpi::comm;
@@ -731,6 +732,7 @@ AnalysisDataStorage::finishDataStorage()
         }
         impl_->notifyNextFrames(0);
     }
+#endif
 
     if (mpi::isMaster())
     {
