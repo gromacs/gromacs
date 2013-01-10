@@ -1368,8 +1368,10 @@ static void fec(const char *ene2fn, const char *runavgfn,
 }
 
 
-static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *filename, gmx_bool bDp,
-                    int *blocks, int *hists, int *samples, int *nlambdas, const output_env_t oenv)
+static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl,
+                    const char *filename, gmx_bool bDp,
+                    int *blocks, int *hists, int *samples, int *nlambdas,
+                    const output_env_t oenv)
 {
     const char *dhdl="dH/d\\lambda",*deltag="\\DeltaH",*lambda="\\lambda";
     char title[STRLEN],label_x[STRLEN],label_y[STRLEN], legend[STRLEN];
@@ -1380,7 +1382,11 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
     /* coll data */
     double temp=0, start_time=0, delta_time=0, start_lambda=0, delta_lambda=0;
     static int setnr=0;
+    double *native_lambda_vec=NULL;
+    const char **lambda_components=NULL;
+    int n_lambda_vec=0;
     gmx_bool changing_lambda=FALSE;
+    int lambda_fep_state;
 
     /* now count the blocks & handle the global dh data */
     for(i=0;i<fr->nblock;i++)
@@ -1410,6 +1416,32 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
             start_lambda = fr->block[i].sub[0].dval[3];
             delta_lambda = fr->block[i].sub[0].dval[4];
             changing_lambda = (delta_lambda != 0);
+            if (fr->block[i].nsub > 1)
+            {
+                lambda_fep_state=fr->block[i].sub[1].ival[0];
+                if (n_lambda_vec==0)
+                {
+                    n_lambda_vec=fr->block[i].sub[1].ival[1];
+                }
+                else
+                {
+                    if (n_lambda_vec!=fr->block[i].sub[1].ival[1])
+                    {
+                        gmx_fatal(FARGS,
+                                  "Unexpected change of basis set in lambda");
+                    }
+                }
+                if (lambda_components == NULL)
+                    snew(lambda_components, n_lambda_vec);
+                if (native_lambda_vec == NULL)
+                    snew(native_lambda_vec, n_lambda_vec);
+                for(j=0;j<n_lambda_vec;j++)
+                {
+                    native_lambda_vec[j] = fr->block[i].sub[0].dval[5+j];
+                    lambda_components[j] =
+                           efpt_singular_names[fr->block[i].sub[1].ival[2+j]];
+                }
+            }
         }
     }
 
@@ -1426,7 +1458,12 @@ static void do_dhdl(t_enxframe *fr, t_inputrec *ir, FILE **fp_dhdl, const char *
     {
         if (nblock_dh>0)
         {
-            /* we have standard, non-histogram data -- call open_dhdl to open the file */
+            /* we have standard, non-histogram data --
+               call open_dhdl to open the file */
+            /* TODO this is an ugly hack that needs to be fixed: this will only
+               work if the order of data is always the same and if we're
+               only using the g_energy compiled with the mdrun that produced
+               the ener.edr. */
             *fp_dhdl=open_dhdl(filename,ir,oenv);
         }
         else
