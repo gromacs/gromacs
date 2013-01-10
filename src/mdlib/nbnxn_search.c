@@ -424,6 +424,7 @@ static real grid_atom_density(int n,rvec corner0,rvec corner1)
 
 static int set_grid_size_xy(const nbnxn_search_t nbs,
                             nbnxn_grid_t *grid,
+                            int dd_zone,
                             int n,rvec corner0,rvec corner1,
                             real atom_density,
                             int XFormat)
@@ -468,6 +469,23 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
     {
         grid->ncx = 1;
         grid->ncy = 1;
+    }
+
+    grid->sx = size[XX]/grid->ncx;
+    grid->sy = size[YY]/grid->ncy;
+    grid->inv_sx = 1/grid->sx;
+    grid->inv_sy = 1/grid->sy;
+
+    if (dd_zone > 0)
+    {
+        /* This is a non-home zone, add an extra row of cells
+         * for particles communicated for bonded interactions.
+         * These can be beyond the cut-off. It doesn't matter where
+         * they end up on the grid, but for performance it's better
+         * if they don't end up in cells that can be within cut-off range.
+         */
+        grid->ncx++;
+        grid->ncy++;
     }
 
     /* We need one additional cell entry for particles moved by DD */
@@ -532,23 +550,39 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
     copy_rvec(corner0,grid->c0);
     copy_rvec(corner1,grid->c1);
-    grid->sx = size[XX]/grid->ncx;
-    grid->sy = size[YY]/grid->ncy;
-    grid->inv_sx = 1/grid->sx;
-    grid->inv_sy = 1/grid->sy;
 
     return nc_max;
 }
 
-#define SORT_GRID_OVERSIZE 2
+/* We need to sort paricles in grid columns on z-coordinate.
+ * As particle are very often distributed homogeneously, we a sorting
+ * algorithm similar to pigeonhole sort. We multiply the z-coordinate
+ * by a factor, cast to an int and try to store in that hole. If the hole
+ * is full, we move this or another particle. A second pass is needed to make
+ * contiguous elements. SORT_GRID_OVERSIZE is the ratio of holes to particles.
+ * 4 is the optimal value for homogeneous particle distribution and allows
+ * for an O(#particles) sort up till distributions were all particles are
+ * concentrated in 1/4 of the space. No NlogN fallback is implemented,
+ * as it can be expensive to detect imhomogeneous particle distributions.
+ * SGSF is the maximum ratio of holes used, in the worst case all particles
+ * end up in the last hole and we need #particles extra holes at the end.
+ */
+#define SORT_GRID_OVERSIZE 4
 #define SGSF (SORT_GRID_OVERSIZE + 1)
 
+/* Sort particle index a on coordinates x along dim.
+ * Backwards tells if we want decreasing iso increasing coordinates.
+ * h0 is the minimum of the coordinate range.
+ * invh is the inverse hole spacing.
+ * nsort, the theortical hole limit, is only used for debugging.
+ * sort is the sorting work array.
+ */
 static void sort_atoms(int dim,gmx_bool Backwards,
                        int *a,int n,rvec *x,
                        real h0,real invh,int nsort,int *sort)
 {
     int i,c;
-    int zi,zim;
+    int zi,zim,zi_min,zi_max;
     int cp,tmp;
 
     if (n <= 1)
@@ -557,13 +591,10 @@ static void sort_atoms(int dim,gmx_bool Backwards,
         return;
     }
 
-    /* For small oversize factors clearing the whole area is fastest.
-     * For large oversize we should clear the used elements after use.
-     */
-    for(i=0; i<nsort; i++)
-    {
-        sort[i] = -1;
-    }
+    /* Determine the index range used, so we can limit it for the second pass */
+    zi_min = INT_MAX;
+    zi_max = -1;
+
     /* Sort the particles using a simple index sort */
     for(i=0; i<n; i++)
     {
@@ -588,6 +619,8 @@ static void sort_atoms(int dim,gmx_bool Backwards,
         if (sort[zi] < 0)
         {
             sort[zi] = a[i];
+            zi_min = min(zi_min,zi);
+            zi_max = max(zi_max,zi);
         }
         else
         {
@@ -617,8 +650,10 @@ static void sort_atoms(int dim,gmx_bool Backwards,
                     zim++;
                 }
                 sort[zim] = cp;
+                zi_max = max(zi_max,zim);
             }
             sort[zi] = a[i];
+            zi_max = max(zi_max,zi);
         }
     }
 
@@ -630,16 +665,18 @@ static void sort_atoms(int dim,gmx_bool Backwards,
             if (sort[zi] >= 0)
             {
                 a[c++] = sort[zi];
+                sort[zi] = -1;
             }
         }
     }
     else
     {
-        for(zi=nsort-1; zi>=0; zi--)
+        for(zi=zi_max; zi>=zi_min; zi--)
         {
             if (sort[zi] >= 0)
             {
                 a[c++] = sort[zi];
+                sort[zi] = -1;
             }
         }
     }
@@ -1359,7 +1396,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
 /* Determine in which grid column atoms should go */
 static void calc_column_indices(nbnxn_grid_t *grid,
                                 int a0,int a1,
-                                rvec *x,const int *move,
+                                rvec *x,
+                                int dd_zone,const int *move,
                                 int thread,int nthread,
                                 int *cell,
                                 int *cxy_na)
@@ -1375,50 +1413,78 @@ static void calc_column_indices(nbnxn_grid_t *grid,
 
     n0 = a0 + (int)((thread+0)*(a1 - a0))/nthread;
     n1 = a0 + (int)((thread+1)*(a1 - a0))/nthread;
-    for(i=n0; i<n1; i++)
+    if (dd_zone == 0)
     {
-        if (move == NULL || move[i] >= 0)
+        /* Home zone */
+        for(i=n0; i<n1; i++)
         {
-            /* We need to be careful with rounding,
-             * particles might be a few bits outside the local box.
-             * The int cast takes care of the lower bound,
-             * we need to explicitly take care of the upper bound.
-             */
+            if (move == NULL || move[i] >= 0)
+            {
+                /* We need to be careful with rounding,
+                 * particles might be a few bits outside the local zone.
+                 * The int cast takes care of the lower bound,
+                 * we will explicitly take care of the upper bound.
+                 */
+                cx = (int)((x[i][XX] - grid->c0[XX])*grid->inv_sx);
+                cy = (int)((x[i][YY] - grid->c0[YY])*grid->inv_sy);
+
+#ifdef DEBUG_NBNXN_GRIDDING
+                if (cx < 0 || cx >= grid->ncx ||
+                    cy < 0 || cy >= grid->ncy)
+                {
+                    gmx_fatal(FARGS,
+                              "grid cell cx %d cy %d out of range (max %d %d)\n"
+                              "atom %f %f %f, grid->c0 %f %f",
+                              cx,cy,grid->ncx,grid->ncy,
+                              x[i][XX],x[i][YY],x[i][ZZ],grid->c0[XX],grid->c0[YY]);
+                }
+#endif
+                /* Take care of potential rouding issues */
+                cx = min(cx,grid->ncx - 1);
+                cy = min(cy,grid->ncy - 1);
+
+                /* For the moment cell will contain only the, grid local,
+                 * x and y indices, not z.
+                 */
+                cell[i] = cx*grid->ncy + cy;
+            }
+            else
+            {
+                /* Put this moved particle after the end of the grid,
+                 * so we can process it later without using conditionals.
+                 */
+                cell[i] = grid->ncx*grid->ncy;
+            }
+
+            cxy_na[cell[i]]++;
+        }
+    }
+    else
+    {
+        /* Non-home zone */
+        for(i=n0; i<n1; i++)
+        {
             cx = (int)((x[i][XX] - grid->c0[XX])*grid->inv_sx);
-            if (cx == grid->ncx)
-            {
-                cx = grid->ncx - 1;
-            }
             cy = (int)((x[i][YY] - grid->c0[YY])*grid->inv_sy);
-            if (cy == grid->ncy)
-            {
-                cy = grid->ncy - 1;
-            }
-            /* For the moment cell contains only the, grid local,
+
+            /* For non-home zones there could be particles outside
+             * the non-bonded cut-off range, which have been communicated
+             * for bonded interactions only. For the result it doesn't
+             * matter where these end up on the grid. For performance
+             * we put them in an extra row at the border.
+             */
+            cx = max(cx,0);
+            cx = min(cx,grid->ncx - 1);
+            cy = max(cy,0);
+            cy = min(cy,grid->ncy - 1);
+
+            /* For the moment cell will contain only the, grid local,
              * x and y indices, not z.
              */
             cell[i] = cx*grid->ncy + cy;
 
-#ifdef DEBUG_NBNXN_GRIDDING
-            if (cell[i] < 0 || cell[i] >= grid->ncx*grid->ncy)
-            {
-                gmx_fatal(FARGS,
-                          "grid cell cx %d cy %d out of range (max %d %d)\n"
-                          "atom %f %f %f, grid->c0 %f %f",
-                          cx,cy,grid->ncx,grid->ncy,
-                          x[i][XX],x[i][YY],x[i][ZZ],grid->c0[XX],grid->c0[YY]);
-            }
-#endif
+            cxy_na[cell[i]]++;
         }
-        else
-        {
-            /* Put this moved particle after the end of the grid,
-             * so we can process it later without using conditionals.
-             */
-            cell[i] = grid->ncx*grid->ncy;
-        }
-
-        cxy_na[cell[i]]++;
     }
 }
 
@@ -1442,7 +1508,7 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for(thread=0; thread<nthread; thread++)
     {
-        calc_column_indices(grid,a0,a1,x,move,thread,nthread,
+        calc_column_indices(grid,a0,a1,x,dd_zone,move,thread,nthread,
                             nbs->cell,nbs->work[thread].cxy_na);
     }
 
@@ -1509,6 +1575,11 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
                 over_alloc_large(ncz_max*grid->na_sc*SGSF);
             srenew(nbs->work[thread].sort_work,
                    nbs->work[thread].sort_work_nalloc);
+            /* When not in use, all elements should be -1 */
+            for(i=0; i<nbs->work[thread].sort_work_nalloc; i++)
+            {
+                nbs->work[thread].sort_work[i] = -1;
+            }
         }
     }
 
@@ -1522,12 +1593,18 @@ static void calc_cell_indices(const nbnxn_search_t nbs,
         nbs->a[(grid->cell0 + grid->cxy_ind[cxy])*grid->na_sc + grid->cxy_na[cxy]++] = i;
     }
 
-    /* Set the cell indices for the moved particles */
-    n0 = grid->nc*grid->na_sc;
-    n1 = grid->nc*grid->na_sc+grid->cxy_na[grid->ncx*grid->ncy];
-    for(i=n0; i<n1; i++)
+    if (dd_zone == 0)
     {
-        nbs->cell[nbs->a[i]] = i;
+        /* Set the cell indices for the moved particles */
+        n0 = grid->nc*grid->na_sc;
+        n1 = grid->nc*grid->na_sc+grid->cxy_na[grid->ncx*grid->ncy];
+        if (dd_zone == 0)
+        {
+            for(i=n0; i<n1; i++)
+            {
+                nbs->cell[nbs->a[i]] = i;
+            }
+        }
     }
 
     /* Sort the super-cell columns along z into the sub-cells. */
@@ -1672,7 +1749,8 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
         nbs->natoms_nonlocal = max(nbs->natoms_nonlocal,a1);
     }
 
-    nc_max_grid = set_grid_size_xy(nbs,grid,n-nmoved,corner0,corner1,
+    nc_max_grid = set_grid_size_xy(nbs,grid,
+                                   dd_zone,n-nmoved,corner0,corner1,
                                    nbs->grid[0].atom_density,
                                    nbat->XFormat);
 
