@@ -368,23 +368,41 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   else if (file_version >= 64)
   {
       gmx_fio_do_int(fio,fepvals->n_lambda);
-      snew(fepvals->all_lambda,efptNR);
       if (bRead)
       {
-          snew(fepvals->all_lambda[efptFEP],fepvals->n_lambda);
+          int g;
+
+          snew(fepvals->all_lambda,efptNR);
+          /* still allocate the all_lambda array's contents. */
+          for(g=0;g<efptNR;g++)
+          {
+              if (fepvals->n_lambda > 0) {
+                  snew(fepvals->all_lambda[g],fepvals->n_lambda);
+              }
+          }
       }
-      bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[efptFEP],fepvals->n_lambda);
+      bDum=gmx_fio_ndo_double(fio,fepvals->all_lambda[efptFEP],
+                              fepvals->n_lambda);
       if (fepvals->init_lambda >= 0)
       {
+          int g,h;
+
           fepvals->separate_dvdl[efptFEP] = TRUE;
-      }
-      /* still allocate the all_lambda array's contents. */
-      for (g=0;g<efptNR;g++)
-      {
-          if (fepvals->n_lambda > 0) {
-              if (bRead)
+
+          if (bRead)
+          {
+              /* copy the contents of the efptFEP lambda component to all
+                 the other components */
+              for(g=0;g<efptNR;g++)
               {
-                  snew(fepvals->all_lambda[g],fepvals->n_lambda);
+                  for(h=0;h<fepvals->n_lambda;h++)
+                  {
+                      if (g!=efptFEP)
+                      {
+                          fepvals->all_lambda[g][h] =
+                                    fepvals->all_lambda[efptFEP][h];
+                      }
+                  }
               }
           }
       }
