@@ -195,36 +195,19 @@ MACRO(gmx_c_flags)
 
     # now actually set the flags:
     # C
-    if ( NOT DEFINED GMXCFLAGS_SET AND NOT DEFINED ENV{CFLAGS} )
-        set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
-            FORCE)
-        
-        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
-        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
+    if ( NOT GMX_SKIP_DEFAULT_CFLAGS )
+        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}")
+        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}")
+        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}")
     endif()
 
     # C++
-    if ( NOT DEFINED GMXCXXFLAGS_SET AND NOT DEFINED ENV{CXXFLAGS} AND CMAKE_CXX_COMPILER_LOADED)
-        set(GMXCXXFLAGS_SET true CACHE INTERNAL "Whether to reset the C++ flags" 
-            FORCE)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
+    if ( NOT GMX_SKIP_DEFAULT_CFLAGS)
+        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}")
         set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
+            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}")
         set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
+            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}")
     endif()
 ENDMACRO(gmx_c_flags)
 

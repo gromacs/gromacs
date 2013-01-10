@@ -211,6 +211,9 @@ endif()
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
+option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
+mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
+
 ######################################################################
 # Compiler tests
 # These need to be done early (before further tests).
@@ -527,25 +530,10 @@ IF( WIN32 AND NOT CYGWIN)
           STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
           STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
       endif()
-  ELSE()
-      STRING(REPLACE /MT /MD CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
-      STRING(REPLACE /MT /MD CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-      if(CMAKE_CXX_COMPILER_LOADED)
-          STRING(REPLACE /MT /MD CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-          STRING(REPLACE /MT /MD CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-      endif()
   ENDIF()
-  SET(CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE} CACHE STRING "" FORCE)
-  SET(CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG} CACHE STRING "" FORCE)
-  if(CMAKE_CXX_COMPILER_LOADED)
-      SET(CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE} CACHE STRING "" FORCE)
-      SET(CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG} CACHE STRING "" FORCE)
-  endif()
-
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
         STRING(REPLACE "/INCREMENTAL:YES" "" CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS})
-        SET(CMAKE_SHARED_LINKER_FLAGS ${CMAKE_SHARED_LINKER_FLAGS} CACHE STRING "" FORCE)
     endif()
   ENDIF()
 ENDIF()
@@ -1062,21 +1050,23 @@ endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
-if (NOT DEFINED GROMACS_C_FLAGS_SET)
-    set(GROMACS_C_FLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
-        FORCE)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}" CACHE STRING
-        "Flags used by the compiler during all build types" FORCE)
-    if (CMAKE_CXX_COMPILER_LOADED)
-        set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}" CACHE STRING
-            "Flags used by the compiler during all build types" FORCE)
+if (NOT GMX_SKIP_DEFAULT_CFLAGS)
+    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
+    set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
+else()
+    message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
+    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
+    message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
+    if(CMAKE_CXX_COMPILER_LOADED)
+        message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMXC_CXXFLAGS}")
+        message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
+        message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     endif()
-    set(CMAKE_EXE_LINKER_FLAGS 
-        "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}"
-        CACHE STRING "Linker flags for creating executables" FORCE) 
-    set(CMAKE_SHARED_LINKER_FLAGS 
-        "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}"
-        CACHE STRING "Linker flags for creating shared libraries" FORCE) 
+    message("CMAKE_EXE_LINKER_FLAGS: ${MPI_LINKER_FLAGS}")
+    message("CMAKE_SHARED_LINKER_FLAGS: ${MPI_LINKER_FLAGS}")
 endif()
 
 if(NOT GMX_OPENMP)
