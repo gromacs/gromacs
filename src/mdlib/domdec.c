@@ -5574,11 +5574,6 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
         }
     }
     
-    if (DDMASTER(dd))
-    {
-        fprintf(stderr,"Making %dD domain decomposition %d x %d x %d\n",
-	    dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
-    }
     if (fplog)
     {
         fprintf(fplog,"\nMaking %dD domain decomposition grid %d x %d x %d, home cell index %d %d %d\n\n",

@@ -1076,9 +1076,10 @@ static void set_cpu_affinity(FILE *fplog,
 
 
 static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
-                                    int cutoff_scheme)
+                                    int cutoff_scheme,
+                                    gmx_bool bIsSimMaster)
 {
-    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp);
+    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, bIsSimMaster);
 
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
@@ -1339,7 +1340,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (SIMMASTER(cr))
 #endif
     {
-        check_and_update_hw_opt(hw_opt,minf.cutoff_scheme);
+        check_and_update_hw_opt(hw_opt,minf.cutoff_scheme,SIMMASTER(cr));
 
 #ifdef GMX_THREAD_MPI
         /* Early check for externally set process affinity. Can't do over all
