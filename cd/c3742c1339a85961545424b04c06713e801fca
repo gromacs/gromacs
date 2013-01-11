@@ -1,0 +1,8 @@
+Code-Review+2: Christoph Junghans <junghans@votca.org>
+Verified+1: Jenkins Buildbot
+Code-Review+1: Carsten Kutzner <ckutzne@mpibpc.mpg.de>
+Submitted-by: Christoph Junghans <junghans@votca.org>
+Submitted-at: Fri, 11 Jan 2013 21:34:35 +0100
+Reviewed-on: https://gerrit.gromacs.org/2025
+Project: gromacs
+Branch: refs/heads/release-4-6
