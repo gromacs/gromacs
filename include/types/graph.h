@@ -49,9 +49,10 @@ extern "C" {
 typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 
 typedef struct {
+  int      at0;     /* The first atom the graph was constructed for */
+  int      at1;     /* The last atom the graph was constructed for */
   int      nnodes;	/* The number of nodes, nnodes=at_end-at_start	*/
   int      nbound;	/* The number of nodes with edges		*/
-  int      natoms;      /* Total range for this graph: 0 to natoms      */
   int      at_start;	/* The first connected atom in this graph	*/
   int      at_end;	/* The last+1 connected atom in this graph	*/
   int      *nedge;	/* For each node the number of edges		*/
