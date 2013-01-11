@@ -51,6 +51,8 @@ t_graph *mk_graph(FILE *fplog,
 			 gmx_bool bShakeOnly,gmx_bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
+ * at_start and at_end should coincide will molecule boundaries,
+ * for the whole system this is simply 0 and natoms.
  * If bShakeOnly, only the connections in the shake list are used.
  * If bSettle && bShakeOnly the settles are used too.
  */
