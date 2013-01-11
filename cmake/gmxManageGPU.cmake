@@ -122,6 +122,10 @@ if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
 
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
+            #Warn if GPU is available but CUDA wasn't found
+            if (GMX_DETECT_GPU_AVAILABLE)
+                message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
+            endif()
             # Disable GPU acceleration in auto mode
             message(STATUS "Disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
