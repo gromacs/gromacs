@@ -1318,7 +1318,10 @@ void do_force_cutsVERLET(FILE *fplog,t_commrec *cr,
             wallcycle_stop(wcycle,ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
+
+            wallcycle_start_nocount(wcycle,ewcLAUNCH_GPU_NB);
             nbnxn_cuda_clear_outputs(nbv->cu_nbv, flags);
+            wallcycle_stop(wcycle,ewcLAUNCH_GPU_NB);
         }
         else
         {            
