@@ -332,7 +332,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                     md_print_warn(cr,fplog,
                                   "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
                                   "      PP %s%s%s than GPU%s available.\n"
-                                  "      Each PP %s can only use one GPU, so only %d GPU%s%s will be used.",
+                                  "      Each PP %s can use only one GPU, %d GPU%s%s will be used.\n",
                                   ShortProgram(),
                                   th_or_proc, th_or_proc_plural, pernode, gpu_plural,
                                   th_or_proc, npppn, gpu_plural, pernode);
@@ -370,12 +370,13 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
             }
         }
 
+        hwinfo->gpu_info.bDevShare = FALSE;
         if (hwinfo->gpu_info.bUserSet && (cr->rank_pp_intranode == 0))
         {
             int i, j, same_count;
             gmx_bool bSomeSame, bAllDifferent;
 
-            same_count = 0;
+            same_count = 0; /* number of GPUs shared among ranks */
             bSomeSame = FALSE;
             bAllDifferent = TRUE;
 
@@ -389,6 +390,9 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                 }
             }
 
+            /* store the number of shared/oversubscribed GPUs */
+            hwinfo->gpu_info.bDevShare = bSomeSame;
+
             if (btMPI && !bAllDifferent)
             {
                 gmx_fatal(FARGS,
@@ -400,8 +404,8 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
             {
                 md_print_warn(cr,fplog,
                               "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
-                              "      multiple %s%s; this should be avoided as it generally\n"
-                              "      causes performance loss.",
+                              "      multiple %s%s; this should be avoided as it can cause\n"
+                              "      performance loss.\n",
                               same_count > 1 ? "GPUs" : "a GPU", th_or_proc, btMPI ? "s" : "es");
             }
         }
