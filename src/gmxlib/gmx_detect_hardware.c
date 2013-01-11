@@ -139,7 +139,7 @@ static void print_gpu_use_stats(FILE *fplog,
     }
     else
     {
-        sprintf(sbuf, "%d GPU%s %sselected to be used for this run: ",
+        sprintf(sbuf, "%d GPU%s %sselected for this run: ",
                 ngpu, (ngpu > 1) ? "s" : "",
                 gpu_info->bUserSet ? "user-" : "auto-");
         for (i = 0; i < ngpu; i++)
