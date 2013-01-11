@@ -2081,7 +2081,6 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
         case SEL_EXPRESSION:
         case SEL_MODIFIER:
-            assert(g);
             rc = _gmx_sel_evaluate_method_params(data, sel, g);
             if (rc != 0)
             {
