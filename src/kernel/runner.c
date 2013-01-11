@@ -1626,7 +1626,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (opt2bSet("-ei",nfile,fnm))
     {
         /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,Flags,cr);
+        ed = ed_open(mtop->natoms,&state->edsamstate,nfile,fnm,Flags,oenv,cr);
     }
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
