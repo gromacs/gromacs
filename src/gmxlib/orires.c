@@ -226,10 +226,12 @@ void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
         fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",ms->nsim);
         
         check_multi_int(fplog,ms,od->nr,
-                        "the number of orientation restraints");
+                        "the number of orientation restraints",
+                        FALSE);
         check_multi_int(fplog,ms,od->nref,
-                        "the number of fit atoms for orientation restraining");
-        check_multi_int(fplog,ms,ir->nsteps,"nsteps");
+                        "the number of fit atoms for orientation restraining",
+                        FALSE);
+        check_multi_int(fplog,ms,ir->nsteps,"nsteps",FALSE);
         /* Copy the reference coordinates from the master to the other nodes */
         gmx_sum_sim(DIM*od->nref,od->xref[0],ms);
     }
