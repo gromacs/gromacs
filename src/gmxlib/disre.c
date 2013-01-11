@@ -193,7 +193,8 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
             fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
         }
         check_multi_int(fplog,cr->ms,dd->nsystems,
-                        "the number of systems per ensemble");
+                        "the number of systems per ensemble",
+                        FALSE);
         /* We use to allow any value of nsystems which was a divisor
          * of ms->nsim. But this required an extra communicator which
          * was stored in t_fcdata. This pulled in mpi.h in nearly all C files.
@@ -230,7 +231,8 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         if (cr && cr->ms)
         {
             check_multi_int(fplog,cr->ms,fcd->disres.nres,
-                            "the number of distance restraints");
+                            "the number of distance restraints",
+                            FALSE);
         }
         please_cite(fplog,"Tropp80a");
         please_cite(fplog,"Torda89a");
