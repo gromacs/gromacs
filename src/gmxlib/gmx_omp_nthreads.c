@@ -189,9 +189,12 @@ static int pick_module_nthreads(FILE *fplog, int m,
     return modth.nth[m] = nth;
 }
 
-void gmx_omp_nthreads_read_env(int *nthreads_omp)
+void gmx_omp_nthreads_read_env(int *nthreads_omp,
+                               gmx_bool bIsSimMaster)
 {
     char *env;
+    gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
+    char buffer[STRLEN];
 
     assert(nthreads_omp);
 
@@ -205,17 +208,33 @@ void gmx_omp_nthreads_read_env(int *nthreads_omp)
             gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
         }
 
-        if (*nthreads_omp > 0 && nt_omp != *nthreads_omp)
+        if (bCommandLineSetNthreadsOMP && nt_omp != *nthreads_omp)
         {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values",nt_omp,*nthreads_omp);
+            gmx_fatal(FARGS,"Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.",nt_omp,*nthreads_omp);
         }
 
-        /* Setting the number of OpenMP threads.
-         * NOTE: with tMPI this function is only called on the master node,
-         * but with MPI on all nodes which means lots of messages on stderr.
-         */
-        fprintf(stderr,"Getting the number of OpenMP threads from OMP_NUM_THREADS: %d\n",nt_omp);
+        /* Setting the number of OpenMP threads. */
         *nthreads_omp = nt_omp;
+
+        /* Output the results */
+        sprintf(buffer,
+                "The number of OpenMP threads was set by environment variable OMP_NUM_THREADS to %d%s\n",
+                nt_omp,
+                bCommandLineSetNthreadsOMP ? " (and the command-line setting agreed with that)" : "");
+        if (bIsSimMaster)
+        {
+            /* This prints once per simulation for multi-simulations,
+             * which might help diagnose issues with inhomogenous
+             * cluster setups. */
+            fputs(buffer, stderr);
+        }
+        if (debug)
+        {
+            /* This prints once per process for real MPI (i.e. once
+             * per debug file), and once per simulation for thread MPI
+             * (because of logic in the calling function). */
+            fputs(buffer, debug);
+        }
     }
 }
 

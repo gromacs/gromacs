@@ -162,17 +162,17 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
 
     fprintf(fplog,"Repl  There are %d replicas:\n",re->nrepl);
 
-    check_multi_int(fplog,ms,state->natoms,"the number of atoms");
-    check_multi_int(fplog,ms,ir->eI,"the integrator");
-    check_multi_large_int(fplog,ms,ir->init_step+ir->nsteps,"init_step+nsteps");
+    check_multi_int(fplog,ms,state->natoms,"the number of atoms",FALSE);
+    check_multi_int(fplog,ms,ir->eI,"the integrator",FALSE);
+    check_multi_large_int(fplog,ms,ir->init_step+ir->nsteps,"init_step+nsteps",FALSE);
     check_multi_large_int(fplog,ms,(ir->init_step+nst-1)/nst,
-                          "first exchange step: init_step/-replex");
-    check_multi_int(fplog,ms,ir->etc,"the temperature coupling");
+                          "first exchange step: init_step/-replex",FALSE);
+    check_multi_int(fplog,ms,ir->etc,"the temperature coupling",FALSE);
     check_multi_int(fplog,ms,ir->opts.ngtc,
-                    "the number of temperature coupling groups");
-    check_multi_int(fplog,ms,ir->epc,"the pressure coupling");
-    check_multi_int(fplog,ms,ir->efep,"free energy");
-    check_multi_int(fplog,ms,ir->fepvals->n_lambda,"number of lambda states");
+                    "the number of temperature coupling groups",FALSE);
+    check_multi_int(fplog,ms,ir->epc,"the pressure coupling",FALSE);
+    check_multi_int(fplog,ms,ir->efep,"free energy",FALSE);
+    check_multi_int(fplog,ms,ir->fepvals->n_lambda,"number of lambda states",FALSE);
 
     re->temp = ir->opts.ref_t[0];
     for(i=1; (i<ir->opts.ngtc); i++)

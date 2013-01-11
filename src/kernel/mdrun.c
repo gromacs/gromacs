@@ -619,7 +619,7 @@ int cmain(int argc,char *argv[])
   ivec     ddxyz;
   int      dd_node_order;
   gmx_bool     bAddPart;
-  FILE     *fplog,*fptest;
+  FILE     *fplog,*fpmulti;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
   char     suffix[STRLEN];
@@ -703,7 +703,7 @@ int cmain(int argc,char *argv[])
                                                 &sim_part_fn,NULL,cr,
                                                 bAppendFiles,NFILE,fnm,
                                                 part_suffix,&bAddPart);
-      if (sim_part_fn==0 && MASTER(cr))
+      if (sim_part_fn==0 && MULTIMASTER(cr))
       {
           fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
       }
@@ -714,7 +714,17 @@ int cmain(int argc,char *argv[])
 
       if (MULTISIM(cr) && MASTER(cr))
       {
-          check_multi_int(stdout,cr->ms,sim_part,"simulation part");
+          if (MULTIMASTER(cr))
+          {
+              /* Log file is not yet available, so if there's a
+               * problem we can only write to stderr. */
+              fpmulti = stderr;
+          }
+          else
+          {
+              fpmulti = NULL;
+          }
+          check_multi_int(fpmulti,cr->ms,sim_part,"simulation part",TRUE);
       }
   } 
   else
@@ -734,7 +744,7 @@ int cmain(int argc,char *argv[])
       sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
       add_suffix_to_output_names(fnm,NFILE,suffix);
-      if (MASTER(cr))
+      if (MULTIMASTER(cr))
       {
           fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
       }
