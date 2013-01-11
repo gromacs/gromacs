@@ -451,7 +451,7 @@ int cmain(int argc,char *argv[])
     { efXVG, "-tpi",    "tpi",      ffOPTWR },
     { efXVG, "-tpid",   "tpidist",  ffOPTWR },
     { efEDI, "-ei",     "sam",      ffOPTRD },
-    { efEDO, "-eo",     "sam",      ffOPTWR },
+    { efXVG, "-eo",     "edsam",    ffOPTWR },
     { efGCT, "-j",      "wham",     ffOPTRD },
     { efGCT, "-jo",     "bam",      ffOPTWR },
     { efXVG, "-ffout",  "gct",      ffOPTWR },

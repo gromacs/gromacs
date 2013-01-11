@@ -642,7 +642,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         if (constr->ed && delta_step > 0)
         {
             /* apply the essential dynamcs constraints here */
-            do_edsam(ir,step,md,cr,xprime,v,box,constr->ed);
+            do_edsam(ir,step,cr,xprime,v,box,constr->ed);
         }
     }
     

@@ -45,12 +45,13 @@
 extern "C" {
 #endif
 
-void do_edsam(t_inputrec *ir,gmx_large_int_t step,t_mdatoms *md,
+void do_edsam(t_inputrec *ir,gmx_large_int_t step,
                      t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
 GMX_LIBMD_EXPORT
-gmx_edsam_t ed_open(int nfile,const t_filenm fnm[],unsigned long Flags,t_commrec *cr);
+gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile,const t_filenm fnm[],
+        unsigned long Flags, const output_env_t oenv, t_commrec *cr);
 /* Sets the ED input/output filenames, opens output (.edo) file */
 
 void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,
@@ -62,7 +63,7 @@ void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
 /* Make a selection of the home atoms for the ED groups. 
  * Should be called at every domain decomposition. */
  
-void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed,
+void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[],rvec force[], gmx_edsam_t ed,
         matrix box, gmx_large_int_t step, gmx_bool bNS);
 /* Flooding - called from do_force() */
 
