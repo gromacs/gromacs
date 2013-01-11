@@ -5345,7 +5345,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         if (lossf >= DD_PERF_LOSS)
         {
             sprintf(buf,
-                    "NOTE: %.1f %% performance was lost due to load imbalance\n"
+                    "NOTE: %.1f %% of the available CPU time was lost due to load imbalance\n"
                     "      in the domain decomposition.\n",lossf*100);
             if (!comm->bDynLoadBal)
             {

@@ -263,8 +263,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->deviceOptions=deviceOptions;
     mda->Flags=Flags;
 
-    fprintf(stderr, "Starting %d tMPI threads\n",hw_opt->nthreads_tmpi);
-    fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
     ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
@@ -1689,6 +1687,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   cr->nnodes==1 ? "process" : "processes"
 #endif
                   );
+    fflush(stderr);
 #endif
 
     gmx_omp_nthreads_init(fplog, cr,
