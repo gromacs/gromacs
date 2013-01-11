@@ -345,9 +345,9 @@
 #ifdef CALC_LJ
 
 #if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB && !defined FIX_LJ_C
-            load_lj_pair_params2(nbfp0,type,aj,c6_SSE0,c12_SSE0);
+            load_lj_pair_params2(nbfp0,nbfp1,type,aj,c6_SSE0,c12_SSE0);
 #ifndef HALF_LJ
-            load_lj_pair_params2(nbfp2,type,aj,c6_SSE2,c12_SSE2);
+            load_lj_pair_params2(nbfp2,nbfp3,type,aj,c6_SSE2,c12_SSE2);
 #endif
 #endif /* not defined any LJ rule */
 
