@@ -4799,6 +4799,7 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
                          t_nrnb *nrnb)
 {
     nbnxn_grid_t *gridi,*gridj;
+    gmx_bool bGPUCPU;
     int nzi,zi,zj0,zj1,zj;
     int nsubpair_max;
     int th;
@@ -4807,6 +4808,9 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     int ci_block;
     gmx_bool CombineNBLists;
     int np_tot,np_noq,np_hlj,nap;
+
+    /* Check if we are running hybrid GPU + CPU nbnxn mode */
+    bGPUCPU = (!nbs->grid[0].bSimple && nbl_list->bSimple);
 
     nnbl            = nbl_list->nnbl;
     nbl             = nbl_list->nbl;
@@ -4818,7 +4822,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
     }
 
     nbat->bUseBufferFlags = (nbat->nout > 1);
-    if (nbat->bUseBufferFlags && LOCAL_I(iloc))
+    /* We should re-init the flags before making the first list */
+    if (nbat->bUseBufferFlags && (LOCAL_I(iloc) || bGPUCPU))
     {
         init_buffer_flags(&nbat->buffer_flags,nbat->natoms);
     }
@@ -4915,7 +4920,11 @@ void nbnxn_make_pairlist(const nbnxn_search_t nbs,
 #pragma omp parallel for num_threads(nnbl) schedule(static)
             for(th=0; th<nnbl; th++)
             {
-                if (nbat->bUseBufferFlags && zi == 0 && zj == 0)
+                /* Re-init the thread-local work flag data before making
+                 * the first list (not an elegant conditional).
+                 */
+                if (nbat->bUseBufferFlags && ((zi == 0 && zj == 0) ||
+                                              (bGPUCPU && zi == 0 && zj == 1)))
                 {
                     init_buffer_flags(&nbs->work[th].buffer_flags,nbat->natoms);
                 }
