@@ -197,7 +197,6 @@ static const t_deffile
     { eftASC, ".m2p", "ps",     NULL, "Input file for mat2ps"},
     { eftXDR, ".mtx", "hessian","-m", "Hessian matrix"},
     { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
-    { eftASC, ".edo", "sam",    NULL, "ED sampling output"},
     { eftASC, ".hat", "gk", NULL, "Fourier transform of spread function" },
     { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
     { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" },
