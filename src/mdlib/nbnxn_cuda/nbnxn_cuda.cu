@@ -210,6 +210,8 @@ static inline int calc_shmem_required(int kver)
         /* force reduction buffers in shared memory */
         shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
 #endif
+	/* cj in shared memory, for both warps separately */
+        shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
     }
 
     return shmem;
