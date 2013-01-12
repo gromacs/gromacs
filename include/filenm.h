@@ -169,6 +169,7 @@ GMX_LIBGMX_EXPORT
 t_filenm *dup_tfn(int nf, const t_filenm tfn[]);
 
 /* Free memory allocated for file names by parse_file_args(). */
+GMX_LIBGMX_EXPORT
 void done_filenms(int nf, t_filenm fnm[]);
 	
 #ifdef __cplusplus
