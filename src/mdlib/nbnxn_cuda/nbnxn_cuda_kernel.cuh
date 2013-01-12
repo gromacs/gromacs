@@ -44,7 +44,7 @@
 
 #if __CUDA_ARCH__ >= 300
 #define REDUCE_SHUFFLE
-/* On Kepler pre-loading i-atom types to shmem gives a few %,
+/* On Kepler pre-loading i-atom types to shmem gives a few %,		
    but on Fermi it does not */
 #define IATYPE_SHMEM
 #endif
@@ -142,18 +142,16 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
-#ifdef IATYPE_SHMEM
+#if __CUDA_ARCH__ >= 300
     /* shmem buffer for i atom-type pre-loading */
-    int *atib = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
-#endif
-
-#ifndef REDUCE_SHUFFLE
-    /* shmem j force buffer */
-#ifdef IATYPE_SHMEM
-    float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
+    int *atib    = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    /* shmem buffer for cj */
+    int *cjs     = (int *)(atib + CL_SIZE * CL_SIZE);
 #else
+    /* shmem j force buffer */
     float *f_buf = (float *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
-#endif
+    /* shmem buffer for cj */
+    int *cjs     = (int *)(f_buf + DIM * FBUF_STRIDE);
 #endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
@@ -222,6 +220,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         if (imask)
 #endif
         {
+            /* Pre-load cj into shared memory on both warps separately */
+            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            {
+                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+            }
+
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler is much slower;
@@ -236,7 +240,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = pl_cj4[j4].cj[jm];
+                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
