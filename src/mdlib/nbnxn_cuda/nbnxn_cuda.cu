@@ -202,14 +202,15 @@ static inline int calc_shmem_required(int kver)
         /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
         /* i-atom x+q in shared memory */
         shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
-#ifdef IATYPE_SHMEM
+#if __CUDA_ARCH__ >= 300
         /* i-atom types in shared memory */
         shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
-#endif
-#if __CUDA_ARCH__ < 300
+#else
         /* force reduction buffers in shared memory */
         shmem += CL_SIZE * CL_SIZE * 3 * sizeof(float);
 #endif
+        /* cj in shared memory, for both warps separately */
+        shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
     }
 
     return shmem;
