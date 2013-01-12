@@ -154,6 +154,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #else
     float *f_buf = (float *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #endif
+    int *cjs = (int *)(f_buf + DIM * FBUF_STRIDE);
+#else
+    int *cjs = (int *)(atib + CL_SIZE * CL_SIZE);
 #endif
 
     nb_sci      = pl_sci[bidx];         /* my i super-cluster's index = current bidx */
@@ -222,6 +225,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         if (imask)
 #endif
         {
+            /* Pre-load cj into shared memory on both warps separately */
+            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            {
+                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+            }
+
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler is much slower;
@@ -236,7 +245,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = pl_cj4[j4].cj[jm];
+                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */
