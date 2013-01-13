@@ -683,7 +683,7 @@ int gmx_disre(int argc,char *argv[])
     isize=0;
 
   ir.dr_tau=0.0;
-  init_disres(fplog,&mtop,&ir,NULL,FALSE,&fcd,NULL);
+  init_disres(fplog,&mtop,&ir,NULL,FALSE,&fcd,NULL,FALSE);
 
   natoms=read_first_x(oenv,&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);

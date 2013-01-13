@@ -3040,7 +3040,7 @@ int mdrunner_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     snew(fcd,1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state,FALSE);
 
     if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
     {
