@@ -231,47 +231,18 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #endif
 #endif
 
-#ifdef GMX_MM128_HERE
-#ifndef GMX_DOUBLE
-    __m128     diag_SSE0 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
-    __m128     diag_SSE1 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
-    __m128     diag_SSE2 = gmx_mm_castsi128_pr( _mm_set_epi32( 0xffffffff, 0x00000000, 0x00000000, 0x00000000 ));
-    __m128     diag_SSE3 = gmx_mm_castsi128_pr( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
+    gmx_mm_pr diag_jmi_SSE;
+#if UNROLLI == UNROLLJ
+    gmx_mm_pr diag_SSE0,diag_SSE1,diag_SSE2,diag_SSE3;
 #else
-    __m128d    diag0_SSE0 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
-    __m128d    diag0_SSE1 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    __m128d    diag0_SSE2 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    __m128d    diag0_SSE3 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    __m128d    diag1_SSE0 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff ));
-    __m128d    diag1_SSE1 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff ));
-    __m128d    diag1_SSE2 = gmx_mm_castsi128_pd( _mm_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
-    __m128d    diag1_SSE3 = gmx_mm_castsi128_pd( _mm_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-#endif
-#endif
-#ifdef GMX_MM256_HERE
-#ifndef GMX_DOUBLE
-    gmx_mm_pr  diag0_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000 ));
-    gmx_mm_pr  diag0_SSE1 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag0_SSE2 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag0_SSE3 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag1_SSE0 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag1_SSE1 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag1_SSE2 = _mm256_castsi256_ps( _mm256_set_epi32( 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag1_SSE3 = _mm256_castsi256_ps( _mm256_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-#else
-    gmx_mm_pr  diag_SSE0 = _mm256_castsi256_pd( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag_SSE1 = _mm256_castsi256_pd( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag_SSE2 = _mm256_castsi256_pd( _mm256_set_epi32( 0xffffffff, 0xffffffff, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-    gmx_mm_pr  diag_SSE3 = _mm256_castsi256_pd( _mm256_set_epi32( 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000 ));
-#endif
+    gmx_mm_pr diag0_SSE0,diag0_SSE1,diag0_SSE2,diag0_SSE3;
+    gmx_mm_pr diag1_SSE0,diag1_SSE1,diag1_SSE2,diag1_SSE3;
 #endif
 
-#ifdef GMX_MM128_HERE
+#if defined GMX_X86_SSE2 && defined GMX_MM128_HERE
     __m128i    zeroi_SSE = _mm_setzero_si128();
 #endif
-#ifdef GMX_X86_SSE4_1
     gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
-#endif
 
     gmx_mm_pr  one_SSE=gmx_set1_pr(1.0);
     gmx_mm_pr  iq_SSE0=gmx_setzero_pr();
@@ -374,6 +345,43 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn,energrp)
 #define NBFP_STRIDE  2
 #endif
     nbfp_stride = NBFP_STRIDE;
+#endif
+
+    /* Load j-i for the first i */
+    diag_jmi_SSE = gmx_load_pr(nbat->simd_4xn_diag);
+    /* Generate all the diagonal masks as comparison results */
+#if UNROLLI == UNROLLJ
+    diag_SSE0    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag_SSE1    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag_SSE2    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag_SSE3    = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+#else
+#if UNROLLI == 2*UNROLLJ || 2*UNROLLI == UNROLLJ
+    diag0_SSE0   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag0_SSE1   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag0_SSE2   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag0_SSE3   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+
+#if UNROLLI == 2*UNROLLJ
+    /* Load j-i for the second half of the j-cluster */
+    diag_jmi_SSE = gmx_load_pr(nbat->simd_4xn_diag+UNROLLJ);
+#endif
+
+    diag1_SSE0   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag1_SSE1   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag1_SSE2   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE,one_SSE);
+    diag1_SSE3   = gmx_cmplt_pr(zero_SSE,diag_jmi_SSE);
+#endif
 #endif
 
 #ifdef CALC_COUL_TAB

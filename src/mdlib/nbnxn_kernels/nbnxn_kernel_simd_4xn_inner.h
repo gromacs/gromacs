@@ -286,18 +286,18 @@
             ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-#ifndef GMX_MM256_HERE
+#if defined GMX_X86_SSE2 && defined GMX_MM128_HERE
             {
                 /* Load integer interaction mask */
                 __m128i mask_int = _mm_set1_epi32(l_cj[cjind].excl);
 
-                /* The is no unequal sse instruction, so we need a not here */
                 int_SSE0  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask0),zeroi_SSE));
                 int_SSE1  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask1),zeroi_SSE));
                 int_SSE2  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask2),zeroi_SSE));
                 int_SSE3  = gmx_mm_castsi128_pr(_mm_cmpeq_epi32(_mm_andnot_si128(mask_int,mask3),zeroi_SSE));
             }
-#else
+#endif
+#if defined GMX_X86_SSE2 && defined GMX_MM256_HERE
             {
 #ifndef GMX_DOUBLE
                 /* Load integer interaction mask */

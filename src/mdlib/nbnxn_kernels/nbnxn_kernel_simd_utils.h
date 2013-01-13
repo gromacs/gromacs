@@ -37,14 +37,15 @@
 #ifndef _nbnxn_kernel_sse_utils_h_
 #define _nbnxn_kernel_sse_utils_h_
 
-/* This files contains all functions/macros for the SSE/AVX kernels
- * which have explicit dependencies on the j-size / SIMD-width, which
- * can be 2 (SSE-double), 4 (SSE-single,AVX-double) or 8 (AVX-single).
+/* This files contains all functions/macros for the SIMD kernels
+ * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
  *   LJ-parameter lookup
  *   force table lookup
  *   energy group pair energy storage
  */
+
+#ifdef GMX_X86_SSE2
 
 /* Transpose 2 double precision registers */
 #define GMX_MM_TRANSPOSE2_OP_PD(in0,in1,out0,out1)                      \
@@ -565,5 +566,7 @@ static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
     }
 }
 #endif
+
+#endif /* GMX_X86_SSE2 */
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */
