@@ -45,12 +45,14 @@ extern "C" {
 #endif
 
 void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
-			t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
-			t_fcdata *fcd,t_state *state);
+                 t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
+                 t_fcdata *fcd,t_state *state, gmx_bool bIsREMD);
 /* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct.
  * When time averaging is used, the history is initialized in state,
  * unless it was read before from a checkpoint file.
+ * The implementation of distance restraints with -multi
+ * must differ according to whether REMD is active.
  */
 
 void calc_disres_R_6(const gmx_multisim_t *ms,
