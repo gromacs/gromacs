@@ -59,7 +59,7 @@ typedef struct
 {
     real f,fprev,x,xprev;  
     int iter_i;
-    gmx_bool bIterate;
+    gmx_bool bIterationActive;
     real allrelerr[MAXITERCONST+2];
     int num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
