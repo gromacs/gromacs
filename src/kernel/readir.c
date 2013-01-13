@@ -2683,16 +2683,22 @@ void do_index(const char* mdparin, const char *ndx,
           }
           if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
           {
-              int mincouple;
-              mincouple = ir->nsttcouple;
-              if (ir->nstpcouple < mincouple)
+              if (ir->nstpcouple != ir->nsttcouple)
               {
-                  mincouple = ir->nstpcouple;
+                  int mincouple;
+                  if (ir->nstpcouple < ir->nsttcouple)
+                  {
+                      mincouple = ir->nstpcouple;
+                      ir->nsttcouple = mincouple;
+                  }
+                  else
+                  {
+                      mincouple = ir->nsttcouple;
+                      ir->nstpcouple = mincouple;
+                  }
+                  sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
+                  warning_note(wi,warn_buf);
               }
-              ir->nstpcouple = mincouple;
-              ir->nsttcouple = mincouple;
-              sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
-              warning_note(wi,warn_buf);
           }
       }
       /* velocity verlet with averaged kinetic energy KE = 0.5*(v(t+1/2) - v(t-1/2)) is implemented
