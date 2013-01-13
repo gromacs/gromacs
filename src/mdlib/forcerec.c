@@ -2161,6 +2161,7 @@ void init_forcerec(FILE *fp,
             fr->bMolPBC = dd_bonded_molpbc(cr->dd,fr->ePBC);
         }
     }
+    fr->bGB = (ir->implicit_solvent == eisGBSA);
 
     fr->rc_scaling = ir->refcoord_scaling;
     copy_rvec(ir->posres_com,fr->posres_com);
@@ -2177,7 +2178,7 @@ void init_forcerec(FILE *fp,
     switch(fr->eeltype)
     {
         case eelCUT:
-            fr->nbkernel_elec_interaction = GMX_NBKERNEL_ELEC_COULOMB;
+            fr->nbkernel_elec_interaction = (fr->bGB) ? GMX_NBKERNEL_ELEC_GENERALIZEDBORN : GMX_NBKERNEL_ELEC_COULOMB;
             break;
 
         case eelRF:
@@ -2428,7 +2429,6 @@ void init_forcerec(FILE *fp,
         set_bham_b_max(fp,fr,mtop);
     }
 
-    fr->bGB = (ir->implicit_solvent == eisGBSA);
 	fr->gb_epsilon_solvent = ir->gb_epsilon_solvent;
 
     /* Copy the GBSA data (radius, volume and surftens for each

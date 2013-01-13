@@ -384,6 +384,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_128_fma_double
             FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
             dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_unpacklo_pd(dvdatmp,_mm_setzero_pd());
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_1real_pd(dvda+jnrA,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
@@ -790,6 +791,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_128_fma_double
             FF               = _mm_macc_pd(_mm_macc_pd(twogbeps,H,G),gbeps,Fp);
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
             dvdatmp          = _mm_mul_pd(minushalf,_mm_macc_pd(fgb,r00,vgb));
+            dvdatmp          = _mm_unpacklo_pd(dvdatmp,_mm_setzero_pd());
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             gmx_mm_increment_1real_pd(dvda+jnrA,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj0,isaj0)));
             velec            = _mm_mul_pd(qq00,rinv00);
