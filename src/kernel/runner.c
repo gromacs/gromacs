@@ -772,15 +772,18 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
-/* Check the process affinity mask and if it is found to be non-zero,
- * will honor it and disable mdrun internal affinity setting.
- * This function should be called first before the OpenMP library gets
- * initialized with the last argument FALSE (which will detect affinity
- * set by external tools like taskset), and later, after the OpenMP
- * initialization, with the last argument TRUE to detect affinity changes
- * made by the OpenMP library.
+/* Check the process affinity mask. If it is non-zero, something
+ * else has set the affinity, and mdrun should honor that and
+ * not attempt to do its own thread pinning.
  *
- * Note that this will only work on Linux as we use a GNU feature. */
+ * This function should be called twice. Once before the OpenMP
+ * library gets initialized with bAfterOpenMPInit=FALSE (which will
+ * detect affinity set by external tools like taskset), and again
+ * later, after the OpenMP initialization, with bAfterOpenMPInit=TRUE
+ * (which will detect affinity changes made by the OpenMP library).
+ *
+ * Note that this will only work on Linux, because we use a GNU
+ * feature. */
 static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt, int ncpus,
                                    gmx_bool bAfterOpenmpInit)
@@ -834,19 +837,21 @@ static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
         if (!bAfterOpenmpInit)
         {
             md_print_warn(cr, fplog,
-                          "Non-default process affinity set, disabling internal affinity");
+                          "%s detected a non-default process affinity, "
+                          "so it will not attempt to pin its threads", ShortProgram());
         }
         else
         {
             md_print_warn(cr, fplog,
-                          "Non-default process affinity set probably by the OpenMP library, "
-                          "disabling internal affinity");
+                          "%s detected a non-default process affinity, "
+                          "probably set by the OpenMP library, "
+                          "so it will not attempt to pin its threads", ShortProgram());
         }
         hw_opt->bThreadPinning = FALSE;
 
         if (debug)
         {
-            fprintf(debug, "Non-default affinity mask found\n");
+            fprintf(debug, "Non-default affinity mask found, mdrun will not pin threads\n");
         }
     }
     else
