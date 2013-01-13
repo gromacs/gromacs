@@ -204,7 +204,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     gmx_bool        bAppend;
     gmx_bool        bResetCountersHalfMaxH=FALSE;
-    gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
+    gmx_bool        bVV,bIterativeCase,bFirstIterate,bTemp,bPres,bTrotter;
     gmx_bool        bUpdateDoLR;
     real        mu_aver=0,dvdl;
     int         a0,a1,gnx=0,ii;
@@ -268,7 +268,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         snew(cbuf,top_global->natoms);
     }
     /* all the iteratative cases - only if there are constraints */ 
-    bIterations = ((IR_NPH_TROTTER(ir) || IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
+    bIterativeCase = ((IR_NPH_TROTTER(ir) || IR_NPT_TROTTER(ir)) && (constr) && (!bRerunMD));
+    gmx_iterate_init(&iterate,FALSE); /* The default value of iterate->bIterationActive is set to
+                                         false in this step.  The correct value, true or false,
+                                         is set at each step, as it depends on the frequency of temperature
+                                         and pressure control.*/
     bTrotter = (bVV && (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir) || IR_NVT_TROTTER(ir)));
     
     if (bRerunMD)
@@ -620,7 +624,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     }
     
     /* if using an iterative algorithm, we need to create a working directory for the state. */
-    if (bIterations) 
+    if (bIterativeCase)
     {
             bufstate = init_bufstate(state);
     }
@@ -1067,15 +1071,21 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
          */
         if (EI_VV(ir->eI) && (!bInitStep))
         {
-            /* for vv, the first half actually corresponds to the last step */
+            /* for vv, the first half of the integration actually corresponds
+               to the previous step.  bCalcEner is only required to be evaluated on the 'next' step,
+               but the virial needs to be calculated on both the current step and the 'next' step. Future
+               reorganization may be able to get rid of one of the bCalcVir=TRUE steps. */
+
             bCalcEner = do_per_step(step-1,ir->nstcalcenergy);
+            bCalcVir = bCalcEner ||
+                (ir->epc != epcNO && (do_per_step(step,ir->nstpcouple) || do_per_step(step-1,ir->nstpcouple)));
         }
         else
         {
             bCalcEner = do_per_step(step,ir->nstcalcenergy);
+            bCalcVir = bCalcEner ||
+                (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
         }
-        bCalcVir = bCalcEner ||
-            (ir->epc != epcNO && do_per_step(step,ir->nstpcouple));
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
@@ -1192,9 +1202,9 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                           ekind,M,wcycle,upd,bInitStep,etrtVELOCITY1,
                           cr,nrnb,constr,&top->idef);
             
-            if (bIterations)
+            if (bIterativeCase && do_per_step(step-1,ir->nstpcouple) && !bInitStep)
             {
-                gmx_iterate_init(&iterate,bIterations && !bInitStep);
+                gmx_iterate_init(&iterate,TRUE);
             }
             /* for iterations, we save these vectors, as we will be self-consistently iterating
                the calculations */
@@ -1202,14 +1212,14 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
             
             /* save the state */
-            if (bIterations && iterate.bIterate) { 
+            if (iterate.bIterationActive) {
                 copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
             }
             
             bFirstIterate = TRUE;
-            while (bFirstIterate || (bIterations && iterate.bIterate))
+            while (bFirstIterate || iterate.bIterationActive)
             {
-                if (bIterations && iterate.bIterate) 
+                if (iterate.bIterationActive)
                 {
                     copy_coupling_state(bufstate,state,ekind_save,ekind,&(ir->opts));
                     if (bFirstIterate && bTrotter) 
@@ -1251,7 +1261,6 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                     unshift_self(graph,state->box,state->x);
                 }
                 
-                
                 /* if VV, compute the pressure and constraints */
                 /* For VV2, we strictly only need this if using pressure
                  * control, but we really would like to have accurate pressures
@@ -1260,35 +1269,38 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                  * For now, keep this choice in comments.
                  */
                 /*bPres = (ir->eI==eiVV || IR_NPT_TROTTER(ir)); */
-                    /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
+                /*bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK && IR_NPT_TROTTER(ir)));*/
                 bPres = TRUE;
                 bTemp = ((ir->eI==eiVV &&(!bInitStep)) || (ir->eI==eiVVAK));
                 if (bCalcEner && ir->eI==eiVVAK)  /*MRS:  7/9/2010 -- this still doesn't fix it?*/
                 {
                     bSumEkinhOld = TRUE;
                 }
-                compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
-                                wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
-                                constr,NULL,FALSE,state->box,
-                                top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
-                                cglo_flags 
-                                | CGLO_ENERGY 
-                                | (bStopCM ? CGLO_STOPCM : 0)
-                                | (bTemp ? CGLO_TEMPERATURE:0) 
-                                | (bPres ? CGLO_PRESSURE : 0) 
-                                | (bPres ? CGLO_CONSTRAINT : 0)
-                                | ((bIterations && iterate.bIterate) ? CGLO_ITERATE : 0)  
-                                | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
-                                | CGLO_SCALEEKIN 
-                    );
-                /* explanation of above: 
-                   a) We compute Ekin at the full time step
-                   if 1) we are using the AveVel Ekin, and it's not the
-                   initial step, or 2) if we are using AveEkin, but need the full
-                   time step kinetic energy for the pressure (always true now, since we want accurate statistics).
-                   b) If we are using EkinAveEkin for the kinetic energy for the temperture control, we still feed in 
-                   EkinAveVel because it's needed for the pressure */
-                
+                /* for vv, the first half of the integration actually corresponds to the previous step.
+                   So we need information from the last step in the first half of the integration */
+                if (bGStat || do_per_step(step-1,nstglobalcomm)) {
+                    compute_globals(fplog,gstat,cr,ir,fr,ekind,state,state_global,mdatoms,nrnb,vcm,
+                                    wcycle,enerd,force_vir,shake_vir,total_vir,pres,mu_tot,
+                                    constr,NULL,FALSE,state->box,
+                                    top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
+                                    cglo_flags
+                                    | CGLO_ENERGY
+                                    | (bStopCM ? CGLO_STOPCM : 0)
+                                    | (bTemp ? CGLO_TEMPERATURE:0)
+                                    | (bPres ? CGLO_PRESSURE : 0)
+                                    | (bPres ? CGLO_CONSTRAINT : 0)
+                                    | ((iterate.bIterationActive) ? CGLO_ITERATE : 0)
+                                    | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
+                                    | CGLO_SCALEEKIN
+                        );
+                    /* explanation of above:
+                       a) We compute Ekin at the full time step
+                       if 1) we are using the AveVel Ekin, and it's not the
+                       initial step, or 2) if we are using AveEkin, but need the full
+                       time step kinetic energy for the pressure (always true now, since we want accurate statistics).
+                       b) If we are using EkinAveEkin for the kinetic energy for the temperature control, we still feed in
+                       EkinAveVel because it's needed for the pressure */
+                }
                 /* temperature scaling and pressure scaling to produce the extended variables at t+dt */
                 if (!bInitStep) 
                 {
@@ -1311,13 +1323,11 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                             top_global,&pcurr,top_global->natoms,&bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         }
-
-
                         update_tcouple(fplog,step,ir,state,ekind,wcycle,upd,&MassQ,mdatoms);
                     }
                 }
                 
-                if (bIterations &&
+                if (iterate.bIterationActive &&
                     done_iterating(cr,fplog,step,&iterate,bFirstIterate,
                                    state->veta,&vetanew)) 
                 {
@@ -1590,21 +1600,18 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
             }
         }
 
-        if (bIterations)
+        if (bIterativeCase && do_per_step(step,ir->nstpcouple))
         {
-            gmx_iterate_init(&iterate,bIterations);
-        }
-    
-        /* for iterations, we save these vectors, as we will be redoing the calculations */
-        if (bIterations && iterate.bIterate) 
-        {
+            gmx_iterate_init(&iterate,TRUE);
+            /* for iterations, we save these vectors, as we will be redoing the calculations */
             copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
         }
+
         bFirstIterate = TRUE;
-        while (bFirstIterate || (bIterations && iterate.bIterate))
+        while (bFirstIterate || iterate.bIterationActive)
         {
             /* We now restore these vectors to redo the calculation with improved extended variables */    
-            if (bIterations) 
+            if (iterate.bIterationActive)
             { 
                 copy_coupling_state(bufstate,state,ekind_save,ekind,&(ir->opts));
             }
@@ -1629,7 +1636,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter) 
                 {
-                    if (bIterations && iterate.bIterate) 
+                    if (iterate.bIterationActive)
                     {
                         if (bFirstIterate) 
                         {
@@ -1763,13 +1770,12 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 wallcycle_stop(wcycle,ewcVSITECONSTR);
             }
             
-            /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints ############ */
+            /* ############## IF NOT VV, Calculate globals HERE, also iterate constraints  ############ */
             /* With Leap-Frog we can skip compute_globals at
              * non-communication steps, but we need to calculate
              * the kinetic energy one step before communication.
              */
-            if (bGStat || do_per_step(step+1,nstglobalcomm) ||
-                EI_VV(ir->eI))
+            if (bGStat || (!EI_VV(ir->eI)&&do_per_step(step+1,nstglobalcomm)))
             {
                 if (ir->nstlist == -1 && bFirstIterate)
                 {
@@ -1788,7 +1794,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
                                 | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0) 
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0) 
-                                | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0) 
+                                | (iterate.bIterationActive ? CGLO_ITERATE : 0)
                                 | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                 | CGLO_CONSTRAINT 
                     );
@@ -1806,7 +1812,7 @@ double do_md(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                but what we actually need entering the new cycle is the new shake_vir value. Ideally, we could
                generate the new shake_vir, but test the veta value for convergence.  This will take some thought. */
 
-            if (bIterations && 
+            if (iterate.bIterationActive &&
                 done_iterating(cr,fplog,step,&iterate,bFirstIterate,
                                trace(shake_vir),&tracevir)) 
             {
