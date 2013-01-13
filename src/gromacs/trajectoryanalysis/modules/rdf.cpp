@@ -68,7 +68,7 @@ const char Rdf::shortDescription[] =
 Rdf::Rdf()
     : TrajectoryAnalysisModule(name, shortDescription),
         // avem_(new AnalysisDataAverageModule()),
-        histm_(new AnalysisDataSimpleHistogramModule(histogramFromRange(0.0, 5.0).binCount(10)))
+        histm_(new AnalysisDataSimpleHistogramModule(histogramFromRange(0.0, 10.0).binCount(100)))
 {
     data_.setColumnCount(1);
     data_.setMultipoint(true);
@@ -95,18 +95,20 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "position in the system, where N/V is the average output",
         "position density in the system.\n",
         "When the output and reference position sets are equal, it is",
-        "sufficient to specify only the former. Self-distances are",
-        "removed from histogram data."
+        "sufficient to specify only the former. Self-distances (zeroes) are",
+        "removed from histogram data.",
+        "NOTE: Work in progress - Tool currently gives false output!"
         #ifdef GMX_LIB_MPI
-        ,"\n Interactive selection is disabled for MPI builds."
+        ,"\n MPI NOTE: Interactive selection is disabled for MPI builds."
+        ,"\n MPI NOTE: DO NOT USE - Tool is broken when using multiple MPI processes."
         #endif
     };
 
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o").filetype(eftPlot).outputFile()
-                           .store(&fnHist_).defaultBasename("hist")
-                           .description("Computed histogram"));
+                           .store(&fnHist_).defaultBasename("rdfhist")
+                           .description("Computed histogram."));
 
     options->addOption(SelectionOption("select").required()
                        .valueCount(1)
@@ -119,7 +121,7 @@ Rdf::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                        .store(refsel_));
 
     options->addOption(BooleanOption("surf")
-                       .description("RDF relative surface of reference position set.")
+                       .description("Calculate RDF relative surface of reference position set. (minimum distance)")
                        .store(&surfref_));
 }
 
