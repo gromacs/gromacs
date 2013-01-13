@@ -86,7 +86,9 @@ class RmsDist : public TrajectoryAnalysisModule
         rvec *          pRefX_;
         // real *          pRefM_;
 
-        bool            bUnitWeights_;  // use 1 for mass weighting
+        bool            bUseMassWeights_;  // use mass weighting
+
+        double nons;
 
         // Copy and assign disallowed by base.
 };

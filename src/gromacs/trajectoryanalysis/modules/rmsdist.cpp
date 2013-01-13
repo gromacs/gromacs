@@ -78,7 +78,6 @@ RmsDist::RmsDist()
     registerAnalysisDataset(&data_, "rmsd_data");
 }
 
-
 RmsDist::~RmsDist()
 {
 }
@@ -96,20 +95,20 @@ RmsDist::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
     options->addOption(FileNameOption("o")
                        .description("Plot of RMSD over time.")
                        .filetype(eftPlot).outputFile()
-                       .store(&fnRmsDist_).defaultBasename("rms"));
+                       .store(&fnRmsDist_).defaultBasename("rmsdist"));
 
     options->addOption(SelectionOption("select")
-                       .description("Selection for rms calculation.")
+                       .description("Selection for RMS calculation.")
                        .required()
                        .valueCount(1)
                        // .onlyStatic()
                        .onlyAtoms()
                        .store(&sel_));
 
-    options->addOption(BooleanOption("uw")
-                       .description("put weights to 1.")
-                       .defaultValue(TRUE)
-                       .store(&bUnitWeights_));
+    options->addOption(BooleanOption("mw")
+                       .description("Use mass weighted RMS.")
+                       .defaultValue(false)
+                       .store(&bUseMassWeights_));
 
     // topology with coords must be provided for use as reference in RMS calc.
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
@@ -135,7 +134,6 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // * setup reference conformation from top file.
     // * save reference to topology for later calls to fitting functions.
     matrix          box;
-
 
     pRefTop_ = topInfo.topology();
     topAtoms_ = pRefTop_->atoms.nr;
@@ -185,8 +183,9 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
         AnalysisDataPlotModulePointer plotm(
             new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnRmsDist_);
-        plotm->setTitle("RMS");
+        plotm->setTitle("RMS dist");
         plotm->setXAxisIsTime();
+        plotm->setYFormat(8, 6, 'f');   // y output fmt: "%8.6f"
         data_.addModule(plotm);
     }
 
@@ -225,8 +224,8 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     real        r, rp;
     real        rms_val = 0.0;  // for accumulating RSMD
 
-    const real  avging_prefactor = 2.0 / (selatoms * (selatoms-1));
-    real        avging_massprefactor = 0.0;
+    // const real  avging_prefactor = 2.0 / (selatoms * (selatoms-1));
+    real        inv_massprefactor = 0.0;
 
     /* first put selection stuff in legacy format
         so that we can use the old routines             */
@@ -253,10 +252,10 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             xp[i][m]    = pRefX_[selindi][m];
         }
 
-        if (bUnitWeights_)
-            m[i] = 1.0;
-        else
+        if (bUseMassWeights_)
             m[i] = spi.mass();
+        else
+            m[i] = 1.0;
     }
 
     for (int i=0; i<selatoms-1; i++)
@@ -282,13 +281,16 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             r = norm(dx);
             rp = norm(dxp);
 
-            rms_val += avging_prefactor * mi*mj * (r-rp)*(r-rp);
-            avging_massprefactor += mi*mj;
+            // rms_val += (r-rp)*(r-rp);
+            const real m_pf = sqrt(mi*mj);
+            rms_val += m_pf * (r-rp)*(r-rp);
+            inv_massprefactor += m_pf;
         }
+
     }
 
     //  correct mass weight averaging
-    rms_val = rms_val * 1.0/(avging_prefactor * avging_massprefactor);
+    rms_val = sqrt(rms_val / inv_massprefactor);
 
     /* write the result */
     dh.startFrame(frnr, fr.time);
