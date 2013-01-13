@@ -55,7 +55,7 @@
 
 void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
                  t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
-                 t_fcdata *fcd,t_state *state)
+                 t_fcdata *fcd,t_state *state, gmx_bool bIsREMD)
 {
     int          fa,nmol,i,npair,np;
     t_iparams    *ip;
@@ -181,7 +181,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
     ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
-    if (cr && cr->ms != NULL && ptr != NULL)
+    if (cr && cr->ms != NULL && ptr != NULL && !bIsREMD)
     {
 #ifdef GMX_MPI
         dd->nsystems = 0;
@@ -190,8 +190,16 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         {
             fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
         }
-        check_multi_int(fplog,cr->ms,dd->nsystems,
-                        "the number of systems per ensemble");
+        /* This check is only valid on MASTER(cr), so probably
+         * ensemble-averaged distance restraints are broken on more
+         * than one processor per simulation system. */
+        if (MASTER(cr))
+        {
+            check_multi_int(fplog,cr->ms,dd->nsystems,
+                            "the number of systems per ensemble");
+        }
+        gmx_bcast_sim(sizeof(int), &dd->nsystems, cr);
+
         if (dd->nsystems <= 0 ||  cr->ms->nsim % dd->nsystems != 0)
         {
             gmx_fatal(FARGS,"The number of systems %d is not divisible by the number of systems per ensemble %d\n",cr->ms->nsim,dd->nsystems);
@@ -225,7 +233,13 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         if (fplog) {
             fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
         }
-        if (cr && cr->ms)
+        /* Have to avoid g_disre de-referencing cr blindly, mdrun not
+         * doing consistency checks for ensemble-averaged distance
+         * restraints when that's not happening, and only doing those
+         * checks from appropriate processes (since check_multi_int is
+         * too broken to check whether the communication will
+         * succeed...) */
+        if (cr && cr->ms && dd->nsystems > 1 && MASTER(cr))
         {
             check_multi_int(fplog,cr->ms,fcd->disres.nres,
                             "the number of distance restraints");

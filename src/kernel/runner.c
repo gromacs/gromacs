@@ -483,7 +483,7 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     snew(fcd,1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state, repl_ex_nst > 0);
 
     if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
     {
