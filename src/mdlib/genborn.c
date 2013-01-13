@@ -498,22 +498,22 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
     real rinv,idr2,idr6,vaj,dccf,cosq,sinq,prod,gpi2;
     real factor;
     real vai, prod_ai, icf4,icf6;
-    
+
     factor  = 0.5*ONE_4PI_EPS0;
     n       = 0;
-    
+
     for(i=0;i<born->nr;i++)
     {
         born->gpol_still_work[i]=0;
     }
-     
-	for(i=0;i<nl->nri;i++ )
+
+    for(i=0;i<nl->nri;i++ )
     {
         ai      = nl->iinr[i];
-        
+
         nj0     = nl->jindex[i];            
         nj1     = nl->jindex[i+1];
-    
+
         /* Load shifts for this list */
         shift   = nl->shift[i];
         shX     = fr->shift_vec[shift][0];
@@ -530,8 +530,8 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
         ix1     = shX + x[ai][0];
         iy1     = shY + x[ai][1];
         iz1     = shZ + x[ai][2];
-                        
-        for(k=nj0;k<nj1;k++)
+
+        for(k=nj0;k<nj1 && nl->jjnr[k]>=0;k++)
         {
             aj    = nl->jjnr[k];
             jx1   = x[aj][0];
@@ -555,7 +555,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
             ratio = dr2 / (rvdw * rvdw);
             vaj   = born->vsolv[aj];
             
-            if(ratio>STILL_P5INV) 
+            if(ratio>STILL_P5INV)
             {
                 ccf=1.0;
                 dccf=0.0;
@@ -573,7 +573,6 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
             prod          = STILL_P4*vaj;
             icf4          = ccf*idr4;
             icf6          = (4*ccf-dccf)*idr6;
-
             born->gpol_still_work[aj] += prod_ai*icf4;
             gpi             = gpi+prod*icf4;
             
@@ -599,7 +598,6 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
     {
 		if(born->use[i] != 0)
         {
-		
             gpi  = born->gpol[i]+born->gpol_still_work[i];
             gpi2 = gpi * gpi;
             born->bRad[i]   = factor*gmx_invsqrt(gpi2);
@@ -673,7 +671,7 @@ calc_gb_rad_hct(t_commrec *cr,t_forcerec *fr,int natoms, gmx_localtop_t *top,
         
         sum_ai  = 0;
         
-        for(k=nj0;k<nj1;k++)
+        for(k=nj0;k<nj1 && nl->jjnr[k]>=0;k++)
         {
             aj    = nl->jjnr[k];
             
@@ -893,7 +891,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
         
         sum_ai   = 0;
         
-        for(k=nj0;k<nj1;k++)
+        for(k=nj0;k<nj1 && nl->jjnr[k]>=0;k++)
         {
             aj    = nl->jjnr[k];
             
@@ -1072,7 +1070,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     real *p;
     int   cnt;
     int ndadx;
-
+    
     if(fr->bAllvsAll && fr->dadx==NULL)
     {
         /* We might need up to 8 atoms of padding before and after, 
@@ -1260,7 +1258,7 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *to
     switch(ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md); 
+            calc_gb_rad_still(cr,fr,born->nr,top,atype,x,nl,born,md);
             break;
         case egbHCT:
             calc_gb_rad_hct(cr,fr,born->nr,top,atype,x,nl,born,md); 
@@ -1573,7 +1571,7 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
         
         rbai = rb[ai];
         
-        for(k=nj0;k<nj1;k++)
+        for(k=nj0;k<nj1 && nl->jjnr[k]>=0;k++)
         {
             aj = nl->jjnr[k];
             

@@ -389,6 +389,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_sse4_1_single
             FF               = _mm_add_ps(Fp,_mm_mul_ps(gbeps,_mm_add_ps(G,_mm_add_ps(Heps,Heps))));
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
+            dvdatmp          = _mm_andnot_ps(dummy_mask,dvdatmp);
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
@@ -792,6 +793,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_F_sse4_1_single
             FF               = _mm_add_ps(Fp,_mm_mul_ps(gbeps,_mm_add_ps(G,_mm_add_ps(Heps,Heps))));
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r00)));
+            dvdatmp          = _mm_andnot_ps(dummy_mask,dvdatmp);
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
