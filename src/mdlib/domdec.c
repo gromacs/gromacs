@@ -9351,7 +9351,7 @@ void dd_partition_system(FILE            *fplog,
                               comm->zones.dens_zone0,
                               fr->cginfo,
                               state_local->x,
-                              ncg_moved,comm->moved,
+                              ncg_moved,bRedist ? comm->moved : NULL,
                               fr->nbv->grp[eintLocal].kernel_type,
                               fr->nbv->grp[eintLocal].nbat);
 
