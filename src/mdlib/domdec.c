@@ -283,6 +283,13 @@ typedef struct gmx_domdec_comm
     /* Effectively no NB cut-off limit with DLB for systems without PBC? */
     gmx_bool bVacDLBNoLimit;
 
+    /* With PME load balancing we set limits on DLB */
+    gmx_bool bPMELoadBalDLBLimits;
+    /* DLB needs to take into account that we want to allow this maximum
+     * cut-off (for PME load balancing), this could limit cell boundaries.
+     */
+    real PMELoadBal_max_cutoff;
+
     /* tric_dir is only stored here because dd_get_ns_ranges needs it */
     ivec tric_dir;
     /* box0 and box_size are required with dim's without pbc and -gcom */
@@ -2695,6 +2702,26 @@ static void clear_dd_indices(gmx_domdec_t *dd,int cg_start,int a_start)
     }
 }
 
+/* This function should be used for moving the domain boudaries during DLB,
+ * for obtaining the minimum cell size. It checks the initially set limit
+ * comm->cellsize_min, for bonded and initial non-bonded cut-offs,
+ * and, possibly, a longer cut-off limit set for PME load balancing.
+ */
+static real cellsize_min_dlb(gmx_domdec_comm_t *comm,int dim_ind,int dim)
+{
+    real cellsize_min;
+
+    cellsize_min = comm->cellsize_min[dim];
+
+    if (!comm->bVacDLBNoLimit && comm->bPMELoadBalDLBLimits)
+    {
+        cellsize_min = max(cellsize_min,
+                           comm->PMELoadBal_max_cutoff/comm->cd[dim_ind].np_dlb);
+    }
+
+    return cellsize_min;
+}
+
 static real grid_jump_limit(gmx_domdec_comm_t *comm,real cutoff,
                             int dim_ind)
 {
@@ -2709,6 +2736,10 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm,real cutoff,
     grid_jump_limit = comm->cellsize_limit;
     if (!comm->bVacDLBNoLimit)
     {
+        if (comm->bPMELoadBalDLBLimits)
+        {
+            cutoff = max(cutoff,comm->PMELoadBal_max_cutoff);
+        }
         grid_jump_limit = max(grid_jump_limit,
                               cutoff/comm->cd[dim_ind].np);
     }
@@ -3369,7 +3400,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         }
     }
     
-    cellsize_limit_f  = comm->cellsize_min[dim]/ddbox->box_size[dim];
+    cellsize_limit_f  = cellsize_min_dlb(comm,d,dim)/ddbox->box_size[dim];
     cellsize_limit_f *= DD_CELL_MARGIN;
     dist_min_f_hard   = grid_jump_limit(comm,comm->cutoff,d)/ddbox->box_size[dim];
     dist_min_f        = dist_min_f_hard * DD_CELL_MARGIN;
@@ -6478,6 +6509,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         fprintf(fplog,"Dynamic load balancing: %s\n",edlb_names[comm->eDLB]);
     }
     dd->bGridJump = comm->bDynLoadBal;
+    comm->bPMELoadBalDLBLimits = FALSE;
     
     if (comm->nstSortCG)
     {
@@ -6881,7 +6913,7 @@ static void turn_on_dlb(FILE *fplog,t_commrec *cr,gmx_large_int_t step)
     dd_warning(cr,fplog,"NOTE: Turning on dynamic load balancing\n");
     comm->bDynLoadBal = TRUE;
     dd->bGridJump = TRUE;
-    
+
     set_dlb_limits(dd);
 
     /* We can set the required cell size info here,
@@ -7264,8 +7296,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     dd->ga2la = ga2la_init(natoms_tot,vol_frac*natoms_tot);
 }
 
-gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
-                          real cutoff_req)
+static gmx_bool test_dd_cutoff(t_commrec *cr,
+                               t_state *state,t_inputrec *ir,
+                               real cutoff_req)
 {
     gmx_domdec_t *dd;
     gmx_ddbox_t ddbox;
@@ -7330,9 +7363,35 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
         }
     }
 
-    dd->comm->cutoff = cutoff_req;
-
     return TRUE;
+}
+
+gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
+                          real cutoff_req)
+{
+    gmx_bool bCutoffAllowed;
+
+    bCutoffAllowed = test_dd_cutoff(cr,state,ir,cutoff_req);
+
+    if (bCutoffAllowed)
+    {
+        cr->dd->comm->cutoff = cutoff_req;
+    }
+
+    return bCutoffAllowed;
+}
+
+void change_dd_dlb_cutoff_limit(t_commrec *cr)
+{
+    gmx_domdec_comm_t *comm;
+
+    comm = cr->dd->comm;
+
+    /* Turn on the DLB limiting (might have been on already) */
+    comm->bPMELoadBalDLBLimits = TRUE;
+
+    /* Change the cut-off limit */
+    comm->PMELoadBal_max_cutoff = comm->cutoff;
 }
 
 static void merge_cg_buffers(int ncell,
