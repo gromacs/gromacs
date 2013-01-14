@@ -84,11 +84,10 @@ class RmsDist : public TrajectoryAnalysisModule
         t_topology *    pRefTop_;
         int             topAtoms_;
         rvec *          pRefX_;
-        // real *          pRefM_;
+        real **         pRefDCache_;
 
-        bool            bUseMassWeights_;  // use mass weighting
-
-        double nons;
+        bool            bUseMassWeights_;       // use mass weighting
+        bool            bDoCache_;              // cache reference distances
 
         // Copy and assign disallowed by base.
 };

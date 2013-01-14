@@ -110,6 +110,11 @@ RmsDist::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
                        .defaultValue(false)
                        .store(&bUseMassWeights_));
 
+    options->addOption(BooleanOption("cache")
+                       .description("Put reference distances in memory.")
+                       .defaultValue(true)
+                       .store(&bDoCache_));
+
     // topology with coords must be provided for use as reference in RMS calc.
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
     settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
@@ -130,15 +135,12 @@ void
 RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation &topInfo)
 {
-    // here need to:
     // * setup reference conformation from top file.
-    // * save reference to topology for later calls to fitting functions.
     matrix          box;
 
     pRefTop_ = topInfo.topology();
     topAtoms_ = pRefTop_->atoms.nr;
     pRefX_ = NULL;
-    // pRefM_ = NULL;
 
     // get coords for reference structure
     (void) topInfo.getTopologyConf(&pRefX_, box);
@@ -153,32 +155,60 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
         (void) gmx_rmpbc_done(gpbc);
     }
 
-    // // setup weights
-    // snew(pRefM_, pRefTop_->atoms.nr);
-    // bool bMass = FALSE;
-    // for(int i=0; i<pRefTop_->atoms.nr; i++)
-    // {
-    //     if (bUnitWeights_)
-    //         pRefM_[i] = 1.0;
-    //     else
-    //         pRefM_[i] = pRefTop_->atoms.atom[i].m;
-    //     bMass = bMass || (pRefTop_->atoms.atom[i].m != 0);
-    // }
-    // if (!bMass)
-    // {
-    //     fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
-    //     for(int i=0; i<pRefTop_->atoms.nr; i++)
-    //     {
-    //         pRefM_[i] = 1.0;
-    //     }
-    // }
+    // check if caching is on and also is available!
+    if (bDoCache_ && sel_.isDynamic())
+    {
+        if (mpi::isMaster())
+            fprintf(stderr, "Caching not supported for dynamic selections - Caching turned off!");
 
-/* setup plot output file */
-#ifdef GMX_LIB_MPI
+        bDoCache_ = false;
+    }
+
+    // then do cacheing! num of cache elements = selCount * (selCount-1) / 2 .
+    if (bDoCache_)
+    {
+        const int selCount      = sel_.atomCount();
+        const int cacheRows     = selCount - 1;
+        const ConstArrayRef< int >  selAtomIndsArray = sel_.atomIndices();
+
+        rvec    dx;
+
+        t_pbc   pbc;
+        t_pbc  *ppbc = settings.hasPBC() ? &pbc : NULL;
+
+        if (ppbc != NULL)
+        {
+            set_pbc(ppbc, topInfo.ePBC(), box);
+        }
+
+
+        // setup cache structure
+        snew(pRefDCache_, cacheRows);
+        for (int i=0; i<cacheRows; i++)
+        {
+            const int       rowLength = selCount - (1+i);
+            const atom_id  &selindi = (atom_id) selAtomIndsArray[i];
+            const rvec     &xi = pRefX_[selindi];
+
+            // fill cache
+            snew(pRefDCache_[i], rowLength);
+            for (int j=0; j<rowLength; j++)
+            {
+                const int       ndxj = i + j + 1;
+                const atom_id  &selindj = (atom_id) selAtomIndsArray[ndxj];
+                const rvec     &xj = pRefX_[selindj];
+
+                if (ppbc != NULL)
+                    pbc_dx(ppbc, xi, xj, dx);
+                else
+                    rvec_sub(xi, xj, dx);
+                pRefDCache_[i][j] = norm(dx);
+            }
+        }
+    }
+
+    /* setup plot output file */
     if (!fnRmsDist_.empty() && mpi::isMaster())
-#else
-    if (!fnRmsDist_.empty())
-#endif
     {
         AnalysisDataPlotModulePointer plotm(
             new AnalysisDataPlotModule(settings.plotSettings()));
@@ -189,20 +219,8 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
         data_.addModule(plotm);
     }
 
-    // also calc average
+    // also calc average for fun!
     data_.addModule(avem_);
-
-// #ifdef GMX_LIB_MPI
-//     if (mpi::isMaster())
-//     {
-//         fprintf(stderr, "master process: %d\n", getpid());
-//     }
-//     else
-//     {
-//         fprintf(stderr, "other process: %d\n", getpid());
-//     }
-// #endif
-
 }
 
 void
@@ -215,99 +233,101 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const int                   selatoms = sel.atomCount();
     const ConstArrayRef< int >  selAtomIndsArray = sel.atomIndices();
 
-    // atom_id *   selind;     // indicies of selected atoms (ref. to topology indexing)
-    rvec *      x;          // coordinates of selected atoms
-    rvec *      xp;         // coordinates of reference atoms corresponding to selected atoms
-    real *      m;          // masses of selected atoms
+    const real  avging_prefactor = 2.0 / (selatoms * (selatoms-1));
+    real        inv_massprefactor = 0.0;    // for mass weight averaging
 
     rvec        dx, dxp;
     real        r, rp;
-    real        rms_val = 0.0;  // for accumulating RSMD
+    real        rms_val = 0.0;              // for RSMD value
 
-    // const real  avging_prefactor = 2.0 / (selatoms * (selatoms-1));
-    real        inv_massprefactor = 0.0;
-
-    /* first put selection stuff in legacy format
-        so that we can use the old routines             */
-
-    // // selection indecies
-    // (void) snew(selind, selatoms);
-    // for(int i=0; i<selatoms; i++)
-    // {
-    //     selind[i] = (atom_id) selAtomIndsArray.at(i);
-    // }
-
-    // coords and masses
-    (void) snew(x, selatoms);
-    (void) snew(xp, selatoms);
-    (void) snew(m, selatoms);
-    for (int i=0; i<selatoms; i++)
-    {
-        const SelectionPosition &spi = sel.position(i);
-        const rvec &spix = spi.x();
-        const atom_id &selindi = (atom_id) selAtomIndsArray.at(i);
-        for (int m=0; m<DIM; m++)
-        {
-            x[i][m]     = spix[m];
-            xp[i][m]    = pRefX_[selindi][m];
-        }
-
-        if (bUseMassWeights_)
-            m[i] = spi.mass();
-        else
-            m[i] = 1.0;
-    }
 
     for (int i=0; i<selatoms-1; i++)
     {
-        const rvec &xi = x[i];
-        const rvec &xpi = xp[i];
-        const real &mi = m[i];
+        const SelectionPosition     &spi = sel.position(i);
+        const rvec                  &spix = spi.x();
+        const real                  &spim = spi.mass();
+
+        const atom_id               &selindi = (atom_id) selAtomIndsArray[i];
+        const rvec                  &xpi = pRefX_[selindi];
+
         for (int j=i+1; j<selatoms; j++)
         {
-            const rvec &xj = x[j];
-            const rvec &xpj = xp[j];
-            const real &mj = m[j];
+            const SelectionPosition     &spj = sel.position(j);
+            const rvec                  &spjx = spj.x();
+            const real                  &spjm = spj.mass();
+
+            // calc selection i-to-j distance
             if (pbc != NULL)
+                pbc_dx(pbc, spix, spjx, dx);
+            else
+                rvec_sub(spix, spjx, dx);
+            r   = norm(dx);
+
+            // calc reference i-to-j distance
+            if (bDoCache_)
             {
-                pbc_dx(pbc, xi, xj, dx);
-                pbc_dx(pbc, xpi, xpj, dxp);
+                rp  = pRefDCache_[i][j-(i+1)];
             }
             else
             {
-                rvec_sub(xi, xj, dx);
-                rvec_sub(xpi, xpj, dxp);
+                const atom_id               &selindj = (atom_id) selAtomIndsArray[j];
+                const rvec                  &xpj = pRefX_[selindj];
+
+                if (pbc != NULL)
+                    pbc_dx(pbc, xpi, xpj, dxp);
+                else
+                    rvec_sub(xpi, xpj, dxp);
+                rp  = norm(dxp);
             }
-            r = norm(dx);
-            rp = norm(dxp);
 
-            // rms_val += (r-rp)*(r-rp);
-            const real m_pf = sqrt(mi*mj);
-            rms_val += m_pf * (r-rp)*(r-rp);
-            inv_massprefactor += m_pf;
+            // account for weights
+            if (bUseMassWeights_)
+            {
+                const real m_pf = sqrt(spim * spjm);
+                rms_val += m_pf * (r-rp)*(r-rp);
+                inv_massprefactor += m_pf;
+            }
+            else
+            {
+                rms_val += (r-rp)*(r-rp);
+            }
+
         }
-
     }
 
-    //  correct mass weight averaging
-    rms_val = sqrt(rms_val / inv_massprefactor);
+    //  apply correct averaging prefactor
+    if (bUseMassWeights_)
+    {
+        rms_val = sqrt(rms_val / inv_massprefactor);
+    }
+    else
+    {
+        rms_val = sqrt(rms_val * avging_prefactor);
+    }
 
     /* write the result */
     dh.startFrame(frnr, fr.time);
     dh.setPoint(0, rms_val);
     dh.finishFrame();
-
-    // release temp frame stuff
-    // (void) sfree(selind);
-    (void) sfree(x);
-    (void) sfree(xp);
-    (void) sfree(m);
 }
 
 
 void
 RmsDist::finishAnalysis(int /*nframes*/)
 {
+    // release cache
+    if (bDoCache_)
+    {
+        const int selCount      = sel_.atomCount();
+        const int cacheRows     = selCount - 1;
+
+        for (int i=0; i<cacheRows; i++)
+        {
+            sfree(pRefDCache_[i]);
+        }
+
+        sfree(pRefDCache_);
+    }
 }
 
 
