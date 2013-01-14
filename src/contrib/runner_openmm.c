@@ -83,6 +83,7 @@
 #include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
+#include "md_openmm.h"
 #include "gmx_omp.h"
 
 #include "thread_mpi/threads.h"
@@ -106,7 +107,7 @@ typedef struct {
 } gmx_intp_t;
 
 /* The array should match the eI array in include/types/enums.h */
-const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
+const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
@@ -1845,7 +1846,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
 
-    if (integrator[inputrec->eI].func == do_md)
+    if (integrator[inputrec->eI].func == do_md
+        ||
+        integrator[inputrec->eI].func == do_md_openmm
+        )
     {
         /* Turn on signal handling on all nodes */
         /*
