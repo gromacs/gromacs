@@ -51,8 +51,8 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 wall-density, wall-ewald-zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre-weighting, disre-mixed, disre-fc, disre-tau, nstdisreout, orire, orire-fc, orire-tau, orire-fitgrp, nstorireout)
-<li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstdhdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
-<li><A HREF="#expanded"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix,init-lambda-weights,initial-wl-delta,wl-scale,wl-ratio,symmetrized-transition-matrix,lmc-forced-nstart,weight-c-range,mininum-var-min,lmc-weights-equil,weight-equil-wl-delta,weight-equil-number-all-lambda,weight-equil-number-steps,weight-equil-number-samples,weight-equil-count-ratio,simulated-tempering,simulated-tempering-scaling,sim-temp-low,sim-temp-high)
+<li><A HREF="#free"><b>Free energy calculations</b></A> (free-energy, nstdhdl, dhdl-print-energy, init-lambda, delta-lambda, fep-lambdas, coul-lambdas, vdw-lambdas, bonded-lambdas, restraint-lambdas, mass-lambdas, temperature-lambdas, sc-alpha, sc-coul, sc-power, sc-r-power, sc-sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
+<li><A HREF="#expanded"><b>Expanded ensemble simulation</b></A> (lmc-stats, lmc-mc-move, lmc-seed, lmc-gibbsdelta, mc-temperature, nst-transition-matrix, init-lambda-weights, initial-wl-delta, wl-scale, wl-ratio, symmetrized-transition-matrix, lmc-forced-nstart, mininum-var-min, lmc-weights-equil, weight-equil-wl-delta, weight-equil-number-all-lambda, weight-equil-number-steps, weight-equil-number-samples, weight-equil-count-ratio, simulated-tempering, simulated-tempering-scaling, sim-temp-low, sim-temp-high)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc-grps, accelerate, freezegrps, freezedim, cos-acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E-x, E-xt, E-y, E-yt, E-z, E-zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
@@ -1497,6 +1497,12 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dd>starting value for the lambda state (integer).  Specified which columm of the lambda vector should be used.</dd>
 <dt><b>delta-lambda: (0)</b></dt>
 <dd>increment per time step for lambda</dd>
+<dt><b>fep-lambdas: ()</b></dt>
+<dd>Zero, one or more lambda values for which Delta H values will
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+Free energy differences between different lambda values can then
+be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
+all components of the lambda vector that are not specified will use <b>fep-lambdas</b>.</dd>
 <dt><b>coul-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
@@ -1522,14 +1528,6 @@ Only the particle masses are controlled with this component of the lambda vector
 be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
 Only the temperatures controlled with this component of the lambda vector.
 Note that these lambdas should not be used for replica exchange, only for simulated tempering.</dd>
-<dt><b>fep-lambdas: ()</b></dt>
-<dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
-Free energy differences between different lambda values can then
-be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
-all components of the lambda vector that are not specified will use <b>fep-lambdas</b>.</dd>
-<dt><b>dhdl-derivatives: (yes)</b></dt>
-<dd>If yes (the default), the derivatives of the Hamiltonian with respect to lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
 <dt><b>sc-alpha: (0)</b></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
@@ -1565,7 +1563,7 @@ the molecule definition in the topology.</dd>
 <dt><b>q</b></dt>
 <dd>the Van der Waals interactions are turned at lambda=0; soft-core interactions will be required to avoid singularities
 <dt><b>none</b></dt>
-<dd>the Van der Waals interactions are turned off and the charges are zero at lambda=0; soft-core interactions will be required to avoid singularities
+<dd>the Van der Waals interactions are turned off and the charges are zero at lambda=0; soft-core interactions will be required to avoid singularities.
 </dl>
 <dt><b>couple-lambda1:</b></dt>
 <dd> analogous to <b>couple-lambda1</b>, but for lambda=1
@@ -1579,6 +1577,10 @@ the molecule definition in the topology.</dd>
 <dt><b>nstdhdl: (100)</b></dt>
 <dd>the frequency for writing dH/dlambda and possibly Delta H to dhdl.xvg,
 0 means no ouput, should be a multiple of <b>nstcalcenergy</b></dd>.</dd>
+<dt><b>dhdl-derivatives: (yes)</b></dt>
+<dd>If yes (the default), the derivatives of the Hamiltonian with respect to lambda at each <b>nstdhdl</b> step are written out. These values are needed for interpolation of linear energy differences with <tt>g_bar</tt> (although the same can also be achieved with the right <b>foreign lambda</b> setting, that may not be as flexible), or with thermodynamic integration</dd>
+<dt><b>dhdl-print-energy: (no)</b></dt>
+<dd> Include the total energy in the dhdl file.  This information is needed for later analysis if the states of interest in the free e energy calculation are at different temperatures.  If all are at the same temperature, this information is not needed.</dd>
 <dt><b>separate-dhdl-file: (yes)</b></dt>
 <dd><dl compact>
 <dt><b>yes</b></dt>
@@ -1601,17 +1603,18 @@ simulations.  Must be a multiple of <b>nstcalcenergy</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
-<dd>No Monte Carlo in state space</dd>
+<dd>No Monte Carlo in state space is performed.</dd>
 <dt><b>metropolis-transition</b></dt>
-<dd> Uses the Metropolis weights to update the expanded ensemble weight of the state.
+<dd> Uses the Metropolis weights to update the expanded ensemble weight of each state.
 Min{1,exp(-(beta_new u_new - beta_old u_old)}</dd>
 <dt><b>barker-transition</b></dt>
-<dd> Uses the Barker transition critera to update the expanded ensemble weight of the state.</dd>
+<dd> Uses the Barker transition critera to update the expanded ensemble weight of each state i, defined by
+exp(-beta_new u_new)/[exp(-beta_new u_new)+exp(-beta_old u_old)</dd>
 <dt><b>wang-landau</b></dt>
-<dd>Uses the Wang-Landau algorithm (in state space) to update the expanded ensemble weights.</dd>
+<dd>Uses the Wang-Landau algorithm (in state space, not energy space) to update the expanded ensemble weights.</dd>
 <dt><b>min-variance</b></dt>
-<dd>Uses the minimum variance updating method of Escobedo et al to update the expanded ensemble weights. Weights
-will not be the free energies, but will rather emphasize states that need more sampling to give even uncertainty.
+<dd>Uses the minimum variance updating method of Escobedo et al. to update the expanded ensemble weights. Weights
+will not be the free energies, but will rather emphasize states that need more sampling to give even uncertainty.</dd>
 </dl>
 <dt><b>lmc-mc-move:</b></dt>
 <dd><dl compact>
@@ -1621,7 +1624,7 @@ will not be the free energies, but will rather emphasize states that need more s
 <dd> Randomly chooses a new state up or down, then uses the Metropolis critera to decide whether to accept or reject:
 Min{1,exp(-(beta_new u_new - beta_old u_old)}</dd>
 <dt><b>barker-transition</b></dt>
-<dd> Randomly chooses a new state up or down, then uses the Barker transition critera to decide whether to accept or reject: exp(-beta_new u_new)/[exp(-beta_new u_new)+exp(-beta_old u_old)] </dd>
+<dd> Randomly chooses a new state up or down, then uses the Barker transition critera to decide whether to accept or reject: exp(-beta_new u_new)/[exp(-beta_new u_new)+exp(-beta_old u_old)]</dd>
 <dt><b>gibbs</b></dt>
 <dd> Uses the conditional weights of the state given the coordinate (exp(-beta_i u_i) / sum_k exp(beta_i u_i) to
 decide which state to move to.</dd>
@@ -1629,35 +1632,69 @@ decide which state to move to.</dd>
 <dd>
 <dd> Uses the conditional weights of the state given the coordinate (exp(-beta_i u_i) / sum_k exp(beta_i u_i) to
 decide which state to move to, EXCLUDING the current state, then uses a rejection step to ensure detailed
-balance. Always more efficient that Gibbs, though marginally so in many situations.</dd>
+balance. Always more efficient that Gibbs, though only marginally so in many situations, such as when only the nearest neighbors have decent phase space overlap.</dd>
 </dl>
-
 <dt><b>lmc-seed:</b></dt>
-<dd> random seed to use for Monte Carlo moves in state space.  If not specified, <b>ld-seed</b> is used instead. </dd>
+<dd> random seed to use for Monte Carlo moves in state space.  If not specified, <b>ld-seed</b> is used instead.</dd>
 <dt><b>mc-temperature:</b></dt>
 <dd> Temperature used for acceptance/rejection for Monte Carlo moves. If not specified, the temperature of the
 simulation specified in the first group of <b>ref_t</b> is used.</dd>
-
-<dt><b>wl-scale: (0.8)</b></dt>
 <dt><b>wl-ratio: (0.8)</b></dt>
-<dt><b>init-wl-delta: (1.0) </b></dt>
-<dt><b>wl-oneovert: (no) </b></dt>
+<dd>The cutoff for the histogram of state occupancies to be reset, and the free energy incrementor to be reset as delta -> delta*wl-scale. If we define the Nratio = (number of samples at each histogram) / (average number of samples at each histogram).  <b>wl-ratio</b> of 0.8 means that means that the histogram is only considered flat if all Nratio &gt; 0.8 AND simultaneously all 1/Nratio &gt; 0.8.</dd>
+<dt><b>wl-scale: (0.8)</b></dt>
+<dd> Each time the histogram is considered flat, then the current value of the Wang-Landau incrementor for the free energies is multiplied by <b>wl-scale</b>.  Value must be between 0 and 1.</dd>
+<dt><b>init-wl-delta: (1.0)</b></dt>
+<dd>The initial value of the Wang-Landau incrementor in kT. Some value near 1 kT is usually most efficient, though sometimes a value of 2-3 in units of kT works better if the free energy differences are large.</dd>
+<dt><b>wl-oneovert: (no)</b></dt>
+<dd>Set Wang-Landau incrementor to scale with 1/(simulation time) in the large sample limit. There is significant evidence that the standard Wang-Landau algorithms in state space presented here result in free energies getting 'burned in' to incorrect values that depend on the initial state. when <b>wl-oneovert</b> is true, then when the incrementor becomes less than 1/N, where N is the mumber of samples collected (and thus proportional to the data collection time, hence '1 over t'), then the Wang-Lambda incrementor is set to 1/N, decreasing every step.  Once this occurs, <b>wl-ratio</b> is ignored, but the weights will still stop updating when the equilibration criteria set in <b>lmc-weights-equil</b> is achieved.</dd>
 <dt><b>lmc-repeats: (1)</b></dt>
-<dt><b>lmc-gibbsdelta: (-1) </b></dt>
-<dt><b>lmc-forced-nstart: (0) </b></dt>
+<dd>Controls the number of times that each Monte Carlo swap type is performed each iteration. In the limit of large numbers of Monte Carlo repeats, then all methods converge to Gibbs sampling.  The value will generally not need to be different from 1.</dd>
+<dt><b>lmc-gibbsdelta: (-1)</b></dt>
+<dd> Limit Gibbs sampling to selected numbers of neighboring states. For Gibbs sampling, it is sometimes inefficient to perform Gibbs sampling over all of the states that are defined.  A positive value of <b>lmc-gibbsdelta</b> means that only states plus or minus <b>lmc-gibbsdelta</b> are considered in exchanges up and down. A value of -1 means that all states are considered.  For less than 100 states, it is probably not that expensive to include all states.</dd> 
+<dt><b>lmc-forced-nstart: (0)</b></dt>
+<dd> Force initial state space sampling to generate weights. In order to come up with reasonable initial weights, this setting allows the simulation to drive from the initial to the final lambda state, with <b>lmc-forced-nstart</b> steps at each state before moving on to the next lambda state. If <b>lmc-forced-nstart</b> is sufficiently long (thousands of steps, perhaps), then the weights will be close to correct.  However, in most cases, it is probably better to simply run the standard weight equilibration algorithms.
 <dt><b>nst-transition-matrix: (-1)</b></dt>
 <dd>Frequency of outputting the expanded ensemble transition matrix.  A negative number means it will only be printed at the end of the simulation.<dd>
 <dt><b>symmetrized-transition-matrix: (no) </b></dt>
-<dd>Whether to symmetrize the empirical transition matrix</dd>
-<dt><b>mininum-var-min</b></dt>
-<dt><b>weight-c-range</b></dt>
-
+<dd>Whether to symmetrize the empirical transition matrix. In the infinite limit the matrix will be symmetric, but will diverge with statistical noise for short timescales.  Forced symmetrization, by using the matrix T_sym = 1/2 (T + transpose(T)), removes problems like the existence of (small magnitude) negative eigenvalues.</dd>
+<dt><b>mininum-var-min: (100)</b></dt>
+<dd> The <b>min-variance</b> strategy (option of <b>lmc-stats</b> is only valid for larger number of samples, and can get stuck if too few samples are used at each state.  <b>mininum-var-min</b> is the minimum number of samples that each state that are allowed before the <b>min-variance</b> strategy is activated if selected.
+<dt><b>init-lambda-weights: </b></dt>
+<dd>The initial weights used for the expanded ensemble states.  Default is a vector of zero weights.
+<dt><b>lmc-weights-equil: (no)</b><dt>
+<dd><dl compact>
+<dt><b>no</b><dt>
+<dd>Expanded ensemble weights continue to be updated throughout the simulation.</dd>
+<dt><b>yes</b><dt>
+<dd>The input expanded ensemble weights are treated as equilibrated, and are not updated throughout the simulation.</dd>
+<dt><b>wl-delta</b><dt>
+<dd>Expanded ensemble weight updating is stopped when the Wang-Landau incrementor falls below the value specified by <b>weight-equil-wl-delta</b>.</dd>
+<dt><b>number-all-lambda</b><dt>
+<dd>Expanded ensemble weight updating is stopped when the number of samples at all of the lambda states is greater than the value specified by <b>weight-equil-number-all-lambda</b>.</dd>
+<dt><b>number-steps</b><dt>
+<dd>Expanded ensemble weight updating is stopped when the number of steps is greater than the level specified by <b>weight-equil-number-steps</b>.</dd>
+<dt><b>number-samples</b><dt>
+<dd>Expanded ensemble weight updating is stopped when the number of total samples across all lambda states is greater than the level specified by <b>weight-equil-number-samples</b>.</dd>
+<dt><b>count-ratio</b><dt>
+<dd>Expanded ensemble weight updating is stopped when the ratio of samples at the least sampled lambda state and most sampled lambda state greater than the value specified by <b>weight-equil-count-ratio</b>.</dd> 
+</dl>
 <dt><b>simulated-tempering: (no)</b></dt>
-<dt><b>simulated-tempering-scaling: ()</b></dt>
-<dt><b>sim-temp-low: (300):</b></dt>
-<dd>Low temperature for simulated tempering</dd>
-<dt><b>sim-temp-high: (300):</b></dt>
-<dd>High temperature for simulated tempering</dd>
+<dd>Turn simulated tempering on or off. Simulated tempering is implemented as expanded ensemble sampling with different temperatures instead of different Hamiltonians.</dd>
+<dt><b>sim-temp-low: (300)</b></dt>
+<dd>Low temperature for simulated tempering.</dd>
+<dt><b>sim-temp-high: (300)</b></dt>
+<dd>High temperature for simulated tempering.</dd>
+<dt><b>simulated-tempering-scaling: (linear)</b></dt>
+<dd>Controls the way that the temperatures at intermediate lambdas are calculated from the <b>temperature-lambda</b> part of the lambda vector.</dd>
+<dd><dl compact>
+<dt><b>linear</b><dt>
+<dd>Linearly interpolates the temperatures using the values of <b>temperature-lambda</b>,i.e. if <b>sim-temp-low</b>=300, <b>sim-temp-high</b>=400, then lambda=0.5 correspond to a temperature of 350. A nonlinear set of temperatures can always be implemented with uneven spacing in lambda.</dd>
+<dt><b>geometric</b><dt>
+<dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>)^(i/(ntemps-1)).  Should give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
+<dt><b>exponential</b><dt>
+<dd> Interpolates temperatures exponentially between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature
+<b>sim-temp-low</b> + (<b>sim-temp-high</b>-<b>sim-temp-low</b>)*((exp(<b>temperature-lambdas</b>[i])-1)/(exp(1.0)-1)).</dd>
+</dl>
 </dl>
 
 <A NAME="neq"><br>
@@ -2013,12 +2050,22 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#vel">gen-vel</A><br>
 <A HREF="#pp">include</A><br>
 <A HREF="#free">init-lambda</A><br>
+<A HREF="#expanded">init-lambda-weights</A><br>
 <A HREF="#run">init-step</A><br>
+<A HREF="#expanded">initial-wl-delta</A><br>
 <A HREF="#run">integrator</A><br>
 <A HREF="#ld">ld-seed</A><br>
 <A HREF="#bond2">lincs-iter</A><br>
 <A HREF="#bond2">lincs-order</A><br>
 <A HREF="#bond2">lincs-warnangle</A><br>
+<A HREF="#expanded">lmc-forced-nstart</A><br>
+<A HREF="#expanded">lmc-gibbsdelta</A><br>
+<A HREF="#expanded">lmc-mc-move</A><br>
+<A HREF="#expanded">lmc-seed</A><br>
+<A HREF="#expanded">lmc-stats</A><br>
+<A HREF="#expanded">lmc-weights-equil</A><br>
+<A HREF="#expanded">mc-temperature</A><br>
+<A HREF="#expanded">mininum-var-min</A><br>
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>
 <A HREF="#xmdrun">niter</A><br>
@@ -2037,6 +2084,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
+<A HREF="#expanded">nst-transition-matrix</A><br>
 <A HREF="#nl">ns-type</A><br>
 <A HREF="#wall">nwall</A><br>
 <A HREF="#ewald">optimize-fft</A><br>
@@ -2065,6 +2113,11 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#free">sc-power</A><br>
 <A HREF="#free">sc-sigma</A><br>
 <A HREF="#bond2">shake-tol</A><br>
+<A HREF="#expanded">sim-temp-low</A><br>
+<A HREF="#expanded">sim-temp-high</A><br>
+<A HREF="#expanded">simulated-tempering</A><br>
+<A HREF="#expanded">simulated-tempering-scaling</A><br>
+<A HREF="#expanded">symmetrized-transition-matrix</A><br>
 <A HREF="#table">table-extension</A><br>
 <A HREF="#pc">tau-p</A><br>
 <A HREF="#tc">tau-t</A><br>
@@ -2093,6 +2146,13 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#walls">wall-ewald-zfac</A><br>
 <A HREF="#walls">wall-r-linpot</A><br>
 <A HREF="#walls">wall-type</A><br>
+<A HREF="#expanded">weight-equil-count-ratio</A><br>
+<A HREF="#expanded">weight-equil-number-all-lambda</A><br>
+<A HREF="#expanded">weight-equil-number-samples</A><br>
+<A HREF="#expanded">weight-equil-number-steps</A><br>
+<A HREF="#expanded">weight-equil-wl-delta</A><br>
+<A HREF="#expanded">wl-ratio</A><br>
+<A HREF="#expanded">wl-scale</A><br>
 </multicol>
 
 <hr>
