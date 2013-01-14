@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2010,2012 The GROMACS development team,
  * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
@@ -36,70 +36,55 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GPU_UTILS_H_
-#define _GPU_UTILS_H_
+#include <stdio.h>
+#include <stdlib.h>
 
-#include "types/simple.h"
+#include "smalloc.h"
+#include "string2.h"
 #include "types/hw_info.h"
 
-#ifdef GMX_GPU
-#define FUNC_TERM_INT ;
-#define FUNC_TERM_VOID ;
-#define FUNC_QUALIFIER
-#else
-#define FUNC_TERM_INT {return -1;}
-#define FUNC_TERM_VOID {}
-#define FUNC_QUALIFIER static
-#endif
+#include "openmm_gpu_utils.h"
+#include "../../src/gmxlib/cuda_tools/cudautils.cuh"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-FUNC_QUALIFIER
-int do_quick_memtest(int dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_full_memtest(int dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_timed_memtest(int dev_id, int time_limit) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void pick_compatible_gpus(gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
-
-FUNC_QUALIFIER
-gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
-                                const int *requested_devs, int count) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void free_gpu_info(const gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
-
-FUNC_QUALIFIER
-gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-gmx_bool free_gpu(char *result_str) FUNC_TERM_INT
-
-/*! \brief Returns the device ID of the GPU currently in use.*/
-FUNC_QUALIFIER
-int get_current_gpu_device_id(void) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
-
-#ifdef __cplusplus
+/*! 
+ * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
+ * 
+ * \param[in] gpu_name  the name of the CUDA device
+ * \returns             TRUE if the device is supported, otherwise FALSE
+ */
+static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
+{
+    size_t i;
+    for (i = 0; i < NB_GPUS; i++)
+    {
+        trim(gpuName);
+        if (gmx_strncasecmp(gpuName, SupportedGPUs[i], strlen(SupportedGPUs[i])) == 0)
+            return 1;
+    }
+    return 0;
 }
-#endif
 
-#undef FUNC_TERM_INT
-#undef FUNC_TERM_VOID
-#undef FUNC_QUALIFIER
+/*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
+ *
+ * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
+ * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
+ * \returns             TRUE if the device is supported, otherwise FALSE
+ * 
+ */
+gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
+{
+    cudaDeviceProp dev_prop;
 
-#endif /* _GPU_UTILS_H_ */
+    if (debug) fprintf(debug, "Checking compatibility with device #%d, %s\n", dev_id, gpu_name);
+
+    if (do_sanity_checks(dev_id, &dev_prop) != 0)
+        return -1;
+
+    if (gpu_name != NULL)
+    { 
+        strcpy(gpu_name, dev_prop.name);
+    }
+    return is_gmx_openmm_supported_gpu_name(dev_prop.name);
+}
+
+

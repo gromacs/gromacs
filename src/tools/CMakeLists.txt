@@ -100,7 +100,7 @@ set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
 
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
-    if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
+    if(GMX_GPU OR GMX_FORCE_CXX)
         set_source_files_properties(${TOOL}.c PROPERTIES LANGUAGE CXX)
         if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
             set_source_files_properties(${TOOL}.c PROPERTIES COMPILE_FLAGS "-x c++")

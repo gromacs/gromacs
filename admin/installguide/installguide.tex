@@ -94,10 +94,14 @@ version is encouraged. \nvidia{} GPUs with at least \nvidia{} compute
 capability 2.0 are required, e.g. Fermi or Kepler cards.
 
 The GPU support from \gromacs{} version 4.5 using \openmm{}
-\url{https://simtk.org/home/openmm} is still available, also requires
-\cuda{}, and remains the only hardware-based acceleration available
-for implicit solvent simulations in \gromacs{}. This parallelization
-path may not be maintained in the future.
+\url{https://simtk.org/home/openmm} is still contained in the code,
+but in the ``user contributions'' section (\texttt{src/contrib}). You
+will need to edit \texttt{src/contrib/CMakeLists.txt} to enable it. It
+also requires \cuda{}, and remains the only hardware-based
+acceleration available for implicit solvent simulations in
+\gromacs{}. There are no plans to maintain this implementation for
+this parallelization path in the future, and it may not even build
+now.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have

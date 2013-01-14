@@ -142,17 +142,13 @@ endif()
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
-# TODO: move OpenMM to contrib
-option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (not fully supported)" OFF)
-mark_as_advanced(GMX_OPENMM)
-
 option(GMX_FORCE_CXX "Enable C++ compilation even if not necessary" OFF)
 mark_as_advanced(GMX_FORCE_CXX)
 
 option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 
-if(GMX_GPU OR GMX_OPENMM OR GMX_FORCE_CXX)
+if(GMX_GPU OR GMX_FORCE_CXX)
     enable_language(CXX)
 endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
@@ -307,10 +303,6 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
-  if (GMX_OPENMM)
-    set (GMX_BINARY_SUFFIX "-openmm")
-    set (GMX_LIBS_SUFFIX "_openmm")
-  endif(GMX_OPENMM)
   mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
   if (NOT SUFFIX_QUIETLY)
     message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
@@ -333,53 +325,6 @@ if(GMX_SOFTWARE_INVSQRT)
   set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_SOFTWARE_INVSQRT")
 endif(GMX_SOFTWARE_INVSQRT)
 
-#######################################################################
-# Check for options incompatible with OpenMM build                    #
-#######################################################################
-if(GMX_OPENMM)
-    # we'll use the built-in fft to avoid unnecessary dependencies
-    string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
-    if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
-        message(STATUS "No external FFT libraries needed for the OpenMM build, switching to fftpack!")
-        set(GMX_FFT_LIBRARY "fftpack" CACHE STRING 
-		"No external FFT libraries needed for the OpenMM build, switching to  fftpack!" FORCE)
-    endif()
-    if(GMX_MPI)
-        message(FATAL_ERROR "The OpenMM build is not compatible with MPI!")
-    endif(GMX_MPI)
-    if(GMX_THREAD_MPI)
-        message(STATUS "Thread-MPI not compatible with OpenMM, disabled!")
-        set(GMX_THREAD_MPI OFF CACHE BOOL
-		"Thread-MPI not compatible with OpenMM build, disabled!" FORCE)
-    endif(GMX_THREAD_MPI)
-    if(GMX_OPENMP)
-        message(STATUS "OpenMP multithreading not compatible with OpenMM, disabled")
-        set(GMX_OPENMP OFF CACHE BOOL
-            "OpenMP multithreading not compatible with OpenMM, disabled!" FORCE)
-    endif()
-    if(GMX_SOFTWARE_INVSQRT)
-        set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
-                "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
-    endif(GMX_SOFTWARE_INVSQRT)
-    string(TOUPPER ${GMX_CPU_ACCELERATION} GMX_CPU_ACCELERATION)
-    if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
-        message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")
-        set(GMX_CPU_ACCELERATION "None" CACHE STRING
-            "Switching off CPU-based acceleration, the OpenMM build does not support/need any!" FORCE)
-    endif()
-    if(GMX_FAHCORE)
-        message(FATAL_ERROR "The OpenMM build does not support FAH build!")
-    endif(GMX_FAHCORE)
-    if(GMX_DOUBLE)
-        message(FATAL_ERROR  "The OpenMM-build does not support double precision calculations!")
-    endif()
-    # mark as advanced the unused variables
-    mark_as_advanced(FORCE GMX_CPU_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
-else(GMX_OPENMM)
-     mark_as_advanced(CLEAR GMX_CPU_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
-        GMX_QMMM_PROGRAM GMX_THREAD_MPI GMX_DOUBLE)
-endif(GMX_OPENMM)
 
 
 ########################################################################
@@ -598,16 +543,6 @@ if(GMX_THREAD_MPI)
 else(GMX_THREAD_MPI)
     tmpi_get_source_list(THREAD_MPI_SRC NOMPI)
 endif(GMX_THREAD_MPI)
-
-if(GMX_OPENMM)
-    set(CUDA_BUILD_EMULATION OFF)
-    find_package(CUDA 3.1 REQUIRED)
-    add_definitions(-DGMX_OPENMM)
-    if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
-        set(CUDA_VERBOSE_BUILD ON)
-    endif()
-    find_package(OpenMM) 
-endif(GMX_OPENMM)
 
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
@@ -930,7 +865,7 @@ else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, Orca, None")
 endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
 
-# Process FFT library settings - if not OpenMM build 
+# Process FFT library settings
 string(TOUPPER ${GMX_FFT_LIBRARY} ${GMX_FFT_LIBRARY})
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
