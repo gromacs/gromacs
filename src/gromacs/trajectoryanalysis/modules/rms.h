@@ -80,6 +80,7 @@ class Rms : public TrajectoryAnalysisModule
 
     private:
         Selection                                sel_;
+        Selection                                fitsel_;
         std::string                              fnRms_;
         AnalysisData                             data_;
         AnalysisDataAverageModulePointer         avem_;
@@ -88,10 +89,12 @@ class Rms : public TrajectoryAnalysisModule
         t_topology *    pRefTop_;
         int             topAtoms_;
         rvec *          pRefX_;
-        // real *          pRefM_;
+        real *          pRefM_;
+        real *          pRefMU_;    // just a bunch of ones.
 
-        bool            bDoFit_;        // R+T fit. TODO: option for only trans. fit!
-        bool            bUnitWeights_;  // use 1 for mass weighting
+        bool            bRMSUseMassWeights_;    // mass weighted RMS
+        bool            bDoFit_;                // R+T fit. TODO: option for only trans. fit!
+        bool            bFitUseMassWeights_;    // mass weighted fit
 
         // Copy and assign disallowed by base.
 };

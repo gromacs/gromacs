@@ -104,14 +104,26 @@ Rms::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
                        .onlyAtoms()
                        .store(&sel_));
 
+    options->addOption(BooleanOption("mw")
+                       .description("Use mass weighted RMS.")
+                       .defaultValue(true)
+                       .store(&bRMSUseMassWeights_));
+
     options->addOption(BooleanOption("fit")
-                       .description("translational and rotational least squares fit.")
+                       .description("Do translational and rotational least-squares fit.")
                        .store(&bDoFit_));
 
-    options->addOption(BooleanOption("uw")
-                       .description("put weights to 1.")
-                       .defaultValue(FALSE)
-                       .store(&bUnitWeights_));
+    options->addOption(SelectionOption("fitsel")
+                       .description("Selection for least-squares fitting.")
+                       .valueCount(1)
+                       // .onlyStatic()
+                       .onlyAtoms()
+                       .store(&fitsel_));
+
+    options->addOption(BooleanOption("fitmw")
+                       .description("Use mass weighted fit.")
+                       .defaultValue(true)
+                       .store(&bFitUseMassWeights_));
 
     // topology with coords must be provided for use as reference in RMS calc.
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
@@ -135,13 +147,15 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
     pRefTop_ = topInfo.topology();
     topAtoms_ = pRefTop_->atoms.nr;
+        fprintf(stderr, "topAtoms_: %d\n", topAtoms_);
     pRefX_ = NULL;
-    // pRefM_ = NULL;
+    pRefM_ = NULL;
+    pRefMU_ = NULL;
 
     // get coords for reference structure
     (void) topInfo.getTopologyConf(&pRefX_, box);
 
-    // make reference structure whole
+    // make reference structure whole Q: does this make sense?!
     if (settings.hasRmPBC())
     {
         gmx_rmpbc_t     gpbc = NULL;
@@ -151,25 +165,25 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
         (void) gmx_rmpbc_done(gpbc);
     }
 
-    // // setup weights
-    // snew(pRefM_, pRefTop_->atoms.nr);
-    // bool bMass = FALSE;
-    // for(int i=0; i<pRefTop_->atoms.nr; i++)
-    // {
-    //     if (bUnitWeights_)
-    //         pRefM_[i] = 1.0;
-    //     else
-    //         pRefM_[i] = pRefTop_->atoms.atom[i].m;
-    //     bMass = bMass || (pRefTop_->atoms.atom[i].m != 0);
-    // }
-    // if (!bMass)
-    // {
-    //     fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
-    //     for(int i=0; i<pRefTop_->atoms.nr; i++)
-    //     {
-    //         pRefM_[i] = 1.0;
-    //     }
-    // }
+    // setup topology weights
+    snew(pRefM_, topAtoms_);
+    snew(pRefMU_, topAtoms_);
+
+    bool bMass = FALSE;
+    for(int i=0; i<topAtoms_; i++)
+    {
+        pRefM_[i] = pRefTop_->atoms.atom[i].m;
+        pRefMU_[i] = 1.0;
+        bMass = bMass || (pRefTop_->atoms.atom[i].m != 0);
+    }
+    if (!bMass)
+    {
+        fprintf(stderr,"All masses in the fit group are 0, using masses of 1\n");
+        for(int i=0; i<topAtoms_; i++)
+        {
+            pRefM_[i] = 1.0;
+        }
+    }
 
 /* setup plot output file */
 #ifdef GMX_LIB_MPI
@@ -183,6 +197,7 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setFileName(fnRms_);
         plotm->setTitle("RMS");
         plotm->setXAxisIsTime();
+        plotm->setYFormat(8, 6, 'f');   // y output fmt: "%8.6f"
         data_.addModule(plotm);
     }
 
@@ -208,19 +223,23 @@ Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 {
     AnalysisDataHandle  dh = pdata->dataHandle(data_);
     const Selection    &sel = pdata->parallelSelection(sel_);
+    const Selection    &fitsel = pdata->parallelSelection(fitsel_);
 
     const int                   selatoms = sel.atomCount();
+    const int                   fitselatoms = fitsel.atomCount();
     const ConstArrayRef< int >  selAtomIndsArray = sel.atomIndices();
+    const ConstArrayRef< int >  fitselAtomIndsArray = fitsel.atomIndices();
 
-    // atom_id *   selind;     // indicies of selected atoms (ref. to topology indexing)
-    rvec *      x;          // coordinates of selected atoms
-    rvec *      xp;         // coordinates of reference atoms corresponding to selected atoms
-    real *      m;          // masses of selected atoms
+    // atom_id *   selind;          // indicies of selected atoms (ref. to topology indexing)
+    rvec *      x,      * x_fit;           // coordinates of output selection and fit selection
+    rvec *      xp,     * xp_fit;         // coordinates of reference corresponding to selection and fit selection
+    real *      w_rms,  * w_fit;       // weights (masses) of output and reference selection atoms
 
-    real        rms_val;
+    real        rms_val;            // variable for accumulating data point value (RMSD)
 
-    /* first put selection stuff in legacy format
-        so that we can use the old routines             */
+
+    /* put stuff from selections in format
+        so that we can use the legacy routines */
 
     // // selection indecies
     // (void) snew(selind, selatoms);
@@ -232,39 +251,63 @@ Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     // coords and masses
     (void) snew(x, selatoms);
     (void) snew(xp, selatoms);
-    (void) snew(m, selatoms);
+    (void) snew(w_rms, selatoms);
+    (void) snew(x_fit, fitselatoms);
+    (void) snew(xp_fit, fitselatoms);
+    (void) snew(w_fit, fitselatoms);
+
+    // setup output selection arrays
     for (int i=0; i<selatoms; i++)
     {
         const SelectionPosition &spi = sel.position(i);
-        const rvec &spix = spi.x();
-        const atom_id selindi = (atom_id) selAtomIndsArray.at(i);
-        for (int m=0; m<DIM; m++)
-        {
-            x[i][m]     = spix[m];
-            xp[i][m]    = pRefX_[selindi][m];
-        }
+        // const rvec &spix = spi.x();
+        const atom_id &selindi = (atom_id) selAtomIndsArray.at(i);
+        // for (int m=0; m<DIM; m++)
+        // {
+        //     x[i][m]     = spix[m];
+        //     xp[i][m]    = pRefX_[selindi][m];
+        // }
+        (void) copy_rvec(spi.x(), x[i]);
+        (void) copy_rvec(pRefX_[selindi], xp[i]);
 
-        if (bUnitWeights_)
-            m[i] = 1.0;
+        if (bRMSUseMassWeights_)
+            w_rms[i] = spi.mass();
         else
-            m[i] = spi.mass();
+            w_rms[i] = 1.0;
     }
 
+    // setup fitting selection arrays
+    for (int i=0; i<fitselatoms; i++)
+    {
+        const SelectionPosition &fitspi = fitsel.position(i);
+        // const rvec &spix = spi.x();
+        const atom_id &fitselindi = (atom_id) fitselAtomIndsArray.at(i);
+
+        (void) copy_rvec(fitspi.x(), x_fit[i]);
+        (void) copy_rvec(pRefX_[fitselindi], xp_fit[i]);
+
+        if (bFitUseMassWeights_)
+            w_fit[i] = fitspi.mass();
+        else
+            w_fit[i] = 1.0;
+    }
+
+    // perform fitting of structures
     if (bDoFit_)
     {
-        /* translate (ie "reset") COM of reference and selected atoms */
+        /* translate (ie "reset") COM of reference and selected atoms to origin */
         (void) reset_x(selatoms, NULL,      // calc COM from same atoms as in selection
                        selatoms, NULL,
-                       xp, m);
+                       xp_fit, w_fit);
         (void) reset_x(selatoms, NULL,      // calc COM from all atoms in selection
                        selatoms, NULL,
-                       x, m);
+                       x_fit, w_fit);
 
         /* rotate selection for least squares fit */
-        (void) do_fit(selatoms, m, xp, x);
+        (void) do_fit(selatoms, w_fit, xp, x);
     }
 
-    rms_val = rmsdev(selatoms, m, x, xp);   // calc_similar_ind(FALSE, selatoms, NULL, m, x, xp);
+    rms_val = rmsdev(selatoms, w_rms, x, xp);   // calc_similar_ind(FALSE, selatoms, NULL, m, x, xp);
 
     /* write the result */
     dh.startFrame(frnr, fr.time);
@@ -275,13 +318,16 @@ Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     // (void) sfree(selind);
     (void) sfree(x);
     (void) sfree(xp);
-    (void) sfree(m);
+    (void) sfree(w_rms);
+    (void) sfree(w_fit);
 }
 
 
 void
 Rms::finishAnalysis(int /*nframes*/)
 {
+    sfree(pRefM_);
+    sfree(pRefMU_);
 }
 
 
