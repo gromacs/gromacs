@@ -1041,10 +1041,6 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
             gmx_input("Sorry, parallel g_membed is not yet fully functional.");
         }
 
-#ifdef GMX_OPENMM
-        gmx_input("Sorry, g_membed does not work with openmm.");
-#endif
-
         if(*cpt>=0)
         {
             fprintf(stderr,"\nSetting -cpt to -1, because embedding cannot be restarted from cpt-files.\n");
