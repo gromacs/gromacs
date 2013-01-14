@@ -481,6 +481,20 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
     {
         pme_lb->fastest = pme_lb->cur;
+
+        if (DOMAINDECOMP(cr))
+        {
+            /* We found a new fastest setting, ensure that with subsequent
+             * shorter cut-off's the dynamic load balancing does not make
+             * the use of the current cut-off impossible. This solution is
+             * a trade-off, as the imbalance could be could by either the
+             * non-bonded interactions on the GPU (changing the limit is good),
+             * or the bonded interactions on the CPU (decreasing the limit can
+             * leave some load imbalance which, maybe, could have been balanced
+             * out, but the PME load on the CPU, redist, FFT, solve decreases).
+             */
+            change_dd_dlb_cutoff_limit(cr);
+        }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
 
