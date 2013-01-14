@@ -44,7 +44,6 @@ extern "C"
 {
 #endif
 
-#ifdef GMX_OPENMM
 void* openmm_init(FILE *fplog, const char *platformOptStr,
                     t_inputrec *ir,
                     gmx_mtop_t *top_global, gmx_localtop_t *top,
@@ -60,27 +59,6 @@ void openmm_copy_state(void *data,
                         gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy);
 
 void openmm_cleanup(FILE *fplog, void* data);
-#else 
-/* dummy versions of the wrapper functions to enable compilation of 
-   do_md_openmm even when OpenMM is not used */ 
-void* openmm_init(FILE *fplog, const char *platformOptStr,
-                    t_inputrec *ir,
-                    gmx_mtop_t *top_global, gmx_localtop_t *top,
-                    t_mdatoms *mdatoms, t_forcerec *fr, t_state *state){return NULL;}
-
-void openmm_take_one_step(void* data){}
-
-void openmm_take_steps(void* data, int nsteps){}
-
-void openmm_copy_state(void *data,
-                        t_state *state, double *time,
-                        rvec f[], gmx_enerdata_t *enerd,
-                        gmx_bool includePos, gmx_bool includeVel, gmx_bool includeForce, gmx_bool includeEnergy){}
-
-void openmm_cleanup(FILE *fplog, void* data){}
-
-#endif /*GMX_OPENMM*/
-
 
 #ifdef __cplusplus
 } // extern "C"

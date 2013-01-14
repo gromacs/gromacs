@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2010,2012 The GROMACS development team,
  * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
@@ -60,9 +60,6 @@
 #define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests to
                                                                             run in time constrained memtest. */
 
-/*! Number of supported GPUs */
-#define NB_GPUS (sizeof(SupportedGPUs)/sizeof(SupportedGPUs[0]))
-
 static int cuda_max_device_count = 32; /*! Max number of devices supported by CUDA (for consistency checking).
                                            In reality it 16 with CUDA <=v5.0, but let's stay on the safe side. */
 
@@ -85,55 +82,6 @@ enum memtest_G80_test_types {
     LOGIC_4_ITER =              0x400,
     LOGIC_1_ITER_SHMEM =        0x800,
     LOGIC_4_ITER_SHMEM =        0x1000
-};
-
-// TODO put this list into an external file and include it so that the list is easily accessible
-/*! List of supported GPUs. */
-static const char * const SupportedGPUs[] = {
-    /* GT400 */
-    "Geforce GTX 480",
-    "Geforce GTX 470",
-    "Geforce GTX 465",
-    "Geforce GTX 460",
-
-    "Tesla C2070",
-    "Tesla C2050",
-    "Tesla S2070",
-    "Tesla S2050",
-    "Tesla M2070",
-    "Tesla M2050",
-
-    "Quadro 5000",
-    "Quadro 6000",
-
-    /* GT200 */
-    "Geforce GTX 295",
-    "Geforce GTX 285",
-    "Geforce GTX 280",
-    "Geforce GTX 275",
-    "Geforce GTX 260",
-    "GeForce GTS 250",
-    "GeForce GTS 150",
-
-    "GeForce GTX 285M",
-    "GeForce GTX 280M",
-
-    "Tesla S1070",
-    "Tesla C1060",
-    "Tesla M1060",
-
-    "Quadro FX 5800",
-    "Quadro FX 4800",
-    "Quadro CX",
-    "Quadro Plex 2200 D2",
-    "Quadro Plex 2200 S4",
-
-    /* G90 */
-    "GeForce 9800 G", /* GX2, GTX, GTX+, GT */
-    "GeForce 9800M GTX",
-
-    "Quadro FX 4700",
-    "Quadro Plex 2100 D4"
 };
 
 
@@ -240,48 +188,6 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     return 0;
-}
-
-
-/*! 
- * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
- * 
- * \param[in] gpu_name  the name of the CUDA device
- * \returns             TRUE if the device is supported, otherwise FALSE
- */
-static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
-{
-    size_t i;
-    for (i = 0; i < NB_GPUS; i++)
-    {
-        trim(gpuName);
-        if (gmx_strncasecmp(gpuName, SupportedGPUs[i], strlen(SupportedGPUs[i])) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-/*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
- *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
- * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
- * \returns             TRUE if the device is supported, otherwise FALSE
- * 
- */
-gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
-{
-    cudaDeviceProp dev_prop;
-
-    if (debug) fprintf(debug, "Checking compatibility with device #%d, %s\n", dev_id, gpu_name);
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-        return -1;
-
-    if (gpu_name != NULL)
-    { 
-        strcpy(gpu_name, dev_prop.name);
-    }
-    return is_gmx_openmm_supported_gpu_name(dev_prop.name);
 }
 
 
