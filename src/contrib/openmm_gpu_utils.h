@@ -36,63 +36,22 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _GPU_UTILS_H_
-#define _GPU_UTILS_H_
+#ifndef _OPENMM_GPU_UTILS_H_
+#define _OPENMM_GPU_UTILS_H_
 
 #include "types/simple.h"
 #include "types/hw_info.h"
 
-#ifdef GMX_GPU
-#define FUNC_TERM_INT ;
-#define FUNC_TERM_VOID ;
-#define FUNC_QUALIFIER
-#else
 #define FUNC_TERM_INT {return -1;}
 #define FUNC_TERM_VOID {}
 #define FUNC_QUALIFIER static
-#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 FUNC_QUALIFIER
-int do_quick_memtest(int dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_full_memtest(int dev_id) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int do_timed_memtest(int dev_id, int time_limit) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void pick_compatible_gpus(gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
-
-FUNC_QUALIFIER
-gmx_bool check_select_cuda_gpus(int *checkres, gmx_gpu_info_t *gpu_info,
-                                const int *requested_devs, int count) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void free_gpu_info(const gmx_gpu_info_t *gpu_info) FUNC_TERM_VOID
-
-FUNC_QUALIFIER
-gmx_bool init_gpu(int mygpu, char *result_str, const gmx_gpu_info_t *gpu_info) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-gmx_bool free_gpu(char *result_str) FUNC_TERM_INT
-
-/*! \brief Returns the device ID of the GPU currently in use.*/
-FUNC_QUALIFIER
-int get_current_gpu_device_id(void) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-int get_gpu_device_id(const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_INT
-
-FUNC_QUALIFIER
-void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int index) FUNC_TERM_VOID
+gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name) FUNC_TERM_INT
 
 #ifdef __cplusplus
 }
@@ -102,4 +61,4 @@ void get_gpu_device_info_string(char *s, const gmx_gpu_info_t *gpu_info, int ind
 #undef FUNC_TERM_VOID
 #undef FUNC_QUALIFIER
 
-#endif /* _GPU_UTILS_H_ */
+#endif /* _OPENMM_GPU_UTILS_H_ */

@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2010,2012 The GROMACS development team,
  * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
@@ -240,48 +240,6 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     return 0;
-}
-
-
-/*! 
- * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
- * 
- * \param[in] gpu_name  the name of the CUDA device
- * \returns             TRUE if the device is supported, otherwise FALSE
- */
-static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
-{
-    size_t i;
-    for (i = 0; i < NB_GPUS; i++)
-    {
-        trim(gpuName);
-        if (gmx_strncasecmp(gpuName, SupportedGPUs[i], strlen(SupportedGPUs[i])) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-/*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
- *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
- * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
- * \returns             TRUE if the device is supported, otherwise FALSE
- * 
- */
-gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
-{
-    cudaDeviceProp dev_prop;
-
-    if (debug) fprintf(debug, "Checking compatibility with device #%d, %s\n", dev_id, gpu_name);
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-        return -1;
-
-    if (gpu_name != NULL)
-    { 
-        strcpy(gpu_name, dev_prop.name);
-    }
-    return is_gmx_openmm_supported_gpu_name(dev_prop.name);
 }
 
 

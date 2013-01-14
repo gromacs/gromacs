@@ -121,11 +121,6 @@ int gmx_membed(int argc,char *argv[])
     gmx_bool bVerbose=FALSE;
     char *mdrun_path=NULL;
 
-/* arguments relevant to OPENMM only*/
-#ifdef GMX_OPENMM
-    gmx_fatal(FARGS,"g_membed not implemented for openmm");
-#endif
-
     t_pargs pa[] = {
         { "-xyinit",   FALSE, etREAL,  {&xy_fac},
             "Resize factor for the protein in the xy dimension before starting embedding" },

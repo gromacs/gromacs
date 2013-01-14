@@ -181,6 +181,9 @@ t_mdebin *init_mdebin(ener_file_t fp_ene,
         md->bEInd[i]=FALSE;
     }
 
+    /* Even though the OpenMM build has moved to contrib, it's not
+     * practical to move/remove this code fragment, because of the
+     * fundamental mess that is the GROMACS library structure. */
 #ifndef GMX_OPENMM
     for(i=0; i<F_NRE; i++)
     {
