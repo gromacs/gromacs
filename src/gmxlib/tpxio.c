@@ -929,7 +929,9 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
         if (ir->eSwapCoords != eswapNO)
         {
             if (bRead)
+            {
                 snew(ir->swap, 1);
+            }
             do_swapcoords(fio,ir->swap,bRead,file_version);
         }
     }

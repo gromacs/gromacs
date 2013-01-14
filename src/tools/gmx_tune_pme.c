@@ -1937,6 +1937,7 @@ static void get_tpr_outfiles(int nfile, t_filenm fnm[])
     gmx_bool     bTpi;      /* Is test particle insertion requested?          */
     gmx_bool     bFree;     /* Is a free energy simulation requested?         */
     gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
+    gmx_bool     bSwap;     /* Is water/ion position swapping requested?      */
     t_inputrec   ir;
     t_state      state;
     gmx_mtop_t   mtop;
@@ -1944,9 +1945,10 @@ static void get_tpr_outfiles(int nfile, t_filenm fnm[])
 
     /* Check tpr file for options that trigger extra output files */
     read_tpx_state(opt2fn("-s",nfile,fnm),&ir,&state,NULL,&mtop);
-    bPull = (epullNO != ir.ePull);
-    bFree = (efepNO  != ir.efep );
-    bNM   = (eiNM    == ir.eI   );
+    bPull = (epullNO != ir.ePull      );
+    bFree = (efepNO  != ir.efep       );
+    bNM   = (eiNM    == ir.eI         );
+    bSwap = (eswapNO != ir.eSwapCoords);
     bTpi  = EI_TPI(ir.eI);
 
     /* Set these output files on the tuning command-line */
@@ -1967,6 +1969,10 @@ static void get_tpr_outfiles(int nfile, t_filenm fnm[])
     if (bNM)
     {
         setopt("-mtx" , nfile, fnm);
+    }
+    if (bSwap)
+    {
+        setopt("-swap", nfile, fnm);
     }
 }
 
