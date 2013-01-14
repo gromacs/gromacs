@@ -15,7 +15,6 @@ This file contains the licenses for the following bodies of code:
 5. thread_mpi
 6. Blas
 7. Lapack
-8. OpenMM
 
 Our chosen method for packaging distributions (CPack) only permits a
 package to have a single license file, so we are unfortunately forced
@@ -1071,9 +1070,3 @@ in Gromacs (primarily full & sparse matrix diagonalization), so in most cases it
 better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
-
-8. OpenMM (binary distributions only)
-=====================================
-
-There are several licenses which cover different parts of OpenMM as described
-in the file openmm/licenses/Licenses.txt accompanying the binary distribution.
