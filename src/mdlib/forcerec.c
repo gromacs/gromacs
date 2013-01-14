@@ -1468,6 +1468,60 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 #endif /* GMX_X86_SSE2 */
 }
 
+
+const char *lookup_nbnxn_kernel_name(int kernel_type)
+{
+    const char *returnvalue = NULL;
+    switch(kernel_type)
+    {
+    case nbnxnkNotSet: returnvalue = "not set"; break;
+    case nbnxnk4x4_PlainC: returnvalue = "plain C"; break;
+#ifndef GMX_NBNXN_SIMD
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "not available"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "not available"; break;
+#else
+#ifdef GMX_X86_SSE2
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+        /* x86 SIMD intrinsics can be converted to either SSE or AVX depending
+         * on compiler flags. As we use nearly identical intrinsics, using an AVX
+         * compiler flag without an AVX macro effectively results in AVX kernels.
+         * For gcc we check for __AVX__
+         * At least a check for icc should be added (if there is a macro)
+         */
+#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
+#ifndef GMX_X86_SSE4_1
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SSE2"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE2"; break;
+#else
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SSE4.1"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE4.1"; break;
+#endif
+#else
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "AVX-128"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-128"; break;
+#endif
+#endif
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "AVX-256"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-256"; break;
+#endif
+#else /* not GMX_X86_SSE2 */
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SIMD"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SIMD"; break;
+#endif
+#endif
+    case nbnxnk8x8x8_CUDA: returnvalue = "CUDA"; break;
+    case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
+
+    case nbnxnkNR:
+    default:
+        gmx_fatal(FARGS, "Illegal kernel type selected");
+        returnvalue = NULL;
+        break;
+    }
+    return returnvalue;
+};
+
 static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
                               const gmx_hw_info_t *hwinfo,
@@ -1557,7 +1611,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     if (bDoNonbonded && fp != NULL)
     {
         fprintf(fp,"\nUsing %s %dx%d non-bonded kernels\n\n",
-                nbnxn_kernel_name[*kernel_type],
+                lookup_nbnxn_kernel_name(*kernel_type),
                 nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
                 nbnxn_kernel_to_cj_size(*kernel_type));
     }
