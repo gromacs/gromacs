@@ -432,6 +432,10 @@ int mdrunner(int nthreads_requested, FILE *fplog,t_commrec *cr,int nfile,
     {
         gmx_fatal(FARGS, "Currently can't do velocity verlet with rerun in parallel.");
     }
+    if (EI_VV(inputrec->eI) && etcVRESCALE == inputrec->etc)
+    {
+        gmx_fatal(FARGS, "In GROMACS 4.5.x, velocity-Verlet integrators do not work with velocity-rescaling temperature coupling. They do work in 4.6.x. Please ugprade your GROMACS version.");
+    }
 
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
