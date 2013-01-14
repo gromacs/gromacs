@@ -82,42 +82,8 @@ typedef enum
     nbnxnkNR
 } nbnxn_kernel_type;
 
-/* Define the nbnxn kernel names for all different types defined above */
-static const char *nbnxn_kernel_name[nbnxnkNR] =
-{
-    "not set",
-    "plain C",
-#ifndef GMX_NBNXN_SIMD
-    "not available", "not available",
-#else
-#ifdef GMX_X86_SSE2
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-/* x86 SIMD intrinsics can be converted to either SSE or AVX depending
- * on compiler flags. As we use nearly identical intrinsics, using an AVX
- * compiler flag without an AVX macro effectively results in AVX kernels.
- * For gcc we check for __AVX__
- * At least a check for icc should be added (if there is a macro)
- */
-#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
-#ifndef GMX_X86_SSE4_1
-    "SSE2", "SSE2",
-#else
-    "SSE4.1", "SSE4.1",
-#endif
-#else
-    "AVX-128", "AVX-128",
-#endif
-#endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-    "AVX-256", "AVX-256",
-#endif
-#else /* not GMX_X86_SSE2 */
-    "SIMD", "SIMD",
-#endif
-#endif
-    "CUDA",
-    "plain C"
-};
+/*! Return a string indentifying the kernel type */
+const char *lookup_nbnxn_kernel_name(enum nbnxn_kernel_type kernel_type);
 
 enum { ewaldexclTable, ewaldexclAnalytical };
 
