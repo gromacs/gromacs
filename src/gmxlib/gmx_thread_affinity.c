@@ -1,0 +1,403 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_GETAFFINITY)
+#define _GNU_SOURCE
+#include <sched.h>
+#include <sys/syscall.h>
+#endif
+#include <assert.h>
+#include "typedefs.h"
+#include "types/commrec.h"
+#include "types/hw_info.h"
+#include "gmx_cpuid.h"
+#include "gmx_omp.h"
+#include "gmx_omp_nthreads.h"
+#include "mdrun.h"
+#include "md_logging.h"
+
+#include "thread_mpi/threads.h"
+
+
+static int
+get_thread_affinity_layout(FILE *fplog,
+                           const t_commrec *cr,
+                           const gmx_hw_info_t * hwinfo,
+                           int nthreads,
+                           int pin_offset, int * pin_stride,
+                           const int **locality_order)
+{
+    int         nhwthreads,npkg,ncores,nhwthreads_per_core,rc;
+    const int * pkg_id;
+    const int * core_id;
+    const int * hwthread_id;
+
+    if (pin_offset < 0)
+    {
+        gmx_fatal(FARGS,"Negative thread pinning offset requested");
+    }
+    if (*pin_stride < 0)
+    {
+        gmx_fatal(FARGS,"Negative thread pinning stride requested");
+    }
+
+    rc = gmx_cpuid_topology(hwinfo->cpuid_info, &nhwthreads, &npkg, &ncores,
+                            &nhwthreads_per_core,
+                            &pkg_id, &core_id, &hwthread_id, locality_order);
+
+    if (rc != 0)
+    {
+        nhwthreads      = hwinfo->nthreads_hw_avail;
+        *locality_order = NULL;
+
+        if (nhwthreads <= 0)
+        {
+            /* We don't know anything about the hardware, don't pin */
+            md_print_warn(NULL, fplog,
+                          "We don't know how many logical cores we have, will not pin threads");
+
+            return -1;
+        }
+    }
+
+    if (pin_offset + nthreads > nhwthreads)
+    {
+        /* We are oversubscribing, don't pin */
+        md_print_warn(NULL, fplog,
+                      "More threads requested than available logical cores, will not pin threads");
+
+        return -1;
+    }
+
+    /* Check if we need to choose the pinning stride */
+    if (*pin_stride == 0)
+    {
+        if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
+        {
+            /* Put one thread on each physical core */
+            *pin_stride = nhwthreads_per_core;
+        }
+        else
+        {
+            /* We don't know if we have SMT, and if we do, we don't know
+             * if hw threads in the same physical core are consecutive.
+             * Without SMT the pinning layout should not matter too much.
+             * so we assume a consecutive layout and maximally spread out"
+             * the threads at equal threads per core.
+             * Note that IBM is the major non-x86 case with cpuid support
+             * and probably threads are already pinned by the queuing system,
+             * so we wouldn't end up here in the first place.
+             */
+            *pin_stride = (nhwthreads - pin_offset)/nthreads;
+        }
+
+        if (fplog != NULL)
+        {
+            fprintf(fplog,"Pinning threads with a logical core stride of %d\n",
+                    *pin_stride);
+        }
+    }
+    else
+    {
+        if (pin_offset + nthreads*(*pin_stride) > nhwthreads)
+        {
+            /* We are oversubscribing, don't pin */
+            md_print_warn(NULL, fplog,
+                          "The requested pinning stride is too large for the available logical cores, will not pin threads");
+
+            return -1;
+        }
+    }
+
+    return 0;
+}
+
+/* Set CPU affinity. Can be important for performance.
+   On some systems (e.g. Cray) CPU Affinity is set by default.
+   But default assigning doesn't work (well) with only some ranks
+   having threads. This causes very low performance.
+   External tools have cumbersome syntax for setting affinity
+   in the case that only some ranks have threads.
+   Thus it is important that GROMACS sets the affinity internally
+   if only PME is using threads.
+*/
+void
+gmx_set_thread_affinity(FILE *fplog,
+                        const t_commrec *cr,
+                        gmx_hw_opt_t *hw_opt,
+                        int nthreads_pme,
+                        const gmx_hw_info_t *hwinfo,
+                        const t_inputrec *inputrec)
+{
+#ifndef __APPLE__
+    /* If the tMPI thread affinity setting is not supported encourage the user
+     * to report it as it's either a bug or an exotic platform which we might
+     * want to support. */
+    if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
+    {
+        md_print_warn(NULL, fplog,
+                      "Can not set thread affinities on the current plarform. On NUMA systems this\n"
+                      "can cause performance degradation. If you think your platform should support\n"
+                      "setting affinities, contact the GROMACS developers.");
+        return;
+    }
+#endif /* __APPLE__ */
+
+    if (hw_opt->bThreadPinning)
+    {
+        int nth_affinity_set, thread_id_node, thread_id,
+            nthread_local, nthread_node, nthread_hw_max, nphyscore;
+        int offset;
+        const int *locality_order;
+        int rc;
+
+        /* threads on this MPI process or TMPI thread */
+        if (cr->duty & DUTY_PP)
+        {
+            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
+        }
+        else
+        {
+            nthread_local = gmx_omp_nthreads_get(emntPME);
+        }
+
+        /* map the current process to cores */
+        thread_id_node = 0;
+        nthread_node = nthread_local;
+#ifdef GMX_MPI
+        if (PAR(cr) || MULTISIM(cr))
+        {
+            /* We need to determine a scan of the thread counts in this
+             * compute node.
+             */
+            MPI_Comm comm_intra;
+
+            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->rank_intranode,
+                           &comm_intra);
+            MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
+            /* MPI_Scan is inclusive, but here we need exclusive */
+            thread_id_node -= nthread_local;
+            /* Get the total number of threads on this physical node */
+            MPI_Allreduce(&nthread_local,&nthread_node,1,MPI_INT,MPI_SUM,comm_intra);
+            MPI_Comm_free(&comm_intra);
+        }
+#endif
+
+        offset = 0;
+        if (hw_opt->core_pinning_offset != 0)
+        {
+            offset = hw_opt->core_pinning_offset;
+            if (SIMMASTER(cr))
+            {
+                fprintf(stderr, "Applying core pinning offset %d\n", offset);
+            }
+            if (fplog)
+            {
+                fprintf(fplog, "Applying core pinning offset %d\n", offset);
+            }
+        }
+
+        rc = get_thread_affinity_layout(fplog, cr, hwinfo,
+                                        nthread_node,
+                                        offset, &hw_opt->core_pinning_stride,
+                                        &locality_order);
+        if (rc != 0)
+        {
+            /* Incompatible layout, don't pin, warning was already issued */
+            return;
+        }
+
+        /* Set the per-thread affinity. In order to be able to check the success
+         * of affinity settings, we will set nth_affinity_set to 1 on threads
+         * where the affinity setting succeded and to 0 where it failed.
+         * Reducing these 0/1 values over the threads will give the total number
+         * of threads on which we succeeded.
+         */
+        nth_affinity_set = 0;
+#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
+                     reduction(+:nth_affinity_set)
+        {
+            int      index,core;
+            gmx_bool setaffinity_ret;
+
+            thread_id       = gmx_omp_get_thread_num();
+            thread_id_node += thread_id;
+            index           = offset + thread_id_node*hw_opt->core_pinning_stride;
+            if (locality_order != NULL)
+            {
+                core = locality_order[index];
+            }
+            else
+            {
+                core = index;
+            }
+
+            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
+
+            /* store the per-thread success-values of the setaffinity */
+            nth_affinity_set = (setaffinity_ret == 0);
+
+            if (debug)
+            {
+                fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
+                        cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
+            }
+        }
+
+        if (nth_affinity_set > nthread_local)
+        {
+            char msg[STRLEN];
+
+            sprintf(msg, "Looks like we have set affinity for more threads than "
+                    "we have (%d > %d)!\n", nth_affinity_set, nthread_local);
+            gmx_incons(msg);
+        }
+        else
+        {
+            /* check & warn if some threads failed to set their affinities */
+            if (nth_affinity_set != nthread_local)
+            {
+                char sbuf1[STRLEN], sbuf2[STRLEN];
+
+                /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
+                sbuf1[0] = sbuf2[0] = '\0';
+#ifdef GMX_MPI
+#ifdef GMX_THREAD_MPI
+                sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
+#else /* GMX_LIB_MPI */
+                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
+#endif
+#endif /* GMX_MPI */
+
+                if (nthread_local > 1)
+                {
+                    sprintf(sbuf2, "of %d/%d thread%s ",
+                            nthread_local - nth_affinity_set, nthread_local,
+                            (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                }
+
+                md_print_warn(NULL, fplog,
+                              "NOTE: %sAffinity setting %sfailed.\n"
+                              "      This can cause performance degradation!",
+                              sbuf1, sbuf2);
+            }
+        }
+    }
+}
+
+/* Check the process affinity mask and if it is found to be non-zero,
+ * will honor it and disable mdrun internal affinity setting.
+ * Note that this will only work on Linux as we use a GNU feature.
+ */
+void
+gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
+                              gmx_hw_opt_t *hw_opt, int ncpus,
+                              gmx_bool bAfterOpenmpInit)
+{
+#ifdef HAVE_SCHED_GETAFFINITY
+    cpu_set_t mask_current;
+    int       i, ret, cpu_count, cpu_set;
+    gmx_bool  bAllSet;
+
+    assert(hw_opt);
+    if (!hw_opt->bThreadPinning)
+    {
+        /* internal affinity setting is off, don't bother checking process affinity */
+        return;
+    }
+
+    CPU_ZERO(&mask_current);
+    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
+    {
+        /* failed to query affinity mask, will just return */
+        if (debug)
+        {
+            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
+        }
+        return;
+    }
+
+    /* Before proceeding with the actual check, make sure that the number of
+     * detected CPUs is >= the CPUs in the current set.
+     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
+#ifdef CPU_COUNT
+    if (ncpus < CPU_COUNT(&mask_current))
+    {
+        if (debug)
+        {
+            fprintf(debug, "%d CPUs detected, but %d was returned by CPU_COUNT",
+                    ncpus, CPU_COUNT(&mask_current));
+        }
+        return;
+    }
+#endif /* CPU_COUNT */
+
+    bAllSet = TRUE;
+    for (i = 0; (i < ncpus && i < CPU_SETSIZE); i++)
+    {
+        bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
+    }
+
+    if (!bAllSet)
+    {
+        if (!bAfterOpenmpInit)
+        {
+            md_print_warn(cr, fplog,
+                          "Non-default process affinity set, disabling internal affinity");
+        }
+        else
+        {
+            md_print_warn(cr, fplog,
+                          "Non-default process affinity set probably by the OpenMP library, "
+                          "disabling internal affinity");
+        }
+        hw_opt->bThreadPinning = FALSE;
+
+        if (debug)
+        {
+            fprintf(debug, "Non-default affinity mask found\n");
+        }
+    }
+    else
+    {
+        if (debug)
+        {
+            fprintf(debug, "Default affinity mask found\n");
+        }
+    }
+#endif /* HAVE_SCHED_GETAFFINITY */
+}
