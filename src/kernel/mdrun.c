@@ -144,19 +144,27 @@ int cmain(int argc,char *argv[])
     "into particle and mesh contributions. The auto-tuning can be turned off",
     "with the option [TT]-notunepme[tt].",
     "[PAR]",
-    "When compiled with OpenMP on Linux, [TT]mdrun[tt] pins threads to cores,",
+    "[TT]mdrun[tt] pins (sets affinity of) threads to specific cores,",
+    "when all (logical) cores on a compute node are used by [TT]mdrun[tt],",
+    "even when no multi-threading is used,",
     "as this usually results in significantly better performance.",
-    "If you don't want this, use [TT]-nopin[tt].",
-    "With Intel CPUs with hyper-threading enabled, you should pin",
-    "consecutive threads to the same physical core for optimal",
-    "performance when you use virtual cores. This is done automatically",
-    "when you use more than half of the virtual cores. It can also be set",
-    "manually with [TT]-pinht[tt], e.g. for running multiple simulations",
-    "on one compute node.",
+    "If the queuing systems or the OpenMP library pinned threads, we honor",
+    "this and don't pin again, even though the layout may be sub-optimal.",
+    "If you want to have [TT]mdrun[tt] override an already set thread affinity",
+    "or pin threads when using less cores, use [TT]-pin on[tt].",
+    "With SMT (simultaneous multithreading), e.g. Intel Hyper-Threading,",
+    "there are multiple logical cores per physical core.",
+    "The option [TT]-pinstride[tt] sets the stride in logical cores for",
+    "pinning consecutive threads. Without SMT, 1 is usually the best choice.",
+    "With Intel Hyper-Threading 2 is best when using half or less of the",
+    "logical cores, 1 otherwise. The default value of 0 do exactly that:",
+    "it minimizes the threads per logical core, to optimize performance.",
+    "If you want to run multiple mdrun jobs on the same physical node,"
+    "you should set [TT]-pinstride[tt] to 1 when using all logical cores.",
     "When running multiple mdrun (or other) simulations on the same physical",
     "node, some simulations need to start pinning from a non-zero core",
     "to avoid overloading cores; with [TT]-pinoffset[tt] you can specify",
-    "the offset in (physical) cores for pinning.",
+    "the offset in logical cores for pinning.",
     "[PAR]",
     "When [TT]mdrun[tt] is started using MPI with more than 1 process",
     "or with thread-MPI with more than 1 thread, MPI parallelization is used.",
@@ -441,7 +449,7 @@ int cmain(int argc,char *argv[])
   output_env_t oenv=NULL;
   const char *deviceOptions = "";
 
-  gmx_hw_opt_t hw_opt={0,0,0,0,TRUE,FALSE,0,NULL};
+  gmx_hw_opt_t hw_opt={0,0,0,0,{NULL,"auto","on","off",NULL},0,0,NULL};
 
   t_pargs pa[] = {
 
@@ -461,12 +469,12 @@ int cmain(int argc,char *argv[])
       "Number of OpenMP threads per MPI process/thread to start (0 is guess)" },
     { "-ntomp_pme", FALSE, etINT, {&hw_opt.nthreads_omp_pme},
       "Number of OpenMP threads per MPI process/thread to start (0 is -ntomp)" },
-    { "-pin",     FALSE, etBOOL, {&hw_opt.bThreadPinning},
-      "Pin OpenMP threads to cores" },
-    { "-pinht",   FALSE, etBOOL, {&hw_opt.bPinHyperthreading},
-      "Always pin threads to Hyper-Threading cores" },
+    { "-pin",     FALSE, etENUM, {hw_opt.thread_aff_opt},
+      "Fix threads (or processes) to specific cores" },
     { "-pinoffset", FALSE, etINT, {&hw_opt.core_pinning_offset},
-      "Core offset for pinning (for running multiple mdrun processes on a single physical node)" },
+      "The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core" },
+    { "-pinstride", FALSE, etINT, {&hw_opt.core_pinning_stride},
+      "Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core" },
     { "-gpu_id",  FALSE, etSTR, {&hw_opt.gpu_id},
       "List of GPU id's to use" },
     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
