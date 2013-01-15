@@ -75,7 +75,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 82;
+static const int tpx_version = 83;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -252,14 +252,18 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
   }
 }
 
-static void do_expandedvals(t_fileio *fio,t_expanded *expand,int n_lambda, gmx_bool bRead, int file_version)
+static void do_expandedvals(t_fileio *fio,t_expanded *expand,t_lambda *fepvals, gmx_bool bRead, int file_version)
 {
   /* i is used in the ndo_double macro*/
   int i;
   real fv;
   gmx_bool bDum=TRUE;
   real rdum;
+  int n_lambda=fepvals->n_lambda;
 
+  /* reset the lambda calculation window */
+  fepvals->lambda_start_n = 0;
+  fepvals->lambda_stop_n = n_lambda;
   if (file_version >= 79)
   {
       if (n_lambda>0)
@@ -327,6 +331,7 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   real rdum;
 
   /* free energy values */
+
   if (file_version >= 79)
   {
       gmx_fio_do_int(fio,fepvals->init_fep_state);
@@ -500,6 +505,38 @@ static void do_fepvals(t_fileio *fio,t_lambda *fepvals,gmx_bool bRead, int file_
   else
   {
       fepvals->bPrintEnergy = FALSE;
+  }
+
+  /* handle lambda_neighbors */
+  if (file_version >= 83)
+  {
+      gmx_fio_do_int(fio,fepvals->lambda_neighbors);
+      if ( (fepvals->lambda_neighbors >= 0) && (fepvals->init_fep_state>=0) &&
+           (fepvals->init_lambda < 0) )
+      {
+          fepvals->lambda_start_n = (fepvals->init_fep_state -
+                                     fepvals->lambda_neighbors);
+          fepvals->lambda_stop_n = (fepvals->init_fep_state +
+                                    fepvals->lambda_neighbors + 1);
+          if (fepvals->lambda_start_n < 0)
+          {
+              fepvals->lambda_start_n = 0;;
+          }
+          if (fepvals->lambda_stop_n >= fepvals->n_lambda)
+          {
+              fepvals->lambda_stop_n = fepvals->n_lambda;
+          }
+      }
+      else
+      {
+          fepvals->lambda_start_n = 0;
+          fepvals->lambda_stop_n = fepvals->n_lambda;
+      }
+  }
+  else
+  {
+      fepvals->lambda_start_n = 0;
+      fepvals->lambda_stop_n = fepvals->n_lambda;
   }
 }
 
@@ -987,7 +1024,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir,gmx_bool bRead,
     }
     if (ir->bExpanded)
     {
-        do_expandedvals(fio,ir->expandedvals,ir->fepvals->n_lambda,bRead,file_version);
+        do_expandedvals(fio,ir->expandedvals,ir->fepvals,bRead,file_version);
     }
     if (file_version >= 57) {
       gmx_fio_do_int(fio,ir->eDisre); 
