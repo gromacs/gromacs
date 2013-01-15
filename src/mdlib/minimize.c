@@ -1432,6 +1432,11 @@ double do_lbfgs(FILE *fplog,t_commrec *cr,
   if (PAR(cr))
     gmx_fatal(FARGS,"Cannot do parallel L-BFGS Minimization - yet.\n");
   
+  if (NULL != constr)
+  {
+      gmx_fatal(FARGS,"The combination of constraints and L-BFGS minimization is not implemented. Either do not use constraints, or use another minimizer (e.g. steepest descent).");
+  }
+
   n = 3*state->natoms;
   nmaxcorr = inputrec->nbfgscorr;
   
