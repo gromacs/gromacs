@@ -587,6 +587,7 @@ static void pr_fepvals(FILE *fp,int indent,t_lambda *fep, gmx_bool bMDPformat)
             fprintf(fp,"\n");
         }
     }
+    PI("calc-lambda-neighbors",fep->lambda_neighbors);
 
     PR("sc-alpha",fep->sc_alpha);
     PS("bScCoul",EBOOL(fep->bScCoul));
