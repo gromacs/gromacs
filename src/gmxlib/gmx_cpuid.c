@@ -48,6 +48,8 @@
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
 #include <intrin.h>
+/* sysinfo functions */
+#include <windows.h>
 #endif
 #ifdef HAVE_UNISTD_H
 /* sysconf() definition */
@@ -502,7 +504,6 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 {
     int                       max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-    int                       i;
     int                       hwthread_bits,core_bits;
     int *                     apic_id;
     
@@ -529,6 +530,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
     {
 #if (defined HAVE_SCHED_H && defined HAVE_SCHED_SETAFFINITY && defined HAVE_SYSCONF && defined __linux__)
         /* Linux */
+        unsigned int   i;
         cpu_set_t      cpuset,save_cpuset;
         cpuid->nproc = sysconf(_SC_NPROCESSORS_ONLN);
         apic_id      = malloc(sizeof(int)*cpuid->nproc);
@@ -548,6 +550,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 #define CPUID_HAVE_APIC
 #elif defined GMX_NATIVE_WINDOWS
         /* Windows */
+        DWORD_PTR     i;
         SYSTEM_INFO   sysinfo;
         unsigned int  save_affinity,affinity;
         GetSystemInfo( &sysinfo );
@@ -557,7 +560,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
         save_affinity = SetThreadAffinityMask(GetCurrentThread(),1);
         for(i=0;i<cpuid->nproc;i++)
         {
-            SetThreadAffinityMask(GetCurrentThread(),(1<<i));
+            SetThreadAffinityMask(GetCurrentThread(),(((DWORD_PTR)1)<<i));
             Sleep(0);
             execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
             apic_id[i]=ebx >> 24;
@@ -574,7 +577,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
         if(core_bits==0)
         {
             /* Legacy method for old single/dual core AMD CPUs */
-            i = ecx & 0xF;
+            int i = ecx & 0xF;
             for(core_bits=0;(i>>core_bits)>0;core_bits++) ;
         }
         cpuid_x86_decode_apic_id(cpuid,apic_id,core_bits,hwthread_bits);
@@ -590,7 +593,6 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 {
     unsigned int              max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-    unsigned int              i;
     unsigned int              max_logical_cores,max_physical_cores;
     int                       hwthread_bits,core_bits;
     int *                     apic_id;
@@ -638,6 +640,7 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         /* Query x2 APIC information from cores */
 #if (defined HAVE_SCHED_H && defined HAVE_SCHED_SETAFFINITY && defined HAVE_SYSCONF && defined __linux__)
         /* Linux */
+        unsigned int   i;
         cpu_set_t      cpuset,save_cpuset;
         cpuid->nproc = sysconf(_SC_NPROCESSORS_ONLN);
         apic_id      = malloc(sizeof(int)*cpuid->nproc);
@@ -657,6 +660,7 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 #define CPUID_HAVE_APIC
 #elif defined GMX_NATIVE_WINDOWS
         /* Windows */
+        DWORD_PTR     i;
         SYSTEM_INFO   sysinfo;
         unsigned int  save_affinity,affinity;
         GetSystemInfo( &sysinfo );
@@ -666,7 +670,7 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         save_affinity = SetThreadAffinityMask(GetCurrentThread(),1);
         for(i=0;i<cpuid->nproc;i++)
         {
-            SetThreadAffinityMask(GetCurrentThread(),(1<<i));
+            SetThreadAffinityMask(GetCurrentThread(),(((DWORD_PTR)1)<<i));
             Sleep(0);
             execute_x86cpuid(0xB,0,&eax,&ebx,&ecx,&edx);
             apic_id[i]=edx;
