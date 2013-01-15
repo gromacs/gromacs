@@ -1914,6 +1914,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
   STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
   STYPE ("temperature-lambdas", fep_lambda[efptTEMPERATURE], NULL);
+  ITYPE ("calc-lambda-neighbors",fep->lambda_neighbors, 1);
   STYPE ("init-lambda-weights",lambda_weights,NULL);
   EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
   RTYPE ("sc-alpha",fep->sc_alpha,0.0);
