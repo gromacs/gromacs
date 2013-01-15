@@ -463,7 +463,7 @@ void tMPI_Start_threads(tmpi_bool main_returns, int N,
                 tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_INIT);
             }
         }
-        /* the main thread now also runs start_fn if we don't want
+        /* the main thread also runs start_fn if we don't want
            it to return */
         if (!main_returns)
             tMPI_Thread_starter((void*)&(threads[0]));
@@ -480,12 +480,11 @@ int tMPI_Init(int *argc, char ***argv,
     tMPI_Trace_print("tMPI_Init(%p, %p, %p)", argc, argv, start_function);
 #endif
 
-
     if (TMPI_COMM_WORLD==0) /* we're the main process */
     {
         int N=0;
         tMPI_Get_N(argc, argv, "-nt", &N);
-        tMPI_Start_threads(FALSE, N, TMPI_AFFINITY_ALL_CORES, argc, argv, 
+        tMPI_Start_threads(TRUE, N, TMPI_AFFINITY_ALL_CORES, argc, argv, 
                            NULL, NULL, start_function);
     }
     else

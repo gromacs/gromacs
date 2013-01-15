@@ -34,17 +34,24 @@
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
 #include <intrin.h>
+/* sysinfo functions */
+#include <windows.h>
 #endif
 #ifdef HAVE_UNISTD_H
 /* sysconf() definition */
 #include <unistd.h>
 #endif
 
-
-
-
 #include "gmx_cpuid.h"
 
+
+
+/* For convenience, and to enable configure-time invocation, we keep all architectures
+ * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
+ */
+#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+#    define GMX_CPUID_X86
+#endif
 
 /* Global constant character strings corresponding to our enumerated types */
 const char *
@@ -121,6 +128,20 @@ struct gmx_cpuid
     int                        stepping;
     /* Not using gmx_bool here, since this file must be possible to compile without simple.h */
     char                       feature[GMX_CPUID_NFEATURES];
+    
+    /* Basic CPU topology information. For x86 this is a bit complicated since the topology differs between
+     * operating systems and sometimes even settings. For most other architectures you can likely just check
+     * the documentation and then write static information to these arrays rather than detecting on-the-fly.
+     */
+    int                        have_cpu_topology;
+    int                        nproc;               /* total number of logical processors from OS */
+    int                        npackages;
+    int                        ncores_per_package;
+    int                        nhwthreads_per_core;
+    int *                      package_id;
+    int *                      core_id;             /* Local core id in each package */
+    int *                      hwthread_id;         /* Local hwthread id in each core */
+    int *                      locality_order;      /* Processor indices sorted in locality order */
 };
 
 
@@ -195,10 +216,7 @@ compiled_acc = GMX_CPUID_ACCELERATION_NONE;
 #endif
 
 
-/* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
- * if the compiler handles GNU-style inline assembly.
- */
-#if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+#ifdef GMX_CPUID_X86
 
 /* Execute CPUID on x86 class CPUs. level sets function to exec, and the
  * contents of register output is returned. See Intel/AMD docs for details.
@@ -216,6 +234,10 @@ execute_x86cpuid(unsigned int   level,
                  unsigned int * edx)
 {
     int rc = 0;
+
+    /* Currently CPUID is only supported (1) if we can use an instruction on MSVC, or (2)
+     * if the compiler handles GNU-style inline assembly.
+     */
 
 #if (defined _MSC_VER)
     int CPUInfo[4];
@@ -269,7 +291,6 @@ execute_x86cpuid(unsigned int   level,
 #endif
     return rc;
 }
-#endif /* architecture is x86 */
 
 
 /* Identify CPU features common to Intel & AMD - mainly brand string,
@@ -371,9 +392,97 @@ cpuid_check_common_x86(gmx_cpuid_t                cpuid)
         execute_x86cpuid(0x80000007,0,&eax,&ebx,&ecx,&edx);
         cpuid->feature[GMX_CPUID_FEATURE_X86_NONSTOP_TSC]  = (edx & (1 << 8))  != 0;
     }
-
     return 0;
 }
+
+/* This routine returns the number of unique different elements found in the array,
+ * and renumbers these starting from 0. For example, the array {0,1,2,8,9,10,8,9,10,0,1,2}
+ * will be rewritten to {0,1,2,3,4,5,3,4,5,0,1,2}, and it returns 6 for the
+ * number of unique elements.
+ */
+static int
+cpuid_renumber_elements(int *data, int n)
+{
+    int *unique;
+    int  i,j,nunique,found;
+
+    unique = malloc(sizeof(int)*n);
+    
+    nunique=0;
+    for(i=0;i<n;i++)
+    {
+        for(j=0,found=0;j<nunique && !found;j++)
+        {
+            found = (data[i]==unique[j]);
+        }
+        if(!found)
+        {
+            /* Insert in sorted order! */
+             for(j=nunique++;j>0 && unique[j-1]>data[i];j--)
+            {
+                unique[j]=unique[j-1];
+            }
+            unique[j]=data[i];
+        }
+    }
+    /* renumber */
+    for(i=0;i<n;i++)
+    {
+        for(j=0;j<nunique;j++)
+        {
+            if(data[i]==unique[j])
+            {
+                data[i]=j;
+            }
+        }
+    }
+    return nunique;
+}
+
+/* APIC IDs, or everything you wanted to know about your x86 cores but were afraid to ask...
+ *
+ * Raw APIC IDs are unfortunately somewhat dirty. For technical reasons they are assigned
+ * in power-of-2 chunks, and even then there are no guarantees about specific numbers - all
+ * we know is that the part for each thread/core/package is unique, and how many bits are
+ * reserved for that part. 
+ * This routine does internal renumbering so we get continuous indices, and also
+ * decodes the actual number of packages,cores-per-package and hwthreads-per-core.
+ */
+static void
+cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid,int *apic_id,int core_bits,int hwthread_bits)
+{
+    int i,idx;
+    int hwthread_mask,core_mask_after_shift;
+    
+    cpuid->hwthread_id     = malloc(sizeof(int)*cpuid->nproc);
+    cpuid->core_id         = malloc(sizeof(int)*cpuid->nproc);
+    cpuid->package_id      = malloc(sizeof(int)*cpuid->nproc);
+    cpuid->locality_order  = malloc(sizeof(int)*cpuid->nproc);
+
+    hwthread_mask         = (1 << hwthread_bits) - 1;
+    core_mask_after_shift = (1 << core_bits) - 1;
+    
+    for(i=0;i<cpuid->nproc;i++)
+    {
+        cpuid->hwthread_id[i] = apic_id[i] & hwthread_mask;
+        cpuid->core_id[i]     = (apic_id[i] >> hwthread_bits) & core_mask_after_shift;
+        cpuid->package_id[i]  = apic_id[i] >> (core_bits + hwthread_bits);
+    }
+    
+    cpuid->npackages            = cpuid_renumber_elements(cpuid->package_id,cpuid->nproc);
+    cpuid->ncores_per_package   = cpuid_renumber_elements(cpuid->core_id,cpuid->nproc);
+    cpuid->nhwthreads_per_core  = cpuid_renumber_elements(cpuid->hwthread_id,cpuid->nproc);
+    
+    /* Create a locality order array, i.e. first all resources in package0, which in turn
+     * are sorted so we first have all resources in core0, where threads are sorted in order, etc.
+     */
+    for(i=0;i<cpuid->nproc;i++)
+    {
+        idx = (cpuid->package_id[i]*cpuid->ncores_per_package + cpuid->core_id[i])*cpuid->nhwthreads_per_core + cpuid->hwthread_id[i];
+        cpuid->locality_order[idx]=i;
+    }
+}
+
 
 /* Detection of AMD-specific CPU features */
 static int
@@ -381,7 +490,9 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 {
     int                       max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-
+    int                       hwthread_bits,core_bits;
+    int *                     apic_id;
+    
     cpuid_check_common_x86(cpuid);
 
     execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
@@ -399,7 +510,66 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
         cpuid->feature[GMX_CPUID_FEATURE_X86_XOP]         = (ecx & (1 << 11)) != 0;
         cpuid->feature[GMX_CPUID_FEATURE_X86_FMA4]        = (ecx & (1 << 16)) != 0;
     }
-
+    
+    /* Query APIC information on AMD */
+    if(max_extfn>=0x80000008)
+    {
+#if (defined HAVE_SCHED_H && defined HAVE_SCHED_SETAFFINITY && defined HAVE_SYSCONF && defined __linux__)
+        /* Linux */
+        unsigned int   i;
+        cpu_set_t      cpuset,save_cpuset;
+        cpuid->nproc = sysconf(_SC_NPROCESSORS_ONLN);
+        apic_id      = malloc(sizeof(int)*cpuid->nproc);
+        sched_getaffinity(0,sizeof(cpu_set_t),&save_cpuset);
+        /* Get APIC id from each core */
+        CPU_ZERO(&cpuset);
+        for(i=0;i<cpuid->nproc;i++)
+        {
+            CPU_SET(i,&cpuset);
+            sched_setaffinity(0,sizeof(cpu_set_t),&cpuset);
+            execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
+            apic_id[i]=ebx >> 24;
+            CPU_CLR(i,&cpuset);
+        }
+        /* Reset affinity to the value it had when calling this routine */
+        sched_setaffinity(0,sizeof(cpu_set_t),&save_cpuset);
+#define CPUID_HAVE_APIC
+#elif defined GMX_NATIVE_WINDOWS
+        /* Windows */
+        DWORD_PTR     i;
+        SYSTEM_INFO   sysinfo;
+        unsigned int  save_affinity,affinity;
+        GetSystemInfo( &sysinfo );
+        cpuid->nproc  = sysinfo.dwNumberOfProcessors;
+        apic_id       = malloc(sizeof(int)*cpuid->nproc);
+        /* Get previous affinity mask */
+        save_affinity = SetThreadAffinityMask(GetCurrentThread(),1);
+        for(i=0;i<cpuid->nproc;i++)
+        {
+            SetThreadAffinityMask(GetCurrentThread(),(((DWORD_PTR)1)<<i));
+            Sleep(0);
+            execute_x86cpuid(0x1,0,&eax,&ebx,&ecx,&edx);
+            apic_id[i]=ebx >> 24;
+        }
+        SetThreadAffinityMask(GetCurrentThread(),save_affinity);
+#define CPUID_HAVE_APIC
+#endif
+#ifdef CPUID_HAVE_APIC
+        /* AMD does not support SMT yet - there are no hwthread bits in apic ID */
+        hwthread_bits = 0;
+        /* Get number of core bits in apic ID - try modern extended method first */
+        execute_x86cpuid(0x80000008,0,&eax,&ebx,&ecx,&edx);
+        core_bits = (ecx >> 12) & 0xf;
+        if(core_bits==0)
+        {
+            /* Legacy method for old single/dual core AMD CPUs */
+            int i = ecx & 0xF;
+            for(core_bits=0;(i>>core_bits)>0;core_bits++) ;
+        }
+        cpuid_x86_decode_apic_id(cpuid,apic_id,core_bits,hwthread_bits);
+        cpuid->have_cpu_topology = 1;
+#endif
+    }
     return 0;
 }
 
@@ -409,8 +579,9 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 {
     unsigned int              max_stdfn,max_extfn;
     unsigned int              eax,ebx,ecx,edx;
-    unsigned int              i;
     unsigned int              max_logical_cores,max_physical_cores;
+    int                       hwthread_bits,core_bits;
+    int *                     apic_id;
 
     cpuid_check_common_x86(cpuid);
 
@@ -449,8 +620,64 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
             cpuid->feature[GMX_CPUID_FEATURE_X86_HTT] = 0;
         }
     }
+    
+    if(max_stdfn>=0xB)
+    {
+        /* Query x2 APIC information from cores */
+#if (defined HAVE_SCHED_H && defined HAVE_SCHED_SETAFFINITY && defined HAVE_SYSCONF && defined __linux__)
+        /* Linux */
+        unsigned int   i;
+        cpu_set_t      cpuset,save_cpuset;
+        cpuid->nproc = sysconf(_SC_NPROCESSORS_ONLN);
+        apic_id      = malloc(sizeof(int)*cpuid->nproc);
+        sched_getaffinity(0,sizeof(cpu_set_t),&save_cpuset);
+        /* Get x2APIC ID from each hardware thread */
+        CPU_ZERO(&cpuset);
+        for(i=0;i<cpuid->nproc;i++)
+        {
+            CPU_SET(i,&cpuset);
+            sched_setaffinity(0,sizeof(cpu_set_t),&cpuset);
+            execute_x86cpuid(0xB,0,&eax,&ebx,&ecx,&edx);
+            apic_id[i]=edx;
+            CPU_CLR(i,&cpuset);
+        }
+        /* Reset affinity to the value it had when calling this routine */
+        sched_setaffinity(0,sizeof(cpu_set_t),&save_cpuset);
+#define CPUID_HAVE_APIC
+#elif defined GMX_NATIVE_WINDOWS
+        /* Windows */
+        DWORD_PTR     i;
+        SYSTEM_INFO   sysinfo;
+        unsigned int  save_affinity,affinity;
+        GetSystemInfo( &sysinfo );
+        cpuid->nproc  = sysinfo.dwNumberOfProcessors;
+        apic_id       = malloc(sizeof(int)*cpuid->nproc);
+        /* Get previous affinity mask */
+        save_affinity = SetThreadAffinityMask(GetCurrentThread(),1);
+        for(i=0;i<cpuid->nproc;i++)
+        {
+            SetThreadAffinityMask(GetCurrentThread(),(((DWORD_PTR)1)<<i));
+            Sleep(0);
+            execute_x86cpuid(0xB,0,&eax,&ebx,&ecx,&edx);
+            apic_id[i]=edx;
+        }
+        SetThreadAffinityMask(GetCurrentThread(),save_affinity);
+#define CPUID_HAVE_APIC
+#endif
+#ifdef CPUID_HAVE_APIC
+        execute_x86cpuid(0xB,0,&eax,&ebx,&ecx,&edx);
+        hwthread_bits    = eax & 0x1F;
+        execute_x86cpuid(0xB,1,&eax,&ebx,&ecx,&edx);
+        core_bits        = (eax & 0x1F) - hwthread_bits;
+        cpuid_x86_decode_apic_id(cpuid,apic_id,core_bits,hwthread_bits);
+        cpuid->have_cpu_topology = 1;
+#endif
+    }
     return 0;
 }
+#endif /* GMX_CPUID_X86 */
+
+
 
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
@@ -466,6 +693,7 @@ cpuid_check_vendor(void)
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
 
+#ifdef GMX_CPUID_X86
     execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
 
     memcpy(vendorstring,&ebx,4);
@@ -481,11 +709,67 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
-
+#else
+    vendor = GMX_CPUID_VENDOR_UNKNOWN;
+#endif
+    
     return vendor;
 }
 
 
+
+int
+gmx_cpuid_topology(gmx_cpuid_t        cpuid,
+                   int *              nprocessors,
+                   int *              npackages,
+                   int *              ncores_per_package,
+                   int *              nhwthreads_per_core,
+                   const int **       package_id,
+                   const int **       core_id,
+                   const int **       hwthread_id,
+                   const int **       locality_order)
+{
+    int rc;
+    
+    if(cpuid->have_cpu_topology)
+    {
+        *nprocessors          = cpuid->nproc;
+        *npackages            = cpuid->npackages;
+        *ncores_per_package   = cpuid->ncores_per_package;
+        *nhwthreads_per_core  = cpuid->nhwthreads_per_core;
+        *package_id           = cpuid->package_id;
+        *core_id              = cpuid->core_id;
+        *hwthread_id          = cpuid->hwthread_id;
+        *locality_order       = cpuid->locality_order;
+        rc = 0;
+    }
+    else
+    {
+        rc = -1;
+    }
+    return rc;
+}
+
+
+enum gmx_cpuid_x86_smt
+gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
+{
+    enum gmx_cpuid_x86_smt rc;
+    
+    if(cpuid->have_cpu_topology)
+    {
+        rc = (cpuid->nhwthreads_per_core>1) ? GMX_CPUID_X86_SMT_ENABLED : GMX_CPUID_X86_SMT_DISABLED;
+    }
+    else if(cpuid->vendor==GMX_CPUID_VENDOR_AMD || gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
+    {
+        rc = GMX_CPUID_X86_SMT_DISABLED;
+    }
+    else
+    {
+        rc = GMX_CPUID_X86_SMT_CANNOTDETECT;
+    }
+    return rc;
+}
 
 
 int
@@ -502,24 +786,35 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
     {
         cpuid->feature[i]=0;
     }
-
+    cpuid->have_cpu_topology   = 0;
+    cpuid->nproc               = 0;
+    cpuid->npackages           = 0;
+    cpuid->ncores_per_package  = 0;
+    cpuid->nhwthreads_per_core = 0;
+    cpuid->package_id          = NULL;
+    cpuid->core_id             = NULL;
+    cpuid->hwthread_id         = NULL;
+    cpuid->locality_order      = NULL;
+    
     cpuid->vendor = cpuid_check_vendor();
-
+    
     switch(cpuid->vendor)
     {
+#ifdef GMX_CPUID_X86
         case GMX_CPUID_VENDOR_INTEL:
             cpuid_check_intel_x86(cpuid);
             break;
         case GMX_CPUID_VENDOR_AMD:
             cpuid_check_amd_x86(cpuid);
             break;
+#endif
         default:
             /* Could not find vendor */
             strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
             cpuid->family         = 0;
             cpuid->model          = 0;
             cpuid->stepping       = 0;
-
+            
             for(i=0;i<GMX_CPUID_NFEATURES;i++)
             {
                 cpuid->feature[i]=0;
@@ -687,94 +982,6 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     }
     return rc;
 }
-
-
-enum gmx_cpuid_x86_smt
-gmx_cpuid_x86_smt(gmx_cpuid_t cpuid)
-{
-
-#if (defined HAVE_SCHED_H && defined HAVE_SCHED_SETAFFINITY && defined HAVE_SYSCONF && defined __linux__)
-    int            i;
-    int            nproc;
-    cpu_set_t      cpuset,save_cpuset;
-    int *          apic_id;
-    unsigned int   eax,ebx,ecx,edx;
-    int            core_shift_bits;
-    int            smt_found;
-
-    if( gmx_cpuid_vendor(cpuid)!=GMX_CPUID_VENDOR_INTEL ||
-       gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT)==0)
-    {
-        return GMX_CPUID_X86_SMT_DISABLED;
-    }
-
-    /* Check cpuid max standard function */
-    execute_x86cpuid(0x0,0,&eax,&ebx,&ecx,&edx);
-
-    /* Early CPUs that do not support function 11 do not support SMT either */
-    if(eax<0xB)
-    {
-        return GMX_CPUID_X86_SMT_DISABLED;
-    }
-
-    /* If we got here, it is a modern Intel CPU that supports detection, as does our OS */
-
-    /* How many processors? */
-    nproc = sysconf(_SC_NPROCESSORS_ONLN);
-
-    apic_id      = malloc(sizeof(int)*nproc);
-
-    sched_getaffinity(0,sizeof(cpu_set_t),&save_cpuset);
-
-    /* Get x2APIC ID from each hardware thread */
-    CPU_ZERO(&cpuset);
-    for(i=0;i<nproc;i++)
-    {
-        CPU_SET(i,&cpuset);
-        sched_setaffinity(0,sizeof(cpu_set_t),&cpuset);
-        execute_x86cpuid(0xB,0,&eax,&ebx,&ecx,&edx);
-        apic_id[i]=edx;
-        CPU_CLR(i,&cpuset);
-    }
-    /* Reset affinity to the value it had when calling this routine */
-    sched_setaffinity(0,sizeof(cpu_set_t),&save_cpuset);
-
-    core_shift_bits = eax & 0x1F;
-
-    /* Check if there is any other APIC id that is identical to [0], apart from
-     * the hardware thread bit.
-     */
-    smt_found  = 0;
-    for(i=1;i<nproc && smt_found==0;i++)
-    {
-        smt_found = (apic_id[i]>>core_shift_bits == apic_id[0] >> core_shift_bits);
-    }
-
-    free(apic_id);
-
-    if(smt_found==1)
-    {
-        return GMX_CPUID_X86_SMT_ENABLED;
-    }
-    else
-    {
-        return GMX_CPUID_X86_SMT_DISABLED;
-    }
-#else
-    /* Do the trivial stuff first. If Hyper-Threading isn't even supported it
-     * cannot be enabled, no matter what OS detection we use!
-     */
-    if(0==gmx_cpuid_feature(cpuid,GMX_CPUID_FEATURE_X86_HTT))
-    {
-        return GMX_CPUID_X86_SMT_DISABLED;
-    }
-    else
-    {
-        return GMX_CPUID_X86_SMT_CANNOTDETECT;
-    }
-#endif
-}
-
 
 
 

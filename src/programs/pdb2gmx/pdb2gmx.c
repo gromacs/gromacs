@@ -267,9 +267,10 @@ static char *search_resrename(int nrr,rtprename_t *rr,
         {
             nn = rr[i].main;
         }
+        
         if (nn[0] == '-')
         {
-            gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",name,bStart ? " as a starting terminus" : (bEnd ? " as an ending terminus" : ""));
+            gmx_fatal(FARGS,"In the chosen force field there is no residue type for '%s'%s",name,bStart ? ( bEnd ? " as a standalone (starting & ending) residue" : " as a starting terminus") : (bEnd ? " as an ending terminus" : ""));
         }
     }
 

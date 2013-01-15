@@ -264,8 +264,6 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->deviceOptions=deviceOptions;
     mda->Flags=Flags;
 
-    fprintf(stderr, "Starting %d tMPI threads\n",hw_opt->nthreads_tmpi);
-    fflush(stderr);
     /* now spawn new threads that start mdrunner_start_fn(), while 
        the main thread returns */
     ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
@@ -775,15 +773,18 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
-/* Check the process affinity mask and if it is found to be non-zero,
- * will honor it and disable mdrun internal affinity setting.
- * This function should be called first before the OpenMP library gets
- * initialized with the last argument FALSE (which will detect affinity
- * set by external tools like taskset), and later, after the OpenMP
- * initialization, with the last argument TRUE to detect affinity changes
- * made by the OpenMP library.
+/* Check the process affinity mask. If it is non-zero, something
+ * else has set the affinity, and mdrun should honor that and
+ * not attempt to do its own thread pinning.
  *
- * Note that this will only work on Linux as we use a GNU feature. */
+ * This function should be called twice. Once before the OpenMP
+ * library gets initialized with bAfterOpenMPInit=FALSE (which will
+ * detect affinity set by external tools like taskset), and again
+ * later, after the OpenMP initialization, with bAfterOpenMPInit=TRUE
+ * (which will detect affinity changes made by the OpenMP library).
+ *
+ * Note that this will only work on Linux, because we use a GNU
+ * feature. */
 static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt, int ncpus,
                                    gmx_bool bAfterOpenmpInit)
@@ -837,19 +838,21 @@ static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
         if (!bAfterOpenmpInit)
         {
             md_print_warn(cr, fplog,
-                          "Non-default process affinity set, disabling internal affinity");
+                          "%s detected a non-default process affinity, "
+                          "so it will not attempt to pin its threads", ShortProgram());
         }
         else
         {
             md_print_warn(cr, fplog,
-                          "Non-default process affinity set probably by the OpenMP library, "
-                          "disabling internal affinity");
+                          "%s detected a non-default process affinity, "
+                          "probably set by the OpenMP library, "
+                          "so it will not attempt to pin its threads", ShortProgram());
         }
         hw_opt->bThreadPinning = FALSE;
 
         if (debug)
         {
-            fprintf(debug, "Non-default affinity mask found\n");
+            fprintf(debug, "Non-default affinity mask found, mdrun will not pin threads\n");
         }
     }
     else
@@ -1044,23 +1047,32 @@ static void set_cpu_affinity(FILE *fplog,
         }
         else
         {
-            /* check if some threads failed to set their affinities */
+            /* check & warn if some threads failed to set their affinities */
             if (nth_affinity_set != nthread_local)
             {
-                char sbuf[STRLEN];
-                sbuf[0] = '\0';
+                char sbuf1[STRLEN], sbuf2[STRLEN];
+
+                /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
+                sbuf1[0] = sbuf2[0] = '\0';
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
-                sprintf(sbuf, "In thread-MPI thread #%d", cr->nodeid);
+                sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
 #else /* GMX_LIB_MPI */
+                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-                sprintf(sbuf, "In MPI process #%d", cr->nodeid);
 #endif /* GMX_MPI */
+
+                if (nthread_local > 1)
+                {
+                    sprintf(sbuf2, "of %d/%d thread%s ",
+                            nthread_local - nth_affinity_set, nthread_local,
+                            (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                }
+
                 md_print_warn(NULL, fplog,
-                              "%s%d/%d thread%s failed to set their affinities. "
-                              "This can cause performance degradation!",
-                              sbuf, nthread_local - nth_affinity_set, nthread_local,
-                              (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                              "NOTE: %sAffinity setting %sfailed.\n"
+                              "      This can cause performance degradation!",
+                              sbuf1, sbuf2);
             }
         }
     }
@@ -1453,13 +1465,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
 
-    /* remove when vv and rerun works correctly! */
-    if (PAR(cr) && EI_VV(inputrec->eI) && ((Flags & MD_RERUN) || (Flags & MD_RERUN_VSITE)))
-    {
-        gmx_fatal(FARGS,
-                  "Currently can't do velocity verlet with rerun in parallel.");
-    }
-
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
@@ -1622,7 +1627,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (opt2bSet("-ei",nfile,fnm))
     {
         /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(nfile,fnm,Flags,cr);
+        ed = ed_open(mtop->natoms,&state->edsamstate,nfile,fnm,Flags,oenv,cr);
     }
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
@@ -1681,6 +1686,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                   cr->nnodes==1 ? "process" : "processes"
 #endif
                   );
+    fflush(stderr);
 #endif
 
     gmx_omp_nthreads_init(fplog, cr,

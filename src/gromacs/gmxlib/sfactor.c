@@ -131,7 +131,6 @@ extern t_complex *** rc_tensor_allocation(int x, int y, int z)
   t_complex ***t;
   int i,j;
 
-  snew(t,x);
   t = (t_complex ***)calloc(x,sizeof(t_complex**));
   if(!t) exit(fprintf(stderr,"\nallocation error"));
   t[0] = (t_complex **)calloc(x*y,sizeof(t_complex*));

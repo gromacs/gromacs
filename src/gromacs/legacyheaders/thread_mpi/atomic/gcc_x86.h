@@ -96,9 +96,12 @@ typedef struct tMPI_Spinlock
    as the 486, and gcc on some Linux versions still target 80386 by default). 
   
    We also specifically check for icc, because intrinsics are not always
-   supported there. */
-#if ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
-     !defined(__INTEL_COMPILER) ) 
+   supported there.
+
+   llvm has issues with inline assembly and also in 32 bits has support for
+   the gcc intrinsics */
+#if ( ( (TMPI_GCC_VERSION >= 40100) && defined(__x86_64__) &&  \
+      !defined(__INTEL_COMPILER) )  || defined(__llvm__) )
 #include "gcc_intrinsics.h"
 
 #else
@@ -115,7 +118,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
     __asm__ __volatile__("lock ; xaddl %0, %1;"
                          :"=r"(i) :"m"(a->value), "0"(i) : "memory");
     return i + __i;
-}  
+}
 
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {

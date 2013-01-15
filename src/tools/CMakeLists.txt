@@ -7,7 +7,7 @@ add_library(gmxana
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
             gmx_bundle.c    gmx_chi.c       gmx_cluster.c   gmx_confrms.c   
             gmx_covar.c     gmx_current.c   
-            gmx_density.c   gmx_densmap.c   gmx_dih.c       
+            gmx_density.c   gmx_densmap.c       
             gmx_dielectric.c        
             gmx_kinetics.c  gmx_spatial.c   gmx_tune_pme.c
             gmx_dipoles.c   gmx_disre.c     gmx_dist.c      gmx_dyndom.c    

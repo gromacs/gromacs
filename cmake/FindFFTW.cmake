@@ -100,4 +100,4 @@ if (${FFTW}_FOUND)
 endif (${FFTW}_FOUND)
 set(${FFTW}_HAVE_SIMD FALSE CACHE BOOL "If ${${FFTW}_PKG} was built with SIMD support")
 
-mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY ${FFTW}_HAVE_SIMD)
+mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY ${FFTW}_HAVE_SIMD ${FFTW}_HAVE_AVX)

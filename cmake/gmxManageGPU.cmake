@@ -18,14 +18,14 @@ if(GMX_GPU_AUTO AND GMX_DOUBLE)
 endif()
 
 # detect GPUs in the build host machine
-if (GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
+if ((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     include(gmxDetectGpu)
     gmx_detect_gpu()
 endif()
 
 # We need to call find_package even when we've already done the detection/setup
 if(GMX_GPU OR GMX_GPU_AUTO)
-    if(NOT GMX_GPU AND GMX_GPU_AUTO AND GMX_GPU_DETECTION_DONE)
+    if(NOT GMX_GPU AND NOT GMX_DETECT_GPU_AVAILABLE)
         # Stay quiet when detection has occured and found no GPU.
         # Noise is acceptable when there is a GPU or the user required one.
         set(FIND_CUDA_QUIETLY QUIET)
@@ -46,7 +46,7 @@ endif()
 # - ON , FALSE: The user requested GPU builds, will require CUDA and will fail
 #               if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
-if(GMX_GPU OR GMX_GPU_AUTO AND NOT GMX_GPU_DETECTION_DONE)
+if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     if (EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
         set(CUDA_FOUND TRUE CACHE INTERNAL "Whether the CUDA toolkit was found" FORCE)
     else()
@@ -108,6 +108,9 @@ endif()
 # user turns GMX_GPU=OFF after a failed cmake pass, these variables will be
 # left behind in the cache.
 mark_as_advanced(CUDA_BUILD_CUBIN CUDA_BUILD_EMULATION CUDA_SDK_ROOT_DIR CUDA_VERBOSE_BUILD)
+if(NOT GMX_GPU)
+    mark_as_advanced(CUDA_TOOLKIT_ROOT_DIR)
+endif()
 
 macro(gmx_gpu_setup)
     # set up nvcc options
