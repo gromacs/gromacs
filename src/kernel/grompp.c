@@ -845,14 +845,22 @@ static void gen_posres(gmx_mtop_t *mtop,t_molinfo *mi,
 }
 
 static void set_wall_atomtype(gpp_atomtype_t at,t_gromppopts *opts,
-			      t_inputrec *ir)
+                              t_inputrec *ir, warninp_t wi)
 {
   int i;
+  char warn_buf[STRLEN];
 
   if (ir->nwall > 0)
     fprintf(stderr,"Searching the wall atom type(s)\n");
   for(i=0; i<ir->nwall; i++)
-    ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
+  {
+      ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
+      if (ir->wall_atomtype[i] == NOTSET)
+      {
+          sprintf(warn_buf,"Specified wall atom type %s is not defined",opts->wall_atomtype[i]);
+          warning_error(wi,warn_buf);
+      }
+  }
 }
 
 static int nrdf_internal(t_atoms *atoms)
@@ -1441,7 +1449,7 @@ int main (int argc, char *argv[])
 		setup_cmap(plist->grid_spacing, plist->nc, plist->cmap,&sys->ffparams.cmap_grid);
 	}
 	
-  set_wall_atomtype(atype,opts,ir);
+  set_wall_atomtype(atype,opts,ir,wi);
   if (bRenum) {
     renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
     ntype = get_atomtype_ntypes(atype);
