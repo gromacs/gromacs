@@ -38,11 +38,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#if defined(HAVE_SCHED_H) && defined(HAVE_SCHED_GETAFFINITY)
-#define _GNU_SOURCE
-#include <sched.h>
-#include <sys/syscall.h>
-#endif
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
@@ -85,8 +80,7 @@
 #include "membed.h"
 #include "md_openmm.h"
 #include "gmx_omp.h"
-
-#include "thread_mpi/threads.h"
+#include "gmx_thread_affinity.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -264,9 +258,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
     mda->Flags=Flags;
 
     /* now spawn new threads that start mdrunner_start_fn(), while 
-       the main thread returns */
-    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi,
-                     (hw_opt->bThreadPinning ? TMPI_AFFINITY_ALL_CORES : TMPI_AFFINITY_NONE),
+       the main thread returns, we set thread affinity later */
+    ret=tMPI_Init_fn(TRUE, hw_opt->nthreads_tmpi, TMPI_AFFINITY_NONE,
                      mdrunner_start_fn, (void*)(mda) );
     if (ret!=TMPI_SUCCESS)
         return NULL;
@@ -772,312 +765,6 @@ static void convert_to_verlet_scheme(FILE *fplog,
     gmx_mtop_remove_chargegroups(mtop);
 }
 
-/* Check the process affinity mask. If it is non-zero, something
- * else has set the affinity, and mdrun should honor that and
- * not attempt to do its own thread pinning.
- *
- * This function should be called twice. Once before the OpenMP
- * library gets initialized with bAfterOpenMPInit=FALSE (which will
- * detect affinity set by external tools like taskset), and again
- * later, after the OpenMP initialization, with bAfterOpenMPInit=TRUE
- * (which will detect affinity changes made by the OpenMP library).
- *
- * Note that this will only work on Linux, because we use a GNU
- * feature. */
-static void check_cpu_affinity_set(FILE *fplog, const t_commrec *cr,
-                                   gmx_hw_opt_t *hw_opt, int ncpus,
-                                   gmx_bool bAfterOpenmpInit)
-{
-#ifdef HAVE_SCHED_GETAFFINITY
-    cpu_set_t mask_current;
-    int       i, ret, cpu_count, cpu_set;
-    gmx_bool  bAllSet;
-
-    assert(hw_opt);
-    if (!hw_opt->bThreadPinning)
-    {
-        /* internal affinity setting is off, don't bother checking process affinity */
-        return;
-    }
-
-    CPU_ZERO(&mask_current);
-    if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
-    {
-        /* failed to query affinity mask, will just return */
-        if (debug)
-        {
-            fprintf(debug, "Failed to query affinity mask (error %d)", ret);
-        }
-        return;
-    }
-
-    /* Before proceeding with the actual check, make sure that the number of
-     * detected CPUs is >= the CPUs in the current set.
-     * We need to check for CPU_COUNT as it was added only in glibc 2.6. */
-#ifdef CPU_COUNT
-    if (ncpus < CPU_COUNT(&mask_current))
-    {
-        if (debug)
-        {
-            fprintf(debug, "%d CPUs detected, but %d was returned by CPU_COUNT",
-                    ncpus, CPU_COUNT(&mask_current));
-        }
-        return;
-    }
-#endif /* CPU_COUNT */
-
-    bAllSet = TRUE;
-    for (i = 0; (i < ncpus && i < CPU_SETSIZE); i++)
-    {
-        bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
-    }
-
-    if (!bAllSet)
-    {
-        if (!bAfterOpenmpInit)
-        {
-            md_print_warn(cr, fplog,
-                          "%s detected a non-default process affinity, "
-                          "so it will not attempt to pin its threads", ShortProgram());
-        }
-        else
-        {
-            md_print_warn(cr, fplog,
-                          "%s detected a non-default process affinity, "
-                          "probably set by the OpenMP library, "
-                          "so it will not attempt to pin its threads", ShortProgram());
-        }
-        hw_opt->bThreadPinning = FALSE;
-
-        if (debug)
-        {
-            fprintf(debug, "Non-default affinity mask found, mdrun will not pin threads\n");
-        }
-    }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Default affinity mask found\n");
-        }
-    }
-#endif /* HAVE_SCHED_GETAFFINITY */
-}
-
-/* Set CPU affinity. Can be important for performance.
-   On some systems (e.g. Cray) CPU Affinity is set by default.
-   But default assigning doesn't work (well) with only some ranks
-   having threads. This causes very low performance.
-   External tools have cumbersome syntax for setting affinity
-   in the case that only some ranks have threads.
-   Thus it is important that GROMACS sets the affinity internally
-   if only PME is using threads.
-*/
-static void set_cpu_affinity(FILE *fplog,
-                             const t_commrec *cr,
-                             gmx_hw_opt_t *hw_opt,
-                             int nthreads_pme,
-                             const gmx_hw_info_t *hwinfo,
-                             const t_inputrec *inputrec)
-{
-#if defined GMX_THREAD_MPI
-    /* With the number of TMPI threads equal to the number of cores
-     * we already pinned in thread-MPI, so don't pin again here.
-     */
-    if (hw_opt->nthreads_tmpi == tMPI_Thread_get_hw_number())
-    {
-        return;
-    }
-#endif
-
-#ifndef __APPLE__
-    /* If the tMPI thread affinity setting is not supported encourage the user
-     * to report it as it's either a bug or an exotic platform which we might
-     * want to support. */
-    if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
-    {
-        md_print_warn(NULL, fplog,
-                      "Can not set thread affinities on the current plarform. On NUMA systems this\n"
-                      "can cause performance degradation. If you think your platform should support\n"
-                      "setting affinities, contact the GROMACS developers.");
-        return;
-    }
-#endif /* __APPLE__ */
-
-    if (hw_opt->bThreadPinning)
-    {
-        int nth_affinity_set, thread_id_node, thread_id,
-            nthread_local, nthread_node, nthread_hw_max, nphyscore;
-        int offset;
-        char *env;
-
-        /* threads on this MPI process or TMPI thread */
-        if (cr->duty & DUTY_PP)
-        {
-            nthread_local = gmx_omp_nthreads_get(emntNonbonded);
-        }
-        else
-        {
-            nthread_local = gmx_omp_nthreads_get(emntPME);
-        }
-
-        /* map the current process to cores */
-        thread_id_node = 0;
-        nthread_node = nthread_local;
-#ifdef GMX_MPI
-        if (PAR(cr) || MULTISIM(cr))
-        {
-            /* We need to determine a scan of the thread counts in this
-             * compute node.
-             */
-            MPI_Comm comm_intra;
-
-            MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->rank_intranode,
-                           &comm_intra);
-            MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
-            /* MPI_Scan is inclusive, but here we need exclusive */
-            thread_id_node -= nthread_local;
-            /* Get the total number of threads on this physical node */
-            MPI_Allreduce(&nthread_local,&nthread_node,1,MPI_INT,MPI_SUM,comm_intra);
-            MPI_Comm_free(&comm_intra);
-        }
-#endif
-
-        offset = 0;
-        if (hw_opt->core_pinning_offset > 0)
-        {
-            offset = hw_opt->core_pinning_offset;
-            if (SIMMASTER(cr))
-            {
-                fprintf(stderr, "Applying core pinning offset %d\n", offset);
-            }
-            if (fplog)
-            {
-                fprintf(fplog, "Applying core pinning offset %d\n", offset);
-            }
-        }
-
-        /* With Intel Hyper-Threading enabled, we want to pin consecutive
-         * threads to physical cores when using more threads than physical
-         * cores or when the user requests so.
-         */
-        nthread_hw_max = hwinfo->nthreads_hw_avail;
-        nphyscore = -1;
-        if (hw_opt->bPinHyperthreading ||
-            (gmx_cpuid_x86_smt(hwinfo->cpuid_info) == GMX_CPUID_X86_SMT_ENABLED &&
-             nthread_node > nthread_hw_max/2 && getenv("GMX_DISABLE_PINHT") == NULL))
-        {
-            if (gmx_cpuid_x86_smt(hwinfo->cpuid_info) != GMX_CPUID_X86_SMT_ENABLED)
-            {
-                /* We print to stderr on all processes, as we might have
-                 * different settings on different physical nodes.
-                 */
-                if (gmx_cpuid_vendor(hwinfo->cpuid_info) != GMX_CPUID_VENDOR_INTEL)
-                {
-                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
-                                  "but non-Intel CPU detected (vendor: %s)\n",
-                                  gmx_cpuid_vendor_string[gmx_cpuid_vendor(hwinfo->cpuid_info)]);
-                }
-                else
-                {
-                    md_print_warn(NULL, fplog, "Pinning for Hyper-Threading layout requested, "
-                                  "but the CPU detected does not have Intel Hyper-Threading support "
-                                  "(or it is turned off)\n");
-                }
-            }
-            nphyscore = nthread_hw_max/2;
-
-            if (SIMMASTER(cr))
-            {
-                fprintf(stderr, "Pinning to Hyper-Threading cores with %d physical cores in a compute node\n",
-                        nphyscore);
-            }
-            if (fplog)
-            {
-                fprintf(fplog, "Pinning to Hyper-Threading cores with %d physical cores in a compute node\n",
-                        nphyscore);
-            }
-        }
-
-        /* Set the per-thread affinity. In order to be able to check the success
-         * of affinity settings, we will set nth_affinity_set to 1 on threads
-         * where the affinity setting succeded and to 0 where it failed.
-         * Reducing these 0/1 values over the threads will give the total number
-         * of threads on which we succeeded.
-         */
-         nth_affinity_set = 0;
-#pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
-                     reduction(+:nth_affinity_set)
-        {
-            int      core;
-            gmx_bool setaffinity_ret;
-
-            thread_id       = gmx_omp_get_thread_num();
-            thread_id_node += thread_id;
-            if (nphyscore <= 0)
-            {
-                core = offset + thread_id_node;
-            }
-            else
-            {
-                /* Lock pairs of threads to the same hyperthreaded core */
-                core = offset + thread_id_node/2 + (thread_id_node % 2)*nphyscore;
-            }
-
-            setaffinity_ret = tMPI_Thread_setaffinity_single(tMPI_Thread_self(), core);
-
-            /* store the per-thread success-values of the setaffinity */
-            nth_affinity_set = (setaffinity_ret == 0);
-
-            if (debug)
-            {
-                fprintf(debug, "On rank %2d, thread %2d, core %2d the affinity setting returned %d\n",
-                        cr->nodeid, gmx_omp_get_thread_num(), core, setaffinity_ret);
-            }
-        }
-
-        if (nth_affinity_set > nthread_local)
-        {
-            char msg[STRLEN];
-
-            sprintf(msg, "Looks like we have set affinity for more threads than "
-                    "we have (%d > %d)!\n", nth_affinity_set, nthread_local);
-            gmx_incons(msg);
-        }
-        else
-        {
-            /* check & warn if some threads failed to set their affinities */
-            if (nth_affinity_set != nthread_local)
-            {
-                char sbuf1[STRLEN], sbuf2[STRLEN];
-
-                /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
-                sbuf1[0] = sbuf2[0] = '\0';
-#ifdef GMX_MPI
-#ifdef GMX_THREAD_MPI
-                sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
-#else /* GMX_LIB_MPI */
-                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
-#endif
-#endif /* GMX_MPI */
-
-                if (nthread_local > 1)
-                {
-                    sprintf(sbuf2, "of %d/%d thread%s ",
-                            nthread_local - nth_affinity_set, nthread_local,
-                            (nthread_local - nth_affinity_set) > 1 ? "s" : "");
-                }
-
-                md_print_warn(NULL, fplog,
-                              "NOTE: %sAffinity setting %sfailed.\n"
-                              "      This can cause performance degradation!",
-                              sbuf1, sbuf2);
-            }
-        }
-    }
-}
-
-
 static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
                                     int cutoff_scheme)
 {
@@ -1349,9 +1036,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * MPI processes because hwinfo is not available everywhere, but with
          * thread-MPI it's needed as pinning might get turned off which needs
          * to be known before starting thread-MPI. */
-        check_cpu_affinity_set(fplog,
-                               NULL,
-                               hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+        gmx_check_thread_affinity_set(fplog,
+                                      NULL,
+                                      hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 #endif
 
 #ifdef GMX_THREAD_MPI
@@ -1457,8 +1144,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
     /* Now do the affinity check with MPI/no-MPI (done earlier with thread-MPI). */
-    check_cpu_affinity_set(fplog, cr,
-                           hw_opt, hwinfo->nthreads_hw_avail, FALSE);
+    gmx_check_thread_affinity_set(fplog, cr,
+                                  hw_opt, hwinfo->nthreads_hw_avail, FALSE);
 #endif
 
     /* now make sure the state is initialized and propagated */
@@ -1815,10 +1502,11 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Before setting affinity, check whether the affinity has changed
      * - which indicates that probably the OpenMP library has changed it since
      * we first checked). */
-    check_cpu_affinity_set(fplog, cr, hw_opt, hwinfo->nthreads_hw_avail, TRUE);
+    gmx_check_thread_affinity_set(fplog, cr,
+                                  hw_opt, hwinfo->nthreads_hw_avail, TRUE);
 
     /* Set the CPU affinity */
-    set_cpu_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
+    gmx_set_thread_affinity(fplog,cr,hw_opt,nthreads_pme,hwinfo,inputrec);
 
     /* Initiate PME if necessary,
      * either on all nodes or on dedicated PME nodes only. */
