@@ -40,7 +40,6 @@
 #include <config.h>
 #endif
 #include "visibility.h"
-#include "gmx_header_config.h"
 
 #ifdef GMX_CRAY_XT3
 #undef HAVE_PWD_H

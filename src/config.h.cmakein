@@ -44,6 +44,8 @@
 #pragma warning (disable : 4090)
 #endif
 
+#include "gmx_header_config.h"
+
 /* Name of package (translate from cmake to autoconf macro name) */
 #define PACKAGE  "@PROJECT_NAME@"
 
