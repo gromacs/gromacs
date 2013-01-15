@@ -740,7 +740,7 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
 
     nsets_dhdl = n_lambda_terms;
     /* count the number of delta_g states */
-    nsets_de = fep->n_lambda;
+    nsets_de = fep->lambda_stop_n - fep->lambda_start_n;
 
     nsets = nsets_dhdl + nsets_de; /* dhdl + fep differences */
 
@@ -822,7 +822,7 @@ extern FILE *open_dhdl(const char *filename,const t_inputrec *ir,
         }
         nsetsbegin += nsets_dhdl;
 
-        for(i=0; i<fep->n_lambda; i++)
+        for(i=fep->lambda_start_n; i<fep->lambda_stop_n; i++)
         {
             print_lambda_vector(fep, i, FALSE, FALSE, lambda_vec_str);
             if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
@@ -1123,7 +1123,7 @@ void upd_mdebin(t_mdebin *md,
                     fprintf(md->fp_dhdl," %#.8g",enerd->term[F_DVDL+i]);
                 }
             }
-            for(i=0;i<fep->n_lambda;i++)
+            for(i=fep->lambda_start_n;i<fep->lambda_stop_n;i++)
             {
                 fprintf(md->fp_dhdl," %#.8g",md->dE[i]);
             }
@@ -1157,7 +1157,7 @@ void upd_mdebin(t_mdebin *md,
                                     store_energy,
                                     pv,
                                     store_dhdl,
-                                    md->dE,
+                                    md->dE + fep->lambda_start_n,
                                     time);
         }
     }
