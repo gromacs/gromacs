@@ -43,9 +43,6 @@
 #include <thread_mpi.h>
 #endif
 
-#ifdef HAVE_LIBMKL
-#include <mkl.h>
-#endif
 #ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
 #endif
@@ -685,8 +682,6 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "FFT library:        %s\n", fftw_version);
 #elif defined(GMX_FFT_FFTW3)
     fprintf(fp, "FFT library:        %s\n", fftwf_version);
-#elif defined(GMX_FFT_MKL)
-    fprintf(fp, "FFT library:        MKL\n");
 #else
     fprintf(fp, "FFT library:        unknown\n");
 #endif
@@ -719,11 +714,6 @@ void gmx_print_version_info(FILE *fp)
         fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
         fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
     }
-#ifdef HAVE_LIBMKL
-    /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    fprintf(fp, "Linked with Intel MKL version %s.%s.%s.\n",
-            __INTEL_MKL__,__INTEL_MKL_MINOR__,__INTEL_MKL_UPDATE__);
-#endif
 #ifdef GMX_GPU
     gmx_print_version_info_gpu(fp);
 #endif

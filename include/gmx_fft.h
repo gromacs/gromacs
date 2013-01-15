@@ -75,7 +75,7 @@ extern "C" {
  *  whatever FFT library we are using, or the built-in FFTPACK if no fast
  *  external library is available.
  *
- *  Since some of the libraries (e.g. MKL) store work array data in their
+ *  Since some of the libraries store work array data in their
  *  handles this datatype should only be used for one thread at a time, i.e.
  *  they should allocate one instance each when executing in parallel.
  */
@@ -135,7 +135,7 @@ static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -154,7 +154,7 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -173,7 +173,7 @@ gmx_fft_init_many_1d        (gmx_fft_t *       fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -193,7 +193,7 @@ gmx_fft_init_1d_real        (gmx_fft_t *       fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -214,7 +214,7 @@ gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -237,7 +237,7 @@ gmx_fft_init_2d        (gmx_fft_t *         fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -259,7 +259,7 @@ gmx_fft_init_2d_real        (gmx_fft_t *         fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */
@@ -284,7 +284,7 @@ gmx_fft_init_3d        (gmx_fft_t *         fft,
  *
  *  \return status - 0 or a standard error message.
  *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
+ *  \note Since some of the libraries store work array data in their 
  *        handles this datatype should only be used for one thread at a time, 
  *        i.e. you should create one copy per thread when executing in parallel.
  */

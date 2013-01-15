@@ -53,7 +53,7 @@
 
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the 
- * files like gmx_fft_fftw3.c or gmx_fft_intel_mkl.c for that.
+ * files like gmx_fft_fftw3.c for that.
  */
 
 #ifndef GMX_FFT_FFTW3

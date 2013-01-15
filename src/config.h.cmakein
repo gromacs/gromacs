@@ -85,12 +85,6 @@
 /* Use FFTW3 FFT library */
 #cmakedefine GMX_FFT_FFTW3
 
-/* Use Intel MKL FFT library */
-#cmakedefine GMX_FFT_MKL
-
-/* Use AMD core math library */
-#cmakedefine GMX_FFT_ACML
-
 /* SSE2 instructions available */
 #cmakedefine GMX_X86_SSE2
 
@@ -220,9 +214,6 @@
 
 /* Define to 1 if you have the m library (-lm). */
 #cmakedefine HAVE_LIBM
-
-/* Define to 1 if you have the mkl library (-lmkl). */
-#cmakedefine HAVE_LIBMKL
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL

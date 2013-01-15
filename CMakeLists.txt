@@ -185,7 +185,7 @@ set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
     CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX")
 
 set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
+    CACHE STRING "FFT library choices: fftw3,fftpack[built-in]")
 option(GMX_BUILD_OWN_FFTW "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack." OFF)
 mark_as_advanced(GMX_BUILD_OWN_FFTW)
 option(GMX_DISABLE_FFTW_MEASURE 
@@ -977,24 +977,11 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
     endif()
 
-elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-#    MESSAGE(STATUS "Using external FFT library - Intel MKL")
-    find_package(MKL REQUIRED)
-    include_directories(${MKL_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${MKL_LIBRARIES})
-    set(PKG_FFT_LIBS ${MKL_LIBRARIES})
-
-    set(GMX_FFT_MKL 1)
-    set(HAVE_MKL 1)
-
-#elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
-#    MESSAGE(STATUS "Using external FFT library - AMD core math library")
-#    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
+    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 
 # enable threaded fftw3 if we've found it 
@@ -1004,8 +991,7 @@ endif()
 
 set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
 set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
-# MKL has BLAS/LAPACK routines
-if(NOT HAVE_MKL AND NOT ACCELERATE_FRAMEWORK)
+if(NOT ACCELERATE_FRAMEWORK)
   if(GMX_EXTERNAL_BLAS)
     if (GMX_BLAS_USER)
         list(APPEND GMX_EXTRA_LIBRARIES ${GMX_BLAS_USER})

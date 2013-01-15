@@ -154,7 +154,7 @@ Many simulations in \gromacs{} make extensive use of Fourier transforms,
 and a software library to perform these is always required. We
 recommend \fftw{} \url{http://www.fftw.org/} (version 3 or higher
 only) or Intel's \mkl{}
-\url{http://software.intel.com/en-us/intel-mkl}.
+\url{http://software.intel.com/en-us/intel-mkl} through its \fftw{} interface.
 
 \subsubsection{\fftw{}}
 
@@ -186,12 +186,6 @@ cannot take advantage of this feature in \fftw{} because of memory
 system performance limitations, it can degrade performance by around
 20\%, and there is no way for \gromacs{} to require the use of the
 \ssetwo{} at run time if \avx{} support has been compiled into \fftw{}.
-
-\subsubsection{\mkl{}}
-
-Using \mkl{} requires a set of linker flags that \gromacs{} is not
-able to detect for you, so setting up optimal linking is tricky at the
-moment. Need better documentation later.
 
 \subsection{Optional build components}
 
