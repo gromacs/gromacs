@@ -92,14 +92,18 @@ enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
+enum {
+  threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
+};
+
 typedef struct {
     int      nthreads_tot;        /* Total number of threads requested (TMPI) */
     int      nthreads_tmpi;       /* Number of TMPI threads requested         */
     int      nthreads_omp;        /* Number of OpenMP threads requested       */
     int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    gmx_bool bThreadPinning;      /* Pin OpenMP threads to cores?             */
-    gmx_bool bPinHyperthreading;  /* Pin pairs of threads to physical cores   */
-    int      core_pinning_offset; /* Physical core pinning offset             */
+    const char *thread_aff_opt[threadaffNR+1]; /* Thread affinity switch      */
+    int      core_pinning_stride; /* Logical core pinning stride              */
+    int      core_pinning_offset; /* Logical core pinning offset              */
     char    *gpu_id;              /* GPU id's to use, each specified as chars */
 } gmx_hw_opt_t;
 
