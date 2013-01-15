@@ -727,6 +727,17 @@ static void print_allswitchind(FILE *fplog,int n,int *ind,int *pind, int *allswa
     }
     fprintf(fplog,"\n");
 
+    /* the "Order After Exchange" is the state label corresponding to the configuration that
+       started in state listed in order, i.e.
+
+       3 0 1 2
+
+       means that the:
+       configuration starting in simulation 3 is now in simulation 0,
+       configuration starting in simulation 0 is now in simulation 1,
+       configuration starting in simulation 1 is now in simulation 2,
+       configuration starting in simulation 2 is now in simulation 3
+     */
     fprintf(fplog,"Order After Exchange: ");
     for (i=0;i<n;i++)
     {
@@ -795,6 +806,7 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
                  =  [H_b(x_a) + H_a(x_b)] - [H_b(x_b) + H_a(x_a)]
                  =  [H_b(x_a) - H_a(x_a)] + [H_a(x_b) - H_b(x_b)]
                  =  de[b][a] + de[a][b] */
+
         /* permuted:
            ediff =  E_new - E_old
                  =  [H_bp(x_a) + H_ap(x_b)] - [H_bp(x_b) + H_ap(x_a)]
@@ -802,6 +814,16 @@ static real calc_delta(FILE *fplog, gmx_bool bPrint, struct gmx_repl_ex *re, int
                  =  [H_bp(x_a) - H_a(x_a) + H_a(x_a) - H_ap(x_a)] + [H_ap(x_b) - H_b(x_b) + H_b(x_b) - H_bp(x_b)]
                  =  [H_bp(x_a) - H_a(x_a)] - [H_ap(x_a) - H_a(x_a)] + [H_ap(x_b) - H_b(x_b)] - H_bp(x_b) - H_b(x_b)]
                  =  (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b])    */
+        /* but, in the current code implementation, we flip configurations, not indices . . .
+           So let's examine that.
+                 =  [H_b(x_ap) - H_a(x_a)] - [H_a(x_ap) - H_a(x_a)] + [H_a(x_bp) - H_b(x_b)] - H_b(x_bp) - H_b(x_b)]
+                 =  [H_b(x_ap) - H_a(x_ap)]  + [H_a(x_bp) - H_b(x_pb)]
+                 = (de[b][ap] - de[a][ap]) + (de[a][bp] - de[b][bp]
+                 So, if we exchange b<=> bp and a<=> ap, we return to the same result.
+                 So the simple solution is to flip the
+                 position of perturbed and original indices in the tests.
+        */
+
         ediff = (de[bp][a] - de[ap][a]) + (de[ap][b] - de[bp][b]);
         delta = ediff*beta[a]; /* assume all same temperature in this case */
         break;
@@ -867,7 +889,7 @@ test_for_replica_exchange(FILE *fplog,
     gmx_bool bPrint,bMultiEx;
     gmx_bool *bEx = re->bEx;
     real *prob = re->prob;
-    int *pind = re->destinations;
+    int *pind = re->destinations; /* permuted index */
     gmx_bool bEpot=FALSE;
     gmx_bool bDLambda=FALSE;
     gmx_bool bVol=FALSE;
@@ -953,24 +975,32 @@ test_for_replica_exchange(FILE *fplog,
         for (i=0;i<re->nex;i++)
         {
             /* randomly select a pair  */
-            /* find out which state it is from, and what label that state currently has */
+            /* in theory, could reduce this by identifying only which switches had a nonneglibible
+               probability of occurring (log p > -100) and only operate on those switches */
+            /* find out which state it is from, and what label that state currently has. Likely
+               more work that useful. */
             i0 = (int)(re->nrepl*rando(&(re->seed)));
             i1 = (int)(re->nrepl*rando(&(re->seed)));
             if (i0==i1)
             {
                 i--;
-                continue;  /* got the same pair, back up and do it again */
+                continue;  /* self-exchange, back up and do it again */
             }
 
-            a = re->ind[i0];
+            a = re->ind[i0]; /* what are the indices of these states? */
             b = re->ind[i1];
             ap = pind[i0];
             bp = pind[i1];
 
             bPrint = FALSE; /* too noisy */
-            delta = calc_delta(fplog,bPrint,re,a,b,ap,bp); /* calculate the energy difference */
+            /* calculate the energy difference */
+            /* if the code changes to flip the STATES, rather than the configurations,
+               use the commented version of the code */
+            /* delta = calc_delta(fplog,bPrint,re,a,b,ap,bp); */
+            delta = calc_delta(fplog,bPrint,re,ap,bp,a,b);
 
-            /* we actually only use the first space, since there are actually many switches between pairs. */
+            /* we actually only use the first space in the prob and bEx array,
+               since there are actually many switches between pairs. */
 
             if (delta <= 0)
             {
@@ -1065,6 +1095,7 @@ test_for_replica_exchange(FILE *fplog,
         re->nmoves[re->ind[i]][pind[i]] +=1;
         re->nmoves[pind[i]][re->ind[i]] +=1;
     }
+    fflush(fplog); /* make sure we can see what the last exchange was */
 }
 
 static void write_debug_x(t_state *state)
@@ -1304,6 +1335,7 @@ gmx_bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re
             /* There will be only one swap cycle with standard replica
              * exchange, but there may be multiple swap cycles if we
              * allow multiple swaps. */
+
             for (j = 0; j < maxswap; j++)
             {
                 exchange_partner = re->order[replica_id][j];

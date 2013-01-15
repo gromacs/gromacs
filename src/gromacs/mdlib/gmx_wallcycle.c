@@ -722,7 +722,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         fprintf(fplog, "%s\n", hline);
 
         gpu_cpu_ratio = tot_gpu/tot_cpu_overlap;
-        fprintf(fplog, "\n Force evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
+        fprintf(fplog, "\nForce evaluation time GPU/CPU: %.3f ms/%.3f ms = %.3f\n",
                 tot_gpu/gpu_t->nb_c, tot_cpu_overlap/wc->wcc[ewcFORCE].n,
                 gpu_cpu_ratio);
 
@@ -744,9 +744,9 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                          * but we currently can't check that here.
                          */
                         md_print_warn(NULL,fplog,
-                                      "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
+                                      "\nNOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
                                       "      performance loss. Maybe the domain decomposition limits the PME tuning.\n"
-                                      "      In that case, try setting the DD grid manually (-dd) or lowering -dds.\n");
+                                      "      In that case, try setting the DD grid manually (-dd) or lowering -dds.");
                     }
                     else
                     {
@@ -754,15 +754,15 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                          * too small for increasing the cut-off for PME tuning.
                          */
                         md_print_warn(NULL,fplog,
-                                      "NOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
-                                      "      performance loss.\n");
+                                      "\nNOTE: The GPU has >25%% less load than the CPU. This imbalance causes\n"
+                                      "      performance loss.");
                     }
                 }
                 if (gpu_cpu_ratio > 1.2)
                 {
                     md_print_warn(NULL,fplog,
-                                  "NOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
-                                  "      performance loss, consider using a shorter cut-off and a finer PME grid.\n");
+                                  "\nNOTE: The GPU has >20%% more load than the CPU. This imbalance causes\n"
+                                  "      performance loss, consider using a shorter cut-off and a finer PME grid.");
                 }
             }
         }

@@ -1084,7 +1084,7 @@ t_forcetable make_tables(FILE *out,const output_env_t oenv,
    * numbers per nx+1 data points. For performance reasons we want
    * the table data to be aligned to 16-byte.
    */
-  snew_aligned(table.data, 12*(nx+1)*sizeof(real),16);
+  snew_aligned(table.data, 12*(nx+1)*sizeof(real),32);
 
   for(k=0; (k<etiNR); k++) {
     if (tabsel[k] != etabUSER) {
@@ -1202,7 +1202,7 @@ t_forcetable make_gb_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-	snew_aligned(table.data,4*nx,16);
+	snew_aligned(table.data,4*nx,32);
 	
 	init_table(out,nx,nx0,table.scale,&(td[0]),!bReadTab);
 	
@@ -1362,7 +1362,7 @@ t_forcetable make_atf_table(FILE *out,const output_env_t oenv,
 	 * to do this :-)
 	 */
 	
-    snew_aligned(table.data,4*nx,16);
+    snew_aligned(table.data,4*nx,32);
 
 	copy2table(table.n,0,4,td[0].x,td[0].v,td[0].f,1.0,table.data);
 	

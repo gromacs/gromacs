@@ -89,17 +89,38 @@ static void set_ljparams(int comb,double reppow,real v,real w,
   }
 }
 
-static void assign_param(t_functype ftype,t_iparams *newparam,
+/* A return value of 0 means parameters were assigned successfully,
+ * returning -1 means this is an all-zero interaction that should not be added.
+ */
+static int
+assign_param(t_functype ftype,t_iparams *newparam,
 			 real old[MAXFORCEPARAM],int comb,double reppow)
 {
   int  i,j;
   real tmp;
+  gmx_bool all_param_zero=TRUE;
 
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++) 
-    {
+  {
       newparam->generic.buf[j]=0.0;
-    }
+      /* If all parameters are zero we might not add some interaction types (selected below).
+       * We cannot apply this to ALL interactions, since many have valid reasons for having
+       * zero parameters (e.g. an index to a Cmap interaction, or LJ parameters), but
+       * we use it for angles and torsions that are typically generated automatically.
+       */
+      all_param_zero = (all_param_zero==TRUE) && fabs(old[j])<GMX_REAL_MIN;
+  }
+
+  if(all_param_zero==TRUE)
+  {
+      if(IS_ANGLE(ftype) || IS_RESTRAINT_TYPE(ftype) || ftype==F_IDIHS ||
+         ftype==F_PDIHS || ftype==F_PIDIHS || ftype==F_RBDIHS || ftype==F_FOURDIHS)
+      {
+          return -1;
+      }
+  }
+
   switch (ftype) {
   case F_G96ANGLES:
     /* Post processing of input data: store cosine iso angle itself */
@@ -245,29 +266,23 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
   case F_PIDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
-    newparam->pdihs.phiA = old[0];
-    newparam->pdihs.cpA  = old[1];
-		  
-    /* Dont do any checks if all parameters are zero (such interactions will be removed).
-     * Change 20100720: Amber occasionally uses negative multiplicities (mathematically OK),
-     * so I have changed the lower limit to -99 /EL
-     *
-     * Second, if the force constant is zero in both A and B states, we set the phase
-     * and multiplicity to zero too so the interaction gets removed during clean-up.
-     */	
-    newparam->pdihs.phiB = old[3];
-    newparam->pdihs.cpB  = old[4];
-          
-    if( fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN )
-    {
-        newparam->pdihs.phiA = 0.0; 
-        newparam->pdihs.phiB = 0.0; 
-        newparam->pdihs.mult = 0; 
-    } 
-    else
-    {
-        newparam->pdihs.mult = round_check(old[2],-99,ftype,"multiplicity");
-    }
+          newparam->pdihs.phiA = old[0];
+          newparam->pdihs.cpA  = old[1];
+
+          /* Change 20100720: Amber occasionally uses negative multiplicities (mathematically OK),
+           * so I have changed the lower limit to -99 /EL
+           */
+          newparam->pdihs.phiB = old[3];
+          newparam->pdihs.cpB  = old[4];
+          /* If both force constants are zero there is no interaction. Return -1 to signal
+           * this entry should NOT be added.
+           */
+          if( fabs(newparam->pdihs.cpA) < GMX_REAL_MIN && fabs(newparam->pdihs.cpB) < GMX_REAL_MIN )
+          {
+              return -1;
+          }
+    
+          newparam->pdihs.mult = round_check(old[2],-99,ftype,"multiplicity");
           
     break;
   case F_POSRES:
@@ -347,7 +362,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     newparam->rbdihs.rbcB[3]=-2.0*old[NR_FOURDIHS+2];
     newparam->rbdihs.rbcB[4]=-4.0*old[NR_FOURDIHS+3];
     newparam->rbdihs.rbcB[5]=0.0;
-    break;    
+    break;
   case F_CONSTR:
   case F_CONSTRNC:
     newparam->constr.dA = old[0];
@@ -399,6 +414,7 @@ static void assign_param(t_functype ftype,t_iparams *newparam,
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
 	      ftype,__FILE__,__LINE__);
   }
+    return 0;
 }
 
 static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
@@ -407,8 +423,14 @@ static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 {
   t_iparams newparam;
   int       type;
-  
-  assign_param(ftype,&newparam,forceparams,comb,reppow);
+  int       rc;
+
+  if( (rc=assign_param(ftype,&newparam,forceparams,comb,reppow))<0 )
+  {
+      /* -1 means this interaction is all-zero and should not be added */
+      return rc;
+  }
+
   if (!bAppend) {
     for (type=start; (type<ffparams->ntypes); type++) {
       if (ffparams->functype[type]==ftype) {
@@ -478,7 +500,8 @@ static void enter_function(t_params *p,t_functype ftype,int comb,real reppow,
 		__FILE__,__LINE__,*maxtypes);
     }
     type = enter_params(ffparams,ftype,p->param[k].c,comb,reppow,start,bAppend);
-    if (!bNB) {
+    /* Type==-1 is used as a signal that this interaction is all-zero and should not be added. */
+    if (!bNB && type>=0) {
       nral  = NRAL(ftype);
       delta = nr*(nral+1);
       srenew(il->iatoms,il->nr+delta);

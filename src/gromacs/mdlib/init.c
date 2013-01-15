@@ -109,10 +109,10 @@ void set_state_entries(t_state *state,const t_inputrec *ir,int nnodes)
             snew(state->cg_p,state->nalloc);
         }
     }
-  if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE) {
+    if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc)) {
     state->nrng  = gmx_rng_n();
     state->nrngi = 1;
-    if (EI_SD(ir->eI) || ir->eI == eiBD) {
+    if (EI_SD(ir->eI) || ir->eI == eiBD || ETC_ANDERSEN(ir->etc)) {
       /* This will be correct later with DD */
       state->nrng  *= nnodes;
       state->nrngi *= nnodes;
@@ -182,7 +182,7 @@ void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
 {
     bcast_ir_mtop(cr,inputrec,mtop);
 
-    if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
+    if (inputrec->eI == eiBD || EI_SD(inputrec->eI) || ETC_ANDERSEN(inputrec->etc)) {
         /* Make sure the random seeds are different on each node */
         inputrec->ld_seed += cr->nodeid;
     }

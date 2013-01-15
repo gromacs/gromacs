@@ -193,8 +193,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
             "Calculate surface fluctuations");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_dielectric, "dielectric",
             "Calculate frequency dependent dielectric constants");
-    LegacyCmdLineWrapper::registerModule(manager, &gmx_dih, "dih",
-            "Analyze dihedral transitions");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_dipoles, "dipoles",
             "Compute the total dipole plus fluctuations");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_disre, "disre",

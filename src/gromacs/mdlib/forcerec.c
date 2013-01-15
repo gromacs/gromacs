@@ -1164,7 +1164,7 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
     nbl->table_elec.formatsize = nbl->table_elec_vdw.formatsize;
     nbl->table_elec.ninteractions = 1;
     nbl->table_elec.stride = nbl->table_elec.formatsize * nbl->table_elec.ninteractions;
-    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),16);
+    snew_aligned(nbl->table_elec.data,nbl->table_elec.stride*(nbl->table_elec.n+1),32);
 
     nbl->table_vdw.interaction = GMX_TABLE_INTERACTION_VDWREP_VDWDISP;
     nbl->table_vdw.format = nbl->table_elec_vdw.format;
@@ -1175,7 +1175,7 @@ static void make_nbf_tables(FILE *fp,const output_env_t oenv,
     nbl->table_vdw.formatsize = nbl->table_elec_vdw.formatsize;
     nbl->table_vdw.ninteractions = 2;
     nbl->table_vdw.stride = nbl->table_vdw.formatsize * nbl->table_vdw.ninteractions;
-    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),16);
+    snew_aligned(nbl->table_vdw.data,nbl->table_vdw.stride*(nbl->table_vdw.n+1),32);
 
     for(i=0; i<=nbl->table_elec_vdw.n; i++)
     {
@@ -1431,7 +1431,7 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 #endif
         if (getenv("GMX_NBNXN_SIMD_4XN") != NULL)
         {
-#ifdef GMX_NBNXN_SIMD_2XNN
+#ifdef GMX_NBNXN_SIMD_4XN
             *kernel_type = nbnxnk4xN_SIMD_4xN;
 #else
             gmx_fatal(FARGS,"SIMD 4xN kernels requested, but Gromacs has been compiled without support for these kernels");
@@ -1467,40 +1467,58 @@ static void pick_nbnxn_kernel_cpu(FILE *fp,
 }
 
 
-/* Note that _mm_... intrinsics can be converted to either SSE or AVX
- * depending on compiler flags.
- * For gcc we check for __AVX__
- * At least a check for icc should be added (if there is a macro)
- */
-static const char *nbk_name[] =
-  { "not set", "plain C 4x4",
-#if !(defined GMX_X86_AVX_256 || defined GMX_X86_AVX128_FMA || defined __AVX__)
+const char *lookup_nbnxn_kernel_name(int kernel_type)
+{
+    const char *returnvalue = NULL;
+    switch(kernel_type)
+    {
+    case nbnxnkNotSet: returnvalue = "not set"; break;
+    case nbnxnk4x4_PlainC: returnvalue = "plain C"; break;
+#ifndef GMX_NBNXN_SIMD
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "not available"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "not available"; break;
+#else
+#ifdef GMX_X86_SSE2
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
+        /* x86 SIMD intrinsics can be converted to either SSE or AVX depending
+         * on compiler flags. As we use nearly identical intrinsics, using an AVX
+         * compiler flag without an AVX macro effectively results in AVX kernels.
+         * For gcc we check for __AVX__
+         * At least a check for icc should be added (if there is a macro)
+         */
+#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
 #ifndef GMX_X86_SSE4_1
-#ifndef GMX_DOUBLE
-    "SSE2 4x4",
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SSE2"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE2"; break;
 #else
-    "SSE2 4x2",
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SSE4.1"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE4.1"; break;
 #endif
 #else
-#ifndef GMX_DOUBLE
-    "SSE4.1 4x4",
-#else
-    "SSE4.1 4x2",
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "AVX-128"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-128"; break;
 #endif
 #endif
-#else
-#ifndef GMX_DOUBLE
-    "AVX-128 4x4",
-#else
-    "AVX-128 4x2",
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "AVX-256"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-256"; break;
+#endif
+#else /* not GMX_X86_SSE2 */
+    case nbnxnk4xN_SIMD_4xN: returnvalue = "SIMD"; break;
+    case nbnxnk4xN_SIMD_2xNN: returnvalue = "SIMD"; break;
 #endif
 #endif
-#ifndef GMX_DOUBLE
-    "AVX-256 4x8",
-#else
-    "AVX-256 4x4",
-#endif
-    "CUDA 8x8x8", "plain C 8x8x8" };
+    case nbnxnk8x8x8_CUDA: returnvalue = "CUDA"; break;
+    case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
+
+    case nbnxnkNR:
+    default:
+        gmx_fatal(FARGS, "Illegal kernel type selected");
+        returnvalue = NULL;
+        break;
+    }
+    return returnvalue;
+};
 
 static void pick_nbnxn_kernel(FILE *fp,
                               const t_commrec *cr,
@@ -1591,7 +1609,7 @@ static void pick_nbnxn_kernel(FILE *fp,
     if (bDoNonbonded && fp != NULL)
     {
         fprintf(fp,"\nUsing %s %dx%d non-bonded kernels\n\n",
-                nbnxn_kernel_name[*kernel_type],
+                lookup_nbnxn_kernel_name(*kernel_type),
                 nbnxn_kernel_pairlist_simple(*kernel_type) ? NBNXN_CPU_CLUSTER_I_SIZE : NBNXN_GPU_CLUSTER_SIZE,
                 nbnxn_kernel_to_cj_size(*kernel_type));
     }
@@ -1649,9 +1667,9 @@ static void init_ewald_f_table(interaction_const_t *ic,
     sfree_aligned(ic->tabq_coul_V);
 
     /* Create the original table data in FDV0 */
-    snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,16);
-    snew_aligned(ic->tabq_coul_F,ic->tabq_size,16);
-    snew_aligned(ic->tabq_coul_V,ic->tabq_size,16);
+    snew_aligned(ic->tabq_coul_FDV0,ic->tabq_size*4,32);
+    snew_aligned(ic->tabq_coul_F,ic->tabq_size,32);
+    snew_aligned(ic->tabq_coul_V,ic->tabq_size,32);
     table_spline3_fill_ewald_lr(ic->tabq_coul_F,ic->tabq_coul_V,ic->tabq_coul_FDV0,
                                 ic->tabq_size,1/ic->tabq_scale,ic->ewaldcoeff);
 }
@@ -1686,9 +1704,9 @@ void init_interaction_const(FILE *fp,
     snew(ic, 1);
 
     /* Just allocate something so we can free it */
-    snew_aligned(ic->tabq_coul_FDV0,16,16);
-    snew_aligned(ic->tabq_coul_F,16,16);
-    snew_aligned(ic->tabq_coul_V,16,16);
+    snew_aligned(ic->tabq_coul_FDV0,16,32);
+    snew_aligned(ic->tabq_coul_F,16,32);
+    snew_aligned(ic->tabq_coul_V,16,32);
 
     ic->rlist       = fr->rlist;
     ic->rlistlong   = fr->rlistlong;

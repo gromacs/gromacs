@@ -43,10 +43,6 @@
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-#ifdef GMX_GPU
-#include <cuda.h>
-#include <cuda_runtime_api.h>
-#endif
 #ifdef GMX_FFT_FFTW3
 #include <fftw3.h>
 #endif
@@ -123,11 +119,11 @@ gmx_bool be_cool(void)
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
-#ifdef GMX_FAHCORE
+#ifdef GMX_COOL_QUOTES
+  return (getenv("GMX_NO_QUOTES") == NULL);
+#else
   /*be uncool*/
   return FALSE;
-#else
-  return (getenv("GMX_NO_QUOTES") == NULL);
 #endif
 }
 
@@ -649,12 +645,10 @@ const char *GromacsVersion()
   return _gmx_ver_string;
 }
 
+void gmx_print_version_info_gpu(FILE *fp);
+
 void gmx_print_version_info(FILE *fp)
 {
-#ifdef GMX_GPU
-    int cuda_driver,cuda_runtime;
-#endif
-
     fprintf(fp, "Gromacs version:    %s\n", _gmx_ver_string);
 #ifdef GMX_GIT_VERSION_INFO
     fprintf(fp, "GIT SHA1 hash:      %s\n", _gmx_full_git_hash);
@@ -673,6 +667,7 @@ void gmx_print_version_info(FILE *fp)
 #else
     fprintf(fp, "Precision:          single\n");
 #endif
+    fprintf(fp, "Memory model:       %lu bit\n",8*sizeof(void *));
 
 #ifdef GMX_THREAD_MPI
     fprintf(fp, "MPI library:        thread_mpi\n");
@@ -747,13 +742,7 @@ void gmx_print_version_info(FILE *fp)
             __INTEL_MKL__,__INTEL_MKL_MINOR__,__INTEL_MKL_UPDATE__);
 #endif
 #ifdef GMX_GPU
-    fprintf(fp, "CUDA compiler:      %s\n",CUDA_NVCC_COMPILER_INFO);
-    cuda_driver = 0;
-    cudaDriverGetVersion(&cuda_driver);
-    cuda_runtime = 0;
-    cudaRuntimeGetVersion(&cuda_runtime);
-    fprintf(fp, "CUDA driver:        %d.%d\n",cuda_driver/1000, cuda_driver%100);
-    fprintf(fp, "CUDA runtime:       %d.%d\n",cuda_runtime/1000, cuda_runtime%100);
+    gmx_print_version_info_gpu(fp);
 #endif
 
 }

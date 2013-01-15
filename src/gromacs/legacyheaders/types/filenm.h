@@ -53,7 +53,7 @@ enum {
   efDAT, efDLG, 
   efMAP, efEPS, efMAT, efM2P,
   efMTX,
-  efEDI, efEDO, 
+  efEDI, 
   efHAT,
   efCUB,
   efXPM,

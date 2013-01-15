@@ -88,9 +88,6 @@ int
 gmx_dielectric(int argc,char *argv[]);
 
 int 
-gmx_dih(int argc,char *argv[]);
-
-int 
 gmx_dipoles(int argc,char *argv[]);
 
 int 

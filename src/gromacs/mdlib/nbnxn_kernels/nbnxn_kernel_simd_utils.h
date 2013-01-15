@@ -37,31 +37,35 @@
 #ifndef _nbnxn_kernel_sse_utils_h_
 #define _nbnxn_kernel_sse_utils_h_
 
-/* This files contains all functions/macros for the SSE/AVX kernels
- * which have explicit dependencies on the j-size / SIMD-width, which
- * can be 2 (SSE-double), 4 (SSE-single,AVX-double) or 8 (AVX-single).
+/* This files contains all functions/macros for the SIMD kernels
+ * which have explicit dependencies on the j-cluster size and/or SIMD-width.
  * The functionality which depends on the j-cluster size is:
  *   LJ-parameter lookup
  *   force table lookup
  *   energy group pair energy storage
  */
 
+#ifdef GMX_X86_SSE2
+
+/* Transpose 2 double precision registers */
 #define GMX_MM_TRANSPOSE2_OP_PD(in0,in1,out0,out1)                      \
 {                                                                       \
-    out0 = _mm_shuffle_pd(in0,in1,_MM_SHUFFLE2(0,0));                   \
-    out1 = _mm_shuffle_pd(in0,in1,_MM_SHUFFLE2(1,1));                   \
+    out0 = _mm_unpacklo_pd(in0,in1);                                    \
+    out1 = _mm_unpackhi_pd(in0,in1);                                    \
 }
 
 #if defined GMX_MM128_HERE || !defined GMX_DOUBLE
+/* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 #define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0,in1,in2,in3,out0,out1)    \
 {                                                                       \
     __m128 _c01,_c23;                                                   \
-    _c01 = _mm_shuffle_ps(in0,in1,_MM_SHUFFLE(1,0,1,0));                \
-    _c23 = _mm_shuffle_ps(in2,in3,_MM_SHUFFLE(1,0,1,0));                \
+    _c01 = _mm_movelh_ps(in0,in1);                                      \
+    _c23 = _mm_movelh_ps(in2,in3);                                      \
     out0 = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(2,0,2,0));              \
     out1 = _mm_shuffle_ps(_c01,_c23,_MM_SHUFFLE(3,1,3,1));              \
 }
 #else
+/* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 #define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0,in1,in2,in3,out0,out1)    \
 {                                                                       \
     __m256d _c01,_c23;                                                  \
@@ -72,6 +76,7 @@
 }
 #endif
 
+/* Collect element 2 of the 4 inputs to out */
 #define GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(in0,in1,in2,in3,out)           \
 {                                                                       \
     __m128 _c01,_c23;                                                   \
@@ -82,43 +87,48 @@
 
 #ifndef GMX_MM256_HERE
 #ifndef GMX_DOUBLE
-#define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM4_PR(in0,in1,in2,in3,out)                   \
 {                                                                       \
-    _MM_TRANSPOSE4_PS(i_SSE0,i_SSE1,i_SSE2,i_SSE3);                     \
-    i_SSE0 = _mm_add_ps(i_SSE0,i_SSE1);                                 \
-    i_SSE2 = _mm_add_ps(i_SSE2,i_SSE3);                                 \
-    o_SSE  = _mm_add_ps(i_SSE0,i_SSE2);                                 \
+    _MM_TRANSPOSE4_PS(in0,in1,in2,in3);                                 \
+    in0 = _mm_add_ps(in0,in1);                                          \
+    in2 = _mm_add_ps(in2,in3);                                          \
+    out  = _mm_add_ps(in0,in2);                                         \
 }
 #else
-#define GMX_MM_TRANSPOSE_SUM2_PD(i_SSE0,i_SSE1,o_SSE)                   \
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM2_PD(in0,in1,out)                           \
 {                                                                       \
-    GMX_MM_TRANSPOSE2_PD(i_SSE0,i_SSE1);                                \
-    o_SSE  = _mm_add_pd(i_SSE0,i_SSE1);                                 \
+    GMX_MM_TRANSPOSE2_PD(in0,in1);                                      \
+    out  = _mm_add_pd(in0,in1);                                         \
 }
 #endif
 #else
 #ifndef GMX_DOUBLE
-#define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM4_PR(in0,in1,in2,in3,out)                   \
 {                                                                       \
-    i_SSE0 = _mm256_hadd_ps(i_SSE0,i_SSE1);                             \
-    i_SSE2 = _mm256_hadd_ps(i_SSE2,i_SSE3);                             \
-    i_SSE1 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
-    o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE1),_mm256_extractf128_ps(i_SSE1,1)); \
+    in0 = _mm256_hadd_ps(in0,in1);                                      \
+    in2 = _mm256_hadd_ps(in2,in3);                                      \
+    in1 = _mm256_hadd_ps(in0,in2);                                      \
+    out = _mm_add_ps(_mm256_castps256_ps128(in1),_mm256_extractf128_ps(in1,1)); \
 }
-#define GMX_MM_TRANSPOSE_SUM4H_PR(i_SSE0,i_SSE2,o_SSE)                  \
+/* Sum the elements of halfs of each input register and store sums in out */
+#define GMX_MM_TRANSPOSE_SUM4H_PR(in0,in2,out)                          \
 {                                                                       \
-    i_SSE0 = _mm256_hadd_ps(i_SSE0,_mm256_setzero_ps());                \
-    i_SSE2 = _mm256_hadd_ps(i_SSE2,_mm256_setzero_ps());                \
-    i_SSE0 = _mm256_hadd_ps(i_SSE0,i_SSE2);                             \
-    i_SSE2 = _mm256_permute_ps(i_SSE0,0b10110001);                      \
-    o_SSE  = _mm_add_ps(_mm256_castps256_ps128(i_SSE0),_mm256_extractf128_ps(i_SSE2,1)); \
+    in0 = _mm256_hadd_ps(in0,_mm256_setzero_ps());                      \
+    in2 = _mm256_hadd_ps(in2,_mm256_setzero_ps());                      \
+    in0 = _mm256_hadd_ps(in0,in2);                                      \
+    in2 = _mm256_permute_ps(in0,_MM_SHUFFLE(2,3,0,1));                  \
+    out = _mm_add_ps(_mm256_castps256_ps128(in0),_mm256_extractf128_ps(in2,1)); \
 }
 #else
-#define GMX_MM_TRANSPOSE_SUM4_PR(i_SSE0,i_SSE1,i_SSE2,i_SSE3,o_SSE)     \
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM4_PR(in0,in1,in2,in3,out)                   \
 {                                                                       \
-    i_SSE0 = _mm256_hadd_pd(i_SSE0,i_SSE1);                             \
-    i_SSE2 = _mm256_hadd_pd(i_SSE2,i_SSE3);                             \
-    o_SSE  = _mm256_add_pd(_mm256_permute2f128_pd(i_SSE0,i_SSE2,0x20),_mm256_permute2f128_pd(i_SSE0,i_SSE2,0x31)); \
+    in0 = _mm256_hadd_pd(in0,in1);                                      \
+    in2 = _mm256_hadd_pd(in2,in3);                                      \
+    out = _mm256_add_pd(_mm256_permute2f128_pd(in0,in2,0x20),_mm256_permute2f128_pd(in0,in2,0x31)); \
 }
 #endif
 #endif
@@ -136,24 +146,24 @@ gmx_mm128_invsqrt_ps_single(__m128 x)
     return _mm_mul_ps(half,_mm_mul_ps(_mm_sub_ps(three,_mm_mul_ps(_mm_mul_ps(lu,lu),x)),lu));
 }
 
-/* Do 2/4 double precision invsqrt operations.
- * Doing the SSE rsqrt and the first Newton Raphson iteration
+/* Do 2 double precision invsqrt operations.
+ * Doing the SIMD rsqrt and the first Newton Raphson iteration
  * in single precision gives full double precision accuracy.
- * The speed is more than twice as fast as two gmx_mm_invsqrt_pd calls.
+ * The speed is more than double that of two gmx_mm_invsqrt_pd calls.
  */
-#define GMX_MM128_INVSQRT2_PD(i_SSE0,i_SSE1,o_SSE0,o_SSE1)              \
+#define GMX_MM128_INVSQRT2_PD(in0,in1,out0,out1)                        \
 {                                                                       \
     const __m128d half  = _mm_set1_pd(0.5);                             \
     const __m128d three = _mm_set1_pd(3.0);                             \
-    __m128  s_SSE,ir_SSE;                                               \
+    __m128  s,ir;                                                       \
     __m128d lu0,lu1;                                                    \
                                                                         \
-    s_SSE  = _mm_movelh_ps(_mm_cvtpd_ps(i_SSE0),_mm_cvtpd_ps(i_SSE1));  \
-    ir_SSE = gmx_mm128_invsqrt_ps_single(s_SSE);                        \
-    lu0    = _mm_cvtps_pd(ir_SSE);                                      \
-    lu1    = _mm_cvtps_pd(_mm_movehl_ps(ir_SSE,ir_SSE));                \
-    o_SSE0 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu0,lu0),i_SSE0)),lu0)); \
-    o_SSE1 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu1,lu1),i_SSE1)),lu1)); \
+    s    = _mm_movelh_ps(_mm_cvtpd_ps(in0),_mm_cvtpd_ps(in1));          \
+    ir   = gmx_mm128_invsqrt_ps_single(s);                              \
+    lu0  = _mm_cvtps_pd(ir);                                            \
+    lu1  = _mm_cvtps_pd(_mm_movehl_ps(ir,ir));                          \
+    out0 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu0,lu0),in0)),lu0)); \
+    out1 = _mm_mul_pd(half,_mm_mul_pd(_mm_sub_pd(three,_mm_mul_pd(_mm_mul_pd(lu1,lu1),in1)),lu1)); \
 }
 
 #define GMX_MM_INVSQRT2_PD GMX_MM128_INVSQRT2_PD
@@ -173,19 +183,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     return _mm256_mul_ps(half,_mm256_mul_ps(_mm256_sub_ps(three,_mm256_mul_ps(_mm256_mul_ps(lu,lu),x)),lu));
 }
 
-#define GMX_MM256_INVSQRT2_PD(i_SSE0,i_SSE1,o_SSE0,o_SSE1)              \
+/* Do 4 double precision invsqrt operations.
+ * Doing the SIMD rsqrt and the first Newton Raphson iteration
+ * in single precision gives full double precision accuracy.
+ */
+#define GMX_MM256_INVSQRT2_PD(in0,in1,out0,out1)                        \
 {                                                                       \
     const __m256d half  = _mm256_set1_pd(0.5);                          \
     const __m256d three = _mm256_set1_pd(3.0);                          \
-    __m256  s_SSE,ir_SSE;                                               \
+    __m256  s,ir;                                                       \
     __m256d lu0,lu1;                                                    \
                                                                         \
-    s_SSE  = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm256_cvtpd_ps(i_SSE0)),_mm256_cvtpd_ps(i_SSE1),1); \
-    ir_SSE = gmx_mm256_invsqrt_ps_single(s_SSE);                        \
-    lu0    = _mm256_cvtps_pd(_mm256_castps256_ps128(ir_SSE));           \
-    lu1    = _mm256_cvtps_pd(_mm256_extractf128_ps(ir_SSE,1));          \
-    o_SSE0 = _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu0,lu0),i_SSE0)),lu0)); \
-    o_SSE1 = _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu1,lu1),i_SSE1)),lu1)); \
+    s    = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm256_cvtpd_ps(in0)),_mm256_cvtpd_ps(in1),1); \
+    ir   = gmx_mm256_invsqrt_ps_single(s);                              \
+    lu0  = _mm256_cvtps_pd(_mm256_castps256_ps128(ir));                 \
+    lu1  = _mm256_cvtps_pd(_mm256_extractf128_ps(ir,1));                \
+    out0 = _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu0,lu0),in0)),lu0)); \
+    out1 = _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu1,lu1),in1)),lu1)); \
 }
 
 #define GMX_MM_INVSQRT2_PD GMX_MM256_INVSQRT2_PD
@@ -236,18 +250,23 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
     GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
 }
 
-#define load_lj_pair_params2(nbfp,type,aj,c6_SSE,c12_SSE)                \
+#define load_lj_pair_params2(nbfp0,nbfp1,type,aj,c6_SSE,c12_SSE)        \
 {                                                                       \
-    __m128 clj_SSE[2*UNROLLJ],c6t_SSE[2],c12t_SSE[2];                     \
+    __m128 clj_SSE0[UNROLLJ],clj_SSE1[UNROLLJ],c6t_SSE[2],c12t_SSE[2];  \
     int p;                                                              \
                                                                         \
-    for(p=0; p<2*UNROLLJ; p++)                                            \
+    for(p=0; p<UNROLLJ; p++)                                            \
     {                                                                   \
         /* Here we load 4 aligned floats, but we need just 2 */         \
-        clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
+        clj_SSE0[p] = _mm_load_ps(nbfp0+type[aj+p]*NBFP_STRIDE);        \
     }                                                                   \
-    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0],clj_SSE[1],clj_SSE[2],clj_SSE[3],c6t_SSE[0],c12t_SSE[0]); \
-    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4],clj_SSE[5],clj_SSE[6],clj_SSE[7],c6t_SSE[1],c12t_SSE[1]); \
+    for(p=0; p<UNROLLJ; p++)                                            \
+    {                                                                   \
+        /* Here we load 4 aligned floats, but we need just 2 */         \
+        clj_SSE1[p] = _mm_load_ps(nbfp1+type[aj+p]*NBFP_STRIDE);        \
+    }                                                                   \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE0[0],clj_SSE0[1],clj_SSE0[2],clj_SSE0[3],c6t_SSE[0],c12t_SSE[0]); \
+    GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE1[0],clj_SSE1[1],clj_SSE1[2],clj_SSE1[3],c6t_SSE[1],c12t_SSE[1]); \
                                                                         \
     GMX_2_MM_TO_M256(c6t_SSE[0],c6t_SSE[1],c6_SSE);                     \
     GMX_2_MM_TO_M256(c12t_SSE[0],c12t_SSE[1],c12_SSE);                  \
@@ -298,7 +317,9 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
  * But AMD CPUs perform significantly worse with gcc than with icc.
  * Performance is improved a bit by using the extract function UNROLLJ times,
  * instead of doing an _mm_store_si128 for every i-particle.
- * With AVX this significantly deteriorates performance (8 extracts iso 4).
+ * This is only faster when we use FDV0 formatted tables, where we also need
+ * to multiple the index by 4, which can be done by a SIMD bit shift.
+ * With single precision AVX, 8 extracts are much slower than 1 store.
  * Because of this, the load_table_f macro always takes the ti parameter,
  * but it is only used with AVX.
  */
@@ -545,5 +566,7 @@ static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
     }
 }
 #endif
+
+#endif /* GMX_X86_SSE2 */
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */

@@ -206,7 +206,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 }
 
 static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
-                         gmx_ekindata_t *ekind, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
+                         gmx_ekindata_t *ekind, tensor vir, real pcorr, t_extmass *MassQ)
 {
 
     real  pscal;
@@ -246,7 +246,7 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
     /* for now, we use Elr = 0, because if you want to get it right, you
        really should be using PME. Maybe print a warning? */
 
-    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres);
+    pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres)+pcorr;
 
     vol = det(box);
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
@@ -933,7 +933,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
         case etrtBAROV:
         case etrtBAROV2:
             boxv_trotter(ir,&(state->veta),dt,state->box,ekind,vir,
-                         enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+                         enerd->term[F_PDISPCORR],MassQ);
             break;
         case etrtBARONHC:
         case etrtBARONHC2:

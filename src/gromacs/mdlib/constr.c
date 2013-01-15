@@ -641,7 +641,7 @@ gmx_bool constrain(FILE *fplog,gmx_bool bLog,gmx_bool bEner,
         if (constr->ed && delta_step > 0)
         {
             /* apply the essential dynamcs constraints here */
-            do_edsam(ir,step,md,cr,xprime,v,box,constr->ed);
+            do_edsam(ir,step,cr,xprime,v,box,constr->ed);
         }
     }
     
@@ -1251,9 +1251,9 @@ gmx_constr_t init_constraints(FILE *fplog,
     /* Initialize the essential dynamics sampling.
      * Put the pointer to the ED struct in constr */
     constr->ed = ed;
-    if (ed != NULL) 
+    if (ed != NULL || state->edsamstate.nED > 0)
     {
-        init_edsam(mtop,ir,cr,ed,state->x,state->box);
+        init_edsam(mtop,ir,cr,ed,state->x,state->box,&state->edsamstate);
     }
     
     constr->warn_mtop = mtop;

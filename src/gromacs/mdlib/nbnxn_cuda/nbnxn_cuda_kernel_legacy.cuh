@@ -206,9 +206,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #if CUDA_VERSION >= 4010
             #pragma unroll 4
 #endif
-            for (jm = 0; jm < 4; jm++)
+            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
-                imask_j = (imask >> (jm * 8)) & 255U;
+                imask_j = (imask >> (jm * CL_SIZE)) & supercl_interaction_mask;
                 if (imask_j)
                 {
                     nsubi = __popc(imask_j);

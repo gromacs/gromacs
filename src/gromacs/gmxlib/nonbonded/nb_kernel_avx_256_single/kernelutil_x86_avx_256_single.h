@@ -199,10 +199,10 @@ gmx_mm256_load_8pair_swizzle_ps(const float * gmx_restrict p1, const float * gmx
 
 static gmx_inline void
 gmx_mm256_load_shift_and_1rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                            const float * gmx_restrict xyz,
-                                            __m256 * gmx_restrict x1,
-                                            __m256 * gmx_restrict y1,
-                                            __m256 * gmx_restrict z1)
+        const float * gmx_restrict xyz,
+        __m256 * gmx_restrict x1,
+        __m256 * gmx_restrict y1,
+        __m256 * gmx_restrict z1)
 {
     __m128 t1,t2,t3,t4;
 
@@ -225,10 +225,10 @@ gmx_mm256_load_shift_and_1rvec_broadcast_ps(const float * gmx_restrict xyz_shift
 
 static gmx_inline void
 gmx_mm256_load_shift_and_3rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                            const float * gmx_restrict xyz,
-                                            __m256 * gmx_restrict x1, __m256 * gmx_restrict y1, __m256 * gmx_restrict z1,
-                                            __m256 * gmx_restrict x2, __m256 * gmx_restrict y2, __m256 * gmx_restrict z2,
-                                            __m256 * gmx_restrict x3, __m256 * gmx_restrict y3, __m256 * gmx_restrict z3)
+        const float * gmx_restrict xyz,
+        __m256 * gmx_restrict x1, __m256 * gmx_restrict y1, __m256 * gmx_restrict z1,
+        __m256 * gmx_restrict x2, __m256 * gmx_restrict y2, __m256 * gmx_restrict z2,
+        __m256 * gmx_restrict x3, __m256 * gmx_restrict y3, __m256 * gmx_restrict z3)
 {
     __m128 tA,tB;
     __m128 t1,t2,t3,t4,t5,t6,t7,t8,t9;
@@ -273,11 +273,11 @@ gmx_mm256_load_shift_and_3rvec_broadcast_ps(const float * gmx_restrict xyz_shift
 
 static gmx_inline void
 gmx_mm256_load_shift_and_4rvec_broadcast_ps(const float * gmx_restrict xyz_shift,
-                                            const float * gmx_restrict xyz,
-                                            __m256 * gmx_restrict x1, __m256 * gmx_restrict y1, __m256 * gmx_restrict z1,
-                                            __m256 * gmx_restrict x2, __m256 * gmx_restrict y2, __m256 * gmx_restrict z2,
-                                            __m256 * gmx_restrict x3, __m256 * gmx_restrict y3, __m256 * gmx_restrict z3,
-                                            __m256 * gmx_restrict x4, __m256 * gmx_restrict y4, __m256 * gmx_restrict z4)
+        const float * gmx_restrict xyz,
+        __m256 * gmx_restrict x1, __m256 * gmx_restrict y1, __m256 * gmx_restrict z1,
+        __m256 * gmx_restrict x2, __m256 * gmx_restrict y2, __m256 * gmx_restrict z2,
+        __m256 * gmx_restrict x3, __m256 * gmx_restrict y3, __m256 * gmx_restrict z3,
+        __m256 * gmx_restrict x4, __m256 * gmx_restrict y4, __m256 * gmx_restrict z4)
 {
     __m128 tA,tB;
     __m128 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
@@ -334,10 +334,10 @@ gmx_mm256_load_1rvec_4ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
 {
     __m128 t1,t2,t3,t4;
     __m128i mask = _mm_set_epi32(0,-1,-1,-1);
-    t1             = _mm_maskload_ps(ptrA,mask);
-    t2             = _mm_maskload_ps(ptrB,mask);
-    t3             = _mm_maskload_ps(ptrC,mask);
-    t4             = _mm_maskload_ps(ptrD,mask);
+    t1             = gmx_mm_maskload_ps(ptrA,mask);
+    t2             = gmx_mm_maskload_ps(ptrB,mask);
+    t3             = gmx_mm_maskload_ps(ptrC,mask);
+    t4             = gmx_mm_maskload_ps(ptrD,mask);
     _MM_TRANSPOSE4_PS(t1,t2,t3,t4);
     *x1           = _mm256_castps128_ps256(t1);
     *y1           = _mm256_castps128_ps256(t2);
@@ -431,10 +431,10 @@ gmx_mm256_load_1rvec_8ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
     __m256 t1,t2,t3,t4,t5,t6,t7,t8;
     __m128i mask = _mm_set_epi32(0,-1,-1,-1);
 
-    t1             = gmx_mm256_set_m128(_mm_maskload_ps(ptrE,mask),_mm_maskload_ps(ptrA,mask)); /*  - zE yE xE |  - zA yA xA */
-    t2             = gmx_mm256_set_m128(_mm_maskload_ps(ptrF,mask),_mm_maskload_ps(ptrB,mask)); /*  - zF yF xF |  - zB yB xB */
-    t3             = gmx_mm256_set_m128(_mm_maskload_ps(ptrG,mask),_mm_maskload_ps(ptrC,mask)); /*  - zG yG xG |  - zC yC xC */
-    t4             = gmx_mm256_set_m128(_mm_maskload_ps(ptrH,mask),_mm_maskload_ps(ptrD,mask)); /*  - zH yH xH |  - zD yD xD */
+    t1             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrE,mask),gmx_mm_maskload_ps(ptrA,mask)); /*  - zE yE xE |  - zA yA xA */
+    t2             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrF,mask),gmx_mm_maskload_ps(ptrB,mask)); /*  - zF yF xF |  - zB yB xB */
+    t3             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrG,mask),gmx_mm_maskload_ps(ptrC,mask)); /*  - zG yG xG |  - zC yC xC */
+    t4             = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrH,mask),gmx_mm_maskload_ps(ptrD,mask)); /*  - zH yH xH |  - zD yD xD */
 
     t5            = _mm256_unpacklo_ps(t1,t2); /* yF yE xF xE | yB yA xB xA */
     t6            = _mm256_unpacklo_ps(t3,t4); /* yH yG xH xG | yD yC xD xC */
@@ -503,7 +503,7 @@ gmx_mm256_load_3rvec_8ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
 
     t1           = _mm256_unpacklo_ps(t1,t3);  /*  -   -  z3g z3e |  -   -  z3c z3a */
     t2           = _mm256_unpacklo_ps(t2,t4);  /*  -   -  z3h z3f |  -   -  z3d z3b */
-    
+
     *z3          = _mm256_unpacklo_ps(t1,t2);
 }
 
@@ -567,7 +567,7 @@ gmx_mm256_load_4rvec_8ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
     t6           = _mm256_unpackhi_ps(t1,t2); /* z4f z4e y4f y4e | z4b z4a y4b y4a */
     t7           = _mm256_unpacklo_ps(t3,t4); /* x4h x4g z3h z3g | x4d x4c z3d z3c */
     t8           = _mm256_unpackhi_ps(t3,t4); /* z4h z4g y4h y4g | z4d z4c y4d y4c */
-    
+
     *z3          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(1,0,1,0)); /* z3h z3g z3f z3e | z3d z3c z3b z3a */
     *x4          = _mm256_shuffle_ps(t5,t7,_MM_SHUFFLE(3,2,3,2)); /* x4h x4g x4f x4e | x4d x4c x4b x4a */
     *y4          = _mm256_shuffle_ps(t6,t8,_MM_SHUFFLE(1,0,1,0)); /* y4h y4g y4f y4e | y4d y4c y4b y4a */
@@ -577,8 +577,8 @@ gmx_mm256_load_4rvec_8ptr_swizzle_ps(const float * gmx_restrict ptrA, const floa
 
 static gmx_inline void
 gmx_mm256_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC,float * gmx_restrict ptrD,
-                                          __m256 x1, __m256 y1, __m256 z1)
+        float * gmx_restrict ptrC,float * gmx_restrict ptrD,
+        __m256 x1, __m256 y1, __m256 z1)
 {
     __m128 t1,t2,t3,t4,t5,t6,t7,t8;
     __m128i mask;
@@ -594,30 +594,79 @@ gmx_mm256_decrement_1rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     t3          = _mm_shuffle_ps(t4,_mm256_castps256_ps128(z1),_MM_SHUFFLE(0,2,1,0)); /*  -  z1c y1c x1c */
     t4          = _mm_shuffle_ps(t4,_mm256_castps256_ps128(z1),_MM_SHUFFLE(0,3,3,2)); /*  -  z1d y1d x1d */
 
-    t5          = _mm_maskload_ps(ptrA,mask);
-    t6          = _mm_maskload_ps(ptrB,mask);
-    t7          = _mm_maskload_ps(ptrC,mask);
-    t8          = _mm_maskload_ps(ptrD,mask);
+    t5          = gmx_mm_maskload_ps(ptrA,mask);
+    t6          = gmx_mm_maskload_ps(ptrB,mask);
+    t7          = gmx_mm_maskload_ps(ptrC,mask);
+    t8          = gmx_mm_maskload_ps(ptrD,mask);
 
     t5          = _mm_sub_ps(t5,t1);
     t6          = _mm_sub_ps(t6,t2);
     t7          = _mm_sub_ps(t7,t3);
     t8          = _mm_sub_ps(t8,t4);
 
-    _mm_maskstore_ps(ptrA,mask,t5);
-    _mm_maskstore_ps(ptrB,mask,t6);
-    _mm_maskstore_ps(ptrC,mask,t7);
-    _mm_maskstore_ps(ptrD,mask,t8);
+    gmx_mm_maskstore_ps(ptrA,mask,t5);
+    gmx_mm_maskstore_ps(ptrB,mask,t6);
+    gmx_mm_maskstore_ps(ptrC,mask,t7);
+    gmx_mm_maskstore_ps(ptrD,mask,t8);
 }
 
-
-
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD, \
+                                                  x1,y1,z1,x2,y2,z2,x3,y3,z3) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6;\
+    __m128 _tA,_tB,_tC,_tD;\
+\
+    _t1         = _mm256_loadu_ps(ptrA);\
+    _t2         = _mm256_loadu_ps(ptrB);\
+    _t3         = _mm256_loadu_ps(ptrC);\
+    _t4         = _mm256_loadu_ps(ptrD);\
+    _tA         = _mm_load_ss(ptrA+8);\
+    _tB         = _mm_load_ss(ptrB+8);\
+    _tC         = _mm_load_ss(ptrC+8);\
+    _tD         = _mm_load_ss(ptrD+8);\
+    _t5         = _mm256_unpacklo_ps(x1,y1);\
+    x1          = _mm256_unpackhi_ps(x1,y1);\
+    y1          = _mm256_unpacklo_ps(z1,x2);\
+    z1          = _mm256_unpackhi_ps(z1,x2);\
+    x2          = _mm256_unpacklo_ps(y2,z2);\
+    y2          = _mm256_unpackhi_ps(y2,z2);\
+    _t6         = _mm256_unpacklo_ps(x3,y3);\
+    x3          = _mm256_unpackhi_ps(x3,y3);\
+    _t5         = _mm256_insertf128_ps(_t5, _mm256_castps256_ps128(x2), 0x1);\
+    x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1);\
+    y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(_t6), 0x1);\
+    z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1);\
+    z2          = _mm256_shuffle_ps(_t5,y1,_MM_SHUFFLE(1,0,1,0));\
+    _t5         = _mm256_shuffle_ps(_t5,y1,_MM_SHUFFLE(3,2,3,2));\
+    y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0));\
+    x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_sub_ps(_t1,z2);\
+    _t2         = _mm256_sub_ps(_t2,_t5);\
+    _t3         = _mm256_sub_ps(_t3,y1);\
+    _t4         = _mm256_sub_ps(_t4,x1);\
+    _tA         = _mm_sub_ss(_tA, _mm256_castps256_ps128(z3));\
+    _tB         = _mm_sub_ss(_tB, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(1,1,1,1)));\
+    _tC         = _mm_sub_ss(_tC, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(2,2,2,2)));\
+    _tD         = _mm_sub_ss(_tD, _mm_permute_ps(_mm256_castps256_ps128(z3),_MM_SHUFFLE(3,3,3,3)));\
+    _mm256_storeu_ps(ptrA,_t1);\
+    _mm256_storeu_ps(ptrB,_t2);\
+    _mm256_storeu_ps(ptrC,_t3);\
+    _mm256_storeu_ps(ptrD,_t4);\
+    _mm_store_ss(ptrA+8,_tA);\
+    _mm_store_ss(ptrB+8,_tB);\
+    _mm_store_ss(ptrC+8,_tC);\
+    _mm_store_ss(ptrD+8,_tD);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC, float * gmx_restrict ptrD,
-                                          __m256 x1, __m256 y1, __m256 z1,
-                                          __m256 x2, __m256 y2, __m256 z2,
-                                          __m256 x3, __m256 y3, __m256 z3)
+        float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+        __m256 x1, __m256 y1, __m256 z1,
+        __m256 x2, __m256 y2, __m256 z2,
+        __m256 x3, __m256 y3, __m256 z3)
 {
     __m256 t1,t2,t3,t4,t5,t6;
     __m128 tA,tB,tC,tD;
@@ -672,15 +721,76 @@ gmx_mm256_decrement_3rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_store_ss(ptrC+8,tC);
     _mm_store_ss(ptrD+8,tD);
 }
+#endif
 
 
+
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD, \
+                                                  x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5;\
+    __m128 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH;\
+\
+    _t1         = _mm256_loadu_ps(ptrA);\
+    _t2         = _mm256_loadu_ps(ptrB);\
+    _t3         = _mm256_loadu_ps(ptrC);\
+    _t4         = _mm256_loadu_ps(ptrD);\
+    _tA         = _mm_loadu_ps(ptrA+8);\
+    _tB         = _mm_loadu_ps(ptrB+8);\
+    _tC         = _mm_loadu_ps(ptrC+8);\
+    _tD         = _mm_loadu_ps(ptrD+8);\
+    _t5         = _mm256_unpacklo_ps(x1,y1);\
+    x1          = _mm256_unpackhi_ps(x1,y1);\
+    y1          = _mm256_unpacklo_ps(z1,x2);\
+    z1          = _mm256_unpackhi_ps(z1,x2);\
+    x2          = _mm256_unpacklo_ps(y2,z2);\
+    y2          = _mm256_unpackhi_ps(y2,z2);\
+    z2          = _mm256_unpacklo_ps(x3,y3);\
+    x3          = _mm256_unpackhi_ps(x3,y3);\
+    y3          = _mm256_unpacklo_ps(z3,x4);\
+    z3          = _mm256_unpackhi_ps(z3,x4);\
+    x4          = _mm256_unpacklo_ps(y4,z4);\
+    y4          = _mm256_unpackhi_ps(y4,z4);\
+    x2          = _mm256_insertf128_ps(_t5, _mm256_castps256_ps128(x2), 0x1);\
+    x1          = _mm256_insertf128_ps(x1, _mm256_castps256_ps128(y2), 0x1);\
+    y1          = _mm256_insertf128_ps(y1, _mm256_castps256_ps128(z2), 0x1);\
+    z1          = _mm256_insertf128_ps(z1, _mm256_castps256_ps128(x3), 0x1);\
+    z2          = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(1,0,1,0));\
+    _t5         = _mm256_shuffle_ps(x2,y1,_MM_SHUFFLE(3,2,3,2));\
+    y1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(1,0,1,0));\
+    x1          = _mm256_shuffle_ps(x1,z1,_MM_SHUFFLE(3,2,3,2));\
+    _tE         = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(1,0,1,0));\
+    _tF         = _mm_shuffle_ps(_mm256_castps256_ps128(y3),_mm256_castps256_ps128(x4),_MM_SHUFFLE(3,2,3,2));\
+    _tG         = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(1,0,1,0));\
+    _tH         = _mm_shuffle_ps(_mm256_castps256_ps128(z3),_mm256_castps256_ps128(y4),_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_sub_ps(_t1,z2);\
+    _t2         = _mm256_sub_ps(_t2,_t5);\
+    _t3         = _mm256_sub_ps(_t3,y1);\
+    _t4         = _mm256_sub_ps(_t4,x1);\
+    _tA         = _mm_sub_ps(_tA,_tE);\
+    _tB         = _mm_sub_ps(_tB,_tF);\
+    _tC         = _mm_sub_ps(_tC,_tG);\
+    _tD         = _mm_sub_ps(_tD,_tH);\
+    _mm256_storeu_ps(ptrA,_t1);\
+    _mm256_storeu_ps(ptrB,_t2);\
+    _mm256_storeu_ps(ptrC,_t3);\
+    _mm256_storeu_ps(ptrD,_t4);\
+    _mm_storeu_ps(ptrA+8,_tA);\
+    _mm_storeu_ps(ptrB+8,_tB);\
+    _mm_storeu_ps(ptrC+8,_tC);\
+    _mm_storeu_ps(ptrD+8,_tD);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC, float * gmx_restrict ptrD,
-                                          __m256 x1, __m256 y1, __m256 z1,
-                                          __m256 x2, __m256 y2, __m256 z2,
-                                          __m256 x3, __m256 y3, __m256 z3,
-                                          __m256 x4, __m256 y4, __m256 z4)
+        float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+        __m256 x1, __m256 y1, __m256 z1,
+        __m256 x2, __m256 y2, __m256 z2,
+        __m256 x3, __m256 y3, __m256 z3,
+        __m256 x4, __m256 y4, __m256 z4)
 {
     __m256 t1,t2,t3,t4,t5;
     __m128 tA,tB,tC,tD,tE,tF,tG,tH;
@@ -745,15 +855,15 @@ gmx_mm256_decrement_4rvec_4ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_storeu_ps(ptrC+8,tC);
     _mm_storeu_ps(ptrD+8,tD);
 }
-
+#endif
 
 
 static gmx_inline void
 gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC, float * gmx_restrict ptrD,
-                                          float * gmx_restrict ptrE, float * gmx_restrict ptrF,
-                                          float * gmx_restrict ptrG, float * gmx_restrict ptrH,
-                                          __m256 x1, __m256 y1, __m256 z1)
+        float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+        float * gmx_restrict ptrE, float * gmx_restrict ptrF,
+        float * gmx_restrict ptrG, float * gmx_restrict ptrH,
+        __m256 x1, __m256 y1, __m256 z1)
 {
     __m256 t1,t2,t3,t4,t5,t6;
     __m256 tA,tB,tC,tD;
@@ -762,10 +872,10 @@ gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     /* Construct a mask without executing any data loads */
     mask        = _mm_blend_epi16(_mm_setzero_si128(),_mm_cmpeq_epi16(_mm_setzero_si128(),_mm_setzero_si128()),0x3F);
 
-    tA          = gmx_mm256_set_m128(_mm_maskload_ps(ptrE,mask),_mm_maskload_ps(ptrA,mask));
-    tB          = gmx_mm256_set_m128(_mm_maskload_ps(ptrF,mask),_mm_maskload_ps(ptrB,mask));
-    tC          = gmx_mm256_set_m128(_mm_maskload_ps(ptrG,mask),_mm_maskload_ps(ptrC,mask));
-    tD          = gmx_mm256_set_m128(_mm_maskload_ps(ptrH,mask),_mm_maskload_ps(ptrD,mask));
+    tA          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrE,mask),gmx_mm_maskload_ps(ptrA,mask));
+    tB          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrF,mask),gmx_mm_maskload_ps(ptrB,mask));
+    tC          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrG,mask),gmx_mm_maskload_ps(ptrC,mask));
+    tD          = gmx_mm256_set_m128(gmx_mm_maskload_ps(ptrH,mask),gmx_mm_maskload_ps(ptrD,mask));
     t1          = _mm256_unpacklo_ps(x1,y1); /* y1f x1f y1e x1e | y1b x1b y1a x1a */
     t2          = _mm256_unpackhi_ps(x1,y1); /* y1h x1h y1g x1g | y1d x1d y1c x1c */
 
@@ -779,26 +889,103 @@ gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tC          = _mm256_sub_ps(tC,t5);
     tD          = _mm256_sub_ps(tD,t6);
 
-    _mm_maskstore_ps(ptrA,mask,_mm256_castps256_ps128(tA));
-    _mm_maskstore_ps(ptrB,mask,_mm256_castps256_ps128(tB));
-    _mm_maskstore_ps(ptrC,mask,_mm256_castps256_ps128(tC));
-    _mm_maskstore_ps(ptrD,mask,_mm256_castps256_ps128(tD));
-    _mm_maskstore_ps(ptrE,mask,_mm256_extractf128_ps(tA,0x1));
-    _mm_maskstore_ps(ptrF,mask,_mm256_extractf128_ps(tB,0x1));
-    _mm_maskstore_ps(ptrG,mask,_mm256_extractf128_ps(tC,0x1));
-    _mm_maskstore_ps(ptrH,mask,_mm256_extractf128_ps(tD,0x1));
+    gmx_mm_maskstore_ps(ptrA,mask,_mm256_castps256_ps128(tA));
+    gmx_mm_maskstore_ps(ptrB,mask,_mm256_castps256_ps128(tB));
+    gmx_mm_maskstore_ps(ptrC,mask,_mm256_castps256_ps128(tC));
+    gmx_mm_maskstore_ps(ptrD,mask,_mm256_castps256_ps128(tD));
+    gmx_mm_maskstore_ps(ptrE,mask,_mm256_extractf128_ps(tA,0x1));
+    gmx_mm_maskstore_ps(ptrF,mask,_mm256_extractf128_ps(tB,0x1));
+    gmx_mm_maskstore_ps(ptrG,mask,_mm256_extractf128_ps(tC,0x1));
+    gmx_mm_maskstore_ps(ptrH,mask,_mm256_extractf128_ps(tD,0x1));
 }
 
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD,ptrE,ptrF,ptrG,ptrH,_x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3) \
+{ \
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10,_t11,_t12;\
+    __m256 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI,_tJ,_tK,_tL;\
+\
+    _tA         = _mm256_loadu_ps(ptrA);\
+    _tB         = _mm256_loadu_ps(ptrB);\
+    _tC         = _mm256_loadu_ps(ptrC);\
+    _tD         = _mm256_loadu_ps(ptrD);\
+    _tE         = _mm256_loadu_ps(ptrE);\
+    _tF         = _mm256_loadu_ps(ptrF);\
+    _tG         = _mm256_loadu_ps(ptrG);\
+    _tH         = _mm256_loadu_ps(ptrH);\
+    _t1         = _mm256_unpacklo_ps(_x1,_y1);\
+    _t2         = _mm256_unpackhi_ps(_x1,_y1);\
+    _t3         = _mm256_unpacklo_ps(_z1,_x2);\
+    _t4         = _mm256_unpackhi_ps(_z1,_x2);\
+    _t5         = _mm256_unpacklo_ps(_y2,_z2);\
+    _t6         = _mm256_unpackhi_ps(_y2,_z2);\
+    _t7         = _mm256_unpacklo_ps(_x3,_y3);\
+    _t8         = _mm256_unpackhi_ps(_x3,_y3);\
+    _t9         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t10        = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t11        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t12        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(1,0,1,0));\
+    _t2         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(3,2,3,2));\
+    _t3         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(1,0,1,0));\
+    _t4         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(3,2,3,2));\
+    _t5         = gmx_mm256_unpack128lo_ps(_t9,_t1);\
+    _t6         = gmx_mm256_unpack128hi_ps(_t9,_t1);\
+    _t7         = gmx_mm256_unpack128lo_ps(_t10,_t2);\
+    _t8         = gmx_mm256_unpack128hi_ps(_t10,_t2);\
+    _t1         = gmx_mm256_unpack128lo_ps(_t11,_t3);\
+    _t2         = gmx_mm256_unpack128hi_ps(_t11,_t3);\
+    _t9         = gmx_mm256_unpack128lo_ps(_t12,_t4);\
+    _t10        = gmx_mm256_unpack128hi_ps(_t12,_t4);\
+    _tA         = _mm256_sub_ps(_tA,_t5);\
+    _tB         = _mm256_sub_ps(_tB,_t7);\
+    _tC         = _mm256_sub_ps(_tC,_t1);\
+    _tD         = _mm256_sub_ps(_tD,_t9);\
+    _tE         = _mm256_sub_ps(_tE,_t6);\
+    _tF         = _mm256_sub_ps(_tF,_t8);\
+    _tG         = _mm256_sub_ps(_tG,_t2);\
+    _tH         = _mm256_sub_ps(_tH,_t10);\
+    _mm256_storeu_ps(ptrA,_tA);\
+    _mm256_storeu_ps(ptrB,_tB);\
+    _mm256_storeu_ps(ptrC,_tC);\
+    _mm256_storeu_ps(ptrD,_tD);\
+    _mm256_storeu_ps(ptrE,_tE);\
+    _mm256_storeu_ps(ptrF,_tF);\
+    _mm256_storeu_ps(ptrG,_tG);\
+    _mm256_storeu_ps(ptrH,_tH);\
+    _tI         = gmx_mm256_set_m128(_mm_load_ss(ptrE+8),_mm_load_ss(ptrA+8));\
+    _tJ         = gmx_mm256_set_m128(_mm_load_ss(ptrF+8),_mm_load_ss(ptrB+8));\
+    _tK         = gmx_mm256_set_m128(_mm_load_ss(ptrG+8),_mm_load_ss(ptrC+8));\
+    _tL         = gmx_mm256_set_m128(_mm_load_ss(ptrH+8),_mm_load_ss(ptrD+8));\
+    _tI         = _mm256_unpacklo_ps(_tI,_tK);\
+    _tJ         = _mm256_unpacklo_ps(_tJ,_tL);\
+    _tI         = _mm256_unpacklo_ps(_tI,_tJ);\
+    _tI         = _mm256_sub_ps(_tI,_z3);\
+    _tJ         = _mm256_permute_ps(_tI,_MM_SHUFFLE(1,1,1,1));\
+    _tK         = _mm256_permute_ps(_tI,_MM_SHUFFLE(2,2,2,2));\
+    _tL         = _mm256_permute_ps(_tI,_MM_SHUFFLE(3,3,3,3));\
+    _mm_store_ss(ptrA+8,_mm256_castps256_ps128(_tI));\
+    _mm_store_ss(ptrB+8,_mm256_castps256_ps128(_tJ));\
+    _mm_store_ss(ptrC+8,_mm256_castps256_ps128(_tK));\
+    _mm_store_ss(ptrD+8,_mm256_castps256_ps128(_tL));\
+    _mm_store_ss(ptrE+8,_mm256_extractf128_ps(_tI,0x1));\
+    _mm_store_ss(ptrF+8,_mm256_extractf128_ps(_tJ,0x1));\
+    _mm_store_ss(ptrG+8,_mm256_extractf128_ps(_tK,0x1));\
+    _mm_store_ss(ptrH+8,_mm256_extractf128_ps(_tL,0x1));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC, float * gmx_restrict ptrD,
-                                          float * gmx_restrict ptrE, float * gmx_restrict ptrF,
-                                          float * gmx_restrict ptrG, float * gmx_restrict ptrH,
-                                          __m256 x1, __m256 y1, __m256 z1,
-                                          __m256 x2, __m256 y2, __m256 z2,
-                                          __m256 x3, __m256 y3, __m256 z3)
+        float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+        float * gmx_restrict ptrE, float * gmx_restrict ptrF,
+        float * gmx_restrict ptrG, float * gmx_restrict ptrH,
+        __m256 x1, __m256 y1, __m256 z1,
+        __m256 x2, __m256 y2, __m256 z2,
+        __m256 x3, __m256 y3, __m256 z3)
 {
     __m256 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
     __m256 tA,tB,tC,tD,tE,tF,tG,tH;
@@ -859,12 +1046,12 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm256_storeu_ps(ptrF,tF);
     _mm256_storeu_ps(ptrG,tG);
     _mm256_storeu_ps(ptrH,tH);
-    
+
     tI          = gmx_mm256_set_m128(_mm_load_ss(ptrE+8),_mm_load_ss(ptrA+8));
     tJ          = gmx_mm256_set_m128(_mm_load_ss(ptrF+8),_mm_load_ss(ptrB+8));
     tK          = gmx_mm256_set_m128(_mm_load_ss(ptrG+8),_mm_load_ss(ptrC+8));
     tL          = gmx_mm256_set_m128(_mm_load_ss(ptrH+8),_mm_load_ss(ptrD+8));
-    
+
     tI          = _mm256_unpacklo_ps(tI,tK);  /*  -  - zG zE |  -  - zC zA */
     tJ          = _mm256_unpacklo_ps(tJ,tL);  /*  -  - zH zF |  -  - zD zB */
     tI          = _mm256_unpacklo_ps(tI,tJ);  /* zH zG zF zE | zD zC zB zA */
@@ -883,17 +1070,102 @@ gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_store_ss(ptrG+8,_mm256_extractf128_ps(tK,0x1));
     _mm_store_ss(ptrH+8,_mm256_extractf128_ps(tL,0x1));
 }
+#endif
 
 
+
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(ptrA,ptrB,ptrC,ptrD,ptrE,ptrF,ptrG,ptrH, \
+                                                  _x1,_y1,_z1,_x2,_y2,_z2,_x3,_y3,_z3,_x4,_y4,_z4) \
+{\
+    __m256 _t1,_t2,_t3,_t4,_t5,_t6,_t7,_t8,_t9,_t10,_t11,_t12;\
+    __m256 _tA,_tB,_tC,_tD,_tE,_tF,_tG,_tH,_tI,_tJ,_tK,_tL;\
+\
+    _tA         = _mm256_loadu_ps(ptrA);\
+    _tB         = _mm256_loadu_ps(ptrB);\
+    _tC         = _mm256_loadu_ps(ptrC);\
+    _tD         = _mm256_loadu_ps(ptrD);\
+    _tE         = _mm256_loadu_ps(ptrE);\
+    _tF         = _mm256_loadu_ps(ptrF);\
+    _tG         = _mm256_loadu_ps(ptrG);\
+    _tH         = _mm256_loadu_ps(ptrH);\
+    _t1         = _mm256_unpacklo_ps(_x1,_y1);\
+    _t2         = _mm256_unpackhi_ps(_x1,_y1);\
+    _t3         = _mm256_unpacklo_ps(_z1,_x2);\
+    _t4         = _mm256_unpackhi_ps(_z1,_x2);\
+    _t5         = _mm256_unpacklo_ps(_y2,_z2);\
+    _t6         = _mm256_unpackhi_ps(_y2,_z2);\
+    _t7         = _mm256_unpacklo_ps(_x3,_y3);\
+    _t8         = _mm256_unpackhi_ps(_x3,_y3);\
+    _t9         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t10        = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t11        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t12        = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _t1         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(1,0,1,0));\
+    _t2         = _mm256_shuffle_ps(_t5,_t7,_MM_SHUFFLE(3,2,3,2));\
+    _t3         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(1,0,1,0));\
+    _t4         = _mm256_shuffle_ps(_t6,_t8,_MM_SHUFFLE(3,2,3,2));\
+    _t5         = gmx_mm256_unpack128lo_ps(_t9,_t1);\
+    _t6         = gmx_mm256_unpack128hi_ps(_t9,_t1);\
+    _t7         = gmx_mm256_unpack128lo_ps(_t10,_t2);\
+    _t8         = gmx_mm256_unpack128hi_ps(_t10,_t2);\
+    _t1         = gmx_mm256_unpack128lo_ps(_t11,_t3);\
+    _t2         = gmx_mm256_unpack128hi_ps(_t11,_t3);\
+    _t9         = gmx_mm256_unpack128lo_ps(_t12,_t4);\
+    _t10        = gmx_mm256_unpack128hi_ps(_t12,_t4);\
+    _tA         = _mm256_sub_ps(_tA,_t5);\
+    _tB         = _mm256_sub_ps(_tB,_t7);\
+    _tC         = _mm256_sub_ps(_tC,_t1);\
+    _tD         = _mm256_sub_ps(_tD,_t9);\
+    _tE         = _mm256_sub_ps(_tE,_t6);\
+    _tF         = _mm256_sub_ps(_tF,_t8);\
+    _tG         = _mm256_sub_ps(_tG,_t2);\
+    _tH         = _mm256_sub_ps(_tH,_t10);\
+    _mm256_storeu_ps(ptrA,_tA);\
+    _mm256_storeu_ps(ptrB,_tB);\
+    _mm256_storeu_ps(ptrC,_tC);\
+    _mm256_storeu_ps(ptrD,_tD);\
+    _mm256_storeu_ps(ptrE,_tE);\
+    _mm256_storeu_ps(ptrF,_tF);\
+    _mm256_storeu_ps(ptrG,_tG);\
+    _mm256_storeu_ps(ptrH,_tH);\
+    _tI         = gmx_mm256_set_m128(_mm_loadu_ps(ptrE+8),_mm_loadu_ps(ptrA+8));\
+    _tJ         = gmx_mm256_set_m128(_mm_loadu_ps(ptrF+8),_mm_loadu_ps(ptrB+8));\
+    _tK         = gmx_mm256_set_m128(_mm_loadu_ps(ptrG+8),_mm_loadu_ps(ptrC+8));\
+    _tL         = gmx_mm256_set_m128(_mm_loadu_ps(ptrH+8),_mm_loadu_ps(ptrD+8));\
+    _t1         = _mm256_unpacklo_ps(_z3,_x4);\
+    _t2         = _mm256_unpackhi_ps(_z3,_x4);\
+    _t3         = _mm256_unpacklo_ps(_y4,_z4);\
+    _t4         = _mm256_unpackhi_ps(_y4,_z4);\
+    _t5         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(1,0,1,0));\
+    _t6         = _mm256_shuffle_ps(_t1,_t3,_MM_SHUFFLE(3,2,3,2));\
+    _t7         = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(1,0,1,0));\
+    _t8         = _mm256_shuffle_ps(_t2,_t4,_MM_SHUFFLE(3,2,3,2));\
+    _tI         = _mm256_sub_ps(_tI,_t5);\
+    _tJ         = _mm256_sub_ps(_tJ,_t6);\
+    _tK         = _mm256_sub_ps(_tK,_t7);\
+    _tL         = _mm256_sub_ps(_tL,_t8);\
+    _mm_storeu_ps(ptrA+8,_mm256_castps256_ps128(_tI));\
+    _mm_storeu_ps(ptrB+8,_mm256_castps256_ps128(_tJ));\
+    _mm_storeu_ps(ptrC+8,_mm256_castps256_ps128(_tK));\
+    _mm_storeu_ps(ptrD+8,_mm256_castps256_ps128(_tL));\
+    _mm_storeu_ps(ptrE+8,_mm256_extractf128_ps(_tI,0x1));\
+    _mm_storeu_ps(ptrF+8,_mm256_extractf128_ps(_tJ,0x1));\
+    _mm_storeu_ps(ptrG+8,_mm256_extractf128_ps(_tK,0x1));\
+    _mm_storeu_ps(ptrH+8,_mm256_extractf128_ps(_tL,0x1));\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx_restrict ptrB,
-                                          float * gmx_restrict ptrC, float * gmx_restrict ptrD,
-                                          float * gmx_restrict ptrE, float * gmx_restrict ptrF,
-                                          float * gmx_restrict ptrG, float * gmx_restrict ptrH,
-                                          __m256 x1, __m256 y1, __m256 z1,
-                                          __m256 x2, __m256 y2, __m256 z2,
-                                          __m256 x3, __m256 y3, __m256 z3,
-                                          __m256 x4, __m256 y4, __m256 z4)
+        float * gmx_restrict ptrC, float * gmx_restrict ptrD,
+        float * gmx_restrict ptrE, float * gmx_restrict ptrF,
+        float * gmx_restrict ptrG, float * gmx_restrict ptrH,
+        __m256 x1, __m256 y1, __m256 z1,
+        __m256 x2, __m256 y2, __m256 z2,
+        __m256 x3, __m256 y3, __m256 z3,
+        __m256 x4, __m256 y4, __m256 z4)
 {
     __m256 t1,t2,t3,t4,t5,t6,t7,t8,t9,t10,t11,t12;
     __m256 tA,tB,tC,tD,tE,tF,tG,tH;
@@ -959,7 +1231,7 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     tJ          = gmx_mm256_set_m128(_mm_loadu_ps(ptrF+8),_mm_loadu_ps(ptrB+8));
     tK          = gmx_mm256_set_m128(_mm_loadu_ps(ptrG+8),_mm_loadu_ps(ptrC+8));
     tL          = gmx_mm256_set_m128(_mm_loadu_ps(ptrH+8),_mm_loadu_ps(ptrD+8));
-    
+
     t1          = _mm256_unpacklo_ps(z3,x4); /* x4f z3f x4e z3e | x4b z3b x4a z3a */
     t2          = _mm256_unpackhi_ps(z3,x4); /* x4h z3h x4g z3g | x4d z3d x4c z3c */
     t3          = _mm256_unpacklo_ps(y4,z4); /* z4f y4f z4e y4e | z4b y4b z4a y4a */
@@ -984,13 +1256,13 @@ gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(float * gmx_restrict ptrA, float * gmx
     _mm_storeu_ps(ptrG+8,_mm256_extractf128_ps(tK,0x1));
     _mm_storeu_ps(ptrH+8,_mm256_extractf128_ps(tL,0x1));
 }
-
+#endif
 
 
 static gmx_inline void
 gmx_mm256_update_iforce_1atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
-                                      float * gmx_restrict fptr,
-                                      float * gmx_restrict fshiftptr)
+        float * gmx_restrict fptr,
+        float * gmx_restrict fshiftptr)
 {
     __m128 t1,t2,t3;
 
@@ -1000,7 +1272,7 @@ gmx_mm256_update_iforce_1atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
 
     /* Add across the two lanes */
     t1   = _mm_add_ps(_mm256_castps256_ps128(fix1),_mm256_extractf128_ps(fix1,0x1));
-    
+
     t2 = _mm_load_ss(fptr);
     t2 = _mm_loadh_pi(t2,(__m64 *)(fptr+1));
     t3 = _mm_load_ss(fshiftptr);
@@ -1015,12 +1287,53 @@ gmx_mm256_update_iforce_1atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
     _mm_storeh_pi((__m64 *)(fshiftptr+1),t3);
 }
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_update_iforce_3atom_swizzle_ps(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3, \
+                                                 fptr,fshiftptr) \
+{ \
+    __m256 _t1,_t2,_t3;\
+    __m128 _tA,_tB,_tC;\
+\
+    fix1 = _mm256_hadd_ps(fix1,fiy1);\
+    fiz1 = _mm256_hadd_ps(fiz1,fix2);\
+    fiy2 = _mm256_hadd_ps(fiy2,fiz2);\
+    fix3 = _mm256_hadd_ps(fix3,fiy3);\
+    fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps());\
+    fix1 = _mm256_hadd_ps(fix1,fiz1);\
+    fiy2 = _mm256_hadd_ps(fiy2,fix3);\
+    fiz3 = _mm256_hadd_ps(fiz3,_mm256_setzero_ps());\
+\
+    _t1  = gmx_mm256_unpack128lo_ps(fix1,fiy2);\
+    _t2  = gmx_mm256_unpack128hi_ps(fix1,fiy2);\
+    _t1  = _mm256_add_ps(_t1,_t2);\
+    _tA  = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));\
+    _t3  = _mm256_loadu_ps(fptr);\
+    _t3  = _mm256_add_ps(_t3,_t1);\
+    _mm256_storeu_ps(fptr,_t3);\
+    _tB  = _mm_load_ss(fptr+8);\
+    _tB  = _mm_add_ss(_tB,_tA);\
+    _mm_store_ss(fptr+8,_tB);\
+\
+    _tB  = _mm256_extractf128_ps(_t1,0x1);\
+    _tC  = _mm_shuffle_ps(_mm256_castps256_ps128(_t1),_tB,_MM_SHUFFLE(1,0,3,3));\
+    _tB  = _mm_shuffle_ps(_tB,_tA,_MM_SHUFFLE(1,0,3,2));\
+    _tC  = _mm_permute_ps(_tC,_MM_SHUFFLE(3,3,2,0));\
+    _tB  = _mm_add_ps(_tB,_mm256_castps256_ps128(_t1));\
+    _tA  = _mm_add_ps(_tB,_tC);\
+    _tA  = _mm_blend_ps(_mm_setzero_ps(),_tA,0x7);\
+    _tC  = _mm_loadu_ps(fshiftptr);\
+    _tC  = _mm_add_ps(_tC,_tA);\
+    _mm_storeu_ps(fshiftptr,_tC);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_update_iforce_3atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
-                                         __m256 fix2, __m256 fiy2, __m256 fiz2,
-                                         __m256 fix3, __m256 fiy3, __m256 fiz3,
-                                         float * gmx_restrict fptr,
-                                         float * gmx_restrict fshiftptr)
+        __m256 fix2, __m256 fiy2, __m256 fiz2,
+        __m256 fix3, __m256 fiy3, __m256 fiz3,
+        float * gmx_restrict fptr,
+        float * gmx_restrict fshiftptr)
 {
     __m256 t1,t2,t3;
     __m128 tA,tB,tC;
@@ -1057,22 +1370,68 @@ gmx_mm256_update_iforce_3atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
 
     tB   = _mm_add_ps(tB,_mm256_castps256_ps128(t1));
     tA   = _mm_add_ps(tB,tC); /*  - z y x */
-    
+
     tA   = _mm_blend_ps(_mm_setzero_ps(),tA,0x7); /* 0 z y x */
 
     tC   = _mm_loadu_ps(fshiftptr);
     tC   = _mm_add_ps(tC,tA);
     _mm_storeu_ps(fshiftptr,tC);
 }
+#endif
 
 
+#if defined (_MSC_VER) && defined(_M_IX86)
+/* Macro work-around since 32-bit MSVC cannot handle >3 xmm/ymm parameters */
+#define gmx_mm256_update_iforce_4atom_swizzle_ps(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,fix4,fiy4,fiz4, \
+                                                fptr,fshiftptr) \
+{ \
+    __m256 _t1,_t2,_t3; \
+    __m128 _tA,_tB,_tC; \
+\
+    fix1 = _mm256_hadd_ps(fix1,fiy1);\
+    fiz1 = _mm256_hadd_ps(fiz1,fix2);\
+    fiy2 = _mm256_hadd_ps(fiy2,fiz2);\
+    fix3 = _mm256_hadd_ps(fix3,fiy3);\
+    fiz3 = _mm256_hadd_ps(fiz3,fix4);\
+    fiy4 = _mm256_hadd_ps(fiy4,fiz4);\
+\
+    fix1 = _mm256_hadd_ps(fix1,fiz1);\
+    fiy2 = _mm256_hadd_ps(fiy2,fix3);\
+    fiz3 = _mm256_hadd_ps(fiz3,fiy4);\
+\
+    _t1  = gmx_mm256_unpack128lo_ps(fix1,fiy2);\
+    _t2  = gmx_mm256_unpack128hi_ps(fix1,fiy2);\
+    _t1  = _mm256_add_ps(_t1,_t2);\
+    _tA  = _mm_add_ps(_mm256_castps256_ps128(fiz3),_mm256_extractf128_ps(fiz3,0x1));\
+    _t3  = _mm256_loadu_ps(fptr);\
+    _t3  = _mm256_add_ps(_t3,_t1);\
+    _mm256_storeu_ps(fptr,_t3);\
+    _tB  = _mm_loadu_ps(fptr+8);\
+    _tB  = _mm_add_ps(_tB,_tA);\
+    _mm_storeu_ps(fptr+8,_tB);\
+\
+    _tB  = _mm256_extractf128_ps(_t1,0x1);\
+    _tC  = _mm_shuffle_ps(_mm256_castps256_ps128(_t1),_tB,_MM_SHUFFLE(1,0,3,3));\
+    _tB  = _mm_shuffle_ps(_tB,_tA,_MM_SHUFFLE(1,0,3,2));\
+    _tC  = _mm_permute_ps(_tC,_MM_SHUFFLE(3,3,2,0));\
+    _tA  = _mm_permute_ps(_tA,_MM_SHUFFLE(0,3,2,1));\
+    _tB  = _mm_add_ps(_tB,_mm256_castps256_ps128(_t1));\
+    _tA  = _mm_add_ps(_tA,_tC);\
+    _tA  = _mm_add_ps(_tA,_tB);\
+    _tA  = _mm_blend_ps(_mm_setzero_ps(),_tA,0x7);\
+    _tC  = _mm_loadu_ps(fshiftptr);\
+    _tC  = _mm_add_ps(_tC,_tA);\
+    _mm_storeu_ps(fshiftptr,_tC);\
+}
+#else
+/* Real function for sane compilers */
 static gmx_inline void
 gmx_mm256_update_iforce_4atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
-                                         __m256 fix2, __m256 fiy2, __m256 fiz2,
-                                         __m256 fix3, __m256 fiy3, __m256 fiz3,
-                                         __m256 fix4, __m256 fiy4, __m256 fiz4,
-                                         float * gmx_restrict fptr,
-                                         float * gmx_restrict fshiftptr)
+        __m256 fix2, __m256 fiy2, __m256 fiz2,
+        __m256 fix3, __m256 fiy3, __m256 fiz3,
+        __m256 fix4, __m256 fiy4, __m256 fiz4,
+        float * gmx_restrict fptr,
+        float * gmx_restrict fshiftptr)
 {
     __m256 t1,t2,t3;
     __m128 tA,tB,tC;
@@ -1120,6 +1479,7 @@ gmx_mm256_update_iforce_4atom_swizzle_ps(__m256 fix1, __m256 fiy1, __m256 fiz1,
     tC   = _mm_add_ps(tC,tA);
     _mm_storeu_ps(fshiftptr,tC);
 }
+#endif
 
 
 
@@ -1150,28 +1510,6 @@ gmx_mm256_update_2pot_ps(__m256 pot1, float * gmx_restrict ptrA,
     t2   = _mm_permute_ps(t1,_MM_SHUFFLE(1,1,1,1));
     _mm_store_ss(ptrA,_mm_add_ss(_mm_load_ss(ptrA),t1));
     _mm_store_ss(ptrB,_mm_add_ss(_mm_load_ss(ptrB),t2));
-}
-
-
-static gmx_inline void
-gmx_mm256_update_4pot_ps(__m256 pot1, float * gmx_restrict ptrA,
-                         __m256 pot2, float * gmx_restrict ptrB,
-                         __m256 pot3, float * gmx_restrict ptrC,
-                         __m256 pot4, float * gmx_restrict ptrD)
-{
-    __m128 t1,t2,t3,t4;
-
-    pot1 = _mm256_hadd_ps(pot1,pot2);
-    pot3 = _mm256_hadd_ps(pot3,pot4);
-    pot1 = _mm256_hadd_ps(pot1,pot3);
-    t1   = _mm_add_ps(_mm256_castps256_ps128(pot1),_mm256_extractf128_ps(pot1,0x1));
-    t2   = _mm_permute_ps(t1,_MM_SHUFFLE(1,1,1,1));
-    t3   = _mm_permute_ps(t1,_MM_SHUFFLE(2,2,2,2));
-    t4   = _mm_permute_ps(t1,_MM_SHUFFLE(3,3,3,3));
-    _mm_store_ss(ptrA,_mm_add_ss(_mm_load_ss(ptrA),t1));
-    _mm_store_ss(ptrB,_mm_add_ss(_mm_load_ss(ptrB),t2));
-    _mm_store_ss(ptrC,_mm_add_ss(_mm_load_ss(ptrC),t3));
-    _mm_store_ss(ptrD,_mm_add_ss(_mm_load_ss(ptrD),t4));
 }
 
 

@@ -67,7 +67,6 @@ void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.
  */
-
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
                       int nfile, const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations

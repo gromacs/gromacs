@@ -45,12 +45,13 @@
  * with different settings from the same source file.
  */
 
-/* NOTE: floor and blend are NOT available with SSE2 only acceleration */
+/* NOTE: floor and blendv are NOT available with SSE2 only acceleration */
 
 #undef GMX_SIMD_WIDTH_HERE
 
 #undef gmx_epi32
 
+/* float/double SIMD register type */
 #undef gmx_mm_pr
 
 #undef gmx_load_pr
@@ -58,6 +59,7 @@
 #undef gmx_set1_pr
 #undef gmx_setzero_pr
 #undef gmx_store_pr
+/* Only used for debugging */
 #undef gmx_storeu_pr
 
 #undef gmx_add_pr
@@ -69,13 +71,18 @@
 #undef gmx_or_pr
 #undef gmx_andnot_pr
 
+/* Only used to speed up the nbnxn tabulated PME kernels */
 #undef gmx_floor_pr
+/* Only used with x86 when blendv is faster than comparison */
 #undef gmx_blendv_pr
 
 #undef gmx_movemask_pr
 
+/* Integer casts are only used for nbnxn x86 exclusion masks */
 #undef gmx_mm_castsi128_pr
+#undef gmx_mm_castsi256_pr
 
+/* Conversions only used for nbnxn x86 exclusion masks and PME table lookup */
 #undef gmx_cvttpr_epi32
 #undef gmx_cvtepi32_pr
 
@@ -83,8 +90,23 @@
 #undef gmx_calc_rsq_pr
 #undef gmx_sum4_pr
 
+/* Only required for nbnxn analytical PME kernels */
 #undef gmx_pmecorrF_pr
 #undef gmx_pmecorrV_pr
+
+
+/* Half SIMD-width types and operations only for nbnxn 2xnn search+kernels */
+#undef gmx_mm_hpr
+
+#undef gmx_load_hpr
+#undef gmx_load1_hpr
+#undef gmx_store_hpr
+#undef gmx_add_hpr
+#undef gmx_sub_hpr
+
+#undef gmx_sum4_hpr
+
+#undef gmx_2hpr_to_pr
 
 
 /* By defining GMX_MM128_HERE or GMX_MM256_HERE before including this file
@@ -103,6 +125,9 @@
 #if defined GMX_MM128_HERE && defined GMX_MM256_HERE
 #error "You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
 #endif
+
+
+#ifdef GMX_X86_SSE2
 
 #ifdef GMX_MM128_HERE
 
@@ -304,3 +329,5 @@
 #endif
 
 #endif /* GMX_MM256_HERE */
+
+#endif /* GMX_X86_SSE2 */

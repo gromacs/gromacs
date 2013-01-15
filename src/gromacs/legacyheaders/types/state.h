@@ -155,6 +155,28 @@ energyhistory_t;
 
 typedef struct
 {
+    /* If one uses essential dynamics or flooding on a group of atoms from
+     * more than one molecule, we cannot make this group whole with
+     * do_pbc_first_mtop(). We assume that the ED group has the correct PBC
+     * representation at the beginning of the simulation and keep track
+     * of the shifts to always get it into that representation.
+     * For proper restarts from a checkpoint we store the positions of the
+     * reference group at the time of checkpoint writing */
+    gmx_bool    bFromCpt;       /* Did we start from a checkpoint file?       */
+    int         nED;            /* No. of ED/Flooding data sets, if <1 no ED  */
+    int         *nref;          /* No. of atoms in i'th reference structure   */
+    int         *nav;           /* Same for average structure                 */
+    rvec        **old_sref;     /* Positions of the reference atoms
+                                   at the last time step (with correct PBC
+                                   representation)                            */
+    rvec        **old_sref_p;   /* Pointer to these positions                 */
+    rvec        **old_sav;      /* Same for the average positions             */
+    rvec        **old_sav_p;
+}
+edsamstate_t;
+
+typedef struct
+{
   int           natoms;
   int           ngtc;
   int           nnhpres;
@@ -196,6 +218,7 @@ typedef struct
 
   energyhistory_t  enerhist; /* Energy history for statistics           */
   df_history_t  dfhist; /*Free energy history for free energy analysis  */
+  edsamstate_t  edsamstate;    /* Essential dynamics / flooding history */
 
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */

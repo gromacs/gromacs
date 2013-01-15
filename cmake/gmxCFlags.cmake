@@ -30,17 +30,6 @@ MACRO(gmx_c_flags)
 
     # gcc
     if(CMAKE_COMPILER_IS_GNUCC)
-
-        #Fix for LLVM OpenMP bug (redmine 900). Needs to run before OpenMP flags are set below.
-        if(GMX_OPENMP)
-            exec_program(${CMAKE_C_COMPILER} ARGS --version OUTPUT_VARIABLE _compiler_output)
-            if(_compiler_output MATCHES "llvm.*4\\.2")
-                message(STATUS "OpenMP multithreading not supported with llvm-gcc 4.2, disabled")
-                set(GMX_OPENMP OFF CACHE BOOL
-                    "OpenMP multithreading not not supported with llvm-gcc 4.2, disabled!" FORCE)
-            endif()
-        endif()
-
         #flags are added in reverse order and -Wno* need to appear after -Wall
         if(NOT GMX_OPENMP)
             GMX_TEST_CFLAG(CFLAGS_PRAGMA "-Wno-unknown-pragmas" GMXC_CFLAGS)
@@ -77,12 +66,10 @@ MACRO(gmx_c_flags)
             GMX_TEST_CFLAG(CFLAGS_WARN "-Wall" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_STDGNU "-std=gnu99" GMXC_CFLAGS)
             GMX_TEST_CFLAG(CFLAGS_OPT "-ip -funroll-all-loops" GMXC_CFLAGS_RELEASE)
-            GMX_TEST_CFLAG(CFLAGS_SSE2 "-msse2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_X86 "-mtune=core2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_IA64 "-mtune=itanium2" GMXC_CFLAGS_RELEASE)
         else()
             GMX_TEST_CFLAG(CFLAGS_WARN "/W2" GMXC_CFLAGS)
-            GMX_TEST_CFLAG(CFLAGS_SSE2 "/arch:SSE2" GMXC_CFLAGS_RELEASE)
             GMX_TEST_CFLAG(CFLAGS_X86 "/Qip" GMXC_CFLAGS_RELEASE)
         endif()
     endif()
@@ -94,13 +81,11 @@ MACRO(gmx_c_flags)
             endif()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "-Wall" GMXC_CXXFLAGS)
             GMX_TEST_CXXFLAG(CXXFLAGS_OPT "-ip -funroll-all-loops" GMXC_CXXFLAGS_RELEASE)
-            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "-msse2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "-mtune=core2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_IA64 "-mtune=itanium2" 
                               GMXC_CXXFLAGS_RELEASE)
         else()
             GMX_TEST_CXXFLAG(CXXFLAGS_WARN "/W2" GMXC_CXXFLAGS)
-            GMX_TEST_CXXFLAG(CXXFLAGS_SSE2 "/arch:SSE2" GMXC_CXXFLAGS_RELEASE)
             GMX_TEST_CXXFLAG(CXXFLAGS_X86 "/Qip" GMXC_CXXFLAGS_RELEASE)
         endif()
     endif()
@@ -181,36 +166,19 @@ MACRO(gmx_c_flags)
 
     # now actually set the flags:
     # C
-    if ( NOT DEFINED GMXCFLAGS_SET AND NOT DEFINED ENV{CFLAGS} )
-        set(GMXCFLAGS_SET true CACHE INTERNAL "Whether to reset the C flags" 
-            FORCE)
-        
-        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
-        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
-        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
+    if ( NOT GMX_SKIP_DEFAULT_CFLAGS )
+        set(CMAKE_C_FLAGS "${GMXC_CFLAGS} ${CMAKE_C_FLAGS}")
+        set(CMAKE_C_FLAGS_RELEASE "${GMXC_CFLAGS_RELEASE} ${CMAKE_C_FLAGS_RELEASE}")
+        set(CMAKE_C_FLAGS_DEBUG "${GMXC_CFLAGS_DEBUG} ${CMAKE_C_FLAGS_DEBUG}")
     endif()
 
     # C++
-    if ( NOT DEFINED GMXCXXFLAGS_SET AND NOT DEFINED ENV{CXXFLAGS} )
-        set(GMXCXXFLAGS_SET true CACHE INTERNAL "Whether to reset the C++ flags" 
-            FORCE)
-        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}" 
-            CACHE STRING "Flags used by the compiler during all build types." 
-            FORCE)
+    if ( NOT GMX_SKIP_DEFAULT_CFLAGS)
+        set(CMAKE_CXX_FLAGS "${GMXC_CXXFLAGS} ${CMAKE_CXX_FLAGS}")
         set(CMAKE_CXX_FLAGS_RELEASE 
-            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}" 
-            CACHE STRING "Flags used by the compiler during release builds." 
-            FORCE)
+            "${GMXC_CXXFLAGS_RELEASE} ${CMAKE_CXX_FLAGS_RELEASE}")
         set(CMAKE_CXX_FLAGS_DEBUG 
-            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}" 
-            CACHE STRING "Flags used by the compiler during debug builds." 
-            FORCE)
+            "${GMXC_CXXFLAGS_DEBUG} ${CMAKE_CXX_FLAGS_DEBUG}")
     endif()
 ENDMACRO(gmx_c_flags)
 

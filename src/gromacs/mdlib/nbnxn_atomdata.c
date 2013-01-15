@@ -45,12 +45,10 @@
 #include "nbnxn_atomdata.h"
 #include "gmx_omp_nthreads.h"
 
-/* Default nbnxn allocation routine, allocates 32 byte aligned,
- * which works for plain C and aligned SSE and AVX loads/stores.
- */
+/* Default nbnxn allocation routine, allocates NBNXN_MEM_ALIGN byte aligned */
 void nbnxn_alloc_aligned(void **ptr,size_t nbytes)
 {
-    *ptr = save_malloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,32);
+    *ptr = save_malloc_aligned("ptr",__FILE__,__LINE__,nbytes,1,NBNXN_MEM_ALIGN);
 }
 
 /* Free function for memory allocated with nbnxn_alloc_aligned */
@@ -650,6 +648,38 @@ void nbnxn_atomdata_init(FILE *fp,
     nbat->xstride = (nbat->XFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->fstride = (nbat->FFormat == nbatXYZQ ? STRIDE_XYZQ : DIM);
     nbat->x       = NULL;
+
+#ifdef GMX_NBNXN_SIMD
+    if (simple)
+    {
+        /* Set the diagonal cluster pair exclusion mask setup data.
+         * In the kernel we check 0 < j - i to generate the masks.
+         * Here we store j - i for generating the mask for the first i,
+         * we substract 0.5 to avoid rounding issues.
+         * In the kernel we can subtract 1 to generate the subsequent mask.
+         */
+        const int simd_width=GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
+        int simd_4xn_diag_size,j;
+
+        simd_4xn_diag_size = max(NBNXN_CPU_CLUSTER_I_SIZE,simd_width);
+        snew_aligned(nbat->simd_4xn_diag,simd_4xn_diag_size,NBNXN_MEM_ALIGN);
+        for(j=0; j<simd_4xn_diag_size; j++)
+        {
+            nbat->simd_4xn_diag[j] = j - 0.5;
+        }
+
+        snew_aligned(nbat->simd_2xnn_diag,simd_width,NBNXN_MEM_ALIGN);
+        for(j=0; j<simd_width/2; j++)
+        {
+            /* The j-cluster size is half the SIMD width */
+            nbat->simd_2xnn_diag[j]              = j - 0.5;
+            /* The next half of the SIMD width is for i + 1 */
+            nbat->simd_2xnn_diag[simd_width/2+j] = j - 1 - 0.5;
+        }
+    }
+#endif
+
+    /* Initialize the output data structures */
     nbat->nout    = nout;
     snew(nbat->out,nbat->nout);
     nbat->nalloc  = 0;
@@ -1021,20 +1051,21 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
 }
 
 static void
-nbnxn_atomdata_reduce_reals_x86_simd(real * gmx_restrict dest,
-                                     gmx_bool bDestSet,
-                                     real ** gmx_restrict src,
-                                     int nsrc,
-                                     int i0, int i1)
+nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
+                                 gmx_bool bDestSet,
+                                 real ** gmx_restrict src,
+                                 int nsrc,
+                                 int i0, int i1)
 {
-#ifdef NBNXN_SEARCH_SSE
-/* We can use AVX256 here, but not when AVX128 kernels are selected.
- * As this reduction is not faster with AVX256 anyway, we use 128-bit SIMD.
+#ifdef GMX_NBNXN_SIMD
+/* The SIMD width here is actually independent of that in the kernels,
+ * but we use the same width for simplicity (usually optimal anyhow).
  */
-#ifdef GMX_X86_AVX_256
-#define GMX_MM256_HERE
-#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
 #define GMX_MM128_HERE
+#endif
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#define GMX_MM256_HERE
 #endif
 #include "gmx_simd_macros.h"
 
@@ -1252,8 +1283,8 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t nbs,
                 }
                 if (nfptr > 0)
                 {
-#ifdef NBNXN_SEARCH_SSE
-                    nbnxn_atomdata_reduce_reals_x86_simd
+#ifdef GMX_NBNXN_SIMD
+                    nbnxn_atomdata_reduce_reals_simd
 #else
                     nbnxn_atomdata_reduce_reals
 #endif

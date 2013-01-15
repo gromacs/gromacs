@@ -321,10 +321,13 @@ void mk_graph_ilist(FILE *fplog,
   int     i,nbtot;
   gmx_bool    bMultiPart;
 
-  if (at_start != 0) {
-    gmx_incons("In mk_graph_ilist at_start can not be != 0");
-  }
-  g->natoms = at_end;
+  /* The naming is somewhat confusing, but we need g->at0 and g->at1
+   * for shifthing coordinates to a new array (not in place) when
+   * some atoms are not connected by the graph, which runs from
+   * g->at_start (>= g->at0) to g->at_end (<= g->at1).
+   */
+  g->at0 = at_start;
+  g->at1 = at_end;
 
   snew(nbond,at_end);
   nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
@@ -390,7 +393,7 @@ void mk_graph_ilist(FILE *fplog,
 
   sfree(nbond);
 
-  snew(g->ishift,g->natoms);
+  snew(g->ishift,g->at1);
 
   if (gmx_debug_at)
     p_graph(debug,"graph",g);
@@ -609,7 +612,7 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
    * at all. If we return without doing this for a system without bonds
    * (i.e. only settles) all water molecules are moved to the opposite octant
    */
-  for(i=0; (i<g->natoms); i++) {
+  for(i=g->at0; (i<g->at1); i++) {
       g->ishift[i][XX]=g->ishift[i][YY]=g->ishift[i][ZZ]=0;
   }
     
@@ -708,7 +711,7 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
   g1 = g->at_end;
   is = g->ishift;
   
-  for(j=0; j<g0; j++) {
+  for(j=g->at0; j<g0; j++) {
     copy_rvec(x[j],x_s[j]);
   }
 
@@ -751,7 +754,7 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
      }
   }       
 
-  for(j=g1; j<g->natoms; j++) {
+  for(j=g1; j<g->at1; j++) {
     copy_rvec(x[j],x_s[j]);
   }
 }
@@ -808,7 +811,7 @@ void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
   g1 = g->at_end;
   is = g->ishift;
 
-  for(j=0; j<g0; j++) {
+  for(j=g->at0; j<g0; j++) {
     copy_rvec(x_s[j],x[j]);
   }
 
@@ -834,7 +837,7 @@ void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
       }
   }
 
-  for(j=g1; j<g->natoms; j++) {
+  for(j=g1; j<g->at1; j++) {
     copy_rvec(x_s[j],x[j]);
   }
 }

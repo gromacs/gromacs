@@ -33,7 +33,6 @@ set(SYMLINK_NAMES
     g_densmap
     g_densorder
     g_dielectric
-    g_dih
     g_dipoles
     g_disre
     g_dist

@@ -68,6 +68,14 @@ typedef struct {
     unsigned excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
+/* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
+ * The upper bits contain information for non-bonded kernel optimization.
+ * Simply calculating LJ and Coulomb for all pairs in a cluster pair is fine.
+ * But three flags can be used to skip interactions, currently only for subc=0
+ * !(shift & NBNXN_CI_DO_LJ(subc))   => we can skip LJ for all pairs
+ * shift & NBNXN_CI_HALF_LJ(subc)    => we can skip LJ for the second half of i
+ * !(shift & NBNXN_CI_DO_COUL(subc)) => we can skip Coulomb for all pairs
+ */
 #define NBNXN_CI_SHIFT          127
 #define NBNXN_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
 #define NBNXN_CI_HALF_LJ(subc)  (1<<(8+3*(subc)))
@@ -76,7 +84,7 @@ typedef struct {
 /* Simple pair-list i-unit */
 typedef struct {
     int ci;             /* i-cluster             */
-    int shift;          /* Shift vector index plus possible flags */
+    int shift;          /* Shift vector index plus possible flags, see above */
     int cj_ind_start;   /* Start index into cj   */
     int cj_ind_end;     /* End index into cj     */
 } nbnxn_ci_t;
@@ -221,6 +229,8 @@ typedef struct {
     int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
     int  fstride;    /* stride for a coordinate in f (usually 3 or 4)      */
     real *x;         /* x and possibly q, size natoms*xstride              */
+    real *simd_4xn_diag;  /* indices to set the SIMD 4xN diagonal masks    */
+    real *simd_2xnn_diag; /* indices to set the SIMD 2x(N+N)diagonal masks */
     int  nout;       /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;  /* Output data structures               */
     int  nalloc;     /* Allocation size of all arrays (for x/f *x/fstride) */

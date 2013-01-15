@@ -55,10 +55,6 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
-if(GMX_GPU)
-    include_directories(${CUDA_TOOLKIT_INCLUDE})
-endif()
-
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx_version)

@@ -125,7 +125,7 @@ static void print_gpu_use_stats(FILE *fplog,
     }
     else
     {
-        sprintf(sbuf, "%d GPU%s %sselected to be used for this run: ",
+        sprintf(sbuf, "%d GPU%s %sselected for this run: ",
                 ngpu, (ngpu > 1) ? "s" : "",
                 gpu_info->bUserSet ? "user-" : "auto-");
         for (i = 0; i < ngpu; i++)
@@ -163,7 +163,7 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
         if (idstr[i] < '0' || idstr[i] > '9')
         {
             gmx_fatal(FARGS, "Invalid character in GPU ID string: '%c'\n%s\n",
-                      invalid_gpuid_hint, idstr[i]);
+                      idstr[i], invalid_gpuid_hint);
         }
         idlist[i] = idstr[i] - '0';
     }
