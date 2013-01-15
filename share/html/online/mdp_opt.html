@@ -1528,6 +1528,15 @@ be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
 all components of the lambda vector that are not specified will use <b>fep-lambdas</b> (including restraint-lambdas and therefore the pull code restraints).</dd>
+<dt><b>calc-lambda-neighbors (1)</b></dt>
+<dd>Controls the number of lambda values for which Delta H values will be
+calculated and written out, if <b>init-lambda-state</b> has been set. A
+positive value will limit the number of lambda points calculated to only the
+nth neighbors of <b>init-lambda-state</b>: for example, if
+<b>init-lambda-state</b> is 5 and this parameter has a value of 2, energies for
+lambda points 3-7 will be calculated and writen out. A value of -1 means all
+lambda points will be written out. For normal BAR such as with g_bar, a value
+of 1 is sufficient, while for MBAR -1 should be used.</dd>
 <dt><b>sc-alpha: (0)</b></dt>
 <dd>the soft-core alpha parameter, a value of 0 results in linear interpolation of the LJ and Coulomb interactions</dd>
 <dt><b>sc-r-power: (6)</b></dt>
