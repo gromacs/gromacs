@@ -1,0 +1,1 @@
+complete g_nmtraj "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-v/f:*.{trr,cpt,trj}{,.gz,.Z}/" "n/-o/f:*.{xtc,trr,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "c/-/( s v o h version nice eignr phases temp amplitude nframes)/"

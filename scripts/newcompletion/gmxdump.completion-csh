@@ -1,0 +1,1 @@
+complete gmxdump "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-e/f:*.edr{,.gz,.Z}/" "n/-cp/f:*.cpt{,.gz,.Z}/" "n/-p/f:*.top{,.gz,.Z}/" "n/-mtx/f:*.mtx{,.gz,.Z}/" "n/-om/f:*.mdp{,.gz,.Z}/" "c/-/( s f e cp p mtx om h version nice nonr sys)/"

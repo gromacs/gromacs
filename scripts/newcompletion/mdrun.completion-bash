@@ -1,0 +1,48 @@
+shopt -s extglob
+_mdrun_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dhdl -field -table -tabletf -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -ro -ra -rs -rt -mtx -dn -multidir -membed -mp -mn -h -version -nice -deffnm -xvg -pd -dd -ddorder -npme -nt -ntmpi -ntomp -ntomp_pme -nopin -pinht -pinoffset -gpu_id -noddcheck -rdd -rcon -dlb -dds -gcom -nb -notunepme -testverlet -v -nocompact -seppot -pforce -reprod -cpt -cpnum -noappend -nsteps -maxh -multi -replex -nex -reseed -ionize' -- $c)); return 0; fi
+case "$p" in
+-xvg) COMPREPLY=( $(compgen -W ' xmgrace xmgr none ' -- $c ));;
+-ddorder) COMPREPLY=( $(compgen -W ' interleave pp_pme cartesian ' -- $c ));;
+-dlb) COMPREPLY=( $(compgen -W ' auto no yes ' -- $c ));;
+-nb) COMPREPLY=( $(compgen -W ' auto cpu gpu gpu_cpu ' -- $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-x) COMPREPLY=( $(compgen -X '!*.xtc*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cpi) COMPREPLY=( $(compgen -X '!*.cpt*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cpo) COMPREPLY=( $(compgen -X '!*.cpt*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-c) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-e) COMPREPLY=( $(compgen -X '!*.edr*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dhdl) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-field) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-table) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tabletf) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tablep) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tableb) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rerun) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tpi) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tpid) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ei) COMPREPLY=( $(compgen -X '!*.edi*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-eo) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-j) COMPREPLY=( $(compgen -X '!*.gct*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-jo) COMPREPLY=( $(compgen -X '!*.gct*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ffout) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-devout) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-runav) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-px) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-pf) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ro) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ra) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rs) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rt) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mtx) COMPREPLY=( $(compgen -X '!*.mtx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-multidir) COMPREPLY=( $(compgen -X '!*.rundir*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-membed) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mp) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _mdrun_compl mdrun

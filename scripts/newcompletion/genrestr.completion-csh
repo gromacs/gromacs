@@ -1,0 +1,1 @@
+complete genrestr "n/-f/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.itp{,.gz,.Z}/" "n/-of/f:*.ndx{,.gz,.Z}/" "c/-/( f n o of h version nice fc freeze disre disre_dist disre_frac disre_up2 cutoff constr)/"

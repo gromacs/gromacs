@@ -1,0 +1,1 @@
+complete g_densorder "n/-method/( bisect functional)/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.dat{,.gz,.Z}/" "n/-or/f:*.out{,.gz,.Z}/" "n/-og/f:*.xpm{,.gz,.Z}/" "n/-Spect/f:*.out{,.gz,.Z}/" "c/-/( s f n o or og Spect h version nice b e dt w 1d bw bwn order axis method d1 d2 tblock nlevel)/"

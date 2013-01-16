@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f o h version nice r0 rot0 T nonn" - 'c[-1,-f]' -g '*.dat(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.eps(|.gz|.Z) *(/)' -- g_wheel

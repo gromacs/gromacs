@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f o trj h version nice nbox dist seed rot shuffle sort block nmolat maxrot norenumber" - 'c[-1,-f]' -g '*.(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.(gro|g96|pdb|brk|ent|esp|xyz)(|.gz|.Z) *(/)' - 'c[-1,-trj]' -g '*.(xtc|trr|cpt|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' -- genconf

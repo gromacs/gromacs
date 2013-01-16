@@ -1,0 +1,1 @@
+complete g_dist "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.xvg{,.gz,.Z}/" "n/-lt/f:*.xvg{,.gz,.Z}/" "c/-/( f s n o lt h version nice b e dt xvg intra dist)/"

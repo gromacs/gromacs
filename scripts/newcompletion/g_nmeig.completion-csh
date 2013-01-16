@@ -1,0 +1,1 @@
+complete g_nmeig "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.mtx{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-of/f:*.xvg{,.gz,.Z}/" "n/-ol/f:*.xvg{,.gz,.Z}/" "n/-os/f:*.xvg{,.gz,.Z}/" "n/-qc/f:*.xvg{,.gz,.Z}/" "n/-v/f:*.{trr,cpt,trj}{,.gz,.Z}/" "c/-/( f s of ol os qc v h version nice xvg nom first last maxspec T constr width)/"

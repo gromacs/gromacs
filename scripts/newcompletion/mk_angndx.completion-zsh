@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " s n h version nice type nohyd hq" - 'c[-1,-type]' -s " angle dihedral improper ryckaert-bellemans" - 'c[-1,-s]' -g '*.(tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' -- mk_angndx

@@ -1,0 +1,1 @@
+complete g_principal "n/-tu/( fs ps ns us ms s)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-a1/f:*.dat{,.gz,.Z}/" "n/-a2/f:*.dat{,.gz,.Z}/" "n/-a3/f:*.dat{,.gz,.Z}/" "n/-om/f:*.dat{,.gz,.Z}/" "c/-/( f s n a1 a2 a3 om h version nice b e dt tu w foo)/"

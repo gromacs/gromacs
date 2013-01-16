@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f n o of h version nice fc freeze disre disre_dist disre_frac disre_up2 cutoff constr" - 'c[-1,-f]' -g '*.(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.itp(|.gz|.Z) *(/)' - 'c[-1,-of]' -g '*.ndx(|.gz|.Z) *(/)' -- genrestr

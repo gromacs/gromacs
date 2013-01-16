@@ -1,0 +1,1 @@
+complete g_pme_error "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.out{,.gz,.Z}/" "n/-so/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "c/-/( s o so h version nice beta tune self seed v)/"

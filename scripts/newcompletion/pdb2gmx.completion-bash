@@ -1,0 +1,18 @@
+shopt -s extglob
+_pdb2gmx_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -p -i -n -q -h -version -nice -chainsep -merge -ff -water -inter -ss -ter -lys -arg -asp -glu -gln -his -angle -dist -una -ignh -missing -v -posrefc -vsite -heavyh -deuterate -nochargegrp -nocmap -renum -rtpres' -- $c)); return 0; fi
+case "$p" in
+-chainsep) COMPREPLY=( $(compgen -W ' id_or_ter id_and_ter ter id interactive ' -- $c ));;
+-merge) COMPREPLY=( $(compgen -W ' no all interactive ' -- $c ));;
+-water) COMPREPLY=( $(compgen -W ' select none spc spce tip3p tip4p tip5p ' -- $c ));;
+-vsite) COMPREPLY=( $(compgen -W ' none hydrogens aromatics ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-i) COMPREPLY=( $(compgen -X '!*.itp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-q) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _pdb2gmx_compl pdb2gmx

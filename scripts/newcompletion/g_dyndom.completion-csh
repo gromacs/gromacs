@@ -1,0 +1,1 @@
+complete g_dyndom "n/-f/f:*.pdb{,.gz,.Z}/" "n/-o/f:*.{xtc,trr,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "c/-/( f o n h version nice firstangle lastangle nframe maxangle trans head tail)/"

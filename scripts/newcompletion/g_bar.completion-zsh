@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f g o oi oh h version nice w xvg b e temp prec nbmin nbmax nbin extp" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-f]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-g]' -g '*.edr(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-oi]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-oh]' -g '*.xvg(|.gz|.Z) *(/)' -- g_bar

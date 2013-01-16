@@ -1,0 +1,1 @@
+complete genbox "n/-cp/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-cs/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-ci/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.{gro,g96,pdb,brk,ent,esp,xyz}{,.gz,.Z}/" "n/-p/f:*.top{,.gz,.Z}/" "c/-/( cp cs ci o p h version nice box nmol try seed vdwd shell maxsol vel)/"

@@ -1,0 +1,15 @@
+shopt -s extglob
+_g_helix_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -n -f -to -cz -co -h -version -nice -b -e -dt -w -r0 -q -noF -db -prop -ev -ahxstart -ahxend' -- $c)); return 0; fi
+case "$p" in
+-prop) COMPREPLY=( $(compgen -W ' RAD TWIST RISE LEN NHX DIP RMS CPHI RMSA PHI PSI HB3 HB4 HB5 CD222 ' -- $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-to) COMPREPLY=( $(compgen -X '!*.g87*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cz) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-co) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_helix_compl g_helix

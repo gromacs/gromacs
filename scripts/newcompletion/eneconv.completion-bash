@@ -1,0 +1,10 @@
+shopt -s extglob
+_eneconv_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -h -version -nice -b -e -dt -offset -settime -nosort -rmdh -scalefac -noerror' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.edr*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.edr*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _eneconv_compl eneconv

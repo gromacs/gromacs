@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f s h version nice b e dt" - 'c[-1,-f]' -g '*.(xtc|trr|cpt|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' - 'c[-1,-s]' -g '*.(tpr|tpb|tpa)(|.gz|.Z) *(/)' -- g_xrama

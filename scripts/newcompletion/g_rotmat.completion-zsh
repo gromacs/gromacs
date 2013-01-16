@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f s n o h version nice b e dt w xvg ref skip fitxy nomw" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-ref]' -s " none xyz xy" - 'c[-1,-f]' -g '*.(xtc|trr|cpt|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' - 'c[-1,-s]' -g '*.(tpr|tpb|tpa|gro|g96|pdb|brk|ent)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.xvg(|.gz|.Z) *(/)' -- g_rotmat

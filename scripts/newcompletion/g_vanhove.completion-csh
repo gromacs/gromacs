@@ -1,0 +1,1 @@
+complete g_vanhove "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-om/f:*.xpm{,.gz,.Z}/" "n/-or/f:*.xvg{,.gz,.Z}/" "n/-ot/f:*.xvg{,.gz,.Z}/" "c/-/( f s n om or ot h version nice b e dt w xvg sqrt fm rmax rbin mmax nlevels nr fr rt ft)/"

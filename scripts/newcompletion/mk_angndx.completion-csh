@@ -1,0 +1,1 @@
+complete mk_angndx "n/-type/( angle dihedral improper ryckaert-bellemans)/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "c/-/( s n h version nice type nohyd hq)/"

@@ -1,0 +1,1 @@
+complete g_filter "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-ol/f:*.{xtc,trr,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-oh/f:*.{xtc,trr,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "c/-/( f s n ol oh h version nice b e dt w nf all nonojump fit)/"

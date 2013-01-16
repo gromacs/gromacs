@@ -1,0 +1,1 @@
+complete eneconv "n/-f/f:*.edr{,.gz,.Z}/" "n/-o/f:*.edr{,.gz,.Z}/" "c/-/( f o h version nice b e dt offset settime nosort rmdh scalefac noerror)/"

@@ -1,0 +1,1 @@
+complete g_polystat "n/-tu/( fs ps ns us ms s)/" "n/-xvg/( xmgrace xmgr none)/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.xvg{,.gz,.Z}/" "n/-v/f:*.xvg{,.gz,.Z}/" "n/-p/f:*.xvg{,.gz,.Z}/" "n/-i/f:*.xvg{,.gz,.Z}/" "c/-/( s f n o v p i h version nice b e dt tu w xvg nomw pc)/"

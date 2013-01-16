@@ -1,0 +1,1 @@
+complete genconf "n/-f/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.{gro,g96,pdb,brk,ent,esp,xyz}{,.gz,.Z}/" "n/-trj/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "c/-/( f o trj h version nice nbox dist seed rot shuffle sort block nmolat maxrot norenumber)/"

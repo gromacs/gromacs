@@ -1,0 +1,19 @@
+shopt -s extglob
+_xpm2ps_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -di -do -o -xpm -h -version -nice -w -noframe -title -yonce -legend -diag -size -bx -by -rainbow -gradient -skip -zeroline -legoffset -combine -cmin -cmax' -- $c)); return 0; fi
+case "$p" in
+-title) COMPREPLY=( $(compgen -W ' top once ylabel none ' -- $c ));;
+-legend) COMPREPLY=( $(compgen -W ' both first second none ' -- $c ));;
+-diag) COMPREPLY=( $(compgen -W ' first second none ' -- $c ));;
+-rainbow) COMPREPLY=( $(compgen -W ' no blue red ' -- $c ));;
+-combine) COMPREPLY=( $(compgen -W ' halves add sub mult div ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f2) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-di) COMPREPLY=( $(compgen -X '!*.m2p*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-do) COMPREPLY=( $(compgen -X '!*.m2p*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.eps*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-xpm) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _xpm2ps_compl xpm2ps

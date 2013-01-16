@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " o h version nice w xvg c6 cn pow sig eps A B C qi qj sigfac" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-o]' -g '*.xvg(|.gz|.Z) *(/)' -- g_sigeps

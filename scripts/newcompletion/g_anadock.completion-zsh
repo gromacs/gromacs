@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f ox od of g h version nice xvg free norms cutoff" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-f]' -g '*.pdb(|.gz|.Z) *(/)' - 'c[-1,-ox]' -g '*.pdb(|.gz|.Z) *(/)' - 'c[-1,-od]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-of]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-g]' -g '*.log(|.gz|.Z) *(/)' -- g_anadock

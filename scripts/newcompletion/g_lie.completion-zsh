@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f o h version nice b e dt w xvg Elj Eqq Clj Cqq ligand" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-f]' -g '*.edr(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.xvg(|.gz|.Z) *(/)' -- g_lie

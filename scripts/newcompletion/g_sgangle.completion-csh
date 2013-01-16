@@ -1,0 +1,1 @@
+complete g_sgangle "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-oa/f:*.xvg{,.gz,.Z}/" "n/-od/f:*.xvg{,.gz,.Z}/" "n/-od1/f:*.xvg{,.gz,.Z}/" "n/-od2/f:*.xvg{,.gz,.Z}/" "c/-/( f n s oa od od1 od2 h version nice b e dt w xvg one z)/"

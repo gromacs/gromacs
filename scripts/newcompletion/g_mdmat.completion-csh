@@ -1,0 +1,1 @@
+complete g_mdmat "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-mean/f:*.xpm{,.gz,.Z}/" "n/-frames/f:*.xpm{,.gz,.Z}/" "n/-no/f:*.xvg{,.gz,.Z}/" "c/-/( f s n mean frames no h version nice b e dt xvg t nlevels)/"

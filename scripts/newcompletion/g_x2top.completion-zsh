@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f o r h version nice ff v nexcl noH14 alldih remdih nopairs name nopbc pdbq noparam noround kb kt kp" - 'c[-1,-f]' -g '*.(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.top(|.gz|.Z) *(/)' - 'c[-1,-r]' -g '*.rtp(|.gz|.Z) *(/)' -- g_x2top

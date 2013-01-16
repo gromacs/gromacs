@@ -1,0 +1,14 @@
+shopt -s extglob
+_editconf_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -o -mead -bf -h -version -nice -w -ndef -bt -box -angles -d -c -center -aligncenter -align -translate -rotate -princ -scale -density -pbc -resnr -grasp -rvdw -sig56 -vdwread -atom -legend -label -conect' -- $c)); return 0; fi
+case "$p" in
+-bt) COMPREPLY=( $(compgen -W ' triclinic cubic dodecahedron octahedron ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|xyz)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mead) COMPREPLY=( $(compgen -X '!*.pqr*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-bf) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _editconf_compl editconf

@@ -1,0 +1,1 @@
+complete g_confrms "n/-f1/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-f2/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.{gro,g96,pdb,brk,ent,esp,xyz}{,.gz,.Z}/" "n/-n1/f:*.ndx{,.gz,.Z}/" "n/-n2/f:*.ndx{,.gz,.Z}/" "n/-no/f:*.ndx{,.gz,.Z}/" "c/-/( f1 f2 o n1 n2 no h version nice w one nomw pbc nofit name label bfac)/"

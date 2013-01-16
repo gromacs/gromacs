@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f s n o lt h version nice b e dt xvg intra dist" - 'c[-1,-xvg]' -s " xmgrace xmgr none" - 'c[-1,-f]' -g '*.(xtc|trr|cpt|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' - 'c[-1,-s]' -g '*.(tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.xvg(|.gz|.Z) *(/)' - 'c[-1,-lt]' -g '*.xvg(|.gz|.Z) *(/)' -- g_dist

@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " s f e n o h version nice extend until nsteps time zeroq novel nocont init_fep_state" - 'c[-1,-s]' -g '*.(tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-f]' -g '*.(trr|cpt|trj)(|.gz|.Z) *(/)' - 'c[-1,-e]' -g '*.edr(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.(tpr|tpb|tpa)(|.gz|.Z) *(/)' -- tpbconv

@@ -1,0 +1,1 @@
+complete genion "n/-xvg/( xmgrace xmgr none)/" "n/-s/f:*.{tpr,tpb,tpa}{,.gz,.Z}/" "n/-table/f:*.xvg{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.{gro,g96,pdb,brk,ent,esp,xyz}{,.gz,.Z}/" "n/-g/f:*.log{,.gz,.Z}/" "n/-pot/f:*.pdb{,.gz,.Z}/" "n/-p/f:*.top{,.gz,.Z}/" "c/-/( s table n o g pot p h version nice xvg np pname pq nn nname nq rmin norandom seed scale conc neutral)/"

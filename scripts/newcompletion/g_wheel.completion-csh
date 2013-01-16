@@ -1,0 +1,1 @@
+complete g_wheel "n/-f/f:*.dat{,.gz,.Z}/" "n/-o/f:*.eps{,.gz,.Z}/" "c/-/( f o h version nice r0 rot0 T nonn)/"

@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " h version nice" -- g_options

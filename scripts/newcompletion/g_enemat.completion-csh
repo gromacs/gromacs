@@ -1,0 +1,1 @@
+complete g_enemat "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.edr{,.gz,.Z}/" "n/-groups/f:*.dat{,.gz,.Z}/" "n/-eref/f:*.dat{,.gz,.Z}/" "n/-emat/f:*.xpm{,.gz,.Z}/" "n/-etot/f:*.xvg{,.gz,.Z}/" "c/-/( f groups eref emat etot h version nice b e dt w xvg sum skip nomean nlevels max min nocoulsr coullr coul14 noljsr ljlr lj14 bhamsr bhamlr nofree temp)/"

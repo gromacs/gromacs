@@ -1,0 +1,1 @@
+complete g_sigeps "n/-xvg/( xmgrace xmgr none)/" "n/-o/f:*.xvg{,.gz,.Z}/" "c/-/( o h version nice w xvg c6 cn pow sig eps A B C qi qj sigfac)/"

@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " s f n h version nice b e dt w pbc nodiv ign bin nab" - 'c[-1,-s]' -g '*.(tpr|tpb|tpa|gro|g96|pdb|brk|ent)(|.gz|.Z) *(/)' - 'c[-1,-f]' -g '*.(xtc|trr|cpt|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' -- g_spatial

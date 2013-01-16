@@ -1,0 +1,1 @@
+complete g_lie "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.edr{,.gz,.Z}/" "n/-o/f:*.xvg{,.gz,.Z}/" "c/-/( f o h version nice b e dt w xvg Elj Eqq Clj Cqq ligand)/"

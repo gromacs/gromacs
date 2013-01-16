@@ -1,0 +1,1 @@
+complete g_nmens "n/-xvg/( xmgrace xmgr none)/" "n/-v/f:*.{trr,cpt,trj}{,.gz,.Z}/" "n/-e/f:*.xvg{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.{xtc,trr,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "c/-/( v e s n o h version nice xvg temp seed num first last)/"

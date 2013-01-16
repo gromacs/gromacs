@@ -1,0 +1,1 @@
+complete g_dielectric "n/-xvg/( xmgrace xmgr none)/" "n/-ffn/( none exp aexp exp_exp vac exp5 exp7 exp9 erffit)/" "n/-f/f:*.xvg{,.gz,.Z}/" "n/-d/f:*.xvg{,.gz,.Z}/" "n/-o/f:*.xvg{,.gz,.Z}/" "n/-c/f:*.xvg{,.gz,.Z}/" "c/-/( f d o c h version nice b e dt w xvg fft nox1 eint bfit efit tail A tau1 tau2 eps0 epsRF fix ffn nsmooth)/"

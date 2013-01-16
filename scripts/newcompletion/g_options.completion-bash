@@ -1,0 +1,8 @@
+shopt -s extglob
+_g_options_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -h -version -nice' -- $c)); return 0; fi
+case "$p" in
+esac }
+complete -F _g_options_compl g_options

@@ -1,0 +1,1 @@
+complete g_x2top "n/-f/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.top{,.gz,.Z}/" "n/-r/f:*.rtp{,.gz,.Z}/" "c/-/( f o r h version nice ff v nexcl noH14 alldih remdih nopairs name nopbc pdbq noparam noround kb kt kp)/"

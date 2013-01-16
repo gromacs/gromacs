@@ -1,0 +1,1 @@
+complete g_morph "n/-xvg/( xmgrace xmgr none)/" "n/-f1/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-f2/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-o/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-or/f:*.xvg{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "c/-/( f1 f2 o or n h version nice w xvg ninterm first last nofit)/"

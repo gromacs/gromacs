@@ -1,0 +1,1 @@
+complete make_ndx "n/-f/f:*.{gro,g96,pdb,brk,ent,esp,xyz,tpr,tpb,tpa}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-o/f:*.ndx{,.gz,.Z}/" "c/-/( f n o h version nice natoms)/"

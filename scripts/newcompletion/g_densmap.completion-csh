@@ -1,0 +1,1 @@
+complete g_densmap "n/-aver/( z y x)/" "n/-unit/( nm-3 nm-2 count)/" "n/-f/f:*.{xtc,trr,cpt,trj,gro,g96,pdb,g87}{,.gz,.Z}/" "n/-s/f:*.{tpr,tpb,tpa,gro,g96,pdb,brk,ent}{,.gz,.Z}/" "n/-n/f:*.ndx{,.gz,.Z}/" "n/-od/f:*.dat{,.gz,.Z}/" "n/-o/f:*.xpm{,.gz,.Z}/" "c/-/( f s n od o h version nice b e dt w bin aver xmin xmax n1 n2 amax rmax mirror sums unit dmin dmax)/"

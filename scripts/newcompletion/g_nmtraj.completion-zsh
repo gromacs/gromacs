@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " s v o h version nice eignr phases temp amplitude nframes" - 'c[-1,-s]' -g '*.(tpr|tpb|tpa|gro|g96|pdb|brk|ent)(|.gz|.Z) *(/)' - 'c[-1,-v]' -g '*.(trr|cpt|trj)(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.(xtc|trr|trj|gro|g96|pdb|g87)(|.gz|.Z) *(/)' -- g_nmtraj

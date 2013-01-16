@@ -1,0 +1,1 @@
+complete g_anadock "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.pdb{,.gz,.Z}/" "n/-ox/f:*.pdb{,.gz,.Z}/" "n/-od/f:*.xvg{,.gz,.Z}/" "n/-of/f:*.xvg{,.gz,.Z}/" "n/-g/f:*.log{,.gz,.Z}/" "c/-/( f ox od of g h version nice xvg free norms cutoff)/"

@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f n o h version nice natoms" - 'c[-1,-f]' -g '*.(gro|g96|pdb|brk|ent|esp|xyz|tpr|tpb|tpa)(|.gz|.Z) *(/)' - 'c[-1,-n]' -g '*.ndx(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.ndx(|.gz|.Z) *(/)' -- make_ndx

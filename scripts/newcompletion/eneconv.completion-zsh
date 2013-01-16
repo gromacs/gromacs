@@ -1,0 +1,1 @@
+compctl  -x 's[-]' -s " f o h version nice b e dt offset settime nosort rmdh scalefac noerror" - 'c[-1,-f]' -g '*.edr(|.gz|.Z) *(/)' - 'c[-1,-o]' -g '*.edr(|.gz|.Z) *(/)' -- eneconv

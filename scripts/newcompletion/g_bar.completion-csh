@@ -1,0 +1,1 @@
+complete g_bar "n/-xvg/( xmgrace xmgr none)/" "n/-f/f:*.xvg{,.gz,.Z}/" "n/-g/f:*.edr{,.gz,.Z}/" "n/-o/f:*.xvg{,.gz,.Z}/" "n/-oi/f:*.xvg{,.gz,.Z}/" "n/-oh/f:*.xvg{,.gz,.Z}/" "c/-/( f g o oi oh h version nice w xvg b e temp prec nbmin nbmax nbin extp)/"
