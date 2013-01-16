@@ -60,41 +60,41 @@ typedef struct {
     char *replace;
 } t_xlate_atom;
 
-static void get_xlatoms(const char *fn,FILE *fp,
-                        int *nptr,t_xlate_atom **xlptr)
+static void get_xlatoms(const char *fn, FILE *fp,
+                        int *nptr, t_xlate_atom **xlptr)
 {
-    char filebase[STRLEN];
-    char line[STRLEN];
-    char abuf[1024],rbuf[1024],repbuf[1024],dumbuf[1024];
-    char *_ptr;
-    int  n,na,idum;
+    char          filebase[STRLEN];
+    char          line[STRLEN];
+    char          abuf[1024], rbuf[1024], repbuf[1024], dumbuf[1024];
+    char         *_ptr;
+    int           n, na, idum;
     t_xlate_atom *xl;
 
-    fflib_filename_base(fn,filebase,STRLEN);
+    fflib_filename_base(fn, filebase, STRLEN);
 
     n  = *nptr;
     xl = *xlptr;
 
-    while (get_a_line(fp,line,STRLEN))
+    while (get_a_line(fp, line, STRLEN))
     {
-        na = sscanf(line,"%s%s%s%s",rbuf,abuf,repbuf,dumbuf);
+        na = sscanf(line, "%s%s%s%s", rbuf, abuf, repbuf, dumbuf);
         /* Check if we are reading an old format file with the number of items
          * on the first line.
          */
-        if (na == 1 && n == *nptr && sscanf(rbuf,"%d",&idum) == 1)
+        if (na == 1 && n == *nptr && sscanf(rbuf, "%d", &idum) == 1)
         {
             continue;
         }
         if (na != 3)
         {
-            gmx_fatal(FARGS,"Expected a residue name and two atom names in file '%s', not '%s'",fn,line);
+            gmx_fatal(FARGS, "Expected a residue name and two atom names in file '%s', not '%s'", fn, line);
         }
-        
-        srenew(xl,n+1);
+
+        srenew(xl, n+1);
         xl[n].filebase = strdup(filebase);
 
         /* Use wildcards... */
-        if (strcmp(rbuf,"*") != 0)
+        if (strcmp(rbuf, "*") != 0)
         {
             xl[n].res = strdup(rbuf);
         }
@@ -102,14 +102,14 @@ static void get_xlatoms(const char *fn,FILE *fp,
         {
             xl[n].res = NULL;
         }
-        
+
         /* Replace underscores in the string by spaces */
-        while ((_ptr = strchr(abuf,'_')) != 0)
+        while ((_ptr = strchr(abuf, '_')) != 0)
         {
             *_ptr = ' ';
         }
-        
-        xl[n].atom = strdup(abuf);
+
+        xl[n].atom    = strdup(abuf);
         xl[n].replace = strdup(repbuf);
         n++;
     }
@@ -118,11 +118,11 @@ static void get_xlatoms(const char *fn,FILE *fp,
     *xlptr = xl;
 }
 
-static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
+static void done_xlatom(int nxlate, t_xlate_atom *xlatom)
 {
     int i;
-    
-    for(i=0; (i<nxlate); i++)
+
+    for (i = 0; (i < nxlate); i++)
     {
         sfree(xlatom[i].filebase);
         if (xlatom[i].res != NULL)
@@ -135,41 +135,41 @@ static void done_xlatom(int nxlate,t_xlate_atom *xlatom)
     sfree(xlatom);
 }
 
-void rename_atoms(const char *xlfile,const char *ffdir,
-                  t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-                  gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,
+void rename_atoms(const char *xlfile, const char *ffdir,
+                  t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
+                  gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
                   gmx_bool bVerbose)
 {
-    FILE *fp;
-    int nxlate,a,i,resind;
+    FILE         *fp;
+    int           nxlate, a, i, resind;
     t_xlate_atom *xlatom;
-    int  nf;
-    char **f;
-    char c,*rnm,atombuf[32],*ptr0,*ptr1;
-    gmx_bool bReorderedNum,bRenamed,bMatch;
+    int           nf;
+    char        **f;
+    char          c, *rnm, atombuf[32], *ptr0, *ptr1;
+    gmx_bool      bReorderedNum, bRenamed, bMatch;
 
     nxlate = 0;
     xlatom = NULL;
     if (xlfile != NULL)
     {
         fp = libopen(xlfile);
-        get_xlatoms(xlfile,fp,&nxlate,&xlatom);
+        get_xlatoms(xlfile, fp, &nxlate, &xlatom);
         fclose(fp);
     }
     else
     {
-        nf = fflib_search_file_end(ffdir,".arn",FALSE,&f);
-        for(i=0; i<nf; i++)
+        nf = fflib_search_file_end(ffdir, ".arn", FALSE, &f);
+        for (i = 0; i < nf; i++)
         {
             fp = fflib_open(f[i]);
-            get_xlatoms(f[i],fp,&nxlate,&xlatom);
+            get_xlatoms(f[i], fp, &nxlate, &xlatom);
             ffclose(fp);
             sfree(f[i]);
         }
         sfree(f);
     }
 
-    for(a=0; (a<atoms->nr); a++)
+    for (a = 0; (a < atoms->nr); a++)
     {
         resind = atoms->atom[a].resind;
         if (bResname)
@@ -180,36 +180,37 @@ void rename_atoms(const char *xlfile,const char *ffdir,
         {
             rnm = *(atoms->resinfo[resind].rtp);
         }
-               
-        strcpy(atombuf,*(atoms->atomname[a]));
+
+        strcpy(atombuf, *(atoms->atomname[a]));
         bReorderedNum = FALSE;
         if (bReorderNum)
         {
             if (isdigit(atombuf[0]))
             {
                 c = atombuf[0];
-                for (i=0; ((size_t)i<strlen(atombuf)-1); i++)
+                for (i = 0; ((size_t)i < strlen(atombuf)-1); i++)
                 {
                     atombuf[i] = atombuf[i+1];
                 }
-                atombuf[i] = c;
+                atombuf[i]    = c;
                 bReorderedNum = TRUE;
             }
         }
         bRenamed = FALSE;
-        for(i=0; (i<nxlate) && !bRenamed; i++) {
+        for (i = 0; (i < nxlate) && !bRenamed; i++)
+        {
             /* Check if the base file name of the rtp and arn entry match */
             if (restp == NULL ||
-                gmx_strcasecmp(restp[resind].filebase,xlatom[i].filebase) == 0)
+                gmx_strcasecmp(restp[resind].filebase, xlatom[i].filebase) == 0)
             {
                 /* Match the residue name */
                 bMatch = (xlatom[i].res == NULL ||
-                          (gmx_strcasecmp("protein",xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_protein(rt,rnm)) ||
-                          (gmx_strcasecmp("DNA",xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_dna(rt,rnm)) ||
-                          (gmx_strcasecmp("RNA",xlatom[i].res) == 0 &&
-                           gmx_residuetype_is_rna(rt,rnm)));
+                          (gmx_strcasecmp("protein", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_protein(rt, rnm)) ||
+                          (gmx_strcasecmp("DNA", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_dna(rt, rnm)) ||
+                          (gmx_strcasecmp("RNA", xlatom[i].res) == 0 &&
+                           gmx_residuetype_is_rna(rt, rnm)));
                 if (!bMatch)
                 {
                     ptr0 = rnm;
@@ -222,7 +223,7 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                     }
                     bMatch = (ptr0[0] == '\0' && ptr1[0] == '\0');
                 }
-                if (bMatch && strcmp(atombuf,xlatom[i].atom) == 0)
+                if (bMatch && strcmp(atombuf, xlatom[i].atom) == 0)
                 {
                     /* We have a match. */
                     /* Don't free the old atomname,
@@ -237,17 +238,16 @@ void rename_atoms(const char *xlfile,const char *ffdir,
                                *atoms->resinfo[resind].name,
                                ptr0);
                     }
-                    atoms->atomname[a] = put_symtab(symtab,ptr0);
-                    bRenamed = TRUE;
+                    atoms->atomname[a] = put_symtab(symtab, ptr0);
+                    bRenamed           = TRUE;
                 }
             }
         }
         if (bReorderedNum && !bRenamed)
         {
-            atoms->atomname[a] = put_symtab(symtab,atombuf);
+            atoms->atomname[a] = put_symtab(symtab, atombuf);
         }
     }
 
-    done_xlatom(nxlate,xlatom);
+    done_xlatom(nxlate, xlatom);
 }
-

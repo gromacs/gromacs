@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_enemat.c is now in gmx_enemat.c,
-* where the old main function is called gmx_enemat().
-*/
+ * The code that used to be in g_enemat.c is now in gmx_enemat.c,
+ * where the old main function is called gmx_enemat().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_enemat(argc,argv);
-  return 0;
+    gmx_enemat(argc, argv);
+    return 0;
 }
-
-
-  

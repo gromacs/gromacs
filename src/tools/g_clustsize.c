@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_clustsize.c is now in gmx_clustsize.c,
-* where the old main function is called gmx_clustsize().
-*/
+ * The code that used to be in g_clustsize.c is now in gmx_clustsize.c,
+ * where the old main function is called gmx_clustsize().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_clustsize(argc,argv);
-  return 0;
+    gmx_clustsize(argc, argv);
+    return 0;
 }
-
-
-  

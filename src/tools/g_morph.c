@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_morph.c is now in gmx_morph.c,
-* where the old main function is called gmx_morph().
-*/
+ * The code that used to be in g_morph.c is now in gmx_morph.c,
+ * where the old main function is called gmx_morph().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_morph(argc,argv);
-  return 0;
+    gmx_morph(argc, argv);
+    return 0;
 }
-
-
-  

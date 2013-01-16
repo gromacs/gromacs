@@ -81,9 +81,9 @@ typedef struct
     /** Flags that describe the type of the operand. */
     int             flags;
     /** (Array of) integer value(s). */
-    int        *i;
+    int            *i;
     /** (Array of) real value(s). */
-    real       *r;
+    real           *r;
 } t_compare_value;
 
 /*! \internal \brief
@@ -175,7 +175,7 @@ comparison_type(char *str)
  * \returns   Pointer to a string that corresponds to \p cmpt.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p cmpt is not one of the valid values.
  */
 static const char *
@@ -447,14 +447,14 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
         {
             /* Reverse the sides to place the integer on the right */
             int    flags;
-            d->left.r  = d->right.r;
-            d->right.r = NULL;
-            d->right.i = d->left.i;
-            d->left.i  = NULL;
+            d->left.r      = d->right.r;
+            d->right.r     = NULL;
+            d->right.i     = d->left.i;
+            d->left.i      = NULL;
             flags          = d->left.flags;
             d->left.flags  = d->right.flags;
             d->right.flags = flags;
-            d->cmpt = reverse_comparison_type(d->cmpt);
+            d->cmpt        = reverse_comparison_type(d->cmpt);
         }
         else if (!(d->left.flags & CMP_DYNAMICVAL))
         {
@@ -513,15 +513,15 @@ static int
 evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
-    int                   i, i1, i2, ig;
-    int                   a, b;
+    t_methoddata_compare     *d = (t_methoddata_compare *)data;
+    int                       i, i1, i2, ig;
+    int                       a, b;
     gmx_bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
-        a = d->left.i[i1];
-        b = d->right.i[i2];
+        a       = d->left.i[i1];
+        b       = d->right.i[i2];
         bAccept = FALSE;
         switch (d->cmpt)
         {
@@ -563,15 +563,15 @@ static int
 evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_compare *d = (t_methoddata_compare *)data;
-    int                   i, i1, i2, ig;
-    real                  a, b;
+    t_methoddata_compare     *d = (t_methoddata_compare *)data;
+    int                       i, i1, i2, ig;
+    real                      a, b;
     gmx_bool                  bAccept;
 
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
-        a = d->left.r[i1];
-        b = (d->right.flags & CMP_REALVAL) ? d->right.r[i2] : d->right.i[i2];
+        a       = d->left.r[i1];
+        b       = (d->right.flags & CMP_REALVAL) ? d->right.r[i2] : d->right.i[i2];
         bAccept = FALSE;
         switch (d->cmpt)
         {

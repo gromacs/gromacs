@@ -42,8 +42,8 @@
 #include "typedefs.h"
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void convert_params(int atnr,t_params nbtypes[],
-			   t_molinfo *mi,int comb,double reppow,real fudgeQQ,
-			   gmx_mtop_t *mtop);
+extern void convert_params(int atnr, t_params nbtypes[],
+                           t_molinfo *mi, int comb, double reppow, real fudgeQQ,
+                           gmx_mtop_t *mtop);
 
-#endif	/* _convparm_h */
+#endif  /* _convparm_h */

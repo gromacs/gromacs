@@ -72,4 +72,3 @@ genborn_allvsall_calc_chainrule_sse2_single(t_forcerec *           fr,
                                             void *                 work);
 
 #endif
-

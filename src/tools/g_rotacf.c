@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rotacf.c is now in gmx_rotacf.c,
-* where the old main function is called gmx_rotacf().
-*/
+ * The code that used to be in g_rotacf.c is now in gmx_rotacf.c,
+ * where the old main function is called gmx_rotacf().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rotacf(argc,argv);
-  return 0;
+    gmx_rotacf(argc, argv);
+    return 0;
 }
-
-
-  

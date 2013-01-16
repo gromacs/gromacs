@@ -52,17 +52,17 @@ void md_print_info(const t_commrec *cr, FILE *fplog,
 
     if (cr == NULL || SIMMASTER(cr))
     {
-        va_start(ap,fmt);
+        va_start(ap, fmt);
 
-        vfprintf(stderr,fmt,ap);
-        
+        vfprintf(stderr, fmt, ap);
+
         va_end(ap);
     }
     if (fplog != NULL)
     {
-        va_start(ap,fmt);
+        va_start(ap, fmt);
 
-        vfprintf(fplog,fmt,ap);
+        vfprintf(fplog, fmt, ap);
 
         va_end(ap);
     }
@@ -75,21 +75,21 @@ void md_print_warn(const t_commrec *cr, FILE *fplog,
 
     if (cr == NULL || SIMMASTER(cr))
     {
-        va_start(ap,fmt);
+        va_start(ap, fmt);
 
-        fprintf(stderr,"\n");
-        vfprintf(stderr,fmt,ap);
-        fprintf(stderr,"\n");
+        fprintf(stderr, "\n");
+        vfprintf(stderr, fmt, ap);
+        fprintf(stderr, "\n");
 
         va_end(ap);
     }
     if (fplog != NULL)
     {
-        va_start(ap,fmt);
+        va_start(ap, fmt);
 
-        fprintf(fplog,"\n");
-        vfprintf(fplog,fmt,ap);
-        fprintf(fplog,"\n");
+        fprintf(fplog, "\n");
+        vfprintf(fplog, fmt, ap);
+        fprintf(fplog, "\n");
 
         va_end(ap);
     }
