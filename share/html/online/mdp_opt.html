@@ -91,7 +91,7 @@ simulation. Edit it to suit your specific needs and desires. </P>
 <dd>defines to pass to the preprocessor, default is no defines. You can use
 any defines to control options in your customized topology files. Options
 that are already available by default are:
-<dd><dl compact>
+</dd><dl compact>
 <dt>-DFLEXIBLE</dt>
 <dd>Will tell <tt>grompp</tt> to include flexible water in stead of rigid water into your
 topology, this can be useful for normal mode analysis.</dd>
@@ -1490,6 +1490,8 @@ the energy file and/or to <tt>dhdl.xvg</tt>, where they can be processed by, for
 The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
+<dt><b>expanded</b></dt>
+<dd> Turns on xpanded ensemble simulation, where the alchemical state becomes a dynamic variable, allowing jumping between different Hamiltonians. See the <A HREF="#expanded">expanded ensemble options</A> for controlling how expanded ensemble simulations are performed. The different Hamiltonians used in expanded ensemble simulations are defined by the other free energy options.</dd>
 </dl></dd>
 <dt><b>init-lambda: (0)</b></dt>
 <dd>starting value for lambda (float).  Generally, this should only be used with slow growth.  In other cases, <b>init-lambda-state</b> should be specified instead.</dd>
@@ -1598,8 +1600,7 @@ the molecule definition in the topology.</dd>
 <h3><!--Idx-->Expanded Ensemble calculations<!--EIdx--></h3>
 
 <dl>
-<dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
-simulations.  Must be a multiple of <b>nstcalcenergy</b>.</dd>
+<dt><b>nstexpanded</b></dt> <dd>The number of integration steps beween attempted moves changing the system Hamiltonian in expanded ensemble simulations.  Must be a multiple of <b>nstcalcenergy</b>, but can be greater or less than <b>nstdhdl</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
@@ -1660,22 +1661,22 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dt><b>mininum-var-min: (100)</b></dt>
 <dd> The <b>min-variance</b> strategy (option of <b>lmc-stats</b> is only valid for larger number of samples, and can get stuck if too few samples are used at each state.  <b>mininum-var-min</b> is the minimum number of samples that each state that are allowed before the <b>min-variance</b> strategy is activated if selected.
 <dt><b>init-lambda-weights: </b></dt>
-<dd>The initial weights (free energies) used for the expanded ensemble states.  Default is a vector of zero weights. format is similar to the lambda vector settings in <b>fep-lambdas</b>, except the weights can be any floating point number.  Units are kT. Its length must match the lambda vector lengths.<dd>
-<dt><b>lmc-weights-equil: (no)</b><dt>
+<dd>The initial weights (free energies) used for the expanded ensemble states.  Default is a vector of zero weights. format is similar to the lambda vector settings in <b>fep-lambdas</b>, except the weights can be any floating point number.  Units are kT. Its length must match the lambda vector lengths.</dd>
+<dt><b>lmc-weights-equil: (no)</b></dt>
 <dd><dl compact>
-<dt><b>no</b><dt>
+<dt><b>no</b></dt>
 <dd>Expanded ensemble weights continue to be updated throughout the simulation.</dd>
-<dt><b>yes</b><dt>
+<dt><b>yes</b></dt>
 <dd>The input expanded ensemble weights are treated as equilibrated, and are not updated throughout the simulation.</dd>
-<dt><b>wl-delta</b><dt>
+<dt><b>wl-delta</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the Wang-Landau incrementor falls below the value specified by <b>weight-equil-wl-delta</b>.</dd>
-<dt><b>number-all-lambda</b><dt>
+<dt><b>number-all-lambda</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of samples at all of the lambda states is greater than the value specified by <b>weight-equil-number-all-lambda</b>.</dd>
-<dt><b>number-steps</b><dt>
+<dt><b>number-steps</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of steps is greater than the level specified by <b>weight-equil-number-steps</b>.</dd>
-<dt><b>number-samples</b><dt>
+<dt><b>number-samples</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of total samples across all lambda states is greater than the level specified by <b>weight-equil-number-samples</b>.</dd>
-<dt><b>count-ratio</b><dt>
+<dt><b>count-ratio</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the ratio of samples at the least sampled lambda state and most sampled lambda state greater than the value specified by <b>weight-equil-count-ratio</b>.</dd> 
 </dl>
 <dt><b>simulated-tempering: (no)</b></dt>
@@ -1687,11 +1688,11 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dt><b>simulated-tempering-scaling: (linear)</b></dt>
 <dd>Controls the way that the temperatures at intermediate lambdas are calculated from the <b>temperature-lambda</b> part of the lambda vector.</dd>
 <dd><dl compact>
-<dt><b>linear</b><dt>
+<dt><b>linear</b></dt>
 <dd>Linearly interpolates the temperatures using the values of <b>temperature-lambda</b>,i.e. if <b>sim-temp-low</b>=300, <b>sim-temp-high</b>=400, then lambda=0.5 correspond to a temperature of 350. A nonlinear set of temperatures can always be implemented with uneven spacing in lambda.</dd>
-<dt><b>geometric</b><dt>
+<dt><b>geometric</b></dt>
 <dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>)^(i/(ntemps-1)).  Should give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
-<dt><b>exponential</b><dt>
+<dt><b>exponential</b></dt>
 <dd> Interpolates temperatures exponentially between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature
 <b>sim-temp-low</b> + (<b>sim-temp-high</b>-<b>sim-temp-low</b>)*((exp(<b>temperature-lambdas</b>[i])-1)/(exp(1.0)-1)).</dd>
 </dl>
