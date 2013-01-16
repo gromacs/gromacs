@@ -1490,6 +1490,8 @@ the energy file and/or to <tt>dhdl.xvg</tt>, where they can be processed by, for
 The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
+<dt><b>expanded</b></dt>
+<dd> Turns on xpanded ensemble simulation, where the alchemical state becomes a dynamic variable, allowing jumping between different Hamiltonians. See the <A HREF="#expanded">expanded ensemble options</A> for controlling how expanded ensemble simulations are performed. The different Hamiltonians used in expanded ensemble simulations are defined by the other free energy options.<dd>
 </dl></dd>
 <dt><b>init-lambda: (0)</b></dt>
 <dd>starting value for lambda (float).  Generally, this should only be used with slow growth.  In other cases, <b>init-lambda-state</b> should be specified instead.</dd>
@@ -1598,8 +1600,7 @@ the molecule definition in the topology.</dd>
 <h3><!--Idx-->Expanded Ensemble calculations<!--EIdx--></h3>
 
 <dl>
-<dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
-simulations.  Must be a multiple of <b>nstcalcenergy</b>.</dd>
+<dt><b>nstexpanded</b></dt> <dd>The number of integration steps beween attempted moves changing the system Hamiltonian in expanded ensemble simulations.  Must be a multiple of <b>nstcalcenergy</b>, but can be greater or less than <b>nstdhdl</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
