@@ -3,7 +3,7 @@
  *
  * This file is part of Gromacs        Copyright (c) 1991-2010
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
