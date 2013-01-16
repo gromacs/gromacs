@@ -259,7 +259,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         for (j = 0; j < d->n; ++j)
         {
-            b = i + d->rperm[j];
+            b     = i + d->rperm[j];
             refid = d->p.m.refid[b];
             if (refid != -1)
             {

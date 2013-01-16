@@ -39,32 +39,32 @@
 #ifndef _x2top_h
 #define _x2top_h
 
-	
+
 #include <stdio.h>
-#include "visibility.h"	
+#include "visibility.h"
 typedef struct {
-  char   *elem,*type;
-  double q,m;
-  int    nbonds;
-  char   **bond;
-  double *blen;
+    char    *elem, *type;
+    double   q, m;
+    int      nbonds;
+    char   **bond;
+    double  *blen;
 } t_nm2type;
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern t_nm2type *rd_nm2type(const char *ffdir,int *nnm);
-/* Read the name 2 type database. nnm is the number of entries 
+extern t_nm2type *rd_nm2type(const char *ffdir, int *nnm);
+/* Read the name 2 type database. nnm is the number of entries
  * ff is the force field.
  */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
+extern void dump_nm2type(FILE *fp, int nnm, t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
-		   gpp_atomtype_t atype,int *nbonds,t_params *bond);
-/* Try to determine the atomtype (force field dependent) for the atoms 
- * with help of the bond list 
+extern int nm2type(int nnm, t_nm2type nm2t[], t_symtab *tab, t_atoms *atoms,
+                   gpp_atomtype_t atype, int *nbonds, t_params *bond);
+/* Try to determine the atomtype (force field dependent) for the atoms
+ * with help of the bond list
  */
 
 #endif

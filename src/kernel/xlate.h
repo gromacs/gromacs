@@ -45,9 +45,9 @@
  * otherwise renames atoms based on rtp entry names.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void rename_atoms(const char *xlfile,const char *ffdir,
-			 t_atoms *atoms,t_symtab *symtab,const t_restp *restp,
-			 gmx_bool bResname,gmx_residuetype_t rt,gmx_bool bReorderNum,
-			 gmx_bool bVerbose);
+extern void rename_atoms(const char *xlfile, const char *ffdir,
+                         t_atoms *atoms, t_symtab *symtab, const t_restp *restp,
+                         gmx_bool bResname, gmx_residuetype_t rt, gmx_bool bReorderNum,
+                         gmx_bool bVerbose);
 
 #endif

@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_mdmat.c is now in gmx_mdmat.c,
-* where the old main function is called gmx_mdmat().
-*/
+ * The code that used to be in g_mdmat.c is now in gmx_mdmat.c,
+ * where the old main function is called gmx_mdmat().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_mdmat(argc,argv);
-  return 0;
+    gmx_mdmat(argc, argv);
+    return 0;
 }
-
-
-  

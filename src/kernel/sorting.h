@@ -64,17 +64,17 @@ extern void sort_bonds(t_topology *top);
  *
  */
 
-extern void sort_xblock(t_block *block,rvec x[],int renum[]);
+extern void sort_xblock(t_block *block, rvec x[], int renum[]);
 /*
- * Sort_xblock returns a renumber table which can be used to sort the 
+ * Sort_xblock returns a renumber table which can be used to sort the
  * blocks specified in block in an order dependent of the coordinates.
  */
 
-extern void sort_bond_list(t_bond bonds[],int nr);
+extern void sort_bond_list(t_bond bonds[], int nr);
 /*
  * Sort_bond_list sort the list of bonds, specified by bonds in order
  * of ascending atom id. The bonds are specified as pairs of atom ids.
  * Where nr specifies the number of bonds (the length of the array).
  */
-                  
-#endif	/* _sorting_h */
+
+#endif  /* _sorting_h */

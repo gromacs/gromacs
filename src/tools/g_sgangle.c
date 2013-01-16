@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_sgangle.c is now in gmx_sgangle.c,
-* where the old main function is called gmx_sgangle().
-*/
+ * The code that used to be in g_sgangle.c is now in gmx_sgangle.c,
+ * where the old main function is called gmx_sgangle().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_sgangle(argc,argv);
-  return 0;
+    gmx_sgangle(argc, argv);
+    return 0;
 }
-
-
-  

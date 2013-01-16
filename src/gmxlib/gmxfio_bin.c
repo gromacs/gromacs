@@ -64,63 +64,63 @@
 /* This is the part that reads dummy and ascii files.  */
 
 
-static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
-                       const char *desc, const char *srcfile, int line);
-static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
-                        const char *desc, const char *srcfile, int line);
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
+                           const char *desc, const char *srcfile, int line);
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
+                            const char *desc, const char *srcfile, int line);
 
 
-const t_iotype bin_iotype={do_binread, do_binwrite};
+const t_iotype bin_iotype = {do_binread, do_binwrite};
 
 
-static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio, 
-                        const char *desc, const char *srcfile, int line)
+static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
+                            const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, wsize;
-    int ssize;
+    int    ssize;
 
     gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
     switch (eio)
     {
-    case eioREAL:
-        size = sizeof(real);
-        break;
-    case eioFLOAT:
-        size = sizeof(float);
-        break;
-    case eioDOUBLE:
-        size = sizeof(double);
-        break;
-    case eioINT:
-        size = sizeof(int);
-        break;
-    case eioGMX_LARGE_INT:
-        size = sizeof(gmx_large_int_t);
-        break;
-    case eioUCHAR:
-        size = sizeof(unsigned char);
-        break;
-    case eioNUCHAR:
-        size = sizeof(unsigned char);
-        break;
-    case eioUSHORT:
-        size = sizeof(unsigned short);
-        break;
-    case eioRVEC:
-        size = sizeof(rvec);
-        break;
-    case eioNRVEC:
-        size = sizeof(rvec);
-        break;
-    case eioIVEC:
-        size = sizeof(ivec);
-        break;
-    case eioSTRING:
-        size = ssize = strlen((char *) item) + 1;
-        do_binwrite(fio, &ssize, 1, eioINT, desc, srcfile, line);
-        break;
-    default:
-        gmx_fio_fe(fio, eio, desc, srcfile, line);
+        case eioREAL:
+            size = sizeof(real);
+            break;
+        case eioFLOAT:
+            size = sizeof(float);
+            break;
+        case eioDOUBLE:
+            size = sizeof(double);
+            break;
+        case eioINT:
+            size = sizeof(int);
+            break;
+        case eioGMX_LARGE_INT:
+            size = sizeof(gmx_large_int_t);
+            break;
+        case eioUCHAR:
+            size = sizeof(unsigned char);
+            break;
+        case eioNUCHAR:
+            size = sizeof(unsigned char);
+            break;
+        case eioUSHORT:
+            size = sizeof(unsigned short);
+            break;
+        case eioRVEC:
+            size = sizeof(rvec);
+            break;
+        case eioNRVEC:
+            size = sizeof(rvec);
+            break;
+        case eioIVEC:
+            size = sizeof(ivec);
+            break;
+        case eioSTRING:
+            size = ssize = strlen((char *) item) + 1;
+            do_binwrite(fio, &ssize, 1, eioINT, desc, srcfile, line);
+            break;
+        default:
+            gmx_fio_fe(fio, eio, desc, srcfile, line);
     }
 
     wsize = fwrite(item, size, nitem, fio->fp);
@@ -136,61 +136,71 @@ static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     return (wsize == nitem);
 }
 
-static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio, 
-                       const char *desc, const char *srcfile, int line)
+static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
+                           const char *desc, const char *srcfile, int line)
 {
     size_t size = 0, rsize;
-    int ssize;
+    int    ssize;
 
     gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
     switch (eio)
     {
-    case eioREAL:
-        if (fio->bDouble)
-            size = sizeof(double);
-        else
+        case eioREAL:
+            if (fio->bDouble)
+            {
+                size = sizeof(double);
+            }
+            else
+            {
+                size = sizeof(float);
+            }
+            break;
+        case eioFLOAT:
             size = sizeof(float);
-        break;
-    case eioFLOAT:
-        size = sizeof(float);
-        break;
-    case eioDOUBLE:
-        size = sizeof(double);
-        break;
-    case eioINT:
-        size = sizeof(int);
-        break;
-    case eioGMX_LARGE_INT:
-        size = sizeof(gmx_large_int_t);
-        break;
-    case eioUCHAR:
-        size = sizeof(unsigned char);
-        break;
-    case eioNUCHAR:
-        size = sizeof(unsigned char);
-        break;
-    case eioUSHORT:
-        size = sizeof(unsigned short);
-        break;
-    case eioRVEC:
-    case eioNRVEC:
-        if (fio->bDouble)
-            size = sizeof(double) * DIM;
-        else
-            size = sizeof(float) * DIM;
-        break;
-    case eioIVEC:
-        size = sizeof(ivec);
-        break;
-    case eioSTRING:
-        do_binread(fio, &ssize, 1, eioINT, desc, srcfile, line);
-        size = ssize;
-        break;
-    default:
-        gmx_fio_fe(fio, eio, desc, srcfile, line);
+            break;
+        case eioDOUBLE:
+            size = sizeof(double);
+            break;
+        case eioINT:
+            size = sizeof(int);
+            break;
+        case eioGMX_LARGE_INT:
+            size = sizeof(gmx_large_int_t);
+            break;
+        case eioUCHAR:
+            size = sizeof(unsigned char);
+            break;
+        case eioNUCHAR:
+            size = sizeof(unsigned char);
+            break;
+        case eioUSHORT:
+            size = sizeof(unsigned short);
+            break;
+        case eioRVEC:
+        case eioNRVEC:
+            if (fio->bDouble)
+            {
+                size = sizeof(double) * DIM;
+            }
+            else
+            {
+                size = sizeof(float) * DIM;
+            }
+            break;
+        case eioIVEC:
+            size = sizeof(ivec);
+            break;
+        case eioSTRING:
+            do_binread(fio, &ssize, 1, eioINT, desc, srcfile, line);
+            size = ssize;
+            break;
+        default:
+            gmx_fio_fe(fio, eio, desc, srcfile, line);
     }
     if (item)
+    {
         rsize = fread(item, size, nitem, fio->fp);
+    }
     else
     {
         /* Skip over it if we have a NULL pointer here */
@@ -198,11 +208,11 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
         rsize = nitem;
     }
     if ((rsize != nitem) && (fio->bDebug))
+    {
         fprintf(stderr,
                 "Error reading %s %s from file %s (source %s, line %d)\n",
                 eioNames[eio], desc, fio->fn, srcfile, line);
+    }
 
     return (rsize == nitem);
 }
-
-

@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_gyrate.c is now in gmx_gyrate.c,
-* where the old main function is called gmx_gyrate().
-*/
+ * The code that used to be in g_gyrate.c is now in gmx_gyrate.c,
+ * where the old main function is called gmx_gyrate().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_gyrate(argc,argv);
-  return 0;
+    gmx_gyrate(argc, argv);
+    return 0;
 }
-
-
-  
