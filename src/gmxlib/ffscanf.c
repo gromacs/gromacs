@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,52 +51,63 @@
 
 static int getfld(char **p)
 {
-  int fld;
-  
-  fld=0;
-  while (isdigit(**p)) fld=(fld*10)+((*((*p)++))-'0');
-  return fld;
-}
+    int fld;
 
-void ffscanf(FILE *in,char *fmt, ...)
-{
-  va_list ap;
-  char *p;
-  char buf[STRLEN];
-  int i,fld;
-  double dval;
-
-  va_start(ap,fmt);
-  for (p=fmt; *p; p++) {
-    if (*p == '%') {
-      p++;
-      fld=getfld(&p);
-      for(i=0; (i<fld); ) {
-	buf[i]=fgetc(in);
-	if (buf[i] != '\n') i++;
-      }
-      buf[fld]='\0';
-      switch(*p) {
-      case 'd':
-	sscanf(buf,"%d",va_arg(ap,int *));
-	break;
-      case 'f':
-	sscanf(buf,"%f",va_arg(ap,float *));
-	break;
-      case 'F':
-	sscanf(buf,"%lf",va_arg(ap,double *));
-	break;
-      case 'r':
-	sscanf(buf,"%lf",&dval);
-	*(va_arg(ap,real *)) = dval;
-	break;
-      default:
-	break;
-      }
+    fld = 0;
+    while (isdigit(**p))
+    {
+        fld = (fld*10)+((*((*p)++))-'0');
     }
-    else
-      gmx_fatal(FARGS,"unknown ffscanf format '%c'",*p+1);
-  }
-  va_end(ap);
+    return fld;
 }
 
+void ffscanf(FILE *in, char *fmt, ...)
+{
+    va_list ap;
+    char   *p;
+    char    buf[STRLEN];
+    int     i, fld;
+    double  dval;
+
+    va_start(ap, fmt);
+    for (p = fmt; *p; p++)
+    {
+        if (*p == '%')
+        {
+            p++;
+            fld = getfld(&p);
+            for (i = 0; (i < fld); )
+            {
+                buf[i] = fgetc(in);
+                if (buf[i] != '\n')
+                {
+                    i++;
+                }
+            }
+            buf[fld] = '\0';
+            switch (*p)
+            {
+                case 'd':
+                    sscanf(buf, "%d", va_arg(ap, int *));
+                    break;
+                case 'f':
+                    sscanf(buf, "%f", va_arg(ap, float *));
+                    break;
+                case 'F':
+                    sscanf(buf, "%lf", va_arg(ap, double *));
+                    break;
+                case 'r':
+                    sscanf(buf, "%lf", &dval);
+                    *(va_arg(ap, real *)) = dval;
+                    break;
+                default:
+                    break;
+            }
+        }
+        else
+        {
+            gmx_fatal(FARGS, "unknown ffscanf format '%c'", *p+1);
+        }
+    }
+    va_end(ap);
+}

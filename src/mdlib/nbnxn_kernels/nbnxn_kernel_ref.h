@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,8 +51,8 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
                  const nbnxn_atomdata_t     *nbat,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,
-                 int                        force_flags,
-                 int                        clearF,
+                 int                         force_flags,
+                 int                         clearF,
                  real                       *fshift,
                  real                       *Vc,
                  real                       *Vvdw);

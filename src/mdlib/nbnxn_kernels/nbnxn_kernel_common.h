@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,7 +53,7 @@ extern "C" {
  * In the latter case output_index is the task/thread list/buffer index.
  */
 void
-clear_f(const nbnxn_atomdata_t *nbat,int output_index,real *f);
+clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f);
 
 /* Clear the shift forces */
 void
@@ -62,7 +62,7 @@ clear_fshift(real *fshift);
 /* Reduce the collected energy terms over the pair-lists/threads */
 void
 reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                        nlist,
+                           int                         nlist,
                            real                       *Vvdw,
                            real                       *Vc);
 

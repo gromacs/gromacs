@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -127,38 +127,46 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
                                   real                       *f,
                                   real                       *fshift);
 
-enum { coultRF, coultTAB, coultTAB_TWIN, coultNR };
+enum {
+    coultRF, coultTAB, coultTAB_TWIN, coultNR
+};
 
 p_nbk_func_ener p_nbk_c_ener[coultNR] =
-{ nbnxn_kernel_ref_rf_ener,
-  nbnxn_kernel_ref_tab_ener,
-  nbnxn_kernel_ref_tab_twin_ener };
+{
+    nbnxn_kernel_ref_rf_ener,
+    nbnxn_kernel_ref_tab_ener,
+    nbnxn_kernel_ref_tab_twin_ener
+};
 
 p_nbk_func_ener p_nbk_c_energrp[coultNR] =
-{ nbnxn_kernel_ref_rf_energrp,
-  nbnxn_kernel_ref_tab_energrp,
-  nbnxn_kernel_ref_tab_twin_energrp};
+{
+    nbnxn_kernel_ref_rf_energrp,
+    nbnxn_kernel_ref_tab_energrp,
+    nbnxn_kernel_ref_tab_twin_energrp
+};
 
 p_nbk_func_noener p_nbk_c_noener[coultNR] =
-{ nbnxn_kernel_ref_rf_noener,
-  nbnxn_kernel_ref_tab_noener,
-  nbnxn_kernel_ref_tab_twin_noener };
+{
+    nbnxn_kernel_ref_rf_noener,
+    nbnxn_kernel_ref_tab_noener,
+    nbnxn_kernel_ref_tab_twin_noener
+};
 
 void
 nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
                  const nbnxn_atomdata_t     *nbat,
                  const interaction_const_t  *ic,
                  rvec                       *shift_vec,
-                 int                        force_flags,
-                 int                        clearF,
+                 int                         force_flags,
+                 int                         clearF,
                  real                       *fshift,
                  real                       *Vc,
                  real                       *Vvdw)
 {
-    int              nnbl;
+    int                nnbl;
     nbnxn_pairlist_t **nbl;
-    int coult;
-    int nb;
+    int                coult;
+    int                nb;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -180,16 +188,16 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
-    for(nb=0; nb<nnbl; nb++)
+    for (nb = 0; nb < nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
-        real *fshift_p;
+        real                    *fshift_p;
 
         out = &nbat->out[nb];
 
         if (clearF == enbvClearFYes)
         {
-            clear_f(nbat,nb,out->f);
+            clear_f(nbat, nb, out->f);
         }
 
         if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)
@@ -209,7 +217,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
         if (!(force_flags & GMX_FORCE_ENERGY))
         {
             /* Don't calculate energies */
-            p_nbk_c_noener[coult](nbl[nb],nbat,
+            p_nbk_c_noener[coult](nbl[nb], nbat,
                                   ic,
                                   shift_vec,
                                   out->f,
@@ -221,7 +229,7 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            p_nbk_c_ener[coult](nbl[nb],nbat,
+            p_nbk_c_ener[coult](nbl[nb], nbat,
                                 ic,
                                 shift_vec,
                                 out->f,
@@ -234,16 +242,16 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
             /* Calculate energy group contributions */
             int i;
 
-            for(i=0; i<out->nV; i++)
+            for (i = 0; i < out->nV; i++)
             {
                 out->Vvdw[i] = 0;
             }
-            for(i=0; i<out->nV; i++)
+            for (i = 0; i < out->nV; i++)
             {
                 out->Vc[i] = 0;
             }
 
-            p_nbk_c_energrp[coult](nbl[nb],nbat,
+            p_nbk_c_energrp[coult](nbl[nb], nbat,
                                    ic,
                                    shift_vec,
                                    out->f,
@@ -255,6 +263,6 @@ nbnxn_kernel_ref(const nbnxn_pairlist_set_t *nbl_list,
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
-        reduce_energies_over_lists(nbat,nnbl,Vvdw,Vc);
+        reduce_energies_over_lists(nbat, nnbl, Vvdw, Vc);
     }
 }

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,14 +49,14 @@
  *  the eigenvalues/vectors will be sorted in ascending order on output.
  *  Gromacs comes with a built-in portable BLAS/LAPACK, but if performance
  *  matters it is advisable to link with an optimized vendor-provided library.
- * 
+ *
  *  \param a            Pointer to matrix data, total size n*n
  *                      The input data in the matrix will be destroyed/changed.
  *  \param n            Side of the matrix to calculate eigenvalues for.
  *  \param index_lower  Index of first eigenvector to determine.
  *  \param index_upper  Last eigenvector determined is index_upper-1.
  *  \param eigenvalues  Array of the eigenvalues on return. The length
- *                      of this array _must_ be n, even if not all 
+ *                      of this array _must_ be n, even if not all
  *                      eigenvectors are calculated, since all eigenvalues
  *                      might be needed as an intermediate step.
  *  \param eigenvectors If this pointer is non-NULL, the eigenvectors
@@ -83,7 +83,7 @@ eigensolver(real *   a,
  *
  *  maxiter=100000 should suffice in most cases!
  */
-void 
+void
 sparse_eigensolver(gmx_sparsematrix_t *    A,
                    int                     neig,
                    real *                  eigenvalues,

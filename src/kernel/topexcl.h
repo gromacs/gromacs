@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,13 +42,13 @@
 #include "topio.h"
 
 typedef struct {
-  int nr;		/* nr atoms (0 <= i < nr) (atoms->nr)	      	*/
-  int nrex;		/* with nrex lists of neighbours		*/
-			/* respectively containing zeroth, first	*/
-			/* second etc. neigbours (0 <= nre < nrex)	*/
-  int **nrexcl;		/* with (0 <= nrx < nrexcl[i][nre]) neigbours 	*/ 
-			/* per list stored in one 2d array of lists	*/ 
-  int ***a;		/* like this: a[i][nre][nrx]			*/
+    int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
+    int nrex;   /* with nrex lists of neighbours		*/
+    /* respectively containing zeroth, first	*/
+    /* second etc. neigbours (0 <= nre < nrex)	*/
+    int  **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
+    /* per list stored in one 2d array of lists	*/
+    int ***a;      /* like this: a[i][nre][nrx]			*/
 } t_nextnb;
 
 GMX_LIBGMXPREPROCESS_EXPORT
@@ -68,8 +68,8 @@ extern void print_nnb(t_nextnb *nnb, char *s);
 #endif
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void gen_nnb(t_nextnb *nnb,t_params plist[]);
-/* Generate a t_nextnb structure from bond information. 
+extern void gen_nnb(t_nextnb *nnb, t_params plist[]);
+/* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
  * initiated using init_nnb.
@@ -79,9 +79,9 @@ extern void nnb2excl (t_nextnb *nnb, t_blocka *excl);
 /* generate exclusions from nnb */
 
 extern void generate_excl (int nrexcl, int nratoms,
-			   t_params plist[],t_blocka *excl);
+                           t_params plist[], t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
 
-#endif	/* _topexcl_h */
+#endif  /* _topexcl_h */

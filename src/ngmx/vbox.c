@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,19 +42,18 @@
 #include "x11.h"
 #include "nmol.h"
 
-t_videobox *init_vbox(t_x11 *x11,t_molwin *mw)
+t_videobox *init_vbox(t_x11 *x11, t_molwin *mw)
 {
-  t_videobox *vb;
+    t_videobox *vb;
 
-  snew(vb,1);
-  snew(vb->vcr,IDNR-IDBUTNR);
-  
-  return vb;
+    snew(vb, 1);
+    snew(vb->vcr, IDNR-IDBUTNR);
+
+    return vb;
 }
 
-void done_vbox(t_x11 *x11,t_videobox *vbox)
+void done_vbox(t_x11 *x11, t_videobox *vbox)
 {
-  sfree(vbox->vcr);
-  sfree(vbox);
+    sfree(vbox->vcr);
+    sfree(vbox);
 }
-

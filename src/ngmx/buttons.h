@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,11 +41,11 @@
 
 #include <xutil.h>
 
-enum { 
-  IDROTX,IDROTY,IDROTZ,IDTRANSX,IDTRANSY,IDTRANSZ,IDZOOM,IDBUTNR,
-  IDREWIND,IDSTEP,IDFF,IDSTOP_ANI,IDNR,
-  IDDRAWMOL,IDLABEL
-  };
+enum {
+    IDROTX, IDROTY, IDROTZ, IDTRANSX, IDTRANSY, IDTRANSZ, IDZOOM, IDBUTNR,
+    IDREWIND, IDSTEP, IDFF, IDSTOP_ANI, IDNR,
+    IDDRAWMOL, IDLABEL
+};
 
 #define AIR      3            /* extra space between child windows */
 #define BORDER  1
@@ -53,28 +53,28 @@ enum {
 #define EnterLeave (EnterWindowMask | LeaveWindowMask)
 
 typedef struct {
-  t_windata wd;
-  int       ID;
+    t_windata wd;
+    int       ID;
 } t_mwbut;
 
 typedef struct {
-  t_windata wd;
-  int       nbut;
-  t_mwbut   *b;
+    t_windata  wd;
+    int        nbut;
+    t_mwbut   *b;
 } t_butbox;
 
-extern t_butbox *init_vbox(t_x11 *x11,Window Parent,Window SendTo,
-			   unsigned long fg,unsigned long bg);
+extern t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo,
+                           unsigned long fg, unsigned long bg);
 
-extern void set_vbtime(t_x11 *x11,t_butbox *vbox,char *text);
+extern void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text);
 
-extern t_butbox *init_bbox(t_x11 *x11,Window Parent,Window SendTo,
-			   int width,unsigned long fg,unsigned long bg);
+extern t_butbox *init_bbox(t_x11 *x11, Window Parent, Window SendTo,
+                           int width, unsigned long fg, unsigned long bg);
 
-extern void show_but(t_x11 *x11,t_butbox *bbox);
+extern void show_but(t_x11 *x11, t_butbox *bbox);
 
-extern void hide_but(t_x11 *x11,t_butbox *bbox);
+extern void hide_but(t_x11 *x11, t_butbox *bbox);
 
-extern void done_bbox(t_x11 *x11,t_butbox *bbox);
+extern void done_bbox(t_x11 *x11, t_butbox *bbox);
 
 #endif

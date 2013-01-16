@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,165 +47,189 @@
 #include "gmx_fatal.h"
 #include "strdb.h"
 
-gmx_bool get_a_line(FILE *fp,char line[],int n)
+gmx_bool get_a_line(FILE *fp, char line[], int n)
 {
-  char *line0;
-  char *dum;
-  
-  snew(line0,n+1);
- 
-  do {
-    if (!fgets(line0,n+1,fp)) {
-      sfree(line0);
-      return FALSE;
+    char *line0;
+    char *dum;
+
+    snew(line0, n+1);
+
+    do
+    {
+        if (!fgets(line0, n+1, fp))
+        {
+            sfree(line0);
+            return FALSE;
+        }
+        dum = strchr(line0, '\n');
+        if (dum)
+        {
+            dum[0] = '\0';
+        }
+        else if (strlen(line0) == n)
+        {
+            fprintf(stderr, "Warning: line length exceeds buffer length (%d), data might be corrupted\n", n);
+            line0[n-1] = '\0';
+        }
+        else
+        {
+            fprintf(stderr, "Warning: file does not end with a newline, last line:\n%s\n",
+                    line0);
+        }
+        dum = strchr(line0, ';');
+        if (dum)
+        {
+            dum[0] = '\0';
+        }
+        strncpy(line, line0, n);
+        dum = line0;
+        ltrim(dum);
     }
-    dum=strchr(line0,'\n');
-    if (dum) 
-      dum[0]='\0';
-    else if (strlen(line0)==n) {
-      fprintf(stderr,"Warning: line length exceeds buffer length (%d), data might be corrupted\n",n);
-      line0[n-1] ='\0';
-    } else
-      fprintf(stderr,"Warning: file does not end with a newline, last line:\n%s\n",
-	      line0);
-    dum=strchr(line0,';');
-    if (dum) 
-      dum[0]='\0';
-    strncpy(line,line0,n);
-    dum=line0;
-    ltrim(dum);
-  } while (dum[0] == '\0'); 
-  
-  sfree(line0);
-  return TRUE;
+    while (dum[0] == '\0');
+
+    sfree(line0);
+    return TRUE;
 }
 
-gmx_bool get_header(char line[],char *header)
+gmx_bool get_header(char line[], char *header)
 {
-  char temp[STRLEN],*dum;
+    char temp[STRLEN], *dum;
 
-  strcpy(temp,line);
-  dum=strchr(temp,'[');
-  if (dum==NULL)
-    return FALSE;
-  dum[0]=' ';
-  dum=strchr(temp,']');
-  if (dum==NULL) {
-    gmx_fatal(FARGS,"header is not terminated on line:\n'%s'\n",line); 
-    return FALSE;
-  }
-  dum[0]='\0';
-  if (sscanf(temp,"%s%*s",header) != 1)
-    return FALSE;
+    strcpy(temp, line);
+    dum = strchr(temp, '[');
+    if (dum == NULL)
+    {
+        return FALSE;
+    }
+    dum[0] = ' ';
+    dum    = strchr(temp, ']');
+    if (dum == NULL)
+    {
+        gmx_fatal(FARGS, "header is not terminated on line:\n'%s'\n", line);
+        return FALSE;
+    }
+    dum[0] = '\0';
+    if (sscanf(temp, "%s%*s", header) != 1)
+    {
+        return FALSE;
+    }
 
-  return TRUE;
+    return TRUE;
 }
 
-int get_strings(const char *db,char ***strings)
+int get_strings(const char *db, char ***strings)
 {
-  FILE *in;
-  char **ptr;
-  char buf[256];
-  int  i,nstr;
+    FILE  *in;
+    char **ptr;
+    char   buf[256];
+    int    i, nstr;
 
-  in=libopen(db);
-  
-  if (fscanf(in,"%d",&nstr) != 1) {
-    gmx_warning("File %s is empty",db);
-    ffclose(in);
-    return 0;
-  }
-  snew(ptr,nstr);
-  for(i=0; (i<nstr); i++) {
-    if(1 != fscanf(in,"%s",buf))
-    { 
-      gmx_fatal(FARGS,"Cannot read string from buffer");
+    in = libopen(db);
+
+    if (fscanf(in, "%d", &nstr) != 1)
+    {
+        gmx_warning("File %s is empty", db);
+        ffclose(in);
+        return 0;
     }
+    snew(ptr, nstr);
+    for (i = 0; (i < nstr); i++)
+    {
+        if (1 != fscanf(in, "%s", buf))
+        {
+            gmx_fatal(FARGS, "Cannot read string from buffer");
+        }
 #ifdef DEBUG
-    fprintf(stderr,"Have read: %s\n",buf);
+        fprintf(stderr, "Have read: %s\n", buf);
 #endif
-    ptr[i] = strdup(buf);
-  }
-  ffclose(in);
-
-  *strings=ptr;
-  
-  return nstr;
-}
-
-int search_str(int nstr,char **str,char *key)
-{
-  int i;
-
-  /* Linear search */
-  for(i=0; (i<nstr); i++)
-    if (gmx_strcasecmp(str[i],key)==0)
-      return i;
-
-  return -1;
-}
-
-int fget_lines(FILE *in,char ***strings)
-{
-  char **ptr;
-  char buf[256];
-  int  i,nstr;
-  char *pret;
-
-  pret = fgets(buf,255,in);  
-  if ( pret==NULL  || sscanf(buf,"%d",&nstr) != 1) 
-  {
-    gmx_warning("File is empty");
-    ffclose(in);
-    
-    return 0;
-  }
-  snew(ptr,nstr);
-  for(i=0; (i<nstr); i++) {
-    fgets2(buf,255,in);
-    ptr[i] = gmx_strdup(buf);
-  }
-  
-  (*strings) = ptr;
-  
-  return nstr;
-}
-
-int get_lines(const char *db,char ***strings)
-{
-  FILE *in;
-  int  nstr;
-  
-  in   = libopen(db);
-  nstr = fget_lines(in,strings);
-  ffclose(in);
-
-  return nstr;
-}
-
-int get_file(const char *db,char ***strings)
-{
-  FILE *in;
-  char **ptr=NULL;
-  char buf[STRLEN];
-  int  i,nstr,maxi;
-
-  in=libopen(db);
-  
-  i=maxi=0;
-  while (fgets2(buf,STRLEN-1,in)) {
-    if (i>=maxi) {
-      maxi+=50;
-      srenew(ptr,maxi);
+        ptr[i] = strdup(buf);
     }
-    ptr[i] = strdup(buf);
-    i++;
-  }
-  nstr=i;
-  ffclose(in);
-  srenew(ptr,nstr);
-  *strings=ptr;
-  
-  return nstr;
+    ffclose(in);
+
+    *strings = ptr;
+
+    return nstr;
 }
 
+int search_str(int nstr, char **str, char *key)
+{
+    int i;
+
+    /* Linear search */
+    for (i = 0; (i < nstr); i++)
+    {
+        if (gmx_strcasecmp(str[i], key) == 0)
+        {
+            return i;
+        }
+    }
+
+    return -1;
+}
+
+int fget_lines(FILE *in, char ***strings)
+{
+    char **ptr;
+    char   buf[256];
+    int    i, nstr;
+    char  *pret;
+
+    pret = fgets(buf, 255, in);
+    if (pret == NULL  || sscanf(buf, "%d", &nstr) != 1)
+    {
+        gmx_warning("File is empty");
+        ffclose(in);
+
+        return 0;
+    }
+    snew(ptr, nstr);
+    for (i = 0; (i < nstr); i++)
+    {
+        fgets2(buf, 255, in);
+        ptr[i] = gmx_strdup(buf);
+    }
+
+    (*strings) = ptr;
+
+    return nstr;
+}
+
+int get_lines(const char *db, char ***strings)
+{
+    FILE *in;
+    int   nstr;
+
+    in   = libopen(db);
+    nstr = fget_lines(in, strings);
+    ffclose(in);
+
+    return nstr;
+}
+
+int get_file(const char *db, char ***strings)
+{
+    FILE  *in;
+    char **ptr = NULL;
+    char   buf[STRLEN];
+    int    i, nstr, maxi;
+
+    in = libopen(db);
+
+    i = maxi = 0;
+    while (fgets2(buf, STRLEN-1, in))
+    {
+        if (i >= maxi)
+        {
+            maxi += 50;
+            srenew(ptr, maxi);
+        }
+        ptr[i] = strdup(buf);
+        i++;
+    }
+    nstr = i;
+    ffclose(in);
+    srenew(ptr, nstr);
+    *strings = ptr;
+
+    return nstr;
+}

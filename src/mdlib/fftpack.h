@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,11 +47,11 @@ extern "C" {
 
 #define Treal real
 
-    void fftpack_cffti1(int n, Treal wa[], int ifac[]);
-    void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[], int isign);
-    void fftpack_rffti1(int n, Treal wa[], int ifac[]);
-    void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
-    void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
+void fftpack_cffti1(int n, Treal wa[], int ifac[]);
+void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[], int isign);
+void fftpack_rffti1(int n, Treal wa[], int ifac[]);
+void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
+void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
 
 #ifdef __cplusplus
 }

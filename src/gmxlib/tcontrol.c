@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,23 +47,23 @@
 #include "thread_mpi.h"
 #endif
 
-/* The source code in this file should be thread-safe. 
+/* The source code in this file should be thread-safe.
          Please keep it that way. */
 
 /* Globals for trajectory input */
 typedef struct {
-  real t;
-  gmx_bool bSet;
+    real     t;
+    gmx_bool bSet;
 } t_timecontrol;
 
 static t_timecontrol timecontrol[TNR] = {
-  { 0, FALSE },
-  { 0, FALSE },
-  { 0, FALSE }
+    { 0, FALSE },
+    { 0, FALSE },
+    { 0, FALSE }
 };
 
 #ifdef GMX_THREAD_MPI
-static tMPI_Thread_mutex_t tc_mutex=TMPI_THREAD_MUTEX_INITIALIZER;
+static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 gmx_bool bTimeSet(int tcontrol)
@@ -73,15 +73,15 @@ gmx_bool bTimeSet(int tcontrol)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
-    range_check(tcontrol,0,TNR);
-    ret=timecontrol[tcontrol].bSet;
+    range_check(tcontrol, 0, TNR);
+    ret = timecontrol[tcontrol].bSet;
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
 
     return ret;
 }
-  
+
 real rTimeValue(int tcontrol)
 {
     real ret;
@@ -89,25 +89,23 @@ real rTimeValue(int tcontrol)
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
-    range_check(tcontrol,0,TNR);
-    ret=timecontrol[tcontrol].t;
+    range_check(tcontrol, 0, TNR);
+    ret = timecontrol[tcontrol].t;
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
     return ret;
 }
-  
-void setTimeValue(int tcontrol,real value)
+
+void setTimeValue(int tcontrol, real value)
 {
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
 #endif
-    range_check(tcontrol,0,TNR);
-    timecontrol[tcontrol].t = value;
+    range_check(tcontrol, 0, TNR);
+    timecontrol[tcontrol].t    = value;
     timecontrol[tcontrol].bSet = TRUE;
 #ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
 #endif
 }
-
-

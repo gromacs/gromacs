@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,37 +43,37 @@
 #include <xdlg.h>
 
 typedef struct {
-  edlgitem edlg;
-  gmx_bool bDef;
-  int  nname;
-  char **name;
-  char *set,*get,*def,*help;
+    edlgitem edlg;
+    gmx_bool bDef;
+    int      nname;
+    char   **name;
+    char    *set, *get, *def, *help;
 } t_fitem;
 
 typedef struct {
-  char *name;
-  int x,y,w,h;
-  int nfitem;
-  t_fitem **fitem;
+    char     *name;
+    int       x, y, w, h;
+    int       nfitem;
+    t_fitem **fitem;
 } t_fgroup;
 
 typedef struct {
-  int x,y,w,h;
-  t_fitem *fitem;
+    int      x, y, w, h;
+    t_fitem *fitem;
 } t_fsimple;
 
 typedef struct {
-  int       w,h;
-  int       nfgroup;
-  t_fgroup  **fgroup;
-  int       nfsimple;
-  t_fsimple **fsimple;
+    int         w, h;
+    int         nfgroup;
+    t_fgroup  **fgroup;
+    int         nfsimple;
+    t_fsimple **fsimple;
 } t_fgrid;
 
 typedef enum {
-  eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT, 
-  eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS 
-  } eDLGERR;
+    eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT,
+    eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS
+} eDLGERR;
 
 extern void ReadDlgErr(const char *infile, eDLGERR err, const char *s);
 
@@ -85,4 +85,4 @@ extern void DumpFGrid(t_fgrid *fgrid);
 
 extern void ReadQuoteString(const char *infile, FILE *in, char *buf);
 
-#endif	/* _fgrid_h */
+#endif  /* _fgrid_h */

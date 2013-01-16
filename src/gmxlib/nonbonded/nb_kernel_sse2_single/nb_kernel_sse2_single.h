@@ -2,7 +2,7 @@
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,10 +41,10 @@
 
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
-kernellist_sse2_single[];
+    kernellist_sse2_single[];
 
 /* Length of kernellist_c */
 extern int
-kernellist_sse2_single_size;
+    kernellist_sse2_single_size;
 
 #endif

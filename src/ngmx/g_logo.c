@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,17 +44,18 @@
 int
 main(int argc, char *argv[])
 {
-  t_x11  *x11;
-  t_logo *logo;
+    t_x11  *x11;
+    t_logo *logo;
 
-  if ((x11=GetX11(&argc,argv))==NULL) {
-    fprintf(stderr,"No X!\n");
-    exit(1);
-  }
-  logo=init_logo(x11,x11->root,TRUE);
-  show_logo(x11,logo);
-  x11->MainLoop(x11);
+    if ((x11 = GetX11(&argc, argv)) == NULL)
+    {
+        fprintf(stderr, "No X!\n");
+        exit(1);
+    }
+    logo = init_logo(x11, x11->root, TRUE);
+    show_logo(x11, logo);
+    x11->MainLoop(x11);
 
-  x11->CleanUp(x11);
-  return 0;
+    x11->CleanUp(x11);
+    return 0;
 }

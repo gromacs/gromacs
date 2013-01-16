@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -39,11 +39,11 @@
 #ifndef _fitahx_h
 #define _fitahx_h
 
-	
+
 #include "typedefs.h"
 #include "hxprops.h"
-	
-extern real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
-		    rvec x[],int nca,atom_id caindex[],matrix box,gmx_bool bFit);
-		    
+
+extern real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
+                    rvec x[], int nca, atom_id caindex[], matrix box, gmx_bool bFit);
+
 #endif

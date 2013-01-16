@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -62,15 +62,15 @@ typedef struct
     /** Position calculation collection to use. */
     gmx_ana_poscalc_coll_t *pcc;
     /** Index group for which the center should be evaluated. */
-    gmx_ana_index_t    g;
+    gmx_ana_index_t         g;
     /** Position evaluation data structure. */
-    gmx_ana_poscalc_t *pc;
+    gmx_ana_poscalc_t      *pc;
     /** TRUE if periodic boundary conditions should be used. */
-    gmx_bool               bPBC;
+    gmx_bool                bPBC;
     /** Type of positions to calculate. */
-    char              *type;
+    char                   *type;
     /** Flags for the position calculation. */
-    int                flags;
+    int                     flags;
 } t_methoddata_pos;
 
 /** Allocates data for position evaluation selection methods. */
@@ -119,9 +119,9 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     &init_kwpos,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -134,9 +134,9 @@ gmx_ana_selmethod_t sm_cog = {
     &init_cog,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
@@ -149,9 +149,9 @@ gmx_ana_selmethod_t sm_com = {
     &init_com,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"com of ATOM_EXPR [pbc]", 0, NULL},
 };
 
@@ -296,8 +296,8 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     int               rc;
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
+    rc       = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                                      d->flags);
     if (rc != 0)
     {
         return rc;
@@ -321,8 +321,8 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
+    rc        = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                                       d->flags);
     if (rc != 0)
     {
         return rc;

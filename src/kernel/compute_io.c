@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,7 +44,7 @@
 #include "typedefs.h"
 #include "compute_io.h"
 
-static int div_nsteps(int nsteps,int nst)
+static int div_nsteps(int nsteps, int nst)
 {
     if (nst > 0)
     {
@@ -56,22 +56,22 @@ static int div_nsteps(int nsteps,int nst)
     }
 }
 
-double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
-		  int nrener,int nrepl)
+double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
+                  int nrener, int nrepl)
 {
 
-    int nsteps = ir->nsteps;
-    int i,nxtcatoms=0;
-    int nstx,nstv,nstf,nste,nstlog,nstxtc,nfep=0;
+    int    nsteps = ir->nsteps;
+    int    i, nxtcatoms = 0;
+    int    nstx, nstv, nstf, nste, nstlog, nstxtc, nfep = 0;
     double cio;
 
-    nstx   = div_nsteps(nsteps,ir->nstxout);
-    nstv   = div_nsteps(nsteps,ir->nstvout);
-    nstf   = div_nsteps(nsteps,ir->nstfout);
-    nstxtc = div_nsteps(nsteps,ir->nstxtcout);
+    nstx   = div_nsteps(nsteps, ir->nstxout);
+    nstv   = div_nsteps(nsteps, ir->nstvout);
+    nstf   = div_nsteps(nsteps, ir->nstfout);
+    nstxtc = div_nsteps(nsteps, ir->nstxtcout);
     if (ir->nstxtcout > 0)
     {
-        for(i=0; i<natoms; i++)
+        for (i = 0; i < natoms; i++)
         {
             if (groups->grpnr[egcXTC] == NULL || groups->grpnr[egcXTC][i] == 0)
             {
@@ -79,44 +79,44 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
             }
         }
     }
-    nstlog = div_nsteps(nsteps,ir->nstlog);
+    nstlog = div_nsteps(nsteps, ir->nstlog);
     /* We add 2 for the header */
-    nste   = div_nsteps(2+nsteps,ir->nstenergy);
+    nste   = div_nsteps(2+nsteps, ir->nstenergy);
 
     cio  = 80*natoms;
     cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
     cio += nstxtc*(14*4 + nxtcatoms*5.0); /* roughly 5 bytes per atom */
-    cio += nstlog*(nrener*16*2.0); /* 16 bytes per energy term plus header */
+    cio += nstlog*(nrener*16*2.0);        /* 16 bytes per energy term plus header */
     /* t_energy contains doubles, but real is written to edr */
     cio += (1.0*nste)*nrener*3*sizeof(real);
 
     if ((ir->efep != efepNO || ir->bSimTemp) && (ir->fepvals->nstdhdl > 0))
     {
-        int ndh=ir->fepvals->n_lambda;
-        int ndhdl=0;
-        int nchars=0;
+        int ndh    = ir->fepvals->n_lambda;
+        int ndhdl  = 0;
+        int nchars = 0;
 
-        for (i=0;i<efptNR;i++)
+        for (i = 0; i < efptNR; i++)
         {
             if (ir->fepvals->separate_dvdl[i])
             {
-                ndhdl+=1;
+                ndhdl += 1;
             }
         }
 
-        if (ir->fepvals->separate_dhdl_file==esepdhdlfileYES)
+        if (ir->fepvals->separate_dhdl_file == esepdhdlfileYES)
         {
             nchars = 8 + ndhdl*8 + ndh*10; /* time data ~8 chars/entry, dH data ~10 chars/entry */
             if (ir->expandedvals->elmcmove > elmcmoveNO)
             {
                 nchars += 5;   /* alchemical state */
             }
-            
+
             if (ir->fepvals->bPrintEnergy)
             {
                 nchars += 12; /* energy for dhdl */
             }
-            cio += div_nsteps(nsteps,ir->fepvals->nstdhdl)*nchars; 
+            cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*nchars;
         }
         else
         {
@@ -133,21 +133,21 @@ double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
                     ndh_tot += 1;
                 }
                 /* as data blocks: 1 real per dH point */
-                cio += div_nsteps(nsteps,ir->fepvals->nstdhdl)*(ndh+ndhdl)*sizeof(real);
+                cio += div_nsteps(nsteps, ir->fepvals->nstdhdl)*(ndh+ndhdl)*sizeof(real);
             }
             else
             {
                 /* as histograms: dh_hist_size ints per histogram */
-                cio += div_nsteps(nsteps,ir->nstenergy)*
+                cio += div_nsteps(nsteps, ir->nstenergy)*
                     sizeof(int)*ir->fepvals->dh_hist_size*ndh;
             }
         }
     }
     if (ir->pull != NULL)
     {
-        cio += div_nsteps(nsteps,ir->pull->nstxout)*20; /* roughly 20 chars per line */
-        cio += div_nsteps(nsteps,ir->pull->nstfout)*20; /* roughly 20 chars per line */
-    }    
+        cio += div_nsteps(nsteps, ir->pull->nstxout)*20; /* roughly 20 chars per line */
+        cio += div_nsteps(nsteps, ir->pull->nstfout)*20; /* roughly 20 chars per line */
+    }
 
     return cio*nrepl/(1024*1024);
 }

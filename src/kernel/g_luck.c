@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,30 +44,38 @@
 #include <string.h>
 #include "statutil.h"
 
-int cmain(int argc,char *argv[])
+int cmain(int argc, char *argv[])
 {
-  char quote[256];
-  int  i,bc=0,bb=0;
-  
-  /* Necessary to find the library directory before installation */
-  set_program_name(argv[0]);
+    char quote[256];
+    int  i, bc = 0, bb = 0;
 
-  for(i=1; (i<argc); i++)
-    if ( strcmp(argv[i],"-c")==0)
-      bc = 1;
-    else if ( strcmp(argv[i],"-b")==0)
-      bb = 1;
-      
-  if (bc)
-    CopyRight(stdout,ShortProgram());
-    
-  if (bb) {
-    bromacs(quote,255);
-    printf("%s\n",quote);
-  }
-    
-  thanx(stdout);
-  
-  return 0;
+    /* Necessary to find the library directory before installation */
+    set_program_name(argv[0]);
+
+    for (i = 1; (i < argc); i++)
+    {
+        if (strcmp(argv[i], "-c") == 0)
+        {
+            bc = 1;
+        }
+        else if (strcmp(argv[i], "-b") == 0)
+        {
+            bb = 1;
+        }
+    }
+
+    if (bc)
+    {
+        CopyRight(stdout, ShortProgram());
+    }
+
+    if (bb)
+    {
+        bromacs(quote, 255);
+        printf("%s\n", quote);
+    }
+
+    thanx(stdout);
+
+    return 0;
 }
- 

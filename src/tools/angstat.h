@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,16 +43,16 @@
 #include <typedefs.h>
 
 extern void do_angav(FILE *status, char *title,
-		     atom_id index[], int nind, 
-		     char *outfile, gmx_bool bAT);
+                     atom_id index[], int nind,
+                     char *outfile, gmx_bool bAT);
 
 extern void do_dihav(FILE *status, char *title,
-		     atom_id index[], int nind, 
-		     char *outfile, gmx_bool bAT);
+                     atom_id index[], int nind,
+                     char *outfile, gmx_bool bAT);
 
-extern void ramachandran(FILE *status,atom_id index[],int nind,char *outfile);
+extern void ramachandran(FILE *status, atom_id index[], int nind, char *outfile);
 
-extern void dis_mon(FILE *status,atom_id index[],int nind,char *outfile,
-		    t_first_x *fx, t_next_x *nx);
+extern void dis_mon(FILE *status, atom_id index[], int nind, char *outfile,
+                    t_first_x *fx, t_next_x *nx);
 
 #endif

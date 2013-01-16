@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,19 +42,20 @@
 
 #include "vec.h"
 
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
-  real x,y,z,diff,av;
-  int  i;
+    real x, y, z, diff, av;
+    int  i;
 
-  printf("%12s  %12s  %12s  %12s  %12s\n","X","invsqrt(X)","1/sqrt(X)","Abs. Diff.","Rel. Diff.");
-  for(i=1; (i<1000); i++) {
-    x = i*1.0;
-    y = gmx_invsqrt(x);
-    z = 1.0/sqrt(x);
-    diff = y-z;
-    av   = 0.5*(y+z);
-    printf("%12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n",x,y,z,diff,diff/z);
-  }
-  return 0;
+    printf("%12s  %12s  %12s  %12s  %12s\n", "X", "invsqrt(X)", "1/sqrt(X)", "Abs. Diff.", "Rel. Diff.");
+    for (i = 1; (i < 1000); i++)
+    {
+        x    = i*1.0;
+        y    = gmx_invsqrt(x);
+        z    = 1.0/sqrt(x);
+        diff = y-z;
+        av   = 0.5*(y+z);
+        printf("%12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n", x, y, z, diff, diff/z);
+    }
+    return 0;
 }

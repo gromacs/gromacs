@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2001
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,16 +41,16 @@
 
 #include "types/simple.h"
 
-extern void rangeArray(int *ar,int size);
+extern void rangeArray(int *ar, int size);
 
 extern void insertionSort(real *ar, int *perm, int start, int end, int direction);
 
 extern int BinarySearch(real *ar, int start, int end, real key, int direction);
 
-extern int start_binsearch(real *array, int *perm, int low, int high, 
+extern int start_binsearch(real *array, int *perm, int low, int high,
                            real key, int direction);
-			   
-extern int LinearSearch(double *array,int startindx, int stopindx, 
-                        double key,int *count, int direction);
+
+extern int LinearSearch(double *array, int startindx, int stopindx,
+                        double key, int *count, int direction);
 
 #endif

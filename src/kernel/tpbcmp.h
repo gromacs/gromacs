@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,19 +42,19 @@
 
 GMX_LIBGMXPREPROCESS_EXPORT
 void
-comp_tpx(const char *fn1,const char *fn2,gmx_bool bRMSD,real ftol,real abstol);
+comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
 /* Compare two binary topology files */
 
 GMX_LIBGMXPREPROCESS_EXPORT
 void
-comp_trx(const output_env_t oenv,const char *fn1,const char *fn2,
-	 gmx_bool bRMSD,real ftol,real abstol);
+comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
+         gmx_bool bRMSD, real ftol, real abstol);
 /* Compare two binary trajectory files */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void 
-comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,
-                     const char *lastener);
+void
+comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
+         const char *lastener);
 /* Compare two binary energy files */
 
 #endif

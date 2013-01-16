@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -55,8 +55,8 @@
 
 
 typedef struct {
-  const char *name;
-  int  flop;
+    const char *name;
+    int         flop;
 } t_nrnb_data;
 
 
@@ -86,7 +86,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NB VdW & Elec. [W4,F]",           1 },
     { "NB VdW & Elec. [W4-W4,V&F]",      1 },
     { "NB VdW & Elec. [W4-W4,F]",        1 },
-    
+
     { "NB Generic kernel",               1 },
     { "NB Free energy kernel",           1 },
     { "NB All-vs-all",                   1 },
@@ -126,9 +126,9 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "All-vs-All Born chain rule",      1 },
     { "Calc Weights",                   36 },
     { "Spread Q",                        6 },
-    { "Spread Q Bspline",                2 }, 
+    { "Spread Q Bspline",                2 },
     { "Gather F",                      23  },
-    { "Gather F Bspline",              6   }, 
+    { "Gather F Bspline",              6   },
     { "3D-FFT",                        8   },
     { "Convolution",                   4   },
     { "Solve PME",                     64  },
@@ -183,297 +183,350 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 3fd",              95  },
     { "Virtual Site 3fad",             176 },
     { "Virtual Site 3out",             87  },
-    { "Virtual Site 4fd",              110 }, 
-    { "Virtual Site 4fdn",             254 }, 
+    { "Virtual Site 4fd",              110 },
+    { "Virtual Site 4fdn",             254 },
     { "Virtual Site N",                 15 },
-    { "Mixed Generalized Born stuff",   10 } 
+    { "Mixed Generalized Born stuff",   10 }
 };
 
 
 void init_nrnb(t_nrnb *nrnb)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<eNRNB); i++)
-    nrnb->n[i]=0.0;
+    for (i = 0; (i < eNRNB); i++)
+    {
+        nrnb->n[i] = 0.0;
+    }
 }
 
 void cp_nrnb(t_nrnb *dest, t_nrnb *src)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<eNRNB); i++)
-    dest->n[i]=src->n[i];
+    for (i = 0; (i < eNRNB); i++)
+    {
+        dest->n[i] = src->n[i];
+    }
 }
 
 void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<eNRNB); i++)
-    dest->n[i]=s1->n[i]+s2->n[i];
+    for (i = 0; (i < eNRNB); i++)
+    {
+        dest->n[i] = s1->n[i]+s2->n[i];
+    }
 }
 
 void print_nrnb(FILE *out, t_nrnb *nrnb)
 {
-  int i;
+    int i;
 
-  for(i=0; (i<eNRNB); i++)
-    if (nrnb->n[i] > 0)
-      fprintf(out," %-26s %10.0f.\n",nbdata[i].name,nrnb->n[i]);
+    for (i = 0; (i < eNRNB); i++)
+    {
+        if (nrnb->n[i] > 0)
+        {
+            fprintf(out, " %-26s %10.0f.\n", nbdata[i].name, nrnb->n[i]);
+        }
+    }
 }
 
-void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
+void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char *file, int line)
 {
-  nrnb->n[enr]+=inc;
+    nrnb->n[enr] += inc;
 #ifdef DEBUG_NRNB
-  printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
-	  nbdata[enr].name,enr,inc,file,line);
+    printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
+           nbdata[enr].name, enr, inc, file, line);
 #endif
 }
 
-void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
+void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
 {
-  int    i;
-  double mni,frac,tfrac,tflop;
-  const char   *myline = "-----------------------------------------------------------------------------";
-  
-  *nbfs = 0.0;
-  for(i=0; (i<eNR_NBKERNEL_ALLVSALLGB); i++) {
-    if (strstr(nbdata[i].name,"W3-W3") != NULL)
-      *nbfs += 9e-6*nrnb->n[i];
-    else if (strstr(nbdata[i].name,"W3") != NULL)
-      *nbfs += 3e-6*nrnb->n[i];
-    else if (strstr(nbdata[i].name,"W4-W4") != NULL)
-      *nbfs += 10e-6*nrnb->n[i];
-    else if (strstr(nbdata[i].name,"W4") != NULL)
-      *nbfs += 4e-6*nrnb->n[i];
-    else
-      *nbfs += 1e-6*nrnb->n[i];
-  }
-  tflop=0;
-  for(i=0; (i<eNRNB); i++) 
-    tflop+=1e-6*nrnb->n[i]*nbdata[i].flop;
-  
-  if (tflop == 0) {
-    fprintf(out,"No MEGA Flopsen this time\n");
-    return;
-  }
-  if (out) {
-    fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
-  }
+    int           i;
+    double        mni, frac, tfrac, tflop;
+    const char   *myline = "-----------------------------------------------------------------------------";
 
-  if (out)
-  {
-      fprintf(out," NB=Group-cutoff nonbonded kernels    NxN=N-by-N cluster Verlet kernels\n");
-      fprintf(out," RF=Reaction-Field  VdW=Van der Waals  QSTab=quadratic-spline table\n");
-      fprintf(out," W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
-      fprintf(out," V&F=Potential and force  V=Potential only  F=Force only\n\n");
+    *nbfs = 0.0;
+    for (i = 0; (i < eNR_NBKERNEL_ALLVSALLGB); i++)
+    {
+        if (strstr(nbdata[i].name, "W3-W3") != NULL)
+        {
+            *nbfs += 9e-6*nrnb->n[i];
+        }
+        else if (strstr(nbdata[i].name, "W3") != NULL)
+        {
+            *nbfs += 3e-6*nrnb->n[i];
+        }
+        else if (strstr(nbdata[i].name, "W4-W4") != NULL)
+        {
+            *nbfs += 10e-6*nrnb->n[i];
+        }
+        else if (strstr(nbdata[i].name, "W4") != NULL)
+        {
+            *nbfs += 4e-6*nrnb->n[i];
+        }
+        else
+        {
+            *nbfs += 1e-6*nrnb->n[i];
+        }
+    }
+    tflop = 0;
+    for (i = 0; (i < eNRNB); i++)
+    {
+        tflop += 1e-6*nrnb->n[i]*nbdata[i].flop;
+    }
 
-      fprintf(out," %-32s %16s %15s  %7s\n",
-              "Computing:","M-Number","M-Flops","% Flops");
-      fprintf(out,"%s\n",myline);
-  }
-  *mflop=0.0;
-  tfrac=0.0;
-  for(i=0; (i<eNRNB); i++) {
-    mni     = 1e-6*nrnb->n[i];
-    *mflop += mni*nbdata[i].flop;
-    frac    = 100.0*mni*nbdata[i].flop/tflop;
-    tfrac  += frac;
-    if (out && mni != 0)
-      fprintf(out," %-32s %16.6f %15.3f  %6.1f\n",
-	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
-  }
-  if (out) {
-    fprintf(out,"%s\n",myline);
-    fprintf(out," %-32s %16s %15.3f  %6.1f\n",
-	    "Total","",*mflop,tfrac);
-    fprintf(out,"%s\n\n",myline);
-  }
+    if (tflop == 0)
+    {
+        fprintf(out, "No MEGA Flopsen this time\n");
+        return;
+    }
+    if (out)
+    {
+        fprintf(out, "\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
+    }
+
+    if (out)
+    {
+        fprintf(out, " NB=Group-cutoff nonbonded kernels    NxN=N-by-N cluster Verlet kernels\n");
+        fprintf(out, " RF=Reaction-Field  VdW=Van der Waals  QSTab=quadratic-spline table\n");
+        fprintf(out, " W3=SPC/TIP3p  W4=TIP4p (single or pairs)\n");
+        fprintf(out, " V&F=Potential and force  V=Potential only  F=Force only\n\n");
+
+        fprintf(out, " %-32s %16s %15s  %7s\n",
+                "Computing:", "M-Number", "M-Flops", "% Flops");
+        fprintf(out, "%s\n", myline);
+    }
+    *mflop = 0.0;
+    tfrac  = 0.0;
+    for (i = 0; (i < eNRNB); i++)
+    {
+        mni     = 1e-6*nrnb->n[i];
+        *mflop += mni*nbdata[i].flop;
+        frac    = 100.0*mni*nbdata[i].flop/tflop;
+        tfrac  += frac;
+        if (out && mni != 0)
+        {
+            fprintf(out, " %-32s %16.6f %15.3f  %6.1f\n",
+                    nbdata[i].name, mni, mni*nbdata[i].flop, frac);
+        }
+    }
+    if (out)
+    {
+        fprintf(out, "%s\n", myline);
+        fprintf(out, " %-32s %16s %15.3f  %6.1f\n",
+                "Total", "", *mflop, tfrac);
+        fprintf(out, "%s\n\n", myline);
+    }
 }
 
-void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		gmx_large_int_t nsteps,real delta_t,
-		double nbfs,double mflop,
+void print_perf(FILE *out, double nodetime, double realtime, int nprocs,
+                gmx_large_int_t nsteps, real delta_t,
+                double nbfs, double mflop,
                 int omp_nth_pp)
 {
-  real runtime;
+    real runtime;
 
-  fprintf(out,"\n");
+    fprintf(out, "\n");
 
-  if (realtime > 0) 
-  {
-    fprintf(out,"%12s %12s %12s %10s\n","","Core t (s)","Wall t (s)","(%)");
-    fprintf(out,"%12s %12.3f %12.3f %10.1f\n","Time:",
-	    nodetime, realtime, 100.0*nodetime/realtime);
-    /* only print day-hour-sec format if realtime is more than 30 min */
-    if (realtime > 30*60)
+    if (realtime > 0)
     {
-      fprintf(out,"%12s %12s","","");
-      pr_difftime(out,realtime);
+        fprintf(out, "%12s %12s %12s %10s\n", "", "Core t (s)", "Wall t (s)", "(%)");
+        fprintf(out, "%12s %12.3f %12.3f %10.1f\n", "Time:",
+                nodetime, realtime, 100.0*nodetime/realtime);
+        /* only print day-hour-sec format if realtime is more than 30 min */
+        if (realtime > 30*60)
+        {
+            fprintf(out, "%12s %12s", "", "");
+            pr_difftime(out, realtime);
+        }
+        if (delta_t > 0)
+        {
+            mflop   = mflop/realtime;
+            runtime = nsteps*delta_t;
+
+            if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+            {
+                fprintf(out, "%12s %12s %12s\n",
+                        "", "(ns/day)", "(hour/ns)");
+                fprintf(out, "%12s %12.3f %12.3f\n", "Performance:",
+                        runtime*24*3.6/realtime, 1000*realtime/(3600*runtime));
+            }
+            else
+            {
+                fprintf(out, "%12s %12s %12s %12s %12s\n",
+                        "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
+                        "(ns/day)", "(hour/ns)");
+                fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:",
+                        nbfs/realtime, (mflop > 1000) ? (mflop/1000) : mflop,
+                        runtime*24*3.6/realtime, 1000*realtime/(3600*runtime));
+            }
+        }
+        else
+        {
+            if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
+            {
+                fprintf(out, "%12s %14s\n",
+                        "", "(steps/hour)");
+                fprintf(out, "%12s %14.1f\n", "Performance:",
+                        nsteps*3600.0/realtime);
+            }
+            else
+            {
+                fprintf(out, "%12s %12s %12s %14s\n",
+                        "", "(Mnbf/s)", (mflop > 1000) ? "(GFlops)" : "(MFlops)",
+                        "(steps/hour)");
+                fprintf(out, "%12s %12.3f %12.3f %14.1f\n", "Performance:",
+                        nbfs/realtime, (mflop > 1000) ? (mflop/1000) : mflop,
+                        nsteps*3600.0/realtime);
+            }
+        }
     }
-    if (delta_t > 0) 
-    {
-      mflop = mflop/realtime;
-      runtime = nsteps*delta_t;
-
-      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
-      {
-          fprintf(out,"%12s %12s %12s\n",
-                  "","(ns/day)","(hour/ns)");
-          fprintf(out,"%12s %12.3f %12.3f\n","Performance:",
-                  runtime*24*3.6/realtime,1000*realtime/(3600*runtime));
-      }
-      else
-      {
-        fprintf(out,"%12s %12s %12s %12s %12s\n",
-	        "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	        "(ns/day)","(hour/ns)");
-        fprintf(out,"%12s %12.3f %12.3f %12.3f %12.3f\n","Performance:",
-	        nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
-	        runtime*24*3.6/realtime,1000*realtime/(3600*runtime));
-      }
-    } 
-    else 
-    {
-      if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
-      {
-          fprintf(out,"%12s %14s\n",
-                  "","(steps/hour)");
-          fprintf(out,"%12s %14.1f\n","Performance:",
-                  nsteps*3600.0/realtime);
-      }
-      else
-      {
-          fprintf(out,"%12s %12s %12s %14s\n",
-	          "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
-	          "(steps/hour)");
-          fprintf(out,"%12s %12.3f %12.3f %14.1f\n","Performance:",
-	      nbfs/realtime,(mflop > 1000) ? (mflop/1000) : mflop,
-	      nsteps*3600.0/realtime);
-      }
-    }
-  }
 }
 
 int cost_nrnb(int enr)
 {
-  return nbdata[enr].flop;
+    return nbdata[enr].flop;
 }
 
 const char *nrnb_str(int enr)
 {
-  return nbdata[enr].name;
+    return nbdata[enr].name;
 }
 
-static const int    force_index[]={ 
-  eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER, 
-  eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
-  eNR_NS,
+static const int    force_index[] = {
+    eNR_BONDS,  eNR_ANGLES,  eNR_PROPER, eNR_IMPROPER,
+    eNR_RB,     eNR_DISRES,  eNR_ORIRES, eNR_POSRES,
+    eNR_NS,
 };
 #define NFORCE_INDEX asize(force_index)
 
-static const int    constr_index[]={ 
-  eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
-  eNR_CONSTR_VIR,eNR_CONSTR_V
+static const int    constr_index[] = {
+    eNR_SHAKE,     eNR_SHAKE_RIJ, eNR_SETTLE,       eNR_UPDATE,       eNR_PCOUPL,
+    eNR_CONSTR_VIR, eNR_CONSTR_V
 };
 #define NCONSTR_INDEX asize(constr_index)
 
-static double pr_av(FILE *log,t_commrec *cr,
-		    double fav,double ftot[],const char *title)
+static double pr_av(FILE *log, t_commrec *cr,
+                    double fav, double ftot[], const char *title)
 {
-  int    i,perc;
-  double dperc,unb;
-  
-  unb=0;
-  if (fav > 0) {
-    fav /= cr->nnodes - cr->npmenodes;
-    fprintf(log,"\n %-26s",title);
-    for(i=0; (i<cr->nnodes); i++) {
-	dperc=(100.0*ftot[i])/fav;
-	unb=max(unb,dperc);
-	perc=dperc;
-	fprintf(log,"%3d ",perc);
+    int    i, perc;
+    double dperc, unb;
+
+    unb = 0;
+    if (fav > 0)
+    {
+        fav /= cr->nnodes - cr->npmenodes;
+        fprintf(log, "\n %-26s", title);
+        for (i = 0; (i < cr->nnodes); i++)
+        {
+            dperc = (100.0*ftot[i])/fav;
+            unb   = max(unb, dperc);
+            perc  = dperc;
+            fprintf(log, "%3d ", perc);
+        }
+        if (unb > 0)
+        {
+            perc = 10000.0/unb;
+            fprintf(log, "%6d%%\n\n", perc);
+        }
+        else
+        {
+            fprintf(log, "\n\n");
+        }
     }
-    if (unb > 0) {
-      perc=10000.0/unb;
-      fprintf(log,"%6d%%\n\n",perc);
-    }
-    else
-      fprintf(log,"\n\n");
-  }
-  return unb;
+    return unb;
 }
 
-void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
+void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[])
 {
-  int    i,j,perc;
-  double dperc,unb,uf,us;
-  double *ftot,fav;
-  double *stot,sav;
-  t_nrnb *av;
+    int     i, j, perc;
+    double  dperc, unb, uf, us;
+    double *ftot, fav;
+    double *stot, sav;
+    t_nrnb *av;
 
-  snew(av,1);
-  snew(ftot,cr->nnodes);
-  snew(stot,cr->nnodes);
-  init_nrnb(av);
-  for(i=0; (i<cr->nnodes); i++) {
-      add_nrnb(av,av,&(nrnb[i]));
-      /* Cost due to forces */
-      for(j=0; (j<eNR_NBKERNEL_ALLVSALLGB); j++)
-	ftot[i]+=nrnb[i].n[j]*cost_nrnb(j);
-      for(j=0; (j<NFORCE_INDEX); j++) 
-	ftot[i]+=nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
-      /* Due to shake */
-      for(j=0; (j<NCONSTR_INDEX); j++) {
-	stot[i]+=nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
-      }
-  }   
-  for(j=0; (j<eNRNB); j++)
-    av->n[j]=av->n[j]/(double)(cr->nnodes - cr->npmenodes);
-    
-    fprintf(log,"\nDetailed load balancing info in percentage of average\n");
-  
-  fprintf(log," Type                 NODE:");
-  for(i=0; (i<cr->nnodes); i++)
-      fprintf(log,"%3d ",i);
-  fprintf(log,"Scaling\n");
-  fprintf(log,"---------------------------");
-  for(i=0; (i<cr->nnodes); i++)
-      fprintf(log,"----");
-  fprintf(log,"-------\n");
-  
-  for(j=0; (j<eNRNB); j++) {
-    unb=100.0;
-    if (av->n[j] > 0) {
-      fprintf(log," %-26s",nrnb_str(j));
-      for(i=0; (i<cr->nnodes); i++) {
-	  dperc=(100.0*nrnb[i].n[j])/av->n[j];
-	  unb=max(unb,dperc);
-	  perc=dperc;
-	  fprintf(log,"%3d ",perc);
-      }
-      if (unb > 0) {
-	perc=10000.0/unb;
-	fprintf(log,"%6d%%\n",perc);
-      }
-      else
-	fprintf(log,"\n");
-    }   
-  }
-  fav=sav=0;
-  for(i=0; (i<cr->nnodes); i++) {
-    fav+=ftot[i];
-    sav+=stot[i];
-  }
-  uf=pr_av(log,cr,fav,ftot,"Total Force");
-  us=pr_av(log,cr,sav,stot,"Total Constr.");
-  
-  unb=(uf*fav+us*sav)/(fav+sav);
-  if (unb > 0) {
-    unb=10000.0/unb;
-    fprintf(log,"\nTotal Scaling: %.0f%% of max performance\n\n",unb);
-  }
+    snew(av, 1);
+    snew(ftot, cr->nnodes);
+    snew(stot, cr->nnodes);
+    init_nrnb(av);
+    for (i = 0; (i < cr->nnodes); i++)
+    {
+        add_nrnb(av, av, &(nrnb[i]));
+        /* Cost due to forces */
+        for (j = 0; (j < eNR_NBKERNEL_ALLVSALLGB); j++)
+        {
+            ftot[i] += nrnb[i].n[j]*cost_nrnb(j);
+        }
+        for (j = 0; (j < NFORCE_INDEX); j++)
+        {
+            ftot[i] += nrnb[i].n[force_index[j]]*cost_nrnb(force_index[j]);
+        }
+        /* Due to shake */
+        for (j = 0; (j < NCONSTR_INDEX); j++)
+        {
+            stot[i] += nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
+        }
+    }
+    for (j = 0; (j < eNRNB); j++)
+    {
+        av->n[j] = av->n[j]/(double)(cr->nnodes - cr->npmenodes);
+    }
+
+    fprintf(log, "\nDetailed load balancing info in percentage of average\n");
+
+    fprintf(log, " Type                 NODE:");
+    for (i = 0; (i < cr->nnodes); i++)
+    {
+        fprintf(log, "%3d ", i);
+    }
+    fprintf(log, "Scaling\n");
+    fprintf(log, "---------------------------");
+    for (i = 0; (i < cr->nnodes); i++)
+    {
+        fprintf(log, "----");
+    }
+    fprintf(log, "-------\n");
+
+    for (j = 0; (j < eNRNB); j++)
+    {
+        unb = 100.0;
+        if (av->n[j] > 0)
+        {
+            fprintf(log, " %-26s", nrnb_str(j));
+            for (i = 0; (i < cr->nnodes); i++)
+            {
+                dperc = (100.0*nrnb[i].n[j])/av->n[j];
+                unb   = max(unb, dperc);
+                perc  = dperc;
+                fprintf(log, "%3d ", perc);
+            }
+            if (unb > 0)
+            {
+                perc = 10000.0/unb;
+                fprintf(log, "%6d%%\n", perc);
+            }
+            else
+            {
+                fprintf(log, "\n");
+            }
+        }
+    }
+    fav = sav = 0;
+    for (i = 0; (i < cr->nnodes); i++)
+    {
+        fav += ftot[i];
+        sav += stot[i];
+    }
+    uf = pr_av(log, cr, fav, ftot, "Total Force");
+    us = pr_av(log, cr, sav, stot, "Total Constr.");
+
+    unb = (uf*fav+us*sav)/(fav+sav);
+    if (unb > 0)
+    {
+        unb = 10000.0/unb;
+        fprintf(log, "\nTotal Scaling: %.0f%% of max performance\n\n", unb);
+    }
 }
-

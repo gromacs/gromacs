@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -345,7 +345,7 @@ nb_kernel_t nb_kernel_ElecRF_VdwBham_GeomW4W4_F_c;
 
 
 nb_kernel_info_t
-kernellist_c[] =
+    kernellist_c[] =
 {
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_c, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_c", "c", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_c, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_c", "c", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
@@ -652,6 +652,6 @@ kernellist_c[] =
 };
 
 int
-kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
+    kernellist_c_size = sizeof(kernellist_c)/sizeof(kernellist_c[0]);
 
 #endif

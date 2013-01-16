@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ read_stdin_line(gmx_sel_lexer_t *state)
 {
     char *ptr     = state->inputstr;
     int   max_len = state->nalloc_input;
-    int   totlen = 0;
+    int   totlen  = 0;
 
     if (feof(stdin))
     {
@@ -126,9 +126,9 @@ read_stdin_line(gmx_sel_lexer_t *state)
         max_len -= len;
         if (max_len <= 2)
         {
-            max_len += state->nalloc_input;
+            max_len             += state->nalloc_input;
             state->nalloc_input *= 2;
-            len = ptr - state->inputstr;
+            len                  = ptr - state->inputstr;
             srenew(state->inputstr, state->nalloc_input);
             ptr = state->inputstr + len;
         }
@@ -144,8 +144,8 @@ int
 _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
 {
     gmx_sel_lexer_t *state = _gmx_sel_yyget_extra(yyscanner);
-    gmx_bool bCmdStart;
-    int token;
+    gmx_bool         bCmdStart;
+    int              token;
 
     if (!state->bBuffer && !state->inputstr)
     {
@@ -155,7 +155,7 @@ _gmx_sel_yyblex(YYSTYPE *yylval, yyscan_t yyscanner)
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
     }
     bCmdStart = state->bCmdStart;
-    token = _gmx_sel_yylex(yylval, yyscanner);
+    token     = _gmx_sel_yylex(yylval, yyscanner);
     while (state->inputstr && token == 0 && read_stdin_line(state))
     {
         _gmx_sel_set_lex_input_str(yyscanner, state->inputstr);
@@ -210,7 +210,9 @@ init_method_token(YYSTYPE *yylval, gmx_ana_selmethod_t *method, gmx_bool bPosMod
             case GROUP_VALUE: return KEYWORD_GROUP;
             default:          return INVALID;
         }
-    } else {
+    }
+    else
+    {
         /* Method with parameters or a modifier */
         if (method->flags & SMETH_MODIFIER)
         {
@@ -258,7 +260,7 @@ _gmx_sel_lexer_process_pending(YYSTYPE *yylval, gmx_sel_lexer_t *state)
 {
     if (state->nextparam)
     {
-        gmx_ana_selparam_t *param = state->nextparam;
+        gmx_ana_selparam_t     *param   = state->nextparam;
         gmx_bool                bBoolNo = state->bBoolNo;
 
         if (state->neom > 0)
@@ -295,9 +297,9 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
     /* Check if the identifier matches with a parameter name */
     if (state->msp >= 0)
     {
-        gmx_ana_selparam_t *param = NULL;
+        gmx_ana_selparam_t     *param   = NULL;
         gmx_bool                bBoolNo = FALSE;
-        int                 sp = state->msp;
+        int                     sp      = state->msp;
         while (!param && sp >= 0)
         {
             int             i;
@@ -319,7 +321,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
                     && yyleng > 2 && yytext[0] == 'n' && yytext[1] == 'o'
                     && !strncmp(state->mstack[sp]->param[i].name, yytext+2, yyleng-2))
                 {
-                    param = &state->mstack[sp]->param[i];
+                    param   = &state->mstack[sp]->param[i];
                     bBoolNo = TRUE;
                     break;
                 }
@@ -337,7 +339,7 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
             }
             if (sp < state->msp)
             {
-                state->neom = state->msp - sp - 1;
+                state->neom      = state->msp - sp - 1;
                 state->nextparam = param;
                 state->bBoolNo   = bBoolNo;
                 return END_OF_METHOD;
@@ -409,8 +411,8 @@ _gmx_sel_lexer_process_identifier(YYSTYPE *yylval, char *yytext, size_t yyleng,
      * some additional handling. */
     if (symtype == SYMBOL_POS)
     {
-        state->bMatchOf = TRUE;
-        yylval->str = _gmx_sel_sym_name(symbol);
+        state->bMatchOf    = TRUE;
+        yylval->str        = _gmx_sel_sym_name(symbol);
         state->prev_pos_kw = 2;
         return KEYWORD_POS;
     }
@@ -442,7 +444,7 @@ _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state)
     }
     /* Append the token to the stored string */
     strncpy(state->pselstr + state->pslen, str, len);
-    state->pslen += len;
+    state->pslen                += len;
     state->pselstr[state->pslen] = 0;
 }
 

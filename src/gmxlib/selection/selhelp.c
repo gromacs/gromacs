@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -57,7 +57,7 @@ typedef struct {
     const char **text;
 } t_selection_help_item;
 
-static const char *help_common[] = {
+static const char                 *help_common[] = {
     "SELECTION HELP[PAR]",
 
     "This program supports selections in addition to traditional index files.",
@@ -71,7 +71,7 @@ static const char *help_common[] = {
     "\"help all\" prints the help for all subtopics.",
 };
 
-static const char *help_arithmetic[] = {
+static const char                 *help_arithmetic[] = {
     "ARITHMETIC EXPRESSIONS IN SELECTIONS[PAR]",
 
     "Basic arithmetic evaluation is supported for numeric expressions.",
@@ -80,7 +80,7 @@ static const char *help_arithmetic[] = {
     "Result of a division by zero or other illegal operations is undefined.",
 };
 
-static const char *help_cmdline[] = {
+static const char                 *help_cmdline[] = {
     "SELECTION COMMAND-LINE ARGUMENTS[PAR]",
 
     "There are two alternative command-line arguments for specifying",
@@ -112,7 +112,7 @@ static const char *help_cmdline[] = {
     "See \"help positions\" for more information on these options.",
 };
 
-static const char *help_eval[] = {
+static const char                 *help_eval[] = {
     "SELECTION EVALUATION AND OPTIMIZATION[PAR]",
 
     "Boolean evaluation proceeds from left to right and is short-circuiting",
@@ -143,7 +143,7 @@ static const char *help_eval[] = {
     "a major problem.",
 };
 
-static const char *help_examples[] = {
+static const char                 *help_examples[] = {
     "SELECTION EXAMPLES[PAR]",
 
     "Below, examples of increasingly complex selections are given.[PAR]",
@@ -177,7 +177,7 @@ static const char *help_examples[] = {
     "  name \"C[1-8]\" merge name \"C[2-9]\"",
 };
 
-static const char *help_keywords[] = {
+static const char                 *help_keywords[] = {
     "SELECTION KEYWORDS[PAR]",
 
     "The following selection keywords are currently available.",
@@ -185,7 +185,7 @@ static const char *help_keywords[] = {
     "\"help KEYWORD\", where KEYWORD is the name of the keyword.",
 };
 
-static const char *help_limits[] = {
+static const char                 *help_limits[] = {
     "SELECTION LIMITATIONS[PAR]",
 
     "Some analysis programs may require a special structure for the input",
@@ -210,7 +210,7 @@ static const char *help_limits[] = {
     "as it appears in the input PDB file.",
 };
 
-static const char *help_positions[] = {
+static const char                 *help_positions[] = {
     "SPECIFYING POSITIONS[PAR]",
 
     "Possible ways of specifying positions in selections are:[PAR]",
@@ -255,7 +255,7 @@ static const char *help_positions[] = {
     "are either selected or not, based on the single distance calculated.",
 };
 
-static const char *help_syntax[] = {
+static const char                 *help_syntax[] = {
     "SELECTION SYNTAX[PAR]",
 
     "A set of selections consists of one or more selections, separated by",
@@ -345,7 +345,7 @@ print_keyword_list(struct gmx_ana_selcollection_t *sc, e_selvalue_t type,
     symbol = _gmx_sel_first_symbol(sc->symtab, SYMBOL_METHOD);
     while (symbol)
     {
-        gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(symbol);
+        gmx_ana_selmethod_t     *method = _gmx_sel_sym_value_method(symbol);
         gmx_bool                 bShow;
         bShow = (method->type == type)
             && ((bMod && (method->flags & SMETH_MODIFIER))
@@ -430,7 +430,7 @@ _gmx_sel_print_help(struct gmx_ana_selcollection_t *sc, const char *topic)
                 && strncmp(method->name, topic, strlen(topic)) == 0)
             {
                 print_tty_formatted(stderr, method->help.nlhelp,
-                        method->help.help, 0, NULL, NULL, FALSE);
+                                    method->help.help, 0, NULL, NULL, FALSE);
                 return;
             }
             symbol = _gmx_sel_next_symbol(symbol, SYMBOL_METHOD);

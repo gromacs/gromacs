@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -61,15 +61,15 @@ typedef struct
 {
     gmx_bool                bDump;
     gmx_bool                bFracNorm;
-    const char         *routt;
-    int                *size;
-    FILE               *sfp;
-    FILE               *cfp;
-    FILE               *ifp;
-    t_blocka           *block;
-    char              **gnames;
-    FILE               *mfp;
-    gmx_ana_indexmap_t *mmap;
+    const char             *routt;
+    int                    *size;
+    FILE                   *sfp;
+    FILE                   *cfp;
+    FILE                   *ifp;
+    t_blocka               *block;
+    char                  **gnames;
+    FILE                   *mfp;
+    gmx_ana_indexmap_t     *mmap;
 } t_dsdata;
 
 static int
@@ -79,8 +79,8 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_dsdata           *d = (t_dsdata *)data;
     int                 g, i, b, mask;
     real                normfac;
-    char                buf2[100],*buf,*nl;
-    static int          bFirstFrame=1;
+    char                buf2[100], *buf, *nl;
+    static int          bFirstFrame = 1;
 
     /* Write the sizes of the groups, possibly normalized */
     if (d->sfp)
@@ -132,12 +132,12 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
         }
         fprintf(d->ifp, "\n");
     }
-    
-    if (d->block) 
+
+    if (d->block)
     {
-        for (g = 0; g < nr; ++g) 
-        {        
-            if (sel[g]->bDynamic || bFirstFrame) 
+        for (g = 0; g < nr; ++g)
+        {
+            if (sel[g]->bDynamic || bFirstFrame)
             {
                 buf = strdup(sel[g]->name);
                 while ((nl = strchr(buf, ' ')) != NULL)
@@ -181,7 +181,7 @@ print_data(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 int
 gmx_select(int argc, char *argv[])
 {
-    const char *desc[] = {
+    const char             *desc[] = {
         "[TT]g_select[tt] writes out basic data about dynamic selections.",
         "It can be used for some simple analyses, or the output can",
         "be combined with output from other programs and/or external",
@@ -231,8 +231,8 @@ gmx_select(int argc, char *argv[])
     gmx_bool                bDump     = FALSE;
     gmx_bool                bFracNorm = FALSE;
     gmx_bool                bTotNorm  = FALSE;
-    const char         *routt[] = {NULL, "number", "index", NULL};
-    t_pargs             pa[] = {
+    const char             *routt[]   = {NULL, "number", "index", NULL};
+    t_pargs                 pa[]      = {
         {"-dump",   FALSE, etBOOL, {&bDump},
          "Do not print the frame time (-om, -oi) or the index size (-oi)"},
         {"-norm",   FALSE, etBOOL, {&bTotNorm},
@@ -243,7 +243,7 @@ gmx_select(int argc, char *argv[])
          "Residue number output type"},
     };
 
-    t_filenm            fnm[] = {
+    t_filenm                fnm[] = {
         {efXVG, "-os", "size.xvg",  ffOPTWR},
         {efXVG, "-oc", "cfrac.xvg", ffOPTWR},
         {efDAT, "-oi", "index.dat", ffOPTWR},
@@ -252,16 +252,16 @@ gmx_select(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    gmx_ana_traj_t       *trj;
-    t_topology           *top;
-    int                   ngrps;
-    gmx_ana_selection_t **sel;
-    char                **grpnames;
-    t_dsdata              d;
+    gmx_ana_traj_t        *trj;
+    t_topology            *top;
+    int                    ngrps;
+    gmx_ana_selection_t  **sel;
+    char                 **grpnames;
+    t_dsdata               d;
     const char            *fnSize, *fnFrac, *fnIndex, *fnNdx, *fnMask;
-    int                   g;
-    int                   rc;
-    output_env_t          oenv;
+    int                    g;
+    int                    rc;
+    output_env_t           oenv;
 
     CopyRight(stderr, argv[0]);
     gmx_ana_traj_create(&trj, 0);
@@ -285,7 +285,7 @@ gmx_select(int argc, char *argv[])
         fnSize = opt2fn("-os", NFILE, fnm);
     }
 
-    if ( bDump && ngrps > 1)
+    if (bDump && ngrps > 1)
     {
         gmx_fatal(FARGS, "Only one index group allowed with -dump");
     }
@@ -322,12 +322,12 @@ gmx_select(int argc, char *argv[])
     }
 
     /* Open output files */
-    d.sfp = d.cfp = d.ifp = d.mfp = NULL;
+    d.sfp   = d.cfp = d.ifp = d.mfp = NULL;
     d.block = NULL;
     gmx_ana_get_grpnames(trj, &grpnames);
     if (fnSize)
     {
-        d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number",oenv);
+        d.sfp = xvgropen(fnSize, "Selection size", "Time (ps)", "Number", oenv);
         xvgr_selections(d.sfp, trj);
         xvgr_legend(d.sfp, ngrps, (const char**)grpnames, oenv);
     }
@@ -345,7 +345,7 @@ gmx_select(int argc, char *argv[])
     }
     if (fnNdx)
     {
-        d.block = new_blocka();
+        d.block  = new_blocka();
         d.gnames = NULL;
     }
     if (fnMask)

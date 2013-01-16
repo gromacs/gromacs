@@ -3,7 +3,7 @@
  *
  * This file is part of Gromacs        Copyright (c) 1991-2008
  * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,13 +48,13 @@ extern "C" {
 struct gmxvmdplugin
 {
     molfile_plugin_t *api;
-    const char* filetype;
-    void* handle;
-    gmx_bool bV;
+    const char      * filetype;
+    void            * handle;
+    gmx_bool          bV;
 };
-    
-int read_first_vmd_frame(int  *status,const char *fn, struct trxframe *fr,int flags);
-gmx_bool read_next_vmd_frame(int status,struct trxframe *fr);
+
+int read_first_vmd_frame(int  *status, const char *fn, struct trxframe *fr, int flags);
+gmx_bool read_next_vmd_frame(int status, struct trxframe *fr);
 
 #ifdef __cplusplus
 }

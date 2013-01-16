@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,13 +42,13 @@
 #include <stdio.h>
 #include "typedefs.h"
 
-extern void ionize(FILE *log,const output_env_t oenv,t_mdatoms *md,
-                   gmx_mtop_t *mtop, real t,t_inputrec *ir,rvec x[],rvec v[],
-                   int start,int end,matrix box,t_commrec *cr);
+extern void ionize(FILE *log, const output_env_t oenv, t_mdatoms *md,
+                   gmx_mtop_t *mtop, real t, t_inputrec *ir, rvec x[], rvec v[],
+                   int start, int end, matrix box, t_commrec *cr);
 
-extern real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
-                                       int start,int end,
-                                       rvec x[],rvec v[],rvec f[],matrix box);
+extern real electron_atom_interactions(FILE *fp, t_mdatoms *md, t_inputrec *ir,
+                                       int start, int end,
+                                       rvec x[], rvec v[], rvec f[], matrix box);
 /* Calculate what the name says. */
 
 #endif

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,126 +50,163 @@
 #include "symtab.h"
 #include "macros.h"
 
-#define	BUFSIZE			1024
-#define	TABLESIZE		5
+#define BUFSIZE         1024
+#define TABLESIZE       5
 
-static char *trim_string(const char *s,char *out, int maxlen)
-     /*
-      * Returns a pointer to a static area which contains a copy 
-      * of s without leading or trailing spaces. Strings are
-      * truncated to BUFSIZE positions.
-      */      
+static char *trim_string(const char *s, char *out, int maxlen)
+/*
+ * Returns a pointer to a static area which contains a copy
+ * of s without leading or trailing spaces. Strings are
+ * truncated to BUFSIZE positions.
+ */
 {
-  int len,i;
- 
-  if(strlen(s)>(size_t)(maxlen-1))
-    gmx_fatal(FARGS,"String '%s' (%d) is longer than buffer (%d).\n", 
-              s, strlen(s), maxlen-1);
-  
-  for (; (*s)&&((*s)==' '); s++);
-  for (len=strlen(s); (len>0); len--) if (s[len-1]!=' ') break;
-  if (len>=BUFSIZE) len=BUFSIZE-1;
-  for (i=0; i<len; i++) out[i]=*(s++);
-  out[i]=0;
-  return out;
+    int len, i;
+
+    if (strlen(s) > (size_t)(maxlen-1))
+    {
+        gmx_fatal(FARGS, "String '%s' (%d) is longer than buffer (%d).\n",
+                  s, strlen(s), maxlen-1);
+    }
+
+    for (; (*s) && ((*s) == ' '); s++)
+    {
+        ;
+    }
+    for (len = strlen(s); (len > 0); len--)
+    {
+        if (s[len-1] != ' ')
+        {
+            break;
+        }
+    }
+    if (len >= BUFSIZE)
+    {
+        len = BUFSIZE-1;
+    }
+    for (i = 0; i < len; i++)
+    {
+        out[i] = *(s++);
+    }
+    out[i] = 0;
+    return out;
 }
 
-int lookup_symtab(t_symtab *symtab,char **name)
+int lookup_symtab(t_symtab *symtab, char **name)
 {
-  int base,index;
-  t_symbuf *symbuf;
-  
-  base=0;
-  index=0;
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL) {
-    index=name-symbuf->buf;
-    if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
-      return index+base;
-    else {
-      base+=symbuf->bufsize;
-      symbuf=symbuf->next;
+    int       base, index;
+    t_symbuf *symbuf;
+
+    base   = 0;
+    index  = 0;
+    symbuf = symtab->symbuf;
+    while (symbuf != NULL)
+    {
+        index = name-symbuf->buf;
+        if ( ( index >= 0 ) && ( index < symbuf->bufsize ) )
+        {
+            return index+base;
+        }
+        else
+        {
+            base  += symbuf->bufsize;
+            symbuf = symbuf->next;
+        }
     }
-  }
-  gmx_fatal(FARGS,"symtab lookup \"%s\" not found",*name);
-  return -1;
+    gmx_fatal(FARGS, "symtab lookup \"%s\" not found", *name);
+    return -1;
 }
 
-char **get_symtab_handle(t_symtab *symtab,int name)
+char **get_symtab_handle(t_symtab *symtab, int name)
 {
-  t_symbuf *symbuf;
-  
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL) {
-    if (name<symbuf->bufsize)
-      return &(symbuf->buf[name]);
-    else {
-      name-=symbuf->bufsize;
-      symbuf=symbuf->next;
+    t_symbuf *symbuf;
+
+    symbuf = symtab->symbuf;
+    while (symbuf != NULL)
+    {
+        if (name < symbuf->bufsize)
+        {
+            return &(symbuf->buf[name]);
+        }
+        else
+        {
+            name  -= symbuf->bufsize;
+            symbuf = symbuf->next;
+        }
     }
-  }
-  gmx_fatal(FARGS,"symtab get_symtab_handle %d not found",name);
-  return NULL;
+    gmx_fatal(FARGS, "symtab get_symtab_handle %d not found", name);
+    return NULL;
 }
 
 static t_symbuf *new_symbuf(void)
 {
-  t_symbuf *symbuf;
+    t_symbuf *symbuf;
 
-  snew(symbuf,1);
-  symbuf->bufsize=TABLESIZE;
-  snew(symbuf->buf,symbuf->bufsize);
-  symbuf->next=NULL;
+    snew(symbuf, 1);
+    symbuf->bufsize = TABLESIZE;
+    snew(symbuf->buf, symbuf->bufsize);
+    symbuf->next = NULL;
 
-  return symbuf;
+    return symbuf;
 }
 
-static char **enter_buf(t_symtab *symtab,char *name)
+static char **enter_buf(t_symtab *symtab, char *name)
 {
-  int      i;
-  t_symbuf *symbuf;
-  gmx_bool     bCont;
-  
-  if (symtab->symbuf == NULL)
-    symtab->symbuf=new_symbuf();
+    int          i;
+    t_symbuf    *symbuf;
+    gmx_bool     bCont;
 
-  symbuf=symtab->symbuf;
-  do {
-    for(i=0; (i < symbuf->bufsize); i++) {
-      if (symbuf->buf[i]==NULL) {
-	symtab->nr++;
-	symbuf->buf[i]=strdup(name);
-	return &(symbuf->buf[i]);
-      } else if (strcmp(symbuf->buf[i],name)==0)
-	return &(symbuf->buf[i]);
+    if (symtab->symbuf == NULL)
+    {
+        symtab->symbuf = new_symbuf();
     }
-    if (symbuf->next != NULL) {
-      symbuf=symbuf->next;
-      bCont = TRUE;
+
+    symbuf = symtab->symbuf;
+    do
+    {
+        for (i = 0; (i < symbuf->bufsize); i++)
+        {
+            if (symbuf->buf[i] == NULL)
+            {
+                symtab->nr++;
+                symbuf->buf[i] = strdup(name);
+                return &(symbuf->buf[i]);
+            }
+            else if (strcmp(symbuf->buf[i], name) == 0)
+            {
+                return &(symbuf->buf[i]);
+            }
+        }
+        if (symbuf->next != NULL)
+        {
+            symbuf = symbuf->next;
+            bCont  = TRUE;
+        }
+        else
+        {
+            bCont = FALSE;
+        }
     }
-    else
-      bCont = FALSE;
-  } while (bCont);
+    while (bCont);
 
-  symbuf->next=new_symbuf();
-  symbuf=symbuf->next;
+    symbuf->next = new_symbuf();
+    symbuf       = symbuf->next;
 
-  symtab->nr++;
-  symbuf->buf[0]=strdup(name);
-  return &(symbuf->buf[0]);
+    symtab->nr++;
+    symbuf->buf[0] = strdup(name);
+    return &(symbuf->buf[0]);
 }
 
-char **put_symtab(t_symtab *symtab,const char *name)
+char **put_symtab(t_symtab *symtab, const char *name)
 {
-  char buf[1024];
-  
-  return enter_buf(symtab,trim_string(name,buf,1023));
+    char buf[1024];
+
+    return enter_buf(symtab, trim_string(name, buf, 1023));
 }
 
 void open_symtab(t_symtab *symtab)
 {
-  symtab->nr=0;
-  symtab->symbuf=NULL;
+    symtab->nr     = 0;
+    symtab->symbuf = NULL;
 }
 
 void close_symtab(t_symtab *symtab)
@@ -178,64 +215,74 @@ void close_symtab(t_symtab *symtab)
 
 void done_symtab(t_symtab *symtab)
 {
-  int i;
-  t_symbuf *symbuf,*freeptr;
-  
-  close_symtab(symtab);
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL) {
-    for (i=0; (i < symbuf->bufsize) && (i < symtab->nr); i++)
-      sfree(symbuf->buf[i]);
-    symtab->nr-=i;
-    sfree(symbuf->buf);
-    freeptr=symbuf;
-    symbuf=symbuf->next;
-    sfree(freeptr);
-  }
-  symtab->symbuf=NULL;
-  if (symtab->nr != 0)
-    gmx_incons("Freeing symbol table (symtab) structure");
+    int       i;
+    t_symbuf *symbuf, *freeptr;
+
+    close_symtab(symtab);
+    symbuf = symtab->symbuf;
+    while (symbuf != NULL)
+    {
+        for (i = 0; (i < symbuf->bufsize) && (i < symtab->nr); i++)
+        {
+            sfree(symbuf->buf[i]);
+        }
+        symtab->nr -= i;
+        sfree(symbuf->buf);
+        freeptr = symbuf;
+        symbuf  = symbuf->next;
+        sfree(freeptr);
+    }
+    symtab->symbuf = NULL;
+    if (symtab->nr != 0)
+    {
+        gmx_incons("Freeing symbol table (symtab) structure");
+    }
 }
 
 void free_symtab(t_symtab *symtab)
 {
-  t_symbuf *symbuf,*freeptr;
-  
-  close_symtab(symtab);
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL) {
-    symtab->nr-=min(symbuf->bufsize,symtab->nr);
-    freeptr=symbuf;
-    symbuf=symbuf->next;
-    sfree(freeptr);
-  }
-  symtab->symbuf=NULL;
-  if (symtab->nr != 0)
-    gmx_incons("Freeing symbol table (symtab) structure");
+    t_symbuf *symbuf, *freeptr;
+
+    close_symtab(symtab);
+    symbuf = symtab->symbuf;
+    while (symbuf != NULL)
+    {
+        symtab->nr -= min(symbuf->bufsize, symtab->nr);
+        freeptr     = symbuf;
+        symbuf      = symbuf->next;
+        sfree(freeptr);
+    }
+    symtab->symbuf = NULL;
+    if (symtab->nr != 0)
+    {
+        gmx_incons("Freeing symbol table (symtab) structure");
+    }
 }
 
-void pr_symtab(FILE *fp,int indent,const char *title,t_symtab *symtab)
+void pr_symtab(FILE *fp, int indent, const char *title, t_symtab *symtab)
 {
-  int i,j,nr;
-  t_symbuf *symbuf;
-  
-  if (available(fp,symtab,indent,title)) 
+    int       i, j, nr;
+    t_symbuf *symbuf;
+
+    if (available(fp, symtab, indent, title))
     {
-      indent=pr_title_n(fp,indent,title,symtab->nr);
-      i=0;
-      nr=symtab->nr;
-      symbuf=symtab->symbuf;
-      while (symbuf!=NULL)
+        indent = pr_title_n(fp, indent, title, symtab->nr);
+        i      = 0;
+        nr     = symtab->nr;
+        symbuf = symtab->symbuf;
+        while (symbuf != NULL)
         {
-          for (j=0; (j < symbuf->bufsize) && (j < nr); j++)
+            for (j = 0; (j < symbuf->bufsize) && (j < nr); j++)
             {
-              pr_indent(fp,indent);
-              (void) fprintf(fp,"%s[%d]=\"%s\"\n",title,i++,symbuf->buf[j]);
+                pr_indent(fp, indent);
+                (void) fprintf(fp, "%s[%d]=\"%s\"\n", title, i++, symbuf->buf[j]);
             }
-          nr-=j;
-          symbuf=symbuf->next;
+            nr    -= j;
+            symbuf = symbuf->next;
         }
-      if (nr != 0)
-	gmx_incons("Printing symbol table (symtab) structure");
+        if (nr != 0)
+        {
+            gmx_incons("Printing symbol table (symtab) structure");
+        }
     }
 }

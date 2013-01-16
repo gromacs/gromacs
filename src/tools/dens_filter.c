@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2001
  * BIOSON Research Institute, Dept. of Biophysical Chemistry
  * University of Groningen, The Netherlands
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -56,59 +56,87 @@
 #endif
 
 /* Modulo function assuming y>0 but with arbitrary INTEGER x */
-static int MOD(int x, int y){
-    if (x<0) x=x+y;
-    return (mod(x,y));
+static int MOD(int x, int y)
+{
+    if (x < 0)
+    {
+        x = x+y;
+    }
+    return (mod(x, y));
 }
 
 
-gmx_bool convolution(int dataSize,real *x, int kernelSize, real* kernel)
+gmx_bool convolution(int dataSize, real *x, int kernelSize, real* kernel)
 {
-    int i, j, k;
+    int   i, j, k;
     real *out;
-    snew(out,dataSize);
+    snew(out, dataSize);
     /* check validity of params */
-    if(!x || !kernel) return FALSE;
-    if(dataSize <=0 || kernelSize <= 0) return FALSE;
+    if (!x || !kernel)
+    {
+        return FALSE;
+    }
+    if (dataSize <= 0 || kernelSize <= 0)
+    {
+        return FALSE;
+    }
 
     /* start convolution from out[kernelSize-1] to out[dataSize-1] (last) */
-    for(i = kernelSize-1; i < dataSize; ++i)
+    for (i = kernelSize-1; i < dataSize; ++i)
     {
-        for(j = i, k = 0; k < kernelSize; --j, ++k)
+        for (j = i, k = 0; k < kernelSize; --j, ++k)
+        {
             out[i] += x[j] * kernel[k];
+        }
     }
 
     /* convolution from out[0] to out[kernelSize-2] */
-    for(i = 0; i < kernelSize - 1; ++i)
+    for (i = 0; i < kernelSize - 1; ++i)
     {
-        for(j = i, k = 0; j >= 0; --j, ++k)
+        for (j = i, k = 0; j >= 0; --j, ++k)
+        {
             out[i] += x[j] * kernel[k];
+        }
     }
 
-    for(i=0;i<dataSize;i++) x[i]=out[i];
-    sfree(out);	
+    for (i = 0; i < dataSize; i++)
+    {
+        x[i] = out[i];
+    }
+    sfree(out);
     return TRUE;
 }
 
 /* Assuming kernel is shorter than x */
 
-gmx_bool periodic_convolution(int datasize, real *x, int kernelsize, 
+gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
                               real *kernel)
 {
-    int i,j,k,nj;
+    int   i, j, k, nj;
     real *filtered;
 
-    if (!x || !kernel) return FALSE;
-    if (kernelsize<=0|| datasize<=0|| kernelsize > datasize) return FALSE;
+    if (!x || !kernel)
+    {
+        return FALSE;
+    }
+    if (kernelsize <= 0 || datasize <= 0 || kernelsize > datasize)
+    {
+        return FALSE;
+    }
 
-    snew(filtered,datasize);
-    
-    for(i=0;(i<datasize); i++){
-        for(j=0; (j<kernelsize); j++){
-            filtered[i] += kernel[j]*x[MOD((i-j),datasize)];
+    snew(filtered, datasize);
+
+    for (i = 0; (i < datasize); i++)
+    {
+        for (j = 0; (j < kernelsize); j++)
+        {
+            filtered[i] += kernel[j]*x[MOD((i-j), datasize)];
         }
     }
-    for(i=0; i<datasize; i++) x[i]=filtered[i];
+    for (i = 0; i < datasize; i++)
+    {
+        x[i] = filtered[i];
+    }
     sfree(filtered);
 
     return TRUE;
@@ -116,20 +144,21 @@ gmx_bool periodic_convolution(int datasize, real *x, int kernelsize,
 
 
 /* returns discrete gaussian kernel of size n in *out, where n=2k+1=3,5,7,9,11 and k=1,2,3 is the order
- * NO checks are performed 
+ * NO checks are performed
  */
-void gausskernel(real *out, int n, real var){
-	int i,j=0,k;
-	real arg,tot=0;
-	k=n/2;
-	
-	for(i=-k; i<=k; i++){
-		arg=(i*i)/(2*var);
-		tot+=out[j++]=EXP(-arg);
-	}
-	for(i=0;i<j;i++){
-		out[i]/=tot;
-	}
+void gausskernel(real *out, int n, real var)
+{
+    int  i, j = 0, k;
+    real arg, tot = 0;
+    k = n/2;
+
+    for (i = -k; i <= k; i++)
+    {
+        arg  = (i*i)/(2*var);
+        tot += out[j++] = EXP(-arg);
+    }
+    for (i = 0; i < j; i++)
+    {
+        out[i] /= tot;
+    }
 }
-
-

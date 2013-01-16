@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2006, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 #include "copyrite.h"
 #include "gmx_ana.h"
 
-/* 
+/*
  * This program is needed to create the files:
  *   options.html
  *   options.tex
@@ -54,64 +54,64 @@
  */
 
 int
-gmx_options(int argc,char *argv[])
+gmx_options(int argc, char *argv[])
 {
-  const char *desc[] = {
-    "GROMACS programs have some standard options,",
-    "of which some are hidden by default:"
-  };
+    const char  *desc[] = {
+        "GROMACS programs have some standard options,",
+        "of which some are hidden by default:"
+    };
 
-  const char *bugs[] = {
-    "If the configuration script found Motif or Lesstif on your system, "
-    "you can use the graphical interface (if not, you will get an error):[BR]"
-    "[TT]-X[tt] gmx_bool [TT]no[tt] Use dialog box GUI to edit command line options",
-    
-    "When compiled on an SGI-IRIX system, all GROMACS programs have an "
-    "additional option:[BR]"
-    "[TT]-npri[tt] int [TT]0[tt] Set non blocking priority (try 128)",
+    const char  *bugs[] = {
+        "If the configuration script found Motif or Lesstif on your system, "
+        "you can use the graphical interface (if not, you will get an error):[BR]"
+        "[TT]-X[tt] gmx_bool [TT]no[tt] Use dialog box GUI to edit command line options",
 
-    "Optional files are not used unless the option is set, in contrast to "
-    "non-optional files, where the default file name is used when the "
-    "option is not set.",
+        "When compiled on an SGI-IRIX system, all GROMACS programs have an "
+        "additional option:[BR]"
+        "[TT]-npri[tt] int [TT]0[tt] Set non blocking priority (try 128)",
 
-    "All GROMACS programs will accept file options without a file extension "
-    "or filename being specified. In such cases the default filenames will "
-    "be used. With multiple input file types, such as generic structure "
-    "format, the directory will be searched for files of each type with the "
-    "supplied or default name. When no such file is found, or with output "
-    "files the first file type will be used.",
+        "Optional files are not used unless the option is set, in contrast to "
+        "non-optional files, where the default file name is used when the "
+        "option is not set.",
 
-    "All GROMACS programs with the exception of [TT]mdrun[tt] "
-    "and [TT]eneconv[tt] check if the command line options "
-    "are valid.  If this is not the case, the program will be halted.",
+        "All GROMACS programs will accept file options without a file extension "
+        "or filename being specified. In such cases the default filenames will "
+        "be used. With multiple input file types, such as generic structure "
+        "format, the directory will be searched for files of each type with the "
+        "supplied or default name. When no such file is found, or with output "
+        "files the first file type will be used.",
 
-    "Enumerated options (enum) should be used with one of the arguments "
-    "listed in the option description, the argument may be abbreviated. "
-    "The first match to the shortest argument in the list will be selected.",
+        "All GROMACS programs with the exception of [TT]mdrun[tt] "
+        "and [TT]eneconv[tt] check if the command line options "
+        "are valid.  If this is not the case, the program will be halted.",
 
-    "Vector options can be used with 1 or 3 parameters. When only one "
-    "parameter is supplied the two others are also set to this value.",
+        "Enumerated options (enum) should be used with one of the arguments "
+        "listed in the option description, the argument may be abbreviated. "
+        "The first match to the shortest argument in the list will be selected.",
 
-    "All GROMACS programs can read compressed or g-zipped files. There "
-    "might be a problem with reading compressed [TT].xtc[tt], "
-    "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
-    "very well anyway.",
+        "Vector options can be used with 1 or 3 parameters. When only one "
+        "parameter is supplied the two others are also set to this value.",
 
-    "Most GROMACS programs can process a trajectory with fewer atoms than "
-    "the run input or structure file, but only if the trajectory consists "
-    "of the first n atoms of the run input or structure file.",
-    
-    "Many GROMACS programs will accept the [TT]-tu[tt] option to set the "
-    "time units to use in output files (e.g. for [TT]xmgr[tt] graphs or "
-    "[TT]xpm[tt] matrices) and in all time options."
-  };
+        "All GROMACS programs can read compressed or g-zipped files. There "
+        "might be a problem with reading compressed [TT].xtc[tt], "
+        "[TT].trr[tt] and [TT].trj[tt] files, but these will not compress "
+        "very well anyway.",
 
-  output_env_t oenv=NULL;
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,
-		    0,NULL,0,NULL,asize(desc),desc,asize(bugs),bugs,&oenv);
-  
-  thanx(stderr);
-  
-  return 0;
+        "Most GROMACS programs can process a trajectory with fewer atoms than "
+        "the run input or structure file, but only if the trajectory consists "
+        "of the first n atoms of the run input or structure file.",
+
+        "Many GROMACS programs will accept the [TT]-tu[tt] option to set the "
+        "time units to use in output files (e.g. for [TT]xmgr[tt] graphs or "
+        "[TT]xpm[tt] matrices) and in all time options."
+    };
+
+    output_env_t oenv = NULL;
+    CopyRight(stderr, argv[0]);
+    parse_common_args(&argc, argv, 0,
+                      0, NULL, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
+
+    thanx(stderr);
+
+    return 0;
 }

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -57,65 +57,68 @@
 #include "gmx_ana.h"
 
 
-static void plot_rama(FILE *out,t_xrama *xr)
+static void plot_rama(FILE *out, t_xrama *xr)
 {
-  int i;
-  real phi,psi;
-  
-  for(i=0; (i<xr->npp); i++) {
-    phi=xr->dih[xr->pp[i].iphi].ang*RAD2DEG;
-    psi=xr->dih[xr->pp[i].ipsi].ang*RAD2DEG;
-    fprintf(out,"%g  %g  %s\n",phi,psi,xr->pp[i].label);
-  }
+    int  i;
+    real phi, psi;
+
+    for (i = 0; (i < xr->npp); i++)
+    {
+        phi = xr->dih[xr->pp[i].iphi].ang*RAD2DEG;
+        psi = xr->dih[xr->pp[i].ipsi].ang*RAD2DEG;
+        fprintf(out, "%g  %g  %s\n", phi, psi, xr->pp[i].label);
+    }
 }
 
-int gmx_rama(int argc,char *argv[])
+int gmx_rama(int argc, char *argv[])
 {
-  const char *desc[] = {
-    "[TT]g_rama[tt] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from your topology file",
-    "and computes these as a function of time.",
-    "Using simple Unix tools such as [IT]grep[it] you can select out", 
-    "specific residues."
-  };
+    const char  *desc[] = {
+        "[TT]g_rama[tt] selects the [GRK]phi[grk]/[GRK]psi[grk] dihedral combinations from your topology file",
+        "and computes these as a function of time.",
+        "Using simple Unix tools such as [IT]grep[it] you can select out",
+        "specific residues."
+    };
 
-  FILE      *out;
-  t_xrama   *xr;
-  int       j;
-  output_env_t oenv;
-  t_filenm  fnm[] = {
-    { efTRX, "-f", NULL,  ffREAD },
-    { efTPX, NULL, NULL,  ffREAD },
-    { efXVG, NULL, "rama",ffWRITE }
-  };
+    FILE        *out;
+    t_xrama     *xr;
+    int          j;
+    output_env_t oenv;
+    t_filenm     fnm[] = {
+        { efTRX, "-f", NULL,  ffREAD },
+        { efTPX, NULL, NULL,  ffREAD },
+        { efXVG, NULL, "rama", ffWRITE }
+    };
 #define NFILE asize(fnm)
 
-  CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL,&oenv);
+    CopyRight(stderr, argv[0]);
+    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                      NFILE, fnm, 0, NULL, asize(desc), desc, 0, NULL, &oenv);
 
-		      
-  snew(xr,1);
-  init_rama(oenv,ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),xr,3);
-  
-  out=xvgropen(ftp2fn(efXVG,NFILE,fnm),"Ramachandran Plot","Phi","Psi",oenv);
-  xvgr_line_props(out,0,elNone,ecFrank,oenv);
-  xvgr_view(out,0.2,0.2,0.8,0.8,oenv);
-  xvgr_world(out,-180,-180,180,180,oenv);
-  fprintf(out,"@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
-  fprintf(out,"@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
-  fprintf(out,"@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
-  
-  j=0;
-  do {
-    plot_rama(out,xr);
-    j++;
-  } while (new_data(xr));
-  fprintf(stderr,"\n");
-  ffclose(out);
-  
-  do_view(oenv,ftp2fn(efXVG,NFILE,fnm),NULL);
-  
-  thanx(stderr);
-  
-  return 0;
+
+    snew(xr, 1);
+    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm), xr, 3);
+
+    out = xvgropen(ftp2fn(efXVG, NFILE, fnm), "Ramachandran Plot", "Phi", "Psi", oenv);
+    xvgr_line_props(out, 0, elNone, ecFrank, oenv);
+    xvgr_view(out, 0.2, 0.2, 0.8, 0.8, oenv);
+    xvgr_world(out, -180, -180, 180, 180, oenv);
+    fprintf(out, "@    xaxis  tick on\n@    xaxis  tick major 60\n@    xaxis  tick minor 30\n");
+    fprintf(out, "@    yaxis  tick on\n@    yaxis  tick major 60\n@    yaxis  tick minor 30\n");
+    fprintf(out, "@ s0 symbol 2\n@ s0 symbol size 0.4\n@ s0 symbol fill 1\n");
+
+    j = 0;
+    do
+    {
+        plot_rama(out, xr);
+        j++;
+    }
+    while (new_data(xr));
+    fprintf(stderr, "\n");
+    ffclose(out);
+
+    do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
+
+    thanx(stderr);
+
+    return 0;
 }

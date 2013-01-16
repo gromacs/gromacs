@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -231,8 +231,8 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
              gmx_sel_symtab_t *symtab)
 {
     gmx_bool              bOk = TRUE;
-    gmx_sel_symrec_t *sym;
-    int               i, j;
+    gmx_sel_symrec_t     *sym;
+    int                   i, j;
 
     if (nparams > 0 && !param)
     {
@@ -394,12 +394,12 @@ check_params(FILE *fp, const char *name, int nparams, gmx_ana_selparam_t param[]
             bOk = FALSE;
         }
     } /* End of parameter loop */
-    /* Check parameters of existing methods */
+      /* Check parameters of existing methods */
     sym = _gmx_sel_first_symbol(symtab, SYMBOL_METHOD);
     while (sym)
     {
         gmx_ana_selmethod_t *method = _gmx_sel_sym_value_method(sym);
-        gmx_ana_selparam_t  *param =
+        gmx_ana_selparam_t  *param  =
             gmx_ana_selmethod_find_param(name, method);
         if (param)
         {
@@ -429,7 +429,7 @@ check_callbacks(FILE *fp, gmx_ana_selmethod_t *method)
 {
     gmx_bool         bOk = TRUE;
     gmx_bool         bNeedInit;
-    int          i;
+    int              i;
 
     /* Make some checks on init_data and free */
     if (method->nparams > 0 && !method->init_data)
@@ -646,7 +646,7 @@ gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
         bOk = check_method(stderr, method, sc->symtab);
     }
     /* Try to register the method if everything is ok */
-    if (bOk) 
+    if (bOk)
     {
         if (!_gmx_sel_add_method_symbol(sc->symtab, name, method))
         {
@@ -669,8 +669,8 @@ gmx_ana_selmethod_register(struct gmx_ana_selcollection_t *sc,
 int
 gmx_ana_selmethod_register_defaults(struct gmx_ana_selcollection_t *sc)
 {
-    size_t i;
-    int  rc;
+    size_t   i;
+    int      rc;
     gmx_bool bOk;
 
     bOk = TRUE;

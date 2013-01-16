@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,29 +49,31 @@
 #define DLG_HIDEONBUTTON (1<<4)
 #define DLG_FREEONBUTTON (1<<5)
 
-enum { DLG_SET, DLG_EXIT };
+enum {
+    DLG_SET, DLG_EXIT
+};
 
-typedef void DlgCallback(t_x11 *x11,int dlg_mess,int item_id,
-			 char *set,void *data);
+typedef void DlgCallback (t_x11 *x11, int dlg_mess, int item_id,
+                          char *set, void *data);
 /* User function that can be called by the dialog box. All setting of
  * check-boxes and radio-buttons etc., is done by the dialog manager,
  * the user can let himself be informed about mouse activity also.
  */
 
 typedef struct {
-  t_x11         *x11;           /* All about X 				*/
-  t_windata    	win;     	/* The position and size of the window 	*/
-  char          *title;         /* Window name 				*/
-  Window	wDad;		/* The parent window 			*/
-  unsigned int          xmax,ymax;      /* Dimensions of parent window 		*/
-  unsigned long         flags;          /* Flags for display 			*/
-  unsigned long         fg,bg;          /* The colours 				*/
-  gmx_bool          bPop;           /* Should we pop the mouse back 	*/
-  gmx_bool          bGrab;          /* Have we grabbed the mouse ? 		*/
-  int         	nitem;		/* The number of items 			*/
-  t_dlgitem   	**dlgitem;	/* The array of item pointers 		*/
-  DlgCallback   *cb;		/* User call back function		*/
-  void          *data;		/* User data				*/
+    t_x11                *x11;        /* All about X                */
+    t_windata             win;        /* The position and size of the window    */
+    char                 *title;      /* Window name                */
+    Window                wDad;       /* The parent window          */
+    unsigned int          xmax, ymax; /* Dimensions of parent window        */
+    unsigned long         flags;      /* Flags for display          */
+    unsigned long         fg, bg;     /* The colours                */
+    gmx_bool              bPop;       /* Should we pop the mouse back   */
+    gmx_bool              bGrab;      /* Have we grabbed the mouse ?        */
+    int                   nitem;      /* The number of items            */
+    t_dlgitem           **dlgitem;    /* The array of item pointers         */
+    DlgCallback          *cb;         /* User call back function		*/
+    void                 *data;       /* User data				*/
 } t_dlg;
 
 /*****************************
@@ -80,9 +82,9 @@ typedef struct {
  * cb and data may be NULL.
  *
  ****************************/
-t_dlg *CreateDlg(t_x11 *x11,Window Parent,const char *title,
-		 int x0,int y0,int w,int h,int bw,unsigned long fg,unsigned long bg,
-		 DlgCallback *cb,void *data);
+t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
+                 int x0, int y0, int w, int h, int bw, unsigned long fg, unsigned long bg,
+                 DlgCallback *cb, void *data);
 
 /*****************************
  *
@@ -91,9 +93,9 @@ t_dlg *CreateDlg(t_x11 *x11,Window Parent,const char *title,
  * the item itself may not be freed until the dlg is done with
  *
  ****************************/
-void AddDlgItem(t_dlg *dlg,t_dlgitem *item);
+void AddDlgItem(t_dlg *dlg, t_dlgitem *item);
 
-void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *item[]);
+void AddDlgItems(t_dlg *dlg, int nitem, t_dlgitem *item[]);
 
 /*****************************
  *
@@ -102,9 +104,9 @@ void AddDlgItems(t_dlg *dlg,int nitem,t_dlgitem *item[]);
  * FALSE will mean most of the time, that item id was not found
  *
  ****************************/
-gmx_bool QueryDlgItemSize(t_dlg *dlg,t_id id,int *w,int *h);
+gmx_bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h);
 
-gmx_bool QueryDlgItemPos(t_dlg *dlg,t_id id,int *x0,int *y0);
+gmx_bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0);
 
 int QueryDlgItemX(t_dlg *dlg, t_id id);
 
@@ -114,11 +116,11 @@ int QueryDlgItemW(t_dlg *dlg, t_id id);
 
 int QueryDlgItemH(t_dlg *dlg, t_id id);
 
-gmx_bool SetDlgItemSize(t_dlg *dlg,t_id id,int w,int h);
+gmx_bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h);
 
-gmx_bool SetDlgItemPos(t_dlg *dlg,t_id id,int x0,int y0);
+gmx_bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0);
 
-void SetDlgSize(t_dlg *dlg,int w,int h, gmx_bool bAutoPosition);
+void SetDlgSize(t_dlg *dlg, int w, int h, gmx_bool bAutoPosition);
 
 /*****************************
  *
@@ -126,13 +128,13 @@ void SetDlgSize(t_dlg *dlg,int w,int h, gmx_bool bAutoPosition);
  * after dlg is exec'ed
  *
  ****************************/
-gmx_bool IsCBChecked(t_dlg *dlg,t_id id);
+gmx_bool IsCBChecked(t_dlg *dlg, t_id id);
 
-t_id RBSelected(t_dlg *dlg,int gid);
+t_id RBSelected(t_dlg *dlg, int gid);
 
-int  EditTextLen(t_dlg *dlg,t_id id);
+int  EditTextLen(t_dlg *dlg, t_id id);
 
-char *EditText(t_dlg *dlg,t_id id);
+char *EditText(t_dlg *dlg, t_id id);
 
 /*****************************
  *
@@ -164,4 +166,4 @@ void FreeDlgItem(t_dlg *dlg, t_id id);
 
 void FreeDlg(t_dlg *dlg);
 
-#endif	/* _xdlg_h */
+#endif  /* _xdlg_h */

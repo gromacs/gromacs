@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -39,15 +39,15 @@
 #ifndef _replace_h
 #define _replace_h
 
-extern char *replace(const char *string,const char *search,const char *replace);
-/* Replace all occurences of 
- * string 'search' in string 'string' by 'replace' 
+extern char *replace(const char *string, const char *search, const char *replace);
+/* Replace all occurences of
+ * string 'search' in string 'string' by 'replace'
  * Return a newly allocated piece of memory!
  */
 
-extern char *replaceww(const char *string,const char *search,const char *replace);
+extern char *replaceww(const char *string, const char *search, const char *replace);
 /* Replace all occurences of string 'search' delimited by non-alphanum
- * characters (i.e. whole words) in string 'string' by 'replace' 
+ * characters (i.e. whole words) in string 'string' by 'replace'
  * Return a newly allocated piece of memory!
  */
-#endif	/* _replace_h */
+#endif  /* _replace_h */

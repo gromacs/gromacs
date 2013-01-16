@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -55,11 +55,12 @@
 #include "mtop_util.h"
 #include "gmx_omp_nthreads.h"
 
-static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
-{ 
-    int i,j;
-    
-    for(i=0; (i<ngtc); i++) {
+static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
+{
+    int i, j;
+
+    for (i = 0; (i < ngtc); i++)
+    {
         tcstat[i].T = 0;
         clear_mat(tcstat[i].ekinh);
         clear_mat(tcstat[i].ekinh_old);
@@ -68,19 +69,20 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 }
 
 static void init_grpstat(FILE *log,
-			 gmx_mtop_t *mtop,int ngacc,t_grp_acc gstat[])
+                         gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
-    gmx_groups_t *groups;
+    gmx_groups_t           *groups;
     gmx_mtop_atomloop_all_t aloop;
-    int    i,grp;
-    t_atom *atom;
-    
-    if (ngacc > 0) {
+    int                     i, grp;
+    t_atom                 *atom;
+
+    if (ngacc > 0)
+    {
         groups = &mtop->groups;
-        aloop = gmx_mtop_atomloop_all_init(mtop);
-        while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) 
+        aloop  = gmx_mtop_atomloop_all_init(mtop);
+        while (gmx_mtop_atomloop_all_next(aloop, &i, &atom))
         {
-            grp = ggrpnr(groups,egcACC,i);
+            grp = ggrpnr(groups, egcACC, i);
             if ((grp < 0) && (grp >= ngacc))
             {
                 gmx_incons("Input for acceleration groups wrong");
@@ -93,195 +95,206 @@ static void init_grpstat(FILE *log,
     }
 }
 
-void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
+void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
-  int i;
-  int nthread,thread;
+    int i;
+    int nthread, thread;
 #ifdef DEBUG
-  fprintf(log,"ngtc: %d, ngacc: %d, ngener: %d\n",opts->ngtc,opts->ngacc,
-	  opts->ngener);
+    fprintf(log, "ngtc: %d, ngacc: %d, ngener: %d\n", opts->ngtc, opts->ngacc,
+            opts->ngener);
 #endif
 
-  /* bNEMD tells if we should remove remove the COM velocity
-   * from the velocities during velocity scaling in T-coupling.
-   * Turn this on when we have multiple acceleration groups
-   * or one accelerated group.
-   */
-  ekind->bNEMD = (opts->ngacc > 1 || norm(opts->acc[0]) > 0);
+    /* bNEMD tells if we should remove remove the COM velocity
+     * from the velocities during velocity scaling in T-coupling.
+     * Turn this on when we have multiple acceleration groups
+     * or one accelerated group.
+     */
+    ekind->bNEMD = (opts->ngacc > 1 || norm(opts->acc[0]) > 0);
 
-  ekind->ngtc = opts->ngtc;
-  snew(ekind->tcstat,opts->ngtc);
-  init_grptcstat(opts->ngtc,ekind->tcstat);
-  /* Set Berendsen tcoupl lambda's to 1, 
-   * so runs without Berendsen coupling are not affected.
-   */
-  for(i=0; i<opts->ngtc; i++) 
-  {
-      ekind->tcstat[i].lambda = 1.0;
-      ekind->tcstat[i].vscale_nhc = 1.0;
-      ekind->tcstat[i].ekinscaleh_nhc = 1.0;
-      ekind->tcstat[i].ekinscalef_nhc = 1.0;
-  }
-  
+    ekind->ngtc = opts->ngtc;
+    snew(ekind->tcstat, opts->ngtc);
+    init_grptcstat(opts->ngtc, ekind->tcstat);
+    /* Set Berendsen tcoupl lambda's to 1,
+     * so runs without Berendsen coupling are not affected.
+     */
+    for (i = 0; i < opts->ngtc; i++)
+    {
+        ekind->tcstat[i].lambda         = 1.0;
+        ekind->tcstat[i].vscale_nhc     = 1.0;
+        ekind->tcstat[i].ekinscaleh_nhc = 1.0;
+        ekind->tcstat[i].ekinscalef_nhc = 1.0;
+    }
+
     nthread = gmx_omp_nthreads_get(emntUpdate);
 
-    snew(ekind->ekin_work_alloc,nthread);
-    snew(ekind->ekin_work,nthread);
+    snew(ekind->ekin_work_alloc, nthread);
+    snew(ekind->ekin_work, nthread);
 #pragma omp parallel for num_threads(nthread) schedule(static)
-    for(thread=0; thread<nthread; thread++)
+    for (thread = 0; thread < nthread; thread++)
     {
         /* Allocate 2 elements extra on both sides,
          * so in single precision we have 2*3*3*4=72 bytes buffer
          * on both sides to avoid cache pollution.
          */
-        snew(ekind->ekin_work_alloc[thread],ekind->ngtc+4);
+        snew(ekind->ekin_work_alloc[thread], ekind->ngtc+4);
         ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + 2;
     }
 
-  ekind->ngacc = opts->ngacc;
-  snew(ekind->grpstat,opts->ngacc);
-  init_grpstat(log,mtop,opts->ngacc,ekind->grpstat);
+    ekind->ngacc = opts->ngacc;
+    snew(ekind->grpstat, opts->ngacc);
+    init_grpstat(log, mtop, opts->ngacc, ekind->grpstat);
 }
 
-void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
+void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
 {
     /* This routine will only be called when it's necessary */
     t_bin *rb;
-    int   g;
-    
+    int    g;
+
     rb = mk_bin();
-    
-    for(g=0; (g<opts->ngacc); g++) 
+
+    for (g = 0; (g < opts->ngacc); g++)
     {
-        add_binr(rb,DIM,ekind->grpstat[g].u);
+        add_binr(rb, DIM, ekind->grpstat[g].u);
     }
-    sum_bin(rb,cr);
-    
-    for(g=0; (g<opts->ngacc); g++) 
+    sum_bin(rb, cr);
+
+    for (g = 0; (g < opts->ngacc); g++)
     {
-        extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
+        extract_binr(rb, DIM*g, DIM, ekind->grpstat[g].u);
     }
     destroy_bin(rb);
-}       
+}
 
 /* I don't think accumulate_ekin is used anymore? */
 
 #if 0
-static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,
-			    gmx_ekindata_t *ekind)
+static void accumulate_ekin(t_commrec *cr, t_grpopts *opts,
+                            gmx_ekindata_t *ekind)
 {
     int g;
 
-    if(PAR(cr))
+    if (PAR(cr))
     {
-        for(g=0; (g<opts->ngtc); g++) 
+        for (g = 0; (g < opts->ngtc); g++)
         {
-            gmx_sum(DIM*DIM,ekind->tcstat[g].ekinf[0],cr);
+            gmx_sum(DIM*DIM, ekind->tcstat[g].ekinf[0], cr);
         }
     }
-}       
-#endif 
+}
+#endif
 
-void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
-                     t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda)
+void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
+                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda)
 {
-  int  d,g,n;
-  real mv;
+    int  d, g, n;
+    real mv;
 
-  /* calculate mean velocities at whole timestep */ 
-  for(g=0; (g<opts->ngtc); g++) {
-    ekind->tcstat[g].T = 0;
-  }
-
-  if (ekind->bNEMD) {
-    for (g=0; (g<opts->ngacc); g++)
-      clear_rvec(ekind->grpstat[g].u);
-    
-    g = 0;
-    for(n=start; (n<start+homenr); n++) {
-      if (md->cACC)
-	g = md->cACC[n];
-      for(d=0; (d<DIM);d++) {
-          mv = md->massT[n]*v[n][d];
-          ekind->grpstat[g].u[d] += mv;
-      }
+    /* calculate mean velocities at whole timestep */
+    for (g = 0; (g < opts->ngtc); g++)
+    {
+        ekind->tcstat[g].T = 0;
     }
 
-    for (g=0; (g < opts->ngacc); g++) {
-      for(d=0; (d<DIM);d++) {
-          ekind->grpstat[g].u[d] /=
-              (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
-      }
+    if (ekind->bNEMD)
+    {
+        for (g = 0; (g < opts->ngacc); g++)
+        {
+            clear_rvec(ekind->grpstat[g].u);
+        }
+
+        g = 0;
+        for (n = start; (n < start+homenr); n++)
+        {
+            if (md->cACC)
+            {
+                g = md->cACC[n];
+            }
+            for (d = 0; (d < DIM); d++)
+            {
+                mv                      = md->massT[n]*v[n][d];
+                ekind->grpstat[g].u[d] += mv;
+            }
+        }
+
+        for (g = 0; (g < opts->ngacc); g++)
+        {
+            for (d = 0; (d < DIM); d++)
+            {
+                ekind->grpstat[g].u[d] /=
+                    (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
+            }
+        }
     }
-  }
 }
 
-real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
+real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
               gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin)
 {
-    int          i,j,m,ngtc;
-    real         T,ek;
+    int           i, j, m, ngtc;
+    real          T, ek;
     t_grp_tcstat *tcstat;
-    real         nrdf,nd,*ndf;
-    
+    real          nrdf, nd, *ndf;
+
     ngtc = opts->ngtc;
     ndf  = opts->nrdf;
-    
-    T = 0; 
+
+    T    = 0;
     nrdf = 0;
 
     clear_mat(ekind->ekin);
 
-    for(i=0; (i<ngtc); i++) 
+    for (i = 0; (i < ngtc); i++)
     {
 
-        nd = ndf[i];
+        nd     = ndf[i];
         tcstat = &ekind->tcstat[i];
         /* Sometimes a group does not have degrees of freedom, e.g.
          * when it consists of shells and virtual sites, then we just
          * set the temperatue to 0 and also neglect the kinetic
          * energy, which should be  zero anyway.
          */
-        
-        if (nd > 0) {
+
+        if (nd > 0)
+        {
             if (bEkinAveVel)
             {
                 if (!bScaleEkin)
                 {
                     /* in this case, kinetic energy is from the current velocities already */
-                    msmul(tcstat->ekinf,tcstat->ekinscalef_nhc,tcstat->ekinf);
+                    msmul(tcstat->ekinf, tcstat->ekinscalef_nhc, tcstat->ekinf);
                 }
-            } 
+            }
             else
 
             {
                 /* Calculate the full step Ekin as the average of the half steps */
-                for(j=0; (j<DIM); j++)
+                for (j = 0; (j < DIM); j++)
                 {
-                    for(m=0; (m<DIM); m++)
+                    for (m = 0; (m < DIM); m++)
                     {
                         tcstat->ekinf[j][m] =
                             0.5*(tcstat->ekinh[j][m]*tcstat->ekinscaleh_nhc + tcstat->ekinh_old[j][m]);
                     }
                 }
             }
-            m_add(tcstat->ekinf,ekind->ekin,ekind->ekin);
-            
-            tcstat->Th = calc_temp(trace(tcstat->ekinh),nd);
-            tcstat->T  = calc_temp(trace(tcstat->ekinf),nd);
+            m_add(tcstat->ekinf, ekind->ekin, ekind->ekin);
+
+            tcstat->Th = calc_temp(trace(tcstat->ekinh), nd);
+            tcstat->T  = calc_temp(trace(tcstat->ekinf), nd);
 
             /* after the scaling factors have been multiplied in, we can remove them */
-            if (bEkinAveVel) 
+            if (bEkinAveVel)
             {
                 tcstat->ekinscalef_nhc = 1.0;
-            } 
-            else 
+            }
+            else
             {
                 tcstat->ekinscaleh_nhc = 1.0;
             }
         }
-        else 
+        else
         {
             tcstat->T  = 0;
             tcstat->Th = 0;
@@ -291,9 +304,9 @@ real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind,real *dekindlambda,
     }
     if (nrdf > 0)
     {
-        T/=nrdf;
+        T /= nrdf;
     }
-    if (dekindlambda) 
+    if (dekindlambda)
     {
         *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
     }

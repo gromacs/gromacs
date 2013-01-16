@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -115,69 +115,71 @@ typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
                                   real                       *f,
                                   real                       *fshift);
 
-enum { coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR };
+enum {
+    coultRF, coultTAB, coultTAB_TWIN, coultEWALD, coultEWALD_TWIN, coultNR
+};
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_ener
+#define NBK_FN(elec, ljcomb) nbnxn_kernel_simd_2xnn_ ## elec ## _comb_ ## ljcomb ## _ener
 static p_nbk_func_ener p_nbk_ener[coultNR][ljcrNR] =
-{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
-  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
-  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
-  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
-  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+{ { NBK_FN(rf, geom), NBK_FN(rf, lb), NBK_FN(rf, none) },
+  { NBK_FN(tab, geom), NBK_FN(tab, lb), NBK_FN(tab, none) },
+  { NBK_FN(tab_twin, geom), NBK_FN(tab_twin, lb), NBK_FN(tab_twin, none) },
+  { NBK_FN(ewald, geom), NBK_FN(ewald, lb), NBK_FN(ewald, none) },
+  { NBK_FN(ewald_twin, geom), NBK_FN(ewald_twin, lb), NBK_FN(ewald_twin, none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_energrp
+#define NBK_FN(elec, ljcomb) nbnxn_kernel_simd_2xnn_ ## elec ## _comb_ ## ljcomb ## _energrp
 static p_nbk_func_ener p_nbk_energrp[coultNR][ljcrNR] =
-{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
-  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
-  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
-  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
-  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+{ { NBK_FN(rf, geom), NBK_FN(rf, lb), NBK_FN(rf, none) },
+  { NBK_FN(tab, geom), NBK_FN(tab, lb), NBK_FN(tab, none) },
+  { NBK_FN(tab_twin, geom), NBK_FN(tab_twin, lb), NBK_FN(tab_twin, none) },
+  { NBK_FN(ewald, geom), NBK_FN(ewald, lb), NBK_FN(ewald, none) },
+  { NBK_FN(ewald_twin, geom), NBK_FN(ewald_twin, lb), NBK_FN(ewald_twin, none) } };
 #undef NBK_FN
 
-#define NBK_FN(elec,ljcomb) nbnxn_kernel_simd_2xnn_##elec##_comb_##ljcomb##_noener
+#define NBK_FN(elec, ljcomb) nbnxn_kernel_simd_2xnn_ ## elec ## _comb_ ## ljcomb ## _noener
 static p_nbk_func_noener p_nbk_noener[coultNR][ljcrNR] =
-{ { NBK_FN(rf        ,geom), NBK_FN(rf        ,lb), NBK_FN(rf        ,none) },
-  { NBK_FN(tab       ,geom), NBK_FN(tab       ,lb), NBK_FN(tab       ,none) },
-  { NBK_FN(tab_twin  ,geom), NBK_FN(tab_twin  ,lb), NBK_FN(tab_twin  ,none) },
-  { NBK_FN(ewald     ,geom), NBK_FN(ewald     ,lb), NBK_FN(ewald     ,none) },
-  { NBK_FN(ewald_twin,geom), NBK_FN(ewald_twin,lb), NBK_FN(ewald_twin,none) } };
+{ { NBK_FN(rf, geom), NBK_FN(rf, lb), NBK_FN(rf, none) },
+  { NBK_FN(tab, geom), NBK_FN(tab, lb), NBK_FN(tab, none) },
+  { NBK_FN(tab_twin, geom), NBK_FN(tab_twin, lb), NBK_FN(tab_twin, none) },
+  { NBK_FN(ewald, geom), NBK_FN(ewald, lb), NBK_FN(ewald, none) },
+  { NBK_FN(ewald_twin, geom), NBK_FN(ewald_twin, lb), NBK_FN(ewald_twin, none) } };
 #undef NBK_FN
 
 
-static void reduce_group_energies(int ng,int ng_2log,
-                                  const real *VSvdw,const real *VSc,
-                                  real *Vvdw,real *Vc)
+static void reduce_group_energies(int ng, int ng_2log,
+                                  const real *VSvdw, const real *VSc,
+                                  real *Vvdw, real *Vc)
 {
     const int simd_width   = GMX_SIMD_WIDTH_HERE;
     const int unrollj_half = GMX_SIMD_WIDTH_HERE/4;
-    int ng_p2,i,j,j0,j1,c,s;
+    int       ng_p2, i, j, j0, j1, c, s;
 
     ng_p2 = (1<<ng_2log);
 
     /* The size of the x86 SIMD energy group buffer array is:
      * ng*ng*ng_p2*unrollj_half*simd_width
      */
-    for(i=0; i<ng; i++)
+    for (i = 0; i < ng; i++)
     {
-        for(j=0; j<ng; j++)
+        for (j = 0; j < ng; j++)
         {
             Vvdw[i*ng+j] = 0;
             Vc[i*ng+j]   = 0;
         }
 
-        for(j1=0; j1<ng; j1++)
+        for (j1 = 0; j1 < ng; j1++)
         {
-            for(j0=0; j0<ng; j0++)
+            for (j0 = 0; j0 < ng; j0++)
             {
                 c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*simd_width/2;
-                for(s=0; s<unrollj_half; s++)
+                for (s = 0; s < unrollj_half; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
                     Vc  [i*ng+j0] += VSc  [c+0];
                     Vc  [i*ng+j1] += VSc  [c+1];
-                    c += simd_width/2 + 2;
+                    c             += simd_width/2 + 2;
                 }
             }
         }
@@ -190,19 +192,19 @@ void
 nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
                        const nbnxn_atomdata_t     *nbat,
                        const interaction_const_t  *ic,
-                       int                        ewald_excl,
-                       rvec                       *shift_vec, 
-                       int                        force_flags,
-                       int                        clearF,
+                       int                         ewald_excl,
+                       rvec                       *shift_vec,
+                       int                         force_flags,
+                       int                         clearF,
                        real                       *fshift,
                        real                       *Vc,
                        real                       *Vvdw)
 #ifdef GMX_NBNXN_SIMD_2XNN
 {
-    int              nnbl;
+    int                nnbl;
     nbnxn_pairlist_t **nbl;
-    int coult;
-    int nb;
+    int                coult;
+    int                nb;
 
     nnbl = nbl_list->nnbl;
     nbl  = nbl_list->nbl;
@@ -238,16 +240,16 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
     }
 
 #pragma omp parallel for schedule(static) num_threads(gmx_omp_nthreads_get(emntNonbonded))
-    for(nb=0; nb<nnbl; nb++)
+    for (nb = 0; nb < nnbl; nb++)
     {
         nbnxn_atomdata_output_t *out;
-        real *fshift_p;
+        real                    *fshift_p;
 
         out = &nbat->out[nb];
 
         if (clearF == enbvClearFYes)
         {
-            clear_f(nbat,nb,out->f);
+            clear_f(nbat, nb, out->f);
         }
 
         if ((force_flags & GMX_FORCE_VIRIAL) && nnbl == 1)
@@ -272,7 +274,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
               (EEL_FULL(ic->eeltype) && (force_flags & GMX_FORCE_VIRIAL))))
         {
             /* Don't calculate energies */
-            p_nbk_noener[coult][nbat->comb_rule](nbl[nb],nbat,
+            p_nbk_noener[coult][nbat->comb_rule](nbl[nb], nbat,
                                                  ic,
                                                  shift_vec,
                                                  out->f,
@@ -284,7 +286,7 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
             out->Vvdw[0] = 0;
             out->Vc[0]   = 0;
 
-            p_nbk_ener[coult][nbat->comb_rule](nbl[nb],nbat,
+            p_nbk_ener[coult][nbat->comb_rule](nbl[nb], nbat,
                                                ic,
                                                shift_vec,
                                                out->f,
@@ -297,16 +299,16 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
             /* Calculate energy group contributions */
             int i;
 
-            for(i=0; i<out->nVS; i++)
+            for (i = 0; i < out->nVS; i++)
             {
                 out->VSvdw[i] = 0;
             }
-            for(i=0; i<out->nVS; i++)
+            for (i = 0; i < out->nVS; i++)
             {
                 out->VSc[i] = 0;
             }
 
-            p_nbk_energrp[coult][nbat->comb_rule](nbl[nb],nbat,
+            p_nbk_energrp[coult][nbat->comb_rule](nbl[nb], nbat,
                                                   ic,
                                                   shift_vec,
                                                   out->f,
@@ -314,15 +316,15 @@ nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
                                                   out->VSvdw,
                                                   out->VSc);
 
-            reduce_group_energies(nbat->nenergrp,nbat->neg_2log,
-                                  out->VSvdw,out->VSc,
-                                  out->Vvdw,out->Vc);
+            reduce_group_energies(nbat->nenergrp, nbat->neg_2log,
+                                  out->VSvdw, out->VSc,
+                                  out->Vvdw, out->Vc);
         }
     }
 
     if (force_flags & GMX_FORCE_ENERGY)
     {
-        reduce_energies_over_lists(nbat,nnbl,Vvdw,Vc);
+        reduce_energies_over_lists(nbat, nnbl, Vvdw, Vc);
     }
 }
 #else

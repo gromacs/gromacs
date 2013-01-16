@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,32 +45,32 @@
 #include "gpp_atomtype.h"
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern double check_mol(gmx_mtop_t *mtop,warninp_t wi);
+extern double check_mol(gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern char **do_top(gmx_bool         bVerbose,
-		     const char   *topfile,
-		     const char   *topppfile,
-		     t_gromppopts *opts,
-		     gmx_bool         bZero,
-		     t_symtab     *symtab,
-		     t_params     plist[],
-		     int          *combination_rule,
-		     double       *repulsion_power,
-		     real         *fudgeQQ,
-		     gpp_atomtype_t atype,
-		     int          *nrmols,
-		     t_molinfo    **molinfo,
-		     t_inputrec   *ir,
-		     int          *nmolblock,
-		     gmx_molblock_t **molblock,
-		     gmx_bool         bGB,
-		     warninp_t    wi);
+                     const char      *topfile,
+                     const char      *topppfile,
+                     t_gromppopts    *opts,
+                     gmx_bool         bZero,
+                     t_symtab        *symtab,
+                     t_params         plist[],
+                     int             *combination_rule,
+                     double          *repulsion_power,
+                     real            *fudgeQQ,
+                     gpp_atomtype_t   atype,
+                     int             *nrmols,
+                     t_molinfo      **molinfo,
+                     t_inputrec      *ir,
+                     int             *nmolblock,
+                     gmx_molblock_t **molblock,
+                     gmx_bool         bGB,
+                     warninp_t        wi);
 
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 GMX_LIBGMXPREPROCESS_EXPORT
-void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir,warninp_t    wi);
+void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
 
-#endif	/* _topio_h */
+#endif  /* _topio_h */

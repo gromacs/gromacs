@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -153,7 +153,7 @@ _gmx_sel_sym_value_var(gmx_sel_symrec_t *sym)
 
 /*! \brief
  * Adds the reserved symbols to a symbol table.
- * 
+ *
  * \param[in,out] tab  Symbol table to which the symbols are added.
  *
  * Assumes that the symbol table is empty.
@@ -186,7 +186,7 @@ add_reserved_symbols(gmx_sel_symtab_t *tab)
 
 /*! \brief
  * Adds the position symbols to the symbol list.
- * 
+ *
  * \param[in,out] tab  Symbol table to which the symbols are added.
  */
 static void
@@ -198,7 +198,7 @@ add_position_symbols(gmx_sel_symtab_t *tab)
     int                i;
 
     postypes = gmx_ana_poscalc_create_type_enum(TRUE);
-    last = tab->first;
+    last     = tab->first;
     while (last && last->next)
     {
         last = last->next;
@@ -251,7 +251,7 @@ _gmx_sel_symtab_free(gmx_sel_symtab_t *tab)
 
     while (tab->first)
     {
-        sym = tab->first;
+        sym        = tab->first;
         tab->first = sym->next;
         if (sym->type == SYMBOL_VARIABLE)
         {
@@ -297,15 +297,15 @@ gmx_sel_symrec_t *
 _gmx_sel_find_symbol_len(gmx_sel_symtab_t *tab, const char *name, size_t len,
                          gmx_bool bExact)
 {
-    gmx_sel_symrec_t *sym;
-    gmx_sel_symrec_t *match;
+    gmx_sel_symrec_t     *sym;
+    gmx_sel_symrec_t     *match;
     gmx_bool              bUnique;
     gmx_bool              bMatch;
 
-    match = NULL;
+    match   = NULL;
     bUnique = TRUE;
     bMatch  = FALSE;
-    sym = tab->first;
+    sym     = tab->first;
     while (sym)
     {
         if (!strncmp(sym->name, name, len))

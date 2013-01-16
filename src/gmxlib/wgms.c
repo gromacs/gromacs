@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -46,43 +46,58 @@
 /*static int     n=0;*/
 #define FPL 10
 
-void write_gms(FILE *fp,int natoms,rvec x[],matrix box)
+void write_gms(FILE *fp, int natoms, rvec x[], matrix box)
 {
-  int i,j,n;
+    int i, j, n;
 
-  n=0;
-  for(i=0;(i<natoms);i++)
-    for(j=0;(j<3);j++) {
-      fprintf(fp,"%8.3f",x[i][j]);
-      n++;
-      if (n==FPL) {
-	fprintf(fp,"\n");
-	n=0;
-      }
+    n = 0;
+    for (i = 0; (i < natoms); i++)
+    {
+        for (j = 0; (j < 3); j++)
+        {
+            fprintf(fp, "%8.3f", x[i][j]);
+            n++;
+            if (n == FPL)
+            {
+                fprintf(fp, "\n");
+                n = 0;
+            }
+        }
     }
-  if (n != 0) 
-    fprintf(fp,"\n");
-  if (box != NULL)
-    fprintf(fp,"%8.3f%8.3f%8.3f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+    if (n != 0)
+    {
+        fprintf(fp, "\n");
+    }
+    if (box != NULL)
+    {
+        fprintf(fp, "%8.3f%8.3f%8.3f\n", box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+    }
 }
 
-void write_gms_ndx(FILE *fp,int isize,atom_id index[],rvec x[],matrix box)
+void write_gms_ndx(FILE *fp, int isize, atom_id index[], rvec x[], matrix box)
 {
-  int i,j,n;
+    int i, j, n;
 
-  n=0;
-  for(i=0;(i<isize);i++)
-    for(j=0;(j<3);j++) {
-      fprintf(fp,"%8.3f",x[index[i]][j]);
-      n++;
-      if (n==FPL) {
-	fprintf(fp,"\n");
-	n=0;
-      }
+    n = 0;
+    for (i = 0; (i < isize); i++)
+    {
+        for (j = 0; (j < 3); j++)
+        {
+            fprintf(fp, "%8.3f", x[index[i]][j]);
+            n++;
+            if (n == FPL)
+            {
+                fprintf(fp, "\n");
+                n = 0;
+            }
+        }
     }
-  if (n != 0) 
-    fprintf(fp,"\n");
-  if (box != NULL)
-    fprintf(fp,"%8.3f%8.3f%8.3f\n",box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+    if (n != 0)
+    {
+        fprintf(fp, "\n");
+    }
+    if (box != NULL)
+    {
+        fprintf(fp, "%8.3f%8.3f%8.3f\n", box[XX][XX], box[YY][YY], box[ZZ][ZZ]);
+    }
 }
-

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,8 +53,8 @@ typedef struct
  * buffer size estimated with this setup will be conservative.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-void verletbuf_get_list_setup(gmx_bool bGPU,
-			      verletbuf_list_setup_t *list_setup);
+void verletbuf_get_list_setup(gmx_bool                bGPU,
+                              verletbuf_list_setup_t *list_setup);
 
 
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
@@ -66,10 +66,10 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
  * Returns the pair-list cut-off.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
-			     const t_inputrec *ir,real drift_target,
-			     const verletbuf_list_setup_t *list_setup,
-			     int *n_nonlin_vsite,
-			     real *rlist);
+void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
+                             const t_inputrec *ir, real drift_target,
+                             const verletbuf_list_setup_t *list_setup,
+                             int *n_nonlin_vsite,
+                             real *rlist);
 
-#endif	/* _calc_verletbuf_h */
+#endif  /* _calc_verletbuf_h */

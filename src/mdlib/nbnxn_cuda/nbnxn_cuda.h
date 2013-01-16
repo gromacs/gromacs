@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -59,18 +59,18 @@ extern "C" {
  *  The local and non-local interaction calculations are launched in two
  *  separate streams.
  */
-void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_kernel(nbnxn_cuda_ptr_t        cu_nb,
                               const nbnxn_atomdata_t *nbdata,
-                              int flags,
-                              int iloc) FUNC_TERM
+                              int                     flags,
+                              int                     iloc) FUNC_TERM
 
 /*! Launch asynchronously the download of nonbonded forces from the GPU
  *  (and energies/shift forces if required).
  */
-void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t cu_nb,
+void nbnxn_cuda_launch_cpyback(nbnxn_cuda_ptr_t        cu_nb,
                                const nbnxn_atomdata_t *nbatom,
-                               int flags,
-                               int aloc) FUNC_TERM
+                               int                     flags,
+                               int                     aloc) FUNC_TERM
 
 /*! Wait for the asynchronously launched nonbonded calculations and data
  *  transfers to finish.

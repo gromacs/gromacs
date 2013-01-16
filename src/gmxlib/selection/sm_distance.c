@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -272,8 +272,8 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
-    int  b, i;
-    real n;
+    int                    b, i;
+    real                   n;
 
     out->nr = pos->g->isize;
     for (b = 0; b < pos->nr; ++b)

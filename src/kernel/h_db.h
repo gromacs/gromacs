@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,27 +44,27 @@
 
 /* number of control atoms for each 'add' type */
 extern const int ncontrol[];
-  
+
 /* functions for the h-database */
 
-extern void read_ab(char *line,const char *fn,t_hack *ab);
+extern void read_ab(char *line, const char *fn, t_hack *ab);
 /* Read one add block */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int read_h_db(const char *ffdir,t_hackblock **ah);
+extern int read_h_db(const char *ffdir, t_hackblock **ah);
 /* Read the database from hdb file(s) in ffdir or current dir */
 
-extern void print_ab(FILE *out,t_hack *ab,char *nname);
+extern void print_ab(FILE *out, t_hack *ab, char *nname);
 /* print one add block */
 
-extern void print_h_db(FILE *out,int nh,t_hackblock ah[]);
+extern void print_h_db(FILE *out, int nh, t_hackblock ah[]);
 /* Print the database to file */
 
-extern int compaddh(const void *a,const void *b);
+extern int compaddh(const void *a, const void *b);
 
-extern t_hackblock *search_h_db(int nh,t_hackblock ah[],char *key);
+extern t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
 /* Search for an entry in the database */
 
 
 
-#endif	/* _h_db_h */
+#endif  /* _h_db_h */

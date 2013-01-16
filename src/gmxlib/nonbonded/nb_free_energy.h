@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,14 +52,13 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                           t_nrnb *                  nrnb);
 
 real
-nb_free_energy_evaluate_single(real r2,real sc_r_power,real alpha_coul,
-                               real alpha_vdw,real tabscale,real *vftab,
-                               real qqA, real c6A, real c12A, real qqB,
-                               real c6B, real c12B,real LFC[2], real LFV[2],real DLF[2],
-                               real lfac_coul[2], real lfac_vdw[2],real dlfac_coul[2],
-                               real dlfac_vdw[2],real sigma6_def, real sigma6_min,
-                               real sigma2_def, real sigma2_min,
-                               real *velectot, real *vvdwtot, real *dvdl);
+    nb_free_energy_evaluate_single(real r2, real sc_r_power, real alpha_coul,
+                                   real alpha_vdw, real tabscale, real *vftab,
+                                   real qqA, real c6A, real c12A, real qqB,
+                                   real c6B, real c12B, real LFC[2], real LFV[2], real DLF[2],
+                                   real lfac_coul[2], real lfac_vdw[2], real dlfac_coul[2],
+                                   real dlfac_vdw[2], real sigma6_def, real sigma6_min,
+                                   real sigma2_def, real sigma2_min,
+                                   real *velectot, real *vvdwtot, real *dvdl);
 
 #endif
-

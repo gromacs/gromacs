@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,10 +42,10 @@
 #include "typedefs.h"
 #include "interf.h"
 
-extern void powerspectavg(real ***interface, int t, int xbins, int ybins, 
-			  char **outfiles);
-			  
-extern void powerspectavg_intf(t_interf ***if1,t_interf ***if2,int t, 
-			       int xbins, int ybins, char **outfiles);
+extern void powerspectavg(real ***interface, int t, int xbins, int ybins,
+                          char **outfiles);
+
+extern void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t,
+                               int xbins, int ybins, char **outfiles);
 
 #endif

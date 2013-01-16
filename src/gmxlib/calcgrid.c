@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,27 +53,27 @@
 
 /* Small grid size array */
 #define g_initNR 15
-const int grid_init[g_initNR] = { 6,8,10,12,14,16,20,24,25,28,32,36,40,42,44 };
+const int grid_init[g_initNR] = { 6, 8, 10, 12, 14, 16, 20, 24, 25, 28, 32, 36, 40, 42, 44 };
 
 /* For larger grid sizes, a prefactor with any power of 2 can be added.
  * Only sizes divisible by 4 should be used, 90 is allowed, 140 not.
  */
 #define g_baseNR 14
-const int grid_base[g_baseNR] = { 45,48,50,52,54,56,60,64,70,72,75,80,81,84 };
+const int grid_base[g_baseNR] = { 45, 48, 50, 52, 54, 56, 60, 64, 70, 72, 75, 80, 81, 84 };
 
-real calc_grid(FILE *fp,matrix box,real gr_sp,
-               int *nx,int *ny,int *nz)
+real calc_grid(FILE *fp, matrix box, real gr_sp,
+               int *nx, int *ny, int *nz)
 {
-    int  d,n[DIM];
+    int  d, n[DIM];
     int  i;
     rvec box_size;
-    int  nmin,fac2,try;
+    int  nmin, fac2, try;
     rvec spacing;
     real max_spacing;
 
     if ((*nx <= 0 || *ny <= 0 || *nz <= 0) && gr_sp <= 0)
     {
-        gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
+        gmx_fatal(FARGS, "invalid fourier grid spacing: %g", gr_sp);
     }
 
     if (grid_base[g_baseNR-1] % 4 != 0)
@@ -93,31 +93,31 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
      *
      * /Erik Lindahl, 20060402.
      */
-    for(d=0; d<DIM; d++)
+    for (d = 0; d < DIM; d++)
     {
         box_size[d] = 0;
-        for(i=0;i<DIM;i++)
+        for (i = 0; i < DIM; i++)
         {
             box_size[d] += box[d][i]*box[d][i];
         }
         box_size[d] = sqrt(box_size[d]);
     }
-    
+
     n[XX] = *nx;
     n[YY] = *ny;
     n[ZZ] = *nz;
 
-    if ((*nx<=0) || (*ny<=0) || (*nz<=0))
+    if ((*nx <= 0) || (*ny <= 0) || (*nz <= 0))
     {
         if (NULL != fp)
         {
-            fprintf(fp,"Calculating fourier grid dimensions for%s%s%s\n",
-                    *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
+            fprintf(fp, "Calculating fourier grid dimensions for%s%s%s\n",
+                    *nx > 0 ? "" : " X", *ny > 0 ? "" : " Y", *nz > 0 ? "" : " Z");
         }
     }
-    
+
     max_spacing = 0;
-    for(d=0; d<DIM; d++)
+    for (d = 0; d < DIM; d++)
     {
         if (n[d] <= 0)
         {
@@ -137,7 +137,7 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
             {
                 /* Determine how many pre-factors of 2 we need */
                 fac2 = 1;
-                i = g_baseNR - 1;
+                i    = g_baseNR - 1;
                 while (fac2*grid_base[i-1] < nmin)
                 {
                     fac2 *= 2;
@@ -169,11 +169,9 @@ real calc_grid(FILE *fp,matrix box,real gr_sp,
     *nz = n[ZZ];
     if (NULL != fp)
     {
-        fprintf(fp,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
-                *nx,*ny,*nz,spacing[XX],spacing[YY],spacing[ZZ]);
+        fprintf(fp, "Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
+                *nx, *ny, *nz, spacing[XX], spacing[YY], spacing[ZZ]);
     }
 
     return max_spacing;
 }
-
-

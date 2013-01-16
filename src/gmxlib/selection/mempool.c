@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -89,7 +89,7 @@ _gmx_sel_mempool_create(gmx_sel_mempool_t **mpp)
     mp->blockstack        = NULL;
     mp->blockstack_nalloc = 0;
     mp->maxsize           = 0;
-    *mpp = mp;
+    *mpp                  = mp;
     return 0;
 }
 
@@ -116,7 +116,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
     void   *ptr = NULL;
     size_t  size_walign;
 
-    *ptrp = NULL;
+    *ptrp       = NULL;
     size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
     if (mp->buffer)
     {
@@ -125,7 +125,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
             gmx_bug("out of memory pool memory");
             return ENOMEM;
         }
-        ptr = mp->freeptr;
+        ptr           = mp->freeptr;
         mp->freeptr  += size_walign;
         mp->freesize -= size_walign;
         mp->currsize += size_walign;
@@ -169,11 +169,11 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     }
     assert(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr);
     mp->nblocks--;
-    size = mp->blockstack[mp->nblocks].size;
+    size          = mp->blockstack[mp->nblocks].size;
     mp->currsize -= size;
     if (mp->buffer)
     {
-        mp->freeptr = (char *)ptr;
+        mp->freeptr   = (char *)ptr;
         mp->freesize += size;
     }
     else

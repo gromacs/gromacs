@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,7 +45,7 @@
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
-		      t_params plist[]);
+                      t_params plist[]);
 /* set parameters for vritual sites, return number of virtual sites */
 
 GMX_LIBGMXPREPROCESS_EXPORT
@@ -57,4 +57,4 @@ extern void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
 /* remove all bonded interaction (bonds, angles and diherals) that
    have become obsolete due to virtual site constructions */
 
-#endif	/* _vsite_parm_h */
+#endif  /* _vsite_parm_h */

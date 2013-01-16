@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -65,7 +65,7 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
     pos->v  = NULL;
     pos->f  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
-    pos->g  = NULL;
+    pos->g        = NULL;
     pos->nalloc_x = 0;
 }
 
@@ -161,11 +161,11 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x)
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
+    pos->nr               = 0;
     sfree(pos->x); pos->x = NULL;
     sfree(pos->v); pos->v = NULL;
     sfree(pos->f); pos->f = NULL;
-    pos->nalloc_x = 0;
+    pos->nalloc_x         = 0;
     gmx_ana_indexmap_deinit(&pos->m);
 }
 
@@ -257,17 +257,17 @@ gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
-    pos->m.b.nr = 0;
-    pos->m.b.nra = 0;
+    pos->m.b.nr    = 0;
+    pos->m.b.nra   = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    pos->m.b.index[0] = 0;
+    pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic = TRUE;
+    pos->m.bStatic    = TRUE;
     pos->m.bMapStatic = TRUE;
 }
 
@@ -279,8 +279,8 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
@@ -288,7 +288,7 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
      * should be FALSE. This makes it possible to update the flags in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic = TRUE;
+    pos->m.bStatic    = TRUE;
     pos->m.bMapStatic = TRUE;
 }
 
@@ -339,9 +339,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     dest->m.mapb.index[j+1] = g->isize;
     dest->m.b.index[j+1]    = g->isize;
     dest->nr++;
-    dest->m.nr = dest->nr;
+    dest->m.nr      = dest->nr;
     dest->m.mapb.nr = dest->nr;
-    dest->m.b.nr = dest->nr;
+    dest->m.b.nr    = dest->nr;
 }
 
 /*!
@@ -394,7 +394,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         if (refid < 0)
         {
             dest->m.refid[j] = -1;
-            dest->m.bStatic = FALSE;
+            dest->m.bStatic  = FALSE;
             /* If we are using masks, there is no need to alter the
              * mapid field. */
         }
@@ -402,7 +402,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         {
             if (refid != j)
             {
-                dest->m.bStatic = FALSE;
+                dest->m.bStatic    = FALSE;
                 dest->m.bMapStatic = FALSE;
             }
             dest->m.refid[j] = refid;
@@ -412,7 +412,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         }
         dest->m.mapb.index[j+1] = g->isize;
         dest->nr++;
-        dest->m.nr = dest->nr;
+        dest->m.nr      = dest->nr;
         dest->m.mapb.nr = dest->nr;
     }
 }
@@ -429,7 +429,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic = FALSE;
+        pos->m.bStatic    = FALSE;
         pos->m.bMapStatic = FALSE;
     }
 }

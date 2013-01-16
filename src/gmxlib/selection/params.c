@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -84,7 +84,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
     {
         return (i == 0) ? NULL : &param[i-1];
     }
-    for ( ; i < nparam; ++i)
+    for (; i < nparam; ++i)
     {
         if (!strcmp(param[i].name, name))
         {
@@ -142,7 +142,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
             real r2 = (real)value->u.i.i2;
             value->u.r.r1 = r1;
             value->u.r.r2 = r2;
-            value->type = type;
+            value->type   = type;
             return 0;
         }
         /* Reals that are integer-valued can also be converted */
@@ -154,7 +154,7 @@ convert_value(t_selexpr_value *value, e_selvalue_t type, void *scanner)
             int i2 = (int)value->u.r.r2;
             value->u.i.i1 = i1;
             value->u.i.i2 = i2;
-            value->type = type;
+            value->type   = type;
             return 0;
         }
     }
@@ -175,7 +175,7 @@ convert_values(t_selexpr_value *values, e_selvalue_t type, void *scanner)
     t_selexpr_value *value;
     int              rc, rc1;
 
-    rc = 0;
+    rc    = 0;
     value = values;
     while (value)
     {
@@ -230,7 +230,7 @@ place_child(t_selelem *root, t_selelem *child, gmx_ana_selparam_t *param)
 
 /*! \brief
  * Comparison function for sorting integer ranges.
- * 
+ *
  * \param[in] a Pointer to the first range.
  * \param[in] b Pointer to the second range.
  * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
@@ -286,7 +286,7 @@ cmp_real_range(const void *a, const void *b)
 
 /*! \brief
  * Parses the values for a parameter that takes integer or real ranges.
- * 
+ *
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
@@ -317,7 +317,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
         snew(rdata, nval*2);
     }
     value = values;
-    i = 0;
+    i     = 0;
     while (value)
     {
         if (value->bExpr)
@@ -392,7 +392,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
             {
                 idata[j]   = idata[i];
                 idata[j+1] = idata[i+1];
-                j += 2;
+                j         += 2;
             }
         }
     }
@@ -412,7 +412,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
             {
                 rdata[j]   = rdata[i];
                 rdata[j+1] = rdata[i+1];
-                j += 2;
+                j         += 2;
             }
         }
     }
@@ -437,7 +437,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
         if (n != param->val.nr)
         {
             _gmx_selparser_error("the value of parameter '%s' should consist of exactly one range",
-                                 param->name);       
+                                 param->name);
             sfree(idata);
             sfree(rdata);
             return FALSE;
@@ -464,7 +464,7 @@ parse_values_range(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
 
 /*! \brief
  * Parses the values for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
@@ -579,10 +579,10 @@ parse_values_varnum(int nval, t_selexpr_value *values,
 
         child = _gmx_selelem_create(SEL_CONST);
         _gmx_selelem_set_vtype(child, STR_VALUE);
-        child->name = param->name;
+        child->name   = param->name;
         child->flags &= ~SEL_ALLOCVAL;
         child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
-        child->v.nr = param->val.nr;
+        child->v.nr   = param->val.nr;
         _gmx_selvalue_setstore(&child->v, param->val.u.s);
         /* Because the child is not group-valued, the u union is not used
          * for anything, so we can abuse it by storing the parameter value
@@ -634,7 +634,7 @@ add_child(t_selelem *root, gmx_ana_selparam_t *param, t_selelem *expr)
         child->child  = expr;
     }
     /* Setup the child element */
-    child->flags &= ~SEL_ALLOCVAL;
+    child->flags  &= ~SEL_ALLOCVAL;
     child->u.param = param;
     if (child->v.type != param->val.type)
     {
@@ -671,7 +671,7 @@ on_error:
 
 /*! \brief
  * Parses an expression value for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
@@ -692,8 +692,8 @@ parse_values_varnum_expr(int nval, t_selexpr_value *values,
         return FALSE;
     }
 
-    value = values;
-    child = add_child(root, param, value->u.expr);
+    value         = values;
+    child         = add_child(root, param, value->u.expr);
     value->u.expr = NULL;
     if (!child)
     {
@@ -763,14 +763,14 @@ set_expr_value_store(t_selelem *sel, gmx_ana_selparam_t *param, int i)
             gmx_bug("internal error");
             return FALSE;
     }
-    sel->v.nr = 1;
+    sel->v.nr     = 1;
     sel->v.nalloc = -1;
     return TRUE;
 }
 
 /*! \brief
  * Parses the values for a parameter that takes a constant number of values.
- * 
+ *
  * \param[in] nval   Number of values in \p values.
  * \param[in] values Pointer to the list of values.
  * \param     param  Parameter to parse.
@@ -784,9 +784,9 @@ static gmx_bool
 parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
                  t_selelem *root)
 {
-    t_selexpr_value   *value;
-    t_selelem         *child;
-    int                i, j;
+    t_selexpr_value       *value;
+    t_selelem             *child;
+    int                    i, j;
     gmx_bool               bDynamic;
 
     /* Handle atom-valued parameters */
@@ -800,7 +800,7 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
         value = values;
         if (value->bExpr)
         {
-            child = add_child(root, param, value->u.expr);
+            child         = add_child(root, param, value->u.expr);
             value->u.expr = NULL;
             if (!child)
             {
@@ -844,8 +844,8 @@ parse_values_std(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param,
         param->flags &= ~SPAR_DYNAMIC;
     }
 
-    value = values;
-    i = 0;
+    value    = values;
+    i        = 0;
     bDynamic = FALSE;
     while (value && i < param->val.nr)
     {
@@ -963,7 +963,7 @@ static gmx_bool
 parse_values_gmx_bool(const char *name, int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
 {
     gmx_bool bSetNo;
-    int  len;
+    int      len;
 
     if (param->val.type != NO_VALUE)
     {
@@ -1027,8 +1027,8 @@ parse_values_enum(int nval, t_selexpr_value *values, gmx_ana_selparam_t *param)
         return FALSE;
     }
 
-    len = strlen(values->u.s);
-    i = 1;
+    len   = strlen(values->u.s);
+    i     = 1;
     match = 0;
     while (param->val.u.s[i] != NULL)
     {
@@ -1114,10 +1114,10 @@ gmx_bool
 _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *params,
                       t_selelem *root, void *scanner)
 {
-    t_selexpr_param    *pparam;
-    gmx_ana_selparam_t *oparam;
+    t_selexpr_param        *pparam;
+    gmx_ana_selparam_t     *oparam;
     gmx_bool                bOk, rc;
-    int                 i;
+    int                     i;
 
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and
      * that they are not NULL for other parameters */
@@ -1164,7 +1164,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         /* Find the parameter and make some checks */
         if (pparam->name != NULL)
         {
-            i = -1;
+            i      = -1;
             oparam = gmx_ana_selparam_find(pparam->name, nparam, params);
         }
         else if (i >= 0)
@@ -1182,7 +1182,7 @@ _gmx_sel_parse_params(t_selexpr_param *pparams, int nparam, gmx_ana_selparam_t *
         else
         {
             _gmx_selparser_error("all NULL parameters should appear in the beginning of the list");
-            bOk = FALSE;
+            bOk    = FALSE;
             pparam = pparam->next;
             continue;
         }
@@ -1251,7 +1251,7 @@ next_param:
             bOk = FALSE;
         }
     }
-    
+
     _gmx_selexpr_free_params(pparams);
     return bOk;
 }

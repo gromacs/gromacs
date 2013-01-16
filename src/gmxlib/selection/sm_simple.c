@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -403,13 +403,13 @@ gmx_ana_selmethod_t sm_betafactor = {
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_x,
 };
 
@@ -417,13 +417,13 @@ gmx_ana_selmethod_t sm_x = {
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_y,
 };
 
@@ -431,13 +431,13 @@ gmx_ana_selmethod_t sm_y = {
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_z,
 };
 
@@ -505,7 +505,7 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
     }
     return 0;
@@ -569,7 +569,10 @@ evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        while (top->mols.index[j + 1] <= g->index[i])
+        {
+            ++j;
+        }
         out->u.i[i] = j + 1;
     }
     return 0;
@@ -680,7 +683,7 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.s[i] = *top->atoms.resinfo[resind].name;
     }
     return 0;
@@ -702,7 +705,7 @@ evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].ic;
     }
     return 0;
@@ -724,7 +727,7 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
     }
     return 0;

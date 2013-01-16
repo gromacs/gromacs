@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -257,7 +257,7 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_sse4_1_single;
 
 
 nb_kernel_info_t
-kernellist_sse4_1_single[] =
+    kernellist_sse4_1_single[] =
 {
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse4_1_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse4_1_single", "sse4_1_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse4_1_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse4_1_single", "sse4_1_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
@@ -476,6 +476,6 @@ kernellist_sse4_1_single[] =
 };
 
 int
-kernellist_sse4_1_single_size = sizeof(kernellist_sse4_1_single)/sizeof(kernellist_sse4_1_single[0]);
+    kernellist_sse4_1_single_size = sizeof(kernellist_sse4_1_single)/sizeof(kernellist_sse4_1_single[0]);
 
 #endif

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -91,7 +91,7 @@
 typedef struct gmx_ana_displpos_t
 {
     /** Stored position vector. */
-    rvec                 x;
+    rvec                     x;
     /** TRUE if there is something stored. */
     gmx_bool                 bPres;
 } gmx_ana_displpos_t;
@@ -112,13 +112,13 @@ struct gmx_ana_displ_t
     /** TRUE if no frames have been read. */
     gmx_bool                 bFirst;
     /** Stores the time of the first frame. */
-    real                 t0;
+    real                     t0;
     /** Stores the time interval between frames. */
-    real                 dt;
+    real                     dt;
     /** Stores the time of the current frame. */
-    real                 t;
+    real                     t;
     /** Stores the index in the store for the current positions. */
-    int                  ci;
+    int                      ci;
 
     /** Maximum number of positions to store for a particle. */
     int                  max_store;

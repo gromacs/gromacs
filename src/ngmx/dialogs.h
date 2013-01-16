@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,63 +45,65 @@
 #include "logo.h"
 
 typedef struct {
-  gmx_bool  bMapped;
-  t_dlg *dlg;
+    gmx_bool  bMapped;
+    t_dlg    *dlg;
 } t_dialogs;
 
-typedef enum { edExport, edBonds, edFilter, edNR } eDialogs;
-	 
 typedef enum {
-  emQuit, emHelp, emAbout, emNotImplemented, emNR
+    edExport, edBonds, edFilter, edNR
+} eDialogs;
+
+typedef enum {
+    emQuit, emHelp, emAbout, emNotImplemented, emNR
 } eMBoxes;
 
 typedef enum {
-  eExpGromos, eExpPDB, eExpNR
+    eExpGromos, eExpPDB, eExpNR
 } eExport;
 
 typedef struct {
-  char         confout[256];	/* Export file			*/
-  int          ExpMode;		/* Export mode			*/
-  t_dlg        **dlgs;	        /* Temporary storage for dlgs	*/
-  int          which_mb;        /* Which mb is visible          */
-  t_dlg        **mboxes;        /* id for message boxes         */
-  t_filter     *filter; 	/* Filter for visibility etc.	*/
-  t_windata    *wd;		/* The main window		*/
-  t_pulldown   *pd;		/* The pull-down menu		*/
-  t_manager    *man;		/* The manager			*/
-  /*t_statrec    *sr;*/		/* The statistics dlg		*/
-  t_logo       *logo;           /* The gromacs logo             */
+    char           confout[256]; /* Export file			*/
+    int            ExpMode;      /* Export mode			*/
+    t_dlg        **dlgs;         /* Temporary storage for dlgs	*/
+    int            which_mb;     /* Which mb is visible          */
+    t_dlg        **mboxes;       /* id for message boxes         */
+    t_filter      *filter;       /* Filter for visibility etc.	*/
+    t_windata     *wd;           /* The main window		*/
+    t_pulldown    *pd;           /* The pull-down menu		*/
+    t_manager     *man;          /* The manager			*/
+    /*t_statrec    *sr;*/		/* The statistics dlg		*/
+    t_logo        *logo;         /* The gromacs logo             */
 } t_gmx;
 
-enum { 
-  IDNEW,IDOPEN,IDOPENED,IDCLOSE,IDIMPORT,IDEXPORT,IDDOEXPORT,IDQUIT,IDTERM,
-  IDEDITTOP,IDEDITCOORDS,IDEDITPARAMS,
-  IDGROMPP,IDRUNMD,IDDOGROMPP,IDGSTAT,IDDOGSTAT,IDDORUNMD,
-  IDFILTER,IDDOFILTER,
-  IDANIMATE,IDSHOWBOX,IDRMPBC,IDHYDROGEN,IDLABELSOFF,IDRESETVIEW,IDPHOTO,
-  IDDUMPWIN,IDDODUMP,
-  IDBONDOPTS,IDTHIN,IDFAT,IDVERYFAT,IDBALLS,
-  IDNOBOX,IDRECTBOX,IDTRIBOX,IDTOBOX,
-  IDBOND,IDANGLE,IDDIH,IDRMS,IDRDF,IDENERGIES,IDCORR,
-  IDHELP,IDABOUT,
-  
-  /* Last line specifies how many IDs there are */
-  IDMENUNR
-  };
+enum {
+    IDNEW, IDOPEN, IDOPENED, IDCLOSE, IDIMPORT, IDEXPORT, IDDOEXPORT, IDQUIT, IDTERM,
+    IDEDITTOP, IDEDITCOORDS, IDEDITPARAMS,
+    IDGROMPP, IDRUNMD, IDDOGROMPP, IDGSTAT, IDDOGSTAT, IDDORUNMD,
+    IDFILTER, IDDOFILTER,
+    IDANIMATE, IDSHOWBOX, IDRMPBC, IDHYDROGEN, IDLABELSOFF, IDRESETVIEW, IDPHOTO,
+    IDDUMPWIN, IDDODUMP,
+    IDBONDOPTS, IDTHIN, IDFAT, IDVERYFAT, IDBALLS,
+    IDNOBOX, IDRECTBOX, IDTRIBOX, IDTOBOX,
+    IDBOND, IDANGLE, IDDIH, IDRMS, IDRDF, IDENERGIES, IDCORR,
+    IDHELP, IDABOUT,
+
+    /* Last line specifies how many IDs there are */
+    IDMENUNR
+};
 
 extern void run_grompp(t_gmx *gmx);
 
 extern void run_mdrun(t_gmx *gmx);
 
-extern void write_gmx(t_x11 *x11,t_gmx *gmx,int mess);
+extern void write_gmx(t_x11 *x11, t_gmx *gmx, int mess);
 
 /*extern void run_sr(t_statrec *sr);
 
-extern t_statrec *init_sr();*/
+   extern t_statrec *init_sr();*/
 
-extern void init_dlgs(t_x11 *x11,t_gmx *gmx);
+extern void init_dlgs(t_x11 *x11, t_gmx *gmx);
 
-extern void show_mb(t_gmx *gmx,int mb);
+extern void show_mb(t_gmx *gmx, int mb);
 
 extern void done_dlgs(t_gmx *gmx);
 
@@ -109,6 +111,6 @@ extern void edit_file(const char *fn);
 
 extern t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx);
 
-extern t_dlg *select_filter(t_x11 *x11,t_gmx *gmx);
+extern t_dlg *select_filter(t_x11 *x11, t_gmx *gmx);
 
 #endif

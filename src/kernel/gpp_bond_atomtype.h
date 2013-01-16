@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,7 +49,7 @@
 
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 
-extern int get_bond_atomtype_type(char *str,t_bond_atomtype at);
+extern int get_bond_atomtype_type(char *str, t_bond_atomtype at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
@@ -62,16 +62,8 @@ extern t_bond_atomtype init_bond_atomtype(void);
 extern void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-extern void add_bond_atomtype(t_bond_atomtype at,t_symtab *tab,
-			      char *name);
+extern void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+                              char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 
-#endif	/* _gpp_bond_atomtype_h */
-
-
-
-
-
-
-
-
+#endif  /* _gpp_bond_atomtype_h */

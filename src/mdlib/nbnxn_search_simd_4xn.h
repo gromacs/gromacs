@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -56,12 +56,12 @@
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 static gmx_inline void
 icell_set_x_simd_4xn(int ci,
-                     real shx,real shy,real shz,
+                     real shx, real shy, real shz,
                      int na_c,
-                     int stride,const real *x,
+                     int stride, const real *x,
                      nbnxn_list_work_t *work)
 {
-    int  ia;
+    int                    ia;
     nbnxn_x_ci_simd_4xn_t *x_ci;
 
     x_ci = work->x_ci_simd_4xn;
@@ -90,38 +90,38 @@ icell_set_x_simd_4xn(int ci,
 static gmx_inline void
 make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
                            nbnxn_pairlist_t *nbl,
-                           int ci,int cjf,int cjl,
+                           int ci, int cjf, int cjl,
                            gmx_bool remove_sub_diag,
                            const real *x_j,
-                           real rl2,float rbb2,
+                           real rl2, float rbb2,
                            int *ndistc)
 {
     const nbnxn_x_ci_simd_4xn_t *work;
-    const float *bb_ci;
+    const float                 *bb_ci;
 
-    gmx_mm_pr  jx_SSE,jy_SSE,jz_SSE;
+    gmx_mm_pr                    jx_SSE, jy_SSE, jz_SSE;
 
-    gmx_mm_pr  dx_SSE0,dy_SSE0,dz_SSE0;
-    gmx_mm_pr  dx_SSE1,dy_SSE1,dz_SSE1;
-    gmx_mm_pr  dx_SSE2,dy_SSE2,dz_SSE2;
-    gmx_mm_pr  dx_SSE3,dy_SSE3,dz_SSE3;
+    gmx_mm_pr                    dx_SSE0, dy_SSE0, dz_SSE0;
+    gmx_mm_pr                    dx_SSE1, dy_SSE1, dz_SSE1;
+    gmx_mm_pr                    dx_SSE2, dy_SSE2, dz_SSE2;
+    gmx_mm_pr                    dx_SSE3, dy_SSE3, dz_SSE3;
 
-    gmx_mm_pr  rsq_SSE0;
-    gmx_mm_pr  rsq_SSE1;
-    gmx_mm_pr  rsq_SSE2;
-    gmx_mm_pr  rsq_SSE3;
+    gmx_mm_pr                    rsq_SSE0;
+    gmx_mm_pr                    rsq_SSE1;
+    gmx_mm_pr                    rsq_SSE2;
+    gmx_mm_pr                    rsq_SSE3;
 
-    gmx_mm_pr  wco_SSE0;
-    gmx_mm_pr  wco_SSE1;
-    gmx_mm_pr  wco_SSE2;
-    gmx_mm_pr  wco_SSE3;
-    gmx_mm_pr  wco_any_SSE01,wco_any_SSE23,wco_any_SSE;
-    
-    gmx_mm_pr  rc2_SSE;
+    gmx_mm_pr                    wco_SSE0;
+    gmx_mm_pr                    wco_SSE1;
+    gmx_mm_pr                    wco_SSE2;
+    gmx_mm_pr                    wco_SSE3;
+    gmx_mm_pr                    wco_any_SSE01, wco_any_SSE23, wco_any_SSE;
 
-    gmx_bool   InRange;
-    float      d2;
-    int        xind_f,xind_l,cj;
+    gmx_mm_pr                    rc2_SSE;
+
+    gmx_bool                     InRange;
+    float                        d2;
+    int                          xind_f, xind_l, cj;
 
     cjf = CI_TO_CJ_SIMD_4XN(cjf);
     cjl = CI_TO_CJ_SIMD_4XN(cjl+1) - 1;
@@ -135,9 +135,9 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2 = subc_bb_dist2_sse(4,0,bb_ci,cjf,gridj->bbj);
+        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
         *ndistc += 2;
-        
+
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
          * or within the cut-off and there is at least one atom pair
@@ -155,36 +155,36 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             jy_SSE  = gmx_load_pr(x_j+xind_f+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_f+2*STRIDE_S);
 
-            
+
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0,jz_SSE);
-            dx_SSE1            = gmx_sub_pr(work->ix_SSE1,jx_SSE);
-            dy_SSE1            = gmx_sub_pr(work->iy_SSE1,jy_SSE);
-            dz_SSE1            = gmx_sub_pr(work->iz_SSE1,jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2,jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2,jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2,jz_SSE);
-            dx_SSE3            = gmx_sub_pr(work->ix_SSE3,jx_SSE);
-            dy_SSE3            = gmx_sub_pr(work->iy_SSE3,jy_SSE);
-            dz_SSE3            = gmx_sub_pr(work->iz_SSE3,jz_SSE);
-            
+            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
+            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
+            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
+            dx_SSE1            = gmx_sub_pr(work->ix_SSE1, jx_SSE);
+            dy_SSE1            = gmx_sub_pr(work->iy_SSE1, jy_SSE);
+            dz_SSE1            = gmx_sub_pr(work->iz_SSE1, jz_SSE);
+            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
+            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
+            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
+            dx_SSE3            = gmx_sub_pr(work->ix_SSE3, jx_SSE);
+            dy_SSE3            = gmx_sub_pr(work->iy_SSE3, jy_SSE);
+            dz_SSE3            = gmx_sub_pr(work->iz_SSE3, jz_SSE);
+
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
-            
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
-            wco_SSE1           = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
-            wco_SSE3           = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
-            
-            wco_any_SSE01      = gmx_or_pr(wco_SSE0,wco_SSE1);
-            wco_any_SSE23      = gmx_or_pr(wco_SSE2,wco_SSE3);
-            wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
-            
+            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
+            rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1, dy_SSE1, dz_SSE1);
+            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
+            rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3, dy_SSE3, dz_SSE3);
+
+            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
+            wco_SSE1           = gmx_cmplt_pr(rsq_SSE1, rc2_SSE);
+            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
+            wco_SSE3           = gmx_cmplt_pr(rsq_SSE3, rc2_SSE);
+
+            wco_any_SSE01      = gmx_or_pr(wco_SSE0, wco_SSE1);
+            wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
+            wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
+
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;
@@ -202,9 +202,9 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2 = subc_bb_dist2_sse(4,0,bb_ci,cjl,gridj->bbj);
+        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
         *ndistc += 2;
-        
+
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
          * or within the cut-off and there is at least one atom pair
@@ -221,36 +221,36 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             jx_SSE  = gmx_load_pr(x_j+xind_l+0*STRIDE_S);
             jy_SSE  = gmx_load_pr(x_j+xind_l+1*STRIDE_S);
             jz_SSE  = gmx_load_pr(x_j+xind_l+2*STRIDE_S);
-            
+
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0,jz_SSE);
-            dx_SSE1            = gmx_sub_pr(work->ix_SSE1,jx_SSE);
-            dy_SSE1            = gmx_sub_pr(work->iy_SSE1,jy_SSE);
-            dz_SSE1            = gmx_sub_pr(work->iz_SSE1,jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2,jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2,jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2,jz_SSE);
-            dx_SSE3            = gmx_sub_pr(work->ix_SSE3,jx_SSE);
-            dy_SSE3            = gmx_sub_pr(work->iy_SSE3,jy_SSE);
-            dz_SSE3            = gmx_sub_pr(work->iz_SSE3,jz_SSE);
-            
+            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
+            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
+            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
+            dx_SSE1            = gmx_sub_pr(work->ix_SSE1, jx_SSE);
+            dy_SSE1            = gmx_sub_pr(work->iy_SSE1, jy_SSE);
+            dz_SSE1            = gmx_sub_pr(work->iz_SSE1, jz_SSE);
+            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
+            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
+            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
+            dx_SSE3            = gmx_sub_pr(work->ix_SSE3, jx_SSE);
+            dy_SSE3            = gmx_sub_pr(work->iy_SSE3, jy_SSE);
+            dz_SSE3            = gmx_sub_pr(work->iz_SSE3, jz_SSE);
+
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1,dy_SSE1,dz_SSE1);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
-            rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3,dy_SSE3,dz_SSE3);
-            
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
-            wco_SSE1           = gmx_cmplt_pr(rsq_SSE1,rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
-            wco_SSE3           = gmx_cmplt_pr(rsq_SSE3,rc2_SSE);
-            
-            wco_any_SSE01      = gmx_or_pr(wco_SSE0,wco_SSE1);
-            wco_any_SSE23      = gmx_or_pr(wco_SSE2,wco_SSE3);
-            wco_any_SSE        = gmx_or_pr(wco_any_SSE01,wco_any_SSE23);
-            
+            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
+            rsq_SSE1           = gmx_calc_rsq_pr(dx_SSE1, dy_SSE1, dz_SSE1);
+            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
+            rsq_SSE3           = gmx_calc_rsq_pr(dx_SSE3, dy_SSE3, dz_SSE3);
+
+            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
+            wco_SSE1           = gmx_cmplt_pr(rsq_SSE1, rc2_SSE);
+            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
+            wco_SSE3           = gmx_cmplt_pr(rsq_SSE3, rc2_SSE);
+
+            wco_any_SSE01      = gmx_or_pr(wco_SSE0, wco_SSE1);
+            wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
+            wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
+
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;
@@ -263,11 +263,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 
     if (cjf <= cjl)
     {
-        for(cj=cjf; cj<=cjl; cj++)
+        for (cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_4xn(remove_sub_diag,ci,cj);
+            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_4xn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -46,18 +46,18 @@
 #include "grompp.h"
 
 
-float 
-calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+float
+calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda,
                               float *xd, float *f, float *fshift, float *shift_vec,
                               int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md);
 
-int 
-calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
+int
+calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
                               const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born);
 
-int 
+int
 calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, int gb_algorithm);
+                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm);
 
 
 #endif /* _genborn_sse_h */

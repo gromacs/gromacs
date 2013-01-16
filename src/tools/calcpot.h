@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -35,29 +35,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-	
-extern FILE *init_calcpot(const char *log,const char *tpx,const char *table,
-			  gmx_mtop_t *mtop,
-			  gmx_localtop_t *top,t_inputrec *inputrec,
-                          t_commrec **cr,
-			  t_graph **graph,t_mdatoms **mdatoms,
-			  t_forcerec **fr,
-			  gmx_enerdata_t *enerdata,
-			  real **coulomb,
-			  matrix box,rvec **x, const output_env_t oenv);
 
-extern void calc_pot(FILE *logf,t_commrec *cr,
-		     gmx_mtop_t *mtop,
-		     t_inputrec *inputrec,gmx_localtop_t *top,rvec x[],
-		     t_forcerec *fr,gmx_enerdata_t *enerd,
-		     t_mdatoms *mdatoms,real coulomb[],matrix box,t_graph *graph);
+extern FILE *init_calcpot(const char *log, const char *tpx, const char *table,
+                          gmx_mtop_t *mtop,
+                          gmx_localtop_t *top, t_inputrec *inputrec,
+                          t_commrec **cr,
+                          t_graph **graph, t_mdatoms **mdatoms,
+                          t_forcerec **fr,
+                          gmx_enerdata_t *enerdata,
+                          real **coulomb,
+                          matrix box, rvec **x, const output_env_t oenv);
+
+extern void calc_pot(FILE *logf, t_commrec *cr,
+                     gmx_mtop_t *mtop,
+                     t_inputrec *inputrec, gmx_localtop_t *top, rvec x[],
+                     t_forcerec *fr, gmx_enerdata_t *enerd,
+                     t_mdatoms *mdatoms, real coulomb[], matrix box, t_graph *graph);
 
 extern void write_pdb_coul();
 
-extern void delete_atom(gmx_localtop_t *top,int inr);
+extern void delete_atom(gmx_localtop_t *top, int inr);
 /* Delete an atom from a topology */
 
-extern void replace_atom(gmx_localtop_t *top,int inr,char *anm,char *resnm,
-			 real q,real m,int type);
+extern void replace_atom(gmx_localtop_t *top, int inr, char *anm, char *resnm,
+                         real q, real m, int type);
 /* Replace an atom in a topology by someting else */
-

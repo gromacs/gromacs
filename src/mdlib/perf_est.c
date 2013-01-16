@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -89,56 +89,65 @@
 /* Cost of a bonded interaction divided by the number of (pbc_)dx nrequired */
 #define C_BOND        5.0
 
-int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl)
+int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl)
 {
-  int mb,nmol,ftype,ndxb,ndx_excl;
-  int ndx;
-  gmx_moltype_t *molt;
+    int            mb, nmol, ftype, ndxb, ndx_excl;
+    int            ndx;
+    gmx_moltype_t *molt;
 
-  /* Count the number of pbc_rvec_sub calls required for bonded interactions.
-   * This number is also roughly proportional to the computational cost.
-   */
-  ndx = 0;
-  ndx_excl = 0;
-  for(mb=0; mb<mtop->nmolblock; mb++) {
-    molt = &mtop->moltype[mtop->molblock[mb].type];
-    nmol = mtop->molblock[mb].nmol;
-    for(ftype=0; ftype<F_NRE; ftype++) {
-      if (interaction_function[ftype].flags & IF_BOND) {
-	switch (ftype) {
-		case F_POSRES:    ndxb = 1; break;
-		case F_CONNBONDS: ndxb = 0; break;
-		default:     ndxb = NRAL(ftype) - 1; break;
-	}
-	ndx += nmol*ndxb*molt->ilist[ftype].nr/(1 + NRAL(ftype));
-      }
+    /* Count the number of pbc_rvec_sub calls required for bonded interactions.
+     * This number is also roughly proportional to the computational cost.
+     */
+    ndx      = 0;
+    ndx_excl = 0;
+    for (mb = 0; mb < mtop->nmolblock; mb++)
+    {
+        molt = &mtop->moltype[mtop->molblock[mb].type];
+        nmol = mtop->molblock[mb].nmol;
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            if (interaction_function[ftype].flags & IF_BOND)
+            {
+                switch (ftype)
+                {
+                    case F_POSRES:    ndxb = 1; break;
+                    case F_CONNBONDS: ndxb = 0; break;
+                    default:     ndxb      = NRAL(ftype) - 1; break;
+                }
+                ndx += nmol*ndxb*molt->ilist[ftype].nr/(1 + NRAL(ftype));
+            }
+        }
+        if (bExcl)
+        {
+            ndx_excl += nmol*(molt->excls.nra - molt->atoms.nr)/2;
+        }
+        else
+        {
+            ndx_excl = 0;
+        }
     }
-    if (bExcl) {
-      ndx_excl += nmol*(molt->excls.nra - molt->atoms.nr)/2;
-    } else {
-      ndx_excl = 0;
+
+    if (debug)
+    {
+        fprintf(debug, "ndx bonded %d exclusions %d\n", ndx, ndx_excl);
     }
-  }
 
-  if (debug)
-    fprintf(debug,"ndx bonded %d exclusions %d\n",ndx,ndx_excl);
+    ndx += ndx_excl;
 
-  ndx += ndx_excl;
-
-  return ndx;
+    return ndx;
 }
 
-static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
+static void pp_group_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                           int *nq_tot,
                           double *cost_pp,
                           gmx_bool *bChargePerturbed)
 {
-    t_atom *atom;
-    int  mb,nmol,atnr,cg,a,a0,ncqlj,ncq,nclj;
-    gmx_bool bBHAM,bLJcut,bWater,bQ,bLJ;
-    int nw,nqlj,nq,nlj;
-    float fq,fqlj,flj,fljtab,fqljw,fqw;
-    t_iparams *iparams;
+    t_atom        *atom;
+    int            mb, nmol, atnr, cg, a, a0, ncqlj, ncq, nclj;
+    gmx_bool       bBHAM, bLJcut, bWater, bQ, bLJ;
+    int            nw, nqlj, nq, nlj;
+    float          fq, fqlj, flj, fljtab, fqljw, fqw;
+    t_iparams     *iparams;
     gmx_moltype_t *molt;
 
     bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
@@ -159,26 +168,26 @@ static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     /* Cost of 1 water with one Q atom or with 1/3 water (LJ negligible) */
     fqw   = C_GR_QW;
 
-    iparams = mtop->ffparams.iparams;
-    atnr = mtop->ffparams.atnr;
-    nw   = 0;
-    nqlj = 0;
-    nq   = 0;
-    nlj  = 0;
+    iparams           = mtop->ffparams.iparams;
+    atnr              = mtop->ffparams.atnr;
+    nw                = 0;
+    nqlj              = 0;
+    nq                = 0;
+    nlj               = 0;
     *bChargePerturbed = FALSE;
-    for(mb=0; mb<mtop->nmolblock; mb++)
-	{
+    for (mb = 0; mb < mtop->nmolblock; mb++)
+    {
         molt = &mtop->moltype[mtop->molblock[mb].type];
         atom = molt->atoms.atom;
         nmol = mtop->molblock[mb].nmol;
-        a = 0;
-        for(cg=0; cg<molt->cgs.nr; cg++)
+        a    = 0;
+        for (cg = 0; cg < molt->cgs.nr; cg++)
         {
             bWater = !bBHAM;
-            ncqlj = 0;
-            ncq   = 0;
-            nclj  = 0;
-            a0    = a;
+            ncqlj  = 0;
+            ncq    = 0;
+            nclj   = 0;
+            a0     = a;
             while (a < molt->cgs.index[cg+1])
             {
                 bQ  = (atom[a].q != 0 || atom[a].qB != 0);
@@ -193,7 +202,9 @@ static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
                       (a == a0+1 &&  bQ && !bLJ) ||
                       (a == a0+2 &&  bQ && !bLJ && atom[a].q == atom[a-1].q) ||
                       (a == a0+3 && !bQ &&  bLJ)))
+                {
                     bWater = FALSE;
+                }
                 if (bQ && bLJ)
                 {
                     ncqlj++;
@@ -228,7 +239,7 @@ static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 
     if (debug)
     {
-      fprintf(debug,"nw %d nqlj %d nq %d nlj %d\n",nw,nqlj,nq,nlj);
+        fprintf(debug, "nw %d nqlj %d nq %d nlj %d\n", nw, nqlj, nq, nlj);
     }
 
     /* For the PP non-bonded cost it is (unrealistically) assumed
@@ -244,33 +255,33 @@ static void pp_group_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
         *4/3*M_PI*ir->rlist*ir->rlist*ir->rlist/det(box);
 }
 
-static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
+static void pp_verlet_load(gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
                            int *nq_tot,
                            double *cost_pp,
                            gmx_bool *bChargePerturbed)
 {
-    t_atom *atom;
-    int  mb,nmol,atnr,cg,a,a0,nqlj,nq,nlj;
-    gmx_bool bQRF;
-    t_iparams *iparams;
+    t_atom        *atom;
+    int            mb, nmol, atnr, cg, a, a0, nqlj, nq, nlj;
+    gmx_bool       bQRF;
+    t_iparams     *iparams;
     gmx_moltype_t *molt;
-    float r_eff;
-    double nat;
+    float          r_eff;
+    double         nat;
 
     bQRF = (EEL_RF(ir->coulombtype) || ir->coulombtype == eelCUT);
 
-    iparams = mtop->ffparams.iparams;
-    atnr = mtop->ffparams.atnr;
-    nqlj = 0;
-    nq   = 0;
+    iparams           = mtop->ffparams.iparams;
+    atnr              = mtop->ffparams.atnr;
+    nqlj              = 0;
+    nq                = 0;
     *bChargePerturbed = FALSE;
-    for(mb=0; mb<mtop->nmolblock; mb++)
-	{
+    for (mb = 0; mb < mtop->nmolblock; mb++)
+    {
         molt = &mtop->moltype[mtop->molblock[mb].type];
         atom = molt->atoms.atom;
         nmol = mtop->molblock[mb].nmol;
-        a = 0;
-        for(a=0; a<molt->atoms.nr; a++)
+        a    = 0;
+        for (a = 0; a < molt->atoms.nr; a++)
         {
             if (atom[a].q != 0 || atom[a].qB != 0)
             {
@@ -296,84 +307,86 @@ static void pp_verlet_load(gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     *nq_tot = nqlj + nq;
 
     /* Effective cut-off for cluster pair list of 4x4 atoms */
-    r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(NBNXN_CPU_CLUSTER_I_SIZE,mtop->natoms/det(box));
+    r_eff = ir->rlist + nbnxn_get_rlist_effective_inc(NBNXN_CPU_CLUSTER_I_SIZE, mtop->natoms/det(box));
 
     if (debug)
     {
-        fprintf(debug,"nqlj %d nq %d nlj %d rlist %.3f r_eff %.3f\n",
-                nqlj,nq,nlj,ir->rlist,r_eff);
+        fprintf(debug, "nqlj %d nq %d nlj %d rlist %.3f r_eff %.3f\n",
+                nqlj, nq, nlj, ir->rlist, r_eff);
     }
 
     /* For the PP non-bonded cost it is (unrealistically) assumed
      * that all atoms are distributed homogeneously in space.
      */
     /* Convert mtop->natoms to double to avoid int overflow */
-    nat = mtop->natoms;
+    nat      = mtop->natoms;
     *cost_pp = 0.5*(nqlj*nat*(bQRF ? C_VT_QLJ_RF : C_VT_QLJ_TAB) +
                     nq*nat*(bQRF ? C_VT_Q_RF : C_VT_Q_TAB) +
                     nlj*nat*C_VT_LJ)
         *4/3*M_PI*r_eff*r_eff*r_eff/det(box);
 }
 
-float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
+float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box)
 {
-  t_atom *atom;
-  int  mb,nmol,atnr,cg,a,a0,nq_tot;
-  gmx_bool bBHAM,bLJcut,bChargePerturbed,bWater,bQ,bLJ;
-  double cost_bond,cost_pp,cost_redist,cost_spread,cost_fft,cost_solve,cost_pme;
-  float ratio;
-  t_iparams *iparams;
-  gmx_moltype_t *molt;
+    t_atom        *atom;
+    int            mb, nmol, atnr, cg, a, a0, nq_tot;
+    gmx_bool       bBHAM, bLJcut, bChargePerturbed, bWater, bQ, bLJ;
+    double         cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve, cost_pme;
+    float          ratio;
+    t_iparams     *iparams;
+    gmx_moltype_t *molt;
 
-  /* Computational cost of bonded, non-bonded and PME calculations.
-   * This will be machine dependent.
-   * The numbers here are accurate for Intel Core2 and AMD Athlon 64
-   * in single precision. In double precision PME mesh is slightly cheaper,
-   * although not so much that the numbers need to be adjusted.
-   */
+    /* Computational cost of bonded, non-bonded and PME calculations.
+     * This will be machine dependent.
+     * The numbers here are accurate for Intel Core2 and AMD Athlon 64
+     * in single precision. In double precision PME mesh is slightly cheaper,
+     * although not so much that the numbers need to be adjusted.
+     */
 
-  iparams = mtop->ffparams.iparams;
-  atnr = mtop->ffparams.atnr;
+    iparams = mtop->ffparams.iparams;
+    atnr    = mtop->ffparams.atnr;
 
-  cost_bond = C_BOND*n_bonded_dx(mtop,TRUE);
+    cost_bond = C_BOND*n_bonded_dx(mtop, TRUE);
 
-  if (ir->cutoff_scheme == ecutsGROUP)
-  {
-      pp_group_load(mtop,ir,box,&nq_tot,&cost_pp,&bChargePerturbed);
-  }
-  else
-  {
-      pp_verlet_load(mtop,ir,box,&nq_tot,&cost_pp,&bChargePerturbed);
-  }
-  
-  cost_redist = C_PME_REDIST*nq_tot;
-  cost_spread = C_PME_SPREAD*nq_tot*pow(ir->pme_order,3);
-  cost_fft    = C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
-  cost_solve  = C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
+    if (ir->cutoff_scheme == ecutsGROUP)
+    {
+        pp_group_load(mtop, ir, box, &nq_tot, &cost_pp, &bChargePerturbed);
+    }
+    else
+    {
+        pp_verlet_load(mtop, ir, box, &nq_tot, &cost_pp, &bChargePerturbed);
+    }
 
-  if (ir->efep != efepNO && bChargePerturbed) {
-    /* All PME work, except redist & spline coefficient calculation, doubles */
-    cost_spread *= 2;
-    cost_fft    *= 2;
-    cost_solve  *= 2;
-  }
+    cost_redist = C_PME_REDIST*nq_tot;
+    cost_spread = C_PME_SPREAD*nq_tot*pow(ir->pme_order, 3);
+    cost_fft    = C_PME_FFT*ir->nkx*ir->nky*ir->nkz*log(ir->nkx*ir->nky*ir->nkz);
+    cost_solve  = C_PME_SOLVE*ir->nkx*ir->nky*ir->nkz;
 
-  cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;
+    if (ir->efep != efepNO && bChargePerturbed)
+    {
+        /* All PME work, except redist & spline coefficient calculation, doubles */
+        cost_spread *= 2;
+        cost_fft    *= 2;
+        cost_solve  *= 2;
+    }
 
-  ratio = cost_pme/(cost_bond + cost_pp + cost_pme);
+    cost_pme = cost_redist + cost_spread + cost_fft + cost_solve;
 
-  if (debug) {
-    fprintf(debug,
-            "cost_bond   %f\n"
-            "cost_pp     %f\n"
-            "cost_redist %f\n"
-            "cost_spread %f\n"
-            "cost_fft    %f\n"
-            "cost_solve  %f\n",
-            cost_bond,cost_pp,cost_redist,cost_spread,cost_fft,cost_solve);
+    ratio = cost_pme/(cost_bond + cost_pp + cost_pme);
 
-    fprintf(debug,"Estimate for relative PME load: %.3f\n",ratio);
-  }
+    if (debug)
+    {
+        fprintf(debug,
+                "cost_bond   %f\n"
+                "cost_pp     %f\n"
+                "cost_redist %f\n"
+                "cost_spread %f\n"
+                "cost_fft    %f\n"
+                "cost_solve  %f\n",
+                cost_bond, cost_pp, cost_redist, cost_spread, cost_fft, cost_solve);
 
-  return ratio;
+        fprintf(debug, "Estimate for relative PME load: %.3f\n", ratio);
+    }
+
+    return ratio;
 }

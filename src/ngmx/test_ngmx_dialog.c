@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,23 +45,27 @@
 
 int main(int argc, char *argv[])
 {
-  t_x11 *x11;
-  t_dlg *dlg;
+    t_x11 *x11;
+    t_dlg *dlg;
 
-  if ((x11=GetX11(&argc,argv))==NULL) {
-    fprintf(stderr,"No X!\n");
-    exit(1);
-  }
-  if (argc > 1) {
-    dlg=ReadDlg(x11,0,x11->title,x11->fg,x11->bg,argv[1],100,100,TRUE,
-		TRUE,NULL,NULL);
-    ShowDlg(dlg);
-    x11->MainLoop(x11);
-  }
-  else 
-    fprintf(stderr,"Usage: %s [ X options ] infile\n",argv[0]);
+    if ((x11 = GetX11(&argc, argv)) == NULL)
+    {
+        fprintf(stderr, "No X!\n");
+        exit(1);
+    }
+    if (argc > 1)
+    {
+        dlg = ReadDlg(x11, 0, x11->title, x11->fg, x11->bg, argv[1], 100, 100, TRUE,
+                      TRUE, NULL, NULL);
+        ShowDlg(dlg);
+        x11->MainLoop(x11);
+    }
+    else
+    {
+        fprintf(stderr, "Usage: %s [ X options ] infile\n", argv[0]);
+    }
 
-  x11->CleanUp(x11);
+    x11->CleanUp(x11);
 
-  return 0;
+    return 0;
 }

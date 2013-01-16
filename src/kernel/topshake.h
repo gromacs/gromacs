@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,6 +41,6 @@
 
 #include "topio.h"
 
-void make_shake (t_params plist[],t_atoms *atoms,gpp_atomtype_t at,int nshake);
+void make_shake (t_params plist[], t_atoms *atoms, gpp_atomtype_t at, int nshake);
 
-#endif	/* _topshake_h */
+#endif  /* _topshake_h */

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,17 +42,17 @@
 #include "popup.h"
 
 typedef struct {
-  t_windata wd;
-  int       nmenu;
-  int       nsel;
-  int       *xpos;
-  t_menu    **m;
-  const char **title;
+    t_windata    wd;
+    int          nmenu;
+    int          nsel;
+    int         *xpos;
+    t_menu     **m;
+    const char **title;
 } t_pulldown;
 
-extern t_pulldown *init_pd(t_x11 *x11,Window Parent,int width,int height,
-			   unsigned long fg,unsigned long bg,
-			   int nmenu,int *nsub,t_mentry *ent[],
+extern t_pulldown *init_pd(t_x11 *x11, Window Parent, int width, int height,
+                           unsigned long fg, unsigned long bg,
+                           int nmenu, int *nsub, t_mentry *ent[],
                            const char **title);
 /* nmenu is the number of submenus, title are the titles of
  * the submenus, nsub are the numbers of entries in each submenu
@@ -69,16 +69,16 @@ extern t_pulldown *init_pd(t_x11 *x11,Window Parent,int width,int height,
  * specifying the selected item in xclient.data.l[0].
  */
 
-extern void hide_pd(t_x11 *x11,t_pulldown *pd);
+extern void hide_pd(t_x11 *x11, t_pulldown *pd);
 /* Hides any menu that is still on the screen when it shouldn't */
 
-extern void check_pd_item(t_pulldown *pd,int nreturn,gmx_bool bStatus);
+extern void check_pd_item(t_pulldown *pd, int nreturn, gmx_bool bStatus);
 /* Set the bChecked field in the pd item with return code
  * nreturn to bStatus. This function must always be called when
  * the bChecked flag has to changed.
  */
 
-extern void done_pd(t_x11 *x11,t_pulldown *pd);
+extern void done_pd(t_x11 *x11, t_pulldown *pd);
 /* This routine destroys the menu pd, and unregisters it with x11 */
 
 extern int pd_width(t_pulldown *pd);
@@ -87,4 +87,4 @@ extern int pd_width(t_pulldown *pd);
 extern int pd_height(t_pulldown *pd);
 /* Return the height of the window */
 
-#endif	/* _pulldown_h */
+#endif  /* _pulldown_h */

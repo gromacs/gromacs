@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,7 +52,7 @@ const char *gmx_stop_cond_name[] =
     "Abort"
 };
 
-/* these do not neccesarily match the stop condition, but are 
+/* these do not neccesarily match the stop condition, but are
    referred to in the signal handler. */
 const char *gmx_signal_name[] =
 {
@@ -66,33 +66,42 @@ const char *gmx_signal_name[] =
     "Abort"
 };
 
-static volatile sig_atomic_t stop_condition=gmx_stop_cond_none;
-static volatile sig_atomic_t last_signal_name=0;
+static volatile sig_atomic_t stop_condition   = gmx_stop_cond_none;
+static volatile sig_atomic_t last_signal_name = 0;
 
-static volatile sig_atomic_t usr_condition=0;
+static volatile sig_atomic_t usr_condition = 0;
 
 static void signal_handler(int n)
 {
-    switch (n) {
-/* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in 
-   ANSI C89, and windows spawns a thread specifically to run the INT signal 
+    switch (n)
+    {
+/* windows doesn't do SIGINT correctly according to ANSI (yes, signals are in
+   ANSI C89, and windows spawns a thread specifically to run the INT signal
    handler), but that doesn't matter for a simple signal handler like this. */
         case SIGTERM:
         case SIGINT:
             /* we explicitly set things up to allow this: */
             stop_condition++;
-            if (n==SIGINT)
-                last_signal_name=1;
-            if (n==SIGTERM)
-                last_signal_name=2;
+            if (n == SIGINT)
+            {
+                last_signal_name = 1;
+            }
+            if (n == SIGTERM)
+            {
+                last_signal_name = 2;
+            }
             if (stop_condition == gmx_stop_cond_next)
-                last_signal_name=3;
+            {
+                last_signal_name = 3;
+            }
             if (stop_condition >= gmx_stop_cond_abort)
+            {
                 abort();
+            }
             break;
 #ifdef HAVE_SIGUSR1
         case SIGUSR1:
-            usr_condition=1;
+            usr_condition = 1;
             break;
 #endif
         default:
@@ -100,16 +109,16 @@ static void signal_handler(int n)
     }
 }
 
-static void gmx_signal(int signum) 
+static void gmx_signal(int signum)
 {
 #ifdef HAVE_SIGACTION
     struct sigaction act;
     act.sa_handler = signal_handler;
     sigemptyset(&act.sa_mask);
     act.sa_flags = SA_RESTART;
-    sigaction(signum,&act,NULL);
+    sigaction(signum, &act, NULL);
 #else
-    signal(signum,signal_handler);
+    signal(signum, signal_handler);
 #endif
 }
 
@@ -119,7 +128,7 @@ void signal_handler_install(void)
     {
         if (debug)
         {
-            fprintf(debug,"Installing signal handler for SIGTERM\n");
+            fprintf(debug, "Installing signal handler for SIGTERM\n");
         }
         gmx_signal(SIGTERM);
     }
@@ -127,7 +136,7 @@ void signal_handler_install(void)
     {
         if (debug)
         {
-            fprintf(debug,"Installing signal handler for SIGINT\n");
+            fprintf(debug, "Installing signal handler for SIGINT\n");
         }
         gmx_signal(SIGINT);
     }
@@ -136,7 +145,7 @@ void signal_handler_install(void)
     {
         if (debug)
         {
-            fprintf(debug,"Installing signal handler for SIGUSR1\n");
+            fprintf(debug, "Installing signal handler for SIGUSR1\n");
         }
         gmx_signal(SIGUSR1);
     }
@@ -152,11 +161,15 @@ void gmx_set_stop_condition(gmx_stop_cond_t recvd_stop_cond)
 {
     if (recvd_stop_cond > stop_condition)
     {
-        stop_condition=recvd_stop_cond;
+        stop_condition = recvd_stop_cond;
         if (stop_condition == gmx_stop_cond_next_ns)
-            last_signal_name=4;
+        {
+            last_signal_name = 4;
+        }
         if (stop_condition == gmx_stop_cond_next)
-            last_signal_name=5;
+        {
+            last_signal_name = 5;
+        }
     }
 }
 
@@ -168,12 +181,10 @@ const char *gmx_get_signal_name(void)
 gmx_bool gmx_got_usr_signal(void)
 {
 #ifdef HAVE_SIGUSR1
-    gmx_bool ret=(gmx_bool)usr_condition;
-    usr_condition=0;
+    gmx_bool ret = (gmx_bool)usr_condition;
+    usr_condition = 0;
     return ret;
 #else
     return FALSE;
 #endif
 }
-
-

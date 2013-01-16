@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,20 +44,20 @@
 #include "grompp.h"
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int read_ter_db(const char *ffdir,char ter,
-		       t_hackblock **tbptr,gpp_atomtype_t atype);
+extern int read_ter_db(const char *ffdir, char ter,
+                       t_hackblock **tbptr, gpp_atomtype_t atype);
 /* Read database for N&C terminal hacking */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern t_hackblock **filter_ter(int nrtp,t_restp rtp[],
-                                int nb,t_hackblock tb[],
+extern t_hackblock **filter_ter(int nrtp, t_restp rtp[],
+                                int nb, t_hackblock tb[],
                                 const char *resname,
                                 const char *rtpname,
                                 int *nret);
 /* Return a list of pointers to blocks that match residue name */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern t_hackblock *choose_ter(int nb,t_hackblock **tb,const char *title);
+extern t_hackblock *choose_ter(int nb, t_hackblock **tb, const char *title);
 /* Interactively select one.. */
 
-#endif	/* _ter_db_h */
+#endif  /* _ter_db_h */
