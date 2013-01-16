@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -57,16 +57,17 @@ gmx_print_version_info(FILE *fp);
   
 static const char *
 CopyrightText[] = {
-  "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-  "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
-  "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
-  "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
-  "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
-  "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
-  "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
-  "Copyright (c) 2001-2010, The GROMACS development team at",
-  "Uppsala University & The Royal Institute of Technology, Sweden.",
-  "check out http://www.gromacs.org for more information.\n"
+    "Contributions from Mark Abraham, Emile Apol, Rossen Apostolov, ",
+    "Herman J.C. Berendsen, Aldert van Buuren, Pär Bjelkmar,  ",
+    "Rudi van Drunen, Anton Feenstra, Gerrit Groenhof, Christoph Junghans, ",
+    "Peter Kasson, Carsten Kutzner, Per Larsson, Pieter Meulenhoff, ",
+    "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
+    "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
+    "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
+    "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
+    "Copyright (c) 2001-2012,2013, The GROMACS development team at",
+    "Uppsala University & The Royal Institute of Technology, Sweden.",
+    "check out http://www.gromacs.org for more information.\n"
 };
 
 static const char *

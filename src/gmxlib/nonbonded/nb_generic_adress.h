@@ -3,7 +3,7 @@
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
  * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
