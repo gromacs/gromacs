@@ -528,7 +528,7 @@ ENDIF()
 
 option(GMX_GSL "Add support for gsl" OFF)
 if (GMX_GSL)
-  find_package(gsl)
+  find_package(GSL)
   set(PKG_GSL "")
   if(GSL_FOUND)
     include_directories(${GSL_INCLUDE_DIR})
