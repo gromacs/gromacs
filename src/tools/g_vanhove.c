@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_sorient.c is now in gmx_vanhove.c,
-* where the old main function is called gmx_vanhove().
-*/
+ * The code that used to be in g_sorient.c is now in gmx_vanhove.c,
+ * where the old main function is called gmx_vanhove().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_vanhove(argc,argv);
-  return 0;
+    gmx_vanhove(argc, argv);
+    return 0;
 }
-
-
-  

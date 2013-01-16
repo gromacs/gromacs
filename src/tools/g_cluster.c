@@ -43,16 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_cluster.c is now in gmx_cluster.c,
-* where the old main function is called gmx_cluster().
-*/
+ * The code that used to be in g_cluster.c is now in gmx_cluster.c,
+ * where the old main function is called gmx_cluster().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_cluster(argc,argv);
-  return 0;
+    gmx_cluster(argc, argv);
+    return 0;
 }
-
-
-
-  

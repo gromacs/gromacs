@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_potential.c is now in gmx_potential.c,
-* where the old main function is called gmx_potential().
-*/
+ * The code that used to be in g_potential.c is now in gmx_potential.c,
+ * where the old main function is called gmx_potential().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_potential(argc,argv);
-  return 0;
+    gmx_potential(argc, argv);
+    return 0;
 }
-
-
-  

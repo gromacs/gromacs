@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_mindist.c is now in gmx_mindist.c,
-* where the old main function is called gmx_mindist().
-*/
+ * The code that used to be in g_mindist.c is now in gmx_mindist.c,
+ * where the old main function is called gmx_mindist().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_mindist(argc,argv);
-  return 0;
+    gmx_mindist(argc, argv);
+    return 0;
 }
-
-
-  

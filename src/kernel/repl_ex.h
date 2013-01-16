@@ -46,18 +46,18 @@
 typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
 extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
-					   const gmx_multisim_t *ms,
-					   const t_state *state,
-					   const t_inputrec *ir,
-					   int nst, int nmultiex, int init_seed);
+                                           const gmx_multisim_t *ms,
+                                           const t_state *state,
+                                           const t_inputrec *ir,
+                                           int nst, int nmultiex, int init_seed);
 /* Should only be called on the master nodes */
 
 extern gmx_bool replica_exchange(FILE *fplog,
-			     const t_commrec *cr,
-			     gmx_repl_ex_t re,
-			     t_state *state,gmx_enerdata_t *enerd,
-			     t_state *state_local,
-			     gmx_large_int_t step,real time);
+                                 const t_commrec *cr,
+                                 gmx_repl_ex_t re,
+                                 t_state *state, gmx_enerdata_t *enerd,
+                                 t_state *state_local,
+                                 gmx_large_int_t step, real time);
 /* Attempts replica exchange, should be called on all nodes.
  * Returns TRUE if this state has been exchanged.
  * When running each replica in parallel,
@@ -67,10 +67,10 @@ extern gmx_bool replica_exchange(FILE *fplog,
  * in state and still needs to be redistributed over the nodes.
  */
 
-extern void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t re);
+extern void print_replica_exchange_statistics(FILE *fplog, gmx_repl_ex_t re);
 /* Should only be called on the master nodes */
 
-extern void pd_distribute_state(const t_commrec *cr,t_state *state);
+extern void pd_distribute_state(const t_commrec *cr, t_state *state);
 /* Distributes the state after exchange for particle decomposition */
 
-#endif	/* _repl_ex_h */
+#endif  /* _repl_ex_h */

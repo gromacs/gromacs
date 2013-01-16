@@ -49,7 +49,7 @@
 
 typedef struct gpp_bondatomtype *t_bond_atomtype;
 
-extern int get_bond_atomtype_type(char *str,t_bond_atomtype at);
+extern int get_bond_atomtype_type(char *str, t_bond_atomtype at);
 /* Return atomtype corresponding to case-insensitive str
    or NOTSET if not found */
 
@@ -62,16 +62,8 @@ extern t_bond_atomtype init_bond_atomtype(void);
 extern void done_bond_atomtype(t_bond_atomtype *at);
 /* Free the memory in the structure */
 
-extern void add_bond_atomtype(t_bond_atomtype at,t_symtab *tab,
-			      char *name);
+extern void add_bond_atomtype(t_bond_atomtype at, t_symtab *tab,
+                              char *name);
 /* Add a complete new atom type to an existing atomtype structure */
 
-#endif	/* _gpp_bond_atomtype_h */
-
-
-
-
-
-
-
-
+#endif  /* _gpp_bond_atomtype_h */

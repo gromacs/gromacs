@@ -54,4 +54,3 @@ gmx_nb_generic_kernel(t_nblist *                nlist,
 
 
 #endif
-

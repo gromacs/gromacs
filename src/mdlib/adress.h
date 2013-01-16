@@ -56,7 +56,7 @@
  *                       eAdressSphere - spherical splitting with ref as center
  *                       else - weight = 1 - explicit simulation
  * \param[in] adressr radius/size of the explicit zone
- * \param[in] adressw size of the hybrid zone 
+ * \param[in] adressw size of the hybrid zone
  * \param[in] ref center of the explicit zone
  *                for adresstype 1 - unused
  *                for adresstype 2 - only ref[0] is used
@@ -65,13 +65,13 @@
  * \return weight of the particle
  *
  */
-real 
-adress_weight(rvec             x,
-              int              adresstype,
-              real             adressr,
-              real             adressw,
-              rvec *           ref,
-              t_pbc *          pbc,
+real
+adress_weight(rvec                 x,
+              int                  adresstype,
+              real                 adressr,
+              real                 adressw,
+              rvec     *           ref,
+              t_pbc     *          pbc,
               t_forcerec *         fr);
 
 /** \brief update the weight of all coarse-grained particles in several charge groups for com vsites
@@ -79,8 +79,8 @@ adress_weight(rvec             x,
  * \param[in,out] fplog log file in case of debug
  * \param[in] cg0 first charge group to update
  * \param[in] cg1 last+1 charge group to update
- * \param[in] cgs block containing the cg index 
- * \param[in] x array with all the particle positions  
+ * \param[in] cgs block containing the cg index
+ * \param[in] x array with all the particle positions
  * \param[in] fr the forcerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
  * \param[in] pbc for shortest distance in adress_weight
@@ -99,7 +99,7 @@ update_adress_weights_com(FILE *               fplog,
  *
  * \param[in] ip contains interaction parameters, in this case the number of constructing atoms n for vsitesn
  * \param[in] ilist list of interaction types, in this case the virtual site types are what's important
- * \param[in] x array with all the particle positions  
+ * \param[in] x array with all the particle positions
  * \param[in] fr the forcerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
  * \param[in] pbc for shortest distance in adress_weight
@@ -115,8 +115,8 @@ update_adress_weights_cog(t_iparams            ip[],
  *
  * \param[in] cg0 first charge group to update
  * \param[in] cg1 last+1 charge group to update
- * \param[in] cgs block containing the cg index 
- * \param[in] x array with all the particle positions  
+ * \param[in] cgs block containing the cg index
+ * \param[in] x array with all the particle positions
  * \param[in] fr the forcerec containing all the parameters
  * \param[in,out] mdatoms the struct containing all the atoms properties
  * \param[in] pbc for shortest distance in adress_weight
@@ -132,19 +132,19 @@ update_adress_weights_atom(int                  cg0,
 
 void
 update_adress_weights_atom_per_atom(int                  cg0,
-                           int                  cg1,
-                           t_block *            cgs,
-                           rvec                 x[],
-                           t_forcerec *         fr,
-                           t_mdatoms *          mdatoms,
-                           t_pbc *              pbc);
+                                    int                  cg1,
+                                    t_block *            cgs,
+                                    rvec                 x[],
+                                    t_forcerec *         fr,
+                                    t_mdatoms *          mdatoms,
+                                    t_pbc *              pbc);
 
 /** \brief add AdResS IC thermodynamic force to f_novirsum
  *
  * \param[in] cg0 first charge group to update
  * \param[in] cg1 last+1 charge group to update
- * \param[in] cgs block containing the cg index 
- * \param[in] x array with all the particle positions  
+ * \param[in] cgs block containing the cg index
+ * \param[in] x array with all the particle positions
  * \param[in,out] f the force array pointing at f_novirsum from sim_util.c
  * \param[in] fr the forcerec containing all the parameters
  * \param[in] mdatoms the struct containing all the atoms properties

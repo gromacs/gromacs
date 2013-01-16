@@ -42,13 +42,13 @@
 #include <stdio.h>
 #include "typedefs.h"
 
-extern void ionize(FILE *log,const output_env_t oenv,t_mdatoms *md,
-                   gmx_mtop_t *mtop, real t,t_inputrec *ir,rvec x[],rvec v[],
-                   int start,int end,matrix box,t_commrec *cr);
+extern void ionize(FILE *log, const output_env_t oenv, t_mdatoms *md,
+                   gmx_mtop_t *mtop, real t, t_inputrec *ir, rvec x[], rvec v[],
+                   int start, int end, matrix box, t_commrec *cr);
 
-extern real electron_atom_interactions(FILE *fp,t_mdatoms *md,t_inputrec *ir,
-                                       int start,int end,
-                                       rvec x[],rvec v[],rvec f[],matrix box);
+extern real electron_atom_interactions(FILE *fp, t_mdatoms *md, t_inputrec *ir,
+                                       int start, int end,
+                                       rvec x[], rvec v[], rvec f[], matrix box);
 /* Calculate what the name says. */
 
 #endif

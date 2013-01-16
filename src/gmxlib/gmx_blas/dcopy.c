@@ -35,37 +35,47 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(dcopy,DCOPY)(int *n__,
-                      double *dx,
-                      int *incx__,
-                      double *dy,
-                      int *incy__)
+F77_FUNC(dcopy, DCOPY) (int *n__,
+                        double *dx,
+                        int *incx__,
+                        double *dy,
+                        int *incy__)
 {
-    int i,ix,iy;
+    int i, ix, iy;
 
-    int n= *n__;
+    int n    = *n__;
     int incx = *incx__;
     int incy = *incy__;
-    
 
-    if(incx!=1 || incy!=1) {
+
+    if (incx != 1 || incy != 1)
+    {
         ix = 0;
         iy = 0;
-        if(incx<0)
+        if (incx < 0)
+        {
             ix = (1-n)*(incx);
-        if(incy<0)
+        }
+        if (incy < 0)
+        {
             iy = (1-n)*(incy);
-        
-        for(i=0;i<n;i++,ix+=incx,iy+=incy) 
+        }
+
+        for (i = 0; i < n; i++, ix += incx, iy += incy)
+        {
             dy[iy] = dx[ix];
-        
+        }
+
         return;
-        
-    } else {
-        
+
+    }
+    else
+    {
+
         /* unroll */
-        
-        for(i=0;i<(n-8);i+=8) {
+
+        for (i = 0; i < (n-8); i += 8)
+        {
             dy[i]   = dx[i];
             dy[i+1] = dx[i+1];
             dy[i+2] = dx[i+2];
@@ -76,7 +86,9 @@ F77_FUNC(dcopy,DCOPY)(int *n__,
             dy[i+7] = dx[i+7];
         }
         /* continue with current value of i */
-        for(;i<n;i++)
+        for (; i < n; i++)
+        {
             dy[i] = dx[i];
+        }
     }
 }
