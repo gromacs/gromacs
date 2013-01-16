@@ -334,23 +334,23 @@ static void init_timings(wallclock_gpu_t *t)
 }
 
 /* Decide which kernel version to use (default or legacy) based on:
- *  - CUDA version
+ *  - CUDA version used for compilation
  *  - non-bonded kernel selector environment variables
- *  - GPU SM version TODO ???
+ *  - GPU architecture version
  */
-static int pick_nbnxn_kernel_version()
+static int pick_nbnxn_kernel_version(cuda_dev_info_t *devinfo)
 {
-    bool bLegacyKernel, bDefaultKernel, bCUDA40, bCUDA32;
+    bool bForceLegacyKernel, bForceDefaultKernel, bCUDA40, bCUDA32;
     char sbuf[STRLEN];
     int  kver;
 
-    /* legacy kernel (former k2), kept for now for backward compatibility,
-       faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
-    bLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
+    /* Legacy kernel (former k2), kept for backward compatibility as it is
+       faster than the default with CUDA 3.2/4.0 on Fermi (not on Kepler). */
+    bForceLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
     /* default kernel (former k3). */
-    bDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
+    bForceDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
 
-    if ((unsigned)(bLegacyKernel + bDefaultKernel) > 1)
+    if ((unsigned)(bForceLegacyKernel + bForceDefaultKernel) > 1)
     {
         gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
                   "of the following environment variables: \n"
@@ -369,10 +369,11 @@ static int pick_nbnxn_kernel_version()
     /* default is default ;) */
     kver = eNbnxnCuKDefault;
 
-    if (bCUDA32 || bCUDA40)
+    /* Consider switching to legacy kernels only on Fermi */
+    if (devinfo->prop.major < 3 && (bCUDA32 || bCUDA40))
     {
         /* use legacy kernel unless something else is forced by an env. var */
-        if (bDefaultKernel)
+        if (bForceDefaultKernel)
         {
             fprintf(stderr,
                     "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
@@ -388,11 +389,11 @@ static int pick_nbnxn_kernel_version()
     }
     else
     {
-        /* issue not if the non-default kernel is forced by an env. var */
-        if (bLegacyKernel)
+        /* issue note if the non-default kernel is forced by an env. var */
+        if (bForceLegacyKernel)
         {
             fprintf(stderr,
-                    "\nNOTE: Legacy non-bonded CUDA kernels were selected by the GMX_CUDA_NB_LEGACY\n"
+                    "\nNOTE: Legacy non-bonded CUDA kernels selected by the GMX_CUDA_NB_LEGACY\n"
                     "      env. var. Consider using using the default kernels which should be faster!\n");
 
             kver = eNbnxnCuKLegacy;
@@ -575,7 +576,7 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 
     /* set the kernel type for the current GPU */
-    nb->kernel_ver = pick_nbnxn_kernel_version();
+    nb->kernel_ver = pick_nbnxn_kernel_version(nb->dev_info);
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
