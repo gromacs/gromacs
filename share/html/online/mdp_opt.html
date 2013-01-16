@@ -1490,6 +1490,8 @@ the energy file and/or to <tt>dhdl.xvg</tt>, where they can be processed by, for
 The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
+<dt><b>expanded</b></dt>
+<dd> Turns on expanded ensemble simulation, where the alchemical state becomes a dynamic variable, allowing jumping between different Hamiltonians. See the <A HREF="#expanded">expanded ensemble options</A> for controlling how expanded ensemble simulations are performed. The different Hamiltonians used in expanded ensemble simulations are defined by the other free energy options.</dd>
 </dl></dd>
 <dt><b>init-lambda: (-1)</b></dt>
 <dd>starting value for lambda (float).  Generally, this should only be used with slow growth (i.e. nonzero <b>delta-lambda</b>).  In other cases, <b>init-lambda-state</b> should be specified instead. Must be greater than or equal to 0.</dd>
@@ -1606,8 +1608,7 @@ the molecule definition in the topology.</dd>
 <h3><!--Idx-->Expanded Ensemble calculations<!--EIdx--></h3>
 
 <dl>
-<dt><b>nstexpanded</b></dt> <dd>The frequency to peform expanded ensemble
-simulations.  Must be a multiple of <b>nstcalcenergy</b>.</dd>
+<dt><b>nstexpanded</b></dt> <dd>The number of integration steps beween attempted moves changing the system Hamiltonian in expanded ensemble simulations.  Must be a multiple of <b>nstcalcenergy</b>, but can be greater or less than <b>nstdhdl</b>.</dd>
 <dt><b>lmc-stats:</b></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
@@ -1698,7 +1699,7 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dt><b>linear</b></dt>
 <dd>Linearly interpolates the temperatures using the values of <b>temperature-lambda</b>,i.e. if <b>sim-temp-low</b>=300, <b>sim-temp-high</b>=400, then lambda=0.5 correspond to a temperature of 350. A nonlinear set of temperatures can always be implemented with uneven spacing in lambda.</dd>
 <dt><b>geometric</b></dt>
-<dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The i-th state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>) to the power (i/(ntemps-1)).  Should give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
+<dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The i:th state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>) raised to the power of (i/(ntemps-1)).  This hould give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
 <dt><b>exponential</b></dt>
 <dd> Interpolates temperatures exponentially between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature
 <b>sim-temp-low</b> + (<b>sim-temp-high</b>-<b>sim-temp-low</b>)*((exp(<b>temperature-lambdas</b>[i])-1)/(exp(1.0)-1)).</dd>
