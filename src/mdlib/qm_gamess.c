@@ -108,7 +108,7 @@ void init_gamess(t_commrec *cr,t_QMrec *qm, t_MMrec *mm){
   
   if (PAR(cr)){
 
-    if MASTER(cr){
+      if (MASTER(cr)){
       out=fopen("FOR009","w");
       /* of these options I am not completely sure....  the overall
        * preformance on more than 4 cpu's is rather poor at the moment.  

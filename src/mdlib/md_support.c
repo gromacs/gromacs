@@ -61,7 +61,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
 {
     gmx_large_int_t steps_out;
 
-    if MASTER(cr)
+    if (MASTER(cr))
     {
         gmx_large_int_t *buf;
         int s;

@@ -234,8 +234,8 @@ gmx_bool gaussj(real **a, int n, real **b, int m)
 	}
     ++(ipiv[icol]);
     if (irow != icol) {
-      for (l=1;l<=n;l++) SWAP(a[irow][l],a[icol][l])
-	for (l=1;l<=m;l++) SWAP(b[irow][l],b[icol][l])
+        for (l=1;l<=n;l++) {SWAP(a[irow][l],a[icol][l]);}
+        for (l=1;l<=m;l++) {SWAP(b[irow][l],b[icol][l]);}
     }
     indxr[i]=irow;
     indxc[i]=icol;
