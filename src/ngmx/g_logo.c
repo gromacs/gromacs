@@ -44,17 +44,18 @@
 int
 main(int argc, char *argv[])
 {
-  t_x11  *x11;
-  t_logo *logo;
+    t_x11  *x11;
+    t_logo *logo;
 
-  if ((x11=GetX11(&argc,argv))==NULL) {
-    fprintf(stderr,"No X!\n");
-    exit(1);
-  }
-  logo=init_logo(x11,x11->root,TRUE);
-  show_logo(x11,logo);
-  x11->MainLoop(x11);
+    if ((x11 = GetX11(&argc, argv)) == NULL)
+    {
+        fprintf(stderr, "No X!\n");
+        exit(1);
+    }
+    logo = init_logo(x11, x11->root, TRUE);
+    show_logo(x11, logo);
+    x11->MainLoop(x11);
 
-  x11->CleanUp(x11);
-  return 0;
+    x11->CleanUp(x11);
+    return 0;
 }

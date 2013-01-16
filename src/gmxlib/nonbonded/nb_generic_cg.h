@@ -54,4 +54,3 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
                          t_nrnb *                  nrnb);
 
 #endif
-

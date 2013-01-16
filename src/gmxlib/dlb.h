@@ -41,7 +41,7 @@
 
 #include "typedefs.h"
 
-extern void count_nb(t_commrec *cr,t_nsborder *nsb,t_block *cgs,int nns,
-		     int nlr,t_idef *idef,int ngner);
+extern void count_nb(t_commrec *cr, t_nsborder *nsb, t_block *cgs, int nns,
+                     int nlr, t_idef *idef, int ngner);
 
-#endif	/* _dlb_h */
+#endif  /* _dlb_h */

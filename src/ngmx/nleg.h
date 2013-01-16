@@ -44,7 +44,7 @@
 #include "writeps.h"
 
 typedef struct {
-  t_windata wd;
+    t_windata wd;
 } t_legendwin;
 
 extern unsigned long Type2Color(const char *type);
@@ -53,12 +53,12 @@ extern unsigned long Type2Color(const char *type);
 extern t_rgb *Type2RGB(const char *type);
 /* Return the color for a given atomtype */
 
-extern t_legendwin *init_legw(t_x11 *x11,Window Parent,
-			    int x,int y,int width,int height,
-			    unsigned long fg,unsigned long bg);
+extern t_legendwin *init_legw(t_x11 *x11, Window Parent,
+                              int x, int y, int width, int height,
+                              unsigned long fg, unsigned long bg);
 
-extern void map_legw(t_x11 *x11,t_legendwin *lw);
+extern void map_legw(t_x11 *x11, t_legendwin *lw);
 
-extern void done_legw(t_x11 *x11,t_legendwin *lw);
+extern void done_legw(t_x11 *x11, t_legendwin *lw);
 
-#endif	/* _nleg_h */
+#endif  /* _nleg_h */

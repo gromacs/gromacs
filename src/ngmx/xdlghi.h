@@ -45,15 +45,15 @@
 #include "xdlg.h"
 
 typedef struct {
-  int       nitem;
-  int       w,h;
-  t_dlgitem **list;
+    int         nitem;
+    int         w, h;
+    t_dlgitem **list;
 } t_dlgitemlist;
 
-extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle, 
-					  t_id GroupID, int nrb, t_id rb[],
-					  int nSelect,
-					  char *szRB[], int x0,int y0);
+extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
+                                          t_id GroupID, int nrb, t_id rb[],
+                                          int nSelect,
+                                          char *szRB[], int x0, int y0);
 /* This routine creates a radio button group at the
  * specified position. The return values is a pointer to an
  * array of dlgitems, the array has length (nrb+1) with the +1
@@ -61,19 +61,19 @@ extern t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
  * nSelect is the ordinal of the selected button.
  */
 
-extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle, 
-				      t_id GroupID, int x0, int y0,
-				      int nitem, ...);
+extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
+                                      t_id GroupID, int x0, int y0,
+                                      int nitem, ...);
 /* This routine creates a dlgitem group at the
  * specified position. The return values is a pointer to an
  * array of dlgitems, the array has length (nitem+1) with the +1
  * because of the groupbox.
  */
 
-extern t_dlg *ReadDlg(t_x11 *x11,Window Parent, const char *title,
-		      unsigned long fg, unsigned long bg, const char *infile, 
-		      int x0, int y0, gmx_bool bAutoPosition,gmx_bool bUseMon,
-		      DlgCallback *cb,void *data);
+extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
+                      unsigned long fg, unsigned long bg, const char *infile,
+                      int x0, int y0, gmx_bool bAutoPosition, gmx_bool bUseMon,
+                      DlgCallback *cb, void *data);
 /* Read a dialog box from a template file */
 
-#endif	/* _xdlghi_h */
+#endif  /* _xdlghi_h */

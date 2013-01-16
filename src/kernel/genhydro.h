@@ -43,13 +43,13 @@
 #include "hackblock.h"
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int add_h(t_atoms **pdbaptr, rvec *xptr[], 
-		 int nah, t_hackblock ah[],
-		 int nterpairs,
-		 t_hackblock **ntdb, t_hackblock **ctdb, 
-		 int *rN, int *rC, gmx_bool bMissing,
-		 int **nabptr, t_hack ***abptr,
-		 gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba);
+extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
+                 int nah, t_hackblock ah[],
+                 int nterpairs,
+                 t_hackblock **ntdb, t_hackblock **ctdb,
+                 int *rN, int *rC, gmx_bool bMissing,
+                 int **nabptr, t_hack ***abptr,
+                 gmx_bool bUpdate_pdba, gmx_bool bKeep_old_pdba);
 /* Generate hydrogen atoms and N and C terminal patches.
  * int nterpairs is the number of termini pairs in the molecule
  * ntdb[i] and ctdb[i] may be NULL, no replacement will be done then.
@@ -59,21 +59,20 @@ extern int add_h(t_atoms **pdbaptr, rvec *xptr[],
  * if nabptr && abptrb, the hack array will be returned in them to be used
  * a second time
  * if bUpdate_pdba, hydrogens are added to *pdbaptr, else it is unchanged
- * return the New total number of atoms 
+ * return the New total number of atoms
  */
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern int protonate(t_atoms **atoms, rvec **x, t_protonate *protdata);
-/* Protonate molecule according to gmx2.ff/aminoacids.hdb 
- * when called the first time, new atoms are added to atoms, 
+/* Protonate molecule according to gmx2.ff/aminoacids.hdb
+ * when called the first time, new atoms are added to atoms,
  * second time only coordinates are generated
- * return the new total number of atoms 
+ * return the new total number of atoms
  */
 
-extern void deprotonate(t_atoms *atoms,rvec *x);
-/* Deprotonate any molecule: all atoms whose name begins with H will be 
- * removed 
+extern void deprotonate(t_atoms *atoms, rvec *x);
+/* Deprotonate any molecule: all atoms whose name begins with H will be
+ * removed
  */
 
 #endif
-

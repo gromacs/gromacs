@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_nmeig.c is now in gmx_nmeig.c,
-* where the old main function is called gmx_nmeig().
-*/
+ * The code that used to be in g_nmeig.c is now in gmx_nmeig.c,
+ * where the old main function is called gmx_nmeig().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_nmeig(argc,argv);
-  return 0;
+    gmx_nmeig(argc, argv);
+    return 0;
 }
-
-
-  

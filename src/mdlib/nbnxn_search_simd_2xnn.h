@@ -59,28 +59,28 @@ static gmx_inline gmx_mm_pr gmx_load_hpr_hilo_pr(const real *a)
 
     a_SSE = _mm_load_ps(a);
 
-    return gmx_2hpr_to_pr(a_SSE,a_SSE);
+    return gmx_2hpr_to_pr(a_SSE, a_SSE);
 }
 
-static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a,real shift)
+static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a, real shift)
 {
-    gmx_mm_hpr a0,a1;
+    gmx_mm_hpr a0, a1;
 
     a0 = _mm_set1_ps(a[0] + shift);
     a1 = _mm_set1_ps(a[1] + shift);
 
-    return gmx_2hpr_to_pr(a1,a0);
+    return gmx_2hpr_to_pr(a1, a0);
 }
 
 /* Copies PBC shifted i-cell packed atom coordinates to working array */
 static gmx_inline void
 icell_set_x_simd_2xnn(int ci,
-                      real shx,real shy,real shz,
+                      real shx, real shy, real shz,
                       int na_c,
-                      int stride,const real *x,
+                      int stride, const real *x,
                       nbnxn_list_work_t *work)
 {
-    int  ia;
+    int                     ia;
     nbnxn_x_ci_simd_2xnn_t *x_ci;
 
     x_ci = work->x_ci_simd_2xnn;
@@ -103,32 +103,32 @@ icell_set_x_simd_2xnn(int ci,
 static gmx_inline void
 make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
                             nbnxn_pairlist_t *nbl,
-                            int ci,int cjf,int cjl,
+                            int ci, int cjf, int cjl,
                             gmx_bool remove_sub_diag,
                             const real *x_j,
-                            real rl2,float rbb2,
+                            real rl2, float rbb2,
                             int *ndistc)
 {
     const nbnxn_x_ci_simd_2xnn_t *work;
-    const float *bb_ci;
+    const float                  *bb_ci;
 
-    gmx_mm_pr  jx_SSE,jy_SSE,jz_SSE;
+    gmx_mm_pr                     jx_SSE, jy_SSE, jz_SSE;
 
-    gmx_mm_pr  dx_SSE0,dy_SSE0,dz_SSE0;
-    gmx_mm_pr  dx_SSE2,dy_SSE2,dz_SSE2;
+    gmx_mm_pr                     dx_SSE0, dy_SSE0, dz_SSE0;
+    gmx_mm_pr                     dx_SSE2, dy_SSE2, dz_SSE2;
 
-    gmx_mm_pr  rsq_SSE0;
-    gmx_mm_pr  rsq_SSE2;
+    gmx_mm_pr                     rsq_SSE0;
+    gmx_mm_pr                     rsq_SSE2;
 
-    gmx_mm_pr  wco_SSE0;
-    gmx_mm_pr  wco_SSE2;
-    gmx_mm_pr  wco_any_SSE;
+    gmx_mm_pr                     wco_SSE0;
+    gmx_mm_pr                     wco_SSE2;
+    gmx_mm_pr                     wco_any_SSE;
 
-    gmx_mm_pr  rc2_SSE;
+    gmx_mm_pr                     rc2_SSE;
 
-    gmx_bool   InRange;
-    float      d2;
-    int        xind_f,xind_l,cj;
+    gmx_bool                      InRange;
+    float                         d2;
+    int                           xind_f, xind_l, cj;
 
     cjf = CI_TO_CJ_SIMD_2XNN(cjf);
     cjl = CI_TO_CJ_SIMD_2XNN(cjl+1) - 1;
@@ -142,7 +142,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2 = subc_bb_dist2_sse(4,0,bb_ci,cjf,gridj->bbj);
+        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -163,21 +163,21 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
             jz_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_f+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0,jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2,jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2,jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2,jz_SSE);
+            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
+            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
+            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
+            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
+            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
+            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
+            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
 
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
+            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
+            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0,wco_SSE2);
+            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
@@ -196,9 +196,9 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2 = subc_bb_dist2_sse(4,0,bb_ci,cjl,gridj->bbj);
+        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
         *ndistc += 2;
-        
+
         /* Check if the distance is within the distance where
          * we use only the bounding box distance rbb,
          * or within the cut-off and there is at least one atom pair
@@ -217,21 +217,21 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
             jz_SSE  = gmx_load_hpr_hilo_pr(x_j+xind_l+2*STRIDE_S);
 
             /* Calculate distance */
-            dx_SSE0            = gmx_sub_pr(work->ix_SSE0,jx_SSE);
-            dy_SSE0            = gmx_sub_pr(work->iy_SSE0,jy_SSE);
-            dz_SSE0            = gmx_sub_pr(work->iz_SSE0,jz_SSE);
-            dx_SSE2            = gmx_sub_pr(work->ix_SSE2,jx_SSE);
-            dy_SSE2            = gmx_sub_pr(work->iy_SSE2,jy_SSE);
-            dz_SSE2            = gmx_sub_pr(work->iz_SSE2,jz_SSE);
+            dx_SSE0            = gmx_sub_pr(work->ix_SSE0, jx_SSE);
+            dy_SSE0            = gmx_sub_pr(work->iy_SSE0, jy_SSE);
+            dz_SSE0            = gmx_sub_pr(work->iz_SSE0, jz_SSE);
+            dx_SSE2            = gmx_sub_pr(work->ix_SSE2, jx_SSE);
+            dy_SSE2            = gmx_sub_pr(work->iy_SSE2, jy_SSE);
+            dz_SSE2            = gmx_sub_pr(work->iz_SSE2, jz_SSE);
 
             /* rsq = dx*dx+dy*dy+dz*dz */
-            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0,dy_SSE0,dz_SSE0);
-            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2,dy_SSE2,dz_SSE2);
+            rsq_SSE0           = gmx_calc_rsq_pr(dx_SSE0, dy_SSE0, dz_SSE0);
+            rsq_SSE2           = gmx_calc_rsq_pr(dx_SSE2, dy_SSE2, dz_SSE2);
 
-            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0,rc2_SSE);
-            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2,rc2_SSE);
+            wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
+            wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0,wco_SSE2);
+            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
             InRange            = gmx_movemask_pr(wco_any_SSE);
 
@@ -245,11 +245,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
     if (cjf <= cjl)
     {
-        for(cj=cjf; cj<=cjl; cj++)
+        for (cj = cjf; cj <= cjl; cj++)
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_2xnn(remove_sub_diag,ci,cj);
+            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_2xnn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */

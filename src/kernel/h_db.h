@@ -44,27 +44,27 @@
 
 /* number of control atoms for each 'add' type */
 extern const int ncontrol[];
-  
+
 /* functions for the h-database */
 
-extern void read_ab(char *line,const char *fn,t_hack *ab);
+extern void read_ab(char *line, const char *fn, t_hack *ab);
 /* Read one add block */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int read_h_db(const char *ffdir,t_hackblock **ah);
+extern int read_h_db(const char *ffdir, t_hackblock **ah);
 /* Read the database from hdb file(s) in ffdir or current dir */
 
-extern void print_ab(FILE *out,t_hack *ab,char *nname);
+extern void print_ab(FILE *out, t_hack *ab, char *nname);
 /* print one add block */
 
-extern void print_h_db(FILE *out,int nh,t_hackblock ah[]);
+extern void print_h_db(FILE *out, int nh, t_hackblock ah[]);
 /* Print the database to file */
 
-extern int compaddh(const void *a,const void *b);
+extern int compaddh(const void *a, const void *b);
 
-extern t_hackblock *search_h_db(int nh,t_hackblock ah[],char *key);
+extern t_hackblock *search_h_db(int nh, t_hackblock ah[], char *key);
 /* Search for an entry in the database */
 
 
 
-#endif	/* _h_db_h */
+#endif  /* _h_db_h */

@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rmsdist.c is now in gmx_rmsdist.c,
-* where the old main function is called gmx_rmsdist().
-*/
+ * The code that used to be in g_rmsdist.c is now in gmx_rmsdist.c,
+ * where the old main function is called gmx_rmsdist().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rmsdist(argc,argv);
-  return 0;
+    gmx_rmsdist(argc, argv);
+    return 0;
 }
-
-
-  

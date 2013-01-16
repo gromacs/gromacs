@@ -41,6 +41,6 @@
 
 #include "topio.h"
 
-void make_shake (t_params plist[],t_atoms *atoms,gpp_atomtype_t at,int nshake);
+void make_shake (t_params plist[], t_atoms *atoms, gpp_atomtype_t at, int nshake);
 
-#endif	/* _topshake_h */
+#endif  /* _topshake_h */
