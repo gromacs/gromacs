@@ -464,11 +464,11 @@ void nbnxn_cuda_init(FILE *fplog,
      * operations and only works on x86/x86_64.
      * With polling wait event-timing also needs to be disabled.
      *
-     * The overhead is greatly reduced in 304.xx drivers (independent of runtime ver).
-     * The corresponding driver API version (which is what we can query) should
-     * be at least 5.0. Hence we will not switch to polling when >=5.0 is returned.
+     * The overhead is greatly reduced in API v5.0 drivers and the improvement
+     $ is independent of runtime version. Hence, with API v5.0 drivers and later
+     * we won't switch to polling.
      *
-     * NOTE: Unfortunately, this is knonw to fail when GPUs are shared by (t)MPI,
+     * NOTE: Unfortunately, this is known to fail when GPUs are shared by (t)MPI,
      * ranks so we will also disable it in that case.
      */
 
@@ -506,7 +506,7 @@ void nbnxn_cuda_init(FILE *fplog,
             if (bOldDriver && !gpu_info->bDevShare)
             {
                 md_print_warn(fplog,
-                              "NOTE: Using a GPU with ECC enabled and a driver older than 5.0, but\n"
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
                               "      cudaStreamSynchronize waiting is forced by the GMX_CUDA_STREAMSYNC env. var.\n");
             }
         }
@@ -524,15 +524,16 @@ void nbnxn_cuda_init(FILE *fplog,
             if (nb->bUseStreamSync)
             {
                 md_print_warn(fplog,
-                              "NOTE: Using a GPU with ECC enabled and CUDA driver version <5.0, will switch to\n"
-                              "      polling wait to avoid performance loss. If you encounter issues, set the\n"
-                              "      GMX_CUDA_STREAMSYNC env. var. to switch back to standard GPU waiting.\n");
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
+                              "      cause performance loss. Switching to the alternative polling GPU waiting.\n"
+                              "      If you encounter issues, switch back to standard GPU waiting by setting\n"
+                              "      the GMX_CUDA_STREAMSYNC environment variable.\n");
             }
             else if (bOldDriver)
             {
                 /* Tell the user that the ECC+old driver combination can be bad */
                 sprintf(sbuf,
-                        "NOTE: Using a GPU with ECC enabled and driver version <5.0. A bug in this\n"
+                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0. A bug in this\n"
                         "      driver can cause performance loss.\n"
                         "      However, the polling waiting workaround can not be used because\n%s\n"
                         "      Consider updating the driver or turning ECC off.",
