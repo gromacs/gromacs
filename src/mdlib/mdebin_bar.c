@@ -446,7 +446,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
             }
         }
         /* add the lambdas */
-        dhc->nlambda = ir->fepvals->n_lambda;
+        dhc->nlambda = ir->fepvals->lambda_stop_n - ir->fepvals->lambda_start_n;
         dhc->ndh += dhc->nlambda;
         /* another compatibility check */
         if (dhc->start_lambda < 0)
@@ -523,7 +523,7 @@ void mde_delta_h_coll_init(t_mde_delta_h_coll *dhc, const t_inputrec *ir)
         /* add the lambdas */
         dhc->dh_du = dhc->dh + n;
         snew(lambda_vec, n_lambda_components);
-        for(i=0;i<ir->fepvals->n_lambda;i++)
+        for(i=ir->fepvals->lambda_start_n;i<ir->fepvals->lambda_stop_n;i++)
         {
             int k=0;
 
