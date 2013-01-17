@@ -202,6 +202,8 @@ static inline int calc_shmem_required(int kver)
         /* NOTE: with the default kernel on sm3.0 we need shmem only for pre-loading */
         /* i-atom x+q in shared memory */
         shmem  = NCL_PER_SUPERCL * CL_SIZE * sizeof(float4);
+        /* cj in shared memory, for both warps separately */
+        shmem += 2 * NBNXN_GPU_JGROUP_SIZE * sizeof(int);
 #ifdef IATYPE_SHMEM
         /* i-atom types in shared memory */
         shmem += NCL_PER_SUPERCL * CL_SIZE * sizeof(int);
