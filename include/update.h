@@ -218,7 +218,7 @@ real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
 real calc_pres(int ePBC,int nwall,matrix box,
-		      tensor ekin,tensor vir,tensor pres,real Elr);
+                     tensor ekin,tensor vir,tensor pres,real Elr);
 /* Calculate the pressure tensor, returns the scalar pressure.
  * The unit of pressure is bar, If Elr != 0
  * a long range correction based on Ewald/PPPM is made (see c-code)

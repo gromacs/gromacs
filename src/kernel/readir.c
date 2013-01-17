@@ -1885,17 +1885,16 @@ void do_index(const char* mdparin, const char *ndx,
       {
           if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
           {
-              int mincouple;
-              mincouple = ir->nsttcouple;
-              if (ir->nstpcouple < mincouple)
+              if (ir->nstpcouple != ir->nsttcouple)
               {
-                  mincouple = ir->nstpcouple;
+                  int mincouple = min(ir->nstpcouple,ir->nsttcouple);
+                  ir->nstpcouple = ir->nsttcouple = mincouple;
+                  sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
+                  warning_note(wi,warn_buf);
               }
-              ir->nstpcouple = mincouple;
-              ir->nsttcouple = mincouple;
-              warning_note(wi,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple)");
           }
       }
+
       nstcmin = tcouple_min_integration_steps(ir->etc);
       if (nstcmin > 1)
       {

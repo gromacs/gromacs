@@ -304,6 +304,8 @@ typedef struct {
 
 #define IR_NPT_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && ((ir)->epc == epcMTTK))
 
+#define IR_NPH_TROTTER(ir) ((((ir)->eI == eiVV) || ((ir)->eI == eiVVAK)) && (((ir)->epc == epcMTTK) && (!(((ir)->etc == etcNOSEHOOVER)))))
+
 #ifdef __cplusplus
 }
 #endif
