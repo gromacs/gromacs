@@ -1,0 +1,8 @@
+Code-Review+2: Berk Hess <hess@kth.se>
+Verified+1: Jenkins Buildbot
+Code-Review+1: Carsten Kutzner <ckutzne@mpibpc.mpg.de>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Thu, 17 Jan 2013 19:03:29 +0100
+Reviewed-on: https://gerrit.gromacs.org/2075
+Project: gromacs
+Branch: refs/heads/release-4-6
