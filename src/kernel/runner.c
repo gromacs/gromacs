@@ -1521,7 +1521,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(fcd,1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state, repl_ex_nst > 0);
 
     if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
     {
