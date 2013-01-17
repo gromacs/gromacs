@@ -450,7 +450,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     {
                         pme_flags |= GMX_PME_CALC_F;
                     }
-                    if (flags & GMX_FORCE_VIRIAL)
+                    if (flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY))
                     {
                         pme_flags |= GMX_PME_CALC_ENER_VIR;
                     }
