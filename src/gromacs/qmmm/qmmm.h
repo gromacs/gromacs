@@ -30,9 +30,12 @@
  */
 /*! \file
  * \brief
- * Declares gmx::Qmmm and related classes.
+ * Declares classes for:
+ * Hybrid quantum/classical systems (QMMM and ONIOM).
+ * Base class for interface to external QM code.
  *
  * \author David van der Spoel <spoel@xray.bmc.uu.se>
+ * \author Lee-Ping Wang <leeping@stanford.edu>
  * \inpublicapi
  * \ingroup module_qmmm
  */
@@ -41,38 +44,78 @@
 
 #include "network.h"
 #include "typedefs.h"
+#include <vector>
+//#include "types/qmmmrec.h"
 
 namespace gmx
 {
 
 /*! \brief
- * Base class for interfacing with QM codes.
+ * Base class for interface to QM software
  *
- * All instances of the class will be to a descendent of this class
- * which are specific to one QM package each.
+ * The QM/MM class will contain one of these, while the
+ * ONIOM class can contain multiples of these.
  *
  * \inpublicapi
  * \ingroup module_qmmm
  */
-class QmmmInterface
+  class QMSystem
+  {
+  protected:
+    int                     nrQMatoms_;     /* total nr of QM atoms              */
+    std::vector<std::vector<real> >   xQM_;           /* shifted to center of box          */  
+    std::vector<int>             indexQM_;       /* atom i = atom indexQM[i] in mdrun */
+    std::vector<int>             atomicnumberQM_;/* atomic numbers of QM atoms        */  
+    std::vector<real>            QMcharges_;     /* atomic charges of QM atoms(ONIOM) */
+    std::vector<int>             shiftQM_;
+    int                     QMcharge_;       /* charge of the QM system           */
+    int                     multiplicity_;   /* multipicity (no of unpaired eln)  */
+    int                     QMmethod_;       /* see enums.h for all methods       */
+    int                     QMbasis_;        /* see enums.h for all bases         */
+    int                     nelectrons_;     /* total number of elecs in QM region*/
+    gmx_bool                bTS_;            /* Optimize a TS, only steep, no md  */
+    gmx_bool                bOPT_;           /* Optimize QM subsys, only steep, no md  */
+    std::vector<gmx_bool> frontatoms_;            /* qm atoms on the QM side of a QM-MM bond */
+    
+  public:
+    QMSystem(int grpnr, 
+	     int nr, 
+	     int *atomarray, 
+	     gmx_mtop_t *mtop, 
+	     t_inputrec *ir);
+    ~QMSystem();
+    /*
+    virtual real execute(t_commrec *cr, 
+			 t_forcerec *fr, 
+			 t_MMrec *mm, 
+			 rvec f[], 
+			 rvec fshift[]);
+    */
+};
+
+/*! \brief
+ * Base class for hybrid QM/classical simulation.
+ *
+ * Contains variables that are common to both QM/classical 
+ * frameworks (ONIOM and QM/MM).  Does not implement the functions
+ * "update" and "calculate" as they are specific to the method.
+ *
+ * \inpublicapi
+ * \ingroup module_qmmm
+ */
+class HybridQuantumClassical
 {
+    protected:
+  //t_MMrec       *mm_;                    // MM record containing information on MM atoms.
     public:
-        //! Creates a qmmm object.
-        QmmmInterface(const t_commrec *cr,
-                      const matrix box,
+        HybridQuantumClassical(const t_commrec *cr,
                       const gmx_mtop_t *mtop,
                       const t_inputrec *ir,
                       const t_forcerec *fr);
-        virtual ~QmmmInterface();
+        ~HybridQuantumClassical();
 
         /*! \brief
-         * Fills the MM stuff in in a Qmmm object.
-         *
-         * The MM atoms are taken from the neighbourlists of the QM atoms -
-         * depending on which QM method is used.
-         * In a QMMM run this
-         * routine should be called at every step, since it updates the MM
-         * elements of the object.
+         * Fills the MM stuff before calling the QM calculation.
          */
         virtual void update(const t_commrec *cr,
                             const t_forcerec *fr,
@@ -83,14 +126,7 @@ class QmmmInterface
 
 
         /*! \brief
-         * Do the actual QM calculation
-         *
-         * Computes the QM forces. This routine makes either function
-         * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC
-         * (ab initio)) or generates input files for an external QM package
-         * (listed in QMMMrec.QMpackage). The binary of the QM package is
-         * called by system().
-         * Returns the energy.
+         * Do the actual QM calculation and return the energy.
          */
         virtual real calculate(const t_commrec *cr,
                                const rvec x[],
@@ -99,6 +135,115 @@ class QmmmInterface
                                const t_mdatoms *md);
 
 };
+
+  /*! \brief
+   *
+   * Class for performing QM/MM calculations.
+   * 
+   * In QM/MM, there is one QM subsystem and one MM subsystem.  
+   * They interact via the QM/MM interaction Hamiltonian.
+   *
+   * The interaction Hamiltonian consists of empirical VdW interactions
+   * (these can either be computed by Gromacs or by the QM code) and
+   * electrostatic interactions.
+   * 
+   * Implements the methods "update" and "calculate".
+   * 
+   * \inpublicapi
+   * \ingroup module_qmmm
+   */
+  class QMMM : public HybridQuantumClassical {
+    public:
+        QMMM(const t_commrec *cr,
+                      const gmx_mtop_t *mtop,
+                      const t_inputrec *ir,
+                      const t_forcerec *fr);
+        ~QMMM();
+
+        /*! \brief
+         * Fills the MM stuff in a Qmmm object.
+         */
+        void update(const t_commrec *cr,
+		    const t_forcerec *fr,
+		    const rvec x[],
+		    const t_mdatoms *md,
+		    const matrix box,
+		    const gmx_localtop_t *top);
+    
+
+        /*! \brief
+         * Do the actual QM calculation
+         */
+        real calculate(const t_commrec *cr,
+		       const rvec x[],
+		       rvec f[],
+		       const t_forcerec *fr,
+		       const t_mdatoms *md);
+  };
+
+  /*! \brief
+   *
+   * Class for performing ONIOM calculations.
+   * 
+   * In ONIOM, there are multiple nexted "layers" of the system, with the smallest
+   * layers corresponding to the highest level of theory.  The outermost layer
+   * is typically MM.  Each layer includes the atoms of inner layers, such that
+   * an outer layer is "AB" while the inner layer is "B".
+   * 
+   * Taken from the Gaussian technical note http://www.gaussian.com/g_whitepap/oniom_technote.htm,
+   * the energy for a two-layer system is defined as:
+   * 
+   * EONIOM = Elow(R) + Ehigh(SM) – Elow(SM)
+   * 
+   * where:
+   * R stands for Real System (all the atoms),
+   * SM stands for Small Model (the high-accuracy region),
+   * Elow stands for low level theory (e.g. MM), and
+   * Ehigh stands for high level theory (e.g. QM).
+   *
+   * In three layer ONIOM the energy is approximated as:
+   * 
+   * EONIOM = Elow(R) + Emedium(IM) + Ehigh(SM) – Elow(IM) – Emedium(SM) 
+   *
+   * In contrast to QM/MM there is no explicit interaction between levels of theory.
+   * Rather, the low level theory is responsible for all of the interactions.
+   * 
+   * Implements the methods "update" and "calculate".
+   * 
+   * \inpublicapi
+   * \ingroup module_qmmm
+   */
+  class ONIOM : public HybridQuantumClassical {
+    private:
+        std::vector<QMSystem>        qms;              /* Contains multiple interfaces to QM software. */
+
+    public:
+        ONIOM(const t_commrec *cr,
+                      const gmx_mtop_t *mtop,
+                      const t_inputrec *ir,
+                      const t_forcerec *fr);
+        ~ONIOM();
+
+        /*! \brief
+         * Fills the MM stuff.
+         */
+        void update(const t_commrec *cr,
+		    const t_forcerec *fr,
+		    const rvec x[],
+		    const t_mdatoms *md,
+		    const matrix box,
+		    const gmx_localtop_t *top);
+    
+
+        /*! \brief
+         * Do the actual QM calculation
+         */
+        real calculate(const t_commrec *cr,
+		       const rvec x[],
+		       rvec f[],
+		       const t_forcerec *fr,
+		       const t_mdatoms *md);
+  };
 
 } // namespace gmx
 

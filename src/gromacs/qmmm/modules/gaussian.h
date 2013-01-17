@@ -50,8 +50,8 @@ namespace gmx
  * \inpublicapi
  * \ingroup module_qmmm
  */
-class QmmmGaussian : public QmmmInterface
-{
+  class QmmmGaussian : public QMSystem
+  {
     public:
         //! Creates a qmmm object.
         QmmmGaussian(const t_commrec *cr,
@@ -91,7 +91,7 @@ class QmmmGaussian : public QmmmInterface
                        const t_forcerec *fr,
                        const t_mdatoms *md);
 
-};
+  };
 
 } // namespace gmx
 
