@@ -85,6 +85,7 @@ class RmsDist : public TrajectoryAnalysisModule
         int             topAtoms_;
         rvec *          pRefX_;
         real **         pRefDCache_;
+        real            invMassAvgCache_;
 
         bool            bUseMassWeights_;       // use mass weighting
         bool            bDoCache_;              // cache reference distances

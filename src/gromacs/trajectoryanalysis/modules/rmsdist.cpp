@@ -167,20 +167,18 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // then do cacheing! num of cache elements = selCount * (selCount-1) / 2 .
     if (bDoCache_)
     {
-        const int selCount      = sel_.atomCount();
-        const int cacheRows     = selCount - 1;
+        const int                   selCount      = sel_.atomCount();
+        const int                   cacheRows     = selCount - 1;
         const ConstArrayRef< int >  selAtomIndsArray = sel_.atomIndices();
 
         rvec    dx;
 
         t_pbc   pbc;
         t_pbc  *ppbc = settings.hasPBC() ? &pbc : NULL;
-
         if (ppbc != NULL)
         {
             set_pbc(ppbc, topInfo.ePBC(), box);
         }
-
 
         // setup cache structure
         snew(pRefDCache_, cacheRows);
@@ -270,8 +268,8 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             else
             {
-                const atom_id               &selindj = (atom_id) selAtomIndsArray[j];
-                const rvec                  &xpj = pRefX_[selindj];
+                const atom_id       &selindj = (atom_id) selAtomIndsArray[j];
+                const rvec          &xpj = pRefX_[selindj];
 
                 if (pbc != NULL)
                     pbc_dx(pbc, xpi, xpj, dxp);
