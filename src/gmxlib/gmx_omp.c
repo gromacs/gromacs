@@ -100,7 +100,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
     char *kmp_env, *gomp_env;
 
     /* no need to worry if internal thread pinning is turned off */
-    if (!hw_opt->bThreadPinning)
+    if (strcmp(hw_opt->thread_aff_opt[0],"off") == 0)
     {
         return;
     }
@@ -171,7 +171,7 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                       "         GOMP_CPU_AFFINITY environment variable.",
                       ShortProgram(), ShortProgram());
 
-        hw_opt->bThreadPinning = FALSE;
+        hw_opt->thread_aff_opt[0] = hw_opt->thread_aff_opt[threadaffOFF];
     }
 #endif /* __INTEL_COMPILER || __GNUC__ */
 
