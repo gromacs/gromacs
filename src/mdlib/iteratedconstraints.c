@@ -63,12 +63,12 @@
 /* maximum length of cyclic traps to check, emerging from limited numerical precision  */
 #define CYCLEMAX            20
 
-void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate)
+void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bSetIterationActive)
 {
     int i;
 
     iterate->iter_i = 0;
-    iterate->bIterate = bIterate;
+    iterate->bIterationActive = bSetIterationActive;
     iterate->num_close = 0;
     for (i=0;i<MAXITERCONST+2;i++) 
     {
@@ -166,7 +166,7 @@ gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate
         
         if ((relerr < CONVERGEITER) || (err < CONVERGEITER) || (fom==0) || ((iterate->x == iterate->xprev) && iterate->iter_i > 1))
         {
-            iterate->bIterate = FALSE;
+            iterate->bIterationActive = FALSE;
             if (debug) 
             {
                 fprintf(debug,"Iterating NPT constraints: CONVERGED\n");
@@ -196,6 +196,7 @@ gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate
                        Better to give up convergence here than have the simulation die.
                     */
                     iterate->num_close++;
+                    iterate->bIterationActive = FALSE;
                     return TRUE;
                 } 
                 else 
@@ -208,6 +209,7 @@ gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate
                         sprintf(buf,"Slight numerical convergence deviation with NPT at step %d, relative error only %10.5g, likely not a problem, continuing\n",nsteps,relerr);
                         md_print_warning(cr,fplog,buf);
                         iterate->num_close++;
+                        iterate->bIterationActive = FALSE;
                         return TRUE;
                         /* if more than a few, check the total fraction.  If too high, die. */
                     } else if (iterate->num_close/(double)nsteps > FRACTION_CLOSE) {

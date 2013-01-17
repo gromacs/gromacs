@@ -550,7 +550,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
   {
       kT = BOLTZ*ref_t[n];
       /* The mass is encounted for later, since this differs per atom */
-      sig[n].V  = sqrt(2*kT*(1 - sdc[n].em));
+      sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
   }
   
   for(n=start; n<start+homenr; n++) 
@@ -756,9 +756,9 @@ static void do_update_bd(int start,int nrend,double dt,
                 } 
                 else 
                 {
-                    /* NOTE: invmass = 1/(mass*friction_constant*dt) */
-                    vn = invmass[n]*f[n][d]*dt 
-                        + sqrt(invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
+                    /* NOTE: invmass = 2/(mass*friction_constant*dt) */
+                    vn = 0.5*invmass[n]*f[n][d]*dt 
+                        + sqrt(0.5*invmass[n])*rf[gt]*gmx_rng_gaussian_table(gaussrand);
                 }
 
                 v[n][d]      = vn;
@@ -1152,15 +1152,22 @@ void update_tcouple(FILE         *fplog,
 {
     gmx_bool   bTCouple=FALSE;
     real   dttc;
-    int    i,start,end,homenr;
+    int    i,start,end,homenr,offset;
     
-    /* if using vv, we do this elsewhere in the code */
+    /* if using vv with trotter decomposition methods, we do this elsewhere in the code */
     if (inputrec->etc != etcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec)))
     {
-        /* We should only couple after a step where energies were determined */
+        /* We should only couple after a step where energies were determined (for leapfrog versions) 
+           or the step energies are determined, for velocity verlet versions */
+
+        if (EI_VV(inputrec->eI)) {
+            offset = 0;
+        } else {
+            offset = 1;
+        }
         bTCouple = (inputrec->nsttcouple == 1 ||
-                    do_per_step(step+inputrec->nsttcouple-1,
+                    do_per_step(step+inputrec->nsttcouple-offset,
                                 inputrec->nsttcouple));
     }
     
@@ -1214,9 +1221,8 @@ void update_pcouple(FILE         *fplog,
     real   dtpc=0;
     int    i;
     
-    /* if using vv, we do this elsewhere in the code */
-    if (inputrec->epc != epcNO &&
-        !(IR_NVT_TROTTER(inputrec) || IR_NPT_TROTTER(inputrec)))
+    /* if using Trotter pressure, we do this in coupling.c, so we leave it false. */
+    if (inputrec->epc != epcNO && (!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))))
     {
         /* We should only couple after a step where energies were determined */
         bPCouple = (inputrec->nstpcouple == 1 ||
@@ -1539,7 +1545,7 @@ o               If we assume isotropic scaling, and box length scaling
         break;
     }
     
-    if ((!(IR_NPT_TROTTER(inputrec))) && scale_tot) 
+    if ((!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))) && scale_tot)
     {
         /* The transposes of the scaling matrices are stored,
          * therefore we need to reverse the order in the multiplication.

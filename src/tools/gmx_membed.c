@@ -1013,7 +1013,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
     gmx_bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
     gmx_bool        bAppend;
     gmx_bool        bResetCountersHalfMaxH=FALSE;
-    gmx_bool        bVV,bIterations,bIterate,bFirstIterate,bTemp,bPres,bTrotter;
+    gmx_bool        bVV,bIterations,bFirstIterate,bTemp,bPres,bTrotter;
     real        temp0,dvdl;
     int         a0,a1,ii;
     rvec        *xcopy=NULL,*vcopy=NULL,*cbuf=NULL;
@@ -1862,15 +1862,15 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /*#### UPDATE EXTENDED VARIABLES IN TROTTER FORMULATION */
 
                 /* save the state */
-                if (bIterations && iterate.bIterate) {
+                if (iterate.bIterationActive) {
                     copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
                 }
             }
 
             bFirstIterate = TRUE;
-            while (bFirstIterate || (bIterations && iterate.bIterate))
+            while (bFirstIterate || (iterate.bIterationActive))
             {
-                if (bIterations && iterate.bIterate)
+                if (iterate.bIterationActive)
                 {
                     copy_coupling_state(bufstate,state,ekind_save,ekind,&(ir->opts));
                     if (bFirstIterate && bTrotter)
@@ -1926,7 +1926,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                                     | (bTemp ? CGLO_TEMPERATURE:0)
                                     | (bPres ? CGLO_PRESSURE : 0)
                                     | (bPres ? CGLO_CONSTRAINT : 0)
-                                    | (iterate.bIterate ? CGLO_ITERATE : 0)
+                                    | (iterate.bIterationActive ? CGLO_ITERATE : 0)
                                     | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                     | CGLO_SCALEEKIN
                         );
@@ -2209,12 +2209,12 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
         }
 
         /* for iterations, we save these vectors, as we will be redoing the calculations */
-        if (bIterations && iterate.bIterate)
+        if (iterate.bIterationActive)
         {
             copy_coupling_state(state,bufstate,ekind,ekind_save,&(ir->opts));
         }
         bFirstIterate = TRUE;
-        while (bFirstIterate || (bIterations && iterate.bIterate))
+        while (bFirstIterate || (iterate.bIterationActive))
         {
             /* We now restore these vectors to redo the calculation with improved extended variables */
             if (bIterations)
@@ -2241,7 +2241,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter)
                 {
-                    if (bIterations && iterate.bIterate)
+                    if (iterate.bIterationActive)
                     {
                         if (bFirstIterate)
                         {
@@ -2379,7 +2379,7 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                             | (!EI_VV(ir->eI) ? CGLO_ENERGY : 0)
                             | (!EI_VV(ir->eI) ? CGLO_TEMPERATURE : 0)
                             | (!EI_VV(ir->eI) || bRerunMD ? CGLO_PRESSURE : 0)
-                            | (bIterations && iterate.bIterate ? CGLO_ITERATE : 0)
+                            | (iterate.bIterationActive ? CGLO_ITERATE : 0)
                             | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                             | CGLO_CONSTRAINT
                 );
@@ -2388,7 +2388,6 @@ double do_md_membed(FILE *fplog,t_commrec *cr,int nfile,const t_filenm fnm[],
                 nlh.nabnsb = gs.set[eglsNABNSB];
                 gs.set[eglsNABNSB] = 0;
             }
-            /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
 
             /* Note: this is OK, but there are some numerical precision issues with using the convergence of
