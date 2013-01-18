@@ -80,4 +80,4 @@ extern "C" {
 }
 #endif
 
-#endif	/* _force_flags_h */
+#endif  /* _force_flags_h */

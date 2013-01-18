@@ -42,33 +42,33 @@
 #include "typedefs.h" /* for real definition only */
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
-/* 
+/*
  * With the macros below you don't
  * have to use an index if you don't wan't to. You can eg. use
  * angle.C0[23] instead if angle.c[0][23].
  * In a similar fashion, you can use angle.AI[3] instead of
  * angle.a[0][3]
  */
-#define AI 	a[0]
-#define AJ 	a[1]
-#define AK 	a[2]
-#define AL 	a[3]
+#define AI  a[0]
+#define AJ  a[1]
+#define AK  a[2]
+#define AL  a[3]
 #define AM      a[4]
-#define C0 	c[0]
-#define C1 	c[1]
-#define C2 	c[2]
-#define C3 	c[3]
-#define C4 	c[4]
-#define C5 	c[5]
+#define C0  c[0]
+#define C1  c[1]
+#define C2  c[2]
+#define C3  c[3]
+#define C4  c[4]
+#define C5  c[5]
 
 #ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b) )
+#define min(a, b) (((a) < (b)) ? (a) : (b) )
 #endif
 #ifndef max
-#define max(a,b) (((a) > (b)) ? (a) : (b) )
+#define max(a, b) (((a) > (b)) ? (a) : (b) )
 #endif
 #ifndef even
 #define even(a) ( ( (a+1) / 2) == (a / 2) )
@@ -92,5 +92,4 @@ extern const real TWELVE;
 #endif
 
 
-#endif	/* _macros_h */
-
+#endif  /* _macros_h */

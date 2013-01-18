@@ -53,8 +53,8 @@ extern "C" {
 #define CENTRAL (N_IVEC/2)
 #define SHIFTS  N_IVEC
 
-#define XYZ2IS(x,y,z) (N_BOX_X*(N_BOX_Y*((z)+D_BOX_Z)+(y)+D_BOX_Y)+(x)+D_BOX_X)
-#define IVEC2IS(iv)   (XYZ2IS((iv)[XX],(iv)[YY],(iv)[ZZ]))
+#define XYZ2IS(x, y, z) (N_BOX_X*(N_BOX_Y*((z)+D_BOX_Z)+(y)+D_BOX_Y)+(x)+D_BOX_X)
+#define IVEC2IS(iv)   (XYZ2IS((iv)[XX], (iv)[YY], (iv)[ZZ]))
 #define IS2X(iv)      (((iv) % N_BOX_X) - D_BOX_X)
 #define IS2Y(iv)      ((((iv) / N_BOX_X) % N_BOX_Y) - D_BOX_Y)
 #define IS2Z(iv)      ((iv) / (N_BOX_X*N_BOX_Y) - D_BOX_Z)
@@ -63,4 +63,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-

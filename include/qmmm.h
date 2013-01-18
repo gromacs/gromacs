@@ -54,36 +54,36 @@ t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
 GMX_LIBMD_EXPORT
-void init_QMMMrec(t_commrec *cr,
-			 matrix box,
-			 gmx_mtop_t *mtop,
-			 t_inputrec *ir,
-			 t_forcerec *fr);
+void init_QMMMrec(t_commrec  *cr,
+                  matrix      box,
+                  gmx_mtop_t *mtop,
+                  t_inputrec *ir,
+                  t_forcerec *fr);
 
 /* init_QMMMrec initializes the QMMM record. From
  * topology->atoms.atomname and topology->atoms.atomtype the atom
  * names and types are read; from inputrec->QMcharge
  * resp. inputrec->QMmult the nelecs and multiplicity are determined
- * and md->cQMMM gives numbers of the MM and QM atoms 
+ * and md->cQMMM gives numbers of the MM and QM atoms
  */
 
-void update_QMMMrec(t_commrec *cr,
-			   t_forcerec *fr,
-			   rvec x[],
-			   t_mdatoms *md,
-			   matrix box,
-			   gmx_localtop_t *top);
+void update_QMMMrec(t_commrec      *cr,
+                    t_forcerec     *fr,
+                    rvec            x[],
+                    t_mdatoms      *md,
+                    matrix          box,
+                    gmx_localtop_t *top);
 
 /* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
  * taken froom the neighbourlists of the QM atoms. In a QMMM run this
  * routine should be called at every step, since it updates the MM
- * elements of the t_QMMMrec struct.  
+ * elements of the t_QMMMrec struct.
  */
 
 real calculate_QMMM(t_commrec *cr,
-			   rvec x[], rvec f[],
-			   t_forcerec *fr,
-			   t_mdatoms *md);
+                    rvec x[], rvec f[],
+                    t_forcerec *fr,
+                    t_mdatoms *md);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC
@@ -96,5 +96,4 @@ real calculate_QMMM(t_commrec *cr,
 }
 #endif
 
-#endif	/* _QMMM_h */
-
+#endif  /* _QMMM_h */

@@ -48,33 +48,33 @@
 extern "C" {
 #endif
 
-char *search_rtp(const char *key,int nrtp,t_restp rtp[]);
+char *search_rtp(const char *key, int nrtp, t_restp rtp[]);
 /* Search for an entry in the rtp database, returns the rtp residue name.
  * A mismatch of one character is allowed, if there is only one nearly
  * matching entry in the database, a warning will be generated.
  */
 
-t_restp *get_restp(const char *rtpname,int nrtp,t_restp rtp[]);
+t_restp *get_restp(const char *rtpname, int nrtp, t_restp rtp[]);
 /* Return the entry in the rtp database with rtp name rtpname.
  * Generates a fatal error when rtpname is not found.
  */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-gpp_atomtype_t read_atype(const char *ffdir,t_symtab *tab);
+gpp_atomtype_t read_atype(const char *ffdir, t_symtab *tab);
 /* read atom type database(s) */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void read_resall(char *resdb, int *nrtp,t_restp **rtp, 
-		 gpp_atomtype_t atype, t_symtab *tab,
-		 gmx_bool bAllowOverrideRTP);
+void read_resall(char *resdb, int *nrtp, t_restp **rtp,
+                 gpp_atomtype_t atype, t_symtab *tab,
+                 gmx_bool bAllowOverrideRTP);
 /* read rtp database, append to the existing database */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void print_resall(FILE *out, int nrtp, t_restp rtp[], 
-			 gpp_atomtype_t atype);
+void print_resall(FILE *out, int nrtp, t_restp rtp[],
+                  gpp_atomtype_t atype);
 /* write rtp database */
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _resall_h */
+#endif  /* _resall_h */

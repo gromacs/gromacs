@@ -67,34 +67,34 @@ struct gmx_sel_lexer_t;
  */
 typedef struct gmx_sel_lexer_t
 {
-    struct gmx_ana_selcollection_t  *sc;
-    struct gmx_ana_indexgrps_t      *grps;
-    int                              nexpsel;
+    struct gmx_ana_selcollection_t      *sc;
+    struct gmx_ana_indexgrps_t          *grps;
+    int                                  nexpsel;
 
     gmx_bool                             bInteractive;
-    char                            *inputstr;
-    int                              nalloc_input;
+    char                                *inputstr;
+    int                                  nalloc_input;
 
-    char                            *pselstr;
-    int                              pslen;
-    int                              nalloc_psel;
+    char                                *pselstr;
+    int                                  pslen;
+    int                                  nalloc_psel;
 
-    struct gmx_ana_selmethod_t     **mstack;
-    int                              msp;
-    int                              mstack_alloc;
+    struct gmx_ana_selmethod_t         **mstack;
+    int                                  msp;
+    int                                  mstack_alloc;
 
-    int                              neom;
-    struct gmx_ana_selparam_t       *nextparam;
+    int                                  neom;
+    struct gmx_ana_selparam_t           *nextparam;
     gmx_bool                             bBoolNo;
-    struct gmx_ana_selmethod_t      *nextmethod;
-    int                              prev_pos_kw;
+    struct gmx_ana_selmethod_t          *nextmethod;
+    int                                  prev_pos_kw;
 
     gmx_bool                             bMatchOf;
     gmx_bool                             bMatchBool;
     gmx_bool                             bCmdStart;
 
     gmx_bool                             bBuffer;
-    YY_BUFFER_STATE                  buffer;
+    YY_BUFFER_STATE                      buffer;
 } gmx_sel_lexer_t;
 
 /* Because Flex defines yylval, yytext, and yyleng as macros,
@@ -105,8 +105,8 @@ int
 _gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
-                                  gmx_sel_lexer_t *state);
+    _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
+                                      gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);

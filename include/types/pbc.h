@@ -52,19 +52,19 @@ extern "C" {
 #define MAX_NTRICVEC 12
 
 typedef struct {
-  int    ndim_ePBC;
-  int    ePBCDX;
-  int    dim;
-  matrix box;
-  rvec   fbox_diag;
-  rvec   hbox_diag;
-  rvec   mhbox_diag;
-  real   max_cutoff2;
-  gmx_bool   bLimitDistance;
-  real   limit_distance2;
-  int    ntric_vec;
-  ivec   tric_shift[MAX_NTRICVEC];
-  rvec   tric_vec[MAX_NTRICVEC];
+    int        ndim_ePBC;
+    int        ePBCDX;
+    int        dim;
+    matrix     box;
+    rvec       fbox_diag;
+    rvec       hbox_diag;
+    rvec       mhbox_diag;
+    real       max_cutoff2;
+    gmx_bool   bLimitDistance;
+    real       limit_distance2;
+    int        ntric_vec;
+    ivec       tric_shift[MAX_NTRICVEC];
+    rvec       tric_vec[MAX_NTRICVEC];
 } t_pbc;
 
 #ifdef __cplusplus

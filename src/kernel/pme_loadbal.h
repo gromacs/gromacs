@@ -43,9 +43,9 @@ typedef struct pme_load_balancing *pme_load_balancing_t;
 
 /* Initialze the PP-PME load balacing data and infrastructure */
 void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
-                     const t_inputrec *ir,matrix box,
-                     const interaction_const_t *ic,
-                     gmx_pme_t pmedata);
+                      const t_inputrec *ir, matrix box,
+                      const interaction_const_t *ic,
+                      gmx_pme_t pmedata);
 
 /* Try to adjust the PME grid and Coulomb cut-off.
  * The adjustment is done to generate a different non-bonded PP and PME load.
@@ -60,16 +60,16 @@ void pme_loadbal_init(pme_load_balancing_t *pme_lb_p,
  * Returns TRUE the load balancing continues, FALSE is the balancing is done.
  */
 gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
-                          t_commrec *cr,
-                          FILE *fp_err,
-                          FILE *fp_log,
-                          t_inputrec *ir,
-                          t_state *state,
-                          double cycles,
+                          t_commrec           *cr,
+                          FILE                *fp_err,
+                          FILE                *fp_log,
+                          t_inputrec          *ir,
+                          t_state             *state,
+                          double               cycles,
                           interaction_const_t *ic,
-                          nonbonded_verlet_t *nbv,
-                          gmx_pme_t *pmedata,
-                          gmx_large_int_t step);
+                          nonbonded_verlet_t  *nbv,
+                          gmx_pme_t           *pmedata,
+                          gmx_large_int_t      step);
 
 /* Restart the PME load balancing discarding all timings gathered up till now */
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);

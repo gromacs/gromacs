@@ -51,41 +51,43 @@ extern "C" {
 
 /* output_env member functions */
 
-/* The output_env structure holds information about program name, cmd line, 
-   default times, etc. 
+/* The output_env structure holds information about program name, cmd line,
+   default times, etc.
 
-   There are still legacy functions for the program name, and the command 
+   There are still legacy functions for the program name, and the command
    line, but the output_env versions are now preferred.*/
 
-typedef enum 
-{ 
-    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s 
+typedef enum
+{
+    timeNULL, time_fs, time_ps, time_ns, time_us, time_ms, time_s
 } time_unit_t;
 /* the time units. For the time being, ps means no conversion. */
 
-typedef enum { exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE } xvg_format_t;
+typedef enum {
+    exvgNULL, exvgXMGRACE, exvgXMGR, exvgNONE
+} xvg_format_t;
 /* the xvg output formattings */
 
 
 struct output_env
 {
-    time_unit_t time_unit; /* the time unit, enum defined in statuti.h */
-    gmx_bool view;  /* view of file requested */
-    xvg_format_t xvg_format; /* xvg output format, enum defined in statutil.h */
-    int  verbosity; /* The level of verbosity for this program */
-    int debug_level; /* the debug level */
+    time_unit_t  time_unit;    /* the time unit, enum defined in statuti.h */
+    gmx_bool     view;         /* view of file requested */
+    xvg_format_t xvg_format;   /* xvg output format, enum defined in statutil.h */
+    int          verbosity;    /* The level of verbosity for this program */
+    int          debug_level;  /* the debug level */
 
-    char *program_name; /* the program name */
-    char *cmd_line; /* the re-assembled command line */
+    char        *program_name; /* the program name */
+    char        *cmd_line;     /* the re-assembled command line */
 };
 
 
 void output_env_init(output_env_t oenv,  int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level);
-/* initialize an output_env structure, setting the command line, 
-   the default time value a gmx_boolean view that is set to TRUE when the 
-   user requests direct viewing of graphs, 
+/* initialize an output_env structure, setting the command line,
+   the default time value a gmx_boolean view that is set to TRUE when the
+   user requests direct viewing of graphs,
    the graph formatting type, the verbosity, and debug level */
 
 void output_env_init_default(output_env_t oenv);

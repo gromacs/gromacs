@@ -49,27 +49,31 @@
 extern "C" {
 #endif
 
-enum { ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
-       ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
-       ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
-       ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE,
-       ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
-       ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
-       ewcTEST, ewcNR };
+enum {
+    ewcRUN, ewcSTEP, ewcPPDURINGPME, ewcDOMDEC, ewcDDCOMMLOAD,
+    ewcDDCOMMBOUND, ewcVSITECONSTR, ewcPP_PMESENDX, ewcNS, ewcLAUNCH_GPU_NB,
+    ewcMOVEX, ewcGB, ewcFORCE, ewcMOVEF, ewcPMEMESH,
+    ewcPME_REDISTXF, ewcPME_SPREADGATHER, ewcPME_FFT, ewcPME_FFTCOMM, ewcPME_SOLVE,
+    ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcWAIT_GPU_NB_NL, ewcWAIT_GPU_NB_L, ewcNB_XF_BUF_OPS,
+    ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcCONSTR, ewcMoveE, ewcROT, ewcROTadd,
+    ewcTEST, ewcNR
+};
 
-enum { ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
-       ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
-       ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
-       ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
-       ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
-       ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
-       ewcsNR };
+enum {
+    ewcsDD_REDIST, ewcsDD_GRID, ewcsDD_SETUPCOMM,
+    ewcsDD_MAKETOP, ewcsDD_MAKECONSTR, ewcsDD_TOPOTHER,
+    ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
+    ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
+    ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
+    ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
+    ewcsNR
+};
 
 gmx_bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
 GMX_LIBMD_EXPORT
-gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr, 
+gmx_wallcycle_t wallcycle_init(FILE *fplog, int resetstep, t_commrec *cr,
                                int nthreads_pp, int nthreads_pme);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
@@ -94,7 +98,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */
 
 void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
-			    gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
+                     gmx_wallcycle_t wc, wallclock_gpu_t *gpu_t);
 /* Print the cycle and time accounting */
 
 GMX_LIBMD_EXPORT

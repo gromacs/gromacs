@@ -47,53 +47,53 @@ extern "C" {
 #endif
 
 
-/* This file contains datatypes and function declarations necessary 
+/* This file contains datatypes and function declarations necessary
    for mdrun to interface with the pull code */
 
 /* Get the distance to the reference and deviation for pull group g */
 GMX_LIBMD_EXPORT
-void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
-				 dvec dr,dvec dev);
+void get_pullgrp_distance(t_pull *pull, t_pbc *pbc, int g, double t,
+                          dvec dr, dvec dev);
 
 /* Set the all the pull forces to zero */
 void clear_pull_forces(t_pull *pull);
 
 /* Determine the COM pull forces and add them to f, return the potential */
-real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-			   t_commrec *cr, double t, real lambda,
-			   rvec *x, rvec *f, tensor vir, real *dvdlambda);
+real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+                    t_commrec *cr, double t, real lambda,
+                    rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
 /* Constrain the coordinates xp in the directions in x
  * and also constrain v when v!=NULL.
  */
 void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-			    t_commrec *cr, double dt, double t,
-			    rvec *x, rvec *xp, rvec *v, tensor vir);
+                     t_commrec *cr, double dt, double t,
+                     rvec *x, rvec *xp, rvec *v, tensor vir);
 
 /* Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
  */
 GMX_LIBMD_EXPORT
 void dd_make_local_pull_groups(gmx_domdec_t *dd,
-				      t_pull *pull,t_mdatoms *md);
+                               t_pull *pull, t_mdatoms *md);
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
 GMX_LIBMD_EXPORT
-void init_pull(FILE *fplog,  
-                      t_inputrec *ir, /* the inputrec */
-                      int nfile,       
-                      const t_filenm fnm[], /* standard filename struct */
-                      gmx_mtop_t *mtop, /* the topology of the whole system */
-                      t_commrec * cr, /* struct for communication info */
-                      const output_env_t oenv,  /* output options */
-                      real lambda, /* FEP lambda */
-                      gmx_bool bOutFile,   /* open output files */
-                      unsigned long Flags);
+void init_pull(FILE              *fplog,
+               t_inputrec        *ir,       /* the inputrec */
+               int                nfile,
+               const t_filenm     fnm[],    /* standard filename struct */
+               gmx_mtop_t        *mtop,     /* the topology of the whole system */
+               t_commrec        * cr,       /* struct for communication info */
+               const output_env_t oenv,     /* output options */
+               real               lambda,   /* FEP lambda */
+               gmx_bool           bOutFile, /* open output files */
+               unsigned long      Flags);
 
 /* Close the pull output files */
 GMX_LIBMD_EXPORT
-void finish_pull(FILE *fplog,t_pull *pull);
+void finish_pull(FILE *fplog, t_pull *pull);
 
 /* Print the pull output (x and/or f) */
 GMX_LIBMD_EXPORT
@@ -104,13 +104,13 @@ void pull_print_output(t_pull *pull, gmx_large_int_t step, double time);
 /* Calculates centers of mass all pull groups */
 GMX_LIBMD_EXPORT
 void pull_calc_coms(t_commrec *cr,
-			   t_pull *pull,   /* the pull group */
-			   t_mdatoms *md,  /* all atoms */
-			   t_pbc *pbc,
-			   double t,       /* only used for cylinder ref. */
-			   rvec x[],       /* local coordinates */
-			   rvec *xp        /* updated x, can be NULL */
-			   );    
+                    t_pull    *pull, /* the pull group */
+                    t_mdatoms *md,   /* all atoms */
+                    t_pbc     *pbc,
+                    double     t,    /* only used for cylinder ref. */
+                    rvec       x[],  /* local coordinates */
+                    rvec      *xp    /* updated x, can be NULL */
+                    );
 
 #ifdef __cplusplus
 }

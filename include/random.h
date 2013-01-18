@@ -56,21 +56,21 @@ real rando(int *seed);
  */
 
 GMX_LIBGMX_EXPORT
-void maxwell_speed(real tempi,int seed, 
-			  gmx_mtop_t *mtop, rvec v[]);
+void maxwell_speed(real tempi, int seed,
+                   gmx_mtop_t *mtop, rvec v[]);
 /* Generate velocites according to a maxwellian distribution */
 
-real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
-		    rvec xcm,rvec vcm,rvec acm,matrix L);
+real calc_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[],
+             rvec xcm, rvec vcm, rvec acm, matrix L);
 /* Calculate the c.o.m. position, velocity, acceleration and the
  * moment of Inertia. Returns the total mass.
  */
 
 GMX_LIBGMX_EXPORT
-void stop_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[]);
+void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[]);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _random_h */
+#endif  /* _random_h */

@@ -300,7 +300,7 @@ typedef struct t_selelem
     struct gmx_sel_mempool_t           *mempool;
     /** Internal data for the selection compiler. */
     struct t_compiler_data             *cdata;
-    
+
     /*! \brief The first child element.
      *
      * Other children can be accessed through the \p next field of \p child.

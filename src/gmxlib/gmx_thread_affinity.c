@@ -64,18 +64,18 @@ get_thread_affinity_layout(FILE *fplog,
                            int pin_offset, int * pin_stride,
                            const int **locality_order)
 {
-    int         nhwthreads,npkg,ncores,nhwthreads_per_core,rc;
+    int         nhwthreads, npkg, ncores, nhwthreads_per_core, rc;
     const int * pkg_id;
     const int * core_id;
     const int * hwthread_id;
 
     if (pin_offset < 0)
     {
-        gmx_fatal(FARGS,"Negative thread pinning offset requested");
+        gmx_fatal(FARGS, "Negative thread pinning offset requested");
     }
     if (*pin_stride < 0)
     {
-        gmx_fatal(FARGS,"Negative thread pinning stride requested");
+        gmx_fatal(FARGS, "Negative thread pinning stride requested");
     }
 
     rc = gmx_cpuid_topology(hwinfo->cpuid_info, &nhwthreads, &npkg, &ncores,
@@ -130,7 +130,7 @@ get_thread_affinity_layout(FILE *fplog,
 
         if (fplog != NULL)
         {
-            fprintf(fplog,"Pinning threads with a logical core stride of %d\n",
+            fprintf(fplog, "Pinning threads with a logical core stride of %d\n",
                     *pin_stride);
         }
     }
@@ -157,20 +157,20 @@ get_thread_affinity_layout(FILE *fplog,
    in the case that only some ranks have threads.
    Thus it is important that GROMACS sets the affinity internally
    if only PME is using threads.
-*/
+ */
 void
-gmx_set_thread_affinity(FILE *fplog,
-                        const t_commrec *cr,
-                        gmx_hw_opt_t *hw_opt,
-                        int nthreads_pme,
+gmx_set_thread_affinity(FILE                *fplog,
+                        const t_commrec     *cr,
+                        gmx_hw_opt_t        *hw_opt,
+                        int                  nthreads_pme,
                         const gmx_hw_info_t *hwinfo,
-                        const t_inputrec *inputrec)
+                        const t_inputrec    *inputrec)
 {
-    int nth_affinity_set, thread_id_node, thread_id,
-        nthread_local, nthread_node, nthread_hw_max, nphyscore;
-    int offset;
+    int        nth_affinity_set, thread_id_node, thread_id,
+               nthread_local, nthread_node, nthread_hw_max, nphyscore;
+    int        offset;
     const int *locality_order;
-    int rc;
+    int        rc;
 
     if (hw_opt->thread_affinity == threadaffOFF)
     {
@@ -204,7 +204,7 @@ gmx_set_thread_affinity(FILE *fplog,
 
     /* map the current process to cores */
     thread_id_node = 0;
-    nthread_node = nthread_local;
+    nthread_node   = nthread_local;
 #ifdef GMX_MPI
     if (PAR(cr) || MULTISIM(cr))
     {
@@ -213,13 +213,13 @@ gmx_set_thread_affinity(FILE *fplog,
          */
         MPI_Comm comm_intra;
 
-        MPI_Comm_split(MPI_COMM_WORLD,gmx_hostname_num(),cr->rank_intranode,
+        MPI_Comm_split(MPI_COMM_WORLD, gmx_hostname_num(), cr->rank_intranode,
                        &comm_intra);
-        MPI_Scan(&nthread_local,&thread_id_node,1,MPI_INT,MPI_SUM,comm_intra);
+        MPI_Scan(&nthread_local, &thread_id_node, 1, MPI_INT, MPI_SUM, comm_intra);
         /* MPI_Scan is inclusive, but here we need exclusive */
         thread_id_node -= nthread_local;
         /* Get the total number of threads on this physical node */
-        MPI_Allreduce(&nthread_local,&nthread_node,1,MPI_INT,MPI_SUM,comm_intra);
+        MPI_Allreduce(&nthread_local, &nthread_node, 1, MPI_INT, MPI_SUM, comm_intra);
         MPI_Comm_free(&comm_intra);
     }
 #endif
@@ -243,7 +243,7 @@ gmx_set_thread_affinity(FILE *fplog,
     if (hw_opt->core_pinning_offset != 0)
     {
         offset = hw_opt->core_pinning_offset;
-        md_print_info(cr,fplog,"Applying core pinning offset %d\n", offset);
+        md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
     rc = get_thread_affinity_layout(fplog, cr, hwinfo,
@@ -264,9 +264,9 @@ gmx_set_thread_affinity(FILE *fplog,
      */
     nth_affinity_set = 0;
 #pragma omp parallel firstprivate(thread_id_node) num_threads(nthread_local) \
-                     reduction(+:nth_affinity_set)
+    reduction(+:nth_affinity_set)
     {
-        int      index,core;
+        int      index, core;
         gmx_bool setaffinity_ret;
 
         thread_id       = gmx_omp_get_thread_num();
@@ -313,10 +313,10 @@ gmx_set_thread_affinity(FILE *fplog,
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
             sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
-#else /* GMX_LIB_MPI */
+#else       /* GMX_LIB_MPI */
             sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-#endif /* GMX_MPI */
+#endif      /* GMX_MPI */
 
             if (nthread_local > 1)
             {

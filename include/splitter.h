@@ -35,7 +35,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
- 
+
 #ifndef _splitter_h
 #define _splitter_h
 #include "visibility.h"
@@ -47,22 +47,22 @@ extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,
-		      t_inputrec *ir,t_block *mols,
-		      real *capacity,int *mulitnr_cgs,int **multinr_nre,
-		      int *left_range, int *right_range);
-/* Split the topology (blocks and forces, based on charge groups 
+void split_top(FILE *fp, int nnodes, gmx_localtop_t *top,
+               t_inputrec *ir, t_block *mols,
+               real *capacity, int *mulitnr_cgs, int **multinr_nre,
+               int *left_range, int *right_range);
+/* Split the topology (blocks and forces, based on charge groups
  * and shake blocks.
- * The capacity is releated to the capacity of each node. If all numbers are 
+ * The capacity is releated to the capacity of each node. If all numbers are
  * equal, load will be distributed equally. If not some (the higher ones)
  * will get more than others. The sum of capacities should be 1.
  * Info is written to the file pointer fp.
  */
 
 GMX_LIBGMX_EXPORT
-void gen_sblocks(FILE *fp,int at_start,int at_end,
-			t_idef *idef,t_blocka *sblock,
-			gmx_bool bSettle);
+void gen_sblocks(FILE *fp, int at_start, int at_end,
+                 t_idef *idef, t_blocka *sblock,
+                 gmx_bool bSettle);
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.
  */

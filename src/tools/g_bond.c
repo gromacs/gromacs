@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_bond.c is now in gmx_bond.c,
-* where the old main function is called gmx_bond().
-*/
+ * The code that used to be in g_bond.c is now in gmx_bond.c,
+ * where the old main function is called gmx_bond().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_bond(argc,argv);
-  return 0;
+    gmx_bond(argc, argv);
+    return 0;
 }
-
-
-  

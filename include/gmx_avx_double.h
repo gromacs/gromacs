@@ -45,22 +45,22 @@ gmx_mm256_invsqrt_pd(__m256d x)
     /* There is no double precision AVX rsqrt instruction.
      * But using a single precision rsqrt still gives the full precision.
      */
-    const __m256d half    = _mm256_set_pd(0.5,0.5,0.5,0.5);
-    const __m256d three   = _mm256_set_pd(3.0,3.0,3.0,3.0);
+    const __m256d half    = _mm256_set_pd(0.5, 0.5, 0.5, 0.5);
+    const __m256d three   = _mm256_set_pd(3.0, 3.0, 3.0, 3.0);
 
-    __m256d lu = _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)));
+    __m256d       lu = _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(x)));
 
-    lu = _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu,lu),x)),lu));
-    return _mm256_mul_pd(half,_mm256_mul_pd(_mm256_sub_pd(three,_mm256_mul_pd(_mm256_mul_pd(lu,lu),x)),lu));
+    lu = _mm256_mul_pd(half, _mm256_mul_pd(_mm256_sub_pd(three, _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
+    return _mm256_mul_pd(half, _mm256_mul_pd(_mm256_sub_pd(three, _mm256_mul_pd(_mm256_mul_pd(lu, lu), x)), lu));
 }
 
 static inline __m256d
 gmx_mm256_calc_rsq_pd(__m256d dx, __m256d dy, __m256d dz)
 {
-    return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx,dx), _mm256_mul_pd(dy,dy) ), _mm256_mul_pd(dz,dz) );
+    return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx, dx), _mm256_mul_pd(dy, dy) ), _mm256_mul_pd(dz, dz) );
 }
 
 /* Normal sum of four xmm registers */
-#define gmx_mm256_sum4_pd(t0,t1,t2,t3)  _mm256_add_pd(_mm256_add_pd(t0,t1),_mm256_add_pd(t2,t3))
+#define gmx_mm256_sum4_pd(t0, t1, t2, t3)  _mm256_add_pd(_mm256_add_pd(t0, t1), _mm256_add_pd(t2, t3))
 
 #endif /* gmx_avx_double_h_ */

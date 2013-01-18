@@ -49,17 +49,17 @@ extern "C" {
 #endif
 
 #ifndef M_PI
-#define	M_PI		3.14159265358979323846
+#define M_PI        3.14159265358979323846
 #endif
 
 #ifndef M_PI_2
-#define	M_PI_2		1.57079632679489661923
+#define M_PI_2      1.57079632679489661923
 #endif
 
 #ifndef M_2PI
-#define	M_2PI		6.28318530717958647692
+#define M_2PI       6.28318530717958647692
 #endif
-    
+
 #ifndef M_SQRT2
 #define M_SQRT2 sqrt(2.0)
 #endif
@@ -87,13 +87,13 @@ extern "C" {
 /* for n=1, w0 = 1 */
 /* for n=3, w0 = w2 = 1/(2-2^-(1/3)), w1 = 1-2*w0 */
 /* for n=5, w0 = w1 = w3 = w4 = 1/(4-4^-(1/3)), w1 = 1-4*w0 */
-    
+
 #define MAX_SUZUKI_YOSHIDA_NUM 5
 #define SUZUKI_YOSHIDA_NUM  5
 
-static const double sy_const_1[] = { 1. };
-static const double sy_const_3[] = { 0.828981543588751,-0.657963087177502,0.828981543588751 };
-static const double sy_const_5[] = { 0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065 };
+static const double  sy_const_1[] = { 1. };
+static const double  sy_const_3[] = { 0.828981543588751, -0.657963087177502, 0.828981543588751 };
+static const double  sy_const_5[] = { 0.2967324292201065, 0.2967324292201065, -0.186929716880426, 0.2967324292201065, 0.2967324292201065 };
 
 static const double* sy_const[] = {
     NULL,
@@ -105,18 +105,18 @@ static const double* sy_const[] = {
 };
 
 /*
-static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
+   static const double sy_const[MAX_SUZUKI_YOSHIDA_NUM+1][MAX_SUZUKI_YOSHIDA_NUM+1] = {
     {},
     {1},
     {},
     {0.828981543588751,-0.657963087177502,0.828981543588751},
     {},
     {0.2967324292201065,0.2967324292201065,-0.186929716880426,0.2967324292201065,0.2967324292201065}
-};*/
+   };*/
 
 GMX_LIBGMX_EXPORT
-int		gmx_nint(real a);
-real    sign(real x,real y);
+int     gmx_nint(real a);
+real    sign(real x, real y);
 
 real    cuberoot (real a);
 GMX_LIBGMX_EXPORT
@@ -144,10 +144,10 @@ gmx_bool gmx_isfinite(real x);
  *  approximately within the given tolerance, defined as
  *  fabs(f1-f2)<=tolerance*fabs(f1+f2).
  *
- *  To check if two floating-point numbers are almost identical, use this routine 
+ *  To check if two floating-point numbers are almost identical, use this routine
  *  with the tolerance GMX_REAL_EPS, or GMX_DOUBLE_EPS if the check should be
  *  done in double regardless of Gromacs precision.
- *  
+ *
  *  To check if two algorithms produce similar results you will normally need
  *  to relax the tolerance significantly since many operations (e.g. summation)
  *  accumulate floating point errors.
@@ -164,7 +164,7 @@ gmx_within_tol(double   f1,
                double   tol)
 {
     /* The or-equal is important - otherwise we return false if f1==f2==0 */
-    if( fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
+    if (fabs(f1-f2) <= tol*0.5*(fabs(f1)+fabs(f2)) )
     {
         return 1;
     }
@@ -176,7 +176,7 @@ gmx_within_tol(double   f1,
 
 
 
-/** 
+/**
  * Check if a number is smaller than some preset safe minimum
  * value, currently defined as GMX_REAL_MIN/GMX_REAL_EPS.
  *
@@ -188,14 +188,14 @@ gmx_within_tol(double   f1,
 static int
 gmx_numzero(double a)
 {
-  return gmx_within_tol(a,0.0,GMX_REAL_MIN/GMX_REAL_EPS);
+    return gmx_within_tol(a, 0.0, GMX_REAL_MIN/GMX_REAL_EPS);
 }
 
 
 static real
 gmx_log2(real x)
 {
-  const real iclog2 = 1.0/log( 2.0 );
+    const real iclog2 = 1.0/log( 2.0 );
 
     return log( x ) * iclog2;
 }
@@ -206,12 +206,12 @@ gmx_log2(real x)
  */
 GMX_LIBGMX_EXPORT
 gmx_bool
-check_int_multiply_for_overflow(gmx_large_int_t a,
-                                gmx_large_int_t b,
+check_int_multiply_for_overflow(gmx_large_int_t  a,
+                                gmx_large_int_t  b,
                                 gmx_large_int_t *result);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _maths_h */
+#endif  /* _maths_h */

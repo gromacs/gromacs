@@ -65,7 +65,7 @@ extern "C" {
  *
  *  index[nrow] should be equal to the total number of elements stored.
  *
- *  Thus, to find the value of matrix element [5,4] you should loop 
+ *  Thus, to find the value of matrix element [5,4] you should loop
  *  over positions index[5] to index[6]-1 in column until you either find
  *  the value 4, or a higher value (meaning the element was zero).
  *
@@ -74,14 +74,14 @@ extern "C" {
  *
  *  IMPORTANT:
  *  If compressed_symmetric is set to TRUE, you should only store EITHER the upper OR
- *  lower triangle (and the diagonal), and the other half is assumed to be 
- *  symmetric. Otherwise, if compressed_symmetric==FALSE, no symmetry is implied and all 
+ *  lower triangle (and the diagonal), and the other half is assumed to be
+ *  symmetric. Otherwise, if compressed_symmetric==FALSE, no symmetry is implied and all
  *  elements should be stored.
- *  
+ *
  *  The symmetry compression saves us a factor 2 both in storage and
  *  matrix multiplication CPU-time, which can be very useful for huge eigenproblems.
  *
- *  If you are unsure, just set compressed_symmetric to FALSE and list all elements. If 
+ *  If you are unsure, just set compressed_symmetric to FALSE and list all elements. If
  *  you enable it but still list all elements (both upper and lower triangle) you will be sorry...
  *
  *  Internally, the sparse data is stored as a separate list for each row, where the list
@@ -91,34 +91,34 @@ extern "C" {
  *  The matrix data could be stored in a single contiguous array with indices for each row,
  *  but then we could only insert elements at the end without copying the entire matrix.
  *
- *  After you have 
+ *  After you have
  *
  *  In other words: Not perfect, but it works.
- */ 
+ */
 
 typedef struct
-gmx_sparsematrix_entry
+    gmx_sparsematrix_entry
 {
     int      col;
     real     value;
 } gmx_sparsematrix_entry_t;
-    
-typedef struct 
-gmx_sparsematrix 
+
+typedef struct
+    gmx_sparsematrix
 {
     gmx_bool                         compressed_symmetric; /*!< Store half elements and assume symmetry. */
-    int                          nrow;                 /*!< Number of rows in matrix                 */
-    int *                        ndata;                /*!< Number of entries on each row (list)     */
-    int *                        nalloc;               /*!< Allocated entry list length for each row */
-    gmx_sparsematrix_entry_t **  data;                 /*!< data[i] is a list with entries on row i  */
-} 
+    int                              nrow;                 /*!< Number of rows in matrix                 */
+    int     *                        ndata;                /*!< Number of entries on each row (list)     */
+    int     *                        nalloc;               /*!< Allocated entry list length for each row */
+    gmx_sparsematrix_entry_t     **  data;                 /*!< data[i] is a list with entries on row i  */
+}
 gmx_sparsematrix_t;
 
 
 /*! \Allocate a new sparse matrix structure
  *
  *  The number of rows is used to allocate the index array entry. Obviously you
- *  can reallocate these later yourself if necessary - this is a 
+ *  can reallocate these later yourself if necessary - this is a
  *  convenience routine.
  *
  *  By default, the compressed_symmetric flag in the structure will
@@ -132,7 +132,7 @@ gmx_sparsematrix_init            (int                    nrow);
 
 /*! \brief Release all resources used by a sparse matrix structure
  *
- *  All arrays in the structure will be freed, and the structure itself.  
+ *  All arrays in the structure will be freed, and the structure itself.
  */
 GMX_LIBGMX_EXPORT
 void
@@ -150,26 +150,26 @@ gmx_sparsematrix_print           (FILE *                 stream,
 
 /* Adds value at row,col. If the value did not exist
  * previously it is added, otherwise it is incremented with difference.
- * 
+ *
  * The column sort order might change, so you need to run fix_sparsematrix
  * once you are done changing the matrix.
  */
 real
 gmx_sparsematrix_value          (gmx_sparsematrix_t *    A,
-                                 int                     row, 
+                                 int                     row,
                                  int                     col);
 
 
 /* Adds value at row,col. If the value did not exist
-* previously it is added, otherwise it is incremented with difference.
-* 
-* The column sort order might change, so you need to run fix_sparsematrix
-* once you are done changing the matrix.
-*/
+ * previously it is added, otherwise it is incremented with difference.
+ *
+ * The column sort order might change, so you need to run fix_sparsematrix
+ * once you are done changing the matrix.
+ */
 GMX_LIBGMX_EXPORT
 void
 gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
-                                 int                     row, 
+                                 int                     row,
                                  int                     col,
                                  real                    difference);
 
@@ -177,7 +177,7 @@ gmx_sparsematrix_increment_value(gmx_sparsematrix_t *    A,
 
 /*! \brief Sort elements in each column and remove zeros.
  *
- *  Sparse matrix access is faster when the elements are stored in 
+ *  Sparse matrix access is faster when the elements are stored in
  *  increasing column order in each row. In some cases previously non-zero
  *  elements will be zero after adding more data, and this routine also removes
  *  those entries to reduce the storage requirements.
@@ -189,9 +189,9 @@ gmx_sparsematrix_compress       (gmx_sparsematrix_t *    A);
 
 
 
-/*! \brief Sparse matrix vector multiplication 
- * 
- * Calculate y = A * x for a sparse matrix A. 
+/*! \brief Sparse matrix vector multiplication
+ *
+ * Calculate y = A * x for a sparse matrix A.
  */
 GMX_LIBGMX_EXPORT
 void
@@ -205,5 +205,3 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
 
 
 #endif
-
-

@@ -67,34 +67,34 @@ extern "C" {
 #define GMX_ATTRIBUTE_NORETURN
 #endif
 #endif
-  
+
 GMX_LIBGMX_EXPORT
-void 
-_where(const char *file,int line);
-#define where() _where(__FILE__,__LINE__)
+void
+_where(const char *file, int line);
+#define where() _where(__FILE__, __LINE__)
 /* Prints filename and line to stdlog and only on amba memvail */
-  
-void 
+
+void
 _set_fatal_tmp_file(const char *fn, const char *file, int line);
-#define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn,__FILE__,__LINE__)
+#define set_fatal_tmp_file(fn) _set_fatal_tmp_file(fn, __FILE__, __LINE__)
 /* set filename to be removed when fatal_error is called */
 
-void 
+void
 _unset_fatal_tmp_file(const char *fn, const char *file, int line);
-#define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn,__FILE__,__LINE__)
+#define unset_fatal_tmp_file(fn) _unset_fatal_tmp_file(fn, __FILE__, __LINE__)
 /* unsets filename to be removed */
 
 GMX_LIBGMX_EXPORT
-void 
-gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATTRIBUTE_NORETURN;
-#define FARGS 0,__FILE__,__LINE__
+void
+gmx_fatal(int fatal_errno, const char *file, int line, const char *fmt, ...) GMX_ATTRIBUTE_NORETURN;
+#define FARGS 0, __FILE__, __LINE__
 /*
- * Routine gmx_fatal prints 
+ * Routine gmx_fatal prints
  *
- * 	"fatal error file %s line %s \n\t " 
+ *  "fatal error file %s line %s \n\t "
  *
- * followed by the string specified by fmt and supplied parameters. If 
- * errno is 0, only the message and arguments are printed. If errno is 
+ * followed by the string specified by fmt and supplied parameters. If
+ * errno is 0, only the message and arguments are printed. If errno is
  * a legal system errno or -1, a perror like message is printed after the
  * first message, if errno is -1, the last system errno will be used.
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
@@ -113,94 +113,94 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...) GMX_ATT
 void
 gmx_fatal_set_log_file(FILE *fp);
 /* Set the log file for printing error messages */
-  
-GMX_LIBGMX_EXPORT
-void 
-_invalid_case(const char *fn,int line);
-#define invalid_case() _invalid_case(__FILE__,__LINE__)
-/* Issue a warning stating 'Invalid case in switch' */
-  
-void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline);
-#define unexpected_eof(fn,line) _unexpected_eof(fn,line,__FILE__,__LINE__)
 
-/* 
+GMX_LIBGMX_EXPORT
+void
+_invalid_case(const char *fn, int line);
+#define invalid_case() _invalid_case(__FILE__, __LINE__)
+/* Issue a warning stating 'Invalid case in switch' */
+
+void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline);
+#define unexpected_eof(fn, line) _unexpected_eof(fn, line, __FILE__, __LINE__)
+
+/*
  * Functions can write to this file for debug info
  * Before writing to it, it should be checked whether
  * the file is not NULL:
  * if (debug) fprintf(debug,"%s","Hallo");
  */
 GMX_LIBGMX_EXPORT
-extern FILE *debug;
+extern FILE    *debug;
 GMX_LIBGMX_EXPORT
 extern gmx_bool gmx_debug_at;
 
-void init_debug (const int dbglevel,const char *dbgfile);
-  
+void init_debug (const int dbglevel, const char *dbgfile);
+
 GMX_LIBGMX_EXPORT
 gmx_bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */
-  
+
 #if (defined __sgi && defined USE_SGI_FPE)
 void doexceptions(void);
 /* Set exception handlers for debugging */
 #endif
 
-  /* warn_str is allowed to be NULL.
-   */
+/* warn_str is allowed to be NULL.
+ */
 GMX_LIBGMX_EXPORT
-  void _range_check(int n,int n_min,int n_max,const char *warn_str,
-			   const char *var,
-			   const char *file,int line);
+void _range_check(int n, int n_min, int n_max, const char *warn_str,
+                  const char *var,
+                  const char *file, int line);
 
-#define range_check_mesg(n,n_min,n_max,str) _range_check(n,n_min,n_max,str,#n,__FILE__,__LINE__)
-  /* Range check will terminate with an error message if not
-   * n E [ n_min, n_max >
-   * That is n_min is inclusive but not n_max.
-   */
+#define range_check_mesg(n, n_min, n_max, str) _range_check(n, n_min, n_max, str,#n, __FILE__, __LINE__)
+/* Range check will terminate with an error message if not
+ * n E [ n_min, n_max >
+ * That is n_min is inclusive but not n_max.
+ */
 
-#define range_check(n,n_min,n_max) _range_check(n,n_min,n_max,NULL,#n,__FILE__,__LINE__)
-  /* Range check will terminate with an error message if not
-   * n E [ n_min, n_max >
-   * That is n_min is inclusive but not n_max.
-   */
+#define range_check(n, n_min, n_max) _range_check(n, n_min, n_max, NULL,#n, __FILE__, __LINE__)
+/* Range check will terminate with an error message if not
+ * n E [ n_min, n_max >
+ * That is n_min is inclusive but not n_max.
+ */
 
-  char *gmx_strerror(const char *key);
-  /* Return error message corresponding to the key.
-   * Maybe a multi-line message.
-   * The messages are stored in src/gmxlib/fatal.c
-   */
-  
+char *gmx_strerror(const char *key);
+/* Return error message corresponding to the key.
+ * Maybe a multi-line message.
+ * The messages are stored in src/gmxlib/fatal.c
+ */
+
 GMX_LIBGMX_EXPORT
-  void _gmx_error(const char *key,const char *msg,const char *file,int line) GMX_ATTRIBUTE_NORETURN;
-#define gmx_error(key,msg) _gmx_error(key,msg,__FILE__,__LINE__)
-  /* Error msg of type key is generated and the program is 
-   * terminated unless and error handle is set (see below)
-   */
+void _gmx_error(const char *key, const char *msg, const char *file, int line) GMX_ATTRIBUTE_NORETURN;
+#define gmx_error(key, msg) _gmx_error(key, msg, __FILE__, __LINE__)
+/* Error msg of type key is generated and the program is
+ * terminated unless and error handle is set (see below)
+ */
 
-  /* Some common error types */
-#define gmx_bug(msg)    gmx_error("bug",msg)
-#define gmx_call(msg)   gmx_error("call",msg)
-#define gmx_comm(msg)   gmx_error("comm",msg)
-#define gmx_file(msg)   gmx_error("file",msg)
-#define gmx_cmd(msg)    gmx_error("cmd",msg)
-#define gmx_impl(msg)   gmx_error("impl",msg)
-#define gmx_incons(msg) gmx_error("incons",msg)
-#define gmx_input(msg)  gmx_error("input",msg)
-#define gmx_mem(msg)    gmx_error("mem",msg)
-#define gmx_open(fn)    gmx_error("open",fn) 
-  
-void 
+/* Some common error types */
+#define gmx_bug(msg)    gmx_error("bug", msg)
+#define gmx_call(msg)   gmx_error("call", msg)
+#define gmx_comm(msg)   gmx_error("comm", msg)
+#define gmx_file(msg)   gmx_error("file", msg)
+#define gmx_cmd(msg)    gmx_error("cmd", msg)
+#define gmx_impl(msg)   gmx_error("impl", msg)
+#define gmx_incons(msg) gmx_error("incons", msg)
+#define gmx_input(msg)  gmx_error("input", msg)
+#define gmx_mem(msg)    gmx_error("mem", msg)
+#define gmx_open(fn)    gmx_error("open", fn)
+
+void
 set_gmx_error_handler(void (*func)(const char *msg));
-/* An error function will be called that terminates the program 
-   * with a fatal error, unless you override it with another function.
-   * i.e.:
-   * set_gmx_error_handler(my_func);
-   * where my_func is a function that takes a string as an argument.
-   * The string may be a multi-line string.
-   */
+/* An error function will be called that terminates the program
+ * with a fatal error, unless you override it with another function.
+ * i.e.:
+ * set_gmx_error_handler(my_func);
+ * where my_func is a function that takes a string as an argument.
+ * The string may be a multi-line string.
+ */
 
 GMX_LIBGMX_EXPORT
-void gmx_warning(const char *fmt,...);
+void gmx_warning(const char *fmt, ...);
 /* Print a warning message to stderr.
  * The format of fmt is that like printf etc, only %d, %x, %c, %f, %g and %s
  * are allowed as format specifiers.
@@ -210,7 +210,7 @@ void gmx_warning(const char *fmt,...);
 
 
 #ifdef __cplusplus
-	   }
+}
 #endif
 
-#endif	/* _fatal_h */
+#endif  /* _fatal_h */
