@@ -43,18 +43,18 @@
 #include <xutil.h>
 
 typedef struct {
-  XFontStruct *bigfont;
-  XFontStruct *smallfont;
-  t_windata   wd;
-  gmx_bool bQuitOnClick;
+    XFontStruct *bigfont;
+    XFontStruct *smallfont;
+    t_windata    wd;
+    gmx_bool     bQuitOnClick;
 } t_logo;
 
-extern void show_logo(t_x11 *x11,t_logo *logo);
+extern void show_logo(t_x11 *x11, t_logo *logo);
 
-extern void hide_logo(t_x11 *x11,t_logo *logo);
+extern void hide_logo(t_x11 *x11, t_logo *logo);
 
-extern t_logo *init_logo(t_x11 *x11,Window parent,gmx_bool bQuitOnClick);
+extern t_logo *init_logo(t_x11 *x11, Window parent, gmx_bool bQuitOnClick);
 
-extern void done_logo(t_x11 *x11,t_logo *logo);
+extern void done_logo(t_x11 *x11, t_logo *logo);
 
-#endif	/* _logo_h */
+#endif  /* _logo_h */

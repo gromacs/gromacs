@@ -44,35 +44,39 @@
 #include "readinp.h"
 #include "grompp.h"
 
-enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
-
-static const char *constraints[eshNR+1]    = { 
-  "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
+enum {
+    eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
 };
 
-enum { ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR };
+static const char *constraints[eshNR+1]    = {
+    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL
+};
 
-static const char *couple_lam[ecouplamNR+1]    = { 
-  "vdw-q", "vdw", "q", "none", NULL 
+enum {
+    ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
+};
+
+static const char *couple_lam[ecouplamNR+1]    = {
+    "vdw-q", "vdw", "q", "none", NULL
 };
 
 typedef struct {
-  int warnings;
-  int nshake;
-  char *include;
-  char *define;
-  gmx_bool bGenVel;
-  gmx_bool bGenPairs;
-  real tempi;
-  int  seed;
-  gmx_bool bOrire;
-  gmx_bool bMorse;
-  char *wall_atomtype[2];
-  gmx_bool pull_start;
-  char *couple_moltype;
-  int  couple_lam0;
-  int  couple_lam1;
-  gmx_bool bCoupleIntra;
+    int      warnings;
+    int      nshake;
+    char    *include;
+    char    *define;
+    gmx_bool bGenVel;
+    gmx_bool bGenPairs;
+    real     tempi;
+    int      seed;
+    gmx_bool bOrire;
+    gmx_bool bMorse;
+    char    *wall_atomtype[2];
+    gmx_bool pull_start;
+    char    *couple_moltype;
+    int      couple_lam0;
+    int      couple_lam1;
+    gmx_bool bCoupleIntra;
 } t_gromppopts;
 
 
@@ -81,48 +85,48 @@ extern void init_ir(t_inputrec *ir, t_gromppopts *opts);
 /* Initiate stuff */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
-		     warninp_t wi);
+extern void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
+                     warninp_t wi);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int search_string(char *s,int ng,char *gn[]);
+extern int search_string(char *s, int ng, char *gn[]);
 /* Returns the index of string s in the index groups */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void double_check(t_inputrec *ir,matrix box,gmx_bool bConstr,
-			 warninp_t wi);
+extern void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr,
+                         warninp_t wi);
 /* Do more checks */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void triple_check(const char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
-			 warninp_t wi);
+extern void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
+                         warninp_t wi);
 /* Do even more checks */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void check_chargegroup_radii(const gmx_mtop_t *mtop,const t_inputrec *ir,
-				    rvec *x,
-				    warninp_t wi);
+extern void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
+                                    rvec *x,
+                                    warninp_t wi);
 /* Even more checks, charge group radii vs. cut-off's only. */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void get_ir(const char *mdparin,const char *mdparout,
-		   t_inputrec *ir,t_gromppopts *opts,
-		   warninp_t wi);
+extern void get_ir(const char *mdparin, const char *mdparout,
+                   t_inputrec *ir, t_gromppopts *opts,
+                   warninp_t wi);
 /* Read the input file, and retrieve data for inputrec.
  * More data are read, but the are only evaluated when the next
  * function is called. Also prints the input file back to mdparout.
  */
- 
+
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void do_index(const char* mdparin, 
-		     const char *ndx,
-		     gmx_mtop_t *mtop,
-		     gmx_bool bVerbose,
-		     t_inputrec *ir,
-		     rvec *v,
-		     warninp_t wi);
+extern void do_index(const char* mdparin,
+                     const char *ndx,
+                     gmx_mtop_t *mtop,
+                     gmx_bool    bVerbose,
+                     t_inputrec *ir,
+                     rvec       *v,
+                     warninp_t   wi);
 /* Read the index file and assign grp numbers to atoms.
  * If v is not NULL, the velocities will be scaled to the correct number
  * of degrees of freedom.
@@ -130,40 +134,40 @@ extern void do_index(const char* mdparin,
 
 /* Routines In readpull.c */
 
-extern char **read_pullparams(int *ninp_p,t_inpfile **inp,
-			      t_pull *pull,gmx_bool *bStart,
-			      warninp_t wi);
+extern char **read_pullparams(int *ninp_p, t_inpfile **inp,
+                              t_pull *pull, gmx_bool *bStart,
+                              warninp_t wi);
 /* Reads the pull parameters, returns a list of the pull group names */
 
-extern void make_pull_groups(t_pull *pull,char **pgnames,
-			     t_blocka *grps,char **gnames);
+extern void make_pull_groups(t_pull *pull, char **pgnames,
+                             t_blocka *grps, char **gnames);
 /* Process the pull parameters after reading the index groups */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box, real lambda,
-			  const output_env_t oenv, gmx_bool bStart);
+extern void set_pull_init(t_inputrec *ir, gmx_mtop_t *mtop, rvec *x, matrix box, real lambda,
+                          const output_env_t oenv, gmx_bool bStart);
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.
  */
 
-extern int str_nelem(const char *str,int maxptr,char *ptr[]);
+extern int str_nelem(const char *str, int maxptr, char *ptr[]);
 /* helper function from readir.c to convert strings */
 
-extern void read_adressparams(int *ninp_p,t_inpfile **inp_p,t_adress *adress, warninp_t wi);
+extern void read_adressparams(int *ninp_p, t_inpfile **inp_p, t_adress *adress, warninp_t wi);
 /* Reads in AdResS related parameters */
 
-extern void do_adress_index(t_adress *adress, gmx_groups_t *groups,char **gnames,t_grpopts *opts,warninp_t wi);
+extern void do_adress_index(t_adress *adress, gmx_groups_t *groups, char **gnames, t_grpopts *opts, warninp_t wi);
 /* Generate adress groups */
 
-extern char **read_rotparams(int *ninp_p,t_inpfile **inp,t_rot *rot,warninp_t wi);
+extern char **read_rotparams(int *ninp_p, t_inpfile **inp, t_rot *rot, warninp_t wi);
 /* Reads enforced rotation parameters, returns a list of the rot group names */
 
-extern void make_rotation_groups(t_rot *rot,char **rotgnames,
-                 t_blocka *grps,char **gnames);
+extern void make_rotation_groups(t_rot *rot, char **rotgnames,
+                                 t_blocka *grps, char **gnames);
 /* Process the rotation parameters after reading the index groups */
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
-        const char *fn, gmx_bool bSet, warninp_t wi);
+                                    const char *fn, gmx_bool bSet, warninp_t wi);
 
-#endif	/* _readir_h */
+#endif  /* _readir_h */

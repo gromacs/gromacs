@@ -41,9 +41,9 @@
 
 #include "typedefs.h"
 
-extern atom_id search_atom(const char *type,int start,
-			   t_atoms *atoms,
-			   const char *bondtype,gmx_bool bAllowMissing);
+extern atom_id search_atom(const char *type, int start,
+                           t_atoms *atoms,
+                           const char *bondtype, gmx_bool bAllowMissing);
 /* Search an atom in array of pointers to strings, starting from start
  * if type starts with '-' then searches backwards from start.
  * bondtype is only used for printing the error/warning string,
@@ -51,6 +51,6 @@ extern atom_id search_atom(const char *type,int start,
  * When bAllowMissing=FALSE an fatal error is issued, otherwise a warning.
  */
 
-extern void set_at(t_atom *at,real m,real q,int type,int resind);
+extern void set_at(t_atom *at, real m, real q, int type, int resind);
 
-#endif	/* _pgutil_h */
+#endif  /* _pgutil_h */

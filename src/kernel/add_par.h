@@ -45,27 +45,27 @@
 extern void add_param(t_params *ps, int ai, int aj, real *c, char *s);
 
 extern void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
-			  real c0, real c1, char *s);
-			  
-extern void add_dih_param(t_params *ps,int ai,int aj,int ak,int al,
-			  real c0, real c1, real c2, char *s);
+                          real c0, real c1, char *s);
 
-extern void add_cmap_param(t_params *ps,int ai,int aj,int ak,int al,int am,
-						   char *s);
+extern void add_dih_param(t_params *ps, int ai, int aj, int ak, int al,
+                          real c0, real c1, real c2, char *s);
+
+extern void add_cmap_param(t_params *ps, int ai, int aj, int ak, int al, int am,
+                           char *s);
 
 extern void add_vsite2_atoms(t_params *ps, int ai, int aj, int ak);
 
-extern void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al, 
-			   gmx_bool bSwapParity);
+extern void add_vsite3_atoms(t_params *ps, int ai, int aj, int ak, int al,
+                             gmx_bool bSwapParity);
 
 extern void add_vsite2_param(t_params *ps, int ai, int aj, int ak, real c0);
 
-extern void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al, 
-			   real c0, real c1);
+extern void add_vsite3_param(t_params *ps, int ai, int aj, int ak, int al,
+                             real c0, real c1);
 
-extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al, 
-			   int am);
+extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
+                             int am);
 
-extern int search_jtype(t_restp *rp,char *name,gmx_bool bFirstRes);
+extern int search_jtype(t_restp *rp, char *name, gmx_bool bFirstRes);
 
-#endif	/* _add_par_h */
+#endif  /* _add_par_h */

@@ -53,8 +53,8 @@
 typedef struct
 {
     gmx_bool                     bFrameTree;
-    int                      nmaxind;
-    gmx_ana_selcollection_t *sc;
+    int                          nmaxind;
+    gmx_ana_selcollection_t     *sc;
 } t_dumpdata;
 
 int
@@ -117,17 +117,25 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         {
             n = sel[g]->p.m.mapb.nr;
             if (nmaxind >= 0 && n > nmaxind)
+            {
                 n = nmaxind;
+            }
             for (i = 0; i <= n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.mapb.index[i]);
+            }
             if (n < sel[g]->p.m.mapb.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
 
         n = sel[g]->p.m.nr;
         if (nmaxind >= 0 && n > nmaxind)
+        {
             n = nmaxind;
+        }
         fprintf(stderr, "    RefId:");
         if (!sel[g]->p.m.refid)
         {
@@ -136,9 +144,13 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         else
         {
             for (i = 0; i < n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.refid[i]);
+            }
             if (n < sel[g]->p.m.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
 
@@ -150,9 +162,13 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         else
         {
             for (i = 0; i < n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.mapid[i]);
+            }
             if (n < sel[g]->p.m.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
     }
@@ -162,16 +178,16 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
 int
 gmx_test_selection(int argc, char *argv[])
 {
-    const char         *desc[] = {
+    const char             *desc[] = {
         "This is a test program for selections.",
     };
 
-    gmx_bool                bMaskOnly  = FALSE;
-    gmx_bool                bFrameTree = FALSE;
+    gmx_bool                bMaskOnly     = FALSE;
+    gmx_bool                bFrameTree    = FALSE;
     gmx_bool                bDebugCompile = FALSE;
-    int                 nref       = 0;
-    int                 nmaxind    = 20;
-    t_pargs             pa[] = {
+    int                     nref          = 0;
+    int                     nmaxind       = 20;
+    t_pargs                 pa[]          = {
         {"-mask",   FALSE, etBOOL, {&bMaskOnly},
          "Test position mask functionality"},
         {"-compdebug", FALSE, etBOOL, {&bDebugCompile},
@@ -184,15 +200,15 @@ gmx_test_selection(int argc, char *argv[])
          "Maximum number of indices to print in lists (-1 = print all)"},
     };
 
-    t_filenm            fnm[] = {
+    t_filenm                fnm[] = {
         {efDAT, "-o", "debug", ffOPTWR},
     };
 
-    gmx_ana_traj_t       *trj;
-    t_dumpdata            d;
-    int                   ngrps;
-    gmx_ana_selection_t **sel;
-    output_env_t          oenv;
+    gmx_ana_traj_t         *trj;
+    t_dumpdata              d;
+    int                     ngrps;
+    gmx_ana_selection_t   **sel;
+    output_env_t            oenv;
 
 #define NFILE asize(fnm)
 

@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rms.c is now in gmx_rms.c,
-* where the old main function is called gmx_rms().
-*/
+ * The code that used to be in g_rms.c is now in gmx_rms.c,
+ * where the old main function is called gmx_rms().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rms(argc,argv);
-  return 0;
+    gmx_rms(argc, argv);
+    return 0;
 }
-
-
-  

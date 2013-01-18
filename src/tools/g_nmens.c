@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_nmens.c is now in gmx_nmens.c,
-* where the old main function is called gmx_nmens().
-*/
+ * The code that used to be in g_nmens.c is now in gmx_nmens.c,
+ * where the old main function is called gmx_nmens().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_nmens(argc,argv);
-  return 0;
+    gmx_nmens(argc, argv);
+    return 0;
 }
-
-
-  

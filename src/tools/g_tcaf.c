@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_tcaf.c is now in gmx_tcaf.c,
-* where the old main function is called gmx_tcaf().
-*/
+ * The code that used to be in g_tcaf.c is now in gmx_tcaf.c,
+ * where the old main function is called gmx_tcaf().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_tcaf(argc,argv);
-  return 0;
+    gmx_tcaf(argc, argv);
+    return 0;
 }
-
-
-  
