@@ -229,11 +229,16 @@ if(CMAKE_CXX_COMPILER_LOADED)
     include(CheckCXXCompilerFlag)
 endif()
 
+# Get compiler version information, needs to be done early as check that depend
+# on compiler verison follow below.
+include(gmxGetCompilerInfo)
+get_compiler_version()
+
 # First exclude compilers known to not work with OpenMP although claim to support it:
 # gcc 4.2.1 and gcc-llvm 4.2.1 (also claims to be 4.2.1) on Mac OS X
 # This fixes redmine 900 and needs to run before OpenMP flags are set below.
 if (CMAKE_SYSTEM_NAME STREQUAL "Darwin" AND
-    CMAKE_COMPILER_IS_GNUCC AND C_COMPILER_VERSION VERSION_LESS 4.3)
+    (CMAKE_COMPILER_IS_GNUCC AND C_COMPILER_VERSION AND C_COMPILER_VERSION VERSION_LESS 4.3))
     message(STATUS "OpenMP multithreading not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled")
     set(GMX_OPENMP OFF CACHE BOOL
         "OpenMP multithreading not not supported with gcc/llvm-gcc 4.2 on Mac OS X, disabled!" FORCE)
@@ -269,9 +274,6 @@ endif()
 
 include(gmxCFlags)
 gmx_c_flags()
-
-include(gmxGetCompilerInfo)
-get_compiler_version()
 
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
 # Detect here whether applying a workaround is needed and will apply it later
