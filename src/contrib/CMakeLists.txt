@@ -49,7 +49,6 @@ if(GMX_OPENMM)
         message(FATAL_ERROR "The OpenMM build is not compatible with the native GPU build")
     endif()
 
-    enable_language(CXX)
     set (GMX_BINARY_SUFFIX "-openmm")
     set (GMX_LIBS_SUFFIX "_openmm")
 
@@ -99,8 +98,6 @@ if(GMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
     endif()
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/contrib)
-    find_package(OpenMM) 
 
     # mark as advanced the unused variables
     mark_as_advanced(FORCE GMX_CPU_ACCELERATION GMX_MPI GMX_FFT_LIBRARY 
