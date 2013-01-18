@@ -44,13 +44,13 @@
 extern "C" {
 #endif
 
-int n_bonded_dx(gmx_mtop_t *mtop,gmx_bool bExcl);
+int n_bonded_dx(gmx_mtop_t *mtop, gmx_bool bExcl);
 /* Returns the number of pbc_rvec_sub calls required for bonded interactions.
  * This number is also roughly proportional to the computational cost.
  */
 
 GMX_LIBMD_EXPORT
-float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box);
+float pme_load_estimate(gmx_mtop_t *mtop, t_inputrec *ir, matrix box);
 /* Returns an estimate for the relative load of the PME mesh calculation
  * in the total force calculation.
  * This estimate is reasonable for recent Intel and AMD x86_64 CPUs.
@@ -60,4 +60,4 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box);
 }
 #endif
 
-#endif	/* _perf_est_h */
+#endif  /* _perf_est_h */

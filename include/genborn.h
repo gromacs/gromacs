@@ -53,7 +53,7 @@ extern "C" {
 #define STILL_P2  0.921*0.1*CAL2JOULE    /* energy*length */
 #define STILL_P3  6.211*0.1*CAL2JOULE    /* energy*length */
 #define STILL_P4  15.236*0.1*CAL2JOULE
-#define STILL_P5  1.254 
+#define STILL_P5  1.254
 
 #define STILL_P5INV (1.0/STILL_P5)
 #define STILL_PIP5  (M_PI*STILL_P5)
@@ -61,20 +61,20 @@ extern "C" {
 
 /* Initialise GB stuff */
 int init_gb(gmx_genborn_t **p_born,
-	    const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
-	    const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm);
+            const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
+            const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir,gmx_localtop_t *top,
-				const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
+                const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
-/* Bonded GB interactions */								
+/* Bonded GB interactions */
 real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtabscale,
-				  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
-				  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
+                  real *invsqrta, real *dvda, real *GBtab, t_idef *idef, real epsilon_r,
+                  real gb_epsilon_solvent, real facel, const t_pbc *pbc, const t_graph *graph);
 
 
 
@@ -82,10 +82,10 @@ void gb_pd_send(t_commrec *cr, real *send_data, int nr);
 
 
 /* Functions for setting up the F_GB12,13,14 lists in grompp */
-int 
+int
 init_gb_plist(t_params *p_list);
 
-int 
+int
 convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist, t_ilist *il);
 
 
@@ -93,16 +93,16 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 /* Functions for calculating adjustments due to ie chain rule terms */
 void
 calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-			   rvec x[], rvec f[], t_forcerec *fr,t_idef *idef,int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
-			   const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd);
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+               const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd);
 
 
 int
 make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
-	       rvec x[], matrix box,
-	       t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
+               rvec x[], matrix box,
+               t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
 
-void 
+void
 make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 
 #ifdef __cplusplus
@@ -110,4 +110,3 @@ make_local_gb(const t_commrec *cr, gmx_genborn_t *born, int gb_algorithm);
 #endif
 
 #endif /* _genborn_h */
-

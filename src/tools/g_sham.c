@@ -46,9 +46,6 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_sham(argc,argv);
-  return 0;
+    gmx_sham(argc, argv);
+    return 0;
 }
-
-
-  

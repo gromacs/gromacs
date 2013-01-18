@@ -56,30 +56,30 @@ void add_nrnb(t_nrnb *dest, t_nrnb *s1, t_nrnb *s2);
 GMX_LIBGMX_EXPORT
 void print_nrnb(FILE *out, t_nrnb *nrnb);
 
-void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
+void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char *file, int line);
 
 #if DEBUG_NRNB
-#define inc_nrnb(nrnb,enr,inc) _inc_nrnb(nrnb,enr,inc,__FILE__,__LINE__)
+#define inc_nrnb(nrnb, enr, inc) _inc_nrnb(nrnb, enr, inc, __FILE__, __LINE__)
 #else
-#define inc_nrnb(nrnb,enr,inc) (nrnb)->n[enr] += inc
+#define inc_nrnb(nrnb, enr, inc) (nrnb)->n[enr] += inc
 #endif
 
- 
+
 GMX_LIBGMX_EXPORT
-void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
+void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop);
 /* Calculates the non-bonded forces and flop count.
  * When out!=NULL also prints the full count table.
  */
 
 GMX_LIBGMX_EXPORT
-void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
-		       gmx_large_int_t nsteps,real delta_t,
-		       double nbfs,double mflop,
-                       int omp_nth_pp);
+void print_perf(FILE *out, double nodetime, double realtime, int nprocs,
+                gmx_large_int_t nsteps, real delta_t,
+                double nbfs, double mflop,
+                int omp_nth_pp);
 /* Prints the performance, nbfs and mflop come from print_flop */
 
 GMX_LIBGMX_EXPORT
-void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
+void pr_load(FILE *log, t_commrec *cr, t_nrnb nrnb[]);
 /* Print detailed load balancing info */
 
 GMX_LIBGMX_EXPORT
@@ -94,4 +94,4 @@ const char *nrnb_str(int enr);
 }
 #endif
 
-#endif	/* _nrnb_h */
+#endif  /* _nrnb_h */

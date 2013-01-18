@@ -46,32 +46,32 @@ extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-real calc_similar_ind(gmx_bool bRho,int nind,atom_id *index,real mass[],
-			     rvec x[],rvec xp[]);
+real calc_similar_ind(gmx_bool bRho, int nind, atom_id *index, real mass[],
+                      rvec x[], rvec xp[]);
 /* Returns RMSD or Rho (depending on bRho) over all atoms in index */
 
 GMX_LIBGMX_EXPORT
-real rmsdev_ind(int nind,atom_id index[],real mass[],
-		       rvec x[],rvec xp[]);
+real rmsdev_ind(int nind, atom_id index[], real mass[],
+                rvec x[], rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms in index */
 
 GMX_LIBGMX_EXPORT
-real rmsdev(int natoms,real mass[],rvec x[],rvec xp[]);
+real rmsdev(int natoms, real mass[], rvec x[], rvec xp[]);
 /* Returns the RMS Deviation betweem x and xp over all atoms */
 
-real rhodev_ind(int nind,atom_id index[],real mass[],rvec x[],rvec xp[]);
+real rhodev_ind(int nind, atom_id index[], real mass[], rvec x[], rvec xp[]);
 /* Returns size-independent Rho similarity parameter over all atoms in index
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
- 
-real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
+
+real rhodev(int natoms, real mass[], rvec x[], rvec xp[]);
 /* Returns size-independent Rho similarity parameter over all atoms
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
 GMX_LIBGMX_EXPORT
-void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
-		       matrix R);
+void calc_fit_R(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x,
+                matrix R);
 /* Calculates the rotation matrix R for which
  * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)
  * is minimal. ndim=3 gives full fit, ndim=2 gives xy fit.
@@ -80,7 +80,7 @@ void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
  */
 
 GMX_LIBGMX_EXPORT
-void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
+void do_fit_ndim(int ndim, int natoms, real *w_rls, rvec *xp, rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not taken into account in fitting.
  * This makes is possible to fit eg. on Calpha atoms and orient
@@ -89,13 +89,13 @@ void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
  */
 
 GMX_LIBGMX_EXPORT
-void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
+void do_fit(int natoms, real *w_rls, rvec *xp, rvec *x);
 /* Calls do_fit with ndim=3, thus fitting in 3D */
 
 GMX_LIBGMX_EXPORT
-void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
-			 int nreset,const atom_id *ind_reset,
-			 rvec x[],const real mass[]);
+void reset_x_ndim(int ndim, int ncm, const atom_id *ind_cm,
+                  int nreset, const atom_id *ind_reset,
+                  rvec x[], const real mass[]);
 /* Put the center of mass of atoms in the origin for dimensions 0 to ndim.
  * The center of mass is computed from the index ind_cm.
  * When ind_cm!=NULL the COM is determined using ind_cm.
@@ -105,13 +105,13 @@ void reset_x_ndim(int ndim,int ncm,const atom_id *ind_cm,
  */
 
 GMX_LIBGMX_EXPORT
-void reset_x(int ncm,const atom_id *ind_cm,
-		    int nreset,const atom_id *ind_reset,
-		    rvec x[],const real mass[]);
+void reset_x(int ncm, const atom_id *ind_cm,
+             int nreset, const atom_id *ind_reset,
+             rvec x[], const real mass[]);
 /* Calls reset_x with ndim=3, thus resetting all dimesions */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _do_fit_h */
+#endif  /* _do_fit_h */

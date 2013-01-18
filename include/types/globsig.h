@@ -47,12 +47,14 @@ extern "C" {
 /* Hack to make automatic indenting work */
 #endif
 
-/* simulation conditions to transmit. Keep in mind that they are 
+/* simulation conditions to transmit. Keep in mind that they are
    transmitted to other nodes through an MPI_Reduce after
-   casting them to a real (so the signals can be sent together with other 
-   data). This means that the only meaningful values are positive, 
+   casting them to a real (so the signals can be sent together with other
+   data). This means that the only meaningful values are positive,
    negative or zero. */
-enum { eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR };
+enum {
+    eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
+};
 
 typedef struct {
     int nstms;       /* The frequency for intersimulation communication */

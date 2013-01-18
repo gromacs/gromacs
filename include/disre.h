@@ -48,10 +48,10 @@ extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
-                 t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
-                 t_fcdata *fcd,t_state *state, gmx_bool bIsREMD);
-/* Initiate *fcd data, must be called once, nbonds is the number 
+void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
+                 t_inputrec *ir, const t_commrec *cr, gmx_bool bPartDecomp,
+                 t_fcdata *fcd, t_state *state, gmx_bool bIsREMD);
+/* Initiate *fcd data, must be called once, nbonds is the number
  * of iatoms in the ilist of the idef struct.
  * When time averaging is used, the history is initialized in state,
  * unless it was read before from a checkpoint file.
@@ -61,9 +61,9 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
 
 GMX_LIBGMX_EXPORT
 void calc_disres_R_6(const gmx_multisim_t *ms,
-			    int nfa,const t_iatom *fa,const t_iparams ip[],
-			    const rvec *x,const t_pbc *pbc,
-			    t_fcdata *fcd,history_t *hist);
+                     int nfa, const t_iatom *fa, const t_iparams ip[],
+                     const rvec *x, const t_pbc *pbc,
+                     t_fcdata *fcd, history_t *hist);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
@@ -72,11 +72,11 @@ t_ifunc ta_disres;
 /* Calculate the distance restraint forces, return the potential */
 
 GMX_LIBGMX_EXPORT
-void update_disres_history(t_fcdata *fcd,history_t *hist);
+void update_disres_history(t_fcdata *fcd, history_t *hist);
 /* Copy the new time averages that have been calculated in calc_disres_R_6 */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _disre_h */
+#endif  /* _disre_h */

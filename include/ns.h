@@ -59,15 +59,15 @@ extern "C" {
  ****************************************************/
 
 GMX_LIBMD_EXPORT
-void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
-/* 
+void init_neighbor_list(FILE *log, t_forcerec *fr, int homenr);
+/*
  * nn is the number of energy terms in the energy matrix
  * (ngener*(ngener-1))/2
  * start is the first atom on this processor
  * homenr is the number of atoms on this processor
  */
- 
-int calc_naaj(int icg,int cgtot);
+
+int calc_naaj(int icg, int cgtot);
 /* Calculate the number of charge groups to interact with for icg */
 
 /****************************************************
@@ -77,38 +77,38 @@ int calc_naaj(int icg,int cgtot);
  *    Calls either ns5_core (when grid selected in .mdp file)
  *    or ns_simple_core (when simple selected in .mdp file)
  *
- *    Return total number of pairs searched 
+ *    Return total number of pairs searched
  *
  ****************************************************/
-void init_ns(FILE *fplog,const t_commrec *cr,
-		    gmx_ns_t *ns,t_forcerec *fr,
-		    const gmx_mtop_t *mtop,
-		    matrix box);
+void init_ns(FILE *fplog, const t_commrec *cr,
+             gmx_ns_t *ns, t_forcerec *fr,
+             const gmx_mtop_t *mtop,
+             matrix box);
 
 GMX_LIBMD_EXPORT
-int search_neighbours(FILE *log,t_forcerec *fr,
-			     rvec x[],matrix box,
-			     gmx_localtop_t *top,
-			     gmx_groups_t *groups,
-			     t_commrec *cr,
-			     t_nrnb *nrnb,t_mdatoms *md,
-			     real *lambda,real *dvdlambda,
-			     gmx_grppairener_t *grppener,
-			     gmx_bool bFillGrid,
-			     gmx_bool bDoLongRangeNS,
-                 gmx_bool bPadListsForKernels);
- 
+int search_neighbours(FILE *log, t_forcerec *fr,
+                      rvec x[], matrix box,
+                      gmx_localtop_t *top,
+                      gmx_groups_t *groups,
+                      t_commrec *cr,
+                      t_nrnb *nrnb, t_mdatoms *md,
+                      real *lambda, real *dvdlambda,
+                      gmx_grppairener_t *grppener,
+                      gmx_bool bFillGrid,
+                      gmx_bool bDoLongRangeNS,
+                      gmx_bool bPadListsForKernels);
+
 
 /* Debugging routines from wnblist.c */
 GMX_LIBMD_EXPORT
-void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
+void dump_nblist(FILE *out, t_commrec *cr, t_forcerec *fr, int nDNL);
 
-int read_nblist(FILE *in,FILE *out,int **mat,int natoms,gmx_bool bSymm);
+int read_nblist(FILE *in, FILE *out, int **mat, int natoms, gmx_bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
 
 GMX_LIBMD_EXPORT
-int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
-				   matrix scale_tot,rvec *x);
+int natoms_beyond_ns_buffer(t_inputrec *ir, t_forcerec *fr, t_block *cgs,
+                            matrix scale_tot, rvec *x);
 /* Returns the number of atoms that moved beyond the ns buffer */
 
 #ifdef __cplusplus
@@ -116,4 +116,4 @@ int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 #endif
 
 
-#endif	/* _ns_h */
+#endif  /* _ns_h */

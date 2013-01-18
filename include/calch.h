@@ -44,11 +44,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-	
+
 GMX_LIBGMX_EXPORT
 void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
 /*
- *    w.f. van gunsteren, groningen, july 1981 
+ *    w.f. van gunsteren, groningen, july 1981
  *
  *    translated to c d. van der spoel groningen jun 1993
  *    added option 5 jan 95
@@ -63,7 +63,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
  *               generated
  *    xa(1..4) : atomic positions of the control atoms i, j and k and l
  *    default bond lengths and angles are defined internally
- *   
+ *
  *    l : dynamically changed index
  */
 
@@ -71,4 +71,4 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[], int *l);
 }
 #endif
 
-#endif	/* _calch_h */
+#endif  /* _calch_h */

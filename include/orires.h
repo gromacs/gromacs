@@ -43,22 +43,22 @@
 #include "typedefs.h"
 
 #ifdef __cplusplus
-    extern "C" {
+extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
-			rvec x[],
-			const t_inputrec *ir,
-			const gmx_multisim_t *ms,t_oriresdata *od,
-			t_state *state);
+void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
+                 rvec x[],
+                 const t_inputrec *ir,
+                 const gmx_multisim_t *ms, t_oriresdata *od,
+                 t_state *state);
 /* Initializes all the orientation restraint stuff in *od */
 
 real calc_orires_dev(const gmx_multisim_t *ms,
-			    int nfa,const t_iatom fa[],const t_iparams ip[],
-			    const t_mdatoms *md,const rvec x[],
-			    const t_pbc *pbc,t_fcdata *fcd,history_t *hist);
-/* 
+                     int nfa, const t_iatom fa[], const t_iparams ip[],
+                     const t_mdatoms *md, const rvec x[],
+                     const t_pbc *pbc, t_fcdata *fcd, history_t *hist);
+/*
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  * Returns the weighted RMS deviation of the orientation restraints.
  */
@@ -72,18 +72,18 @@ void diagonalize_orires_tensors(t_oriresdata *od);
  */
 
 GMX_LIBGMX_EXPORT
-void print_orires_log(FILE *log,t_oriresdata *od);
+void print_orires_log(FILE *log, t_oriresdata *od);
 /* Print order parameter, eigenvalues and eigenvectors to the log file */
 
 t_ifunc orires;
 /* Does only the orientation restraint force calculation */
 
 GMX_LIBGMX_EXPORT
-void update_orires_history(t_fcdata *fcd,history_t *hist);
+void update_orires_history(t_fcdata *fcd, history_t *hist);
 /* Copy the new time averages that have been calculated in calc_orires_dev */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _orires_h */
+#endif  /* _orires_h */

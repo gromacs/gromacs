@@ -49,7 +49,7 @@ extern "C" {
 
 #define eNR_NBKERNEL_NONE -1
 
-enum 
+enum
 {
     eNR_NBKERNEL_VDW_VF,
     eNR_NBKERNEL_VDW_F,
@@ -74,7 +74,7 @@ enum
     eNR_NBKERNEL_ELEC_VDW_W4W4_VF,
     eNR_NBKERNEL_ELEC_VDW_W4W4_F,
 
-    eNR_NBKERNEL_NR,  /* Total number of interaction-specific kernel entries */
+    eNR_NBKERNEL_NR,                        /* Total number of interaction-specific kernel entries */
 
     eNR_NBKERNEL_GENERIC = eNR_NBKERNEL_NR, /* Reuse number; KERNEL_NR is not an entry itself */
     eNR_NBKERNEL_FREE_ENERGY,               /* Add other generic kernels _before_ the free energy one */
@@ -97,7 +97,7 @@ enum
     eNR_BORN_AVA_CHAINRULE,
     eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
     eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
-    eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
+    eNR_CONV,                 eNR_SOLVEPME, eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
     eNR_BONDS,                eNR_G96BONDS,             eNR_FENEBONDS,
     eNR_TABBONDS,             eNR_RESTRBONDS,           eNR_LINEAR_ANGLES,

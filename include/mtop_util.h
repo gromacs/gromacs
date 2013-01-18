@@ -87,8 +87,8 @@ gmx_mtop_atomlookup_destroy(gmx_mtop_atomlookup_t alook);
 GMX_LIBGMX_EXPORT
 void
 gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
-			int atnr_global,
-			t_atom **atom);
+                        int                         atnr_global,
+                        t_atom                    **atom);
 
 
 /* Returns a pointer to the molecule interaction array ilist_mol[F_NRE]
@@ -97,8 +97,8 @@ gmx_mtop_atomnr_to_atom(const gmx_mtop_atomlookup_t alook,
 GMX_LIBGMX_EXPORT
 void
 gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
-			 int atnr_global,
-			 t_ilist **ilist_mol,int *atnr_offset);
+                         int atnr_global,
+                         t_ilist **ilist_mol, int *atnr_offset);
 
 
 /* Returns the molecule block index
@@ -109,15 +109,15 @@ gmx_mtop_atomnr_to_ilist(const gmx_mtop_atomlookup_t alook,
 GMX_LIBGMX_EXPORT
 void
 gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_atomlookup_t alook,
-				int atnr_global,
-				int *molb,int *molnr,int *atnr_mol);
+                                int atnr_global,
+                                int *molb, int *molnr, int *atnr_mol);
 
 
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 GMX_LIBGMX_EXPORT
 void
-gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
-			 char **atomname,int *resnr,char **resname);
+gmx_mtop_atominfo_global(const gmx_mtop_t *mtop, int atnr_global,
+                         char **atomname, int *resnr, char **resname);
 
 
 /* Abstract type for atom loop over all atoms */
@@ -149,21 +149,21 @@ gmx_mtop_atomloop_all_init(const gmx_mtop_t *mtop);
 GMX_LIBGMX_EXPORT
 gmx_bool
 gmx_mtop_atomloop_all_next(gmx_mtop_atomloop_all_t aloop,
-			   int *at_global,t_atom **atom);
+                           int *at_global, t_atom **atom);
 
 /* Return the atomname, the residue number and residue name
  * of the current atom in the loop.
  */
 void
 gmx_mtop_atomloop_all_names(gmx_mtop_atomloop_all_t aloop,
-			    char **atomname,int *resnr,char **resname);
+                            char **atomname, int *resnr, char **resname);
 
 /* Return the a pointer to the moltype struct of the current atom
  * in the loop and the atom number in the molecule.
  */
 void
 gmx_mtop_atomloop_all_moltype(gmx_mtop_atomloop_all_t aloop,
-			      gmx_moltype_t **moltype,int *at_mol);
+                              gmx_moltype_t **moltype, int *at_mol);
 
 
 /* Abstract type for atom loop over atoms in all molecule blocks */
@@ -191,7 +191,7 @@ gmx_mtop_atomloop_block_init(const gmx_mtop_t *mtop);
 GMX_LIBGMX_EXPORT
 gmx_bool
 gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
-			     t_atom **atom,int *nmol);
+                             t_atom **atom, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists */
@@ -212,7 +212,7 @@ gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
 GMX_LIBGMX_EXPORT
 gmx_bool
 gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-			t_ilist **ilist_mol,int *nmol);
+                        t_ilist **ilist_mol, int *nmol);
 
 
 /* Abstract type for ilist loop over all ilists of all molecules */
@@ -236,13 +236,13 @@ gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
 GMX_LIBGMX_EXPORT
 gmx_bool
 gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
-			    t_ilist **ilist_mol,int *atnr_offset);
+                            t_ilist **ilist_mol, int *atnr_offset);
 
 
 /* Returns the total number of interactions in the system of type ftype */
 GMX_LIBGMX_EXPORT
 int
-gmx_mtop_ftype_count(const gmx_mtop_t *mtop,int ftype);
+gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype);
 
 
 /* Returns a charge group index for the whole system */
@@ -251,7 +251,7 @@ t_block
 gmx_mtop_global_cgs(const gmx_mtop_t *mtop);
 
 
-/* Returns a single t_atoms struct for the whole system */ 
+/* Returns a single t_atoms struct for the whole system */
 GMX_LIBGMX_EXPORT
 t_atoms
 gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
@@ -262,7 +262,7 @@ gmx_mtop_global_atoms(const gmx_mtop_t *mtop);
  * that consist of a single charge group.
  */
 void
-gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,gmx_bool bKeepSingleMolCG);
+gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop, gmx_bool bKeepSingleMolCG);
 
 
 /* Generate a 'local' topology for the whole system.
@@ -270,7 +270,7 @@ gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,gmx_bool bKeepSingleMolCG);
  */
 GMX_LIBGMX_EXPORT
 gmx_localtop_t *
-gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir);
+gmx_mtop_generate_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir);
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
@@ -283,4 +283,3 @@ gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop);
 #ifdef __cplusplus
 }
 #endif
-

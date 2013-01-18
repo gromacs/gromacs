@@ -45,7 +45,7 @@
 #include "gmx_fft.h"
 
 typedef struct gmx_parallel_3dfft *
-gmx_parallel_3dfft_t;
+    gmx_parallel_3dfft_t;
 
 
 
@@ -56,7 +56,7 @@ gmx_parallel_3dfft_t;
  *
  *  The routine is optimized for small-to-medium size FFTs used for PME and
  *  PPPM algorithms, and do allocate extra workspace whenever it might improve
- *  performance. 
+ *  performance.
  *
  *  \param pfft_setup     Pointer to parallel 3dfft setup structure, previously
  *                        allocated or with automatic storage.
@@ -67,24 +67,24 @@ gmx_parallel_3dfft_t;
  *  \param ngridz         Global number of grid cells in the z direction.
  *  \param node2slab      Node id to slab index array, can be NULL.
  *  \param slab2grid_x    Slab index to grid_x array (nnodes+1), can be NULL.
- *  \param comm           MPI communicator, must have been initialized. 
+ *  \param comm           MPI communicator, must have been initialized.
  *  \param bReproducible  Try to avoid FFT timing optimizations and other stuff
  *                        that could make results differ for two runs with
  *                        identical input (reproducibility for debugging).
  *  \param nthreads       Run in parallel using n threads
- *    
+ *
  *  \return 0 or a standard error code.
  */
 int
-gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
-                           ivec                      ndata,
-                           real **                   real_data,
-                           t_complex **              complex_data,
-                           MPI_Comm                  comm[2],
-                           int *                     slab2index_major,
-                           int *                     slab2index_minor,
-                           gmx_bool                  bReproducible,
-                           int                       nthreads);
+    gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
+                               ivec                      ndata,
+                               real **real_data,
+                               t_complex **complex_data,
+                               MPI_Comm                  comm[2],
+                               int *                     slab2index_major,
+                               int *                     slab2index_minor,
+                               gmx_bool                  bReproducible,
+                               int                       nthreads);
 
 
 
@@ -140,4 +140,3 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 
 
 #endif /* _gmx_parallel_3dfft_h_ */
-

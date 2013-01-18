@@ -48,37 +48,37 @@ extern "C" {
 #endif
 
 typedef struct {
-  gmx_bool bShow;
-  char *label;
-  int  iphi,ipsi; /* point in the dih array of xr... */
+    gmx_bool bShow;
+    char    *label;
+    int      iphi, ipsi; /* point in the dih array of xr... */
 } t_phipsi;
 
 typedef struct {
-  atom_id ai[4];
-  int     mult;
-  real    phi0;
-  real    ang;
+    atom_id ai[4];
+    int     mult;
+    real    phi0;
+    real    ang;
 } t_dih;
 
 typedef struct {
-  int       ndih;
-  t_dih     *dih;
-  int       npp;
-  t_phipsi  *pp;
-  t_trxstatus *traj;
-  int       natoms;
-  int       amin,amax;
-  real      t;
-  rvec      *x;
-  matrix    box;
-  t_idef    *idef;
-  int       ePBC;
-  output_env_t oenv;
+    int          ndih;
+    t_dih       *dih;
+    int          npp;
+    t_phipsi    *pp;
+    t_trxstatus *traj;
+    int          natoms;
+    int          amin, amax;
+    real         t;
+    rvec        *x;
+    matrix       box;
+    t_idef      *idef;
+    int          ePBC;
+    output_env_t oenv;
 } t_xrama;
 
 GMX_LIBGMX_EXPORT
 t_topology *init_rama(const output_env_t oenv, const char *infile,
-                             const char *topfile, t_xrama *xr,int mult);
+                      const char *topfile, t_xrama *xr, int mult);
 
 GMX_LIBGMX_EXPORT
 gmx_bool new_data(t_xrama *xr);
@@ -87,4 +87,4 @@ gmx_bool new_data(t_xrama *xr);
 }
 #endif
 
-#endif	/* _nrama_h */
+#endif  /* _nrama_h */

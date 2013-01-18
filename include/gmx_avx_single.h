@@ -42,21 +42,21 @@
 static inline __m256
 gmx_mm256_invsqrt_ps(__m256 x)
 {
-    const __m256 half  = _mm256_set_ps(0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5);
-    const __m256 three = _mm256_set_ps(3.0,3.0,3.0,3.0,3.0,3.0,3.0,3.0);
-    
-    __m256 lu = _mm256_rsqrt_ps(x);
-    
-    return _mm256_mul_ps(half,_mm256_mul_ps(_mm256_sub_ps(three,_mm256_mul_ps(_mm256_mul_ps(lu,lu),x)),lu));
+    const __m256 half  = _mm256_set_ps(0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+    const __m256 three = _mm256_set_ps(3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0);
+
+    __m256       lu = _mm256_rsqrt_ps(x);
+
+    return _mm256_mul_ps(half, _mm256_mul_ps(_mm256_sub_ps(three, _mm256_mul_ps(_mm256_mul_ps(lu, lu), x)), lu));
 }
 
 static inline __m256
 gmx_mm256_calc_rsq_ps(__m256 dx, __m256 dy, __m256 dz)
 {
-    return _mm256_add_ps( _mm256_add_ps( _mm256_mul_ps(dx,dx), _mm256_mul_ps(dy,dy) ), _mm256_mul_ps(dz,dz) );
+    return _mm256_add_ps( _mm256_add_ps( _mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy) ), _mm256_mul_ps(dz, dz) );
 }
 
 /* Normal sum of four xmm registers */
-#define gmx_mm256_sum4_ps(t0,t1,t2,t3)  _mm256_add_ps(_mm256_add_ps(t0,t1),_mm256_add_ps(t2,t3))
+#define gmx_mm256_sum4_ps(t0, t1, t2, t3)  _mm256_add_ps(_mm256_add_ps(t0, t1), _mm256_add_ps(t2, t3))
 
 #endif /* gmx_avx_single_h_ */

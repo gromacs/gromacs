@@ -243,9 +243,9 @@
 #define gmx_mul_pr        _mm256_mul_ps
 #define gmx_max_pr        _mm256_max_ps
 /* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x,y)  _mm256_cmp_ps(x,y,0x0c)
+#define gmx_cmpneq_pr(x, y)  _mm256_cmp_ps(x, y, 0x0c)
 /* Less-than (ordered, non-signaling)  */
-#define gmx_cmplt_pr(x,y) _mm256_cmp_ps(x,y,0x11)
+#define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
 #define gmx_and_pr        _mm256_and_ps
 #define gmx_or_pr         _mm256_or_ps
 #define gmx_andnot_pr     _mm256_andnot_ps
@@ -303,9 +303,9 @@
 #define gmx_mul_pr        _mm256_mul_pd
 #define gmx_max_pr        _mm256_max_pd
 /* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x,y)  _mm256_cmp_pd(x,y,0x0c)
+#define gmx_cmpneq_pr(x, y)  _mm256_cmp_pd(x, y, 0x0c)
 /* Less-than (ordered, non-signaling)  */
-#define gmx_cmplt_pr(x,y) _mm256_cmp_pd(x,y,0x11)
+#define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
 #define gmx_and_pr        _mm256_and_pd
 #define gmx_or_pr         _mm256_or_pd
 #define gmx_andnot_pr     _mm256_andnot_pd

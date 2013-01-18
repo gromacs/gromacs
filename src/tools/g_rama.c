@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rama.c is now in gmx_rama.c,
-* where the old main function is called gmx_rama().
-*/
+ * The code that used to be in g_rama.c is now in gmx_rama.c,
+ * where the old main function is called gmx_rama().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rama(argc,argv);
-  return 0;
+    gmx_rama(argc, argv);
+    return 0;
 }
-
-
-  

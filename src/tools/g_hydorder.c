@@ -44,13 +44,10 @@
 
 
 /* This is just a wrapper binary.
-*/
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_hydorder(argc,argv);
-  return 0;
+    gmx_hydorder(argc, argv);
+    return 0;
 }
-
-
-  

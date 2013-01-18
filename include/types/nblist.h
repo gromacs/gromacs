@@ -55,7 +55,7 @@ typedef unsigned long t_excl;
  */
 #define MAX_CGCGSIZE 32
 
-typedef struct 
+typedef struct
 {
     int             igeometry;    /* The type of list (atom, water, etc.)  */
     int             ielec;        /* Coulomb loop type index for kernels   */
@@ -65,8 +65,8 @@ typedef struct
     int             type;         /* Type of interaction, listed in
                                      gmx_nblist_interaction_type           */
 
-    int             nri,maxnri;   /* Current/max number of i particles	   */
-    int             nrj,maxnrj;   /* Current/max number of j particles	   */
+    int             nri, maxnri;  /* Current/max number of i particles	   */
+    int             nrj, maxnrj;  /* Current/max number of j particles	   */
     int             maxlen;       /* maxnr of j atoms for a single i atom  */
     int *           iinr;         /* The i-elements                        */
     int *           iinr_end;     /* The end atom, only with enlistCG      */

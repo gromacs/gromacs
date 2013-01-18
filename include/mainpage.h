@@ -42,15 +42,13 @@
 
 /*! \mainpage Gromacs
 
-  GROMACS is a versatile package to perform molecular dynamics, i.e.  simulate 
-  the Newtonian equations of motion for systems with hundreds, to millions 
-  of particles.
+   GROMACS is a versatile package to perform molecular dynamics, i.e.  simulate
+   the Newtonian equations of motion for systems with hundreds, to millions
+   of particles.
 
-  Currently, there is documentation available (at least) on the following
-  parts of the source tree:
+   Currently, there is documentation available (at least) on the following
+   parts of the source tree:
    - \subpage thread_mpi
    - \subpage libtrajana
 
-  */
-
-
+ */

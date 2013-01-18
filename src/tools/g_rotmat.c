@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_fitmat.c is now in gmx_fitmat.c,
-* where the old main function is called gmx_fitmat().
-*/
+ * The code that used to be in g_fitmat.c is now in gmx_fitmat.c,
+ * where the old main function is called gmx_fitmat().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rotmat(argc,argv);
-  return 0;
+    gmx_rotmat(argc, argv);
+    return 0;
 }
-
-
-  

@@ -64,14 +64,14 @@ nb_kernel_hash_func(const char *   arch,
 {
     unsigned int hash;
 
-    hash = gmx_string_hash_func(arch,gmx_string_hash_init);
-    hash = gmx_string_hash_func(elec,hash);
-    hash = gmx_string_hash_func(elec_mod,hash);
-    hash = gmx_string_hash_func(vdw,hash);
-    hash = gmx_string_hash_func(vdw_mod,hash);
-    hash = gmx_string_hash_func(geom,hash);
-    hash = gmx_string_hash_func(other,hash);
-    hash = gmx_string_hash_func(vf,hash);
+    hash = gmx_string_hash_func(arch, gmx_string_hash_init);
+    hash = gmx_string_hash_func(elec, hash);
+    hash = gmx_string_hash_func(elec_mod, hash);
+    hash = gmx_string_hash_func(vdw, hash);
+    hash = gmx_string_hash_func(vdw_mod, hash);
+    hash = gmx_string_hash_func(geom, hash);
+    hash = gmx_string_hash_func(other, hash);
+    hash = gmx_string_hash_func(vf, hash);
 
     return hash;
 }
@@ -80,8 +80,8 @@ void
 nb_kernel_list_add_kernels(nb_kernel_info_t *   new_kernel_list,
                            int                  new_kernel_list_size)
 {
-    srenew(kernel_list,kernel_list_size+new_kernel_list_size);
-    memcpy(kernel_list+kernel_list_size,new_kernel_list,new_kernel_list_size*sizeof(nb_kernel_info_t));
+    srenew(kernel_list, kernel_list_size+new_kernel_list_size);
+    memcpy(kernel_list+kernel_list_size, new_kernel_list, new_kernel_list_size*sizeof(nb_kernel_info_t));
     kernel_list_size += new_kernel_list_size;
 }
 
@@ -93,25 +93,25 @@ nb_kernel_list_hash_init(void)
     unsigned int            index;
 
     kernel_list_hash_size   = kernel_list_size*5;
-    snew(kernel_list_hash,kernel_list_hash_size);
+    snew(kernel_list_hash, kernel_list_hash_size);
 
-    for(i=0;i<kernel_list_hash_size;i++)
+    for (i = 0; i < kernel_list_hash_size; i++)
     {
         kernel_list_hash[i] = -1;
     }
-    for(i=0;i<kernel_list_size;i++)
+    for (i = 0; i < kernel_list_size; i++)
     {
-        index=nb_kernel_hash_func(kernel_list[i].architecture,
-                                  kernel_list[i].electrostatics,
-                                  kernel_list[i].electrostatics_modifier,
-                                  kernel_list[i].vdw,
-                                  kernel_list[i].vdw_modifier,
-                                  kernel_list[i].geometry,
-                                  kernel_list[i].other,
-                                  kernel_list[i].vf) % kernel_list_hash_size;
+        index = nb_kernel_hash_func(kernel_list[i].architecture,
+                                    kernel_list[i].electrostatics,
+                                    kernel_list[i].electrostatics_modifier,
+                                    kernel_list[i].vdw,
+                                    kernel_list[i].vdw_modifier,
+                                    kernel_list[i].geometry,
+                                    kernel_list[i].other,
+                                    kernel_list[i].vf) % kernel_list_hash_size;
 
         /* Check for collisions and advance if necessary */
-        while( kernel_list_hash[index] != -1 )
+        while (kernel_list_hash[index] != -1)
         {
             index = (index+1) % kernel_list_hash_size;
         }
@@ -125,7 +125,7 @@ void
 nb_kernel_list_hash_destroy()
 {
     sfree(kernel_list_hash);
-    kernel_list_hash = NULL;
+    kernel_list_hash      = NULL;
     kernel_list_hash_size = 0;
 }
 
@@ -145,31 +145,31 @@ nb_kernel_list_findkernel(FILE *              log,
     unsigned int        index;
     nb_kernel_info_t *  kernelinfo_ptr;
 
-    if(kernel_list_hash_size==0)
+    if (kernel_list_hash_size == 0)
     {
         return NULL;
     }
 
-    index=nb_kernel_hash_func(arch,
-                              electrostatics,
-                              electrostatics_modifier,
-                              vdw,
-                              vdw_modifier,
-                              geometry,
-                              other,
-                              vf) % kernel_list_hash_size;
+    index = nb_kernel_hash_func(arch,
+                                electrostatics,
+                                electrostatics_modifier,
+                                vdw,
+                                vdw_modifier,
+                                geometry,
+                                other,
+                                vf) % kernel_list_hash_size;
 
     kernelinfo_ptr = NULL;
-    while( (i=kernel_list_hash[index]) != -1)
+    while ( (i = kernel_list_hash[index]) != -1)
     {
-        if(!gmx_strcasecmp_min(kernel_list[i].architecture,arch) &&
-           !gmx_strcasecmp_min(kernel_list[i].electrostatics,electrostatics) &&
-           !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier,electrostatics_modifier) &&
-           !gmx_strcasecmp_min(kernel_list[i].vdw,vdw) &&
-           !gmx_strcasecmp_min(kernel_list[i].vdw_modifier,vdw_modifier) &&
-           !gmx_strcasecmp_min(kernel_list[i].geometry,geometry) &&
-           !gmx_strcasecmp_min(kernel_list[i].other,other) &&
-           !gmx_strcasecmp_min(kernel_list[i].vf,vf))
+        if (!gmx_strcasecmp_min(kernel_list[i].architecture, arch) &&
+            !gmx_strcasecmp_min(kernel_list[i].electrostatics, electrostatics) &&
+            !gmx_strcasecmp_min(kernel_list[i].electrostatics_modifier, electrostatics_modifier) &&
+            !gmx_strcasecmp_min(kernel_list[i].vdw, vdw) &&
+            !gmx_strcasecmp_min(kernel_list[i].vdw_modifier, vdw_modifier) &&
+            !gmx_strcasecmp_min(kernel_list[i].geometry, geometry) &&
+            !gmx_strcasecmp_min(kernel_list[i].other, other) &&
+            !gmx_strcasecmp_min(kernel_list[i].vf, vf))
         {
             kernelinfo_ptr = kernel_list+i;
             break;
@@ -177,17 +177,17 @@ nb_kernel_list_findkernel(FILE *              log,
         index = (index+1) % kernel_list_hash_size;
     }
 
-    if(debug && kernelinfo_ptr!=NULL)
+    if (debug && kernelinfo_ptr != NULL)
     {
         fprintf(debug,
                 "NB kernel %s() with architecture '%s' used for neighborlist with\n"
                 "    Elec: '%s', Modifier: '%s'\n"
                 "    Vdw:  '%s', Modifier: '%s'\n"
                 "    Geom: '%s', Other: '%s', Calc: '%s'\n\n",
-                kernelinfo_ptr->kernelname,arch,electrostatics,electrostatics_modifier,
-                vdw,vdw_modifier,geometry,other,vf);
+                kernelinfo_ptr->kernelname, arch, electrostatics, electrostatics_modifier,
+                vdw, vdw_modifier, geometry, other, vf);
     }
 
     /* If we did not find any kernel the pointer will still be NULL */
-    return (kernelinfo_ptr !=NULL) ? kernelinfo_ptr->kernelptr : NULL;
+    return (kernelinfo_ptr != NULL) ? kernelinfo_ptr->kernelptr : NULL;
 }

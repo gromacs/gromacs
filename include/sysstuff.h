@@ -41,7 +41,7 @@
 
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
 #ifndef _386_
@@ -62,4 +62,4 @@ extern "C" {
 }
 #endif
 
-#endif	/* _sysstuff_h */
+#endif  /* _sysstuff_h */

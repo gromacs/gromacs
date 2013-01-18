@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_velacc.c is now in gmx_velacc.c,
-* where the old main function is called gmx_velacc().
-*/
+ * The code that used to be in g_velacc.c is now in gmx_velacc.c,
+ * where the old main function is called gmx_velacc().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_velacc(argc,argv);
-  return 0;
+    gmx_velacc(argc, argv);
+    return 0;
 }
-
-
-  

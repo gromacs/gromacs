@@ -66,7 +66,7 @@
 
 
 
-/* The source code in this file should be thread-safe. 
+/* The source code in this file should be thread-safe.
       Please keep it that way. */
 
 /******************************************************************
@@ -77,12 +77,16 @@
 
 /* read only time names */
 /* These must correspond to the time units type time_unit_t in statutil.h */
-static const real timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
-static const real timeinvfactors[] ={ 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
-static const char *time_units_str[] = { NULL, "fs", "ps", "ns", "us", 
-                                        "\\mus", "ms", "s" };
-static const char *time_units_xvgr[] = { NULL, "fs", "ps", "ns",  
-                                        "ms", "s", NULL };
+static const real  timefactors[] =   { 0,  1e3,  1, 1e-3, 1e-6, 1e-9, 1e-12, 0 };
+static const real  timeinvfactors[] = { 0, 1e-3,  1,  1e3,  1e6,  1e9,  1e12, 0 };
+static const char *time_units_str[] = {
+    NULL, "fs", "ps", "ns", "us",
+    "\\mus", "ms", "s"
+};
+static const char *time_units_xvgr[] = {
+    NULL, "fs", "ps", "ns",
+    "ms", "s", NULL
+};
 
 
 
@@ -92,34 +96,34 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
                      time_unit_t tmu, gmx_bool view, xvg_format_t xvg_format,
                      int verbosity, int debug_level)
 {
-    int i;
-    int cmdlength=0;
-    char *argvzero=NULL, *extpos;
+    int   i;
+    int   cmdlength = 0;
+    char *argvzero  = NULL, *extpos;
 
-    oenv->time_unit  = tmu;
-    oenv->view=view;
-    oenv->xvg_format = xvg_format;
-    oenv->verbosity=verbosity;
-    oenv->debug_level=debug_level;
-    oenv->program_name=NULL;
+    oenv->time_unit    = tmu;
+    oenv->view         = view;
+    oenv->xvg_format   = xvg_format;
+    oenv->verbosity    = verbosity;
+    oenv->debug_level  = debug_level;
+    oenv->program_name = NULL;
 
     if (argv)
     {
-        argvzero=argv[0];
+        argvzero = argv[0];
         assert(argvzero);
     }
     /* set program name */
     if (argvzero)
     {
         /* if filename has file ending (e.g. .exe) then strip away */
-        extpos=strrchr(argvzero,'.');
-        if(extpos > strrchr(argvzero,DIR_SEPARATOR))
+        extpos = strrchr(argvzero, '.');
+        if (extpos > strrchr(argvzero, DIR_SEPARATOR))
         {
-            oenv->program_name=gmx_strndup(argvzero,extpos-argvzero);
+            oenv->program_name = gmx_strndup(argvzero, extpos-argvzero);
         }
         else
         {
-            oenv->program_name=gmx_strdup(argvzero);
+            oenv->program_name = gmx_strdup(argvzero);
         }
     }
     if (oenv->program_name == NULL)
@@ -127,24 +131,24 @@ void output_env_init(output_env_t oenv,  int argc, char *argv[],
         oenv->program_name = gmx_strdup("GROMACS");
     }
 
-    /* copy command line */ 
-    if (argv) 
+    /* copy command line */
+    if (argv)
     {
         cmdlength = strlen(argvzero);
-        for (i=1; i<argc; i++) 
+        for (i = 1; i < argc; i++)
         {
             cmdlength += strlen(argv[i]);
         }
     }
-        
+
     /* Fill the cmdline string */
-    snew(oenv->cmd_line,cmdlength+argc+1);
+    snew(oenv->cmd_line, cmdlength+argc+1);
     if (argv)
     {
-        for (i=0; i<argc; i++)
+        for (i = 0; i < argc; i++)
         {
-            strcat(oenv->cmd_line,argv[i]);
-            strcat(oenv->cmd_line," ");
+            strcat(oenv->cmd_line, argv[i]);
+            strcat(oenv->cmd_line, " ");
         }
     }
 }
@@ -185,10 +189,10 @@ const char *output_env_get_time_label(const output_env_t oenv)
 {
     char *label;
     snew(label, 20);
-    
-    sprintf(label,"Time (%s)",time_units_str[oenv->time_unit] ? 
-            time_units_str[oenv->time_unit]: "ps");
-    
+
+    sprintf(label, "Time (%s)", time_units_str[oenv->time_unit] ?
+            time_units_str[oenv->time_unit] : "ps");
+
     return label;
 }
 
@@ -196,10 +200,10 @@ const char *output_env_get_xvgr_tlabel(const output_env_t oenv)
 {
     char *label;
     snew(label, 20);
-    
-    sprintf(label,"Time (%s)", time_units_xvgr[oenv->time_unit] ?
+
+    sprintf(label, "Time (%s)", time_units_xvgr[oenv->time_unit] ?
             time_units_xvgr[oenv->time_unit] : "ps");
-    
+
     return label;
 }
 
@@ -222,12 +226,16 @@ real output_env_conv_time(const output_env_t oenv, real time)
 
 void output_env_conv_times(const output_env_t oenv, int n, real *time)
 {
-    int i;
-    double fact=timefactors[oenv->time_unit];
-    
-    if (fact!=1.)
-        for(i=0; i<n; i++)
+    int    i;
+    double fact = timefactors[oenv->time_unit];
+
+    if (fact != 1.)
+    {
+        for (i = 0; i < n; i++)
+        {
             time[i] *= fact;
+        }
+    }
 }
 
 gmx_bool output_env_get_view(const output_env_t oenv)
@@ -247,13 +255,17 @@ const char *output_env_get_program_name(const output_env_t oenv)
 
 const char *output_env_get_short_program_name(const output_env_t oenv)
 {
-    const char *pr,*ret;
-    pr=ret=oenv->program_name; 
-    if ((pr=strrchr(ret,DIR_SEPARATOR)) != NULL)
-        ret=pr+1;
+    const char *pr, *ret;
+    pr = ret = oenv->program_name;
+    if ((pr = strrchr(ret, DIR_SEPARATOR)) != NULL)
+    {
+        ret = pr+1;
+    }
     /* Strip away the libtool prefix if it's still there. */
-    if(strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+    if (strlen(ret) > 3 && !strncmp(ret, "lt-", 3))
+    {
         ret = ret + 3;
+    }
     return ret;
 }
 
@@ -263,5 +275,3 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
 {
     return oenv->cmd_line;
 }
-
-
