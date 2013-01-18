@@ -67,4 +67,4 @@ void md_print_warn(const t_commrec *cr, FILE *fplog,
 }
 #endif
 
-#endif	/* _md_logging_h */
+#endif  /* _md_logging_h */

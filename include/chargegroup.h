@@ -43,35 +43,35 @@
 #include "typedefs.h"
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-  void calc_chargegroup_radii(const gmx_mtop_t *mtop,rvec *x,
-				     real *rvdw1,real *rvdw2,
-				     real *rcoul1,real *rcoul2);
-  /* This routine calculates the two largest charge group radii in x,
-   * separately for VdW and Coulomb interactions.
-   */
+void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
+                            real *rvdw1, real *rvdw2,
+                            real *rcoul1, real *rcoul2);
+/* This routine calculates the two largest charge group radii in x,
+ * separately for VdW and Coulomb interactions.
+ */
 
 GMX_LIBGMX_EXPORT
-  void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
-			rvec pos[],rvec cg_cm[]);
-  /* Routine to compute centers of geometry of charge groups. No periodicity
-   * is used.
-   */
-  
+void calc_cgcm(FILE *log, int cg0, int cg1, t_block *cgs,
+               rvec pos[], rvec cg_cm[]);
+/* Routine to compute centers of geometry of charge groups. No periodicity
+ * is used.
+ */
+
 GMX_LIBGMX_EXPORT
-  void put_charge_groups_in_box (FILE *log,int cg0,int cg1,
-					int ePBC,matrix box,t_block *cgs,
-					rvec pos[],
-					rvec cg_cm[]);
-  /* This routine puts charge groups in the periodic box, keeping them
-   * together.
-   */
-  
+void put_charge_groups_in_box (FILE *log, int cg0, int cg1,
+                               int ePBC, matrix box, t_block *cgs,
+                               rvec pos[],
+                               rvec cg_cm[]);
+/* This routine puts charge groups in the periodic box, keeping them
+ * together.
+ */
+
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _chargegroup_h */
+#endif  /* _chargegroup_h */

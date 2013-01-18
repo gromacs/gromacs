@@ -37,7 +37,7 @@
  */
 /*! \internal \file
  * \brief Definitions of generic keyword evaluation structures.
- * 
+ *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
  */

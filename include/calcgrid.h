@@ -44,8 +44,8 @@ extern "C" {
 
 GMX_LIBGMX_EXPORT
 real calc_grid(FILE *fp,
-		      matrix box,real gr_sp,
-		      int *nx,int *ny,int *nz);
+               matrix box, real gr_sp,
+               int *nx, int *ny, int *nz);
 /* Sets the number of grid points for each zero n* to the first reasonable
  * number which gives a spacing equal to or smaller than gr_sp.
  * Returns the maximum grid spacing.

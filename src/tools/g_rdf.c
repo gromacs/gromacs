@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rdf.c is now in gmx_rdf.c,
-* where the old main function is called gmx_rdf().
-*/
+ * The code that used to be in g_rdf.c is now in gmx_rdf.c,
+ * where the old main function is called gmx_rdf().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rdf(argc,argv);
-  return 0;
+    gmx_rdf(argc, argv);
+    return 0;
 }
-
-
-  

@@ -47,46 +47,46 @@ extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-gmx_bool get_a_line(FILE *fp,char line[],int n);
-/* Read a line of at most n characters form *fp to line. 
+gmx_bool get_a_line(FILE *fp, char line[], int n);
+/* Read a line of at most n characters form *fp to line.
  * Comment ';...' and leading spaces are removed, empty lines are skipped.
- * Return FALSE when eof. 
+ * Return FALSE when eof.
  */
 
 GMX_LIBGMX_EXPORT
-gmx_bool get_header(char line[],char header[]);
+gmx_bool get_header(char line[], char header[]);
 /* Read a header between '[' and ']' from line to header.
  * Returns FALSE no header is found.
  */
 
-int fget_lines(FILE *in,char ***strings);
+int fget_lines(FILE *in, char ***strings);
 /* Read an array of lines from file in. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
 GMX_LIBGMX_EXPORT
-int get_lines(const char *db,char ***strings);
-/* Open file db, or if non-existant file $GMXLIB/db and read strings 
+int get_lines(const char *db, char ***strings);
+/* Open file db, or if non-existant file $GMXLIB/db and read strings
  * return the number of strings.
  */
 
 GMX_LIBGMX_EXPORT
-int search_str(int nstr,char **str,char *key);
+int search_str(int nstr, char **str, char *key);
 /* Search an array of strings for key, return the index if found
  * -1 if not found.
  */
 
 GMX_LIBGMX_EXPORT
-int get_strings(const char *db,char ***strings);
+int get_strings(const char *db, char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
  * return the number of strings.
  */
 GMX_LIBGMX_EXPORT
-int get_file(const char *db,char ***strings);
+int get_file(const char *db, char ***strings);
 /* Read an array of strings from file db or $GMXLIB/db. strings should be
  * the address of an array of strings (to be malloced by this routine)
- * Does not need number of lines as first line in the file. 
+ * Does not need number of lines as first line in the file.
  * return the number of strings.
  */
 
@@ -95,4 +95,4 @@ int get_file(const char *db,char ***strings);
 #endif
 
 
-#endif	/* _strdb_h */
+#endif  /* _strdb_h */

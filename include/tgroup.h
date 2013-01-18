@@ -47,15 +47,15 @@ extern "C" {
 #endif
 
 GMX_LIBMD_EXPORT
-void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
-			  gmx_ekindata_t *ekind);
+void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
+                   gmx_ekindata_t *ekind);
 /* Allocate memory and set the grpnr array. */
 
 void done_ekindata(gmx_ekindata_t *ekind);
 /* Free the memory */
 
-void accumulate_u(t_commrec *cr,t_grpopts *opts,
-			 gmx_ekindata_t *ekind);
+void accumulate_u(t_commrec *cr, t_grpopts *opts,
+                  gmx_ekindata_t *ekind);
 
 /*extern void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps);*/
 /* Communicate subsystem - group velocities and subsystem ekin respectively
@@ -63,14 +63,14 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,
  */
 
 GMX_LIBMD_EXPORT
-real sum_ekin(t_grpopts *opts,gmx_ekindata_t *ekind, real *dekindlambda, 
-		     gmx_bool bEkinFullStep,gmx_bool bSaveEkinOld, gmx_bool bScaleEkin);
+real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
+              gmx_bool bEkinFullStep, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
 
-void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
-			    t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda);
+void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
+                     t_grpopts *opts, rvec v[], t_mdatoms *md, real lambda);
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */
@@ -79,4 +79,4 @@ void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
 }
 #endif
 
-#endif	/* _tgroup_h */
+#endif  /* _tgroup_h */

@@ -44,12 +44,11 @@
 
 void
 gmx_nb_generic_adress_kernel(t_nblist *                nlist,
-                      rvec *                    xx,
-                      rvec *                    ff,
-                      t_forcerec *              fr,
-                      t_mdatoms *               mdatoms,
-                      nb_kernel_data_t *        kernel_data,
-                      t_nrnb *                  nrnb);
+                             rvec *                    xx,
+                             rvec *                    ff,
+                             t_forcerec *              fr,
+                             t_mdatoms *               mdatoms,
+                             nb_kernel_data_t *        kernel_data,
+                             t_nrnb *                  nrnb);
 
 #endif
-

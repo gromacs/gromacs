@@ -53,9 +53,9 @@ int name2index(char *str, char ***typenames, int ntypes);
 void pr_alloc (int extra, t_params *pr);
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void set_p_string(t_param *p,const char *s);
+void set_p_string(t_param *p, const char *s);
 
-void cp_param(t_param *dest,t_param *src);
+void cp_param(t_param *dest, t_param *src);
 
 GMX_LIBGMXPREPROCESS_EXPORT
 void add_param_to_list(t_params *list, t_param *b);
@@ -78,14 +78,14 @@ void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
-void print_blocka(FILE *out,const char *szName,const char *szIndex, 
-			 const char *szA,t_blocka *block);
+void print_blocka(FILE *out, const char *szName, const char *szIndex,
+                  const char *szA, t_blocka *block);
 
-void print_atoms(FILE *out,gpp_atomtype_t atype,t_atoms *at,int *cgnr,
-			gmx_bool bRTPresname);
+void print_atoms(FILE *out, gpp_atomtype_t atype, t_atoms *at, int *cgnr,
+                 gmx_bool bRTPresname);
 
-void print_bondeds(FILE *out,int natoms,directive d,
-			  int ftype,int fsubtype,t_params plist[]);
+void print_bondeds(FILE *out, int natoms, directive d,
+                   int ftype, int fsubtype, t_params plist[]);
 
 void print_excl(FILE *out, int natoms, t_excls excls[]);
 
@@ -93,4 +93,4 @@ void print_excl(FILE *out, int natoms, t_excls excls[]);
 }
 #endif
 
-#endif	/* _toputil_h */
+#endif  /* _toputil_h */

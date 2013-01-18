@@ -41,29 +41,31 @@
 
 #include "typedefs.h"
 
-enum { eWXR_NO, eWXR_YES, eWXR_NOFIT };
+enum {
+    eWXR_NO, eWXR_YES, eWXR_NOFIT
+};
 
-extern void read_eigenvectors(const char *file,int *natoms,gmx_bool *bFit,
-			      rvec **xref,gmx_bool *bDMR,
-			      rvec **xav,gmx_bool *bDMA,
-			      int *nvec, int **eignr, rvec ***eigvec, real **eigval);
+extern void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
+                              rvec **xref, gmx_bool *bDMR,
+                              rvec **xav, gmx_bool *bDMA,
+                              int *nvec, int **eignr, rvec ***eigvec, real **eigval);
 /* Read eigenvectors from file into eigvec, the eigenvector numbers   */
 /* are stored in eignr.                                               */
 /* When bFit=FALSE no fitting was used in the covariance analysis.    */
 /* xref is the reference structure, can be NULL if not present.       */
 /* bDMR indicates mass weighted fit.                                  */
 /* xav is the average/minimum structure is written (t=0).             */
-/* bDMA indicates mass weighted analysis/eigenvectors.                */ 
+/* bDMA indicates mass weighted analysis/eigenvectors.                */
 
-extern void write_eigenvectors(const char *trnname,int natoms,real mat[],
-			       gmx_bool bReverse,int begin,int end,
-			       int WriteXref,rvec *xref,gmx_bool bDMR,
-			       rvec xav[],gmx_bool bDMA, real *eigval);
+extern void write_eigenvectors(const char *trnname, int natoms, real mat[],
+                               gmx_bool bReverse, int begin, int end,
+                               int WriteXref, rvec *xref, gmx_bool bDMR,
+                               rvec xav[], gmx_bool bDMA, real *eigval);
 /* Write eigenvectors in mat to a TRN file.                           */
 /* The reference structure is written (t=-1) when WriteXref=eWXR_YES. */
 /* When WriteXref==eWXR_NOFIT a zero frame is written (t=-1),         */
-/* with lambda=-1.                                                    */ 
-/* bDMR indicates mass weighted fit.                                  */ 
+/* with lambda=-1.                                                    */
+/* bDMR indicates mass weighted fit.                                  */
 /* The average/minimum structure is written (t=0).                    */
 /* bDMA indicates mass weighted analysis/eigenvectors.                */
 /* eigenvectors with begin <= num <= end are written (num is base-1), */
@@ -71,13 +73,13 @@ extern void write_eigenvectors(const char *trnname,int natoms,real mat[],
 /* If bReverse==TRUE, num=1 is the last vector in mat.                */
 
 
-/* Read up to nmax eigenvalues from file fn, store the values in eigval[], 
+/* Read up to nmax eigenvalues from file fn, store the values in eigval[],
  * and the corresponding indices (start counting on 0) in eigvalnr[].
  * Returns the number of values read.
  */
 int read_eigval  (const char *          fn,
-                  int             nmax,
-                  int             eigvalnr[],
-                  real            eigval[]);
+                  int                   nmax,
+                  int                   eigvalnr[],
+                  real                  eigval[]);
 
 #endif

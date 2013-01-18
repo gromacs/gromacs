@@ -1,4 +1,4 @@
- /*
+/*
  * This file is part of the GROMACS molecular simulation package.
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -45,30 +45,30 @@
 extern "C" {
 #endif
 
-void do_edsam(t_inputrec *ir,gmx_large_int_t step,
-                     t_commrec *cr,rvec xs[],rvec v[],matrix box,gmx_edsam_t ed);
+void do_edsam(t_inputrec *ir, gmx_large_int_t step,
+              t_commrec *cr, rvec xs[], rvec v[], matrix box, gmx_edsam_t ed);
 /* Essential dynamics constraints, called from constrain() */
 
 GMX_LIBMD_EXPORT
-gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile,const t_filenm fnm[],
-        unsigned long Flags, const output_env_t oenv, t_commrec *cr);
+gmx_edsam_t ed_open(int natoms, edsamstate_t *EDstate, int nfile, const t_filenm fnm[],
+                    unsigned long Flags, const output_env_t oenv, t_commrec *cr);
 /* Sets the ED input/output filenames, opens output file */
 
-void init_edsam(gmx_mtop_t *mtop,t_inputrec *ir,t_commrec *cr,
-                       gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *edsamstate);
-/* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle 
+void init_edsam(gmx_mtop_t *mtop, t_inputrec *ir, t_commrec *cr,
+                gmx_edsam_t ed, rvec x[], matrix box, edsamstate_t *edsamstate);
+/* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle
  * contained in the input file, creates a NULL terminated list of t_edpar structures */
 
 void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed);
-/* Make a selection of the home atoms for the ED groups. 
+/* Make a selection of the home atoms for the ED groups.
  * Should be called at every domain decomposition. */
- 
-void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[],rvec force[], gmx_edsam_t ed,
-        matrix box, gmx_large_int_t step, gmx_bool bNS);
+
+void do_flood(t_commrec *cr, t_inputrec *ir, rvec x[], rvec force[], gmx_edsam_t ed,
+              matrix box, gmx_large_int_t step, gmx_bool bNS);
 /* Flooding - called from do_force() */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _edsam_h */
+#endif  /* _edsam_h */

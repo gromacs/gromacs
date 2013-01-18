@@ -41,356 +41,356 @@
 #include "visibility.h"
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_anadock(int argc,char *argv[]);
+int
+gmx_anadock(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_analyze(int argc,char *argv[]);
+int
+gmx_analyze(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_anaeig(int argc,char *argv[]);
+int
+gmx_anaeig(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_g_angle(int argc,char *argv[]);
+int
+gmx_g_angle(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_bar(int argc,char *argv[]);
+int
+gmx_bar(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_bond(int argc,char *argv[]);
+int
+gmx_bond(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_bundle(int argc,char *argv[]);
+int
+gmx_bundle(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_chi(int argc,char *argv[]);
+int
+gmx_chi(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_cluster(int argc,char *argv[]);
+int
+gmx_cluster(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_confrms(int argc,char *argv[]);
+int
+gmx_confrms(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_covar(int argc,char *argv[]);
+int
+gmx_covar(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_current(int argc,char *argv[]);
+int
+gmx_current(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_density(int argc,char *argv[]);
+int
+gmx_density(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_densmap(int argc,char *argv[]);
+int
+gmx_densmap(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_densorder(int argc,char *argv[]);
+int
+gmx_densorder(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dielectric(int argc,char *argv[]);
+int
+gmx_dielectric(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dipoles(int argc,char *argv[]);
+int
+gmx_dipoles(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_disre(int argc,char *argv[]);
+int
+gmx_disre(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dist(int argc,char *argv[]);
+int
+gmx_dist(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_do_dssp(int argc,char *argv[]);
+int
+gmx_do_dssp(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dos(int argc,char *argv[]);
+int
+gmx_dos(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dyecoupl(int argc,char *argv[]);
+int
+gmx_dyecoupl(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_dyndom(int argc,char *argv[]);
+int
+gmx_dyndom(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
+int
 gmx_editconf(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
-int 
-gmx_eneconv(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_enemat(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_energy(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_lie(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_filter(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_genbox(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_genconf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_genion(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_genpr(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_gyrate(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_h2order(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_hbond(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_helix(int argc,char *argv[]);
+int
+gmx_eneconv(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_helixorient(int argc,char *argv[]);
+gmx_enemat(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_hydorder(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_kinetics(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_make_edi(int argc,char *argv[]);
+gmx_energy(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_make_ndx(int argc,char *argv[]);
+gmx_lie(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_mindist(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_mk_angndx(int argc,char *argv[]);
+gmx_filter(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_msd(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_morph(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_nmeig(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_nmens(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_nmtraj(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_order(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_polystat(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_potential(int argc,char *argv[]);
+gmx_genbox(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_principal(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rama(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rdf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rotmat(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rms(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rmsdist(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rmsf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_rotacf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_saltbr(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_sas(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_sdf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_select(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_sgangle(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_sham(int argc,char *argv[]);
+gmx_genconf(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_sigeps(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_sorient(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_spol(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_spatial(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_tcaf(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_traj(int argc,char *argv[]);
+gmx_genion(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_trjcat(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_trjconv(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_trjorder(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_tune_pme(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_velacc(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_clustsize(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_mdmat(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_vanhove(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_wham(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_wheel(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_xpm2ps(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_membed(int argc,char *argv[]);
-
-GMX_LIBGMXANA_EXPORT
-int 
-gmx_pme_error(int argc,char *argv[]);
+gmx_genpr(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_options(int argc,char *argv[]);
+gmx_gyrate(int argc, char *argv[]);
 
 GMX_LIBGMXANA_EXPORT
 int
-gmx_sans(int argc,char *argv[]);
+gmx_h2order(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_hbond(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_helix(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_helixorient(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_hydorder(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_kinetics(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_make_edi(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_make_ndx(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_mindist(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_mk_angndx(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_msd(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_morph(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_nmeig(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_nmens(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_nmtraj(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_order(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_polystat(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_potential(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_principal(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rama(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rdf(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rotmat(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rms(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rmsdist(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rmsf(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_rotacf(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_saltbr(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sas(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sdf(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_select(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sgangle(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sham(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sigeps(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sorient(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_spol(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_spatial(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_tcaf(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_traj(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_trjcat(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_trjconv(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_trjorder(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_tune_pme(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_velacc(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_clustsize(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_mdmat(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_vanhove(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_wham(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_wheel(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_xpm2ps(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_membed(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_pme_error(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_options(int argc, char *argv[]);
+
+GMX_LIBGMXANA_EXPORT
+int
+gmx_sans(int argc, char *argv[]);
 
 #ifdef __cplusplus
 }

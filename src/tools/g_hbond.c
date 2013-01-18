@@ -43,16 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_hbond.c is now in gmx_hbond.c,
-* where the old main function is called gmx_hbond().
-*/
+ * The code that used to be in g_hbond.c is now in gmx_hbond.c,
+ * where the old main function is called gmx_hbond().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_hbond(argc,argv);
-  return 0;
+    gmx_hbond(argc, argv);
+    return 0;
 }
-
-
-
-  

@@ -53,7 +53,7 @@
  * can also be used with the routines in gmxfio.h
  *
  **************************************************************/
-#include "visibility.h"	
+#include "visibility.h"
 #include "typedefs.h"
 #include "gmxfio.h"
 
@@ -61,31 +61,31 @@
 extern "C" {
 #endif
 
-typedef struct		/* This struct describes the order and the	*/
-  /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
+typedef struct           /* This struct describes the order and the	*/
+                         /* sizes of the structs in a trjfile, sizes are given in bytes.	*/
 {
-  gmx_bool  bDouble;        /* Double precision?                            */
-  int	ir_size;	/* Backward compatibility		        */
-  int	e_size;		/* Backward compatibility		        */
-  int	box_size;	/* Non zero if a box is present			*/
-  int   vir_size;       /* Backward compatibility		        */
-  int   pres_size;      /* Backward compatibility		        */
-  int	top_size;	/* Backward compatibility		        */
-  int	sym_size;	/* Backward compatibility		        */
-  int	x_size;		/* Non zero if coordinates are present		*/
-  int	v_size;		/* Non zero if velocities are present		*/
-  int	f_size;		/* Non zero if forces are present		*/
+    gmx_bool  bDouble;   /* Double precision?                            */
+    int       ir_size;   /* Backward compatibility		        */
+    int       e_size;    /* Backward compatibility		        */
+    int       box_size;  /* Non zero if a box is present			*/
+    int       vir_size;  /* Backward compatibility		        */
+    int       pres_size; /* Backward compatibility		        */
+    int       top_size;  /* Backward compatibility		        */
+    int       sym_size;  /* Backward compatibility		        */
+    int       x_size;    /* Non zero if coordinates are present		*/
+    int       v_size;    /* Non zero if velocities are present		*/
+    int       f_size;    /* Non zero if forces are present		*/
 
-  int	natoms;		/* The total number of atoms			*/
-  int	step;		/* Current step number				*/
-  int	nre;		/* Backward compatibility		        */
-  real	t;		/* Current time					*/
-  real	lambda;		/* Current value of lambda			*/
-  int	fep_state;  /* Current value of alchemical state */
+    int       natoms;    /* The total number of atoms			*/
+    int       step;      /* Current step number				*/
+    int       nre;       /* Backward compatibility		        */
+    real      t;         /* Current time					*/
+    real      lambda;    /* Current value of lambda			*/
+    int       fep_state; /* Current value of alchemical state */
 } t_trnheader;
 
 GMX_LIBGMX_EXPORT
-t_fileio *open_trn(const char *fn,const char *mode);
+t_fileio *open_trn(const char *fn, const char *mode);
 /* Open a trj / trr file */
 
 GMX_LIBGMX_EXPORT
@@ -93,17 +93,17 @@ void close_trn(t_fileio *fio);
 /* Close it */
 
 GMX_LIBGMX_EXPORT
-gmx_bool fread_trnheader(t_fileio *fio,t_trnheader *trn,gmx_bool *bOK);
+gmx_bool fread_trnheader(t_fileio *fio, t_trnheader *trn, gmx_bool *bOK);
 /* Read the header of a trn file. Return FALSE if there is no frame.
  * bOK will be FALSE when the header is incomplete.
  */
 
 GMX_LIBGMX_EXPORT
-void read_trnheader(const char *fn,t_trnheader *header);
-/* Read the header of a trn file from fn, and close the file afterwards. 
+void read_trnheader(const char *fn, t_trnheader *header);
+/* Read the header of a trn file from fn, and close the file afterwards.
  */
 
-void pr_trnheader(FILE *fp,int indent,char *title,t_trnheader *sh);
+void pr_trnheader(FILE *fp, int indent, char *title, t_trnheader *sh);
 /* Print the header of a trn file to fp */
 
 gmx_bool is_trn(FILE *fp);
@@ -112,34 +112,34 @@ gmx_bool is_trn(FILE *fp);
  */
 
 GMX_LIBGMX_EXPORT
-void fwrite_trn(t_fileio *fio,int step,real t,real lambda,
-		       rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
+void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
 GMX_LIBGMX_EXPORT
-gmx_bool fread_htrn(t_fileio *fio,t_trnheader *sh,
-		       rvec *box,rvec *x,rvec *v,rvec *f);
+gmx_bool fread_htrn(t_fileio *fio, t_trnheader *sh,
+                    rvec *box, rvec *x, rvec *v, rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
  * using routine read_trnheader, see above) from a trn file.
  * Return FALSE on error
  */
- 
-gmx_bool fread_trn(t_fileio *fio,int *step,real *t,real *lambda,
-		      rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
+
+gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
+                   rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
 /* Read a trn frame, including the header from fp. box, x, v, f may
  * be NULL, in which case the data will be skipped over.
  * return FALSE on error
  */
- 
+
 GMX_LIBGMX_EXPORT
-void write_trn(const char *fn,int step,real t,real lambda,
-		      rvec *box,int natoms,rvec *x,rvec *v,rvec *f);
+void write_trn(const char *fn, int step, real t, real lambda,
+               rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a single trn frame to file fn, which is closed afterwards */
 
 GMX_LIBGMX_EXPORT
-void read_trn(const char *fn,int *step,real *t,real *lambda,
-		     rvec *box,int *natoms,rvec *x,rvec *v,rvec *f);
-/* Read a single trn frame from file fn, which is closed afterwards 
+void read_trn(const char *fn, int *step, real *t, real *lambda,
+              rvec *box, int *natoms, rvec *x, rvec *v, rvec *f);
+/* Read a single trn frame from file fn, which is closed afterwards
  */
 
 #ifdef __cplusplus

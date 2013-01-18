@@ -44,11 +44,10 @@
 
 
 /* This is just a wrapper binary.
-*/
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_tune_pme(argc,argv);
-  return 0;
+    gmx_tune_pme(argc, argv);
+    return 0;
 }
-

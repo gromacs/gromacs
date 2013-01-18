@@ -2,22 +2,22 @@
 #if defined _WIN32 || defined __CYGWIN__ || defined WINDOWS
 #ifdef gmx_EXPORTS
 #define GMX_LIBGMX_EXPORT __declspec(dllexport)
-#else 
+#else
 #define GMX_LIBGMX_EXPORT __declspec(dllimport)
 #endif
 #ifdef md_EXPORTS
 #define GMX_LIBMD_EXPORT __declspec(dllexport)
-#else 
+#else
 #define GMX_LIBMD_EXPORT __declspec(dllimport)
 #endif
 #ifdef gmxana_EXPORTS
 #define GMX_LIBGMXANA_EXPORT __declspec(dllexport)
-#else 
+#else
 #define GMX_LIBGMXANA_EXPORT __declspec(dllimport)
 #endif
 #ifdef gmxpreprocess_EXPORTS
 #define GMX_LIBGMXPREPROCESS_EXPORT __declspec(dllexport)
-#else 
+#else
 #define GMX_LIBGMXPREPROCESS_EXPORT __declspec(dllimport)
 #endif
 #else /* Unix */

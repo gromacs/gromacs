@@ -43,9 +43,9 @@
 
 
 /* This is just a wrapper binary.
-*/
-int 
-main(int argc,char *argv[]) 
+ */
+int
+main(int argc, char *argv[])
 {
-  return gmx_anadock(argc,argv);
+    return gmx_anadock(argc, argv);
 }

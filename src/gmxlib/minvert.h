@@ -44,18 +44,18 @@
 /* A bunch of routines that works on matrices that run from 1 thru n
  * although they are allocated from 0 thru n
  */
-	
-extern void mat_mult(int n,real **A,real **B,real **C);
+
+extern void mat_mult(int n, real **A, real **B, real **C);
 
 extern real **mk_mat(int n);
 
-extern real **mk_mat2(int nrow,int ncol);
+extern real **mk_mat2(int nrow, int ncol);
 
-extern void cp_mat(int n,real **src,real **dest);
+extern void cp_mat(int n, real **src, real **dest);
 
-extern void print_mat(FILE *fp,char *title,int n,real **a,int *indx);
+extern void print_mat(FILE *fp, char *title, int n, real **a, int *indx);
 /* index may be NULL */
 
-extern void invert_mat(int n,real **A,real **Ainv);
+extern void invert_mat(int n, real **A, real **Ainv);
 
 #endif

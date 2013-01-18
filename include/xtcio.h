@@ -48,41 +48,41 @@
 extern "C" {
 #endif
 
-/* All functions return 1 if successful, 0 otherwise 
- * bOK tells if a frame is not corrupted 
- */  
+/* All functions return 1 if successful, 0 otherwise
+ * bOK tells if a frame is not corrupted
+ */
 
 GMX_LIBGMX_EXPORT
-t_fileio *open_xtc(const char *filename,const char *mode);
+t_fileio *open_xtc(const char *filename, const char *mode);
 /* Open a file for xdr I/O */
-  
+
 GMX_LIBGMX_EXPORT
 void close_xtc(t_fileio *fio);
 /* Close the file for xdr I/O */
-  
+
 GMX_LIBGMX_EXPORT
 int read_first_xtc(t_fileio *fio,
-			  int *natoms,int *step,real *time,
-			  matrix box,rvec **x,real *prec,gmx_bool *bOK);
+                   int *natoms, int *step, real *time,
+                   matrix box, rvec **x, real *prec, gmx_bool *bOK);
 /* Open xtc file, read xtc file first time, allocate memory for x */
 
 GMX_LIBGMX_EXPORT
 int read_next_xtc(t_fileio *fio,
-			 int natoms,int *step,real *time,
-			 matrix box,rvec *x,real *prec,gmx_bool *bOK);
+                  int natoms, int *step, real *time,
+                  matrix box, rvec *x, real *prec, gmx_bool *bOK);
 /* Read subsequent frames */
 
 GMX_LIBGMX_EXPORT
 int write_xtc(t_fileio *fio,
-		     int natoms,int step,real time,
-		     matrix box,rvec *x,real prec);
+              int natoms, int step, real time,
+              matrix box, rvec *x, real prec);
 /* Write a frame to xtc file */
 
-int xtc_check(const char *str,gmx_bool bResult,const char *file,int line);
-#define XTC_CHECK(s,b) xtc_check(s,b,__FILE__,__LINE__)
+int xtc_check(const char *str, gmx_bool bResult, const char *file, int line);
+#define XTC_CHECK(s, b) xtc_check(s, b, __FILE__, __LINE__)
 
-void xtc_check_fat_err(const char *str,gmx_bool bResult,const char *file,int line);
-#define XTC_CHECK_FAT_ERR(s,b) xtc_check_fat_err(s,b,__FILE__,__LINE__)
+void xtc_check_fat_err(const char *str, gmx_bool bResult, const char *file, int line);
+#define XTC_CHECK_FAT_ERR(s, b) xtc_check_fat_err(s, b, __FILE__, __LINE__)
 
 #ifdef __cplusplus
 }

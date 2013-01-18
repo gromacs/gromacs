@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-void ffscanf(FILE *in,char *fmt, ...);
+void ffscanf(FILE *in, char *fmt, ...);
 
 #ifdef __cplusplus
 }

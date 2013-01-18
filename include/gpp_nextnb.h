@@ -46,13 +46,13 @@ extern "C" {
 #endif
 
 typedef struct {
-  int nr;		/* nr atoms (0 <= i < nr) (atoms->nr)	      	*/
-  int nrex;		/* with nrex lists of neighbours		*/
-			/* respectively containing zeroth, first	*/
-			/* second etc. neigbours (0 <= nre < nrex)	*/
-  int **nrexcl;		/* with (0 <= nrx < nrexcl[i][nre]) neigbours 	*/ 
-			/* per list stored in one 2d array of lists	*/ 
-  int ***a;		/* like this: a[i][nre][nrx]			*/
+    int nr;     /* nr atoms (0 <= i < nr) (atoms->nr)	        */
+    int nrex;   /* with nrex lists of neighbours		*/
+    /* respectively containing zeroth, first	*/
+    /* second etc. neigbours (0 <= nre < nrex)	*/
+    int  **nrexcl; /* with (0 <= nrx < nrexcl[i][nre]) neigbours    */
+    /* per list stored in one 2d array of lists	*/
+    int ***a;      /* like this: a[i][nre][nrx]			*/
 } t_nextnb;
 
 GMX_LIBGMXPREPROCESS_EXPORT
@@ -72,8 +72,8 @@ void print_nnb(t_nextnb *nnb, char *s);
 #endif
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void gen_nnb(t_nextnb *nnb,t_params plist[]);
-/* Generate a t_nextnb structure from bond information. 
+void gen_nnb(t_nextnb *nnb, t_params plist[]);
+/* Generate a t_nextnb structure from bond information.
  * With the structure you can either generate exclusions
  * or generate angles and dihedrals. The structure must be
  * initiated using init_nnb.
@@ -83,7 +83,7 @@ void nnb2excl (t_nextnb *nnb, t_blocka *excl);
 /* generate exclusions from nnb */
 
 void generate_excl (int nrexcl, int nratoms,
-			   t_params plist[],t_nextnb *nnb,t_blocka *excl);
+                    t_params plist[], t_nextnb *nnb, t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
@@ -92,4 +92,4 @@ void generate_excl (int nrexcl, int nratoms,
 }
 #endif
 
-#endif	/* _gpp_nextnb_h */
+#endif  /* _gpp_nextnb_h */

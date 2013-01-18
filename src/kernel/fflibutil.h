@@ -60,7 +60,7 @@ extern const char *fflib_forcefield_itp();
 extern const char *fflib_forcefield_doc();
 /* Returns the name of the forcefield documentation file */
 
-extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
+extern void fflib_filename_base(const char *filename, char *filebase, int maxlen);
 /* Return the base file name of filename in base,
  * i.e. remove path and extension, if present.
  * base should be at least of size maxlen.
@@ -68,16 +68,16 @@ extern void fflib_filename_base(const char *filename,char *filebase,int maxlen);
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern int fflib_search_file_end(const char *ffdir,
-				 const char *file_end,
-				 gmx_bool bFatalError,
-				 char ***filenames);
+                                 const char *file_end,
+                                 gmx_bool    bFatalError,
+                                 char     ***filenames);
 /* Search for files ending on file_end in the force field directory fflib.
  * fflib should be in the GROMACS lib.path.
  * Return the number of files and the file names in filenames.
  */
 
-extern int fflib_search_file_in_dirend(const char *filename,const char *dirend,
-				       char ***dirnames);
+extern int fflib_search_file_in_dirend(const char *filename, const char *dirend,
+                                       char ***dirnames);
 /* Search for files with name filename in subdirectories with names
  * ending on dirend.
  * Return the number of files and the directory names in dirnames.
@@ -97,4 +97,4 @@ extern FILE *fflib_open(const char *file);
 }
 #endif
 
-#endif	/* _fflibutil_h */
+#endif  /* _fflibutil_h */

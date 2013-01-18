@@ -76,19 +76,19 @@ extern "C" {
 
 
 #ifdef HAVE_FSEEKO
-   typedef off_t              gmx_off_t;
+typedef off_t              gmx_off_t;
 #  define SIZEOF_GMX_OFF_T   SIZEOF_OFF_T
-#elif defined HAVE__FSEEKI64 
-   typedef __int64            gmx_off_t;
+#elif defined HAVE__FSEEKI64
+typedef __int64            gmx_off_t;
 #  define SIZEOF_GMX_OFF_T   8
 #else
-   /* Almost certainly 64 bits, and guaranteed to be available */
-   typedef gmx_large_int_t    gmx_off_t;
+/* Almost certainly 64 bits, and guaranteed to be available */
+typedef gmx_large_int_t    gmx_off_t;
 #  define SIZEOF_GMX_OFF_T   SIZEOF_GMX_LARGE_INT
-#endif    
+#endif
 
 
-  
+
 void no_buffers(void);
 /* Turn off buffering of files (which is default) for debugging purposes */
 
@@ -106,15 +106,15 @@ gmx_bool gmx_eof(FILE *fp);
 gmx_bool is_pipe(FILE *fp);
 /* Check whether the file (opened by ffopen) is a pipe */
 
-/*  Make a backup of file if necessary.  
+/*  Make a backup of file if necessary.
     Return false if there was a problem.
-*/
+ */
 GMX_LIBGMX_EXPORT
 gmx_bool make_backup(const char * file);
 
 GMX_LIBGMX_EXPORT
 FILE *ffopen(const char *file, const char *mode);
-/* Return a valid file pointer when successful, exits otherwise 
+/* Return a valid file pointer when successful, exits otherwise
  * If the file is in compressed format, open a pipe which uncompresses
  * the file! Therefore, files must be closed with ffclose (see below)
  */
@@ -131,11 +131,11 @@ void frewind(FILE *fp);
 
 
 GMX_LIBGMX_EXPORT
-int gmx_fseek(FILE *stream, gmx_off_t offset, int whence); 
+int gmx_fseek(FILE *stream, gmx_off_t offset, int whence);
 /* OS-independent fseek. 64-bit when available */
 
 GMX_LIBGMX_EXPORT
-gmx_off_t gmx_ftell(FILE *stream); 
+gmx_off_t gmx_ftell(FILE *stream);
 /* OS-independent fseek. 64-bit when available. */
 
 
@@ -154,16 +154,16 @@ FILE *libopen(const char *file);
 
 /* Opaque data type to list directories */
 typedef struct gmx_directory *
-gmx_directory_t;
+    gmx_directory_t;
 
 /* Open a directory for reading. The first argument should be a pointer
  * to a declared gmx_directory_t variable. Returns 0 on success.
  */
 GMX_LIBGMX_EXPORT
 int
-gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
+gmx_directory_open(gmx_directory_t *p_gmxdir, const char *dirname);
 
-    
+
 /* Given an initialized gmx_directory_t, if there are more files in
  * the directory this routine returns 0 and write the next name
  * into the USER-PROVIDED buffer name. The last argument is the max
@@ -172,26 +172,26 @@ gmx_directory_open(gmx_directory_t *p_gmxdir,const char *dirname);
  */
 GMX_LIBGMX_EXPORT
 int
-gmx_directory_nextfile(gmx_directory_t gmxdir,char *name,int maxlength_name);
-    
+gmx_directory_nextfile(gmx_directory_t gmxdir, char *name, int maxlength_name);
+
 /* Release all data for a directory structure */
 GMX_LIBGMX_EXPORT
-int 
+int
 gmx_directory_close(gmx_directory_t gmxdir);
-    
 
-    
+
+
 GMX_LIBGMX_EXPORT
 gmx_bool get_libdir(char *libdir);
 
 GMX_LIBGMX_EXPORT
-char *low_gmxlibfn(const char *file,gmx_bool bAddCWD,gmx_bool bFatal);
+char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
 
-FILE *low_libopen(const char *file,gmx_bool bFatal);
+FILE *low_libopen(const char *file, gmx_bool bFatal);
 /* The same as the above, but does not terminate if (!bFatal) */
 
-/* Create unique name for temp file (wrapper around mkstemp). 
- * Buf should be at least 7 bytes long 
+/* Create unique name for temp file (wrapper around mkstemp).
+ * Buf should be at least 7 bytes long
  */
 GMX_LIBGMX_EXPORT
 void gmx_tmpnam(char *buf);
@@ -199,7 +199,7 @@ void gmx_tmpnam(char *buf);
 /* truncte the file to the specified length */
 int gmx_truncatefile(char *path, gmx_off_t length);
 
-/* rename/move the file (atomically, if the OS makes that available) oldname 
+/* rename/move the file (atomically, if the OS makes that available) oldname
    to newname */
 int gmx_file_rename(const char *oldname, const char *newname);
 
@@ -207,7 +207,7 @@ int gmx_file_rename(const char *oldname, const char *newname);
    the file won't be copied if it's empty.*/
 int gmx_file_copy(const char *oldname, const char *newname, gmx_bool copy_if_empty);
 
-/* do an fsync() on an open file pointer. 
+/* do an fsync() on an open file pointer.
    Only use this during checkpointing! */
 int gmx_fsync(FILE *fp);
 
@@ -220,4 +220,4 @@ int gmx_fsync(FILE *fp);
 }
 #endif
 
-#endif	/* _futil_h */
+#endif  /* _futil_h */

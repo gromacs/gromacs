@@ -47,11 +47,11 @@ extern "C" {
 
 #define Treal real
 
-    void fftpack_cffti1(int n, Treal wa[], int ifac[]);
-    void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[], int isign);
-    void fftpack_rffti1(int n, Treal wa[], int ifac[]);
-    void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
-    void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
+void fftpack_cffti1(int n, Treal wa[], int ifac[]);
+void fftpack_cfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[], int isign);
+void fftpack_rffti1(int n, Treal wa[], int ifac[]);
+void fftpack_rfftf1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
+void fftpack_rfftb1(int n, Treal c[], Treal ch[], const Treal wa[], const int ifac[]);
 
 #ifdef __cplusplus
 }

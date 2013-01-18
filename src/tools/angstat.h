@@ -43,16 +43,16 @@
 #include <typedefs.h>
 
 extern void do_angav(FILE *status, char *title,
-		     atom_id index[], int nind, 
-		     char *outfile, gmx_bool bAT);
+                     atom_id index[], int nind,
+                     char *outfile, gmx_bool bAT);
 
 extern void do_dihav(FILE *status, char *title,
-		     atom_id index[], int nind, 
-		     char *outfile, gmx_bool bAT);
+                     atom_id index[], int nind,
+                     char *outfile, gmx_bool bAT);
 
-extern void ramachandran(FILE *status,atom_id index[],int nind,char *outfile);
+extern void ramachandran(FILE *status, atom_id index[], int nind, char *outfile);
 
-extern void dis_mon(FILE *status,atom_id index[],int nind,char *outfile,
-		    t_first_x *fx, t_next_x *nx);
+extern void dis_mon(FILE *status, atom_id index[], int nind, char *outfile,
+                    t_first_x *fx, t_next_x *nx);
 
 #endif

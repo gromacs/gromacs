@@ -71,7 +71,7 @@ gmx_mtxio_write(const char *             filename,
  * This routine will autodetect the matrix format stored in the file
  * (sparse or full) and set either the full or sparse matrix arguments (ptr to ptr)
  * to a newly allocated matrix structure. Note that the full storage
- * structure is simply nrow*ncol floating-point elements. The sparse                                                  
+ * structure is simply nrow*ncol floating-point elements. The sparse
  * matrix structure should be freed with gmx_sparsematrix_destroy() when you are done.
  *
  * To determine the format you should set *full_matrix and *sparse_matrix to NULL
@@ -90,4 +90,3 @@ gmx_mtxio_read (const char *            filename,
 #endif
 
 #endif
-

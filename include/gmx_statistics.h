@@ -47,16 +47,22 @@ extern "C" {
 #include "typedefs.h"
 
 typedef struct gmx_stats *gmx_stats_t;
-	
-/* Error codes returned by the routines */
-enum { estatsOK, estatsNO_POINTS, estatsNO_MEMORY, estatsERROR, 
-       estatsINVALID_INPUT, estatsNOT_IMPLEMENTED, estatsNR };
-       
-enum { elsqWEIGHT_NONE, elsqWEIGHT_X, elsqWEIGHT_Y, 
-       elsqWEIGHT_XY, elsqWEIGHT_NR  };
 
-enum { ehistoX, ehistoY, ehistoNR };
-  
+/* Error codes returned by the routines */
+enum {
+    estatsOK, estatsNO_POINTS, estatsNO_MEMORY, estatsERROR,
+    estatsINVALID_INPUT, estatsNOT_IMPLEMENTED, estatsNR
+};
+
+enum {
+    elsqWEIGHT_NONE, elsqWEIGHT_X, elsqWEIGHT_Y,
+    elsqWEIGHT_XY, elsqWEIGHT_NR
+};
+
+enum {
+    ehistoX, ehistoY, ehistoNR
+};
+
 GMX_LIBGMX_EXPORT
 gmx_stats_t gmx_stats_init();
 
@@ -65,16 +71,16 @@ int gmx_stats_done(gmx_stats_t stats);
 
 /* Remove outliers from a straight line, where level in units of
    sigma. Level needs to be larger than one obviously. */
-int gmx_stats_remove_outliers(gmx_stats_t stats,double level);
+int gmx_stats_remove_outliers(gmx_stats_t stats, double level);
 
 GMX_LIBGMX_EXPORT
-int gmx_stats_add_point(gmx_stats_t stats,double x,double y,
-			       double dx,double dy);
+int gmx_stats_add_point(gmx_stats_t stats, double x, double y,
+                        double dx, double dy);
 
 /* The arrays dx and dy may be NULL if no uncertainties are available,
    in that case zero uncertainties will be assumed. */
-int gmx_stats_add_points(gmx_stats_t stats,int n,real *x,real *y,
-				real *dx,real *dy);
+int gmx_stats_add_points(gmx_stats_t stats, int n, real *x, real *y,
+                         real *dx, real *dy);
 
 /* Return the data points one by one. Return estatsOK while there are
    more points, and returns estatsNOPOINTS when the last point has
@@ -82,8 +88,8 @@ int gmx_stats_add_points(gmx_stats_t stats,int n,real *x,real *y,
    pointer may be NULL, in which case the routine can be used as an
    expensive point counter. */
 GMX_LIBGMX_EXPORT
-int gmx_stats_get_point(gmx_stats_t stats,real *x,real *y,
-			       real *dx,real *dy);
+int gmx_stats_get_point(gmx_stats_t stats, real *x, real *y,
+                        real *dx, real *dy);
 
 /* Fit the data to y = ax + b, possibly weighted, if uncertainties
    have been input. Returns slope in *a and intercept in b, *return
@@ -91,54 +97,54 @@ int gmx_stats_get_point(gmx_stats_t stats,real *x,real *y,
    fit in *chi2 and correlation of fit with data in Rfit. chi2, Rfit,
    da and db may be NULL. */
 GMX_LIBGMX_EXPORT
-int gmx_stats_get_ab(gmx_stats_t stats,int weight,
-			    real *a,real *b,
-			    real *da,real *db,real *chi2,real *Rfit);
+int gmx_stats_get_ab(gmx_stats_t stats, int weight,
+                     real *a, real *b,
+                     real *da, real *db, real *chi2, real *Rfit);
 
 /* Fit the data to y = ax, possibly weighted, if uncertainties have
    been input. Returns slope in *a, sigma in a in *da, and normalized
    quality of fit in *chi2 and correlation of fit with data in
    Rfit. chi2, Rfit and da may be NULL. */
-int gmx_stats_get_a(gmx_stats_t stats,int weight,
-			   real *a,real *da,real *chi2,real *Rfit);
+int gmx_stats_get_a(gmx_stats_t stats, int weight,
+                    real *a, real *da, real *chi2, real *Rfit);
 
 /* Return the correlation coefficient between the data (x and y) as
    input to the structure. */
-int gmx_stats_get_corr_coeff(gmx_stats_t stats,real *R);
+int gmx_stats_get_corr_coeff(gmx_stats_t stats, real *R);
 
 /* Returns the root mean square deviation between x and y values. */
-int gmx_stats_get_rmsd(gmx_stats_t gstats,real *rmsd);
+int gmx_stats_get_rmsd(gmx_stats_t gstats, real *rmsd);
 
 GMX_LIBGMX_EXPORT
-int gmx_stats_get_npoints(gmx_stats_t stats,int *N);
+int gmx_stats_get_npoints(gmx_stats_t stats, int *N);
 
 GMX_LIBGMX_EXPORT
-int gmx_stats_get_average(gmx_stats_t stats,real *aver);
+int gmx_stats_get_average(gmx_stats_t stats, real *aver);
 
-int gmx_stats_get_sigma(gmx_stats_t stats,real *sigma);
+int gmx_stats_get_sigma(gmx_stats_t stats, real *sigma);
 
-int gmx_stats_get_error(gmx_stats_t stats,real *error);
+int gmx_stats_get_error(gmx_stats_t stats, real *error);
 
 /* Get all three of the above. Pointers may be null, in which case no
    assignment will be done. */
 GMX_LIBGMX_EXPORT
-int gmx_stats_get_ase(gmx_stats_t gstats,real *aver,real *sigma,real *error);
+int gmx_stats_get_ase(gmx_stats_t gstats, real *aver, real *sigma, real *error);
 
 /* Dump the x, y, dx, dy data to a text file */
-int gmx_stats_dump_xy(gmx_stats_t gstats,FILE *fp);
+int gmx_stats_dump_xy(gmx_stats_t gstats, FILE *fp);
 
 /* Make a histogram of the data present. Uses either bindwith to
    determine the number of bins, or nbins to determine the binwidth,
    therefore one of these should be zero, but not the other. If *nbins = 0
-   the number of bins will be returned in this variable. ehisto should be one of 
+   the number of bins will be returned in this variable. ehisto should be one of
    ehistoX or ehistoY. If
    normalized not equal to zero, the integral of the histogram will be
    normalized to one. The output is in two arrays, *x and *y, to which
    you should pass a pointer. Memory for the arrays will be allocated
    as needed. Function returns one of the estats codes. */
-int gmx_stats_make_histogram(gmx_stats_t gstats,real binwidth,int *nbins,
-				    int ehisto,
-				    int normalized,real **x,real **y);
+int gmx_stats_make_histogram(gmx_stats_t gstats, real binwidth, int *nbins,
+                             int ehisto,
+                             int normalized, real **x, real **y);
 
 /* Return message belonging to error code */
 GMX_LIBGMX_EXPORT
@@ -153,22 +159,22 @@ int lsq_y_ax(int n, real x[], real y[], real *a);
    slope in *a. Return value can be estatsOK, or something else. */
 
 GMX_LIBGMX_EXPORT
-int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r,
-		      real *chi2);
+int lsq_y_ax_b(int n, real x[], real y[], real *a, real *b, real *r,
+               real *chi2);
 /* Fit a straight line y=ax+b thru the n data points x,y.
  * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
  * The correlation coefficient is returned in r.
  */
 
 int lsq_y_ax_b_xdouble(int n, double x[], real y[],
-			       real *a, real *b,real *r,real *chi2);
+                       real *a, real *b, real *r, real *chi2);
 /* As lsq_y_ax_b, but with x in double precision.
  */
 
 GMX_LIBGMX_EXPORT
 int lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
-			     real *a, real *b, real *da, real *db,
-			     real *r,real *chi2);
+                     real *a, real *b, real *da, real *db,
+                     real *r, real *chi2);
 /* Fit a straight line y=ax+b thru the n data points x,y, with sigma dy
  * Returns the "fit quality" sigma = sqrt(chi^2/(n-2)).
  * The correlation coefficient is returned in r.
