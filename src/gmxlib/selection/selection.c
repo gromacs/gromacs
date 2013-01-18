@@ -70,23 +70,23 @@
  */
 int
 gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
-                             gmx_ana_poscalc_coll_t *pcc)
+                             gmx_ana_poscalc_coll_t   *pcc)
 {
     gmx_ana_selcollection_t *sc;
-    
+
     snew(sc, 1);
-    sc->rpost     = NULL;
-    sc->spost     = NULL;
-    sc->bMaskOnly = FALSE;
-    sc->bVelocities = FALSE;
-    sc->bForces   = FALSE;
+    sc->rpost         = NULL;
+    sc->spost         = NULL;
+    sc->bMaskOnly     = FALSE;
+    sc->bVelocities   = FALSE;
+    sc->bForces       = FALSE;
     sc->bDebugCompile = FALSE;
-    sc->root      = NULL;
-    sc->nr        = 0;
-    sc->sel       = NULL;
-    sc->nvars     = 0;
-    sc->varstrs   = NULL;
-    sc->top       = NULL;
+    sc->root          = NULL;
+    sc->nr            = 0;
+    sc->sel           = NULL;
+    sc->nvars         = 0;
+    sc->varstrs       = NULL;
+    sc->top           = NULL;
     gmx_ana_index_clear(&sc->gall);
     sc->pcc       = pcc;
     sc->mempool   = NULL;
@@ -151,7 +151,7 @@ _gmx_selcollection_clear_symtab(gmx_ana_selcollection_t *sc)
  */
 void
 gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type)
+                                     const char              *type)
 {
     sc->rpost     = type;
 }
@@ -185,7 +185,7 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut)
+                                    gmx_bool                 bVelOut)
 {
     sc->bVelocities = bVelOut;
 }
@@ -197,7 +197,7 @@ gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut)
+                                      gmx_bool                 bForceOut)
 {
     sc->bForces = bForceOut;
 }
@@ -270,7 +270,9 @@ gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
 {
     if (i < 0 || i >= sc->nr || !sc->sel)
+    {
         return NULL;
+    }
     return sc->sel[i];
 }
 
@@ -295,7 +297,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
     if (sc->rpost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &type, &flags);
+        rc    = gmx_ana_poscalc_type_from_enum(sc->rpost, &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -304,7 +306,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
     if (sc->spost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->spost, &type, &flags);
+        rc    = gmx_ana_poscalc_type_from_enum(sc->spost, &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -395,7 +397,7 @@ gmx_ana_selection_print_info(gmx_ana_selection_t *sel)
  * \param[in] sel  Selection to initialize.
  * \param[in] type Type of covered fraction required.
  * \returns   TRUE if the covered fraction can be calculated for the selection,
- *   FALSE otherwise.    
+ *   FALSE otherwise.
  */
 gmx_bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)

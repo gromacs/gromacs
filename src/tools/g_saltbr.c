@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_saltbr.c is now in gmx_saltbr.c,
-* where the old main function is called gmx_saltbr().
-*/
+ * The code that used to be in g_saltbr.c is now in gmx_saltbr.c,
+ * where the old main function is called gmx_saltbr().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_saltbr(argc,argv);
-  return 0;
+    gmx_saltbr(argc, argv);
+    return 0;
 }
-
-
-  

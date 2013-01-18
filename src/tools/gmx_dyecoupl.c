@@ -53,101 +53,101 @@ int gmx_dyecoupl(int argc, char *argv[])
 {
     const char *desc[] =
     {
-            "This tool extracts dye dynamics from trajectory files.",
-            "Currently, R and kappa^2 between dyes is extracted for (F)RET",
-            "simulations with assumed dipolar coupling as in the Foerster equation.",
-            "It further allows the calculation of R(t) and kappa^2(t), R and",
-            "kappa^2 histograms and averages, as well as the instantaneous FRET",
-            "efficiency E(t) for a specified Foerster radius R_0 (switch [TT]-R0[tt]).",
-            "The input dyes have to be whole (see res and mol pbc options",
-            "in [TT]trjconv[tt]).",
-            "The dye transition dipole moment has to be defined by at least",
-            "a single atom pair, however multiple atom pairs can be provided ",
-            "in the index file. The distance R is calculated on the basis of",
-            "the COMs of the given atom pairs.",
-            "The [TT]-pbcdist[tt] option calculates distances to the nearest periodic",
-            "image instead to the distance in the box. This works however only,"
-            "for periodic boundaries in all 3 dimensions.",
-            "The [TT]-norm[tt] option (area-) normalizes the histograms."
+        "This tool extracts dye dynamics from trajectory files.",
+        "Currently, R and kappa^2 between dyes is extracted for (F)RET",
+        "simulations with assumed dipolar coupling as in the Foerster equation.",
+        "It further allows the calculation of R(t) and kappa^2(t), R and",
+        "kappa^2 histograms and averages, as well as the instantaneous FRET",
+        "efficiency E(t) for a specified Foerster radius R_0 (switch [TT]-R0[tt]).",
+        "The input dyes have to be whole (see res and mol pbc options",
+        "in [TT]trjconv[tt]).",
+        "The dye transition dipole moment has to be defined by at least",
+        "a single atom pair, however multiple atom pairs can be provided ",
+        "in the index file. The distance R is calculated on the basis of",
+        "the COMs of the given atom pairs.",
+        "The [TT]-pbcdist[tt] option calculates distances to the nearest periodic",
+        "image instead to the distance in the box. This works however only,"
+        "for periodic boundaries in all 3 dimensions.",
+        "The [TT]-norm[tt] option (area-) normalizes the histograms."
     };
-    
-	static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
-    int histbins = 50;
-    output_env_t oenv;
-    real R0=-1;
 
-    t_pargs pa[] =
+    static gmx_bool bPBCdist = FALSE, bNormHist = FALSE;
+    int             histbins = 50;
+    output_env_t    oenv;
+    real            R0 = -1;
+
+    t_pargs         pa[] =
     {
-            { "-pbcdist", FALSE, etBOOL, { &bPBCdist },"Distance R based on PBC" },
-            { "-norm", FALSE, etBOOL, { &bNormHist },"Normalize histograms" },
-            { "-bins", FALSE, etINT, {&histbins},"# of histogram bins" },
-            { "-R0", FALSE, etREAL, {&R0},"Foerster radius including kappa^2=2/3 in nm" }
+        { "-pbcdist", FALSE, etBOOL, { &bPBCdist }, "Distance R based on PBC" },
+        { "-norm", FALSE, etBOOL, { &bNormHist }, "Normalize histograms" },
+        { "-bins", FALSE, etINT, {&histbins}, "# of histogram bins" },
+        { "-R0", FALSE, etREAL, {&R0}, "Foerster radius including kappa^2=2/3 in nm" }
     };
 #define NPA asize(pa)
 
     t_filenm fnm[] =
     {
-            { efTRX, "-f", NULL, ffREAD },
-            { efNDX, NULL, NULL, ffREAD },
-            { efXVG, "-ot", "rkappa",ffOPTWR },
-            { efXVG, "-oe", "insteff",ffOPTWR },
-            { efDAT, "-o", "rkappa",ffOPTWR },
-            { efXVG, "-rhist","rhist", ffOPTWR },
-            { efXVG, "-khist", "khist", ffOPTWR }
+        { efTRX, "-f", NULL, ffREAD },
+        { efNDX, NULL, NULL, ffREAD },
+        { efXVG, "-ot", "rkappa", ffOPTWR },
+        { efXVG, "-oe", "insteff", ffOPTWR },
+        { efDAT, "-o", "rkappa", ffOPTWR },
+        { efXVG, "-rhist", "rhist", ffOPTWR },
+        { efXVG, "-khist", "khist", ffOPTWR }
     };
 #define NFILE asize(fnm)
 
 
-    const char *in_trajfile, *in_ndxfile, *out_xvgrkfile = NULL, *out_xvginstefffile = NULL, *out_xvgrhistfile = NULL, *out_xvgkhistfile = NULL,*out_datfile=NULL;
-    gmx_bool bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
-    int ndon, nacc;
-    atom_id *donindex, *accindex;
-    char *grpnm;
-    t_atoms *atoms = NULL;
+    const char  *in_trajfile, *in_ndxfile, *out_xvgrkfile = NULL, *out_xvginstefffile = NULL, *out_xvgrhistfile = NULL, *out_xvgkhistfile = NULL, *out_datfile = NULL;
+    gmx_bool     bHaveFirstFrame, bHaveNextFrame, indexOK = TRUE;
+    int          ndon, nacc;
+    atom_id     *donindex, *accindex;
+    char        *grpnm;
+    t_atoms     *atoms = NULL;
     t_trxstatus *status;
-    t_trxframe fr;
+    t_trxframe   fr;
 
-    int flags;
-    int allocblock = 1000;
-    real histexpand = 1e-6;
-    rvec donvec, accvec, donpos, accpos, dist, distnorm;
-    int natoms;
+    int          flags;
+    int          allocblock = 1000;
+    real         histexpand = 1e-6;
+    rvec         donvec, accvec, donpos, accpos, dist, distnorm;
+    int          natoms;
 
     /*we rely on PBC autodetection (...currently)*/
-    int ePBC = -1;
+    int         ePBC = -1;
 
-    real *rvalues=NULL, *kappa2values=NULL, *rhist=NULL, *khist=NULL;
-    t_pbc *pbc=NULL;
-    int i, bin;
-    FILE *rkfp = NULL, *rhfp = NULL, *khfp = NULL,*datfp=NULL,*iefp=NULL;
-    gmx_bool bRKout, bRhistout, bKhistout,bDatout,bInstEffout,grident;
+    real       *rvalues = NULL, *kappa2values = NULL, *rhist = NULL, *khist = NULL;
+    t_pbc      *pbc     = NULL;
+    int         i, bin;
+    FILE       *rkfp = NULL, *rhfp = NULL, *khfp = NULL, *datfp = NULL, *iefp = NULL;
+    gmx_bool    bRKout, bRhistout, bKhistout, bDatout, bInstEffout, grident;
 
     const char *rkleg[2] = { "R", "\\f{Symbol}k\\f{}\\S2\\N" };
     const char *rhleg[1] = { "p(R)" };
     const char *khleg[1] = { "p(\\f{Symbol}k\\f{}\\S2\\N)" };
     const char *ieleg[1] = { "E\\sRET\\N(t)" };
 
-    real R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs=0., rmax, rmin, kmin = 0., kmax = 4.,
-            rrange, krange, rincr, kincr,Rfrac;
-    int rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
+    real        R, kappa2, insteff, Rs = 0., kappa2s = 0., insteffs = 0., rmax, rmin, kmin = 0., kmax = 4.,
+                rrange, krange, rincr, kincr, Rfrac;
+    int         rkcount = 0, rblocksallocated = 0, kblocksallocated = 0;
 
     CopyRight(stderr, argv[0]);
-    parse_common_args(&argc,argv,PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE,fnm,NPA,pa,asize(desc),desc, 0,NULL,&oenv);
+    parse_common_args(&argc, argv, PCA_CAN_BEGIN | PCA_CAN_END | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE, NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
 
 
     /* Check command line options for filenames and set bool flags when switch used*/
-    in_trajfile = opt2fn("-f", NFILE, fnm);
-    in_ndxfile = opt2fn("-n", NFILE, fnm);
-    out_xvgrkfile = opt2fn("-ot", NFILE, fnm);
-    out_xvgrhistfile = opt2fn("-rhist", NFILE, fnm);
-    out_xvgkhistfile = opt2fn("-khist", NFILE, fnm);
+    in_trajfile        = opt2fn("-f", NFILE, fnm);
+    in_ndxfile         = opt2fn("-n", NFILE, fnm);
+    out_xvgrkfile      = opt2fn("-ot", NFILE, fnm);
+    out_xvgrhistfile   = opt2fn("-rhist", NFILE, fnm);
+    out_xvgkhistfile   = opt2fn("-khist", NFILE, fnm);
     out_xvginstefffile = opt2fn("-oe", NFILE, fnm);
-    out_datfile = opt2fn("-o",NFILE,fnm);
+    out_datfile        = opt2fn("-o", NFILE, fnm);
 
-    bRKout = opt2bSet("-ot", NFILE, fnm);
-    bRhistout = opt2bSet("-rhist", NFILE, fnm);
-    bKhistout = opt2bSet("-khist", NFILE, fnm);
-    bDatout = opt2bSet("-o", NFILE, fnm);
+    bRKout      = opt2bSet("-ot", NFILE, fnm);
+    bRhistout   = opt2bSet("-rhist", NFILE, fnm);
+    bKhistout   = opt2bSet("-khist", NFILE, fnm);
+    bDatout     = opt2bSet("-o", NFILE, fnm);
     bInstEffout = opt2bSet("-oe", NFILE, fnm);
 
 
@@ -159,27 +159,27 @@ int gmx_dyecoupl(int argc, char *argv[])
     }
 
 
-    if (bInstEffout && R0<=0.)
+    if (bInstEffout && R0 <= 0.)
     {
-        gmx_fatal(FARGS,"You have to specify R0 and R0 has to be larger than 0 nm.\n\n");
+        gmx_fatal(FARGS, "You have to specify R0 and R0 has to be larger than 0 nm.\n\n");
     }
 
     printf("Select group with donor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex,&grpnm);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &ndon, &donindex, &grpnm);
 
     printf("Select group with acceptor atom pairs defining the transition moment\n");
-    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex,&grpnm);
+    get_index(atoms, ftp2fn_null(efNDX, NFILE, fnm), 1, &nacc, &accindex, &grpnm);
 
     /*check if groups are identical*/
-    grident=TRUE;
+    grident = TRUE;
 
     if (ndon == nacc)
     {
-        for (i=0;i<nacc;i++)
+        for (i = 0; i < nacc; i++)
         {
-            if(accindex[i] != donindex[i])
+            if (accindex[i] != donindex[i])
             {
-                grident=FALSE;
+                grident = FALSE;
                 break;
             }
         }
@@ -187,13 +187,13 @@ int gmx_dyecoupl(int argc, char *argv[])
 
     if (grident)
     {
-        gmx_fatal(FARGS,"Donor and acceptor group are identical. This makes no sense.");
+        gmx_fatal(FARGS, "Donor and acceptor group are identical. This makes no sense.");
     }
 
     printf("Reading first frame\n");
     /* open trx file for reading */
-    flags=0;
-    flags = flags | TRX_READ_X;
+    flags           = 0;
+    flags           = flags | TRX_READ_X;
     bHaveFirstFrame = read_first_frame(oenv, &status, in_trajfile, &fr, flags);
 
     if (bHaveFirstFrame)
@@ -206,15 +206,19 @@ int gmx_dyecoupl(int argc, char *argv[])
         }
         else
         {
-            for (i = 0; i < ndon;i++)
+            for (i = 0; i < ndon; i++)
             {
                 if (donindex[i] >= natoms)
+                {
                     indexOK = FALSE;
+                }
             }
-            for (i = 0; i < nacc;i++)
+            for (i = 0; i < nacc; i++)
             {
                 if (accindex[i] >= natoms)
+                {
                     indexOK = FALSE;
+                }
             }
         }
 
@@ -223,24 +227,24 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             if (bDatout)
             {
-                datfp = fopen(out_datfile,"w");
+                datfp = fopen(out_datfile, "w");
             }
 
             if (bRKout)
             {
                 rkfp = xvgropen(out_xvgrkfile,
-                        "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
-                        "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
-                        oenv);
+                                "Distance and \\f{Symbol}k\\f{}\\S2\\N trajectory",
+                                "Time (ps)", "Distance (nm) / \\f{Symbol}k\\f{}\\S2\\N",
+                                oenv);
                 xvgr_legend(rkfp, 2, rkleg, oenv);
             }
 
             if (bInstEffout)
             {
                 iefp = xvgropen(out_xvginstefffile,
-                        "Instantaneous RET Efficiency",
-                        "Time (ps)", "RET Efficiency",
-                        oenv);
+                                "Instantaneous RET Efficiency",
+                                "Time (ps)", "RET Efficiency",
+                                oenv);
                 xvgr_legend(iefp, 1, ieleg, oenv);
             }
 
@@ -298,14 +302,14 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 unitv(dist, distnorm);
-                R = norm(dist);
-                kappa2 = iprod(donvec, accvec)- 3.* (iprod(donvec, distnorm) * iprod(distnorm, accvec));
+                R       = norm(dist);
+                kappa2  = iprod(donvec, accvec)- 3.* (iprod(donvec, distnorm) * iprod(distnorm, accvec));
                 kappa2 *= kappa2;
-                if (R0>0)
+                if (R0 > 0)
                 {
-                    Rfrac=R/R0;
-                    insteff=1/(1+(Rfrac*Rfrac*Rfrac*Rfrac*Rfrac*Rfrac)*2/3/kappa2);
-                    insteffs+=insteff;
+                    Rfrac     = R/R0;
+                    insteff   = 1/(1+(Rfrac*Rfrac*Rfrac*Rfrac*Rfrac*Rfrac)*2/3/kappa2);
+                    insteffs += insteff;
 
                     if (bInstEffout)
                     {
@@ -314,15 +318,19 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
 
-                Rs += R;
+                Rs      += R;
                 kappa2s += kappa2;
                 rkcount++;
 
                 if (bRKout)
+                {
                     fprintf(rkfp, "%12.7f %12.7f %12.7f\n", fr.time, R, kappa2);
+                }
 
                 if (bDatout)
+                {
                     fprintf(datfp, "%12.7f %12.7f %12.7f\n", fr.time, R, kappa2);
+                }
 
                 if (bRhistout)
                 {
@@ -345,16 +353,23 @@ int gmx_dyecoupl(int argc, char *argv[])
                 }
 
                 bHaveNextFrame = read_next_frame(oenv, status, &fr);
-            } while (bHaveNextFrame);
+            }
+            while (bHaveNextFrame);
 
             if (bRKout)
+            {
                 ffclose(rkfp);
+            }
 
             if (bDatout)
+            {
                 ffclose(datfp);
+            }
 
             if (bInstEffout)
+            {
                 ffclose(iefp);
+            }
 
 
             if (bRhistout)
@@ -365,31 +380,38 @@ int gmx_dyecoupl(int argc, char *argv[])
                 for (i = 1; i < rkcount; i++)
                 {
                     if (rvalues[i] < rmin)
+                    {
                         rmin = rvalues[i];
+                    }
                     else if (rvalues[i] > rmax)
+                    {
                         rmax = rvalues[i];
+                    }
                 }
                 rmin -= histexpand;
                 rmax += histexpand;
 
                 rrange = rmax - rmin;
-                rincr = rrange / histbins;
+                rincr  = rrange / histbins;
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin = (int) ((rvalues[i] - rmin) / rincr);
+                    bin         = (int) ((rvalues[i] - rmin) / rincr);
                     rhist[bin] += 1;
                 }
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
+                    {
                         rhist[i] /= rkcount * rrange/histbins;
+                    }
                     rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                            "R (nm)", "Normalized Probability", oenv);
-                } else
+                                    "R (nm)", "Normalized Probability", oenv);
+                }
+                else
                 {
                     rhfp = xvgropen(out_xvgrhistfile, "Distance Distribution",
-                            "R (nm)", "Probability", oenv);
+                                    "R (nm)", "Probability", oenv);
                 }
                 xvgr_legend(rhfp, 1, rhleg, oenv);
                 for (i = 0; i < histbins; i++)
@@ -404,26 +426,29 @@ int gmx_dyecoupl(int argc, char *argv[])
             {
                 printf("Writing kappa^2-Histogram\n");
                 krange = kmax - kmin;
-                kincr = krange / histbins;
+                kincr  = krange / histbins;
 
                 for (i = 1; i < rkcount; i++)
                 {
-                    bin = (int) ((kappa2values[i] - kmin) / kincr);
+                    bin         = (int) ((kappa2values[i] - kmin) / kincr);
                     khist[bin] += 1;
                 }
                 if (bNormHist)
                 {
                     for (i = 0; i < histbins; i++)
+                    {
                         khist[i] /= rkcount * krange/histbins;
+                    }
                     khfp = xvgropen(out_xvgkhistfile,
-                            "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                            "\\f{Symbol}k\\f{}\\S2\\N",
-                            "Normalized Probability", oenv);
-                } else
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N",
+                                    "Normalized Probability", oenv);
+                }
+                else
                 {
                     khfp = xvgropen(out_xvgkhistfile,
-                            "\\f{Symbol}k\\f{}\\S2\\N Distribution",
-                            "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
+                                    "\\f{Symbol}k\\f{}\\S2\\N Distribution",
+                                    "\\f{Symbol}k\\f{}\\S2\\N", "Probability", oenv);
                 }
                 xvgr_legend(khfp, 1, khleg, oenv);
                 for (i = 0; i < histbins; i++)
@@ -436,24 +461,23 @@ int gmx_dyecoupl(int argc, char *argv[])
 
             printf("\nAverages:\n");
             printf("R_avg   = %8.4f nm\nKappa^2 = %8.4f\n", Rs / rkcount,
-                    kappa2s / rkcount);
-            if (R0>0)
+                   kappa2s / rkcount);
+            if (R0 > 0)
             {
                 printf("E_RETavg   = %8.4f\n", insteffs / rkcount);
             }
-            please_cite(stdout,"Hoefling2011");
+            please_cite(stdout, "Hoefling2011");
         }
         else
         {
-            gmx_fatal(FARGS,"Index file invalid, check your index file for correct pairs.\n");
+            gmx_fatal(FARGS, "Index file invalid, check your index file for correct pairs.\n");
         }
     }
     else
     {
-        gmx_fatal(FARGS,"Could not read first frame of the trajectory.\n");
+        gmx_fatal(FARGS, "Could not read first frame of the trajectory.\n");
     }
 
     thanx(stderr);
     return 0;
 }
-

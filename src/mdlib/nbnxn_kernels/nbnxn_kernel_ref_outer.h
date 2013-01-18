@@ -55,42 +55,42 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(x,y) x##_rf_##y
+#define NBK_FUNC_NAME(x, y) x ## _rf_ ## y
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(x,y) x##_tab_##y
+#define NBK_FUNC_NAME(x, y) x ## _tab_ ## y
 #else
-#define NBK_FUNC_NAME(x,y) x##_tab_twin_##y
+#define NBK_FUNC_NAME(x, y) x ## _tab_twin_ ## y
 #endif
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nbnxn_kernel_ref,noener)
+NBK_FUNC_NAME(nbnxn_kernel_ref, noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nbnxn_kernel_ref,ener)
+NBK_FUNC_NAME(nbnxn_kernel_ref, ener)
 #else
-NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_ref, energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
-                            (const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f
+(const nbnxn_pairlist_t     *nbl,
+ const nbnxn_atomdata_t     *nbat,
+ const interaction_const_t  *ic,
+ rvec                       *shift_vec,
+ real                       *f
 #ifdef CALC_SHIFTFORCES
-                             ,
-                             real                       *fshift
+ ,
+ real                       *fshift
 #endif
 #ifdef CALC_ENERGIES
-                             ,
-                             real                       *Vvdw,
-                             real                       *Vc
+ ,
+ real                       *Vvdw,
+ real                       *Vc
 #endif
-                            )
+)
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
@@ -99,27 +99,27 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp;
-    real       rcut2;
+    real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
-    real       rvdw2;
+    real                rvdw2;
 #endif
-    int        ntype2;
-    real       facel;
-    real       *nbfp_i;
-    int        n,ci,ci_sh;
-    int        ish,ishf;
-    gmx_bool   do_LJ,half_LJ,do_coul;
-    int        cjind0,cjind1,cjind;
-    int        ip,jp;
+    int                 ntype2;
+    real                facel;
+    real               *nbfp_i;
+    int                 n, ci, ci_sh;
+    int                 ish, ishf;
+    gmx_bool            do_LJ, half_LJ, do_coul;
+    int                 cjind0, cjind1, cjind;
+    int                 ip, jp;
 
-    real       xi[UNROLLI*XI_STRIDE];
-    real       fi[UNROLLI*FI_STRIDE];
-    real       qi[UNROLLI];
+    real                xi[UNROLLI*XI_STRIDE];
+    real                fi[UNROLLI*FI_STRIDE];
+    real                qi[UNROLLI];
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
 
-    real       Vvdw_ci,Vc_ci;
+    real       Vvdw_ci, Vc_ci;
 #else
     int        egp_mask;
     int        egp_sh_i[UNROLLI];
@@ -130,7 +130,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #ifdef CALC_COUL_RF
     real       k_rf2;
 #ifdef CALC_ENERGIES
-    real       k_rf,c_rf;
+    real       k_rf, c_rf;
 #endif
 #endif
 #ifdef CALC_COUL_TAB
@@ -149,7 +149,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     int ninner;
 
 #ifdef COUNT_PAIRS
-    int npair=0;
+    int npair = 0;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -198,9 +198,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     l_cj = nbl->cj;
 
     ninner = 0;
-    for(n=0; n<nbl->nci; n++)
+    for (n = 0; n < nbl->nci; n++)
     {
-        int i,d;
+        int i, d;
 
         nbln = &nbl->ci[n];
 
@@ -228,16 +228,16 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         Vvdw_ci = 0;
         Vc_ci   = 0;
 #else
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
         }
 #endif
 #endif
 
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d = 0; d < DIM; d++)
             {
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
@@ -261,7 +261,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #endif
 
-            for(i=0; i<UNROLLI; i++)
+            for (i = 0; i < UNROLLI; i++)
             {
                 qi[i] = facel*q[ci*UNROLLI+i];
 
@@ -306,7 +306,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             cjind++;
         }
 
-        for(; (cjind<cjind1); cjind++)
+        for (; (cjind < cjind1); cjind++)
         {
             if (half_LJ)
             {
@@ -331,9 +331,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d = 0; d < DIM; d++)
             {
                 f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
             }
@@ -342,9 +342,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         if (fshift != NULL)
         {
             /* Add i forces to shifted force list */
-            for(i=0; i<UNROLLI; i++)
+            for (i = 0; i < UNROLLI; i++)
             {
-                for(d=0; d<DIM; d++)
+                for (d = 0; d < DIM; d++)
                 {
                     fshift[ishf+d] += fi[i*FI_STRIDE+d];
                 }
@@ -358,10 +358,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         *Vc   += Vc_ci;
 #endif
 #endif
-	}
+    }
 
 #ifdef COUNT_PAIRS
-    printf("atom pairs %d\n",npair);
+    printf("atom pairs %d\n", npair);
 #endif
 }
 

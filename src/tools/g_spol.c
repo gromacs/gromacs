@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_sorient.c is now in gmx_sorient.c,
-* where the old main function is called gmx_sorient().
-*/
+ * The code that used to be in g_sorient.c is now in gmx_sorient.c,
+ * where the old main function is called gmx_sorient().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_spol(argc,argv);
-  return 0;
+    gmx_spol(argc, argv);
+    return 0;
 }
-
-
-  

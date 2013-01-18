@@ -43,11 +43,11 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_disre.c is now in gmx_disre.c,
-* where the old main function is called gmx_disre().
-*/
-int 
-main(int argc,char *argv[]) 
+ * The code that used to be in g_disre.c is now in gmx_disre.c,
+ * where the old main function is called gmx_disre().
+ */
+int
+main(int argc, char *argv[])
 {
-  return gmx_genconf(argc,argv);
+    return gmx_genconf(argc, argv);
 }
