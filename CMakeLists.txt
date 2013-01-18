@@ -153,7 +153,7 @@ mark_as_advanced(GMX_FORCE_CXX)
 option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 
-if(GMX_GPU OR GMX_FORCE_CXX)
+if(GMX_GPU OR GMX_FORCE_CXX OR GMX_OPENMM)
     enable_language(CXX)
 endif()
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
