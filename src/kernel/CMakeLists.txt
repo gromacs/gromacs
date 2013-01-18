@@ -88,7 +88,10 @@ if(GMX_OPENMM)
     # Even though the OpenMM build has "moved to contrib", many things
     # have be be done from within the scope of the CMakeLists.txt that
     # builds its mdrun, and that is here
-    include(../contrib/BuildMdrunOpenMM)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/src/contrib)
+    find_package(OpenMM)
+    include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+    include(${CMAKE_SOURCE_DIR}/src/contrib/BuildMdrunOpenMM.cmake)
 endif(GMX_OPENMM)
 
 if(GMX_GPU OR GMX_FORCE_CXX)
