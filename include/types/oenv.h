@@ -46,4 +46,3 @@ typedef struct output_env *output_env_t;
 #ifdef __cplusplus
 }
 #endif
-

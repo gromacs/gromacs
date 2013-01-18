@@ -39,8 +39,8 @@
 #ifndef _topdef_h
 #define _topdef_h
 
-/* These are the indices for combination rule selection 	*/
-#define COMB_GROMOS 	1	/* Gromos rules			*/
-#define COMB_EPSSIG 	2	/* Epsilon and Sigma		*/
+/* These are the indices for combination rule selection     */
+#define COMB_GROMOS     1 /* Gromos rules			*/
+#define COMB_EPSSIG     2 /* Epsilon and Sigma		*/
 
-#endif	/* _topdef_h */
+#endif                    /* _topdef_h */

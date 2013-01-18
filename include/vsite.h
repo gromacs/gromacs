@@ -48,46 +48,46 @@ extern "C" {
 #endif
 
 typedef struct {
-        int *      left_import_construct;
-        int        left_import_nconstruct;
-        int *      left_export_construct;
-        int        left_export_nconstruct;
-        int *      right_import_construct;
-        int        right_import_nconstruct;
-        int *      right_export_construct;
-        int        right_export_nconstruct;
-        rvec *     send_buf;
-        rvec *     recv_buf;
+    int *      left_import_construct;
+    int        left_import_nconstruct;
+    int *      left_export_construct;
+    int        left_export_nconstruct;
+    int *      right_import_construct;
+    int        right_import_nconstruct;
+    int *      right_export_construct;
+    int        right_export_nconstruct;
+    rvec *     send_buf;
+    rvec *     recv_buf;
 } t_comm_vsites;
 
 typedef struct {
     t_ilist ilist[F_NRE];     /* vsite ilists for this thread            */
-    rvec fshift[SHIFTS];      /* fshift accumulation buffer              */
-    matrix dxdf;              /* virial dx*df accumulation buffer        */
+    rvec    fshift[SHIFTS];   /* fshift accumulation buffer              */
+    matrix  dxdf;             /* virial dx*df accumulation buffer        */
 } gmx_vsite_thread_t;
 
 typedef struct {
-  gmx_bool bHaveChargeGroups; /* Do we have charge groups?               */
-  int  n_intercg_vsite;       /* The number of inter charge group vsites */
-  int  nvsite_pbc_molt;       /* The array size of vsite_pbc_molt        */
-  int  ***vsite_pbc_molt;     /* The pbc atoms for intercg vsites        */
-  int  **vsite_pbc_loc;       /* The local pbc atoms                     */
-  int  *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
-  gmx_bool bPDvsitecomm;      /* Do we need vsite communication with PD? */
-  t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
-  int  nthreads;              /* Number of threads used for vsites       */
-  gmx_vsite_thread_t *tdata;  /* Thread local vsites and work structs    */
-  int  *th_ind;               /* Work array                              */
-  int  th_ind_nalloc;         /* Size of th_ind                          */
+    gmx_bool            bHaveChargeGroups;    /* Do we have charge groups?               */
+    int                 n_intercg_vsite;      /* The number of inter charge group vsites */
+    int                 nvsite_pbc_molt;      /* The array size of vsite_pbc_molt        */
+    int              ***vsite_pbc_molt;       /* The pbc atoms for intercg vsites        */
+    int               **vsite_pbc_loc;        /* The local pbc atoms                     */
+    int                *vsite_pbc_loc_nalloc; /* Sizes of vsite_pbc_loc                  */
+    gmx_bool            bPDvsitecomm;         /* Do we need vsite communication with PD? */
+    t_comm_vsites      *vsitecomm;            /* The PD vsite communication struct       */
+    int                 nthreads;             /* Number of threads used for vsites       */
+    gmx_vsite_thread_t *tdata;                /* Thread local vsites and work structs    */
+    int                *th_ind;               /* Work array                              */
+    int                 th_ind_nalloc;        /* Size of th_ind                          */
 } gmx_vsite_t;
 
 GMX_LIBMD_EXPORT
-void construct_vsites(FILE *log,gmx_vsite_t *vsite,
-			     rvec x[],t_nrnb *nrnb,
-			     real dt,rvec v[],
-			     t_iparams ip[],t_ilist ilist[],
-			     int ePBC,gmx_bool bMolPBC,t_graph *graph,
-			     t_commrec *cr,matrix box);
+void construct_vsites(FILE *log, gmx_vsite_t *vsite,
+                      rvec x[], t_nrnb *nrnb,
+                      real dt, rvec v[],
+                      t_iparams ip[], t_ilist ilist[],
+                      int ePBC, gmx_bool bMolPBC, t_graph *graph,
+                      t_commrec *cr, matrix box);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the local system.
  * If v is passed, the velocities of the vsites will be calculated
@@ -99,19 +99,19 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
  */
 
 GMX_LIBMD_EXPORT
-void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
-			   gmx_mtop_t *mtop,rvec x[]);
+void construct_vsites_mtop(FILE *log, gmx_vsite_t *vsite,
+                           gmx_mtop_t *mtop, rvec x[]);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the whole system.
  * This function assumes that all molecules are whole.
  */
 
-void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
-		    rvec x[],rvec f[],rvec *fshift,
-		    gmx_bool VirCorr,matrix vir,
-		    t_nrnb *nrnb,t_idef *idef,
-		    int ePBC,gmx_bool bMolPBC,t_graph *g,matrix box,
-		    t_commrec *cr);
+void spread_vsite_f(FILE *log, gmx_vsite_t *vsite,
+                    rvec x[], rvec f[], rvec *fshift,
+                    gmx_bool VirCorr, matrix vir,
+                    t_nrnb *nrnb, t_idef *idef,
+                    int ePBC, gmx_bool bMolPBC, t_graph *g, matrix box,
+                    t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.
  * If VirCorr=TRUE add the virial correction for non-linear vsite constructs
@@ -121,8 +121,8 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  */
 
 GMX_LIBMD_EXPORT
-gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
-			gmx_bool bSerial_NoPBC);
+gmx_vsite_t *init_vsite(gmx_mtop_t *mtop, t_commrec *cr,
+                        gmx_bool bSerial_NoPBC);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
  * bSerial_NoPBC is to generate a simple vsite setup to be
@@ -130,17 +130,17 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr,
  * this is useful for correction vsites of the initial configuration.
  */
 
-void split_vsites_over_threads(const t_ilist *ilist,
+void split_vsites_over_threads(const t_ilist   *ilist,
                                const t_mdatoms *mdatoms,
-                               gmx_bool bLimitRange,
-                               gmx_vsite_t *vsite);
+                               gmx_bool         bLimitRange,
+                               gmx_vsite_t     *vsite);
 /* Divide the vsite work-load over the threads.
  * Should be called at the end of the domain decomposition.
  */
 
 GMX_LIBMD_EXPORT
-void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
-			  t_commrec *cr);
+void set_vsite_top(gmx_vsite_t *vsite, gmx_localtop_t *top, t_mdatoms *md,
+                   t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
@@ -150,4 +150,3 @@ void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 #endif
 
 #endif
-

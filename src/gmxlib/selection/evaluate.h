@@ -65,13 +65,13 @@ typedef struct gmx_sel_evaluate_t
     /** Memory pool for intermediate values. */
     struct gmx_sel_mempool_t *mp;
     /** Index group that contains all the atoms. */
-    gmx_ana_index_t         *gall;
+    gmx_ana_index_t          *gall;
     /** Topology information. */
-    t_topology              *top;
+    t_topology               *top;
     /** Current frame. */
-    t_trxframe              *fr;
+    t_trxframe               *fr;
     /** PBC data. */
-    t_pbc                   *pbc;
+    t_pbc                    *pbc;
 } gmx_sel_evaluate_t;
 
 /*! \name Utility functions

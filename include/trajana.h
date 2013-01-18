@@ -80,7 +80,7 @@ typedef struct gmx_ana_traj_t gmx_ana_traj_t;
  * \anchor analysis_flags
  * These flags can be used to alter the behavior of the analysis library to
  * suit the analysis tool.
- * They are given to the gmx_ana_traj_create() when creating the 
+ * They are given to the gmx_ana_traj_create() when creating the
  * \c gmx_ana_traj_t data structure, and affect the behavior of the other
  * functions in this header.
  */
@@ -218,7 +218,7 @@ int
 parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   unsigned long pca_flags, int nfile, t_filenm fnm[],
                   int npargs, t_pargs *pa,
-		  int ndesc, const char **desc,
+                  int ndesc, const char **desc,
                   int nbugs, const char **bugs,
                   output_env_t *oenv);
 /** Initializes selection information. */
@@ -297,7 +297,7 @@ xvgr_selections(FILE *out, gmx_ana_traj_t *d);
  * the same value to the caller.
  */
 typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-	                        int nr, gmx_ana_selection_t *sel[], void *data);
+                                int nr, gmx_ana_selection_t *sel[], void *data);
 
 /** Loops through all frames in the trajectory. */
 GMX_LIBGMX_EXPORT

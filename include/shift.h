@@ -45,7 +45,7 @@
 extern "C" {
 #endif
 
-real *mk_shift_tab(int n,real r1,real rc,real dr,real *sfac);
+real *mk_shift_tab(int n, real r1, real rc, real dr, real *sfac);
 /* Return a table of length n, containing the parabolic
  * shift function from HJC Berendsen
  */
@@ -54,4 +54,4 @@ real *mk_shift_tab(int n,real r1,real rc,real dr,real *sfac);
 }
 #endif
 
-#endif	/* _shift_h */
+#endif  /* _shift_h */

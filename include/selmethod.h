@@ -37,7 +37,7 @@
  */
 /*! \page selmethods Custom selection methods
  *
- * Custom selection methods are defined by creating a new instance of 
+ * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
  * the selection.
  * The structure contains callback pointers that define the actual behavior
@@ -144,7 +144,7 @@
  * \c gmx_ana_selparam_t structures.
  * The order of the parameters does not matter (except possibly for callback
  * implementation), with one important exception:
- * If the method evaluates to a \ref POS_VALUE, the first parameter should 
+ * If the method evaluates to a \ref POS_VALUE, the first parameter should
  * have \ref GROUP_VALUE and be the one that is used to calculate the
  * positions.
  *
@@ -252,14 +252,14 @@
  *    or to control the default behavior of the selection engine
  *    (currently, such a framework is not implemented, but should be easy to
  *    implement if required).
- *    
+ *
  * In addition to restricting the type of the method, selection modifiers
  * do not allow the flags \ref SMETH_SINGLEVAL and \ref SMETH_VARNUMVAL
  * (they would not make sense).
  *
  * Parameters and callbacks should be implemented as with normal selection
  * method, but beware that very little of the functionality has been tested.
- * 
+ *
  * \todo
  * The modifier handling could be made more flexible and more generic;
  * the current implementation does not allow many things which would be
@@ -611,7 +611,7 @@ typedef struct gmx_ana_selmethod_help_t
  *
  * See the function pointer type documentation for details of how the
  * functions should be implemented.
- * More details on implementing new selection methods can be found on a 
+ * More details on implementing new selection methods can be found on a
  * separate page: \ref selmethods.
  */
 typedef struct gmx_ana_selmethod_t

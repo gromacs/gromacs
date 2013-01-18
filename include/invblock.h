@@ -45,13 +45,13 @@
 extern "C" {
 #endif
 
-atom_id *make_invblock(const t_block *block,int nr);
+atom_id *make_invblock(const t_block *block, int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */
 
 GMX_LIBGMX_EXPORT
-atom_id *make_invblocka(const t_blocka *block,int nr);
+atom_id *make_invblocka(const t_blocka *block, int nr);
 /* Inverse the block structure. nr is the maximum entry in the inversed
  * array, and therefore the dimension of the returned array
  */
@@ -60,4 +60,4 @@ atom_id *make_invblocka(const t_blocka *block,int nr);
 }
 #endif
 
-#endif	/* _invblock_h */
+#endif  /* _invblock_h */

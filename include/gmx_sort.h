@@ -66,15 +66,15 @@ extern "C"
  *  @param size    Size in bytes of each element
  *  @param compar  Comparison function that takes two pointers to elements
  *                 being compared as arguments. The function should return an
- *                 integer less than, equal to, or greater than zero if the 
+ *                 integer less than, equal to, or greater than zero if the
  *                 first argument is considered to be respectively less than,
  *                 equal to, or greater than the second.
  */
 GMX_LIBGMX_EXPORT
 void
-gmx_qsort(void *           base, 
-          size_t           nmemb, 
-          size_t           size, 
+gmx_qsort(void *           base,
+          size_t           nmemb,
+          size_t           size,
           int            (*compar)(const void *, const void *));
 
 

@@ -96,8 +96,8 @@ GMX_LIBGMX_EXPORT
 void strip_comment (char *line);
 
 int break_line (char *line,
-		       char *variable,
-		       char *value);
+                char *variable,
+                char *value);
 
 GMX_LIBGMX_EXPORT
 void upstring (char *str);
@@ -112,7 +112,7 @@ GMX_LIBGMX_EXPORT
 void trim (char *str);
 
 GMX_LIBGMX_EXPORT
-void nice_header (FILE *out,const char *fn);
+void nice_header (FILE *out, const char *fn);
 
 GMX_LIBGMX_EXPORT
 int gmx_strcasecmp_min(const char *str1, const char *str2);
@@ -133,7 +133,7 @@ char *gmx_strndup(const char *src, int n);
 
 /* Magic hash initialization number from Dan J. Bernstein. */
 extern const unsigned int
-gmx_string_hash_init;
+    gmx_string_hash_init;
 
 /* Return a hash of the string according to Dan J. Bernsteins algorithm.
  * This routine only uses characters for which isalnum(c) is true,
@@ -145,7 +145,7 @@ gmx_string_hash_init;
  */
 unsigned int
 gmx_string_hash_func(const char *s, unsigned int hash_init);
-    
+
 /** Pattern matcing with wildcards. */
 GMX_LIBGMX_EXPORT
 int gmx_wcmatch(const char *pattern, const char *src);
@@ -161,21 +161,21 @@ char *gmx_strsep(char **stringp, const char *delim);
 
 
 GMX_LIBGMX_EXPORT
-char *wrap_lines(const char *buf,int line_width, int indent,
-			gmx_bool bIndentFirst);
+char *wrap_lines(const char *buf, int line_width, int indent,
+                 gmx_bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,
  * which can be disposed of if no longer needed.
- * If !bIndentFirst, then the first line will not be indented, only 
+ * If !bIndentFirst, then the first line will not be indented, only
  * the lines that are created due to wapping.
  */
 
 
-char **split(char sep,char *str);
+char **split(char sep, char *str);
 /* Implementation of the well-known Perl function split */
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
-    
+
 #ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
@@ -184,4 +184,4 @@ gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 }
 #endif
 
-#endif	/* _string2_h */
+#endif  /* _string2_h */

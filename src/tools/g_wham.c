@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_wham.c is now in gmx_wham.c,
-* where the old main function is called gmx_wham().
-*/
+ * The code that used to be in g_wham.c is now in gmx_wham.c,
+ * where the old main function is called gmx_wham().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_wham(argc,argv);
-  return 0;
+    gmx_wham(argc, argv);
+    return 0;
 }
-
-
-  

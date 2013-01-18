@@ -47,31 +47,31 @@ extern "C" {
 
 
 typedef struct {
-  int	 nr;		/* Total number of charge groups	*/
-  int    nboundeddim;   /* The number of bounded dimensions     */
-  int    npbcdim;       /* The number of dimensions with pbc    */
-  int    ncg_ideal;     /* The ideal number of cg's per cell    */
-  ivec	 n;	        /* The dimension of the grid		*/
-  int    ncells;	/* Total number of cells		*/
-  int    cells_nalloc;	/* Allocation size of index and nra    	*/
-  ivec   ncpddc;        /* The number of cells per DD cell      */
-  rvec   cell_size;     /* The size of the cells                */
-  rvec   cell_offset;   /* The offset of the cell (0,0,0)       */
-  int	 *cell_index;	/* The cell number of each cg		*/
-  int    *index;	/* The index into a for each cell	*/
-			/* The location of the cell in the index*/
-			/* array can be found by calling xyz2ci	*/
-  int    *nra;		/* The number of entries in a cell	*/
-  int    icg0;          /* The start of the i-cg range          */
-  int    icg1;          /* The end of the i-cg range            */
-  rvec   *os0;
-  rvec   *os1;
-  int    *a;		/* The grid of cgs			*/
-  int    nr_alloc;      /* Allocation size of cell_index and a  */
-  real   *dcx2;         /* Squared distance from atom to j-cell */
-  real   *dcy2;         /* Squared distance from atom to j-cell */
-  real   *dcz2;         /* Squared distance from atom to j-cell */
-  int    dc_nalloc;     /* Allocation size of dcx2, dyc2, dcz2  */
+    int     nr;           /* Total number of charge groups	*/
+    int     nboundeddim;  /* The number of bounded dimensions     */
+    int     npbcdim;      /* The number of dimensions with pbc    */
+    int     ncg_ideal;    /* The ideal number of cg's per cell    */
+    ivec    n;            /* The dimension of the grid		*/
+    int     ncells;       /* Total number of cells		*/
+    int     cells_nalloc; /* Allocation size of index and nra       */
+    ivec    ncpddc;       /* The number of cells per DD cell      */
+    rvec    cell_size;    /* The size of the cells                */
+    rvec    cell_offset;  /* The offset of the cell (0,0,0)       */
+    int    *cell_index;   /* The cell number of each cg		*/
+    int    *index;        /* The index into a for each cell	*/
+    /* The location of the cell in the index*/
+    /* array can be found by calling xyz2ci	*/
+    int    *nra;    /* The number of entries in a cell	*/
+    int     icg0;   /* The start of the i-cg range          */
+    int     icg1;   /* The end of the i-cg range            */
+    rvec   *os0;
+    rvec   *os1;
+    int    *a;         /* The grid of cgs			*/
+    int     nr_alloc;  /* Allocation size of cell_index and a  */
+    real   *dcx2;      /* Squared distance from atom to j-cell */
+    real   *dcy2;      /* Squared distance from atom to j-cell */
+    real   *dcz2;      /* Squared distance from atom to j-cell */
+    int     dc_nalloc; /* Allocation size of dcx2, dyc2, dcz2  */
 } t_grid;
 
 #ifdef __cplusplus

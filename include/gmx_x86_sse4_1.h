@@ -47,15 +47,15 @@
  */
 
 
-#define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x),(imm))
+#define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
 
 #define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
-    __m128d __gmx_t1 = row0;                         \
-    row0           = _mm_unpacklo_pd(row0,row1);     \
-    row1           = _mm_unpackhi_pd(__gmx_t1,row1); \
+        __m128d __gmx_t1 = row0;                         \
+        row0           = _mm_unpacklo_pd(row0, row1);     \
+        row1           = _mm_unpackhi_pd(__gmx_t1, row1); \
 }
 
-#define _GMX_MM_BLEND(b3,b2,b1,b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
+#define _GMX_MM_BLEND(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
 #  define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
@@ -94,51 +94,51 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 
 
 static void
-gmx_mm_printxmm_ps(const char *s,__m128 xmm)
+gmx_mm_printxmm_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s: %15.10e %15.10e %15.10e %15.10e\n",s,f[0],f[1],f[2],f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s: %15.10e %15.10e %15.10e %15.10e\n", s, f[0], f[1], f[2], f[3]);
 }
 
 
 static void
-gmx_mm_printxmmsum_ps(const char *s,__m128 xmm)
+gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]+f[2]+f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]+f[2]+f[3]);
 }
 
 
 static void
-gmx_mm_printxmm_pd(const char *s,__m128d xmm)
+gmx_mm_printxmm_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s: %30.20e %30.20e\n",s,f[0],f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s: %30.20e %30.20e\n", s, f[0], f[1]);
 }
 
 static void
-gmx_mm_printxmmsum_pd(const char *s,__m128d xmm)
+gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]);
 }
 
 
 static void
-gmx_mm_printxmm_epi32(const char *s,__m128i xmmi)
+gmx_mm_printxmm_epi32(const char *s, __m128i xmmi)
 {
     int i[4];
 
-    _mm_storeu_si128((__m128i *)i,xmmi);
-    printf("%10s: %2d %2d %2d %2d\n",s,i[0],i[1],i[2],i[3]);
+    _mm_storeu_si128((__m128i *)i, xmmi);
+    printf("%10s: %2d %2d %2d %2d\n", s, i[0], i[1], i[2], i[3]);
 }
 
 

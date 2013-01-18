@@ -46,20 +46,20 @@
 extern "C" {
 #endif
 
-void write_java(FILE *out,const char *program,
-		       int nldesc,const char **desc,
-		       int nfile,t_filenm *fnm,
-		       int npargs,t_pargs *pa,
-		       int nbug,const char **bugs);
-     
-void write_man(FILE *out,const char *mantp,const char *program,
-		      int nldesc,const char **desc,
-		      int nfile,t_filenm *fnm,
-		      int npargs,t_pargs *pa,
-		      int nbug,const char **bugs,
-		      gmx_bool bHidden);
+void write_java(FILE *out, const char *program,
+                int nldesc, const char **desc,
+                int nfile, t_filenm *fnm,
+                int npargs, t_pargs *pa,
+                int nbug, const char **bugs);
 
-char *fileopt(unsigned long flag,char buf[],int maxsize);
+void write_man(FILE *out, const char *mantp, const char *program,
+               int nldesc, const char **desc,
+               int nfile, t_filenm *fnm,
+               int npargs, t_pargs *pa,
+               int nbug, const char **bugs,
+               gmx_bool bHidden);
+
+char *fileopt(unsigned long flag, char buf[], int maxsize);
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
  * You have to provide a buffer and buffer length in which
@@ -82,6 +82,4 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
 }
 #endif
 
-#endif	/* _wman_h */
-
-
+#endif  /* _wman_h */

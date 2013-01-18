@@ -47,10 +47,10 @@
 #include "smalloc.h"
 #include "gmx_fatal.h"
 
-static gmx_bool ip_pert(int ftype,const t_iparams *ip)
+static gmx_bool ip_pert(int ftype, const t_iparams *ip)
 {
     gmx_bool bPert;
-    int  i;
+    int      i;
 
     if (NRFPB(ftype) == 0)
     {
@@ -59,88 +59,88 @@ static gmx_bool ip_pert(int ftype,const t_iparams *ip)
 
     switch (ftype)
     {
-    case F_BONDS:
-    case F_G96BONDS:
-    case F_HARMONIC:
-    case F_ANGLES:
-    case F_G96ANGLES:
-    case F_IDIHS:
-        bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
-                 ip->harmonic.krA != ip->harmonic.krB);
-        break;
-    case F_MORSE:
-        bPert = (ip->morse.b0A  != ip->morse.b0B ||
-                 ip->morse.cbA  != ip->morse.cbB ||
-                 ip->morse.betaA  != ip->morse.betaB);
-        break;
-    case F_RESTRBONDS:
-        bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
-                 ip->restraint.up1A  != ip->restraint.up1B ||
-                 ip->restraint.up2A  != ip->restraint.up2B ||
-                 ip->restraint.kA    != ip->restraint.kB);
-        break;
-    case F_PDIHS:
-    case F_PIDIHS:
-    case F_ANGRES:
-    case F_ANGRESZ:
-        bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
-                 ip->pdihs.cpA  != ip->pdihs.cpB);
-        break;
-    case F_RBDIHS:
-        bPert = FALSE;
-        for(i=0; i<NR_RBDIHS; i++)
-        {
-            if (ip->rbdihs.rbcA[i] != ip->rbdihs.rbcB[i])
+        case F_BONDS:
+        case F_G96BONDS:
+        case F_HARMONIC:
+        case F_ANGLES:
+        case F_G96ANGLES:
+        case F_IDIHS:
+            bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
+                     ip->harmonic.krA != ip->harmonic.krB);
+            break;
+        case F_MORSE:
+            bPert = (ip->morse.b0A  != ip->morse.b0B ||
+                     ip->morse.cbA  != ip->morse.cbB ||
+                     ip->morse.betaA  != ip->morse.betaB);
+            break;
+        case F_RESTRBONDS:
+            bPert = (ip->restraint.lowA  != ip->restraint.lowB ||
+                     ip->restraint.up1A  != ip->restraint.up1B ||
+                     ip->restraint.up2A  != ip->restraint.up2B ||
+                     ip->restraint.kA    != ip->restraint.kB);
+            break;
+        case F_PDIHS:
+        case F_PIDIHS:
+        case F_ANGRES:
+        case F_ANGRESZ:
+            bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
+                     ip->pdihs.cpA  != ip->pdihs.cpB);
+            break;
+        case F_RBDIHS:
+            bPert = FALSE;
+            for (i = 0; i < NR_RBDIHS; i++)
             {
-                bPert = TRUE;
+                if (ip->rbdihs.rbcA[i] != ip->rbdihs.rbcB[i])
+                {
+                    bPert = TRUE;
+                }
             }
-        }
-        break;
-    case F_TABBONDS:
-    case F_TABBONDSNC:
-    case F_TABANGLES:
-    case F_TABDIHS:
-        bPert = (ip->tab.kA != ip->tab.kB);
-        break;
-    case F_POSRES:
-        bPert = FALSE;
-        for(i=0; i<DIM; i++)
-        {
-            if (ip->posres.pos0A[i] != ip->posres.pos0B[i] ||
-                ip->posres.fcA[i]   != ip->posres.fcB[i])
+            break;
+        case F_TABBONDS:
+        case F_TABBONDSNC:
+        case F_TABANGLES:
+        case F_TABDIHS:
+            bPert = (ip->tab.kA != ip->tab.kB);
+            break;
+        case F_POSRES:
+            bPert = FALSE;
+            for (i = 0; i < DIM; i++)
             {
-                bPert = TRUE;
+                if (ip->posres.pos0A[i] != ip->posres.pos0B[i] ||
+                    ip->posres.fcA[i]   != ip->posres.fcB[i])
+                {
+                    bPert = TRUE;
+                }
             }
-        }
-        break;
-    case F_DIHRES:
-        bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
-                 (ip->dihres.dphiA != ip->dihres.dphiB) ||
-                 (ip->dihres.kfacA != ip->dihres.kfacB));
-        break;
-   case F_LJ14:
-        bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
-                 ip->lj14.c12A != ip->lj14.c12B);
-        break;
-    case F_CMAP:
-        bPert = FALSE;
-        break;
-    default:
-        bPert = FALSE;
-        gmx_fatal(FARGS,"Function type %s not implemented in ip_pert",
-                  interaction_function[ftype].longname);
+            break;
+        case F_DIHRES:
+            bPert = ((ip->dihres.phiA != ip->dihres.phiB) ||
+                     (ip->dihres.dphiA != ip->dihres.dphiB) ||
+                     (ip->dihres.kfacA != ip->dihres.kfacB));
+            break;
+        case F_LJ14:
+            bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
+                     ip->lj14.c12A != ip->lj14.c12B);
+            break;
+        case F_CMAP:
+            bPert = FALSE;
+            break;
+        default:
+            bPert = FALSE;
+            gmx_fatal(FARGS, "Function type %s not implemented in ip_pert",
+                      interaction_function[ftype].longname);
     }
 
     return bPert;
 }
 
-static gmx_bool ip_q_pert(int ftype,const t_iatom *ia,
-                      const t_iparams *ip,const real *qA,const real *qB)
+static gmx_bool ip_q_pert(int ftype, const t_iatom *ia,
+                          const t_iparams *ip, const real *qA, const real *qB)
 {
     /* 1-4 interactions do not have the charges stored in the iparams list,
      * so we need a separate check for those.
      */
-    return (ip_pert(ftype,ip+ia[0]) || 
+    return (ip_pert(ftype, ip+ia[0]) ||
             (ftype == F_LJ14 && (qA[ia[1]] != qB[ia[1]] ||
                                  qA[ia[2]] != qB[ia[2]])));
 }
@@ -148,23 +148,23 @@ static gmx_bool ip_q_pert(int ftype,const t_iatom *ia,
 gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
 {
     const gmx_ffparams_t *ffparams;
-    int  i,ftype;
-    int  mb;
-    t_atom  *atom;
-    t_ilist *il;
-    t_iatom *ia;
-    gmx_bool bPert;
+    int                   i, ftype;
+    int                   mb;
+    t_atom               *atom;
+    t_ilist              *il;
+    t_iatom              *ia;
+    gmx_bool              bPert;
 
     ffparams = &mtop->ffparams;
-    
+
     /* Loop over all the function types and compare the A/B parameters */
     bPert = FALSE;
-    for(i=0; i<ffparams->ntypes; i++)
+    for (i = 0; i < ffparams->ntypes; i++)
     {
         ftype = ffparams->functype[i];
         if (interaction_function[ftype].flags & IF_BOND)
         {
-            if (ip_pert(ftype,&ffparams->iparams[i]))
+            if (ip_pert(ftype, &ffparams->iparams[i]))
             {
                 bPert = TRUE;
             }
@@ -172,12 +172,12 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     }
 
     /* Check perturbed charges for 1-4 interactions */
-    for(mb=0; mb<mtop->nmolblock; mb++)
+    for (mb = 0; mb < mtop->nmolblock; mb++)
     {
         atom = mtop->moltype[mtop->molblock[mb].type].atoms.atom;
         il   = &mtop->moltype[mtop->molblock[mb].type].ilist[F_LJ14];
         ia   = il->iatoms;
-        for(i=0; i<il->nr; i+=3)
+        for (i = 0; i < il->nr; i += 3)
         {
             if (atom[ia[i+1]].q != atom[ia[i+1]].qB ||
                 atom[ia[i+2]].q != atom[ia[i+2]].qB)
@@ -190,15 +190,15 @@ gmx_bool gmx_mtop_bondeds_free_energy(const gmx_mtop_t *mtop)
     return (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
 }
 
-void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
+void gmx_sort_ilist_fe(t_idef *idef, const real *qA, const real *qB)
 {
-    int  ftype,nral,i,ic,ib,a;
+    int        ftype, nral, i, ic, ib, a;
     t_iparams *iparams;
-    t_ilist *ilist;
-    t_iatom *iatoms;
-    gmx_bool bPert;
-    t_iatom *iabuf;
-    int  iabuf_nalloc;
+    t_ilist   *ilist;
+    t_iatom   *iatoms;
+    gmx_bool   bPert;
+    t_iatom   *iabuf;
+    int        iabuf_nalloc;
 
     if (qB == NULL)
     {
@@ -207,31 +207,31 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
 
     iabuf_nalloc = 0;
     iabuf        = NULL;
-    
+
     iparams = idef->iparams;
 
-    for(ftype=0; ftype<F_NRE; ftype++)
+    for (ftype = 0; ftype < F_NRE; ftype++)
     {
         if (interaction_function[ftype].flags & IF_BOND)
         {
-            ilist = &idef->il[ftype];
+            ilist  = &idef->il[ftype];
             iatoms = ilist->iatoms;
-            nral  = NRAL(ftype);
-            ic = 0;
-            ib = 0;
-            i  = 0;
+            nral   = NRAL(ftype);
+            ic     = 0;
+            ib     = 0;
+            i      = 0;
             while (i < ilist->nr)
             {
                 /* Check if this interaction is perturbed */
-                if (ip_q_pert(ftype,iatoms+i,iparams,qA,qB))
+                if (ip_q_pert(ftype, iatoms+i, iparams, qA, qB))
                 {
                     /* Copy to the perturbed buffer */
                     if (ib + 1 + nral > iabuf_nalloc)
                     {
                         iabuf_nalloc = over_alloc_large(ib+1+nral);
-                        srenew(iabuf,iabuf_nalloc);
+                        srenew(iabuf, iabuf_nalloc);
                     }
-                    for(a=0; a<1+nral; a++)
+                    for (a = 0; a < 1+nral; a++)
                     {
                         iabuf[ib++] = iatoms[i++];
                     }
@@ -239,7 +239,7 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
                 else
                 {
                     /* Copy in place */
-                    for(a=0; a<1+nral; a++)
+                    for (a = 0; a < 1+nral; a++)
                     {
                         iatoms[ic++] = iatoms[i++];
                     }
@@ -247,16 +247,16 @@ void gmx_sort_ilist_fe(t_idef *idef,const real *qA,const real *qB)
             }
             /* Now we now the number of non-perturbed interactions */
             ilist->nr_nonperturbed = ic;
-            
+
             /* Copy the buffer with perturbed interactions to the ilist */
-            for(a=0; a<ib; a++)
+            for (a = 0; a < ib; a++)
             {
                 iatoms[ic++] = iabuf[a];
             }
 
             if (debug)
             {
-                fprintf(debug,"%s non-pert %d pert %d\n",
+                fprintf(debug, "%s non-pert %d pert %d\n",
                         interaction_function[ftype].longname,
                         ilist->nr_nonperturbed,
                         ilist->nr-ilist->nr_nonperturbed);

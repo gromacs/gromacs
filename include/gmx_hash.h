@@ -60,13 +60,13 @@ typedef struct {
 } gmx_hash_e_t;
 
 typedef struct gmx_hash {
-    int          mod;
-    int          mask;
-    int          nalloc;
+    int           mod;
+    int           mask;
+    int           nalloc;
     int          *direct;
     gmx_hash_e_t *hash;
-    int          nkey;
-    int          start_space_search;
+    int           nkey;
+    int           start_space_search;
 } t_gmx_hash;
 
 /* Clear all the entries in the hash table */
@@ -74,7 +74,7 @@ static void gmx_hash_clear(gmx_hash_t hash)
 {
     int i;
 
-    for(i=0; i<hash->nalloc; i++)
+    for (i = 0; i < hash->nalloc; i++)
     {
         hash->hash[i].key  = -1;
         hash->hash[i].next = -1;
@@ -84,7 +84,7 @@ static void gmx_hash_clear(gmx_hash_t hash)
     hash->nkey = 0;
 }
 
-static void gmx_hash_realloc(gmx_hash_t hash,int nkey_used_estimate)
+static void gmx_hash_realloc(gmx_hash_t hash, int nkey_used_estimate)
 {
     /* Memory requirements:
      * nkey_used_est*(2+1-2(1-e^-1/2))*3 ints
@@ -104,13 +104,13 @@ static void gmx_hash_realloc(gmx_hash_t hash,int nkey_used_estimate)
     {
         hash->mod *= 2;
     }
-    hash->mask = hash->mod - 1;
+    hash->mask   = hash->mod - 1;
     hash->nalloc = over_alloc_dd(hash->mod);
-    srenew(hash->hash,hash->nalloc);
+    srenew(hash->hash, hash->nalloc);
 
     if (debug != NULL)
     {
-        fprintf(debug,"Hash table mod %d nalloc %d\n",hash->mod,hash->nalloc);
+        fprintf(debug, "Hash table mod %d nalloc %d\n", hash->mod, hash->nalloc);
     }
 }
 
@@ -126,10 +126,10 @@ static void gmx_hash_clear_and_optimize(gmx_hash_t hash)
     {
         if (debug != NULL)
         {
-            fprintf(debug,"Hash table size %d #key %d: resizing\n",
-                    hash->mod,hash->nkey);
+            fprintf(debug, "Hash table size %d #key %d: resizing\n",
+                    hash->mod, hash->nkey);
         }
-        gmx_hash_realloc(hash,hash->nkey);
+        gmx_hash_realloc(hash, hash->nkey);
     }
 
     gmx_hash_clear(hash);
@@ -139,10 +139,10 @@ static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
 {
     gmx_hash_t hash;
 
-    snew(hash,1);
+    snew(hash, 1);
     hash->hash = NULL;
 
-    gmx_hash_realloc(hash,nkey_used_estimate);
+    gmx_hash_realloc(hash, nkey_used_estimate);
 
     gmx_hash_clear(hash);
 
@@ -150,17 +150,17 @@ static gmx_hash_t gmx_hash_init(int nkey_used_estimate)
 }
 
 /* Set the hash entry for global atom a_gl to local atom a_loc and cell. */
-static void gmx_hash_set(gmx_hash_t hash,int key,int value)
+static void gmx_hash_set(gmx_hash_t hash, int key, int value)
 {
-    int ind,ind_prev,i;
+    int ind, ind_prev, i;
 
     ind = key & hash->mask;
-    
+
     if (hash->hash[ind].key >= 0)
     {
         /* Search the last entry in the linked list for this index */
         ind_prev = ind;
-        while(hash->hash[ind_prev].next >= 0)
+        while (hash->hash[ind_prev].next >= 0)
         {
             ind_prev = hash->hash[ind_prev].next;
         }
@@ -174,15 +174,15 @@ static void gmx_hash_set(gmx_hash_t hash,int key,int value)
         if (ind == hash->nalloc)
         {
             hash->nalloc = over_alloc_dd(ind+1);
-            srenew(hash->hash,hash->nalloc);
-            for(i=ind; i<hash->nalloc; i++)
+            srenew(hash->hash, hash->nalloc);
+            for (i = ind; i < hash->nalloc; i++)
             {
                 hash->hash[i].key  = -1;
                 hash->hash[i].next = -1;
             }
         }
         hash->hash[ind_prev].next = ind;
-    
+
         hash->start_space_search = ind + 1;
     }
     hash->hash[ind].key = key;
@@ -192,12 +192,12 @@ static void gmx_hash_set(gmx_hash_t hash,int key,int value)
 }
 
 /* Delete the hash entry for key */
-static void gmx_hash_del(gmx_hash_t hash,int key)
+static void gmx_hash_del(gmx_hash_t hash, int key)
 {
-    int ind,ind_prev;
+    int ind, ind_prev;
 
     ind_prev = -1;
-    ind = key & hash->mask;
+    ind      = key & hash->mask;
     do
     {
         if (hash->hash[ind].key == key)
@@ -223,7 +223,7 @@ static void gmx_hash_del(gmx_hash_t hash,int key)
             return;
         }
         ind_prev = ind;
-        ind = hash->hash[ind].next;
+        ind      = hash->hash[ind].next;
     }
     while (ind >= 0);
 
@@ -231,17 +231,17 @@ static void gmx_hash_del(gmx_hash_t hash,int key)
 }
 
 /* Change the value for present hash entry for key */
-static void gmx_hash_change_value(gmx_hash_t hash,int key,int value)
+static void gmx_hash_change_value(gmx_hash_t hash, int key, int value)
 {
     int ind;
 
     ind = key & hash->mask;
     do
-    {        
+    {
         if (hash->hash[ind].key == key)
         {
             hash->hash[ind].val = value;
-            
+
             return;
         }
         ind = hash->hash[ind].next;
@@ -252,13 +252,13 @@ static void gmx_hash_change_value(gmx_hash_t hash,int key,int value)
 }
 
 /* Change the hash value if already set, otherwise set the hash value */
-static void gmx_hash_change_or_set(gmx_hash_t hash,int key,int value)
+static void gmx_hash_change_or_set(gmx_hash_t hash, int key, int value)
 {
     int ind;
 
     ind = key & hash->mask;
     do
-    {        
+    {
         if (hash->hash[ind].key == key)
         {
             hash->hash[ind].val = value;
@@ -269,13 +269,13 @@ static void gmx_hash_change_or_set(gmx_hash_t hash,int key,int value)
     }
     while (ind >= 0);
 
-    gmx_hash_set(hash,key,value);
+    gmx_hash_set(hash, key, value);
 
     return;
 }
 
 /* Returns if the key is present, if the key is present *value is set */
-static gmx_bool gmx_hash_get(const gmx_hash_t hash,int key,int *value)
+static gmx_bool gmx_hash_get(const gmx_hash_t hash, int key, int *value)
 {
     int ind;
 
@@ -296,7 +296,7 @@ static gmx_bool gmx_hash_get(const gmx_hash_t hash,int key,int *value)
 }
 
 /* Returns the value or -1 if the key is not present */
-static int gmx_hash_get_minone(const gmx_hash_t hash,int key)
+static int gmx_hash_get_minone(const gmx_hash_t hash, int key)
 {
     int ind;
 

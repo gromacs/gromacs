@@ -39,28 +39,28 @@
 #include "typedefs.h"
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-void rotate_conf(int natom,rvec *x,rvec *v,real alfa, real beta,real gamma);
+void rotate_conf(int natom, rvec *x, rvec *v, real alfa, real beta, real gamma);
 /*rotate() rotates a configuration alfa degrees around the x_axis and beta degrees around the y_axis, *v can be NULL */
 
-void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box);
-/*orient() rotates a configuration until the largest atom-atom distance is 
- *placed along the z-axis and the second largest distance is placed along
- *the y-axis. Finally the third longest distance is placed along the x-axis
+void orient(int natom, rvec *x, rvec *v, rvec angle, matrix box);
+/*orient() rotates a configuration until the largest atom-atom distance is
+ * placed along the z-axis and the second largest distance is placed along
+ * the y-axis. Finally the third longest distance is placed along the x-axis
  */
 
 GMX_LIBGMX_EXPORT
-void genconf(t_atoms *atoms,rvec *x,rvec *v,real *r,matrix box,ivec n_box);
+void genconf(t_atoms *atoms, rvec *x, rvec *v, real *r, matrix box, ivec n_box);
 /*genconf() generates a new configuration by adding boxes*/
 GMX_LIBGMX_EXPORT
-void gen_box(int NTB,int natoms,rvec *x, matrix box,rvec box_space,
-		    gmx_bool bCenter);
-/* gen_box() generates a box around a configuration, box_space is optional 
- * extra space around it. If NTB = 1 then a truncated octahedon will be 
- * generated (don't!) if bCenter then coordinates will be centered in the 
+void gen_box(int NTB, int natoms, rvec *x, matrix box, rvec box_space,
+             gmx_bool bCenter);
+/* gen_box() generates a box around a configuration, box_space is optional
+ * extra space around it. If NTB = 1 then a truncated octahedon will be
+ * generated (don't!) if bCenter then coordinates will be centered in the
  * genereated box
  */
 
