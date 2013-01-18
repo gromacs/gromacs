@@ -65,9 +65,6 @@ macro(get_compiler_version)
                 CACHE STRING "C compiler version not available" FORCE)
         endif ()
     endif()
-    message("CMAKE_C_COMPILER_VERSION: ${CMAKE_C_COMPILER_VERSION}")
-    message("C_COMPILER_VERSION: ${C_COMPILER_VERSION}")
-
 
     if(NOT CXX_COMPILER_VERSION AND CMAKE_CXX_COMPILER_LOADED)
         set(_cxx_dumpversion_res 0)
