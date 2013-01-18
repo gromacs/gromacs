@@ -42,19 +42,18 @@
 #include "x11.h"
 #include "nmol.h"
 
-t_videobox *init_vbox(t_x11 *x11,t_molwin *mw)
+t_videobox *init_vbox(t_x11 *x11, t_molwin *mw)
 {
-  t_videobox *vb;
+    t_videobox *vb;
 
-  snew(vb,1);
-  snew(vb->vcr,IDNR-IDBUTNR);
-  
-  return vb;
+    snew(vb, 1);
+    snew(vb->vcr, IDNR-IDBUTNR);
+
+    return vb;
 }
 
-void done_vbox(t_x11 *x11,t_videobox *vbox)
+void done_vbox(t_x11 *x11, t_videobox *vbox)
 {
-  sfree(vbox->vcr);
-  sfree(vbox);
+    sfree(vbox->vcr);
+    sfree(vbox);
 }
-

@@ -46,6 +46,6 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_bar(argc,argv);
-  return 0;
+    gmx_bar(argc, argv);
+    return 0;
 }

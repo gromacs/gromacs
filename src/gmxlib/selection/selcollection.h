@@ -66,7 +66,7 @@
  * gmx_ana_selcollection_requires_top() returns FALSE.
  * Once all selections are parsed, they must be compiled all at once using
  * gmx_ana_selcollection_compile().
- * After these calls, gmx_ana_selcollection_get_count() and 
+ * After these calls, gmx_ana_selcollection_get_count() and
  * gmx_ana_selcollection_get_selections() can be used
  * to get the compiled selections.
  * gmx_ana_selcollection_evaluate() can be used to update the selections for a
@@ -84,9 +84,9 @@
 struct gmx_ana_selcollection_t
 {
     /** Default reference position type for selections. */
-    const char                 *rpost;
+    const char                     *rpost;
     /** Default output position type for selections. */
-    const char                 *spost;
+    const char                     *spost;
     /** TRUE if \ref POS_MASKONLY should be used for output position evaluation. */
     gmx_bool                        bMaskOnly;
     /** TRUE if velocities should be evaluated for output positions. */
@@ -97,11 +97,11 @@ struct gmx_ana_selcollection_t
     gmx_bool                        bDebugCompile;
 
     /** Root of the selection element tree. */
-    struct t_selelem           *root;
+    struct t_selelem              *root;
     /** Number of selections in \p sel. */
-    int                         nr;
+    int                            nr;
     /** Array of compiled selections. */
-    struct gmx_ana_selection_t **sel;
+    struct gmx_ana_selection_t   **sel;
     /** Number of variables defined. */
     int                            nvars;
     /** Selection strings for variables. */
@@ -116,7 +116,7 @@ struct gmx_ana_selcollection_t
     /** Memory pool used for selection evaluation. */
     struct gmx_sel_mempool_t      *mempool;
     /** Parser symbol table. */
-    struct gmx_sel_symtab_t     *symtab;
+    struct gmx_sel_symtab_t       *symtab;
 };
 
 /** Clears the symbol table in the collection */

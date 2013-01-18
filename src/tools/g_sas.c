@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_sas.c is now in gmx_sas.c,
-* where the old main function is called gmx_sas().
-*/
+ * The code that used to be in g_sas.c is now in gmx_sas.c,
+ * where the old main function is called gmx_sas().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_sas(argc,argv);
-  return 0;
+    gmx_sas(argc, argv);
+    return 0;
 }
-
-
-  

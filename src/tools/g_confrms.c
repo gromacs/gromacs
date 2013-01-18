@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_confrms.c is now in gmx_confrms.c,
-* where the old main function is called gmx_confrms().
-*/
+ * The code that used to be in g_confrms.c is now in gmx_confrms.c,
+ * where the old main function is called gmx_confrms().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_confrms(argc,argv);
-  return 0;
+    gmx_confrms(argc, argv);
+    return 0;
 }
-
-
-  

@@ -42,11 +42,11 @@
 #include "grompp.h"
 
 typedef struct tagDirStack {
-  directive d;
-  struct tagDirStack *prev;
+    directive           d;
+    struct tagDirStack *prev;
 } DirStack;
 
-extern int ifunc_index(directive d,int type);
+extern int ifunc_index(directive d, int type);
 
 extern const char *dir2str (directive d);
 
@@ -62,4 +62,4 @@ extern int  DS_Search (DirStack *DS, directive d);
 
 extern int  DS_Check_Order (DirStack *DS, directive d);
 
-#endif	/* _topdirs_h */
+#endif  /* _topdirs_h */

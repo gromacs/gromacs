@@ -42,8 +42,8 @@
 #include "pdb2top.h"
 
 GMX_LIBGMXPREPROCESS_EXPORT
-extern int mk_specbonds(t_atoms *pdba,rvec x[],gmx_bool bInteractive,
-			t_ssbond **specbonds,gmx_bool bVerbose);
+extern int mk_specbonds(t_atoms *pdba, rvec x[], gmx_bool bInteractive,
+                        t_ssbond **specbonds, gmx_bool bVerbose);
 
 extern gmx_bool yesno(void);
 

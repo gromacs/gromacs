@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_anaeig.c is now in gmx_anaeig.c,
-* where the old main function is called gmx_anaeig().
-*/
+ * The code that used to be in g_anaeig.c is now in gmx_anaeig.c,
+ * where the old main function is called gmx_anaeig().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_membed(argc,argv);
-  return 0;
+    gmx_membed(argc, argv);
+    return 0;
 }
-
-
-

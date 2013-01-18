@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_filter.c is now in gmx_filter.c,
-* where the old main function is called gmx_filter().
-*/
+ * The code that used to be in g_filter.c is now in gmx_filter.c,
+ * where the old main function is called gmx_filter().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_filter(argc,argv);
-  return 0;
+    gmx_filter(argc, argv);
+    return 0;
 }
-
-
-  

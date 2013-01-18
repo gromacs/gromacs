@@ -119,7 +119,7 @@ gmx_ana_indexgrps_set(gmx_ana_indexgrps_t **g, int ngrps, int *isize,
  * If both are null, the index group structure is initialized empty.
  */
 void
-gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top, 
+gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
                        const char *fnm)
 {
     t_blocka *block = NULL;
@@ -154,7 +154,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
         {
             grp->index[j] = block->a[block->index[i]+j];
         }
-        grp->name = names[i];
+        grp->name         = names[i];
         grp->nalloc_index = grp->isize;
     }
 
@@ -177,7 +177,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
  * topology (uses Gromacs routine get_index()).
  */
 void
-gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top, 
+gmx_ana_indexgrps_get(gmx_ana_indexgrps_t **g, t_topology *top,
                       const char *fnm, int ngrps)
 {
     int      *isize;
@@ -431,7 +431,7 @@ gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name)
     {
         g->index[i] = i;
     }
-    g->name = name;
+    g->name         = name;
     g->nalloc_index = natoms;
 }
 
@@ -537,15 +537,15 @@ gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
     {
         if (g->index[j] >= natoms)
         {
-            gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "larger than number of atoms in trajectory (%d atoms)",
-              g->index[j], g->name, g->isize, natoms);
+            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
+                      "larger than number of atoms in trajectory (%d atoms)",
+                      g->index[j], g->name, g->isize, natoms);
         }
         else if (g->index[j] < 0)
         {
-            gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) "
-              "is less than zero",
-              g->index[j], g->name, g->isize);
+            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
+                      "is less than zero",
+                      g->index[j], g->name, g->isize);
         }
     }
 }
@@ -578,8 +578,14 @@ gmx_ana_index_check_sorted(gmx_ana_index_t *g)
 static int
 cmp_atomid(const void *a, const void *b)
 {
-    if (*(atom_id *)a < *(atom_id *)b) return -1;
-    if (*(atom_id *)a > *(atom_id *)b) return 1;
+    if (*(atom_id *)a < *(atom_id *)b)
+    {
+        return -1;
+    }
+    if (*(atom_id *)a > *(atom_id *)b)
+    {
+        return 1;
+    }
     return 0;
 }
 
@@ -630,7 +636,8 @@ gmx_ana_index_contains(gmx_ana_index_t *a, gmx_ana_index_t *b)
 {
     int  i, j;
 
-    for (i = j = 0; j < b->isize; ++i, ++j) {
+    for (i = j = 0; j < b->isize; ++i, ++j)
+    {
         while (i < a->isize && a->index[i] != b->index[j])
         {
             ++i;
@@ -656,7 +663,8 @@ gmx_ana_index_intersection(gmx_ana_index_t *dest,
 {
     int i, j, k;
 
-    for (i = j = k = 0; i < a->isize && j < b->isize; ++i) {
+    for (i = j = k = 0; i < a->isize && j < b->isize; ++i)
+    {
         while (j < b->isize && b->index[j] < a->index[i])
         {
             ++j;
@@ -741,7 +749,7 @@ gmx_ana_index_difference_size(gmx_ana_index_t *a, gmx_ana_index_t *b)
 void
 gmx_ana_index_partition(gmx_ana_index_t *dest1, gmx_ana_index_t *dest2,
                         gmx_ana_index_t *src, gmx_ana_index_t *g)
-                     
+
 {
     int i, j, k;
 
@@ -778,9 +786,9 @@ gmx_ana_index_union(gmx_ana_index_t *dest,
     int dsize;
     int i, j, k;
 
-    dsize = gmx_ana_index_difference_size(b, a);
-    i = a->isize - 1;
-    j = b->isize - 1;
+    dsize       = gmx_ana_index_difference_size(b, a);
+    i           = a->isize - 1;
+    j           = b->isize - 1;
     dest->isize = a->isize + dsize;
     for (k = dest->isize - 1; k >= 0; k--)
     {
@@ -815,8 +823,8 @@ gmx_ana_index_merge(gmx_ana_index_t *dest,
 {
     int i, j, k;
 
-    i = a->isize - 1;
-    j = b->isize - 1;
+    i           = a->isize - 1;
+    j           = b->isize - 1;
     dest->isize = a->isize + b->isize;
     for (k = dest->isize - 1; k >= 0; k--)
     {
@@ -912,8 +920,8 @@ gmx_ana_index_make_block(t_blocka *t, t_topology *top, gmx_ana_index_t *g,
     }
     /* Clear counters */
     t->nr = 0;
-    j = 0; /* j is used by residue completion for the first atom not stored */
-    id = cur = -1;
+    j     = 0; /* j is used by residue completion for the first atom not stored */
+    id    = cur = -1;
     for (i = 0; i < g->isize; ++i)
     {
         ai = g->index[i];
@@ -1268,13 +1276,13 @@ gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
     m->mapid = m->orgid;
     sfree(m->b.index);
     m->b.nalloc_index = 0;
-    m->b.index = b->index;
+    m->b.index        = b->index;
     sfree(m->mapb.index);
     m->mapb.nalloc_index = 0;
-    m->mapb.index = m->b.index;
+    m->mapb.index        = m->b.index;
     sfree(m->b.a);
     m->b.nalloc_a = 0;
-    m->b.a = b->a;
+    m->b.a        = b->a;
 }
 
 /*!
@@ -1303,7 +1311,7 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, gmx_boo
     dest->mapb.nr    = src->mapb.nr;
     memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
     memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
-    memcpy(dest->mapb.index, src->mapb.index,(dest->mapb.nr+1)*sizeof(*dest->mapb.index));
+    memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
     dest->bStatic    = src->bStatic;
     dest->bMapStatic = src->bMapStatic;
 }
@@ -1322,7 +1330,7 @@ void
 gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                         gmx_bool bMaskOnly)
 {
-    int i, j, bi, bj;
+    int      i, j, bi, bj;
     gmx_bool bStatic;
 
     /* Process the simple cases first */
@@ -1413,8 +1421,8 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 {
                     ++bj;
                 }
-                m->refid[bi] = bj;
-                m->mapid[bi] = m->orgid[bj];
+                m->refid[bi]      = bj;
+                m->mapid[bi]      = m->orgid[bj];
                 m->mapb.index[bi] = i;
                 bi++;
             }

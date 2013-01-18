@@ -43,16 +43,13 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_dipoles.c is now in gmx_dipoles.c,
-* where the old main function is called gmx_dipoles().
-*/
+ * The code that used to be in g_dipoles.c is now in gmx_dipoles.c,
+ * where the old main function is called gmx_dipoles().
+ */
 int
 main(int argc, char *argv[])
 {
 
-  gmx_current(argc,argv);
-  return 0;
+    gmx_current(argc, argv);
+    return 0;
 }
-
-
-  

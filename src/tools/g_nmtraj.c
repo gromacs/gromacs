@@ -46,9 +46,6 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_nmtraj(argc,argv);
-  return 0;
+    gmx_nmtraj(argc, argv);
+    return 0;
 }
-
-
-  

@@ -39,11 +39,11 @@
 #ifndef _fitahx_h
 #define _fitahx_h
 
-	
+
 #include "typedefs.h"
 #include "hxprops.h"
-	
-extern real fit_ahx(int nres,t_bb bb[],int natoms,int nall,atom_id allindex[],
-		    rvec x[],int nca,atom_id caindex[],matrix box,gmx_bool bFit);
-		    
+
+extern real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
+                    rvec x[], int nca, atom_id caindex[], matrix box, gmx_bool bFit);
+
 #endif

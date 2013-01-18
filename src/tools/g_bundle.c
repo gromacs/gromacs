@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_bundle.c is now in gmx_bundle.c,
-* where the old main function is called gmx_bundle().
-*/
+ * The code that used to be in g_bundle.c is now in gmx_bundle.c,
+ * where the old main function is called gmx_bundle().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_bundle(argc,argv);
-  return 0;
+    gmx_bundle(argc, argv);
+    return 0;
 }
-
-
-  
