@@ -1408,6 +1408,15 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     fr.f = NULL;
     in = gmx_fio_fopen(infile,"r");
     read_g96_conf(in, infile, &fr, g96_line);
+    if (title != NULL)
+    {
+        /* We can't safely modify the title in read_g96_conf.
+         * We make sure it's a proper, empty string here,
+         * so we don't procude corrupted output later.
+         * TODO: fix this g96 title reading properly
+         */
+        title[0] = '\0';
+    }
     gmx_fio_fclose(in);
     copy_mat(fr.box,box);
     break;
