@@ -224,7 +224,7 @@ gmx_histogram_create(gmx_histogram_t **hp, e_histogram_t type, int nbins)
 
     h->type     = type;
     h->flags    = 0;
-    
+
     h->bsize    = 0;
     h->blockfp  = NULL;
     h->invbw    = 0;
@@ -291,7 +291,7 @@ gmx_histogram_create_range(gmx_histogram_t **hp, e_histogram_t type,
         {
             start -= binw;
         }
-        end += binw;
+        end  += binw;
         nbins = (int)((end - start) / binw + 0.5);
     }
     /* Create the histogram */
@@ -599,7 +599,7 @@ gmx_histogram_get_value(gmx_histogram_t *h, real pos, double *value, double *err
 
     if (pos < h->start || pos > h->end)
     {
-        v = e = 0;    
+        v = e = 0;
     }
     else
     {
@@ -639,7 +639,7 @@ gmx_histogram_get_bin_value(gmx_histogram_t *h, int bin, double *value, double *
 
     if (bin < 0 || bin >= h->nbins)
     {
-        v = e = 0;    
+        v = e = 0;
     }
     else
     {
@@ -935,7 +935,7 @@ gmx_histogram_resample_dblbw(gmx_histogram_t **destp, gmx_histogram_t *src,
             ve = sqr(src->histerr[j]) + sqr(src->histerr[j+1]);
             j += 2;
         }
-        ve = sqrt(ve);
+        ve               = sqrt(ve);
         dest->hist[i]    = v;
         dest->histerr[i] = ve;
     }
@@ -1021,7 +1021,7 @@ void
 gmx_histogram_scale_vec(gmx_histogram_t *h, real norm[])
 {
     int  i;
-    
+
     for (i = 0; i < h->nbins; ++i)
     {
         h->hist[i]    *= norm[i];
@@ -1137,7 +1137,7 @@ gmx_histogram_write_array(FILE *fp, int n, gmx_histogram_t *h[],
  */
 void
 gmx_histogram_write_cum_array(FILE *fp, int n, gmx_histogram_t *h[],
-                                  gmx_bool bValue, gmx_bool bErrors)
+                              gmx_bool bValue, gmx_bool bErrors)
 {
     int           i, j, nbins;
     double       *sum;

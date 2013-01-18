@@ -35,29 +35,28 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-	
-extern FILE *init_calcpot(const char *log,const char *tpx,const char *table,
-			  gmx_mtop_t *mtop,
-			  gmx_localtop_t *top,t_inputrec *inputrec,
-                          t_commrec **cr,
-			  t_graph **graph,t_mdatoms **mdatoms,
-			  t_forcerec **fr,
-			  gmx_enerdata_t *enerdata,
-			  real **coulomb,
-			  matrix box,rvec **x, const output_env_t oenv);
 
-extern void calc_pot(FILE *logf,t_commrec *cr,
-		     gmx_mtop_t *mtop,
-		     t_inputrec *inputrec,gmx_localtop_t *top,rvec x[],
-		     t_forcerec *fr,gmx_enerdata_t *enerd,
-		     t_mdatoms *mdatoms,real coulomb[],matrix box,t_graph *graph);
+extern FILE *init_calcpot(const char *log, const char *tpx, const char *table,
+                          gmx_mtop_t *mtop,
+                          gmx_localtop_t *top, t_inputrec *inputrec,
+                          t_commrec **cr,
+                          t_graph **graph, t_mdatoms **mdatoms,
+                          t_forcerec **fr,
+                          gmx_enerdata_t *enerdata,
+                          real **coulomb,
+                          matrix box, rvec **x, const output_env_t oenv);
+
+extern void calc_pot(FILE *logf, t_commrec *cr,
+                     gmx_mtop_t *mtop,
+                     t_inputrec *inputrec, gmx_localtop_t *top, rvec x[],
+                     t_forcerec *fr, gmx_enerdata_t *enerd,
+                     t_mdatoms *mdatoms, real coulomb[], matrix box, t_graph *graph);
 
 extern void write_pdb_coul();
 
-extern void delete_atom(gmx_localtop_t *top,int inr);
+extern void delete_atom(gmx_localtop_t *top, int inr);
 /* Delete an atom from a topology */
 
-extern void replace_atom(gmx_localtop_t *top,int inr,char *anm,char *resnm,
-			 real q,real m,int type);
+extern void replace_atom(gmx_localtop_t *top, int inr, char *anm, char *resnm,
+                         real q, real m, int type);
 /* Replace an atom in a topology by someting else */
-

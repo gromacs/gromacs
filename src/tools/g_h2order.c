@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_h2order.c is now in gmx_h2order.c,
-* where the old main function is called gmx_h2order().
-*/
+ * The code that used to be in g_h2order.c is now in gmx_h2order.c,
+ * where the old main function is called gmx_h2order().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_h2order(argc,argv);
-  return 0;
+    gmx_h2order(argc, argv);
+    return 0;
 }
-
-
-  

@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_energy.c is now in gmx_energy.c,
-* where the old main function is called gmx_energy().
-*/
+ * The code that used to be in g_energy.c is now in gmx_energy.c,
+ * where the old main function is called gmx_energy().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_energy(argc,argv);
-  return 0;
+    gmx_energy(argc, argv);
+    return 0;
 }
-
-
-  

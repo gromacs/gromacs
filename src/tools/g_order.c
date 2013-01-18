@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_order.c is now in gmx_order.c,
-* where the old main function is called gmx_order().
-*/
+ * The code that used to be in g_order.c is now in gmx_order.c,
+ * where the old main function is called gmx_order().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_order(argc,argv);
-  return 0;
+    gmx_order(argc, argv);
+    return 0;
 }
-
-
-  

@@ -40,7 +40,7 @@
 #define _hizzie_h
 #include "visibility.h"
 GMX_LIBGMXPREPROCESS_EXPORT
-extern void set_histp(t_atoms *pdba,rvec *x,real angle,real distance);
+extern void set_histp(t_atoms *pdba, rvec *x, real angle, real distance);
 /* calculate HIStidine protonation state */
 
-#endif	/* _pdb2gmx_h */
+#endif  /* _pdb2gmx_h */

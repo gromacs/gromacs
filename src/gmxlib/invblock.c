@@ -45,43 +45,62 @@
 #include "invblock.h"
 #include "gmx_fatal.h"
 
-atom_id *make_invblock(const t_block *block,int nr)
+atom_id *make_invblock(const t_block *block, int nr)
 {
-  int i,j;
-  atom_id *invblock;
-  
-  snew(invblock,nr+1);
-  /* Mark unused numbers */
-  for (i=0; i<=nr; i++) 
-    invblock[i]=NO_ATID; 
-  for (i=0; (i<block->nr); i++)
-    for (j=block->index[i]; (j<block->index[i+1]); j++) 
-      if (invblock[j] == NO_ATID)
-	invblock[j]=i;
-      else
-	gmx_fatal(FARGS,"Double entries in block structure. Item %d is in blocks %d and %d\n"
-		  " Cannot make an unambiguous inverse block.",
-		  j,i,invblock[j]);
-  return invblock;
+    int      i, j;
+    atom_id *invblock;
+
+    snew(invblock, nr+1);
+    /* Mark unused numbers */
+    for (i = 0; i <= nr; i++)
+    {
+        invblock[i] = NO_ATID;
+    }
+    for (i = 0; (i < block->nr); i++)
+    {
+        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        {
+            if (invblock[j] == NO_ATID)
+            {
+                invblock[j] = i;
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                          " Cannot make an unambiguous inverse block.",
+                          j, i, invblock[j]);
+            }
+        }
+    }
+    return invblock;
 }
 
-atom_id *make_invblocka(const t_blocka *block,int nr)
+atom_id *make_invblocka(const t_blocka *block, int nr)
 {
-  int i,j;
-  atom_id *invblock;
-  
-  snew(invblock,nr+1);
-  /* Mark unused numbers */
-  for (i=0; i<=nr; i++) 
-    invblock[i]=NO_ATID; 
-  for (i=0; (i<block->nr); i++)
-    for (j=block->index[i]; (j<block->index[i+1]); j++) 
-      if (invblock[block->a[j]] == NO_ATID)
-	invblock[block->a[j]]=i;
-      else
-	gmx_fatal(FARGS,"Double entries in block structure. Item %d is in blocks %d and %d\n"
-		  " Cannot make an unambiguous inverse block.",
-		  j,i,invblock[block->a[j]]);
-  return invblock;
-}
+    int      i, j;
+    atom_id *invblock;
 
+    snew(invblock, nr+1);
+    /* Mark unused numbers */
+    for (i = 0; i <= nr; i++)
+    {
+        invblock[i] = NO_ATID;
+    }
+    for (i = 0; (i < block->nr); i++)
+    {
+        for (j = block->index[i]; (j < block->index[i+1]); j++)
+        {
+            if (invblock[block->a[j]] == NO_ATID)
+            {
+                invblock[block->a[j]] = i;
+            }
+            else
+            {
+                gmx_fatal(FARGS, "Double entries in block structure. Item %d is in blocks %d and %d\n"
+                          " Cannot make an unambiguous inverse block.",
+                          j, i, invblock[block->a[j]]);
+            }
+        }
+    }
+    return invblock;
+}

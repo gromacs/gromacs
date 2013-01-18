@@ -41,16 +41,16 @@
 
 #include "types/simple.h"
 
-extern void rangeArray(int *ar,int size);
+extern void rangeArray(int *ar, int size);
 
 extern void insertionSort(real *ar, int *perm, int start, int end, int direction);
 
 extern int BinarySearch(real *ar, int start, int end, real key, int direction);
 
-extern int start_binsearch(real *array, int *perm, int low, int high, 
+extern int start_binsearch(real *array, int *perm, int low, int high,
                            real key, int direction);
-			   
-extern int LinearSearch(double *array,int startindx, int stopindx, 
-                        double key,int *count, int direction);
+
+extern int LinearSearch(double *array, int startindx, int stopindx,
+                        double key, int *count, int direction);
 
 #endif

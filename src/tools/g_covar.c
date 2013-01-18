@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_covar.c is now in gmx_covar.c,
-* where the old main function is called gmx_covar().
-*/
+ * The code that used to be in g_covar.c is now in gmx_covar.c,
+ * where the old main function is called gmx_covar().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_covar(argc,argv);
-  return 0;
+    gmx_covar(argc, argv);
+    return 0;
 }
-
-
-  

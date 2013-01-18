@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_dielectric.c is now in gmx_dielectric.c,
-* where the old main function is called gmx_dielectric().
-*/
+ * The code that used to be in g_dielectric.c is now in gmx_dielectric.c,
+ * where the old main function is called gmx_dielectric().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_dielectric(argc,argv);
-  return 0;
+    gmx_dielectric(argc, argv);
+    return 0;
 }
-
-
-  

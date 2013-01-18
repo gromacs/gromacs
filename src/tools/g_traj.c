@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_traj .c is now in gmx_traj .c,
-* where the old main function is called gmx_traj ().
-*/
+ * The code that used to be in g_traj .c is now in gmx_traj .c,
+ * where the old main function is called gmx_traj ().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_traj (argc,argv);
-  return 0;
+    gmx_traj (argc, argv);
+    return 0;
 }
-
-
-  

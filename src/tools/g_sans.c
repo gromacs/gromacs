@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in gmx_sans.c is now in gmx_rdf.c,
-* where the old main function is called gmx_sans().
-*/
+ * The code that used to be in gmx_sans.c is now in gmx_rdf.c,
+ * where the old main function is called gmx_sans().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_sans(argc,argv);
-  return 0;
+    gmx_sans(argc, argv);
+    return 0;
 }
-
-
-  

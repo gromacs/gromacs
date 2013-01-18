@@ -46,18 +46,18 @@
 #include "grompp.h"
 
 
-float 
-calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda, 
+float
+calc_gb_chainrule_sse2_single(int natoms, t_nblist *nl, float *dadx, float *dvda,
                               float *xd, float *f, float *fshift, float *shift_vec,
                               int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md);
 
-int 
-calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr,int natoms, gmx_localtop_t *top,
+int
+calc_gb_rad_still_sse2_single(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
                               const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born);
 
-int 
+int
 calc_gb_rad_hct_obc_sse2_single(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born,t_mdatoms *md, int gb_algorithm);
+                                const t_atomtypes *atype, float *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm);
 
 
 #endif /* _genborn_sse_h */

@@ -42,19 +42,19 @@
 
 GMX_LIBGMXPREPROCESS_EXPORT
 void
-comp_tpx(const char *fn1,const char *fn2,gmx_bool bRMSD,real ftol,real abstol);
+comp_tpx(const char *fn1, const char *fn2, gmx_bool bRMSD, real ftol, real abstol);
 /* Compare two binary topology files */
 
 GMX_LIBGMXPREPROCESS_EXPORT
 void
-comp_trx(const output_env_t oenv,const char *fn1,const char *fn2,
-	 gmx_bool bRMSD,real ftol,real abstol);
+comp_trx(const output_env_t oenv, const char *fn1, const char *fn2,
+         gmx_bool bRMSD, real ftol, real abstol);
 /* Compare two binary trajectory files */
 
 GMX_LIBGMXPREPROCESS_EXPORT
-void 
-comp_enx(const char *fn1,const char *fn2,real ftol,real abstol,
-                     const char *lastener);
+void
+comp_enx(const char *fn1, const char *fn2, real ftol, real abstol,
+         const char *lastener);
 /* Compare two binary energy files */
 
 #endif

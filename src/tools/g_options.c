@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code is in gmx_options.c,
-* where the old main function is called gmx_options().
-*/
+ * The code is in gmx_options.c,
+ * where the old main function is called gmx_options().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_options(argc,argv);
-  return 0;
+    gmx_options(argc, argv);
+    return 0;
 }
-
-
-  
