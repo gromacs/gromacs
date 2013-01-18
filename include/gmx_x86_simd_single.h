@@ -63,22 +63,22 @@
 static inline __m128
 gmx_mm_calc_rsq_ps(__m128 dx, __m128 dy, __m128 dz)
 {
-    return _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx,dx), _mm_mul_ps(dy,dy) ), _mm_mul_ps(dz,dz) );
+    return _mm_add_ps( _mm_add_ps( _mm_mul_ps(dx, dx), _mm_mul_ps(dy, dy) ), _mm_mul_ps(dz, dz) );
 }
 
 /* Normal sum of four __m128 registers */
-#define gmx_mm_sum4_ps(t0,t1,t2,t3)  _mm_add_ps(_mm_add_ps(t0,t1),_mm_add_ps(t2,t3))
+#define gmx_mm_sum4_ps(t0, t1, t2, t3)  _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3))
 
 #ifdef GMX_X86_AVX_256
 
 static inline __m256
 gmx_mm256_calc_rsq_ps(__m256 dx, __m256 dy, __m256 dz)
 {
-    return _mm256_add_ps( _mm256_add_ps( _mm256_mul_ps(dx,dx), _mm256_mul_ps(dy,dy) ), _mm256_mul_ps(dz,dz) );
+    return _mm256_add_ps( _mm256_add_ps( _mm256_mul_ps(dx, dx), _mm256_mul_ps(dy, dy) ), _mm256_mul_ps(dz, dz) );
 }
 
 /* Normal sum of four __m256 registers */
-#define gmx_mm256_sum4_ps(t0,t1,t2,t3)  _mm256_add_ps(_mm256_add_ps(t0,t1),_mm256_add_ps(t2,t3))
+#define gmx_mm256_sum4_ps(t0, t1, t2, t3)  _mm256_add_ps(_mm256_add_ps(t0, t1), _mm256_add_ps(t2, t3))
 
 #endif
 

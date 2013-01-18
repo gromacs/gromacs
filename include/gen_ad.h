@@ -60,4 +60,4 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 }
 #endif
 
-#endif	/* _gen_ad_h */
+#endif  /* _gen_ad_h */

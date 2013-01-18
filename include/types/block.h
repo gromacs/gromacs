@@ -47,30 +47,30 @@ extern "C" {
 
 /* the block structure points into an array (usually of atom_ids).
    It is a list of starting indices for objects of consecutive ids, such
-   as molecules. 
+   as molecules.
    For example, if this block denotes molecules, then the first molecule
    ranges from index[0] to index[1]-1 in the atom list.
 
    This makes the mapping from atoms to molecules O(Nmolecules) instead
    of O(Natoms) in size.  */
 typedef struct {
-  int nr;			/* The number of blocks			*/
-  atom_id *index;		/* Array of indices (dim: nr+1) 	*/
-  int nalloc_index;             /* The allocation size for index        */
+    int      nr;           /* The number of blocks			*/
+    atom_id *index;        /* Array of indices (dim: nr+1)  */
+    int      nalloc_index; /* The allocation size for index        */
 } t_block;
 
 typedef struct {
-  int nr;			/* The number of blocks			*/
-  atom_id *index;		/* Array of indices in a (dim: nr+1)	*/
-  int nra;			/* The number of atoms 			*/
-  atom_id *a;			/* Array of atom numbers in each group 	*/
-				/* (dim: nra)				*/
-				/* Block i (0<=i<nr) runs from		*/
-				/* index[i] to index[i+1]-1. There will */
-				/* allways be an extra entry in index	*/
-				/* to terminate the table		*/
-  int nalloc_index;             /* The allocation size for index        */
-  int nalloc_a;                 /* The allocation size for a            */
+    int      nr;    /* The number of blocks			*/
+    atom_id *index; /* Array of indices in a (dim: nr+1)	*/
+    int      nra;   /* The number of atoms          */
+    atom_id *a;     /* Array of atom numbers in each group  */
+    /* (dim: nra)				*/
+    /* Block i (0<=i<nr) runs from		*/
+    /* index[i] to index[i+1]-1. There will */
+    /* allways be an extra entry in index	*/
+    /* to terminate the table		*/
+    int nalloc_index;           /* The allocation size for index        */
+    int nalloc_a;               /* The allocation size for a            */
 } t_blocka;
 
 

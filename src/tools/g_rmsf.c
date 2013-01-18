@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_rmsf.c is now in gmx_rmsf.c,
-* where the old main function is called gmx_rmsf().
-*/
+ * The code that used to be in g_rmsf.c is now in gmx_rmsf.c,
+ * where the old main function is called gmx_rmsf().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_rmsf(argc,argv);
-  return 0;
+    gmx_rmsf(argc, argv);
+    return 0;
 }
-
-
-  

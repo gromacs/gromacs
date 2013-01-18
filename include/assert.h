@@ -51,16 +51,16 @@ extern "C" {
 #endif
 
 #define assert(EXPRESSION)  \
-  if (!(EXPRESSION)) { \
-    fprintf(stderr,"Assertion failed for \"%s\" in file %s, " \
-	    "line %d\ndump core ? (y/n):",#EXPRESSION, __FILE__, __LINE__); \
-    fflush(stderr); \
-    if (toupper(getc(stdin))=='Y') \
-      (void) abort(); else exit(-1); \
-  }
+    if (!(EXPRESSION)) { \
+        fprintf(stderr, "Assertion failed for \"%s\" in file %s, " \
+                "line %d\ndump core ? (y/n):",#EXPRESSION, __FILE__, __LINE__); \
+        fflush(stderr); \
+        if (toupper(getc(stdin)) == 'Y') { \
+            (void) abort(); } else{ exit(-1); } \
+    }
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif	/* _assert_h */
+#endif  /* _assert_h */

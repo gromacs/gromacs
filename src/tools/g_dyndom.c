@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_dyndom.c is now in gmx_dyndom.c,
-* where the old main function is called gmx_dyndom().
-*/
+ * The code that used to be in g_dyndom.c is now in gmx_dyndom.c,
+ * where the old main function is called gmx_dyndom().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_dyndom(argc,argv);
-  return 0;
+    gmx_dyndom(argc, argv);
+    return 0;
 }
-
-
-  

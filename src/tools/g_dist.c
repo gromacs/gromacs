@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_dist.c is now in gmx_dist.c,
-* where the old main function is called gmx_dist().
-*/
+ * The code that used to be in g_dist.c is now in gmx_dist.c,
+ * where the old main function is called gmx_dist().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_dist(argc,argv);
-  return 0;
+    gmx_dist(argc, argv);
+    return 0;
 }
-
-
-  

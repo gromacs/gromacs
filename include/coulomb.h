@@ -49,14 +49,14 @@ extern "C" {
 
 /* Ewald related stuff */
 
-void 
+void
 init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
-                   FILE *fp);
+               FILE *fp);
 /* initialize the ewald table (as found in the t_forcerec) */
 
 GMX_LIBGMX_EXPORT
-real 
-calc_ewaldcoeff(real rc,real dtol);
+real
+calc_ewaldcoeff(real rc, real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
 
 
@@ -71,27 +71,27 @@ do_ewald(FILE *log,       gmx_bool bVerbose,
          real lambda,    real *dvdlambda,
          ewald_tab_t et);
 /* Do an Ewald calculation for the long range electrostatics. */
- 
+
 GMX_LIBGMX_EXPORT
 real
 ewald_LRcorrection(FILE *fp,
-		   int start,int end,
-		   t_commrec *cr,int thread,t_forcerec *fr,
-		   real *chargeA,real *chargeB,
-		   gmx_bool calc_excl_corr,
-		   t_blocka *excl,rvec x[],
-		   matrix box,rvec mu_tot[],
-		   int ewald_geometry,real epsilon_surface,
-		   rvec *f,tensor vir,
-		   real lambda,real *dvdlambda);
+                   int start, int end,
+                   t_commrec *cr, int thread, t_forcerec *fr,
+                   real *chargeA, real *chargeB,
+                   gmx_bool calc_excl_corr,
+                   t_blocka *excl, rvec x[],
+                   matrix box, rvec mu_tot[],
+                   int ewald_geometry, real epsilon_surface,
+                   rvec *f, tensor vir,
+                   real lambda, real *dvdlambda);
 /* Calculate the Long range correction to the Ewald sum,
  * due to excluded pairs and/or surface dipole terms.
  */
 
 GMX_LIBGMX_EXPORT
 real
-ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
-			real *dvdlambda,tensor vir);
+ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
+                        real *dvdlambda, tensor vir);
 /* Calculate the Long range correction to the Ewald sum,
  * due to a net system charge.
  * Should only be called on one thread.
@@ -101,14 +101,12 @@ ewald_charge_correction(t_commrec *cr,t_forcerec *fr,real lambda,matrix box,
  * of potentials and forces.
  */
 GMX_LIBGMX_EXPORT
-void 
-set_shift_consts(FILE *log,real r1,real rc,rvec box,
-			     t_forcerec *fr);
+void
+set_shift_consts(FILE *log, real r1, real rc, rvec box,
+                 t_forcerec *fr);
 
 #ifdef __cplusplus
 }
 #endif
- 
+
 #endif
-
-

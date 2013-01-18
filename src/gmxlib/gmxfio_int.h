@@ -43,16 +43,16 @@
 
 /* WARNING WARNING WARNING WARNING
    The data types used here are PRIVATE to gmxfio routines. DO NOT use them
-   directly in your own code, but use the external functions provided in 
-   include/gmxfio.h 
+   directly in your own code, but use the external functions provided in
+   include/gmxfio.h
 
-   If you don't heed this warning, your code will suddenly stop working 
-   at some point in the not-so-distant future. 
+   If you don't heed this warning, your code will suddenly stop working
+   at some point in the not-so-distant future.
 
    WARNING WARNING WARNING WARNING */
 
 
-/* XDR should be available on all platforms now, 
+/* XDR should be available on all platforms now,
  * but we keep the possibility of turning it off...
  */
 #define USE_XDR
@@ -60,16 +60,16 @@
 
 
 /* the reader/writer functions  for t_iotype */
-typedef gmx_bool read_func(t_fileio *fio, void *item, int nitem, int eio,
-                       const char *desc,const char *srcfile,int line);
-typedef gmx_bool write_func(t_fileio *fio, const void *item, int nitem, int eio,
-                        const char *desc,const char *srcfile,int line);
+typedef gmx_bool read_func (t_fileio *fio, void *item, int nitem, int eio,
+                            const char *desc, const char *srcfile, int line);
+typedef gmx_bool write_func (t_fileio *fio, const void *item, int nitem, int eio,
+                             const char *desc, const char *srcfile, int line);
 
 
 /* these are pointers to the actual reading & writing functions */
 typedef struct
 {
-    read_func *nread;
+    read_func  *nread;
     write_func *nwrite;
 } t_iotype;
 
@@ -77,32 +77,32 @@ typedef struct
 
 struct t_fileio
 {
-    FILE *fp; /* the file pointer */
-    const t_iotype *iotp;  /* file type */
-    gmx_bool bOpen,  /* the file is open */
-         bRead,  /* the file is open for reading */
-         bDouble, /* write doubles instead of floats */
-         bDebug, /* the file ops should come with debug info */
-         bStdio, /* the file is actually stdin or stdout */
-         bLargerThan_off_t,  /* if the file position is largen than off_t 
-                                could hold */
-         bReadWrite; /* the file is open for reading and writing */
-    char *fn; /* the file name */
-    XDR *xdr; /* the xdr data pointer */
-    enum xdr_op xdrmode; /* the xdr mode */
-    int iFTP; /* the file type identifier */
+    FILE           *fp;                /* the file pointer */
+    const t_iotype *iotp;              /* file type */
+    gmx_bool        bOpen,             /* the file is open */
+                    bRead,             /* the file is open for reading */
+                    bDouble,           /* write doubles instead of floats */
+                    bDebug,            /* the file ops should come with debug info */
+                    bStdio,            /* the file is actually stdin or stdout */
+                    bLargerThan_off_t, /* if the file position is largen than off_t
+                                          could hold */
+                    bReadWrite;        /* the file is open for reading and writing */
+    char       *fn;                    /* the file name */
+    XDR        *xdr;                   /* the xdr data pointer */
+    enum xdr_op xdrmode;               /* the xdr mode */
+    int         iFTP;                  /* the file type identifier */
 
-    const char *comment; /* a comment string for debugging */
+    const char *comment;               /* a comment string for debugging */
 
-    t_fileio *next, *prev; /* next and previous file pointers in the
-                              linked list */
+    t_fileio   *next, *prev;           /* next and previous file pointers in the
+                                          linked list */
 #ifdef GMX_THREAD_MPI
-    tMPI_Lock_t  mtx;  /* content locking mutex. This is a fast lock
-                          for performance reasons: in some cases every
-                          single byte that gets read/written requires
-                          a lock */
+    tMPI_Lock_t  mtx;                  /* content locking mutex. This is a fast lock
+                                          for performance reasons: in some cases every
+                                          single byte that gets read/written requires
+                                          a lock */
 #endif
-}; 
+};
 
 
 
@@ -111,7 +111,7 @@ extern const t_iotype bin_iotype;
 extern const t_iotype xdr_iotype;
 extern const t_iotype dummy_iotype;
 
-extern const char *eioNames[eioNR];
+extern const char    *eioNames[eioNR];
 
 
 
@@ -120,15 +120,12 @@ extern const char *eioNames[eioNR];
 /* make a debug string if that is requested in the fio */
 const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf);
 /* check the number of items against the allowed number of items */
-void gmx_fio_check_nitem(t_fileio *fio, int eio, int nitem, const char *file, 
+void gmx_fio_check_nitem(t_fileio *fio, int eio, int nitem, const char *file,
                          int line);
 /* check the output type against allowed values */
-void gmx_fio_fe(t_fileio *fio, int eio, const char *desc, const char *srcfile, 
+void gmx_fio_fe(t_fileio *fio, int eio, const char *desc, const char *srcfile,
                 int line);
 
 /* lock/unlock the mutex associated with a fio  */
 void gmx_fio_lock(t_fileio *fio);
 void gmx_fio_unlock(t_fileio *fio);
-
-
-

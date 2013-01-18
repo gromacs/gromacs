@@ -52,19 +52,19 @@ extern "C" {
 #endif
 
 
-typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
-		     const t_iparams iparams[],
-                     const rvec x[],rvec f[],rvec fshift[],
-		     const t_pbc *pbc,const t_graph *g,
-		     real lambda,real *dvdlambda,
-		     const t_mdatoms *md,t_fcdata *fcd,
-		     int *ddgatindex);
+typedef real t_ifunc (int nbonds, const t_iatom iatoms[],
+                      const t_iparams iparams[],
+                      const rvec x[], rvec f[], rvec fshift[],
+                      const t_pbc *pbc, const t_graph *g,
+                      real lambda, real *dvdlambda,
+                      const t_mdatoms *md, t_fcdata *fcd,
+                      int *ddgatindex);
 
 /*
- * The function type t_ifunc() calculates one interaction, using iatoms[] 
- * and iparams. Within the function the number of atoms to be used is 
- * known. Within the function only the atomid part of the iatoms[] array 
- * is supplied, not the type field (see also t_ilist). The function 
+ * The function type t_ifunc() calculates one interaction, using iatoms[]
+ * and iparams. Within the function the number of atoms to be used is
+ * known. Within the function only the atomid part of the iatoms[] array
+ * is supplied, not the type field (see also t_ilist). The function
  * returns the potential energy. If pbc==NULL the coordinates in x are
  * assumed to be such that no calculation of PBC is necessary,
  * If pbc!=NULL a full PBC calculation is performed.
@@ -96,16 +96,16 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
  */
 typedef struct
 {
-  const char *name;	/* the name of this function			*/
-  const char *longname; /* The name for printing etc.                   */
-  int     nratoms;	/* nr of atoms needed for this function		*/
-  int     nrfpA,nrfpB;  /* number of parameters for this function.      */
-                        /* this corresponds to the number of params in  */
-                        /* iparams struct! (see idef.h)                 */
-  /* A and B are for normal and free energy components respectively.    */
-  unsigned long   flags;        /* Flags (see above)                            */
-  int     nrnb_ind;     /* index for nrnb (-1 if unknown)               */
-  t_ifunc *ifunc;	/* the function it self				*/
+    const char *name;         /* the name of this function			*/
+    const char *longname;     /* The name for printing etc.                   */
+    int         nratoms;      /* nr of atoms needed for this function		*/
+    int         nrfpA, nrfpB; /* number of parameters for this function.      */
+                              /* this corresponds to the number of params in  */
+                              /* iparams struct! (see idef.h)                 */
+    /* A and B are for normal and free energy components respectively.    */
+    unsigned long   flags;    /* Flags (see above)                            */
+    int             nrnb_ind; /* index for nrnb (-1 if unknown)               */
+    t_ifunc        *ifunc;    /* the function it self				*/
 } t_interaction_function;
 
 #define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)
@@ -113,13 +113,13 @@ typedef struct
 #define NRFP(ftype)  (NRFPA(ftype)+NRFPB(ftype))
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
-#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
+#define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms == 2 && (interaction_function[(ftype)].flags & IF_CHEMBOND))
 /* IS_CHEMBOND tells if function type ftype represents a chemical bond */
 
-/* IS_ANGLE tells if a function type ftype represents an angle 
+/* IS_ANGLE tells if a function type ftype represents an angle
  * Per Larsson, 2007-11-06
  */
-#define IS_ANGLE(ftype) (interaction_function[(ftype)].nratoms==3 && (interaction_function[(ftype)].flags & IF_ATYPE))
+#define IS_ANGLE(ftype) (interaction_function[(ftype)].nratoms == 3 && (interaction_function[(ftype)].flags & IF_ATYPE))
 #define IS_VSITE(ftype) (interaction_function[(ftype)].flags & IF_VSITE)
 
 #define IS_TABULATED(ftype) (interaction_function[(ftype)].flags & IF_TABULATED)

@@ -46,6 +46,6 @@
 int
 main(int argc, char *argv[])
 {
-  gmx_polystat(argc,argv);
-  return 0;
+    gmx_polystat(argc, argv);
+    return 0;
 }

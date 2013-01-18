@@ -46,8 +46,8 @@ extern "C" {
 #endif
 
 GMX_LIBGMX_EXPORT
-void jacobi(double **a,int n,double d[],double **v,int *nrot);
-/* 
+void jacobi(double **a, int n, double d[], double **v, int *nrot);
+/*
  * real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
  * int     natoms = number of rows and columns
  * real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
@@ -57,7 +57,7 @@ void jacobi(double **a,int n,double d[],double **v,int *nrot);
  */
 
 GMX_LIBGMX_EXPORT
-int m_inv_gen(real **m,int n,real **minv);
+int m_inv_gen(real **m, int n, real **minv);
 /* Produces minv, a generalized inverse of m.
  * Inversion is done via diagonalization,
  * eigenvalues smaller than 1e-6 times the average diagonal element

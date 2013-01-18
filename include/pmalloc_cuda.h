@@ -62,5 +62,3 @@ void pfree(void *h_ptr) FUNC_TERM
 }
 #endif
 #endif  /* PMALLOC_CUDA_H */
-
-

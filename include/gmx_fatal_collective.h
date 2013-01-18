@@ -45,13 +45,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-  
+
 
 GMX_LIBGMX_EXPORT
 void
-gmx_fatal_collective(int f_errno,const char *file,int line,
-		     const t_commrec *cr,gmx_domdec_t *dd,
-		     const char *fmt,...);
+gmx_fatal_collective(int f_errno, const char *file, int line,
+                     const t_commrec *cr, gmx_domdec_t *dd,
+                     const char *fmt, ...);
 /* As gmx_fatal declared in gmx_fatal.h,
  * but only the master process prints the error message.
  * This should only be called one of the following two situations:
@@ -64,7 +64,7 @@ gmx_fatal_collective(int f_errno,const char *file,int line,
 
 
 #ifdef __cplusplus
-	   }
+}
 #endif
 
-#endif	/* _fatal_collective_h */
+#endif  /* _fatal_collective_h */

@@ -47,7 +47,7 @@
 #define FUNC_TERM_VOID ;
 #define FUNC_QUALIFIER
 #else
-#define FUNC_TERM_INT {return -1;}
+#define FUNC_TERM_INT {return -1; }
 #define FUNC_TERM_VOID {}
 #define FUNC_QUALIFIER static
 #endif

@@ -44,15 +44,15 @@ extern "C" {
 #endif
 
 typedef struct symbuf {
-  int bufsize;
-  char **buf;
-  struct symbuf *next;
+    int            bufsize;
+    char         **buf;
+    struct symbuf *next;
 } t_symbuf;
 
 typedef struct
 {
-  int      nr;
-  t_symbuf *symbuf;
+    int       nr;
+    t_symbuf *symbuf;
 } t_symtab;
 
 #ifdef __cplusplus

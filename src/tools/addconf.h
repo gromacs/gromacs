@@ -37,11 +37,11 @@
  */
 #include "typedefs.h"
 
-extern 
-void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew, 
-	      int ePBC, matrix box, gmx_bool bInsert,
-	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt, 
-	      gmx_bool bVerbose,real rshell,int max_sol, const output_env_t oenv);
+extern
+void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, gmx_bool bSrenew,
+              int ePBC, matrix box, gmx_bool bInsert,
+              t_atoms *atoms_solvt, rvec *x_solvt, rvec *v_solvt, real *r_solvt,
+              gmx_bool bVerbose, real rshell, int max_sol, const output_env_t oenv);
 /* Add two conformations together, without generating overlap.
  * When not inserting, don't check overlap in the middle of the box.
  * If rshell > 0, keep all the residues around the protein (0..natoms_prot-1)

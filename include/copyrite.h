@@ -46,15 +46,15 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-    
-/* Has to be a function, so we can get version number from autoconf */   
+
+/* Has to be a function, so we can get version number from autoconf */
 GMX_LIBGMX_EXPORT
 const char *GromacsVersion(void);
 
-void 
+void
 gmx_print_version_info(FILE *fp);
-  
-  
+
+
 static const char *
 CopyrightText[] = {
     "Contributions from Mark Abraham, Emile Apol, Rossen Apostolov, ",
@@ -72,21 +72,21 @@ CopyrightText[] = {
 
 static const char *
 LicenseText[] = {
-  "This program is free software; you can redistribute it and/or",
-  "modify it under the terms of the GNU Lesser General Public License",
-  "as published by the Free Software Foundation; either version 2.1",
-  "of the License, or (at your option) any later version."
+    "This program is free software; you can redistribute it and/or",
+    "modify it under the terms of the GNU Lesser General Public License",
+    "as published by the Free Software Foundation; either version 2.1",
+    "of the License, or (at your option) any later version."
 };
 
 
 void
-pr_difftime(FILE *out,double dt);
+pr_difftime(FILE *out, double dt);
 
 GMX_LIBGMX_EXPORT
 void
-CopyRight(FILE *out,const char *szProgram);
- 
-  
+CopyRight(FILE *out, const char *szProgram);
+
+
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This
  * is necessary to make the routines threadsafe and avoid allocating
@@ -95,9 +95,9 @@ CopyRight(FILE *out,const char *szProgram);
 GMX_LIBGMX_EXPORT
 void
 bromacs(char *retstring, int retsize);
-  
-/* For cool_quote, the number of the quote used will be returned in cqnum 
- * if it is non-NULL. 
+
+/* For cool_quote, the number of the quote used will be returned in cqnum
+ * if it is non-NULL.
  */
 GMX_LIBGMX_EXPORT
 void
@@ -111,8 +111,10 @@ GMX_LIBGMX_EXPORT
 void
 thanx(FILE *fp);
 
-enum { eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR, 
-       eCITEDISRE, eCITERF, eCITELINCS, eCITENR };
+enum {
+    eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR,
+    eCITEDISRE, eCITERF, eCITELINCS, eCITENR
+};
 
 GMX_LIBGMX_EXPORT
 void
@@ -123,4 +125,4 @@ please_cite(FILE *fp, const char *key);
 }
 #endif
 
-#endif	/* _copyright_h */
+#endif  /* _copyright_h */

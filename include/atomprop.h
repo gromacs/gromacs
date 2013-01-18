@@ -48,8 +48,10 @@ extern "C" {
 /* Abstract type for the atom property database */
 typedef struct gmx_atomprop *gmx_atomprop_t;
 
-enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
-       epropNR };
+enum {
+    epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement,
+    epropNR
+};
 
 GMX_LIBGMX_EXPORT
 gmx_atomprop_t gmx_atomprop_init(void);
@@ -59,14 +61,14 @@ GMX_LIBGMX_EXPORT
 void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
-char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
+char *gmx_atomprop_element(gmx_atomprop_t aps, int atomnumber);
 
-int gmx_atomprop_atomnumber(gmx_atomprop_t aps,const char *element);
+int gmx_atomprop_atomnumber(gmx_atomprop_t aps, const char *element);
 
 GMX_LIBGMX_EXPORT
 gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
-                        int eprop,const char *resnm,const char *atomnm,
-                        real *value);
+                            int eprop, const char *resnm, const char *atomnm,
+                            real *value);
 /* Extract a value from the database. Returns TRUE on succes,
  * FALSE otherwise. In the latter case, value is a deafult value.
  * The first time this function is called for this property

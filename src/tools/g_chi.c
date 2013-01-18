@@ -44,15 +44,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_chi.c is now in gmx_chi.c,
-* where the old main function is called gmx_chi().
-*/
+ * The code that used to be in g_chi.c is now in gmx_chi.c,
+ * where the old main function is called gmx_chi().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_chi(argc,argv);
-  return 0;
+    gmx_chi(argc, argv);
+    return 0;
 }
-
-
-  

@@ -43,42 +43,43 @@
 extern "C" {
 #endif
 
-enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
-       eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
-       eNL_VDWQQ_WATER, eNL_QQ_WATER, 
-       eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
-       eNL_NR };
+enum {
+    eNL_VDWQQ, eNL_VDW, eNL_QQ,
+    eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE,
+    eNL_VDWQQ_WATER, eNL_QQ_WATER,
+    eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER,
+    eNL_NR
+};
 
 #define MAX_CG 1024
 
 typedef struct {
-  int     ncg;
-  int     nj;
-  atom_id jcg[MAX_CG];
+    int     ncg;
+    int     nj;
+    atom_id jcg[MAX_CG];
 } t_ns_buf;
 
 typedef struct {
-  gmx_bool     bCGlist;
-  atom_id  *simple_aaj;
-  t_grid   *grid;
-  t_excl   *bexcl;
-  gmx_bool     *bHaveVdW;
-  t_ns_buf **ns_buf;
-  gmx_bool     *bExcludeAlleg;
-  int      nra_alloc;
-  int      cg_alloc;
-  atom_id  **nl_sr;
-  int      *nsr;
-  atom_id  **nl_lr_ljc;
-  atom_id  **nl_lr_one;
-  int      *nlr_ljc;
-  int      *nlr_one;
-  /* the nblists should probably go in here */
-  gmx_bool     nblist_initialized; /* has the nblist been initialized?  */
-  int      dump_nl; /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
+    gmx_bool      bCGlist;
+    atom_id      *simple_aaj;
+    t_grid       *grid;
+    t_excl       *bexcl;
+    gmx_bool     *bHaveVdW;
+    t_ns_buf    **ns_buf;
+    gmx_bool     *bExcludeAlleg;
+    int           nra_alloc;
+    int           cg_alloc;
+    atom_id     **nl_sr;
+    int          *nsr;
+    atom_id     **nl_lr_ljc;
+    atom_id     **nl_lr_one;
+    int          *nlr_ljc;
+    int          *nlr_one;
+    /* the nblists should probably go in here */
+    gmx_bool      nblist_initialized; /* has the nblist been initialized?  */
+    int           dump_nl;            /* neighbour list dump level (from env. var. GMX_DUMP_NL)*/
 } gmx_ns_t;
 
 #ifdef __cplusplus
 }
 #endif
-

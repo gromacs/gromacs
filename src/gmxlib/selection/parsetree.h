@@ -43,7 +43,7 @@
  * In particular, the parameters for the method are stored.
  * The intermediate data is freed once a \c t_selelem object can be
  * constructed.
- * 
+ *
  * This is an implementation header: there should be no need to use it outside
  * this directory.
  */
@@ -67,7 +67,7 @@ struct gmx_ana_selparam_t;
 typedef struct t_selexpr_value
 {
     /** Type of the value. */
-    e_selvalue_t            type;
+    e_selvalue_t                type;
     /** TRUE if the value is the result of an expression. */
     gmx_bool                    bExpr;
     union {

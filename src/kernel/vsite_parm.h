@@ -45,7 +45,7 @@
 
 GMX_LIBGMXPREPROCESS_EXPORT
 extern int set_vsites(gmx_bool bVerbose, t_atoms *atoms,  gpp_atomtype_t atype,
-		      t_params plist[]);
+                      t_params plist[]);
 /* set parameters for vritual sites, return number of virtual sites */
 
 GMX_LIBGMXPREPROCESS_EXPORT
@@ -57,4 +57,4 @@ extern void clean_vsite_bondeds(t_params *ps, int natoms, gmx_bool bRmVSiteBds);
 /* remove all bonded interaction (bonds, angles and diherals) that
    have become obsolete due to virtual site constructions */
 
-#endif	/* _vsite_parm_h */
+#endif  /* _vsite_parm_h */

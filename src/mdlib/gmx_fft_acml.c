@@ -38,7 +38,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_ACML 
+#ifdef GMX_FFT_ACML
 
 #include <errno.h>
 #include <stdlib.h>
@@ -53,8 +53,8 @@
 #include "gmx_fatal.h"
 
 /*	Since c has no support of templates, we get around the type restrictions
-	with macros.  Our custom macro names obscure the float vs double interfaces
-	*/
+    with macros.  Our custom macro names obscure the float vs double interfaces
+ */
 #ifdef GMX_DOUBLE
 #define ACML_FFT1DX zfft1dx
 #define ACML_FFT2DX zfft2dx
@@ -84,44 +84,44 @@
 
 void cPrintArray( t_complex* arr, int outer, int mid, int inner )
 {
-	int i, j, k;
+    int i, j, k;
 
-	printf("\n");
-	for( i = 0; i < outer; ++i )
-	{
-		for( j = 0; j < mid; ++j )
-		{
-			for( k = 0; k < inner; ++k )
-			{
-				printf("%f,%f ", arr[i*inner*mid+j*inner+k].re, arr[i*inner*mid+j*inner+k].im );
-			}
-			printf("\n");
-		}
-		printf("\n");
-	}
+    printf("\n");
+    for (i = 0; i < outer; ++i)
+    {
+        for (j = 0; j < mid; ++j)
+        {
+            for (k = 0; k < inner; ++k)
+            {
+                printf("%f,%f ", arr[i*inner*mid+j*inner+k].re, arr[i*inner*mid+j*inner+k].im );
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
 
-	return;
+    return;
 }
 
 void rPrintArray( real* arr, int outer, int mid, int inner )
 {
-	int i, j, k;
+    int i, j, k;
 
-	printf("\n");
-	for( i = 0; i < outer; ++i )
-	{
-		for( j = 0; j < mid; ++j )
-		{
-			for( k = 0; k < inner; ++k )
-			{
-				printf("%f ", arr[i*inner*mid+j*inner+k] );
-			}
-			printf("\n");
-		}
-		printf("\n");
-	}
+    printf("\n");
+    for (i = 0; i < outer; ++i)
+    {
+        for (j = 0; j < mid; ++j)
+        {
+            for (k = 0; k < inner; ++k)
+            {
+                printf("%f ", arr[i*inner*mid+j*inner+k] );
+            }
+            printf("\n");
+        }
+        printf("\n");
+    }
 
-	return;
+    return;
 }
 
 /* Contents of the AMD ACML FFT fft datatype.
@@ -155,10 +155,10 @@ struct gmx_fft
 {
     /* Work arrays;
      * c2c = index0
-	 * r2c = index0, c2r = index1
+     * r2c = index0, c2r = index1
      */
-    void*		comm[4];
-    void*		realScratch;
+    void       *       comm[4];
+    void       *       realScratch;
 
     int                ndim;              /**< Number of dimensions in FFT  */
     int                nx;                /**< Length of X transform        */
@@ -168,275 +168,275 @@ struct gmx_fft
 };
 
 /*	ACML's real FFT support leaves the data in a swizzled 'hermitian' format.  The
-	problem with this is that you can't just feed this data back into ACML :(  A
-	pre-processing step is required to transform the hermitian swizzled complex
-	values into unswizzled complex values
-	-This function assumes that the complex conjugates are not expanded; the
-	calling function should not assume that they exist.
-	-This function pads all real numbers with 0's for imaginary components.
-	*/
-void	hermitianUnPacking( float scale, int row, int col, void* src, int srcPitch, void* dst )
+    problem with this is that you can't just feed this data back into ACML :(  A
+    pre-processing step is required to transform the hermitian swizzled complex
+    values into unswizzled complex values
+    -This function assumes that the complex conjugates are not expanded; the
+    calling function should not assume that they exist.
+    -This function pads all real numbers with 0's for imaginary components.
+ */
+void    hermitianUnPacking( float scale, int row, int col, void* src, int srcPitch, void* dst )
 {
-	int mid 		= col/2;
-	int loopCount	= (col-1)/2;
-	int hermLength	= mid + 1;
+    int mid         = col/2;
+    int loopCount   = (col-1)/2;
+    int hermLength  = mid + 1;
 
-	int nFFT;
+    int nFFT;
 
-	/* Currently this function is not written to handle aliased input/output pointers */
-	assert( src != dst );
+    /* Currently this function is not written to handle aliased input/output pointers */
+    assert( src != dst );
 
-	/* These two pointers could be aliased on top of each other; be careful */
-	real* 	realData		= (real*)src;
-	t_complex* 	hermData	= (t_complex*)dst;
+    /* These two pointers could be aliased on top of each other; be careful */
+    real    *   realData        = (real*)src;
+    t_complex*  hermData        = (t_complex*)dst;
 
-	/*	We have to expand the data from real to complex, which will clobber data if you start
-	 *	from the beginning.  For this reason, we start at the last array and work backwards,
-	 *	however, we skip the very first row (nFFT == 0) because we still have data collision
-	 *	on that row.  We copy the first row into a temporary buffer.
-	 */
-	for( nFFT = row-1; nFFT >= 0; --nFFT )
-	{
-		realData		= (real*)src + (nFFT*srcPitch);
-		hermData		= (t_complex*)dst + (nFFT*hermLength);
+    /*	We have to expand the data from real to complex, which will clobber data if you start
+     *	from the beginning.  For this reason, we start at the last array and work backwards,
+     *	however, we skip the very first row (nFFT == 0) because we still have data collision
+     *	on that row.  We copy the first row into a temporary buffer.
+     */
+    for (nFFT = row-1; nFFT >= 0; --nFFT)
+    {
+        realData        = (real*)src + (nFFT*srcPitch);
+        hermData        = (t_complex*)dst + (nFFT*hermLength);
 
-		/* The first complex number is real valued */
-		t_complex	tmp = { realData[0]*scale, 0 };
-		hermData[0] = tmp;
+        /* The first complex number is real valued */
+        t_complex   tmp = { realData[0]*scale, 0 };
+        hermData[0] = tmp;
 
-		int i;
-		for(i = 1; i <= loopCount; ++i)
-		{
-			t_complex	tmp = { realData[i]*scale, realData[col-i]*scale };
-			hermData[i] = tmp;
-		}
+        int i;
+        for (i = 1; i <= loopCount; ++i)
+        {
+            t_complex   tmp = { realData[i]*scale, realData[col-i]*scale };
+            hermData[i] = tmp;
+        }
 
-		/* A little cleanup for even lengths */
-		if( loopCount != mid )
-		{
-			/* The n/2 number is real valued */
-			t_complex	tmp = { realData[mid]*scale, 0 };
-			hermData[mid] = tmp;
-		}
-	}
+        /* A little cleanup for even lengths */
+        if (loopCount != mid)
+        {
+            /* The n/2 number is real valued */
+            t_complex   tmp = { realData[mid]*scale, 0 };
+            hermData[mid] = tmp;
+        }
+    }
 
-	return;
+    return;
 }
 
 /*	ACML's real FFT support requires the data in a swizzled 'hermitian' format.
-	This is a non-standard format, and requires us to manually swizzle the data :(
-	A pre-processing step is required to transform the complex values into the
-	swizzled hermitian format
-	*/
-void	hermitianPacking( float scale, int row, int col, void* src, void* dst, int dstPitch )
+    This is a non-standard format, and requires us to manually swizzle the data :(
+    A pre-processing step is required to transform the complex values into the
+    swizzled hermitian format
+ */
+void    hermitianPacking( float scale, int row, int col, void* src, void* dst, int dstPitch )
 {
-	int mid 		= col/2;
-	int loopCount	= (col-1)/2;
-	int hermLength	= mid + 1;
+    int         mid         = col/2;
+    int         loopCount   = (col-1)/2;
+    int         hermLength  = mid + 1;
 
-	int nFFT;
+    int         nFFT;
 
-	real* 	realData;
-	t_complex* 	hermData;
+    real    *   realData;
+    t_complex*  hermData;
 
-	/* Currently this function is not written to handle aliased input/output pointers */
-	assert( src != dst );
+    /* Currently this function is not written to handle aliased input/output pointers */
+    assert( src != dst );
 
-	for( nFFT = 0; nFFT < row; ++nFFT )
-	{
-		realData		= (real*)dst + (nFFT*dstPitch);
-		hermData		= (t_complex*)src + (nFFT*hermLength);
+    for (nFFT = 0; nFFT < row; ++nFFT)
+    {
+        realData        = (real*)dst + (nFFT*dstPitch);
+        hermData        = (t_complex*)src + (nFFT*hermLength);
 
-		/* The first complex number is real valued */
-		realData[0] = hermData[0].re * scale;
+        /* The first complex number is real valued */
+        realData[0] = hermData[0].re * scale;
 
-		/* ACML's complex to real function is documented as only handling 'forward'
-		 * transforms, which mean we have to manually conjugate the data before doing
-		 * the backwards transform. */
-		int i;
-		for(i = 1; i <= loopCount; ++i)
-		{
-			realData[i] 	= hermData[i].re * scale;
-			realData[col-i]	= -hermData[i].im * scale;
-		}
+        /* ACML's complex to real function is documented as only handling 'forward'
+         * transforms, which mean we have to manually conjugate the data before doing
+         * the backwards transform. */
+        int i;
+        for (i = 1; i <= loopCount; ++i)
+        {
+            realData[i]     = hermData[i].re * scale;
+            realData[col-i] = -hermData[i].im * scale;
+        }
 
-		/* A little cleanup for even lengths */
-		if( loopCount != mid )
-		{
-			/* The n/2 number is real valued */
-			realData[mid] = hermData[mid].re * scale;
-		}
+        /* A little cleanup for even lengths */
+        if (loopCount != mid)
+        {
+            /* The n/2 number is real valued */
+            realData[mid] = hermData[mid].re * scale;
+        }
 
-	}
+    }
 
-	return;
+    return;
 }
 
 /*	Gromacs expects results that are returned to be in a packed form; No
-	complex conjugate's.  This routine takes a 2D array of complex data,
-	and compresses it to fit into 'real' form by removing all the complex
-	conjugates and any known imaginary 0's.  Data is expected in row-major
-	form, with ny describing the length of a row.
-	*/
-void	compressConj2D( int nX, int nY, void* src, void* dst )
+    complex conjugate's.  This routine takes a 2D array of complex data,
+    and compresses it to fit into 'real' form by removing all the complex
+    conjugates and any known imaginary 0's.  Data is expected in row-major
+    form, with ny describing the length of a row.
+ */
+void    compressConj2D( int nX, int nY, void* src, void* dst )
 {
-	/* These two pointers are aliased on top of each other; be careful */
-	real* 	realData	= (real*)dst;
-	t_complex* 	complexData;
+    /* These two pointers are aliased on top of each other; be careful */
+    real    *   realData    = (real*)dst;
+    t_complex*  complexData;
 
-	int halfRows	= nX/2 + 1;
-	int halfCols	= nY/2 + 1;
-	int rowOdd		= nX & 0x1;
-	int colOdd		= nY & 0x1;
+    int         halfRows    = nX/2 + 1;
+    int         halfCols    = nY/2 + 1;
+    int         rowOdd      = nX & 0x1;
+    int         colOdd      = nY & 0x1;
 
 
-	int nRow;
-	for( nRow = 0; nRow < nX; ++nRow )
-	{
-		complexData	= (t_complex*)src + (nRow*halfCols);
+    int nRow;
+    for (nRow = 0; nRow < nX; ++nRow)
+    {
+        complexData = (t_complex*)src + (nRow*halfCols);
 
-		int nCol;
-		for( nCol = 0; nCol < halfCols; ++nCol )
-		{
-			if(( nRow == 0) && (nCol == 0 ))
-			{
-				/* The complex number is real valued */
-				realData[0] = complexData[nCol].re;
-				realData += 1;
-			}
-			/* Last column is real if even column length */
-			else if( (nRow == 0) && ( !colOdd && ( nCol == (halfCols-1) ) ) )
-			{
-				/* The complex number is real valued */
-				realData[0] = complexData[nCol].re;
-				realData += 1;
-			}
-			/* The middle value of the first column is real if we have an even number of rows and
-			 * the last column of middle row is real if we have an even number of rows and columns */
-			else if( !rowOdd && ( ( nRow == (halfRows-1) ) && ( ( nCol == 0 ) || ( !colOdd && ( nCol == (halfCols-1) ) ) ) ) )
-			{
-				/* The complex number is real valued */
-				realData[0] = complexData[nCol].re;
-				realData += 1;
-			}
-			else if( (nCol == 0) || ( !colOdd && ( nCol == (halfCols-1) ) ) )
-			{
-				/* Last half of real columns are conjugates */
-				if( nRow < halfRows )
-				{
-					/* Copy a complex number, which is two reals */
-					realData[0] = complexData[nCol].re;
-					realData[1] = complexData[nCol].im;
-					realData += 2;
-				}
-			}
-			else
-			{
-				/* Copy a complex number, which is two reals */
-				realData[0] = complexData[nCol].re;
-				realData[1] = complexData[nCol].im;
-				realData += 2;
-			}
-		}
-	}
+        int nCol;
+        for (nCol = 0; nCol < halfCols; ++nCol)
+        {
+            if (( nRow == 0) && (nCol == 0 ))
+            {
+                /* The complex number is real valued */
+                realData[0] = complexData[nCol].re;
+                realData   += 1;
+            }
+            /* Last column is real if even column length */
+            else if ( (nRow == 0) && ( !colOdd && ( nCol == (halfCols-1) ) ) )
+            {
+                /* The complex number is real valued */
+                realData[0] = complexData[nCol].re;
+                realData   += 1;
+            }
+            /* The middle value of the first column is real if we have an even number of rows and
+             * the last column of middle row is real if we have an even number of rows and columns */
+            else if (!rowOdd && ( ( nRow == (halfRows-1) ) && ( ( nCol == 0 ) || ( !colOdd && ( nCol == (halfCols-1) ) ) ) ) )
+            {
+                /* The complex number is real valued */
+                realData[0] = complexData[nCol].re;
+                realData   += 1;
+            }
+            else if ( (nCol == 0) || ( !colOdd && ( nCol == (halfCols-1) ) ) )
+            {
+                /* Last half of real columns are conjugates */
+                if (nRow < halfRows)
+                {
+                    /* Copy a complex number, which is two reals */
+                    realData[0] = complexData[nCol].re;
+                    realData[1] = complexData[nCol].im;
+                    realData   += 2;
+                }
+            }
+            else
+            {
+                /* Copy a complex number, which is two reals */
+                realData[0] = complexData[nCol].re;
+                realData[1] = complexData[nCol].im;
+                realData   += 2;
+            }
+        }
+    }
 
-	return;
+    return;
 }
 
 /*	Gromacs expects results that are returned to be in a packed form; No
-	complex conjugate's.  This routine takes a 2D array of real data,
-	and uncompresses it to fit into 'complex' form by creating all the complex
-	conjugates and any known imaginary 0's.  Data is expected in row-major
-	form, with ny describing the length of a row.
-	*/
-void	unCompressConj2D( int nX, int nY, void* src, void* dst )
+    complex conjugate's.  This routine takes a 2D array of real data,
+    and uncompresses it to fit into 'complex' form by creating all the complex
+    conjugates and any known imaginary 0's.  Data is expected in row-major
+    form, with ny describing the length of a row.
+ */
+void    unCompressConj2D( int nX, int nY, void* src, void* dst )
 {
-	/* These two pointers are aliased on top of each other; be careful */
-	real* 		realData	= (real*)src;
-	t_complex* 	complexData	= (t_complex*)dst;
+    /* These two pointers are aliased on top of each other; be careful */
+    real*       realData    = (real*)src;
+    t_complex*  complexData = (t_complex*)dst;
 
-	int halfRows	= nX/2 + 1;
-	int halfCols	= nY/2 + 1;
-	int rowOdd		= nX & 0x1;
-	int colOdd		= nY & 0x1;
+    int         halfRows    = nX/2 + 1;
+    int         halfCols    = nY/2 + 1;
+    int         rowOdd      = nX & 0x1;
+    int         colOdd      = nY & 0x1;
 
-	int nRow;
-	for( nRow = 0; nRow < nX; ++nRow )
-	{
-		int nCol;
-		for( nCol = 0; nCol < halfCols; ++nCol )
-		{
-			int	iIndex	= nRow*halfCols + nCol;
+    int         nRow;
+    for (nRow = 0; nRow < nX; ++nRow)
+    {
+        int nCol;
+        for (nCol = 0; nCol < halfCols; ++nCol)
+        {
+            int iIndex  = nRow*halfCols + nCol;
 
-			if(( nRow == 0) && (nCol == 0 ))
-			{
-				/* The complex number is real valued */
-				complexData[iIndex].re = realData[0];
-				complexData[iIndex].im =  0;
-				realData += 1;
-			}
-			/* Last column is real if even column length */
-			else if( (nRow == 0) && ( !colOdd && ( nCol == (halfCols-1) ) ) )
-			{
-				/* The complex number is real valued */
-				complexData[iIndex].re = realData[0];
-				complexData[iIndex].im =  0;
-				realData += 1;
-			}
-			/* The middle value of the first column is real if we have an even number of rows and
-			 * the last column of middle row is real if we have an even number of rows and columns */
-			else if( !rowOdd && ( ( nRow == (halfRows-1) ) && ( ( nCol == 0 ) || ( !colOdd && ( nCol == (halfCols-1) ) ) ) ) )
-			{
-				/* The complex number is real valued */
-				complexData[iIndex].re = realData[0];
-				complexData[iIndex].im =  0;
-				realData += 1;
-			}
-			else if( (nCol == 0) || (!colOdd && ( nCol == (halfCols-1) ) ) )
-			{
-				/* Last half of real columns are conjugates */
-				if( nRow < halfRows )
-				{
-					/* Copy a complex number, which is two reals */
-					complexData[iIndex].re = realData[0];
-					complexData[iIndex].im = realData[1];
-					realData += 2;
-				}
-				else
-				{
-					int	oIndex	= (nX-nRow)*halfCols + nCol;
-					complexData[iIndex].re = complexData[oIndex].re;
-					complexData[iIndex].im = -complexData[oIndex].im;
-				}
-			}
-			else
-			{
-				/* Copy a complex number, which is two reals */
-				complexData[iIndex].re = realData[0];
-				complexData[iIndex].im = realData[1];
-				realData += 2;
-			}
-		}
-	}
+            if (( nRow == 0) && (nCol == 0 ))
+            {
+                /* The complex number is real valued */
+                complexData[iIndex].re = realData[0];
+                complexData[iIndex].im =  0;
+                realData              += 1;
+            }
+            /* Last column is real if even column length */
+            else if ( (nRow == 0) && ( !colOdd && ( nCol == (halfCols-1) ) ) )
+            {
+                /* The complex number is real valued */
+                complexData[iIndex].re = realData[0];
+                complexData[iIndex].im =  0;
+                realData              += 1;
+            }
+            /* The middle value of the first column is real if we have an even number of rows and
+             * the last column of middle row is real if we have an even number of rows and columns */
+            else if (!rowOdd && ( ( nRow == (halfRows-1) ) && ( ( nCol == 0 ) || ( !colOdd && ( nCol == (halfCols-1) ) ) ) ) )
+            {
+                /* The complex number is real valued */
+                complexData[iIndex].re = realData[0];
+                complexData[iIndex].im =  0;
+                realData              += 1;
+            }
+            else if ( (nCol == 0) || (!colOdd && ( nCol == (halfCols-1) ) ) )
+            {
+                /* Last half of real columns are conjugates */
+                if (nRow < halfRows)
+                {
+                    /* Copy a complex number, which is two reals */
+                    complexData[iIndex].re = realData[0];
+                    complexData[iIndex].im = realData[1];
+                    realData              += 2;
+                }
+                else
+                {
+                    int oIndex  = (nX-nRow)*halfCols + nCol;
+                    complexData[iIndex].re = complexData[oIndex].re;
+                    complexData[iIndex].im = -complexData[oIndex].im;
+                }
+            }
+            else
+            {
+                /* Copy a complex number, which is two reals */
+                complexData[iIndex].re = realData[0];
+                complexData[iIndex].im = realData[1];
+                realData              += 2;
+            }
+        }
+    }
 
-	return;
+    return;
 }
 
 /* Support routine for the 1D array tranforms.  ACML does not support a MODE
  * flag on the real/complex interface.  It assumes a 'forward' transform both
  * directions, so that requires a manual conjugation of the imaginary comps. */
-void	negateConj( int len, void* src )
+void    negateConj( int len, void* src )
 {
-	real* imag	= (real*)src;
-	int	half	= len/2 + 1;
-	int i;
+    real* imag    = (real*)src;
+    int   half    = len/2 + 1;
+    int   i;
 
-	for( i = half; i < len; ++i)
-	{
-		imag[i] = -imag[i];
-	}
+    for (i = half; i < len; ++i)
+    {
+        imag[i] = -imag[i];
+    }
 
-	return;
+    return;
 }
 
 int
@@ -444,43 +444,47 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
                 enum gmx_fft_flag  flags)
 {
-    gmx_fft_t      fft;
-    int			   info	= 0;
-    acmlComplex*	   comm	= NULL;
-    int			   commSize	= 0;
+    gmx_fft_t          fft;
+    int                info     = 0;
+    acmlComplex*       comm     = NULL;
+    int                commSize = 0;
 
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
 
-	//	Single precision requires 5*nx+100
-	//	Double precision requires 3*nx+100
-	if( sizeof( acmlComplex ) == 16 )
-		commSize	= (3*nx+100)*sizeof( acmlComplex );
-	else
-		commSize	= (5*nx+100)*sizeof( acmlComplex );
+    //	Single precision requires 5*nx+100
+    //	Double precision requires 3*nx+100
+    if (sizeof( acmlComplex ) == 16)
+    {
+        commSize    = (3*nx+100)*sizeof( acmlComplex );
+    }
+    else
+    {
+        commSize    = (5*nx+100)*sizeof( acmlComplex );
+    }
 
     // Allocate communication work array
-	if( (comm = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (comm = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     // Initialize communication work array
     ACML_FFT1DX( 100, 1.0f, TRUE, nx, NULL, 1, NULL, 1, comm, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -500,44 +504,44 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
                      enum gmx_fft_flag  flags)
 {
     gmx_fft_t      fft;
-    int			   info	= 0;
-    real*	   commRC	= NULL;
-    real*	   commCR	= NULL;
-    int			   commSize	= 0;
+    int            info     = 0;
+    real    *      commRC   = NULL;
+    real    *      commCR   = NULL;
+    int            commSize = 0;
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
 
 
-	commSize	= (3*nx+100)*sizeof( float );
+    commSize    = (3*nx+100)*sizeof( float );
 
     // Allocate communication work array, r2c
-	if( (commRC = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commRC = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     // Allocate communication work array, c2r
-	if( (commCR = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commCR = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     // Initialize communication work array
     ACML_RCFFT1D( 100, nx, NULL, (real*)commRC, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -545,19 +549,19 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     // Initialize communication work array
     ACML_CRFFT1D( 100, nx, NULL, (real*)commCR, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
 
     /* Allocate scratch work array that ACML uses to splat from hermitian complex format to
      * full complex format */
-	if( (fft->realScratch = (acmlComplex*)malloc( nx*sizeof( acmlComplex ) ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (fft->realScratch = (acmlComplex*)malloc( nx*sizeof( acmlComplex ) ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     fft->ndim     = 1;
     fft->nx       = nx;
@@ -575,43 +579,47 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
                 int                ny,
                 enum gmx_fft_flag  flags)
 {
-    gmx_fft_t      fft;
-    int			   info	= 0;
-    acmlComplex*	   comm	= NULL;
-    int			   commSize	= 0;
+    gmx_fft_t          fft;
+    int                info     = 0;
+    acmlComplex*       comm     = NULL;
+    int                commSize = 0;
 
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
 
-	//	Single precision requires nx*ny+5*(nx+ny)
-	//	Double precision requires nx*ny+3*(nx+ny)
-	if( sizeof( acmlComplex ) == 16 )
-		commSize	= (nx*ny+3*(nx+ny)+200)*sizeof( acmlComplex );
-	else
-		commSize	= (nx*ny+5*(nx+ny)+200)*sizeof( acmlComplex );
+    //	Single precision requires nx*ny+5*(nx+ny)
+    //	Double precision requires nx*ny+3*(nx+ny)
+    if (sizeof( acmlComplex ) == 16)
+    {
+        commSize    = (nx*ny+3*(nx+ny)+200)*sizeof( acmlComplex );
+    }
+    else
+    {
+        commSize    = (nx*ny+5*(nx+ny)+200)*sizeof( acmlComplex );
+    }
 
     // Allocate communication work array
-	if( (comm = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (comm = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     // Initialize communication work array
     ACML_FFT2DX( 100, 1.0f, TRUE, TRUE, nx, ny, NULL, 1, nx, NULL, 1, nx, (acmlComplex*)comm, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -633,21 +641,21 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
                      enum gmx_fft_flag  flags)
 {
     gmx_fft_t      fft;
-    int			   info		= 0;
-    acmlComplex*   comm		= NULL;
-    real*		   commRC	= NULL;
-    real*		   commCR	= NULL;
-    int			   commSize	= 0;
-    int			   nyc		= 0;
+    int            info     = 0;
+    acmlComplex*   comm     = NULL;
+    real*          commRC   = NULL;
+    real*          commCR   = NULL;
+    int            commSize = 0;
+    int            nyc      = 0;
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
@@ -659,71 +667,75 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
      * and all but the most recent don't even have 2D real FFTs.
      */
 
-	//	Single precision requires 5*nx+100
-	//	Double precision requires 3*nx+100
-	if( sizeof( acmlComplex ) == 16 )
-		commSize	= (3*nx+100)*sizeof( acmlComplex );
-	else
-		commSize	= (5*nx+100)*sizeof( acmlComplex );
+    //	Single precision requires 5*nx+100
+    //	Double precision requires 3*nx+100
+    if (sizeof( acmlComplex ) == 16)
+    {
+        commSize    = (3*nx+100)*sizeof( acmlComplex );
+    }
+    else
+    {
+        commSize    = (5*nx+100)*sizeof( acmlComplex );
+    }
 
     // Allocate communication work array
-	if( (comm = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (comm = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     // Initialize communication work array
     ACML_FFT1DMX( 100, 1.0f, FALSE, nyc, nx, NULL, nyc, 1, NULL, nyc, 1, comm, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
 
-	commSize	= (3*ny+100)*sizeof( real );
+    commSize    = (3*ny+100)*sizeof( real );
     // Allocate communication work array
-	if( (commRC = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commRC = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
-	//	TODO:  Is there no MODE or PLAN for multiple hermetian sequences?
+    //	TODO:  Is there no MODE or PLAN for multiple hermetian sequences?
     // Initialize communication work array
     ACML_RCFFT1D( 100, ny, NULL, commRC, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
 
-	commSize	= (3*ny+100)*sizeof( real );
+    commSize    = (3*ny+100)*sizeof( real );
     // Allocate communication work array
-	if( (commCR = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commCR = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
-	//	TODO:  Is there no MODE or PLAN for multiple hermetian sequences?
+    //	TODO:  Is there no MODE or PLAN for multiple hermetian sequences?
     // Initialize communication work array
     ACML_CRFFT1D( 100, ny, NULL, commCR, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
 
     /* Allocate scratch work array that ACML uses to splat from hermitian complex format to
      * full complex format */
-	if( (fft->realScratch = (acmlComplex*)malloc( (nx*ny)*sizeof( acmlComplex ) ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (fft->realScratch = (acmlComplex*)malloc( (nx*ny)*sizeof( acmlComplex ) ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     fft->ndim     = 2;
     fft->nx       = nx;
@@ -744,31 +756,31 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
                 int                nz,
                 enum gmx_fft_flag  flags)
 {
-    gmx_fft_t      fft;
-    int			   info	= 0;
-    acmlComplex*	   comm	= NULL;
-    int			   commSize	= 0;
+    gmx_fft_t          fft;
+    int                info     = 0;
+    acmlComplex*       comm     = NULL;
+    int                commSize = 0;
 
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
 
-	commSize	= (nx*ny*nz+4*(nx+ny+nz)+300)*sizeof( acmlComplex );
+    commSize    = (nx*ny*nz+4*(nx+ny+nz)+300)*sizeof( acmlComplex );
 
     // Allocate communication work array
-	if( (comm = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (comm = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     ACML_FFT3DX( 100, 1.0f, TRUE, nx, ny, nz, NULL, 1, nx, nx*ny, NULL, 1, nx, nx*ny, comm, commSize, &info );
 
@@ -791,23 +803,23 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
                      enum gmx_fft_flag  flags)
 {
     gmx_fft_t      fft;
-    int			   info		= 0;
-    acmlComplex*   commX	= NULL;
-    acmlComplex*   commY	= NULL;
-    real*		   commRC	= NULL;
-    real*		   commCR	= NULL;
-    int			   commSize	= 0;
+    int            info     = 0;
+    acmlComplex*   commX    = NULL;
+    acmlComplex*   commY    = NULL;
+    real*          commRC   = NULL;
+    real*          commCR   = NULL;
+    int            commSize = 0;
 
-    if(pfft==NULL)
+    if (pfft == NULL)
     {
-        gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
+        gmx_fatal(FARGS, "Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
 
     /* nzc = (nz/2 + 1); */
 
-    if( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
+    if ( (fft = malloc(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
     }
@@ -823,26 +835,30 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: ny*nz
      */
 
-	/*	Single precision requires 5*nx+100
-		Double precision requires 3*nx+100
-	*/
-	if( sizeof( acmlComplex ) == 16 )
-		commSize	= (3*nx+100)*sizeof( acmlComplex );
-	else
-		commSize	= (5*nx+100)*sizeof( acmlComplex );
+    /*	Single precision requires 5*nx+100
+        Double precision requires 3*nx+100
+     */
+    if (sizeof( acmlComplex ) == 16)
+    {
+        commSize    = (3*nx+100)*sizeof( acmlComplex );
+    }
+    else
+    {
+        commSize    = (5*nx+100)*sizeof( acmlComplex );
+    }
 
     /* Allocate communication work array */
-	if( (commX = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commX = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     /* Initialize communication work array */
     ACML_FFT1DMX( 100, 1.0f, TRUE, ny*nz, nx, NULL, ny*nz, 1, NULL, ny*nz, 1, commX, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -854,29 +870,33 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * transform distance: 1
      * element strides: nz
      */
-	/*	Single precision requires 5*nx+100
-		Double precision requires 3*nx+100
-	*/
-	if( sizeof( acmlComplex ) == 16 )
-		commSize	= (3*ny+100)*sizeof( acmlComplex );
-	else
-		commSize	= (5*ny+100)*sizeof( acmlComplex );
+    /*	Single precision requires 5*nx+100
+        Double precision requires 3*nx+100
+     */
+    if (sizeof( acmlComplex ) == 16)
+    {
+        commSize    = (3*ny+100)*sizeof( acmlComplex );
+    }
+    else
+    {
+        commSize    = (5*ny+100)*sizeof( acmlComplex );
+    }
 
     /* Allocate communication work array */
-	if( (commY = (acmlComplex*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commY = (acmlComplex*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     /* Initialize communication work array */
-	/* We want to do multiple 1D FFT's in z-y plane, so we have to loop over x
-	 * dimension recalculating z-y plane for each slice.
-	 */
+    /* We want to do multiple 1D FFT's in z-y plane, so we have to loop over x
+     * dimension recalculating z-y plane for each slice.
+     */
     ACML_FFT1DMX( 100, 1.0f, TRUE, nz, ny, NULL, nz, 1, NULL, nz, 1, commY, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -887,21 +907,21 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: 1
      */
 
-	commSize	= (3*nz+100)*sizeof( real );
+    commSize    = (3*nz+100)*sizeof( real );
     /* Allocate communication work array */
-	if( (commRC = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commRC = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
-	/*	TODO:  Is there no MODE or PLAN for multiple hermetian sequences? */
-	// Initialize communication work array
+    /*	TODO:  Is there no MODE or PLAN for multiple hermetian sequences? */
+    // Initialize communication work array
     ACML_RCFFT1D( 100, nz, NULL, commRC, &info );
 
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
@@ -911,29 +931,29 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * transform distance: nzc*2 -> nz
      * element STRIDES: 1
      */
-	commSize	= (3*nz+100)*sizeof( real );
+    commSize    = (3*nz+100)*sizeof( real );
     /* Allocate communication work array */
-	if( (commCR = (real*)malloc( commSize ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (commCR = (real*)malloc( commSize ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
-	// Initialize communication work array
+    // Initialize communication work array
     ACML_CRFFT1D( 100, nz, NULL, commCR, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error initializing ACML FFT; status=%d", info);
+        gmx_fatal(FARGS, "Error initializing ACML FFT; status=%d", info);
         gmx_fft_destroy( fft );
         return info;
     }
 
     /* Allocate scratch work array that ACML uses to splat from hermitian complex format to
      * full complex format */
-	if( (fft->realScratch = (acmlComplex*)malloc( (nx*ny*nz)*sizeof( acmlComplex ) ) ) == NULL )
-	{
-		return ENOMEM;
-	}
+    if ( (fft->realScratch = (acmlComplex*)malloc( (nx*ny*nz)*sizeof( acmlComplex ) ) ) == NULL)
+    {
+        return ENOMEM;
+    }
 
     fft->ndim     = 3;
     fft->nx       = nx;
@@ -957,20 +977,20 @@ gmx_fft_1d(gmx_fft_t                  fft,
 {
     int inpl = (in_data == out_data);
     int info = 0;
-	int	mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
+    int mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
 
-    if( (fft->real_fft == 1) || (fft->ndim != 1) ||
-        ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+    if ( (fft->real_fft == 1) || (fft->ndim != 1) ||
+         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
     ACML_FFT1DX( mode, 1.0f, inpl, fft->nx, in_data, 1, out_data, 1, fft->comm[0], &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
     }
 
@@ -984,41 +1004,41 @@ gmx_fft_1d_real(gmx_fft_t                  fft,
                 void *                     outPtr)
 {
     int info = 0;
-	int nx = fft->nx;
+    int nx   = fft->nx;
 
-    if( (fft->real_fft != 1) || (fft->ndim != 1) ||
-        ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+    if ( (fft->real_fft != 1) || (fft->ndim != 1) ||
+         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
     /* I apply a correction scale to the automatic scaling that was done in the real-complex step */
-    float	recipCorrection	= sqrtf( nx );
+    float   recipCorrection = sqrtf( nx );
 
-	/*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
-	 * 	of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
-	 * 	are also only in-place, so we manually do a memcpy() first */
-    if(dir==GMX_FFT_REAL_TO_COMPLEX)
+    /*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
+     *  of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
+     *  are also only in-place, so we manually do a memcpy() first */
+    if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
         memcpy( fft->realScratch, inPtr, nx*sizeof( real ) );
-		ACML_RCFFT1D( 1, nx, fft->realScratch, fft->comm[0], &info );
+        ACML_RCFFT1D( 1, nx, fft->realScratch, fft->comm[0], &info );
 
-		hermitianUnPacking( recipCorrection, 1, nx, fft->realScratch, 0, outPtr );
+        hermitianUnPacking( recipCorrection, 1, nx, fft->realScratch, 0, outPtr );
     }
     else
     {
         memcpy( fft->realScratch, inPtr, nx*sizeof( t_complex ) );
-		hermitianPacking( recipCorrection, 1, nx, fft->realScratch, outPtr, 0 );
+        hermitianPacking( recipCorrection, 1, nx, fft->realScratch, outPtr, 0 );
 
-		ACML_CRFFT1D( 1, nx, outPtr, fft->comm[1], &info );
+        ACML_CRFFT1D( 1, nx, outPtr, fft->comm[1], &info );
     }
 
-	if( info != 0 )
-	{
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+    if (info != 0)
+    {
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
-	}
+    }
 
     return info;
 }
@@ -1031,21 +1051,21 @@ gmx_fft_2d(gmx_fft_t                  fft,
 {
     int inpl = (in_data == out_data);
     int info = 0;
-	int	mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
+    int mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
 
-    if( (fft->real_fft == 1) || (fft->ndim != 2) ||
-        ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+    if ( (fft->real_fft == 1) || (fft->ndim != 2) ||
+         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
-	}
+    }
 
     ACML_FFT2DX( mode, 1.0f, TRUE, inpl, fft->nx, fft->ny,
-				in_data, 1, fft->nx, out_data, 1, fft->nx, fft->comm[0], &info );
+                 in_data, 1, fft->nx, out_data, 1, fft->nx, fft->comm[0], &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
     }
 
@@ -1061,90 +1081,96 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
 {
     int inpl = (inPtr == outPtr);
     int info = 0;
-    int i 	= 0;
+    int i    = 0;
 
-	int nx	= fft->nx;
-	int ny	= fft->ny;
-    int nyc	= (fft->ny/2 + 1);
-    int nyLen	= 0;
+    int nx      = fft->nx;
+    int ny      = fft->ny;
+    int nyc     = (fft->ny/2 + 1);
+    int nyLen   = 0;
 
     /* Depending on whether we are calculating the FFT in place or not, the rows of the
      * 2D FFT will be packed or not.
      */
-    if( inpl )
+    if (inpl)
     {
-    	/* Not packed; 1 or 2 extra reals padding at end of each row */
-    	nyLen	= nyc*2;
+        /* Not packed; 1 or 2 extra reals padding at end of each row */
+        nyLen   = nyc*2;
     }
     else
     {
-    	nyLen	= ny;
+        nyLen   = ny;
     }
 
-    if( (fft->real_fft != 1) || (fft->ndim != 2) ||
-        ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+    if ( (fft->real_fft != 1) || (fft->ndim != 2) ||
+         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
     /* I apply a correction scale to the automatic scaling that was done in the real-complex step */
-    float	recipCorrection	= sqrtf( ny );
+    float   recipCorrection = sqrtf( ny );
 
-    if(dir==GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
-    	/*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
-    	 * 	of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
-    	 * 	are also only in-place, so we manually do a memcpy() first */
-    	if( !inpl )
-    	{
-        	memcpy( outPtr, inPtr, nx*ny*sizeof( real ) );
-    	}
+        /*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
+         *  of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
+         *  are also only in-place, so we manually do a memcpy() first */
+        if (!inpl)
+        {
+            memcpy( outPtr, inPtr, nx*ny*sizeof( real ) );
+        }
 
         /* real-to-complex in Y dimension, in-place
          * SCFFTM is not valid to call here.  SCFFTM does not take any stride information, and assumes that
          * the rows are tightly packed.  GROMACS pads rows with either 1 or 2 extra reals depending
          * on even or odd lengths.
          */
-    	for( i = 0; i < nx; ++i )
-    	{
-            if ( info == 0 )
-            	ACML_RCFFT1D( 1, ny, (real*)outPtr+i*nyLen, fft->comm[1], &info );
-    	}
+        for (i = 0; i < nx; ++i)
+        {
+            if (info == 0)
+            {
+                ACML_RCFFT1D( 1, ny, (real*)outPtr+i*nyLen, fft->comm[1], &info );
+            }
+        }
 
-		hermitianUnPacking( 1.0f, nx, ny, outPtr, nyLen, fft->realScratch );
+        hermitianUnPacking( 1.0f, nx, ny, outPtr, nyLen, fft->realScratch );
 
         /* complex-to-complex in X dimension */
-        if ( info == 0 )
-			ACML_FFT1DMX( -1, recipCorrection, FALSE, nyc, nx, fft->realScratch, nyc, 1,
-					outPtr, nyc, 1, fft->comm[0], &info );
+        if (info == 0)
+        {
+            ACML_FFT1DMX( -1, recipCorrection, FALSE, nyc, nx, fft->realScratch, nyc, 1,
+                          outPtr, nyc, 1, fft->comm[0], &info );
+        }
     }
     else
     {
         /* complex-to-complex in X dimension, in-place */
-		ACML_FFT1DMX( 1, recipCorrection, FALSE, nyc, nx, inPtr, nyc, 1,
-					fft->realScratch, nyc, 1, fft->comm[0], &info );
+        ACML_FFT1DMX( 1, recipCorrection, FALSE, nyc, nx, inPtr, nyc, 1,
+                      fft->realScratch, nyc, 1, fft->comm[0], &info );
 
-		hermitianPacking( 1.0f, nx, ny, fft->realScratch, outPtr, nyLen );
+        hermitianPacking( 1.0f, nx, ny, fft->realScratch, outPtr, nyLen );
 
         /* complex-to-real in Y dimension
-        * CSFFTM is not valid to call here.  SCFFTM does not take any stride information, and assumes that
-        * the rows are tightly packed.  GROMACS pads rows with either 1 or 2 extra reals depending
-        * on even or odd lengths.
-        */
-        if ( info == 0 )
+         * CSFFTM is not valid to call here.  SCFFTM does not take any stride information, and assumes that
+         * the rows are tightly packed.  GROMACS pads rows with either 1 or 2 extra reals depending
+         * on even or odd lengths.
+         */
+        if (info == 0)
         {
-        	for( i = 0; i < nx; ++i )
-        	{
-                if ( info == 0 )
-                	ACML_CRFFT1D( 1, ny, (real*)outPtr+i*nyLen, fft->comm[2], &info );
-        	}
+            for (i = 0; i < nx; ++i)
+            {
+                if (info == 0)
+                {
+                    ACML_CRFFT1D( 1, ny, (real*)outPtr+i*nyLen, fft->comm[2], &info );
+                }
+            }
         }
     }
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
     }
 
@@ -1158,30 +1184,30 @@ gmx_fft_3d(gmx_fft_t                  fft,
            void *                     in_data,
            void *                     out_data)
 {
-	int	mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
-	int inpl = ( in_data == out_data );
+    int mode = (dir == GMX_FFT_FORWARD) ? -1 : 1;
+    int inpl = ( in_data == out_data );
 
-    int	commSize	= 0;
-	int nx = fft->nx;
-	int ny = fft->ny;
-	int nz = fft->nz;
-    int info = 0;
+    int commSize    = 0;
+    int nx          = fft->nx;
+    int ny          = fft->ny;
+    int nz          = fft->nz;
+    int info        = 0;
 
-    if( (fft->real_fft == 1) || (fft->ndim != 3) ||
-        ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
+    if ( (fft->real_fft == 1) || (fft->ndim != 3) ||
+         ((dir != GMX_FFT_FORWARD) && (dir != GMX_FFT_BACKWARD)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
-	commSize	= (nx*ny*nz+4*(nx+ny+nz)+300)*sizeof( acmlComplex );
+    commSize    = (nx*ny*nz+4*(nx+ny+nz)+300)*sizeof( acmlComplex );
 
     ACML_FFT3DX( mode, 1.0f, inpl, nx, ny, nz, in_data, 1, nx, nx*ny,
-					out_data, 1, nx, nx*ny, fft->comm[0], commSize, &info );
+                 out_data, 1, nx, nx*ny, fft->comm[0], commSize, &info );
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
     }
 
@@ -1197,102 +1223,112 @@ gmx_fft_3d_real(gmx_fft_t                  fft,
     int inpl = (inPtr == outPtr);
     int info = 0;
     int i;
-    int nx,ny,nz, nzLen	= 0;
+    int nx, ny, nz, nzLen = 0;
 
     nx  = fft->nx;
     ny  = fft->ny;
     nz  = fft->nz;
-    int nzc	= (nz/2 + 1);
+    int nzc = (nz/2 + 1);
 
     /* Depending on whether we are calculating the FFT in place or not, the rows of the
      * 3D FFT will be packed or not.
      */
-    if( inpl )
+    if (inpl)
     {
-    	/* Not packed; 1 or 2 extra reals padding at end of each row */
-    	nzLen	= nzc*2;
+        /* Not packed; 1 or 2 extra reals padding at end of each row */
+        nzLen   = nzc*2;
     }
     else
     {
-    	nzLen	= nz;
+        nzLen   = nz;
     }
 
-    if( (fft->real_fft != 1) || (fft->ndim != 3) ||
-        ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
+    if ( (fft->real_fft != 1) || (fft->ndim != 3) ||
+         ((dir != GMX_FFT_REAL_TO_COMPLEX) && (dir != GMX_FFT_COMPLEX_TO_REAL)) )
     {
-        gmx_fatal(FARGS,"FFT plan mismatch - bad plan or direction.");
+        gmx_fatal(FARGS, "FFT plan mismatch - bad plan or direction.");
         return EINVAL;
     }
 
     /* I apply a correction scale to the automatic scaling that was done in the real-complex step */
-    float	recipCorrection	= sqrtf( nz );
+    float   recipCorrection = sqrtf( nz );
 
-    if(dir==GMX_FFT_REAL_TO_COMPLEX)
+    if (dir == GMX_FFT_REAL_TO_COMPLEX)
     {
-    	/*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
-    	 * 	of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
-    	 * 	are also only in-place, so we manually do a memcpy() first */
-    	if( !inpl )
-    	{
-        	memcpy( outPtr, inPtr, nx*ny*nz*sizeof( real ) );
-    	}
+        /*	ACML needs to do complex2complex intermediate transforms, which will not fit in the amount
+         *  of memory allocated by the gromacs program, which assumes real.  The real2complex transforms
+         *  are also only in-place, so we manually do a memcpy() first */
+        if (!inpl)
+        {
+            memcpy( outPtr, inPtr, nx*ny*nz*sizeof( real ) );
+        }
 
-		/* real-to-complex in Z dimension, in-place
+        /* real-to-complex in Z dimension, in-place
          * SCFFTM is not valid to call here.  SCFFTM does not take any stride information, and assumes that
          * the rows are tightly packed.  GROMACS pads rows with either 1 or 2 extra reals depending
          * on even or odd lengths.
          */
-    	for( i = 0; i < nx*ny; ++i )
-    	{
-            if ( info == 0 )
-            	ACML_RCFFT1D( 1, nz, (real*)outPtr+i*nzLen, fft->comm[2], &info );
-    	}
+        for (i = 0; i < nx*ny; ++i)
+        {
+            if (info == 0)
+            {
+                ACML_RCFFT1D( 1, nz, (real*)outPtr+i*nzLen, fft->comm[2], &info );
+            }
+        }
 
-		hermitianUnPacking( 1.0f, nx*ny, nz, outPtr, nzLen, fft->realScratch );
+        hermitianUnPacking( 1.0f, nx*ny, nz, outPtr, nzLen, fft->realScratch );
 
-		/* complex-to-complex in Y dimension, in-place */
-		for(i=0;i<nx;i++)
-		{
-			if ( info == 0 )
-				ACML_FFT1DMX( -1, 1.0f, TRUE, nzc, ny, (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1,
-								(acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1, fft->comm[1], &info );
-		}
+        /* complex-to-complex in Y dimension, in-place */
+        for (i = 0; i < nx; i++)
+        {
+            if (info == 0)
+            {
+                ACML_FFT1DMX( -1, 1.0f, TRUE, nzc, ny, (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1,
+                              (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1, fft->comm[1], &info );
+            }
+        }
 
-		/* complex-to-complex in X dimension, in-place */
-		if ( info == 0 )
-			ACML_FFT1DMX( -1, recipCorrection, FALSE, ny*nzc, nx, fft->realScratch, ny*nzc, 1, outPtr, ny*nzc, 1, fft->comm[0], &info );
+        /* complex-to-complex in X dimension, in-place */
+        if (info == 0)
+        {
+            ACML_FFT1DMX( -1, recipCorrection, FALSE, ny*nzc, nx, fft->realScratch, ny*nzc, 1, outPtr, ny*nzc, 1, fft->comm[0], &info );
+        }
     }
     else
     {
-		/* complex-to-complex in X dimension, from inPtr to work */
-		ACML_FFT1DMX( 1, recipCorrection, FALSE, ny*nzc, nx, inPtr, ny*nzc, 1, fft->realScratch, ny*nzc, 1, fft->comm[0], &info );
+        /* complex-to-complex in X dimension, from inPtr to work */
+        ACML_FFT1DMX( 1, recipCorrection, FALSE, ny*nzc, nx, inPtr, ny*nzc, 1, fft->realScratch, ny*nzc, 1, fft->comm[0], &info );
 
-		/* complex-to-complex in Y dimension, in-place */
-		for( i=0; i < nx; i++ )
-		{
-			if ( info == 0 )
-				ACML_FFT1DMX( 1, 1.0f, TRUE, nzc, ny, (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1,
-							(acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1, fft->comm[1], &info );
-		}
+        /* complex-to-complex in Y dimension, in-place */
+        for (i = 0; i < nx; i++)
+        {
+            if (info == 0)
+            {
+                ACML_FFT1DMX( 1, 1.0f, TRUE, nzc, ny, (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1,
+                              (acmlComplex*)fft->realScratch+i*ny*nzc, nzc, 1, fft->comm[1], &info );
+            }
+        }
 
-		hermitianPacking( 1.0f, nx*ny, nz, fft->realScratch, outPtr, nzLen );
+        hermitianPacking( 1.0f, nx*ny, nz, fft->realScratch, outPtr, nzLen );
 
-		/* complex-to-real in Z dimension, in-place
+        /* complex-to-real in Z dimension, in-place
          * CSFFTM is not valid to call here.  CSFFTM does not take any stride information, and assumes that
          * the rows are tightly packed.  GROMACS pads rows with either 1 or 2 extra reals depending
          * on even or odd lengths.
          */
-    	for( i = 0; i < nx*ny; ++i )
-    	{
-            if ( info == 0 )
-            	ACML_CRFFT1D( 1, nz, (real*)outPtr+i*nzLen, fft->comm[3], &info );
-    	}
+        for (i = 0; i < nx*ny; ++i)
+        {
+            if (info == 0)
+            {
+                ACML_CRFFT1D( 1, nz, (real*)outPtr+i*nzLen, fft->comm[3], &info );
+            }
+        }
 
     }
 
-    if( info != 0 )
+    if (info != 0)
     {
-        gmx_fatal(FARGS,"Error executing AMD ACML FFT.");
+        gmx_fatal(FARGS, "Error executing AMD ACML FFT.");
         info = -1;
     }
 
@@ -1304,18 +1340,20 @@ gmx_fft_destroy(gmx_fft_t    fft)
 {
     int d;
 
-    if(fft != NULL)
+    if (fft != NULL)
     {
-        for(d=0;d<4;d++)
+        for (d = 0; d < 4; d++)
         {
-            if(fft->comm[d] != NULL)
+            if (fft->comm[d] != NULL)
             {
-				free(fft->comm[d]);
+                free(fft->comm[d]);
             }
         }
 
-        if( fft->realScratch != NULL)
-        	free( fft->realScratch );
+        if (fft->realScratch != NULL)
+        {
+            free( fft->realScratch );
+        }
 
         free( fft );
     }
@@ -1323,5 +1361,5 @@ gmx_fft_destroy(gmx_fft_t    fft)
 
 #else
 int
-gmx_fft_acml_empty;
+    gmx_fft_acml_empty;
 #endif /* GMX_FFT_ACML */

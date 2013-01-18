@@ -59,39 +59,41 @@ extern "C" {
 
 
 /* The code below is to facilitate controlled begin and end of
- trajectory reading. Corresponding routines in
- src/gmxlib/tcontrol.c
+   trajectory reading. Corresponding routines in
+   src/gmxlib/tcontrol.c
  */
-enum { TBEGIN, TEND, TDELTA, TNR };
+enum {
+    TBEGIN, TEND, TDELTA, TNR
+};
 
 gmx_bool bTimeSet(int tcontrol);
 
-real rTimeValue(int tcontrol); 
+real rTimeValue(int tcontrol);
 
-void setTimeValue(int tcontrol,real value);
+void setTimeValue(int tcontrol, real value);
 
 /* End trajectory time control */
 
 /* a dedicated status type contains fp, etc. */
 typedef struct t_trxstatus t_trxstatus;
-  
-typedef int t_first_x(t_trxstatus **status,const char *fn,real *t,rvec **x,
-                      matrix box);
 
-typedef gmx_bool t_next_x(t_trxstatus *status,real *t,int natoms,rvec x[],
-                      matrix box);
+typedef int t_first_x (t_trxstatus **status, const char *fn, real *t, rvec **x,
+                       matrix box);
+
+typedef gmx_bool t_next_x (t_trxstatus *status, real *t, int natoms, rvec x[],
+                           matrix box);
 
 /* I/O function types */
 
-  
-/* LEGACY FUNCTIONS 
+
+/* LEGACY FUNCTIONS
 
    The program names, command lines, etc. are now also set in the output_env
    structure. That is now the preferred location, but the functions here
    are still available as legacy functions. Because they all act on inherently
    global informaion, their existence in a multi-threaded environment is not
    a real problem. */
-    
+
 /* Return the name of the program */
 GMX_LIBGMX_EXPORT
 const char *command_line(void);
@@ -100,7 +102,7 @@ void set_command_line(int argc, char *argv[]);
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
- */    
+ */
 GMX_LIBGMX_EXPORT
 const char *Program(void);
 GMX_LIBGMX_EXPORT
@@ -118,14 +120,14 @@ int prec2ndec(real prec);
 /* Convert precision in 1/(nm) to number of decimal places */
 
 GMX_LIBGMX_EXPORT
-void clear_trxframe(t_trxframe *fr,gmx_bool bFirst);
+void clear_trxframe(t_trxframe *fr, gmx_bool bFirst);
 /* Set all content gmx_booleans to FALSE.
  * When bFirst = TRUE, set natoms=-1, all pointers to NULL
  *                     and all data to zero.
  */
 
 GMX_LIBGMX_EXPORT
-void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
+void set_trxframe_ePBC(t_trxframe *fr, int ePBC);
 /* Set the type of periodic boundary conditions, ePBC=-1 is not set */
 
 GMX_LIBGMX_EXPORT
@@ -133,13 +135,13 @@ int nframes_read(t_trxstatus *status);
 /* Returns the number of frames read from the trajectory */
 
 GMX_LIBGMX_EXPORT
-int write_trxframe_indexed(t_trxstatus *status,t_trxframe *fr,int nind,
+int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
                            atom_id *ind, gmx_conect gc);
 /* Write an indexed frame to a TRX file, see write_trxframe. gc may be NULL */
 
 GMX_LIBGMX_EXPORT
-int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
-/* Write a frame to a TRX file. 
+int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc);
+/* Write a frame to a TRX file.
  * Only entries for which the gmx_boolean is TRUE will be written,
  * except for step, time, lambda and/or box, which may not be
  * omitted for certain trajectory formats.
@@ -149,13 +151,13 @@ int write_trxframe(t_trxstatus *status,t_trxframe *fr,gmx_conect gc);
  */
 
 GMX_LIBGMX_EXPORT
-int write_trx(t_trxstatus *status,int nind,atom_id *ind,t_atoms *atoms,
-              int step,real time,matrix box,rvec x[],rvec *v,
+int write_trx(t_trxstatus *status, int nind, atom_id *ind, t_atoms *atoms,
+              int step, real time, matrix box, rvec x[], rvec *v,
               gmx_conect gc);
 /* Write an indexed frame to a TRX file.
- * v can be NULL. 
+ * v can be NULL.
  * atoms can be NULL for file types which don't need atom names.
- */ 
+ */
 
 GMX_LIBGMX_EXPORT
 void close_trx(t_trxstatus *status);
@@ -164,7 +166,7 @@ void close_trx(t_trxstatus *status);
  */
 
 GMX_LIBGMX_EXPORT
-t_trxstatus *open_trx(const char *outfile,const char *filemode);
+t_trxstatus *open_trx(const char *outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
 /* get a fileio from a trxstatus */
@@ -173,18 +175,18 @@ t_fileio *trx_get_fileio(t_trxstatus *status);
 
 
 GMX_LIBGMX_EXPORT
-gmx_bool bRmod_fd(double a, double b, double c,gmx_bool bDouble);
+gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
  * larger than the float/double precision.
  */
 
 #ifdef GMX_DOUBLE
-#define bRmod(a,b,c) bRmod_fd(a,b,c,TRUE)
+#define bRmod(a, b, c) bRmod_fd(a, b, c, TRUE)
 #else
-#define bRmod(a,b,c) bRmod_fd(a,b,c,FALSE)
+#define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
 #endif
 
-int check_times2(real t,real t0,real tp,real tpp,gmx_bool bDouble);
+int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
@@ -227,35 +229,35 @@ int check_times(real t);
 #define FRAME_NOT_OK  (HEADER_NOT_OK | DATA_NOT_OK)
 
 GMX_LIBGMX_EXPORT
-int read_first_frame(const output_env_t oenv,t_trxstatus **status,
-                            const char *fn, t_trxframe *fr,int flags);
-  /* Read the first frame which is in accordance with flags, which are
-   * defined further up in this file. 
-   * Returns natoms when succeeded, 0 otherwise.
-   * Memory will be allocated for flagged entries.
-   * The flags are copied to fr for subsequent calls to read_next_frame.
-   * Returns TRUE when succeeded, FALSE otherwise.
-   */
+int read_first_frame(const output_env_t oenv, t_trxstatus **status,
+                     const char *fn, t_trxframe *fr, int flags);
+/* Read the first frame which is in accordance with flags, which are
+ * defined further up in this file.
+ * Returns natoms when succeeded, 0 otherwise.
+ * Memory will be allocated for flagged entries.
+ * The flags are copied to fr for subsequent calls to read_next_frame.
+ * Returns TRUE when succeeded, FALSE otherwise.
+ */
 
 GMX_LIBGMX_EXPORT
-gmx_bool read_next_frame(const output_env_t oenv,t_trxstatus *status,
-                            t_trxframe *fr);
-  /* Reads the next frame which is in accordance with fr->flags.
-   * Returns TRUE when succeeded, FALSE otherwise.
-   */
+gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status,
+                         t_trxframe *fr);
+/* Reads the next frame which is in accordance with fr->flags.
+ * Returns TRUE when succeeded, FALSE otherwise.
+ */
 
 GMX_LIBGMX_EXPORT
-int read_first_x(const output_env_t oenv,t_trxstatus **status,
-                        const char *fn, real *t,rvec **x,matrix box);
-/* These routines read first coordinates and box, and allocates 
+int read_first_x(const output_env_t oenv, t_trxstatus **status,
+                 const char *fn, real *t, rvec **x, matrix box);
+/* These routines read first coordinates and box, and allocates
  * memory for the coordinates, for a trajectory file.
  * The routine returns the number of atoms, or 0 when something is wrong.
  * The integer in status should be passed to calls of read_next_x
  */
 
 GMX_LIBGMX_EXPORT
-gmx_bool read_next_x(const output_env_t oenv,t_trxstatus *status,real *t,
-                        int natoms, rvec x[],matrix box);
+gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
+                     int natoms, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
@@ -271,13 +273,13 @@ void rewind_trj(t_trxstatus *status);
 /* Rewind trj file as opened with read_first_x */
 
 GMX_LIBGMX_EXPORT
-t_topology *read_top(const char *fn,int *ePBC);
+t_topology *read_top(const char *fn, int *ePBC);
 /* Extract a topology data structure from a topology file.
  * If ePBC!=NULL *ePBC gives the pbc type.
  */
 
 /*****************************************************
- *         Some command line parsing routines 
+ *         Some command line parsing routines
  *****************************************************/
 
 #define PCA_CAN_VIEW       (1<<5)
@@ -304,7 +306,7 @@ t_topology *read_top(const char *fn,int *ePBC);
 #define PCA_NOT_READ_NODE  (1<<16)
 /* Is this node not reading: for parallel all nodes but the master */
 
-int iscan(int argc,char *argv[],int *i);
+int iscan(int argc, char *argv[], int *i);
 /* Scan an int from the argument at *i. If the argument length
  * is > 2, the int is assumed to be in the remainder of the arg,
  * eg: -p32, else the int is assumed to be in the next argument
@@ -313,38 +315,38 @@ int iscan(int argc,char *argv[],int *i);
  * argument *i is incremented. You typically would want to pass
  * a loop variable to this routine.
  */
-gmx_large_int_t istepscan(int argc,char *argv[],int *i);
+gmx_large_int_t istepscan(int argc, char *argv[], int *i);
 /* Same as above, but for large integer values */
 
-double dscan(int argc,char *argv[],int *i);
+double dscan(int argc, char *argv[], int *i);
 /* Routine similar to the above, but working on doubles. */
 
-char *sscan(int argc,char *argv[],int *i);
+char *sscan(int argc, char *argv[], int *i);
 /* Routine similar to the above, but working on strings. The pointer
  * returned is a pointer to the argv field.
  */
 
-void vscan(int argc,char *argv[],int *i,rvec *vec);
+void vscan(int argc, char *argv[], int *i, rvec *vec);
 /* Routine similar to the above, but working on rvecs. */
 
 GMX_LIBGMX_EXPORT
 int nenum(const char *const enumc[]);
-/* returns ordinal number of selected enum from args 
+/* returns ordinal number of selected enum from args
  * depends on enumc[0] pointing to one of the other elements
- * array must be terminated by a NULL pointer 
+ * array must be terminated by a NULL pointer
  */
 
 GMX_LIBGMX_EXPORT
-void parse_common_args(int *argc,char *argv[],unsigned long Flags,
-                              int nfile,t_filenm fnm[],int npargs,t_pargs *pa,
-                              int ndesc,const char **desc,
-                              int nbugs,const char **bugs, 
-                              output_env_t *oenv);
+void parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                       int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                       int ndesc, const char **desc,
+                       int nbugs, const char **bugs,
+                       output_env_t *oenv);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables
  * some input checks. Using this routine also means that the arguments
- * -b and -e will be used for begin and end time, whether this is 
+ * -b and -e will be used for begin and end time, whether this is
  * appropriate or not!
  */
 

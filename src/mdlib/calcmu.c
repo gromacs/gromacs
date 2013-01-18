@@ -51,19 +51,19 @@
 #include "calcmu.h"
 #include "gmx_omp_nthreads.h"
 
-void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
+void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
              int nChargePerturbed,
-             dvec mu,dvec mu_B)
+             dvec mu, dvec mu_B)
 {
-    int i,end,m;
+    int    i, end, m;
     double mu_x, mu_y, mu_z;
 
     end   = start + homenr;
 
     mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_nthreads_get(emntDefault))
-    for(i=start; i<end; i++)
+    num_threads(gmx_omp_nthreads_get(emntDefault))
+    for (i = start; i < end; i++)
     {
         mu_x += q[i]*x[i][XX];
         mu_y += q[i]*x[i][YY];
@@ -73,7 +73,7 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     mu[YY] = mu_y;
     mu[ZZ] = mu_z;
 
-    for(m=0; (m<DIM); m++)
+    for (m = 0; (m < DIM); m++)
     {
         mu[m] *= ENM2DEBYE;
     }
@@ -82,12 +82,12 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     {
         mu_x = mu_y = mu_z = 0.0;
 #pragma omp parallel for reduction(+: mu_x, mu_y, mu_z) schedule(static) \
-                         num_threads(gmx_omp_nthreads_get(emntDefault))
-        for(i=start; i<end; i++)
+        num_threads(gmx_omp_nthreads_get(emntDefault))
+        for (i = start; i < end; i++)
         {
-             mu_x += qB[i]*x[i][XX];
-             mu_y += qB[i]*x[i][YY];
-             mu_z += qB[i]*x[i][ZZ];
+            mu_x += qB[i]*x[i][XX];
+            mu_y += qB[i]*x[i][YY];
+            mu_z += qB[i]*x[i][ZZ];
         }
         mu_B[XX] = mu_x * ENM2DEBYE;
         mu_B[YY] = mu_y * ENM2DEBYE;
@@ -95,23 +95,22 @@ void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
     }
     else
     {
-        copy_dvec(mu,mu_B);
+        copy_dvec(mu, mu_B);
     }
 }
 
-gmx_bool read_mu(FILE *fp,rvec mu,real *vol)
+gmx_bool read_mu(FILE *fp, rvec mu, real *vol)
 {
     /* For backward compatibility */
     real mmm[4];
 
-    if (fread(mmm,(size_t)(4*sizeof(real)),1,fp) != 1)
+    if (fread(mmm, (size_t)(4*sizeof(real)), 1, fp) != 1)
     {
         return FALSE;
     }
 
-    copy_rvec(mmm,mu);
+    copy_rvec(mmm, mu);
     *vol = mmm[3];
 
     return TRUE;
 }
-

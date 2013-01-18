@@ -47,11 +47,11 @@
 extern "C" {
 #endif
 
-void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
-		    int nChargePerturbed,
-		    dvec mu,dvec mu_B);
+void calc_mu(int start, int homenr, rvec x[], real q[], real qB[],
+             int nChargePerturbed,
+             dvec mu, dvec mu_B);
 
-gmx_bool read_mu(FILE *fp,rvec mu,real *vol);
+gmx_bool read_mu(FILE *fp, rvec mu, real *vol);
 /* Return true on succes */
 
 #ifdef __cplusplus

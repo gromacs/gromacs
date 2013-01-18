@@ -57,18 +57,18 @@ extern "C" {
 /* data type */
 typedef struct
 {
-    real f,fprev,x,xprev;  
-    int iter_i;
+    real     f, fprev, x, xprev;
+    int      iter_i;
     gmx_bool bIterationActive;
-    real allrelerr[MAXITERCONST+2];
-    int num_close; /* number of "close" violations, caused by limited precision. */
+    real     allrelerr[MAXITERCONST+2];
+    int      num_close; /* number of "close" violations, caused by limited precision. */
 } gmx_iterate_t;
 
 GMX_LIBMD_EXPORT
-void gmx_iterate_init(gmx_iterate_t *iterate,gmx_bool bIterate);
+void gmx_iterate_init(gmx_iterate_t *iterate, gmx_bool bIterate);
 
 GMX_LIBMD_EXPORT
-gmx_bool done_iterating(const t_commrec *cr,FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
+gmx_bool done_iterating(const t_commrec *cr, FILE *fplog, int nsteps, gmx_iterate_t *iterate, gmx_bool bFirstIterate, real fom, real *newf);
 
 #ifdef __cplusplus
 }

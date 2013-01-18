@@ -76,27 +76,27 @@ int tcouple_min_integration_steps(int etc)
 
     switch (etc)
     {
-    case etcNO:
-        n = 0;
-        break;
-    case etcBERENDSEN:
-    case etcYES:
-        n = nstmin_berendsen_tcouple;
-        break;
-    case etcVRESCALE:
-        /* V-rescale supports instantaneous rescaling */
-        n = 0;
-        break;
-    case etcNOSEHOOVER:
-        n = nstmin_harmonic;
-        break;
-    case etcANDERSEN:
-    case etcANDERSENMASSIVE:
-        n = 1;
-        break;
-    default:
-        gmx_incons("Unknown etc value");
-        n = 0;
+        case etcNO:
+            n = 0;
+            break;
+        case etcBERENDSEN:
+        case etcYES:
+            n = nstmin_berendsen_tcouple;
+            break;
+        case etcVRESCALE:
+            /* V-rescale supports instantaneous rescaling */
+            n = 0;
+            break;
+        case etcNOSEHOOVER:
+            n = nstmin_harmonic;
+            break;
+        case etcANDERSEN:
+        case etcANDERSENMASSIVE:
+            n = 1;
+            break;
+        default:
+            gmx_incons("Unknown etc value");
+            n = 0;
     }
 
     return n;
@@ -104,7 +104,7 @@ int tcouple_min_integration_steps(int etc)
 
 int ir_optimal_nsttcouple(const t_inputrec *ir)
 {
-    int  nmin,nwanted,n;
+    int  nmin, nwanted, n;
     real tau_min;
     int  g;
 
@@ -115,11 +115,11 @@ int ir_optimal_nsttcouple(const t_inputrec *ir)
     tau_min = 1e20;
     if (ir->etc != etcNO)
     {
-        for(g=0; g<ir->opts.ngtc; g++)
+        for (g = 0; g < ir->opts.ngtc; g++)
         {
             if (ir->opts.tau_t[g] > 0)
             {
-                tau_min = min(tau_min,ir->opts.tau_t[g]);
+                tau_min = min(tau_min, ir->opts.tau_t[g]);
             }
         }
     }
@@ -150,20 +150,20 @@ int pcouple_min_integration_steps(int epc)
 
     switch (epc)
     {
-    case epcNO:
-        n = 0;
-        break;
-    case etcBERENDSEN:
-    case epcISOTROPIC:
-        n = nstmin_berendsen_pcouple;
-        break;
-    case epcPARRINELLORAHMAN:
-    case epcMTTK:
-        n = nstmin_harmonic;
-        break;
-    default:
-        gmx_incons("Unknown epc value");
-        n = 0;
+        case epcNO:
+            n = 0;
+            break;
+        case etcBERENDSEN:
+        case epcISOTROPIC:
+            n = nstmin_berendsen_pcouple;
+            break;
+        case epcPARRINELLORAHMAN:
+        case epcMTTK:
+            n = nstmin_harmonic;
+            break;
+        default:
+            gmx_incons("Unknown epc value");
+            n = 0;
     }
 
     return n;
@@ -171,7 +171,7 @@ int pcouple_min_integration_steps(int epc)
 
 int ir_optimal_nstpcouple(const t_inputrec *ir)
 {
-    int  nmin,nwanted,n;
+    int  nmin, nwanted, n;
 
     nmin = pcouple_min_integration_steps(ir->epc);
 

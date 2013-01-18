@@ -71,27 +71,27 @@ typedef enum
 typedef struct gmx_ana_selection_t
 {
     /** Name of the selection. */
-    char                   *name;
+    char                       *name;
     /** The actual selection string. */
-    char                   *selstr;
+    char                       *selstr;
     /** Selected positions. */
-    gmx_ana_pos_t           p;
+    gmx_ana_pos_t               p;
     /** Masses associated with the positions. */
-    real                   *m;
+    real                       *m;
     /** Charges associated with the positions. */
-    real                   *q;
+    real                       *q;
     /** Pointer to the index group that holds the selected atoms. */
-    struct gmx_ana_index_t *g;
+    struct gmx_ana_index_t     *g;
     /** TRUE if the value can change as a function of time. */
     gmx_bool                    bDynamic;
     /** Type of the covered fraction. */
-    e_coverfrac_t           cfractype;
+    e_coverfrac_t               cfractype;
     /** TRUE if the covered fraction depends on the frame. */
     gmx_bool                    bCFracDyn;
     /** Covered fraction of the selection for the current frame. */
-    real                    cfrac;
+    real                        cfrac;
     /** The average covered fraction (over the trajectory). */
-    real                    avecfrac;
+    real                        avecfrac;
 
     /*! \brief
      * Pointer to the root of the selection element tree (internal use only).
@@ -122,7 +122,7 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
 
 /** Creates a new empty selection collection. */
 int
-gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
+gmx_ana_selcollection_create(gmx_ana_selcollection_t      **sc,
                              struct gmx_ana_poscalc_coll_t *pcc);
 /** Frees the memory allocated for a selection collection. */
 void
@@ -137,11 +137,11 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
 /** Request evaluation of velocities for selections. */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut);
+                                    gmx_bool                 bVelOut);
 /** Request evaluation of forces for selections. */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut);
+                                      gmx_bool                 bForceOut);
 /** Sets the topology for a selection collection. */
 int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
@@ -160,7 +160,7 @@ void
 gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues);
 /** Prints the selection strings into an XVGR file as comments. */
 void
-xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
+xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc,
                    const output_env_t oenv);
 
 /* In parsetree.c */
@@ -172,7 +172,7 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
 /** Parses selection(s) from a file. */
 int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
-                                  gmx_ana_indexgrps_t *grps);
+                                 gmx_ana_indexgrps_t *grps);
 /** Parses selection(s) from a string. */
 int
 gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,

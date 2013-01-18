@@ -48,40 +48,39 @@ extern "C" {
  */
 GMX_LIBMD_EXPORT
 gmx_shellfc_t init_shell_flexcon(FILE *log,
-					gmx_mtop_t *mtop,int nflexcon,
-					rvec *x);
+                                 gmx_mtop_t *mtop, int nflexcon,
+                                 rvec *x);
 
 /* Get the local shell with domain decomposition */
 GMX_LIBMD_EXPORT
-void make_local_shells(t_commrec *cr,t_mdatoms *md,
-			      gmx_shellfc_t shfc);
+void make_local_shells(t_commrec *cr, t_mdatoms *md,
+                       gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
 GMX_LIBMD_EXPORT
-int relax_shell_flexcon(FILE *log,t_commrec *cr,gmx_bool bVerbose,
-			       gmx_large_int_t mdstep,t_inputrec *inputrec,
-			       gmx_bool bDoNS,int force_flags,
-			       gmx_bool bStopCM,
-			       gmx_localtop_t *top,
-			       gmx_mtop_t *mtop,
-			       gmx_constr_t constr,
-			       gmx_enerdata_t *enerd,t_fcdata *fcd,
-			       t_state *state,rvec f[],
-			       tensor force_vir,
-			       t_mdatoms *md,
-			       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-			       t_graph *graph,
-			       gmx_groups_t *groups,
-			       gmx_shellfc_t shfc,
-			       t_forcerec *fr,
-			       gmx_bool bBornRadii,
-			       double t,rvec mu_tot,
-			       int natoms,gmx_bool *bConverged,
-			       gmx_vsite_t *vsite,
-			       FILE *fp_field);
+int relax_shell_flexcon(FILE *log, t_commrec *cr, gmx_bool bVerbose,
+                        gmx_large_int_t mdstep, t_inputrec *inputrec,
+                        gmx_bool bDoNS, int force_flags,
+                        gmx_bool bStopCM,
+                        gmx_localtop_t *top,
+                        gmx_mtop_t *mtop,
+                        gmx_constr_t constr,
+                        gmx_enerdata_t *enerd, t_fcdata *fcd,
+                        t_state *state, rvec f[],
+                        tensor force_vir,
+                        t_mdatoms *md,
+                        t_nrnb *nrnb, gmx_wallcycle_t wcycle,
+                        t_graph *graph,
+                        gmx_groups_t *groups,
+                        gmx_shellfc_t shfc,
+                        t_forcerec *fr,
+                        gmx_bool bBornRadii,
+                        double t, rvec mu_tot,
+                        int natoms, gmx_bool *bConverged,
+                        gmx_vsite_t *vsite,
+                        FILE *fp_field);
 
 
 #ifdef __cplusplus
 }
 #endif
-
