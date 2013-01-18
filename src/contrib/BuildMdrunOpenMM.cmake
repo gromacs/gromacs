@@ -39,14 +39,15 @@ link_directories(${OpenMM_LIBRARY_DIR})
 # if the same OpenMM installation is used for running and building 
 add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
 file(TO_CMAKE_PATH ${OpenMM_PLUGIN_DIR} _path)
-add_library(openmm_api_wrapper STATIC openmm_wrapper.cpp)
+add_library(openmm_api_wrapper STATIC ${CMAKE_SOURCE_DIR}/src/contrib/openmm_wrapper.cpp)
 target_link_libraries(openmm_api_wrapper ${OpenMM_LIBRARIES})
-list(APPEND GMX_EXTRA_LIBRARIES openmm_api_wrapper ${OpenMM_LIBRARIES})   
 
-list(REMOVE_ITEM MDRUN_SOURCES mdrun.c)
+list(REMOVE_ITEM MDRUN_SOURCES mdrun.c runner.c)
 list(APPEND MDRUN_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/contrib/md_openmm.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/contrib/mdrun_openmm.c)
+    ${CMAKE_SOURCE_DIR}/src/contrib/md_openmm.c
+    ${CMAKE_SOURCE_DIR}/src/contrib/mdrun_openmm.c
+    ${CMAKE_SOURCE_DIR}/src/contrib/runner_openmm.c
+    )
 
 # this is to circumvent the following MSVC error: 
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
