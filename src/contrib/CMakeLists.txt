@@ -99,7 +99,7 @@ if(GMX_OPENMM)
     if(CMAKE_BUILD_TYPE STREQUAL "DEBUG")    
         set(CUDA_VERBOSE_BUILD ON)
     endif()
-    list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/src/contrib)
+    list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/src/contrib)
     find_package(OpenMM) 
 
     # mark as advanced the unused variables
