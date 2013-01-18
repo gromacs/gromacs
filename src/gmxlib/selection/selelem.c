@@ -59,7 +59,7 @@
  * \returns   Pointer to a string that corresponds to \p sel->type.
  *
  * The return value points to a string constant and should not be \p free'd.
- * 
+ *
  * The function returns NULL if \p sel->type is not one of the valid values.
  */
 const char *
@@ -392,7 +392,7 @@ _gmx_selelem_free_exprdata(t_selelem *sel)
     if (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
     {
         _gmx_selelem_free_method(sel->u.expr.method, sel->u.expr.mdata);
-        sel->u.expr.mdata = NULL;
+        sel->u.expr.mdata  = NULL;
         sel->u.expr.method = NULL;
         /* Free position data */
         if (sel->u.expr.pos)
@@ -467,7 +467,7 @@ _gmx_selelem_free_chain(t_selelem *first)
     child = first;
     while (child)
     {
-        prev = child;
+        prev  = child;
         child = child->next;
         _gmx_selelem_free(prev);
     }
@@ -483,7 +483,7 @@ _gmx_selelem_free_chain(t_selelem *first)
 void
 _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, gmx_bool bValues, int level)
 {
-    t_selelem *child;
+    t_selelem   *child;
     int          i;
 
     fprintf(fp, "%*c %s %s", level*2+1, '*',
@@ -535,7 +535,9 @@ _gmx_selelem_print_tree(FILE *fp, t_selelem *sel, gmx_bool bValues, int level)
         {
             gmx_ana_index_t *g = sel->v.u.g;
             if (!g || g->isize == 0)
+            {
                 g = &sel->u.cgrp;
+            }
             fprintf(fp, " (%d atoms)", g->isize);
         }
     }

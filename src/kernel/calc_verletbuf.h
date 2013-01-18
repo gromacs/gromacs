@@ -53,8 +53,8 @@ typedef struct
  * buffer size estimated with this setup will be conservative.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-void verletbuf_get_list_setup(gmx_bool bGPU,
-			      verletbuf_list_setup_t *list_setup);
+void verletbuf_get_list_setup(gmx_bool                bGPU,
+                              verletbuf_list_setup_t *list_setup);
 
 
 /* Calculate the non-bonded pair-list buffer size for the Verlet list
@@ -66,10 +66,10 @@ void verletbuf_get_list_setup(gmx_bool bGPU,
  * Returns the pair-list cut-off.
  */
 GMX_LIBGMXPREPROCESS_EXPORT
-void calc_verlet_buffer_size(const gmx_mtop_t *mtop,real boxvol,
-			     const t_inputrec *ir,real drift_target,
-			     const verletbuf_list_setup_t *list_setup,
-			     int *n_nonlin_vsite,
-			     real *rlist);
+void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
+                             const t_inputrec *ir, real drift_target,
+                             const verletbuf_list_setup_t *list_setup,
+                             int *n_nonlin_vsite,
+                             real *rlist);
 
-#endif	/* _calc_verletbuf_h */
+#endif  /* _calc_verletbuf_h */

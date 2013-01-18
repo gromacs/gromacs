@@ -43,15 +43,12 @@
 
 
 /* This is just a wrapper binary.
-* The code that used to be in g_angle.c is now in gmx_angle.c,
-* where the old main function is called gmx_angle().
-*/
+ * The code that used to be in g_angle.c is now in gmx_angle.c,
+ * where the old main function is called gmx_angle().
+ */
 int
 main(int argc, char *argv[])
 {
-  gmx_g_angle(argc,argv);
-  return 0;
+    gmx_g_angle(argc, argv);
+    return 0;
 }
-
-
-  
