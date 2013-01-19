@@ -1,8 +1,8 @@
-.TH g_rotacf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_rotacf 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_rotacf - calculates the rotational correlation function for molecules
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_rotacf\fP
 .BI "\-f" " traj.xtc "
@@ -28,14 +28,14 @@ g_rotacf - calculates the rotational correlation function for molecules
 .BI "\-endfit" " real "
 .SH DESCRIPTION
 \&\fB g_rotacf\fR calculates the rotational correlation function
-\&for molecules. Three atoms (i,j,k) must be given in the index
+\&for molecules. Atom triplets (i,j,k) must be given in the index
 \&file, defining two vectors ij and jk. The rotational ACF
 \&is calculated as the autocorrelation function of the vector
 \&n = ij x jk, i.e. the cross product of the two vectors.
 \&Since three atoms span a plane, the order of the three atoms
-\&does not matter. Optionally, controlled by the \fB \-d\fR switch, you can
+\&does not matter. Optionally, by invoking the \fB \-d\fR switch, you can
 \&calculate the rotational correlation function for linear molecules
-\&by specifying two atoms (i,j) in the index file.
+\&by specifying atom pairs (i,j) in the index file.
 \&
 
 
@@ -111,7 +111,7 @@ g_rotacf - calculates the rotational correlation function for molecules
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

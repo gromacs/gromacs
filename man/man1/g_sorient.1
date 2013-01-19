@@ -1,8 +1,8 @@
-.TH g_sorient 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_sorient 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_sorient - analyzes solvent orientation around solutes
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_sorient\fP
 .BI "\-f" " traj.xtc "
@@ -34,10 +34,10 @@ g_sorient - analyzes solvent orientation around solutes
 \&reference positions to the first atom of each solvent molecule:
 
 
-\&theta1: the angle with the vector from the first atom of the solvent
+\&theta_1: the angle with the vector from the first atom of the solvent
 \&molecule to the midpoint between atoms 2 and 3.
 
-\&theta2: the angle with the normal of the solvent plane, defined by the
+\&theta_2: the angle with the normal of the solvent plane, defined by the
 \&same three atoms, or, when the option \fB \-v23\fR is set, 
 \&the angle with the vector between atoms 2 and 3.
 
@@ -49,18 +49,18 @@ g_sorient - analyzes solvent orientation around solutes
 \&considered for \fB \-o\fR and \fB \-no\fR each frame.
 
 
-\&\fB \-o\fR: distribtion of cos(theta1) for rmin=r=rmax.
+\&\fB \-o\fR: distribtion of cos(theta_1) for rmin=r=rmax.
 
 
-\&\fB \-no\fR: distribution of cos(theta2) for rmin=r=rmax.
+\&\fB \-no\fR: distribution of cos(theta_2) for rmin=r=rmax.
 
 
-\&\fB \-ro\fR: cos(theta1) and 3cos2(theta2)\-1 as a function of the
+\&\fB \-ro\fR: cos(theta_1) and 3cos(2theta_2)\-1 as a function of the
 \&distance.
 
 
 \&\fB \-co\fR: the sum over all solvent molecules within distance r
-\&of cos(theta1) and 3cos2(theta2)\-1 as a function of r.
+\&of cos(theta_1) and 3cos(2(theta_2)\-1) as a function of r.
 
 
 \&\fB \-rc\fR: the distribution of the solvent molecules as a function of r

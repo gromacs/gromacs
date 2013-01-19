@@ -1,8 +1,8 @@
-.TH g_energy 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_energy 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_energy - writes energies to xvg files and displays averages
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_energy\fP
 .BI "\-f" " ener.edr "
@@ -39,6 +39,8 @@ g_energy - writes energies to xvg files and displays averages
 .BI "\-skip" " int "
 .BI "\-[no]aver" ""
 .BI "\-nmol" " int "
+.BI "\-[no]fluct_props" ""
+.BI "\-[no]driftcorr" ""
 .BI "\-[no]fluc" ""
 .BI "\-[no]orinst" ""
 .BI "\-[no]ovec" ""
@@ -74,7 +76,32 @@ g_energy - writes energies to xvg files and displays averages
 \&The term fluctuation gives the RMSD around the least\-squares fit.
 
 
-\&When the \fB \-viol\fR option is set, the time averaged
+\&Some fluctuation\-dependent properties can be calculated provided
+\&the correct energy terms are selected, and that the command line option
+\&\fB \-fluct_props\fR is given. The following properties
+\&will be computed:
+
+\&Property                        Energy terms needed
+
+\&\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+
+\&Heat capacity C_p (NPT sims):    Enthalpy, Temp     
+
+\&Heat capacity C_v (NVT sims):    Etot, Temp         
+
+\&Thermal expansion coeff. (NPT): Enthalpy, Vol, Temp
+
+\&Isothermal compressibility:     Vol, Temp          
+
+\&Adiabatic bulk modulus:         Vol, Temp          
+
+\&\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-
+
+\&You always need to set the number of molecules \fB \-nmol\fR.
+\&The C_p/C_v computations do \fB not\fR include any corrections
+\&for quantum effects. Use the \fB g_dos\fR program if you need that (and you do).
+
+When the \fB \-viol\fR option is set, the time averaged
 \&violations are plotted and the running time\-averaged and
 \&instantaneous sum of violations are recalculated. Additionally
 \&running time\-averaged and instantaneous distances between
@@ -109,9 +136,9 @@ g_energy - writes energies to xvg files and displays averages
 \&With \fB \-fee\fR an estimate is calculated for the free\-energy
 \&difference with an ideal gas state: 
 
-\&  Delta A = A(N,V,T) \- A_idgas(N,V,T) = kT ln  e(Upot/kT) 
+\&  Delta A = A(N,V,T) \- A_idealgas(N,V,T) = kT ln(exp(U_pot/kT))
 
-\&  Delta G = G(N,p,T) \- G_idgas(N,p,T) = kT ln  e(Upot/kT) 
+\&  Delta G = G(N,p,T) \- G_idealgas(N,p,T) = kT ln(exp(U_pot/kT))
 
 \&where k is Boltzmann's constant, T is set by \fB \-fetemp\fR and
 \&the average is over the ensemble (or time in a trajectory).
@@ -120,15 +147,16 @@ g_energy - writes energies to xvg files and displays averages
 \&and using the potential energy. This also allows for an entropy
 \&estimate using:
 
-\&  Delta S(N,V,T) = S(N,V,T) \- S_idgas(N,V,T) = (Upot \- Delta A)/T
+\&  Delta S(N,V,T) = S(N,V,T) \- S_idealgas(N,V,T) = (U_pot \- Delta A)/T
 
-\&  Delta S(N,p,T) = S(N,p,T) \- S_idgas(N,p,T) = (Upot + pV \- Delta G)/T
+\&  Delta S(N,p,T) = S(N,p,T) \- S_idealgas(N,p,T) = (U_pot + pV \- Delta G)/T
 \&
 
 
 \&When a second energy file is specified (\fB \-f2\fR), a free energy
-\&difference is calculated dF = \-kT ln  e  \-(EB\-EA)/kT A ,
-\&where EA and EB are the energies from the first and second energy
+\&difference is calculated 
+ dF = \-kT ln(exp(\-(E_B\-E_A)/kT)_A) ,
+\&where E_A and E_B are the energies from the first and second energy
 \&files, and the average is over the ensemble A. The running average
 \&of the free energy difference is printed to a file specified by \fB \-ravg\fR.
 \&\fB Note\fR that the energies must both be calculated from the same trajectory.
@@ -252,6 +280,12 @@ g_energy - writes energies to xvg files and displays averages
 .BI "\-nmol"  " int" " 1" 
  Number of molecules in your sample: the energies are divided by this number
 
+.BI "\-[no]fluct_props"  "no    "
+ Compute properties based on energy fluctuations, like heat capacity
+
+.BI "\-[no]driftcorr"  "no    "
+ Useful only for calculations of fluctuation properties. The drift in the observables will be subtracted before computing the fluctuation properties.
+
 .BI "\-[no]fluc"  "no    "
  Calculate autocorrelation of energy fluctuations rather than energy itself
 
@@ -274,7 +308,7 @@ g_energy - writes energies to xvg files and displays averages
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

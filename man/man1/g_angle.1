@@ -1,8 +1,8 @@
-.TH g_angle 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_angle 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_angle - calculates distributions and correlations for angles and dihedrals
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_angle\fP
 .BI "\-f" " traj.xtc "
@@ -59,6 +59,12 @@ g_angle - calculates distributions and correlations for angles and dihedrals
 \&With option \fB \-or\fR a trajectory file is dumped containing cos and
 \&sin of selected dihedral angles which subsequently can be used as
 \&input for a PCA analysis using \fB g_covar\fR.
+
+
+\&Option \fB \-ot\fR plots when transitions occur between
+\&dihedral rotamers of multiplicity 3 and \fB \-oh\fR
+\&records a histogram of the times between such transitions,
+\&assuming the input trajectory frames are equally spaced in time.
 .SH FILES
 .BI "\-f" " traj.xtc" 
 .B Input
@@ -152,7 +158,7 @@ g_angle - calculates distributions and correlations for angles and dihedrals
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

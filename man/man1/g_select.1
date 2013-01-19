@@ -1,8 +1,8 @@
-.TH g_select 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_select 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_select - selects groups of atoms based on flexible textual selections
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_select\fP
 .BI "\-f" " traj.xtc "
@@ -37,6 +37,7 @@ g_select - selects groups of atoms based on flexible textual selections
 \&analysis programs to calculate more complex things.
 \&Any combination of the output options is possible, but note
 \&that \fB \-om\fR only operates on the first selection.
+\&\fB \-os\fR is the default output option if none is selected.
 
 
 \&With \fB \-os\fR, calculates the number of positions in each
@@ -152,7 +153,7 @@ g_select - selects groups of atoms based on flexible textual selections
  Use periodic boundary conditions for distance calculation
 
 .BI "\-select"  " string" " " 
- Selection string (use 'help' for help)
+ Selection string (use 'help' for help). Note that the whole selection string will need to be quoted so that your shell will pass it in as a string. Example: \fB g_select \-select '"Nearby water" resname SOL and within 0.25 of group Protein'\fR
 
 .BI "\-selrpos"  " enum" " atom" 
  Selection reference position: \fB atom\fR, \fB res_com\fR, \fB res_cog\fR, \fB mol_com\fR, \fB mol_cog\fR, \fB whole_res_com\fR, \fB whole_res_cog\fR, \fB whole_mol_com\fR, \fB whole_mol_cog\fR, \fB part_res_com\fR, \fB part_res_cog\fR, \fB part_mol_com\fR, \fB part_mol_cog\fR, \fB dyn_res_com\fR, \fB dyn_res_cog\fR, \fB dyn_mol_com\fR or \fB dyn_mol_cog\fR

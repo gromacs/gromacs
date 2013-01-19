@@ -1,8 +1,8 @@
-.TH g_tcaf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_tcaf 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_tcaf - calculates viscosities of liquids
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_tcaf\fP
 .BI "\-f" " traj.trr "
@@ -45,19 +45,19 @@ g_tcaf - calculates viscosities of liquids
 \&not independent). For each k\-vector the sine and cosine are used, in
 \&combination with the velocity in 2 perpendicular directions. This gives
 \&a total of 16*2*2=64 transverse currents. One autocorrelation is
-\&calculated fitted for each k\-vector, which gives 16 TCAF's. Each of
-\&these TCAF's is fitted to f(t) = exp(\-v)(cosh(Wv) + 1/W sinh(Wv)),
+\&calculated fitted for each k\-vector, which gives 16 TCAFs. Each of
+\&these TCAFs is fitted to f(t) = exp(\-v)(cosh(Wv) + 1/W sinh(Wv)),
 \&v = \-t/(2 tau), W = sqrt(1 \- 4 tau eta/rho k2), which gives 16 values of tau
-\&and eta. The fit weights decay with time as exp(\-t/wt), and the TCAF and
-\&fit are calculated up to time 5*wt.
+\&and eta. The fit weights decay exponentially with time constant w (given with \fB \-wt\fR) as exp(\-t/w), and the TCAF and
+\&fit are calculated up to time 5*w.
 \&The eta values should be fitted to 1 \- a eta(k) k2, from which
 \&one can estimate the shear viscosity at k=0.
 
 
 \&When the box is cubic, one can use the option \fB \-oc\fR, which
-\&averages the TCAF's over all k\-vectors with the same length.
-\&This results in more accurate tcaf's.
-\&Both the cubic TCAF's and fits are written to \fB \-oc\fR
+\&averages the TCAFs over all k\-vectors with the same length.
+\&This results in more accurate TCAFs.
+\&Both the cubic TCAFs and fits are written to \fB \-oc\fR
 \&The cubic eta estimates are also written to \fB \-ov\fR.
 
 
@@ -67,7 +67,7 @@ g_tcaf - calculates viscosities of liquids
 
 
 \&The k\-dependent viscosities in the \fB \-ov\fR file should be
-\&fitted to eta(k) = eta0 (1 \- a k2) to obtain the viscosity at
+\&fitted to eta(k) = eta_0 (1 \- a k2) to obtain the viscosity at
 \&infinite wavelength.
 
 
@@ -137,7 +137,7 @@ g_tcaf - calculates viscosities of liquids
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
 
 .BI "\-[no]mol"  "no    "
- Calculate tcaf of molecules
+ Calculate TCAF of molecules
 
 .BI "\-[no]k34"  "no    "
  Also use k=(3,0,0) and k=(4,0,0)
@@ -158,7 +158,7 @@ g_tcaf - calculates viscosities of liquids
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

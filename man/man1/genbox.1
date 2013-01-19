@@ -1,8 +1,8 @@
-.TH genbox 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH genbox 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 genbox - solvates a system
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3genbox\fP
 .BI "\-cp" " protein.gro "
@@ -132,28 +132,28 @@ genbox - solvates a system
  Set the nicelevel
 
 .BI "\-box"  " vector" " 0 0 0" 
- box size
+ Box size
 
 .BI "\-nmol"  " int" " 0" 
- no of extra molecules to insert
+ Number of extra molecules to insert
 
 .BI "\-try"  " int" " 10" 
- try inserting \fB \-nmol\fR times \fB \-try\fR times
+ Try inserting \fB \-nmol\fR times \fB \-try\fR times
 
 .BI "\-seed"  " int" " 1997" 
- random generator seed
+ Random generator seed
 
 .BI "\-vdwd"  " real" " 0.105 " 
- default vdwaals distance
+ Default van der Waals distance
 
 .BI "\-shell"  " real" " 0     " 
- thickness of optional water layer around solute
+ Thickness of optional water layer around solute
 
 .BI "\-maxsol"  " int" " 0" 
- maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored
+ Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored
 
 .BI "\-[no]vel"  "no    "
- keep velocities from input solute and solvent
+ Keep velocities from input solute and solvent
 
 .SH KNOWN PROBLEMS
 \- Molecules must be whole in the initial configurations.

@@ -1,8 +1,8 @@
-.TH g_helix 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_helix 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_helix - calculates basic properties of alpha helices
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_helix\fP
 .BI "\-s" " topol.tpr "
@@ -37,7 +37,7 @@ g_helix - calculates basic properties of alpha helices
 
 \&\fB 1.\fR Helix radius (file \fB radius.xvg\fR). This is merely the
 \&RMS deviation in two dimensions for all Calpha atoms.
-\&it is calced as sqrt((SUM i(x2(i)+y2(i)))/N), where N is the number
+\&it is calculated as sqrt((sum_i (x2(i)+y2(i)))/N) where N is the number
 \&of backbone atoms. For an ideal helix the radius is 0.23 nm
 
 \&\fB 2.\fR Twist (file \fB twist.xvg\fR). The average helical angle per

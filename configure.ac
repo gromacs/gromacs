@@ -9,7 +9,7 @@ AC_PREREQ(2.50)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-AC_INIT(gromacs, 4.5.5-dev, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.6-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST

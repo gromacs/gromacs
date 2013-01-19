@@ -1,8 +1,8 @@
-.TH g_h2order 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_h2order 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_h2order - computes the orientation of water molecules
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_h2order\fP
 .BI "\-f" " traj.xtc "
@@ -79,7 +79,7 @@ g_h2order - computes the orientation of water molecules
  Take the normal on the membrane in direction X, Y or Z.
 
 .BI "\-sl"  " int" " 0" 
- Calculate order parameter as function of boxlength, dividing the box in nr slices.
+ Calculate order parameter as function of boxlength, dividing the box in this number of slices.
 
 .SH KNOWN PROBLEMS
 \- The program assigns whole water molecules to a slice, based on the first atom of three in the index file group. It assumes an order O,H,H. Name is not important, but the order is. If this demand is not met, assigning molecules to slices is different.

@@ -1,8 +1,8 @@
-.TH g_velacc 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_velacc 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_velacc - calculates velocity autocorrelation functions
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_velacc\fP
 .BI "\-f" " traj.trr "
@@ -35,6 +35,12 @@ g_velacc - calculates velocity autocorrelation functions
 \&With option \fB \-mol\fR the velocity autocorrelation function of
 \&molecules is calculated. In this case the index group should consist
 \&of molecule numbers instead of atom numbers.
+
+
+\&Be sure that your trajectory contains frames with velocity information
+\&(i.e. \fB nstvout\fR was set in your original \fB .mdp\fR file),
+\&and that the time interval between data collection points is
+\&much shorter than the time scale of the autocorrelation.
 .SH FILES
 .BI "\-f" " traj.trr" 
 .B Input
@@ -96,7 +102,7 @@ g_velacc - calculates velocity autocorrelation functions
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

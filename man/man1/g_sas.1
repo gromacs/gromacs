@@ -1,8 +1,8 @@
-.TH g_sas 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_sas 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_sas - computes solvent accessible surface area
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_sas\fP
 .BI "\-f" " traj.xtc "
@@ -31,10 +31,12 @@ g_sas - computes solvent accessible surface area
 .BI "\-[no]prot" ""
 .BI "\-dgs" " real "
 .SH DESCRIPTION
-\&\fB g_sas\fR computes hydrophobic, hydrophilic and total solvent accessible surface area.
+\&\fB g_sas\fR computes hydrophobic, hydrophilic and total solvent
+\&accessible surface area. See Eisenhaber F, Lijnzaad P, Argos P,
+\&Sander C, & Scharf M (1995) J. Comput. Chem. 16, 273\-284.
 \&As a side effect, the Connolly surface can be generated as well in
-\&a \fB .pdb\fR file where the nodes are represented as atoms and the vertices
-\&connecting the nearest nodes as CONECT records.
+\&a \fB .pdb\fR file where the nodes are represented as atoms and the
+\&vertice connecting the nearest nodes as CONECT records.
 \&The program will ask for a group for the surface calculation
 \&and a group for the output. The calculation group should always
 \&consists of all the non\-solvent atoms in the system.
@@ -50,8 +52,8 @@ g_sas - computes solvent accessible surface area
 \&this can be turned off using the \fB \-nopbc\fR option.
 
 
-\&With the \fB \-tv\fR option the total volume and density of the molecule can be
-\&computed.
+\&With the \fB \-tv\fR option the total volume and density of the
+\&molecule can be computed.
 \&Please consider whether the normal probe radius is appropriate
 \&in this case or whether you would rather use e.g. 0. It is good
 \&to keep in mind that the results for volume and density are very

@@ -1,8 +1,8 @@
-.TH g_rmsdist 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_rmsdist 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_rmsdist - calculates atom pair distances averaged with power \-2, \-3 or \-6
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_rmsdist\fP
 .BI "\-f" " traj.xtc "
@@ -126,13 +126,13 @@ g_rmsdist - calculates atom pair distances averaged with power \-2, \-3 or \-6
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
 
 .BI "\-nlevels"  " int" " 40" 
- Discretize rms in  levels
+ Discretize RMS in this number of levels
 
 .BI "\-max"  " real" " \-1    " 
  Maximum level in matrices
 
 .BI "\-[no]sumh"  "yes   "
- average distance over equivalent hydrogens
+ Average distance over equivalent hydrogens
 
 .BI "\-[no]pbc"  "yes   "
  Use periodic boundary conditions when computing distances

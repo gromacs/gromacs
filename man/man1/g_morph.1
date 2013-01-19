@@ -1,8 +1,8 @@
-.TH g_morph 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_morph 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_morph - linear interpolation of conformations 
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_morph\fP
 .BI "\-f1" " conf1.gro "
@@ -28,11 +28,11 @@ g_morph - linear interpolation of conformations
 \&interpolating: 0 corresponds to input structure 1 while
 \&1 corresponds to input structure 2.
 \&If you specify \fB \-first\fR  0 or \fB \-last\fR  1 extrapolation will be
-\&on the path from input structure x1 to x2. In general, the coordinates
-\&of the intermediate x(i) out of N total intermidates correspond to:
+\&on the path from input structure x_1 to x_2. In general, the coordinates
+\&of the intermediate x(i) out of N total intermediates correspond to:
 
 
-\&x(i) = x1 + (first+(i/(N\-1))*(last\-first))*(x2\-x1)
+\&x(i) = x_1 + (first+(i/(N\-1))*(last\-first))*(x_2\-x_1)
 
 
 \&Finally the RMSD with respect to both input structures can be computed
@@ -79,10 +79,10 @@ g_morph - linear interpolation of conformations
  Number of intermediates
 
 .BI "\-first"  " real" " 0     " 
- Corresponds to first generated structure (0 is input x0, see above)
+ Corresponds to first generated structure (0 is input x_1, see above)
 
 .BI "\-last"  " real" " 1     " 
- Corresponds to last generated structure (1 is input x1, see above)
+ Corresponds to last generated structure (1 is input x_2, see above)
 
 .BI "\-[no]fit"  "yes   "
  Do a least squares fit of the second to the first structure before interpolating

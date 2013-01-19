@@ -1,8 +1,8 @@
-.TH g_gyrate 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_gyrate 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_gyrate - calculates the radius of gyration
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_gyrate\fP
 .BI "\-f" " traj.xtc "
@@ -102,7 +102,7 @@ g_gyrate - calculates the radius of gyration
  Calculate the moments of inertia (defined by the principal axes).
 
 .BI "\-nz"  " int" " 0" 
- Calculate the 2D radii of gyration of  slices along the z\-axis
+ Calculate the 2D radii of gyration of this number of slices along the z\-axis
 
 .BI "\-acflen"  " int" " \-1" 
  Length of the ACF, default is half the number of frames
@@ -117,7 +117,7 @@ g_gyrate - calculates the radius of gyration
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

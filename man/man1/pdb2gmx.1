@@ -1,8 +1,8 @@
-.TH pdb2gmx 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH pdb2gmx 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
-pdb2gmx - converts pdb files to topology and coordinate files
+pdb2gmx - converts coordinate files to topology and FF-compliant coordinate files
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3pdb2gmx\fP
 .BI "\-f" " eiwit.pdb "
@@ -15,6 +15,7 @@ pdb2gmx - converts pdb files to topology and coordinate files
 .BI "\-[no]version" ""
 .BI "\-nice" " int "
 .BI "\-chainsep" " enum "
+.BI "\-merge" " enum "
 .BI "\-ff" " string "
 .BI "\-water" " enum "
 .BI "\-[no]inter" ""
@@ -51,7 +52,7 @@ pdb2gmx - converts pdb files to topology and coordinate files
 
 \&\fB pdb2gmx\fR will search for force fields by looking for
 \&a \fB forcefield.itp\fR file in subdirectories \fB forcefield.ff\fR
-\&of the current working directory and of the Gromacs library directory
+\&of the current working directory and of the GROMACS library directory
 \&as inferred from the path of the binary or the \fB GMXLIB\fR environment
 \&variable.
 \&By default the forcefield selection is interactive,
@@ -64,7 +65,7 @@ pdb2gmx - converts pdb files to topology and coordinate files
 \&After choosing a force field, all files will be read only from
 \&the corresponding force field directory.
 \&If you want to modify or add a residue types, you can copy the force
-\&field directory from the Gromacs library directory to your current
+\&field directory from the GROMACS library directory to your current
 \&working directory. If you want to add new protein residue types,
 \&you will need to modify \fB residuetypes.dat\fR in the library directory
 \&or copy the whole library directory to a local directory and set
@@ -82,16 +83,28 @@ pdb2gmx - converts pdb files to topology and coordinate files
 \&The program has limited intelligence, it reads a number of database
 \&files, that allow it to make special bonds (Cys\-Cys, Heme\-His, etc.),
 \&if necessary this can be done manually. The program can prompt the
-\&user to select which kind of LYS, ASP, GLU, CYS or HIS residue she
-\&wants. For LYS the choice is between neutral (two protons on NZ) or
-\&protonated (three protons, default), for ASP and GLU unprotonated
-\&(default) or protonated, for HIS the proton can be either on ND1,
+\&user to select which kind of LYS, ASP, GLU, CYS or HIS residue is
+\&desired. For Lys the choice is between neutral (two protons on NZ) or
+\&protonated (three protons, default), for Asp and Glu unprotonated
+\&(default) or protonated, for His the proton can be either on ND1,
 \&on NE2 or on both. By default these selections are done automatically.
 \&For His, this is based on an optimal hydrogen bonding
 \&conformation. Hydrogen bonds are defined based on a simple geometric
 \&criterion, specified by the maximum hydrogen\-donor\-acceptor angle
 \&and donor\-acceptor distance, which are set by \fB \-angle\fR and
 \&\fB \-dist\fR respectively.
+
+
+\&The protonation state of N\- and C\-termini can be chosen interactively
+\&with the \fB \-ter\fR flag.  Default termini are ionized (NH3+ and COO\-),
+\&respectively.  Some force fields support zwitterionic forms for chains of
+\&one residue, but for polypeptides these options should NOT be selected.
+\&The AMBER force fields have unique forms for the terminal residues,
+\&and these are incompatible with the \fB \-ter\fR mechanism. You need
+\&to prefix your N\- or C\-terminal residue names with "N" or "C"
+\&respectively to use these forms, making sure you preserve the format
+\&of the coordinate file. Alternatively, use named terminating residues
+\&(e.g. ACE, NME).
 
 
 \&The separation of chains is not entirely trivial since the markup
@@ -101,10 +114,15 @@ pdb2gmx - converts pdb files to topology and coordinate files
 \&two protein chains or if you have a HEME group bound to a protein.
 \&In such cases multiple chains should be contained in a single
 \&\fB moleculetype\fR definition.
-\&To handle this, \fB pdb2gmx\fR has an option \fB \-chainsep\fR so you can
-\&choose whether a new chain should start when we find a TER record,
-\&when the chain id changes, combinations of either or both of these
-\&or fully interactively.
+\&To handle this, \fB pdb2gmx\fR uses two separate options.
+\&First, \fB \-chainsep\fR allows you to choose when a new chemical chain should
+\&start, and termini added when applicable. This can be done based on the
+\&existence of TER records, when the chain id changes, or combinations of either
+\&or both of these. You can also do the selection fully interactively.
+\&In addition, there is a \fB \-merge\fR option that controls how multiple chains
+\&are merged into one moleculetype, after adding all the chemical termini (or not).
+\&This can be turned off (no merging), all non\-water chains can be merged into a
+\&single molecule, or the selection can be done interactively.
 
 
 \&\fB pdb2gmx\fR will also check the occupancy field of the \fB .pdb\fR file.
@@ -182,7 +200,10 @@ pdb2gmx - converts pdb files to topology and coordinate files
  Set the nicelevel
 
 .BI "\-chainsep"  " enum" " id_or_ter" 
- Condition in PDB files when a new chain and molecule_type should be started: \fB id_or_ter\fR, \fB id_and_ter\fR, \fB ter\fR, \fB id\fR or \fB interactive\fR
+ Condition in PDB files when a new chain should be started (adding termini): \fB id_or_ter\fR, \fB id_and_ter\fR, \fB ter\fR, \fB id\fR or \fB interactive\fR
+
+.BI "\-merge"  " enum" " no" 
+ Merge multiple chains into a single [moleculetype]: \fB no\fR, \fB all\fR or \fB interactive\fR
 
 .BI "\-ff"  " string" " select" 
  Force field, interactive by default. Use \fB \-h\fR for information.
@@ -197,25 +218,25 @@ pdb2gmx - converts pdb files to topology and coordinate files
  Interactive SS bridge selection
 
 .BI "\-[no]ter"  "no    "
- Interactive termini selection, iso charged
+ Interactive termini selection, instead of charged (default)
 
 .BI "\-[no]lys"  "no    "
- Interactive lysine selection, iso charged
+ Interactive lysine selection, instead of charged
 
 .BI "\-[no]arg"  "no    "
- Interactive arginine selection, iso charged
+ Interactive arginine selection, instead of charged
 
 .BI "\-[no]asp"  "no    "
- Interactive aspartic Acid selection, iso charged
+ Interactive aspartic acid selection, instead of charged
 
 .BI "\-[no]glu"  "no    "
- Interactive glutamic Acid selection, iso charged
+ Interactive glutamic acid selection, instead of charged
 
 .BI "\-[no]gln"  "no    "
- Interactive glutamine selection, iso neutral
+ Interactive glutamine selection, instead of neutral
 
 .BI "\-[no]his"  "no    "
- Interactive histidine selection, iso checking H\-bonds
+ Interactive histidine selection, instead of checking H\-bonds
 
 .BI "\-angle"  " real" " 135   " 
  Minimum hydrogen\-donor\-acceptor angle for a H\-bond (degrees)

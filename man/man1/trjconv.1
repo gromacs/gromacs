@@ -1,8 +1,8 @@
-.TH trjconv 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH trjconv 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 trjconv - converts and manipulates trajectory files
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "\-f" " traj.xtc "
@@ -132,7 +132,8 @@ trjconv - converts and manipulates trajectory files
 \&Option \fB \-pbc\fR sets the type of periodic boundary condition
 \&treatment:
 
-\&\fB * mol\fR puts the center of mass of molecules in the box.
+\&\fB * mol\fR puts the center of mass of molecules in the box,
+\&and requires a run input file to be supplied with \fB \-s\fR.
 
 \&\fB * res\fR puts the center of mass of residues in the box.
 
@@ -167,8 +168,8 @@ trjconv - converts and manipulates trajectory files
 \&\fB rect\fR is the ordinary brick shape.
 \&\fB tric\fR is the triclinic unit cell.
 \&\fB compact\fR puts all atoms at the closest distance from the center
-\&of the box. This can be useful for visualizing e.g. truncated
-\&octahedra. The center for options \fB tric\fR and \fB compact\fR
+\&of the box. This can be useful for visualizing e.g. truncated octahedra
+\&or rhombic dodecahedra. The center for options \fB tric\fR and \fB compact\fR
 \&is \fB tric\fR (see below), unless the option \fB \-boxcenter\fR
 \&is set differently.
 
@@ -182,6 +183,12 @@ trjconv - converts and manipulates trajectory files
 \&\fB zero\fR: zero.
 \&Use option \fB \-pbc mol\fR in addition to \fB \-center\fR when you
 \&want all molecules in the box after the centering.
+
+
+\&It is not always possible to use combinations of \fB \-pbc\fR,
+\&\fB \-fit\fR, \fB \-ur\fR and \fB \-center\fR to do exactly what
+\&you want in one call to \fB trjconv\fR. Consider using multiple
+\&calls, and check out the GROMACS website for suggestions.
 
 
 \&With \fB \-dt\fR, it is possible to reduce the number of 

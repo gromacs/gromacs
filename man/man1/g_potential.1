@@ -1,8 +1,8 @@
-.TH g_potential 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_potential 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_potential - calculates the electrostatic potential across the box
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_potential\fP
 .BI "\-f" " traj.xtc "
@@ -90,16 +90,16 @@ g_potential - calculates the electrostatic potential across the box
  Take the normal on the membrane in direction X, Y or Z.
 
 .BI "\-sl"  " int" " 10" 
- Calculate potential as function of boxlength, dividing the box in nr slices.
+ Calculate potential as function of boxlength, dividing the box in this number of slices.
 
 .BI "\-cb"  " int" " 0" 
- Discard first nr slices of box for integration
+ Discard this number of  first slices of box for integration
 
 .BI "\-ce"  " int" " 0" 
- Discard last nr slices of box for integration
+ Discard this number of last slices of box for integration
 
 .BI "\-tz"  " real" " 0     " 
- Translate all coordinates distance in the direction of the box
+ Translate all coordinates by this distance in the direction of the box
 
 .BI "\-[no]spherical"  "no    "
  Calculate spherical thingie
