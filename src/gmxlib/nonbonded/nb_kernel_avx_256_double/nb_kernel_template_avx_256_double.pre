@@ -1,7 +1,7 @@
 /* ## */
 /* ## This file is part of the GROMACS molecular simulation package. */
 /* ## */
-/* ## Copyright (c) 2012, by the GROMACS development team, led by */
+/* ## Copyright (c) 2012,2013, by the GROMACS development team, led by */
 /* ## David van der Spoel, Berk Hess, Erik Lindahl, and including many */
 /* ## others, as listed in the AUTHORS file in the top-level source */
 /* ## directory and at http://www.gromacs.org. */
@@ -629,7 +629,7 @@ void
             fgb              = _mm256_mul_pd(gbqqfactor,_mm256_mul_pd(FF,gbscale));
             dvdatmp          = _mm256_mul_pd(minushalf,_mm256_add_pd(vgb,_mm256_mul_pd(fgb,r{I}{J})));
             /*                 #if ROUND == 'Epilogue' */
-            dvdatmp          = _mm256_andnot_ps(dummy_mask,dvdatmp);
+            dvdatmp          = _mm256_andnot_pd(dummy_mask,dvdatmp);
             /*                 #endif */
             dvdasum          = _mm256_add_pd(dvdasum,dvdatmp);
             /*                 #if ROUND == 'Loop' */
