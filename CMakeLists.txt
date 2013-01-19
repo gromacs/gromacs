@@ -9,7 +9,7 @@ LATEX_GET_OUTPUT_PATH(output_dir)
 # Some variables for manual version numbers. These get transferred
 # into the LaTeX.
 set(MANUAL_MAJOR_VERSION "4")
-set(MANUAL_VERSION "4.5.4")
+set(MANUAL_VERSION "4.5.6")
 
 # Some cache variables that the user needs to set
 set(
