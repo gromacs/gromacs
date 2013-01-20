@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_rdf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -18,34 +18,34 @@ The structure of liquids can be studied by either neutron or X-ray
 scattering. The most common way to describe liquid structure is by a
 radial distribution function. However, this is not easy to obtain from
 a scattering experiment.<p>
-g_rdf calculates radial distribution functions in different ways.
+<tt>g_rdf</tt> calculates radial distribution functions in different ways.
 The normal method is around a (set of) particle(s), the other methods
 are around the center of mass of a set of particles (<tt>-com</tt>)
 or to the closest particle in a set (<tt>-surf</tt>).
-With all methods rdf's can also be calculated around axes parallel
-to the z-axis with option <tt>-xy</tt>.
+With all methods, the RDF can also be calculated around axes parallel
+to the <it>z</it>-axis with option <tt>-xy</tt>.
 With option <tt>-surf</tt> normalization can not be used.<p>
-The option <tt>-rdf</tt> sets the type of rdf to be computed.
+The option <tt>-rdf</tt> sets the type of RDF to be computed.
 Default is for atoms or particles, but one can also select center
-of mass or geometry of molecules or residues. In all cases only
+of mass or geometry of molecules or residues. In all cases, only
 the atoms in the index groups are taken into account.
-For molecules and/or the center of mass option a run input file
+For molecules and/or the center of mass option, a run input file
 is required.
-Other weighting than COM or COG can currently only be achieved
+Weighting other than COM or COG can currently only be achieved
 by providing a run input file with different masses.
 Options <tt>-com</tt> and <tt>-surf</tt> also work in conjunction
 with <tt>-rdf</tt>.<p>
 If a run input file is supplied (<tt>-s</tt>) and <tt>-rdf</tt> is set
 to <tt>atom</tt>, exclusions defined
-in that file are taken into account when calculating the rdf.
+in that file are taken into account when calculating the RDF.
 The option <tt>-cut</tt> is meant as an alternative way to avoid
-intramolecular peaks in the rdf plot.
+intramolecular peaks in the RDF plot.
 It is however better to supply a run input file with a higher number of
-exclusions. For eg. benzene a topology with nrexcl set to 5
-would eliminate all intramolecular contributions to the rdf.
+exclusions. For e.g. benzene a topology, setting nrexcl to 5
+would eliminate all intramolecular contributions to the RDF.
 Note that all atoms in the selected groups are used, also the ones
 that don't have Lennard-Jones interactions.<p>
-Option <tt>-cn</tt> produces the cumulative number rdf,
+Option <tt>-cn</tt> produces the cumulative number RDF,
 i.e. the average number of particles within a distance r.<p>
 To bridge the gap between theory and experiment structure factors can
 be computed (option <tt>-sq</tt>). The algorithm uses FFT, the grid
@@ -67,21 +67,21 @@ spacing of which is determined by option <tt>-grid</tt>.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.002 </tt> </TD><TD> Binwidth (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> RDF with respect to the center of mass of first group </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> RDF with respect to the center of mass of first group </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-surf</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> RDF with respect to the surface of the first group: <tt>no</tt>, <tt>mol</tt> or <tt>res</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rdf</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>atom</tt> </TD><TD> RDF type: <tt>atom</tt>, <tt>mol_com</tt>, <tt>mol_cog</tt>, <tt>res_com</tt> or <tt>res_cog</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the largest box edge. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]norm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize for volume and density </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xy</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use only the x and y components of the distance </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the largest box edge. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]norm</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize for volume and density </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xy</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use only the x and y components of the distance </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-cut</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Shortest distance (nm) to be considered </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ng</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of secondary groups to compute RDFs around a central group </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fade</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)^2 to make it go to 1 smoothly. If fade is 0.0 nothing is done. </TD></TD>

@@ -9,14 +9,14 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_cluster</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_cluster can cluster structures with several different methods.
+<tt>g_cluster</tt> can cluster structures using several different methods.
 Distances between structures can be determined from a trajectory
-or read from an XPM matrix file with the <tt>-dm</tt> option.
+or read from an <tt>.<a href="xpm.html">xpm</a></tt> matrix file with the <tt>-dm</tt> option.
 RMS deviation after fitting or RMS deviation of atom-pair distances
 can be used to define the distance between structures.<p>
 single linkage: add a structure to a cluster when its distance to any
@@ -32,7 +32,7 @@ gromos: use algorithm as described in Daura <it>et al.</it>
 (<it>Angew. Chem. Int. Ed.</it> <b>1999</b>, <it>38</it>, pp 236-240).
 Count number of neighbors using cut-off, take structure with
 largest number of neighbors with all its neighbors as cluster
-and eleminate it from the pool of clusters. Repeat for remaining
+and eliminate it from the pool of clusters. Repeat for remaining
 structures in pool.<p>
 When the clustering algorithm assigns each structure to exactly one
 cluster (single linkage, Jarvis Patrick and gromos) and a trajectory
@@ -63,7 +63,9 @@ each cluster.<br>
 <tt>-cl</tt> writes average (with option <tt>-av</tt>) or central
 structure of each cluster or writes numbered files with cluster members
 for a selected set of clusters (with option <tt>-wcl</tt>, depends on
-<tt>-nst</tt> and <tt>-rmsmin</tt>).<br>
+<tt>-nst</tt> and <tt>-rmsmin</tt>). The center of a cluster is the
+structure with the smallest average RMSD from all other structures
+of the cluster.<br>
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -86,33 +88,34 @@ for a selected set of clusters (with option <tt>-wcl</tt>, depends on
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]dista</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use RMSD of distances instead of RMS deviation </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>40</tt> </TD><TD> Discretize RMSD matrix in # levels </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]dista</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use RMSD of distances instead of RMS deviation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>40</tt> </TD><TD> Discretize RMSD matrix in this number of levels </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-cutoff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.1   </tt> </TD><TD> RMSD cut-off (nm) for two structures to be neighbor </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use least squares fitting before RMSD calculation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use least squares fitting before RMSD calculation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Maximum level in RMSD matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only analyze every nr-th frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]av</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write average iso middle structure for each cluster </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-wcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Write all structures for first # clusters to numbered files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nst</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write all structures if more than # per cluster </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]av</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write average iso middle structure for each cluster </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-wcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Write the structures for this number of clusters to numbered files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nst</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write all structures if more than this number of structures per cluster </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmsmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> minimum rms difference with rest of cluster for writing structures </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-method</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>linkage</tt> </TD><TD> Method for cluster determination: <tt>linkage</tt>, <tt>jarvis-patrick</tt>, <tt>monte-carlo</tt>, <tt>diagonalization</tt> or <tt>gromos</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-minstruct</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Minimum number of structures in cluster for coloring in the <a href="xpm.html">xpm</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]binary</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-minstruct</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Minimum number of structures in cluster for coloring in the <tt>.<a href="xpm.html">xpm</a></tt> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]binary</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by <tt>-cutoff</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-M</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Number of nearest neighbors considered for Jarvis-Patrick algorithm, 0 is use cutoff </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of identical nearest neighbors required to form a cluster </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1993</tt> </TD><TD> Random number seed for Monte Carlo clustering algorithm </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-niter</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10000</tt> </TD><TD> Number of iterations for MC </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-kT</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> PBC check </TD></TD>
 </TABLE>
 <P>
 <hr>

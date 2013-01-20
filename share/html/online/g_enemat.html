@@ -9,17 +9,17 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_enemat</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_enemat extracts an energy matrix from the energy file (<tt>-f</tt>).
+<tt>g_enemat</tt> extracts an energy matrix from the energy file (<tt>-f</tt>).
 With <tt>-groups</tt> a file must be supplied with on each
 line a group of atoms to be used. For these groups matrix of
 interaction energies will be extracted from the energy file
 by looking for energy groups with names corresponding to pairs
-of groups of atoms. E.g. if your <tt>-groups</tt> file contains:<br>
+of groups of atoms, e.g. if your <tt>-groups</tt> file contains:<br>
 <tt>2</tt><br>
 <tt>Protein</tt><br>
 <tt>SOL</tt><br>
@@ -34,7 +34,7 @@ out separately, as controlled by the
 Finally, the total interaction energy energy per group can be 
 calculated (<tt>-etot</tt>).<p>
 An approximation of the free energy can be calculated using:
-E(free) = E0 + kT <a href="log.html">log</a>( &lt;exp((E-E0)/kT)&gt; ), where '&lt;&gt;'
+E_free = E_0 + kT <a href="log.html">log</a>(<exp((E-E_0)/kT)>), where '<>'
 stands for time-average. A file with reference free energies
 can be supplied to calculate the free energy difference
 with some reference state. Group names (e.g. residue names)
@@ -56,29 +56,29 @@ in the comparison.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Sum the energy terms selected rather than display them all </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Sum the energy terms selected rather than display them all </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip number of frames between data points </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mean</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> with -groups extracts matrix of mean energies instead of matrix for each timestep </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mean</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> with <tt>-groups</tt> extracts matrix of mean energies instead of matrix for each timestep </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>20</tt> </TD><TD> number of levels for matrix colors </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1e+20 </tt> </TD><TD> max value for energies </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-min</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1e+20</tt> </TD><TD> min value for energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]coul</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> extract Coulomb SR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]coulr</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Coulomb LR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]coul14</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Coulomb 1-4 energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]lj</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> extract Lennard-Jones SR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]lj</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Lennard-Jones LR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]lj14</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Lennard-Jones 1-4 energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]bhamsr</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Buckingham SR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]bhamlr</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Buckingham LR energies </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]free</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> calculate free energy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]coulsr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> extract Coulomb SR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]coullr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Coulomb LR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]coul14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Coulomb 1-4 energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ljsr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> extract Lennard-Jones SR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ljlr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Lennard-Jones LR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]lj14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Lennard-Jones 1-4 energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]bhamsr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Buckingham SR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]bhamlr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> extract Buckingham LR energies </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]free</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> calculate free energy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> reference temperature for free energy calculation </TD></TD>
 </TABLE>
 <P>
