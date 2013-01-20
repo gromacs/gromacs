@@ -1,0 +1,90 @@
+<HTML>
+<HEAD>
+<TITLE>g_kinetics</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_kinetics</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+<tt>g_kinetics</tt> reads two <tt>.<a href="xvg.html">xvg</a></tt> files, each one containing data for N replicas.
+The first file contains the temperature of each replica at each timestep,
+and the second contains real values that can be interpreted as
+an indicator for folding. If the value in the file is larger than
+the cutoff it is taken to be unfolded and the other way around.<p>
+From these data an estimate of the forward and backward rate constants
+for folding is made at a reference temperature. In addition,
+a theoretical melting curve and free energy as a function of temperature
+are printed in an <tt>.<a href="xvg.html">xvg</a></tt> file.<p>
+The user can give a max value to be regarded as intermediate
+(<tt>-ucut</tt>), which, when given will trigger the use of an intermediate state
+in the algorithm to be defined as those structures that have
+cutoff &lt; DATA &lt; ucut. Structures with DATA values larger than ucut will
+not be regarded as potential folders. In this case 8 parameters are optimized.<p>
+The average fraction foled is printed in an <tt>.<a href="xvg.html">xvg</a></tt> file together with the fit to it.
+If an intermediate is used a further file will show the build of the intermediate and the fit to that process.<p>
+The program can also be used with continuous variables (by setting
+<tt>-nodiscrete</tt>). In this case kinetics of other processes can be
+studied. This is very much a work in progress and hence the manual
+(this information) is lagging behind somewhat.<p>
+In order to compile this program you need access to the GNU
+scientific library.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    temp.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    data.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-d2</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   data2.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  ft_all.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o2</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  it_all.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o3</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> ft_repl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ee</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> err_est.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">    remd.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-m</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    melt.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Expect a time in the input </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time to start the fit from </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-efit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time to end the fit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-T</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Reference temperature for computing rate constants </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Read data for this number of replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cut</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.2   </tt> </TD><TD> Cut-off (max) value for regarding a structure as folded </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ucut</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Cut-off (max) value for regarding a structure as intermediate (if not folded) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-euf</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>10    </tt> </TD><TD> Initial guess for energy of activation for folding (kJ/mol) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-efu</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>30    </tt> </TD><TD> Initial guess for energy of activation for unfolding (kJ/mol) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>10    </tt> </TD><TD> Initial guess for energy of activation for intermediates (kJ/mol) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxiter</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Max number of iterations </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]back</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Take the back reaction into account </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Absolute tolerance for convergence of the Nelder and Mead simplex algorithm </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip points in the output <tt>.<a href="xvg.html">xvg</a></tt> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Estimate error by splitting the number of replicas in two and refitting </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Average folding before computing &chi;^2 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]discrete</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use a discrete folding criterion (F &lt;-&gt; U) or a continuous one </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-mult</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Factor to multiply the data with before discretization </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

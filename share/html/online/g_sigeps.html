@@ -9,15 +9,15 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sigeps</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-Sigeps is a simple utility that converts c6/c12 or c6/cn combinations
-to sigma and epsilon, or vice versa. It can also plot the potential
-in  file. In addition it makes an approximation of a Buckingham potential
-to a Lennard Jones potential.
+<tt>g_sigeps</tt> is a simple utility that converts C6/C12 or C6/Cn combinations
+to &sigma; and &epsilon;, or vice versa. It can also plot the potential
+in  file. In addition, it makes an approximation of a Buckingham potential
+to a Lennard-Jones potential.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -28,22 +28,22 @@ to a Lennard Jones potential.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-c6</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> c6 </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-cn</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1e-06 </tt> </TD><TD> constant for repulsion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-pow</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>12</tt> </TD><TD> power of the repulsion term </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-sig</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.3   </tt> </TD><TD> sig </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-eps</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> <a href="eps.html">eps</a> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-c6</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> C6 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cn</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1e-06 </tt> </TD><TD> Constant for repulsion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pow</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>12</tt> </TD><TD> Power of the repulsion term </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sig</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.3   </tt> </TD><TD> &sigma; </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-eps</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> &epsilon; </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-A</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>100000</tt> </TD><TD> Buckingham A </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-B</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>32    </tt> </TD><TD> Buckingham B </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-C</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Buckingham C </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-qi</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> qi </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-qj</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> qj </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-sigfac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.7   </tt> </TD><TD> Factor in front of sigma for starting the plot </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sigfac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.7   </tt> </TD><TD> Factor in front of &sigma; for starting the plot </TD></TD>
 </TABLE>
 <P>
 <hr>
