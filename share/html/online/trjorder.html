@@ -9,12 +9,12 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>trjorder</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-trjorder orders molecules according to the smallest distance
+<tt>trjorder</tt> orders molecules according to the smallest distance
 to atoms in a reference group
 or on z-coordinate (with option <tt>-z</tt>).
 With distance ordering, it will ask for a group of reference
@@ -25,15 +25,15 @@ atoms in the reference group. The center of mass of the molecules can
 be used instead of a reference atom by setting <tt>-da</tt> to 0.
 All atoms in the trajectory are written
 to the output trajectory.<p>
-trjorder can be useful for e.g. analyzing the n waters closest to a
+<tt>trjorder</tt> can be useful for e.g. analyzing the n waters closest to a
 protein.
 In that case the reference group would be the protein and the group
 of molecules would consist of all the water atoms. When an index group
 of the first n waters is made, the ordered trajectory can be used
 with any Gromacs program to analyze the n closest waters.
 <p>
-If the output file is a <a href="pdb.html">pdb</a> file, the distance to the reference target
-will be stored in the B-factor field in order to color with e.g. rasmol.
+If the output file is a <tt>.<a href="pdb.html">pdb</a></tt> file, the distance to the reference target
+will be stored in the B-factor field in order to color with e.g. Rasmol.
 <p>
 With option <tt>-nshell</tt> the number of molecules within a shell
 of radius <tt>-r</tt> around the reference group are printed.
@@ -51,8 +51,8 @@ of radius <tt>-r</tt> around the reference group are printed.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
@@ -60,9 +60,9 @@ of radius <tt>-r</tt> around the reference group are printed.
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-na</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of atoms in a molecule </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-da</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Atom used for the distance calculation, 0 is COM </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the distance to the center of mass of the reference group </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the distance to the center of mass of the reference group </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]z</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Order molecules on z-coordinate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]z</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Order molecules on z-coordinate </TD></TD>
 </TABLE>
 <P>
 <hr>

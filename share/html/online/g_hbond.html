@@ -9,14 +9,15 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_hbond</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
-determined based on cutoffs for the angle Acceptor - Donor - Hydrogen
-(zero is extended) and the distance Hydrogen - Acceptor.
+<tt>g_hbond</tt> computes and analyzes hydrogen bonds. Hydrogen bonds are
+determined based on cutoffs for the angle Hydrogen - Donor - Acceptor
+(zero is extended) and the distance Donor - Acceptor
+(or Hydrogen - Acceptor using <tt>-noda</tt>).
 OH and NH groups are regarded as donors, O is an acceptor always,
 N is an acceptor by default, but this can be switched using
 <tt>-nitacc</tt>. Dummy hydrogen atoms are assumed to be connected
@@ -24,10 +25,17 @@ to the first preceding non-hydrogen atom.<p>
 You need to specify two groups for analysis, which must be either
 identical or non-overlapping. All hydrogen bonds between the two
 groups are analyzed.<p>
-If you set -shell, you will be asked for an additional index group
+If you set <tt>-shell</tt>, you will be asked for an additional index group
 which should contain exactly one atom. In this case, only hydrogen
 bonds between atoms within the shell distance from the one atom are
 considered.<p>
+With option -ac, rate constants for hydrogen bonding can be derived with the model of Luzar and Chandler
+(Nature 394, 1996; J. Chem. Phys. 113:23, 2000) or that of Markovitz and Agmon (J. Chem. Phys 129, 2008).
+If contact kinetics are analyzed by using the -contact option, then
+n(t) can be defined as either all pairs that are not within contact distance r at time t
+(corresponding to leaving the -r2 option at the default value 0) or all pairs that
+are within distance r2 (corresponding to setting a second cut-off value with option -r2).
+See mentioned literature for more details and definitions.<p>
 <tt>
 [ selected ]<br>
      20    21    24<br>
@@ -86,36 +94,38 @@ times the total number of acceptors in the selected group(s).
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>30    </tt> </TD><TD> Cutoff angle (degrees, Acceptor - Donor - Hydrogen) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>30    </tt> </TD><TD> Cutoff angle (degrees, Hydrogen - Donor - Acceptor) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.35  </tt> </TD><TD> Cutoff radius (nm, X - Acceptor, see next option) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]da</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-r2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Second cutoff radius. Mainly useful with -contact and -ac </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]da</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-r2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Second cutoff radius. Mainly useful with <tt>-contact</tt> and <tt>-ac</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-abin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Binwidth angle distribution (degrees) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.005 </tt> </TD><TD> Binwidth distance distribution (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]contact</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not look for hydrogen bonds, but merely for contacts within the cut-off distance </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]contact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not look for hydrogen bonds, but merely for contacts within the cut-off distance </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> when &gt; 0, only calculate hydrogen bonds within # nm shell around one particle </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With -gemfit we suggest -fitstart 0 </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with -gemfit) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. With <tt>-gemfit</tt> we suggest <tt>-fitstart 0</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Time (ps) to which to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation (only with <tt>-gemfit</tt>) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-smooth</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> If &gt;= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Dump the first N hydrogen bond ACFs in a single <a href="xvg.html">xvg</a> file for debugging </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-smooth</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> If &gt;= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/&tau;) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Dump the first N hydrogen bond ACFs in a single <tt>.<a href="xvg.html">xvg</a></tt> file for debugging </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max_hb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-geminate</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Use reversible geminate recombination for the kinetics/thermodynamics calclations. See Markovitch et al., J. Chem. Phys 129, 084505 (2008) for details.: <tt>none</tt>, <tt>dd</tt>, <tt>ad</tt>, <tt>aa</tt> or <tt>a4</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-diff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Dffusion coefficient to use in the rev. gem. recomb. kinetic model. If non-positive, then it will be fitted to the ACF along with ka and kd. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-diff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Dffusion coefficient to use in the reversible geminate recombination kinetic model. If negative, then it will be fitted to the ACF along with ka and kd. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nthreads</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of threads used for the parallel loop over autocorrelations. nThreads &lt;= 0 means maximum number of threads. Requires linking with OpenMP. The number of threads is limited by the number of processors (before OpenMP v.3 ) or environment variable OMP_THREAD_LIMIT (OpenMP v.3) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt>, <tt>exp9</tt> or <tt>erffit</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip this many points in the output file of correlation functions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is until the end </TD></TD>
 </TABLE>

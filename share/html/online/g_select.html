@@ -9,17 +9,18 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_select</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_select writes out basic data about dynamic selections.
+<tt>g_select</tt> writes out basic data about dynamic selections.
 It can be used for some simple analyses, or the output can
 be combined with output from other programs and/or external
 analysis programs to calculate more complex things.
 Any combination of the output options is possible, but note
-that <tt>-om</tt> only operates on the first selection.<p>
+that <tt>-om</tt> only operates on the first selection.
+<tt>-os</tt> is the default output option if none is selected.<p>
 With <tt>-os</tt>, calculates the number of positions in each
 selection for each frame. With <tt>-norm</tt>, the output is
 between 0 and 1 and describes the fraction from the maximum
@@ -41,7 +42,7 @@ and so on. With <tt>-dump</tt>, the frame time and the number
 of positions is omitted from the output. In this case, only one
 selection can be given.<p>
 With <tt>-on</tt>, the selected atoms are written as a index file
-compatible with <a href="make_<a href="ndx.html">ndx</a>.html">make_<a href="ndx.html">ndx</a></a> and the analyzing tools. Each selection
+compatible with <tt><a href="make_<a href="ndx.html">ndx</a>.html">make_<a href="ndx.html">ndx</a></a></tt> and the analyzing tools. Each selection
 is written as a selection group and for dynamic selections a
 group is written for each frame.<p>
 For residue numbers, the output of <tt>-oi</tt> can be controlled
@@ -75,21 +76,21 @@ With <tt>-dump</tt>, the frame time is omitted from the output.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmpbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Make molecules whole for each frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions for distance calculation </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-select</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Selection string (use 'help' for help) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmpbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Make molecules whole for each frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions for distance calculation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-select</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Selection string (use 'help' for help). Note that the whole selection string will need to be quoted so that your shell will pass it in as a string. Example: <tt>g_select -select '"Nearby water" resname SOL and within 0.25 of group Protein'</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-selrpos</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>atom</tt> </TD><TD> Selection reference position: <tt>atom</tt>, <tt>res_com</tt>, <tt>res_cog</tt>, <tt>mol_com</tt>, <tt>mol_cog</tt>, <tt>whole_res_com</tt>, <tt>whole_res_cog</tt>, <tt>whole_mol_com</tt>, <tt>whole_mol_cog</tt>, <tt>part_res_com</tt>, <tt>part_res_cog</tt>, <tt>part_mol_com</tt>, <tt>part_mol_cog</tt>, <tt>dyn_res_com</tt>, <tt>dyn_res_cog</tt>, <tt>dyn_mol_com</tt> or <tt>dyn_mol_cog</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-seltype</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>atom</tt> </TD><TD> Default analysis positions: <tt>atom</tt>, <tt>res_com</tt>, <tt>res_cog</tt>, <tt>mol_com</tt>, <tt>mol_cog</tt>, <tt>whole_res_com</tt>, <tt>whole_res_cog</tt>, <tt>whole_mol_com</tt>, <tt>whole_mol_cog</tt>, <tt>part_res_com</tt>, <tt>part_res_cog</tt>, <tt>part_mol_com</tt>, <tt>part_mol_cog</tt>, <tt>dyn_res_com</tt>, <tt>dyn_res_cog</tt>, <tt>dyn_mol_com</tt> or <tt>dyn_mol_cog</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]dump</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not print the frame time (-om, -oi) or the index size (-oi) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]norm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by total number of positions with -os </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cfnorm</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by covered fraction with -os </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]dump</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not print the frame time (-om, -oi) or the index size (-oi) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]norm</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by total number of positions with -os </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cfnorm</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Normalize by covered fraction with -os </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-resnr</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>number</tt> </TD><TD> Residue number output type: <tt>number</tt> or <tt>index</tt> </TD></TD>
 </TABLE>
 <P>
