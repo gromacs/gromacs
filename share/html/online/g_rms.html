@@ -9,22 +9,22 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_rms</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_rms compares two structures by computing the root mean square
-deviation (RMSD), the size-independent 'rho' similarity parameter
-(rho) or the scaled rho (rhosc), 
-see Maiorov & Crippen, PROTEINS <b>22</b>, 273 (1995).
+<tt>g_rms</tt> compares two structures by computing the root mean square
+deviation (RMSD), the size-independent &rho; similarity parameter
+(<tt>rho</tt>) or the scaled &rho; (<tt>rhosc</tt>), 
+see Maiorov & Crippen, Proteins <b>22</b>, 273 (1995).
 This is selected by <tt>-what</tt>.<p>Each structure from a trajectory (<tt>-f</tt>) is compared to a
 reference structure. The reference structure
 is taken from the structure file (<tt>-s</tt>).<p>
 With option <tt>-mir</tt> also a comparison with the mirror image of
 the reference structure is calculated.
 This is useful as a reference for 'significant' values, see
-Maiorov & Crippen, PROTEINS <b>22</b>, 273 (1995).<p>
+Maiorov & Crippen, Proteins <b>22</b>, 273 (1995).<p>
 Option <tt>-prev</tt> produces the comparison with a previous frame
 the specified number of frames ago.<p>
 Option <tt>-m</tt> produces a matrix in <tt>.<a href="xpm.html">xpm</a></tt> format of
@@ -36,10 +36,10 @@ the structures on <a href="top.html">top</a> of each other: complete fit (rotati
 translation), translation only, or no fitting at all.<p>
 Option <tt>-mw</tt> controls whether mass weighting is done or not.
 If you select the option (default) and 
-supply a valid <a href="tpr.html">tpr</a> file masses will be taken from there, 
-otherwise the masses will be deduced from the atommass.<a href="dat.html">dat</a> file in
-the GROMACS library directory. This is fine for proteins but not
-necessarily for other molecules. A default mass of 12.011 amu (Carbon)
+supply a valid <tt>.<a href="tpr.html">tpr</a></tt> file masses will be taken from there, 
+otherwise the masses will be deduced from the <tt>atommass.<a href="dat.html">dat</a></tt> file in
+<tt>GMXLIB</tt>. This is fine for proteins, but not
+necessarily for other molecules. A default mass of 12.011 amu (carbon)
 is assigned to unknown atoms. You can check whether this happend by
 turning on the <tt>-debug</tt> flag and inspecting the <a href="log.html">log</a> file.<p>
 With <tt>-f2</tt>, the 'other structures' are taken from a second
@@ -69,27 +69,27 @@ comparison group are considered.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-what</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rmsd</tt> </TD><TD> Structural difference measure: <tt>rmsd</tt>, <tt>rho</tt> or <tt>rhosc</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> PBC check </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> PBC check </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rot+trans</tt> </TD><TD> Fit to reference structure: <tt>rot+trans</tt>, <tt>translation</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-prev</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Compare with previous frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Split graph where time is zero </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Split graph where time is zero </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame to matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip2</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame to matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Maximum level in comparison matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-min</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Minimum level in comparison matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Maximum level in bond angle matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Minimum level in bond angle matrix </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use mass weighting for superposition </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mw</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use mass weighting for superposition </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>80</tt> </TD><TD> Number of levels in the matrices </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ng</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of groups to compute RMS between </TD></TD>
 </TABLE>

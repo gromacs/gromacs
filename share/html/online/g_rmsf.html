@@ -9,31 +9,31 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_rmsf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard 
-deviation) of atomic positions 
-after (optionally) fitting to a reference frame.<p>
+<tt>g_rmsf</tt> computes the root mean square fluctuation (RMSF, i.e. standard 
+deviation) of atomic positions in the trajectory (supplied with <tt>-f</tt>)
+after (optionally) fitting to a reference frame (supplied with <tt>-s</tt>).<p>
 With option <tt>-oq</tt> the RMSF values are converted to B-factor
-values, which are written to a <a href="pdb.html">pdb</a> file with the coordinates, of the
-structure file, or of a <a href="pdb.html">pdb</a> file when <tt>-q</tt> is specified.
+values, which are written to a <tt>.<a href="pdb.html">pdb</a></tt> file with the coordinates, of the
+structure file, or of a <tt>.<a href="pdb.html">pdb</a></tt> file when <tt>-q</tt> is specified.
 Option <tt>-ox</tt> writes the B-factors to a file with the average
 coordinates.<p>
 With the option <tt>-od</tt> the root mean square deviation with
 respect to the reference structure is calculated.<p>
-With the option <tt>aniso</tt> g_rmsf will compute anisotropic
+With the option <tt>-aniso</tt>, <tt>g_rmsf</tt> will compute anisotropic
 temperature factors and then it will also output average coordinates
-and a <a href="pdb.html">pdb</a> file with ANISOU records (corresonding to the <tt>-oq</tt>
+and a <tt>.<a href="pdb.html">pdb</a></tt> file with ANISOU records (corresonding to the <tt>-oq</tt>
 or <tt>-ox</tt> option). Please note that the U values
-are orientation dependent, so before comparison with experimental data
+are orientation-dependent, so before comparison with experimental data
 you should verify that you fit to the experimental coordinates.<p>
-When a <a href="pdb.html">pdb</a> input file is passed to the program and the <tt>-aniso</tt>
+When a <tt>.<a href="pdb.html">pdb</a></tt> input file is passed to the program and the <tt>-aniso</tt>
 flag is set
 a correlation plot of the Uij will be created, if any anisotropic
-temperature factors are present in the <a href="pdb.html">pdb</a> file.<p>
+temperature factors are present in the <tt>.<a href="pdb.html">pdb</a></tt> file.<p>
 With option <tt>-dir</tt> the average MSF (3x3) matrix is diagonalized.
 This shows the directions in which the atoms fluctuate the most and
 the least.
@@ -56,17 +56,17 @@ the least.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]res</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate averages for each residue </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]aniso</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute anisotropic termperature factors </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]res</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate averages for each residue </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]aniso</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute anisotropic termperature factors </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match. </TD></TD>
 </TABLE>
 <P>
 <hr>
