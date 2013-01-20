@@ -602,6 +602,8 @@ static void cmp_fepvals(FILE *fp,t_lambda *fep1,t_lambda *fep2,real ftol, real a
           cmp_double(fp,"inputrec->fepvals->all_lambda",-1,fep1->all_lambda[i][j],fep2->all_lambda[i][j],ftol,abstol);
       }
   }
+  cmp_int(fp,"inputrec->fepvals->lambda_neighbors",1,fep1->lambda_neighbors,
+          fep2->lambda_neighbors);
   cmp_real(fp,"inputrec->fepvals->sc_alpha",-1,fep1->sc_alpha,fep2->sc_alpha,ftol,abstol);
   cmp_int(fp,"inputrec->fepvals->sc_power",-1,fep1->sc_power,fep2->sc_power);
   cmp_real(fp,"inputrec->fepvals->sc_r_power",-1,fep1->sc_r_power,fep2->sc_r_power,ftol,abstol);

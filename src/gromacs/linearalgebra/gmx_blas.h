@@ -57,9 +57,6 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#ifndef F77_FUNC
-#define F77_FUNC(name,NAME) name ## _
-#endif
 
 /* Suppress Cygwin compiler warnings from using newlib version of
  * ctype.h */

@@ -60,13 +60,17 @@ void gmx_log_close(FILE *fp);
 /* Close the log file */
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,
-			    int val,const char *name);
+                     int val,const char *name,
+                     gmx_bool bQuiet);
 void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
-                           gmx_large_int_t val,const char *name);
+                           gmx_large_int_t val,const char *name,
+                           gmx_bool bQuiet);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
- * if the val's don't match.
+ * if the val's don't match. If bQuiet is true and the check passes,
+ * no output is written.
  */
+
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
                       int nfile, const t_filenm fnm[], gmx_bool bParFn);
 /* Splits the communication into nsim separate simulations

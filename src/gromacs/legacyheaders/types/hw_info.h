@@ -54,6 +54,8 @@ static const char * const gpu_detect_res_str[] =
 typedef struct 
 {
     gmx_bool            bUserSet;       /* true if the GPUs in cuda_dev_use are manually provided by the user */
+    gmx_bool            bDevShare;      /* true if any of the devices is shared by
+                                           (t)MPI ranks, with auto-detection always FALSE */
 
     int                 ncuda_dev_use;  /* number of devices selected to be used */
     int                 *cuda_dev_use;  /* index of the devices selected to be used */

@@ -39,7 +39,6 @@
 #include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/linearalgebra/sparsematrix.h"
-
 #include "gmx_lapack.h"
 #include "gmx_arpack.h"
 

@@ -900,13 +900,11 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
 
     trotter_seq = trotter_seqlist[trotter_seqno];
 
-    /* signal we are returning if nothing is going to be done in this routine */
-    if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
+    if ((trotter_seq[0] == etrtSKIPALL) || (!bCouple))
     {
         return;
     }
-
-    dtc = ir->nsttcouple*ir->delta_t;
+    dtc = ir->nsttcouple*ir->delta_t;  /* This is OK for NPT, because nsttcouple == nstpcouple is enforcesd */
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     assert(ngtc>0);

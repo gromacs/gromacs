@@ -59,79 +59,6 @@
 int cmain(int argc,char *argv[])
 {
   const char *desc[] = {
- #ifdef GMX_OPENMM
-    "This is an experimental release of GROMACS for accelerated",
-	"Molecular Dynamics simulations on GPU processors. Support is provided",
-	"by the OpenMM library (https://simtk.org/home/openmm).[PAR]",
-	"*Warning*[BR]",
-	"This release is targeted at developers and advanced users and",
-	"care should be taken before production use. The following should be",
-	"noted before using the program:[PAR]",
-	" * The current release runs only on modern nVidia GPU hardware with CUDA support.",
-	"Make sure that the necessary CUDA drivers and libraries for your operating system",
-	"are already installed. The CUDA SDK also should be installed in order to compile",
-	"the program from source (http://www.nvidia.com/object/cuda_home.html).[PAR]",
-	" * Multiple GPU cards are not supported.[PAR]",
-	" * Only a small subset of the GROMACS features and options are supported on the GPUs.",
-	"See below for a detailed list.[PAR]",
-	" * Consumer level GPU cards are known to often have problems with faulty memory.",
-	"It is recommended that a full memory check of the cards is done at least once",
-	"(for example, using the memtest=full option).",
-	"A partial memory check (for example, memtest=15) before and",
-	"after the simulation run would help spot",
-	"problems resulting from processor overheating.[PAR]",
-	" * The maximum size of the simulated systems depends on the available",
-	"GPU memory,for example, a GTX280 with 1GB memory has been tested with systems",
-	"of up to about 100,000 atoms.[PAR]",
-	" * In order to take a full advantage of the GPU platform features, many algorithms",
-	"have been implemented in a very different way than they are on the CPUs.",
-	"Therefore numercal correspondence between properties of the state of",
-	"simulated systems should not be expected. Moreover, the values will likely vary",
-	"when simulations are done on different GPU hardware.[PAR]",
-	" * Frequent retrieval of system state information such as",
-	"trajectory coordinates and energies can greatly influence the performance",
-	"of the program due to slow CPU<->GPU memory transfer speed.[PAR]",
-	" * MD algorithms are complex, and although the Gromacs code is highly tuned for them,",
-	"they often do not translate very well onto the streaming architetures.",
-	"Realistic expectations about the achievable speed-up from test with GTX280:",
-	"For small protein systems in implicit solvent using all-vs-all kernels the acceleration",
-	"can be as high as 20 times, but in most other setups involving cutoffs and PME the",
-	"acceleration is usually only ~4 times relative to a 3GHz CPU.[PAR]",
-	"Supported features:[PAR]",
-	" * Integrators: md/md-vv/md-vv-avek, sd/sd1 and bd.\n",
-	" * Long-range interactions (option coulombtype): Reaction-Field, Ewald, PME, and cut-off (for Implicit Solvent only)\n",
-	" * Temperature control: Supported only with the md/md-vv/md-vv-avek, sd/sd1 and bd integrators.\n",
-	" * Pressure control: Supported.\n",
-	" * Implicit solvent: Supported.\n",
-	"A detailed description can be found on the GROMACS website:\n",
-	"http://www.gromacs.org/gpu[PAR]",
-/* From the original mdrun documentaion */
-    "The [TT]mdrun[tt] program reads the run input file ([TT]-s[tt])",
-    "and distributes the topology over nodes if needed.",
-    "[TT]mdrun[tt] produces at least four output files.",
-    "A single log file ([TT]-g[tt]) is written, unless the option",
-    "[TT]-seppot[tt] is used, in which case each node writes a log file.",
-    "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
-    "optionally forces.",
-    "The structure file ([TT]-c[tt]) contains the coordinates and",
-    "velocities of the last step.",
-    "The energy file ([TT]-e[tt]) contains energies, the temperature,",
-    "pressure, etc, a lot of these things are also printed in the log file.",
-    "Optionally coordinates can be written to a compressed trajectory file",
-    "([TT]-x[tt]).[PAR]",
-/* openmm specific information */
-	"Usage with OpenMM:[BR]",
-	"[TT]mdrun -device \"OpenMM:platform=Cuda,memtest=15,deviceid=0,force-device=no\"[tt][PAR]",
-	"Options:[PAR]",
-	"      [TT]platform[tt] = Cuda\t\t:\tThe only available value. OpenCL support will be available in future.\n",
-	"      [TT]memtest[tt] = 15\t\t:\tRun a partial, random GPU memory test for the given amount of seconds. A full test",
-	"(recommended!) can be run with \"memtest=full\". Memory testing can be disabled with \"memtest=off\".\n",
-	"      [TT]deviceid[tt] = 0\t\t:\tSpecify the target device when multiple cards are present.",
-	"Only one card can be used at any given time though.\n",
-	"      [TT]force-device[tt] = no\t\t:\tIf set to \"yes\" [TT]mdrun[tt]  will be forced to execute on",
-	"hardware that is not officially supported. GPU acceleration can also be achieved on older",
-	"but Cuda capable cards, although the simulation might be too slow, and the memory limits too strict.",
-#else
     "The [TT]mdrun[tt] program is the main computational chemistry engine",
     "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
     "but it can also perform Stochastic Dynamics, Energy Minimization,",
@@ -314,10 +241,11 @@ int cmain(int argc,char *argv[])
     "forces and energies will be (re)calculated. Neighbor searching will be",
     "performed for every frame, unless [TT]nstlist[tt] is zero",
     "(see the [TT].mdp[tt] file).[PAR]",
-    "ED (essential dynamics) sampling is switched on by using the [TT]-ei[tt]",
-    "flag followed by an [TT].edi[tt] file.",
-    "The [TT].edi[tt] file can be produced using options in the essdyn",
-    "menu of the WHAT IF program. [TT]mdrun[tt] produces a [TT].xvg[tt] output file that",
+    "ED (essential dynamics) sampling and/or additional flooding potentials",
+    "are switched on by using the [TT]-ei[tt] flag followed by an [TT].edi[tt]",
+    "file. The [TT].edi[tt] file can be produced with the [TT]make_edi[tt] tool",
+    "or by using options in the essdyn menu of the WHAT IF program.",
+    "[TT]mdrun[tt] produces a [TT].xvg[tt] output file that",
     "contains projections of positions, velocities and forces onto selected",
     "eigenvectors.[PAR]",
     "When user-defined potential functions have been selected in the",
@@ -427,7 +355,6 @@ int cmain(int argc,char *argv[])
     "the [TT]mdrun[tt] process that is the parent of the others.",
     "[PAR]",
     "When [TT]mdrun[tt] is started with MPI, it does not run niced by default."
-#endif
   };
   t_commrec    *cr;
   t_filenm fnm[] = {
@@ -606,18 +533,13 @@ int cmain(int argc,char *argv[])
       "HIDDENReset cycle counters after these many time steps" },
     { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
       "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
-#ifdef GMX_OPENMM
-    ,
-    { "-device",  FALSE, etSTR, {&deviceOptions},
-      "Device option string" }
-#endif
   };
   gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
   gmx_bool     bAddPart;
-  FILE     *fplog,*fptest;
+  FILE     *fplog,*fpmulti;
   int      sim_part,sim_part_fn;
   const char *part_suffix=".part";
   char     suffix[STRLEN];
@@ -701,7 +623,7 @@ int cmain(int argc,char *argv[])
                                                 &sim_part_fn,NULL,cr,
                                                 bAppendFiles,NFILE,fnm,
                                                 part_suffix,&bAddPart);
-      if (sim_part_fn==0 && MASTER(cr))
+      if (sim_part_fn==0 && MULTIMASTER(cr))
       {
           fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
       }
@@ -712,7 +634,17 @@ int cmain(int argc,char *argv[])
 
       if (MULTISIM(cr) && MASTER(cr))
       {
-          check_multi_int(stdout,cr->ms,sim_part,"simulation part");
+          if (MULTIMASTER(cr))
+          {
+              /* Log file is not yet available, so if there's a
+               * problem we can only write to stderr. */
+              fpmulti = stderr;
+          }
+          else
+          {
+              fpmulti = NULL;
+          }
+          check_multi_int(fpmulti,cr->ms,sim_part,"simulation part",TRUE);
       }
   } 
   else
@@ -732,7 +664,7 @@ int cmain(int argc,char *argv[])
       sprintf(suffix,"%s%04d",part_suffix,sim_part_fn);
 
       add_suffix_to_output_names(fnm,NFILE,suffix);
-      if (MASTER(cr))
+      if (MULTIMASTER(cr))
       {
           fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed '%s'.\n",sim_part-1,suffix);
       }

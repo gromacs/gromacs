@@ -53,6 +53,7 @@ extern "C" {
 /* forward declaration */
 typedef struct t_mde_delta_h_coll t_mde_delta_h_coll;
 
+
 /* This is the collection of energy averages collected during mdrun, and to 
    be written out to the .edr file. */
 typedef struct {
@@ -89,9 +90,24 @@ typedef struct {
   char   **print_grpnms;
 
   FILE   *fp_dhdl; /* the dhdl.xvg output file */
+  double *dE; /* energy components for dhdl.xvg output */
   t_mde_delta_h_coll *dhc; /* the delta U components (raw data + histogram) */
   real *temperatures;
 } t_mdebin;
+
+
+/* delta_h block type enum: the kinds of energies written out. */
+enum
+{
+    dhbtDH=0,    /* delta H BAR energy difference*/
+    dhbtDHDL=1,  /* dH/dlambda derivative */
+    dhbtEN,      /* System energy */
+    dhbtPV,      /* pV term */
+    dhbtEXPANDED, /* expanded ensemble statistics */
+    dhbtNR
+};
+
+
 
 t_mdebin *init_mdebin(ener_file_t fp_ene,
                              const gmx_mtop_t *mtop,

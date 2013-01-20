@@ -44,18 +44,6 @@ struct gmx_invsqrtdata
   unsigned int    fracttab[4096]; /*!< Mantissa lookup table    */
 };
 
-#ifndef F77_FUNC
-/*! \brief Macro for Fortran name-mangling
- *
- * Use Fortran name mangling from autoconf macros if defined, 
- * or lowercase+underscore by default. Since there is no easy way to convert
- * between lower and upper case in macros, you should call fortran routines
- * as F77_FUNC(routine,ROUTINE)(param1,param2,...)
- */
-#define F77_FUNC(name,NAME) name ## _
-#endif
-
-
 
 struct gmx_invsqrtdata 
 F77_FUNC(gmxinvsqrtdata,GMXINVSQRTDATA) = 

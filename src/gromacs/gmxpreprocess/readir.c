@@ -428,11 +428,29 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                 }
             }
         }
-        else if (ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy)
+        else if ( (ir->nstenergy > 0 && ir->nstcalcenergy > ir->nstenergy) ||
+                  (ir->efep != efepNO && ir->fepvals->nstdhdl > 0 &&
+                   (ir->nstcalcenergy > ir->fepvals->nstdhdl) ) )
+
         {
+            const char *nsten="nstenergy";
+            const char *nstdh="nstdhdl";
+            const char *min_name=nsten;
+            int min_nst=ir->nstenergy;
+
+            /* find the smallest of ( nstenergy, nstdhdl ) */
+            if (ir->efep != efepNO && ir->fepvals->nstdhdl > 0 &&
+                (ir->fepvals->nstdhdl < ir->nstenergy) )
+            {
+                min_nst=ir->fepvals->nstdhdl;
+                min_name=nstdh;
+            }
             /* If the user sets nstenergy small, we should respect that */
-            sprintf(warn_buf,"Setting nstcalcenergy (%d) equal to nstenergy (%d)",ir->nstcalcenergy,ir->nstenergy);
-            ir->nstcalcenergy = ir->nstenergy;
+            sprintf(warn_buf,
+                    "Setting nstcalcenergy (%d) equal to %s (%d)",
+                    ir->nstcalcenergy,min_name, min_nst);
+            warning_note(wi,warn_buf);
+            ir->nstcalcenergy = min_nst;
         }
 
         if (ir->epc != epcNO)
@@ -453,13 +471,8 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
             }
         }
 
-        if (ir->nstcalcenergy > 1)
+        if (ir->nstcalcenergy > 0)
         {
-            /* for storing exact averages nstenergy should be
-             * a multiple of nstcalcenergy
-             */
-            check_nst("nstcalcenergy",ir->nstcalcenergy,
-                      "nstenergy",&ir->nstenergy,wi);
             if (ir->efep != efepNO)
             {
                 /* nstdhdl should be a multiple of nstcalcenergy */
@@ -467,8 +480,13 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
                           "nstdhdl",&ir->fepvals->nstdhdl,wi);
                 /* nstexpanded should be a multiple of nstcalcenergy */
                 check_nst("nstcalcenergy",ir->nstcalcenergy,
-                          "nstdhdl",&ir->expandedvals->nstexpanded,wi);
+                          "nstexpanded",&ir->expandedvals->nstexpanded,wi);
             }
+            /* for storing exact averages nstenergy should be
+             * a multiple of nstcalcenergy
+             */
+            check_nst("nstcalcenergy",ir->nstcalcenergy,
+                      "nstenergy",&ir->nstenergy,wi);
         }
     }
 
@@ -560,7 +578,7 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       }
 
       sprintf(err_buf,"Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero",fep->delta_lambda);
-      CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state !=0) ||  (fep->init_lambda !=0)));
+      CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)));
 
       sprintf(err_buf,"Can't use postive delta-lambda (%g) with expanded ensemble simulations",fep->delta_lambda);
       CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
@@ -569,8 +587,50 @@ void check_ir(const char *mdparin,t_inputrec *ir, t_gromppopts *opts,
       CHECK(ir->coulombtype==eelEWALD);
 
       /* check validty of lambda inputs */
-      sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda);
-      CHECK((fep->init_fep_state > fep->n_lambda));
+      if (fep->n_lambda == 0)
+      {
+          /* Clear output in case of no states:*/
+          sprintf(err_buf,"init-lambda-state set to %d: no lambda states are defined.",fep->init_fep_state);
+          CHECK((fep->init_fep_state>=0) && (fep->n_lambda==0));
+      }
+      else
+      {
+          sprintf(err_buf,"initial thermodynamic state %d does not exist, only goes to %d",fep->init_fep_state,fep->n_lambda-1);
+          CHECK((fep->init_fep_state >= fep->n_lambda));
+      }
+
+      sprintf(err_buf,"Lambda state must be set, either with init-lambda-state or with init-lambda");
+      CHECK((fep->init_fep_state < 0) && (fep->init_lambda <0));
+
+      sprintf(err_buf,"init-lambda=%g while init-lambda-state=%d. Lambda state must be set either with init-lambda-state or with init-lambda, but not both",
+              fep->init_lambda, fep->init_fep_state);
+      CHECK((fep->init_fep_state >= 0) && (fep->init_lambda >= 0));
+
+
+
+      if((fep->init_lambda >= 0) && (fep->delta_lambda == 0))
+      {
+          int n_lambda_terms;
+          n_lambda_terms=0;
+          for (i=0;i<efptNR;i++)
+          {
+              if (fep->separate_dvdl[i])
+              {
+                  n_lambda_terms++;
+              }
+          }
+          if (n_lambda_terms > 1)
+          {
+              sprintf(warn_buf,"If lambda vector states (fep-lambdas, coul-lambdas etc.) are set, don't use init-lambda to set lambda state (except for slow growth). Use init-lambda-state instead.");
+              warning(wi, warn_buf);
+          }
+
+          if (n_lambda_terms < 2 && fep->n_lambda > 0)
+          {
+              warning_note(wi,
+                           "init-lambda is deprecated for setting lambda state (except for slow growth). Use init-lambda-state instead.");
+          }
+      }
 
       for (j=0;j<efptNR;j++)
       {
@@ -1305,7 +1365,7 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN],char weights
     /* "fep-vals" is either zero or the full number. If zero, we'll need to define fep-lambdas for internal
        bookkeeping -- for now, init_lambda */
 
-    if ((nfep[efptFEP] == 0) && (fep->init_lambda >= 0) && (fep->init_lambda <= 1))
+    if ((nfep[efptFEP] == 0) && (fep->init_lambda >= 0))
     {
         for (i=0;i<fep->n_lambda;i++)
         {
@@ -1842,9 +1902,9 @@ void get_ir(const char *mdparin,const char *mdparout,
   RTYPE ("init-lambda", fep->init_lambda,-1); /* start with -1 so
                                                  we can recognize if
                                                  it was not entered */
-  ITYPE ("init-lambda-state", fep->init_fep_state,0);
+  ITYPE ("init-lambda-state", fep->init_fep_state,-1);
   RTYPE ("delta-lambda",fep->delta_lambda,0.0);
-  ITYPE ("nstdhdl",fep->nstdhdl, 100);
+  ITYPE ("nstdhdl",fep->nstdhdl, 50);
   STYPE ("fep-lambdas", fep_lambda[efptFEP], NULL);
   STYPE ("mass-lambdas", fep_lambda[efptMASS], NULL);
   STYPE ("coul-lambdas", fep_lambda[efptCOUL], NULL);
@@ -1852,6 +1912,7 @@ void get_ir(const char *mdparin,const char *mdparout,
   STYPE ("bonded-lambdas", fep_lambda[efptBONDED], NULL);
   STYPE ("restraint-lambdas", fep_lambda[efptRESTRAINT], NULL);
   STYPE ("temperature-lambdas", fep_lambda[efptTEMPERATURE], NULL);
+  ITYPE ("calc-lambda-neighbors",fep->lambda_neighbors, 1);
   STYPE ("init-lambda-weights",lambda_weights,NULL);
   EETYPE("dhdl-print-energy", fep->bPrintEnergy, yesno_names);
   RTYPE ("sc-alpha",fep->sc_alpha,0.0);
@@ -2681,16 +2742,13 @@ void do_index(const char* mdparin, const char *ndx,
           }
           if ((ir->epc==epcMTTK) && (ir->etc>etcNO))
           {
-              int mincouple;
-              mincouple = ir->nsttcouple;
-              if (ir->nstpcouple < mincouple)
+              if (ir->nstpcouple != ir->nsttcouple)
               {
-                  mincouple = ir->nstpcouple;
+                  int mincouple = min(ir->nstpcouple,ir->nsttcouple);
+                  ir->nstpcouple = ir->nsttcouple = mincouple;
+                  sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
+                  warning_note(wi,warn_buf);
               }
-              ir->nstpcouple = mincouple;
-              ir->nsttcouple = mincouple;
-              sprintf(warn_buf,"for current Trotter decomposition methods with vv, nsttcouple and nstpcouple must be equal.  Both have been reset to min(nsttcouple,nstpcouple) = %d",mincouple);
-              warning_note(wi,warn_buf);
           }
       }
       /* velocity verlet with averaged kinetic energy KE = 0.5*(v(t+1/2) - v(t-1/2)) is implemented

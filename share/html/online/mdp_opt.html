@@ -1491,54 +1491,62 @@ The potentials, bond-lengths and angles are interpolated linearly as
 described in the manual. When <b>sc-alpha</b> is larger than zero, soft-core
 potentials are used for the LJ and Coulomb interactions.</dd>
 </dl></dd>
-<dt><b>init-lambda: (0)</b></dt>
-<dd>starting value for lambda (float).  Generally, this should only be used with slow growth.  In other cases, <b>init-lambda-state</b> should be specified instead.</dd>
-<dt><b>init-lambda-state: (0)</b></dt>
-<dd>starting value for the lambda state (integer).  Specified which columm of the lambda vector should be used.</dd>
+<dt><b>init-lambda: (-1)</b></dt>
+<dd>starting value for lambda (float).  Generally, this should only be used with slow growth (i.e. nonzero <b>delta-lambda</b>).  In other cases, <b>init-lambda-state</b> should be specified instead. Must be greater than or equal to 0.</dd>
 <dt><b>delta-lambda: (0)</b></dt>
 <dd>increment per time step for lambda</dd>
+<dt><b>init-lambda-state: (-1)</b></dt>
+<dd>starting value for the lambda state (integer).  Specifies which columm of the lambda vector (<b>coul-lambdas</b>, <b>vdw-lambdas</b>, <b>bonded-lambdas</b>, <b>restraint-lambdas</b>, <b>mass-lambdas</b>, <b>temperature-lambdas</b>, <b>fep-lambdas</b>) should be used. This is a zero-based index: <b>init-lambda-state</b> 0 means the first column, and so on.</dd>
 <dt><b>fep-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. 
+Values must be between 0 and 1.
 Free energy differences between different lambda values can then
 be determined with <tt>g_bar</tt>. <b>fep-lambdas</b> is different from the other -lambdas keywords because
-all components of the lambda vector that are not specified will use <b>fep-lambdas</b>.</dd>
+all components of the lambda vector that are not specified will use <b>fep-lambdas</b> (including restraint-lambdas and therefore the pull code restraints).</dd>
 <dt><b>coul-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
-Only the electrostatic interactions are controlled with this component of the lambda vector.</dd>
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
+Only the electrostatic interactions are controlled with this component of the lambda vector (and only if the lambda=0 and lambda=1 states have differing electrostatic interactions).</dd>
 <dt><b>vdw-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the van der Waals interactions are controlled with this component of the lambda vector.</dd>
 <dt><b>bonded-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the bonded interactions are controlled with this component of the lambda vector.</dd>
 <dt><b>restraint-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
-Only the restraint interactions are controlled with this component of the lambda vector.</dd>
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
+Only the restraint interactions: dihedral restraints, and the pull code restraints are controlled with this component of the lambda vector. </dd>
 <dt><b>mass-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the particle masses are controlled with this component of the lambda vector.</dd>
 <dt><b>temperature-lambdas: ()</b></dt>
 <dd>Zero, one or more lambda values for which Delta H values will
-be determined and written to dhdl.xvg every <b>nstdhdl</b> steps.
+be determined and written to dhdl.xvg every <b>nstdhdl</b> steps. Values must be between 0 and 1.
 Only the temperatures controlled with this component of the lambda vector.
 Note that these lambdas should not be used for replica exchange, only for simulated tempering.</dd>
+<dt><b>calc-lambda-neighbors (1)</b></dt>
+<dd>Controls the number of lambda values for which Delta H values will be
+calculated and written out, if <b>init-lambda-state</b> has been set. A
+positive value will limit the number of lambda points calculated to only the
+nth neighbors of <b>init-lambda-state</b>: for example, if
+<b>init-lambda-state</b> is 5 and this parameter has a value of 2, energies for
+lambda points 3-7 will be calculated and writen out. A value of -1 means all
+lambda points will be written out. For normal BAR such as with g_bar, a value
+of 1 is sufficient, while for MBAR -1 should be used.</dd>
 <dt><b>sc-alpha: (0)</b></dt>
-<dd>the soft-core parameter, a value of 0 results in linear interpolation of
-the LJ and Coulomb interactions</dd>
+<dd>the soft-core alpha parameter, a value of 0 results in linear interpolation of the LJ and Coulomb interactions</dd>
 <dt><b>sc-r-power: (6)</b></dt>
 <dd>the power of the radial term in the soft-core equation.  Possible values are 6 and 48. 6 is more standard, and is the default.  When 48 is used, then sc-alpha should generally be much lower (between 0.001 and 0.003).</dd>
 <dt><b>sc-coul: (no)</b></dt>
 <dd>Whether to apply the soft core free energy interations to the Columbic interaction. Default is no, as it is generally
 more efficient to turn of the Coulomic interactions linearly before turning off electrostatic interactions.</dd>
 <dt><b>sc-power: (0)</b></dt>
-<dd>the power for lambda in the soft-core function,
-only the values 1 and 2 are supported</dd>
+<dd>the power for lambda in the soft-core function, only the values 1 and 2 are supported</dd>
 <dt><b>sc-sigma: (0.3) [nm]</b></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
 to zero or a sigma smaller than <b>sc-sigma</b></dd>
@@ -1658,24 +1666,24 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dt><b>symmetrized-transition-matrix: (no) </b></dt>
 <dd>Whether to symmetrize the empirical transition matrix. In the infinite limit the matrix will be symmetric, but will diverge with statistical noise for short timescales.  Forced symmetrization, by using the matrix T_sym = 1/2 (T + transpose(T)), removes problems like the existence of (small magnitude) negative eigenvalues.</dd>
 <dt><b>mininum-var-min: (100)</b></dt>
-<dd> The <b>min-variance</b> strategy (option of <b>lmc-stats</b> is only valid for larger number of samples, and can get stuck if too few samples are used at each state.  <b>mininum-var-min</b> is the minimum number of samples that each state that are allowed before the <b>min-variance</b> strategy is activated if selected.
+<dd> The <b>min-variance</b> strategy (option of <b>lmc-stats</b> is only valid for larger number of samples, and can get stuck if too few samples are used at each state.  <b>mininum-var-min</b> is the minimum number of samples that each state that are allowed before the <b>min-variance</b> strategy is activated if selected.</dd>
 <dt><b>init-lambda-weights: </b></dt>
-<dd>The initial weights (free energies) used for the expanded ensemble states.  Default is a vector of zero weights. format is similar to the lambda vector settings in <b>fep-lambdas</b>, except the weights can be any floating point number.  Units are kT. Its length must match the lambda vector lengths.<dd>
-<dt><b>lmc-weights-equil: (no)</b><dt>
+<dd>The initial weights (free energies) used for the expanded ensemble states.  Default is a vector of zero weights. format is similar to the lambda vector settings in <b>fep-lambdas</b>, except the weights can be any floating point number.  Units are kT. Its length must match the lambda vector lengths.</dd>
+<dt><b>lmc-weights-equil: (no)</b></dt>
 <dd><dl compact>
-<dt><b>no</b><dt>
+<dt><b>no</b></dt>
 <dd>Expanded ensemble weights continue to be updated throughout the simulation.</dd>
-<dt><b>yes</b><dt>
+<dt><b>yes</b></dt>
 <dd>The input expanded ensemble weights are treated as equilibrated, and are not updated throughout the simulation.</dd>
-<dt><b>wl-delta</b><dt>
+<dt><b>wl-delta</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the Wang-Landau incrementor falls below the value specified by <b>weight-equil-wl-delta</b>.</dd>
-<dt><b>number-all-lambda</b><dt>
+<dt><b>number-all-lambda</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of samples at all of the lambda states is greater than the value specified by <b>weight-equil-number-all-lambda</b>.</dd>
-<dt><b>number-steps</b><dt>
+<dt><b>number-steps</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of steps is greater than the level specified by <b>weight-equil-number-steps</b>.</dd>
-<dt><b>number-samples</b><dt>
+<dt><b>number-samples</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the number of total samples across all lambda states is greater than the level specified by <b>weight-equil-number-samples</b>.</dd>
-<dt><b>count-ratio</b><dt>
+<dt><b>count-ratio</b></dt>
 <dd>Expanded ensemble weight updating is stopped when the ratio of samples at the least sampled lambda state and most sampled lambda state greater than the value specified by <b>weight-equil-count-ratio</b>.</dd> 
 </dl>
 <dt><b>simulated-tempering: (no)</b></dt>
@@ -1687,11 +1695,11 @@ simulation specified in the first group of <b>ref_t</b> is used.</dd>
 <dt><b>simulated-tempering-scaling: (linear)</b></dt>
 <dd>Controls the way that the temperatures at intermediate lambdas are calculated from the <b>temperature-lambda</b> part of the lambda vector.</dd>
 <dd><dl compact>
-<dt><b>linear</b><dt>
+<dt><b>linear</b></dt>
 <dd>Linearly interpolates the temperatures using the values of <b>temperature-lambda</b>,i.e. if <b>sim-temp-low</b>=300, <b>sim-temp-high</b>=400, then lambda=0.5 correspond to a temperature of 350. A nonlinear set of temperatures can always be implemented with uneven spacing in lambda.</dd>
-<dt><b>geometric</b><dt>
-<dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>)^(i/(ntemps-1)).  Should give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
-<dt><b>exponential</b><dt>
+<dt><b>geometric</b></dt>
+<dd> Interpolates temperatures geometrically between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The i-th state has temperature <b>sim-temp-low</b> * (<b>sim-temp-high</b>/<b>sim-temp-low</b>) to the power (i/(ntemps-1)).  Should give roughly equal exchange for constant heat capacity, though of course things simulations that involve protein folding have very high heat capacity peaks.</dd>
+<dt><b>exponential</b></dt>
 <dd> Interpolates temperatures exponentially between <b>sim-temp-low</b> and <b>sim-temp-high</b>. The ith state has temperature
 <b>sim-temp-low</b> + (<b>sim-temp-high</b>-<b>sim-temp-low</b>)*((exp(<b>temperature-lambdas</b>[i])-1)/(exp(1.0)-1)).</dd>
 </dl>

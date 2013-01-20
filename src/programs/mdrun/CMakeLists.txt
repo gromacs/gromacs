@@ -2,20 +2,15 @@ include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 set(MDRUN_SOURCES
     do_gct.c      gctio.c       genalg.c    ionize.c
-    md.c          md_openmm.c   mdrun.c     membed.c
+    md.c          mdrun.c     membed.c
     pme_loadbal.c repl_ex.c     runner.c    xutils.c
     ../main.cpp)
 
-if(GMX_OPENMM) 
-    include_directories(./gmx_gpu_utils ${OpenMM_INCLUDE_DIR})
-    link_directories(${OpenMM_LIBRARY_DIR}) 
-    # with this define no evn.var. is needed with OPENMM_PLUGIN_DIR
-    # if the same OpenMM installation is used for running and building 
-    add_definitions( -DOPENMM_PLUGIN_DIR="${OpenMM_PLUGIN_DIR}" ) 
-    file(TO_CMAKE_PATH ${OpenMM_PLUGIN_DIR} _path)
-    add_library(openmm_api_wrapper STATIC openmm_wrapper.cpp)
-    target_link_libraries(openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})
-    set(GMX_OPENMM_LIBRARIES openmm_api_wrapper gmx_gpu_utils ${OpenMM_LIBRARIES})   
+if(GMX_OPENMM)
+    # Even though the OpenMM build has "moved to contrib", many things
+    # have be be done from within the scope of the CMakeLists.txt that
+    # builds its mdrun, and that is here
+    include(../contrib/BuildMdrunOpenMM)
 endif(GMX_OPENMM)
 
 if(GMX_FAHCORE)
@@ -23,15 +18,11 @@ if(GMX_FAHCORE)
 else(GMX_FAHCORE)
     add_executable(mdrun ${MDRUN_SOURCES})
     gmx_add_man_page(mdrun)
-    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_OPENMM_LIBRARIES}
+    target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} libgromacs
         ${GMX_EXE_LINKER_FLAGS})
     set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}"
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
-
-    if(GMX_OPENMM AND MSVC)
-        set_target_properties(mdrun PROPERTIES LINK_FLAGS "/NODEFAULTLIB:LIBCMT")
-    endif()
 
     # Create the custom install-mdrun target
     if (BUILD_SHARED_LIBS)

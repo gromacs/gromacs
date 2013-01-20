@@ -119,12 +119,13 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
 }
 
 void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
-                     const char *name)
+                     const char *name,
+                     gmx_bool bQuiet)
 {
   int  *ibuf,p;
   gmx_bool bCompatible;
 
-  if (NULL != log)
+  if (NULL != log && !bQuiet)
       fprintf(log,"Multi-checking %s ... ",name);
   
   if (ms == NULL)
@@ -141,7 +142,7 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
   
   if (bCompatible) 
   {
-      if (NULL != log)
+      if (NULL != log && !bQuiet)
           fprintf(log,"OK\n");
   }
   else 
@@ -159,13 +160,14 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,
 }
 
 void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
-                           gmx_large_int_t val, const char *name)
+                           gmx_large_int_t val, const char *name,
+                           gmx_bool bQuiet)
 {
   gmx_large_int_t  *ibuf;
   int p;
   gmx_bool bCompatible;
 
-  if (NULL != log)
+  if (NULL != log && !bQuiet)
       fprintf(log,"Multi-checking %s ... ",name);
   
   if (ms == NULL)
@@ -182,7 +184,7 @@ void check_multi_large_int(FILE *log,const gmx_multisim_t *ms,
   
   if (bCompatible) 
   {
-      if (NULL != log)
+      if (NULL != log && !bQuiet)
           fprintf(log,"OK\n");
   }
   else 
@@ -342,7 +344,10 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   
   if (!MASTER(cr))
     snew(*argv,*argc+1);
-  fprintf(stderr,"NODEID=%d argc=%d\n",cr->nodeid,*argc);
+  if (debug)
+  {
+      fprintf(debug,"NODEID=%d argc=%d\n",cr->nodeid,*argc);
+  }
   for(i=0; (i<*argc); i++) {
     if (MASTER(cr))
       len = strlen((*argv)[i])+1;

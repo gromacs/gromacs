@@ -43,8 +43,8 @@ endif()
 # - OFF, TRUE : Will keep GMX_GPU=OFF if no CUDA is detected, but will assemble
 #               a warning message which will be issued at the end of the
 #               configuration if GPU(s) were found in the build system.
-# - ON , FALSE: The user requested GPU builds, will require CUDA and will fail
-#               if it is not available.
+# - ON , FALSE: The user requested GPU build and this requires CUDA, so we will
+#               fail if it is not available.
 # - ON , TRUE : Can't happen (GMX_GPU=ON can only be user-set at this point)
 if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     if (EXISTS ${CUDA_TOOLKIT_ROOT_DIR})
@@ -77,9 +77,9 @@ if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
 
         set(CUDA_NOTFOUND_MESSAGE "
     mdrun supports native GPU acceleration on NVIDIA hardware with compute
-    capability >=2.0. This requires the NVIDIA CUDA library, which was not
-    found; the location can be hinted by setting CUDA_TOOLKIT_ROOT_DIR as
-    a CMake option (It does not work as an environment variable).
+    capability >=2.0 (Fermi or later). This requires the NVIDIA CUDA toolkit,
+    which was not found. Its location can be hinted by setting the
+    CUDA_TOOLKIT_ROOT_DIR CMake option (does not work as an environment variable).
     The typical location would be /usr/local/cuda[-version].
     Note that CPU or GPU acceleration can be selected at runtime!
 
@@ -89,7 +89,7 @@ if((GMX_GPU OR GMX_GPU_AUTO) AND NOT GMX_GPU_DETECTION_DONE)
     if (NOT CUDA_FOUND)
         if (GMX_GPU_AUTO)
             # Disable GPU acceleration in auto mode
-            message(STATUS "Disabling native GPU acceleration")
+            message(STATUS "No compatible CUDA toolkit found (v3.2+), disabling native GPU acceleration")
             set_property(CACHE GMX_GPU PROPERTY VALUE OFF)
             set(CUDA_NOTFOUND_AUTO ON)
         else ()
@@ -127,7 +127,7 @@ macro(gmx_gpu_setup)
     if(NOT GMX_OPENMP)
         message(WARNING "
     To use GPU acceleration efficiently, mdrun requires OpenMP multi-threading.
-    With no OpenMP a single CPU core can be used with a GPU which is not optimal.
+    Without OpenMP a single CPU core can be used with a GPU which is not optimal.
     Note that with MPI multiple processes can be forced to use a single GPU, but this
     typically inefficient. Note that you need to set both C and C++ compilers that
     support OpenMP (CC and CXX environment variables, respectively) when using GPUs.")

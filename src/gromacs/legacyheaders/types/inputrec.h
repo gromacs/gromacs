@@ -130,12 +130,20 @@ typedef struct {
 
 typedef struct {
   int  nstdhdl;          /* The frequency for calculating dhdl           */
-  double init_lambda;    /* fractional value of lambda (usually will use init_fep_state, this will only be for slow growth, and for legacy free energy code)   */
+  double init_lambda;    /* fractional value of lambda (usually will use
+                            init_fep_state, this will only be for slow growth,
+                            and for legacy free energy code. Only has a
+                            valid value if positive)   */
   int init_fep_state;    /* the initial number of the state                   */
   double delta_lambda;	 /* change of lambda per time step (fraction of (0.1) */
   gmx_bool bPrintEnergy; /* Whether to print the energy in the dhdl           */
   int  n_lambda;         /* The number of foreign lambda points               */
   double **all_lambda;   /* The array of all lambda values                    */
+  int lambda_neighbors;  /* The number of neighboring lambda states to
+                            calculate the energy for in up and down directions
+                            (-1 for all) */
+  int lambda_start_n;    /* The first lambda to calculate energies for */
+  int lambda_stop_n;     /* The last lambda +1 to calculate energies for */
   real sc_alpha;         /* free energy soft-core parameter                   */
   int  sc_power;         /* lambda power for soft-core interactions           */
   real sc_r_power;          /* r power for soft-core interactions                */

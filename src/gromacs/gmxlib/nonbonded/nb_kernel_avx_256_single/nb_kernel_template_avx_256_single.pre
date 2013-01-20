@@ -649,6 +649,9 @@ void
             FF               = _mm256_add_ps(Fp,_mm256_mul_ps(gbeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
             fgb              = _mm256_mul_ps(gbqqfactor,_mm256_mul_ps(FF,gbscale));
             dvdatmp          = _mm256_mul_ps(minushalf,_mm256_add_ps(vgb,_mm256_mul_ps(fgb,r{I}{J})));
+            /*                 #if ROUND == 'Epilogue' */
+            dvdatmp          = _mm256_andnot_ps(dummy_mask,dvdatmp);
+            /*                 #endif */
             dvdasum          = _mm256_add_ps(dvdasum,dvdatmp);
             /*                 #if ROUND == 'Loop' */
             fjptrA           = dvda+jnrA;

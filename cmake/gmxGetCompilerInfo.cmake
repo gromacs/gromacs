@@ -1,36 +1,50 @@
 # This macro attempts to parse the version string of the C compiler in use.
-# Currently supported are only compilers that accept "-dumpversion" argument:
-# gcc, Intel Compiler (on Linux and Mac OS), Open64, EkoPath.
+# With CMake 2.8.9 CMake provides a CMAKE_[C|CXX]_COMPILER_VERSION variable
+# so we will use that if available.
+#
+# Currently supported are:
+# - with cmake >2.8.8 all compilers supported by CMake
+# - with cmake <=2.8.8: compilers that accept "-dumpversion" argument:
+#   gcc, Intel Compiler (on Linux and Mac OS), Open64, EkoPath, clang
+#   (and probably other gcc-compatible compilers).
 #
 # C_COMPILER_VERSION    - version string of the current C compiler (CMAKE_C_COMPILER)
 # CXX_COMPILER_VERSION  - version string of the current C++ compiler (CMAKE_CXX_COMPILER)
 #
 macro(get_compiler_version)
     if(NOT C_COMPILER_VERSION)
-        execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
-            RESULT_VARIABLE _cc_dumpversion_res
-            OUTPUT_VARIABLE _cc_dumpversion_out
-	    ERROR_VARIABLE  _cc_dumpversion_err
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(_cc_dumpversion_res 0)
+        if (DEFINED xCMAKE_C_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
+            set(_cc_version ${CMAKE_C_COMPILER_VERSION})
+        else()
+            execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
+                RESULT_VARIABLE _cc_dumpversion_res
+                OUTPUT_VARIABLE _cc_version
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        endif()
 
         if (${_cc_dumpversion_res} EQUAL 0)
-            SET(C_COMPILER_VERSION ${_cc_dumpversion_out}
-                CACHE STRING "C compiler version string" FORCE)
+            SET(C_COMPILER_VERSION ${_cc_version}
+                CACHE STRING "C compiler version" FORCE)
         else ()
             SET(C_COMPILER_VERSION ""
-                CACHE STRING "C compiler version string not available" FORCE)
+                CACHE STRING "C compiler version not available" FORCE)
         endif ()
     endif()
 
     if(NOT CXX_COMPILER_VERSION AND CMAKE_CXX_COMPILER_LOADED)
-        execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
-            RESULT_VARIABLE _cxx_dumpversion_res
-            OUTPUT_VARIABLE _cxx_dumpversion_out
-	    ERROR_VARIABLE  _cxx_dumpversion_err
-            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        set(_cxx_dumpversion_res 0)
+        if (DEFINED CMAKE_CXX_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
+            set(_cxx_version ${CMAKE_CXX_COMPILER_VERSION})
+        else()
+            execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
+                RESULT_VARIABLE _cxx_dumpversion_res
+                OUTPUT_VARIABLE _cxx_version
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+        endif()
 
         if (${_cxx_dumpversion_res} EQUAL 0)
-            SET(CXX_COMPILER_VERSION ${_cxx_dumpversion_out}
+            SET(CXX_COMPILER_VERSION ${_cxx_version}
                 CACHE STRING "C++ compiler version string" FORCE)
         else ()
             SET(CXX_COMPILER_VERSION ""
@@ -39,7 +53,7 @@ macro(get_compiler_version)
     endif ()
 
     if (NOT "${C_COMPILER_VERSION}" STREQUAL "${CXX_COMPILER_VERSION}" AND CMAKE_CXX_COMPILER_LOADED)
-        message(WARNING "The version string of the C and C++ compilers does not match!")
+        message(WARNING "The version of the C and C++ compilers does not match. Note that mixing different C/C++ compilers can cause problems!")
     endif ()
 
     mark_as_advanced(C_COMPILER_VERSION CXX_COMPILER_VERSION)

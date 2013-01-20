@@ -68,6 +68,7 @@
 #include "orires.h"
 #include "gmx_wallcycle.h"
 #include "gmx_omp_nthreads.h"
+#include "gmx_omp.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/
@@ -90,8 +91,12 @@ typedef struct {
 } gmx_sd_sigma_t;
 
 typedef struct {
-  /* The random state */
-  gmx_rng_t gaussrand;
+  /* The random state for ngaussrand threads.
+   * Normal thermostats need just 1 random number generator,
+   * but SD and BD with OpenMP parallelization need 1 for each thread.
+   */
+  int ngaussrand;
+  gmx_rng_t *gaussrand;
   /* BD stuff */
   real *bd_rf;
   /* SD stuff */
@@ -467,11 +472,42 @@ static void do_update_visc(int start,int nrend,double dt,
     }
 }
 
-static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
+/* Allocates and initializes sd->gaussrand[i] for i=1, i<sd->ngaussrand,
+ * Using seeds generated from sd->gaussrand[0].
+ */
+static void init_multiple_gaussrand(gmx_stochd_t *sd)
+{
+    int          ngr,i;
+    unsigned int *seed;
+
+    ngr = sd->ngaussrand;
+    snew(seed,ngr);
+
+    for(i=1; i<ngr; i++)
+    {
+        seed[i] = gmx_rng_uniform_uint32(sd->gaussrand[0]);
+    }
+
+#pragma omp parallel num_threads(ngr)
+    {
+        int th;
+
+        th = gmx_omp_get_thread_num();
+        if (th > 0)
+        {
+            /* Initialize on each thread to have thread-local memory alloced */
+            sd->gaussrand[th] = gmx_rng_init(seed[th]);
+        }
+    }
+
+    sfree(seed);
+}
+
+static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir,int nthreads)
 {
     gmx_stochd_t *sd;
     gmx_sd_const_t *sdc;
-    int  ngtc,n;
+    int  ngtc,n,th;
     real y;
 
     snew(sd,1);
@@ -479,7 +515,26 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
     /* Initiate random number generator for langevin type dynamics,
      * for BD, SD or velocity rescaling temperature coupling.
      */
-    sd->gaussrand = gmx_rng_init(ir->ld_seed);
+    if (ir->eI == eiBD || EI_SD(ir->eI))
+    {
+        sd->ngaussrand = nthreads;
+    }
+    else
+    {
+        sd->ngaussrand = 1;
+    }
+    snew(sd->gaussrand,sd->ngaussrand);
+
+    /* Initialize the first random generator */
+    sd->gaussrand[0] = gmx_rng_init(ir->ld_seed);
+
+    if (sd->ngaussrand > 1)
+    {
+        /* Initialize the rest of the random number generators,
+         * using the first one to generate seeds.
+         */
+        init_multiple_gaussrand(sd);
+    }
 
     ngtc = ir->opts.ngtc;
 
@@ -561,12 +616,38 @@ static gmx_stochd_t *init_stochd(FILE *fplog,t_inputrec *ir)
 
 void get_stochd_state(gmx_update_t upd,t_state *state)
 {
-    gmx_rng_get_state(upd->sd->gaussrand,state->ld_rng,state->ld_rngi);
+    /* Note that we only get the state of the first random generator,
+     * even if there are multiple. This avoids repetition.
+     */
+    gmx_rng_get_state(upd->sd->gaussrand[0],state->ld_rng,state->ld_rngi);
 }
 
 void set_stochd_state(gmx_update_t upd,t_state *state)
 {
-    gmx_rng_set_state(upd->sd->gaussrand,state->ld_rng,state->ld_rngi[0]);
+    gmx_stochd_t *sd;
+    int i;
+
+    sd = upd->sd;
+
+    gmx_rng_set_state(sd->gaussrand[0],state->ld_rng,state->ld_rngi[0]);
+
+    if (sd->ngaussrand > 1)
+    {
+        /* We only end up here with SD or BD with OpenMP.
+         * Destroy and reinitialize the rest of the random number generators,
+         * using seeds generated from the first one.
+         * Although this doesn't recover the previous state,
+         * it at least avoids repetition, which is most important.
+         * Exaclty restoring states with all MPI+OpenMP setups is difficult
+         * and as the integrator is random to start with, doesn't gain us much.
+         */
+        for(i=1; i<sd->ngaussrand; i++)
+        {
+            gmx_rng_destroy(sd->gaussrand[i]);
+        }
+
+        init_multiple_gaussrand(sd);
+    }
 }
 
 gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
@@ -577,7 +658,7 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
 
     if (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE || ETC_ANDERSEN(ir->etc))
     {
-        upd->sd = init_stochd(fplog,ir);
+        upd->sd = init_stochd(fplog,ir,gmx_omp_nthreads_get(emntUpdate));
     }
 
     upd->xp = NULL;
@@ -590,7 +671,8 @@ gmx_update_t init_update(FILE *fplog,t_inputrec *ir)
 }
 
 static void do_update_sd1(gmx_stochd_t *sd,
-                          int start,int homenr,double dt,
+                          gmx_rng_t gaussrand,
+                          int start,int nrend,double dt,
                           rvec accel[],ivec nFreeze[],
                           real invmass[],unsigned short ptype[],
                           unsigned short cFREEZE[],unsigned short cACC[],
@@ -601,7 +683,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
-  gmx_rng_t gaussrand;
   real   kT;
   int    gf=0,ga=0,gt=0;
   real   ism,sd_V;
@@ -609,12 +690,11 @@ static void do_update_sd1(gmx_stochd_t *sd,
 
   sdc = sd->sdc;
   sig = sd->sdsig;
-  if (homenr > sd->sd_V_nalloc)
+  if (nrend-start > sd->sd_V_nalloc)
   {
-      sd->sd_V_nalloc = over_alloc_dd(homenr);
+      sd->sd_V_nalloc = over_alloc_dd(nrend-start);
       srenew(sd->sd_V,sd->sd_V_nalloc);
   }
-  gaussrand = sd->gaussrand;
 
   for(n=0; n<ngtc; n++)
   {
@@ -623,7 +703,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
       sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
   }
 
-  for(n=start; n<start+homenr; n++)
+  for(n=start; n<nrend; n++)
   {
       ism = sqrt(invmass[n]);
       if (cFREEZE)
@@ -660,8 +740,10 @@ static void do_update_sd1(gmx_stochd_t *sd,
   }
 }
 
-static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
-                          int start,int homenr,
+static void do_update_sd2(gmx_stochd_t *sd,
+                          gmx_rng_t gaussrand,
+                          gmx_bool bInitStep,
+                          int start,int nrend,
                           rvec accel[],ivec nFreeze[],
                           real invmass[],unsigned short ptype[],
                           unsigned short cFREEZE[],unsigned short cACC[],
@@ -677,7 +759,6 @@ static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
    * half of the update, needs to be remembered for the second half.
    */
   rvec *sd_V;
-  gmx_rng_t gaussrand;
   real   kT;
   int    gf=0,ga=0,gt=0;
   real   vn=0,Vmh,Xmh;
@@ -686,13 +767,12 @@ static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
 
   sdc = sd->sdc;
   sig = sd->sdsig;
-  if (homenr > sd->sd_V_nalloc)
+  if (nrend-start > sd->sd_V_nalloc)
   {
-      sd->sd_V_nalloc = over_alloc_dd(homenr);
+      sd->sd_V_nalloc = over_alloc_dd(nrend-start);
       srenew(sd->sd_V,sd->sd_V_nalloc);
   }
   sd_V = sd->sd_V;
-  gaussrand = sd->gaussrand;
 
   if (bFirstHalf)
   {
@@ -707,7 +787,7 @@ static void do_update_sd2(gmx_stochd_t *sd,gmx_bool bInitStep,
       }
   }
 
-  for (n=start; n<start+homenr; n++)
+  for (n=start; n<nrend; n++)
   {
       ism = sqrt(invmass[n]);
       if (cFREEZE)
@@ -1297,7 +1377,7 @@ void update_tcouple(FILE         *fplog,
             break;
         case etcVRESCALE:
             vrescale_tcoupl(inputrec,ekind,dttc,
-                            state->therm_integral,upd->sd->gaussrand);
+                            state->therm_integral,upd->sd->gaussrand[0]);
             break;
         }
         /* rescale in place here */
@@ -1417,6 +1497,7 @@ void update_constraints(FILE         *fplog,
     int              start,homenr,nrend,i,n,m,g,d;
     tensor           vir_con;
     rvec             *vbuf,*xprime=NULL;
+    int              nth,th;
 
     if (constr) {bDoConstr=TRUE;}
     if (bFirstHalf && !EI_VV(inputrec->eI)) {bDoConstr=FALSE;}
@@ -1513,14 +1594,26 @@ void update_constraints(FILE         *fplog,
     {
         xprime = get_xprime(state,upd);
 
-        /* The second part of the SD integration */
-        do_update_sd2(upd->sd,FALSE,start,homenr,
-                      inputrec->opts.acc,inputrec->opts.nFreeze,
-                      md->invmass,md->ptype,
-                      md->cFREEZE,md->cACC,md->cTC,
-                      state->x,xprime,state->v,force,state->sd_X,
-                      inputrec->opts.ngtc,inputrec->opts.tau_t,
-                      inputrec->opts.ref_t,FALSE);
+        nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+        for(th=0; th<nth; th++)
+        {
+            int start_th,end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            /* The second part of the SD integration */
+            do_update_sd2(upd->sd,upd->sd->gaussrand[th],
+                          FALSE,start_th,end_th,
+                          inputrec->opts.acc,inputrec->opts.nFreeze,
+                          md->invmass,md->ptype,
+                          md->cFREEZE,md->cACC,md->cTC,
+                          state->x,xprime,state->v,force,state->sd_X,
+                          inputrec->opts.ngtc,inputrec->opts.tau_t,
+                          inputrec->opts.ref_t,FALSE);
+        }
         inc_nrnb(nrnb, eNR_UPDATE, homenr);
 
         if (bDoConstr)
@@ -1774,7 +1867,7 @@ void update_coords(FILE         *fplog,
         nth = gmx_omp_nthreads_get(emntUpdate);
     }
 
-# pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
+#pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
     for(th=0; th<nth; th++)
     {
         int start_th,end_th;
@@ -1808,7 +1901,8 @@ void update_coords(FILE         *fplog,
             }
             break;
         case (eiSD1):
-            do_update_sd1(upd->sd,start,homenr,dt,
+            do_update_sd1(upd->sd,upd->sd->gaussrand[th],
+                          start_th,end_th,dt,
                           inputrec->opts.acc,inputrec->opts.nFreeze,
                           md->invmass,md->ptype,
                           md->cFREEZE,md->cACC,md->cTC,
@@ -1819,7 +1913,8 @@ void update_coords(FILE         *fplog,
             /* The SD update is done in 2 parts, because an extra constraint step
              * is needed 
              */
-            do_update_sd2(upd->sd,bInitStep,start,homenr,
+            do_update_sd2(upd->sd,upd->sd->gaussrand[th],
+                          bInitStep,start_th,end_th,
                           inputrec->opts.acc,inputrec->opts.nFreeze,
                           md->invmass,md->ptype,
                           md->cFREEZE,md->cACC,md->cTC,
@@ -1828,13 +1923,13 @@ void update_coords(FILE         *fplog,
                           TRUE);
         break;
         case (eiBD):
-            do_update_bd(start,nrend,dt,
+            do_update_bd(start_th,end_th,dt,
                          inputrec->opts.nFreeze,md->invmass,md->ptype,
                          md->cFREEZE,md->cTC,
                          state->x,xprime,state->v,force,
                          inputrec->bd_fric,
                          inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                         upd->sd->bd_rf,upd->sd->gaussrand);
+                         upd->sd->bd_rf,upd->sd->gaussrand[th]);
             break;
         case (eiVV):
         case (eiVVAK):
@@ -1940,7 +2035,7 @@ extern gmx_bool update_randomize_velocities(t_inputrec *ir, gmx_large_int_t step
             }
             upd->randatom_list_init = TRUE;
         }
-        andersen_tcoupl(ir,md,state,upd->sd->gaussrand,rate,
+        andersen_tcoupl(ir,md,state,upd->sd->gaussrand[0],rate,
                         (ir->etc==etcANDERSEN)?idef:NULL,
                         constr?get_nblocks(constr):0,
                         constr?get_sblock(constr):NULL,

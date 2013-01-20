@@ -63,9 +63,6 @@ FUNC_QUALIFIER
 int do_timed_memtest(int dev_id, int time_limit) FUNC_TERM_INT
 
 FUNC_QUALIFIER
-gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name) FUNC_TERM_INT
-
-FUNC_QUALIFIER
 int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str) FUNC_TERM_INT
 
 FUNC_QUALIFIER

@@ -152,6 +152,10 @@ const char *efpt_names[efptNR+1] = {
   "fep-lambdas", "mass-lambdas", "coul-lambdas", "vdw-lambdas", "bonded-lambdas", "restraint-lambdas", "temperature-lambdas", NULL
 };
 
+const char *efpt_singular_names[efptNR+1] = {
+  "fep-lambda", "mass-lambda", "coul-lambda", "vdw-lambda", "bonded-lambda", "restraint-lambda", "temperature-lambda", NULL
+};
+
 const char *elamstats_names[elamstatsNR+1] = {
   "no", "metropolis-transition", "barker-transition", "minvar", "wang-landau", "weighted-wang-landau", NULL
 };

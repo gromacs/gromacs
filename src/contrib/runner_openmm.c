@@ -1,37 +1,39 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -43,9 +45,6 @@
 #endif
 #include <signal.h>
 #include <stdlib.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #include <string.h>
 #include <assert.h>
 
@@ -58,7 +57,6 @@
 #include "md_support.h"
 #include "network.h"
 #include "pull.h"
-#include "pull_rotation.h"
 #include "names.h"
 #include "disre.h"
 #include "orires.h"
@@ -66,6 +64,7 @@
 #include "mdatoms.h"
 #include "repl_ex.h"
 #include "qmmm.h"
+#include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
 #include "coulomb.h"
@@ -84,7 +83,7 @@
 #include "../mdlib/nbnxn_consts.h"
 #include "gmx_fatal_collective.h"
 #include "membed.h"
-#include "macros.h"
+#include "md_openmm.h"
 #include "gmx_omp.h"
 
 #include "thread_mpi/threads.h"
@@ -108,7 +107,7 @@ typedef struct {
 } gmx_intp_t;
 
 /* The array should match the eI array in include/types/enums.h */
-const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md}, {do_md},{do_md}};
+const gmx_intp_t integrator[eiNR] = { {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm}, {do_md_openmm},{do_md_openmm}};
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
@@ -1072,10 +1071,9 @@ static void set_cpu_affinity(FILE *fplog,
 
 
 static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
-                                    int cutoff_scheme,
-                                    gmx_bool bIsSimMaster)
+                                    int cutoff_scheme)
 {
-    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp, bIsSimMaster);
+    gmx_omp_nthreads_read_env(&hw_opt->nthreads_omp);
 
 #ifndef GMX_THREAD_MPI
     if (hw_opt->nthreads_tot > 0)
@@ -1336,7 +1334,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (SIMMASTER(cr))
 #endif
     {
-        check_and_update_hw_opt(hw_opt,minf.cutoff_scheme,SIMMASTER(cr));
+        check_and_update_hw_opt(hw_opt,minf.cutoff_scheme);
 
 #ifdef GMX_THREAD_MPI
         /* Early check for externally set process affinity. Can't do over all
@@ -1458,6 +1456,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* now make sure the state is initialized and propagated */
     set_state_entries(state,inputrec,cr->nnodes);
 
+    /* remove when vv and rerun works correctly! */
+    if (PAR(cr) && EI_VV(inputrec->eI) && ((Flags & MD_RERUN) || (Flags & MD_RERUN_VSITE)))
+    {
+        gmx_fatal(FARGS,
+                  "Currently can't do velocity verlet with rerun in parallel.");
+    }
+
     /* A parallel command line option consistency check that we can
        only do after any threads have started. */
     if (!PAR(cr) &&
@@ -1523,7 +1528,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     snew(fcd,1);
 
     /* This needs to be called before read_checkpoint to extend the state */
-    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state, repl_ex_nst > 0);
+    init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
 
     if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0)
     {
@@ -1620,7 +1625,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (opt2bSet("-ei",nfile,fnm))
     {
         /* Open input and output files, allocate space for ED data structure */
-        ed = ed_open(mtop->natoms,&state->edsamstate,nfile,fnm,Flags,oenv,cr);
+        ed = ed_open(nfile,fnm,Flags,cr);
     }
 
     if (PAR(cr) && !((Flags & MD_PARTDEC) ||
@@ -1841,7 +1846,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     }
 
 
-    if (integrator[inputrec->eI].func == do_md)
+    if (integrator[inputrec->eI].func == do_md
+        ||
+        integrator[inputrec->eI].func == do_md_openmm
+        )
     {
         /* Turn on signal handling on all nodes */
         /*

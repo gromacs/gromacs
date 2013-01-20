@@ -68,6 +68,21 @@ extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref();
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref();
 
+/* We should actually be using md_print_warn in md_logging.c,
+ * but we can't include mpi.h in CUDA code.
+ */
+static void md_print_warn(FILE *fplog, const char *buf)
+{
+    if (fplog != NULL)
+    {
+        /* We should only print to stderr on the master node,
+         * in most cases fplog is only set on the master node, so this works.
+         */
+        fprintf(stderr, "\n%s\n", buf);
+        fprintf(fplog,  "\n%s\n", buf);
+    }
+}
+
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
 
@@ -392,7 +407,8 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86;
+    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86, bOldDriver;
+    int cuda_drv_ver;
 
     assert(gpu_info);
 
@@ -444,6 +460,13 @@ void nbnxn_cuda_init(FILE *fplog,
      * waiting to preserve performance. This requires support for atomic
      * operations and only works on x86/x86_64.
      * With polling wait event-timing also needs to be disabled.
+     *
+     * The overhead is greatly reduced in API v5.0 drivers and the improvement
+     $ is independent of runtime version. Hence, with API v5.0 drivers and later
+     * we won't switch to polling.
+     *
+     * NOTE: Unfortunately, this is known to fail when GPUs are shared by (t)MPI,
+     * ranks so we will also disable it in that case.
      */
 
     bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
@@ -466,61 +489,55 @@ void nbnxn_cuda_init(FILE *fplog,
         gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
     }
 
+    stat = cudaDriverGetVersion(&cuda_drv_ver);
+    CU_RET_ERR(stat, "cudaDriverGetVersion failed");
+    bOldDriver = (cuda_drv_ver < 5000);
+
     if (nb->dev_info->prop.ECCEnabled == 1)
     {
         if (bStreamSync)
         {
             nb->bUseStreamSync = true;
 
-            sprintf(sbuf,
-                    "NOTE: Using a GPU with ECC enabled, but cudaStreamSynchronize-based waiting is\n"
-                    "      forced by the GMX_CUDA_STREAMSYNC env. var. Due to a CUDA bug, this \n"
-                    "      combination causes performance loss.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
+            /* only warn if polling should be used */
+            if (bOldDriver && !gpu_info->bDevShare)
             {
-                fprintf(fplog, "\n%s\n", sbuf);
+                md_print_warn(fplog,
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
+                              "      cudaStreamSynchronize waiting is forced by the GMX_CUDA_STREAMSYNC env. var.\n");
             }
         }
         else
         {
-            /* can use polling wait only on x86/x86_64 *if* atomics are available */
-            nb->bUseStreamSync = ((bX86 && bTMPIAtomics) == false);
+            /* Can/should turn of cudaStreamSynchronize wait only if
+             *   - we're on x86/x86_64
+             *   - atomics are available
+             *   - GPUs are not being shared
+             *   - and driver is old. */
+            nb->bUseStreamSync =
+                (bX86 && bTMPIAtomics && !gpu_info->bDevShare && bOldDriver) ?
+                true : false;
 
-            if (!bX86)
+            if (nb->bUseStreamSync)
             {
-                sprintf(sbuf,
-                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
-                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
-                        "      However, the polling waiting workaround can not be used as it is only\n"
-                        "      supported on x86/x86_64, but not on the current architecture.");
-                gmx_warning("%s\n", sbuf);
-                if (fplog)
-                {
-                    fprintf(fplog, "\n%s\n", sbuf);
-                }
-
+                md_print_warn(fplog,
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
+                              "      cause performance loss. Switching to the alternative polling GPU waiting.\n"
+                              "      If you encounter issues, switch back to standard GPU waiting by setting\n"
+                              "      the GMX_CUDA_STREAMSYNC environment variable.\n");
             }
-            else if (bTMPIAtomics)
+            else if (bOldDriver)
             {
-                if (fplog)
-                {
-                    fprintf(fplog,
-                            "NOTE: Using a GPU with ECC enabled; will use polling waiting.\n");
-                }
-            }
-            else
-            {
+                /* Tell the user that the ECC+old driver combination can be bad */
                 sprintf(sbuf,
-                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
-                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
-                        "      However, the polling waiting workaround can not be used as atomic\n"
-                        "      operations are not supported by the current CPU+compiler combination.");
-                gmx_warning("%s\n", sbuf);
-                if (fplog)
-                {
-                    fprintf(fplog, "\n%s\n", sbuf);
-                }
+                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0. A bug in this\n"
+                        "      driver can cause performance loss.\n"
+                        "      However, the polling waiting workaround can not be used because\n%s\n"
+                        "      Consider updating the driver or turning ECC off.",
+                        (!bX86 || !bTMPIAtomics) ?
+                           "         atomic operations are not supported by the platform/CPU+compiler." :
+                           "         GPU(s) are being oversubscribed.");
+                md_print_warn(fplog, sbuf);
             }
         }
     }
@@ -530,14 +547,8 @@ void nbnxn_cuda_init(FILE *fplog,
         {
             nb->bUseStreamSync = false;
 
-            sprintf(sbuf,
-                    "NOTE: Using a GPU with no/disabled ECC, but cudaStreamSynchronize-based waiting\n"
-                    "      is turned off and polling turned on by the GMX_NO_CUDA_STREAMSYNC env. var.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
-            {
-                fprintf(fplog, "\n%s\n", sbuf);
-            }
+            md_print_warn(fplog,
+                          "NOTE: Polling wait for GPU synchronization requested by GMX_NO_CUDA_STREAMSYNC\n");
         }
         else
         {

@@ -480,6 +480,23 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
     if (set->cycles < pme_lb->setup[pme_lb->fastest].cycles)
     {
         pme_lb->fastest = pme_lb->cur;
+
+        if (DOMAINDECOMP(cr))
+        {
+            /* We found a new fastest setting, ensure that with subsequent
+             * shorter cut-off's the dynamic load balancing does not make
+             * the use of the current cut-off impossible. This solution is
+             * a trade-off, as the PME load balancing and DD domain size
+             * load balancing can interact in complex ways.
+             * With the Verlet kernels, DD load imbalance will usually be
+             * mainly due to bonded interaction imbalance, which will often
+             * quickly push the domain boundaries beyond the limit for the
+             * optimal, PME load balanced, cut-off. But it could be that
+             * better overal performance can be obtained with a slightly
+             * shorter cut-off and better DD load balancing.
+             */
+            change_dd_dlb_cutoff_limit(cr);
+        }
     }
     cycles_fast = pme_lb->setup[pme_lb->fastest].cycles;
 

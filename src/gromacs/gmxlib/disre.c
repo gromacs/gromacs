@@ -55,7 +55,7 @@
 
 void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
                  t_inputrec *ir,const t_commrec *cr,gmx_bool bPartDecomp,
-                 t_fcdata *fcd,t_state *state)
+                 t_fcdata *fcd,t_state *state, gmx_bool bIsREMD)
 {
     int          fa,nmol,i,npair,np;
     t_iparams    *ip;
@@ -181,7 +181,7 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
 
     ptr = getenv("GMX_DISRE_ENSEMBLE_SIZE");
-    if (cr && cr->ms != NULL && ptr != NULL)
+    if (cr && cr->ms != NULL && ptr != NULL && !bIsREMD)
     {
 #ifdef GMX_MPI
         dd->nsystems = 0;
@@ -190,8 +190,17 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         {
             fprintf(fplog,"Found GMX_DISRE_ENSEMBLE_SIZE set to %d systems per ensemble\n",dd->nsystems);
         }
-        check_multi_int(fplog,cr->ms,dd->nsystems,
-                        "the number of systems per ensemble");
+        /* This check is only valid on MASTER(cr), so probably
+         * ensemble-averaged distance restraints are broken on more
+         * than one processor per simulation system. */
+        if (MASTER(cr))
+        {
+            check_multi_int(fplog,cr->ms,dd->nsystems,
+                            "the number of systems per ensemble",
+                            FALSE);
+        }
+        gmx_bcast_sim(sizeof(int), &dd->nsystems, cr);
+
         /* We use to allow any value of nsystems which was a divisor
          * of ms->nsim. But this required an extra communicator which
          * was stored in t_fcdata. This pulled in mpi.h in nearly all C files.
@@ -200,7 +209,6 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         {
             gmx_fatal(FARGS,"GMX_DISRE_ENSEMBLE_SIZE (%d) is not equal to 1 or the number of systems (option -multi) %d",dd->nsystems,cr->ms->nsim);
         }
-
         if (fplog)
         {
             fprintf(fplog,"Our ensemble consists of systems:");
@@ -225,10 +233,17 @@ void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
         if (fplog) {
             fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
         }
-        if (cr && cr->ms)
+        /* Have to avoid g_disre de-referencing cr blindly, mdrun not
+         * doing consistency checks for ensemble-averaged distance
+         * restraints when that's not happening, and only doing those
+         * checks from appropriate processes (since check_multi_int is
+         * too broken to check whether the communication will
+         * succeed...) */
+        if (cr && cr->ms && dd->nsystems > 1 && MASTER(cr))
         {
             check_multi_int(fplog,cr->ms,fcd->disres.nres,
-                            "the number of distance restraints");
+                            "the number of distance restraints",
+                            FALSE);
         }
         please_cite(fplog,"Tropp80a");
         please_cite(fplog,"Torda89a");

@@ -140,9 +140,6 @@ typedef double gmx_integrator_t(FILE *log,t_commrec *cr,
 
 gmx_integrator_t do_md;
 
-gmx_integrator_t do_md_openmm;
-
-
 
 /* ROUTINES from minimize.c */
 

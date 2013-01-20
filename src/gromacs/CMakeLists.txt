@@ -87,7 +87,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
         COMPONENT development)
 
 if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_OPENMM OR GMX_GPU)
+    if (GMX_GPU)
         foreach(CUDA_LIB ${CUDA_LIBRARIES})
             string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
             if(IS_CUDART) #libcuda should not be installed
@@ -98,6 +98,6 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
             endif()
         endforeach()
     else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_OPENMM or GMX_GPU")
+        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
 endif ()

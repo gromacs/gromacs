@@ -111,6 +111,13 @@ gmx_bool change_dd_cutoff(t_commrec *cr,t_state *state,t_inputrec *ir,
  * then FALSE will be returned and the cut-off is not modified.
  */
 
+void change_dd_dlb_cutoff_limit(t_commrec *cr);
+/* Domain boundary changes due to the DD dynamic load balancing can limit
+ * the cut-off distance that can be set in change_dd_cutoff. This function
+ * limits the DLB such that using the currently set cut-off should still be
+ * possible after subsequently setting a shorter cut-off with change_dd_cutoff.
+ */
+
 void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 void dd_collect_vec(gmx_domdec_t *dd,

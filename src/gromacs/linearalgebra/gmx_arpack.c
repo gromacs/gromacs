@@ -33,11 +33,9 @@
 #include <string.h>
 
 #include "gromacs/legacyheaders/types/simple.h"
-
 #include "gmx_arpack.h"
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
-
 static void 
 F77_FUNC(dstqrb,DSTQRB)(int *      n, 
                         double *   d__, 
