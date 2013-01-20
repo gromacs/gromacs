@@ -60,11 +60,12 @@
 #include "molprop_tables.h"
 #include "molselect.h"
 
-#define SPOEL ((char *)"spoel")
+static const char *SPOEL = "spoel";
 
 typedef struct 
 {
     char *cat;
+    gmx_bool bPrint;
     int count;
     real rms;
 } t_catli;
@@ -268,7 +269,8 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
             if (gmx_stats_done(lsq) == estatsOK)
                 sfree(lsq);
         }
-        if ((nqmres > 0) && (nexpres > 0))
+        cats->catli[i].bPrint = ((nqmres > 0) && (nexpres > 0));
+        if (cats->catli[i].bPrint)
         {
             strncat(catbuf,"\\\\\n",STRLEN-1);
             fprintf(fp,"%s",catbuf);
@@ -835,7 +837,8 @@ void gmx_molprop_atomtype_table(FILE *fp,gmx_bool bPolar,
                                
 
 static void prop_header(FILE *fp,int caption,const char *property,real rtoler,real atoler,
-                        t_qmcount *qmc,gmx_bool bSideways,int ims,gmx_bool bPrintConf)
+                        t_qmcount *qmc,gmx_bool bSideways,int ims,gmx_bool bPrintConf,
+                        gmx_bool bPrintBasis,gmx_bool bPrintMultQ)
 {
     int  i;
     
@@ -856,20 +859,31 @@ static void prop_header(FILE *fp,int caption,const char *property,real rtoler,re
     }
     
     fprintf(fp,"\\begin{tabularx}{23cm}{Xcc");
+    if (bPrintMultQ)
+        fprintf(fp,"cc");
     if (bPrintConf)
         fprintf(fp,"c");
     for(i=0; (i<qmc->n); i++)
         fprintf(fp,"c");
     fprintf(fp,"}\n\\hline\n");
-    fprintf(fp,"Molecule & Form. %s & Exper. ",bPrintConf ? "& Conf." : "");
+    fprintf(fp,"Molecule & Form. %s %s & Exper. ",
+            bPrintMultQ ? "& q & mult" : "",
+            bPrintConf  ? "& Conf." : "");
     for(i=0; (i<qmc->n); i++)
         fprintf(fp,"& %s",qmc->method[i]);
     fprintf(fp,"\\\\\n");
-    fprintf(fp," & & %s",bPrintConf ? "&" : "");
-    for(i=0; (i<qmc->n); i++)
-        fprintf(fp,"& %s",qmc->basis[i]);
-    fprintf(fp,"\\\\\n");
-    fprintf(fp,"Type & & %s",bPrintConf ? "&" : "");
+    if (bPrintBasis) 
+    {
+        fprintf(fp," & & %s %s",
+                bPrintMultQ ? "& &" : "",
+                bPrintConf ? "&" : "");
+        for(i=0; (i<qmc->n); i++)
+            fprintf(fp,"& %s",qmc->basis[i]);
+        fprintf(fp,"\\\\\n");
+    }
+    fprintf(fp,"Type & &%s %s",
+            bPrintMultQ ? "& &" : "",
+            bPrintConf ? "&" : "");
     for(i=0; (i<qmc->n); i++)
         fprintf(fp,"& %s",qmc->type[i]);
     fprintf(fp,"\\\\\n\\hline\n");
@@ -909,6 +923,7 @@ static int outside(real vexp,real vcalc,real rtoler,real atoler)
 void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                             int np,gmx_molprop_t mp[],int bDS,
                             t_qmcount *qmc,gmx_bool bPrintAll,
+                            gmx_bool bPrintBasis,gmx_bool bPrintMultQ,
                             gmx_molselect_t gms,int ims)
 {
     int    i,j,iprint=0,ne,header,iline,caption=1,maxline,result,nexp,ncalc,expref,calcref;
@@ -937,7 +952,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
     snew(type_exp,20);
     
     if (bSideways)
-        maxline = 25;
+        maxline = 20;
     else
         maxline = 40;
     /* Double spaced text ? */
@@ -953,7 +968,8 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
     if (nprint <= 0)
         return;
     bPrintConf = (emp == empDIPOLE);
-    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf);  
+    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf,
+                bPrintBasis,bPrintMultQ);  
     header  = 1;
     iline   = 0;
     for(i=0; (i<np); i++) 
@@ -971,7 +987,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                 {
                 case empDIPOLE:
                     while (gmx_molprop_get_dipole(mp[i],expref,&type,&unit,
-                                              &x,&y,&z,&aver,&error) == 1) 
+                                                  &x,&y,&z,&aver,&error) == 1) 
                     {
                         val_exp[nexp] = aver;
                         err_exp[nexp] = error;
@@ -1043,10 +1059,16 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                     myline[0] = '\0';
                     if ((ne == 0))
                     {
-                        if (strlen(iupac) > 0)
-                            sprintf(myline,"%d. %-15s & %s ",iprint,iupac,form);
+                        if (bPrintMultQ)
+                            sprintf(myline,"%d. %-15s & %s & %d & %d",
+                                    iprint,(strlen(iupac) > 0) ? iupac : molname,
+                                    form,
+                                    gmx_molprop_get_charge(mp[i]),
+                                    gmx_molprop_get_multiplicity(mp[i]));
                         else
-                            sprintf(myline,"%d. XXX %-11s & %s ",iprint,molname,form);
+                            sprintf(myline,"%d. %-15s & %s",
+                                    iprint,(strlen(iupac) > 0) ? iupac : molname,
+                                    form);
                         header = 0;
                     }
                     else 
@@ -1062,7 +1084,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                     {
                         sprintf(mylbuf,"& %8.3f",val_exp[ne]);
                         strncat(myline,mylbuf,BLEN-strlen(myline));
-                        if (strcmp(ref_exp[ne],"Maaren2009a") == 0)
+                        if (strcmp(ref_exp[ne],"Maaren2013a") == 0)
                             sprintf(mylbuf," (*)");
                         else
                             sprintf(mylbuf,"~\\cite{%s} ",ref_exp[ne]);
@@ -1118,14 +1140,15 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                     /*if ((toler > 0) && bOutlier)
                       {*/
                         fprintf(fp,"%s",myline);
-                        iline++;
+                        iline++;/*=(1+strlen(molname)/25);*/
                         /*}*/
                 }
                 if ((iline >= (maxline-7*caption)*ds_fac) && (i+1<np)) 
                 {
                     caption = 0;
                     prop_end(fp,bSideways);
-                    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf);
+                    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,
+                                bSideways,ims,bPrintConf,bPrintBasis,bPrintMultQ);
                     header  = 1;
                     iline   = 0;
                 }

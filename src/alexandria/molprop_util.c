@@ -422,7 +422,7 @@ void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)
                 ncomp[1] = 0;
             }
         }
-        for(j=1; (j<110); j++) 
+        for(j=110; (j>=1); j--) 
         {
             if (ncomp[j] > 0)
             {

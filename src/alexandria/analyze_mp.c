@@ -269,6 +269,7 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
                                 char *fc_str,gmx_bool bPrintAll,
                                 gmx_bool bStatsTable,gmx_bool bCategoryTable,
                                 gmx_bool bPropTable,gmx_bool bCompositionTable,
+                                gmx_bool bPrintBasis,gmx_bool bPrintMultQ,
                                 const char *texfn,
                                 const char *xvgfn,
                                 const char *histo,
@@ -343,8 +344,10 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,gms,imsTrain);
-        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,gms,imsTest);
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,bPrintBasis,
+                               bPrintMultQ,gms,imsTrain);
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,np,mp,0,qmc,bPrintAll,bPrintBasis,
+                               bPrintMultQ,gms,imsTest);
         if (NULL != selout) 
         {
             gp = fopen(selout,"w");
@@ -420,7 +423,7 @@ int main(int argc,char *argv[])
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static real rtoler = 0.15,atoler=0,outlier=1;
     static real th_toler=170,ph_toler=5;
-    static gmx_bool bMerge = TRUE,bAll = FALSE,bCalcPol=TRUE;
+    static gmx_bool bMerge = TRUE,bAll = FALSE,bCalcPol=TRUE, bPrintBasis = TRUE,bPrintMultQ=FALSE;
     static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE,bCategoryTable=TRUE;
     t_pargs pa[] = {
         { "-sort",   FALSE, etENUM, {sort},
@@ -439,6 +442,10 @@ int main(int argc,char *argv[])
           "Property to print" },
         { "-all",    FALSE, etBOOL, {&bAll},
           "Print calculated results for properties even if no experimental data is available to compare to" },
+        { "-printbasis", FALSE, etBOOL, {&bPrintBasis},
+          "Print the basis set in the property table" },
+        { "-printmultq", FALSE, etBOOL, {&bPrintMultQ},
+          "Print the multiplicity and charge in the property table" },
         { "-calcpol", FALSE, etBOOL, {&bCalcPol},
           "Calculate polarizabilities based on empirical methods" },
         { "-composition", FALSE, etBOOL, {&bCompositionTable},
@@ -530,6 +537,7 @@ int main(int argc,char *argv[])
     gmx_molprop_analyze(np,mp,npdfile,pd,pdref,bCalcPol,
                         eprop,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
                         bStatsTable,bCategoryTable,bPropTable,bCompositionTable,
+                        bPrintBasis,bPrintMultQ,
                         opt2fn("-t",NFILE,fnm),opt2fn("-c",NFILE,fnm),
                         opt2fn("-his",NFILE,fnm),opt2fn("-atype",NFILE,fnm),oenv,gms,
                         opt2fn_null("-selout",NFILE,fnm));

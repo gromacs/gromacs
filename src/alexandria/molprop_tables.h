@@ -66,7 +66,8 @@ extern void gmx_molprop_category_table(FILE *fp,int np,gmx_molprop_t mp[],
 
 extern void gmx_molprop_prop_table(FILE *fp,int eprop,real rtoler,real atoler,
 				   int np,gmx_molprop_t mp[],int bDS,t_qmcount *qmc,
-				   gmx_bool bPrintAll,gmx_molselect_t gms,int ims);
+				   gmx_bool bPrintAll,gmx_bool bPrintBasis,
+                                   gmx_bool bPrintMultQ,gmx_molselect_t gms,int ims);
 				   
 /* Calling this with bPolar TRUE will print an atomtype table with polarizability information.
  * With bPolar FALSE it will print the same table with EEM parameters.

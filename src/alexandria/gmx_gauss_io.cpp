@@ -366,7 +366,7 @@ static gmx_molprop_t gmx_molprop_read_babel(const char *g98,
     {
         OpenBabel::vector3 v3 = dipole->GetData();
         gmx_molprop_add_dipole(mpt,calcref,"electronic",
-                               unit2string(eg2c_Angstrom),
+                               unit2string(eg2c_Debye),
                                v3.GetX(),v3.GetY(),v3.GetZ(),
                                v3.length(),0.0);
     }

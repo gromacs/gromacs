@@ -49,19 +49,30 @@ extern const char *emp_name[empNR];
 
 namespace gmx 
 {
+  class AtomNum 
+  {
+  private:
+    std::string _catom;
+    int _cnumber;
+  public:
+    AtomNum(const char *catom,int cnumber) { _catom.assign(catom); _cnumber = cnumber; }
+    AtomNum(std::string catom,int cnumber) { _catom = catom; _cnumber = cnumber; }
+    ~AtomNum() {};
+    
+  };
+  
   class MolecularComposition 
   {
   private:
     std::string _compname;
-    int _catom_index;
-    std::vector<std::string> _catom;
-    std::vector<int> _cnumber;
+    int _atomnum_index;
+    std::vector<t_atomnum> _atomnum;
   public:
     MolecularComposition(char *compname) { _compname.assign(compname); }
-    MolecularComposition(std::string compname) { _compname.assign(compname); }
+    MolecularComposition(std::string compname) { _compname = compname; }
     ~MolecularComposition() {}
-    void AddAtom(const char *catom,const int cnumber);
-    void AddAtom(std::string catom,const int cnumber);
+    void AddAtom(const char *catom,int cnumber) { _atomnum.push_back(catom,cnumber); }
+    void AddAtom(std::string catom,int cnumber) { _atomnum.push_back(catom,cnumber); }
     void DeleteAtom(const char *catom);
     void DeleteAtom(std::string catom);
     void ReplaceAtom(const char *oldatom,const char *newatom);
