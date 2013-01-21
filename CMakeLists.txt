@@ -298,6 +298,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
     message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
 endif()
 
+if(CMAKE_C_COMPILER_ID MATCHES "Intel"  AND C_COMPILER_VERSION VERSION_LESS "12.0.0")
+    message(WARNING "Intel compiler before 12.0.0 are not tested. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up to date compiler. If you choose to use this version, make sure to run the regressiontests.")
+endif()
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
