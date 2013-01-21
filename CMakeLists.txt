@@ -828,7 +828,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     # parameter of the mask for maskload/maskstore arguments. Check if this is present, since we can work around it.
     gmx_test_avx_gcc_maskload_bug(${ACCELERATION_C_FLAGS} GMX_X86_AVX_GCC_MASKLOAD_BUG)
 
-else(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
+elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     # Used on BlueGene/Q
     if (CMAKE_C_COMPILER_ID MATCHES "XL")
         GMX_TEST_CFLAG(XLC_BLUEGENEQ_CFLAG "-qarch=qp -qtune=qp" ACCELERATION_C_FLAGS)
