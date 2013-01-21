@@ -14,7 +14,7 @@
 macro(get_compiler_version)
     if(NOT C_COMPILER_VERSION)
         set(_cc_dumpversion_res 0)
-        if (DEFINED xCMAKE_C_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
+        if (DEFINED CMAKE_C_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
             set(_cc_version ${CMAKE_C_COMPILER_VERSION})
         else()
             execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion

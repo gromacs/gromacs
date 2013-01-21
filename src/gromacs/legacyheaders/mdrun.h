@@ -84,8 +84,14 @@ extern "C" {
 #define MD_TUNEPME        (1<<20)
 #define MD_TESTVERLET     (1<<22)
 
+/* The options for the domain decomposition MPI task ordering */
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
+};
+
+/* The options for the thread affinity setting, default: auto */
+enum {
+  threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
 };
 
 typedef struct {
@@ -93,9 +99,9 @@ typedef struct {
     int      nthreads_tmpi;       /* Number of TMPI threads requested         */
     int      nthreads_omp;        /* Number of OpenMP threads requested       */
     int      nthreads_omp_pme;    /* As nthreads_omp, but for PME only nodes  */
-    gmx_bool bThreadPinning;      /* Pin OpenMP threads to cores?             */
-    gmx_bool bPinHyperthreading;  /* Pin pairs of threads to physical cores   */
-    int      core_pinning_offset; /* Physical core pinning offset             */
+    int      thread_affinity;     /* Thread affinity switch, see enum above   */
+    int      core_pinning_stride; /* Logical core pinning stride              */
+    int      core_pinning_offset; /* Logical core pinning offset              */
     char    *gpu_id;              /* GPU id's to use, each specified as chars */
 } gmx_hw_opt_t;
 

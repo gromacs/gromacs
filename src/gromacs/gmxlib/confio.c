@@ -1397,7 +1397,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     read_xyz_conf(infile,title,atoms,x);
     break;
   case efG96:
-    fr.title = title;
+    fr.title  = NULL;
     fr.natoms = atoms->nr;
     fr.atoms = atoms;
     fr.x = x;
@@ -1407,6 +1407,7 @@ void read_stx_conf(const char *infile,char *title,t_atoms *atoms,
     read_g96_conf(in, infile, &fr, g96_line);
     gmx_fio_fclose(in);
     copy_mat(fr.box,box);
+    strncpy(title, fr.title, STRLEN);
     break;
   case efPDB:
   case efBRK:
