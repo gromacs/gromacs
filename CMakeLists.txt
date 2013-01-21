@@ -298,6 +298,10 @@ if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
     message(WARNING "All tested PGI compiler versions (up to 12.9.0) generate binaries which produce incorrect results, or even fail to compile Gromacs. Highly recommended to use a different compiler. If you choose to use PGI, make sure to run the regressiontests.")
 endif()
 
+if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_LESS "12.0.0")
+    message(WARNING "Intel compilers before 12.0.0 are not generally tested. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
+endif()
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
@@ -749,6 +753,9 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
       message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
+    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
+        message(FATAL_ERROR "Intel compilers before 12.0.0 are not generally tested. Version 11.1 with SSE4.1 is known to produce incorrect results. Refusing to build with this compiler")
+    endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
 
     # Set the AVX compiler flag for both these choices!
