@@ -87,7 +87,7 @@ void
 RmsDist::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
 {
     static const char *const desc[] = {
-        "rmsdist calculates RMS deviation of (intra-molecular) atom distances relative a reference structure."
+        "rmsdist calculates RMS deviation of (intra-molecular) pair-wise atom distances relative a reference structure."
     };
 
     options->setDescription(concatenateStrings(desc));
@@ -159,12 +159,12 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (bDoCache_ && sel_.isDynamic())
     {
         if (mpi::isMaster())
-            fprintf(stderr, "Caching not supported for dynamic selections - Caching turned off!");
+            fprintf(stderr, "Caching not supported for dynamic selections - option turned off!");
 
         bDoCache_ = false;
     }
 
-    // then do cacheing! num of cache elements = selCount * (selCount-1) / 2 .
+    // do cacheing! num of cache elements = selCount * (selCount-1) / 2 .
     if (bDoCache_)
     {
         const int                   selCount      = sel_.atomCount();
@@ -259,12 +259,12 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 pbc_dx(pbc, spix, spjx, dx);
             else
                 rvec_sub(spix, spjx, dx);
-            r   = norm(dx);
+            r = norm(dx);
 
             // calc reference i-to-j distance
             if (bDoCache_)
             {
-                rp  = pRefDCache_[i][j-(i+1)];
+                rp = pRefDCache_[i][j-(i+1)];
             }
             else
             {
@@ -275,13 +275,14 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     pbc_dx(pbc, xpi, xpj, dxp);
                 else
                     rvec_sub(xpi, xpj, dxp);
-                rp  = norm(dxp);
+                rp = norm(dxp);
             }
 
             // account for weights
             if (bUseMassWeights_)
             {
                 const real m_pf = sqrt(spim * spjm);
+
                 rms_val += m_pf * (r-rp)*(r-rp);
                 inv_massprefactor += m_pf;
             }
