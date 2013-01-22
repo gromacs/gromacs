@@ -1,39 +1,36 @@
 /*
- * This file is part of the GROMACS molecular simulation package.
  *
+ *                This source code is part of
+ *
+ *                 G   R   O   M   A   C   S
+ *
+ *          GROningen MAchine for Chemical Simulations
+ *
+ *                        VERSION 3.2.0
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
- *
- * GROMACS is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
+
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
  *
- * GROMACS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
- *
- * If you want to redistribute modifications to GROMACS, please
- * consider that scientific software is very special. Version
- * control is crucial - bugs must be traceable. We will be happy to
- * consider code for inclusion in the official distribution, but
- * derived work must not be called official GROMACS. Details are found
- * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
+ * If you want to redistribute modifications, please consider that
+ * scientific software is very special. Version control is crucial -
+ * bugs must be traceable. We will be happy to consider code for
+ * inclusion in the official distribution, but derived work must not
+ * be called official GROMACS. Details are found in the README & COPYING
+ * files - if they are missing, get the official version at www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * the papers on the package - you can find them in the top README file.
+ *
+ * For more info, check our website at http://www.gromacs.org
+ *
+ * And Hey:
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -43,7 +40,7 @@
 #include <ctype.h>
 
 #include "sysstuff.h"
-#include <string.h>
+#include "string.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -81,18 +78,18 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
                                     real sgslice[], real skslice[],
                                     gmx_rmpbc_t gpbc)
 {
-    FILE    *fpoutdist;
-    char     fnsgdist[32];
-    int      ix, jx, nsgbin, *sgbin;
-    int      i1, i2, i, ibin, j, k, l, n, *nn[4];
-    rvec     dx, dx1, dx2, rj, rk, urk, urj;
-    real     cost, cost2, *sgmol, *skmol, rmean, rmean2, r2, box2, *r_nn[4];
-    t_pbc    pbc;
-    t_mat   *dmat;
-    t_dist  *d;
-    int      m1, mm, sl_index;
-    int    **nnb, *sl_count;
-    real     onethird = 1.0/3.0;
+    FILE   *fpoutdist;
+    char    fnsgdist[32];
+    int     ix, jx, nsgbin, *sgbin;
+    int     i1, i2, i, ibin, j, k, l, n, *nn[4];
+    rvec    dx, dx1, dx2, rj, rk, urk, urj;
+    real    cost, cost2, *sgmol, *skmol, rmean, rmean2, r2, box2, *r_nn[4];
+    t_pbc   pbc;
+    t_mat  *dmat;
+    t_dist *d;
+    int     m1, mm, sl_index;
+    int   **nnb, *sl_count;
+    real    onethird = 1.0/3.0;
     /*  dmat = init_mat(maxidx, FALSE); */
     box2 = box[XX][XX] * box[XX][XX];
     snew(sl_count, nslice);
@@ -384,36 +381,36 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 {
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
-    rvec *x0,                                    /* coordinates with pbc                           */
-    *x1,                                         /* coordinates without pbc                        */
-          dist;                                  /* vector between two atoms                       */
-    matrix       box;                            /* box (3x3)                                      */
+    rvec *x0,                           /* coordinates with pbc                           */
+    *x1,                                /* coordinates without pbc                        */
+          dist;                         /* vector between two atoms                       */
+    matrix       box;                   /* box (3x3)                                      */
     t_trxstatus *status;
-    rvec         cossum,                         /* sum of vector angles for three axes            */
-                 Sx, Sy, Sz,                     /* the three molecular axes                       */
-                 tmp1, tmp2,                     /* temp. rvecs for calculating dot products       */
-                 frameorder;                     /* order parameters for one frame                 */
-    real *slFrameorder;                          /* order parameter for one frame, per slice      */
-    real  length,                                /* total distance between two atoms               */
-          t,                                     /* time from trajectory                           */
-          z_ave, z1, z2;                         /* average z, used to det. which slice atom is in */
-    int natoms,                                  /* nr. atoms in trj                               */
-        nr_tails,                                /* nr tails, to check if index file is correct    */
-        size = 0,                                /* nr. of atoms in group. same as nr_tails        */
+    rvec         cossum,                /* sum of vector angles for three axes            */
+                 Sx, Sy, Sz,            /* the three molecular axes                       */
+                 tmp1, tmp2,            /* temp. rvecs for calculating dot products       */
+                 frameorder;            /* order parameters for one frame                 */
+    real *slFrameorder;                 /* order parameter for one frame, per slice      */
+    real  length,                       /* total distance between two atoms               */
+          t,                            /* time from trajectory                           */
+          z_ave, z1, z2;                /* average z, used to det. which slice atom is in */
+    int natoms,                         /* nr. atoms in trj                               */
+        nr_tails,                       /* nr tails, to check if index file is correct    */
+        size = 0,                       /* nr. of atoms in group. same as nr_tails        */
         i, j, m, k, l, teller = 0,
-        slice,                                   /* current slice number                           */
+        slice,                          /* current slice number                           */
         nr_frames = 0,
-    *slCount;                                    /* nr. of atoms in one slice                      */
-    real         dbangle                = 0,     /* angle between double bond and  axis            */
-                 sdbangle               = 0;     /* sum of these angles                            */
-    gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
-    rvec         direction, com, dref, dvec;
-    int          comsize, distsize;
-    atom_id     *comidx  = NULL, *distidx = NULL;
-    char        *grpname = NULL;
-    t_pbc        pbc;
-    real         arcdist;
-    gmx_rmpbc_t  gpbc = NULL;
+    *slCount;                           /* nr. of atoms in one slice                      */
+    real        dbangle        = 0,     /* angle between double bond and  axis            */
+                sdbangle       = 0;     /* sum of these angles                            */
+    gmx_bool    use_unitvector = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
+    rvec        direction, com, dref, dvec;
+    int         comsize, distsize;
+    atom_id    *comidx  = NULL, *distidx = NULL;
+    char       *grpname = NULL;
+    t_pbc       pbc;
+    real        arcdist;
+    gmx_rmpbc_t gpbc = NULL;
 
     /* PBC added for center-of-mass vector*/
     /* Initiate the pbc structure */
@@ -645,7 +642,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                         z_ave -= box[axis][axis];
                     }
 
-                    slice  = (int)(0.5 + (z_ave / (*slWidth))) - 1;
+                    slice = (int)(0.5 + (z_ave / (*slWidth))) - 1;
                     slCount[slice]++;     /* determine slice, increase count */
 
                     slFrameorder[slice] += 0.5 * (3 * cossum[axis] - 1);
@@ -740,10 +737,10 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
                 const char *cfile, int ngrps, int nslices, real slWidth, gmx_bool bSzonly,
                 gmx_bool permolecule, real **distvals, const output_env_t oenv)
 {
-    FILE       *ord, *slOrd;      /* xvgr files with order parameters  */
-    int         atom, slice;      /* atom corresponding to order para.*/
-    char        buf[256];         /* for xvgr title */
-    real        S;                /* order parameter averaged over all atoms */
+    FILE *ord, *slOrd;            /* xvgr files with order parameters  */
+    int   atom, slice;            /* atom corresponding to order para.*/
+    char  buf[256];               /* for xvgr title */
+    real  S;                      /* order parameter averaged over all atoms */
 
     if (permolecule)
     {
@@ -817,7 +814,7 @@ void order_plot(rvec order[], real *slOrder[], const char *afile, const char *bf
     }
 }
 
-void write_bfactors(t_filenm  *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, output_env_t oenv)
+void write_bfactors(t_filenm *fnm, int nfile, atom_id *index, atom_id *a, int nslices, int ngrps, real **order, t_topology *top, real **distvals, output_env_t oenv)
 {
     /*function to write order parameters as B factors in PDB file using
           first frame of trajectory*/
@@ -912,7 +909,7 @@ int gmx_order(int argc, char *argv[])
           "Direction of the normal on the membrane" },
         { "-sl",     FALSE, etINT, {&nslices},
           "Calculate order parameter as function of box length, dividing the box"
-          " into this number of slices." },
+          " in #nr slices." },
         { "-szonly", FALSE, etBOOL, {&bSzonly},
           "Only give Sz element of order tensor. (axis can be specified with [TT]-d[tt])" },
         { "-unsat",  FALSE, etBOOL, {&bUnsat},
@@ -923,7 +920,7 @@ int gmx_order(int argc, char *argv[])
         { "-radial", FALSE, etBOOL, {&radial},
           "Compute a radial membrane normal" },
         { "-calcdist", FALSE, etBOOL, {&distcalc},
-          "Compute distance from a reference (currently defined only for radial and permolecule)" },
+          "Compute distance from a reference" },
     };
 
     rvec              *order;                         /* order par. for each atom   */
@@ -933,12 +930,12 @@ int gmx_order(int argc, char *argv[])
     int                ngrps,                         /* nr. of groups              */
                        i,
                        axis = 0;                      /* normal axis                */
-    t_topology   *top;                                /* topology         */
-    int           ePBC;
-    atom_id      *index,                              /* indices for a              */
+    t_topology  *top;                                 /* topology         */
+    int          ePBC;
+    atom_id     *index,                               /* indices for a              */
     *a;                                               /* atom numbers in each group */
-    t_blocka     *block;                              /* data from index file       */
-    t_filenm      fnm[] = {                           /* files for g_order    */
+    t_blocka    *block;                               /* data from index file       */
+    t_filenm     fnm[] = {                            /* files for g_order    */
         { efTRX, "-f", NULL,  ffREAD },               /* trajectory file              */
         { efNDX, "-n", NULL,  ffREAD },               /* index file           */
         { efNDX, "-nr", NULL,  ffREAD },              /* index for radial axis calculation	  */
@@ -952,11 +949,11 @@ int gmx_order(int argc, char *argv[])
         { efXVG, "-Sgsl", "sg-ang-slice", ffOPTWR },  /* xvgr output file           */
         { efXVG, "-Sksl", "sk-dist-slice", ffOPTWR }, /* xvgr output file           */
     };
-    gmx_bool      bSliced = FALSE;                    /* True if box is sliced      */
+    gmx_bool     bSliced = FALSE;                     /* True if box is sliced      */
 #define NFILE asize(fnm)
-    real        **distvals = NULL;
-    const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
-    output_env_t  oenv;
+    real       **distvals = NULL;
+    const char  *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
+    output_env_t oenv;
 
     CopyRight(stderr, argv[0]);
 
