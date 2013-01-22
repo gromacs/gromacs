@@ -1767,7 +1767,7 @@ static void flex2_precalc_inner_sum(t_rotgrp *rotg)
             OOpsiistar = norm2(tmpvec)+rotg->eps; /* OOpsii* = 1/psii* = |v x (xi-xcn)|^2 + eps */
             OOpsii     = norm(tmpvec);            /* OOpsii = 1 / psii = |v x (xi - xcn)| */
 
-            /*         v x (xi - xcn)          */
+            /*                           *         v x (xi - xcn)          */
             unitv(tmpvec, s_in);        /*  sin = ----------------         */
                                         /*        |v x (xi - xcn)|         */
 
@@ -1840,7 +1840,7 @@ static void flex_precalc_inner_sum(t_rotgrp *rotg)
             mvmul(erg->rotmat, tmpvec, rin);              /* rin = Omega.(yi0 - ycn)  */
             cprod(rotg->vec, rin, tmpvec);                /* tmpvec = v x Omega*(yi0-ycn) */
 
-            /*        v x Omega*(yi0-ycn)    */
+            /*                                *        v x Omega*(yi0-ycn)    */
             unitv(tmpvec, qin);              /* qin = ---------------------   */
                                              /*       |v x Omega*(yi0-ycn)|   */
 
@@ -1998,7 +1998,7 @@ static real do_flex2_lowlevel(
 
             OOpsij = norm(tmpvec);    /* OOpsij = 1 / psij = |v x (xj - xcn)| */
 
-            /*         v x (xj - xcn)          */
+            /*                              *         v x (xj - xcn)          */
             unitv(tmpvec, sjn);            /*  sjn = ----------------         */
                                            /*        |v x (xj - xcn)|         */
 
@@ -2116,7 +2116,7 @@ static real do_flex_lowlevel(
     rvec            s_n;
     rvec            force_n;                /* Single force from slab n on one atom          */
     rvec            force_n1, force_n2;     /* First and second part of force_n              */
-    rvec            tmpvec, tmpvec2, tmp_f; /* Helper variables                         */
+    rvec            tmpvec, tmpvec2, tmp_f; /* Helper variables                              */
     real            V;                      /* The rotation potential energy                 */
     real            OOsigma2;               /* 1/(sigma^2)                                   */
     real            beta;                   /* beta_n(xj)                                    */
@@ -2200,7 +2200,7 @@ static real do_flex_lowlevel(
             /* Calculate qjn */
             cprod(rotg->vec, tmpvec2, tmpvec); /* tmpvec= v x Omega.(yj0-ycn) */
 
-            /*         v x Omega.(yj0-ycn)    */
+            /*                         *         v x Omega.(yj0-ycn)    */
             unitv(tmpvec, qjn);       /*  qjn = ---------------------   */
                                       /*        |v x Omega.(yj0-ycn)|   */
 
@@ -2221,7 +2221,7 @@ static real do_flex_lowlevel(
                     mvmul(erg->PotAngleFit->rotmat[ifit], yj0_ycn, tmpvec2); /* tmpvec2= Omega.(yj0-ycn) */
                     /* As above calculate qjn */
                     cprod(rotg->vec, tmpvec2, tmpvec);                       /* tmpvec= v x Omega.(yj0-ycn) */
-                    /*             v x Omega.(yj0-ycn)    */
+                    /*                                                        *             v x Omega.(yj0-ycn)    */
                     unitv(tmpvec, fit_qjn);                                  /*  fit_qjn = ---------------------   */
                                                                              /*            |v x Omega.(yj0-ycn)|   */
                     fit_bjn = iprod(fit_qjn, xj_xcn);                        /* fit_bjn = fit_qjn * (xj - xcn) */
@@ -2248,7 +2248,7 @@ static real do_flex_lowlevel(
 
             /* We already have precalculated the Sn term for slab n */
             copy_rvec(erg->slab_innersumvec[islab], s_n);
-            /*          beta_n(xj)              */
+            /*                                                             *          beta_n(xj)              */
             svmul(betan_xj_sigma2*iprod(s_n, xj_xcn), rotg->vec, tmpvec); /* tmpvec = ---------- s_n (xj-xcn) */
                                                                           /*            sigma^2               */
 
@@ -2781,7 +2781,7 @@ static void do_radial_motion(
         /* Calculate Omega.(yj0-u) */
         cprod(rotg->vec, erg->xr_loc[j], tmpvec);  /* tmpvec = v x Omega.(yj0-u) */
 
-        /*         v x Omega.(yj0-u)     */
+        /*                       *         v x Omega.(yj0-u)     */
         unitv(tmpvec, pj);      /*  pj = ---------------------   */
                                 /*       | v x Omega.(yj0-u) |   */
 
@@ -2812,7 +2812,7 @@ static void do_radial_motion(
 
                 /* Calculate Omega.(yj0-u) */
                 cprod(rotg->vec, fit_tmpvec, tmpvec); /* tmpvec = v x Omega.(yj0-u) */
-                /*         v x Omega.(yj0-u)     */
+                /*                                     *         v x Omega.(yj0-u)     */
                 unitv(tmpvec, pj);                    /*  pj = ---------------------   */
                                                       /*       | v x Omega.(yj0-u) |   */
 
@@ -2893,7 +2893,7 @@ static void do_radial_motion_pf(
 
         cprod(rotg->vec, tmpvec, tmpvec2);          /* tmpvec2 = v x Omega.(yi0-yc0) */
 
-        /*         v x Omega.(yi0-yc0)     */
+        /*                                             *         v x Omega.(yi0-yc0)     */
         unitv(tmpvec2, qi);                           /*  qi = -----------------------   */
                                                       /*       | v x Omega.(yi0-yc0) |   */
 
@@ -2931,7 +2931,7 @@ static void do_radial_motion_pf(
 
         cprod(rotg->vec, tmpvec2, tmpvec);    /* tmpvec = v x Omega.(yj0-yc0) */
 
-        /*         v x Omega.(yj0-yc0)     */
+        /*                     *         v x Omega.(yj0-yc0)     */
         unitv(tmpvec, qj);    /*  qj = -----------------------   */
                               /*       | v x Omega.(yj0-yc0) |   */
 
@@ -2961,7 +2961,7 @@ static void do_radial_motion_pf(
 
                 /* Calculate Omega.(yj0-u) */
                 cprod(rotg->vec, tmpvec2, tmpvec); /* tmpvec = v x Omega.(yj0-yc0) */
-                /*         v x Omega.(yj0-yc0)     */
+                /*                                  *         v x Omega.(yj0-yc0)     */
                 unitv(tmpvec, qj);                 /*  qj = -----------------------   */
                                                    /*       | v x Omega.(yj0-yc0) |   */
 
@@ -3026,7 +3026,7 @@ static void radial_motion2_precalc_inner_sum(t_rotgrp  *rotg, rvec innersumvec)
         cprod(rotg->vec, xi_xc, v_xi_xc);            /* v_xi_xc = v x (xi-u)  */
 
         fac = norm2(v_xi_xc);
-        /*                      1           */
+        /*                                 *                      1           */
         psiistar = 1.0/(fac + rotg->eps); /* psiistar = --------------------- */
                                           /*            |v x (xi-xc)|^2 + eps */
 
@@ -3146,7 +3146,7 @@ static void do_radial_motion2(
         cprod(rotg->vec, xj_u, v_xj_u);              /* v_xj_u = v x (xj-u)   */
 
         fac = norm2(v_xj_u);
-        /*                      1           */
+        /*                                 *                      1           */
         psijstar = 1.0/(fac + rotg->eps); /*  psistar = --------------------  */
                                           /*            |v x (xj-u)|^2 + eps  */
 
