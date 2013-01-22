@@ -381,7 +381,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                 gmx_bool permolecule, gmx_bool radial, gmx_bool distcalc, const char *radfn,
                 real ***distvals,
                 const output_env_t oenv)
-{
+{ 
     /* if permolecule = TRUE, order parameters will be calculed per molecule
      * and stored in slOrder with #slices = # molecules */
     rvec *x0,                                    /* coordinates with pbc                           */
@@ -403,7 +403,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
         i, j, m, k, l, teller = 0,
         slice,                                   /* current slice number                           */
         nr_frames = 0,
-    *slCount;                                    /* nr. of atoms in one slice                      */
+        *slCount;                                /* nr. of atoms in one slice                      */
     real         dbangle                = 0,     /* angle between double bond and  axis            */
                  sdbangle               = 0;     /* sum of these angles                            */
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
@@ -412,7 +412,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
     atom_id     *comidx  = NULL, *distidx = NULL;
     char        *grpname = NULL;
     t_pbc        pbc;
-    real         arcdist;
+    real         arcdist, tmpdist;
     gmx_rmpbc_t  gpbc = NULL;
 
     /* PBC added for center-of-mass vector*/
@@ -441,16 +441,16 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
         use_unitvector = TRUE;
         fprintf(stderr, "Select an index group to calculate the radial membrane normal\n");
         get_index(&top->atoms, radfn, 1, &comsize, &comidx, &grpname);
-        if (distcalc)
+    }
+    if (distcalc)
+    {
+        if (grpname != NULL)
         {
-            if (grpname != NULL)
-            {
-                sfree(grpname);
-            }
-            fprintf(stderr, "Select an index group to use as distance reference\n");
-            get_index(&top->atoms, radfn, 1, &distsize, &distidx, &grpname);
-            bSliced = FALSE; /*force slices off*/
+            sfree(grpname);
         }
+        fprintf(stderr, "Select an index group to use as distance reference\n");
+        get_index(&top->atoms, radfn, 1, &distsize, &distidx, &grpname);
+        bSliced = FALSE; /*force slices off*/
     }
 
     if (use_unitvector && bSliced)
@@ -483,6 +483,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                 nslices, *slWidth);
     }
 
+
 #if 0
     nr_tails = index[1] - index[0];
     fprintf(stderr, "Number of elements in first group: %d\n", nr_tails);
@@ -513,6 +514,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
            so for DPPC ngrps = 16 and i runs from 1 to 14, including 14
          */
 
+
         if (radial)
         {
             /*center-of-mass determination*/
@@ -531,8 +533,11 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                 rvec_inc(dist, x1[distidx[j]]);
             }
             svmul(1.0/distsize, dref, dref);
-            pbc_dx(&pbc, dref, com, dvec);
-            unitv(dvec, dvec);
+            if (radial)
+            {
+                pbc_dx(&pbc, dref, com, dvec);                
+                unitv(dvec, dvec);
+            }
         }
 
         for (i = 1; i < ngrps - 1; i++)
@@ -573,7 +578,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                        the axis on the bilayer are zero */
                     if (use_unitvector)
                     {
-                        sdbangle += acos(iprod(direction, Sz)); /*this can probably be optimized*/
+                        sdbangle += gmx_angle(direction, Sz); /*this can probably be optimized*/
                     }
                     else
                     {
@@ -659,9 +664,26 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                 }
                 if (distcalc)
                 {
-                    /* bin order parameter by arc distance from reference group*/
-                    arcdist            = acos(iprod(dvec, direction));
-                    (*distvals)[j][i] += arcdist;
+                    if (radial)
+                    {
+                        /* bin order parameter by arc distance from reference group*/
+                        arcdist = gmx_angle(dvec,direction);
+                        (*distvals)[j][i] += arcdist;
+                    }
+                    else if (i == 1)
+                    {
+                        /* Want minimum lateral distance to first group calculated */
+                        tmpdist = trace(box);  /* should be max value */
+                        for (k=0;k<distsize;k++)
+                        {
+                            pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i]+j]], dvec);
+                            /* at the moment, just remove dvec[axis] */
+                            dvec[axis] = 0;
+                            tmpdist = min(tmpdist, norm2(dvec));
+                        }
+                    //fprintf(stderr, "Min dist %f; trace %f\n", tmpdist, trace(box));
+                    (*distvals)[j][i]+=sqrt(tmpdist);
+                    }
                 }
             } /* end loop j, over all atoms in group */
 
@@ -1053,9 +1075,8 @@ int gmx_order(int argc, char *argv[])
             fprintf(stderr, "Calculating Scd order parameters for each of %d molecules\n", nslices);
         }
 
-        if (distcalc)
+        if (radial)
         {
-            radial = TRUE;
             fprintf(stderr, "Calculating radial distances\n");
             if (!permolecule)
             {
