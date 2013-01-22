@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_order</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -23,9 +23,9 @@ file to avoid confusing the program (this is not relevant to tetrahedral order
 parameters however, which only work for water anyway).<p>
 The program can also give all
 diagonal elements of the order tensor and even calculate the deuterium
-order parameter Scd (default). If the option -szonly is given, only one
-order tensor component (specified by the -d option) is given and the
-order parameter per slice is calculated as well. If -szonly is not
+order parameter Scd (default). If the option <tt>-szonly</tt> is given, only one
+order tensor component (specified by the <tt>-d</tt> option) is given and the
+order parameter per slice is calculated as well. If <tt>-szonly</tt> is not
 selected, all diagonal elements and the deuterium order parameter is
 given.<p>The tetrahedrality order parameters can be determined
 around an atom. Both angle an distance order parameters are calculated. See
@@ -53,21 +53,21 @@ for more details.<br>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>z</tt> </TD><TD> Direction of the normal on the membrane: <tt>z</tt>, <tt>x</tt> or <tt>y</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Calculate order parameter as function of boxlength, dividing the box in #nr slices. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]szonly</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Only give Sz element of order tensor. (axis can be specified with -d) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]unsat</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate order parameters for unsaturated carbons. Note that this cannot be mixed with normal order parameters. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]permolecule</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute per-molecule Scd order parameters </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]radial</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute a radial membrane normal </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]calcdist</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute distance from a reference (currently defined only for radial and permolecule) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Calculate order parameter as function of box length, dividing the box into this number of slices. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]szonly</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Only give Sz element of order tensor. (axis can be specified with <tt>-d</tt>) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]unsat</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate order parameters for unsaturated carbons. Note that this cannot be mixed with normal order parameters. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]permolecule</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute per-molecule Scd order parameters </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]radial</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute a radial membrane normal </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]calcdist</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute distance from a reference (currently defined only for radial and permolecule) </TD></TD>
 </TABLE>
 <P>
 <hr>

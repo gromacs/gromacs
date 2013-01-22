@@ -9,16 +9,16 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dyndom</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_dyndom reads a <a href="pdb.html">pdb</a> file output from DynDom
-http://www.cmp.uea.ac.uk/dyndom/
-It reads the coordinates, and the coordinates of the rotation axis
-furthermore it reads an index file containing the domains.
-Furthermore it takes the first and last atom of the arrow file
+<tt>g_dyndom</tt> reads a <tt>.<a href="pdb.html">pdb</a></tt> file output from DynDom
+(http://www.cmp.uea.ac.uk/dyndom/).
+It reads the coordinates, the coordinates of the rotation axis,
+and an index file containing the domains.
+Furthermore, it takes the first and last atom of the arrow file
 as command line arguments (head and tail) and
 finally it takes the translation vector (given in DynDom info file)
 and the angle of rotation (also as command line arguments). If the angle
@@ -44,14 +44,14 @@ validate the structure.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-firstangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-lastangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nframe</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>11</tt> </TD><TD> Number of steps on the pathway </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-maxangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> DymDom dtermined angle of rotation about rotation vector </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-trans</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Translation (Aangstroem) along rotation vector (see DynDom info file) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-trans</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Translation (Angstrom) along rotation vector (see DynDom info file) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-head</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> First atom of the arrow vector </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tail</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Last atom of the arrow vector </TD></TD>
 </TABLE>
