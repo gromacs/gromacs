@@ -43,11 +43,9 @@
 
 #include "modules/angle.h"
 #include "modules/distance.h"
-#include "modules/rdf.h"
-#include "modules/rms.h"
 #include "modules/rmsdist.h"
 #include "modules/select.h"
-#include "modules/zleep.h"
+
 
 namespace gmx
 {
@@ -129,11 +127,8 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     /* Let's try to use alphabetical order! */
     manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Rdf> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Rms> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<RmsDist> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Zleep> >();
 }
 
 } // namespace gmx
