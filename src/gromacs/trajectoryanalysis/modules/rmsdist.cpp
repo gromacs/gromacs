@@ -124,11 +124,10 @@ void
 RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation &topInfo)
 {
-    // matrix      box;
-
+    matrix      box;
 
     pRefTop_ = topInfo.topology();
-    (void) topInfo.getTopologyConf(&pRefX_, NULL); // (void) topInfo.getTopologyConf(&pRefX_, box);
+    (void) topInfo.getTopologyConf(&pRefX_, box);
 
     // cacheing is not implemented for dynamic selections!
     if (bDoCache_ && sel_.isDynamic())
