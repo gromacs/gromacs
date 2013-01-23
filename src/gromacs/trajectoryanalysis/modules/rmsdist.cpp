@@ -137,23 +137,28 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     // * setup reference conformation from top file.
     matrix          box;
+    rvec *          pRefX;
+
 
     pRefTop_ = topInfo.topology();
-    topAtoms_ = pRefTop_->atoms.nr;
+    // topAtoms_ = pRefTop_->atoms.nr;
     pRefX_ = NULL;
 
     // get coords for reference structure
     (void) topInfo.getTopologyConf(&pRefX_, box);
 
-    // make reference structure whole
-    if (settings.hasRmPBC())
-    {
-        gmx_rmpbc_t     gpbc = NULL;
+    const ConstArrayRef< int >  fitselAtomIndsArray = sel_.atomIndices();
 
-        gpbc = gmx_rmpbc_init(&pRefTop_->idef, topInfo.ePBC(), pRefTop_->atoms.nr, box);
-        (void) gmx_rmpbc(gpbc, pRefTop_->atoms.nr, box, pRefX_);
-        (void) gmx_rmpbc_done(gpbc);
-    }
+    // make reference structure whole
+    // if (settings.hasRmPBC())
+    // {
+    //     gmx_rmpbc_t     gpbc = NULL;
+
+    //     gpbc = gmx_rmpbc_init(&pRefTop_->idef, topInfo.ePBC(), pRefTop_->atoms.nr, box);
+    //     (void) gmx_rmpbc(gpbc, pRefTop_->atoms.nr, box, pRefX_);
+    //     (void) gmx_rmpbc_done(gpbc);
+    // }
+
 
     // check if caching is on and also is available!
     if (bDoCache_ && sel_.isDynamic())

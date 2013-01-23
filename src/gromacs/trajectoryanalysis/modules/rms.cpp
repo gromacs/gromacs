@@ -111,6 +111,7 @@ Rms::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
 
     options->addOption(BooleanOption("fit")
                        .description("Do translational and rotational least-squares fit.")
+                       .defaultValue(true)
                        .store(&bDoFit_));
 
     options->addOption(SelectionOption("fitsel")
@@ -120,7 +121,7 @@ Rms::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
                        .onlyAtoms()
                        .store(&fitsel_));
 
-    options->addOption(BooleanOption("fitmw")
+    options->addOption(BooleanOption("mwfit")
                        .description("Use mass weighted fit.")
                        .defaultValue(true)
                        .store(&bFitUseMassWeights_));
@@ -144,7 +145,6 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // * save reference to topology for later calls to fitting functions.
     matrix          box;
 
-
     pRefTop_ = topInfo.topology();
     topAtoms_ = pRefTop_->atoms.nr;
         fprintf(stderr, "topAtoms_: %d\n", topAtoms_);
@@ -155,7 +155,7 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
     // get coords for reference structure
     (void) topInfo.getTopologyConf(&pRefX_, box);
 
-    // make reference structure whole Q: does this make sense?!
+    // make reference structure whole. Q: does this make sense?!
     if (settings.hasRmPBC())
     {
         gmx_rmpbc_t     gpbc = NULL;
@@ -185,12 +185,8 @@ Rms::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
     }
 
-/* setup plot output file */
-#ifdef GMX_LIB_MPI
+    /* setup plot output file */
     if (!fnRms_.empty() && mpi::isMaster())
-#else
-    if (!fnRms_.empty())
-#endif
     {
         AnalysisDataPlotModulePointer plotm(
             new AnalysisDataPlotModule(settings.plotSettings()));
@@ -231,11 +227,11 @@ Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     const ConstArrayRef< int >  fitselAtomIndsArray = fitsel.atomIndices();
 
     // atom_id *   selind;          // indicies of selected atoms (ref. to topology indexing)
-    rvec *      x,      * x_fit;           // coordinates of output selection and fit selection
-    rvec *      xp,     * xp_fit;         // coordinates of reference corresponding to selection and fit selection
-    real *      w_rms,  * w_fit;       // weights (masses) of output and reference selection atoms
+    rvec    *x,      *x_fit;           // coordinates of output selection and fit selection
+    rvec    *xp,     *xp_fit;         // coordinates of reference corresponding to selection and fit selection
+    real    *w_rms,  *w_fit;       // weights (masses) of output and reference selection atoms
 
-    real        rms_val;            // variable for accumulating data point value (RMSD)
+    real      rms_val;            // variable for accumulating data point value (RMSD)
 
 
     /* put stuff from selections in format
@@ -276,25 +272,25 @@ Rms::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             w_rms[i] = 1.0;
     }
 
-    // setup fitting selection arrays
-    for (int i=0; i<fitselatoms; i++)
-    {
-        const SelectionPosition &fitspi = fitsel.position(i);
-        // const rvec &spix = spi.x();
-        const atom_id &fitselindi = (atom_id) fitselAtomIndsArray.at(i);
-
-        (void) copy_rvec(fitspi.x(), x_fit[i]);
-        (void) copy_rvec(pRefX_[fitselindi], xp_fit[i]);
-
-        if (bFitUseMassWeights_)
-            w_fit[i] = fitspi.mass();
-        else
-            w_fit[i] = 1.0;
-    }
-
     // perform fitting of structures
     if (bDoFit_)
     {
+        // setup fitting selection arrays
+        for (int i=0; i<fitselatoms; i++)
+        {
+            const SelectionPosition &fitspi = fitsel.position(i);
+            // const rvec &spix = spi.x();
+            const atom_id &fitselindi = (atom_id) fitselAtomIndsArray.at(i);
+
+            (void) copy_rvec(fitspi.x(), x_fit[i]);
+            (void) copy_rvec(pRefX_[fitselindi], xp_fit[i]);
+
+            if (bFitUseMassWeights_)
+                w_fit[i] = fitspi.mass();
+            else
+                w_fit[i] = 1.0;
+        }
+
         /* translate (ie "reset") COM of reference and selected atoms to origin */
         (void) reset_x(selatoms, NULL,      // calc COM from same atoms as in selection
                        selatoms, NULL,

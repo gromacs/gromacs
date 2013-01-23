@@ -82,8 +82,9 @@ class RmsDist : public TrajectoryAnalysisModule
 
         // for the quick-port
         t_topology *    pRefTop_;
-        int             topAtoms_;
+        // int             topAtoms_;
         rvec *          pRefX_;
+        rvec *          pRefselX_;
         real **         pRefDCache_;
         real            invMassAvgCache_;
 
