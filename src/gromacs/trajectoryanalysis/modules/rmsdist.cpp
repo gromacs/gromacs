@@ -30,7 +30,6 @@
  */
 /*! \internal \file
  * \brief
- * AGWIP
  * Implements gmx::analysismodules::RmsDist.
  *
  * \ingroup module_trajectoryanalysis
@@ -43,7 +42,8 @@
 
 #include "pbc.h"
 #include "vec.h"
-
+#include "smalloc.h"
+#include "rmpbc.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -55,10 +55,6 @@
 #include "gromacs/trajectoryanalysis/analysissettings.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
-
-#include "smalloc.h"
-#include "rmpbc.h"
-
 
 namespace gmx
 {
@@ -101,7 +97,6 @@ RmsDist::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
                        .description("Selection for RMS calculation.")
                        .required()
                        .valueCount(1)
-                       // .onlyStatic()
                        .onlyAtoms()
                        .store(&sel_));
 
@@ -115,15 +110,9 @@ RmsDist::initOptions(Options *options, TrajectoryAnalysisSettings * settings)
                        .defaultValue(true)
                        .store(&bDoCache_));
 
-    // topology with coords must be provided for use as reference in RMS calc.
+    // topology with coords MUST be provided for use as reference in RMS calculations!
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
     settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
-
-    // // turn off PBC distances to calc intra-mol distances when having whole molecules
-    // if (settings->hasRmPCB())
-    // {
-    //     settings->setPCB(false);
-    // }
 }
 
 void
@@ -135,50 +124,33 @@ void
 RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
                        const TopologyInformation &topInfo)
 {
-    // * setup reference conformation from top file.
-    matrix          box;
-    rvec *          pRefX;
+    // matrix      box;
 
 
     pRefTop_ = topInfo.topology();
-    // topAtoms_ = pRefTop_->atoms.nr;
-    pRefX_ = NULL;
+    (void) topInfo.getTopologyConf(&pRefX_, NULL); // (void) topInfo.getTopologyConf(&pRefX_, box);
 
-    // get coords for reference structure
-    (void) topInfo.getTopologyConf(&pRefX_, box);
-
-    const ConstArrayRef< int >  fitselAtomIndsArray = sel_.atomIndices();
-
-    // make reference structure whole
-    // if (settings.hasRmPBC())
-    // {
-    //     gmx_rmpbc_t     gpbc = NULL;
-
-    //     gpbc = gmx_rmpbc_init(&pRefTop_->idef, topInfo.ePBC(), pRefTop_->atoms.nr, box);
-    //     (void) gmx_rmpbc(gpbc, pRefTop_->atoms.nr, box, pRefX_);
-    //     (void) gmx_rmpbc_done(gpbc);
-    // }
-
-
-    // check if caching is on and also is available!
+    // cacheing is not implemented for dynamic selections!
     if (bDoCache_ && sel_.isDynamic())
     {
         if (mpi::isMaster())
-            fprintf(stderr, "Caching not supported for dynamic selections - option turned off!");
-
+        {
+            fprintf(stderr, "Cacheing not supported for dynamic selections - option turned off!");
+        }
         bDoCache_ = false;
     }
 
-    // do cacheing! num of cache elements = selCount * (selCount-1) / 2 .
+    // NOTE: num of cache elements = selCount * (selCount-1) / 2 .
     if (bDoCache_)
     {
-        const int                   selCount      = sel_.atomCount();
-        const int                   cacheRows     = selCount - 1;
-        const ConstArrayRef< int >  selAtomIndsArray = sel_.atomIndices();
+        const int                   selCount            = sel_.atomCount();
+        const int                   cacheRows           = selCount - 1;
+        const ConstArrayRef< int >  selAtomIndsArray    = sel_.atomIndices();
 
-        rvec    dx;
+        rvec        dx;
+        t_pbc       pbc;
 
-        t_pbc   pbc;
+
         t_pbc  *ppbc = settings.hasPBC() ? &pbc : NULL;
         if (ppbc != NULL)
         {
@@ -210,7 +182,7 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
         }
     }
 
-    /* setup plot output file */
+    // setup plot output file
     if (!fnRmsDist_.empty() && mpi::isMaster())
     {
         AnalysisDataPlotModulePointer plotm(
@@ -218,11 +190,11 @@ RmsDist::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setFileName(fnRmsDist_);
         plotm->setTitle("RMS dist");
         plotm->setXAxisIsTime();
-        plotm->setYFormat(8, 6, 'f');   // y output fmt: "%8.6f"
+        plotm->setYFormat(8, 6, 'f');   // gives output fmt: "%8.6f"
         data_.addModule(plotm);
     }
 
-    // also calc average for fun!
+    // add average module
     data_.addModule(avem_);
 }
 
@@ -259,14 +231,14 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             const rvec                  &spjx = spj.x();
             const real                  &spjm = spj.mass();
 
-            // calc selection i-to-j distance
+            // selection i-to-j distance
             if (pbc != NULL)
                 pbc_dx(pbc, spix, spjx, dx);
             else
                 rvec_sub(spix, spjx, dx);
             r = norm(dx);
 
-            // calc reference i-to-j distance
+            // reference i-to-j distance
             if (bDoCache_)
             {
                 rp = pRefDCache_[i][j-(i+1)];
@@ -283,7 +255,7 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 rp = norm(dxp);
             }
 
-            // account for weights
+            // accumulate squared RMS value
             if (bUseMassWeights_)
             {
                 const real m_pf = sqrt(spim * spjm);
@@ -309,7 +281,6 @@ RmsDist::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         rms_val = sqrt(rms_val * avging_prefactor);
     }
 
-    /* write the result */
     dh.startFrame(frnr, fr.time);
     dh.setPoint(0, rms_val);
     dh.finishFrame();

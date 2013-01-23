@@ -31,7 +31,7 @@
 /*! \internal \file
  * \brief
  * AGWIP
- * Declares trajectory analysis module for radial distribution function.
+ * Declares trajectory analysis module for RMSD of pair-wise distances.
  *
  * \ingroup module_trajectoryanalysis
  */
@@ -43,7 +43,6 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
-// #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
 
@@ -75,21 +74,22 @@ class RmsDist : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        Selection                                sel_;
-        std::string                              fnRmsDist_;
-        AnalysisData                             data_;
+        Selection                                sel_;          // output selection
+        std::string                              fnRmsDist_;    // output plot filename
+        AnalysisData                             data_;         // output data object
         AnalysisDataAverageModulePointer         avem_;
 
-        // for the quick-port
-        t_topology *    pRefTop_;
-        // int             topAtoms_;
-        rvec *          pRefX_;
-        rvec *          pRefselX_;
-        real **         pRefDCache_;
-        real            invMassAvgCache_;
+        // reference structure
+        t_topology      *pRefTop_;              // topology
+        rvec            *pRefX_;                // structure coordinates
 
+        // mass weighting
         bool            bUseMassWeights_;       // use mass weighting
-        bool            bDoCache_;              // cache reference distances
+        real            invMassAvgCache_;       // mass weighting factor
+
+        // data cacheing
+        bool            bDoCache_;              // use caching
+        real            **pRefDCache_;          // reference distances data structure
 
         // Copy and assign disallowed by base.
 };
