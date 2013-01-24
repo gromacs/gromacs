@@ -43,6 +43,8 @@
 #include <limits>
 #endif
 
+#include "cuda.h"
+
 #include "types/simple.h" 
 #include "types/nbnxn_pairlist.h"
 #include "types/nb_verlet.h"
