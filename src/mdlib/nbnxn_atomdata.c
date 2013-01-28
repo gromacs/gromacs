@@ -405,7 +405,11 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
             }
             break;
         case ljcrNONE:
-            /* In nbfp_s4 we use a stride of 4 for storing two parameters */
+#if defined GMX_NBNXN_SIMD
+#if defined GMX_X86_SSE2 && !defined GMX_DOUBLE
+            /* nbfp_s4 stores two parameters using a stride of 4,
+             * because this suits x86 SIMD single-precision quad-load
+             * intrinsics. */
             nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
             for (i = 0; i < nt; i++)
             {
@@ -417,6 +421,8 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
                     nbat->nbfp_s4[(i*nt+j)*4+3] = 0;
                 }
             }
+#endif
+#endif /* GMX_NBNXN_SIMD */
             break;
         default:
             gmx_incons("Unknown combination rule");
