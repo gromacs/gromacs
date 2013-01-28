@@ -84,6 +84,25 @@ int gmx_saxs(int argc,char *argv[])
     };
 #define NPA asize(pa)
     const char *fnTPS,*fnTRX,*fnNDX,*fnDAT=NULL;
+    int i,*isize,flags = TRX_READ_X,**index_atp;
+    t_trxstatus *status;
+    char **grpname,title[STRLEN];
+    atom_id **index;
+    t_topology top;
+    int ePBC;
+    t_trxframe fr;
+    reduced_atom_t **red;
+    structure_factor_t *sf;
+    rvec *xtop;
+    real **sf_table;
+    int nsftable;
+    matrix box;
+    double r_tmp;
+
+    gmx_structurefactors_t *gmx_sf;
+    real *a,*b,c;
+    int success;
+
     output_env_t oenv;
 
     t_filenm   fnm[] = {
@@ -102,9 +121,81 @@ int gmx_saxs(int argc,char *argv[])
     fnDAT = ftp2fn(efDAT,NFILE,fnm);
     fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
 
-    do_scattering_intensity(fnTPS,fnNDX,opt2fn("-sq",NFILE,fnm),
-                            fnTRX,fnDAT,
-                            start_q, end_q, energy, ngroups,oenv);
+    snew(a,4);
+    snew(b,4);
+
+
+    gmx_sf=gmx_structurefactors_init(fnDAT);
+
+    success=gmx_structurefactors_get_sf(gmx_sf,0, a, b, &c);
+
+    snew (sf, 1);
+    sf->energy = energy;
+
+    /* Read the topology informations */
+    read_tps_conf (fnTPS, title, &top, &ePBC, &xtop, NULL, box, TRUE);
+    sfree (xtop);
+
+    /* groups stuff... */
+    snew (isize, ngroups);
+    snew (index, ngroups);
+    snew (grpname, ngroups);
+
+    fprintf (stderr, "\nSelect %d group%s\n", ngroups,
+             ngroups == 1 ? "" : "s");
+    if (fnTPS)
+        get_index (&top.atoms, fnNDX, ngroups, isize, index, grpname);
+    else
+        rd_index (fnNDX, ngroups, isize, index, grpname);
+
+    /* The first time we read data is a little special */
+    read_first_frame (oenv,&status, fnTRX, &fr, flags);
+
+    sf->total_n_atoms = fr.natoms;
+
+    snew (red, ngroups);
+    snew (index_atp, ngroups);
+
+    r_tmp = max (box[XX][XX], box[YY][YY]);
+    r_tmp = (double) max (box[ZZ][ZZ], r_tmp);
+
+    sf->ref_k = (2.0 * M_PI) / (r_tmp);
+    /* ref_k will be the reference momentum unit */
+    sf->n_angles = (int) (end_q / sf->ref_k + 0.5);
+
+    snew (sf->F, ngroups);
+    for (i = 0; i < ngroups; i++)
+        snew (sf->F[i], sf->n_angles);
+    for (i = 0; i < ngroups; i++) {
+        snew (red[i], isize[i]);
+        rearrange_atoms (red[i], &fr, index[i], isize[i], &top, TRUE,gmx_sf);
+        index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
+    }
+
+    sf_table = compute_scattering_factor_table (gmx_sf,(structure_factor_t *)sf,&nsftable);
+
+
+    /* This is the main loop over frames */
+
+    do {
+        sf->nSteps++;
+        for (i = 0; i < ngroups; i++) {
+            rearrange_atoms (red[i], &fr, index[i], isize[i], &top,FALSE,gmx_sf);
+
+            compute_structure_factor ((structure_factor_t *)sf, box, red[i], isize[i],
+                                      start_q, end_q, i, sf_table);
+        }
+    }
+
+    while (read_next_frame (oenv,status, &fr));
+
+    save_data ((structure_factor_t *)sf, opt2fn_null("-sq",NFILE,fnm), ngroups, start_q, end_q,oenv);
+
+
+    sfree(a);
+    sfree(b);
+
+    done_gmx_structurefactors(gmx_sf);
 
     please_cite(stdout,"Cromer1968a");
 
