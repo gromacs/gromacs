@@ -1154,6 +1154,7 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
     gmx_bool      j_all_atom;
     int           iwater, jwater;
     t_nblist     *nlist, *nlist_adress;
+    gmx_bool      bEnergyGroupCG;
 
     /* Copy some pointers */
     cginfo  = fr->cginfo;
@@ -1241,6 +1242,13 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
         bDoVdW_i  = (bDoVdW  && bHaveVdW[type[i_atom]]);
         bDoCoul_i = (bDoCoul && qi != 0);
 
+        /* Here we find out whether the energy groups interaction belong to a
+         * coarse-grained (vsite) or atomistic interaction. Note that, beacuse
+         * interactions between coarse-grained and other (atomistic) energygroups
+         * are excluded automatically by grompp, it is sufficient to check for
+         * the group id of atom i (igid) */
+        bEnergyGroupCG = !egp_explicit(fr, igid);
+
         if (bDoVdW_i || bDoCoul_i)
         {
             /* Loop over the j charge groups */
@@ -1264,7 +1272,33 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
                 {
                     bNotEx = NOTEXCL(bExcl, i, jj);
 
-                    b_hybrid = !((wf[i_atom] == 1 && wf[jj] == 1) || (wf[i_atom] == 0 && wf[jj] == 0));
+                    /* Now we have to exclude interactions which will be zero
+                     * anyway due to the AdResS weights (in previous implementations
+                     * this was done in the force kernel). This is necessary as
+                     * pure interactions (those with b_hybrid=false, i.e. w_i*w_j==1 or 0)
+                     * are put into neighbour lists which will be passed to the
+                     * standard (optimized) kernels for speed. The interactions with
+                     * b_hybrid=true are placed into the _adress neighbour lists and
+                     * processed by the generic AdResS kernel.
+                     */
+                    if ( bEnergyGroupCG &&
+                        ( wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS ) )
+                    {
+                        continue;
+                    }
+                    else if( !bEnergyGroupCG &&
+                        ( wf[i_atom] <= GMX_REAL_EPS && wf[jj] <= GMX_REAL_EPS ) )
+                    {
+                        continue;
+                    }
+                    else if (!bEnergyGroupCG &&
+                        ( wf[i_atom] <= GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS ) )
+                    {
+                        continue;
+                    }
+
+                    b_hybrid = !((wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS) ||
+                        (wf[i_atom] <= GMX_REAL_EPS && wf[jj] <= GMX_REAL_EPS));
 
                     if (bNotEx)
                     {
@@ -2367,7 +2401,7 @@ static int nsgrid_core(FILE *log, t_commrec *cr, t_forcerec *fr,
                      *  from the neigbour list as it will not interact  */
                     if (fr->adress_type != eAdressOff)
                     {
-                        if (md->wf[cgs->index[icg]] == 0 && egp_explicit(fr, igid))
+                        if (md->wf[cgs->index[icg]] <= GMX_REAL_EPS && egp_explicit(fr, igid))
                         {
                             continue;
                         }
