@@ -54,7 +54,7 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_ana.h"
-#include "nsfactor.h"
+#include "sfactor.h"
 #include "gmx_omp.h"
 
 int gmx_nse(int argc,char *argv[])
@@ -80,7 +80,7 @@ int gmx_nse(int argc,char *argv[])
     static const char *emode[]= { NULL, "direct", "mc", NULL };
     static const char *emethod[]={ NULL, "debye", "fft", NULL };
 
-    gmx_neutron_atomic_structurefactors_t    *gnsf;
+    gmx_structurefactors_t    *gnsf;
     gmx_nse_t              *gnse;
 
 #define NPA asize(pa)
@@ -148,7 +148,7 @@ int gmx_nse(int argc,char *argv[])
       { efTPX,  "-s",         NULL,   ffREAD },
       { efTRX,  "-f",         NULL,   ffREAD },
       { efNDX,  NULL,         NULL,   ffOPTRD },
-      { efDAT,  "-d",   "nsfactor",   ffOPTRD },
+      { efDAT,  "-d",   "sfactor",   ffOPTRD },
       { efXVG, "-grt",       "grt",   ffOPTWR },
       { efXVG, "-sqt",       "sqt",   ffWRITE },
       { efXVG, "-stq",       "stq",   ffOPTWR }
@@ -206,7 +206,7 @@ int gmx_nse(int argc,char *argv[])
   fnTPX = ftp2fn(efTPX,NFILE,fnm);
   fnTRX = ftp2fn(efTRX,NFILE,fnm);
 
-  gnsf = gmx_neutronstructurefactors_init(fnDAT);
+  gnsf = gmx_structurefactors_init(fnDAT);
   fprintf(stderr,"Read %d atom names from %s with neutron scattering parameters\n\n",gnsf->nratoms,fnDAT);
 
   snew(top,1);
@@ -369,7 +369,7 @@ int gmx_nse(int argc,char *argv[])
   sfree(index);
   sfree(grpname);
   done_sans(gnse->sans);
-  done_nsf(gnsf);
+  done_gmx_structurefactors(gnsf);
   sfree(top); // done_top already done via done_sans
 
 

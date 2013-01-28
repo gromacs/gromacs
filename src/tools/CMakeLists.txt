@@ -3,7 +3,7 @@ add_library(gmxana
             anadih.c        pp2shift.c      dlist.c         
             eigio.c         cmat.c          nsc.c
             hxprops.c       fitahx.c        
-            geminate.c      nsfactor.c
+            geminate.c
             gmx_analyze.c   gmx_anaeig.c    gmx_angle.c     gmx_bond.c      
             gmx_bundle.c    gmx_chi.c       gmx_cluster.c   gmx_confrms.c   
             gmx_covar.c     gmx_current.c   
