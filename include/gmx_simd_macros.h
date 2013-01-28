@@ -36,7 +36,7 @@
  */
 
 /* The macros in this file are intended to be used for writing
- * architecture independent SIMD intrinsics code.
+ * architecture-independent SIMD intrinsics code.
  * To support a new architecture, adding macros here should be (nearly)
  * all that is needed.
  */
@@ -45,7 +45,7 @@
  * with different settings from the same source file.
  */
 
-/* NOTE: floor and blendv are NOT available with SSE2 only acceleration */
+/* NOTE: SSE2 acceleration does not include floor or blendv */
 
 #undef GMX_SIMD_WIDTH_HERE
 
