@@ -244,22 +244,22 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 
     if (nl->type == GMX_NBLIST_INTERACTION_ADRESS)
     {
-        nl->kernelptr_vf       = gmx_nb_generic_adress_kernel;
-        nl->kernelptr_f        = gmx_nb_generic_adress_kernel;
+        nl->kernelptr_vf       = (void *) gmx_nb_generic_adress_kernel;
+        nl->kernelptr_f        = (void *) gmx_nb_generic_adress_kernel;
         nl->simd_padding_width = 1;
         return;
     }
 
     if (nl->type == GMX_NBLIST_INTERACTION_FREE_ENERGY)
     {
-        nl->kernelptr_vf       = gmx_nb_free_energy_kernel;
-        nl->kernelptr_f        = gmx_nb_free_energy_kernel;
+        nl->kernelptr_vf       = (void *) gmx_nb_free_energy_kernel;
+        nl->kernelptr_f        = (void *) gmx_nb_free_energy_kernel;
         nl->simd_padding_width = 1;
     }
     else if (!gmx_strcasecmp_min(geom, "CG-CG"))
     {
-        nl->kernelptr_vf       = gmx_nb_generic_cg_kernel;
-        nl->kernelptr_f        = gmx_nb_generic_cg_kernel;
+        nl->kernelptr_vf       = (void *) gmx_nb_generic_cg_kernel;
+        nl->kernelptr_f        = (void *) gmx_nb_generic_cg_kernel;
         nl->simd_padding_width = 1;
     }
     else
@@ -268,18 +268,18 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
 
         for (i = 0; i < narch && nl->kernelptr_vf == NULL; i++)
         {
-            nl->kernelptr_vf       = nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+            nl->kernelptr_vf       = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
         }
         for (i = 0; i < narch && nl->kernelptr_f == NULL; i++)
         {
-            nl->kernelptr_f        = nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
+            nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(log, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "Force");
             nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
 
             /* If there is not force-only optimized kernel, is there a potential & force one? */
             if (nl->kernelptr_f == NULL)
             {
-                nl->kernelptr_f        = nb_kernel_list_findkernel(NULL, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
+                nl->kernelptr_f        = (void *) nb_kernel_list_findkernel(NULL, arch_and_padding[i].arch, elec, elec_mod, vdw, vdw_mod, geom, other, "PotentialAndForce");
                 nl->simd_padding_width = arch_and_padding[i].simd_padding_width;
             }
         }
@@ -287,8 +287,8 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
         /* Give up, pick a generic one instead */
         if (nl->kernelptr_vf == NULL)
         {
-            nl->kernelptr_vf       = gmx_nb_generic_kernel;
-            nl->kernelptr_f        = gmx_nb_generic_kernel;
+            nl->kernelptr_vf       = (void *) gmx_nb_generic_kernel;
+            nl->kernelptr_f        = (void *) gmx_nb_generic_kernel;
             nl->simd_padding_width = 1;
             if (debug)
             {
