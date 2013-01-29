@@ -280,5 +280,5 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
     do
     {
     }
-    while (spin_islocked(x));
+    while (tMPI_Spinlock_islocked(x));
 }
