@@ -141,8 +141,12 @@ void gmx_pme_send_finish(t_commrec *cr);
 /* Tell our PME-only node to finish */
 
 GMX_LIBMD_EXPORT
-void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff);
+void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff);
 /* Tell our PME-only node to switch to a new grid size */
+
+GMX_LIBMD_EXPORT
+void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step);
+/* Tell our PME-only node to reset all cycle and flop counters */
 
 void gmx_pme_receive_f(t_commrec *cr,
                        rvec f[], matrix vir,
@@ -150,7 +154,16 @@ void gmx_pme_receive_f(t_commrec *cr,
                        float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
+/* Return values for gmx_pme_recv_q_x */
+enum {
+    pmerecvqxX,            /* calculate PME mesh interactions for new x    */
+    pmerecvqxFINISH,       /* the simulation should finish, we should quit */
+    pmerecvqxSWITCHGRID,   /* change the PME grid size                     */
+    pmerecvqxRESETCOUNTERS /* reset the cycle and flop counters            */
+};
+
 int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
+                     int *natoms,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x, rvec **f,
                      int *maxshift_x, int *maxshift_y,
@@ -159,10 +172,11 @@ int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
                      gmx_large_int_t *step,
                      ivec grid_size, real *ewaldcoeff);
 ;
-/* Receive charges and/or coordinates from the PP-only nodes.
- * Returns the number of atoms, or -1 when the run is finished.
- * In the special case of a PME grid size switch request, -2 is returned
- * and grid_size and *ewaldcoeff are set, which are otherwise not set.
+/* With return value:
+ * pmerecvqxX:             all parameters set, chargeA and chargeB can be NULL
+ * pmerecvqxFINISH:        no parameters set
+ * pmerecvqxSWITCHGRID:    only grid_size and *ewaldcoeff are set
+ * pmerecvqxRESETCOUNTERS: *step is set
  */
 
 void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
