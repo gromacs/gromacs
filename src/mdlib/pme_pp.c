@@ -62,13 +62,15 @@
 
 #include "mpelogging.h"
 
-#define PP_PME_CHARGE   (1<<0)
-#define PP_PME_CHARGEB  (1<<1)
-#define PP_PME_COORD    (1<<2)
-#define PP_PME_FEP      (1<<3)
-#define PP_PME_ENER_VIR (1<<4)
-#define PP_PME_FINISH   (1<<5)
-#define PP_PME_SWITCH   (1<<6)
+#define PP_PME_CHARGE         (1<<0)
+#define PP_PME_CHARGEB        (1<<1)
+#define PP_PME_COORD          (1<<2)
+#define PP_PME_FEP            (1<<3)
+#define PP_PME_ENER_VIR       (1<<4)
+#define PP_PME_FINISH         (1<<5)
+#define PP_PME_SWITCHGRID     (1<<6)
+#define PP_PME_RESETCOUNTERS  (1<<7)
+
 
 #define PME_PP_SIGSTOP     (1<<0)
 #define PME_PP_SIGSTOPNSS     (1<<1)
@@ -291,14 +293,15 @@ void gmx_pme_send_finish(t_commrec *cr)
     gmx_pme_send_q_x(cr, flags, NULL, NULL, NULL, NULL, 0, 0, 0, -1);
 }
 
-void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff)
+void gmx_pme_send_switchgrid(t_commrec *cr, ivec grid_size, real ewaldcoeff)
 {
 #ifdef GMX_MPI
     gmx_pme_comm_n_box_t cnb;
 
+    /* Only let one PP node signal each PME node */
     if (cr->dd->pme_receive_vir_ener)
     {
-        cnb.flags = PP_PME_SWITCH;
+        cnb.flags = PP_PME_SWITCHGRID;
         copy_ivec(grid_size, cnb.grid_size);
         cnb.ewaldcoeff = ewaldcoeff;
 
@@ -309,7 +312,26 @@ void gmx_pme_send_switch(t_commrec *cr, ivec grid_size, real ewaldcoeff)
 #endif
 }
 
+void gmx_pme_send_resetcounters(t_commrec *cr, gmx_large_int_t step)
+{
+#ifdef GMX_MPI
+    gmx_pme_comm_n_box_t cnb;
+
+    /* Only let one PP node signal each PME node */
+    if (cr->dd->pme_receive_vir_ener)
+    {
+        cnb.flags = PP_PME_RESETCOUNTERS;
+        cnb.step  = step;
+
+        /* We send this, uncommon, message blocking to simplify the code */
+        MPI_Send(&cnb, sizeof(cnb), MPI_BYTE,
+                 cr->dd->pme_nodeid, 0, cr->mpi_comm_mysim);
+    }
+#endif
+}
+
 int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
+                     int *natoms,
                      real **chargeA, real **chargeB,
                      matrix box, rvec **x, rvec **f,
                      int *maxshift_x, int *maxshift_y,
@@ -336,20 +358,29 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 
         if (debug)
         {
-            fprintf(debug, "PME only node receiving:%s%s%s%s\n",
-                    (cnb.flags & PP_PME_CHARGE) ? " charges" : "",
-                    (cnb.flags & PP_PME_COORD ) ? " coordinates" : "",
-                    (cnb.flags & PP_PME_FINISH) ? " finish" : "",
-                    (cnb.flags & PP_PME_SWITCH) ? " switch" : "");
+            fprintf(debug, "PME only node receiving:%s%s%s%s%s\n",
+                    (cnb.flags & PP_PME_CHARGE)        ? " charges" : "",
+                    (cnb.flags & PP_PME_COORD )        ? " coordinates" : "",
+                    (cnb.flags & PP_PME_FINISH)        ? " finish" : "",
+                    (cnb.flags & PP_PME_SWITCHGRID)    ? " switch grid" : "",
+                    (cnb.flags & PP_PME_RESETCOUNTERS) ? " reset counters" : "");
         }
 
-        if (cnb.flags & PP_PME_SWITCH)
+        if (cnb.flags & PP_PME_SWITCHGRID)
         {
             /* Special case, receive the new parameters and return */
             copy_ivec(cnb.grid_size, grid_size);
             *ewaldcoeff = cnb.ewaldcoeff;
 
-            return -2;
+            return pmerecvqxSWITCHGRID;
+        }
+
+        if (cnb.flags & PP_PME_RESETCOUNTERS)
+        {
+            /* Special case, receive the step and return */
+            *step = cnb.step;
+
+            return pmerecvqxRESETCOUNTERS;
         }
 
         if (cnb.flags & PP_PME_CHARGE)
@@ -481,13 +512,13 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
     *step = cnb.step;
 #endif
 
+    *natoms  = nat;
     *chargeA = pme_pp->chargeA;
     *chargeB = pme_pp->chargeB;
     *x       = pme_pp->x;
     *f       = pme_pp->f;
 
-
-    return ((cnb.flags & PP_PME_FINISH) ? -1 : nat);
+    return ((cnb.flags & PP_PME_FINISH) ? pmerecvqxFINISH : pmerecvqxX);
 }
 
 static void receive_virial_energy(t_commrec *cr,
