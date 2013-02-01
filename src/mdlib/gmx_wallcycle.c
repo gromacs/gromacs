@@ -114,7 +114,7 @@ static const char *wcsn[ewcsNR] =
     "DD make top.", "DD make constr.", "DD top. other",
     "NS grid local", "NS grid non-loc.", "NS search local", "NS search non-loc.",
     "Bonded F", "Nonbonded F", "Ewald F correction",
-    "NB X buffer ops.", "NB F buffer ops."
+    "NB X buffer ops.", "NB F buffer ops.", "AdResS NB F", "FreeEngy Sums",
 };
 
 gmx_bool wallcycle_have_counter(void)

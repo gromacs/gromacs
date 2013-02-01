@@ -65,8 +65,8 @@ enum {
     ewcsNBS_GRID_LOCAL, ewcsNBS_GRID_NONLOCAL,
     ewcsNBS_SEARCH_LOCAL, ewcsNBS_SEARCH_NONLOCAL,
     ewcsBONDED, ewcsNONBONDED, ewcsEWALD_CORRECTION,
-    ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS,
-    ewcsNR
+    ewcsNB_X_BUF_OPS, ewcsNB_F_BUF_OPS, ewcsNB_ADRESS,
+    ewcsFE_SUMS, ewcsNR
 };
 
 gmx_bool wallcycle_have_counter(void);

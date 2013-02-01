@@ -64,6 +64,7 @@
 #include "nrnb.h"
 #include "smalloc.h"
 #include "nonbonded.h"
+#include "gmx_wallcycle.h"
 
 #include "nb_kernel.h"
 #include "nb_free_energy.h"
@@ -408,7 +409,13 @@ void do_nonbonded(t_commrec *cr, t_forcerec *fr,
                         /* We don't need the non-perturbed interactions */
                         continue;
                     }
+		    int wc_cycle_counter = ewcsNONBONDED;
+		    if (nlist[i].type == GMX_NBLIST_INTERACTION_ADRESS) {
+		        wc_cycle_counter = ewcsNB_ADRESS;
+		    }
+		    wallcycle_sub_start(wcycle, wc_cycle_counter);   
                     (*kernelptr)(&(nlist[i]), x, f, fr, mdatoms, &kernel_data, nrnb);
+		    wallcycle_sub_stop(wcycle, wc_cycle_counter);   
                 }
             }
         }

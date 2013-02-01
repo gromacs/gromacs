@@ -281,7 +281,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             donb_flags |= GMX_NONBONDED_DO_LR;
         }
 
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(cr, fr, x, f, f_longrange, md, excl,
                      &enerd->grpp, box_size, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
@@ -306,7 +305,6 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
         }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
         where();
     }
 
@@ -773,6 +771,8 @@ void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot)
 {
     int i;
 
+    wallcycle_sub_start(wcycle, ewcsFE_SUMS);
+
     /* Accumulate energies */
     epot[F_COUL_SR]  = sum_v(grpp->nener, grpp->ener[egCOULSR]);
     epot[F_LJ]       = sum_v(grpp->nener, grpp->ener[egLJSR]);
@@ -797,6 +797,8 @@ void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot)
             epot[F_EPOT] += epot[i];
         }
     }
+
+    wallcycle_sub_stop(wcycle, ewcsFE_SUMS);
 }
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
