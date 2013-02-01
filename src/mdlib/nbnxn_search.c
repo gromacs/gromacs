@@ -394,6 +394,9 @@ void nbnxn_init_search(nbnxn_search_t    * nbs_ptr,
     nbs->a           = NULL;
     nbs->a_nalloc    = 0;
 
+    nbs->sci_sort    = NULL;
+    nbs->sci_sort_nalloc = 0;
+
     nbs->nthread_max = nthread_max;
 
     /* Initialize the work data structures for each thread */
@@ -2619,37 +2622,6 @@ static void print_nblist_statistics_supersub(FILE *fp, const nbnxn_pairlist_t *n
     }
 }
 
-/* Print the full pair list, used for debug output */
-static void print_supersub_nsp(const char             *fn,
-                               const nbnxn_pairlist_t *nbl,
-                               int                     iloc)
-{
-    char  buf[STRLEN];
-    FILE *fp;
-    int   i, nsp, j4, p;
-
-    sprintf(buf, "%s_%s.xvg", fn, NONLOCAL_I(iloc) ? "nl" : "l");
-    fp = ffopen(buf, "w");
-
-    for (i = 0; i < nbl->nci; i++)
-    {
-        nsp = 0;
-        for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
-        {
-            for (p = 0; p < NBNXN_GPU_JGROUP_SIZE*GPU_NSUBCELL; p++)
-            {
-                nsp += (nbl->cj4[j4].imei[0].imask >> p) & 1;
-            }
-        }
-        fprintf(fp, "%4d %3d %3d\n",
-                i,
-                nsp,
-                nbl->sci[i].cj4_ind_end-nbl->sci[i].cj4_ind_start);
-    }
-
-    fclose(fp);
-}
-
 /* Returns a pointer to the exclusion mask for cj4-unit cj4, warp warp */
 static void low_get_nbl_exclusions(nbnxn_pairlist_t *nbl, int cj4,
                                    int warp, nbnxn_excl_t **excl)
@@ -2979,7 +2951,13 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
              */
             *ndistc += na_c*na_c;
             if (d2 < rbb2 ||
-                (d2 < rl2 && subc_in_range_x(na_c, ci, x_ci, cj_gl, stride, x, rl2)))
+                (d2 < rl2 &&
+#ifdef NBNXN_PBB_SSE
+                subc_in_range_sse8
+#else
+                subc_in_range_x
+#endif
+                    (na_c, ci, x_ci, cj_gl, stride, x, rl2)))
 #else
             /* Check if the distance between the two bounding boxes
              * in within the pair-list cut-off.
@@ -3465,10 +3443,10 @@ static void close_ci_entry_simple(nbnxn_pairlist_t *nbl)
 }
 
 /* Split sci entry for load balancing on the GPU.
- * As we only now the current count on our own thread,
+ * As we only know the current count on our own thread,
  * we will need to estimate the current total amount of i-entries.
  * As the lists get concatenated later, this estimate depends
- * both on nthread and our own thread index thread.
+ * both on nthread and our own thread index.
  */
 static void split_sci_entry(nbnxn_pairlist_t *nbl,
                             int nsp_max_av, gmx_bool progBal, int nc_bal,
@@ -3481,12 +3459,13 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
     int nsp, nsp_sci, nsp_cj4, nsp_cj4_e, nsp_cj4_p;
     int p;
 
-    /* Estimate the total numbers of ci's of the nblist combined
-     * over all threads using the target number of ci's.
-     */
-    nsci_est = nc_bal*thread/nthread + nbl->nsci;
     if (progBal)
     {
+        /* Estimate the total numbers of ci's of the nblist combined
+         * over all threads using the target number of ci's.
+         */
+        nsci_est = nc_bal*thread/nthread + nbl->nsci;
+
         /* The first ci blocks should be larger, to avoid overhead.
          * The last ci blocks should be smaller, to improve load balancing.
          */
@@ -3508,24 +3487,25 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
         nbl->nsci -= 1;
 
         sci        = nbl->nsci;
-        cj4        = cj4_start;
         nsp        = 0;
         nsp_sci    = 0;
         nsp_cj4_e  = 0;
         nsp_cj4    = 0;
-        while (cj4 < cj4_end)
+        for (cj4 = cj4_start; cj4 < cj4_end; cj4++)
         {
             nsp_cj4_p = nsp_cj4;
+            /* Count the number of cluster pairs in this cj4 group */
             nsp_cj4   = 0;
             for (p = 0; p < GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE; p++)
             {
                 nsp_cj4 += (nbl->cj4[cj4].imei[0].imask >> p) & 1;
             }
-            nsp += nsp_cj4;
 
-            if (nsp > nsp_max && nsp > nsp_cj4)
+            if (nsp_cj4 > 0 && nsp + nsp_cj4 > nsp_max)
             {
+                /* Split the list at cj4 */
                 nbl->sci[sci].cj4_ind_end = cj4;
+                /* Create a new sci entry */
                 sci++;
                 nbl->nsci++;
                 if (nbl->nsci+1 > nbl->sci_nalloc)
@@ -3535,19 +3515,18 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
                 nbl->sci[sci].sci           = nbl->sci[nbl->nsci-1].sci;
                 nbl->sci[sci].shift         = nbl->sci[nbl->nsci-1].shift;
                 nbl->sci[sci].cj4_ind_start = cj4;
-                nsp_sci                     = nsp - nsp_cj4;
+                nsp_sci                     = nsp;
                 nsp_cj4_e                   = nsp_cj4_p;
-                nsp                         = nsp_cj4;
+                nsp                         = 0;
             }
-
-            cj4++;
+            nsp += nsp_cj4;
         }
 
-        /* Put the remaining cj4's in a new ci entry */
+        /* Put the remaining cj4's in the last sci entry */
         nbl->sci[sci].cj4_ind_end = cj4_end;
 
-        /* Possibly balance out the last two ci's
-         * by moving the last cj4 of the second last ci.
+        /* Possibly balance out the last two sci's
+         * by moving the last cj4 of the second last sci.
          */
         if (nsp_sci - nsp_cj4_e >= nsp + nsp_cj4_e)
         {
@@ -3555,7 +3534,6 @@ static void split_sci_entry(nbnxn_pairlist_t *nbl,
             nbl->sci[sci].cj4_ind_start--;
         }
 
-        sci++;
         nbl->nsci++;
     }
 }
@@ -3585,6 +3563,7 @@ static void close_ci_entry_supersub(nbnxn_pairlist_t *nbl,
 
         if (nsp_max_av > 0)
         {
+            /* Measure the size of the new entry and potentially split it */
             split_sci_entry(nbl, nsp_max_av, progBal, nc_bal, thread, nthread);
         }
     }
@@ -3864,14 +3843,11 @@ static int get_nsubpair_max(const nbnxn_search_t nbs,
         /* Thus the (average) maximum j-list size should be as follows */
         nsubpair_max = max(1, (int)(nsp_est/min_ci_balanced+0.5));
 
-        /* Since the target value is a maximum (this avoid high outliers,
-         * which lead to load imbalance), not average, we get more lists
-         * than we ask for (to compensate we need to add GPU_NSUBCELL*4/4).
-         * But more importantly, the optimal GPU performance moves
-         * to lower number of block for very small blocks.
-         * To compensate we add the maximum pair count per cj4.
+        /* Since the target value is a maximum (this avoids high outliers,
+         * which lead to load imbalance), not average, we add half the
+         * number of pairs in a cj4 block to get the average about right.
          */
-        nsubpair_max += GPU_NSUBCELL*NBNXN_CPU_CLUSTER_I_SIZE;
+        nsubpair_max += GPU_NSUBCELL*NBNXN_GPU_JGROUP_SIZE/2;
     }
 
     if (debug)
@@ -3906,7 +3882,7 @@ static void print_nblist_ci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
 /* Debug list print function */
 static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
 {
-    int i, j4, j;
+    int i, j4, j, ncp, si;
 
     for (i = 0; i < nbl->nsci; i++)
     {
@@ -3914,6 +3890,7 @@ static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
                 nbl->sci[i].sci, nbl->sci[i].shift,
                 nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start);
 
+        ncp = 0;
         for (j4 = nbl->sci[i].cj4_ind_start; j4 < nbl->sci[i].cj4_ind_end; j4++)
         {
             for (j = 0; j < NBNXN_GPU_JGROUP_SIZE; j++)
@@ -3921,8 +3898,19 @@ static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
                 fprintf(fp, "  sj %5d  imask %x\n",
                         nbl->cj4[j4].cj[j],
                         nbl->cj4[j4].imei[0].imask);
+                for (si=0; si<GPU_NSUBCELL; si++)
+                {
+                    if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
+                    {
+                        ncp++;
+                    }
+                }
             }
         }
+        fprintf(fp, "ci %4d  shift %2d  ncj4 %2d ncp %3d\n",
+                nbl->sci[i].sci, nbl->sci[i].shift,
+                nbl->sci[i].cj4_ind_end - nbl->sci[i].cj4_ind_start,
+                ncp);
     }
 }
 
@@ -4794,6 +4782,74 @@ static void print_reduction_cost(const nbnxn_buffer_flags_t *flags, int nout)
             nred/(double)(flags->nflag));
 }
 
+/* Perform a count (linear) sort to sort the smaller lists to the end.
+ * The sorting is done on the cj4 count, not on the actual pair counts.
+ * Not only does this make the sort faster, but it also results in
+ * better load balancing than using a list sorted on exact load.
+ * This function swaps the pointer in the pair list to avoid a copy operation.
+ */
+static void sort_sci(const nbnxn_search_t  nbs, nbnxn_pairlist_t *nbl)
+{
+    int          m, i, s, s0, s1;
+    nbnxn_sci_t *sci_sort;
+
+    if (nbl->ncj4 <= nbl->nsci)
+    {
+        /* nsci = 0 or all sci have size 1, sorting won't change the order */
+        return;
+    }
+
+    /* We will distinguish differences up to double the average */
+    m = (2*nbl->ncj4)/nbl->nsci;
+
+    if (m + 1 > nbs->sort_nalloc)
+    {
+        nbs->sort_nalloc = over_alloc_large(m + 1);
+        srenew(nbs->sort, nbs->sort_nalloc);
+    }
+
+    if (nbs->sci_sort_nalloc != nbl->sci_nalloc)
+    {
+        nbs->sci_sort_nalloc = nbl->sci_nalloc;
+        nbnxn_realloc_void((void **)&nbs->sci_sort,
+                           0,
+                           nbs->sci_sort_nalloc*sizeof(*nbs->sci_sort),
+                           nbl->alloc, nbl->free);
+    }
+
+    /* Count the entries of each size */
+    for(i = 0; i <= m; i++)
+    {
+        nbs->sort[i] = 0;
+    }
+    for(s = 0; s < nbl->nsci; s++)
+    {
+        i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
+        nbs->sort[i]++;
+    }
+    /* Calculate the offset for each count */
+    s0           = nbs->sort[m];
+    nbs->sort[m] = 0;
+    for(i = m - 1; i >= 0; i--)
+    {
+        s1           = nbs->sort[i];
+        nbs->sort[i] = nbs->sort[i + 1] + s0;
+        s0           = s1;
+    }
+
+    /* Sort entries directly into place */
+    sci_sort = nbs->sci_sort;
+    for(s = 0; s < nbl->nsci; s++)
+    {
+        i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
+        sci_sort[nbs->sort[i]++] = nbl->sci[s];
+    }
+
+    /* Swap the sci pointers so we use the new, sorted list */
+    nbs->sci_sort = nbl->sci;
+    nbl->sci      = sci_sort;
+}
+
 /* Make a local or non-local pair-list, depending on iloc */
 void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          nbnxn_atomdata_t     *nbat,
@@ -4991,14 +5047,16 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
         }
     }
 
+    if (!nbl_list->bSimple)
+    {
+        /* Sort the entries on size, large ones first */
+        sort_sci(nbs, nbl[0]);
+    }
+
     if (nbat->bUseBufferFlags)
     {
         reduce_buffer_flags(nbs, nnbl, &nbat->buffer_flags);
     }
-
-    /*
-       print_supersub_nsp("nsubpair",nbl[0],iloc);
-     */
 
     /* Special performance logging stuff (env.var. GMX_NBNXN_CYCLE) */
     if (LOCAL_I(iloc))

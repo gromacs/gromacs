@@ -235,6 +235,12 @@ typedef struct nbnxn_search {
 
     gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
 
+    int                 *sort;            /* Sort index                     */
+    int                  sort_nalloc;     /* Allocation size of sort        */
+
+    nbnxn_sci_t         *sci_sort;        /* Second sci buffer, for sorting */
+    int                  sci_sort_nalloc; /* Allocation size of sci_sort    */
+
     int                  nthread_max; /* Maximum number of threads for pair-search  */
     nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
 } nbnxn_search_t_t;
