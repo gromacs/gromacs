@@ -281,10 +281,9 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             donb_flags |= GMX_NONBONDED_DO_LR;
         }
 
-        wallcycle_sub_start(wcycle, ewcsNONBONDED);
         do_nonbonded(cr, fr, x, f, f_longrange, md, excl,
                      &enerd->grpp, box_size, nrnb,
-                     lambda, dvdl_nb, -1, -1, donb_flags);
+                     lambda, dvdl_nb, -1, -1, donb_flags, wcycle);
 
         /* If we do foreign lambda and we have soft-core interactions
          * we have to recalculate the (non-linear) energies contributions.
@@ -301,12 +300,14 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 do_nonbonded(cr, fr, x, f, f_longrange, md, excl,
                              &(enerd->foreign_grpp), box_size, nrnb,
                              lam_i, dvdl_dum, -1, -1,
-                             (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
+                             (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA,
+			     wcycle);
+                wallcycle_sub_start(wcycle, ewcsFE_SUMS);
                 sum_epot(&ir->opts, &(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
+                wallcycle_sub_stop(wcycle, ewcsFE_SUMS);
             }
         }
-        wallcycle_sub_stop(wcycle, ewcsNONBONDED);
         where();
     }
 

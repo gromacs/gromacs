@@ -83,7 +83,7 @@ do_nonbonded(t_commrec *cr, t_forcerec *fr,
              rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *md, t_blocka *excl,
              gmx_grppairener_t *grppener, rvec box_size,
              t_nrnb *nrnb, real *lambda, real dvdlambda[],
-             int nls, int eNL, int flags);
+             int nls, int eNL, int flags, gmx_wallcycle_t wcycle);
 
 /* Calculate VdW/charge listed pair interactions (usually 1-4 interactions).
  * global_atom_index is only passed for printing error messages.
