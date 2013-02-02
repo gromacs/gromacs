@@ -357,7 +357,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
             }
             break;
         default:
-            gmx_incons("Unsupported stride");
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
@@ -1216,6 +1216,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 }
             }
             break;
+    default:
+        gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
