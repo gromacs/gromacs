@@ -77,6 +77,8 @@ enum
     eNR_NBKERNEL_NR,                        /* Total number of interaction-specific kernel entries */
 
     eNR_NBKERNEL_GENERIC = eNR_NBKERNEL_NR, /* Reuse number; KERNEL_NR is not an entry itself */
+    eNR_NBKERNEL_GENERIC_CG,
+    eNR_NBKERNEL_GENERIC_ADRESS,
     eNR_NBKERNEL_FREE_ENERGY,               /* Add other generic kernels _before_ the free energy one */
 
     eNR_NBKERNEL_ALLVSALL,
