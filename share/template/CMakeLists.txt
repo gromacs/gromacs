@@ -37,7 +37,7 @@ install(FILES CMakeLists.txt.template
         RENAME CMakeLists.txt
         COMPONENT development)
 
-file(GLOB_RECURSE GROMACS_HEADERS ${CMAKE_SOURCE_DIR}/include *.h)
+file(GLOB_RECURSE GROMACS_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
 add_custom_command(OUTPUT gromacs
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include gromacs 
     DEPENDS ${GROMACS_HEADERS})
