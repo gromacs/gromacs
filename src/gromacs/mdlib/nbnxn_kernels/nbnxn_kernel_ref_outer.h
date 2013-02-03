@@ -50,13 +50,13 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(x, y) x ## _rf_ ## y
+#define NBK_FUNC_NAME(base, ene) base ## _rf_ ## ene
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(x, y) x ## _tab_ ## y
+#define NBK_FUNC_NAME(base, ene) base ## _tab_ ## ene
 #else
-#define NBK_FUNC_NAME(x, y) x ## _tab_twin_ ## y
+#define NBK_FUNC_NAME(base, ene) base ## _tab_twin_ ## ene
 #endif
 #endif
 
