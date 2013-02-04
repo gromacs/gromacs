@@ -75,6 +75,7 @@
 #include "nbnxn_consts.h"
 #include "statutil.h"
 #include "gmx_omp_nthreads.h"
+#include "gmx_detect_hardware.h"
 
 #ifdef _MSC_VER
 /* MSVC definition for __cpuid() */
@@ -2039,6 +2040,17 @@ void init_forcerec(FILE              *fp,
     gmx_bool       bTab, bSep14tab, bNormalnblists;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
+
+    if (fr->hwinfo == NULL)
+    {
+        /* Detect hardware, gather information.
+         * In mdrun, hwinfo has already been set before calling init_forcerec.
+         * Here we ignore GPUs, as tools will not use them anyhow.
+         */
+        snew(fr->hwinfo, 1);
+        gmx_detect_hardware(fp, fr->hwinfo, cr,
+                            FALSE, FALSE, NULL);
+    }
 
     /* By default we turn acceleration on, but it might be turned off further down... */
     fr->use_cpu_acceleration = TRUE;
