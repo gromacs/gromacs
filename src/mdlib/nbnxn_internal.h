@@ -154,6 +154,12 @@ typedef struct nbnxn_list_work {
     int                     ncj_noq;   /* Nr. of cluster pairs without Coul for flop count  */
     int                     ncj_hlj;   /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
+    int                    *sort;            /* Sort index                    */
+    int                     sort_nalloc;     /* Allocation size of sort       */
+
+    nbnxn_sci_t            *sci_sort;        /* Second sci array, for sorting */
+    int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
+
     gmx_cache_protect_t     cp1;       /* Protect cache between threads               */
 } nbnxn_list_work_t;
 
