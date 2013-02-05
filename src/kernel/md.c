@@ -2222,7 +2222,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (pme_loadbal != NULL)
     {
-        pme_loadbal_done(pme_loadbal, fplog);
+        pme_loadbal_done(pme_loadbal, cr, fplog,
+                         fr->nbv != NULL && fr->nbv->bUseGPU);
     }
 
     if (shellfc && fplog)
