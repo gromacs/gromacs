@@ -661,6 +661,14 @@ endif(NOT GMX_SYSTEM_XDR)
 include(gmxTestAVXMaskload)
 
 # Process nonbonded accelerated kernels settings
+#
+# Note that for the backward-compatible x86 SIMD architectures, the
+# GMX_CPU_ACCELERATION determines the maximum level of the instruction
+# set used (e.g. GMX_CPU_ACCLERATION=SSE4.1 implies
+# SSE2). Accordingly, there are a set of CMake variables
+# GMX_<arch>_<feature-set> that are exported to the C code to specify
+# CPU features that should be used. This means that the logic for
+# requiring such backward compatibility is all located here.
 string(TOUPPER ${GMX_CPU_ACCELERATION} GMX_CPU_ACCELERATION)
 if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
