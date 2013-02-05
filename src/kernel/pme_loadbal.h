@@ -75,6 +75,8 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
 void restart_pme_loadbal(pme_load_balancing_t pme_lb, int n);
 
 /* Finish the PME load balancing and print the settings when fplog!=NULL */
-void pme_loadbal_done(pme_load_balancing_t pme_lb, FILE *fplog);
+void pme_loadbal_done(pme_load_balancing_t pme_lb,
+                      t_commrec *cr, FILE *fplog,
+                      gmx_bool bNonBondedOnGPU);
 
 #endif /* _pme_loadbal_h */
