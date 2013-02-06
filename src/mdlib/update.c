@@ -703,11 +703,6 @@ static void do_update_sd1(gmx_stochd_t *sd,
 
     sdc = sd->sdc;
     sig = sd->sdsig;
-    if (nrend-start > sd->sd_V_nalloc)
-    {
-        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
-        srenew(sd->sd_V, sd->sd_V_nalloc);
-    }
 
     for (n = 0; n < ngtc; n++)
     {
@@ -753,6 +748,15 @@ static void do_update_sd1(gmx_stochd_t *sd,
     }
 }
 
+static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
+{
+    if (nrend > sd->sd_V_nalloc)
+    {
+        sd->sd_V_nalloc = over_alloc_dd(nrend);
+        srenew(sd->sd_V, sd->sd_V_nalloc);
+    }
+}
+
 static void do_update_sd2(gmx_stochd_t *sd,
                           gmx_rng_t gaussrand,
                           gmx_bool bInitStep,
@@ -778,13 +782,8 @@ static void do_update_sd2(gmx_stochd_t *sd,
     real   ism;
     int    n, d;
 
-    sdc = sd->sdc;
-    sig = sd->sdsig;
-    if (nrend-start > sd->sd_V_nalloc)
-    {
-        sd->sd_V_nalloc = over_alloc_dd(nrend-start);
-        srenew(sd->sd_V, sd->sd_V_nalloc);
-    }
+    sdc  = sd->sdc;
+    sig  = sd->sdsig;
     sd_V = sd->sd_V;
 
     if (bFirstHalf)
@@ -832,11 +831,11 @@ static void do_update_sd2(gmx_stochd_t *sd,
                     }
                     Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c)
                         + ism*sig[gt].Yv*gmx_rng_gaussian_table(gaussrand);
-                    sd_V[n-start][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+                    sd_V[n][d] = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
 
                     v[n][d] = vn*sdc[gt].em
                         + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                        + sd_V[n-start][d] - sdc[gt].em*Vmh;
+                        + sd_V[n][d] - sdc[gt].em*Vmh;
 
                     xprime[n][d] = x[n][d] + v[n][d]*tau_t[gt]*(sdc[gt].eph - sdc[gt].emh);
                 }
@@ -850,7 +849,7 @@ static void do_update_sd2(gmx_stochd_t *sd,
                     v[n][d] =
                         (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));
 
-                    Xmh = sd_V[n-start][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
+                    Xmh = sd_V[n][d]*tau_t[gt]*sdc[gt].d/(sdc[gt].em-1)
                         + ism*sig[gt].Yx*gmx_rng_gaussian_table(gaussrand);
                     sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
@@ -1894,6 +1893,11 @@ void update_coords(FILE             *fplog,
     else
     {
         nth = gmx_omp_nthreads_get(emntUpdate);
+    }
+
+    if (inputrec->eI == eiSD2)
+    {
+        check_sd2_work_data_allocation(upd->sd, nrend);
     }
 
 #pragma omp parallel for num_threads(nth) schedule(static) private(alpha)
