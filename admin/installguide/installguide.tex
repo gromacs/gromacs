@@ -470,10 +470,19 @@ single and double precision, and with and without \mpi{}. By default,
 \gromacs{} will suffix binaries and libraries for such builds with
 '\verb+_d+' for double precision and/or '\verb+_mpi+' for \mpi{} (and
 nothing otherwise). This can be controlled manually with
-\verb+GMX_DEFAULT_SUFFIX+, \verb+GMX_BINARY_SUFFIX+ and
-\verb+GMX_LIBRARY_SUFFIX+. This can also be useful for resolving
-libary-naming conflicts with existing packges (\verb+GMX_PREFIX_LIBMD+
-also can be useful).
+\verb+GMX_DEFAULT_SUFFIX (ON/OFF)+, \verb+GMX_BINARY_SUFFIX+ (takes 
+a string) and \verb+GMX_LIBS_SUFFIX+ (also takes a string). 
+This can also be useful for resolving libary-naming conflicts with 
+existing packges (\verb+GMX_PREFIX_LIBMD+ also can be useful).
+For instance, to set a custom suffix for binaries and libraries, 
+one might specify:
+
+\begin{verbatim}
+cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_BINARY_SUFFIX=_mod -DGMX_LIBS_SUFFIX=_mod
+\end{verbatim}
+
+Thus the names of all binaries and libraries will be appended with
+"_mod."
 
 \subsection{Building \gromacs{}}
 
