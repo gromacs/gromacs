@@ -71,6 +71,12 @@
                 <xsl:if test="Position/Vector[@Name='Coordinates']">
                     <th>Coordinates</th>
                 </xsl:if>
+                <xsl:if test="Position/Real[@Name='Mass']">
+                    <th>Mass</th>
+                </xsl:if>
+                <xsl:if test="Position/Real[@Name='Charge']">
+                    <th>Charge</th>
+                </xsl:if>
             </tr>
             <xsl:for-each select="Position">
             <tr>
@@ -90,6 +96,12 @@
                     <td>
                         <xsl:apply-templates select="Vector[@Name='Coordinates']"/>
                     </td>
+                </xsl:if>
+                <xsl:if test="Real[@Name='Mass']">
+                    <td><xsl:value-of select="Real[@Name='Mass']"/></td>
+                </xsl:if>
+                <xsl:if test="Real[@Name='Charge']">
+                    <td><xsl:value-of select="Real[@Name='Charge']"/></td>
                 </xsl:if>
             </tr>
             </xsl:for-each>

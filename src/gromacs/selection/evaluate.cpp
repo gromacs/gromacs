@@ -396,7 +396,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
         internal::SelectionData &sel = **isel;
-        sel.refreshMassesAndCharges();
+        sel.refreshMassesAndCharges(sc->top);
         sel.updateCoveredFractionForFrame();
     }
 }
@@ -414,7 +414,7 @@ SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
     for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
     {
         internal::SelectionData &sel = **isel;
-        sel.restoreOriginalPositions();
+        sel.restoreOriginalPositions(sc->top);
         sel.computeAverageCoveredFraction(nframes);
     }
 }

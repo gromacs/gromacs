@@ -160,6 +160,8 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             efTestPositionAtoms         = 1<<1,
             efTestPositionCoordinates   = 1<<2,
             efTestPositionMapping       = 1<<3,
+            efTestPositionMasses        = 1<<4,
+            efTestPositionCharges       = 1<<5,
             efDontTestCompiledAtoms     = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
@@ -171,9 +173,6 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
 
         void setFlags(TestFlags flags) { flags_ = flags; }
 
-        void runTest(int natoms, const char *const *selections, size_t count);
-        void runTest(const char *filename, const char *const *selections,
-                     size_t count);
         template <size_t count>
         void runTest(int natoms, const char *const (&selections)[count])
         {
@@ -185,15 +184,26 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             runTest(filename, selections, count);
         }
 
+        template <size_t count>
+        void runParser(const char *const (&selections)[count])
+        {
+            runParser(selections, count);
+        }
+
+        void runCompiler();
+        void runEvaluate();
+        void runEvaluateFinal();
+
     private:
         static void checkSelection(gmx::test::TestReferenceChecker *checker,
                                    const gmx::Selection &sel, TestFlags flags);
 
+        void runTest(int natoms, const char *const *selections, size_t count);
+        void runTest(const char *filename, const char *const *selections,
+                     size_t count);
         void runParser(const char *const *selections, size_t count);
-        void runCompiler();
+
         void checkCompiled();
-        void runEvaluate();
-        void runEvaluateFinal();
 
         gmx::test::TestReferenceData  data_;
         gmx::test::TestReferenceChecker checker_;
@@ -216,7 +226,9 @@ SelectionCollectionDataTest::checkSelection(
     }
     if (flags.test(efTestPositionAtoms)
         || flags.test(efTestPositionCoordinates)
-        || flags.test(efTestPositionMapping))
+        || flags.test(efTestPositionMapping)
+        || flags.test(efTestPositionMasses)
+        || flags.test(efTestPositionCharges))
     {
         TestReferenceChecker compound(
                 checker->checkSequenceCompound("Positions", sel.posCount()));
@@ -237,6 +249,14 @@ SelectionCollectionDataTest::checkSelection(
             {
                 poscompound.checkInteger(p.refId(), "RefId");
                 poscompound.checkInteger(p.mappedId(), "MappedId");
+            }
+            if (flags.test(efTestPositionMasses))
+            {
+                poscompound.checkReal(p.mass(), "Mass");
+            }
+            if (flags.test(efTestPositionCharges))
+            {
+                poscompound.checkReal(p.charge(), "Charge");
             }
         }
     }
@@ -567,8 +587,33 @@ TEST_F(SelectionCollectionDataTest, HandlesChain)
     runTest("simple.pdb", selections);
 }
 
-// TODO: Add test for mass
-// TODO: Add test for charge
+TEST_F(SelectionCollectionDataTest, HandlesMass)
+{
+    static const char * const selections[] = {
+        "mass > 5"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].m = 1.0 + i;
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesCharge)
+{
+    static const char * const selections[] = {
+        "charge < 0.5"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].q = i / 10.0;
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesAltLoc)
 {
@@ -738,6 +783,44 @@ TEST_F(SelectionCollectionDataTest, HandlesMergeModifier)
     setFlags(TestFlags() | efTestEvaluation | efTestPositionCoordinates
              | efTestPositionAtoms | efTestPositionMapping);
     runTest("simple.gro", selections);
+}
+
+
+/********************************************************************
+ * Tests for generic selection evaluation
+ */
+
+TEST_F(SelectionCollectionDataTest, ComputesMassesAndCharges)
+{
+    static const char * const selections[] = {
+        "name CB",
+        "y > 2",
+        "res_cog of y > 2"
+    };
+    setFlags(TestFlags() | efTestEvaluation | efTestPositionAtoms
+             | efTestPositionMasses | efTestPositionCharges);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        top_->atoms.atom[i].m =   1.0 + i / 100.0;
+        top_->atoms.atom[i].q = -(1.0 + i / 100.0);
+    }
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+    ASSERT_NO_FATAL_FAILURE(runEvaluate());
+    ASSERT_NO_FATAL_FAILURE(runEvaluateFinal());
+}
+
+TEST_F(SelectionCollectionDataTest, ComputesMassesAndChargesWithoutTopology)
+{
+    static const char * const selections[] = {
+        "atomnr 1 to 3 8 to 9",
+        "y > 2",
+        "cog of (y > 2)"
+    };
+    setFlags(TestFlags() | efTestPositionAtoms
+             | efTestPositionMasses | efTestPositionCharges);
+    runTest(10, selections);
 }
 
 
