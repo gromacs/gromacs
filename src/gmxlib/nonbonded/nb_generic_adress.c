@@ -508,9 +508,9 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
         velecgrp[ggid]  += vctot;
         vvdwgrp[ggid]   += vvdwtot;
     }
-    /* Estimate flops, average for generic kernel:
-     * 12 flops per outer iteration
-     * 50 flops per inner iteration
+    /* Estimate flops, average for generic adress kernel:
+     * 14 flops per outer iteration
+     * 54 flops per inner iteration
      */
-    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC, nlist->nri*12 + nlist->jindex[n]*50);
+    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC_ADRESS, nlist->nri*14 + nlist->jindex[n]*54);
 }
