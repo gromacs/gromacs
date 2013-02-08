@@ -580,14 +580,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                 (int)fep->sc_r_power);
         CHECK(fep->sc_alpha != 0 && fep->sc_r_power != 6.0 && fep->sc_r_power != 48.0);
 
-        /* check validity of options */
-        if (fep->n_lambda > 0 && ir->rlist < max(ir->rvdw, ir->rcoulomb))
-        {
-            sprintf(warn_buf,
-                    "For foreign lambda free energy differences it is assumed that the soft-core interactions have no effect beyond the neighborlist cut-off");
-            warning(wi, warn_buf);
-        }
-
         sprintf(err_buf, "Can't use postive delta-lambda (%g) if initial state/lambda does not start at zero", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && ((fep->init_fep_state > 0) ||  (fep->init_lambda > 0)));
 
@@ -664,12 +656,6 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
                        ((fep->all_lambda[efptVDW][i] > 0.0) &&
                         (fep->all_lambda[efptVDW][i] < 1.0))));
             }
-        }
-
-        if ((fep->bScCoul) && (EEL_PME(ir->coulombtype)))
-        {
-            sprintf(warn_buf, "With coulomb soft core, the reciprocal space calculation will not necessarily cancel.  It may be necessary to decrease the reciprocal space energy, and increase the cutoff radius to get sufficiently close matches to energies with free energy turned off.");
-            warning(wi, warn_buf);
         }
 
         /*  Free Energy Checks -- In an ideal world, slow growth and FEP would
