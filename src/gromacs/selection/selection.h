@@ -298,6 +298,65 @@ class Selection
         int posCount() const { return data().posCount(); }
         //! Access a single position.
         SelectionPosition position(int i) const;
+        //! Returns coordinates for this selection as a continuous array.
+        ConstArrayRef<rvec> coordinates() const
+        {
+            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.x);
+        }
+        //! Returns whether velocities are available for this selection.
+        bool hasVelocities() const { return data().rawPositions_.v != NULL; }
+        /*! \brief
+         * Returns velocities for this selection as a continuous array.
+         *
+         * Must not be called if hasVelocities() returns false.
+         */
+        ConstArrayRef<rvec> velocities() const
+        {
+            GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
+            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.v);
+        }
+        //! Returns whether forces are available for this selection.
+        bool hasForces() const { return sel_->rawPositions_.f != NULL; }
+        /*! \brief
+         * Returns forces for this selection as a continuous array.
+         *
+         * Must not be called if hasForces() returns false.
+         */
+        ConstArrayRef<rvec> forces() const
+        {
+            GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
+            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.f);
+        }
+        //! Returns masses for this selection as a continuous array.
+        ConstArrayRef<real> masses() const
+        {
+            return ConstArrayRef<real>(data().posMass_.begin(),
+                                       data().posMass_.end());
+        }
+        //! Returns charges for this selection as a continuous array.
+        ConstArrayRef<real> charges() const
+        {
+            return ConstArrayRef<real>(data().posCharge_.begin(),
+                                       data().posCharge_.end());
+        }
+        /*! \brief
+         * Returns reference IDs for this selection as a continuous array.
+         *
+         * \see SelectionPosition::refId()
+         */
+        ConstArrayRef<int> refIds() const
+        {
+            return ConstArrayRef<int>(posCount(), data().rawPositions_.m.refid);
+        }
+        /*! \brief
+         * Returns mapped IDs for this selection as a continuous array.
+         *
+         * \see SelectionPosition::mappedId()
+         */
+        ConstArrayRef<int> mappedIds() const
+        {
+            return ConstArrayRef<int>(posCount(), data().rawPositions_.m.mapid);
+        }
         /*! \brief
          * Sets the ID for the \p i'th position for use with
          * SelectionPosition::mappedId().
@@ -437,28 +496,26 @@ class SelectionPosition
         {
             return sel_->rawPositions_.x[i_];
         }
-        //! Returns whether velocity is available for this position.
-        bool hasVelocity() const { return sel_->rawPositions_.v != NULL; }
         /*! \brief
          * Returns velocity for this position.
          *
-         * Must not be called if hasVelocity() returns false.
+         * Must not be called if Selection::hasVelocities() returns false.
          */
         const rvec &v() const
         {
-            GMX_ASSERT(hasVelocity(), "Velocities accessed, but unavailable");
+            GMX_ASSERT(sel_->rawPositions_.v != NULL,
+                       "Velocities accessed, but unavailable");
             return sel_->rawPositions_.v[i_];
         }
-        //! Returns whether force is available for this position.
-        bool hasForce() const { return sel_->rawPositions_.f != NULL; }
         /*! \brief
          * Returns force for this position.
          *
-         * Must not be called if hasForce() returns false.
+         * Must not be called if Selection::hasForces() returns false.
          */
         const rvec &f() const
         {
-            GMX_ASSERT(hasForce(), "Forces accessed, but unavailable");
+            GMX_ASSERT(sel_->rawPositions_.f != NULL,
+                       "Velocities accessed, but unavailable");
             return sel_->rawPositions_.f[i_];
         }
         /*! \brief
