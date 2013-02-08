@@ -108,7 +108,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real *        Vv;
     real *        Vc;
     gmx_bool      bDoForces;
-    real          rcoulomb, rvdw, factor_coul, factor_vdw, sh_invrc6;
+    real          rcoulomb, rvdw, sh_invrc6;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff;
     real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
 
@@ -361,9 +361,6 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                     rinvV          = pow(rpinvV, 1.0/sc_r_power);
                     rV             = 1.0/rinvV;
 
-                    factor_coul    = (rC <= rcoulomb) ? 1.0 : 0.0;
-                    factor_vdw     = (rV <= rvdw)     ? 1.0 : 0.0;
-
                     if (do_tab)
                     {
                         rtC        = rC*tabscale;
@@ -379,7 +376,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                         n1V        = tab_elemsize*n0;
                     }
 
-                    if (qq[i] != 0)
+                    /* With Ewald and soft-core we should put the cut-off on r,
+                     * not on the soft-cored rC, as the real-space and
+                     * reciprocal space contributions should (almost) cancel.
+                     */
+                    if (qq[i] != 0 &&
+                        !(bExactElecCutoff &&
+                          ((icoul != GMX_NBKERNEL_ELEC_EWALD && rC >= rcoulomb) ||
+                           (icoul == GMX_NBKERNEL_ELEC_EWALD && r >= rcoulomb))))
                     {
                         switch (icoul)
                         {
@@ -427,15 +431,10 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                             Vcoul[i]        *= sw;
                             FscalC[i]        = FscalC[i]*sw + Vcoul[i]*dsw;
                         }
-
-                        if (bExactElecCutoff)
-                        {
-                            FscalC[i]        = (rC < rcoulomb) ? FscalC[i] : 0.0;
-                            Vcoul[i]         = (rC < rcoulomb) ? Vcoul[i] : 0.0;
-                        }
                     }
 
-                    if ((c6[i] != 0) || (c12[i] != 0))
+                    if ((c6[i] != 0 || c12[i] != 0) &&
+                        !(bExactVdwCutoff && rV >= rvdw))
                     {
                         switch (ivdw)
                         {
@@ -519,13 +518,21 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
             Fscal = 0;
 
-            if (icoul == GMX_NBKERNEL_ELEC_EWALD)
+            if (icoul == GMX_NBKERNEL_ELEC_EWALD &&
+                !(bExactElecCutoff && r >= rcoulomb))
             {
                 /* because we compute the softcore normally,
                    we have to remove the ewald short range portion. Done outside of
                    the states loop because this part doesn't depend on the scaled R */
 
-                if (r != 0)
+#ifdef GMX_DOUBLE
+                /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
+#define         R_ERF_R_INACC 0.006
+#else
+                /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
+#define         R_ERF_R_INACC 0.1
+#endif
+                if (ewc*r > R_ERF_R_INACC)
                 {
                     VV    = gmx_erf(ewc*r)*rinv;
                     FF    = rinv*rinv*(VV - ewc*M_2_SQRTPI*exp(-ewc*ewc*rsq));
@@ -533,7 +540,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                 else
                 {
                     VV    = ewc*M_2_SQRTPI;
-                    FF    = 0;
+                    FF    = ewc*ewc*ewc*M_2_SQRTPI*(2.0/3.0 - 0.4*ewc*ewc*rsq);
                 }
 
                 for (i = 0; i < NSTATES; i++)
