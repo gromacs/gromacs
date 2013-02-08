@@ -124,47 +124,68 @@ SelectionData::initCoveredFraction(e_coverfrac_t type)
     return type == CFRAC_NONE || coveredFractionType_ != CFRAC_NONE;
 }
 
+namespace
+{
+
+/*! \brief
+ * Helper function to compute total masses and charges for positions.
+ *
+ * \param[in]  top     Topology to take atom masses from.
+ * \param[in]  pos     Positions to compute masses and charges for.
+ * \param[out] masses  Output masses.
+ * \param[out] charges Output charges.
+ *
+ * Does not throw if enough space has been reserved for the output vectors.
+ */
+void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
+                             std::vector<real> *masses,
+                             std::vector<real> *charges)
+{
+    GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
+    masses->clear();
+    charges->clear();
+    for (int b = 0; b < pos.nr; ++b)
+    {
+        real mass   = 0.0;
+        real charge = 0.0;
+        for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
+        {
+            int index = pos.g->index[i];
+            mass   += top->atoms.atom[index].m;
+            charge += top->atoms.atom[index].q;
+        }
+        masses->push_back(mass);
+        charges->push_back(charge);
+    }
+}
+
+} // namespace
 
 void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
 {
-    posInfo_.reserve(posCount());
-    for (int b = 0; b < posCount(); ++b)
+    GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
+               "Should not be called more than once");
+    posMass_.reserve(posCount());
+    posCharge_.reserve(posCount());
+    if (top == NULL)
     {
-        real mass   = 1.0;
-        real charge = 0.0;
-        if (top != NULL)
-        {
-            mass = 0.0;
-            for (int i = rawPositions_.m.mapb.index[b];
-                 i < rawPositions_.m.mapb.index[b+1];
-                 ++i)
-            {
-                int index = rawPositions_.g->index[i];
-                mass   += top->atoms.atom[index].m;
-                charge += top->atoms.atom[index].q;
-            }
-        }
-        posInfo_.push_back(PositionInfo(mass, charge));
+        posMass_.resize(posCount(), 1.0);
+        posCharge_.resize(posCount(), 0.0);
     }
-    if (isDynamic() && !hasFlag(efSelection_DynamicMask))
+    else
     {
-        originalPosInfo_ = posInfo_;
+        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
     }
 }
 
 
 void
-SelectionData::refreshMassesAndCharges()
+SelectionData::refreshMassesAndCharges(const t_topology *top)
 {
-    if (!originalPosInfo_.empty())
+    if (top != NULL && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
-        posInfo_.clear();
-        for (int i = 0; i < posCount(); ++i)
-        {
-            int refid  = rawPositions_.m.refid[i];
-            posInfo_.push_back(originalPosInfo_[refid]);
-        }
+        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
     }
 }
 
@@ -192,7 +213,7 @@ SelectionData::computeAverageCoveredFraction(int nframes)
 
 
 void
-SelectionData::restoreOriginalPositions()
+SelectionData::restoreOriginalPositions(const t_topology *top)
 {
     if (isDynamic())
     {
@@ -201,7 +222,7 @@ SelectionData::restoreOriginalPositions()
         p.g->name = NULL;
         gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;
-        refreshMassesAndCharges();
+        refreshMassesAndCharges(top);
     }
 }
 
