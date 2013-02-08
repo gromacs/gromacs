@@ -117,9 +117,9 @@ class SelectionData
          * \param[in] top   Topology information.
          * \throws    std::bad_alloc if out of memory.
          *
-         * Computed values are cached, and need to be updated for dynamic
-         * selections with refreshMassesAndCharges() after the selection has
-         * been evaluated.  This is done by SelectionEvaluator.
+         * For dynamic selections, the values need to be updated after each
+         * evaluation with refreshMassesAndCharges().
+         * This is done by SelectionEvaluator.
          *
          * This function is called by SelectionCompiler.
          *
@@ -130,9 +130,11 @@ class SelectionData
          * Updates masses and charges after dynamic selection has been
          * evaluated.
          *
+         * \param[in] top   Topology information.
+         *
          * Called by SelectionEvaluator.
          */
-        void refreshMassesAndCharges();
+        void refreshMassesAndCharges(const t_topology *top);
         /*! \brief
          * Updates the covered fraction after a selection has been evaluated.
          *
@@ -152,44 +154,25 @@ class SelectionData
         /*! \brief
          * Restores position information to state it was in after compilation.
          *
+         * \param[in] top   Topology information.
+         *
          * Depends on SelectionCompiler storing the original atoms in the
          * \a rootElement_ object.
          * Called by SelectionEvaluator::evaluateFinal().
          */
-        void restoreOriginalPositions();
+        void restoreOriginalPositions(const t_topology *top);
 
     private:
-        /*! \brief
-         * Additional information about positions.
-         *
-         * This structure contains information about positions in the
-         * selection that is not stored in ::gmx_ana_pos_t.
-         *
-         * Methods in this class do not throw.
-         */
-        struct PositionInfo
-        {
-            //! Construct position information with unit mass and no charge.
-            PositionInfo() : mass(1.0), charge(0.0) {}
-            //! Construct position information with the given information.
-            PositionInfo(real mass, real charge) : mass(mass), charge(charge) {}
-
-            //! Total mass of atoms that make up the position.
-            real                mass;
-            //! Total charge of atoms that make up the position.
-            real                charge;
-        };
-
         //! Name of the selection.
         std::string             name_;
         //! The actual selection string.
         std::string             selectionText_;
         //! Low-level representation of selected positions.
         gmx_ana_pos_t           rawPositions_;
-        //! Information associated with the current positions.
-        std::vector<PositionInfo> posInfo_;
-        //! Information for all possible positions.
-        std::vector<PositionInfo> originalPosInfo_;
+        //! Total masses for the current positions.
+        std::vector<real>       posMass_;
+        //! Total charges for the current positions.
+        std::vector<real>       posCharge_;
         SelectionFlags          flags_;
         //! Root of the selection evaluation tree.
         SelectionTreeElement   &rootElement_;
@@ -487,7 +470,7 @@ class SelectionPosition
          */
         real mass() const
         {
-            return sel_->posInfo_[i_].mass;
+            return sel_->posMass_[i_];
         }
         /*! \brief
          * Returns total charge for this position.
@@ -498,7 +481,7 @@ class SelectionPosition
          */
         real charge() const
         {
-            return sel_->posInfo_[i_].charge;
+            return sel_->posCharge_[i_];
         }
         //! Returns the number of atoms that make up this position.
         int atomCount() const
