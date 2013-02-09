@@ -205,18 +205,27 @@ class HelpWriterContext::Impl
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
                                             WrapperInterface  *wrapper) const
 {
-    if (wrapper->settings().lineLength() == 0)
-    {
-        wrapper->settings().setLineLength(78);
-    }
-    std::string result;
-    {
-        char            *resultStr = check_tty(text.c_str());
-        scoped_ptr_sfree resultGuard(resultStr);
-        result = resultStr;
-    }
     const char *program = ProgramInfo::getInstance().programName().c_str();
-    return wrapper->wrap(replaceAll(result, "[PROGRAM]", program));
+    std::string result(text);
+    result = replaceAll(result, "[PROGRAM]", program);
+    switch (state_->format_)
+    {
+        case eHelpOutputFormat_Console:
+        {
+            {
+                char            *resultStr = check_tty(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            if (wrapper->settings().lineLength() == 0)
+            {
+                wrapper->settings().setLineLength(78);
+            }
+            return wrapper->wrap(result);
+        }
+        default:
+            GMX_THROW(InternalError("Invalid help output format"));
+    }
 }
 
 /********************************************************************
@@ -226,13 +235,6 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
     : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format)), 0))
 {
-    if (format != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
 }
 
 HelpWriterContext::HelpWriterContext(Impl *impl)
@@ -306,6 +308,18 @@ void HelpWriterContext::writeTextBlock(const TextLineWrapperSettings &settings,
                                        const std::string             &text) const
 {
     outputFile().writeLine(substituteMarkupAndWrapToString(settings, text));
+}
+
+void HelpWriterContext::writeOptionItem(const std::string &name,
+                                        const std::string &args,
+                                        const std::string &description) const
+{
+    switch (outputFormat())
+    {
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
 }
 
 } // namespace gmx
