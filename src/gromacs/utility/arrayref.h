@@ -132,13 +132,13 @@ class ConstArrayRef
         /*! \brief
          * Constructs a reference to an array.
          *
-         * \param[in] size   Number of elements in the array.
          * \param[in] begin  Pointer to the beginning of the array.
          *      May be NULL if \p size is zero.
+         * \param[in] size   Number of elements in the array.
          *
          * Passed pointer must remain valid for the lifetime of this object.
          */
-        ConstArrayRef(size_type size, const_pointer begin)
+        ConstArrayRef(const_pointer begin, size_type size)
             : begin_(begin), end_(begin + size)
         {
         }
