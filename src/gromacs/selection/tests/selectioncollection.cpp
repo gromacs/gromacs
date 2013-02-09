@@ -402,6 +402,22 @@ TEST_F(SelectionCollectionTest, HandlesNoSelections)
     EXPECT_NO_THROW(sc_.compile());
 }
 
+TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
+{
+    ASSERT_NO_THROW(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    ASSERT_EQ(2U, sel_.size());
+    ASSERT_NO_THROW(sel_[0].setEvaluateVelocities(true));
+    ASSERT_NO_THROW(sel_[1].setEvaluateVelocities(true));
+    ASSERT_NO_THROW(sel_[0].setEvaluateForces(true));
+    ASSERT_NO_THROW(sel_[1].setEvaluateForces(true));
+    ASSERT_NO_THROW(sc_.compile());
+    EXPECT_TRUE(sel_[0].hasVelocities());
+    EXPECT_TRUE(sel_[1].hasVelocities());
+    EXPECT_TRUE(sel_[0].hasForces());
+    EXPECT_TRUE(sel_[1].hasForces());
+}
+
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
     ASSERT_NO_THROW(sel_ = sc_.parseFromFile(

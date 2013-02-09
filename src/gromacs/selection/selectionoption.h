@@ -79,16 +79,14 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         /*! \brief
          * Request velocity evaluation for output positions.
          *
-         * Note that even with this flag set, velocities may not be available,
-         * in which case Selection::hasVelocities() returns false.
+         * \see Selection::setEvaluateVelocities()
          */
         MyClass &evaluateVelocities()
         { selectionFlags_.set(efSelection_EvaluateVelocities); return me(); }
         /*! \brief
          * Request force evaluation for output positions.
          *
-         * Note that even with this flag set, forces may not be available,
-         * in which case Selection::hasForces() returns false.
+         * \see Selection::setEvaluateForces()
          */
         MyClass &evaluateForces()
         { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
@@ -227,7 +225,7 @@ class SelectionOptionInfo : public OptionInfo
          *
          * Does not throw.
          *
-         * \see SelectionOption::evaluateVelocities()
+         * \see Selection::setEvaluateVelocities()
          */
         void setEvaluateVelocities(bool bEnabled);
         /*! \brief
@@ -237,7 +235,7 @@ class SelectionOptionInfo : public OptionInfo
          *
          * Does not throw.
          *
-         * \see SelectionOption::evaluateForces()
+         * \see Selection::setEvaluateForces()
          */
         void setEvaluateForces(bool bEnabled);
         /*! \brief
