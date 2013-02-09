@@ -294,8 +294,8 @@ class Selection
             {
                 return ConstArrayRef<int>();
             }
-            return ConstArrayRef<int>(data().rawPositions_.g->isize,
-                                      data().rawPositions_.g->index);
+            return ConstArrayRef<int>(data().rawPositions_.g->index,
+                                      data().rawPositions_.g->isize);
         }
         //! Number of positions in the selection.
         int posCount() const { return data().posCount(); }
@@ -304,7 +304,7 @@ class Selection
         //! Returns coordinates for this selection as a continuous array.
         ConstArrayRef<rvec> coordinates() const
         {
-            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.x);
+            return ConstArrayRef<rvec>(data().rawPositions_.x, posCount());
         }
         //! Returns whether velocities are available for this selection.
         bool hasVelocities() const { return data().rawPositions_.v != NULL; }
@@ -316,7 +316,7 @@ class Selection
         ConstArrayRef<rvec> velocities() const
         {
             GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
-            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.v);
+            return ConstArrayRef<rvec>(data().rawPositions_.v, posCount());
         }
         //! Returns whether forces are available for this selection.
         bool hasForces() const { return sel_->rawPositions_.f != NULL; }
@@ -328,7 +328,7 @@ class Selection
         ConstArrayRef<rvec> forces() const
         {
             GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
-            return ConstArrayRef<rvec>(posCount(), data().rawPositions_.f);
+            return ConstArrayRef<rvec>(data().rawPositions_.f, posCount());
         }
         //! Returns masses for this selection as a continuous array.
         ConstArrayRef<real> masses() const
@@ -359,7 +359,7 @@ class Selection
          */
         ConstArrayRef<int> refIds() const
         {
-            return ConstArrayRef<int>(posCount(), data().rawPositions_.m.refid);
+            return ConstArrayRef<int>(data().rawPositions_.m.refid, posCount());
         }
         /*! \brief
          * Returns mapped IDs for this selection as a continuous array.
@@ -368,7 +368,7 @@ class Selection
          */
         ConstArrayRef<int> mappedIds() const
         {
-            return ConstArrayRef<int>(posCount(), data().rawPositions_.m.mapid);
+            return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
         }
         /*! \brief
          * Sets the ID for the \p i'th position for use with
@@ -567,8 +567,8 @@ class SelectionPosition
                 return ConstArrayRef<int>();
             }
             int first = sel_->rawPositions_.m.mapb.index[i_];
-            return ConstArrayRef<int>(atomCount(),
-                                      &sel_->rawPositions_.g->index[first]);
+            return ConstArrayRef<int>(&sel_->rawPositions_.g->index[first],
+                                      atomCount());
         }
         /*! \brief
          * Returns whether this position is selected in the current frame.

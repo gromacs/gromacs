@@ -160,7 +160,7 @@ AnalysisDataFrameRef::AnalysisDataFrameRef(
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
-    : header_(frame.header()), values_(columnCount, &frame.values_[firstColumn])
+    : header_(frame.header()), values_(&frame.values_[firstColumn], columnCount)
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
     GMX_ASSERT(columnCount >= 0, "Invalid column count");
