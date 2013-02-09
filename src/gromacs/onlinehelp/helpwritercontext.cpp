@@ -65,6 +65,12 @@ namespace gmx
 namespace
 {
 
+const char * const g_latexSectionTypeNames[] = {
+    "section",
+    "subsection",
+    "subsubsection"
+};
+
 class WrapperInterface
 {
     public:
@@ -223,6 +229,24 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             }
             return wrapper->wrap(result);
         }
+        case eHelpOutputFormat_ManPage:
+        {
+            {
+                char            *resultStr = check_nroff(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            return wrapper->wrap(result);
+        }
+        case eHelpOutputFormat_Latex:
+        {
+            {
+                char            *resultStr = check_tex(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            return wrapper->wrap(result);
+        }
         default:
             GMX_THROW(InternalError("Invalid help output format"));
     }
@@ -295,8 +319,26 @@ HelpWriterContext::substituteMarkupAndWrapToVector(
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
     File &file = outputFile();
-    file.writeLine(toUpperCase(title));
-    file.writeLine();
+    switch (outputFormat())
+    {
+        case eHelpOutputFormat_Console:
+            file.writeLine(toUpperCase(title));
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_ManPage:
+            file.writeFormatted(".SH %s\n", toUpperCase(title).c_str());
+            break;
+        case eHelpOutputFormat_Latex:
+            GMX_RELEASE_ASSERT(impl_->sectionDepth_ < 3,
+                               "Too many nested subsections");
+            file.writeFormatted("\\%s{%s}\n",
+                                g_latexSectionTypeNames[impl_->sectionDepth_],
+                                title.c_str());
+            break;
+        default:
+            GMX_THROW(NotImplementedError(
+                              "This output format is not implemented"));
+    }
 }
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
@@ -314,8 +356,22 @@ void HelpWriterContext::writeOptionItem(const std::string &name,
                                         const std::string &args,
                                         const std::string &description) const
 {
+    File &file = outputFile();
     switch (outputFormat())
     {
+        case eHelpOutputFormat_ManPage:
+            file.writeFormatted(".BI \"\\-%s\" \" %s\"\n",
+                                name.c_str(), args.c_str());
+            writeTextBlock(description);
+            file.writeLine();
+            break;
+        case eHelpOutputFormat_Latex:
+            // TODO: This needs additional work to write the surrounding table
+            // environment.
+            file.writeFormatted("-%s & %s &\n", name.c_str(), args.c_str());
+            writeTextBlock(description);
+            file.writeLine("\\\\");
+            break;
         default:
             GMX_THROW(NotImplementedError(
                               "This output format is not implemented"));

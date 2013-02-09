@@ -64,8 +64,8 @@ char *fileopt(unsigned long flag, char buf[], int maxsize);
  * a pointer to this buffer.
  */
 
+char *check_nroff(const char *s);
 char *check_tex(const char *s);
-
 char *check_tty(const char *s);
 
 /* FIXME: It should not be necessary to expose the struct */

@@ -59,6 +59,9 @@ class TextLineWrapperSettings;
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
+    eHelpOutputFormat_ManPage,  //!< Man page.
+    eHelpOutputFormat_Latex,    //!< Latex for the manual.
+    eHelpOutputFormat_Html,     //!< Html for the online manual.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond

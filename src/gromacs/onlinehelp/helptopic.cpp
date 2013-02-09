@@ -181,7 +181,9 @@ AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
             }
         }
     }
-    else if (false /* to be specified in alternative implementations */)
+    else if (context.outputFormat() == eHelpOutputFormat_ManPage
+             || context.outputFormat() == eHelpOutputFormat_Latex
+             || context.outputFormat() == eHelpOutputFormat_Html)
     {
         Impl::SubTopicMap::const_iterator topic;
         for (topic = impl_->subtopics_.begin();

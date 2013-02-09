@@ -239,6 +239,19 @@ void File::writeLine()
     writeString("\n");
 }
 
+void File::writeFormatted(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int     retval = vfprintf(handle(), fmt, ap);
+    va_end(ap);
+    if (retval < 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
+                             "vfprintf", errno);
+    }
+}
+
 // static
 bool File::exists(const char *filename)
 {

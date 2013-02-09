@@ -80,6 +80,8 @@ const t_sandr_const sandrTeX[] = {
     { "[IT]", "{\\em " },
     { "[it]", "}"      },
     { "[PAR]", "\n\n"   },
+    { "[PRE]", "\n\\begin{verbatim}\n" },
+    { "[pre]", "\\end{verbatim}\n"     },
     /* Escaping underscore for LaTeX is no longer necessary, and it breaks
      * text searching and the index if you do. */
     /*
@@ -142,7 +144,7 @@ const t_sandr_const sandrTeX[] = {
     { "[TANH]", "\\ensuremath{\\tanh{(" },
     { "[tanh]", ")}}" }
 };
-#define NSRTEX asize(sandrTeX)
+#define NSRTEX asize(sandrTex)
 
 const t_sandr_const sandrTty[] = {
     { "[TT]", "" },
@@ -189,6 +191,8 @@ const t_sandr_const sandrTty[] = {
     { "[tanh]", ")" },
     { "[PAR]", "\n\n" },
     { "[BR]", "\n"},
+    { "[PRE]", "\n"},
+    { "[pre]", "" },
     { "[GRK]", "" },
     { "[grk]", "" }
 };
@@ -558,7 +562,7 @@ char *check_tex(const char *s)
     return repall(s, NSRTEX, sandrTeX);
 }
 
-static char *check_nroff(const char *s)
+char *check_nroff(const char *s)
 {
     return repall(s, NSRNROFF, sandrNROFF);
 }

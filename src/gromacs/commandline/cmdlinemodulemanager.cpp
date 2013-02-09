@@ -238,6 +238,68 @@ class HelpExportInterface
         virtual void exportHelpTopics(const RootHelpTopic &root) = 0;
 };
 
+/********************************************************************
+ * HelpExportManPage
+ */
+
+class HelpExportManPage : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport() {}
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
+        virtual void exportHelpTopics(const RootHelpTopic & /*root*/) {}
+};
+
+void HelpExportManPage::exportModuleHelp(const std::string                &tag,
+                                         const CommandLineModuleInterface &module)
+{
+    File              file(tag + ".1", "w");
+    HelpWriterContext context(&file, eHelpOutputFormat_ManPage);
+    // TODO: Implement date generation
+    // TODO: The current version string is too long
+    file.writeFormatted(".TH %s 1 \"%s\" \"%s\" \"Gromacs Manual\"\n",
+                        tag.c_str(),
+                        "2012-08-24",
+                        GromacsVersion());
+    file.writeLine(".SH NAME");
+    file.writeFormatted("%s - %s\n\n",
+                        tag.c_str(),
+                        module.shortDescription());
+    module.writeHelp(context);
+}
+
+/********************************************************************
+ * HelpExportLatex
+ */
+
+class HelpExportLatex : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport() {}
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
+        virtual void exportHelpTopics(const RootHelpTopic &root);
+};
+
+void HelpExportLatex::exportModuleHelp(const std::string                &tag,
+                                       const CommandLineModuleInterface &module)
+{
+    File              file(tag + ".tex", "w");
+    HelpWriterContext context(&file, eHelpOutputFormat_Latex);
+    HelpWriterContext titleSec(context.createSubsection(tag));
+    module.writeHelp(titleSec);
+}
+
+void HelpExportLatex::exportHelpTopics(const RootHelpTopic &root)
+{
+    File              file("help-topics.tex", "w");
+    HelpWriterContext context(&file, eHelpOutputFormat_Latex);
+    root.writeHelp(context);
+}
+
 }   // namespace
 
 /********************************************************************
@@ -308,6 +370,15 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (argc == 3 && std::strcmp(argv[1], "-export") == 0)
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
+        if (std::strcmp(argv[2], "man") == 0)
+        {
+            exporter.reset(new HelpExportManPage);
+        }
+        else if (std::strcmp(argv[2], "latex") == 0)
+        {
+            exporter.reset(new HelpExportLatex);
+        }
+        else
         {
             GMX_THROW(InvalidInputError(
                               formatString("Unknown help export format '%s'",

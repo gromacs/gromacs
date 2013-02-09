@@ -177,6 +177,7 @@ class File
          * \throws     FileIOError on any I/O error.
          */
         void writeLine();
+        void writeFormatted(const char *fmt, ...);
 
         /*! \brief
          * Checks whether a file exists.
