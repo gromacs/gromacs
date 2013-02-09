@@ -210,6 +210,11 @@ class SelectionData
  * any time after the selection has been parsed, and type() can be accessed
  * after the selection has been compiled.
  *
+ * There are a few methods that can be used to change the behavior of the
+ * selection.  setEvaluateVelocities() and setEvaluateForces() can be called
+ * before the selection is compiled to request evaluation of velocities and/or
+ * forces in addition to coordinates.
+ *
  * Each selection is made of a set of positions.  Each position has associated
  * coordinates, and possibly velocities and forces if they have been requested
  * and are available.  It also has a set of atoms associated with it; typically
@@ -370,6 +375,61 @@ class Selection
         {
             return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
         }
+
+        //! Deprecated method for direct access to position data.
+        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
+
+        //! Returns whether the covered fraction can change between frames.
+        bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
+        //! Returns the covered fraction for the current frame.
+        real coveredFraction() const { return data().coveredFraction_; }
+
+        /*! \brief
+         * Initializes information about covered fractions.
+         *
+         * \param[in] type Type of covered fraction required.
+         * \returns   true if the covered fraction can be calculated for the
+         *      selection.
+         */
+        bool initCoveredFraction(e_coverfrac_t type)
+        {
+            return data().initCoveredFraction(type);
+        }
+        /*! \brief
+         * Sets whether this selection evaluates velocities for positions.
+         *
+         * \param[in] bEnabled  If true, velocities are evaluated.
+         *
+         * If you request the evaluation, but then evaluate the selection for
+         * a frame that does not contain velocity information, results are
+         * undefined.
+         *
+         * \todo
+         * Implement it such that in the above case, hasVelocities() will
+         * return false for such frames.
+         *
+         * Does not throw.
+         */
+        void setEvaluateVelocities(bool bEnabled)
+        {
+            data().flags_.set(efSelection_EvaluateVelocities, bEnabled);
+        }
+        /*! \brief
+         * Sets whether this selection evaluates forces for positions.
+         *
+         * \param[in] bEnabled  If true, forces are evaluated.
+         *
+         * If you request the evaluation, but then evaluate the selection for
+         * a frame that does not contain force information, results are
+         * undefined.
+         *
+         * Does not throw.
+         */
+        void setEvaluateForces(bool bEnabled)
+        {
+            data().flags_.set(efSelection_EvaluateForces, bEnabled);
+        }
+
         /*! \brief
          * Sets the ID for the \p i'th position for use with
          * SelectionPosition::mappedId().
@@ -386,25 +446,6 @@ class Selection
          * \see SelectionPosition::mappedId()
          */
         void setOriginalId(int i, int id) { data().rawPositions_.m.orgid[i] = id; }
-
-        //! Deprecated method for direct access to position data.
-        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
-
-        //! Returns whether the covered fraction can change between frames.
-        bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
-        //! Returns the covered fraction for the current frame.
-        real coveredFraction() const { return data().coveredFraction_; }
-        /*! \brief
-         * Initializes information about covered fractions.
-         *
-         * \param[in] type Type of covered fraction required.
-         * \returns   true if the covered fraction can be calculated for the
-         *      selection.
-         */
-        bool initCoveredFraction(e_coverfrac_t type)
-        {
-            return data().initCoveredFraction(type);
-        }
 
         /*! \brief
          * Prints out one-line description of the selection.

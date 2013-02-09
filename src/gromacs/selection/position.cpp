@@ -73,6 +73,14 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
 {
+    GMX_RELEASE_ASSERT(n >= 0, "Invalid position allocation count");
+    // Always reserve at least one entry to make NULL checks against pos->x
+    // and gmx_ana_pos_reserve_velocities/forces() work as expected in the case
+    // that there are actually no positions.
+    if (n == 0)
+    {
+        n = 1;
+    }
     if (pos->nalloc_x < n)
     {
         pos->nalloc_x = n;
@@ -96,7 +104,7 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
  * \param[in,out] pos   Position data structure.
  *
  * Currently, this function can only be called after gmx_ana_pos_reserve()
- * has been called at least once with a \p n > 0.
+ * has been called at least once with a \p n >= 0.
  */
 void
 gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
@@ -113,7 +121,7 @@ gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
  * \param[in,out] pos   Position data structure.
  *
  * Currently, this function can only be called after gmx_ana_pos_reserve()
- * has been called at least once with a \p n > 0.
+ * has been called at least once with a \p n >= 0.
  */
 void
 gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
