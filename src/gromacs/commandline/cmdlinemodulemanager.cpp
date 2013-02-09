@@ -42,10 +42,15 @@
 #include "cmdlinemodulemanager.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <map>
 #include <string>
 #include <utility>
+
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/legacyheaders/copyrite.h"
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helpformat.h"
@@ -117,32 +122,29 @@ class RootHelpTopic : public CompositeHelpTopic<RootHelpText>
 
 void RootHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
+    if (context.outputFormat() == eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "Root help is not implemented for this output format"));
+        context.writeTextBlock(helpText());
+        // TODO: If/when this list becomes long, it may be better to only print
+        // "common" commands here, and have a separate topic (e.g.,
+        // "help commands") that prints the full list.
+        printModuleList(context);
+        context.writeTextBlock(
+                "For additional help on a command, use '[PROGRAM] help <command>'");
     }
-    context.writeTextBlock(helpText());
-    // TODO: If/when this list becomes long, it may be better to only print
-    // "common" commands here, and have a separate topic (e.g.,
-    // "help commands") that prints the full list.
-    printModuleList(context);
-    context.writeTextBlock(
-            "For additional help on a command, use '[PROGRAM] help <command>'");
     writeSubTopicList(context,
                       "\nAdditional help is available on the following topics:");
-    context.writeTextBlock(
-            "To access the help, use '[PROGRAM] help <topic>'.");
+    if (context.outputFormat() == eHelpOutputFormat_Console)
+    {
+        context.writeTextBlock(
+                "To access the help, use '[PROGRAM] help <topic>'.");
+    }
 }
 
 void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
 {
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
         GMX_THROW(NotImplementedError(
                           "Module list is not implemented for this output format"));
     }
@@ -220,6 +222,22 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
     module_.writeHelp(context);
 }
 
+/********************************************************************
+ * HelpExportInterface
+ */
+
+class HelpExportInterface
+{
+    public:
+        virtual ~HelpExportInterface() {};
+
+        virtual void startModuleExport() = 0;
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module) = 0;
+        virtual void finishModuleExport() = 0;
+        virtual void exportHelpTopics(const RootHelpTopic &root) = 0;
+};
+
 }   // namespace
 
 /********************************************************************
@@ -266,13 +284,16 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void printUsage() const;
 
     private:
-        CompositeHelpTopicPointer   rootTopic_;
+        void exportHelp(HelpExportInterface *exporter) const;
+
+        boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        const CommandLineModuleMap       &modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
 CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules))
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules)
 {
 }
 
@@ -283,6 +304,18 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
+    // TODO: It would be nicer to use a CommandLineParser here.
+    if (argc == 3 && std::strcmp(argv[1], "-export") == 0)
+    {
+        boost::scoped_ptr<HelpExportInterface> exporter;
+        {
+            GMX_THROW(InvalidInputError(
+                              formatString("Unknown help export format '%s'",
+                                           argv[2])));
+        }
+        exportHelp(exporter.get());
+        return 0;
+    }
     HelpWriterContext context(&File::standardOutput(),
                               eHelpOutputFormat_Console);
     HelpManager       helpManager(*rootTopic_, context);
@@ -315,6 +348,28 @@ void CommandLineHelpModule::printUsage() const
     HelpWriterContext context(&File::standardError(),
                               eHelpOutputFormat_Console);
     rootTopic_->writeHelp(context);
+}
+
+void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
+{
+    // TODO: Would be nicer to have the file names supplied by the build system
+    // and/or export a list of files from here.
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    CommandLineModuleMap::const_iterator module;
+    exporter->startModuleExport();
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        const char *moduleName = module->first.c_str();
+        // For testing, only export the select module.
+        if (std::strcmp(moduleName, "select") != 0)
+        {
+            continue;
+        }
+        std::string tag(formatString("%s-%s", program, moduleName));
+        exporter->exportModuleHelp(tag, *module->second);
+    }
+    exporter->finishModuleExport();
+    exporter->exportHelpTopics(*rootTopic_);
 }
 
 /********************************************************************

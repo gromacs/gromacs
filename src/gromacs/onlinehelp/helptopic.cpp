@@ -136,49 +136,73 @@ bool
 AbstractCompositeHelpTopic::writeSubTopicList(const HelpWriterContext &context,
                                               const std::string       &title) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
+    if (context.outputFormat() == eHelpOutputFormat_Console)
     {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
+        int maxNameLength = 0;
+        Impl::SubTopicMap::const_iterator topic;
+        for (topic = impl_->subtopics_.begin();
+             topic != impl_->subtopics_.end();
+             ++topic)
+        {
+            const char *title = topic->second->title();
+            if (title == NULL || title[0] == '\0')
+            {
+                continue;
+            }
+            int nameLength = static_cast<int>(topic->first.length());
+            if (nameLength > maxNameLength)
+            {
+                maxNameLength = nameLength;
+            }
+        }
+        if (maxNameLength == 0)
+        {
+            return false;
+        }
+
+        File              &file = context.outputFile();
+        TextTableFormatter formatter;
+        formatter.addColumn(NULL, maxNameLength + 1, false);
+        formatter.addColumn(NULL, 72 - maxNameLength, true);
+        formatter.setFirstColumnIndent(4);
+        file.writeLine(title);
+        for (topic = impl_->subtopics_.begin();
+             topic != impl_->subtopics_.end();
+             ++topic)
+        {
+            const char *name  = topic->first.c_str();
+            const char *title = topic->second->title();
+            if (title != NULL && title[0] != '\0')
+            {
+                formatter.clear();
+                formatter.addColumnLine(0, name);
+                formatter.addColumnLine(1, title);
+                file.writeString(formatter.formatRow());
+            }
+        }
+    }
+    else if (false /* to be specified in alternative implementations */)
+    {
+        Impl::SubTopicMap::const_iterator topic;
+        for (topic = impl_->subtopics_.begin();
+             topic != impl_->subtopics_.end();
+             ++topic)
+        {
+            const char *title = topic->second->title();
+            if (title == NULL || title[0] == '\0')
+            {
+                continue;
+            }
+            context.outputFile().writeLine();
+            HelpWriterContext subContext(
+                    context.createSubsection(title));
+            topic->second->writeHelp(subContext);
+        }
+    }
+    else
+    {
         GMX_THROW(NotImplementedError(
                           "Subtopic listing is not implemented for this output format"));
-    }
-    int maxNameLength = 0;
-    Impl::SubTopicMap::const_iterator topic;
-    for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
-    {
-        const char *title = topic->second->title();
-        if (title == NULL || title[0] == '\0')
-        {
-            continue;
-        }
-        int nameLength = static_cast<int>(topic->first.length());
-        if (nameLength > maxNameLength)
-        {
-            maxNameLength = nameLength;
-        }
-    }
-    if (maxNameLength == 0)
-    {
-        return false;
-    }
-    File              &file = context.outputFile();
-    TextTableFormatter formatter;
-    formatter.addColumn(NULL, maxNameLength + 1, false);
-    formatter.addColumn(NULL, 72 - maxNameLength, true);
-    formatter.setFirstColumnIndent(4);
-    file.writeLine(title);
-    for (topic = impl_->subtopics_.begin(); topic != impl_->subtopics_.end(); ++topic)
-    {
-        const char *name  = topic->first.c_str();
-        const char *title = topic->second->title();
-        if (title != NULL && title[0] != '\0')
-        {
-            formatter.clear();
-            formatter.addColumnLine(0, name);
-            formatter.addColumnLine(1, title);
-            file.writeString(formatter.formatRow());
-        }
     }
     return true;
 }

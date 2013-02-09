@@ -195,6 +195,13 @@ class HelpWriterContext
          */
         void writeTextBlock(const TextLineWrapperSettings &settings,
                             const std::string             &text) const;
+        /*! \brief
+         * Writes an entry for a single option into the output.
+         *
+         * Does not work for the console output format.
+         */
+        void writeOptionItem(const std::string &name, const std::string &args,
+                             const std::string &description) const;
 
     private:
         class Impl;
