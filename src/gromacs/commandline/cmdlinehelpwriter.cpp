@@ -556,7 +556,9 @@ void OptionsExportFormatter::formatOption(
 {
     if (option.isType<BooleanOptionInfo>())
     {
-        // Implementation depends on approach.
+        std::string name = "[no]" + option.name();
+        const char *args = "[yes/no/true/false/0/1]";
+        context.writeOptionItem(name, args, option.description());
     }
     else
     {
@@ -648,6 +650,11 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
     {
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
+            break;
+        case eHelpOutputFormat_ManPage:
+        case eHelpOutputFormat_Latex:
+        case eHelpOutputFormat_Html:
+            formatter.reset(new OptionsExportFormatter(common));
             break;
         default:
             GMX_THROW(NotImplementedError(

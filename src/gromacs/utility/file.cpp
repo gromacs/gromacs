@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -42,6 +42,7 @@
 #include "file.h"
 
 #include <cerrno>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 
@@ -237,6 +238,19 @@ void File::writeLine(const char *line)
 void File::writeLine()
 {
     writeString("\n");
+}
+
+void File::writeFormatted(const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    int     retval = vfprintf(handle(), fmt, ap);
+    va_end(ap);
+    if (retval < 0)
+    {
+        GMX_THROW_WITH_ERRNO(FileIOError("Writing to file failed"),
+                             "vfprintf", errno);
+    }
 }
 
 // static

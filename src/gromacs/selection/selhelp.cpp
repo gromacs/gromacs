@@ -189,10 +189,12 @@ const char *const EvaluationHelpText::text[] = {
     "automatically recognized, but can be manually optimized by the use of",
     "variables. This can have a big impact on the performance of complex",
     "selections, in particular if you define several index groups like this:",
-    "  [TT]rdist = distance from com of resnr 1 to 5;[tt][BR]",
-    "  [TT]resname RES and rdist < 2;[tt][BR]",
-    "  [TT]resname RES and rdist < 4;[tt][BR]",
-    "  [TT]resname RES and rdist < 6;[tt][BR]",
+    "[PRE]",
+    "  rdist = distance from com of resnr 1 to 5;\n",
+    "  resname RES and rdist < 2;\n",
+    "  resname RES and rdist < 4;\n",
+    "  resname RES and rdist < 6;\n",
+    "[pre]",
     "Without the variable assignment, the distances would be evaluated three",
     "times, although they are exactly the same within each selection.",
     "Anything assigned into a variable becomes a common subexpression that",
@@ -218,33 +220,41 @@ const char *const ExamplesHelpText::text[] = {
     // tools and explain what the selections do in those tools.
     "Below, examples of increasingly complex selections are given.[PAR]",
 
-    "Selection of all water oxygens:[BR]",
-    "  resname SOL and name OW",
-    "[PAR]",
+    "Selection of all water oxygens:"
+    "[PRE]",
+    "  resname SOL and name OW\n",
+    "[pre][PAR]",
 
-    "Centers of mass of residues 1 to 5 and 10:[BR]",
-    "  res_com of resnr 1 to 5 10",
-    "[PAR]",
+    "Centers of mass of residues 1 to 5 and 10:",
+    "[PRE]",
+    "  res_com of resnr 1 to 5 10\n",
+    "[pre][PAR]",
 
-    "All atoms farther than 1 nm of a fixed position:[BR]",
+    "All atoms farther than 1 nm of a fixed position:",
+    "[PRE]",
     "  not within 1 of (1.2, 3.1, 2.4)",
-    "[PAR]",
+    "[pre][PAR]",
 
-    "All atoms of a residue LIG within 0.5 nm of a protein (with a custom name):[BR]",
-    "  \"Close to protein\" resname LIG and within 0.5 of group \"Protein\"",
-    "[PAR]",
+    "All atoms of a residue LIG within 0.5 nm of a protein (with a custom name):",
+    "[PRE]",
+    "  \"Close to protein\" resname LIG and within 0.5 of group \"Protein\"\n",
+    "[pre][PAR]",
 
-    "All protein residues that have at least one atom within 0.5 nm of a residue LIG:[BR]",
-    "  group \"Protein\" and same residue as within 0.5 of resname LIG",
-    "[PAR]",
+    "All protein residues that have at least one atom within 0.5 nm of a residue LIG:",
+    "[PRE]",
+    "  group \"Protein\" and same residue as within 0.5 of resname LIG\n",
+    "[pre][PAR]",
 
-    "All RES residues whose COM is between 2 and 4 nm from the COM of all of them:[BR]",
-    "  rdist = res_com distance from com of resname RES[BR]",
-    "  resname RES and rdist >= 2 and rdist <= 4",
-    "[PAR]",
+    "All RES residues whose COM is between 2 and 4 nm from the COM of all of them:",
+    "[PRE]",
+    "  rdist = res_com distance from com of resname RES\n",
+    "  resname RES and rdist >= 2 and rdist <= 4\n",
+    "[pre][PAR]",
 
-    "Selection like C1 C2 C2 C3 C3 C4 ... C8 C9 (e.g., for g_bond):[BR]",
-    "  name \"C[1-8]\" merge name \"C[2-9]\"",
+    "Selection like C1 C2 C2 C3 C3 C4 ... C8 C9 (e.g., for g_bond):",
+    "[PRE]",
+    "  name \"C[1-8]\" merge name \"C[2-9]\"\n",
+    "[pre]",
 };
 
 struct KeywordsHelpText
@@ -282,10 +292,14 @@ const char *const LimitationsHelpText::text[] = {
     "[PAR]",
 
     "Due to technical reasons, having a negative value as the first value in",
-    "expressions like[BR]",
-    "[TT]charge -1 to -0.7[tt][BR]",
-    "result in a syntax error. A workaround is to write[BR]",
-    "[TT]charge {-1 to -0.7}[tt][BR]",
+    "expressions like",
+    "[PRE]",
+    "  charge -1 to -0.7\n",
+    "[pre]",
+    "result in a syntax error. A workaround is to write",
+    "[PRE]",
+    "  charge {-1 to -0.7}\n",
+    "[pre]",
     "instead.[PAR]",
 
     "When [TT]name[tt] selection keyword is used together with PDB input",
@@ -374,8 +388,10 @@ const char *const SyntaxHelpText::text[] = {
     "not if you provide the selections, e.g., from a pipe.[PAR]",
 
     "It is possible to use variables to store selection expressions.",
-    "A variable is defined with the following syntax:[BR]",
-    "[TT]VARNAME = EXPR ;[tt][BR]",
+    "A variable is defined with the following syntax:",
+    "[PRE]",
+    "  VARNAME = EXPR ;",
+    "[pre]",
     "where [TT]EXPR[tt] is any valid selection expression.",
     "After this, [TT]VARNAME[tt] can be used anywhere where [TT]EXPR[tt]",
     "would be valid.[PAR]",
@@ -536,50 +552,42 @@ KeywordsHelpTopic::KeywordsHelpTopic()
 
 void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    if (context.outputFormat() != eHelpOutputFormat_Console)
-    {
-        GMX_THROW(NotImplementedError(
-                          "Selection help is not implemented for this output format"));
-    }
-    // TODO: The markup here is not really appropriate, and printKeywordList()
-    // still prints raw text, but these are waiting for discussion of the
-    // markup format in #969.
-    context.writeTextBlock(helpText());
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock(helpText() + "[PAR]");
 
     // Print the list of keywords
     context.writeTextBlock(
             "Keywords that select atoms by an integer property:[BR]"
-            "(use in expressions or like \"atomnr 1 to 5 7 9\")[BR]");
+            "(use in expressions or like \"atomnr 1 to 5 7 9\")[PRE]");
     printKeywordList(context, INT_VALUE, false);
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock("[pre][PAR]");
 
     context.writeTextBlock(
             "Keywords that select atoms by a numeric property:[BR]"
-            "(use in expressions or like \"occupancy 0.5 to 1\")[BR]");
+            "(use in expressions or like \"occupancy 0.5 to 1\")[PRE]");
     printKeywordList(context, REAL_VALUE, false);
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock("[pre][PAR]");
 
     context.writeTextBlock(
             "Keywords that select atoms by a string property:[BR]"
-            "(use like \"name PATTERN [PATTERN] ...\")[BR]");
+            "(use like \"name PATTERN [PATTERN] ...\")[PRE]");
     printKeywordList(context, STR_VALUE, false);
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock("[pre][PAR]");
 
     context.writeTextBlock(
-            "Additional keywords that directly select atoms:[BR]");
+            "Additional keywords that directly select atoms:[PRE]");
     printKeywordList(context, GROUP_VALUE, false);
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock("[pre][PAR]");
 
     context.writeTextBlock(
             "Keywords that directly evaluate to positions:[BR]"
-            "(see also \"positions\" subtopic)[BR]");
+            "(see also \"positions\" subtopic)[PRE]");
     printKeywordList(context, POS_VALUE, false);
-    context.writeTextBlock("[BR]");
+    context.writeTextBlock("[pre][PAR]");
 
-    context.writeTextBlock("Additional keywords:[BR]");
+    context.writeTextBlock("Additional keywords:[PRE]");
     printKeywordList(context, POS_VALUE, true);
     printKeywordList(context, NO_VALUE, true);
+    context.writeTextBlock("[pre]");
 }
 
 void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
