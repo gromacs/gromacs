@@ -44,19 +44,19 @@
  * An example \c gmx_ana_selmethod_t definition could look like this:
  *
  * \code
- * gmx_ana_selmethod_t sm_example = {
- *   "example", GROUP_VALUE, 0,
- *   asize(sm_params_example), sm_params_example,
- *   &init_data_example,
- *    NULL,
- *   &init_example,
- *    NULL,
- *   &free_data_example,
- *   &init_frame_example,
- *   &evaluate_example,
- *    NULL,
- *   {"example from POS_EXPR [cutoff REAL]", 0, NULL},
- * };
+   gmx_ana_selmethod_t sm_example = {
+       "example", GROUP_VALUE, 0,
+       asize(sm_params_example), sm_params_example,
+       &init_data_example,
+        NULL,
+       &init_example,
+        NULL,
+       &free_data_example,
+       &init_frame_example,
+       &evaluate_example,
+        NULL,
+       {"example from POS_EXPR [cutoff REAL]", 0, NULL},
+   };
  * \endcode
  *
  * The first value defines the name of the method.
@@ -143,10 +143,10 @@
  *
  * An example parameter definition:
  * \code
- * static gmx_ana_selparam_t sm_params_example[] = {
- *   {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
- *   {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
- * };
+   static gmx_ana_selparam_t sm_params_example[] = {
+     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
+     {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+   };
  * \endcode
  *
  * The first value gives the name of the parameter.

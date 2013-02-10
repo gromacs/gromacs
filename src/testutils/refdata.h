@@ -136,20 +136,21 @@ class TestReferenceChecker;
  *
  * Simple example (using Google Test):
  * \code
-int functionToTest(int param);
+   int functionToTest(int param);
 
-TEST(MyTest, SimpleTest)
-{
-    gmx::test::TestReferenceData data;
+   TEST(MyTest, SimpleTest)
+   {
+       gmx::test::TestReferenceData data;
 
-    gmx::test::TestReferenceChecker checker(data.rootChecker());
-    checker.checkInteger(functionToTest(3), "ValueWith3");
-    checker.checkInteger(functionToTest(5), "ValueWith5");
-    gmx::test::TestReferenceChecker compound(checker.startCompound("CustomCompound", "Item"));
-    compound.checkInteger(function2ToTest(3), "ValueWith3");
-    compound.checkInteger(function2ToTest(5), "ValueWith5");
-    checker.checkInteger(functionToTest(4), "ValueWith4");
-}
+       gmx::test::TestReferenceChecker checker(data.rootChecker());
+       checker.checkInteger(functionToTest(3), "ValueWith3");
+       checker.checkInteger(functionToTest(5), "ValueWith5");
+       gmx::test::TestReferenceChecker compound(
+               checker.startCompound("CustomCompound", "Item"));
+       compound.checkInteger(function2ToTest(3), "ValueWith3");
+       compound.checkInteger(function2ToTest(5), "ValueWith5");
+       checker.checkInteger(functionToTest(4), "ValueWith4");
+   }
  * \endcode
  *
  * If rootChecker() is never called, no comparison is done (i.e., missing
@@ -250,12 +251,12 @@ class TestReferenceChecker
          *
          * The main use of this method is to assign meaning for missing
          * reference data.  Example use:
-\code
-if (checker.checkPresent(bHaveVelocities, "Velocities"))
-{
-    // <check the velocities>
-}
-\endcode
+         * \code
+           if (checker.checkPresent(bHaveVelocities, "Velocities"))
+           {
+               // <check the velocities>
+           }
+         * \endcode
          */
         bool checkPresent(bool bPresent, const char *id);
 

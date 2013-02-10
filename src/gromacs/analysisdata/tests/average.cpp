@@ -62,12 +62,14 @@ const real inputdata[] = {
 };
 //! Multipoint input data for gmx::AnalysisDataAverageModule tests.
 const real mpinputdata[] = {
+    // *INDENT-OFF*
     1.0,  0.0, 1.0, 2.0, MPSTOP,
           1.0, 0.0, MPSTOP,
           2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, MPSTOP,
           2.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME
+    // *INDENT-ON*
 };
 
 

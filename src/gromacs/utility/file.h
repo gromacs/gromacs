@@ -132,13 +132,13 @@ class File
          * Terminating newline will be present in \p line if it was present in
          * the file.
          * To loop over all lines in the file, use:
-\code
-std::string line;
-while (file.readLine(&line))
-{
-    // ...
-}
-\endcode
+         * \code
+           std::string line;
+           while (file.readLine(&line))
+           {
+               // ...
+           }
+         * \endcode
          */
         bool readLine(std::string *line);
 
