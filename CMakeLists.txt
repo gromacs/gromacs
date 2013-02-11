@@ -1127,7 +1127,7 @@ IF(BUILD_TESTING)
         add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
         add_dependencies(check gmxtests)
     else()
-        add_custom_target(check COMMAND ${CMAKE_COMMAND} -E echo "WARNING: No tests are run. Running the tests requires either of the cmake variables REGRESSIONTEST_PATH or REGRESSIONTEST_DOWNLOAD to be set.")
+        add_custom_target(check COMMAND ${CMAKE_COMMAND} -E echo "WARNING: The regression tests are not being run. Running these tests requires either of the cmake variables REGRESSIONTEST_PATH or REGRESSIONTEST_DOWNLOAD to be set.")
     endif()
 ENDIF()
 

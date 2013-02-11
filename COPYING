@@ -1,13 +1,15 @@
-GROMACS is free software, distributed under the GNU General Public License
-(GPL) Version 2. See section 1 for details. GROMACS includes optional code
-covered by several different licences as described below. The GROMACS
-package in its interety has to be used, copied, and distributed under
-the GPLv2 conditions. The individual parts can be used under their respictive
-licenses.
+GROMACS is free software, distributed under the GNU Lesser General
+Public License (LGPL) Version 2.1. See section 1 for details. GROMACS
+includes optional code covered by several different licences as
+described below.  The GROMACS package in its entirety may be copied,
+modified or distributed according to the conditions described in
+section 1.  However, in the interests of clarity and completeness,
+some individual parts of GROMACS that can be used under their
+respective licenses are also noted here.
 
-This file contains the licenses for:
+This file contains the licenses for the following bodies of code:
  1. GROMACS
- 2. Trajectory file reading using VMD plugins 
+ 2. Trajectory file reading using VMD plugins
  3. Internal FFT (fftpack)
  4. The memtestG80 library
  5. thread_mpi
@@ -15,6 +17,13 @@ This file contains the licenses for:
  7. Lapack
  8. Subset of Boost C++ library
  9. Google Test and Google Mock
+
+Our chosen method for packaging distributions (CPack) only permits a
+package to have a single license file, so we are unfortunately forced
+to combine all of this information into a single license file. Sorry
+about that.
+
+============================================
 
 1. GROMACS
 ====================================
@@ -556,7 +565,6 @@ better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
 
-
 8. Subset of Boost C++ library
 ==============================
 Files: src/external/boost/boost/*
@@ -617,3 +625,4 @@ DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
 THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+=======
