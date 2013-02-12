@@ -1118,16 +1118,13 @@ ADD_CUSTOM_TARGET(uninstall
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 #gmxtests target builds all binaries required for running gmxtest
-add_custom_target(gmxtests DEPENDS grompp mdrun pdb2gmx gmxcheck gmx)
+add_custom_target(gmxtests DEPENDS grompp mdrun pdb2gmx gmxcheck gmx links)
 IF(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)
-    if(REGRESSIONTEST_PATH)
-        #check target builds all to run tests and the runs tests
-        add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
-        add_dependencies(check gmxtests)
-    else()
-        add_custom_target(check COMMAND ${CMAKE_COMMAND} -E echo "WARNING: No tests are run. Running the tests requires either of the cmake variables REGRESSIONTEST_PATH or REGRESSIONTEST_DOWNLOAD to be set.")
-    endif()
+    #"check" target builds and runs all tests
+    add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
+    add_dependencies(check gmxtests tests)
+    #TODO: Add warning if NOT REGRESSIONTEST_PATH OR NOT GMX_XML that regression/unit tests are not run.
 ENDIF()
 
