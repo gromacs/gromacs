@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -55,7 +55,7 @@ namespace
  * These must correspond to the TimeUnit enum in the header!
  */
 const char *const g_timeUnits[] = {
-    "fs", "ps", "ns", "us", "ms",  "s", NULL
+    "fs", "ps", "ns", "us", "ms",  "s"
 };
 /*! \brief
  * Scaling factors from each time unit to internal units (=picoseconds).

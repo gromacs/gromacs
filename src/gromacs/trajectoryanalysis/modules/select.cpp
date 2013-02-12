@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -377,11 +377,11 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                            .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
                            .description("Normalize by covered fraction with -os"));
-    const char *const cResNumberEnum[] = { "number", "index", NULL };
+    const char *const cResNumberEnum[] = { "number", "index" };
     options->addOption(StringOption("resnr").store(&resNumberType_)
                            .enumValue(cResNumberEnum).defaultEnumIndex(0)
                            .description("Residue number output type with -oi and -on"));
-    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected", NULL };
+    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
     options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
                            .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
                            .description("Atoms to write with -ofpdb"));

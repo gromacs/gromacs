@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -699,7 +699,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
@@ -718,11 +718,35 @@ TEST(OptionsAssignerStringTest, HandlesEnumValue)
     EXPECT_EQ(1, index);
 }
 
-TEST(OptionsAssignerStringTest, HandlesIncorrectEnumValue)
+TEST(OptionsAssignerStringTest, HandlesEnumValueFromNullTerminatedArray)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
     const char * const     allowed[] = { "none", "test", "value", NULL };
+    int                    index     = -1;
+    using gmx::StringOption;
+    ASSERT_NO_THROW(options.addOption(
+                            StringOption("p").store(&value)
+                                .enumValueFromNullTerminatedArray(allowed)
+                                .storeEnumIndex(&index)));
+
+    gmx::OptionsAssigner assigner(&options);
+    EXPECT_NO_THROW(assigner.start());
+    ASSERT_NO_THROW(assigner.startOption("p"));
+    ASSERT_NO_THROW(assigner.appendValue("value"));
+    EXPECT_NO_THROW(assigner.finishOption());
+    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW(options.finish());
+
+    EXPECT_EQ("value", value);
+    EXPECT_EQ(2, index);
+}
+
+TEST(OptionsAssignerStringTest, HandlesIncorrectEnumValue)
+{
+    gmx::Options           options(NULL, NULL);
+    std::string            value;
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
@@ -739,7 +763,7 @@ TEST(OptionsAssignerStringTest, CompletesEnumValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
@@ -762,7 +786,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumWithNoValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -3;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
@@ -781,7 +805,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultValue)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(
@@ -804,7 +828,7 @@ TEST(OptionsAssignerStringTest, HandlesEnumDefaultIndex)
 {
     gmx::Options           options(NULL, NULL);
     std::string            value;
-    const char * const     allowed[] = { "none", "test", "value", NULL };
+    const char * const     allowed[] = { "none", "test", "value" };
     int                    index     = -1;
     using gmx::StringOption;
     ASSERT_NO_THROW(options.addOption(

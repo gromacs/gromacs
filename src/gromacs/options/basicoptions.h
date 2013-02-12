@@ -201,7 +201,7 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
    std::string  str;
    options.addOption(StringOption("str").store(&str));
    // Option that only accepts predefined values
-   const char * const  allowed[] = { "atom", "residue", "molecule", NULL };
+   const char * const  allowed[] = { "atom", "residue", "molecule" };
    std::string  str;
    int          type;
    options.addOption(StringOption("type").enumValue(allowed).store(&str)
@@ -220,16 +220,15 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
-              enumIndexStore_(NULL)
+            : MyBase(name), enumValues_(NULL), enumValuesCount_(0),
+              defaultEnumIndex_(-1), enumIndexStore_(NULL)
         {
         }
 
         /*! \brief
          * Sets the option to only accept one of a fixed set of strings.
          *
-         * \param[in] values  Array of strings to accept, a NULL pointer
-         *      following the last string.
+         * \param[in] values  Array of strings to accept.
          *
          * Also accepts prefixes of the strings; if a prefix matches more than
          * one of the possible strings, the shortest one is used (in a tie, the
@@ -241,8 +240,35 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          *
          * The strings are copied once the option is created.
          */
-        MyClass &enumValue(const char *const *values)
-        { enumValues_ = values; return me(); }
+        template <size_t count>
+        MyClass &enumValue(const char *const (&values)[count])
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = count;
+            return me();
+        }
+        /*! \brief
+         * Sets the option to only accept one of a fixed set of strings.
+         *
+         * \param[in] values  Array of strings to accept, with a NULL pointer
+         *      following the last string.
+         *
+         * Works otherwise as the array version, but accepts a pointer to
+         * an array of undetermined length.  The end of the array is indicated
+         * by a NULL pointer in the array.
+         *
+         * \see enumValue()
+         */
+        MyClass &enumValueFromNullTerminatedArray(const char *const *values)
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = -1;
+            return me();
+        }
         /*! \brief
          * Sets the default value using an index into the enumeration table.
          *
@@ -250,7 +276,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          */
         MyClass &defaultEnumIndex(int index)
         {
-            GMX_RELEASE_ASSERT(index >= 0, "Invalid enumeration index");
+            GMX_ASSERT(index >= 0, "Invalid enumeration index");
             defaultEnumIndex_ = index;
             return me();
         }
@@ -264,6 +290,10 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * and there is no default value, -1 is stored.
          *
          * Cannot be specified without enumValue().
+         *
+         * \todo
+         * Implement this such that it is also possible to store the value
+         * directly into a real enum type.
          */
         MyClass &storeEnumIndex(int *store)
         { enumIndexStore_ = store; return me(); }
@@ -273,6 +303,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
         virtual AbstractOptionStoragePointer createStorage() const;
 
         const char *const      *enumValues_;
+        int                     enumValuesCount_;
         int                     defaultEnumIndex_;
         int                    *enumIndexStore_;
 

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -369,8 +369,8 @@ SelectionCollection::~SelectionCollection()
 void
 SelectionCollection::initOptions(Options *options)
 {
-    static const char * const debug_levels[]
-        = {"no", "basic", "compile", "eval", "full", NULL};
+    const char * const debug_levels[]
+        = {"no", "basic", "compile", "eval", "full" };
     /*
        static const char * const desc[] = {
         "This program supports selections in addition to traditional",
@@ -382,10 +382,12 @@ SelectionCollection::initOptions(Options *options)
      */
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
-    options->addOption(StringOption("selrpos").enumValue(postypes)
+    options->addOption(StringOption("selrpos")
+                           .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->rpost_).defaultValue(postypes[0])
                            .description("Selection reference positions"));
-    options->addOption(StringOption("seltype").enumValue(postypes)
+    options->addOption(StringOption("seltype")
+                           .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->spost_).defaultValue(postypes[0])
                            .description("Default selection output positions"));
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,

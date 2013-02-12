@@ -319,8 +319,21 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
         enumIndexStore_ = settings.enumIndexStore_;
         const std::string *defaultValue = settings.defaultValue();
         int                match        = -1;
-        for (int i = 0; settings.enumValues_[i] != NULL; ++i)
+        int                count        = settings.enumValuesCount_;
+        if (count < 0)
         {
+            count = 0;
+            while (settings.enumValues_[count] != NULL)
+            {
+                ++count;
+            }
+        }
+        for (int i = 0; i < count; ++i)
+        {
+            if (settings.enumValues_[i] == NULL)
+            {
+                GMX_THROW(APIError("Enumeration value cannot be NULL"));
+            }
             if (defaultValue != NULL && settings.enumValues_[i] == *defaultValue)
             {
                 match = i;

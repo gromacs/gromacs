@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -117,7 +117,7 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
                           .timeValue().defaultValue(10.0));
     options.addOption(StringOption("string").description("String option")
                           .defaultValue("test"));
-    const char * const enumValues[] = {"no", "opt1", "opt2", NULL};
+    const char * const enumValues[] = { "no", "opt1", "opt2" };
     options.addOption(StringOption("enum").description("Enum option")
                           .enumValue(enumValues).defaultEnumIndex(0));
 
