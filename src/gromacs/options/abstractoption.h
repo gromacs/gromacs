@@ -67,7 +67,7 @@ class Options;
 
 //! Smart pointer for managing an AbstractOptionStorage object.
 typedef gmx_unique_ptr<AbstractOptionStorage>::type
-        AbstractOptionStoragePointer;
+    AbstractOptionStoragePointer;
 
 /*! \brief
  * Abstract base class for specifying option properties.
@@ -478,7 +478,7 @@ class OptionInfo
         explicit OptionInfo(AbstractOptionStorage *option);
 
         //! Returns the wrapped option storage object.
-        AbstractOptionStorage &option() { return option_; }
+        AbstractOptionStorage       &option() { return option_; }
         //! Returns the wrapped option storage object.
         const AbstractOptionStorage &option() const { return option_; }
         //! \endcond

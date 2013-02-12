@@ -318,13 +318,13 @@ AnalysisDataStorage::Impl::endStorageLocation() const
 
 void
 AnalysisDataStorage::Impl::extendBuffer(AnalysisDataStorage *storage,
-                                        size_t newSize)
+                                        size_t               newSize)
 {
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
         frames_.push_back(StoredFrame(
-            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
+                                  new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -348,7 +348,7 @@ AnalysisDataStorage::Impl::rotateBuffer()
     }
     firstFrameLocation_ = nextFirst;
     StoredFrame &prevFrame = frames_[prevFirst];
-    prevFrame.status = StoredFrame::eMissing;
+    prevFrame.status         = StoredFrame::eMissing;
     prevFrame.frame->header_ = AnalysisDataFrameHeader(nextIndex_ + 1, 0.0, 0.0);
     prevFrame.frame->clearValues();
     ++nextIndex_;
@@ -376,7 +376,7 @@ AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
             return;
         }
     }
-    size_t i = firstLocation;
+    size_t i   = firstLocation;
     size_t end = endStorageLocation();
     while (i != end)
     {
@@ -425,7 +425,7 @@ AnalysisDataPointSetRef
 AnalysisDataStorageFrame::currentPoints() const
 {
     std::vector<AnalysisDataValue>::const_iterator begin = values_.begin();
-    std::vector<AnalysisDataValue>::const_iterator end = values_.end();
+    std::vector<AnalysisDataValue>::const_iterator end   = values_.end();
     while (begin != end && !begin->isSet())
     {
         ++begin;
@@ -436,7 +436,7 @@ AnalysisDataStorageFrame::currentPoints() const
     }
     int firstColumn = (begin != end) ? begin - values_.begin() : 0;
     return AnalysisDataPointSetRef(header_, firstColumn,
-                AnalysisDataValuesRef(begin, end));
+                                   AnalysisDataValuesRef(begin, end));
 }
 
 
@@ -578,7 +578,7 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
                        "startFrame() called twice for the same frame");
     GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
                        "Inconsistent internal frame indexing");
-    storedFrame->status = Impl::StoredFrame::eStarted;
+    storedFrame->status         = Impl::StoredFrame::eStarted;
     storedFrame->frame->header_ = header;
     if (impl_->isMultipoint())
     {
@@ -598,7 +598,7 @@ AnalysisDataStorage::startFrame(int index, real x, real dx)
 AnalysisDataStorageFrame &
 AnalysisDataStorage::currentFrame(int index)
 {
-    int storageIndex = impl_->computeStorageLocation(index);
+    int                storageIndex = impl_->computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
     Impl::StoredFrame &storedFrame = impl_->frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),
@@ -614,7 +614,7 @@ AnalysisDataStorage::currentFrame(int index)
 void
 AnalysisDataStorage::finishFrame(int index)
 {
-    int storageIndex = impl_->computeStorageLocation(index);
+    int                storageIndex = impl_->computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
     Impl::StoredFrame &storedFrame = impl_->frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),

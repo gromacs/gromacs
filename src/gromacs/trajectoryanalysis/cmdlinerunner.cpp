@@ -73,8 +73,8 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        void printHelp(const Options &options,
-                       const TrajectoryAnalysisSettings &settings,
+        void printHelp(const Options                        &options,
+                       const TrajectoryAnalysisSettings     &settings,
                        const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
@@ -82,8 +82,8 @@ class TrajectoryAnalysisCommandLineRunner::Impl
                           int *argc, char *argv[]);
 
         TrajectoryAnalysisModule *module_;
-        int                     debugLevel_;
-        bool                    bPrintCopyright_;
+        int                       debugLevel_;
+        bool                      bPrintCopyright_;
 };
 
 
@@ -101,8 +101,8 @@ TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 
 void
 TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
-        const Options &options,
-        const TrajectoryAnalysisSettings &settings,
+        const Options                        &options,
+        const TrajectoryAnalysisSettings     &settings,
         const TrajectoryAnalysisRunnerCommon &common)
 {
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
@@ -217,7 +217,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     SelectionCollection  selections;
     selections.setDebugLevel(impl_->debugLevel_);
 
-    TrajectoryAnalysisSettings  settings;
+    TrajectoryAnalysisSettings      settings;
     TrajectoryAnalysisRunnerCommon  common(&settings);
 
     if (!impl_->parseOptions(&settings, &common, &selections, &argc, argv))
@@ -238,8 +238,8 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
     t_pbc  pbc;
     t_pbc *ppbc = settings.hasPBC() ? &pbc : NULL;
 
-    int nframes = 0;
-    AnalysisDataParallelOptions dataOptions;
+    int    nframes = 0;
+    AnalysisDataParallelOptions         dataOptions;
     TrajectoryAnalysisModuleDataPointer pdata(
             module->startFrames(dataOptions, selections));
     do

@@ -163,7 +163,7 @@ namespace internal
  */
 void fatalError(int retcode, const char *msg, const char *file, int line);
 
-} // namespace internal
+}   // namespace internal
 //! \endcond
 
 } // namespace gmx

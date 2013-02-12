@@ -114,7 +114,7 @@ gmx_ana_selmethod_t *
 SelectionParserSymbol::methodValue() const
 {
     GMX_RELEASE_ASSERT(type() == MethodSymbol,
-            "Attempting to get method handle for a non-method symbol");
+                       "Attempting to get method handle for a non-method symbol");
     return impl_->meth_;
 }
 
@@ -122,7 +122,7 @@ const gmx::SelectionTreeElementPointer &
 SelectionParserSymbol::variableValue() const
 {
     GMX_RELEASE_ASSERT(type() == VariableSymbol,
-            "Attempting to get variable value for a non-variable symbol");
+                       "Attempting to get variable value for a non-variable symbol");
     return impl_->var_;
 }
 
@@ -142,7 +142,7 @@ class SelectionParserSymbolTable::Impl
     public:
         //! Smart pointer type for managing a SelectionParserSymbol.
         typedef gmx::gmx_unique_ptr<SelectionParserSymbol>::type
-                SymbolPointer;
+            SymbolPointer;
         //! Container type for the list of symbols.
         typedef std::map<std::string, SymbolPointer> SymbolMap;
 
@@ -187,8 +187,8 @@ SelectionParserSymbolTable::Impl::addReservedSymbols()
     for (size_t i = 0; i < asize(sym_reserved); ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
+                                  new SelectionParserSymbol::Impl(
+                                          SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
         addSymbol(move(sym));
     }
 }
@@ -201,8 +201,8 @@ SelectionParserSymbolTable::Impl::addPositionSymbols()
     for (int i = 0; postypes[i] != NULL; ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::PositionSymbol, postypes[i])));
+                                  new SelectionParserSymbol::Impl(
+                                          SelectionParserSymbol::PositionSymbol, postypes[i])));
         addSymbol(move(sym));
     }
 }
@@ -221,7 +221,7 @@ class SelectionParserSymbolIterator::Impl
     public:
         //! Shorthand for the underlying iterator type.
         typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
-                IteratorType;
+            IteratorType;
 
         /*! \brief
          * Constructs an end iterator.
@@ -310,7 +310,7 @@ SelectionParserSymbolTable::~SelectionParserSymbolTable()
 
 const SelectionParserSymbol *
 SelectionParserSymbolTable::findSymbol(const std::string &name,
-                                       bool bExact) const
+                                       bool               bExact) const
 {
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
@@ -362,7 +362,7 @@ SelectionParserSymbolTable::endIterator() const
 }
 
 void
-SelectionParserSymbolTable::addVariable(const char *name,
+SelectionParserSymbolTable::addVariable(const char                             *name,
                                         const gmx::SelectionTreeElementPointer &sel)
 {
     // In the current parser implementation, a syntax error is produced before
@@ -373,36 +373,36 @@ SelectionParserSymbolTable::addVariable(const char *name,
         if (other->second->type() == SelectionParserSymbol::VariableSymbol)
         {
             GMX_THROW(InvalidInputError(
-                        formatString("Reassigning variable '%s' is not supported",
-                                     name)));
+                              formatString("Reassigning variable '%s' is not supported",
+                                           name)));
         }
         else
         {
             GMX_THROW(InvalidInputError(
-                        formatString("Variable name '%s' conflicts with a reserved keyword",
-                                     name)));
+                              formatString("Variable name '%s' conflicts with a reserved keyword",
+                                           name)));
         }
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::VariableSymbol, name)));
+                                    new SelectionParserSymbol::Impl(
+                                            SelectionParserSymbol::VariableSymbol, name)));
     sym->impl_->var_ = sel;
     impl_->addSymbol(move(sym));
 }
 
 void
-SelectionParserSymbolTable::addMethod(const char *name,
+SelectionParserSymbolTable::addMethod(const char          *name,
                                       gmx_ana_selmethod_t *method)
 {
     if (impl_->symbols_.find(name) != impl_->symbols_.end())
     {
         GMX_THROW(APIError(
-                    formatString("Method name '%s' conflicts with another symbol",
-                                 name)));
+                          formatString("Method name '%s' conflicts with another symbol",
+                                       name)));
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::MethodSymbol, name)));
+                                    new SelectionParserSymbol::Impl(
+                                            SelectionParserSymbol::MethodSymbol, name)));
     sym->impl_->meth_ = method;
     impl_->addSymbol(move(sym));
 }

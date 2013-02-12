@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -130,7 +130,7 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS];
 
 /* Abstract data type with CPU detection information. Set by gmx_cpuid_init(). */
 typedef struct gmx_cpuid *
-gmx_cpuid_t;
+    gmx_cpuid_t;
 
 
 /* Fill the data structure by using CPU detection instructions.
@@ -175,7 +175,7 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
 
 
 /* Return pointers to cpu topology information.
- * 
+ *
  * Important: CPU topology requires more OS support than most other
  * functions in this file, including support for thread pinning to hardware.
  * This means it will not work on some platforms, including e.g. Mac OS X.

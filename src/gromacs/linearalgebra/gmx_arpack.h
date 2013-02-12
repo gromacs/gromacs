@@ -1,5 +1,5 @@
 /*
- * 
+ *
  * This file is part of Gromacs        Copyright (c) 1991-2004
  * David van der Spoel, Erik Lindahl, University of Groningen.
  *
@@ -7,7 +7,7 @@
  * diagonalization and SVD for sparse matrices in Gromacs.
  *
  * The code has been translated to C to avoid being dependent on
- * a Fotran compiler, and it has been made threadsafe by using 
+ * a Fotran compiler, and it has been made threadsafe by using
  * additional workspace arrays to store data during reverse communication.
  *
  * You might prefer the original ARPACK library for general use, but
@@ -18,15 +18,15 @@
  * precision work array workd needs to be of size (3*N+4) here
  * (4 more than the general library), and there is an extra argument
  * iwork, which should be an integer work array of length 80.
- * 
- * ARPACK was written by 
+ *
+ * ARPACK was written by
  *
  *     Danny Sorensen               Phuong Vu
  *    Riconst chard Lehoucq              CRPC / Rice University
  *    Dept. of Computational &     Houston, Texas
  *    Applied Mathematics
- *    Rice University           
- *    Houston, Texas            
+ *    Rice University
+ *    Houston, Texas
  */
 /*! \internal \file
  * \brief
@@ -54,7 +54,7 @@ extern "C" {
 
 /*! \brief Implicitly Restarted Arnoldi Iteration, double precision.
  *
- *  Reverse communication interface for the Implicitly Restarted Arnoldi 
+ *  Reverse communication interface for the Implicitly Restarted Arnoldi
  *  Iteration.  For symmetric problems this reduces to a variant of the
  *  Lanczos method. See the ARPACK site for details.
  *
@@ -66,7 +66,7 @@ extern "C" {
  *                 Return with ido=99 means it finished.
  *  \param bmat    'I' for standard eigenproblem, 'G' for generalized.
  *  \param n       Order of eigenproblem.
- *  \param which   Which eigenvalues to calculate. 'LA' for largest 
+ *  \param which   Which eigenvalues to calculate. 'LA' for largest
  *                 algebraic, 'SA' for smallest algebraic, 'LM' for largest
  *                 magnitude, 'SM' for smallest magnitude, and finally
  *                 'BE' (both ends) to calculate half from each end of
@@ -74,7 +74,7 @@ extern "C" {
  *  \param nev     Number of eigenvalues to calculate. 0<nev<n.
  *  \param tol     Tolerance. Machine precision of it is 0.
  *  \param resid   Optional starting residual vector at input if info=1,
- *                 otherwise a random one is used. Final residual vector on 
+ *                 otherwise a random one is used. Final residual vector on
  *                 return.
  *  \param ncv     Number of columns in matrix v.
  *  \param v       N*NCV matrix. V contain the Lanczos basis vectors.
@@ -82,38 +82,38 @@ extern "C" {
  *  \param iparam  Integer array, size 11. Same contents as arpack.
  *  \param ipntr   Integer array, size 11. Points to starting locations
  *                 in the workd/workl arrays. Same contents as arpack.
- *  \param workd   Double precision work array, length 3*n+4. 
+ *  \param workd   Double precision work array, length 3*n+4.
  *                 Provide the same array for all calls, and don't touch it.
  *                 IMPORTANT: This is 4 units larger than standard ARPACK!
- *  \param iwork   Integer work array, size 80. 
+ *  \param iwork   Integer work array, size 80.
  *                 Provide the same array for all calls, and don't touch it.
  *                 IMPORTANT: New argument compared to standard ARPACK!
  *  \param workl   Double precision work array, length lwork.
  *  \param lworkl  Length of the work array workl. Must be at least ncv*(ncv+8)
  *  \param info    Set info to 0 to use random initial residual vector,
- *                 or to 1 if you provide a one. On output, info=0 means 
+ *                 or to 1 if you provide a one. On output, info=0 means
  *                 normal exit, 1 that max number of iterations was reached,
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
 void
-F77_FUNC(dsaupd,DSAUPD)(int *     ido, 
-                        const char *    bmat, 
-                        int *     n, 
-                        const char *	  which, 
-                        int *     nev, 
-                        double *  tol, 
-                        double *  resid, 
-                        int *     ncv,
-                        double *  v, 
-                        int *     ldv, 
-                        int *     iparam,
-                        int *     ipntr, 
-                        double *  workd, 
-                        int *     iwork,
-                        double *  workl, 
-                        int *     lworkl,
-                        int *     info);
+    F77_FUNC(dsaupd, DSAUPD) (int *     ido,
+                              const char *    bmat,
+                              int *     n,
+                              const char *      which,
+                              int *     nev,
+                              double *  tol,
+                              double *  resid,
+                              int *     ncv,
+                              double *  v,
+                              int *     ldv,
+                              int *     iparam,
+                              int *     ipntr,
+                              double *  workd,
+                              int *     iwork,
+                              double *  workl,
+                              int *     lworkl,
+                              int *     info);
 
 
 
@@ -125,12 +125,12 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
  *  \param rvec    1 if you want eigenvectors, 0 if not.
  *  \param howmny  'A' if you want all nvec vectors, 'S' if you
  *                 provide a subset selection in select[].
- *  \param select  Integer array, dimension nev. Indices of the 
+ *  \param select  Integer array, dimension nev. Indices of the
  *                 eigenvectors to calculate. Fortran code means we
  *                 start counting on 1. This array must be given even in
  *                 howmny is 'A'. (Arpack documentation is wrong on this).
- *  \param d       Double precision array, length nev. Eigenvalues.              
- *  \param z       Double precision array, n*nev. Eigenvectors.           
+ *  \param d       Double precision array, length nev. Eigenvalues.
+ *  \param z       Double precision array, n*nev. Eigenvectors.
  *  \param ldz     Leading dimension of z. Normally n.
  *  \param sigma   Shift if iparam[6] is 3,4, or 5. Ignored otherwise.
  *  \param bmat    Provide the same argument as you did to dsaupd()
@@ -156,28 +156,28 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
  *  \param info    Provide the same argument as you did to dsaupd()
  */
 void
-F77_FUNC(dseupd,DSEUPD)(int *     rvec, 
-                        const char *    howmny, 
-                        int *     select, 
-                        double *  d, 
-                        double *  z, 
-                        int *     ldz, 
-                        double *  sigma, 
-                        const char *    bmat, 
-                        int *     n, 
-                        const char *    which, 
-                        int *     nev, 
-                        double *  tol, 
-                        double *  resid, 
-                        int *     ncv, 
-                        double *  v,
-                        int *     ldv, 
-                        int *     iparam, 
-                        int *     ipntr, 
-                        double *  workd, 
-                        double *  workl, 
-                        int *     lworkl, 
-                        int *     info);
+    F77_FUNC(dseupd, DSEUPD) (int *     rvec,
+                              const char *    howmny,
+                              int *     select,
+                              double *  d,
+                              double *  z,
+                              int *     ldz,
+                              double *  sigma,
+                              const char *    bmat,
+                              int *     n,
+                              const char *    which,
+                              int *     nev,
+                              double *  tol,
+                              double *  resid,
+                              int *     ncv,
+                              double *  v,
+                              int *     ldv,
+                              int *     iparam,
+                              int *     ipntr,
+                              double *  workd,
+                              double *  workl,
+                              int *     lworkl,
+                              int *     info);
 
 
 
@@ -185,7 +185,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
 
 /*! \brief Implicitly Restarted Arnoldi Iteration, single precision.
  *
- *  Reverse communication interface for the Implicitly Restarted Arnoldi 
+ *  Reverse communication interface for the Implicitly Restarted Arnoldi
  *  Iteration.  For symmetric problems this reduces to a variant of the
  *  Lanczos method. See the ARPACK site for details.
  *
@@ -197,7 +197,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  *                 Return with ido=99 means it finished.
  *  \param bmat    'I' for standard eigenproblem, 'G' for generalized.
  *  \param n       Order of eigenproblem.
- *  \param which   Which eigenvalues to calculate. 'LA' for largest 
+ *  \param which   Which eigenvalues to calculate. 'LA' for largest
  *                 algebraic, 'SA' for smallest algebraic, 'LM' for largest
  *                 magnitude, 'SM' for smallest magnitude, and finally
  *                 'BE' (both ends) to calculate half from each end of
@@ -205,7 +205,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  *  \param nev     Number of eigenvalues to calculate. 0<nev<n.
  *  \param tol     Tolerance. Machine precision of it is 0.
  *  \param resid   Optional starting residual vector at input if info=1,
- *                 otherwise a random one is used. Final residual vector on 
+ *                 otherwise a random one is used. Final residual vector on
  *                 return.
  *  \param ncv     Number of columns in matrix v.
  *  \param v       N*NCV matrix. V contain the Lanczos basis vectors.
@@ -213,38 +213,38 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
  *  \param iparam  Integer array, size 11. Same contents as arpack.
  *  \param ipntr   Integer array, size 11. Points to starting locations
  *                 in the workd/workl arrays. Same contents as arpack.
- *  \param workd   Single precision work array, length 3*n+4. 
+ *  \param workd   Single precision work array, length 3*n+4.
  *                 Provide the same array for all calls, and don't touch it.
  *                 IMPORTANT: This is 4 units larger than standard ARPACK!
- *  \param iwork   Integer work array, size 80. 
+ *  \param iwork   Integer work array, size 80.
  *                 Provide the same array for all calls, and don't touch it.
  *                 IMPORTANT: New argument compared to standard ARPACK!
  *  \param workl   Single precision work array, length lwork.
  *  \param lworkl  Length of the work array workl. Must be at least ncv*(ncv+8)
  *  \param info    Set info to 0 to use random initial residual vector,
- *                 or to 1 if you provide a one. On output, info=0 means 
+ *                 or to 1 if you provide a one. On output, info=0 means
  *                 normal exit, 1 that max number of iterations was reached,
  *                 and 3 that no shifts could be applied. Negative numbers
  *                 correspond to errors in the arguments provided.
  */
-void 
-F77_FUNC(ssaupd,SSAUPD)(int *     ido, 
-                        const char *    bmat, 
-                        int *     n, 
-                        const char *    which, 
-                        int *     nev, 
-                        float *   tol, 
-                        float *   resid, 
-                        int *     ncv,
-                        float *   v, 
-                        int *     ldv, 
-                        int *     iparam,
-                        int *     ipntr, 
-                        float *   workd, 
-                        int *     iwork,
-                        float *   workl, 
-                        int *     lworkl,
-                        int *     info);
+void
+    F77_FUNC(ssaupd, SSAUPD) (int *     ido,
+                              const char *    bmat,
+                              int *     n,
+                              const char *    which,
+                              int *     nev,
+                              float *   tol,
+                              float *   resid,
+                              int *     ncv,
+                              float *   v,
+                              int *     ldv,
+                              int *     iparam,
+                              int *     ipntr,
+                              float *   workd,
+                              int *     iwork,
+                              float *   workl,
+                              int *     lworkl,
+                              int *     info);
 
 
 
@@ -258,12 +258,12 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
  *  \param rvec    1 if you want eigenvectors, 0 if not.
  *  \param howmny  'A' if you want all nvec vectors, 'S' if you
  *                 provide a subset selection in select[].
- *  \param select  Integer array, dimension nev. Indices of the 
+ *  \param select  Integer array, dimension nev. Indices of the
  *                 eigenvectors to calculate. Fortran code means we
  *                 start counting on 1. This array must be given even in
  *                 howmny is 'A'. (Arpack documentation is wrong on this).
- *  \param d       Single precision array, length nev. Eigenvalues.              
- *  \param z       Single precision array, n*nev. Eigenvectors.           
+ *  \param d       Single precision array, length nev. Eigenvalues.
+ *  \param z       Single precision array, n*nev. Eigenvectors.
  *  \param ldz     Leading dimension of z. Normally n.
  *  \param sigma   Shift if iparam[6] is 3,4, or 5. Ignored otherwise.
  *  \param bmat    Provide the same argument as you did to ssaupd()
@@ -289,32 +289,31 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
  *  \param info    Provide the same argument as you did to ssaupd()
  */
 void
-F77_FUNC(sseupd,SSEUPD)(int *     rvec, 
-                        const char *    howmny, 
-                        int *     select, 
-                        float *   d, 
-                        float *   z, 
-                        int *     ldz, 
-                        float *   sigma, 
-                        const char *    bmat, 
-                        int *     n, 
-                        const char *    which, 
-                        int *     nev, 
-                        float *   tol, 
-                        float *   resid, 
-                        int *     ncv, 
-                        float *   v,
-                        int *     ldv, 
-                        int *     iparam, 
-                        int *     ipntr, 
-                        float *   workd, 
-                        float *   workl, 
-                        int *     lworkl, 
-                        int *     info);
+    F77_FUNC(sseupd, SSEUPD) (int *     rvec,
+                              const char *    howmny,
+                              int *     select,
+                              float *   d,
+                              float *   z,
+                              int *     ldz,
+                              float *   sigma,
+                              const char *    bmat,
+                              int *     n,
+                              const char *    which,
+                              int *     nev,
+                              float *   tol,
+                              float *   resid,
+                              int *     ncv,
+                              float *   v,
+                              int *     ldv,
+                              int *     iparam,
+                              int *     ipntr,
+                              float *   workd,
+                              float *   workl,
+                              int *     lworkl,
+                              int *     info);
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

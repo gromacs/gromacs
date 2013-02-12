@@ -232,9 +232,9 @@ namespace gmx
 /*! \brief
  * Function pointer for evaluating a gmx::SelectionTreeElement.
  */
-typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t *data,
+typedef void (*sel_evalfunc)(struct gmx_sel_evaluate_t         *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g);
+                             gmx_ana_index_t                   *g);
 
 /*! \internal \brief
  * Represents an element of a selection expression.
@@ -408,7 +408,7 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc);
 /** Sets the value type of a gmx::SelectionTreeElement. */
 void
 _gmx_selelem_set_vtype(const gmx::SelectionTreeElementPointer &sel,
-                       e_selvalue_t vtype);
+                       e_selvalue_t                            vtype);
 
 /** Frees the memory allocated for a selection method. */
 void

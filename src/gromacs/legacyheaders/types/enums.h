@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -46,41 +46,41 @@ extern "C" {
 /* note: these enums should correspond to the names in gmxlib/names.c */
 
 enum {
-  epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
+    epbcXYZ, epbcNONE, epbcXY, epbcSCREW, epbcNR
 };
 
 enum {
-  etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
+    etcNO, etcBERENDSEN, etcNOSEHOOVER, etcYES, etcANDERSEN, etcANDERSENMASSIVE, etcVRESCALE, etcNR
 }; /* yes is an alias for berendsen */
 
 #define ETC_ANDERSEN(e) (((e) == etcANDERSENMASSIVE) || ((e) == etcANDERSEN))
 
 enum {
-  epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
+    epcNO, epcBERENDSEN, epcPARRINELLORAHMAN, epcISOTROPIC, epcMTTK, epcNR
 }; /* isotropic is an alias for berendsen */
 
 /* trotter decomposition extended variable parts */
 enum {
-  etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2, 
-  etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
+    etrtNONE, etrtNHC, etrtBAROV, etrtBARONHC, etrtNHC2, etrtBAROV2, etrtBARONHC2,
+    etrtVELOCITY1, etrtVELOCITY2, etrtPOSITION, etrtSKIPALL, etrtNR
 };
 
 /* sequenced parts of the trotter decomposition */
 enum {
-  ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
+    ettTSEQ0,  ettTSEQ1,  ettTSEQ2,  ettTSEQ3,  ettTSEQ4, ettTSEQMAX
 };
 
 enum {
-  epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
-  epctSURFACETENSION, epctNR
+    epctISOTROPIC, epctSEMIISOTROPIC, epctANISOTROPIC,
+    epctSURFACETENSION, epctNR
 };
 
 enum {
-  erscNO, erscALL, erscCOM, erscNR
+    erscNO, erscALL, erscCOM, erscNR
 };
 
 enum {
-  ecutsGROUP, ecutsVERLET, ecutsNR
+    ecutsGROUP, ecutsVERLET, ecutsNR
 };
 
 /* Coulomb / VdW interaction modifiers.
@@ -97,14 +97,14 @@ enum eintmod {
  * separately (through the implicit_solvent option).
  */
 enum {
-  eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD, 
-  eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT, 
-  eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
+    eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelP3M_AD,
+    eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB_NOTUSED, eelRF_NEC, eelENCADSHIFT,
+    eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelRF_ZERO, eelNR
 };
 
 /* Ewald geometry */
-enum { 
-  eewg3D, eewg3DC, eewgNR
+enum {
+    eewg3D, eewg3DC, eewgNR
 };
 
 #define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC || (e) == eelRF_ZERO )
@@ -121,7 +121,7 @@ enum {
 #define EEL_MIGHT_BE_ZERO_AT_CUTOFF(e) (EEL_IS_ZERO_AT_CUTOFF(e) || (e) == eelUSER || (e) == eelPMEUSER)
 
 enum {
-  evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
+    evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
 };
 
 #define EVDW_SWITCHED(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
@@ -130,15 +130,15 @@ enum {
 
 #define EVDW_MIGHT_BE_ZERO_AT_CUTOFF(e) (EVDW_IS_ZERO_AT_CUTOFF(e) || (e) == evdwUSER)
 
-enum { 
-  ensGRID, ensSIMPLE, ensNR
+enum {
+    ensGRID, ensSIMPLE, ensNR
 };
 
 /* eiVV is normal velocity verlet -- eiVVAK uses 1/2*(KE(t-dt/2)+KE(t+dt/2)) as the kinetic energy, and the half step kinetic
    energy for temperature control */
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
+    eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD1, eiVV, eiVVAK, eiNR
 };
 #define EI_VV(e) ((e) == eiVV || (e) == eiVVAK)
 #define EI_MD(e) ((e) == eiMD || EI_VV(e))
@@ -152,45 +152,45 @@ enum {
 #define EI_STATE_VELOCITY(e) (EI_MD(e) || EI_SD(e))
 
 enum {
-  econtLINCS, econtSHAKE, econtNR
+    econtLINCS, econtSHAKE, econtNR
 };
 
 enum {
-  edrNone, edrSimple, edrEnsemble, edrNR
+    edrNone, edrSimple, edrEnsemble, edrNR
 };
 
 enum {
-  edrwConservative, edrwEqual, edrwNR
+    edrwConservative, edrwEqual, edrwNR
 };
 
 /* Combination rule things */
-enum { 
-  eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_NR 
+enum {
+    eCOMB_NONE, eCOMB_GEOMETRIC, eCOMB_ARITHMETIC, eCOMB_GEOM_SIG_EPS, eCOMB_NR
 };
 
 /* NBF selection */
-enum { 
-  eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR 
+enum {
+    eNBF_NONE, eNBF_LJ, eNBF_BHAM, eNBF_NR
 };
 
 /* simulated tempering methods */
 enum {
-  esimtempGEOMETRIC, esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
+    esimtempGEOMETRIC, esimtempEXPONENTIAL, esimtempLINEAR, esimtempNR
 };
 /* FEP selection */
 enum {
-  efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR
+    efepNO, efepYES, efepSTATIC, efepSLOWGROWTH, efepEXPANDED, efepNR
 };
-  /* if efepNO, there are no evaluations at other states.
-     if efepYES, treated equivalently to efepSTATIC.
-     if efepSTATIC, then lambdas do not change during the simulation.
-     if efepSLOWGROWTH, then the states change monotonically throughout the simulation.
-     if efepEXPANDED, then expanded ensemble simulations are occuring.
-  */
+/* if efepNO, there are no evaluations at other states.
+   if efepYES, treated equivalently to efepSTATIC.
+   if efepSTATIC, then lambdas do not change during the simulation.
+   if efepSLOWGROWTH, then the states change monotonically throughout the simulation.
+   if efepEXPANDED, then expanded ensemble simulations are occuring.
+ */
 
 /* FEP coupling types */
 enum {
-  efptFEP,efptMASS,efptCOUL,efptVDW,efptBONDED,efptRESTRAINT,efptTEMPERATURE,efptNR
+    efptFEP, efptMASS, efptCOUL, efptVDW, efptBONDED, efptRESTRAINT, efptTEMPERATURE, efptNR
 };
 
 /* How the lambda weights are calculated:
@@ -199,9 +199,9 @@ enum {
    elamstatsMINVAR = using Barker + minimum variance for weights
    elamstatsWL = Wang-Landu (using visitation counts)
    elamstatsWWL = Weighted Wang-Landau (using optimized gibbs weighted visitation counts)
-*/
+ */
 enum {
-  elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsWWL, elamstatsNR
+    elamstatsNO, elamstatsMETROPOLIS, elamstatsBARKER, elamstatsMINVAR, elamstatsWL, elamstatsWWL, elamstatsNR
 };
 
 #define ELAMSTATS_EXPANDED(e) ((e) > elamstatsNO)
@@ -213,9 +213,9 @@ enum {
    elmovemcBARKER - using the Barker criteria, and 50% up and down
    elmovemcGIBBS - computing the transition using the marginalized probabilities of the lambdas
    elmovemcMETGIBBS - computing the transition using the metropolized version of Gibbs (Monte Carlo Strategies in Scientific computing, Liu, p. 134)
-*/
+ */
 enum {
-  elmcmoveNO,elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
+    elmcmoveNO, elmcmoveMETROPOLIS, elmcmoveBARKER, elmcmoveGIBBS, elmcmoveMETGIBBS, elmcmoveNR
 };
 
 /* how we decide whether weights have reached equilibrium
@@ -226,89 +226,89 @@ enum {
    elmceqSTEPS - stop when we've run a certain total number of steps
    elmceqSAMPLES - stop when we've run a certain total number of samples
    elmceqRATIO - stop when the ratio of samples (lowest to highest) is sufficiently large
-*/
+ */
 enum {
-  elmceqNO,elmceqYES,elmceqWLDELTA,elmceqNUMATLAM,elmceqSTEPS,elmceqSAMPLES,elmceqRATIO,elmceqNR
+    elmceqNO, elmceqYES, elmceqWLDELTA, elmceqNUMATLAM, elmceqSTEPS, elmceqSAMPLES, elmceqRATIO, elmceqNR
 };
 
 /* separate_dhdl_file selection */
 enum
 {
-  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-  esepdhdlfileYES, esepdhdlfileNO, esepdhdlfileNR
+    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+    esepdhdlfileYES, esepdhdlfileNO, esepdhdlfileNR
 };
 
 /* dhdl_derivatives selection */
 enum
 {
-  /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
-  edhdlderivativesYES, edhdlderivativesNO, edhdlderivativesNR
+    /* NOTE: YES is the first one. Do NOT interpret this one as a gmx_bool */
+    edhdlderivativesYES, edhdlderivativesNO, edhdlderivativesNR
 };
 
 /* Solvent model */
 enum {
-  esolNO, esolSPC, esolTIP4P, esolNR
+    esolNO, esolSPC, esolTIP4P, esolNR
 };
 
 /* Dispersion correction */
 enum {
-  edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR
-}; 
+    edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR
+};
 
 /* Shell types, for completion stuff */
 enum {
-  eshellCSH, eshellBASH, eshellZSH, eshellNR
-}; 
+    eshellCSH, eshellBASH, eshellZSH, eshellNR
+};
 
 /* Center of mass motion selection */
-enum { 
-  ecmLINEAR, ecmANGULAR, ecmNO, ecmNR 
+enum {
+    ecmLINEAR, ecmANGULAR, ecmNO, ecmNR
 };
 
 /* New version of simulated annealing */
-enum { 
-  eannNO, eannSINGLE, eannPERIODIC, eannNR 
+enum {
+    eannNO, eannSINGLE, eannPERIODIC, eannNR
 };
 
 /* Implicit solvent algorithms */
-enum { 
-  eisNO, eisGBSA, eisNR
+enum {
+    eisNO, eisGBSA, eisNR
 };
 
 /* Algorithms for calculating GB radii */
-enum { 
-  egbSTILL, egbHCT, egbOBC, egbNR 
+enum {
+    egbSTILL, egbHCT, egbOBC, egbNR
 };
 
 enum {
-  esaAPPROX, esaNO, esaSTILL, esaNR
+    esaAPPROX, esaNO, esaSTILL, esaNR
 };
 
 /* Wall types */
 enum {
-  ewt93, ewt104, ewtTABLE, ewt126, ewtNR
+    ewt93, ewt104, ewtTABLE, ewt126, ewtNR
 };
 
 /* Pull stuff */
 enum {
-  epullNO, epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullNR
+    epullNO, epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullNR
 };
 
 enum {
-  epullgDIST, epullgDIR, epullgCYL, epullgPOS, epullgDIRPBC, epullgNR
+    epullgDIST, epullgDIR, epullgCYL, epullgPOS, epullgDIRPBC, epullgNR
 };
 
 #define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
 
 /* Enforced rotation groups */
 enum {
-  erotgISO  , erotgISOPF ,
-  erotgPM   , erotgPMPF  ,
-  erotgRM   , erotgRMPF  ,
-  erotgRM2  , erotgRM2PF ,
-  erotgFLEX , erotgFLEXT ,
-  erotgFLEX2, erotgFLEX2T,
-  erotgNR
+    erotgISO, erotgISOPF,
+    erotgPM, erotgPMPF,
+    erotgRM, erotgRMPF,
+    erotgRM2, erotgRM2PF,
+    erotgFLEX, erotgFLEXT,
+    erotgFLEX2, erotgFLEX2T,
+    erotgNR
 };
 
 enum {
@@ -317,47 +317,47 @@ enum {
 
 /* QMMM */
 enum {
-  eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 
-  eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF, eQMmethodB3LYPLAN,
-  eQMmethodDIRECT, eQMmethodNR
+    eQMmethodAM1, eQMmethodPM3, eQMmethodRHF,
+    eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF, eQMmethodB3LYPLAN,
+    eQMmethodDIRECT, eQMmethodNR
 };
 
 enum {
-  eQMbasisSTO3G, eQMbasisSTO3G2, eQMbasis321G, 
-  eQMbasis321Gp, eQMbasis321dGp, eQMbasis621G,
-  eQMbasis631G, eQMbasis631Gp, eQMbasis631dGp, 
-  eQMbasis6311G, eQMbasisNR
+    eQMbasisSTO3G, eQMbasisSTO3G2, eQMbasis321G,
+    eQMbasis321Gp, eQMbasis321dGp, eQMbasis621G,
+    eQMbasis631G, eQMbasis631Gp, eQMbasis631dGp,
+    eQMbasis6311G, eQMbasisNR
 };
 
 enum {
-  eQMMMschemenormal,eQMMMschemeoniom,eQMMMschemeNR
+    eQMMMschemenormal, eQMMMschemeoniom, eQMMMschemeNR
 };
 
 enum {
-  eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
+    eMultentOptName, eMultentOptNo, eMultentOptLast, eMultentOptNR
 };
 
 /* flat-bottom posres geometries */
 enum {
-  efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
-  efbposresNR
+    efbposresZERO, efbposresSPHERE, efbposresCYLINDER, efbposresX, efbposresY, efbposresZ,
+    efbposresNR
 };
 
 enum {
-  eAdressOff,eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
+    eAdressOff, eAdressConst, eAdressXSplit, eAdressSphere, eAdressNR
 };
 
 enum {
-  eAdressICOff, eAdressICThermoForce, eAdressICNR
+    eAdressICOff, eAdressICThermoForce, eAdressICNR
 };
 
 enum {
-  eAdressSITEcom,eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
+    eAdressSITEcom, eAdressSITEcog, eAdressSITEatom, eAdressSITEatomatom, eAdressSITENR
 };
 
 
 /* The interactions contained in a (possibly merged) table
- * for computing electrostatic, VDW repulsion and/or VDW dispersion 
+ * for computing electrostatic, VDW repulsion and/or VDW dispersion
  * contributions.
  */
 enum gmx_table_interaction
@@ -391,7 +391,7 @@ enum gmx_table_format
 };
 
 /* Neighborlist geometry type.
- * Kernels will compute interactions between two particles, 
+ * Kernels will compute interactions between two particles,
  * 3-center water, 4-center water or coarse-grained beads.
  */
 enum gmx_nblist_kernel_geometry
@@ -436,10 +436,10 @@ enum gmx_nbkernel_vdw
  */
 enum gmx_nblist_interaction_type
 {
-  GMX_NBLIST_INTERACTION_STANDARD,
-  GMX_NBLIST_INTERACTION_FREE_ENERGY,
-  GMX_NBLIST_INTERACTION_ADRESS,
-  GMX_NBLIST_INTERACTION_NR
+    GMX_NBLIST_INTERACTION_STANDARD,
+    GMX_NBLIST_INTERACTION_FREE_ENERGY,
+    GMX_NBLIST_INTERACTION_ADRESS,
+    GMX_NBLIST_INTERACTION_NR
 };
 
 #ifdef __cplusplus

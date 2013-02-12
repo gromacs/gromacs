@@ -156,7 +156,7 @@ class MessageStringContext
          * Adds a context for the given object.
          */
         MessageStringContext(MessageStringCollector *collector,
-                             const std::string &name)
+                             const std::string      &name)
             : collector_(*collector)
         {
             collector_.startContext(name);

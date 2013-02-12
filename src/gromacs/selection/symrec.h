@@ -256,7 +256,7 @@ class SelectionParserSymbolTable
          * \throws    InvalidInputError if there was a symbol with the same
          *      name.
          */
-        void addVariable(const char *name,
+        void addVariable(const char                        *name,
                          const SelectionTreeElementPointer &sel);
         /*! \brief
          * Adds a new method symbol.

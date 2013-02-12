@@ -52,10 +52,10 @@ void
 nbnxn_kernel_simd_2xnn(nbnxn_pairlist_set_t       *nbl_list,
                        const nbnxn_atomdata_t     *nbat,
                        const interaction_const_t  *ic,
-                       int                        ewald_excl,
+                       int                         ewald_excl,
                        rvec                       *shift_vec,
-                       int                        force_flags,
-                       int                        clearF,
+                       int                         force_flags,
+                       int                         clearF,
                        real                       *fshift,
                        real                       *Vc,
                        real                       *Vvdw);

@@ -112,4 +112,3 @@ class TestException : public GromacsException
 } // namespace gmx
 
 #endif
-

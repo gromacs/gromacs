@@ -134,7 +134,7 @@ AnalysisHistogramSettings::AnalysisHistogramSettings(
         else
         {
             firstEdge_     = settings.min_;
-            lastEdge_     = settings.max_;
+            lastEdge_      = settings.max_;
             if (settings.binCount_ > 0)
             {
                 binCount_ = settings.binCount_;
@@ -223,7 +223,7 @@ StaticAverageHistogram::StaticAverageHistogram(
 {
 }
 
-} // namespace
+}   // namespace
 
 
 /********************************************************************
@@ -274,9 +274,9 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
     }
 
     AverageHistogramPointer dest(
-        new StaticAverageHistogram(
-            histogramFromBins(xstart(), nbins, 2*xstep())
-                .integerBins(bIntegerBins)));
+            new StaticAverageHistogram(
+                    histogramFromBins(xstart(), nbins, 2*xstep())
+                        .integerBins(bIntegerBins)));
     dest->setColumnCount(columnCount());
     dest->allocateValues();
 
@@ -490,7 +490,7 @@ class BasicHistogramImpl
     public:
         //! Smart pointer to manage an BasicAverageHistogramModule object.
         typedef boost::shared_ptr<BasicAverageHistogramModule>
-                BasicAverageHistogramModulePointer;
+            BasicAverageHistogramModulePointer;
 
         BasicHistogramImpl();
         //! Creates an histogram impl with defined bin parameters.
@@ -547,7 +547,7 @@ BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 /********************************************************************

@@ -56,7 +56,7 @@
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     private: \
         ClassName(const ClassName &); \
-        ClassName &operator =(const ClassName &)
+        ClassName                 &operator=(const ClassName &)
 /*! \libinternal \brief
  * Macro to declare a class non-assignable.
  *
@@ -66,7 +66,7 @@
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
     private: \
-        ClassName &operator =(const ClassName &)
+        ClassName &operator=(const ClassName &)
 //! \endcond
 
 namespace gmx

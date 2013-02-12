@@ -78,12 +78,12 @@ yyerror(yyscan_t scanner, char const *s)
 //! Finishes an action that may throw exceptions.
 #define END_ACTION \
     } \
-    catch(const std::exception &ex) \
+    catch (const std::exception &ex) \
     { \
-        if (_gmx_selparser_handle_exception(scanner, ex)) \
-            YYERROR; \
-        else \
-            YYABORT; \
+        if (_gmx_selparser_handle_exception(scanner, ex)) { \
+            YYERROR; } \
+        else{ \
+            YYABORT; } \
     }
 //!\}
 
@@ -138,7 +138,7 @@ ValueType get(ValueType *src)
  * possible ::CHECK_SEL.
  */
 template <typename ValueType> static
-void set(ValueType *&dest, ValueType value)
+void set(ValueType * &dest, ValueType value)
 {
     dest = new ValueType(move(value));
 }
@@ -155,7 +155,7 @@ void set(ValueType *&dest, ValueType value)
  * possible ::CHECK_SEL.
  */
 template <typename ValueType> static
-void set_empty(ValueType *&dest)
+void set_empty(ValueType * &dest)
 {
     dest = new ValueType;
 }

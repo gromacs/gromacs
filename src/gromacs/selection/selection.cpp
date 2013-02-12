@@ -48,7 +48,7 @@ namespace internal
 {
 
 SelectionData::SelectionData(SelectionTreeElement *elem,
-                             const char *selstr)
+                             const char           *selstr)
     : name_(elem->name()), selectionText_(selstr),
       rootElement_(*elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
@@ -112,14 +112,14 @@ SelectionData::initCoveredFraction(e_coverfrac_t type)
     }
     else if (!_gmx_selelem_can_estimate_cover(rootElement()))
     {
-        coveredFractionType_ = CFRAC_NONE;
+        coveredFractionType_     = CFRAC_NONE;
         bDynamicCoveredFraction_ = false;
     }
     else
     {
         bDynamicCoveredFraction_ = true;
     }
-    coveredFraction_ = bDynamicCoveredFraction_ ? 0.0 : 1.0;
+    coveredFraction_        = bDynamicCoveredFraction_ ? 0.0 : 1.0;
     averageCoveredFraction_ = coveredFraction_;
     return type == CFRAC_NONE || coveredFractionType_ != CFRAC_NONE;
 }
@@ -137,8 +137,8 @@ SelectionData::initializeMassesAndCharges(const t_topology *top)
         {
             mass = 0.0;
             for (int i = rawPositions_.m.mapb.index[b];
-                     i < rawPositions_.m.mapb.index[b+1];
-                     ++i)
+                 i < rawPositions_.m.mapb.index[b+1];
+                 ++i)
             {
                 int index = rawPositions_.g->index[i];
                 mass   += top->atoms.atom[index].m;
@@ -175,7 +175,7 @@ SelectionData::updateCoveredFractionForFrame()
     if (isCoveredFractionDynamic())
     {
         real cfrac = _gmx_selelem_estimate_coverfrac(rootElement());
-        coveredFraction_ = cfrac;
+        coveredFraction_         = cfrac;
         averageCoveredFraction_ += cfrac;
     }
 }
@@ -205,7 +205,7 @@ SelectionData::restoreOriginalPositions()
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 void
@@ -238,17 +238,25 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     {
         int n = p.m.mapb.nr;
         if (nmaxind >= 0 && n > nmaxind)
+        {
             n = nmaxind;
+        }
         for (int i = 0; i <= n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapb.index[i]);
+        }
         if (n < p.m.mapb.nr)
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
     int n = posCount();
     if (nmaxind >= 0 && n > nmaxind)
+    {
         n = nmaxind;
+    }
     fprintf(fp, "    RefId:");
     if (!p.m.refid)
     {
@@ -257,9 +265,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.refid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
@@ -271,9 +283,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 }
