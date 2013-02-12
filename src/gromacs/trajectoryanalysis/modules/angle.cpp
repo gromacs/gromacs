@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -134,9 +134,9 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
          */
     };
     static const char *const cGroup1TypeEnum[] =
-    { "angle", "dihedral", "vector", "plane", NULL };
+    { "angle", "dihedral", "vector", "plane" };
     static const char *const cGroup2TypeEnum[] =
-    { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
+    { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
     options->setDescription(concatenateStrings(desc));
 
