@@ -110,20 +110,20 @@ class AbstractPlotModule::Impl
 
         void closeFile();
 
-        AnalysisDataPlotSettings settings_;
-        std::string             filename_;
-        FILE                   *fp_;
+        AnalysisDataPlotSettings  settings_;
+        std::string               filename_;
+        FILE                     *fp_;
 
-        bool                    bPlain_;
-        bool                    gOmitX_;
-        std::string             title_;
-        std::string             subtitle_;
-        std::string             xlabel_;
-        std::string             ylabel_;
+        bool                      bPlain_;
+        bool                      gOmitX_;
+        std::string               title_;
+        std::string               subtitle_;
+        std::string               xlabel_;
+        std::string               ylabel_;
         std::vector<std::string>  legend_;
-        char                    xformat_[15];
-        char                    yformat_[15];
-        real                    xscale_;
+        char                      xformat_[15];
+        char                      yformat_[15];
+        real                      xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
@@ -303,13 +303,13 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
         }
         else
         {
-            time_unit_t time_unit
+            time_unit_t  time_unit
                 = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
-                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                    : exvgNONE);
-            output_env_t oenv;
+                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                   : exvgNONE);
+            output_env_t                  oenv;
             output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),

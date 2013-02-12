@@ -27,10 +27,10 @@
 
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
-kernellist_sse4_1_single[];
+    kernellist_sse4_1_single[];
 
 /* Length of kernellist_c */
 extern int
-kernellist_sse4_1_single_size;
+    kernellist_sse4_1_single_size;
 
 #endif

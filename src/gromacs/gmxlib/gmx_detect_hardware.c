@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GROup of MAchos and Cynical Suckers
  */
@@ -49,7 +49,7 @@
  * ridiculous number. */
 static unsigned int max_gpu_ids_user = 64;
 
-static const char* invalid_gpuid_hint =
+static const char * invalid_gpuid_hint =
     "A delimiter-free sequence of valid numeric IDs of available GPUs is expected.";
 
 /* FW decl. */
@@ -75,22 +75,22 @@ static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info, gmx_bool bPr
     }
 }
 
-static void print_gpu_detection_stats(FILE *fplog,
+static void print_gpu_detection_stats(FILE                 *fplog,
                                       const gmx_gpu_info_t *gpu_info,
-                                      const t_commrec *cr)
+                                      const t_commrec      *cr)
 {
-    char onhost[266],stmp[STRLEN];
+    char onhost[266], stmp[STRLEN];
     int  ngpu;
 
     ngpu = gpu_info->ncuda_dev;
 
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
     /* We only print the detection on one, of possibly multiple, nodes */
-    strncpy(onhost," on host ",10);
-    gmx_gethostname(onhost+9,256);
+    strncpy(onhost, " on host ", 10);
+    gmx_gethostname(onhost+9, 256);
 #else
     /* We detect all relevant GPUs */
-    strncpy(onhost,"",1);
+    strncpy(onhost, "", 1);
 #endif
 
     if (ngpu > 0)
@@ -105,9 +105,9 @@ static void print_gpu_detection_stats(FILE *fplog,
     }
 }
 
-static void print_gpu_use_stats(FILE *fplog,
+static void print_gpu_use_stats(FILE                 *fplog,
                                 const gmx_gpu_info_t *gpu_info,
-                                const t_commrec *cr)
+                                const t_commrec      *cr)
 {
     char sbuf[STRLEN], stmp[STRLEN];
     int  i, ngpu, ngpu_all;
@@ -145,14 +145,14 @@ static void print_gpu_use_stats(FILE *fplog,
  * to GPU IDs; the order will indicate the process/tMPI thread - GPU assignment. */
 static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
 {
-    int  i;
+    int    i;
     size_t len_idstr;
 
     len_idstr = strlen(idstr);
 
     if (len_idstr > max_gpu_ids_user)
     {
-        gmx_fatal(FARGS,"%d GPU IDs provided, but only at most %d are supported",
+        gmx_fatal(FARGS, "%d GPU IDs provided, but only at most %d are supported",
                   len_idstr, max_gpu_ids_user);
     }
 
@@ -187,10 +187,10 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     assert(hwinfo);
     assert(cr);
 
-    btMPI = bMPI = FALSE;
+    btMPI         = bMPI = FALSE;
     bNthreadsAuto = FALSE;
 #if defined(GMX_THREAD_MPI)
-    btMPI = TRUE;
+    btMPI         = TRUE;
     bNthreadsAuto = (ntmpi_requested < 1);
 #elif defined(GMX_LIB_MPI)
     bMPI  = TRUE;
@@ -231,7 +231,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
     /* number of PP processes per node */
     npppn = cr->nrank_pp_intranode;
 
-    pernode[0] = '\0';
+    pernode[0]           = '\0';
     th_or_proc_plural[0] = '\0';
     if (btMPI)
     {
@@ -284,7 +284,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                 else
                 {
                     /* There are more GPUs than tMPI threads; we have to limit the number GPUs used. */
-                    md_print_warn(cr,fplog,
+                    md_print_warn(cr, fplog,
                                   "NOTE: %d GPU%s were detected, but only %d PP thread-MPI thread%s can be started.\n"
                                   "      %s can use one GPU per PP tread-MPI thread, so only %d GPU%s will be used.%s\n",
                                   ngpu, gpu_plural, npppn, th_or_proc_plural,
@@ -308,14 +308,14 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                 gmx_fatal(FARGS,
                           "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
                           "%s was started with %d PP %s%s%s, but you provided %d GPU%s.",
-                          th_or_proc, btMPI ? "s" : "es" , pernode,
+                          th_or_proc, btMPI ? "s" : "es", pernode,
                           ShortProgram(), npppn, th_or_proc, th_or_proc_plural, pernode, ngpu, gpu_plural);
             }
             else
             {
                 if (ngpu > npppn)
                 {
-                    md_print_warn(cr,fplog,
+                    md_print_warn(cr, fplog,
                                   "NOTE: potentially sub-optimal launch configuration, %s started with less\n"
                                   "      PP %s%s%s than GPU%s available.\n"
                                   "      Each PP %s can use only one GPU, %d GPU%s%s will be used.\n",
@@ -342,7 +342,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                         gmx_fatal(FARGS,
                                   "Incorrect launch configuration: mismatching number of PP %s%s and GPUs%s.\n"
                                   "%s was started with %d PP %s%s%s, but only %d GPU%s were detected.",
-                                  th_or_proc, btMPI ? "s" : "es" , pernode,
+                                  th_or_proc, btMPI ? "s" : "es", pernode,
                                   ShortProgram(), npppn, th_or_proc, th_or_proc_plural, pernode, ngpu, gpu_plural);
                     }
 #ifdef GMX_MPI
@@ -359,11 +359,11 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
         hwinfo->gpu_info.bDevShare = FALSE;
         if (hwinfo->gpu_info.bUserSet && (cr->rank_pp_intranode == 0))
         {
-            int i, j, same_count;
+            int      i, j, same_count;
             gmx_bool bSomeSame, bAllDifferent;
 
-            same_count = 0; /* number of GPUs shared among ranks */
-            bSomeSame = FALSE;
+            same_count    = 0; /* number of GPUs shared among ranks */
+            bSomeSame     = FALSE;
             bAllDifferent = TRUE;
 
             for (i = 0; i < ngpu - 1; i++)
@@ -388,7 +388,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
 
             if (bSomeSame)
             {
-                md_print_warn(cr,fplog,
+                md_print_warn(cr, fplog,
                               "NOTE: Potentially sub-optimal launch configuration: you assigned %s to\n"
                               "      multiple %s%s; this should be avoided as it can cause\n"
                               "      performance loss.\n",
@@ -405,7 +405,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
  */
 static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
 {
-     int ret = 0;
+    int ret = 0;
 
 #if ((defined(WIN32) || defined( _WIN32 ) || defined(WIN64) || defined( _WIN64 )) && !(defined (__CYGWIN__) || defined (__CYGWIN32__)))
     /* Windows */
@@ -455,12 +455,12 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
                          gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
                          const char *gpu_id)
 {
-    int             i;
+    int              i;
     const char      *env;
-    char            sbuf[STRLEN], stmp[STRLEN];
+    char             sbuf[STRLEN], stmp[STRLEN];
     gmx_hw_info_t   *hw;
-    gmx_gpu_info_t  gpuinfo_auto, gpuinfo_user;
-    gmx_bool        bGPUBin;
+    gmx_gpu_info_t   gpuinfo_auto, gpuinfo_user;
+    gmx_bool         bGPUBin;
 
     assert(hwinfo);
 
@@ -498,7 +498,7 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
     }
 
     /* run the detection if the binary was compiled with GPU support */
-    if (bGPUBin && getenv("GMX_DISABLE_GPU_DETECTION")==NULL)
+    if (bGPUBin && getenv("GMX_DISABLE_GPU_DETECTION") == NULL)
     {
         char detection_error[STRLEN];
 
@@ -524,7 +524,7 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
         env = getenv("GMX_GPU_ID");
         if (env != NULL && gpu_id != NULL)
         {
-            gmx_fatal(FARGS,"GMX_GPU_ID and -gpu_id can not be used at the same time");
+            gmx_fatal(FARGS, "GMX_GPU_ID and -gpu_id can not be used at the same time");
         }
         if (env == NULL)
         {
@@ -535,7 +535,7 @@ void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
         if (env != NULL)
         {
             int *gpuid, *checkres;
-            int nid, res;
+            int  nid, res;
 
             snew(gpuid, max_gpu_ids_user);
             snew(checkres, max_gpu_ids_user);

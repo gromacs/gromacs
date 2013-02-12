@@ -84,23 +84,23 @@ class FlagsTemplate
         }
 
         //! Combines flags from two flags objects.
-        FlagsTemplate<T> operator |(const FlagsTemplate<T> &other) const
+        FlagsTemplate<T> operator|(const FlagsTemplate<T> &other) const
         {
             return FlagsTemplate<T>(flags_ | other.flags_);
         }
         //! Combines flags from another flag object.
-        FlagsTemplate<T> &operator |=(const FlagsTemplate<T> &other)
+        FlagsTemplate<T> &operator|=(const FlagsTemplate<T> &other)
         {
             flags_ |= other.flags_;
             return *this;
         }
         //! Combined flags from two flags objects.
-        FlagsTemplate<T> operator &(const FlagsTemplate<T> &other) const
+        FlagsTemplate<T> operator&(const FlagsTemplate<T> &other) const
         {
             return FlagsTemplate<T>(flags_ & other.flags_);
         }
         //! Returns an object with all flags flipped.
-        FlagsTemplate<T> operator ~() const
+        FlagsTemplate<T> operator~() const
         {
             return FlagsTemplate<T>(~flags_);
         }

@@ -1,12 +1,12 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2010, The GROMACS development team,
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
@@ -55,10 +55,10 @@
  *  algorithmic module in mdrun. */
 typedef struct
 {
-    int gnth;               /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
-    int gnth_pme;           /**< Global num. of threads per PME only process/tMPI thread. */
+    int      gnth;          /**< Global num. of threads per PP or PP+PME process/tMPI thread. */
+    int      gnth_pme;      /**< Global num. of threads per PME only process/tMPI thread. */
 
-    int nth[emntNR];        /**< Number of threads for each module, indexed with module_nth_t */
+    int      nth[emntNR];   /**< Number of threads for each module, indexed with module_nth_t */
     gmx_bool initialized;   /**< TRUE if the module as been initialized. */
 } omp_module_nthreads_t;
 
@@ -111,9 +111,9 @@ static int pick_module_nthreads(FILE *fplog, int m,
                                 gmx_bool bFullOmpSupport,
                                 gmx_bool bSepPME)
 {
-    char *env;
-    int  nth;
-    char sbuf[STRLEN];
+    char    *env;
+    int      nth;
+    char     sbuf[STRLEN];
     gmx_bool bOMP;
 
 #ifdef GMX_OPENMP
@@ -186,12 +186,12 @@ static int pick_module_nthreads(FILE *fplog, int m,
     return modth.nth[m] = nth;
 }
 
-void gmx_omp_nthreads_read_env(int *nthreads_omp,
+void gmx_omp_nthreads_read_env(int     *nthreads_omp,
                                gmx_bool bIsSimMaster)
 {
-    char *env;
+    char    *env;
     gmx_bool bCommandLineSetNthreadsOMP = *nthreads_omp > 0;
-    char buffer[STRLEN];
+    char     buffer[STRLEN];
 
     assert(nthreads_omp);
 
@@ -199,15 +199,15 @@ void gmx_omp_nthreads_read_env(int *nthreads_omp,
     {
         int nt_omp;
 
-        sscanf(env,"%d",&nt_omp);
+        sscanf(env, "%d", &nt_omp);
         if (nt_omp <= 0)
         {
-            gmx_fatal(FARGS,"OMP_NUM_THREADS is invalid: '%s'",env);
+            gmx_fatal(FARGS, "OMP_NUM_THREADS is invalid: '%s'", env);
         }
 
         if (bCommandLineSetNthreadsOMP && nt_omp != *nthreads_omp)
         {
-            gmx_fatal(FARGS,"Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.",nt_omp,*nthreads_omp);
+            gmx_fatal(FARGS, "Environment variable OMP_NUM_THREADS (%d) and the number of threads requested on the command line (%d) have different values. Either omit one, or set them both to the same value.", nt_omp, *nthreads_omp);
         }
 
         /* Setting the number of OpenMP threads. */
@@ -242,8 +242,8 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            gmx_bool bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
-    int  nth, nth_pmeonly, gmx_maxth, nppn;
-    char *env;
+    int      nth, nth_pmeonly, gmx_maxth, nppn;
+    char    *env;
     gmx_bool bSepPME, bOMP;
 
 #ifdef GMX_OPENMP
@@ -256,7 +256,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     nppn = cr->nrank_intranode;
 
     bSepPME = ( (cr->duty & DUTY_PP) && !(cr->duty & DUTY_PME)) ||
-              (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
+        (!(cr->duty & DUTY_PP) &&  (cr->duty & DUTY_PME));
 
 #ifdef GMX_THREAD_MPI
     /* modth is shared among tMPI threads, so for thread safety do the
@@ -374,7 +374,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                 gmx_omp_set_num_threads(modth.gnth_pme);
             }
             else
-#endif /* GMX_THREAD_MPI */
+#endif      /* GMX_THREAD_MPI */
             {
                 if (bFullOmpSupport)
                 {
@@ -401,22 +401,22 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
     if (bOMP)
     {
 #ifdef GMX_THREAD_MPI
-        const char *mpi_str="per tMPI thread";
+        const char *mpi_str = "per tMPI thread";
 #else
-        const char *mpi_str="per MPI process";
+        const char *mpi_str = "per MPI process";
 #endif
 
         /* for group scheme we print PME threads info only */
         if (bFullOmpSupport)
         {
             md_print_info(cr, fplog, "Using %d OpenMP thread%s %s\n",
-                          modth.gnth,modth.gnth > 1 ? "s" : "",
+                          modth.gnth, modth.gnth > 1 ? "s" : "",
                           cr->nnodes > 1 ? mpi_str : "");
         }
         if (bSepPME && modth.gnth_pme != modth.gnth)
         {
             md_print_info(cr, fplog, "Using %d OpenMP thread%s %s for PME\n",
-                          modth.gnth_pme,modth.gnth_pme > 1 ? "s" : "",
+                          modth.gnth_pme, modth.gnth_pme > 1 ? "s" : "",
                           cr->nnodes > 1 ? mpi_str : "");
         }
     }

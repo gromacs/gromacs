@@ -398,13 +398,13 @@ gmx_ana_selmethod_t sm_betafactor = {
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_x,
 };
 
@@ -412,13 +412,13 @@ gmx_ana_selmethod_t sm_x = {
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_y,
 };
 
@@ -426,13 +426,13 @@ gmx_ana_selmethod_t sm_y = {
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_z,
 };
 
@@ -497,7 +497,7 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
     }
 }
@@ -557,7 +557,10 @@ evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        while (top->mols.index[j + 1] <= g->index[i])
+        {
+            ++j;
+        }
         out->u.i[i] = j + 1;
     }
 }
@@ -662,7 +665,7 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.s[i] = *top->atoms.resinfo[resind].name;
     }
 }
@@ -683,7 +686,7 @@ evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].ic;
     }
 }
@@ -704,7 +707,7 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
     }
 }

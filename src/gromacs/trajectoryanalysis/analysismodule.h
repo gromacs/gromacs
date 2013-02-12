@@ -148,9 +148,9 @@ class TrajectoryAnalysisModuleData
          * TrajectoryAnalysisModule::registerAnalysisDataset() in \p module.
          * The handles are accessible through dataHandle().
          */
-        TrajectoryAnalysisModuleData(TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModuleData(TrajectoryAnalysisModule          *module,
                                      const AnalysisDataParallelOptions &opt,
-                                     const SelectionCollection &selections);
+                                     const SelectionCollection         &selections);
 
         /*! \brief
          * Calls finishData() on all data handles.
@@ -171,7 +171,7 @@ class TrajectoryAnalysisModuleData
 
 //! Smart pointer to manage a TrajectoryAnalysisModuleData object.
 typedef gmx_unique_ptr<TrajectoryAnalysisModuleData>::type
-        TrajectoryAnalysisModuleDataPointer;
+    TrajectoryAnalysisModuleDataPointer;
 
 /*! \brief
  * Base class for trajectory analysis modules.
@@ -241,7 +241,7 @@ class TrajectoryAnalysisModule
          * If settings depend on the option values provided by the user, see
          * optionsFinished().
          */
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings) = 0;
         /*! \brief
          * Called after all option values have been set.
@@ -259,7 +259,7 @@ class TrajectoryAnalysisModule
          *
          * The default implementation does nothing.
          */
-        virtual void optionsFinished(Options *options,
+        virtual void optionsFinished(Options                    *options,
                                      TrajectoryAnalysisSettings *settings);
         /*! \brief
          * Initializes the analysis.
@@ -274,7 +274,7 @@ class TrajectoryAnalysisModule
          * analyzeFrame() are always a subset of the selections provided here.
          */
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top) = 0;
+                                  const TopologyInformation        &top) = 0;
         /*! \brief
          * Performs additional initialization after reading the first frame.
          *
@@ -311,8 +311,8 @@ class TrajectoryAnalysisModule
          * \see TrajectoryAnalysisModuleData
          */
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
-                const AnalysisDataParallelOptions &opt,
-                const SelectionCollection &selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
         /*! \brief
          * Analyzes a single frame.
          *
@@ -490,7 +490,7 @@ class TrajectoryAnalysisModule
 
 //! Smart pointer to manage a TrajectoryAnalysisModule.
 typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
-        TrajectoryAnalysisModulePointer;
+    TrajectoryAnalysisModulePointer;
 
 } // namespace gmx
 

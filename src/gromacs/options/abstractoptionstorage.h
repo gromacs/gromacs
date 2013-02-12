@@ -199,7 +199,7 @@ class AbstractOptionStorage
          * \throws  APIError if invalid settings have been provided.
          */
         AbstractOptionStorage(const AbstractOption &settings,
-                              OptionFlags staticFlags);
+                              OptionFlags           staticFlags);
 
         //! Marks the option as set.
         void markAsSet() { flags_.set(efOption_Set); }

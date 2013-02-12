@@ -60,7 +60,7 @@ namespace internal
 {
 //! Internal container type for storing a list of nested exceptions.
 typedef std::vector<boost::exception_ptr> NestedExceptionList;
-} // namespace internal
+}   // namespace internal
 
 /*! \addtopublicapi
  * \{
@@ -376,8 +376,8 @@ class NotImplementedError : public APIError
     do { \
         int stored_errno_ = (err); \
         GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
-                      << boost::errinfo_api_function(syscall)); \
-    } while(0)
+                  << boost::errinfo_api_function(syscall)); \
+    } while (0)
 
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.

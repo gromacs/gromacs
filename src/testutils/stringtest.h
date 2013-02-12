@@ -98,9 +98,9 @@ class StringTestBase : public ::testing::Test
         void checkFileContents(const std::string &filename, const char *id);
 
     private:
-        static bool             s_bWriteToStdOut;
+        static bool                             s_bWriteToStdOut;
 
-        TestReferenceData       data_;
+        TestReferenceData                       data_;
         boost::scoped_ptr<TestReferenceChecker> checker_;
 };
 
