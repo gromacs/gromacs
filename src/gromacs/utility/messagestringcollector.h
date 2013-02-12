@@ -127,14 +127,14 @@ class MessageStringCollector
  *
  * Example usage:
  * \code
-bool function(::gmx::MessageStringCollector *errors)
-{
-    ::gmx::MessageStringContext errcontext(errors, "In function()");
-    bool bOk = function2(errors);
-    bOk = function3(errors) && bOk;
-    // <more processing>
-    return bOk;
-}
+   bool function(::gmx::MessageStringCollector *errors)
+   {
+       ::gmx::MessageStringContext errcontext(errors, "In function()");
+       bool bOk = function2(errors);
+       bOk = function3(errors) && bOk;
+       // <more processing>
+       return bOk;
+   }
  * \endcode
  *
  * \see MessageStringCollector

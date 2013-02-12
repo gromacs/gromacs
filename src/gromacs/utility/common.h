@@ -91,33 +91,33 @@ namespace gmx
  *
  * Intended use:
  * \code
-// In exampleclass.h
-class ExampleClass
-{
-    public:
-        ExampleClass();
-        ~ExampleClass(); // Must not be defined inline
+   // In exampleclass.h
+   class ExampleClass
+   {
+       public:
+           ExampleClass();
+           ~ExampleClass(); // Must not be defined inline
 
-        // <...>
+           // <...>
 
-    private:
-        class Impl;
+       private:
+           class Impl;
 
-        PrivateImplPointer<Impl> impl_;
-};
+           PrivateImplPointer<Impl> impl_;
+   };
 
-// In exampleclass.cpp
+   // In exampleclass.cpp
 
-// <definition of ExampleClass::Impl>
+   // <definition of ExampleClass::Impl>
 
-ExampleClass::ExampleClass()
-    : impl_(new Impl)
-{
-}
+   ExampleClass::ExampleClass()
+       : impl_(new Impl)
+   {
+   }
 
-ExampleClass::~ExampleClass()
-{
-}
+   ExampleClass::~ExampleClass()
+   {
+   }
  * \endcode
  * \inlibraryapi
  * \ingroup module_utility

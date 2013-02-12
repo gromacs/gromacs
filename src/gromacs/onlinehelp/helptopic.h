@@ -215,22 +215,22 @@ typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
  *
  * Typical use:
  * \code
-struct ExampleHelpText
-{
-    static const char name[];
-    static const char title[];
-    static const char *const text[];
-};
+   struct ExampleHelpText
+   {
+       static const char name[];
+       static const char title[];
+       static const char *const text[];
+   };
 
-const char ExampleHelpText::name[] = "example";
-const char ExampleHelpText::title[] =
-    "Example title";
-const char *const ExampleHelpText::text[] = {
-    "Text for the topic.",
-    "More text for the topic."
-};
+   const char ExampleHelpText::name[] = "example";
+   const char ExampleHelpText::title[] =
+       "Example title";
+   const char *const ExampleHelpText::text[] = {
+       "Text for the topic.",
+       "More text for the topic."
+   };
 
-typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
+   typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
  * \endcode
  *
  * \inlibraryapi

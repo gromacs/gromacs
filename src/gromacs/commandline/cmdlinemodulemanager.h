@@ -58,24 +58,24 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  *
  * Typical usage:
  * \code
-int
-main(int argc, char *argv[])
-{
-    const gmx::ProgramInfo &programInfo =
-        gmx::ProgramInfo::init("gmx", argc, argv);
-    CopyRight(stderr, argv[0]);
-    try
-    {
-        gmx::CommandLineModuleManager manager(programInfo);
-        // <register all necessary modules>
-        return manager.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
-}
+   int
+   main(int argc, char *argv[])
+   {
+       const gmx::ProgramInfo &programInfo =
+           gmx::ProgramInfo::init("gmx", argc, argv);
+       CopyRight(stderr, argv[0]);
+       try
+       {
+           gmx::CommandLineModuleManager manager(programInfo);
+           // <register all necessary modules>
+           return manager.run(argc, argv);
+       }
+       catch (const std::exception &ex)
+       {
+           gmx::printFatalErrorMessage(stderr, ex);
+           return 1;
+       }
+   }
  * \endcode
  *
  * \inpublicapi

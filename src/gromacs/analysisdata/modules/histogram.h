@@ -202,9 +202,9 @@ class AnalysisHistogramSettings
          * This constructor is not explicit to allow initialization of
          * histograms directly from AnalysisHistogramSettingsInitializer:
          * \code
-         gmx::AnalysisDataSimpleHistogramModule *hist =
-            new gmx::AnalysisDataSimpleHistogramModule(
-                histogramFromRange(0.0, 5.0).binWidth(0.5));
+           gmx::AnalysisDataSimpleHistogramModule *hist =
+                   new gmx::AnalysisDataSimpleHistogramModule(
+                           histogramFromRange(0.0, 5.0).binWidth(0.5));
          * \endcode
          */
         AnalysisHistogramSettings(const AnalysisHistogramSettingsInitializer &settings);

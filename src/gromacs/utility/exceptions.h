@@ -339,10 +339,10 @@ class NotImplementedError : public APIError
  *
  * Basic usage:
  * \code
-if (value < 0)
-{
-    GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
-}
+   if (value < 0)
+   {
+       GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
+   }
  * \endcode
  */
 #define GMX_THROW(e) \
@@ -365,11 +365,11 @@ if (value < 0)
  *
  * Typical usage (note that gmx::File wraps this particular case):
  * \code
-FILE *fp = fopen("filename.txt", "r");
-if (fp == NULL)
-{
-    GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
-}
+   FILE *fp = fopen("filename.txt", "r");
+   if (fp == NULL)
+   {
+       GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
+   }
  * \endcode
  */
 #define GMX_THROW_WITH_ERRNO(e, syscall, err) \
@@ -387,20 +387,20 @@ if (fp == NULL)
  *
  * Normal usage in Gromacs command-line programs is like this:
  * \code
-int main(int argc, char *argv[])
-{
-    gmx::ProgramInfo::init(argc, argv);
-    try
-    {
-        // The actual code for the program
-        return 0;
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
-}
+   int main(int argc, char *argv[])
+   {
+       gmx::ProgramInfo::init(argc, argv);
+       try
+       {
+           // The actual code for the program
+           return 0;
+       }
+       catch (const std::exception &ex)
+       {
+           gmx::printFatalErrorMessage(stderr, ex);
+           return 1;
+       }
+   }
  * \endcode
  */
 void printFatalErrorMessage(FILE *fp, const std::exception &ex);
@@ -428,11 +428,11 @@ int translateException(const std::exception &ex);
  *
  * Usage:
  * \code
-try
-{
-    // C++ code
-}
-GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+   try
+   {
+       // C++ code
+   }
+   GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
  * \endcode
  *
  * \inlibraryapi
