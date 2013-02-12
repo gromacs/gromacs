@@ -9,15 +9,15 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>genbox</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-Genbox can do one of 3 things:<p>
-1) Generate a box of solvent. Specify -cs and -box. Or specify -cs and
--cp with a structure file with a box, but without atoms.<p>
-2) Solvate a solute configuration, eg. a protein, in a bath of solvent 
+<tt>genbox</tt> can do one of 3 things:<p>
+1) Generate a box of solvent. Specify <tt>-cs</tt> and <tt>-box</tt>. Or specify <tt>-cs</tt> and
+<tt>-cp</tt> with a structure file with a box, but without atoms.<p>
+2) Solvate a solute configuration, e.g. a protein, in a bath of solvent 
 molecules. Specify <tt>-cp</tt> (solute) and <tt>-cs</tt> (solvent). 
 The box specified in the solute coordinate file (<tt>-cp</tt>) is used,
 unless <tt>-box</tt> is set.
@@ -26,9 +26,9 @@ the program <tt><a href="editconf.html">editconf</a></tt> has sophisticated opti
 to change the box dimensions and center the solute.
 Solvent molecules are removed from the box where the 
 distance between any atom of the solute molecule(s) and any atom of 
-the solvent molecule is less than the sum of the VanderWaals radii of 
-both atoms. A database (<tt>vdwradii.<a href="dat.html">dat</a></tt>) of VanderWaals radii is 
-read by the program, atoms not in the database are 
+the solvent molecule is less than the sum of the van der Waals radii of 
+both atoms. A database (<tt>vdwradii.<a href="dat.html">dat</a></tt>) of van der Waals radii is 
+read by the program, and atoms not in the database are 
 assigned a default distance <tt>-vdwd</tt>.
 Note that this option will also influence the distances between
 solvent molecules if they contain atoms that are not in the database.
@@ -37,11 +37,14 @@ solvent molecules if they contain atoms that are not in the database.
 at random positions.
 The program iterates until <tt>nmol</tt> molecules
 have been inserted in the box. To test whether an insertion is 
-successful the same VanderWaals criterium is used as for removal of 
-solvent molecules. When no appropriately 
-sized holes (holes that can hold an extra molecule) are available the 
+successful the same van der Waals criterium is used as for removal of 
+solvent molecules. When no appropriately-sized 
+holes (holes that can hold an extra molecule) are available, the 
 program tries for <tt>-nmol</tt> * <tt>-try</tt> times before giving up. 
-Increase -try if you have several small holes to fill.<p>
+Increase <tt>-try</tt> if you have several small holes to fill.<p>
+If you need to do more than one of the above operations, it can be
+best to call <tt>genbox</tt> separately for each operation, so that
+you are sure of the order in which the operations occur.<p>
 The default solvent is Simple Point Charge water (SPC), with coordinates 
 from <tt>$GMXLIB/spc216.<a href="gro.html">gro</a></tt>. These coordinates can also be used
 for other 3-site water models, since a short equibilibration will remove
@@ -57,20 +60,21 @@ the coordinate file. This means that these coordinates should be
 equlibrated in periodic boundary conditions to ensure a good
 alignment of molecules on the stacking interfaces.
 The <tt>-maxsol</tt> option simply adds only the first <tt>-maxsol</tt>
-solvent molecules and leaves out the rest would have fit into the box.
-<p>
+solvent molecules and leaves out the rest that would have fitted
+into the box. This can create a void that can cause problems later.
+Choose your volume wisely.<p>
 The program can optionally rotate the solute molecule to align the
 longest molecule axis along a box edge. This way the amount of solvent
 molecules necessary is reduced.
 It should be kept in mind that this only works for
-short simulations, as eg. an alpha-helical peptide in solution can 
+short simulations, as e.g. an alpha-helical peptide in solution can 
 rotate over 90 degrees, within 500 ps. In general it is therefore 
 better to make a more or less cubic box.<p>
-Setting -shell larger than zero will place a layer of water of
+Setting <tt>-shell</tt> larger than zero will place a layer of water of
 the specified thickness (nm) around the solute. Hint: it is a good
-idea to put the protein in the center of a box first (using <a href="editconf.html">editconf</a>).
+idea to put the protein in the center of a box first (using <tt><a href="editconf.html">editconf</a></tt>).
 <p>
-Finally, genbox will optionally remove lines from your topology file in 
+Finally, <tt>genbox</tt> will optionally remove lines from your topology file in 
 which a number of solvent molecules is already added, and adds a 
 line with the total number of solvent molecules in your coordinate file.
 <P>
@@ -87,17 +91,17 @@ line with the total number of solvent molecules in your coordinate file.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> box size </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nmol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> no of extra molecules to insert </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-try</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> try inserting -nmol*-try times </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1997</tt> </TD><TD> random generator seed </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-vdwd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.105 </tt> </TD><TD> default vdwaals distance </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> thickness of optional water layer around solute </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-maxsol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> keep velocities from input solute and solvent </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Box size </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nmol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of extra molecules to insert </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-try</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Try inserting <tt>-nmol</tt> times <tt>-try</tt> times </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1997</tt> </TD><TD> Random generator seed </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-vdwd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.105 </tt> </TD><TD> Default van der Waals distance </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Thickness of optional water layer around solute </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxsol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Keep velocities from input solute and solvent </TD></TD>
 </TABLE>
 <P>
 <H3>Known problems</H3>

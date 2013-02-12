@@ -3,8 +3,6 @@
  *
  * Copyright (c) 2009 Christoph Junghans, Brad Lambeth.
  * Copyright (c) 2011 Christoph Junghans, Sebastian Fritsch
- * Copyright (c) 2012, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -510,9 +508,9 @@ gmx_nb_generic_adress_kernel(t_nblist *                nlist,
         velecgrp[ggid]  += vctot;
         vvdwgrp[ggid]   += vvdwtot;
     }
-    /* Estimate flops, average for generic kernel:
-     * 12 flops per outer iteration
-     * 50 flops per inner iteration
+    /* Estimate flops, average for generic adress kernel:
+     * 14 flops per outer iteration
+     * 54 flops per inner iteration
      */
-    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC, nlist->nri*12 + nlist->jindex[n]*50);
+    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC_ADRESS, nlist->nri*14 + nlist->jindex[n]*54);
 }

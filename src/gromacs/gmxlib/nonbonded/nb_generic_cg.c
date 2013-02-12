@@ -327,5 +327,5 @@ gmx_nb_generic_cg_kernel(t_nblist *                nlist,
      * 12  flops per outer iteration
      * 100 flops per inner iteration
      */
-    inc_nrnb(nrnb, eNR_NBKERNEL_FREE_ENERGY, nlist->nri*12 + nlist->jindex[n]*100);
+    inc_nrnb(nrnb, eNR_NBKERNEL_GENERIC_CG, nlist->nri*12 + nlist->jindex[n]*100);
 }

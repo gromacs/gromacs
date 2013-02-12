@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <cuda.h>
+
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
@@ -858,6 +860,17 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
         cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
     }
+
+    sfree(atdat);
+    sfree(nbparam);
+    sfree(plist);
+    if (cu_nb->bUseTwoStreams)
+    {
+        sfree(plist_nl);
+    }
+    sfree(timers);
+    sfree(cu_nb->timings);
+    sfree(cu_nb);
 
     if (debug)
     {
