@@ -2154,6 +2154,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, runtime,
                                fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
+            if (!(cr->duty & DUTY_PME))
+            {
+                /* Tell our PME node to reset its counters */
+                gmx_pme_send_resetcounters(cr, step);
+            }
             /* Correct max_hours for the elapsed time */
             max_hours                -= run_time/(60.0*60.0);
             bResetCountersHalfMaxH    = FALSE;
