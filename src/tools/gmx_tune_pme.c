@@ -600,7 +600,10 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
     const char def_mpirun[]   = "mpirun";
     const char def_mdrun[]    = "mdrun";
     const char filename[]     = "benchtest.log";
-    const char match_mpi[]    = "NNODES=";
+
+    /* This string should always be identical to the one in copyrite.c,
+     * gmx_print_version_info() in the defined(GMX_MPI) section */
+    const char match_mpi[]    = "MPI library:        MPI";
     const char match_mdrun[]  = "Program: ";
     const char empty_mpirun[] = "";
     gmx_bool   bMdrun         = FALSE;
