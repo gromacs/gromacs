@@ -1386,12 +1386,16 @@ static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
 
     snew(fr->atf_tabs, ir->adress->n_tf_grps);
 
+    sprintf(buf, "%s", tabfn);
     for (i = 0; i < ir->adress->n_tf_grps; i++)
     {
         j = ir->adress->tf_table_index[i]; /* get energy group index */
         sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1, "tf_%s.%s",
                 *(mtop->groups.grpname[mtop->groups.grps[egcENER].nm_ind[j]]), ftp2ext(efXVG));
-        printf("loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[j], buf);
+        if(fp)
+        {
+           fprintf(fp,"loading tf table for energygrp index %d from %s\n", ir->adress->tf_table_index[i], buf);
+        }
         fr->atf_tabs[i] = make_atf_table(fp, oenv, fr, buf, box);
     }
 
