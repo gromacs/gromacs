@@ -9,12 +9,12 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>gmxcheck</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-gmxcheck reads a trajectory (<tt>.<a href="trj.html">trj</a></tt>, <tt>.<a href="trr.html">trr</a></tt> or 
+<tt>gmxcheck</tt> reads a trajectory (<tt>.<a href="trj.html">trj</a></tt>, <tt>.<a href="trr.html">trr</a></tt> or 
 <tt>.<a href="xtc.html">xtc</a></tt>), an energy file (<tt>.<a href="ene.html">ene</a></tt> or <tt>.<a href="edr.html">edr</a></tt>)
 or an index file (<tt>.<a href="ndx.html">ndx</a></tt>)
 and prints out useful information about them.<p>
@@ -26,11 +26,11 @@ radii) and atoms outside the box (these may occur often and are
 no problem). If velocities are present, an estimated temperature
 will be calculated from them.<p>
 If an index file, is given its contents will be summarized.<p>
-If both a trajectory and a <a href="tpr.html">tpr</a> file are given (with <tt>-s1</tt>)
+If both a trajectory and a <tt>.<a href="tpr.html">tpr</a></tt> file are given (with <tt>-s1</tt>)
 the program will check whether the bond lengths defined in the <a href="tpr.html">tpr</a>
 file are indeed correct in the trajectory. If not you may have
 non-matching files due to e.g. deshuffling or due to problems with
-virtual sites. With these flags, gmxcheck provides a quick check for such problems.<p>
+virtual sites. With these flags, <tt>gmxcheck</tt> provides a quick check for such problems.<p>
 The program can compare two run input (<tt>.<a href="tpr.html">tpr</a></tt>, <tt>.<a href="tpb.html">tpb</a></tt> or
 <tt>.<a href="tpa.html">tpa</a></tt>) files
 when both <tt>-s1</tt> and <tt>-s2</tt> are supplied.
@@ -58,16 +58,16 @@ consisting of a rough outline for a methods section for a paper.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-vdwfac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.8   </tt> </TD><TD> Fraction of sum of VdW radii used as warning cutoff </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bonlo</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.4   </tt> </TD><TD> Min. fract. of sum of VdW radii for bonded atoms </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bonhi</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.7   </tt> </TD><TD> Max. fract. of sum of VdW radii for bonded atoms </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmsd</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print RMSD for x, v and f </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmsd</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print RMSD for x, v and f </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-abstol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Absolute tolerance, useful when sums are close to zero. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ab</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compare the A and B topology from one file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ab</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compare the A and B topology from one file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-lastener</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure. </TD></TD>
 </TABLE>
 <P>

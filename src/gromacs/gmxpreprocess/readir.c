@@ -1071,7 +1071,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         ir->vdwtype == evdwSWITCH || ir->vdwtype == evdwSHIFT)
     {
         sprintf(warn_buf,
-                "The switch/shift interaction settings are just for compatibility; you will get better"
+                "The switch/shift interaction settings are just for compatibility; you will get better "
                 "performance from applying potential modifiers to your interactions!\n");
         warning_note(wi, warn_buf);
     }
