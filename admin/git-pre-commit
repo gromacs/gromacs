@@ -1,0 +1,43 @@
+#!/bin/bash
+
+if git rev-parse --verify HEAD >/dev/null 2>&1
+then
+	against=HEAD
+else
+	# Initial commit: diff against an empty tree object
+	against=4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+# Redirect output to stderr.
+exec 1>&2
+
+uncrustify_mode=`git config hooks.uncrustifymode`
+
+if [ -f admin/uncrustify.sh ] && \
+   [ ! -z "$uncrustify_mode" ] && [ "$uncrustify_mode" != "off" ]
+then
+    uncrustify_path=`git config hooks.uncrustifypath`
+    if [ -z "$uncrustify_path" ]
+    then
+        echo "Please set the path to uncrustify using 'git config hooks.uncrustifypath'."
+        echo "Note that you need a custom version of uncrustify."
+        exit 1
+    fi
+    export UNCRUSTIFY="$uncrustify_path"
+    case "$uncrustify_mode" in
+        check)
+            admin/uncrustify.sh check-index --rev=$against
+            stat=$?
+            if [ $stat -eq 1 ] ; then
+                exit 1
+            elif [ $stat -ne 0 ] ; then
+                echo "Source code formatting check failed"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Unknown uncrustify mode: $uncrustify_mode"
+            exit 1
+            ;;
+    esac
+fi
