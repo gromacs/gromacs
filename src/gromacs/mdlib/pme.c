@@ -4105,14 +4105,19 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 
 
 static void reset_pmeonly_counters(t_commrec *cr, gmx_wallcycle_t wcycle,
-                                   t_nrnb *nrnb, t_inputrec *ir, gmx_large_int_t step_rel)
+                                   t_nrnb *nrnb, t_inputrec *ir,
+                                   gmx_large_int_t step)
 {
     /* Reset all the counters related to performance over the run */
     wallcycle_stop(wcycle, ewcRUN);
     wallcycle_reset_all(wcycle);
     init_nrnb(nrnb);
-    ir->init_step += step_rel;
-    ir->nsteps    -= step_rel;
+    if (ir->nsteps >= 0)
+    {
+        /* ir->nsteps is not used here, but we update it for consistency */
+        ir->nsteps -= step - ir->init_step;
+    }
+    ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
 }
 
@@ -4160,6 +4165,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     int npmedata;
     gmx_pme_t *pmedata;
     gmx_pme_pp_t pme_pp;
+    int  ret;
     int  natoms;
     matrix box;
     rvec *x_pp      = NULL, *f_pp = NULL;
@@ -4190,23 +4196,30 @@ int gmx_pmeonly(gmx_pme_t pme,
         do
         {
             /* Domain decomposition */
-            natoms = gmx_pme_recv_q_x(pme_pp,
-                                      &chargeA, &chargeB, box, &x_pp, &f_pp,
-                                      &maxshift_x, &maxshift_y,
-                                      &pme->bFEP, &lambda,
-                                      &bEnerVir,
-                                      &step,
-                                      grid_switch, &ewaldcoeff);
+            ret = gmx_pme_recv_q_x(pme_pp,
+                                   &natoms,
+                                   &chargeA, &chargeB, box, &x_pp, &f_pp,
+                                   &maxshift_x, &maxshift_y,
+                                   &pme->bFEP, &lambda,
+                                   &bEnerVir,
+                                   &step,
+                                   grid_switch, &ewaldcoeff);
 
-            if (natoms == -2)
+            if (ret == pmerecvqxSWITCHGRID)
             {
                 /* Switch the PME grid to grid_switch */
                 gmx_pmeonly_switch(&npmedata, &pmedata, grid_switch, cr, ir, &pme);
             }
-        }
-        while (natoms == -2);
 
-        if (natoms == -1)
+            if (ret == pmerecvqxRESETCOUNTERS)
+            {
+                /* Reset the cycle and flop counters */
+                reset_pmeonly_counters(cr, wcycle, nrnb, ir, step);
+            }
+        }
+        while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
+
+        if (ret == pmerecvqxFINISH)
         {
             /* We should stop: break out of the loop */
             break;
@@ -4235,14 +4248,6 @@ int gmx_pmeonly(gmx_pme_t pme,
                                     cycles);
 
         count++;
-
-        if (step_rel == wcycle_get_reset_counters(wcycle))
-        {
-            /* Reset all the counters related to performance over the run */
-            reset_pmeonly_counters(cr, wcycle, nrnb, ir, step_rel);
-            wcycle_set_reset_counters(wcycle, 0);
-        }
-
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
