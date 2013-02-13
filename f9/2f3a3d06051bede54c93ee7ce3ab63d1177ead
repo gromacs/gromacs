@@ -1,0 +1,9 @@
+Code-Review+2: Roland Schulz <roland@rschulz.eu>
+Code-Review+1: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Berk Hess <hess@kth.se>
+Verified+1: Jenkins Buildbot
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Wed, 13 Feb 2013 22:24:19 +0100
+Reviewed-on: https://gerrit.gromacs.org/2154
+Project: gromacs
+Branch: refs/heads/release-4-6
