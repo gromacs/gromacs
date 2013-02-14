@@ -1356,7 +1356,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
             /* Sort the atoms along y */
             sort_atoms(YY, (sub_z & 1),
                        nbs->a+ash_z, na_z, x,
-                       grid->c0[YY]+cy*grid->sy, grid->inv_sy,
+                       grid->c0[YY]+cy*grid->sy,
+                       subdiv_y*SORT_GRID_OVERSIZE*grid->inv_sy,
                        subdiv_y*SGSF, sort_work);
 #endif
 
@@ -1369,7 +1370,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 /* Sort the atoms along x */
                 sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1),
                            nbs->a+ash_y, na_y, x,
-                           grid->c0[XX]+cx*grid->sx, grid->inv_sx,
+                           grid->c0[XX]+cx*grid->sx,
+                           subdiv_x*SORT_GRID_OVERSIZE*grid->inv_sx,
                            subdiv_x*SGSF, sort_work);
 #endif
 
