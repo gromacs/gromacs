@@ -295,14 +295,14 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     real     gs_buf[eglsNR];
     tensor   corr_vir, corr_pres;
     gmx_bool bEner, bPres, bTemp, bVV;
-    gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
-             bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
+    gmx_bool bRerunMD, bStopCM, bGStat,
+             bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
     real     ekin, temp, prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
-    bRerunMD = flags & CGLO_RERUNMD;
-    bStopCM  = flags & CGLO_STOPCM;
-    bGStat   = flags & CGLO_GSTAT;
+    bRerunMD      = flags & CGLO_RERUNMD;
+    bStopCM       = flags & CGLO_STOPCM;
+    bGStat        = flags & CGLO_GSTAT;
 
     bReadEkin     = (flags & CGLO_READEKIN);
     bScaleEkin    = (flags & CGLO_SCALEEKIN);
@@ -310,8 +310,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     bTemp         = flags & CGLO_TEMPERATURE;
     bPres         = (flags & CGLO_PRESSURE);
     bConstrain    = (flags & CGLO_CONSTRAINT);
-    bIterate      = (flags & CGLO_ITERATE);
-    bFirstIterate = (flags & CGLO_FIRSTITERATE);
 
     /* we calculate a full state kinetic energy either with full-step velocity verlet
        or half step where we need the pressure */
@@ -340,8 +338,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
         }
         else
         {
-
-            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel, bIterate);
+            calc_ke_part(state, &(ir->opts), mdatoms, ekind, nrnb, bEkinAveVel);
         }
 
         debug_gmx();
@@ -449,8 +446,6 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            Leap with AveVel is not supported; it's not clear that it will actually work.
            bEkinAveVel: If TRUE, we simply multiply ekin by ekinscale to get a full step kinetic energy.
            If FALSE, we average ekinh_old and ekinh*ekinscale_nhc to get an averaged half step kinetic energy.
-           bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
-           If FALSE, we go ahead and erase over it.
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bScaleEkin);
@@ -467,7 +462,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                       corr_pres, corr_vir, &prescorr, &enercorr, &dvdlcorr);
     }
 
-    if (bEner && bFirstIterate)
+    if (bEner)
     {
         enerd->term[F_DISPCORR]  = enercorr;
         enerd->term[F_EPOT]     += enercorr;

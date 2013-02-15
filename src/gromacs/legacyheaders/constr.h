@@ -85,8 +85,7 @@ gmx_bool bshakef(FILE           *log,          /* Log file			*/
                  gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
                  tensor          vir_r_m_dr,   /* sum r x m delta_r            */
                  gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
-                 int             econq,        /* which type of constrainint is occurring */
-                 t_vetavars     *vetavar);     /* veta for pressure control */
+                 int             econq);       /* which type of constrainint is occurring */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0
@@ -110,8 +109,7 @@ void csettle(gmx_settledata_t    settled,
              real               *v,                /* Also constrain v if v!=NULL  */
              int                 calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
              tensor              vir_r_m_dr,       /* sum r x m delta_r            */
-             int                *xerror,
-             t_vetavars         *vetavar           /* variables for pressure control */
+             int                *xerror
              );
 
 void settle_proj(gmx_settledata_t settled, int econq,
@@ -119,8 +117,7 @@ void settle_proj(gmx_settledata_t settled, int econq,
                  const struct t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],
                  rvec *der, rvec *derp,
-                 int CalcVirAtomEnd, tensor vir_r_m_dder,
-                 t_vetavars *vetavar);
+                 int CalcVirAtomEnd, tensor vir_r_m_dder);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
@@ -132,13 +129,12 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
 
 void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
              real dist2[], real vp[], real rij[], real m2[], real omega,
-             real invmass[], real tt[], real lagr[], int *nerror, real invdt, t_vetavars *vetavar);
+             real invmass[], real tt[], real lagr[], int *nerror, real invdt);
 
 gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_constr_t constr,
                    t_idef *idef,
                    t_inputrec *ir,
-                   gmx_ekindata_t *ekind,
                    t_commrec *cr,
                    gmx_int64_t step, int delta_step,
                    real step_scaling,
@@ -147,7 +143,7 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq, gmx_bool bPscal, real veta, real vetanew);
+                   t_nrnb *nrnb, int econq);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -174,11 +170,6 @@ gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
  * If vir!=NULL calculate the constraint virial.
- *
- * if veta != NULL, constraints are done assuming isotropic pressure control
- * (i.e. constraining rdot.r = (v + veta*r).r = 0 instead of v
- *
- * Init_constraints must have be called once, before calling constrain.
  *
  * Return TRUE if OK, FALSE in case of shake error
  *
