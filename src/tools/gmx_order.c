@@ -402,8 +402,8 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
         size = 0,                                /* nr. of atoms in group. same as nr_tails        */
         i, j, m, k, l, teller = 0,
         slice,                                   /* current slice number                           */
-        nr_frames = 0,
-        *slCount;                                /* nr. of atoms in one slice                      */
+        nr_frames = 0;
+    int         *slCount;                        /* nr. of atoms in one slice                      */
     real         dbangle                = 0,     /* angle between double bond and  axis            */
                  sdbangle               = 0;     /* sum of these angles                            */
     gmx_bool     use_unitvector         = FALSE; /* use a specified unit vector instead of axis to specify unit normal*/
@@ -535,7 +535,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
             svmul(1.0/distsize, dref, dref);
             if (radial)
             {
-                pbc_dx(&pbc, dref, com, dvec);                
+                pbc_dx(&pbc, dref, com, dvec);
                 unitv(dvec, dvec);
             }
         }
@@ -667,22 +667,22 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
                     if (radial)
                     {
                         /* bin order parameter by arc distance from reference group*/
-                        arcdist = gmx_angle(dvec,direction);
+                        arcdist            = gmx_angle(dvec, direction);
                         (*distvals)[j][i] += arcdist;
                     }
                     else if (i == 1)
                     {
                         /* Want minimum lateral distance to first group calculated */
                         tmpdist = trace(box);  /* should be max value */
-                        for (k=0;k<distsize;k++)
+                        for (k = 0; k < distsize; k++)
                         {
                             pbc_dx(&pbc, x1[distidx[k]], x1[a[index[i]+j]], dvec);
                             /* at the moment, just remove dvec[axis] */
                             dvec[axis] = 0;
-                            tmpdist = min(tmpdist, norm2(dvec));
+                            tmpdist    = min(tmpdist, norm2(dvec));
                         }
-                    //fprintf(stderr, "Min dist %f; trace %f\n", tmpdist, trace(box));
-                    (*distvals)[j][i]+=sqrt(tmpdist);
+                        //fprintf(stderr, "Min dist %f; trace %f\n", tmpdist, trace(box));
+                        (*distvals)[j][i] += sqrt(tmpdist);
                     }
                 }
             } /* end loop j, over all atoms in group */

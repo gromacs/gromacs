@@ -842,7 +842,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         }
         if (iMu[XX] < 0 || iMu[YY] < 0 || iMu[ZZ] < 0)
         {
-            gmx_fatal(FARGS,"No index for Mu-X, Mu-Y or Mu-Z energy group.");
+            gmx_fatal(FARGS, "No index for Mu-X, Mu-Y or Mu-Z energy group.");
         }
     }
     else
