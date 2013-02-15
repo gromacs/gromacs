@@ -436,7 +436,7 @@ void init_em(FILE *fplog, const char *title,
                       ir, NULL, cr, -1, 0, mdatoms,
                       ems->s.x, ems->s.x, NULL, fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdl_constr,
-                      NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                      NULL, NULL, nrnb, econqCoord);
         }
     }
 
@@ -653,7 +653,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                   ir, NULL, cr, count, 0, md,
                   s1->x, s2->x, NULL, bMolPBC, s2->box,
                   s2->lambda[efptBONDED], &dvdl_constr,
-                  NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                  NULL, NULL, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
     }
 }
@@ -768,8 +768,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                     top_global, &ems->s, FALSE,
                     CGLO_ENERGY |
                     CGLO_PRESSURE |
-                    CGLO_CONSTRAINT |
-                    CGLO_FIRSTITERATE);
+                    CGLO_CONSTRAINT);
 
         wallcycle_stop(wcycle, ewcMoveE);
     }
@@ -793,7 +792,7 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
                   inputrec, NULL, cr, count, 0, mdatoms,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdl_constr,
-                  NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);
+                  NULL, &shake_vir, nrnb, econqForceDispl);
         if (fr->bSepDVDL && fplog)
         {
             gmx_print_sepdvdl(fplog, "Constraints", t, dvdl_constr);
