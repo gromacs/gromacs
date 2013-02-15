@@ -809,6 +809,9 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     vol_aver = 0.0;
 
     iVol = -1;
+
+    /* initialize to a negative value so we can see that it wasn't picked up */
+    iMu[XX] = iMu[YY] = iMu[ZZ] = -1;
     if (bMU)
     {
         fmu = open_enx(mufn, "r");
@@ -834,13 +837,16 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                 iMu[ZZ] = i;
             }
         }
+        if (iMu[XX] < 0 || iMu[YY] < 0 || iMu[ZZ] < 0)
+        {
+            gmx_fatal(FARGS,"No index for Mu-X, Mu-Y or Mu-Z energy group.");
+        }
     }
     else
     {
         atom = top->atoms.atom;
         mols = &(top->mols);
     }
-
     if ((iVol == -1) && bMU)
     {
         printf("Using Volume from topology: %g nm^3\n", volume);
