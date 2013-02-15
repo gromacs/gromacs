@@ -1,3 +1,37 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
 /* Manually created from config.h.in to work with cmake */
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
@@ -10,6 +44,8 @@
 #pragma warning (disable : 4090)
 #endif
 
+#include "gmx_header_config.h"
+
 /* Name of package (translate from cmake to autoconf macro name) */
 #define PACKAGE  "@PROJECT_NAME@"
 
@@ -20,55 +56,18 @@
 #cmakedefine USE_VERSION_H
 
 /* Default location of data files */
-#cmakedefine GMXLIBDIR "@GMXLIBDIR@"
+#define GMXLIBDIR "@GMXLIBDIR@"
 
-/* Hardware and OS version for build host */
-#cmakedefine BUILD_MACHINE "@BUILD_MACHINE@"
-
-/* Date and time for build */
-#cmakedefine BUILD_TIME "@BUILD_TIME@"
-
-/* User doing build */
-#cmakedefine BUILD_USER "@BUILD_USER@"
-
-/* Turn off water-water neighborlist optimization only */
+/* Turn off water-water neighborlist optimization only - not used right now */
 #cmakedefine DISABLE_WATERWATER_NLIST
 
-/* Turn off all water neighborlist optimization */
+/* Turn off all water neighborlist optimization - not used right now */
 #cmakedefine DISABLE_WATER_NLIST
-
-/* Fortran support */
-#cmakedefine GMX_FORTRAN
-
-/* Define to a macro mangling the given C identifier (in lower and upper
-   case), which must not contain underscores, for linking with Fortran. */
-#define F77_FUNC(name,NAME)     @F77_FUNCDEF@
-
-/* As F77_FUNC, but for C identifiers containing underscores. */
-#define F77_FUNC_(name,NAME)    @F77_FUNCDEF_@
-
-/* Use the d prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_DFFTW
-
-/* Dont use any prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_FFTW
-
-/* Use the s prefix on fftw2 includes */
-#cmakedefine FFTW2_NAME_SFFTW
 
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
-
-/* Detect Cygwin */
-#cmakedefine GMX_CYGWIN
-
-/* Use assembly intrinsics kernels for BlueGene */
-#cmakedefine GMX_BLUEGENE
-
-/* Power6 acceleration */
-#cmakedefine GMX_POWER6
 
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
@@ -85,9 +84,6 @@
 /* Use Built-in FFTPACK FFT library */
 #cmakedefine GMX_FFT_FFTPACK
 
-/* Use FFTW2 FFT library */
-#cmakedefine GMX_FFT_FFTW2
-
 /* Use FFTW3 FFT library */
 #cmakedefine GMX_FFT_FFTW3
 
@@ -97,14 +93,38 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
-/* Single-precision SSE instructions on ia32 */
-#cmakedefine GMX_IA32_SSE
+/* SSE2 instructions available */
+#cmakedefine GMX_X86_SSE2
 
-/* Double-precision SSE2 instructions on ia32 */
-#cmakedefine GMX_IA32_SSE2
+/* SSE4.1 instructions available */
+#cmakedefine GMX_X86_SSE4_1
 
-/* Use ia64 assembly tuned for Itanium2 */
-#cmakedefine GMX_IA64_ASM
+/* AVX 128-bit FMA instructions available */
+#cmakedefine GMX_X86_AVX_128_FMA
+
+/* AVX 256-bit instructions available */
+#cmakedefine GMX_X86_AVX_256
+
+/* GCC bug in AVX maskload/maskstore arguments - worked around internally */
+#cmakedefine GMX_X86_AVX_GCC_MASKLOAD_BUG
+
+/* SSE2 was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
+
+/* SSE4.1 was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_SSE4_1
+
+/* AVX 128-bit FMA was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_128_FMA
+
+/* AVX 256-bit was selected as CPU acceleration level */
+#cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+
+/* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
+#cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
+
+/* String for CPU acceleration choice (for writing to log files and stdout) */
+#define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
 /* Integer byte order is big endian. */
 #cmakedefine GMX_INTEGER_BIG_ENDIAN 
@@ -122,20 +142,17 @@
    (MPI or thread_mpi) */
 #cmakedefine GMX_MPI
 
-/* Use threads for parallelization */
-#cmakedefine GMX_THREADS
+/* Use threads_mpi for parallelization */
+#cmakedefine GMX_THREAD_MPI
 
-/* Use old threading (domain decomp force calc) code */
-#cmakedefine GMX_THREAD_SHM_FDECOMP 
+/* Use OpenMP multithreading */
+#cmakedefine GMX_OPENMP
 
 /* Ignore calls to nice(3) */
 #cmakedefine GMX_NO_NICE
 
 /* Ignore calls to system(3) */
 #cmakedefine GMX_NO_SYSTEM
-
-/* Use PowerPC Altivec inner loops */
-#cmakedefine GMX_PPC_ALTIVEC
 
 /* Use (modified) Gamess-UK for QM-MM calculations */
 #cmakedefine GMX_QMMM_GAMESS
@@ -149,17 +166,23 @@
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
-/* Use the PowerPC hardware 1/sqrt(x) */
-#cmakedefine GMX_POWERPC_INVSQRT
+/* Use sub-counters */
+#cmakedefine GMX_CYCLE_SUBCOUNTERS
 
-/* Compile with dlopen */
-#cmakedefine GMX_DLOPEN
+/* Compile with plugin support */
+#cmakedefine GMX_USE_PLUGINS
+
+/* Fallback path for VMD plug-ins */
+#define GMX_VMD_PLUGIN_PATH "@GMX_VMD_PLUGIN_PATH@"
 
 /* Define when pthreads are used */
 #cmakedefine THREAD_PTHREADS
 
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
+
+/* Define when thread-MPI atomic operations are available */
+#cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
 #cmakedefine TMPI_WAIT_FOR_NO_ONE
@@ -182,32 +205,11 @@
 /* Define for GetSystemInfo() */
 #cmakedefine HAVE_SYSTEM_INFO
 
-/* Single-precision SSE instructions on X86_64 */
-#cmakedefine GMX_X86_64_SSE
-
-/* Double-precision SSE2 instructions on X86_64 */
-#cmakedefine GMX_X86_64_SSE2
-
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
 
-/* Enable x86 MSVC inline assembly */
-#cmakedefine GMX_X86_MSVC_INLINE_ASM
-
-/* Support for SSE intrinsics */
-#cmakedefine GMX_SSE
-
-/* Support for SSE2 intrinsics */
-#cmakedefine GMX_SSE2
-
-/* Support for SSE3 intrinsics */
-#cmakedefine GMX_SSE3
-
-/* Support for SSE4.1 intrinsics */
-#cmakedefine GMX_SSE4_1
-
-/* Define to 1 if you have the <altivec.h> header file. */
-#cmakedefine HAVE_ALTIVEC_H
+/* Use GPU native acceleration */
+#cmakedefine GMX_GPU
 
 /* Define to 1 if the system has the type gmx_bool. */
 #cmakedefine HAVE_BOOL
@@ -226,9 +228,6 @@
 
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
-
-/* Define to 1 if you have the xml2 library (-lxml2). */
-#cmakedefine HAVE_LIBXML2
 
 /* Define to 1 if you have the dl library (-ldl). */
 #cmakedefine HAVE_LIBDL
@@ -290,6 +289,18 @@
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
 
+/* Define to 1 if you have the sigaction() function. */
+#cmakedefine HAVE_SIGACTION
+
+/* Define to 1 if you have the rsqrt() function. */
+#cmakedefine HAVE_RSQRT
+
+/* Define to 1 if you have the rsqrtf() function. */
+#cmakedefine HAVE_RSQRTF
+
+/* Define to 1 if you have the sqrtf() function. */
+#cmakedefine HAVE_SQRTF
+
 /* Define to 1 if you have the <string.h> header file. */
 #cmakedefine HAVE_STRING_H
 
@@ -344,23 +355,26 @@
 /* Define to 1 if you have the <rpc/xdr.h> header file. */
 #cmakedefine HAVE_RPC_XDR_H
 
-/* Define to 1 if yo have the <xmmintrin.h> header file. */
-#cmakedefine HAVE_XMMINTRIN_H
+/* Define to 1 if you have the <x86intrin.h> header file */
+#cmakedefine HAVE_X86INTRIN_H
 
-/* Define to 1 if yo have the <emmintrin.h> header file. */
-#cmakedefine HAVE_EMMINTRIN_H
+/* Define to 1 if you have the <intrin.h> header file */
+#cmakedefine HAVE_INTRIN_H
 
-/* Define to 1 if yo have the <pmmintrin.h> header file. */
-#cmakedefine HAVE_PMMINTRIN_H
-
-/* Define to 1 if yo have the <smmintrin.h> header file. */
-#cmakedefine HAVE_SMMINTRIN_H
-
-/* Define for sched.h (this is for thread_mpi)*/
-#define HAVE_SCHED_H
+/* Define to 1 if you have the <sched.h> header */
+#cmakedefine HAVE_SCHED_H
 
 /* Define to 1 if you have the vprintf() function. */
 #cmakedefine HAVE_VPRINTF
+
+/* Define to 1 if you have the sysconf() function */
+#cmakedefine HAVE_SYSCONF
+
+/* Define to 1 if you have the sched_getaffinity() function */
+#cmakedefine HAVE_SCHED_GETAFFINITY
+
+/* Define to 1 if you have the sched_setaffinity() function */
+#cmakedefine HAVE_SCHED_SETAFFINITY
 
 /* Bytes in IEEE fp word are in big-endian order if set, little-endian if not.
    Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
@@ -370,9 +384,6 @@
    set, little-endian if not. Do NOT assume this is the same as the byte
    order! Only relevant when FLOAT_FORMAT_IEEE754 is defined. */
 #cmakedefine GMX_IEEE754_BIG_ENDIAN_WORD_ORDER
-
-/* Define as the return type of signal handlers (int or void). */
-#cmakedefine RETSIGTYPE @RETSIGTYPE@
 
 /* Define if SIGUSR1 is present */
 #cmakedefine HAVE_SIGUSR1
@@ -408,14 +419,23 @@
 #cmakedefine gid_t int
 
 /* Define to __inline__ or __inline if that is what the C compiler
-   calls it, or to nothing if inline is not supported under any name.  */
+   calls it, or to nothing if inline is not supported under any name.
+   Please do NOT remove the gmx_inline keyword from here. The classical
+   C++ inline keyword is merely a recommendation to the compiler, and
+   many compilers support stronger alternatives (e.g. __forceinline)
+   that we might want to use. */
+#define gmx_inline ${INLINE_KEYWORD}
 #ifndef __cplusplus
 #define inline ${INLINE_KEYWORD}
 #endif
 
 /* Define to __restrict__ or __restrict if that is what the C compiler
-   calls it, or to nothing if restrict is not supported under any name.  */
-#define restrict ${RESTRICT_KEYWORD}
+   calls it, unless we are on C99 when it is simply called restrict.
+   Since restrict is a reserved key word in C99 we are not allowed to
+   redefine the word itself, so call this gmx_restrict to avoid having
+   to identify the language standard level. If it is not supported, it
+   is still defined to an empty string here. */
+#define gmx_restrict ${RESTRICT_KEYWORD}
 
 #ifndef CPLUSPLUS
 #ifdef __cplusplus
@@ -424,22 +444,28 @@
 #endif  
 
 /* Define to long int if <sys/types.h> does not define. */                    
-#cmakedefine off_t int                                                                
-                                                                                
+#cmakedefine off_t int
+
 /* Define to unsigned int if <sys/types.h> does not define. */
-#cmakedefine size_t int                                                                
+#cmakedefine size_t int
 
 /* Define to int if <sys/types.h> does not define. */
 #cmakedefine uid_t int
-                                                                
+
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
+
+/* Enable gromacs quotes */
+#cmakedefine GMX_COOL_QUOTES
 
 #ifdef GMX_FAHCORE
 #define FULLINDIRECT 1
 #define USE_FAH_XDR  1
 #include "swindirect.h"
 #endif
+
+/* default name mangling maybe wrong on exotic plattforms */
+#define F77_FUNC(name,NAME) name ## _
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES

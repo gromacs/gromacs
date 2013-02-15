@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Selection compilation and optimization.
@@ -266,6 +273,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <vec.h>
+#include <assert.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -307,7 +315,7 @@ enum
     /** Whether subexpressions use simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
     /** Whether this expressions is a part of a common subexpression. */
-    SEL_CDATA_COMMONSUBEXPR = 64 
+    SEL_CDATA_COMMONSUBEXPR = 64
 };
 
 /*! \internal \brief
@@ -517,7 +525,7 @@ alloc_selection_pos_data(t_selelem *sel)
         child = sel->child->child;
     }
     nalloc = child->v.u.p->nr;
-    isize = child->v.u.p->m.b.nra;
+    isize  = child->v.u.p->m.b.nra;
 
     /* For positions, we want to allocate just a single structure
      * for nalloc positions. */
@@ -576,10 +584,10 @@ reverse_selelem_chain(t_selelem *root)
     item = root;
     while (item)
     {
-        next = item->next;
+        next       = item->next;
         item->next = prev;
-        prev = item;
-        item = next;
+        prev       = item;
+        item       = next;
     }
     return prev;
 }
@@ -678,7 +686,7 @@ extract_item_subselections(t_selelem *sel, int *subexprn)
     t_selelem *subexpr;
     t_selelem *child;
 
-    root = subexpr = NULL;
+    root  = subexpr = NULL;
     child = sel->child;
     while (child)
     {
@@ -741,7 +749,7 @@ extract_item_subselections(t_selelem *sel, int *subexprn)
 
 /*! \brief
  * Extracts subexpressions of the selection chain.
- * 
+ *
  * \param   sel First selection in the whole selection chain.
  * \returns The new first element for the chain.
  *
@@ -759,8 +767,8 @@ extract_subexpressions(t_selelem *sel)
     int          subexprn;
 
     subexprn = 0;
-    root = NULL;
-    next = sel;
+    root     = NULL;
+    next     = sel;
     while (next)
     {
         item = extract_item_subselections(next, &subexprn);
@@ -784,7 +792,7 @@ extract_subexpressions(t_selelem *sel)
         {
             root = next;
         }
-        sel = next;
+        sel  = next;
         next = next->next;
     }
     return root;
@@ -873,7 +881,7 @@ optimize_gmx_boolean_expressions(t_selelem *sel)
         }
         else
         {
-            prev = child;
+            prev  = child;
             child = child->next;
         }
     }
@@ -910,8 +918,8 @@ reorder_gmx_boolean_static_children(t_selelem *sel)
         t_selelem  start;
 
         start.next = sel->child;
-        prev  = &start;
-        child = &start;
+        prev       = &start;
+        child      = &start;
         while (child->next)
         {
             /* child is the last handled static expression */
@@ -962,7 +970,7 @@ reorder_gmx_boolean_static_children(t_selelem *sel)
 static gmx_bool
 optimize_arithmetic_expressions(t_selelem *sel)
 {
-    t_selelem  *child;
+    t_selelem      *child;
     gmx_bool        bOk;
 
     /* Do recursively for children. */
@@ -1001,7 +1009,7 @@ optimize_arithmetic_expressions(t_selelem *sel)
             snew(r, 1);
             r[0] = child->v.u.i[0];
             sfree(child->v.u.i);
-            child->v.u.r = r;
+            child->v.u.r  = r;
             child->v.type = REAL_VALUE;
         }
         else if (child->v.type != REAL_VALUE)
@@ -1155,6 +1163,9 @@ setup_memory_pooling(t_selelem *sel, gmx_sel_mempool_t *mempool)
 static void
 init_item_evaloutput(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1179,10 +1190,10 @@ init_item_evaloutput(t_selelem *sel)
     else if (sel->type == SEL_SUBEXPR
              && (sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
+        sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
         sel->cdata->evaluate = sel->evaluate;
-        sel->child->mempool = NULL;
-        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->child->mempool  = NULL;
+        sel->flags          &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
         {
             _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
@@ -1285,7 +1296,7 @@ init_item_compilerdata(t_selelem *sel)
         gmx_bool  bEvalMax;
 
         bEvalMax = (sel->u.boolt == BOOL_AND);
-        child = sel->child;
+        child    = sel->child;
         while (child)
         {
             if (bEvalMax)
@@ -1306,7 +1317,7 @@ init_item_compilerdata(t_selelem *sel)
         while (child)
         {
             child->cdata->flags |= SEL_CDATA_EVALMAX;
-            child = child->next;
+            child                = child->next;
         }
     }
 }
@@ -1371,7 +1382,7 @@ init_item_staticeval(t_selelem *sel)
             while (child)
             {
                 child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
-                child = child->next;
+                child                = child->next;
             }
         }
 
@@ -1467,6 +1478,7 @@ init_item_minmax_groups(t_selelem *sel)
                  && ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
                      || (sel->cdata->flags & SEL_CDATA_FULLEVAL)))
         {
+            assert(sel->child);
             sel->cdata->gmin = sel->child->cdata->gmin;
             sel->cdata->gmax = sel->child->cdata->gmax;
         }
@@ -1617,14 +1629,14 @@ make_static(t_selelem *sel)
     {
         if (sel->child->child->flags & SEL_ALLOCDATA)
         {
-            sel->flags |= SEL_ALLOCDATA;
+            sel->flags               |= SEL_ALLOCDATA;
             sel->child->child->flags &= ~SEL_ALLOCDATA;
         }
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags |= SEL_ALLOCVAL;
-            sel->v.nalloc = sel->child->child->v.nalloc;
-            sel->child->child->flags &= ~SEL_ALLOCVAL;
+            sel->flags                 |= SEL_ALLOCVAL;
+            sel->v.nalloc               = sel->child->child->v.nalloc;
+            sel->child->child->flags   &= ~SEL_ALLOCVAL;
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -1634,8 +1646,8 @@ make_static(t_selelem *sel)
     if (sel->type == SEL_SUBEXPRREF && sel->u.param)
     {
         sel->u.param->val.nalloc = sel->v.nalloc;
-        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
-        sel->v.nalloc = -1;
+        sel->flags              &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->v.nalloc            = -1;
     }
     /* Free the children. */
     release_subexpr_memory(sel);
@@ -1732,13 +1744,13 @@ store_param_val(t_selelem *sel)
 static int
 init_method(t_selelem *sel, t_topology *top, int isize)
 {
-    t_selelem *child;
+    t_selelem     *child;
     gmx_bool       bAtomVal;
-    int        rc;
+    int            rc;
 
     /* Find out whether there are any atom-valued parameters */
     bAtomVal = FALSE;
-    child = sel->child;
+    child    = sel->child;
     while (child)
     {
         if (child->flags & SEL_ATOMVAL)
@@ -1753,8 +1765,8 @@ init_method(t_selelem *sel, t_topology *top, int isize)
         && (bAtomVal || !(sel->flags & SEL_METHODINIT)))
     {
         sel->flags |= SEL_METHODINIT;
-        rc = sel->u.expr.method->init(top, sel->u.expr.method->nparams,
-                sel->u.expr.method->param, sel->u.expr.mdata);
+        rc          = sel->u.expr.method->init(top, sel->u.expr.method->nparams,
+                                               sel->u.expr.method->param, sel->u.expr.mdata);
         if (rc != 0)
         {
             return rc;
@@ -1833,7 +1845,7 @@ init_method(t_selelem *sel, t_topology *top, int isize)
  */
 static int
 evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
-                             gmx_ana_index_t *g)
+                                 gmx_ana_index_t *g)
 {
     t_selelem *child, *next;
     int        rc;
@@ -1852,9 +1864,9 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
     /* Evalute the static part if there is more than one expression */
     if (child != sel->child)
     {
-        next  = child->next;
+        next        = child->next;
         child->next = NULL;
-        rc = sel->cdata->evaluate(data, sel, g);
+        rc          = sel->cdata->evaluate(data, sel, g);
         if (rc != 0)
         {
             return rc;
@@ -1872,8 +1884,8 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
         init_item_minmax_groups(child);
         child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
         child->cdata->flags |= sel->cdata->flags & SEL_CDATA_STATICEVAL;
-        child->next = next;
-        sel->child = child;
+        child->next          = next;
+        sel->child           = child;
     }
     else if (child->evaluate)
     {
@@ -1942,7 +1954,7 @@ evaluate_gmx_boolean_static_part(gmx_sel_evaluate_t *data, t_selelem *sel,
  */
 static void
 evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
-                             gmx_ana_index_t *gmin, gmx_ana_index_t *gmax)
+                                 gmx_ana_index_t *gmin, gmx_ana_index_t *gmax)
 {
     t_selelem *child;
 
@@ -2023,7 +2035,7 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
 
 /*! \brief
  * Evaluates the static parts of \p sel and analyzes the structure.
- * 
+ *
  * \param[in]     data Evaluation data.
  * \param[in,out] sel  Selection currently being evaluated.
  * \param[in]     g    Group for which \p sel should be evaluated.
@@ -2034,7 +2046,7 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
  * It does the single most complex task in the compiler: after all elements
  * have been processed, the \p gmin and \p gmax fields of \p t_compiler_data
  * have been properly initialized, enough memory has been allocated for
- * storing the value of each expression, and the static parts of the 
+ * storing the value of each expression, and the static parts of the
  * expressions have been evaluated.
  * The above is exactly true only for elements other than subexpressions:
  * another pass is required for subexpressions that are referred to more than
@@ -2043,9 +2055,9 @@ evaluate_gmx_boolean_minmax_grps(t_selelem *sel, gmx_ana_index_t *g,
 static int
 analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    t_selelem       *child, *next;
+    t_selelem           *child, *next;
     gmx_bool             bDoMinMax;
-    int              rc;
+    int                  rc;
 
     if (sel->type != SEL_ROOT && g)
     {
@@ -2140,7 +2152,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 
                 /* Evaluate minimal and maximal selections */
                 evaluate_gmx_boolean_minmax_grps(sel, g, sel->cdata->gmin,
-                                             sel->cdata->gmax);
+                                                 sel->cdata->gmax);
             }
             break;
 
@@ -2175,6 +2187,7 @@ analyze_static(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
             }
             else if (sel->u.cgrp.isize == 0)
             {
+                assert(g);
                 gmx_ana_index_reserve(&sel->u.cgrp, g->isize);
                 rc = sel->cdata->evaluate(data, sel, g);
                 if (bDoMinMax)
@@ -2411,6 +2424,9 @@ init_root_item(t_selelem *root, gmx_ana_index_t *gall)
 static void
 postprocess_item_subexpressions(t_selelem *sel)
 {
+    assert(!(sel->child == NULL &&
+             (sel->type == SEL_SUBEXPRREF || sel->type == SEL_SUBEXPR)));
+
     /* Process children. */
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -2439,11 +2455,9 @@ postprocess_item_subexpressions(t_selelem *sel)
         gmx_ana_index_deinit(&sel->u.cgrp);
         sel->u.cgrp.name = name;
 
-        sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
-        if (sel->cdata)
-        {
-            sel->cdata->evaluate = sel->evaluate;
-        }
+        sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
+        sel->cdata->evaluate = sel->evaluate;
+
         _gmx_selelem_free_values(sel->child);
         sel->child->mempool = NULL;
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
@@ -2458,10 +2472,10 @@ postprocess_item_subexpressions(t_selelem *sel)
     {
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags |= SEL_ALLOCVAL;
-            sel->flags |= (sel->child->child->flags & SEL_ALLOCDATA);
-            sel->v.nalloc = sel->child->child->v.nalloc;
-            sel->child->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+            sel->flags                 |= SEL_ALLOCVAL;
+            sel->flags                 |= (sel->child->child->flags & SEL_ALLOCDATA);
+            sel->v.nalloc               = sel->child->child->v.nalloc;
+            sel->child->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -2471,10 +2485,10 @@ postprocess_item_subexpressions(t_selelem *sel)
         && !(sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
         && (sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        sel->flags |= SEL_ALLOCVAL;
-        sel->flags |= (sel->child->flags & SEL_ALLOCDATA);
-        sel->v.nalloc = sel->child->v.nalloc;
-        sel->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->flags          |= SEL_ALLOCVAL;
+        sel->flags          |= (sel->child->flags & SEL_ALLOCDATA);
+        sel->v.nalloc        = sel->child->v.nalloc;
+        sel->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         sel->child->v.nalloc = -1;
     }
 }
@@ -2525,7 +2539,7 @@ init_item_comg(t_selelem *sel, gmx_ana_poscalc_coll_t *pcc,
             if (!sel->u.expr.pc)
             {
                 cflags |= flags;
-                rc = gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
+                rc      = gmx_ana_poscalc_create(&sel->u.expr.pc, pcc, type, cflags);
                 if (rc != 0)
                 {
                     return rc;
@@ -2683,10 +2697,10 @@ int
 gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
 {
     gmx_sel_evaluate_t  evaldata;
-    t_selelem   *item;
-    e_poscalc_t  post;
-    int          flags;
-    int          rc;
+    t_selelem          *item;
+    e_poscalc_t         post;
+    int                 flags;
+    int                 rc;
 
     rc = _gmx_sel_mempool_create(&sc->mempool);
     if (rc != 0)
@@ -2838,7 +2852,7 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
      * compilation. */
     /* By default, use whole residues/molecules. */
     flags = POS_COMPLWHOLE;
-    rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &post, &flags);
+    rc    = gmx_ana_poscalc_type_from_enum(sc->rpost, &post, &flags);
     if (rc != 0)
     {
         gmx_bug("invalid default reference position type");

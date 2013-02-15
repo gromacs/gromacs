@@ -9,89 +9,104 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>pdb2gmx</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-This program reads a <a href="pdb.html">pdb</a> (or <a href="gro.html">gro</a>) file, reads
+This program reads a <tt>.<a href="pdb.html">pdb</a></tt> (or <tt>.<a href="gro.html">gro</a></tt>) file, reads
 some database files, adds hydrogens to the molecules and generates
-coordinates in Gromacs (Gromos), or optionally <a href="pdb.html">pdb</a>, format
-and a topology in Gromacs format.
+coordinates in GROMACS (GROMOS), or optionally <tt>.<a href="pdb.html">pdb</a></tt>, format
+and a topology in GROMACS format.
 These files can subsequently be processed to generate a run input file.
 <p>
-pdb2gmx will search for force fields by looking for
+<tt>pdb2gmx</tt> will search for force fields by looking for
 a <tt>forcefield.<a href="itp.html">itp</a></tt> file in subdirectories <tt>&lt;forcefield&gt;.ff</tt>
-of the current working directory and of the Gomracs library directory
+of the current working directory and of the GROMACS library directory
 as inferred from the path of the binary or the <tt>GMXLIB</tt> environment
 variable.
 By default the forcefield selection is interactive,
 but you can use the <tt>-ff</tt> option to specify one of the short names
-in the list on the command line instead. In that case pdb2gmx just looks
+in the list on the command line instead. In that case <tt>pdb2gmx</tt> just looks
 for the corresponding <tt>&lt;forcefield&gt;.ff</tt> directory.
 <p>
 After choosing a force field, all files will be read only from
 the corresponding force field directory.
 If you want to modify or add a residue types, you can copy the force
-field directory from the Gromacs library directory to your current
+field directory from the GROMACS library directory to your current
 working directory. If you want to add new protein residue types,
-you will need to modify residuetypes.<a href="dat.html">dat</a> in the libary directory
+you will need to modify <tt>residuetypes.<a href="dat.html">dat</a></tt> in the library directory
 or copy the whole library directory to a local directory and set
 the environment variable <tt>GMXLIB</tt> to the name of that directory.
-Check chapter 5 of the manual for more information about file formats.
+Check Chapter 5 of the manual for more information about file formats.
 <p>
-Note that a <a href="pdb.html">pdb</a> file is nothing more than a file format, and it
+Note that a <tt>.<a href="pdb.html">pdb</a></tt> file is nothing more than a file format, and it
 need not necessarily contain a protein structure. Every kind of
 molecule for which there is support in the database can be converted.
 If there is no support in the database, you can add it yourself.<p>
 The program has limited intelligence, it reads a number of database
 files, that allow it to make special bonds (Cys-Cys, Heme-His, etc.),
 if necessary this can be done manually. The program can prompt the
-user to select which kind of LYS, ASP, GLU, CYS or HIS residue she
-wants. For LYS the choice is between neutral (two protons on NZ) or
-protonated (three protons, default), for ASP and GLU unprotonated
-(default) or protonated, for HIS the proton can be either on ND1,
+user to select which kind of LYS, ASP, GLU, CYS or HIS residue is
+desired. For Lys the choice is between neutral (two protons on NZ) or
+protonated (three protons, default), for Asp and Glu unprotonated
+(default) or protonated, for His the proton can be either on ND1,
 on NE2 or on both. By default these selections are done automatically.
 For His, this is based on an optimal hydrogen bonding
 conformation. Hydrogen bonds are defined based on a simple geometric
-criterium, specified by the maximum hydrogen-donor-acceptor angle
+criterion, specified by the maximum hydrogen-donor-acceptor angle
 and donor-acceptor distance, which are set by <tt>-angle</tt> and
 <tt>-dist</tt> respectively.<p>
+The protonation state of N- and C-termini can be chosen interactively
+with the <tt>-ter</tt> flag.  Default termini are ionized (NH3+ and COO-),
+respectively.  Some force fields support zwitterionic forms for chains of
+one residue, but for polypeptides these options should NOT be selected.
+The AMBER force fields have unique forms for the terminal residues,
+and these are incompatible with the <tt>-ter</tt> mechanism. You need
+to prefix your N- or C-terminal residue names with "N" or "C"
+respectively to use these forms, making sure you preserve the format
+of the coordinate file. Alternatively, use named terminating residues
+(e.g. ACE, NME).<p>
 The separation of chains is not entirely trivial since the markup
 in user-generated PDB files frequently varies and sometimes it
 is desirable to merge entries across a TER record, for instance
 if you want a disulfide bridge or distance restraints between
 two protein chains or if you have a HEME group bound to a protein.
 In such cases multiple chains should be contained in a single
-<tt>molecule_type</tt> definition.
-To handle this, pdb2gmx has an option <tt>-chainsep</tt> so you can
-choose whether a new chain should start when we find a TER record,
-when the chain id changes, combinations of either or both of these
-or fully interactively.<p>
-pdb2gmx will also check the occupancy field of the <a href="pdb.html">pdb</a> file.
+<tt>moleculetype</tt> definition.
+To handle this, <tt>pdb2gmx</tt> uses two separate options.
+First, <tt>-chainsep</tt> allows you to choose when a new chemical chain should
+start, and termini added when applicable. This can be done based on the
+existence of TER records, when the chain id changes, or combinations of either
+or both of these. You can also do the selection fully interactively.
+In addition, there is a <tt>-merge</tt> option that controls how multiple chains
+are merged into one moleculetype, after adding all the chemical termini (or not).
+This can be turned off (no merging), all non-water chains can be merged into a
+single molecule, or the selection can be done interactively.<p>
+<tt>pdb2gmx</tt> will also check the occupancy field of the <tt>.<a href="pdb.html">pdb</a></tt> file.
 If any of the occupancies are not one, indicating that the atom is
 not resolved well in the structure, a warning message is issued.
-When a <a href="pdb.html">pdb</a> file does not originate from an X-Ray structure determination
+When a <tt>.<a href="pdb.html">pdb</a></tt> file does not originate from an X-ray structure determination
 all occupancy fields may be zero. Either way, it is up to the user
 to verify the correctness of the input data (read the article!).<p>
-During processing the atoms will be reordered according to Gromacs
+During processing the atoms will be reordered according to GROMACS
 conventions. With <tt>-n</tt> an index file can be generated that
 contains one group reordered in the same way. This allows you to
-convert a Gromos trajectory and coordinate file to Gromos. There is
+convert a GROMOS trajectory and coordinate file to GROMOS. There is
 one limitation: reordering is done after the hydrogens are stripped
 from the input and before new hydrogens are added. This means that
 you should not use <tt>-ignh</tt>.<p>
 The <tt>.<a href="gro.html">gro</a></tt> and <tt>.<a href="g96.html">g96</a></tt> file formats do not support chain
-identifiers. Therefore it is useful to enter a <a href="pdb.html">pdb</a> file name at
-the <tt>-o</tt> option when you want to convert a multichain <a href="pdb.html">pdb</a> file.
+identifiers. Therefore it is useful to enter a <tt>.<a href="pdb.html">pdb</a></tt> file name at
+the <tt>-o</tt> option when you want to convert a multi-chain <tt>.<a href="pdb.html">pdb</a></tt> file.
 <p>
 The option <tt>-vsite</tt> removes hydrogen and fast improper dihedral
 motions. Angular and out-of-plane motions can be removed by changing
 hydrogens into virtual sites and fixing angles, which fixes their
 position relative to neighboring atoms. Additionally, all atoms in the
 aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)
-can be converted into virtual sites, elminating the fast improper dihedral
-fluctuations in these rings. Note that in this case all other hydrogen
+can be converted into virtual sites, eliminating the fast improper dihedral
+fluctuations in these rings. <b>Note</b> that in this case all other hydrogen
 atoms are also converted to virtual sites. The mass of all atoms that are
 converted into virtual sites, is added to the heavy atoms.<p>
 Also slowing down of dihedral motion can be done with <tt>-heavyh</tt>
@@ -114,35 +129,36 @@ The increase in mass of the hydrogens is subtracted from the bonded
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-chainsep</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>id_or_ter</tt> </TD><TD> Condition in PDB files when a new chain and molecule_type should be started: <tt>id_or_ter</tt>, <tt>id_and_ter</tt>, <tt>ter</tt>, <tt>id</tt> or <tt>interactive</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Force field, interactive by default. Use -h for information. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-chainsep</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>id_or_ter</tt> </TD><TD> Condition in PDB files when a new chain should be started (adding termini): <tt>id_or_ter</tt>, <tt>id_and_ter</tt>, <tt>ter</tt>, <tt>id</tt> or <tt>interactive</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-merge</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Merge multiple chains into a single [moleculetype]: <tt>no</tt>, <tt>all</tt> or <tt>interactive</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Force field, interactive by default. Use <tt>-h</tt> for information. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-water</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Water model to use: <tt>select</tt>, <tt>none</tt>, <tt>spc</tt>, <tt>spce</tt>, <tt>tip3p</tt>, <tt>tip4p</tt> or <tt>tip5p</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]inter</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the next 8 options to interactive </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ss</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive SS bridge selection </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive termini selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]lys</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Lysine selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]arg</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Arganine selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]asp</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Aspartic Acid selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]glu</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Glutamic Acid selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]gln</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Glutamine selection, iso neutral </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]his</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Histidine selection, iso checking H-bonds </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]inter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the next 8 options to interactive </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ss</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive SS bridge selection </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive termini selection, instead of charged (default) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]lys</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive lysine selection, instead of charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]arg</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive arginine selection, instead of charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]asp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive aspartic acid selection, instead of charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]glu</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive glutamic acid selection, instead of charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]gln</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive glutamine selection, instead of neutral </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]his</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive histidine selection, instead of checking H-bonds </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-angle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>135   </tt> </TD><TD> Minimum hydrogen-donor-acceptor angle for a H-bond (degrees) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.3   </tt> </TD><TD> Maximum donor-acceptor distance for a H-bond (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]una</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ignh</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Ignore hydrogen atoms that are in the <a href="pdb.html">pdb</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]missing</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Continue when atoms are missing, dangerous </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be slightly more verbose in messages </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]una</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Select aromatic rings with united CH atoms on phenylalanine, tryptophane and tyrosine </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ignh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Ignore hydrogen atoms that are in the coordinate file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]missing</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Continue when atoms are missing, dangerous </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be slightly more verbose in messages </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-posrefc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1000  </tt> </TD><TD> Force constant for position restraints </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-vsite</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Convert atoms to virtual sites: <tt>none</tt>, <tt>hydrogens</tt> or <tt>aromatics</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]heavyh</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Make hydrogen atoms heavy </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]deuterate</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change the mass of hydrogens to 2 amu </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]chargegrp</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use charge groups in the <a href="rtp.html">rtp</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cmap</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use cmap torsions (if enabled in the <a href="rtp.html">rtp</a> file) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]renum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Renumber the residues consecutively in the output </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]rtpres</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use <a href="rtp.html">rtp</a> entry names as residue names </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]heavyh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Make hydrogen atoms heavy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]deuterate</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change the mass of hydrogens to 2 amu </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]chargegrp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use charge groups in the <tt>.<a href="rtp.html">rtp</a></tt> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cmap</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use cmap torsions (if enabled in the <tt>.<a href="rtp.html">rtp</a></tt> file) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]renum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Renumber the residues consecutively in the output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rtpres</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use <tt>.<a href="rtp.html">rtp</a></tt> entry names as residue names </TD></TD>
 </TABLE>
 <P>
 <hr>

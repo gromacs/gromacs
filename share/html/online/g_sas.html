@@ -9,34 +9,36 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sas</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_sas computes hydrophobic, hydrophilic and total solvent accessible surface area.
-As a side effect the Connolly surface can be generated as well in
-a <a href="pdb.html">pdb</a> file where the nodes are represented as atoms and the vertices
-connecting the nearest nodes as CONECT records.
+<tt>g_sas</tt> computes hydrophobic, hydrophilic and total solvent
+accessible surface area. See Eisenhaber F, Lijnzaad P, Argos P,
+Sander C, & Scharf M (1995) J. Comput. Chem. 16, 273-284.
+As a side effect, the Connolly surface can be generated as well in
+a <tt>.<a href="pdb.html">pdb</a></tt> file where the nodes are represented as atoms and the
+vertice connecting the nearest nodes as CONECT records.
 The program will ask for a group for the surface calculation
 and a group for the output. The calculation group should always
 consists of all the non-solvent atoms in the system.
 The output group can be the whole or part of the calculation group.
-The area can be plotted
+The average and standard deviation of the area over the trajectory can be plotted
 per residue and atom as well (options <tt>-or</tt> and <tt>-oa</tt>).
-In combination with the latter option an <tt><a href="itp.html">itp</a></tt> file can be
+In combination with the latter option an <tt>.<a href="itp.html">itp</a></tt> file can be
 generated (option <tt>-i</tt>)
 which can be used to restrain surface atoms.<p>
 By default, periodic boundary conditions are taken into account,
 this can be turned off using the <tt>-nopbc</tt> option.<p>
-With the <tt>-tv</tt> option the total volume and density of the molecule can be
-computed.
+With the <tt>-tv</tt> option the total volume and density of the
+molecule can be computed.
 Please consider whether the normal probe radius is appropriate
 in this case or whether you would rather use e.g. 0. It is good
 to keep in mind that the results for volume and density are very
-approximate, in e.g. ice Ih one can easily fit water molecules in the
-pores which would yield too low volume, too high surface area and too
-high density.
+approximate. For example, in ice Ih, one can easily fit water molecules in the
+pores which would yield a volume that is too low, and surface area and density
+that are both too high.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -55,22 +57,22 @@ high density.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-probe</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.14  </tt> </TD><TD> Radius of the solvent probe (nm) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ndots</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>24</tt> </TD><TD> Number of dots per sphere, more dots means more accuracy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-qmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.2   </tt> </TD><TD> The maximum charge (e, absolute value) of a hydrophobic atom </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]f_index</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Determine from a group in the index file what are the hydrophobic atoms rather than from the charge </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]f_index</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Determine from a group in the index file what are the hydrophobic atoms rather than from the charge </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-minarea</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Take periodicity into account </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]prot</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Output the protein to the connelly <a href="pdb.html">pdb</a> file too </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dgs</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> default value for solvation free energy per area (kJ/mol/nm^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Take periodicity into account </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]prot</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Output the protein to the Connelly <tt>.<a href="pdb.html">pdb</a></tt> file too </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dgs</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Default value for solvation free energy per area (kJ/mol/nm^2) </TD></TD>
 </TABLE>
 <P>
 <hr>

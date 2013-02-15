@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementations of simple keyword selection methods.
@@ -396,13 +403,13 @@ gmx_ana_selmethod_t sm_betafactor = {
 gmx_ana_selmethod_t sm_x = {
     "x", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_x,
 };
 
@@ -410,13 +417,13 @@ gmx_ana_selmethod_t sm_x = {
 gmx_ana_selmethod_t sm_y = {
     "y", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_y,
 };
 
@@ -424,13 +431,13 @@ gmx_ana_selmethod_t sm_y = {
 gmx_ana_selmethod_t sm_z = {
     "z", REAL_VALUE, SMETH_DYNAMIC,
     0, NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_z,
 };
 
@@ -498,7 +505,7 @@ evaluate_resnr(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.i[i] = top->atoms.resinfo[resind].nr;
     }
     return 0;
@@ -562,7 +569,10 @@ evaluate_molindex(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = j = 0; i < g->isize; ++i)
     {
-        while (top->mols.index[j + 1] <= g->index[i]) ++j;
+        while (top->mols.index[j + 1] <= g->index[i])
+        {
+            ++j;
+        }
         out->u.i[i] = j + 1;
     }
     return 0;
@@ -673,7 +683,7 @@ evaluate_resname(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind      = top->atoms.atom[g->index[i]].resind;
         out->u.s[i] = *top->atoms.resinfo[resind].name;
     }
     return 0;
@@ -695,7 +705,7 @@ evaluate_insertcode(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].ic;
     }
     return 0;
@@ -717,7 +727,7 @@ evaluate_chain(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->nr = g->isize;
     for (i = 0; i < g->isize; ++i)
     {
-        resind = top->atoms.atom[g->index[i]].resind;
+        resind         = top->atoms.atom[g->index[i]].resind;
         out->u.s[i][0] = top->atoms.resinfo[resind].chainid;
     }
     return 0;

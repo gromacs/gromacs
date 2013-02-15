@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementation of functions in evaluate.h.
@@ -51,6 +58,7 @@
 #include <maths.h>
 #include <smalloc.h>
 #include <vec.h>
+#include <assert.h>
 
 #include <indexutil.h>
 #include <poscalc.h>
@@ -70,35 +78,65 @@ void
 _gmx_sel_print_evalfunc_name(FILE *fp, sel_evalfunc evalfunc)
 {
     if (!evalfunc)
+    {
         fprintf(fp, "none");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_root)
+    {
         fprintf(fp, "root");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_static)
+    {
         fprintf(fp, "static");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_simple)
+    {
         fprintf(fp, "subexpr_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr_staticeval)
+    {
         fprintf(fp, "subexpr_staticeval");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexpr)
+    {
         fprintf(fp, "subexpr");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref_simple)
+    {
         fprintf(fp, "ref_simple");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_subexprref)
+    {
         fprintf(fp, "ref");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_method)
+    {
         fprintf(fp, "method");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_modifier)
+    {
         fprintf(fp, "mod");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_not)
+    {
         fprintf(fp, "not");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_and)
+    {
         fprintf(fp, "and");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_or)
+    {
         fprintf(fp, "or");
+    }
     else if (evalfunc == &_gmx_sel_evaluate_arithmetic)
+    {
         fprintf(fp, "arithmetic");
+    }
     else
+    {
         fprintf(fp, "%p", (void*)(evalfunc));
+    }
 }
 
 /*!
@@ -221,7 +259,7 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
         }
         if (sel->bCFracDyn)
         {
-            sel->cfrac = _gmx_selelem_estimate_coverfrac(sel->selelem);
+            sel->cfrac     = _gmx_selelem_estimate_coverfrac(sel->selelem);
             sel->avecfrac += sel->cfrac;
         }
     }
@@ -458,7 +496,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_inde
         name = sel->u.cgrp.name;
         gmx_ana_index_copy(&sel->u.cgrp, g, FALSE);
         sel->u.cgrp.name = name;
-        gmiss.isize = 0;
+        gmiss.isize      = 0;
     }
     else
     {
@@ -769,7 +807,7 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_an
             }
             else
             {
-                rc = child->evaluate(data, child, NULL);
+                rc            = child->evaluate(data, child, NULL);
                 child->flags |= SEL_EVALFRAME;
             }
             if (rc != 0)
@@ -876,8 +914,8 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
         return -1;
     }
     rc = sel->u.expr.method->pupdate(data->top, data->fr, data->pbc,
-                                    sel->child->v.u.p,
-                                    &sel->v, sel->u.expr.mdata);
+                                     sel->child->v.u.p,
+                                     &sel->v, sel->u.expr.mdata);
     return rc;
 }
 
@@ -893,7 +931,7 @@ _gmx_sel_evaluate_modifier(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_ind
  * \returns   0 on success, a non-zero error code on error.
  *
  * Evaluates the child element (there should be only one) in the group
- * \p g, and then sets the value of \p sel to the complement of the 
+ * \p g, and then sets the value of \p sel to the complement of the
  * child value.
  *
  * This function is used as \c t_selelem::evaluate for \ref SEL_BOOLEAN
@@ -1014,7 +1052,7 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t 
 int
 _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *g)
 {
-    t_selelem     *child;
+    t_selelem       *child;
     gmx_ana_index_t  tmp, tmp2;
     int              rc;
 
@@ -1041,7 +1079,7 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
     while (child && tmp.isize > 0)
     {
         tmp.name = NULL;
-        rc = _gmx_selelem_mempool_reserve(child, tmp.isize);
+        rc       = _gmx_selelem_mempool_reserve(child, tmp.isize);
         if (rc == 0)
         {
             rc = child->evaluate(data, child, &tmp);
@@ -1053,9 +1091,9 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_index_t *
         gmx_ana_index_partition(&tmp, &tmp2, &tmp, child->v.u.g);
         _gmx_selelem_mempool_release(child);
         sel->v.u.g->isize += tmp.isize;
-        tmp.isize = tmp2.isize;
-        tmp.index = tmp2.index;
-        child = child->next;
+        tmp.isize          = tmp2.isize;
+        tmp.index          = tmp2.index;
+        child              = child->next;
     }
     gmx_ana_index_sort(sel->v.u.g);
     return 0;
@@ -1076,13 +1114,13 @@ int
 _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
                              gmx_ana_index_t *g)
 {
-    t_selelem  *left, *right;
-    int         n, i, i1, i2;
-    real        lval, rval=0., val=0.;
-    int         rc;
+    int               n, i, i1, i2;
+    real              lval, rval = 0., val = 0.;
+    int               rc;
+    gmx_bool          bArithNeg;
 
-    left  = sel->child;
-    right = left->next;
+    t_selelem  *const left  = sel->child;
+    t_selelem  *const right = left->next;
 
     if (left->mempool)
     {
@@ -1102,12 +1140,15 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
     }
     rc = _gmx_sel_evaluate_children(data, sel, g);
 
-    n = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
+    n         = (sel->flags & SEL_SINGLEVAL) ? 1 : g->isize;
     sel->v.nr = n;
+
+    bArithNeg = (sel->u.arith.type == ARITH_NEG);
+    assert(right || bArithNeg);
     for (i = i1 = i2 = 0; i < n; ++i)
     {
         lval = left->v.u.r[i1];
-        if (sel->u.arith.type != ARITH_NEG)
+        if (!bArithNeg)
         {
             rval = right->v.u.r[i2];
         }
@@ -1125,7 +1166,7 @@ _gmx_sel_evaluate_arithmetic(gmx_sel_evaluate_t *data, t_selelem *sel,
         {
             ++i1;
         }
-        if (sel->u.arith.type != ARITH_NEG && !(right->flags & SEL_SINGLEVAL))
+        if (!bArithNeg && !(right->flags & SEL_SINGLEVAL))
         {
             ++i2;
         }

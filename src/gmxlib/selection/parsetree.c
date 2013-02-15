@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementation of functions of in parsetree.h.
@@ -214,6 +221,7 @@
 #include <smalloc.h>
 #include <string2.h>
 #include <gmx_fatal.h>
+#include <assert.h>
 
 #include <poscalc.h>
 #include <selection.h>
@@ -320,7 +328,7 @@ _gmx_selexpr_free_values(t_selexpr_value *value)
         {
             sfree(value->u.s);
         }
-        old = value;
+        old   = value;
         value = value->next;
         sfree(old);
     }
@@ -339,7 +347,7 @@ _gmx_selexpr_free_params(t_selexpr_param *param)
     while (param)
     {
         _gmx_selexpr_free_values(param->value);
-        old = param;
+        old   = param;
         param = param->next;
         sfree(old->name);
         sfree(old);
@@ -367,9 +375,9 @@ _gmx_selexpr_free_params(t_selexpr_param *param)
 int
 _gmx_selelem_update_flags(t_selelem *sel)
 {
-    t_selelem          *child;
-    int                 rc;
-    gmx_bool                bUseChildType=FALSE;
+    t_selelem              *child;
+    int                     rc;
+    gmx_bool                bUseChildType = FALSE;
     gmx_bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
@@ -381,7 +389,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
     switch (sel->type)
     {
         case SEL_CONST:
-            sel->flags |= SEL_SINGLEVAL;
+            sel->flags   |= SEL_SINGLEVAL;
             bUseChildType = FALSE;
             break;
 
@@ -406,7 +414,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
             break;
 
         case SEL_ARITHMETIC:
-            sel->flags |= SEL_ATOMVAL;
+            sel->flags   |= SEL_ATOMVAL;
             bUseChildType = FALSE;
             break;
 
@@ -430,7 +438,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
     }
     /* Loop through children to propagate their flags upwards */
     bOnlySingleChildren = TRUE;
-    child = sel->child;
+    child               = sel->child;
     while (child)
     {
         /* Update the child */
@@ -469,6 +477,7 @@ _gmx_selelem_update_flags(t_selelem *sel)
      * children have been updated. */
     if (sel->type == SEL_ROOT)
     {
+        assert(sel->child);
         sel->flags |= (sel->child->flags & SEL_VALTYPEMASK);
     }
     /* Mark that the flags are set */
@@ -613,11 +622,11 @@ _gmx_sel_init_arithmetic(t_selelem *left, t_selelem *right, char op,
     t_selelem         *sel;
     char               buf[2];
 
-    buf[0] = op;
-    buf[1] = 0;
-    sel = _gmx_selelem_create(SEL_ARITHMETIC);
+    buf[0]             = op;
+    buf[1]             = 0;
+    sel                = _gmx_selelem_create(SEL_ARITHMETIC);
     sel->v.type        = REAL_VALUE;
-    switch(op)
+    switch (op)
     {
         case '+': sel->u.arith.type = ARITH_PLUS; break;
         case '-': sel->u.arith.type = (right ? ARITH_MINUS : ARITH_NEG); break;
@@ -655,7 +664,7 @@ _gmx_sel_init_comparison(t_selelem *left, t_selelem *right, char *cmpop,
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
     /* Create the parameter for the left expression */
     name               = left->v.type == INT_VALUE ? "int1" : "real1";
-    params = param     = _gmx_selexpr_create_param(strdup(name));
+    params             = param     = _gmx_selexpr_create_param(strdup(name));
     param->nval        = 1;
     param->value       = _gmx_selexpr_create_value_expr(left);
     /* Create the parameter for the right expression */
@@ -696,11 +705,11 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
                       const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    t_selelem         *root, *child;
-    t_selexpr_param   *params, *param;
-    t_selexpr_value   *arg;
-    int                nargs;
-    int                rc;
+    t_selelem               *root, *child;
+    t_selexpr_param         *params, *param;
+    t_selexpr_value         *arg;
+    int                      nargs;
+    int                      rc;
 
     if (method->nparams > 0)
     {
@@ -708,7 +717,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         return NULL;
     }
 
-    root = _gmx_selelem_create(SEL_EXPRESSION);
+    root  = _gmx_selelem_create(SEL_EXPRESSION);
     child = root;
     _gmx_selelem_set_method(child, method, scanner);
 
@@ -737,7 +746,7 @@ _gmx_sel_init_keyword(gmx_ana_selmethod_t *method, t_selexpr_value *args,
         /* Initialize the selection element */
         root = _gmx_selelem_create(SEL_EXPRESSION);
         _gmx_selelem_set_method(root, kwmethod, scanner);
-        params = param = _gmx_selexpr_create_param(NULL);
+        params         = param = _gmx_selexpr_create_param(NULL);
         param->nval    = 1;
         param->value   = _gmx_selexpr_create_value_expr(child);
         param          = _gmx_selexpr_create_param(NULL);
@@ -785,8 +794,8 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method, t_selexpr_param *params,
                      const char *rpost, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    t_selelem       *root;
-    int              rc;
+    t_selelem               *root;
+    int                      rc;
 
     _gmx_sel_finish_method(scanner);
     /* The "same" keyword needs some custom massaging of the parameters. */
@@ -935,14 +944,14 @@ t_selelem *
 _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 {
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-    t_selelem *sel;
+    t_selelem           *sel;
 
     if (!grps)
     {
         return NULL;
     }
     sel = _gmx_selelem_create(SEL_CONST);
-    _gmx_selelem_set_vtype(sel, GROUP_VALUE); 
+    _gmx_selelem_set_vtype(sel, GROUP_VALUE);
     /* FIXME: The constness should not be cast away */
     if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, (char *)name))
     {
@@ -963,7 +972,7 @@ t_selelem *
 _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 {
     gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-    t_selelem *sel;
+    t_selelem           *sel;
 
     if (!grps)
     {
@@ -1081,7 +1090,7 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
         return NULL;
     }
 
-    root = _gmx_selelem_create(SEL_ROOT);
+    root        = _gmx_selelem_create(SEL_ROOT);
     root->child = sel;
     /* Assign the name (this is done here to free it automatically in the case
      * of an error below). */
@@ -1121,14 +1130,14 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
             && child->child->child->v.type == GROUP_VALUE)
         {
             root->name = root->u.cgrp.name =
-                strdup(child->child->child->u.cgrp.name);
+                    strdup(child->child->child->u.cgrp.name);
         }
     }
     /* If there still is no name, use the selection string */
     if (!root->name)
     {
         root->name = root->u.cgrp.name
-            = strdup(_gmx_sel_lexer_pselstr(scanner));
+                   = strdup(_gmx_sel_lexer_pselstr(scanner));
     }
 
     /* Print out some information if the parser is interactive */
@@ -1156,9 +1165,9 @@ _gmx_sel_init_selection(char *name, t_selelem *sel, yyscan_t scanner)
 t_selelem *
 _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc      = _gmx_sel_lexer_selcollection(scanner);
     const char              *pselstr = _gmx_sel_lexer_pselstr(scanner);
-    t_selelem               *root = NULL;
+    t_selelem               *root    = NULL;
     int                      rc;
 
     rc = _gmx_selelem_update_flags(expr);
@@ -1197,7 +1206,7 @@ _gmx_sel_assign_variable(char *name, t_selelem *expr, yyscan_t scanner)
         goto finish;
     }
     /* Create the root element */
-    root = _gmx_selelem_create(SEL_ROOT);
+    root                = _gmx_selelem_create(SEL_ROOT);
     root->name          = name;
     root->u.cgrp.name   = name;
     /* Create the subexpression element */
@@ -1290,7 +1299,7 @@ _gmx_sel_append_selection(t_selelem *sel, t_selelem *last, yyscan_t scanner)
             {
                 t_selelem *child;
 
-                child = sel->child;
+                child             = sel->child;
                 child->flags     &= ~SEL_ALLOCVAL;
                 _gmx_selvalue_setstore(&child->v, &sc->sel[i]->p);
                 /* We should also skip any modifiers to determine the dynamic
@@ -1353,12 +1362,14 @@ _gmx_sel_parser_should_finish(yyscan_t scanner)
 void
 _gmx_sel_handle_empty_cmd(yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
     int                      i;
 
     if (!_gmx_sel_is_lexer_interactive(scanner))
+    {
         return;
+    }
 
     if (grps)
     {
@@ -1410,8 +1421,8 @@ static int
 run_parser(int maxnr, yyscan_t scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    gmx_bool bOk;
-    int  nr;
+    gmx_bool                 bOk;
+    int                      nr;
 
     nr  = sc->nr;
     bOk = !_gmx_sel_yybparse(scanner);
@@ -1468,8 +1479,8 @@ gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
                                  gmx_ana_indexgrps_t *grps)
 {
     yyscan_t scanner;
-    FILE *fp;
-    int   rc;
+    FILE    *fp;
+    int      rc;
 
     rc = _gmx_sel_init_lexer(&scanner, sc, FALSE, -1, grps);
     if (rc != 0)

@@ -1,3 +1,37 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+#
 
 include(CheckIncludeFiles)
 include(CheckFunctionExists)
@@ -13,55 +47,72 @@ MACRO(TEST_TMPI_ATOMICS VARIABLE)
 
         if (TEST_ATOMICS)
             message(STATUS "Atomics found")
-            set(${VARIABLE} CACHE INTERNAL 1)
+            set(${VARIABLE} TRUE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         else (TEST_ATOMICS)
-            message(WARNING "Atomics not found for this compiler+cpu combination. Thread support will be unbearably slow: disable threads. Atomics should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
-            set(${VARIABLE} CACHE INTERNAL 0)
+            message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
+            set(${VARIABLE} FALSE CACHE INTERNAL "Whether atomic operations for thread-MPI were found")
         endif(TEST_ATOMICS)
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TEST_TMPI_ATOMICS VARIABLE)
 
+MACRO(TMPI_MAKE_CXX_LIB)
+    set(TMPI_CXX_LIB 1)
+ENDMACRO(TMPI_MAKE_CXX_LIB)
+
+MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
+    foreach (_option IN ITEMS ${ARGN})
+        if (_option STREQUAL "CXX")
+            set(TMPI_CXX_LIB 1)
+        elseif (_option STREQUAL "NOMPI")
+            set(TMPI_NO_MPI_LIB 1)
+        else ()
+            message(FATAL_ERROR "Unknown thread_mpi option '${_option}'")
+        endif ()
+    endforeach ()
+    set(${SRC_VARIABLE}
+        thread_mpi/errhandler.c
+        thread_mpi/tmpi_malloc.c)
+    if (THREAD_PTHREADS)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/pthreads.c)
+    elseif (THREAD_WINDOWS)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/winthreads.c)
+    endif (THREAD_PTHREADS)
+    if (TMPI_CXX_LIB)
+        list(APPEND ${SRC_VARIABLE} thread_mpi/system_error.cpp)
+    endif (TMPI_CXX_LIB)
+    if (NOT TMPI_NO_MPI_LIB)
+        list(APPEND ${SRC_VARIABLE}
+             thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
+             thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
+             thread_mpi/bcast.c         thread_mpi/p2p_wait.c
+             thread_mpi/collective.c    thread_mpi/profile.c
+             thread_mpi/comm.c          thread_mpi/reduce.c
+             thread_mpi/event.c         thread_mpi/reduce_fast.c
+             thread_mpi/gather.c        thread_mpi/scatter.c
+             thread_mpi/group.c         thread_mpi/tmpi_init.c
+             thread_mpi/topology.c      thread_mpi/list.c
+             thread_mpi/type.c          thread_mpi/lock.c
+             thread_mpi/numa_malloc.c   thread_mpi/once.c
+             thread_mpi/scan.c)
+    endif()
+ENDMACRO(TMPI_GET_SOURCE_LIST)
+
+test_tmpi_atomics(TMPI_ATOMICS)
 
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
     check_include_files(pthread.h    HAVE_PTHREAD_H)
     set(THREAD_PTHREADS 1)
     #add_definitions(-DTHREAD_PTHREADS)
-    set(THREAD_MPI_SRC 
-        thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-        thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-        thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-        thread_mpi/collective.c    thread_mpi/profile.c
-        thread_mpi/comm.c          thread_mpi/pthreads.c
-        thread_mpi/errhandler.c    thread_mpi/reduce.c
-        thread_mpi/event.c         thread_mpi/reduce_fast.c
-        thread_mpi/gather.c        thread_mpi/scatter.c
-        thread_mpi/group.c         thread_mpi/tmpi_init.c
-        thread_mpi/topology.c      thread_mpi/list.c          
-        thread_mpi/type.c          thread_mpi/lock.c
-        thread_mpi/numa_malloc.c   thread_mpi/once.c)
     set(THREAD_LIB ${CMAKE_THREAD_LIBS_INIT})
-else (CMAKE_USE_PTHREADS_INIT)
-    if (CMAKE_USE_WIN32_THREADS_INIT)
-        set(THREAD_WINDOWS 1)
-        #add_definitions(-DTHREAD_WINDOWS)
-        set(THREAD_MPI_SRC 
-            thread_mpi/alltoall.c      thread_mpi/p2p_protocol.c
-            thread_mpi/barrier.c       thread_mpi/p2p_send_recv.c
-            thread_mpi/bcast.c         thread_mpi/p2p_wait.c
-            thread_mpi/collective.c    thread_mpi/profile.c
-            thread_mpi/comm.c          
-            thread_mpi/errhandler.c    thread_mpi/reduce.c
-            thread_mpi/event.c         thread_mpi/reduce_fast.c
-            thread_mpi/gather.c        thread_mpi/scatter.c
-            thread_mpi/group.c         thread_mpi/tmpi_init.c
-            thread_mpi/topology.c      thread_mpi/list.c
-            thread_mpi/type.c          thread_mpi/lock.c
-            thread_mpi/winthreads.c    thread_mpi/once.c
-            thread_mpi/numa_malloc.c)
-        set(THREAD_LIBRARY )
-    endif (CMAKE_USE_WIN32_THREADS_INIT)
+elseif (CMAKE_USE_WIN32_THREADS_INIT)
+    set(THREAD_WINDOWS 1)
+    #add_definitions(-DTHREAD_WINDOWS)
+    set(THREAD_LIB)
+else ()
+    message(FATAL_ERROR "Thread support required")
 endif (CMAKE_USE_PTHREADS_INIT)
+
 
 # the spin-waiting option
 option(THREAD_MPI_WAIT_FOR_NO_ONE "Use busy waits without yielding to the OS scheduler. Turning this on might improve performance (very) slightly at the cost of very poor performance if the threads are competing for CPU time." OFF)
@@ -94,18 +145,6 @@ endif (THREAD_MPI_PROFILING)
 
 include(CheckCSourceCompiles)
 
-# Windows NUMA allocator
-if (THREAD_WINDOWS)
-	check_c_source_compiles(
-	"#include <windows.h>
-	int main(void) { PROCESSOR_NUMBER a; return 0; }"
-	HAVE_PROCESSOR_NUMBER)
-	if(HAVE_PROCESSOR_NUMBER)
-            #add_definitions(-DTMPI_WINDOWS_NUMA_API)
-            set(TMPI_WINDOWS_NUMA_API 1)
-	endif(HAVE_PROCESSOR_NUMBER)
-endif(THREAD_WINDOWS)
-
 # option to set affinity 
 option(THREAD_MPI_SET_AFFINITY "Set thread affinity to a core if number of threads equal to number of hardware threads." ON)
 mark_as_advanced(THREAD_MPI_SET_AFFINITY)
@@ -136,6 +175,7 @@ int main(void) { cpu_set_t set;
     if (PTHREAD_SETAFFINITY)
         set(HAVE_PTHREAD_SETAFFINITY 1)
     endif (PTHREAD_SETAFFINITY)
+    set(CMAKE_REQUIRED_LIBRARIES)
 endif (THREAD_PTHREADS)
 
 
@@ -146,6 +186,3 @@ check_include_files(sys/time.h      HAVE_SYS_TIME_H)
 check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
-
-
-test_tmpi_atomics(TMPI_ATOMICS)
