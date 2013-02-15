@@ -437,7 +437,7 @@ void init_em(FILE *fplog, const char *title,
                       ir, NULL, cr, -1, 0, mdatoms,
                       ems->s.x, ems->s.x, NULL, fr->bMolPBC, ems->s.box,
                       ems->s.lambda[efptFEP], &dvdlambda,
-                      NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                      NULL, NULL, nrnb, econqCoord);
         }
     }
 
@@ -654,7 +654,7 @@ static void do_em_step(t_commrec *cr, t_inputrec *ir, t_mdatoms *md,
                   ir, NULL, cr, count, 0, md,
                   s1->x, s2->x, NULL, bMolPBC, s2->box,
                   s2->lambda[efptBONDED], &dvdlambda,
-                  NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                  NULL, NULL, nrnb, econqCoord);
         wallcycle_stop(wcycle, ewcCONSTR);
     }
 }
@@ -794,13 +794,13 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
                   inputrec, NULL, cr, count, 0, mdatoms,
                   ems->s.x, ems->f, ems->f, fr->bMolPBC, ems->s.box,
                   ems->s.lambda[efptBONDED], &dvdlambda,
-                  NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);
+                  NULL, &shake_vir, nrnb, econqForceDispl);
         if (fr->bSepDVDL && fplog)
         {
             fprintf(fplog, sepdvdlformat, "Constraints", t, dvdlambda);
         }
         enerd->term[F_DVDL_BONDED] += dvdlambda;
-        m_add(force_vir, shake_vir, vir);
+        m_add(force_vir, shake_vir,vir);
         wallcycle_stop(wcycle, ewcCONSTR);
     }
     else
@@ -812,7 +812,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
     enerd->term[F_PRES] =
         calc_pres(fr->ePBC, inputrec->nwall, ems->s.box, ekin, vir, pres);
 
-    sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
+    sum_dhdl(enerd,ems->s.lambda, inputrec->fepvals);
 
     if (EI_ENERGY_MINIMIZATION(inputrec->eI))
     {
