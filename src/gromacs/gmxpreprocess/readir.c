@@ -4290,6 +4290,12 @@ void double_check(t_inputrec *ir, matrix box, gmx_bool bConstr, warninp_t wi)
         }
     }
 
+    if (bConstr && ir->epc == epcMTTK)
+    {
+        sprintf(warn_buf, "Constraints are not compatible with MTTK pressure control.");
+        warning_error(wi, warn_buf);
+    }
+
     if ( (ir->eConstrAlg == econtLINCS) && bConstr)
     {
         /* If we have Lincs constraints: */
