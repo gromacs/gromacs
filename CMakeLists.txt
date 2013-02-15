@@ -21,7 +21,7 @@ mark_as_advanced(CUSTOM_VERSION_STRING)
 if (CUSTOM_VERSION_STRING)
     set(PROJECT_VERSION ${CUSTOM_VERSION_STRING})
 endif (CUSTOM_VERSION_STRING)
-set(SOVERSION 6)
+set(SOVERSION 7)
 # It is a bit irritating, but this has to be set separately for now!
 SET(CPACK_PACKAGE_VERSION_MAJOR "4")
 SET(CPACK_PACKAGE_VERSION_MINOR "5")
