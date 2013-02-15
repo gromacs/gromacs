@@ -112,7 +112,6 @@ void update_constraints(FILE             *fplog,
                         gmx_int64_t       step,
                         real             *dvdlambda, /* FEP stuff */
                         t_inputrec       *inputrec,  /* input record and box stuff	*/
-                        gmx_ekindata_t   *ekind,
                         t_mdatoms        *md,
                         t_state          *state,
                         gmx_bool          bMolPBC,
@@ -126,8 +125,7 @@ void update_constraints(FILE             *fplog,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
                         gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir,
-                        real              vetanew);
+                        gmx_bool          bCalcVir);
 
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
@@ -144,7 +142,7 @@ void update_box(FILE             *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveOld);
+                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
