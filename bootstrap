@@ -4,5 +4,6 @@
 
 echo "\
 The use of autotools for installing GROMACS is deprecated for 4.6 onwards
-Please switch to CMake. Check http://www.gromacs.org/Developer_Zone/Cmake
+Please switch to CMake. Check out
+http://www.gromacs.org/Documentation/Installation_Instructions
 for instructions."
