@@ -951,20 +951,17 @@ static void dump_it_all(FILE *fp, const char *title,
 }
 
 static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
-                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel,
-                                gmx_bool bSaveEkinOld)
+                                gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
-    int           g;
-    t_grp_tcstat *tcstat  = ekind->tcstat;
-    t_grp_acc    *grpstat = ekind->grpstat;
-    int           nthread, thread;
+    int          g;
+    t_grp_tcstat *tcstat=ekind->tcstat;
+    t_grp_acc    *grpstat=ekind->grpstat;
+    int          nthread,thread;
 
     /* three main: VV with AveVel, vv with AveEkin, leap with AveEkin.  Leap with AveVel is also
-       an option, but not supported now.  Additionally, if we are doing iterations.
+       an option, but not supported now.
        bEkinAveVel: If TRUE, we sum into ekin, if FALSE, into ekinh.
-       bSavEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't copy over the ekinh_old.
-       If FALSE, we overrwrite it.
-     */
+    */
 
     /* group velocities are calculated in update_ekindata and
      * accumulated in acumulate_groups.
@@ -972,26 +969,17 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
      */
     for (g = 0; (g < opts->ngtc); g++)
     {
-
-        if (!bSaveEkinOld)
-        {
-            copy_mat(tcstat[g].ekinh, tcstat[g].ekinh_old);
-        }
         if (bEkinAveVel)
         {
             clear_mat(tcstat[g].ekinf);
-        }
+            tcstat[g].ekinscalef_nhc = 1.0;   /* need to clear this -- logic is complicated! */
+        } 
         else
         {
             clear_mat(tcstat[g].ekinh);
         }
-        if (bEkinAveVel)
-        {
-            tcstat[g].ekinscalef_nhc = 1.0; /* need to clear this -- logic is complicated! */
-        }
     }
     ekind->dekindl_old = ekind->dekindl;
-
     nthread = gmx_omp_nthreads_get(emntUpdate);
 
 #pragma omp parallel for num_threads(nthread) schedule(static)
@@ -1076,7 +1064,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
 static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
                               t_grpopts *opts, t_mdatoms *md,
                               gmx_ekindata_t *ekind,
-                              t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+                              t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     int           start = md->start, homenr = md->homenr;
     int           g, d, n, m, gt = 0;
@@ -1141,16 +1129,16 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
     inc_nrnb(nrnb, eNR_EKIN, homenr);
 }
 
-void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,
-                  gmx_ekindata_t *ekind, t_nrnb *nrnb, gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld)
+void calc_ke_part(t_state *state,t_grpopts *opts,t_mdatoms *md,
+                  gmx_ekindata_t *ekind,t_nrnb *nrnb, gmx_bool bEkinAveVel)
 {
     if (ekind->cosacc.cos_accel == 0)
     {
-        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        calc_ke_part_normal(state->v, opts, md, ekind, nrnb, bEkinAveVel);
     }
     else
     {
-        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel, bSaveEkinOld);
+        calc_ke_part_visc(state->box, state->x, state->v, opts, md, ekind, nrnb, bEkinAveVel);
     }
 }
 
@@ -1329,7 +1317,7 @@ static void combine_forces(int nstcalclr,
         /* MRS -- need to make sure this works with trotter integration -- the constraint calls may not be right.*/
         constrain(NULL, FALSE, FALSE, constr, idef, ir, NULL, cr, step, 0, md,
                   state->x, f_lr, f_lr, bMolPBC, state->box, state->lambda[efptBONDED], NULL,
-                  NULL, NULL, nrnb, econqForce, ir->epc == epcMTTK, state->veta, state->veta);
+                  NULL, NULL, nrnb, econqForce);
     }
 
     /* Add nstcalclr-1 times the LR force to the sum of both forces
@@ -1508,8 +1496,7 @@ void update_constraints(FILE             *fplog,
                         gmx_constr_t      constr,
                         gmx_bool          bInitStep,
                         gmx_bool          bFirstHalf,
-                        gmx_bool          bCalcVir,
-                        real              vetanew)
+                        gmx_bool          bCalcVir)
 {
     gmx_bool             bExtended, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double               dt;
@@ -1568,8 +1555,7 @@ void update_constraints(FILE             *fplog,
                       state->x, state->v, state->v,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc,
-                      inputrec->epc == epcMTTK, state->veta, vetanew);
+                      NULL, bCalcVir ? &vir_con : NULL, nrnb, econqVeloc);
         }
         else
         {
@@ -1578,8 +1564,7 @@ void update_constraints(FILE             *fplog,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord,
-                      inputrec->epc == epcMTTK, state->veta, state->veta);
+                      state->v, bCalcVir ? &vir_con : NULL, nrnb, econqCoord);
         }
         wallcycle_stop(wcycle, ewcCONSTR);
 
@@ -1651,7 +1636,7 @@ void update_constraints(FILE             *fplog,
                       state->x, xprime, NULL,
                       bMolPBC, state->box,
                       state->lambda[efptBONDED], dvdlambda,
-                      NULL, NULL, nrnb, econqCoord, FALSE, 0, 0);
+                      NULL, NULL, nrnb, econqCoord);
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
