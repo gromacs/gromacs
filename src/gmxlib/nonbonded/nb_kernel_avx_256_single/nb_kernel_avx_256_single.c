@@ -257,7 +257,7 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_avx_256_single;
 
 
 nb_kernel_info_t
-kernellist_avx_256_single[] =
+    kernellist_avx_256_single[] =
 {
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_256_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_avx_256_single", "avx_256_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_256_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_avx_256_single", "avx_256_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
@@ -476,6 +476,6 @@ kernellist_avx_256_single[] =
 };
 
 int
-kernellist_avx_256_single_size = sizeof(kernellist_avx_256_single)/sizeof(kernellist_avx_256_single[0]);
+    kernellist_avx_256_single_size = sizeof(kernellist_avx_256_single)/sizeof(kernellist_avx_256_single[0]);
 
 #endif
