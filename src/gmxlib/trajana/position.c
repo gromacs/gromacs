@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementation of functions in position.h.
@@ -58,7 +65,7 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
     pos->v  = NULL;
     pos->f  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
-    pos->g  = NULL;
+    pos->g        = NULL;
     pos->nalloc_x = 0;
 }
 
@@ -154,11 +161,11 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, rvec x)
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
+    pos->nr               = 0;
     sfree(pos->x); pos->x = NULL;
     sfree(pos->v); pos->v = NULL;
     sfree(pos->f); pos->f = NULL;
-    pos->nalloc_x = 0;
+    pos->nalloc_x         = 0;
     gmx_ana_indexmap_deinit(&pos->m);
 }
 
@@ -205,10 +212,12 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, gmx_bool bFirst)
     memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
     if (dest->v)
     {
+        assert(src->v);
         memcpy(dest->v, src->v, dest->nr*sizeof(*dest->v));
     }
     if (dest->f)
     {
+        assert(src->f);
         memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
@@ -248,17 +257,17 @@ gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
-    pos->m.b.nr = 0;
-    pos->m.b.nra = 0;
+    pos->m.b.nr    = 0;
+    pos->m.b.nra   = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    pos->m.b.index[0] = 0;
+    pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic = TRUE;
+    pos->m.bStatic    = TRUE;
     pos->m.bMapStatic = TRUE;
 }
 
@@ -270,8 +279,8 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
@@ -279,7 +288,7 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
      * should be FALSE. This makes it possible to update the flags in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic = TRUE;
+    pos->m.bStatic    = TRUE;
     pos->m.bMapStatic = TRUE;
 }
 
@@ -330,9 +339,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     dest->m.mapb.index[j+1] = g->isize;
     dest->m.b.index[j+1]    = g->isize;
     dest->nr++;
-    dest->m.nr = dest->nr;
+    dest->m.nr      = dest->nr;
     dest->m.mapb.nr = dest->nr;
-    dest->m.b.nr = dest->nr;
+    dest->m.b.nr    = dest->nr;
 }
 
 /*!
@@ -385,7 +394,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         if (refid < 0)
         {
             dest->m.refid[j] = -1;
-            dest->m.bStatic = FALSE;
+            dest->m.bStatic  = FALSE;
             /* If we are using masks, there is no need to alter the
              * mapid field. */
         }
@@ -393,7 +402,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         {
             if (refid != j)
             {
-                dest->m.bStatic = FALSE;
+                dest->m.bStatic    = FALSE;
                 dest->m.bMapStatic = FALSE;
             }
             dest->m.refid[j] = refid;
@@ -403,7 +412,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         }
         dest->m.mapb.index[j+1] = g->isize;
         dest->nr++;
-        dest->m.nr = dest->nr;
+        dest->m.nr      = dest->nr;
         dest->m.mapb.nr = dest->nr;
     }
 }
@@ -420,7 +429,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic = FALSE;
+        pos->m.bStatic    = FALSE;
         pos->m.bMapStatic = FALSE;
     }
 }

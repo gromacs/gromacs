@@ -1,3 +1,37 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+#
 # - Define macro to check if isfinite or _isfinite exists
 #
 #  gmx_test_isfinite(VARIABLE)
@@ -14,10 +48,13 @@
 #
 
 MACRO(gmx_test_isfinite VARIABLE)
+  if(NOT DEFINED isfinite_compile_ok)
     MESSAGE(STATUS "Checking for isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    if (HAVE_LIBM)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
+    endif()
     check_c_source_compiles(
       "#include <math.h>
 int main(void) {
@@ -27,18 +64,27 @@ int main(void) {
 
     if(isfinite_compile_ok)
         MESSAGE(STATUS "Checking for isfinite - yes")
-            set(${VARIABLE} ${isfinite_compile_ok}
-                "Result of test for isfinite")
     else(isfinite_compile_ok)
         MESSAGE(STATUS "Checking for isfinite - no")
     endif(isfinite_compile_ok)
+    set(isfinite_compile_ok "${isfinite_compile_ok}" CACHE INTERNAL "Result of isfinite check")
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  endif(NOT DEFINED isfinite_compile_ok)
+  if(isfinite_compile_ok)
+    set(${VARIABLE} ${isfinite_compile_ok}
+                "Result of test for isfinite")
+  endif()
 ENDMACRO(gmx_test_isfinite VARIABLE)
 
 MACRO(gmx_test__isfinite VARIABLE)
+  if(NOT DEFINED _isfinite_compile_ok)
     MESSAGE(STATUS "Checking for _isfinite")
 
     set(CMAKE_REQUIRED_INCLUDES "math.h")
-    set(CMAKE_REQUIRED_LIBRARIES "m")
+    if (HAVE_LIBM)
+        set(CMAKE_REQUIRED_LIBRARIES "m")
+    endif()
     check_c_source_compiles(
       "#include <math.h>
 int main(void) {
@@ -48,15 +94,22 @@ int main(void) {
 
     if(_isfinite_compile_ok)
         MESSAGE(STATUS "Checking for _isfinite - yes")
-            set(${VARIABLE} ${_isfinite_compile_ok}
-                "Result of test for _isfinite")
     else(_isfinite_compile_ok)
         MESSAGE(STATUS "Checking for _isfinite - no")
     endif(_isfinite_compile_ok)
+    set(_isfinite_compile_ok "${_isfinite_compile_ok}" CACHE INTERNAL "Result of _isfinite check")
+    set(CMAKE_REQUIRED_INCLUDES)
+    set(CMAKE_REQUIRED_LIBRARIES)
+  endif(NOT DEFINED _isfinite_compile_ok)
+  if(_isfinite_compile_ok)
+    set(${VARIABLE} ${_isfinite_compile_ok}
+                "Result of test for _isfinite")
+  endif()
 ENDMACRO(gmx_test__isfinite VARIABLE)
 
 # Necessary for MSVC
 MACRO(gmx_test__finite VARIABLE)
+  if(NOT DEFINED _finite_compile_ok)
     MESSAGE(STATUS "Checking for _finite")
 
     set(CMAKE_REQUIRED_INCLUDES "float.h")
@@ -69,9 +122,14 @@ int main(void) {
 
     if(_finite_compile_ok)
         MESSAGE(STATUS "Checking for _finite - yes")
-            set(${VARIABLE} ${_finite_compile_ok}
-                "Result of test for _finite")
     else(_finite_compile_ok)
         MESSAGE(STATUS "Checking for _finite - no")
     endif(_finite_compile_ok)
+    set(_finite_compile_ok "${_finite_compile_ok}" CACHE INTERNAL "Result of _finite check")
+    set(CMAKE_REQUIRED_INCLUDES)
+  endif(NOT DEFINED _finite_compile_ok)
+  if(_finite_compile_ok)
+    set(${VARIABLE} ${_finite_compile_ok}
+                "Result of test for _finite")
+  endif()
 ENDMACRO(gmx_test__finite VARIABLE)

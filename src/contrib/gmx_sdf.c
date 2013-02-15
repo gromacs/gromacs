@@ -33,7 +33,7 @@
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "rdgroup.h"
+#include "index.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "gstat.h"

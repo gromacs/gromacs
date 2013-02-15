@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief API for handling selection (the \c gmx_ana_selection_t structure and related functions).
@@ -64,27 +71,27 @@ typedef enum
 typedef struct gmx_ana_selection_t
 {
     /** Name of the selection. */
-    char                   *name;
+    char                       *name;
     /** The actual selection string. */
-    char                   *selstr;
+    char                       *selstr;
     /** Selected positions. */
-    gmx_ana_pos_t           p;
+    gmx_ana_pos_t               p;
     /** Masses associated with the positions. */
-    real                   *m;
+    real                       *m;
     /** Charges associated with the positions. */
-    real                   *q;
+    real                       *q;
     /** Pointer to the index group that holds the selected atoms. */
-    struct gmx_ana_index_t *g;
+    struct gmx_ana_index_t     *g;
     /** TRUE if the value can change as a function of time. */
     gmx_bool                    bDynamic;
     /** Type of the covered fraction. */
-    e_coverfrac_t           cfractype;
+    e_coverfrac_t               cfractype;
     /** TRUE if the covered fraction depends on the frame. */
     gmx_bool                    bCFracDyn;
     /** Covered fraction of the selection for the current frame. */
-    real                    cfrac;
+    real                        cfrac;
     /** The average covered fraction (over the trajectory). */
-    real                    avecfrac;
+    real                        avecfrac;
 
     /*! \brief
      * Pointer to the root of the selection element tree (internal use only).
@@ -115,7 +122,7 @@ gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type);
 
 /** Creates a new empty selection collection. */
 int
-gmx_ana_selcollection_create(gmx_ana_selcollection_t **sc,
+gmx_ana_selcollection_create(gmx_ana_selcollection_t      **sc,
                              struct gmx_ana_poscalc_coll_t *pcc);
 /** Frees the memory allocated for a selection collection. */
 void
@@ -130,11 +137,11 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
 /** Request evaluation of velocities for selections. */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut);
+                                    gmx_bool                 bVelOut);
 /** Request evaluation of forces for selections. */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut);
+                                      gmx_bool                 bForceOut);
 /** Sets the topology for a selection collection. */
 int
 gmx_ana_selcollection_set_topology(gmx_ana_selcollection_t *sc, t_topology *top,
@@ -153,7 +160,7 @@ void
 gmx_ana_selcollection_print_tree(FILE *fp, gmx_ana_selcollection_t *sc, gmx_bool bValues);
 /** Prints the selection strings into an XVGR file as comments. */
 void
-xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc, 
+xvgr_selcollection(FILE *fp, gmx_ana_selcollection_t *sc,
                    const output_env_t oenv);
 
 /* In parsetree.c */
@@ -165,7 +172,7 @@ gmx_ana_selcollection_parse_stdin(gmx_ana_selcollection_t *sc, int nr,
 /** Parses selection(s) from a file. */
 int
 gmx_ana_selcollection_parse_file(gmx_ana_selcollection_t *sc, const char *fnm,
-                                  gmx_ana_indexgrps_t *grps);
+                                 gmx_ana_indexgrps_t *grps);
 /** Parses selection(s) from a string. */
 int
 gmx_ana_selcollection_parse_str(gmx_ana_selcollection_t *sc, const char *str,

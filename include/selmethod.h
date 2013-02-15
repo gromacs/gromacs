@@ -1,36 +1,43 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \page selmethods Custom selection methods
  *
- * Custom selection methods are defined by creating a new instance of 
+ * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
  * the selection.
  * The structure contains callback pointers that define the actual behavior
@@ -137,7 +144,7 @@
  * \c gmx_ana_selparam_t structures.
  * The order of the parameters does not matter (except possibly for callback
  * implementation), with one important exception:
- * If the method evaluates to a \ref POS_VALUE, the first parameter should 
+ * If the method evaluates to a \ref POS_VALUE, the first parameter should
  * have \ref GROUP_VALUE and be the one that is used to calculate the
  * positions.
  *
@@ -245,14 +252,14 @@
  *    or to control the default behavior of the selection engine
  *    (currently, such a framework is not implemented, but should be easy to
  *    implement if required).
- *    
+ *
  * In addition to restricting the type of the method, selection modifiers
  * do not allow the flags \ref SMETH_SINGLEVAL and \ref SMETH_VARNUMVAL
  * (they would not make sense).
  *
  * Parameters and callbacks should be implemented as with normal selection
  * method, but beware that very little of the functionality has been tested.
- * 
+ *
  * \todo
  * The modifier handling could be made more flexible and more generic;
  * the current implementation does not allow many things which would be
@@ -604,7 +611,7 @@ typedef struct gmx_ana_selmethod_help_t
  *
  * See the function pointer type documentation for details of how the
  * functions should be implemented.
- * More details on implementing new selection methods can be found on a 
+ * More details on implementing new selection methods can be found on a
  * separate page: \ref selmethods.
  */
 typedef struct gmx_ana_selmethod_t

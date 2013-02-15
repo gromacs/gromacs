@@ -1,37 +1,39 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifndef _gmx_ga2la_h
 #define _gmx_ga2la_h
@@ -57,11 +59,11 @@ typedef struct {
 
 typedef struct gmx_ga2la {
     gmx_bool      bAll;
-    int       mod;
-    int       nalloc;
-    gmx_laa_t *laa;
-    gmx_lal_t *lal;
-    int       start_space_search;
+    int           mod;
+    int           nalloc;
+    gmx_laa_t    *laa;
+    gmx_lal_t    *lal;
+    int           start_space_search;
 } t_gmx_ga2la;
 
 /* Clear all the entries in the ga2la list */
@@ -71,14 +73,14 @@ static void ga2la_clear(gmx_ga2la_t ga2la)
 
     if (ga2la->bAll)
     {
-        for(i=0; i<ga2la->nalloc; i++)
+        for (i = 0; i < ga2la->nalloc; i++)
         {
             ga2la->laa[i].cell = -1;
         }
     }
     else
     {
-        for(i=0; i<ga2la->nalloc; i++)
+        for (i = 0; i < ga2la->nalloc; i++)
         {
             ga2la->lal[i].ga   = -1;
             ga2la->lal[i].next = -1;
@@ -87,11 +89,11 @@ static void ga2la_clear(gmx_ga2la_t ga2la)
     }
 }
 
-static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
+static gmx_ga2la_t ga2la_init(int nat_tot, int nat_loc)
 {
     gmx_ga2la_t ga2la;
 
-    snew(ga2la,1);
+    snew(ga2la, 1);
 
     /* There are two methods implemented for finding the local atom number
      * belonging to a global atom number:
@@ -108,7 +110,7 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
     if (ga2la->bAll)
     {
         ga2la->nalloc = nat_tot;
-        snew(ga2la->laa,ga2la->nalloc);
+        snew(ga2la->laa, ga2la->nalloc);
     }
     else
     {
@@ -119,9 +121,9 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
          * where f is: the direct list length / #local atoms
          * The fraction of atoms not in the direct list is: 1-f(1-e^-1/f).
          */
-        ga2la->mod = 2*nat_loc;
+        ga2la->mod    = 2*nat_loc;
         ga2la->nalloc = over_alloc_dd(ga2la->mod);
-        snew(ga2la->lal,ga2la->nalloc);
+        snew(ga2la->lal, ga2la->nalloc);
     }
 
     ga2la_clear(ga2la);
@@ -130,9 +132,9 @@ static gmx_ga2la_t ga2la_init(int nat_tot,int nat_loc)
 }
 
 /* Set the ga2la entry for global atom a_gl to local atom a_loc and cell. */
-static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
+static void ga2la_set(gmx_ga2la_t ga2la, int a_gl, int a_loc, int cell)
 {
-    int ind,ind_prev,i;
+    int ind, ind_prev, i;
 
     if (ga2la->bAll)
     {
@@ -143,12 +145,12 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
     }
 
     ind = a_gl % ga2la->mod;
-    
+
     if (ga2la->lal[ind].ga >= 0)
     {
         /* Search the last entry in the linked list for this index */
         ind_prev = ind;
-        while(ga2la->lal[ind_prev].next >= 0)
+        while (ga2la->lal[ind_prev].next >= 0)
         {
             ind_prev = ga2la->lal[ind_prev].next;
         }
@@ -162,15 +164,15 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
         if (ind == ga2la->nalloc)
         {
             ga2la->nalloc = over_alloc_dd(ind+1);
-            srenew(ga2la->lal,ga2la->nalloc);
-            for(i=ind; i<ga2la->nalloc; i++)
+            srenew(ga2la->lal, ga2la->nalloc);
+            for (i = ind; i < ga2la->nalloc; i++)
             {
                 ga2la->lal[i].ga   = -1;
                 ga2la->lal[i].next = -1;
             }
         }
         ga2la->lal[ind_prev].next = ind;
-    
+
         ga2la->start_space_search = ind + 1;
     }
     ga2la->lal[ind].ga   = a_gl;
@@ -179,19 +181,19 @@ static void ga2la_set(gmx_ga2la_t ga2la,int a_gl,int a_loc,int cell)
 }
 
 /* Delete the ga2la entry for global atom a_gl */
-static void ga2la_del(gmx_ga2la_t ga2la,int a_gl)
+static void ga2la_del(gmx_ga2la_t ga2la, int a_gl)
 {
-    int ind,ind_prev;
+    int ind, ind_prev;
 
     if (ga2la->bAll)
     {
         ga2la->laa[a_gl].cell = -1;
-        
+
         return;
     }
 
     ind_prev = -1;
-    ind = a_gl % ga2la->mod;
+    ind      = a_gl % ga2la->mod;
     do
     {
         if (ga2la->lal[ind].ga == a_gl)
@@ -215,7 +217,7 @@ static void ga2la_del(gmx_ga2la_t ga2la,int a_gl)
             return;
         }
         ind_prev = ind;
-        ind = ga2la->lal[ind].next;
+        ind      = ga2la->lal[ind].next;
     }
     while (ind >= 0);
 
@@ -223,7 +225,7 @@ static void ga2la_del(gmx_ga2la_t ga2la,int a_gl)
 }
 
 /* Change the local atom for present ga2la entry for global atom a_gl */
-static void ga2la_change_la(gmx_ga2la_t ga2la,int a_gl,int a_loc)
+static void ga2la_change_la(gmx_ga2la_t ga2la, int a_gl, int a_loc)
 {
     int ind;
 
@@ -236,11 +238,11 @@ static void ga2la_change_la(gmx_ga2la_t ga2la,int a_gl,int a_loc)
 
     ind = a_gl % ga2la->mod;
     do
-    {        
+    {
         if (ga2la->lal[ind].ga == a_gl)
         {
             ga2la->lal[ind].la = a_loc;
-            
+
             return;
         }
         ind = ga2la->lal[ind].next;
@@ -256,7 +258,7 @@ static void ga2la_change_la(gmx_ga2la_t ga2la,int a_gl,int a_loc)
  * in which case it indicates that it is more than one cell away
  * in zone cell - #zones.
  */
-static gmx_bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
+static gmx_bool ga2la_get(const gmx_ga2la_t ga2la, int a_gl, int *a_loc, int *cell)
 {
     int ind;
 
@@ -275,7 +277,7 @@ static gmx_bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
         {
             *a_loc = ga2la->lal[ind].la;
             *cell  = ga2la->lal[ind].cell;
-            
+
             return TRUE;
         }
         ind = ga2la->lal[ind].next;
@@ -288,7 +290,7 @@ static gmx_bool ga2la_get(const gmx_ga2la_t ga2la,int a_gl,int *a_loc,int *cell)
 /* Returns if the global atom a_gl is a home atom.
  * Sets the local atom.
  */
-static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
+static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la, int a_gl, int *a_loc)
 {
     int ind;
 
@@ -301,7 +303,7 @@ static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 
     ind = a_gl % ga2la->mod;
     do
-    {        
+    {
         if (ga2la->lal[ind].ga == a_gl)
         {
             if (ga2la->lal[ind].cell == 0)
@@ -324,7 +326,7 @@ static gmx_bool ga2la_get_home(const gmx_ga2la_t ga2la,int a_gl,int *a_loc)
 
 /* Returns if the global atom a_gl is a home atom.
  */
-static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la,int a_gl)
+static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la, int a_gl)
 {
     int ind;
 
@@ -335,7 +337,7 @@ static gmx_bool ga2la_is_home(const gmx_ga2la_t ga2la,int a_gl)
 
     ind = a_gl % ga2la->mod;
     do
-    {        
+    {
         if (ga2la->lal[ind].ga == a_gl)
         {
             return (ga2la->lal[ind].cell == 0);

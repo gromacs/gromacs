@@ -79,6 +79,7 @@ g_polystat|calculates static properties of polymers
 g_rdf|calculates radial distribution functions
 g_rotacf|calculates the rotational correlation function for molecules
 g_rotmat|plots the rotation matrix for fitting to a reference structure
+g_sans|computes the small angle neutron scattering spectra
 g_traj|plots x, v, f, box, temperature and rotational energy
 g_vanhove|calculates Van Hove displacement functions
 END
@@ -86,7 +87,6 @@ END
 HEAD|Analyzing bonded interactions
 g_angle|calculates distributions and correlations for angles and dihedrals
 g_bond|calculates bond length distributions
-g_dih|analyzes dihedral transitions
 mk_angndx|generates index files for g_angle
 END
 
@@ -110,6 +110,7 @@ HEAD|Kinetic properties
 g_bar|calculates free energy difference estimates through Bennett's acceptance ratio
 g_current|calculate current autocorrelation function of system
 g_dos|analyzes density of states and properties based on that
+g_dyecoupl|extracts dye dynamics from trajectories
 g_kinetics|analyzes kinetic constants from properties based on the Eyring model
 g_principal|calculate principal axes of inertion for a group of atoms
 g_tcaf|calculates viscosities of liquids

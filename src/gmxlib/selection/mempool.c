@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Memory pooling for selection evaluation.
@@ -82,7 +89,7 @@ _gmx_sel_mempool_create(gmx_sel_mempool_t **mpp)
     mp->blockstack        = NULL;
     mp->blockstack_nalloc = 0;
     mp->maxsize           = 0;
-    *mpp = mp;
+    *mpp                  = mp;
     return 0;
 }
 
@@ -109,7 +116,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
     void   *ptr = NULL;
     size_t  size_walign;
 
-    *ptrp = NULL;
+    *ptrp       = NULL;
     size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
     if (mp->buffer)
     {
@@ -118,7 +125,7 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, void **ptrp, size_t size)
             gmx_bug("out of memory pool memory");
             return ENOMEM;
         }
-        ptr = mp->freeptr;
+        ptr           = mp->freeptr;
         mp->freeptr  += size_walign;
         mp->freesize -= size_walign;
         mp->currsize += size_walign;
@@ -162,11 +169,11 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     }
     assert(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr);
     mp->nblocks--;
-    size = mp->blockstack[mp->nblocks].size;
+    size          = mp->blockstack[mp->nblocks].size;
     mp->currsize -= size;
     if (mp->buffer)
     {
-        mp->freeptr = (char *)ptr;
+        mp->freeptr   = (char *)ptr;
         mp->freesize += size;
     }
     else

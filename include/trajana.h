@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief Main API of the trajectory analysis library.
@@ -54,7 +61,7 @@
  */
 #ifndef TRAJANA_H
 #define TRAJANA_H
-
+#include "visibility.h"
 #include "typedefs.h"
 #include "filenm.h"
 #include "readinp.h"
@@ -73,7 +80,7 @@ typedef struct gmx_ana_traj_t gmx_ana_traj_t;
  * \anchor analysis_flags
  * These flags can be used to alter the behavior of the analysis library to
  * suit the analysis tool.
- * They are given to the gmx_ana_traj_create() when creating the 
+ * They are given to the gmx_ana_traj_create() when creating the
  * \c gmx_ana_traj_t data structure, and affect the behavior of the other
  * functions in this header.
  */
@@ -179,6 +186,7 @@ typedef struct gmx_ana_traj_t gmx_ana_traj_t;
 /*@{*/
 
 /** Allocates and initializes data structure for trajectory analysis. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags);
 /** Frees the memory allocated for trajectory analysis data. */
@@ -188,9 +196,11 @@ gmx_ana_traj_free(gmx_ana_traj_t *d);
 int
 gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags);
 /** Sets the number of reference groups required. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_set_nrefgrps(gmx_ana_traj_t *d, int nrefgrps);
 /** Sets the number of analysis groups required. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_set_nanagrps(gmx_ana_traj_t *d, int nanagrps);
 /** Sets whether PBC are used. */
@@ -203,17 +213,19 @@ gmx_ana_set_rmpbc(gmx_ana_traj_t *d, gmx_bool bRmPBC);
 int
 gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags);
 /** Parses command-line arguments and performs some initialization. */
+GMX_LIBGMX_EXPORT
 int
 parse_trjana_args(gmx_ana_traj_t *d, int *argc, char *argv[],
                   unsigned long pca_flags, int nfile, t_filenm fnm[],
                   int npargs, t_pargs *pa,
-		  int ndesc, const char **desc,
+                  int ndesc, const char **desc,
                   int nbugs, const char **bugs,
                   output_env_t *oenv);
 /** Initializes selection information. */
 int
 gmx_ana_init_selections(gmx_ana_traj_t *d);
 /** Initializes calculation of covered fractions for selections. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 
@@ -221,6 +233,7 @@ gmx_ana_init_coverfrac(gmx_ana_traj_t *d, e_coverfrac_t type);
 gmx_bool
 gmx_ana_has_pbc(gmx_ana_traj_t *d);
 /** Gets the topology information. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_topology(gmx_ana_traj_t *d, gmx_bool bReq, t_topology **top, gmx_bool *bTop);
 /** Gets the configuration from the topology. */
@@ -234,21 +247,26 @@ gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr);
 int
 gmx_ana_get_ngrps(gmx_ana_traj_t *d, int *ngrps);
 /** Gets the number of analysis groups provided by the user. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_nanagrps(gmx_ana_traj_t *d, int *nanagrps);
 /** Gets the selection object for a reference selection. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_refsel(gmx_ana_traj_t *d, int i, gmx_ana_selection_t **sel);
 /** Gets the selection object for a reference selection. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_anagrps(gmx_ana_traj_t *d, gmx_ana_selection_t ***sel);
 /** Gets an array of names for the selections. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_get_grpnames(gmx_ana_traj_t *d, char ***grpnames);
 /** Gets the selection collection object that contains all the selections. */
 int
 gmx_ana_get_selcollection(gmx_ana_traj_t *d, gmx_ana_selcollection_t **sc);
 /** Prints the selection strings into an XVGR file as comments. */
+GMX_LIBGMX_EXPORT
 int
 xvgr_selections(FILE *out, gmx_ana_traj_t *d);
 
@@ -279,9 +297,10 @@ xvgr_selections(FILE *out, gmx_ana_traj_t *d);
  * the same value to the caller.
  */
 typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-	                        int nr, gmx_ana_selection_t *sel[], void *data);
+                                int nr, gmx_ana_selection_t *sel[], void *data);
 
 /** Loops through all frames in the trajectory. */
+GMX_LIBGMX_EXPORT
 int
 gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data);
 /** Gets the total number of frames analyzed. */

@@ -1,19 +1,38 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*- 
- *
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
  * Gromacs 4.0                         Copyright (c) 1991-2003
  * David van der Spoel, Erik Lindahl, University of Groningen.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
- * 
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _GMX_FFT_H_
@@ -22,7 +41,7 @@
 /*! \file gmx_fft.h
  *  \brief Fast Fourier Transforms.
  *
- *  This file provides an abstract Gromacs interface to Fourier transforms, 
+ *  This file provides an abstract Gromacs interface to Fourier transforms,
  *  including multi-dimensional and real-to-complex transforms.
  *
  *  Internally it is implemented as wrappers to external libraries such
@@ -35,7 +54,7 @@
  */
 
 #include <stdio.h>
-
+#include "visibility.h"
 #include "types/simple.h"
 #include "gmxcomplex.h"
 
@@ -49,10 +68,10 @@ extern "C" {
 
 
 
-/*! \brief Datatype for FFT setup 
+/*! \brief Datatype for FFT setup
  *
  *  The gmx_fft_t type contains all the setup information, e.g. twiddle
- *  factors, necessary to perform an FFT. Internally it is mapped to 
+ *  factors, necessary to perform an FFT. Internally it is mapped to
  *  whatever FFT library we are using, or the built-in FFTPACK if no fast
  *  external library is available.
  *
@@ -61,12 +80,12 @@ extern "C" {
  *  they should allocate one instance each when executing in parallel.
  */
 typedef struct gmx_fft *
-gmx_fft_t;
+    gmx_fft_t;
 
 
 
 
-/*! \brief Specifier for FFT direction. 
+/*! \brief Specifier for FFT direction.
  *
  *  The definition of the 1D forward transform from input x[] to output y[] is
  *  \f[
@@ -81,7 +100,7 @@ gmx_fft_t;
  *
  *  A forward-backward transform pair will this result in data scaled by N.
  *
- *  For complex-to-complex transforms you can only use one of 
+ *  For complex-to-complex transforms you can only use one of
  *  GMX_FFT_FORWARD or GMX_FFT_BACKWARD, and for real-complex transforms you
  *  can only use GMX_FFT_REAL_TO_COMPLEX or GMX_FFT_COMPLEX_TO_REAL.
  */
@@ -93,31 +112,31 @@ typedef enum gmx_fft_direction
     GMX_FFT_COMPLEX_TO_REAL  /*!< Complex-to-real valued fft            */
 } gmx_fft_direction;
 
-/*! \brief Specifier for FFT flags. 
+/*! \brief Specifier for FFT flags.
  *
  *  Some FFT libraries (FFTW, in particular) can do timings and other
  *  tricks to try and optimize the FFT for the current architecture. However,
  *  this can also lead to results that differ between consecutive runs with
- *  identical input. 
+ *  identical input.
  *  To avoid this, the conservative flag will attempt to disable such
  *  optimization, but there are no guarantees since we cannot control what
  *  the FFT libraries do internally.
  */
 
 typedef int gmx_fft_flag;
-static const int GMX_FFT_FLAG_NONE = 0;
+static const int GMX_FFT_FLAG_NONE         = 0;
 static const int GMX_FFT_FLAG_CONSERVATIVE = (1<<0);
 
-/*! \brief Setup a 1-dimensional complex-to-complex transform 
+/*! \brief Setup a 1-dimensional complex-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
- *  \param nx     Length of transform 
+ *  \param nx     Length of transform
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
@@ -126,17 +145,17 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
                         gmx_fft_flag      flags);
 
 
-/*! \brief Setup multiple 1-dimensional complex-to-complex transform 
+/*! \brief Setup multiple 1-dimensional complex-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
- *  \param nx     Length of transform 
+ *  \param nx     Length of transform
  *  \param howmany Howmany 1D FFT
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
@@ -146,25 +165,26 @@ gmx_fft_init_many_1d        (gmx_fft_t *       fft,
                              gmx_fft_flag      flags);
 
 
-/*! \brief Setup a 1-dimensional real-to-complex transform 
+/*! \brief Setup a 1-dimensional real-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in real space
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_init_1d_real        (gmx_fft_t *       fft,
                              int               nx,
                              gmx_fft_flag      flags);
 
 
-/*! \brief Setup multiple 1-dimensional real-to-complex transform 
+/*! \brief Setup multiple 1-dimensional real-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in real space
@@ -172,9 +192,9 @@ gmx_fft_init_1d_real        (gmx_fft_t *       fft,
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
@@ -185,7 +205,7 @@ gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
 
 
 
-/*! \brief Setup a 2-dimensional complex-to-complex transform 
+/*! \brief Setup a 2-dimensional complex-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in first dimension
@@ -193,19 +213,19 @@ gmx_fft_init_many_1d_real        (gmx_fft_t *       fft,
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
 gmx_fft_init_2d        (gmx_fft_t *         fft,
-                        int                 nx, 
+                        int                 nx,
                         int                 ny,
                         gmx_fft_flag        flags);
 
 
-/*! \brief Setup a 2-dimensional real-to-complex transform 
+/*! \brief Setup a 2-dimensional real-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in first dimension
@@ -216,19 +236,20 @@ gmx_fft_init_2d        (gmx_fft_t *         fft,
  *  frequency space are complex.
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_init_2d_real        (gmx_fft_t *         fft,
-                             int                 nx, 
+                             int                 nx,
                              int                 ny,
                              gmx_fft_flag        flags);
 
 
-/*! \brief Setup a 3-dimensional complex-to-complex transform 
+/*! \brief Setup a 3-dimensional complex-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in first dimension
@@ -237,20 +258,20 @@ gmx_fft_init_2d_real        (gmx_fft_t *         fft,
  *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
 gmx_fft_init_3d        (gmx_fft_t *         fft,
-                        int                 nx, 
+                        int                 nx,
                         int                 ny,
                         int                 nz,
-                        gmx_fft_flag   flags);
+                        gmx_fft_flag        flags);
 
 
-/*! \brief Setup a 3-dimensional real-to-complex transform 
+/*! \brief Setup a 3-dimensional real-to-complex transform
  *
  *  \param fft    Pointer to opaque Gromacs FFT datatype
  *  \param nx     Length of transform in first dimension
@@ -262,17 +283,17 @@ gmx_fft_init_3d        (gmx_fft_t *         fft,
  *  frequency space are complex.
  *
  *  \return status - 0 or a standard error message.
- *   
- *  \note Since some of the libraries (e.g. MKL) store work array data in their 
- *        handles this datatype should only be used for one thread at a time, 
+ *
+ *  \note Since some of the libraries (e.g. MKL) store work array data in their
+ *        handles this datatype should only be used for one thread at a time,
  *        i.e. you should create one copy per thread when executing in parallel.
  */
 int
 gmx_fft_init_3d_real   (gmx_fft_t *         fft,
-                        int                 nx, 
+                        int                 nx,
                         int                 ny,
                         int                 nz,
-                        gmx_fft_flag   flags);
+                        gmx_fft_flag        flags);
 
 
 
@@ -291,10 +312,10 @@ gmx_fft_init_3d_real   (gmx_fft_t *         fft,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
- int 
+int
 gmx_fft_1d               (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -316,10 +337,10 @@ gmx_fft_1d               (gmx_fft_t                  setup,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
- int 
+int
 gmx_fft_many_1d          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -345,10 +366,11 @@ gmx_fft_many_1d          (gmx_fft_t                  setup,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int 
+GMX_LIBMD_EXPORT
+int
 gmx_fft_1d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -373,10 +395,10 @@ gmx_fft_1d_real          (gmx_fft_t                  setup,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int 
+int
 gmx_fft_many_1d_real     (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -398,10 +420,10 @@ gmx_fft_many_1d_real     (gmx_fft_t                  setup,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
-int 
+int
 gmx_fft_2d               (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -424,7 +446,7 @@ gmx_fft_2d               (gmx_fft_t                  setup,
  * \return 0 on success, or an error code.
  *
  * \note If you are doing an in-place transform, the last dimension of the
- * array MUST be padded up to an even integer length so n/2 complex numbers can 
+ * array MUST be padded up to an even integer length so n/2 complex numbers can
  * fit. Thus, if the real grid e.g. has dimension 5*3, you must allocate it as
  * a 5*4 array, where the last element in the second dimension is padding.
  * The complex data will be written to the same array, but since that dimension
@@ -434,9 +456,10 @@ gmx_fft_2d               (gmx_fft_t                  setup,
  * The padding does NOT apply to out-of-place transformation. In that case the
  * input array will simply be 5*3 of real, while the output is 5*2 of complex.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
+GMX_LIBMD_EXPORT
 int
 gmx_fft_2d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
@@ -459,10 +482,10 @@ gmx_fft_2d_real          (gmx_fft_t                  setup,
  *
  * \return 0 on success, or an error code.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on your grid type.
  */
-int 
+int
 gmx_fft_3d               (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
@@ -485,7 +508,7 @@ gmx_fft_3d               (gmx_fft_t                  setup,
  * \return 0 on success, or an error code.
  *
  * \note If you are doing an in-place transform, the last dimension of the
- * array MUST be padded up to an even integer length so n/2 complex numbers can 
+ * array MUST be padded up to an even integer length so n/2 complex numbers can
  * fit. Thus, if the real grid e.g. has dimension 7*5*3, you must allocate it as
  * a 7*5*4 array, where the last element in the second dimension is padding.
  * The complex data will be written to the same array, but since that dimension
@@ -495,17 +518,17 @@ gmx_fft_3d               (gmx_fft_t                  setup,
  * The padding does NOT apply to out-of-place transformation. In that case the
  * input will simply be 7*5*3 of real, while the output is 7*5*2 of complex.
  *
- * \note Data pointers are declared as void, to avoid casting pointers 
+ * \note Data pointers are declared as void, to avoid casting pointers
  *       depending on transform direction.
  */
-int 
+int
 gmx_fft_3d_real          (gmx_fft_t                  setup,
                           enum gmx_fft_direction     dir,
                           void *                     in_data,
                           void *                     out_data);
 
 
-/*! \brief Release an FFT setup structure 
+/*! \brief Release an FFT setup structure
  *
  *  Destroy setup and release all allocated memory.
  *
@@ -513,10 +536,11 @@ gmx_fft_3d_real          (gmx_fft_t                  setup,
  *		 of the other initializers.
  *
  */
+GMX_LIBMD_EXPORT
 void
 gmx_fft_destroy          (gmx_fft_t                 setup);
 
-/*! \brief Release a many FFT setup structure 
+/*! \brief Release a many FFT setup structure
  *
  *  Destroy setup and release all allocated memory.
  *
@@ -529,13 +553,13 @@ gmx_many_fft_destroy          (gmx_fft_t                 setup);
 
 
 /*! \brief Transpose 2d complex matrix, in-place or out-of-place.
- * 
- * This routines works when the matrix is non-square, i.e. nx!=ny too, 
+ *
+ * This routines works when the matrix is non-square, i.e. nx!=ny too,
  * without allocating an entire matrix of work memory, which is important
  * for huge FFT grids.
  *
- * \param in_data    Input data, to be transposed 
- * \param out_data   Output, transposed data. If this is identical to 
+ * \param in_data    Input data, to be transposed
+ * \param out_data   Output, transposed data. If this is identical to
  *                   in_data, an in-place transpose is performed.
  * \param nx         Number of rows before transpose
  * \param ny         Number of columns before transpose
@@ -549,23 +573,23 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
                         int               ny);
 
 
-/*! \brief Transpose 2d multi-element matrix 
- * 
- * This routine is very similar to gmx_fft_transpose_2d(), but it 
+/*! \brief Transpose 2d multi-element matrix
+ *
+ * This routine is very similar to gmx_fft_transpose_2d(), but it
  * supports matrices with more than one data value for each position.
  * It is extremely useful when transposing the x/y dimensions of a 3d
  * matrix - in that case you just set nelem to nz, and the routine will do
- * and x/y transpose where it moves entire columns of z data 
+ * and x/y transpose where it moves entire columns of z data
  *
- * This routines works when the matrix is non-square, i.e. nx!=ny too, 
+ * This routines works when the matrix is non-square, i.e. nx!=ny too,
  * without allocating an entire matrix of work memory, which is important
  * for huge FFT grid.
  *
- * For performance reasons you need to provide a \a small workarray 
+ * For performance reasons you need to provide a \a small workarray
  * with length at least 2*nelem (note that the type is char, not t_complex).
  *
- * \param in_data    Input data, to be transposed 
- * \param out_data   Output, transposed data. If this is identical to 
+ * \param in_data    Input data, to be transposed
+ * \param out_data   Output, transposed data. If this is identical to
  *                   in_data, an in-place transpose is performed.
  * \param nx         Number of rows before transpose
  * \param ny         Number of columns before transpose
