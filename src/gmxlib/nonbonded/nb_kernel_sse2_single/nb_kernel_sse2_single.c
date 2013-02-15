@@ -257,7 +257,7 @@ nb_kernel_t nb_kernel_ElecRF_VdwCSTab_GeomW4W4_F_sse2_single;
 
 
 nb_kernel_info_t
-kernellist_sse2_single[] =
+    kernellist_sse2_single[] =
 {
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse2_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_VF_sse2_single", "sse2_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "PotentialAndForce" },
     { nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse2_single, "nb_kernel_ElecNone_VdwLJ_GeomP1P1_F_sse2_single", "sse2_single", "None", "None", "LennardJones", "None", "ParticleParticle", "", "Force" },
@@ -476,6 +476,6 @@ kernellist_sse2_single[] =
 };
 
 int
-kernellist_sse2_single_size = sizeof(kernellist_sse2_single)/sizeof(kernellist_sse2_single[0]);
+    kernellist_sse2_single_size = sizeof(kernellist_sse2_single)/sizeof(kernellist_sse2_single[0]);
 
 #endif
