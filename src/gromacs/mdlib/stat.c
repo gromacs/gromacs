@@ -161,14 +161,13 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     int        nener, j;
     real      *rmsd_data = NULL;
     double     nb;
-    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bFirstIterate, bReadEkin;
+    gmx_bool   bVV, bTemp, bEner, bPres, bConstrVir, bEkinAveVel, bReadEkin;
 
     bVV           = EI_VV(inputrec->eI);
     bTemp         = flags & CGLO_TEMPERATURE;
     bEner         = flags & CGLO_ENERGY;
     bPres         = (flags & CGLO_PRESSURE);
     bConstrVir    = (flags & CGLO_CONSTRAINT);
-    bFirstIterate = (flags & CGLO_FIRSTITERATE);
     bEkinAveVel   = (inputrec->eI == eiVV || (inputrec->eI == eiVVAK && bPres));
     bReadEkin     = (flags & CGLO_READEKIN);
 
@@ -227,7 +226,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     }
     where();
 
-    if ((bPres || !bVV) && bFirstIterate)
+    if (bPres || !bVV)
     {
         ifv = add_binr(rb, DIM*DIM, fvir[0]);
     }
@@ -236,10 +235,7 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
     if (bEner)
     {
         where();
-        if (bFirstIterate)
-        {
-            ie  = add_binr(rb, nener, copyenerd);
-        }
+        ie  = add_binr(rb, nener, copyenerd);
         where();
         if (constr)
         {
@@ -255,21 +251,18 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             where();
         }
 
-        if (bFirstIterate)
+        for (j = 0; (j < egNR); j++)
         {
-            for (j = 0; (j < egNR); j++)
+            inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j]);
+        }
+        where();
+        if (inputrec->efep != efepNO)
+        {
+            idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
+            idvdlnl = add_bind(rb, efptNR, enerd->dvdl_nonlin);
+            if (enerd->n_lambda > 0)
             {
-                inn[j] = add_binr(rb, enerd->grpp.nener, enerd->grpp.ener[j]);
-            }
-            where();
-            if (inputrec->efep != efepNO)
-            {
-                idvdll  = add_bind(rb, efptNR, enerd->dvdl_lin);
-                idvdlnl = add_bind(rb, efptNR, enerd->dvdl_nonlin);
-                if (enerd->n_lambda > 0)
-                {
-                    iepl = add_bind(rb, enerd->n_lambda, enerd->enerpart_lambda);
-                }
+                iepl = add_bind(rb, enerd->n_lambda, enerd->enerpart_lambda);
             }
         }
     }
@@ -342,50 +335,47 @@ void global_stat(FILE *fplog, gmx_global_stat_t gs,
             where();
         }
     }
-    if ((bPres || !bVV) && bFirstIterate)
+    if (bPres || !bVV)
     {
         extract_binr(rb, ifv, DIM*DIM, fvir[0]);
     }
 
     if (bEner)
     {
-        if (bFirstIterate)
+        extract_binr(rb, ie, nener, copyenerd);
+        if (rmsd_data)
         {
-            extract_binr(rb, ie, nener, copyenerd);
-            if (rmsd_data)
-            {
-                extract_binr(rb, irmsd, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
-            }
-            if (!NEED_MUTOT(*inputrec))
-            {
-                extract_binr(rb, imu, DIM, mu_tot);
-            }
-
-            for (j = 0; (j < egNR); j++)
-            {
-                extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j]);
-            }
-            if (inputrec->efep != efepNO)
-            {
-                extract_bind(rb, idvdll, efptNR, enerd->dvdl_lin);
-                extract_bind(rb, idvdlnl, efptNR, enerd->dvdl_nonlin);
-                if (enerd->n_lambda > 0)
-                {
-                    extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
-                }
-            }
-            if (DOMAINDECOMP(cr))
-            {
-                extract_bind(rb, inb, 1, &nb);
-                if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-                {
-                    dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
-                }
-            }
-            where();
-
-            filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
+            extract_binr(rb, irmsd, inputrec->eI == eiSD2 ? 3 : 2, rmsd_data);
         }
+        if (!NEED_MUTOT(*inputrec))
+        {
+            extract_binr(rb, imu, DIM, mu_tot);
+        }
+
+        for (j = 0; (j < egNR); j++)
+        {
+            extract_binr(rb, inn[j], enerd->grpp.nener, enerd->grpp.ener[j]);
+        }
+        if (inputrec->efep != efepNO)
+        {
+            extract_bind(rb, idvdll, efptNR, enerd->dvdl_lin);
+            extract_bind(rb, idvdlnl, efptNR, enerd->dvdl_nonlin);
+            if (enerd->n_lambda > 0)
+            {
+                extract_bind(rb, iepl, enerd->n_lambda, enerd->enerpart_lambda);
+            }
+        }
+        if (DOMAINDECOMP(cr))
+        {
+            extract_bind(rb, inb, 1, &nb);
+            if ((int)(nb + 0.5) != cr->dd->nbonded_global)
+            {
+                dd_print_missing_interactions(fplog, cr, (int)(nb + 0.5), top_global, state_local);
+            }
+        }
+        where();
+
+        filter_enerdterm(copyenerd, FALSE, enerd->term, bTemp, bPres, bEner);
     }
 
     if (vcm)

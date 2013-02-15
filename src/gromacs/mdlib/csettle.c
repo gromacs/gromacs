@@ -175,8 +175,7 @@ void settle_proj(gmx_settledata_t settled, int econq,
                  const t_pbc *pbc,
                  rvec x[],
                  rvec *der, rvec *derp,
-                 int calcvir_atom_end, tensor vir_r_m_dder,
-                 t_vetavars *vetavar)
+                 int calcvir_atom_end, tensor vir_r_m_dder)
 {
     /* Settle for projection out constraint components
      * of derivatives of the coordinates.
@@ -188,8 +187,6 @@ void settle_proj(gmx_settledata_t settled, int econq,
     matrix         invmat;
     int            i, m, m2, ow1, hw2, hw3;
     rvec           roh2, roh3, rhh, dc, fc, fcv;
-    rvec           derm[3], derpm[3];
-    real           invvscale, vscale_nhc, veta;
     real           kfacOH, kfacHH;
 
     calcvir_atom_end *= DIM;
@@ -210,9 +207,6 @@ void settle_proj(gmx_settledata_t settled, int econq,
     invdOH = p->invdOH;
     invdHH = p->invdHH;
 
-    veta       = vetavar->veta;
-    vscale_nhc = vetavar->vscale_nhc[0]; /* assume the first temperature control group. */
-
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
@@ -222,19 +216,6 @@ void settle_proj(gmx_settledata_t settled, int econq,
         ow1 = iatoms[i*4+1];
         hw2 = iatoms[i*4+2];
         hw3 = iatoms[i*4+3];
-
-
-        for (m = 0; m < DIM; m++)
-        {
-            /* in the velocity case, these are the velocities, so we
-               need to modify with the pressure control velocities! */
-
-            derm[0][m]  = vscale_nhc*der[ow1][m] + veta*x[ow1][m];
-            derm[1][m]  = vscale_nhc*der[hw2][m] + veta*x[hw2][m];
-            derm[2][m]  = vscale_nhc*der[hw3][m] + veta*x[hw3][m];
-
-        }
-        /* 27 flops */
 
         if (pbc == NULL)
         {
@@ -253,13 +234,13 @@ void settle_proj(gmx_settledata_t settled, int econq,
         svmul(invdHH, rhh, rhh);
         /* 18 flops */
 
-        /* Determine the projections of der(modified) on the bonds */
+        /* Determine the projections of der on the bonds */
         clear_rvec(dc);
         for (m = 0; m < DIM; m++)
         {
-            dc[0] += (derm[0][m] - derm[1][m])*roh2[m];
-            dc[1] += (derm[0][m] - derm[2][m])*roh3[m];
-            dc[2] += (derm[1][m] - derm[2][m])*rhh [m];
+            dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
+            dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
+            dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
         }
         /* 27 flops */
 
@@ -267,17 +248,12 @@ void settle_proj(gmx_settledata_t settled, int econq,
         mvmul(invmat, dc, fc);
         /* 15 flops */
 
-        /* divide velocity by vscale_nhc for determining constrained velocities, since they
-           have not yet been multiplied */
-        svmul(1.0/vscale_nhc, fc, fcv);
-        /* 7? flops */
-
         /* Subtract the corrections from derp */
         for (m = 0; m < DIM; m++)
         {
-            derp[ow1][m] -= imO*( fcv[0]*roh2[m] + fcv[1]*roh3[m]);
-            derp[hw2][m] -= imH*(-fcv[0]*roh2[m] + fcv[2]*rhh [m]);
-            derp[hw3][m] -= imH*(-fcv[1]*roh3[m] - fcv[2]*rhh [m]);
+            derp[ow1][m] -= imO*( fc[0]*roh2[m] + fc[1]*roh3[m]);
+            derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
+            derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
         }
 
         /* 45 flops */
@@ -293,20 +269,12 @@ void settle_proj(gmx_settledata_t settled, int econq,
                 for (m2 = 0; m2 < DIM; m2++)
                 {
                     vir_r_m_dder[m][m2] +=
-                        dOH*roh2[m]*roh2[m2]*fcv[0] +
-                        dOH*roh3[m]*roh3[m2]*fcv[1] +
-                        dHH*rhh [m]*rhh [m2]*fcv[2];
+                        dOH*roh2[m]*roh2[m2]*fc[0] +
+                        dOH*roh3[m]*roh3[m2]*fc[1] +
+                        dHH*rhh [m]*rhh [m2]*fc[2];
                 }
             }
         }
-    }
-
-    if (calcvir_atom_end > 0)
-    {
-        /* Correct r_m_dder, which will be used to calcualate the virial;
-         * we need to use the unscaled multipliers in the virial.
-         */
-        msmul(vir_r_m_dder, 1.0/vetavar->vscale, vir_r_m_dder);
     }
 }
 
@@ -317,8 +285,7 @@ void csettle(gmx_settledata_t settled,
              real b4[], real after[],
              real invdt, real *v, int CalcVirAtomEnd,
              tensor vir_r_m_dr,
-             int *error,
-             t_vetavars *vetavar)
+             int *error)
 {
     /* ***************************************************************** */
     /*                                                               ** */
@@ -334,19 +301,19 @@ void csettle(gmx_settledata_t settled,
     /* Initialized data */
     settleparam_t *p;
     real           wh, ra, rb, rc, irc2;
-    real           mOs, mHs, invdts;
+    real           mO, mH;
 
     /* Local variables */
-    real gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
-    real axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22,
-         trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe,
-         cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd,
-         xb0, yb0, zb0, xc0, yc0, zc0, xa1;
-    real ya1, za1, xb1, yb1;
-    real zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3,
-         xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d,
-         za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d,
-         xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
+    real     gama, beta, alpa, xcom, ycom, zcom, al2be2, tmp, tmp2;
+    real     axlng, aylng, azlng, trns11, trns21, trns31, trns12, trns22,
+             trns32, trns13, trns23, trns33, cosphi, costhe, sinphi, sinthe,
+             cospsi, xaksxd, yaksxd, xakszd, yakszd, zakszd, zaksxd, xaksyd,
+             xb0, yb0, zb0, xc0, yc0, zc0, xa1;
+    real     ya1, za1, xb1, yb1;
+    real     zb1, xc1, yc1, zc1, yaksyd, zaksyd, sinpsi, xa3, ya3, za3,
+             xb3, yb3, zb3, xc3, yc3, zc3, xb0d, yb0d, xc0d, yc0d,
+             za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d,
+             xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
     real     t1, t2;
     real     dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
     real     mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
@@ -363,16 +330,14 @@ void csettle(gmx_settledata_t settled,
 
     CalcVirAtomEnd *= 3;
 
-    p    = &settled->massw;
-    wh   = p->wh;
-    rc   = p->rc;
-    ra   = p->ra;
-    rb   = p->rb;
-    irc2 = p->irc2;
-
-    mOs    = p->mO / vetavar->rvscale;
-    mHs    = p->mH / vetavar->rvscale;
-    invdts = invdt / vetavar->rscale;
+    p     = &settled->massw;
+    wh    = p->wh;
+    rc    = p->rc;
+    ra    = p->ra;
+    rb    = p->rb;
+    irc2  = p->irc2;
+    mO    = p->mO;
+    mH    = p->mH;
 
 #ifdef PRAGMAS
 #pragma ivdep
@@ -598,29 +563,29 @@ void csettle(gmx_settledata_t settled,
 
             if (v != NULL)
             {
-                v[ow1]     += dax*invdts;
-                v[ow1 + 1] += day*invdts;
-                v[ow1 + 2] += daz*invdts;
-                v[hw2]     += dbx*invdts;
-                v[hw2 + 1] += dby*invdts;
-                v[hw2 + 2] += dbz*invdts;
-                v[hw3]     += dcx*invdts;
-                v[hw3 + 1] += dcy*invdts;
-                v[hw3 + 2] += dcz*invdts;
+                v[ow1]     += dax*invdt;
+                v[ow1 + 1] += day*invdt;
+                v[ow1 + 2] += daz*invdt;
+                v[hw2]     += dbx*invdt;
+                v[hw2 + 1] += dby*invdt;
+                v[hw2 + 2] += dbz*invdt;
+                v[hw3]     += dcx*invdt;
+                v[hw3 + 1] += dcy*invdt;
+                v[hw3 + 2] += dcz*invdt;
                 /* 3*6 flops */
             }
 
             if (ow1 < CalcVirAtomEnd)
             {
-                mdax                = mOs*dax;
-                mday                = mOs*day;
-                mdaz                = mOs*daz;
-                mdbx                = mHs*dbx;
-                mdby                = mHs*dby;
-                mdbz                = mHs*dbz;
-                mdcx                = mHs*dcx;
-                mdcy                = mHs*dcy;
-                mdcz                = mHs*dcz;
+                mdax                = mO*dax;
+                mday                = mO*day;
+                mdaz                = mO*daz;
+                mdbx                = mH*dbx;
+                mdby                = mH*dby;
+                mdbz                = mH*dbz;
+                mdcx                = mH*dcx;
+                mdcy                = mH*dcy;
+                mdcz                = mH*dcz;
                 vir_r_m_dr[XX][XX] -= b4[ow1  ]*mdax + (b4[ow1  ]+xb0)*mdbx + (b4[ow1  ]+xc0)*mdcx;
                 vir_r_m_dr[XX][YY] -= b4[ow1  ]*mday + (b4[ow1  ]+xb0)*mdby + (b4[ow1  ]+xc0)*mdcy;
                 vir_r_m_dr[XX][ZZ] -= b4[ow1  ]*mdaz + (b4[ow1  ]+xb0)*mdbz + (b4[ow1  ]+xc0)*mdcz;
