@@ -90,63 +90,6 @@ typedef struct {
     atom_id blocknr;
 } t_sortblock;
 
-static void *init_vetavars(t_vetavars *vars,
-                           gmx_bool constr_deriv,
-                           real veta, real vetanew, t_inputrec *ir, gmx_ekindata_t *ekind, gmx_bool bPscal)
-{
-    double g;
-    int    i;
-
-    /* first, set the alpha integrator variable */
-    if ((ir->opts.nrdf[0] > 0) && bPscal)
-    {
-        vars->alpha = 1.0 + DIM/((double)ir->opts.nrdf[0]);
-    }
-    else
-    {
-        vars->alpha = 1.0;
-    }
-    g             = 0.5*veta*ir->delta_t;
-    vars->rscale  = exp(g)*series_sinhx(g);
-    g             = -0.25*vars->alpha*veta*ir->delta_t;
-    vars->vscale  = exp(g)*series_sinhx(g);
-    vars->rvscale = vars->vscale*vars->rscale;
-    vars->veta    = vetanew;
-
-    if (constr_deriv)
-    {
-        snew(vars->vscale_nhc, ir->opts.ngtc);
-        if ((ekind == NULL) || (!bPscal))
-        {
-            for (i = 0; i < ir->opts.ngtc; i++)
-            {
-                vars->vscale_nhc[i] = 1;
-            }
-        }
-        else
-        {
-            for (i = 0; i < ir->opts.ngtc; i++)
-            {
-                vars->vscale_nhc[i] = ekind->tcstat[i].vscale_nhc;
-            }
-        }
-    }
-    else
-    {
-        vars->vscale_nhc = NULL;
-    }
-
-    return vars;
-}
-
-static void free_vetavars(t_vetavars *vars)
-{
-    if (vars->vscale_nhc != NULL)
-    {
-        sfree(vars->vscale_nhc);
-    }
-}
-
 static int pcomp(const void *p1, const void *p2)
 {
     int          db;
@@ -313,21 +256,19 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                    gmx_bool bMolPBC, matrix box,
                    real lambda, real *dvdlambda,
                    rvec *v, tensor *vir,
-                   t_nrnb *nrnb, int econq, gmx_bool bPscal,
-                   real veta, real vetanew)
+                   t_nrnb *nrnb, int econq)
 {
     gmx_bool    bOK, bDump;
     int         start, homenr, nrend;
     int         i, j, d;
     int         ncons, settle_error;
     tensor      vir_r_m_dr;
-    rvec       *vstor;
+    rvec        *vstor;
     real        invdt, vir_fac, t;
-    t_ilist    *settle;
+    t_ilist     *settle;
     int         nsettle;
     t_pbc       pbc, *pbc_null;
     char        buf[22];
-    t_vetavars  vetavar;
     int         nth, th;
 
     if (econq == econqForceDispl && !EI_ENERGY_MINIMIZATION(ir->eI))
@@ -341,10 +282,6 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
     start  = md->start;
     homenr = md->homenr;
     nrend  = start+homenr;
-
-    /* set constants for pressure control integration */
-    init_vetavars(&vetavar, econq != econqCoord,
-                  veta, vetanew, ir, ekind, bPscal);
 
     if (ir->delta_t == 0)
     {
@@ -442,26 +379,26 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
     if (constr->nblocks > 0)
     {
-        switch (econq)
+        switch (econq) 
         {
             case (econqCoord):
                 bOK = bshakef(fplog, constr->shaked,
                               homenr, md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
-                              invdt, v, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              invdt, v, vir!=NULL, vir_r_m_dr,
+                              constr->maxwarn>=0, econq);
                 break;
             case (econqVeloc):
                 bOK = bshakef(fplog, constr->shaked,
                               homenr, md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
-                              invdt, NULL, vir != NULL, vir_r_m_dr,
-                              constr->maxwarn >= 0, econq, &vetavar);
+                              invdt, NULL, vir!=NULL, vir_r_m_dr,
+                              constr->maxwarn>=0, econq);
                 break;
             default:
-                gmx_fatal(FARGS, "Internal error, SHAKE called for constraining something else than coordinates");
+                gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
                 break;
         }
 
@@ -513,8 +450,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                                 x[0], xprime[0],
                                 invdt, v ? v[0] : NULL, calcvir_atom_end,
                                 th == 0 ? vir_r_m_dr : constr->vir_r_m_dr_th[th],
-                                th == 0 ? &settle_error : &constr->settle_error[th],
-                                &vetavar);
+                                th == 0 ? &settle_error : &constr->settle_error[th]);
                     }
                 }
                 inc_nrnb(nrnb, eNR_SETTLE, nsettle);
@@ -600,9 +536,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
             }
         }
     }
-
-    free_vetavars(&vetavar);
-
+    
     if (vir != NULL)
     {
         switch (econq)
