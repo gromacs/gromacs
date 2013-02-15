@@ -1280,14 +1280,14 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
                      * processed by the generic AdResS kernel.
                      */
                     if ( (bEnergyGroupCG &&
-                         wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS ) ||
-                           ( !bEnergyGroupCG && wf[jj] <= GMX_REAL_EPS ) )
+                          wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS ) ||
+                         ( !bEnergyGroupCG && wf[jj] <= GMX_REAL_EPS ) )
                     {
                         continue;
                     }
 
                     b_hybrid = !((wf[i_atom] >= 1-GMX_REAL_EPS && wf[jj] >= 1-GMX_REAL_EPS) ||
-                        (wf[i_atom] <= GMX_REAL_EPS && wf[jj] <= GMX_REAL_EPS));
+                                 (wf[i_atom] <= GMX_REAL_EPS && wf[jj] <= GMX_REAL_EPS));
 
                     if (bNotEx)
                     {

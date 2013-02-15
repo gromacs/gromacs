@@ -140,16 +140,16 @@ typedef struct nbnxn_list_work {
     nbnxn_x_ci_simd_4xn_t  *x_ci_simd_4xn;
     nbnxn_x_ci_simd_2xnn_t *x_ci_simd_2xnn;
 #endif
-    int                     cj_ind;    /* The current cj_ind index for the current list     */
-    int                     cj4_init;  /* The first unitialized cj4 block                   */
+    int                     cj_ind;          /* The current cj_ind index for the current list     */
+    int                     cj4_init;        /* The first unitialized cj4 block                   */
 
-    float                  *d2;        /* Bounding box distance work array                  */
+    float                  *d2;              /* Bounding box distance work array                  */
 
-    nbnxn_cj_t             *cj;        /* The j-cell list                                   */
-    int                     cj_nalloc; /* Allocation size of cj                             */
+    nbnxn_cj_t             *cj;              /* The j-cell list                                   */
+    int                     cj_nalloc;       /* Allocation size of cj                             */
 
-    int                     ncj_noq;   /* Nr. of cluster pairs without Coul for flop count  */
-    int                     ncj_hlj;   /* Nr. of cluster pairs with 1/2 LJ for flop count   */
+    int                     ncj_noq;         /* Nr. of cluster pairs without Coul for flop count  */
+    int                     ncj_hlj;         /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
     int                    *sort;            /* Sort index                    */
     int                     sort_nalloc;     /* Allocation size of sort       */
@@ -157,7 +157,7 @@ typedef struct nbnxn_list_work {
     nbnxn_sci_t            *sci_sort;        /* Second sci array, for sorting */
     int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
 
-    gmx_cache_protect_t     cp1;       /* Protect cache between threads               */
+    gmx_cache_protect_t     cp1;             /* Protect cache between threads               */
 } nbnxn_list_work_t;
 
 /* Function type for setting the i-atom coordinate working data */
