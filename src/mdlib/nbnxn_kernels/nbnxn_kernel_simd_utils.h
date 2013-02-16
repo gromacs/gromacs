@@ -9,16 +9,16 @@
  * directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
+ * modify it under the terms of the GNU LeSIMDr General Public License
  * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
  * GROMACS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * LeSIMDr General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU LeSIMDr General Public
  * License along with GROMACS; if not, see
  * http://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
@@ -210,17 +210,17 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #if defined GMX_MM128_HERE && !defined GMX_DOUBLE
 
-#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
+#define load_lj_pair_params(nbfp, type, aj, c6_SIMD, c12_SIMD)                \
     {                                                                       \
-        gmx_mm_pr clj_SSE[UNROLLJ];                                         \
+        gmx_mm_pr clj_SIMD[UNROLLJ];                                         \
         int       p;                                                              \
                                                                         \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
             /* Here we load 4 aligned floats, but we need just 2 */         \
-            clj_SSE[p] = gmx_load_pr(nbfp+type[aj+p]*NBFP_STRIDE);          \
+            clj_SIMD[p] = gmx_load_pr(nbfp+type[aj+p]*NBFP_STRIDE);          \
         }                                                                   \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0], clj_SSE[1], clj_SSE[2], clj_SSE[3], c6_SSE, c12_SSE); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SIMD[0], clj_SIMD[1], clj_SIMD[2], clj_SIMD[3], c6_SIMD, c12_SIMD); \
     }
 
 #endif
@@ -233,78 +233,78 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
         out = _mm256_insertf128_ps(_mm256_castps128_ps256(in0), in1, 1);      \
     }
 
-#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
+#define load_lj_pair_params(nbfp, type, aj, c6_SIMD, c12_SIMD)                \
     {                                                                       \
-        __m128 clj_SSE[UNROLLJ], c6t_SSE[2], c12t_SSE[2];                     \
+        __m128 clj_SIMD[UNROLLJ], c6t_SIMD[2], c12t_SIMD[2];                     \
         int    p;                                                              \
                                                                         \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
             /* Here we load 4 aligned floats, but we need just 2 */         \
-            clj_SSE[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
+            clj_SIMD[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);          \
         }                                                                   \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[0], clj_SSE[1], clj_SSE[2], clj_SSE[3], c6t_SSE[0], c12t_SSE[0]); \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE[4], clj_SSE[5], clj_SSE[6], clj_SSE[7], c6t_SSE[1], c12t_SSE[1]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SIMD[0], clj_SIMD[1], clj_SIMD[2], clj_SIMD[3], c6t_SIMD[0], c12t_SIMD[0]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SIMD[4], clj_SIMD[5], clj_SIMD[6], clj_SIMD[7], c6t_SIMD[1], c12t_SIMD[1]); \
                                                                         \
-        GMX_2_MM_TO_M256(c6t_SSE[0], c6t_SSE[1], c6_SSE);                     \
-        GMX_2_MM_TO_M256(c12t_SSE[0], c12t_SSE[1], c12_SSE);                  \
+        GMX_2_MM_TO_M256(c6t_SIMD[0], c6t_SIMD[1], c6_SIMD);                     \
+        GMX_2_MM_TO_M256(c12t_SIMD[0], c12t_SIMD[1], c12_SIMD);                  \
     }
 
-#define load_lj_pair_params2(nbfp0, nbfp1, type, aj, c6_SSE, c12_SSE)        \
+#define load_lj_pair_params2(nbfp0, nbfp1, type, aj, c6_SIMD, c12_SIMD)        \
     {                                                                       \
-        __m128 clj_SSE0[UNROLLJ], clj_SSE1[UNROLLJ], c6t_SSE[2], c12t_SSE[2];  \
+        __m128 clj_SIMD0[UNROLLJ], clj_SIMD1[UNROLLJ], c6t_SIMD[2], c12t_SIMD[2];  \
         int    p;                                                              \
                                                                         \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
             /* Here we load 4 aligned floats, but we need just 2 */         \
-            clj_SSE0[p] = _mm_load_ps(nbfp0+type[aj+p]*NBFP_STRIDE);        \
+            clj_SIMD0[p] = _mm_load_ps(nbfp0+type[aj+p]*NBFP_STRIDE);        \
         }                                                                   \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
             /* Here we load 4 aligned floats, but we need just 2 */         \
-            clj_SSE1[p] = _mm_load_ps(nbfp1+type[aj+p]*NBFP_STRIDE);        \
+            clj_SIMD1[p] = _mm_load_ps(nbfp1+type[aj+p]*NBFP_STRIDE);        \
         }                                                                   \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE0[0], clj_SSE0[1], clj_SSE0[2], clj_SSE0[3], c6t_SSE[0], c12t_SSE[0]); \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SSE1[0], clj_SSE1[1], clj_SSE1[2], clj_SSE1[3], c6t_SSE[1], c12t_SSE[1]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SIMD0[0], clj_SIMD0[1], clj_SIMD0[2], clj_SIMD0[3], c6t_SIMD[0], c12t_SIMD[0]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(clj_SIMD1[0], clj_SIMD1[1], clj_SIMD1[2], clj_SIMD1[3], c6t_SIMD[1], c12t_SIMD[1]); \
                                                                         \
-        GMX_2_MM_TO_M256(c6t_SSE[0], c6t_SSE[1], c6_SSE);                     \
-        GMX_2_MM_TO_M256(c12t_SSE[0], c12t_SSE[1], c12_SSE);                  \
+        GMX_2_MM_TO_M256(c6t_SIMD[0], c6t_SIMD[1], c6_SIMD);                     \
+        GMX_2_MM_TO_M256(c12t_SIMD[0], c12t_SIMD[1], c12_SIMD);                  \
     }
 
 #endif
 
 #if defined GMX_MM128_HERE && defined GMX_DOUBLE
 
-#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
+#define load_lj_pair_params(nbfp, type, aj, c6_SIMD, c12_SIMD)                \
     {                                                                       \
-        gmx_mm_pr clj_SSE[UNROLLJ];                                         \
+        gmx_mm_pr clj_SIMD[UNROLLJ];                                         \
         int       p;                                                              \
                                                                         \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
-            clj_SSE[p] = gmx_load_pr(nbfp+type[aj+p]*NBFP_STRIDE);          \
+            clj_SIMD[p] = gmx_load_pr(nbfp+type[aj+p]*NBFP_STRIDE);          \
         }                                                                   \
-        GMX_MM_TRANSPOSE2_OP_PD(clj_SSE[0], clj_SSE[1], c6_SSE, c12_SSE);      \
+        GMX_MM_TRANSPOSE2_OP_PD(clj_SIMD[0], clj_SIMD[1], c6_SIMD, c12_SIMD);      \
     }
 
 #endif
 
 #if defined GMX_MM256_HERE && defined GMX_DOUBLE
 
-#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
+#define load_lj_pair_params(nbfp, type, aj, c6_SIMD, c12_SIMD)                \
     {                                                                       \
-        __m128d clj_SSE[UNROLLJ], c6t_SSE[2], c12t_SSE[2];                    \
+        __m128d clj_SIMD[UNROLLJ], c6t_SIMD[2], c12t_SIMD[2];                    \
         int     p;                                                              \
                                                                         \
         for (p = 0; p < UNROLLJ; p++)                                            \
         {                                                                   \
-            clj_SSE[p] = _mm_load_pd(nbfp+type[aj+p]*NBFP_STRIDE);          \
+            clj_SIMD[p] = _mm_load_pd(nbfp+type[aj+p]*NBFP_STRIDE);          \
         }                                                                   \
-        GMX_MM_TRANSPOSE2_OP_PD(clj_SSE[0], clj_SSE[1], c6t_SSE[0], c12t_SSE[0]); \
-        GMX_MM_TRANSPOSE2_OP_PD(clj_SSE[2], clj_SSE[3], c6t_SSE[1], c12t_SSE[1]); \
-        GMX_2_M128D_TO_M256D(c6t_SSE[0], c6t_SSE[1], c6_SSE);                 \
-        GMX_2_M128D_TO_M256D(c12t_SSE[0], c12t_SSE[1], c12_SSE);              \
+        GMX_MM_TRANSPOSE2_OP_PD(clj_SIMD[0], clj_SIMD[1], c6t_SIMD[0], c12t_SIMD[0]); \
+        GMX_MM_TRANSPOSE2_OP_PD(clj_SIMD[2], clj_SIMD[3], c6t_SIMD[1], c12t_SIMD[1]); \
+        GMX_2_M128D_TO_M256D(c6t_SIMD[0], c6t_SIMD[1], c6_SIMD);                 \
+        GMX_2_M128D_TO_M256D(c12t_SIMD[0], c12t_SIMD[1], c12_SIMD);              \
     }
 
 #endif
@@ -326,137 +326,137 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #if defined GMX_MM128_HERE && !defined GMX_DOUBLE
 
-#define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
+#define load_table_f(tab_coul_FDV0, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD)   \
     {                                                                       \
         int    idx[4];                                                      \
-        __m128 ctab_SSE[4];                                                 \
+        __m128 ctab_SIMD[4];                                                 \
                                                                         \
         /* Table has 4 entries, left-shift index by 2 */                    \
-        ti_SSE = _mm_slli_epi32(ti_SSE, 2);                                  \
-        /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
-        idx[0]      = gmx_mm_extract_epi32(ti_SSE, 0);                            \
-        ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
-        idx[1]      = gmx_mm_extract_epi32(ti_SSE, 1);                            \
-        ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
-        idx[2]      = gmx_mm_extract_epi32(ti_SSE, 2);                            \
-        ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
-        idx[3]      = gmx_mm_extract_epi32(ti_SSE, 3);                            \
-        ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
+        ti_SIMD = _mm_slli_epi32(ti_SIMD, 2);                                  \
+        /* Without SIMD4.1 the extract macro needs an immediate: unroll */   \
+        idx[0]      = gmx_mm_extract_epi32(ti_SIMD, 0);                            \
+        ctab_SIMD[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
+        idx[1]      = gmx_mm_extract_epi32(ti_SIMD, 1);                            \
+        ctab_SIMD[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
+        idx[2]      = gmx_mm_extract_epi32(ti_SIMD, 2);                            \
+        ctab_SIMD[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
+        idx[3]      = gmx_mm_extract_epi32(ti_SIMD, 3);                            \
+        ctab_SIMD[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
                                                                         \
         /* Shuffle the force table entries to a convenient order */         \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctab0_SSE, ctab1_SSE); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctab0_SIMD, ctab1_SIMD); \
     }
 
-#define load_table_f_v(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
+#define load_table_f_v(tab_coul_FDV0, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD, ctabv_SIMD) \
     {                                                                       \
         int    idx[4];                                                      \
-        __m128 ctab_SSE[4];                                                 \
+        __m128 ctab_SIMD[4];                                                 \
                                                                         \
         /* Table has 4 entries, left-shift index by 2 */                    \
-        ti_SSE = _mm_slli_epi32(ti_SSE, 2);                                  \
-        /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
-        idx[0]      = gmx_mm_extract_epi32(ti_SSE, 0);                            \
-        ctab_SSE[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
-        idx[1]      = gmx_mm_extract_epi32(ti_SSE, 1);                            \
-        ctab_SSE[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
-        idx[2]      = gmx_mm_extract_epi32(ti_SSE, 2);                            \
-        ctab_SSE[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
-        idx[3]      = gmx_mm_extract_epi32(ti_SSE, 3);                            \
-        ctab_SSE[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
+        ti_SIMD = _mm_slli_epi32(ti_SIMD, 2);                                  \
+        /* Without SIMD4.1 the extract macro needs an immediate: unroll */   \
+        idx[0]      = gmx_mm_extract_epi32(ti_SIMD, 0);                            \
+        ctab_SIMD[0] = _mm_load_ps(tab_coul_FDV0+idx[0]);                    \
+        idx[1]      = gmx_mm_extract_epi32(ti_SIMD, 1);                            \
+        ctab_SIMD[1] = _mm_load_ps(tab_coul_FDV0+idx[1]);                    \
+        idx[2]      = gmx_mm_extract_epi32(ti_SIMD, 2);                            \
+        ctab_SIMD[2] = _mm_load_ps(tab_coul_FDV0+idx[2]);                    \
+        idx[3]      = gmx_mm_extract_epi32(ti_SIMD, 3);                            \
+        ctab_SIMD[3] = _mm_load_ps(tab_coul_FDV0+idx[3]);                    \
                                                                         \
         /* Shuffle the force  table entries to a convenient order */        \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctab0_SSE, ctab1_SSE); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctab0_SIMD, ctab1_SIMD); \
         /* Shuffle the energy table entries to a convenient order */        \
-        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctabv_SSE); \
+        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctabv_SIMD); \
     }
 
 #endif
 
 #if defined GMX_MM256_HERE && !defined GMX_DOUBLE
 
-#define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
+#define load_table_f(tab_coul_FDV0, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD)   \
     {                                                                       \
-        __m128 ctab_SSE[8], ctabt_SSE[4];                                    \
+        __m128 ctab_SIMD[8], ctabt_SIMD[4];                                    \
         int    j;                                                           \
                                                                         \
         /* Bit shifting would be faster, but AVX doesn't support that */    \
-        _mm256_store_si256((__m256i *)ti, ti_SSE);                           \
+        _mm256_store_si256((__m256i *)ti, ti_SIMD);                           \
         for (j = 0; j < 8; j++)                                                  \
         {                                                                   \
-            ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
+            ctab_SIMD[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
         }                                                                   \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctabt_SSE[0], ctabt_SSE[2]); \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[4], ctab_SSE[5], ctab_SSE[6], ctab_SSE[7], ctabt_SSE[1], ctabt_SSE[3]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctabt_SIMD[0], ctabt_SIMD[2]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[4], ctab_SIMD[5], ctab_SIMD[6], ctab_SIMD[7], ctabt_SIMD[1], ctabt_SIMD[3]); \
                                                                         \
-        GMX_2_MM_TO_M256(ctabt_SSE[0], ctabt_SSE[1], ctab0_SSE);              \
-        GMX_2_MM_TO_M256(ctabt_SSE[2], ctabt_SSE[3], ctab1_SSE);              \
+        GMX_2_MM_TO_M256(ctabt_SIMD[0], ctabt_SIMD[1], ctab0_SIMD);              \
+        GMX_2_MM_TO_M256(ctabt_SIMD[2], ctabt_SIMD[3], ctab1_SIMD);              \
     }
 
-#define load_table_f_v(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
+#define load_table_f_v(tab_coul_FDV0, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD, ctabv_SIMD) \
     {                                                                       \
-        __m128 ctab_SSE[8], ctabt_SSE[4], ctabvt_SSE[2];                      \
+        __m128 ctab_SIMD[8], ctabt_SIMD[4], ctabvt_SIMD[2];                      \
         int    j;                                                           \
                                                                         \
         /* Bit shifting would be faster, but AVX doesn't support that */    \
-        _mm256_store_si256((__m256i *)ti, ti_SSE);                           \
+        _mm256_store_si256((__m256i *)ti, ti_SIMD);                           \
         for (j = 0; j < 8; j++)                                                  \
         {                                                                   \
-            ctab_SSE[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
+            ctab_SIMD[j] = _mm_load_ps(tab_coul_FDV0+ti[j]*4);               \
         }                                                                   \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctabt_SSE[0], ctabt_SSE[2]); \
-        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SSE[4], ctab_SSE[5], ctab_SSE[6], ctab_SSE[7], ctabt_SSE[1], ctabt_SSE[3]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctabt_SIMD[0], ctabt_SIMD[2]); \
+        GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(ctab_SIMD[4], ctab_SIMD[5], ctab_SIMD[6], ctab_SIMD[7], ctabt_SIMD[1], ctabt_SIMD[3]); \
                                                                         \
-        GMX_2_MM_TO_M256(ctabt_SSE[0], ctabt_SSE[1], ctab0_SSE);              \
-        GMX_2_MM_TO_M256(ctabt_SSE[2], ctabt_SSE[3], ctab1_SSE);              \
+        GMX_2_MM_TO_M256(ctabt_SIMD[0], ctabt_SIMD[1], ctab0_SIMD);              \
+        GMX_2_MM_TO_M256(ctabt_SIMD[2], ctabt_SIMD[3], ctab1_SIMD);              \
                                                                         \
-        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE[0], ctab_SSE[1], ctab_SSE[2], ctab_SSE[3], ctabvt_SSE[0]); \
-        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SSE[4], ctab_SSE[5], ctab_SSE[6], ctab_SSE[7], ctabvt_SSE[1]); \
+        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SIMD[0], ctab_SIMD[1], ctab_SIMD[2], ctab_SIMD[3], ctabvt_SIMD[0]); \
+        GMX_MM_SHUFFLE_4_PS_FIL2_TO_1_PS(ctab_SIMD[4], ctab_SIMD[5], ctab_SIMD[6], ctab_SIMD[7], ctabvt_SIMD[1]); \
                                                                         \
-        GMX_2_MM_TO_M256(ctabvt_SSE[0], ctabvt_SSE[1], ctabv_SSE);            \
+        GMX_2_MM_TO_M256(ctabvt_SIMD[0], ctabvt_SIMD[1], ctabv_SIMD);            \
     }
 
 #endif
 
 #if defined GMX_MM128_HERE && defined GMX_DOUBLE
 
-#define load_table_f(tab_coul_F, ti_SSE, ti, ctab0_SSE, ctab1_SSE)      \
+#define load_table_f(tab_coul_F, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD)      \
     {                                                                       \
         int     idx[2];                                                     \
-        __m128d ctab_SSE[2];                                                \
+        __m128d ctab_SIMD[2];                                                \
                                                                         \
-        /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
-        idx[0]      = gmx_mm_extract_epi32(ti_SSE, 0);                            \
-        ctab_SSE[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
-        idx[1]      = gmx_mm_extract_epi32(ti_SSE, 1);                            \
-        ctab_SSE[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
+        /* Without SIMD4.1 the extract macro needs an immediate: unroll */   \
+        idx[0]      = gmx_mm_extract_epi32(ti_SIMD, 0);                            \
+        ctab_SIMD[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
+        idx[1]      = gmx_mm_extract_epi32(ti_SIMD, 1);                            \
+        ctab_SIMD[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
                                                                         \
         /* Shuffle the force table entries to a convenient order */         \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0], ctab_SSE[1], ctab0_SSE, ctab1_SSE); \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[0], ctab_SIMD[1], ctab0_SIMD, ctab1_SIMD); \
         /* The second force table entry should contain the difference */    \
-        ctab1_SSE = _mm_sub_pd(ctab1_SSE, ctab0_SSE);                        \
+        ctab1_SIMD = _mm_sub_pd(ctab1_SIMD, ctab0_SIMD);                        \
     }
 
-#define load_table_f_v(tab_coul_F, tab_coul_V, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
+#define load_table_f_v(tab_coul_F, tab_coul_V, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD, ctabv_SIMD) \
     {                                                                       \
         int     idx[2];                                                     \
-        __m128d ctab_SSE[4];                                                \
+        __m128d ctab_SIMD[4];                                                \
                                                                         \
-        /* Without SSE4.1 the extract macro needs an immediate: unroll */   \
-        idx[0]      = gmx_mm_extract_epi32(ti_SSE, 0);                            \
-        ctab_SSE[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
-        idx[1]      = gmx_mm_extract_epi32(ti_SSE, 1);                            \
-        ctab_SSE[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
+        /* Without SIMD4.1 the extract macro needs an immediate: unroll */   \
+        idx[0]      = gmx_mm_extract_epi32(ti_SIMD, 0);                            \
+        ctab_SIMD[0] = _mm_loadu_pd(tab_coul_F+idx[0]);                      \
+        idx[1]      = gmx_mm_extract_epi32(ti_SIMD, 1);                            \
+        ctab_SIMD[1] = _mm_loadu_pd(tab_coul_F+idx[1]);                      \
                                                                         \
         /* Shuffle the force table entries to a convenient order */         \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0], ctab_SSE[1], ctab0_SSE, ctab1_SSE); \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[0], ctab_SIMD[1], ctab0_SIMD, ctab1_SIMD); \
         /* The second force table entry should contain the difference */    \
-        ctab1_SSE = _mm_sub_pd(ctab1_SSE, ctab0_SSE);                        \
+        ctab1_SIMD = _mm_sub_pd(ctab1_SIMD, ctab0_SIMD);                        \
                                                                         \
-        ctab_SSE[2] = _mm_loadu_pd(tab_coul_V+idx[0]);                      \
-        ctab_SSE[3] = _mm_loadu_pd(tab_coul_V+idx[1]);                      \
+        ctab_SIMD[2] = _mm_loadu_pd(tab_coul_V+idx[0]);                      \
+        ctab_SIMD[3] = _mm_loadu_pd(tab_coul_V+idx[1]);                      \
                                                                         \
         /* Shuffle the energy table entries to a single register */         \
-        ctabv_SSE = _mm_shuffle_pd(ctab_SSE[2], ctab_SSE[3], _MM_SHUFFLE2(0, 0)); \
+        ctabv_SIMD = _mm_shuffle_pd(ctab_SIMD[2], ctab_SIMD[3], _MM_SHUFFLE2(0, 0)); \
     }
 
 #endif
@@ -469,58 +469,58 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
         out = _mm256_insertf128_pd(_mm256_castpd128_pd256(in0), in1, 1);      \
     }
 
-#define load_table_f(tab_coul_F, ti_SSE, ti, ctab0_SSE, ctab1_SSE)      \
+#define load_table_f(tab_coul_F, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD)      \
     {                                                                       \
-        __m128d ctab_SSE[4], tr_SSE[4];                                      \
+        __m128d ctab_SIMD[4], tr_SIMD[4];                                      \
         int     j;                                                          \
                                                                         \
-        _mm_store_si128((__m128i *)ti, ti_SSE);                              \
+        _mm_store_si128((__m128i *)ti, ti_SIMD);                              \
         for (j = 0; j < 4; j++)                                                  \
         {                                                                   \
-            ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
+            ctab_SIMD[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
         }                                                                   \
         /* Shuffle the force table entries to a convenient order */         \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0], ctab_SSE[1], tr_SSE[0], tr_SSE[1]); \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[2], ctab_SSE[3], tr_SSE[2], tr_SSE[3]); \
-        GMX_2_M128D_TO_M256D(tr_SSE[0], tr_SSE[2], ctab0_SSE);                \
-        GMX_2_M128D_TO_M256D(tr_SSE[1], tr_SSE[3], ctab1_SSE);                \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[0], ctab_SIMD[1], tr_SIMD[0], tr_SIMD[1]); \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[2], ctab_SIMD[3], tr_SIMD[2], tr_SIMD[3]); \
+        GMX_2_M128D_TO_M256D(tr_SIMD[0], tr_SIMD[2], ctab0_SIMD);                \
+        GMX_2_M128D_TO_M256D(tr_SIMD[1], tr_SIMD[3], ctab1_SIMD);                \
         /* The second force table entry should contain the difference */    \
-        ctab1_SSE = _mm256_sub_pd(ctab1_SSE, ctab0_SSE);                     \
+        ctab1_SIMD = _mm256_sub_pd(ctab1_SIMD, ctab0_SIMD);                     \
     }
 
-#define load_table_f_v(tab_coul_F, tab_coul_V, ti_SSE, ti, ctab0_SSE, ctab1_SSE, ctabv_SSE) \
+#define load_table_f_v(tab_coul_F, tab_coul_V, ti_SIMD, ti, ctab0_SIMD, ctab1_SIMD, ctabv_SIMD) \
     {                                                                       \
-        __m128d ctab_SSE[8], tr_SSE[4];                                      \
+        __m128d ctab_SIMD[8], tr_SIMD[4];                                      \
         int     j;                                                          \
                                                                         \
-        _mm_store_si128((__m128i *)ti, ti_SSE);                              \
+        _mm_store_si128((__m128i *)ti, ti_SIMD);                              \
         for (j = 0; j < 4; j++)                                                  \
         {                                                                   \
-            ctab_SSE[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
+            ctab_SIMD[j] = _mm_loadu_pd(tab_coul_F+ti[j]);                   \
         }                                                                   \
         /* Shuffle the force table entries to a convenient order */         \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[0], ctab_SSE[1], tr_SSE[0], tr_SSE[1]); \
-        GMX_MM_TRANSPOSE2_OP_PD(ctab_SSE[2], ctab_SSE[3], tr_SSE[2], tr_SSE[3]); \
-        GMX_2_M128D_TO_M256D(tr_SSE[0], tr_SSE[2], ctab0_SSE);                \
-        GMX_2_M128D_TO_M256D(tr_SSE[1], tr_SSE[3], ctab1_SSE);                \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[0], ctab_SIMD[1], tr_SIMD[0], tr_SIMD[1]); \
+        GMX_MM_TRANSPOSE2_OP_PD(ctab_SIMD[2], ctab_SIMD[3], tr_SIMD[2], tr_SIMD[3]); \
+        GMX_2_M128D_TO_M256D(tr_SIMD[0], tr_SIMD[2], ctab0_SIMD);                \
+        GMX_2_M128D_TO_M256D(tr_SIMD[1], tr_SIMD[3], ctab1_SIMD);                \
         /* The second force table entry should contain the difference */    \
-        ctab1_SSE = _mm256_sub_pd(ctab1_SSE, ctab0_SSE);                     \
+        ctab1_SIMD = _mm256_sub_pd(ctab1_SIMD, ctab0_SIMD);                     \
                                                                         \
         for (j = 0; j < 4; j++)                                                  \
         {                                                                   \
-            ctab_SSE[4+j] = _mm_loadu_pd(tab_coul_V+ti[j]);                 \
+            ctab_SIMD[4+j] = _mm_loadu_pd(tab_coul_V+ti[j]);                 \
         }                                                                   \
         /* Shuffle the energy table entries to a single register */         \
-        GMX_2_M128D_TO_M256D(_mm_shuffle_pd(ctab_SSE[4], ctab_SSE[5], _MM_SHUFFLE2(0, 0)), _mm_shuffle_pd(ctab_SSE[6], ctab_SSE[7], _MM_SHUFFLE2(0, 0)), ctabv_SSE); \
+        GMX_2_M128D_TO_M256D(_mm_shuffle_pd(ctab_SIMD[4], ctab_SIMD[5], _MM_SHUFFLE2(0, 0)), _mm_shuffle_pd(ctab_SIMD[6], ctab_SIMD[7], _MM_SHUFFLE2(0, 0)), ctabv_SIMD); \
     }
 
 #endif
 
 
 /* Add energy register to possibly multiple terms in the energy array.
- * This function is the same for SSE/AVX single/double.
+ * This function is the same for SIMD/AVX single/double.
  */
-static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
+static inline void add_ener_grp(gmx_mm_pr e_SIMD, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -530,10 +530,10 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
      */
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_pr v_SSE;
+        gmx_mm_pr v_SIMD;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
-        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_SSE, e_SSE));
+        v_SIMD = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_SIMD, e_SIMD));
     }
 }
 
@@ -541,28 +541,28 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
 /* As add_ener_grp above, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
-static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
+static inline void add_ener_grp_halves(gmx_mm_pr e_SIMD,
                                        real *v0, real *v1, const int *offset_jj)
 {
-    gmx_mm_hpr e_SSE0, e_SSE1;
+    gmx_mm_hpr e_SIMD0, e_SIMD1;
     int        jj;
 
-    e_SSE0 = _mm256_extractf128_ps(e_SSE, 0);
-    e_SSE1 = _mm256_extractf128_ps(e_SSE, 1);
+    e_SIMD0 = _mm256_extractf128_ps(e_SIMD, 0);
+    e_SIMD1 = _mm256_extractf128_ps(e_SIMD, 1);
 
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_hpr v_SSE;
+        gmx_mm_hpr v_SIMD;
 
-        v_SSE = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_SSE, e_SSE0));
+        v_SIMD = gmx_load_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v0+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_SIMD, e_SIMD0));
     }
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_hpr v_SSE;
+        gmx_mm_hpr v_SIMD;
 
-        v_SSE = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
-        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_SSE, e_SSE1));
+        v_SIMD = gmx_load_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2);
+        gmx_store_hpr(v1+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE/2, gmx_add_hpr(v_SIMD, e_SIMD1));
     }
 }
 #endif

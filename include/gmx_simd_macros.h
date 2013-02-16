@@ -157,8 +157,10 @@
 #define gmx_or_pr         _mm_or_ps
 #define gmx_andnot_pr     _mm_andnot_ps
 
+#ifdef GMX_X86_SSE4_1
 #define gmx_floor_pr      _mm_floor_ps
 #define gmx_blendv_pr     _mm_blendv_ps
+#endif
 
 #define gmx_movemask_pr   _mm_movemask_ps
 
@@ -198,8 +200,10 @@
 #define gmx_or_pr         _mm_or_pd
 #define gmx_andnot_pr     _mm_andnot_pd
 
+#ifdef GMX_X86_SSE4_1
 #define gmx_floor_pr      _mm_floor_pd
 #define gmx_blendv_pr     _mm_blendv_pd
+#endif
 
 #define gmx_movemask_pr   _mm_movemask_pd
 
