@@ -53,7 +53,7 @@
 
 #include "nbnxn_kernel_simd_2xnn.h"
 
-/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
+/* Include all flavors of the SIMD kernel loops */
 
 #if GMX_NBNXN_SIMD_BITWIDTH == 128
 #define GMX_MM128_HERE

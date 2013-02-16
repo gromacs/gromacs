@@ -9,16 +9,16 @@
  * directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
+ * modify it under the terms of the GNU LeSIMDr General Public License
  * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
  * GROMACS is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
+ * LeSIMDr General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public
+ * You should have received a copy of the GNU LeSIMDr General Public
  * License along with GROMACS; if not, see
  * http://www.gnu.org/licenses, or write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
@@ -166,49 +166,50 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     real       *vctp[UNROLLI];
 #endif
 
-    gmx_mm_pr  shX_SSE;
-    gmx_mm_pr  shY_SSE;
-    gmx_mm_pr  shZ_SSE;
-    gmx_mm_pr  ix_SSE0, iy_SSE0, iz_SSE0;
-    gmx_mm_pr  ix_SSE2, iy_SSE2, iz_SSE2;
-    gmx_mm_pr  fix_SSE0, fiy_SSE0, fiz_SSE0;
-    gmx_mm_pr  fix_SSE2, fiy_SSE2, fiz_SSE2;
+    gmx_mm_pr  shX_SIMD;
+    gmx_mm_pr  shY_SIMD;
+    gmx_mm_pr  shZ_SIMD;
+    gmx_mm_pr  ix_SIMD0, iy_SIMD0, iz_SIMD0;
+    gmx_mm_pr  ix_SIMD2, iy_SIMD2, iz_SIMD2;
+    gmx_mm_pr  fix_SIMD0, fiy_SIMD0, fiz_SIMD0;
+    gmx_mm_pr  fix_SIMD2, fiy_SIMD2, fiz_SIMD2;
+    /* FIXME: Several SSE/AVX-specific types below. */
 #if UNROLLJ >= 4
 #ifndef GMX_DOUBLE
-    __m128     fix_SSE, fiy_SSE, fiz_SSE;
+    __m128     fix_SIMD, fiy_SIMD, fiz_SIMD;
 #else
-    __m256d    fix_SSE, fiy_SSE, fiz_SSE;
+    __m256d    fix_SIMD, fiy_SIMD, fiz_SIMD;
 #endif
 #else
-    __m128d    fix0_SSE, fiy0_SSE, fiz0_SSE;
-    __m128d    fix2_SSE, fiy2_SSE, fiz2_SSE;
+    __m128d    fix0_SIMD, fiy0_SIMD, fiz0_SIMD;
+    __m128d    fix2_SIMD, fiy2_SIMD, fiz2_SIMD;
 #endif
 
     /* AVX: use floating point masks, as there are no integer instructions */
     gmx_mm_pr  mask0 = _mm256_castsi256_ps(_mm256_set_epi32( 0x0080, 0x0040, 0x0020, 0x0010, 0x0008, 0x0004, 0x0002, 0x0001 ));
     gmx_mm_pr  mask2 = _mm256_castsi256_ps(_mm256_set_epi32( 0x8000, 0x4000, 0x2000, 0x1000, 0x0800, 0x0400, 0x0200, 0x0100 ));
 
-    gmx_mm_pr  diag_jmi_SSE;
+    gmx_mm_pr  diag_jmi_SIMD;
 #if UNROLLI == UNROLLJ
-    gmx_mm_pr  diag_SSE0, diag_SSE2;
+    gmx_mm_pr  diag_SIMD0, diag_SIMD2;
 #else
-    gmx_mm_pr  diag0_SSE0, diag0_SSE2;
-    gmx_mm_pr  diag1_SSE0, diag1_SSE2;
+    gmx_mm_pr  diag0_SIMD0, diag0_SIMD2;
+    gmx_mm_pr  diag1_SIMD0, diag1_SIMD2;
 #endif
 
-    gmx_mm_pr  zero_SSE = gmx_set1_pr(0);
+    gmx_mm_pr  zero_SIMD = gmx_set1_pr(0);
 
-    gmx_mm_pr  one_SSE = gmx_set1_pr(1.0);
-    gmx_mm_pr  iq_SSE0 = gmx_setzero_pr();
-    gmx_mm_pr  iq_SSE2 = gmx_setzero_pr();
-    gmx_mm_pr  mrc_3_SSE;
+    gmx_mm_pr  one_SIMD = gmx_set1_pr(1.0);
+    gmx_mm_pr  iq_SIMD0 = gmx_setzero_pr();
+    gmx_mm_pr  iq_SIMD2 = gmx_setzero_pr();
+    gmx_mm_pr  mrc_3_SIMD;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  hrc_3_SSE, moh_rc_SSE;
+    gmx_mm_pr  hrc_3_SIMD, moh_rc_SIMD;
 #endif
 
 #ifdef CALC_COUL_TAB
     /* Coulomb table variables */
-    gmx_mm_pr   invtsp_SSE;
+    gmx_mm_pr   invtsp_SIMD;
     const real *tab_coul_F;
 #ifndef TAB_FDV0
     const real *tab_coul_V;
@@ -218,52 +219,52 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2;
 #endif
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  mhalfsp_SSE;
+    gmx_mm_pr  mhalfsp_SIMD;
 #endif
 #endif
 
 #ifdef CALC_COUL_EWALD
-    gmx_mm_pr beta2_SSE, beta_SSE;
+    gmx_mm_pr beta2_SIMD, beta_SIMD;
 #endif
 
 #if defined CALC_ENERGIES && (defined CALC_COUL_EWALD || defined CALC_COUL_TAB)
-    gmx_mm_pr  sh_ewald_SSE;
+    gmx_mm_pr  sh_ewald_SIMD;
 #endif
 
 #ifdef LJ_COMB_LB
     const real *ljc;
 
-    gmx_mm_pr   hsig_i_SSE0, seps_i_SSE0;
-    gmx_mm_pr   hsig_i_SSE2, seps_i_SSE2;
+    gmx_mm_pr   hsig_i_SIMD0, seps_i_SIMD0;
+    gmx_mm_pr   hsig_i_SIMD2, seps_i_SIMD2;
 #else
 #ifdef FIX_LJ_C
     real        pvdw_array[2*UNROLLI*UNROLLJ+3];
     real       *pvdw_c6, *pvdw_c12;
-    gmx_mm_pr   c6_SSE0, c12_SSE0;
-    gmx_mm_pr   c6_SSE2, c12_SSE2;
+    gmx_mm_pr   c6_SIMD0, c12_SIMD0;
+    gmx_mm_pr   c6_SIMD2, c12_SIMD2;
 #endif
 
 #ifdef LJ_COMB_GEOM
     const real *ljc;
 
-    gmx_mm_pr   c6s_SSE0, c12s_SSE0;
-    gmx_mm_pr   c6s_SSE1, c12s_SSE1;
-    gmx_mm_pr   c6s_SSE2 = gmx_setzero_pr(), c12s_SSE2 = gmx_setzero_pr();
-    gmx_mm_pr   c6s_SSE3 = gmx_setzero_pr(), c12s_SSE3 = gmx_setzero_pr();
+    gmx_mm_pr   c6s_SIMD0, c12s_SIMD0;
+    gmx_mm_pr   c6s_SIMD1, c12s_SIMD1;
+    gmx_mm_pr   c6s_SIMD2 = gmx_setzero_pr(), c12s_SIMD2 = gmx_setzero_pr();
+    gmx_mm_pr   c6s_SIMD3 = gmx_setzero_pr(), c12s_SIMD3 = gmx_setzero_pr();
 #endif
 #endif /* LJ_COMB_LB */
 
-    gmx_mm_pr  vctotSSE, VvdwtotSSE;
-    gmx_mm_pr  sixthSSE, twelvethSSE;
+    gmx_mm_pr  vctotSIMD, VvdwtotSIMD;
+    gmx_mm_pr  sixthSIMD, twelvethSIMD;
 
-    gmx_mm_pr  avoid_sing_SSE;
-    gmx_mm_pr  rc2_SSE;
+    gmx_mm_pr  avoid_sing_SIMD;
+    gmx_mm_pr  rc2_SIMD;
 #ifdef VDW_CUTOFF_CHECK
-    gmx_mm_pr  rcvdw2_SSE;
+    gmx_mm_pr  rcvdw2_SIMD;
 #endif
 
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  sh_invrc6_SSE, sh_invrc12_SSE;
+    gmx_mm_pr  sh_invrc6_SIMD, sh_invrc12_SIMD;
 
     /* cppcheck-suppress unassignedVariable */
     real       tmpsum_array[15], *tmpsum;
@@ -283,36 +284,36 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     ljc = nbat->lj_comb;
 #else
     /* No combination rule used */
-#ifndef GMX_DOUBLE
-    nbfp_ptr    = nbat->nbfp_s4;
-#define NBFP_STRIDE  4
-#else
+#ifdef GMX_DOUBLE
     nbfp_ptr    = nbat->nbfp;
 #define NBFP_STRIDE  2
+#else
+    nbfp_ptr    = nbat->nbfp_s4;
+#define NBFP_STRIDE  4
 #endif
     nbfp_stride = NBFP_STRIDE;
 #endif
 
     /* Load j-i for the first i */
-    diag_jmi_SSE = gmx_load_pr(nbat->simd_2xnn_diag);
+    diag_jmi_SIMD = gmx_load_pr(nbat->simd_2xnn_diag);
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
-    diag_SSE0    = gmx_cmplt_pr(zero_SSE, diag_jmi_SSE);
-    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE, one_SSE);
-    diag_jmi_SSE = gmx_sub_pr(diag_jmi_SSE, one_SSE);
-    diag_SSE2    = gmx_cmplt_pr(zero_SSE, diag_jmi_SSE);
+    diag_SIMD0    = gmx_cmplt_pr(zero_SIMD, diag_jmi_SIMD);
+    diag_jmi_SIMD = gmx_sub_pr(diag_jmi_SIMD, one_SIMD);
+    diag_jmi_SIMD = gmx_sub_pr(diag_jmi_SIMD, one_SIMD);
+    diag_SIMD2    = gmx_cmplt_pr(zero_SIMD, diag_jmi_SIMD);
 #else
 #if 2*UNROLLI == UNROLLJ
-    diag0_SSE0 = gmx_cmplt_pr(diag_i_SSE, diag_j_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag0_SSE2 = gmx_cmplt_pr(diag_i_SSE, diag_j_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag1_SSE0 = gmx_cmplt_pr(diag_i_SSE, diag_j_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag_i_SSE = gmx_add_pr(diag_i_SSE, one_SSE);
-    diag1_SSE2 = gmx_cmplt_pr(diag_i_SSE, diag_j_SSE);
+    diag0_SIMD0 = gmx_cmplt_pr(diag_i_SIMD, diag_j_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag0_SIMD2 = gmx_cmplt_pr(diag_i_SIMD, diag_j_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag1_SIMD0 = gmx_cmplt_pr(diag_i_SIMD, diag_j_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag_i_SIMD = gmx_add_pr(diag_i_SIMD, one_SIMD);
+    diag1_SIMD2 = gmx_cmplt_pr(diag_i_SIMD, diag_j_SIMD);
 #endif
 #endif
 
@@ -323,9 +324,9 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     ti2 = (int *)(((size_t)(ti2_array+GMX_SIMD_WIDTH_HERE-1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int)-1))));
 #endif
 
-    invtsp_SSE  = gmx_set1_pr(ic->tabq_scale);
+    invtsp_SIMD  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
-    mhalfsp_SSE = gmx_set1_pr(-0.5/ic->tabq_scale);
+    mhalfsp_SIMD = gmx_set1_pr(-0.5/ic->tabq_scale);
 #endif
 
 #ifdef TAB_FDV0
@@ -337,12 +338,12 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #endif /* CALC_COUL_TAB */
 
 #ifdef CALC_COUL_EWALD
-    beta2_SSE = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
-    beta_SSE  = gmx_set1_pr(ic->ewaldcoeff);
+    beta2_SIMD = gmx_set1_pr(ic->ewaldcoeff*ic->ewaldcoeff);
+    beta_SIMD  = gmx_set1_pr(ic->ewaldcoeff);
 #endif
 
 #if (defined CALC_COUL_TAB || defined CALC_COUL_EWALD) && defined CALC_ENERGIES
-    sh_ewald_SSE = gmx_set1_pr(ic->sh_ewald);
+    sh_ewald_SIMD = gmx_set1_pr(ic->sh_ewald);
 #endif
 
     q                   = nbat->q;
@@ -351,28 +352,28 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     shiftvec            = shift_vec[0];
     x                   = nbat->x;
 
-    avoid_sing_SSE = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
+    avoid_sing_SIMD = gmx_set1_pr(NBNXN_AVOID_SING_R2_INC);
 
     /* The kernel either supports rcoulomb = rvdw or rcoulomb >= rvdw */
-    rc2_SSE    = gmx_set1_pr(ic->rcoulomb*ic->rcoulomb);
+    rc2_SIMD    = gmx_set1_pr(ic->rcoulomb*ic->rcoulomb);
 #ifdef VDW_CUTOFF_CHECK
-    rcvdw2_SSE = gmx_set1_pr(ic->rvdw*ic->rvdw);
+    rcvdw2_SIMD = gmx_set1_pr(ic->rvdw*ic->rvdw);
 #endif
 
 #ifdef CALC_ENERGIES
-    sixthSSE    = gmx_set1_pr(1.0/6.0);
-    twelvethSSE = gmx_set1_pr(1.0/12.0);
+    sixthSIMD    = gmx_set1_pr(1.0/6.0);
+    twelvethSIMD = gmx_set1_pr(1.0/12.0);
 
-    sh_invrc6_SSE  = gmx_set1_pr(ic->sh_invrc6);
-    sh_invrc12_SSE = gmx_set1_pr(ic->sh_invrc6*ic->sh_invrc6);
+    sh_invrc6_SIMD  = gmx_set1_pr(ic->sh_invrc6);
+    sh_invrc12_SIMD = gmx_set1_pr(ic->sh_invrc6*ic->sh_invrc6);
 #endif
 
-    mrc_3_SSE = gmx_set1_pr(-2*ic->k_rf);
+    mrc_3_SIMD = gmx_set1_pr(-2*ic->k_rf);
 
 #ifdef CALC_ENERGIES
-    hrc_3_SSE = gmx_set1_pr(ic->k_rf);
+    hrc_3_SIMD = gmx_set1_pr(ic->k_rf);
 
-    moh_rc_SSE = gmx_set1_pr(-ic->c_rf);
+    moh_rc_SIMD = gmx_set1_pr(-ic->c_rf);
 #endif
 
 #ifdef CALC_ENERGIES
@@ -398,15 +399,15 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         pvdw_c12[2*UNROLLJ+jp] = nbat->nbfp[0*2+1];
         pvdw_c12[3*UNROLLJ+jp] = nbat->nbfp[0*2+1];
     }
-    c6_SSE0            = gmx_load_pr(pvdw_c6 +0*UNROLLJ);
-    c6_SSE1            = gmx_load_pr(pvdw_c6 +1*UNROLLJ);
-    c6_SSE2            = gmx_load_pr(pvdw_c6 +2*UNROLLJ);
-    c6_SSE3            = gmx_load_pr(pvdw_c6 +3*UNROLLJ);
+    c6_SIMD0            = gmx_load_pr(pvdw_c6 +0*UNROLLJ);
+    c6_SIMD1            = gmx_load_pr(pvdw_c6 +1*UNROLLJ);
+    c6_SIMD2            = gmx_load_pr(pvdw_c6 +2*UNROLLJ);
+    c6_SIMD3            = gmx_load_pr(pvdw_c6 +3*UNROLLJ);
 
-    c12_SSE0           = gmx_load_pr(pvdw_c12+0*UNROLLJ);
-    c12_SSE1           = gmx_load_pr(pvdw_c12+1*UNROLLJ);
-    c12_SSE2           = gmx_load_pr(pvdw_c12+2*UNROLLJ);
-    c12_SSE3           = gmx_load_pr(pvdw_c12+3*UNROLLJ);
+    c12_SIMD0           = gmx_load_pr(pvdw_c12+0*UNROLLJ);
+    c12_SIMD1           = gmx_load_pr(pvdw_c12+1*UNROLLJ);
+    c12_SIMD2           = gmx_load_pr(pvdw_c12+2*UNROLLJ);
+    c12_SIMD3           = gmx_load_pr(pvdw_c12+3*UNROLLJ);
 #endif /* FIX_LJ_C */
 
 #ifdef ENERGY_GROUPS
@@ -433,9 +434,9 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
-        shX_SSE = gmx_load1_pr(shiftvec+ish3);
-        shY_SSE = gmx_load1_pr(shiftvec+ish3+1);
-        shZ_SSE = gmx_load1_pr(shiftvec+ish3+2);
+        shX_SIMD = gmx_load1_pr(shiftvec+ish3);
+        shY_SIMD = gmx_load1_pr(shiftvec+ish3+1);
+        shZ_SIMD = gmx_load1_pr(shiftvec+ish3+2);
 
 #if UNROLLJ <= 4
         sci              = ci*STRIDE;
@@ -520,39 +521,39 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         /* Load i atom data */
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
-        ix_SSE0          = gmx_add_pr(gmx_load2_hpr(x+scix), shX_SSE);
-        ix_SSE2          = gmx_add_pr(gmx_load2_hpr(x+scix+2), shX_SSE);
-        iy_SSE0          = gmx_add_pr(gmx_load2_hpr(x+sciy), shY_SSE);
-        iy_SSE2          = gmx_add_pr(gmx_load2_hpr(x+sciy+2), shY_SSE);
-        iz_SSE0          = gmx_add_pr(gmx_load2_hpr(x+sciz), shZ_SSE);
-        iz_SSE2          = gmx_add_pr(gmx_load2_hpr(x+sciz+2), shZ_SSE);
+        ix_SIMD0          = gmx_add_pr(gmx_load2_hpr(x+scix), shX_SIMD);
+        ix_SIMD2          = gmx_add_pr(gmx_load2_hpr(x+scix+2), shX_SIMD);
+        iy_SIMD0          = gmx_add_pr(gmx_load2_hpr(x+sciy), shY_SIMD);
+        iy_SIMD2          = gmx_add_pr(gmx_load2_hpr(x+sciy+2), shY_SIMD);
+        iz_SIMD0          = gmx_add_pr(gmx_load2_hpr(x+sciz), shZ_SIMD);
+        iz_SIMD2          = gmx_add_pr(gmx_load2_hpr(x+sciz+2), shZ_SIMD);
 
         if (do_coul)
         {
-            gmx_mm_pr facel_SSE;
+            gmx_mm_pr facel_SIMD;
 
-            facel_SSE    = gmx_set1_pr(facel);
+            facel_SIMD    = gmx_set1_pr(facel);
 
-            iq_SSE0      = gmx_mul_pr(facel_SSE, gmx_load2_hpr(q+sci));
-            iq_SSE2      = gmx_mul_pr(facel_SSE, gmx_load2_hpr(q+sci+2));
+            iq_SIMD0      = gmx_mul_pr(facel_SIMD, gmx_load2_hpr(q+sci));
+            iq_SIMD2      = gmx_mul_pr(facel_SIMD, gmx_load2_hpr(q+sci+2));
         }
 
 #ifdef LJ_COMB_LB
-        hsig_i_SSE0      = gmx_load2_hpr(ljc+sci2+0);
-        hsig_i_SSE2      = gmx_load2_hpr(ljc+sci2+2);
-        seps_i_SSE0      = gmx_load2_hpr(ljc+sci2+STRIDE+0);
-        seps_i_SSE2      = gmx_load2_hpr(ljc+sci2+STRIDE+2);
+        hsig_i_SIMD0      = gmx_load2_hpr(ljc+sci2+0);
+        hsig_i_SIMD2      = gmx_load2_hpr(ljc+sci2+2);
+        seps_i_SIMD0      = gmx_load2_hpr(ljc+sci2+STRIDE+0);
+        seps_i_SIMD2      = gmx_load2_hpr(ljc+sci2+STRIDE+2);
 #else
 #ifdef LJ_COMB_GEOM
-        c6s_SSE0         = gmx_load2_hpr(ljc+sci2+0);
+        c6s_SIMD0         = gmx_load2_hpr(ljc+sci2+0);
         if (!half_LJ)
         {
-            c6s_SSE2     = gmx_load2_hpr(ljc+sci2+2);
+            c6s_SIMD2     = gmx_load2_hpr(ljc+sci2+2);
         }
-        c12s_SSE0        = gmx_load2_hpr(ljc+sci2+STRIDE+0);
+        c12s_SIMD0        = gmx_load2_hpr(ljc+sci2+STRIDE+0);
         if (!half_LJ)
         {
-            c12s_SSE2    = gmx_load2_hpr(ljc+sci2+STRIDE+2);
+            c12s_SIMD2    = gmx_load2_hpr(ljc+sci2+STRIDE+2);
         }
 #else
         nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
@@ -566,16 +567,16 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #endif
 
         /* Zero the potential energy for this list */
-        VvdwtotSSE       = gmx_setzero_pr();
-        vctotSSE         = gmx_setzero_pr();
+        VvdwtotSIMD       = gmx_setzero_pr();
+        vctotSIMD         = gmx_setzero_pr();
 
         /* Clear i atom forces */
-        fix_SSE0           = gmx_setzero_pr();
-        fix_SSE2           = gmx_setzero_pr();
-        fiy_SSE0           = gmx_setzero_pr();
-        fiy_SSE2           = gmx_setzero_pr();
-        fiz_SSE0           = gmx_setzero_pr();
-        fiz_SSE2           = gmx_setzero_pr();
+        fix_SIMD0           = gmx_setzero_pr();
+        fix_SIMD2           = gmx_setzero_pr();
+        fiy_SIMD0           = gmx_setzero_pr();
+        fiy_SIMD2           = gmx_setzero_pr();
+        fiz_SIMD0           = gmx_setzero_pr();
+        fiz_SIMD2           = gmx_setzero_pr();
 
         cjind = cjind0;
 
@@ -633,6 +634,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
+        
+        /* FIXME: AVX/SSE-specific instructions should be moved to utility functions */
 #if UNROLLJ >= 4
 #ifndef GMX_DOUBLE
 #define gmx_load_ps4  _mm_load_ps
@@ -643,45 +646,50 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #define gmx_store_ps4 _mm256_store_pd
 #define gmx_add_ps4   _mm256_add_pd
 #endif
-        GMX_MM_TRANSPOSE_SUM4H_PR(fix_SSE0, fix_SSE2, fix_SSE);
-        gmx_store_ps4(f+scix, gmx_add_ps4(fix_SSE, gmx_load_ps4(f+scix)));
-
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiy_SSE0, fiy_SSE2, fiy_SSE);
-        gmx_store_ps4(f+sciy, gmx_add_ps4(fiy_SSE, gmx_load_ps4(f+sciy)));
-
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiz_SSE0, fiz_SSE2, fiz_SSE);
-        gmx_store_ps4(f+sciz, gmx_add_ps4(fiz_SSE, gmx_load_ps4(f+sciz)));
-
+ 
+        /* FIXME: More AVX/SSE-specific instructions */
+        GMX_MM_TRANSPOSE_SUM4H_PR(fix_SIMD0, fix_SIMD2, fix_SIMD);
+        gmx_store_ps4(f+scix, gmx_add_ps4(fix_SIMD, gmx_load_ps4(f+scix)));
+        
+        GMX_MM_TRANSPOSE_SUM4H_PR(fiy_SIMD0, fiy_SIMD2, fiy_SIMD);
+        gmx_store_ps4(f+sciy, gmx_add_ps4(fiy_SIMD, gmx_load_ps4(f+sciy)));
+        
+        GMX_MM_TRANSPOSE_SUM4H_PR(fiz_SIMD0, fiz_SIMD2, fiz_SIMD);
+        gmx_store_ps4(f+sciz, gmx_add_ps4(fiz_SIMD, gmx_load_ps4(f+sciz)));
+        
 #ifdef CALC_SHIFTFORCES
-        gmx_store_ps4(shf, fix_SSE);
+        /* FIXME: More AVX/SSE-specific instructions */
+        gmx_store_ps4(shf, fix_SIMD);
         fshift[ish3+0] += SUM_SIMD4(shf);
-        gmx_store_ps4(shf, fiy_SSE);
+        gmx_store_ps4(shf, fiy_SIMD);
         fshift[ish3+1] += SUM_SIMD4(shf);
-        gmx_store_ps4(shf, fiz_SSE);
+        gmx_store_ps4(shf, fiz_SIMD);
         fshift[ish3+2] += SUM_SIMD4(shf);
 #endif
 #else
-        GMX_MM_TRANSPOSE_SUM2_PD(fix_SSE0, fix_SSE1, fix0_SSE);
-        _mm_store_pd(f+scix, _mm_add_pd(fix0_SSE, _mm_load_pd(f+scix)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fix_SSE2, fix_SSE3, fix2_SSE);
-        _mm_store_pd(f+scix+2, _mm_add_pd(fix2_SSE, _mm_load_pd(f+scix+2)));
-
-        GMX_MM_TRANSPOSE_SUM2_PD(fiy_SSE0, fiy_SSE1, fiy0_SSE);
-        _mm_store_pd(f+sciy, _mm_add_pd(fiy0_SSE, _mm_load_pd(f+sciy)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fiy_SSE2, fiy_SSE3, fiy2_SSE);
-        _mm_store_pd(f+sciy+2, _mm_add_pd(fiy2_SSE, _mm_load_pd(f+sciy+2)));
-
-        GMX_MM_TRANSPOSE_SUM2_PD(fiz_SSE0, fiz_SSE1, fiz0_SSE);
-        _mm_store_pd(f+sciz, _mm_add_pd(fiz0_SSE, _mm_load_pd(f+sciz)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fiz_SSE2, fiz_SSE3, fiz2_SSE);
-        _mm_store_pd(f+sciz+2, _mm_add_pd(fiz2_SSE, _mm_load_pd(f+sciz+2)));
-
+        /* FIXME: More AVX/SSE-specific instructions */
+        GMX_MM_TRANSPOSE_SUM2_PD(fix_SIMD0, fix_SIMD1, fix0_SIMD);
+        _mm_store_pd(f+scix, _mm_add_pd(fix0_SIMD, _mm_load_pd(f+scix)));
+        GMX_MM_TRANSPOSE_SUM2_PD(fix_SIMD2, fix_SIMD3, fix2_SIMD);
+        _mm_store_pd(f+scix+2, _mm_add_pd(fix2_SIMD, _mm_load_pd(f+scix+2)));
+        
+        GMX_MM_TRANSPOSE_SUM2_PD(fiy_SIMD0, fiy_SIMD1, fiy0_SIMD);
+        _mm_store_pd(f+sciy, _mm_add_pd(fiy0_SIMD, _mm_load_pd(f+sciy)));
+        GMX_MM_TRANSPOSE_SUM2_PD(fiy_SIMD2, fiy_SIMD3, fiy2_SIMD);
+        _mm_store_pd(f+sciy+2, _mm_add_pd(fiy2_SIMD, _mm_load_pd(f+sciy+2)));
+        
+        GMX_MM_TRANSPOSE_SUM2_PD(fiz_SIMD0, fiz_SIMD1, fiz0_SIMD);
+        _mm_store_pd(f+sciz, _mm_add_pd(fiz0_SIMD, _mm_load_pd(f+sciz)));
+        GMX_MM_TRANSPOSE_SUM2_PD(fiz_SIMD2, fiz_SIMD3, fiz2_SIMD);
+        _mm_store_pd(f+sciz+2, _mm_add_pd(fiz2_SIMD, _mm_load_pd(f+sciz+2)));
+        
 #ifdef CALC_SHIFTFORCES
-        _mm_store_pd(shf, _mm_add_pd(fix0_SSE, fix2_SSE));
+        /* FIXME: More AVX/SSE-specific instructions */
+        _mm_store_pd(shf, _mm_add_pd(fix0_SIMD, fix2_SIMD));
         fshift[ish3+0] += shf[0] + shf[1];
-        _mm_store_pd(shf, _mm_add_pd(fiy0_SSE, fiy2_SSE));
+        _mm_store_pd(shf, _mm_add_pd(fiy0_SIMD, fiy2_SIMD));
         fshift[ish3+1] += shf[0] + shf[1];
-        _mm_store_pd(shf, _mm_add_pd(fiz0_SSE, fiz2_SSE));
+        _mm_store_pd(shf, _mm_add_pd(fiz0_SIMD, fiz2_SIMD));
         fshift[ish3+2] += shf[0] + shf[1];
 #endif
 #endif
@@ -689,11 +697,11 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #ifdef CALC_ENERGIES
         if (do_coul)
         {
-            gmx_store_pr(tmpsum, vctotSSE);
+            gmx_store_pr(tmpsum, vctotSIMD);
             *Vc += SUM_SIMD(tmpsum);
         }
 
-        gmx_store_pr(tmpsum, VvdwtotSSE);
+        gmx_store_pr(tmpsum, VvdwtotSIMD);
         *Vvdw += SUM_SIMD(tmpsum);
 #endif
 
