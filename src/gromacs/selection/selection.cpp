@@ -159,7 +159,7 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
     }
 }
 
-} // namespace
+}       // namespace
 
 void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
