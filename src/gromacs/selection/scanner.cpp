@@ -497,34 +497,38 @@ static yyconst flex_int16_t yy_chk[191] =
 #define YY_RESTORE_YY_MORE_OFFSET
 #line 1 "scanner.l"
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \cond \internal \file scanner.l
  * \brief
@@ -540,7 +544,7 @@ static yyconst flex_int16_t yy_chk[191] =
  *
  * \ingroup module_selection
  */
-#line 46 "scanner.l"
+#line 50 "scanner.l"
 #include "gromacs/legacyheaders/string2.h"
 
 #include "parser.h"
@@ -556,7 +560,7 @@ static yyconst flex_int16_t yy_chk[191] =
 
 
 
-#line 560 "scanner.cpp"
+#line 564 "scanner.cpp"
 
 #define INITIAL 0
 #define matchof 1
@@ -785,7 +789,7 @@ YY_DECL
 	register int yy_act;
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 
-#line 81 "scanner.l"
+#line 85 "scanner.l"
 
 
 
@@ -819,7 +823,7 @@ YY_DECL
     }
 
 
-#line 823 "scanner.cpp"
+#line 827 "scanner.cpp"
 
 	if ( !yyg->yy_init )
 		{
@@ -900,34 +904,34 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 114 "scanner.l"
+#line 118 "scanner.l"
 
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 115 "scanner.l"
+#line 119 "scanner.l"
 { yylval->i   = strtol(yytext, NULL, 10);    ADD_TOKEN; return TOK_INT; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 116 "scanner.l"
+#line 120 "scanner.l"
 { yylval->r   = strtod(yytext, NULL);        ADD_TOKEN; return TOK_REAL; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 117 "scanner.l"
+#line 121 "scanner.l"
 { yylval->str = gmx_strndup(yytext+1, yyleng-2); ADD_TOKEN; return STR;  }
 	YY_BREAK
 case 5:
 /* rule 5 can match eol */
 YY_RULE_SETUP
-#line 119 "scanner.l"
+#line 123 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 120 "scanner.l"
+#line 124 "scanner.l"
 {
                     if (yytext[0] == ';' || state->bInteractive)
                     {
@@ -942,122 +946,122 @@ YY_RULE_SETUP
                 }
 	YY_BREAK
 case YY_STATE_EOF(cmdstart):
-#line 133 "scanner.l"
+#line 137 "scanner.l"
 { state->bCmdStart = true; yyterminate(); }
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(matchof):
 case YY_STATE_EOF(matchbool):
 case YY_STATE_EOF(help):
-#line 134 "scanner.l"
+#line 138 "scanner.l"
 { state->bCmdStart = true; return CMD_SEP; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 136 "scanner.l"
+#line 140 "scanner.l"
 { if (YYSTATE == cmdstart) { BEGIN(help); } return HELP; }
 	YY_BREAK
 
 case 8:
 YY_RULE_SETUP
-#line 138 "scanner.l"
+#line 142 "scanner.l"
 
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 139 "scanner.l"
+#line 143 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); return HELP_TOPIC; }
 	YY_BREAK
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 140 "scanner.l"
+#line 144 "scanner.l"
 { state->bCmdStart = true; return CMD_SEP; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 141 "scanner.l"
+#line 145 "scanner.l"
 { return INVALID; }
 	YY_BREAK
 
 
 case 12:
 YY_RULE_SETUP
-#line 145 "scanner.l"
+#line 149 "scanner.l"
 { ADD_TOKEN; yylval->i = 1; return TOK_INT; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 146 "scanner.l"
+#line 150 "scanner.l"
 { ADD_TOKEN; yylval->i = 0; return TOK_INT; }
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-#line 148 "scanner.l"
+#line 152 "scanner.l"
 { ADD_TOKEN; return GROUP; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 149 "scanner.l"
+#line 153 "scanner.l"
 { ADD_TOKEN; return TO; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 150 "scanner.l"
+#line 154 "scanner.l"
 { ADD_TOKEN; BEGIN(0); return OF; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 151 "scanner.l"
+#line 155 "scanner.l"
 { ADD_TOKEN; return AND; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 152 "scanner.l"
+#line 156 "scanner.l"
 { ADD_TOKEN; return OR; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 153 "scanner.l"
+#line 157 "scanner.l"
 { ADD_TOKEN; return XOR; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 154 "scanner.l"
+#line 158 "scanner.l"
 { ADD_TOKEN; return NOT; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 155 "scanner.l"
+#line 159 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return CMP_OP; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 157 "scanner.l"
+#line 161 "scanner.l"
 { return _gmx_sel_lexer_process_identifier(yylval, yytext, yyleng, state); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 159 "scanner.l"
+#line 163 "scanner.l"
 { _gmx_sel_lexer_add_token(" ", 1, state); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 160 "scanner.l"
+#line 164 "scanner.l"
 { yylval->str = gmx_strndup(yytext, yyleng); ADD_TOKEN; return STR; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 161 "scanner.l"
+#line 165 "scanner.l"
 { ADD_TOKEN; return yytext[0]; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 162 "scanner.l"
+#line 166 "scanner.l"
 YY_FATAL_ERROR( "flex scanner jammed" );
 	YY_BREAK
-#line 1061 "scanner.cpp"
+#line 1065 "scanner.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1835,7 +1839,7 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yyb
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	yy_size_t i;
+	int i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = _yybytes_len + 2;
@@ -2208,4 +2212,4 @@ void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 162 "scanner.l"
+#line 166 "scanner.l"
