@@ -49,40 +49,60 @@
 
 #undef GMX_SIMD_WIDTH_HERE
 
-#undef gmx_epi32
-
 /* float/double SIMD register type */
 #undef gmx_mm_pr
+
+/* integer SIMD register type, only used in the tabulated PME kernels */
+#undef gmx_epi32
 
 #undef gmx_load_pr
 #undef gmx_load1_pr
 #undef gmx_set1_pr
 #undef gmx_setzero_pr
 #undef gmx_store_pr
-/* Only used for debugging */
-#undef gmx_storeu_pr
 
 #undef gmx_add_pr
 #undef gmx_sub_pr
 #undef gmx_mul_pr
 #undef gmx_max_pr
 #undef gmx_cmplt_pr
+/* gmx_blendzero_pr(real a, boolean b) does: (b ? a : 0) */
+#undef gmx_blendzero_pr
+/* Logical operations on SIMD booleans */
 #undef gmx_and_pr
 #undef gmx_or_pr
 #undef gmx_andnot_pr
 
-/* Only used to speed up the nbnxn tabulated PME kernels */
+/* Not required, only used to speed up the nbnxn tabulated PME kernels */
+#undef GMX_HAVE_SIMD_FLOOR
 #undef gmx_floor_pr
-/* Only used with x86 when blendv is faster than comparison */
+/* Not required, only used with when blendv is faster than comparison */
+#undef GMX_HAVE_SIMD_BLENDV
 #undef gmx_blendv_pr
+/* Not required, gmx_anytrue(x) returns if any of the boolean is x is True.
+ * If this is not present, define GMX_SIMD_IS_TRUE(real x),
+ * which should return x==True, where True is True as defined in SIMD.
+ */
+#undef GMX_HAVE_SIMD_ANYTRUE
+#undef gmx_anytrue_pr
 
-#undef gmx_movemask_pr
+/* Integer set and cast are only used for nbnxn exclusion masks */
+#undef gmx_set1_epi32
+#undef gmx_castsi_pr
+/* For topology exclusion pair checking we need: ((a & b) ? True : False)
+ * when we do a bit-wise and between a and b.
+ * When integer SIMD operations are present, we use gmx_checkbitmask_epi32(a, b)
+ * Otherwise we do all operations, except for the set1, in reals.
+ */
+#undef gmx_load_si
+/* If the same bit is set in both input masks, return all bits 1, otherwise 0 */
+#undef gmx_checkbitmask_epi32
+/* As gmx_checkbitmask_epi32, but operates on reals. In double precision two
+ * identical 32-bit masks are set in one double and one or both can be used.
+ */
+#undef gmx_checkbitmask_pr
 
-/* Integer casts are only used for nbnxn x86 exclusion masks */
-#undef gmx_mm_castsi128_pr
-#undef gmx_mm_castsi256_pr
-
-/* Conversions only used for nbnxn x86 exclusion masks and PME table lookup */
+/* Conversions only used for PME table lookup */
 #undef gmx_cvttpr_epi32
 #undef gmx_cvtepi32_pr
 
@@ -95,43 +115,27 @@
 #undef gmx_pmecorrV_pr
 
 
-/* Half SIMD-width types and operations only for nbnxn 2xnn search+kernels */
-#undef gmx_mm_hpr
-
-#undef gmx_load_hpr
-#undef gmx_load1_hpr
-#undef gmx_store_hpr
-#undef gmx_add_hpr
-#undef gmx_sub_hpr
-
-#undef gmx_sum4_hpr
-
-#undef gmx_2hpr_to_pr
-
-
-/* By defining GMX_MM128_HERE or GMX_MM256_HERE before including this file
- * the same intrinsics, with defines, can be compiled for either 128 or 256
- * bit wide SSE or AVX instructions.
- * The gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
+/* The same SIMD macros, can be translated to SIMD intrinsics, and compiled
+ * to instructions for, different SIMD width and float precision.
+ * On x86, the gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
  * The _pr suffix is replaced by _ps or _pd (single or double precision).
  * Note that compiler settings will decide if 128-bit intrinsics will
  * be translated into SSE or AVX instructions.
  */
 
-#if !defined GMX_MM128_HERE && !defined GMX_MM256_HERE
-#error "You should define GMX_MM128_HERE or GMX_MM256_HERE"
-#endif
 
-#if defined GMX_MM128_HERE && defined GMX_MM256_HERE
-#error "You should not define both GMX_MM128_HERE and GMX_MM256_HERE"
+#ifdef GMX_USE_HALF_WIDTH_SIMD_HERE
+#if defined GMX_X86_AVX_256
+/* We have half SIMD width support, continue */
+#else
+#error "half SIMD width intrinsics are not supported"
+#endif
 #endif
 
 
 #ifdef GMX_X86_SSE2
 
-#ifdef GMX_MM128_HERE
-
-#define gmx_epi32  __m128i
+#if !defined GMX_X86_AVX_256 || defined GMX_USE_HALF_WIDTH_SIMD_HERE
 
 #ifndef GMX_DOUBLE
 
@@ -141,28 +145,38 @@
 
 #define gmx_mm_pr  __m128
 
+#define gmx_epi32  __m128i
+
 #define gmx_load_pr       _mm_load_ps
 #define gmx_load1_pr      _mm_load1_ps
 #define gmx_set1_pr       _mm_set1_ps
 #define gmx_setzero_pr    _mm_setzero_ps
 #define gmx_store_pr      _mm_store_ps
-#define gmx_storeu_pr     _mm_storeu_ps
 
 #define gmx_add_pr        _mm_add_ps
 #define gmx_sub_pr        _mm_sub_ps
 #define gmx_mul_pr        _mm_mul_ps
 #define gmx_max_pr        _mm_max_ps
 #define gmx_cmplt_pr      _mm_cmplt_ps
+#define gmx_blendzero_pr  _mm_and_ps
 #define gmx_and_pr        _mm_and_ps
 #define gmx_or_pr         _mm_or_ps
 #define gmx_andnot_pr     _mm_andnot_ps
 
+#ifdef GMX_X86_SSE4_1
+#define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm_floor_ps
+#define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm_blendv_ps
+#endif
 
-#define gmx_movemask_pr   _mm_movemask_ps
+#define GMX_HAVE_SIMD_ANYTRUE
+#define gmx_anytrue_pr    _mm_movemask_ps
 
-#define gmx_mm_castsi128_pr gmx_mm_castsi128_ps
+#define gmx_set1_epi32    _mm_set1_epi32
+#define gmx_castsi_pr     gmx_mm_castsi128_ps
+#define gmx_load_si(i)    _mm_load_si128((__m128i *) (i))
+#define gmx_checkbitmask_epi32(m0, m1) _mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128())
 
 #define gmx_cvttpr_epi32  _mm_cvttps_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_ps
@@ -182,28 +196,38 @@
 
 #define gmx_mm_pr  __m128d
 
+#define gmx_epi32  __m128i
+
 #define gmx_load_pr       _mm_load_pd
 #define gmx_load1_pr      _mm_load1_pd
 #define gmx_set1_pr       _mm_set1_pd
 #define gmx_setzero_pr    _mm_setzero_pd
 #define gmx_store_pr      _mm_store_pd
-#define gmx_storeu_pr     _mm_storeu_pd
 
 #define gmx_add_pr        _mm_add_pd
 #define gmx_sub_pr        _mm_sub_pd
 #define gmx_mul_pr        _mm_mul_pd
 #define gmx_max_pr        _mm_max_pd
 #define gmx_cmplt_pr      _mm_cmplt_pd
+#define gmx_blendzero_pr  _mm_and_pd
 #define gmx_and_pr        _mm_and_pd
 #define gmx_or_pr         _mm_or_pd
 #define gmx_andnot_pr     _mm_andnot_pd
 
+#ifdef GMX_X86_SSE4_1
+#define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm_floor_pd
+#define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm_blendv_pd
+#endif
 
-#define gmx_movemask_pr   _mm_movemask_pd
+#define GMX_HAVE_SIMD_ANYTRUE
+#define gmx_anytrue_pr    _mm_movemask_pd
 
-#define gmx_mm_castsi128_pr gmx_mm_castsi128_pd
+#define gmx_set1_epi32    _mm_set1_epi32
+#define gmx_castsi_pr     gmx_mm_castsi128_pd
+#define gmx_load_si(i)    _mm_load_si128((__m128i *) (i))
+#define gmx_checkbitmask_epi32(m0, m1) _mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128())
 
 #define gmx_cvttpr_epi32  _mm_cvttpd_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_pd
@@ -217,11 +241,10 @@
 
 #endif /* ifndef GMX_DOUBLE */
 
-#endif /* GMX_MM128_HERE */
-
-#ifdef GMX_MM256_HERE
-
-#define gmx_epi32 __m256i
+#else
+/* We have GMX_X86_AVX_256 and not GMX_USE_HALF_WIDTH_SIMD_HERE,
+ * so we use 256-bit SIMD.
+ */
 
 #ifndef GMX_DOUBLE
 
@@ -231,31 +254,40 @@
 
 #define gmx_mm_pr  __m256
 
+#define gmx_epi32  __m256i
+
 #define gmx_load_pr       _mm256_load_ps
 #define gmx_load1_pr(x)   _mm256_set1_ps((x)[0])
 #define gmx_set1_pr       _mm256_set1_ps
 #define gmx_setzero_pr    _mm256_setzero_ps
 #define gmx_store_pr      _mm256_store_ps
-#define gmx_storeu_pr     _mm256_storeu_ps
 
 #define gmx_add_pr        _mm256_add_ps
 #define gmx_sub_pr        _mm256_sub_ps
 #define gmx_mul_pr        _mm256_mul_ps
 #define gmx_max_pr        _mm256_max_ps
-/* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x, y)  _mm256_cmp_ps(x, y, 0x0c)
-/* Less-than (ordered, non-signaling)  */
+/* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
+#define gmx_blendzero_pr  _mm256_and_ps
 #define gmx_and_pr        _mm256_and_ps
 #define gmx_or_pr         _mm256_or_ps
 #define gmx_andnot_pr     _mm256_andnot_ps
 
+#define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm256_floor_ps
+#define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm256_blendv_ps
 
-#define gmx_movemask_pr   _mm256_movemask_ps
+#define GMX_HAVE_SIMD_ANYTRUE
+#define gmx_anytrue_pr    _mm256_movemask_ps
 
-#define gmx_mm_castsi256_pr _mm256_castsi256_ps
+#define gmx_set1_epi32    _mm256_set1_epi32
+#define gmx_castsi_pr     _mm256_castsi256_ps
+/* With <= 16 bits used the cast and conversion should not be required,
+ * since only mantissa bits are set and that would give a non-zero float,
+ * but with the Intel compiler this does not work correctly.
+ */
+#define gmx_checkbitmask_pr(m0, m1) _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c)
 
 #define gmx_cvttpr_epi32  _mm256_cvttps_epi32
 
@@ -266,23 +298,6 @@
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
 
-#define gmx_loaddh_pr     gmx_mm256_load4_ps
-
-/* Half SIMD-width type */
-#define gmx_mm_hpr  __m128
-
-/* Half SIMD-width macros */
-#define gmx_load_hpr      _mm_load_ps
-#define gmx_load1_hpr(x)  _mm_set1_ps((x)[0])
-#define gmx_store_hpr     _mm_store_ps
-#define gmx_add_hpr       _mm_add_ps
-#define gmx_sub_hpr       _mm_sub_ps
-
-#define gmx_sum4_hpr      gmx_mm256_sum4h_m128
-
-/* Conversion between half and full SIMD-width */
-#define gmx_2hpr_to_pr    gmx_mm256_set_m128
-
 #else
 
 #include "gmx_x86_simd_double.h"
@@ -291,31 +306,42 @@
 
 #define gmx_mm_pr  __m256d
 
+/* We use 128-bit integer registers because of missing 256-bit operations */
+#define gmx_epi32  __m128i
+
 #define gmx_load_pr       _mm256_load_pd
 #define gmx_load1_pr(x)   _mm256_set1_pd((x)[0])
 #define gmx_set1_pr       _mm256_set1_pd
 #define gmx_setzero_pr    _mm256_setzero_pd
 #define gmx_store_pr      _mm256_store_pd
-#define gmx_storeu_pr     _mm256_storeu_pd
 
 #define gmx_add_pr        _mm256_add_pd
 #define gmx_sub_pr        _mm256_sub_pd
 #define gmx_mul_pr        _mm256_mul_pd
 #define gmx_max_pr        _mm256_max_pd
-/* Not-equal (ordered, non-signaling)  */
-#define gmx_cmpneq_pr(x, y)  _mm256_cmp_pd(x, y, 0x0c)
-/* Less-than (ordered, non-signaling)  */
+/* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
+#define gmx_blendzero_pr  _mm256_and_pd
 #define gmx_and_pr        _mm256_and_pd
 #define gmx_or_pr         _mm256_or_pd
 #define gmx_andnot_pr     _mm256_andnot_pd
 
+#define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm256_floor_pd
+#define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm256_blendv_pd
 
-#define gmx_movemask_pr   _mm256_movemask_pd
+#define GMX_HAVE_SIMD_ANYTRUE
+#define gmx_anytrue_pr    _mm256_movemask_pd
 
-#define gmx_mm_castsi256_pr _mm256_castsi256_pd
+#define gmx_set1_epi32    _mm256_set1_epi32
+#define gmx_castsi_pr     _mm256_castsi256_pd
+/* With <= 16 bits used the cast and conversion should not be required,
+ * since only mantissa bits are set and that would give a non-zero float,
+ * but with the Intel compiler this does not work correctly.
+ * Because AVX does not have int->double conversion, we convert via float.
+ */
+#define gmx_checkbitmask_pr(m0, m1) _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c)
 
 #define gmx_cvttpr_epi32  _mm256_cvttpd_epi32
 
@@ -326,8 +352,8 @@
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_pd
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_pd
 
-#endif
+#endif /* GMX_DOUBLE */
 
-#endif /* GMX_MM256_HERE */
+#endif /* 128- or 256-bit x86 SIMD */
 
 #endif /* GMX_X86_SSE2 */
