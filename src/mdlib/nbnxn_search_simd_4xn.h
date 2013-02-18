@@ -36,14 +36,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
+#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
+
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
 #include "gmx_simd_macros.h"
 
@@ -267,7 +265,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_4xn(remove_sub_diag, ci, cj);
+            nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */
@@ -276,5 +274,4 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 }
 
 #undef STRIDE_S
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
+#undef GMX_USE_HALF_WIDTH_SIMD_HERE

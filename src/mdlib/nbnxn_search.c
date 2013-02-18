@@ -2704,7 +2704,7 @@ static unsigned int get_imask(gmx_bool rdiag, int ci, int cj)
 }
 
 /* Returns a diagonal or off-diagonal interaction mask for SIMD128 lists */
-static unsigned int get_imask_x86_simd128(gmx_bool rdiag, int ci, int cj)
+static unsigned int get_imask_simd128(gmx_bool rdiag, int ci, int cj)
 {
 #ifndef GMX_DOUBLE /* cj-size = 4 */
     return (rdiag && ci == cj ? NBNXN_INT_MASK_DIAG : NBNXN_INT_MASK_ALL);
@@ -2716,7 +2716,7 @@ static unsigned int get_imask_x86_simd128(gmx_bool rdiag, int ci, int cj)
 }
 
 /* Returns a diagonal or off-diagonal interaction mask for SIMD256 lists */
-static unsigned int get_imask_x86_simd256(gmx_bool rdiag, int ci, int cj)
+static unsigned int get_imask_simd256(gmx_bool rdiag, int ci, int cj)
 {
 #ifndef GMX_DOUBLE /* cj-size = 8 */
     return (rdiag && ci == cj*2 ? NBNXN_INT_MASK_DIAG_J8_0 :
@@ -2729,11 +2729,11 @@ static unsigned int get_imask_x86_simd256(gmx_bool rdiag, int ci, int cj)
 
 #ifdef GMX_NBNXN_SIMD
 #if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define get_imask_x86_simd_4xn  get_imask_x86_simd128
+#define get_imask_simd_4xn  get_imask_simd128
 #else
 #if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define get_imask_x86_simd_4xn  get_imask_x86_simd256
-#define get_imask_x86_simd_2xnn get_imask_x86_simd128
+#define get_imask_simd_4xn  get_imask_simd256
+#define get_imask_simd_2xnn get_imask_simd128
 #else
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
