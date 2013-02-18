@@ -47,8 +47,10 @@ extern "C" {
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 
-#ifdef GMX_X86_AVX_256
-/* Note that setting this to 128 will also work with AVX-256, but slower */
+/* Uncomment the next line to use, slower, 128-bit SIMD with AVX-256 */
+/* #define GMX_NBNXN_HALF_WIDTH_SIMD */
+
+#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_NBNXN_SIMD_BITWIDTH  256
 #else
 #define GMX_NBNXN_SIMD_BITWIDTH  128

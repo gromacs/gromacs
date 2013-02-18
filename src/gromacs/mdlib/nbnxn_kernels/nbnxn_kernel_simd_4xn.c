@@ -55,14 +55,8 @@
 
 /* Include all flavors of the SSE or AVX 4xN kernel loops */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
+#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
 #endif
 
 /* Analytical reaction-field kernels */
