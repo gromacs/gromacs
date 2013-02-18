@@ -36,16 +36,25 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
+#if GMX_NBNXN_SIMD_BITWIDTH != 256
+#error "unsupported SIMD width"
 #endif
-#endif
+
 #include "gmx_simd_macros.h"
+
+/* Define a few macros for half-width SIMD */
+#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
+/* Half-width SIMD real type */
+#define gmx_mm_hpr  __m128
+/* Half-width SIMD operations */
+#define gmx_load_hpr   _mm_load_ps
+#define gmx_set1_hpr   _mm_set1_ps
+/* Conversion between half and full SIMD-width */
+#define gmx_2hpr_to_pr    gmx_mm256_set_m128
+#else
+#error "Half-width SIMD macros are not yet defined"
+#endif
+
 
 #if GMX_SIMD_WIDTH_HERE >= 2*NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_WIDTH_HERE/2)
@@ -57,7 +66,7 @@ static gmx_inline gmx_mm_pr gmx_load_hpr_hilo_pr(const real *a)
 {
     gmx_mm_hpr a_SSE;
 
-    a_SSE = _mm_load_ps(a);
+    a_SSE = gmx_load_hpr(a);
 
     return gmx_2hpr_to_pr(a_SSE, a_SSE);
 }
@@ -66,8 +75,8 @@ static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a, real shift)
 {
     gmx_mm_hpr a0, a1;
 
-    a0 = _mm_set1_ps(a[0] + shift);
-    a1 = _mm_set1_ps(a[1] + shift);
+    a0 = gmx_set1_hpr(a[0] + shift);
+    a1 = gmx_set1_hpr(a[1] + shift);
 
     return gmx_2hpr_to_pr(a1, a0);
 }
@@ -94,6 +103,32 @@ icell_set_x_simd_2xnn(int ci,
     x_ci->iy_SSE2 = gmx_set_2real_shift_pr(x + ia + 1*STRIDE_S + 2, shy);
     x_ci->iz_SSE2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
 }
+
+#ifndef GMX_HAVE_SIMD_ANYTRUE
+/* Fallback function in case gmx_anytrue_pr is not present */
+static gmx_inline gmx_bool
+gmx_anytrue_2xn_pr(gmx_mm_pr bool_S)
+{
+    real     bools_array[2*GMX_SIMD_WIDTH_HERE], *bools;
+    gmx_bool any;
+    int      s;
+
+    bools = (real *)(((size_t)(bools_array + GMX_SIMD_WIDTH_HERE - 1)) & ~(size_t)(sizeof(real)*GMX_SIMD_WIDTH_HERE - 1));
+
+    gmx_store_pr(bools, bool_S);
+
+    any = FALSE;
+    for (s = 0; s < GMX_SIMD_WIDTH_HERE; s++)
+    {
+        if (GMX_SIMD_IS_TRUE(s))
+        {
+            any = TRUE;
+        }
+    }
+
+    return any;
+}
+#endif
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
  * for coordinates in packed format.
@@ -179,7 +214,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+#ifdef GMX_HAVE_SIMD_ANYTRUE
+            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#else
+            InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
+#endif
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
@@ -233,7 +272,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+#ifdef GMX_HAVE_SIMD_ANYTRUE
+            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#else
+            InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
+#endif
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
         }
@@ -249,7 +292,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_2XNN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_2xnn(remove_sub_diag, ci, cj);
+            nbl->cj[nbl->ncj].excl = get_imask_simd_2xnn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */
@@ -258,5 +301,8 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 }
 
 #undef STRIDE_S
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
+
+#undef gmx_mm_hpr
+#undef gmx_load_hpr
+#undef gmx_set1_hpr
+#undef gmx_2hpr_to_pr
