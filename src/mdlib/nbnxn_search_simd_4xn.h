@@ -36,14 +36,12 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
+#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
+
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
 #include "gmx_simd_macros.h"
 
@@ -81,6 +79,32 @@ icell_set_x_simd_4xn(int ci,
     x_ci->iy_SSE3 = gmx_set1_pr(x[ia + 1*STRIDE_S + 3] + shy);
     x_ci->iz_SSE3 = gmx_set1_pr(x[ia + 2*STRIDE_S + 3] + shz);
 }
+
+#ifndef GMX_HAVE_SIMD_ANYTRUE
+/* Fallback function in case gmx_anytrue_pr is not present */
+static gmx_inline gmx_bool
+gmx_anytrue_4xn_pr(gmx_mm_pr bool_S)
+{
+    real     bools_array[2*GMX_SIMD_WIDTH_HERE], *bools;
+    gmx_bool any;
+    int      s;
+
+    bools = gmx_simd_align_realbools_array);
+
+    gmx_store_pr(bools, bool_S);
+
+    any = FALSE;
+    for (s = 0; s < GMX_SIMD_WIDTH_HERE; s++)
+    {
+        if (GMX_SIMD_IS_TRUE(bools[s]))
+        {
+            any = TRUE;
+        }
+    }
+
+    return any;
+}
+#endif
 
 /* SIMD code for making a pair list of cell ci vs cell cjf-cjl
  * for coordinates in packed format.
@@ -185,7 +209,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+#ifdef GMX_HAVE_SIMD_ANYTRUE
+            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#else
+            InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);
+#endif
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;
         }
@@ -251,7 +279,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
 
-            InRange            = gmx_movemask_pr(wco_any_SSE);
+#ifdef GMX_HAVE_SIMD_ANYTRUE
+            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#else
+            InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);
+#endif
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;
         }
@@ -267,7 +299,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
         {
             /* Store cj and the interaction mask */
             nbl->cj[nbl->ncj].cj   = CI_TO_CJ_SIMD_4XN(gridj->cell0) + cj;
-            nbl->cj[nbl->ncj].excl = get_imask_x86_simd_4xn(remove_sub_diag, ci, cj);
+            nbl->cj[nbl->ncj].excl = get_imask_simd_4xn(remove_sub_diag, ci, cj);
             nbl->ncj++;
         }
         /* Increase the closing index in i super-cell list */
@@ -276,5 +308,4 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
 }
 
 #undef STRIDE_S
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
+#undef GMX_USE_HALF_WIDTH_SIMD_HERE
