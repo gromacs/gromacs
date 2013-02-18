@@ -670,7 +670,7 @@ void nbnxn_atomdata_init(FILE *fp,
          * In the kernel we can subtract 1 to generate the subsequent mask.
          */
         const int simd_width = GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
-        int       simd_4xn_diag_size, j;
+        int       simd_4xn_diag_size, real_excl, simd_excl_size, j, s;
 
         simd_4xn_diag_size = max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
         snew_aligned(nbat->simd_4xn_diag, simd_4xn_diag_size, NBNXN_MEM_ALIGN);
@@ -686,6 +686,28 @@ void nbnxn_atomdata_init(FILE *fp,
             nbat->simd_2xnn_diag[j]              = j - 0.5;
             /* The next half of the SIMD width is for i + 1 */
             nbat->simd_2xnn_diag[simd_width/2+j] = j - 1 - 0.5;
+        }
+
+        /* We always use 32-bit integer exclusion masks. When we use
+         * double precision, we fit two integers in a double SIMD register.
+         */
+        real_excl = sizeof(real)/sizeof(*nbat->simd_excl_mask);
+        /* We can't use all 32 bits of an integer, since when cast to a float
+         * the exponent bits might lead to a float of 0, which compilers can
+         * optimize to all bits set to 0. So we use up to 16 bits.
+         */
+        simd_excl_size = min(NBNXN_CPU_CLUSTER_I_SIZE*simd_width*real_excl, 16);
+        snew_aligned(nbat->simd_excl_mask, simd_excl_size*real_excl, NBNXN_MEM_ALIGN);
+        for (j = 0; j < simd_excl_size; j++)
+        {
+            /* For double a single-bit mask would be enough.
+             * But using two bits avoids endianness issues.
+             */
+            for (s = 0; s < real_excl; s++)
+            {
+                /* Set the consecutive bits for masking pair exclusions */
+                nbat->simd_excl_mask[j*real_excl + s] = (1U << j);
+            }
         }
     }
 #endif

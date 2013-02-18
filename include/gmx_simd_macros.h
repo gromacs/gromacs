@@ -66,23 +66,24 @@
 #undef gmx_sub_pr
 #undef gmx_mul_pr
 #undef gmx_max_pr
+#undef gmx_cmpneq_pr
 #undef gmx_cmplt_pr
 #undef gmx_and_pr
 #undef gmx_or_pr
 #undef gmx_andnot_pr
 
-/* Only used to speed up the nbnxn tabulated PME kernels */
+/* Not required, only used to speed up the nbnxn tabulated PME kernels */
 #undef gmx_floor_pr
-/* Only used with x86 when blendv is faster than comparison */
+/* Not required, only used with when blendv is faster than comparison */
 #undef gmx_blendv_pr
 
 #undef gmx_movemask_pr
 
-/* Integer casts are only used for nbnxn x86 exclusion masks */
-#undef gmx_mm_castsi128_pr
-#undef gmx_mm_castsi256_pr
+/* Integer set and cast are only used for nbnxn exclusion masks */
+#undef gmx_set1_epi32
+#undef gmx_castsi_pr
 
-/* Conversions only used for nbnxn x86 exclusion masks and PME table lookup */
+/* Conversions only used for PME table lookup */
 #undef gmx_cvttpr_epi32
 #undef gmx_cvtepi32_pr
 
@@ -111,8 +112,8 @@
 
 /* By defining GMX_MM128_HERE or GMX_MM256_HERE before including this file
  * the same intrinsics, with defines, can be compiled for either 128 or 256
- * bit wide SSE or AVX instructions.
- * The gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
+ * bit wide SIMD instructions.
+ * On x86, the gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
  * The _pr suffix is replaced by _ps or _pd (single or double precision).
  * Note that compiler settings will decide if 128-bit intrinsics will
  * be translated into SSE or AVX instructions.
@@ -152,17 +153,22 @@
 #define gmx_sub_pr        _mm_sub_ps
 #define gmx_mul_pr        _mm_mul_ps
 #define gmx_max_pr        _mm_max_ps
+#define gmx_cmpneq_pr     _mm_cmpneq_ps
 #define gmx_cmplt_pr      _mm_cmplt_ps
 #define gmx_and_pr        _mm_and_ps
 #define gmx_or_pr         _mm_or_ps
 #define gmx_andnot_pr     _mm_andnot_ps
 
+#ifdef GMX_X86_SSE4_1
 #define gmx_floor_pr      _mm_floor_ps
 #define gmx_blendv_pr     _mm_blendv_ps
+#endif
 
 #define gmx_movemask_pr   _mm_movemask_ps
 
-#define gmx_mm_castsi128_pr gmx_mm_castsi128_ps
+#define gmx_load_si(i)    _mm_load_si128((__m128i *) (i))
+#define gmx_set1_epi32    _mm_set1_epi32
+#define gmx_castsi_pr     gmx_mm_castsi128_ps
 
 #define gmx_cvttpr_epi32  _mm_cvttps_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_ps
@@ -193,17 +199,22 @@
 #define gmx_sub_pr        _mm_sub_pd
 #define gmx_mul_pr        _mm_mul_pd
 #define gmx_max_pr        _mm_max_pd
+#define gmx_cmpneq_pr     _mm_cmpneq_pd
 #define gmx_cmplt_pr      _mm_cmplt_pd
 #define gmx_and_pr        _mm_and_pd
 #define gmx_or_pr         _mm_or_pd
 #define gmx_andnot_pr     _mm_andnot_pd
 
+#ifdef GMX_X86_SSE4_1
 #define gmx_floor_pr      _mm_floor_pd
 #define gmx_blendv_pr     _mm_blendv_pd
+#endif
 
 #define gmx_movemask_pr   _mm_movemask_pd
 
-#define gmx_mm_castsi128_pr gmx_mm_castsi128_pd
+#define gmx_load_si(i)    _mm_load_si128((__m128i *) (i))
+#define gmx_set1_epi32    _mm_set1_epi32
+#define gmx_castsi_pr     gmx_mm_castsi128_pd
 
 #define gmx_cvttpr_epi32  _mm_cvttpd_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_pd
@@ -255,7 +266,9 @@
 
 #define gmx_movemask_pr   _mm256_movemask_ps
 
-#define gmx_mm_castsi256_pr _mm256_castsi256_ps
+#define gmx_load_si(i)    _mm256_load_si256((__m256i *) (i))
+#define gmx_set1_epi32    _mm256_set1_epi32
+#define gmx_castsi_pr     _mm256_castsi256_ps
 
 #define gmx_cvttpr_epi32  _mm256_cvttps_epi32
 
@@ -315,7 +328,9 @@
 
 #define gmx_movemask_pr   _mm256_movemask_pd
 
-#define gmx_mm_castsi256_pr _mm256_castsi256_pd
+#define gmx_load_si(i)    _mm256_load_si256((__m256i *) (i))
+#define gmx_set1_epi32    _mm256_set1_epi32
+#define gmx_castsi_pr     _mm256_castsi256_pd
 
 #define gmx_cvttpr_epi32  _mm256_cvttpd_epi32
 
