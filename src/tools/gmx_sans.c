@@ -53,12 +53,12 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_ana.h"
-#include "nsfactor.h"
+#include "sfactor.h"
 #include "gmx_omp.h"
 
 int gmx_sans(int argc, char *argv[])
 {
-    const char          *desc[] = {
+    const char                *desc[] = {
         "This is simple tool to compute SANS spectra using Debye formula",
         "It currently uses topology file (since it need to assigne element for each atom)",
         "[PAR]",
@@ -75,19 +75,19 @@ int gmx_sans(int argc, char *argv[])
         "[PAR]",
         "WARNING: If sq or pr specified this tool can produce large number of files! Up to two times larger than number of frames!"
     };
-    static gmx_bool      bPBC     = TRUE;
-    static gmx_bool      bNSE     = FALSE;
-    static real          binwidth = 0.2, grid = 0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
-    static real          start_q  = 0.0, end_q = 2.0, q_step = 0.01;
-    static real          mcover   = -1;
-    static unsigned int  seed     = 0;
-    static int           nthreads = -1;
+    static gmx_bool            bPBC     = TRUE;
+    static gmx_bool            bNSE     = FALSE;
+    static real                binwidth = 0.2, grid = 0.05; /* bins shouldnt be smaller then smallest bond (~0.1nm) length */
+    static real                start_q  = 0.0, end_q = 2.0, q_step = 0.01;
+    static real                mcover   = -1;
+    static unsigned int        seed     = 0;
+    static int                 nthreads = -1;
 
-    static const char   *emode[]   = { NULL, "direct", "mc", NULL };
-    static const char   *emethod[] = { NULL, "debye", "fft", NULL };
+    static const char         *emode[]   = { NULL, "direct", "mc", NULL };
+    static const char         *emethod[] = { NULL, "debye", "fft", NULL };
 
-    gmx_neutron_atomic_structurefactors_t    *gnsf;
-    gmx_sans_t                               *gsans;
+    gmx_structurefactors_t    *gnsf;
+    gmx_sans_t                *gsans;
 
 #define NPA asize(pa)
 
@@ -140,7 +140,7 @@ int gmx_sans(int argc, char *argv[])
     char                                 *suffix         = NULL;
     t_filenm                             *fnmdup         = NULL;
     gmx_radial_distribution_histogram_t  *prframecurrent = NULL, *pr = NULL;
-    gmx_static_structurefactor_t         *sqframecurrent = NULL, *sq = NULL;
+    gmx_sans_structurefactor_t           *sqframecurrent = NULL, *sq = NULL;
     output_env_t                          oenv;
 
 #define NFILE asize(fnm)
@@ -149,7 +149,7 @@ int gmx_sans(int argc, char *argv[])
         { efTPX,  "-s",       NULL,       ffREAD },
         { efTRX,  "-f",       NULL,       ffREAD },
         { efNDX,  NULL,       NULL,       ffOPTRD },
-        { efDAT,  "-d",       "nsfactor", ffOPTRD },
+        { efDAT,  "-d",       "sfactor", ffOPTRD },
         { efXVG,  "-pr",      "pr",       ffWRITE },
         { efXVG,  "-sq",       "sq",      ffWRITE },
         { efXVG,  "-prframe", "prframe",  ffOPTWR },
@@ -217,7 +217,7 @@ int gmx_sans(int argc, char *argv[])
     fnTPX = ftp2fn(efTPX, NFILE, fnm);
     fnTRX = ftp2fn(efTRX, NFILE, fnm);
 
-    gnsf = gmx_neutronstructurefactors_init(fnDAT);
+    gnsf = gmx_structurefactors_init(fnDAT);
     fprintf(stderr, "Read %d atom names from %s with neutron scattering parameters\n\n", gnsf->nratoms, fnDAT);
 
     snew(top, 1);
