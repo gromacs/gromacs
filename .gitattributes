@@ -1,0 +1,8 @@
+*.cpp                              filter=uncrustify
+*.c                                filter=uncrustify
+src/contrib/*                     !filter
+src/gmxlib/gmx_blas/*             !filter
+src/gmxlib/gmx_lapack/*           !filter
+src/gmxlib/selection/parser.c     !filter
+src/gmxlib/selection/scanner.c    !filter
+src/gmxlib/nonbonded/nb_kernel*/* !filter
