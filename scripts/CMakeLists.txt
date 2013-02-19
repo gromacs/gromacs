@@ -32,6 +32,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 #
+
+if(APPLE)
+  set(LD_LIBRARY_PATH "DYLD_LIBRARY_PATH")
+else(APPLE)
+  include(CheckCSourceCompiles)
+  check_c_source_compiles(
+    "int main(void) {
+    #ifndef _AIX
+    #error
+    #endif
+    return 0;
+    }" HAVE_AIX)
+  if(HAVE_AIX)
+    set(LD_LIBRARY_PATH "LIBPATH")
+  else(HAVE_AIX)
+    set(LD_LIBRARY_PATH "LD_LIBRARY_PATH")
+  endif(HAVE_AIX)
+endif(APPLE)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.cmakein      ${CMAKE_CURRENT_BINARY_DIR}/GMXRC @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.bash.cmakein ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash @ONLY)
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/GMXRC.csh.cmakein  ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh @ONLY)

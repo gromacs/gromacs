@@ -5,7 +5,7 @@
 # repeatedly switch between gmx versions in a shell.
 
 # zero possibly unset vars to avoid warnings
-if (! $?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ""
+if (! $?@LD_LIBRARY_PATH@) setenv @LD_LIBRARY_PATH@ ""
 if (! $?PKG_CONFIG_PATH) setenv PKG_CONFIG_PATH ""
 if (! $?PATH) setenv PATH ""
 if (! $?MANPATH) setenv MANPATH ""
@@ -15,7 +15,7 @@ if (! $?GMXMAN) setenv GMXMAN ""
 
 # remove previous gromacs part from ld_library_path
 set tmppath = ""
-foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
+foreach i ( `echo $@LD_LIBRARY_PATH@ | sed "s/:/ /g"` )
   if ( "$i" != "$GMXLDLIB" ) then
     if ("${tmppath}" == "") then
       set tmppath = "$i"
@@ -24,7 +24,7 @@ foreach i ( `echo $LD_LIBRARY_PATH | sed "s/:/ /g"` )
     endif
   endif
 end
-setenv LD_LIBRARY_PATH $tmppath
+setenv @LD_LIBRARY_PATH@ $tmppath
 
 # remove previous gromacs part from PKG_CONFIG_PATH
 set tmppath = ""
@@ -76,12 +76,12 @@ setenv GMXMAN @MAN_INSTALL_DIR@
 setenv GMXDATA @DATA_INSTALL_DIR@
 
 #make them begin with :
-if ($?LD_LIBRARY_PATH) setenv LD_LIBRARY_PATH ":${LD_LIBRARY_PATH}"
+if ($?@LD_LIBRARY_PATH@) setenv @LD_LIBRARY_PATH@ ":${@LD_LIBRARY_PATH@}"
 if ($?PKG_CONFIG_PATH) setenv PKG_CONFIG_PATH ":${PKG_CONFIG_PATH}"
 
 #path is never empty
 setenv PATH ${GMXBIN}:${PATH}
-setenv LD_LIBRARY_PATH ${GMXLDLIB}${LD_LIBRARY_PATH}
+setenv @LD_LIBRARY_PATH@ ${GMXLDLIB}${@LD_LIBRARY_PATH@}
 setenv PKG_CONFIG_PATH ${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH}
 #debian/ubuntu needs a : at the end
 setenv MANPATH ${GMXMAN}:${MANPATH}
