@@ -34,8 +34,8 @@
 #include <gromacs/pbc.h>
 #include <gromacs/smalloc.h>
 #include <gromacs/statutil.h>
-#include <gromacs/vec.h>
 #include <gromacs/xvgr.h>
+#include <gromacs/gmx_fatal.h>
 
 #include <gromacs/nbsearch.h>
 #include <gromacs/trajana.h>

@@ -1,40 +1,46 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef _constr_h
+#define _constr_h
+#include "visibility.h"
 #include "typedefs.h"
+#include "types/commrec.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,7 +48,7 @@ extern "C" {
 
 enum
 {
-    econqCoord,         /* Constrain coordinates (mass weighted)           */ 
+    econqCoord,         /* Constrain coordinates (mass weighted)           */
     econqVeloc,         /* Constrain velocities (mass weighted)            */
     econqDeriv,         /* Constrain a derivative (mass weighted),         *
                          * for instance velocity or acceleration,          *
@@ -52,93 +58,98 @@ enum
     econqForceDispl     /* Constrain forces (mass-weighted 1/0 for freeze) */
 };
 
+GMX_LIBMD_EXPORT
 int n_flexible_constraints(struct gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
 
-void too_many_constraint_warnings(int eConstrAlg,int warncount);
+void too_many_constraint_warnings(int eConstrAlg, int warncount);
 /* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
 gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
-gmx_bool bshakef(FILE *log,		/* Log file			*/
-                    gmx_shakedata_t shaked, /* SHAKE data */
-                    int natoms,		/* Total number of atoms	*/
-                    real invmass[],	/* Atomic masses		*/
-                    int nblocks,	/* The number of shake blocks	*/
-                    int sblock[],       /* The shake blocks             */
-                    t_idef *idef,	/* The interaction def		*/
-                    t_inputrec *ir,	/* Input record		        */
-                    matrix box,		/* The box			*/
-                    rvec x_s[],		/* Coords before update		*/
-                    rvec prime[],		/* Output coords		*/
-                    t_nrnb *nrnb,       /* Performance measure          */
-                    real *lagr,         /* The Lagrange multipliers     */
-                    real lambda,        /* FEP lambda                   */
-                    real *dvdlambda,    /* FEP force                    */
-                    real invdt,         /* 1/delta_t                    */
-                    rvec *v,            /* Also constrain v if v!=NULL  */
-                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
-                    tensor rmdr,        /* sum r x m delta_r            */
-                    gmx_bool bDumpOnError,  /* Dump debugging stuff on error*/
-                    int econq,         /* which type of constrainint is occurring */
-                    t_vetavars *vetavar);           /* veta for pressure control */
+gmx_bool bshakef(FILE           *log,          /* Log file			*/
+                 gmx_shakedata_t shaked,       /* SHAKE data */
+                 int             natoms,       /* Total number of atoms	*/
+                 real            invmass[],    /* Atomic masses		*/
+                 int             nblocks,      /* The number of shake blocks	*/
+                 int             sblock[],     /* The shake blocks             */
+                 t_idef         *idef,         /* The interaction def		*/
+                 t_inputrec     *ir,           /* Input record		        */
+                 rvec            x_s[],        /* Coords before update		*/
+                 rvec            prime[],      /* Output coords		*/
+                 t_nrnb         *nrnb,         /* Performance measure          */
+                 real           *lagr,         /* The Lagrange multipliers     */
+                 real            lambda,       /* FEP lambda                   */
+                 real           *dvdlambda,    /* FEP force                    */
+                 real            invdt,        /* 1/delta_t                    */
+                 rvec           *v,            /* Also constrain v if v!=NULL  */
+                 gmx_bool        bCalcVir,     /* Calculate r x m delta_r      */
+                 tensor          vir_r_m_dr,   /* sum r x m delta_r            */
+                 gmx_bool        bDumpOnError, /* Dump debugging stuff on error*/
+                 int             econq,        /* which type of constrainint is occurring */
+                 t_vetavars     *vetavar);     /* veta for pressure control */
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
- * sblock array points into the idef->shakes.iatoms field, with block 0 
+ * sblock array points into the idef->shakes.iatoms field, with block 0
  * starting
- * at sblock[0] and running to ( < ) sblock[1], block n running from 
+ * at sblock[0] and running to ( < ) sblock[1], block n running from
  * sblock[n] to sblock[n+1]. Array sblock should be large enough.
  * Return TRUE when OK, FALSE when shake-error
  */
 
-gmx_settledata_t settle_init(real mO,real mH,real invmO,real invmH,
-				    real dOH,real dHH);
+gmx_settledata_t settle_init(real mO, real mH, real invmO, real invmH,
+                             real dOH, real dHH);
 /* Initializes and returns a structure with SETTLE parameters */
 
 void csettle(gmx_settledata_t settled,
-                    int nsettle,	/* Number of settles  	        */
-                    t_iatom iatoms[],	/* The settle iatom list        */
-                    real b4[],		/* Old coordinates		*/
-                    real after[],	/* New coords, to be settled	*/
-                    real invdt,         /* 1/delta_t                    */
-                    real *v,            /* Also constrain v if v!=NULL  */
-                    gmx_bool bCalcVir,      /* Calculate r x m delta_r      */
-                    tensor rmdr,        /* sum r x m delta_r            */
-                    int *xerror,
-                    t_vetavars *vetavar     /* variables for pressure control */   
-    );
+             int              nsettle,          /* Number of settles            */
+             t_iatom          iatoms[],         /* The settle iatom list        */
+             const t_pbc     *pbc,              /* PBC data pointer, can be NULL  */
+             real             b4[],             /* Old coordinates		*/
+             real             after[],          /* New coords, to be settled	*/
+             real             invdt,            /* 1/delta_t                    */
+             real            *v,                /* Also constrain v if v!=NULL  */
+             int              calcvir_atom_end, /* Calculate r x m delta_r up to this atom */
+             tensor           vir_r_m_dr,       /* sum r x m delta_r            */
+             int             *xerror,
+             t_vetavars      *vetavar           /* variables for pressure control */
+             );
 
 void settle_proj(FILE *fp,
-                        gmx_settledata_t settled,int econq,
-                        int nsettle, t_iatom iatoms[],rvec x[],
-                        rvec *der,rvec *derp,
-                        gmx_bool bCalcVir,tensor rmdder, t_vetavars *vetavar);
+                 gmx_settledata_t settled, int econq,
+                 int nsettle, t_iatom iatoms[],
+                 const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
+                 rvec x[],
+                 rvec *der, rvec *derp,
+                 int CalcVirAtomEnd, tensor vir_r_m_dder,
+                 t_vetavars *vetavar);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */
 
-void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
-                   real dist2[],real xp[],real rij[],real m2[],real omega,
-                   real invmass[],real tt[],real lagr[],int *nerror);
+void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
+            real dist2[], real xp[], real rij[], real m2[], real omega,
+            real invmass[], real tt[], real lagr[], int *nerror);
 /* Regular iterative shake */
 
-void crattle(atom_id iatom[],int ncon,int *nnit,int maxnit,
-                    real dist2[],real vp[],real rij[],real m2[],real omega,
-                    real invmass[],real tt[],real lagr[],int *nerror,real invdt,t_vetavars *vetavar);
+void crattle(atom_id iatom[], int ncon, int *nnit, int maxnit,
+             real dist2[], real vp[], real rij[], real m2[], real omega,
+             real invmass[], real tt[], real lagr[], int *nerror, real invdt, t_vetavars *vetavar);
 
-gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
-                      gmx_constr_t constr,
-                      t_idef *idef,
-                      t_inputrec *ir,
-                      gmx_ekindata_t *ekind,
-                      t_commrec *cr,
-                      gmx_large_int_t step,int delta_step,
-                      t_mdatoms *md,
-                      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-                      real lambda,real *dvdlambda,
-                      rvec *v,tensor *vir,
-                      t_nrnb *nrnb,int econq, gmx_bool bPscal, real veta, real vetanew);
+gmx_bool constrain(FILE *log, gmx_bool bLog, gmx_bool bEner,
+                   gmx_constr_t constr,
+                   t_idef *idef,
+                   t_inputrec *ir,
+                   gmx_ekindata_t *ekind,
+                   t_commrec *cr,
+                   gmx_large_int_t step, int delta_step,
+                   t_mdatoms *md,
+                   rvec *x, rvec *xprime, rvec *min_proj,
+                   gmx_bool bMolPBC, matrix box,
+                   real lambda, real *dvdlambda,
+                   rvec *v, tensor *vir,
+                   t_nrnb *nrnb, int econq, gmx_bool bPscal, real veta, real vetanew);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -150,6 +161,8 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
  * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
  * but only the components of the flexible constraints are stored.
  *
+ * When bMolPBC=TRUE, assume that molecules might be broken: correct PBC.
+ *
  * delta_step is used for determining the constraint reference lengths
  * when lenA != lenB or will the pull code with a pulling rate.
  * step + delta_step is the step at which the final configuration
@@ -159,8 +172,8 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
  *
  * If vir!=NULL calculate the constraint virial.
  *
- * if veta != NULL, constraints are done assuming isotropic pressure control 
- * (i.e. constraining rdot.r = (v + veta*r).r = 0 instead of v 
+ * if veta != NULL, constraints are done assuming isotropic pressure control
+ * (i.e. constraining rdot.r = (v + veta*r).r = 0 instead of v
  *
  * Init_constraints must have be called once, before calling constrain.
  *
@@ -168,17 +181,19 @@ gmx_bool constrain(FILE *log,gmx_bool bLog,gmx_bool bEner,
  *
  */
 
+GMX_LIBMD_EXPORT
 gmx_constr_t init_constraints(FILE *log,
-				     gmx_mtop_t *mtop,t_inputrec *ir, 
-				     gmx_edsam_t ed,t_state *state,
-				     t_commrec *cr);
+                              gmx_mtop_t *mtop, t_inputrec *ir,
+                              gmx_edsam_t ed, t_state *state,
+                              t_commrec *cr);
 /* Initialize constraints stuff */
 
-void set_constraints(gmx_constr_t constr,
-							gmx_localtop_t *top,
-							t_inputrec *ir,
-							t_mdatoms *md,
-							t_commrec *cr);
+GMX_LIBMD_EXPORT
+void set_constraints(gmx_constr_t    constr,
+                     gmx_localtop_t *top,
+                     t_inputrec     *ir,
+                     t_mdatoms      *md,
+                     t_commrec      *cr);
 /* Set up all the local constraints for the node */
 
 /* The at2con t_blocka struct returned by the routines below
@@ -187,69 +202,88 @@ void set_constraints(gmx_constr_t constr,
  * after the F_CONSTR constraints.
  */
 
-t_blocka make_at2con(int start,int natoms,
-			    t_ilist *ilist,t_iparams *iparams,
-			    gmx_bool bDynamics,int *nflexiblecons);
+t_blocka make_at2con(int start, int natoms,
+                     t_ilist *ilist, t_iparams *iparams,
+                     gmx_bool bDynamics, int *nflexiblecons);
 /* Returns a block struct to go from atoms to constraints */
 
-t_blocka *atom2constraints_moltype(gmx_constr_t constr);
-/* Returns the an arry of atom to constraints lists for the moltypes */
+const t_blocka *atom2constraints_moltype(gmx_constr_t constr);
+/* Returns the an array of atom to constraints lists for the moltypes */
 
-#define constr_iatomptr(nconstr,iatom_constr,iatom_constrnc,con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
+const int **atom2settle_moltype(gmx_constr_t constr);
+/* Returns the an array of atom to settle for the moltypes */
+
+#define constr_iatomptr(nconstr, iatom_constr, iatom_constrnc, con) ((con) < (nconstr) ? (iatom_constr)+(con)*3 : (iatom_constrnc)+(con-nconstr)*3)
 /* Macro for getting the constraint iatoms for a constraint number con
  * which comes from a list where F_CONSTR and F_CONSTRNC constraints
  * are concatenated.
  */
 
-gmx_bool inter_charge_group_constraints(gmx_mtop_t *mtop);
+gmx_bool inter_charge_group_constraints(const gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
+
+gmx_bool inter_charge_group_settles(const gmx_mtop_t *mtop);
+/* Returns if there are inter charge group settles */
 
 real *constr_rmsd_data(gmx_constr_t constr);
 /* Return the data for determining constraint RMS relative deviations.
  * Returns NULL when LINCS is not used.
  */
 
-real constr_rmsd(gmx_constr_t constr,gmx_bool bSD2);
+GMX_LIBMD_EXPORT
+real constr_rmsd(gmx_constr_t constr, gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 /* Return the data for determining constraint RMS relative deviations */
 
-real lincs_rmsd(gmx_lincsdata_t lincsd,gmx_bool bSD2);
+real lincs_rmsd(gmx_lincsdata_t lincsd, gmx_bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
-gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
-			   int nflexcon_global,t_blocka *at2con,
-			   gmx_bool bPLINCS,int nIter,int nProjOrder);
+gmx_lincsdata_t init_lincs(FILE *fplog, gmx_mtop_t *mtop,
+                           int nflexcon_global, t_blocka *at2con,
+                           gmx_bool bPLINCS, int nIter, int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
-void set_lincs(t_idef *idef,t_mdatoms *md,
-		      gmx_bool bDynamics,t_commrec *cr,
-		      gmx_lincsdata_t li);
+void set_lincs(t_idef *idef, t_mdatoms *md,
+               gmx_bool bDynamics, t_commrec *cr,
+               gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
-void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
+void set_lincs_matrix(gmx_lincsdata_t li, real *invmass, real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
+real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir);
 /* Returns an estimate of the maximum distance between atoms
  * required for LINCS.
  */
 
-gmx_bool constrain_lincs(FILE *log,gmx_bool bLog,gmx_bool bEner,
-			    t_inputrec *ir,
-			    gmx_large_int_t step,
-			    gmx_lincsdata_t lincsd,t_mdatoms *md,
-			    t_commrec *cr,
-			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			    real lambda,real *dvdlambda,
-			    real invdt,rvec *v,
-			    gmx_bool bCalcVir,tensor rmdr,
-			    int econ,
-			    t_nrnb *nrnb,
-			    int maxwarn,int *warncount);
+gmx_bool
+constrain_lincs(FILE *log, gmx_bool bLog, gmx_bool bEner,
+                t_inputrec *ir,
+                gmx_large_int_t step,
+                gmx_lincsdata_t lincsd, t_mdatoms *md,
+                t_commrec *cr,
+                rvec *x, rvec *xprime, rvec *min_proj,
+                matrix box, t_pbc *pbc,
+                real lambda, real *dvdlambda,
+                real invdt, rvec *v,
+                gmx_bool bCalcVir, tensor vir_r_m_dr,
+                int econ,
+                t_nrnb *nrnb,
+                int maxwarn, int *warncount);
 /* Returns if the constraining succeeded */
+
+
+/* helper functions for andersen temperature control, because the
+ * gmx_constr construct is only defined in constr.c. Return the list
+ * of blocks (get_sblock) and the number of blocks (get_nblocks).  */
+
+int *get_sblock(struct gmx_constr *constr);
+
+int get_nblocks(struct gmx_constr *constr);
 
 #ifdef __cplusplus
 }
+#endif
 #endif

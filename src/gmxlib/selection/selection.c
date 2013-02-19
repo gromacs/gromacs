@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
@@ -63,23 +70,23 @@
  */
 int
 gmx_ana_selcollection_create(gmx_ana_selcollection_t **scp,
-                             gmx_ana_poscalc_coll_t *pcc)
+                             gmx_ana_poscalc_coll_t   *pcc)
 {
     gmx_ana_selcollection_t *sc;
-    
+
     snew(sc, 1);
-    sc->rpost     = NULL;
-    sc->spost     = NULL;
-    sc->bMaskOnly = FALSE;
-    sc->bVelocities = FALSE;
-    sc->bForces   = FALSE;
+    sc->rpost         = NULL;
+    sc->spost         = NULL;
+    sc->bMaskOnly     = FALSE;
+    sc->bVelocities   = FALSE;
+    sc->bForces       = FALSE;
     sc->bDebugCompile = FALSE;
-    sc->root      = NULL;
-    sc->nr        = 0;
-    sc->sel       = NULL;
-    sc->nvars     = 0;
-    sc->varstrs   = NULL;
-    sc->top       = NULL;
+    sc->root          = NULL;
+    sc->nr            = 0;
+    sc->sel           = NULL;
+    sc->nvars         = 0;
+    sc->varstrs       = NULL;
+    sc->top           = NULL;
     gmx_ana_index_clear(&sc->gall);
     sc->pcc       = pcc;
     sc->mempool   = NULL;
@@ -144,7 +151,7 @@ _gmx_selcollection_clear_symtab(gmx_ana_selcollection_t *sc)
  */
 void
 gmx_ana_selcollection_set_refpostype(gmx_ana_selcollection_t *sc,
-                                     const char *type)
+                                     const char              *type)
 {
     sc->rpost     = type;
 }
@@ -178,7 +185,7 @@ gmx_ana_selcollection_set_outpostype(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
-                                    gmx_bool bVelOut)
+                                    gmx_bool                 bVelOut)
 {
     sc->bVelocities = bVelOut;
 }
@@ -190,7 +197,7 @@ gmx_ana_selcollection_set_veloutput(gmx_ana_selcollection_t *sc,
  */
 void
 gmx_ana_selcollection_set_forceoutput(gmx_ana_selcollection_t *sc,
-                                      gmx_bool bForceOut)
+                                      gmx_bool                 bForceOut)
 {
     sc->bForces = bForceOut;
 }
@@ -263,7 +270,9 @@ gmx_ana_selection_t *
 gmx_ana_selcollection_get_selection(gmx_ana_selcollection_t *sc, int i)
 {
     if (i < 0 || i >= sc->nr || !sc->sel)
+    {
         return NULL;
+    }
     return sc->sel[i];
 }
 
@@ -288,7 +297,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
     if (sc->rpost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->rpost, &type, &flags);
+        rc    = gmx_ana_poscalc_type_from_enum(sc->rpost, &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -297,7 +306,7 @@ gmx_ana_selcollection_requires_top(gmx_ana_selcollection_t *sc)
     if (sc->spost)
     {
         flags = 0;
-        rc = gmx_ana_poscalc_type_from_enum(sc->spost, &type, &flags);
+        rc    = gmx_ana_poscalc_type_from_enum(sc->spost, &type, &flags);
         if (rc == 0 && type != POS_ATOM)
         {
             return TRUE;
@@ -388,7 +397,7 @@ gmx_ana_selection_print_info(gmx_ana_selection_t *sel)
  * \param[in] sel  Selection to initialize.
  * \param[in] type Type of covered fraction required.
  * \returns   TRUE if the covered fraction can be calculated for the selection,
- *   FALSE otherwise.    
+ *   FALSE otherwise.
  */
 gmx_bool
 gmx_ana_selection_init_coverfrac(gmx_ana_selection_t *sel, e_coverfrac_t type)

@@ -6,9 +6,9 @@
 <CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 COLS=2 WIDTH="98%">
 <TR>
 <TD><font size=-1><A HREF="../online.html">Main Table of Contents</A></font></TD>
-<TD ALIGN=RIGHT><B>VERSION 4.0</B></TR>
+<TD ALIGN=RIGHT><B>VERSION 4.6</B></TR>
 <TR><TD><font size=-1><A HREF="http://www.gromacs.org">GROMACS homepage</A></font></TD>
-<TD ALIGN=RIGHT><B>Sun 18 Jan 2009</B></TR></TABLE></CENTER><HR>
+<TD ALIGN=RIGHT><B>Sat 19 Jan 2013</B></TR></TABLE></CENTER><HR>
 <P> Follow <a href="mdp_opt.html">this link</a> for a detailed description of the options</a>.  </P>
 
 <P> Below is a sample mdp file.
@@ -34,25 +34,25 @@ nstvout                  = 5000
 nstlog                   = 5000
 nstenergy                = 250
 nstxtcout                = 250
-xtc_grps                 = Protein
+xtc-grps                 = Protein
 energygrps               = Protein  SOL
 nstlist                  = 10
-ns_type                  = grid
+ns-type                  = grid
 rlist                    = 0.8
 coulombtype              = cut-off
 rcoulomb                 = 1.4
 rvdw                     = 0.8
 tcoupl                   = Berendsen
 tc-grps                  = Protein      SOL
-tau_t                    = 0.1  0.1
-ref_t                    = 300  300
+tau-t                    = 0.1  0.1
+ref-t                    = 300  300
 Pcoupl                   = Berendsen
-tau_p                    = 1.0
+tau-p                    = 1.0
 compressibility          = 4.5e-5
-ref_p                    = 1.0
-gen_vel                  = yes
-gen_temp                 = 300
-gen_seed                 = 173529
+ref-p                    = 1.0
+gen-vel                  = yes
+gen-temp                 = 300
+gen-seed                 = 173529
 constraints              = all-bonds
 </pre>
 <hr>
@@ -90,7 +90,7 @@ ld-seed                  = 1993
 ; Force tolerance and initial step-size = 
 emtol                    = 100
 emstep                   = 0.01
-; Max number of iterations in relax_shells = 
+; Max number of iterations in relax-shells = 
 niter                    = 20
 ; Frequency of steepest descents steps when doing CG = 
 nstcgsteep               = 1000
@@ -108,7 +108,7 @@ nstxtcout                = 250
 xtc-precision            = 1000
 ; This selects the subset of atoms for the xtc file. You can = 
 ; select multiple groups. By default all atoms will be written. = 
-xtc_grps                 = Protein
+xtc-grps                 = Protein
 ; Selection of energy groups = 
 energygrps               = Protein  SOL
 
@@ -116,7 +116,7 @@ energygrps               = Protein  SOL
 ; nblist update frequency = 
 nstlist                  = 10
 ; ns algorithm (simple or grid) = 
-ns_type                  = grid
+ns-type                  = grid
 ; Periodic boundary conditions: xyz or none = 
 pbc                      = xyz
 ; nblist cut-off         = 
@@ -140,14 +140,14 @@ DispCorr                 = No
 ; Spacing for the PME/PPPM FFT grid = 
 fourierspacing           = 0.12
 ; FFT grid size, when a value is 0 fourierspacing will be used = 
-fourier_nx               = 0
-fourier_ny               = 0
-fourier_nz               = 0
+fourier-nx               = 0
+fourier-ny               = 0
+fourier-nz               = 0
 ; EWALD/PME/PPPM parameters = 
-pme_order                = 4
-ewald_rtol               = 1e-05
-epsilon_surface          = 0
-optimize_fft             = no
+pme-order                = 4
+ewald-rtol               = 1e-05
+epsilon-surface          = 0
+optimize-fft             = no
 
 ; OPTIONS FOR WEAK COUPLING ALGORITHMS = 
 ; Temperature coupling   = 
@@ -155,25 +155,25 @@ tcoupl                   = Berendsen
 ; Groups to couple separately = 
 tc-grps                  = Protein      SOL
 ; Time constant (ps) and reference temperature (K) = 
-tau_t                    = 0.1  0.1
-ref_t                    = 300  300
+tau-t                    = 0.1  0.1
+ref-t                    = 300  300
 ; Pressure coupling      = 
 Pcoupl                   = Berendsen
 Pcoupltype               = Isotropic
 ; Time constant (ps), compressibility (1/bar) and reference P (bar) = 
-tau_p                    = 1.0
+tau-p                    = 1.0
 compressibility          = 4.5e-5
-ref_p                    = 1.0
+ref-p                    = 1.0
 
 ; SIMULATED ANNEALING CONTROL = 
 annealing                = no
 ; Time at which temperature should be zero (ps) = 
-zero-temp_time           = 0
+zero-temp-time           = 0
 
 ; GENERATE VELOCITIES FOR STARTUP RUN = 
-gen_vel                  = yes
-gen_temp                 = 300
-gen_seed                 = 173529
+gen-vel                  = yes
+gen-temp                 = 300
+gen-seed                 = 173529
 
 ; OPTIONS FOR BONDS     = 
 constraints              = all-bonds
@@ -216,7 +216,7 @@ accelerate               =
 freezegrps               = 
 freezedim                = 
 cos-acceleration         = 0
-energygrp_excl           =
+energygrp-excl           =
 
 ; Electric fields       = 
 ; Format is number of terms (int) and for all terms an amplitude (real) = 

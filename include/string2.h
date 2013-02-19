@@ -1,36 +1,39 @@
 /*
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * This file is part of the GROMACS molecular simulation package.
+ *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief Generic string handling functions.
@@ -45,13 +48,14 @@
  *
  */
 
-
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <time.h>
 #include <errno.h>
+#include "visibility.h"
+#include "gmx_header_config.h"
 
 /*#include "typedefs.h"*/
 #include "types/simple.h"
@@ -75,43 +79,75 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#if 0
+}
+#endif
 
 #define CONTINUE    '\\'
 #define COMMENTSIGN ';'
 
+GMX_LIBGMX_EXPORT
 int continuing(char *s);
 
+GMX_LIBGMX_EXPORT
 char *fgets2(char *s, int n, FILE *stream);
 
+GMX_LIBGMX_EXPORT
 void strip_comment (char *line);
 
 int break_line (char *line,
-		       char *variable,
-		       char *value);
+                char *variable,
+                char *value);
 
+GMX_LIBGMX_EXPORT
 void upstring (char *str);
 
+GMX_LIBGMX_EXPORT
 void ltrim (char *str);
 
+GMX_LIBGMX_EXPORT
 void rtrim (char *str);
 
+GMX_LIBGMX_EXPORT
 void trim (char *str);
 
-void nice_header (FILE *out,const char *fn);
+GMX_LIBGMX_EXPORT
+void nice_header (FILE *out, const char *fn);
 
+GMX_LIBGMX_EXPORT
 int gmx_strcasecmp_min(const char *str1, const char *str2);
+GMX_LIBGMX_EXPORT
 int gmx_strncasecmp_min(const char *str1, const char *str2, int n);
 /* This funny version of strcasecmp, is not only case-insensitive,
  * but also ignores '-' and '_'.
  */
 
+GMX_LIBGMX_EXPORT
 int gmx_strcasecmp(const char *str1, const char *str2);
+GMX_LIBGMX_EXPORT
 int gmx_strncasecmp(const char *str1, const char *str2, int n);
 
+GMX_LIBGMX_EXPORT
 char *gmx_strdup(const char *src);
 char *gmx_strndup(const char *src, int n);
-    
+
+/* Magic hash initialization number from Dan J. Bernstein. */
+extern const unsigned int
+    gmx_string_hash_init;
+
+/* Return a hash of the string according to Dan J. Bernsteins algorithm.
+ * This routine only uses characters for which isalnum(c) is true,
+ * and all characters are converted to upper case.
+ * On the first invocation for a new string, use the constant
+ * gmx_string_hash_init for the second argument. If you want to create a hash
+ * corresponding to several concatenated strings, provide the returned hash
+ * value as hash_init for the second string, etc.
+ */
+unsigned int
+gmx_string_hash_func(const char *s, unsigned int hash_init);
+
 /** Pattern matcing with wildcards. */
+GMX_LIBGMX_EXPORT
 int gmx_wcmatch(const char *pattern, const char *src);
 
 /** Return value for gmx_wcmatch() when there is no match. */
@@ -120,25 +156,27 @@ int gmx_wcmatch(const char *pattern, const char *src);
 
 /* this is our implementation of strsep, the thread-safe replacement for
    strtok */
+GMX_LIBGMX_EXPORT
 char *gmx_strsep(char **stringp, const char *delim);
 
 
-char *wrap_lines(const char *buf,int line_width, int indent,
-			gmx_bool bIndentFirst);
+GMX_LIBGMX_EXPORT
+char *wrap_lines(const char *buf, int line_width, int indent,
+                 gmx_bool bIndentFirst);
 /* wraps lines at 'linewidth', indenting all following
  * lines by 'indent' spaces. A temp buffer is allocated and returned,
  * which can be disposed of if no longer needed.
- * If !bIndentFirst, then the first line will not be indented, only 
+ * If !bIndentFirst, then the first line will not be indented, only
  * the lines that are created due to wapping.
  */
 
 
-char **split(char sep,char *str);
+char **split(char sep, char *str);
 /* Implementation of the well-known Perl function split */
 
 gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#ifdef GMX_NATIVE_WINDOWS
 #define snprintf _snprintf
 #endif
 
@@ -146,4 +184,4 @@ gmx_large_int_t str_to_large_int_t(const char *str, char **endptr);
 }
 #endif
 
-#endif	/* _string2_h */
+#endif  /* _string2_h */

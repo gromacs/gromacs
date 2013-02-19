@@ -1,36 +1,39 @@
 /*
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * This file is part of the GROMACS molecular simulation package.
+ *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * GRoups of Organic Molecules in ACtion for Science
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifndef _nblist_h
 #define _nblist_h
@@ -39,14 +42,6 @@
 extern "C" {
 #endif
 
-/* Neighborlist type */
-enum {
-  enlistATOM_ATOM,
-  enlistSPC_ATOM,   enlistSPC_SPC,
-  enlistTIP4P_ATOM, enlistTIP4P_TIP4P,
-  enlistCG_CG,
-  enlistNR
-};
 
 typedef unsigned long t_excl;
 
@@ -60,28 +55,42 @@ typedef unsigned long t_excl;
  */
 #define MAX_CGCGSIZE 32
 
-typedef struct 
+typedef struct
 {
-  int             enlist;      /* The type of nblist, enum, see above    */
-  int             il_code;      /* Innerloop index from nrnb.h, used     */
-                                /* for flop accounting.                  */
-  int             icoul;        /* Coulomb loop type index for kernels   */
-  int             ivdw;         /* VdW loop type index for kernels       */
-  int             free_energy;  /* Free energy setting for this list     */
+    int             igeometry;    /* The type of list (atom, water, etc.)  */
+    int             ielec;        /* Coulomb loop type index for kernels   */
+    int             ielecmod;     /* Coulomb modifier (e.g. switch/shift)  */
+    int             ivdw;         /* VdW loop type index for kernels       */
+    int             ivdwmod;      /* VdW modifier (e.g. switch/shift)      */
+    int             type;         /* Type of interaction, listed in
+                                     gmx_nblist_interaction_type           */
 
-  int             nri,maxnri;   /* Current/max number of i particles	 */
-  int             nrj,maxnrj;   /* Current/max number of j particles	 */
-  int             maxlen;       /* maxnr of j atoms for a single i atom  */
-  int *           iinr;	        /* The i-elements	   	         */
-  int *           iinr_end;     /* The end atom, only with enlistCG      */
-  int *           gid;          /* Index in energy arrays                */
-  int *           shift;        /* Shift vector index                    */
-  int *           jindex;       /* Index in jjnr                         */
-  int *           jjnr;	        /* The j-atom list                       */
-  int *           jjnr_end;     /* The end atom, only with enltypeCG     */
-  t_excl *        excl;         /* Exclusions, only with enltypeCG       */
-  int             count;        /* counter to multithread the innerloops */
-  void *          mtx;          /* mutex to lock the counter             */
+    int             nri, maxnri;  /* Current/max number of i particles	   */
+    int             nrj, maxnrj;  /* Current/max number of j particles	   */
+    int             maxlen;       /* maxnr of j atoms for a single i atom  */
+    int *           iinr;         /* The i-elements                        */
+    int *           iinr_end;     /* The end atom, only with enlistCG      */
+    int *           gid;          /* Index in energy arrays                */
+    int *           shift;        /* Shift vector index                    */
+    int *           jindex;       /* Index in jjnr                         */
+    int *           jjnr;         /* The j-atom list                       */
+    int *           jjnr_end;     /* The end atom, only with enltypeCG     */
+    t_excl *        excl;         /* Exclusions, only with enltypeCG       */
+
+    /* We use separate pointers for kernels that compute both potential
+     * and force (vf suffix), only potential (v) or only force (f)
+     */
+    void *          kernelptr_vf;
+    void *          kernelptr_v;
+    void *          kernelptr_f;
+
+    /* Pad the list of neighbors for each i atom with "-1" entries up to the
+     * simd_padding_width, if it is larger than 0. This is necessary for many
+     * accelerated kernels using single-instruction multiple-data operations
+     * internally.
+     */
+    int             simd_padding_width;
+
 } t_nblist;
 
 

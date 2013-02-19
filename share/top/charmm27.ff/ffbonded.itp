@@ -185,10 +185,6 @@ NH2	CT1	1	0.1455	200832.0
 
 
 [ constrainttypes ]
-; this section is copied from OPLS. In theory we could recalculate
-; optimal geometries from charmm values, but since pratical equilibrium
-; geometries do not correspond exactly to these values anyway it is not
-; worth the effort...
 #ifdef HEAVY_H
 ; account for larger inertia with heavy hydrogens
 ; constraints for the rigid NH3 groups

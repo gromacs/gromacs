@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
@@ -46,8 +53,8 @@
 typedef struct
 {
     gmx_bool                     bFrameTree;
-    int                      nmaxind;
-    gmx_ana_selcollection_t *sc;
+    int                          nmaxind;
+    gmx_ana_selcollection_t     *sc;
 } t_dumpdata;
 
 int
@@ -110,17 +117,25 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         {
             n = sel[g]->p.m.mapb.nr;
             if (nmaxind >= 0 && n > nmaxind)
+            {
                 n = nmaxind;
+            }
             for (i = 0; i <= n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.mapb.index[i]);
+            }
             if (n < sel[g]->p.m.mapb.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
 
         n = sel[g]->p.m.nr;
         if (nmaxind >= 0 && n > nmaxind)
+        {
             n = nmaxind;
+        }
         fprintf(stderr, "    RefId:");
         if (!sel[g]->p.m.refid)
         {
@@ -129,9 +144,13 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         else
         {
             for (i = 0; i < n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.refid[i]);
+            }
             if (n < sel[g]->p.m.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
 
@@ -143,9 +162,13 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
         else
         {
             for (i = 0; i < n; ++i)
+            {
                 fprintf(stderr, " %d", sel[g]->p.m.mapid[i]);
+            }
             if (n < sel[g]->p.m.nr)
+            {
                 fprintf(stderr, " ...");
+            }
         }
         fprintf(stderr, "\n");
     }
@@ -155,16 +178,16 @@ print_selections(int nr, gmx_ana_selection_t **sel, int nmaxind)
 int
 gmx_test_selection(int argc, char *argv[])
 {
-    const char         *desc[] = {
+    const char             *desc[] = {
         "This is a test program for selections.",
     };
 
-    gmx_bool                bMaskOnly  = FALSE;
-    gmx_bool                bFrameTree = FALSE;
+    gmx_bool                bMaskOnly     = FALSE;
+    gmx_bool                bFrameTree    = FALSE;
     gmx_bool                bDebugCompile = FALSE;
-    int                 nref       = 0;
-    int                 nmaxind    = 20;
-    t_pargs             pa[] = {
+    int                     nref          = 0;
+    int                     nmaxind       = 20;
+    t_pargs                 pa[]          = {
         {"-mask",   FALSE, etBOOL, {&bMaskOnly},
          "Test position mask functionality"},
         {"-compdebug", FALSE, etBOOL, {&bDebugCompile},
@@ -177,15 +200,15 @@ gmx_test_selection(int argc, char *argv[])
          "Maximum number of indices to print in lists (-1 = print all)"},
     };
 
-    t_filenm            fnm[] = {
+    t_filenm                fnm[] = {
         {efDAT, "-o", "debug", ffOPTWR},
     };
 
-    gmx_ana_traj_t       *trj;
-    t_dumpdata            d;
-    int                   ngrps;
-    gmx_ana_selection_t **sel;
-    output_env_t          oenv;
+    gmx_ana_traj_t         *trj;
+    t_dumpdata              d;
+    int                     ngrps;
+    gmx_ana_selection_t   **sel;
+    output_env_t            oenv;
 
 #define NFILE asize(fnm)
 

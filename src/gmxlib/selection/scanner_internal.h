@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Internal header file used by the selection tokenizer.
@@ -60,34 +67,34 @@ struct gmx_sel_lexer_t;
  */
 typedef struct gmx_sel_lexer_t
 {
-    struct gmx_ana_selcollection_t  *sc;
-    struct gmx_ana_indexgrps_t      *grps;
-    int                              nexpsel;
+    struct gmx_ana_selcollection_t      *sc;
+    struct gmx_ana_indexgrps_t          *grps;
+    int                                  nexpsel;
 
     gmx_bool                             bInteractive;
-    char                            *inputstr;
-    int                              nalloc_input;
+    char                                *inputstr;
+    int                                  nalloc_input;
 
-    char                            *pselstr;
-    int                              pslen;
-    int                              nalloc_psel;
+    char                                *pselstr;
+    int                                  pslen;
+    int                                  nalloc_psel;
 
-    struct gmx_ana_selmethod_t     **mstack;
-    int                              msp;
-    int                              mstack_alloc;
+    struct gmx_ana_selmethod_t         **mstack;
+    int                                  msp;
+    int                                  mstack_alloc;
 
-    int                              neom;
-    struct gmx_ana_selparam_t       *nextparam;
+    int                                  neom;
+    struct gmx_ana_selparam_t           *nextparam;
     gmx_bool                             bBoolNo;
-    struct gmx_ana_selmethod_t      *nextmethod;
-    int                              prev_pos_kw;
+    struct gmx_ana_selmethod_t          *nextmethod;
+    int                                  prev_pos_kw;
 
     gmx_bool                             bMatchOf;
     gmx_bool                             bMatchBool;
     gmx_bool                             bCmdStart;
 
     gmx_bool                             bBuffer;
-    YY_BUFFER_STATE                  buffer;
+    YY_BUFFER_STATE                      buffer;
 } gmx_sel_lexer_t;
 
 /* Because Flex defines yylval, yytext, and yyleng as macros,
@@ -98,8 +105,8 @@ int
 _gmx_sel_lexer_process_pending(YYSTYPE *, gmx_sel_lexer_t *state);
 /** Internal function that processes identifier tokens. */
 int
-_gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
-                                  gmx_sel_lexer_t *state);
+    _gmx_sel_lexer_process_identifier(YYSTYPE *, char *, size_t,
+                                      gmx_sel_lexer_t *state);
 /** Internal function to add a token to the pretty-printed selection text. */
 void
 _gmx_sel_lexer_add_token(const char *str, int len, gmx_sel_lexer_t *state);

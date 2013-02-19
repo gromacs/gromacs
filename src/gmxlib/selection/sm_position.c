@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementation of position evaluation selection methods.
@@ -55,15 +62,15 @@ typedef struct
     /** Position calculation collection to use. */
     gmx_ana_poscalc_coll_t *pcc;
     /** Index group for which the center should be evaluated. */
-    gmx_ana_index_t    g;
+    gmx_ana_index_t         g;
     /** Position evaluation data structure. */
-    gmx_ana_poscalc_t *pc;
+    gmx_ana_poscalc_t      *pc;
     /** TRUE if periodic boundary conditions should be used. */
-    gmx_bool               bPBC;
+    gmx_bool                bPBC;
     /** Type of positions to calculate. */
-    char              *type;
+    char                   *type;
     /** Flags for the position calculation. */
-    int                flags;
+    int                     flags;
 } t_methoddata_pos;
 
 /** Allocates data for position evaluation selection methods. */
@@ -112,9 +119,9 @@ gmx_ana_selmethod_t sm_keyword_pos = {
     &init_kwpos,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -127,9 +134,9 @@ gmx_ana_selmethod_t sm_cog = {
     &init_cog,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"cog of ATOM_EXPR [pbc]", 0, NULL},
 };
 
@@ -142,9 +149,9 @@ gmx_ana_selmethod_t sm_com = {
     &init_com,
     &init_output_pos,
     &free_data_pos,
-     NULL,
+    NULL,
     &evaluate_pos,
-     NULL,
+    NULL,
     {"com of ATOM_EXPR [pbc]", 0, NULL},
 };
 
@@ -289,8 +296,8 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     int               rc;
 
     d->flags = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
+    rc       = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                                      d->flags);
     if (rc != 0)
     {
         return rc;
@@ -314,8 +321,8 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     d->flags  = (param[0].flags & SPAR_DYNAMIC) ? POS_DYNAMIC : 0;
     d->flags |= POS_MASS;
-    rc = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
-                                d->flags);
+    rc        = gmx_ana_poscalc_create(&d->pc, d->pcc, d->bPBC ? POS_ALL_PBC : POS_ALL,
+                                       d->flags);
     if (rc != 0)
     {
         return rc;

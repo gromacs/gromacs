@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementations of internal selection methods for numeric and
@@ -178,13 +185,13 @@ gmx_ana_selmethod_t sm_keyword_int = {
     "kw_int", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_int), smparams_keyword_int,
     &init_data_kwint,
-     NULL,
+    NULL,
     &init_kwint,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_int,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -193,13 +200,13 @@ gmx_ana_selmethod_t sm_keyword_real = {
     "kw_real", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_real), smparams_keyword_real,
     &init_data_kwreal,
-     NULL,
+    NULL,
     &init_kwreal,
-     NULL,
-     NULL,
-     NULL,
+    NULL,
+    NULL,
+    NULL,
     &evaluate_keyword_real,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -208,13 +215,13 @@ gmx_ana_selmethod_t sm_keyword_str = {
     "kw_str", GROUP_VALUE, SMETH_SINGLEVAL,
     asize(smparams_keyword_str), smparams_keyword_str,
     &init_data_kwstr,
-     NULL,
+    NULL,
     &init_kwstr,
-     NULL,
+    NULL,
     &free_data_kwstr,
-     NULL,
+    NULL,
     &evaluate_keyword_str,
-     NULL,
+    NULL,
     {NULL, 0, NULL},
 };
 
@@ -309,7 +316,7 @@ evaluate_keyword_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                 val;
 
     out->u.g->isize = 0;
-    n    = d->n;
+    n               = d->n;
     for (i = 0; i < g->isize; ++i)
     {
         val = d->v[i];
@@ -393,14 +400,14 @@ init_kwreal(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  */
 static int
 evaluate_keyword_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                     gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_kwreal *d = (t_methoddata_kwreal *)data;
     int                  n, i, j, jmin, jmax;
     real                 val;
 
     out->u.g->isize = 0;
-    n    = d->n;
+    n               = d->n;
     for (i = 0; i < g->isize; ++i)
     {
         val = d->v[i];
@@ -466,11 +473,11 @@ init_data_kwstr(int npar, gmx_ana_selparam_t *param)
 static int
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    char               *buf;
-    char               *s;
-    int                 i;
-    size_t              j;
+    t_methoddata_kwstr     *d = (t_methoddata_kwstr *)data;
+    char                   *buf;
+    char                   *s;
+    int                     i;
+    size_t                  j;
     gmx_bool                bRegExp;
 
     d->v   = param[0].val.u.s;
@@ -483,7 +490,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     snew(d->m, d->n);
     for (i = 0; i < d->n; ++i)
     {
-        s = param[1].val.u.s[i];
+        s       = param[1].val.u.s[i];
         bRegExp = FALSE;
         for (j = 0; j < strlen(s); ++j)
         {
@@ -502,13 +509,13 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
             {
                 bRegExp = FALSE;
                 fprintf(stderr, "WARNING: error in regular expression,\n"
-                                "         will match '%s' as a simple string\n", s);
+                        "         will match '%s' as a simple string\n", s);
             }
             sfree(buf);
 #else
             bRegExp = FALSE;
             fprintf(stderr, "WARNING: no regular expressions support,\n"
-                            "         will match '%s' as a simple string\n", s);
+                    "         will match '%s' as a simple string\n", s);
 #endif
         }
         if (!bRegExp)
@@ -558,8 +565,8 @@ static int
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
-    int                 i, j;
+    t_methoddata_kwstr     *d = (t_methoddata_kwstr *)data;
+    int                     i, j;
     gmx_bool                bFound;
 
     out->u.g->isize = 0;
@@ -709,7 +716,7 @@ _gmx_sel_init_keyword_evaluator(t_selelem **selp, gmx_ana_selmethod_t *method,
     }
 
     *selp = NULL;
-    sel = _gmx_selelem_create(SEL_EXPRESSION);
+    sel   = _gmx_selelem_create(SEL_EXPRESSION);
     _gmx_selelem_set_method(sel, method, scanner);
 
     snew(data, 1);

@@ -1,41 +1,44 @@
 /*
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * This file is part of the GROMACS molecular simulation package.
+ *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 
 #ifndef _smalloc_h
 #define _smalloc_h
-
+#include "visibility.h"
 #include <stdlib.h>
 
 /*
@@ -58,7 +61,7 @@
  *    Allocates memory for size bytes and returns this in ptr.
  *
  * scalloc(ptr,nelem,elsize)
- *    Allocates memory for nelem elements of size elsize and returns 
+ *    Allocates memory for nelem elements of size elsize and returns
  *    this in ptr.
  *
  * srealloc(ptr,size)
@@ -85,7 +88,7 @@
  *    Like alloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
  *
- * extern void *save_calloc(char *name,char *file,int line, 
+ * extern void *save_calloc(char *name,char *file,int line,
  *                          size_t nelem,size_t elsize);
  *    Like calloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
@@ -98,7 +101,7 @@
  *    it is possible to combine first and later allocations.
  *
  * extern void save_free(char *name,char *file,int line, void *ptr);
- *    Like free, uses name, file and line to generate an error message when 
+ *    Like free, uses name, file and line to generate an error message when
  *    the free failed.
  *
  * extern size_t maxavail();
@@ -106,13 +109,13 @@
  *    search on the largest block of memory available. After allocation
  *    it invokes free to restore the original state. So it is important
  *    that free can undo the effect of a malloc.
- * 
+ *
  * extern size_t memavail();
  *    Returns the total of available allocation unit, by applying maxavail
  *    until no space is left, it then frees all allocated space and returns
  *    the sum of the previously allocated space. As mentioned with maxavail,
  *    it is important that free can undo the effect of a malloc.
- * 
+ *
  * extern void *save_malloc_aligned(char *name,char *file,int line,size_t size,size_t alignment);
  *    Like alloc, returns a pointer to the allocated space, uses name, file
  *    and line to generate an error message when allocation failed.
@@ -120,30 +123,39 @@
  *    The pointer should only be freed with a call to save_free.
  *
  * extern void save_free_aligned(char *name,char *file,int line, void *ptr);
- *    Like free, uses name, file and line to generate an error message when 
+ *    Like free, uses name, file and line to generate an error message when
  *    the free failed. This function is intended to be called for
  *    pointers allocated with save_malloc_aligned, and may not work
  *    on normal pointers.
  */
 
 #ifdef __cplusplus
-extern "C" { 
+extern "C" {
 #endif
 
-void *save_malloc(const char *name,const char *file,int line,size_t size); 
-void *save_calloc(const char *name,const char *file,int line,
-		  size_t nelem,size_t elsize); 
-void *save_realloc(const char *name,const char *file,int line,
-		   void *ptr,size_t nelem,size_t elsize);
-void save_free(const char *name,const char *file,int line, void *ptr);
+GMX_LIBGMX_EXPORT
+void *save_malloc(const char *name, const char *file, int line, size_t size);
+GMX_LIBGMX_EXPORT
+void *save_calloc(const char *name, const char *file, int line,
+                  size_t nelem, size_t elsize);
+GMX_LIBGMX_EXPORT
+void *save_realloc(const char *name, const char *file, int line,
+                   void *ptr, size_t nelem, size_t elsize);
+GMX_LIBGMX_EXPORT
+void save_free(const char *name, const char *file, int line, void *ptr);
 size_t maxavail(void);
 size_t memavail(void);
 
 /* Aligned-memory counterparts */
 
-void *save_calloc_aligned(const char *name,const char *file,int line,
-			  unsigned nelem,size_t elsize,size_t alignment); 
-void save_free_aligned(const char *name,const char *file,int line, void *ptr);
+GMX_LIBGMX_EXPORT
+void *save_malloc_aligned(const char *name, const char *file, int line,
+                          unsigned nelem, size_t elsize, size_t alignment);
+GMX_LIBGMX_EXPORT
+void *save_calloc_aligned(const char *name, const char *file, int line,
+                          unsigned nelem, size_t elsize, size_t alignment);
+GMX_LIBGMX_EXPORT
+void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 
 #ifdef __cplusplus
 }
@@ -164,58 +176,58 @@ void save_free_aligned(const char *name,const char *file,int line, void *ptr);
  */
 template <typename T>
 void _snew(const char *name, const char *file, int line,
-           T *&ptr, size_t nelem, size_t elsize)
+           T * &ptr, size_t nelem, size_t elsize)
 {
     ptr = (T *)save_calloc(name, file, line, nelem, elsize);
 }
 template <typename T>
 void _srenew(const char *name, const char *file, int line,
-             T *&ptr, size_t nelem, size_t elsize)
+             T * &ptr, size_t nelem, size_t elsize)
 {
     ptr = (T *)save_realloc(name, file, line, ptr, nelem, elsize);
 }
 template <typename T>
-void _smalloc(const char *name, const char *file, int line, T *&ptr, size_t size)
+void _smalloc(const char *name, const char *file, int line, T * &ptr, size_t size)
 {
     ptr = (T *)save_malloc(name, file, line, size);
 }
 template <typename T>
-void _srealloc(const char *name, const char *file, int line, T *&ptr, size_t size)
+void _srealloc(const char *name, const char *file, int line, T * &ptr, size_t size)
 {
     ptr = (T *)save_realloc(name, file, line, ptr, size, sizeof(char));
 }
 template <typename T>
 void _snew_aligned(const char *name, const char *file, int line,
-		   T *&ptr, size_t nelem, size_t elsize,size_t alignment)
+                   T * &ptr, size_t nelem, size_t elsize, size_t alignment)
 {
-  ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
+    ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
 }
 
-#define snew(ptr,nelem) _snew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
-#define srenew(ptr,nelem) _srenew(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)))
-#define smalloc(ptr, size) _smalloc(#ptr,__FILE__,__LINE__,(ptr),(size))
-#define srealloc(ptr, size) _srealloc(#ptr,__FILE__,__LINE__,(ptr),(size))
-#define snew_aligned(ptr,nelem,alignment) _snew_aligned(#ptr,__FILE__,__LINE__,(ptr),(nelem),sizeof(*(ptr)),alignment)
+#define snew(ptr, nelem) _snew(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
+#define srenew(ptr, nelem) _srenew(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
+#define smalloc(ptr, size) _smalloc(#ptr, __FILE__, __LINE__, (ptr), (size))
+#define srealloc(ptr, size) _srealloc(#ptr, __FILE__, __LINE__, (ptr), (size))
+#define snew_aligned(ptr, nelem, alignment) _snew_aligned(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)), alignment)
 
 #else
 
 /* These macros work in C, not in C++ */
-#define snew(ptr,nelem) (ptr)=save_calloc(#ptr,__FILE__,__LINE__,\
-			(nelem),sizeof(*(ptr)))
-#define srenew(ptr,nelem) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
-			(ptr),(nelem),sizeof(*(ptr)))
-#define smalloc(ptr,size) (ptr)=save_malloc(#ptr,__FILE__,__LINE__,size)
-#define scalloc(ptr,nelem,elsize)\
-		(ptr)=save_calloc(#ptr,__FILE__,__LINE__,nelem,elsize)
-#define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
-			(ptr),size,1)
-#define snew_aligned(ptr,nelem,alignment) (ptr)=save_calloc_aligned(#ptr,__FILE__,__LINE__,(nelem),sizeof(*(ptr)),alignment)
+#define snew(ptr, nelem) (ptr) = save_calloc(#ptr, __FILE__, __LINE__, \
+                                             (nelem), sizeof(*(ptr)))
+#define srenew(ptr, nelem) (ptr) = save_realloc(#ptr, __FILE__, __LINE__, \
+                                                (ptr), (nelem), sizeof(*(ptr)))
+#define smalloc(ptr, size) (ptr) = save_malloc(#ptr, __FILE__, __LINE__, size)
+#define scalloc(ptr, nelem, elsize) \
+    (ptr) = save_calloc(#ptr, __FILE__, __LINE__, nelem, elsize)
+#define srealloc(ptr, size) (ptr) = save_realloc(#ptr, __FILE__, __LINE__, \
+                                                 (ptr), size, 1)
+#define snew_aligned(ptr, nelem, alignment) (ptr) = save_calloc_aligned(#ptr, __FILE__, __LINE__, (nelem), sizeof(*(ptr)), alignment)
 #endif
 
-#define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
+#define sfree(ptr) save_free(#ptr, __FILE__, __LINE__, (ptr))
 
-/* call this ONLY with a pointer obtained through snew_aligned or 
+/* call this ONLY with a pointer obtained through snew_aligned or
    smalloc_aligned: */
-#define sfree_aligned(ptr) save_free_aligned(#ptr,__FILE__,__LINE__,(ptr))
+#define sfree_aligned(ptr) save_free_aligned(#ptr, __FILE__, __LINE__, (ptr))
 
-#endif	/* _smalloc_h */
+#endif  /* _smalloc_h */

@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Implementation of functions in centerofmass.h.
@@ -90,7 +97,7 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -128,7 +135,7 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -212,10 +219,10 @@ int
 gmx_calc_cog_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
-    const real          tol = 1e-4;
+    const real              tol = 1e-4;
     gmx_bool                bChanged;
-    int                 m, j, ai, iter;
-    rvec                dx, xtest;
+    int                     m, j, ai, iter;
+    rvec                    dx, xtest;
 
     /* First simple calculation */
     gmx_calc_cog(top, x, nrefat, index, xout);
@@ -269,11 +276,11 @@ int
 gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                  int nrefat, atom_id index[], rvec xout)
 {
-    const real          tol = 1e-4;
+    const real              tol = 1e-4;
     gmx_bool                bChanged;
-    int                 m, j, ai, iter;
-    real                mass, mtot;
-    rvec                dx, xtest;
+    int                     m, j, ai, iter;
+    real                    mass, mtot;
+    rvec                    dx, xtest;
 
     if (!top)
     {
@@ -285,7 +292,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
     mtot = 0;
     for (m = 0; m < nrefat; ++m)
     {
-        ai = index[m];
+        ai   = index[m];
         mass = top->atoms.atom[ai].m;
         for (j = 0; j < DIM; ++j)
         {
@@ -303,7 +310,7 @@ gmx_calc_com_pbc(t_topology *top, rvec x[], t_pbc *pbc,
             bChanged = FALSE;
             for (m = 0; m < nrefat; ++m)
             {
-                ai = index[m];
+                ai   = index[m];
                 mass = top->atoms.atom[ai].m / mtot;
                 pbc_dx(pbc, x[ai], xout, dx);
                 rvec_add(xout, dx, xtest);
@@ -413,7 +420,7 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
         mtot = 0;
         for (i = block->index[b]; i < block->index[b+1]; ++i)
         {
-            ai = index[i];
+            ai   = index[i];
             mass = top->atoms.atom[ai].m;
             for (d = 0; d < DIM; ++d)
             {
@@ -453,7 +460,7 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
         mtot = 0;
         for (i = block->index[b]; i < block->index[b+1]; ++i)
         {
-            ai = index[i];
+            ai   = index[i];
             mass = top->atoms.atom[ai].m;
             for (d = 0; d < DIM; ++d)
             {

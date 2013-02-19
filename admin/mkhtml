@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 4.5
+set VER		= 4.6
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -51,13 +51,13 @@ cat > $HTMLIDX << EOD
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
-GROMACS 4.5<br>
+GROMACS 4.6<br>
 Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td>
+<B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td>
 </tr>
 </table>
 
@@ -85,7 +85,7 @@ cat >> $HTMLIDX <<EOD
 <br>
 EOD
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then  
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) && ( $program != "demux.pl" ) && ( $program != "xplor2gmx.pl" ) ) then  
     echo "<br><a href="$MANDIR/$program.html">$program</a>" >> $HTMLIDX
   endif
 end

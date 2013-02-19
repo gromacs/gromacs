@@ -1,3 +1,37 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+#
 # Generate Gromacs development build version information.
 #
 # The script generates version information for a build from a development
@@ -7,8 +41,8 @@
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined:
-# Git_EXECUTABLE        - path to git binary
-# Git_VERSION           - git version (if not defined it's assumed that >=1.5.3)
+# GIT_EXECUTABLE        - path to git binary
+# GIT_VERSION           - git version (if not defined it's assumed that >=1.5.3)
 # PROJECT_VERSION       - hard-coded version string, should have the following structure:
 #                       VERSION[-dev-SUFFIX] where the VERSION can have any form and the suffix
 #                       is optional but should start with -dev
@@ -48,9 +82,9 @@ endif()
 # if git executable exists and it's compatible version
 # build the development version string
 # this should at some point become VERSION_LESS
-if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
-    # refresh git index
-    execute_process(COMMAND ${Git_EXECUTABLE} update-index -q --refresh
+if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION STRLESS "1.5.3")
+    # refresh git index 
+    execute_process(COMMAND ${GIT_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         TIMEOUT 5
         OUTPUT_QUIET
@@ -59,7 +93,7 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
     )
 
     # get the full hash of the current HEAD
-    execute_process(COMMAND ${Git_EXECUTABLE} rev-parse HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE HEAD_HASH
         ERROR_VARIABLE EXEC_ERR
@@ -67,7 +101,7 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
     )
     set(GMX_GIT_HEAD_HASH ${HEAD_HASH})
     # extract the shortened hash (7 char)
-    execute_process(COMMAND ${Git_EXECUTABLE} rev-parse --short HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE HEAD_HASH_SHORT
         ERROR_VARIABLE EXEC_ERR
@@ -75,7 +109,7 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
     )
 
     # if there are local uncommitted changes, the build gets labeled "dirty"
-    execute_process(COMMAND ${Git_EXECUTABLE} diff-index --name-only HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} diff-index --name-only HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE SRC_LOCAL_CHANGES
         ERROR_VARIABLE EXEC_ERR
@@ -87,7 +121,7 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
     endif()
 
     # get the date of the HEAD commit
-    execute_process(COMMAND ${Git_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
+    execute_process(COMMAND ${GIT_EXECUTABLE} rev-list -n1 "--pretty=format:%ci" HEAD
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE HEAD_DATE
         ERROR_VARIABLE EXEC_ERR
@@ -102,7 +136,7 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
 
     # find the names of remotes that are located on the official gromacs
     # git/gerrit servers
-    execute_process(COMMAND ${Git_EXECUTABLE} config --get-regexp
+    execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
                     "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
         OUTPUT_VARIABLE GMX_REMOTES
@@ -120,10 +154,10 @@ if(EXISTS "${Git_EXECUTABLE}" AND NOT Git_VERSION STRLESS "1.5.3")
         # construct a command pipeline that produces a reverse-time-ordered
         # list of commits and their annotated names in GMX_REMOTES
         # the max-count limit is there to put an upper bound on the execution time
-        set(BASEREVCOMMAND "COMMAND ${Git_EXECUTABLE} rev-list --max-count=1000 HEAD")
+        set(BASEREVCOMMAND "COMMAND ${GIT_EXECUTABLE} rev-list --max-count=1000 HEAD")
         foreach(REMOTE ${GMX_REMOTES})
             string(REGEX REPLACE "remote\\.(.*)\\.url.*" "\\1" REMOTE ${REMOTE})
-            set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${Git_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
+            set(BASEREVCOMMAND "${BASEREVCOMMAND} COMMAND ${GIT_EXECUTABLE} name-rev --stdin --refs=refs/remotes/${REMOTE}/*")
         endforeach(REMOTE)
         # this is necessary for CMake to properly split the variable into
         # parameters for execute_process().

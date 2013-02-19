@@ -1,0 +1,1164 @@
+/* ## */
+/* ## This file is part of the GROMACS molecular simulation package. */
+/* ## */
+/* ## Copyright (c) 2012, by the GROMACS development team, led by */
+/* ## David van der Spoel, Berk Hess, Erik Lindahl, and including many */
+/* ## others, as listed in the AUTHORS file in the top-level source */
+/* ## directory and at http://www.gromacs.org. */
+/* ## */
+/* ## GROMACS is free software; you can redistribute it and/or */
+/* ## modify it under the terms of the GNU Lesser General Public License */
+/* ## as published by the Free Software Foundation; either version 2.1 */
+/* ## of the License, or (at your option) any later version. */
+/* ## */
+/* ## GROMACS is distributed in the hope that it will be useful, */
+/* ## but WITHOUT ANY WARRANTY; without even the implied warranty of */
+/* ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
+/* ## Lesser General Public License for more details. */
+/* ## */
+/* ## You should have received a copy of the GNU Lesser General Public */
+/* ## License along with GROMACS; if not, see */
+/* ## http://www.gnu.org/licenses, or write to the Free Software Foundation, */
+/* ## Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA. */
+/* ## */
+/* ## If you want to redistribute modifications to GROMACS, please */
+/* ## consider that scientific software is very special. Version */
+/* ## control is crucial - bugs must be traceable. We will be happy to */
+/* ## consider code for inclusion in the official distribution, but */
+/* ## derived work must not be called official GROMACS. Details are found */
+/* ## in the README & COPYING files - if they are missing, get the */
+/* ## official version at http://www.gromacs.org. */
+/* ## */
+/* ## To help us fund GROMACS development, we humbly ask that you cite */
+/* ## the research papers on the package. Check out http://www.gromacs.org. */
+/* ## */
+/* #if 0 */
+#error This file must be processed with the Gromacs pre-preprocessor
+/* #endif */
+/* #if INCLUDE_HEADER */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <math.h>
+
+#include "../nb_kernel.h"
+#include "types/simple.h"
+#include "vec.h"
+#include "nrnb.h"
+
+#include "gmx_math_x86_avx_256_single.h"
+#include "kernelutil_x86_avx_256_single.h"
+/* #endif */
+
+/* ## List of variables set by the generating script:                                    */
+/* ##                                                                                    */
+/* ## Setttings that apply to the entire kernel:                                         */
+/* ## KERNEL_ELEC:           String, choice for electrostatic interactions               */
+/* ## KERNEL_VDW:            String, choice for van der Waals interactions               */
+/* ## KERNEL_NAME:           String, name of this kernel                                 */
+/* ## KERNEL_VF:             String telling if we calculate potential, force, or both    */
+/* ## GEOMETRY_I/GEOMETRY_J: String, name of each geometry, e.g. 'Water3' or '1Particle' */
+/* ##                                                                                    */
+/* ## Setttings that apply to particles in the outer (I) or inner (J) loops:             */
+/* ## PARTICLES_I[]/         Arrays with lists of i/j particles to use in kernel. It is  */
+/* ## PARTICLES_J[]:         just [0] for particle geometry, but can be longer for water */
+/* ## PARTICLES_ELEC_I[]/    Arrays with lists of i/j particle that have electrostatics  */
+/* ## PARTICLES_ELEC_J[]:    interactions that should be calculated in this kernel.      */
+/* ## PARTICLES_VDW_I[]/     Arrays with the list of i/j particle that have VdW          */
+/* ## PARTICLES_VDW_J[]:     interactions that should be calculated in this kernel.      */
+/* ##                                                                                    */
+/* ## Setttings for pairs of interactions (e.g. 2nd i particle against 1st j particle)   */
+/* ## PAIRS_IJ[]:            Array with (i,j) tuples of pairs for which interactions     */
+/* ##                        should be calculated in this kernel. Zero-charge particles  */
+/* ##                        do not have interactions with particles without vdw, and    */
+/* ##                        Vdw-only interactions are not evaluated in a no-vdw-kernel. */
+/* ## INTERACTION_FLAGS[][]: 2D matrix, dimension e.g. 3*3 for water-water interactions. */
+/* ##                        For each i-j pair, the element [I][J] is a list of strings  */
+/* ##                        defining properties/flags of this interaction. Examples     */
+/* ##                        include 'electrostatics'/'vdw' if that type of interaction  */
+/* ##                        should be evaluated, 'rsq'/'rinv'/'rinvsq' if those values  */
+/* ##                        are needed, and 'exactcutoff' or 'shift','switch' to        */
+/* ##                        decide if the force/potential should be modified. This way  */
+/* ##                        we only calculate values absolutely needed for each case.   */
+
+/* ## Calculate the size and offset for (merged/interleaved) table data */
+
+/*
+ * Gromacs nonbonded kernel:   {KERNEL_NAME}
+ * Electrostatics interaction: {KERNEL_ELEC}
+ * VdW interaction:            {KERNEL_VDW}
+ * Geometry:                   {GEOMETRY_I}-{GEOMETRY_J}
+ * Calculate force/pot:        {KERNEL_VF}
+ */
+void
+{KERNEL_NAME}
+                    (t_nblist * gmx_restrict                nlist,
+                     rvec * gmx_restrict                    xx,
+                     rvec * gmx_restrict                    ff,
+                     t_forcerec * gmx_restrict              fr,
+                     t_mdatoms * gmx_restrict               mdatoms,
+                     nb_kernel_data_t * gmx_restrict        kernel_data,
+                     t_nrnb * gmx_restrict                  nrnb)
+{
+    /* ## Not all variables are used for all kernels, but any optimizing compiler fixes that, */
+    /* ## so there is no point in going to extremes to exclude variables that are not needed. */
+    /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
+     * just 0 for non-waters.
+     * Suffixes A,B,C,D,E,F,G,H refer to j loop unrolling done with AVX, e.g. for the eight different
+     * jnr indices corresponding to data put in the four positions in the SIMD register.
+     */
+    int              i_shift_offset,i_coord_offset,outeriter,inneriter;
+    int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
+    int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrE,jnrF,jnrG,jnrH;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
+    int              jnrlistE,jnrlistF,jnrlistG,jnrlistH;
+    int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
+    int              j_coord_offsetE,j_coord_offsetF,j_coord_offsetG,j_coord_offsetH;
+    int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
+    real             rcutoff_scalar;
+    real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD,*fjptrE,*fjptrF,*fjptrG,*fjptrH;
+    real             scratch[4*DIM];
+    __m256           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
+    /* #for I in PARTICLES_I */
+    real *           vdwioffsetptr{I};
+    __m256           ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
+    /* #endfor */
+    /* #for J in PARTICLES_J */
+    int              vdwjidx{J}A,vdwjidx{J}B,vdwjidx{J}C,vdwjidx{J}D,vdwjidx{J}E,vdwjidx{J}F,vdwjidx{J}G,vdwjidx{J}H;
+    __m256           jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J};
+    /* #endfor */
+    /* #for I,J in PAIRS_IJ */
+    __m256           dx{I}{J},dy{I}{J},dz{I}{J},rsq{I}{J},rinv{I}{J},rinvsq{I}{J},r{I}{J},qq{I}{J},c6_{I}{J},c12_{I}{J};
+    /* #endfor */
+    /* #if KERNEL_ELEC != 'None' */
+    __m256           velec,felec,velecsum,facel,crf,krf,krf2;
+    real             *charge;
+    /* #endif */
+    /* #if 'GeneralizedBorn' in KERNEL_ELEC */
+    __m256i          gbitab;
+    __m128i          gbitab_lo,gbitab_hi;
+    __m256           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,gbeps,dvdatmp;
+    __m256           minushalf = _mm256_set1_ps(-0.5);
+    real             *invsqrta,*dvda,*gbtab;
+    /* #endif */
+    /* #if KERNEL_VDW != 'None' */
+    int              nvdwtype;
+    __m256           rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,sh_vdw_invrcut6;
+    int              *vdwtype;
+    real             *vdwparam;
+    __m256           one_sixth   = _mm256_set1_ps(1.0/6.0);
+    __m256           one_twelfth = _mm256_set1_ps(1.0/12.0);
+    /* #endif */
+    /* #if 'Table' in KERNEL_ELEC or 'GeneralizedBorn' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
+    __m256i          vfitab;
+    __m128i          vfitab_lo,vfitab_hi;
+    __m128i          ifour       = _mm_set1_epi32(4);
+    __m256           rt,vfeps,vftabscale,Y,F,G,H,Heps,Fp,VV,FF;
+    real             *vftab;
+    /* #endif */
+    /* #if 'Ewald' in KERNEL_ELEC */
+    __m256i          ewitab;
+    __m128i          ewitab_lo,ewitab_hi;
+    __m256           ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace,ewtabF,ewtabFn,ewtabD,ewtabV;
+    __m256           beta,beta2,beta3,zeta2,pmecorrF,pmecorrV,rinv3;
+    real             *ewtab;
+    /* #endif */
+    /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
+    __m256           rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+    real             rswitch_scalar,d_scalar;
+    /* #endif */
+    __m256           dummy_mask,cutoff_mask;
+    __m256           signbit = _mm256_castsi256_ps( _mm256_set1_epi32(0x80000000) );
+    __m256           one     = _mm256_set1_ps(1.0);
+    __m256           two     = _mm256_set1_ps(2.0);
+    x                = xx[0];
+    f                = ff[0];
+
+    nri              = nlist->nri;
+    iinr             = nlist->iinr;
+    jindex           = nlist->jindex;
+    jjnr             = nlist->jjnr;
+    shiftidx         = nlist->shift;
+    gid              = nlist->gid;
+    shiftvec         = fr->shift_vec[0];
+    fshift           = fr->fshift[0];
+    /* #if KERNEL_ELEC != 'None' */
+    facel            = _mm256_set1_ps(fr->epsfac);
+    charge           = mdatoms->chargeA;
+    /*     #if 'ReactionField' in KERNEL_ELEC */
+    krf              = _mm256_set1_ps(fr->ic->k_rf);
+    krf2             = _mm256_set1_ps(fr->ic->k_rf*2.0);
+    crf              = _mm256_set1_ps(fr->ic->c_rf);
+    /*     #endif */
+    /* #endif */
+    /* #if KERNEL_VDW != 'None' */
+    nvdwtype         = fr->ntype;
+    vdwparam         = fr->nbfp;
+    vdwtype          = mdatoms->typeA;
+    /* #endif */
+
+    /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
+    vftab            = kernel_data->table_elec_vdw->data;
+    vftabscale       = _mm256_set1_ps(kernel_data->table_elec_vdw->scale);
+    /* #elif 'Table' in KERNEL_ELEC */
+    vftab            = kernel_data->table_elec->data;
+    vftabscale       = _mm256_set1_ps(kernel_data->table_elec->scale);
+    /* #elif 'Table' in KERNEL_VDW */
+    vftab            = kernel_data->table_vdw->data;
+    vftabscale       = _mm256_set1_ps(kernel_data->table_vdw->scale);
+    /* #endif */
+
+    /* #if 'Ewald' in KERNEL_ELEC */
+    sh_ewald         = _mm256_set1_ps(fr->ic->sh_ewald);
+    beta             = _mm256_set1_ps(fr->ic->ewaldcoeff);
+    beta2            = _mm256_mul_ps(beta,beta);
+    beta3            = _mm256_mul_ps(beta,beta2);
+
+    /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
+    ewtab            = fr->ic->tabq_coul_F;
+    ewtabscale       = _mm256_set1_ps(fr->ic->tabq_scale);
+    ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
+    /*     #else */
+    ewtab            = fr->ic->tabq_coul_FDV0;
+    ewtabscale       = _mm256_set1_ps(fr->ic->tabq_scale);
+    ewtabhalfspace   = _mm256_set1_ps(0.5/fr->ic->tabq_scale);
+     /*     #endif */
+    /* #endif */
+
+    /* #if KERNEL_ELEC=='GeneralizedBorn' */
+    invsqrta         = fr->invsqrta;
+    dvda             = fr->dvda;
+    gbtabscale       = _mm256_set1_ps(fr->gbtab.scale);
+    gbtab            = fr->gbtab.data;
+    gbinvepsdiff     = _mm256_set1_ps((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    /* #endif */
+
+    /* #if 'Water' in GEOMETRY_I */
+    /* Setup water-specific parameters */
+    inr              = nlist->iinr[0];
+    /*     #for I in PARTICLES_ELEC_I */
+    iq{I}              = _mm256_mul_ps(facel,_mm256_set1_ps(charge[inr+{I}]));
+    /*     #endfor */
+    /*     #for I in PARTICLES_VDW_I */
+    vdwioffsetptr{I}   = vdwparam+2*nvdwtype*vdwtype[inr+{I}];
+    /*     #endfor */
+    /* #endif */
+
+    /* #if 'Water' in GEOMETRY_J */
+    /*     #for J in PARTICLES_ELEC_J */
+    jq{J}              = _mm256_set1_ps(charge[inr+{J}]);
+    /*     #endfor */
+    /*     #for J in PARTICLES_VDW_J */
+    vdwjidx{J}A        = 2*vdwtype[inr+{J}];
+    /*     #endfor */
+    /*     #for I,J in PAIRS_IJ */
+    /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+    qq{I}{J}             = _mm256_mul_ps(iq{I},jq{J});
+    /*         #endif */
+    /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+    c6_{I}{J}            = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A]);
+    c12_{I}{J}           = _mm256_set1_ps(vdwioffsetptr{I}[vdwjidx{J}A+1]);
+    /*         #endif */
+    /*     #endfor */
+    /* #endif */
+
+    /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
+    /*     #if KERNEL_ELEC!='None' */
+    /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
+    rcutoff_scalar   = fr->rcoulomb;
+    /*     #else */
+    rcutoff_scalar   = fr->rvdw;
+    /*     #endif */
+    rcutoff          = _mm256_set1_ps(rcutoff_scalar);
+    rcutoff2         = _mm256_mul_ps(rcutoff,rcutoff);
+    /* #endif */
+
+    /* #if KERNEL_MOD_VDW=='PotentialShift' */
+    sh_vdw_invrcut6  = _mm256_set1_ps(fr->ic->sh_invrc6);
+    rvdw             = _mm256_set1_ps(fr->rvdw);
+    /* #endif */
+
+    /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
+    /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
+    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch          = _mm256_set1_ps(rswitch_scalar);
+    /*     #else */
+    rswitch_scalar   = fr->rvdw_switch;
+    rswitch          = _mm256_set1_ps(rswitch_scalar);
+    /*     #endif */
+    /* Setup switch parameters */
+    d_scalar         = rcutoff_scalar-rswitch_scalar;
+    d                = _mm256_set1_ps(d_scalar);
+    swV3             = _mm256_set1_ps(-10.0/(d_scalar*d_scalar*d_scalar));
+    swV4             = _mm256_set1_ps( 15.0/(d_scalar*d_scalar*d_scalar*d_scalar));
+    swV5             = _mm256_set1_ps( -6.0/(d_scalar*d_scalar*d_scalar*d_scalar*d_scalar));
+    /*     #if 'Force' in KERNEL_VF */
+    swF2             = _mm256_set1_ps(-30.0/(d_scalar*d_scalar*d_scalar));
+    swF3             = _mm256_set1_ps( 60.0/(d_scalar*d_scalar*d_scalar*d_scalar));
+    swF4             = _mm256_set1_ps(-30.0/(d_scalar*d_scalar*d_scalar*d_scalar*d_scalar));
+    /*     #endif */
+    /* #endif */
+
+    /* Avoid stupid compiler warnings */
+    jnrA = jnrB = jnrC = jnrD = jnrE = jnrF = jnrG = jnrH = 0;
+    j_coord_offsetA = 0;
+    j_coord_offsetB = 0;
+    j_coord_offsetC = 0;
+    j_coord_offsetD = 0;
+    j_coord_offsetE = 0;
+    j_coord_offsetF = 0;
+    j_coord_offsetG = 0;
+    j_coord_offsetH = 0;
+
+    /* ## Keep track of the floating point operations we issue for reporting! */
+    /* #define OUTERFLOPS 0 */
+    outeriter        = 0;
+    inneriter        = 0;
+
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }
+
+    /* Start outer loop over neighborlists */
+    for(iidx=0; iidx<nri; iidx++)
+    {
+        /* Load shift vector for this list */
+        i_shift_offset   = DIM*shiftidx[iidx];
+
+        /* Load limits for loop over neighbors */
+        j_index_start    = jindex[iidx];
+        j_index_end      = jindex[iidx+1];
+
+        /* Get outer coordinate index */
+        inr              = iinr[iidx];
+        i_coord_offset   = DIM*inr;
+
+        /* Load i particle coords and add shift vector */
+        /* #if GEOMETRY_I == 'Particle' */
+        gmx_mm256_load_shift_and_1rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,&ix0,&iy0,&iz0);
+        /* #elif GEOMETRY_I == 'Water3' */
+        gmx_mm256_load_shift_and_3rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                    &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2);
+        /* #elif GEOMETRY_I == 'Water4' */
+        /*     #if 0 in PARTICLES_I                 */
+        gmx_mm256_load_shift_and_4rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                    &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #else                                */
+        gmx_mm256_load_shift_and_3rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset+DIM,
+                                                    &ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #endif                               */
+        /* #endif                                   */
+
+        /* #if 'Force' in KERNEL_VF */
+        /*     #for I in PARTICLES_I */
+        fix{I}             = _mm256_setzero_ps();
+        fiy{I}             = _mm256_setzero_ps();
+        fiz{I}             = _mm256_setzero_ps();
+        /*     #endfor */
+        /* #endif */
+
+        /* ## For water we already preloaded parameters at the start of the kernel */
+        /* #if not 'Water' in GEOMETRY_I */
+        /* Load parameters for i particles */
+        /*     #for I in PARTICLES_ELEC_I */
+        iq{I}              = _mm256_mul_ps(facel,_mm256_set1_ps(charge[inr+{I}]));
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*         #if KERNEL_ELEC=='GeneralizedBorn' */
+        isai{I}            = _mm256_set1_ps(invsqrta[inr+{I}]);
+        /*         #endif */
+        /*     #endfor */
+        /*     #for I in PARTICLES_VDW_I */
+        vdwioffsetptr{I}   = vdwparam+2*nvdwtype*vdwtype[inr+{I}];
+        /*     #endfor */
+        /* #endif */
+
+        /* #if 'Potential' in KERNEL_VF */
+        /* Reset potential sums */
+        /*     #if KERNEL_ELEC != 'None' */
+        velecsum         = _mm256_setzero_ps();
+        /*     #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
+        vgbsum           = _mm256_setzero_ps();
+        /*     #endif */
+        /*     #if KERNEL_VDW != 'None' */
+        vvdwsum          = _mm256_setzero_ps();
+        /*     #endif */
+        /* #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
+        dvdasum          = _mm256_setzero_ps();
+        /*     #endif */
+
+        /* #for ROUND in ['Loop','Epilogue'] */
+
+        /* #if ROUND =='Loop' */
+        /* Start inner kernel loop */
+        for(jidx=j_index_start; jidx<j_index_end && jjnr[jidx+7]>=0; jidx+=8)
+        {
+        /* ## First round is normal loop (next statement resets indentation) */
+        /*     #if 0 */
+        }
+        /*     #endif */
+        /* #else */
+        if(jidx<j_index_end)
+        {
+        /* ## Second round is epilogue */
+        /* #endif */
+        /* #define INNERFLOPS 0 */
+
+            /* Get j neighbor index, and coordinate index */
+            /* #if ROUND =='Loop' */
+            jnrA             = jjnr[jidx];
+            jnrB             = jjnr[jidx+1];
+            jnrC             = jjnr[jidx+2];
+            jnrD             = jjnr[jidx+3];
+            jnrE             = jjnr[jidx+4];
+            jnrF             = jjnr[jidx+5];
+            jnrG             = jjnr[jidx+6];
+            jnrH             = jjnr[jidx+7];
+            /* #else */
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
+            jnrlistE         = jjnr[jidx+4];
+            jnrlistF         = jjnr[jidx+5];
+            jnrlistG         = jjnr[jidx+6];
+            jnrlistH         = jjnr[jidx+7];
+            /* Sign of each element will be negative for non-real atoms.
+             * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
+             * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
+             */
+            dummy_mask = gmx_mm256_set_m128(gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx+4)),_mm_setzero_si128())),
+                                            gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128())));
+                                            
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
+            jnrE       = (jnrlistE>=0) ? jnrlistE : 0;
+            jnrF       = (jnrlistF>=0) ? jnrlistF : 0;
+            jnrG       = (jnrlistG>=0) ? jnrlistG : 0;
+            jnrH       = (jnrlistH>=0) ? jnrlistH : 0;
+            /* #endif */
+            j_coord_offsetA  = DIM*jnrA;
+            j_coord_offsetB  = DIM*jnrB;
+            j_coord_offsetC  = DIM*jnrC;
+            j_coord_offsetD  = DIM*jnrD;
+            j_coord_offsetE  = DIM*jnrE;
+            j_coord_offsetF  = DIM*jnrF;
+            j_coord_offsetG  = DIM*jnrG;
+            j_coord_offsetH  = DIM*jnrH;
+
+            /* load j atom coordinates */
+            /* #if GEOMETRY_J == 'Particle'             */
+            gmx_mm256_load_1rvec_8ptr_swizzle_ps(x+j_coord_offsetA,x+j_coord_offsetB,
+                                                 x+j_coord_offsetC,x+j_coord_offsetD,
+                                                 x+j_coord_offsetE,x+j_coord_offsetF,
+                                                 x+j_coord_offsetG,x+j_coord_offsetH,
+                                                 &jx0,&jy0,&jz0);
+            /* #elif GEOMETRY_J == 'Water3'             */
+            gmx_mm256_load_3rvec_8ptr_swizzle_ps(x+j_coord_offsetA,x+j_coord_offsetB,
+                                                 x+j_coord_offsetC,x+j_coord_offsetD,
+                                                 x+j_coord_offsetE,x+j_coord_offsetF,
+                                                 x+j_coord_offsetG,x+j_coord_offsetH,
+                                              &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,&jy2,&jz2);
+            /* #elif GEOMETRY_J == 'Water4'             */
+            /*     #if 0 in PARTICLES_J                 */
+            gmx_mm256_load_4rvec_8ptr_swizzle_ps(x+j_coord_offsetA,x+j_coord_offsetB,
+                                                 x+j_coord_offsetC,x+j_coord_offsetD,
+                                                 x+j_coord_offsetE,x+j_coord_offsetF,
+                                                 x+j_coord_offsetG,x+j_coord_offsetH,
+                                                 &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,
+                                                 &jy2,&jz2,&jx3,&jy3,&jz3);
+            /*     #else                                */
+            gmx_mm256_load_3rvec_8ptr_swizzle_ps(x+j_coord_offsetA+DIM,x+j_coord_offsetB+DIM,
+                                                 x+j_coord_offsetC+DIM,x+j_coord_offsetD+DIM,
+                                                 x+j_coord_offsetE+DIM,x+j_coord_offsetF+DIM,
+                                                 x+j_coord_offsetG+DIM,x+j_coord_offsetH+DIM,
+                                                 &jx1,&jy1,&jz1,&jx2,&jy2,&jz2,&jx3,&jy3,&jz3);
+            /*     #endif                               */
+            /* #endif                                   */
+
+            /* Calculate displacement vector */
+            /* #for I,J in PAIRS_IJ */
+            dx{I}{J}             = _mm256_sub_ps(ix{I},jx{J});
+            dy{I}{J}             = _mm256_sub_ps(iy{I},jy{J});
+            dz{I}{J}             = _mm256_sub_ps(iz{I},jz{J});
+            /*     #define INNERFLOPS INNERFLOPS+3 */
+            /* #endfor */
+
+            /* Calculate squared distance and things based on it */
+            /* #for I,J in PAIRS_IJ */
+            rsq{I}{J}            = gmx_mm256_calc_rsq_ps(dx{I}{J},dy{I}{J},dz{I}{J});
+            /*     #define INNERFLOPS INNERFLOPS+5 */
+            /* #endfor */
+
+            /* #for I,J in PAIRS_IJ */
+            /*     #if 'rinv' in INTERACTION_FLAGS[I][J] */
+            rinv{I}{J}           = gmx_mm256_invsqrt_ps(rsq{I}{J});
+            /*         #define INNERFLOPS INNERFLOPS+5 */
+            /*     #endif */
+            /* #endfor */
+
+            /* #for I,J in PAIRS_IJ */
+            /*     #if 'rinvsq' in INTERACTION_FLAGS[I][J] */
+            /*         # if 'rinv' not in INTERACTION_FLAGS[I][J] */
+            rinvsq{I}{J}         = gmx_mm256_inv_ps(rsq{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*         #else */
+            rinvsq{I}{J}         = _mm256_mul_ps(rinv{I}{J},rinv{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*     #endif */
+            /* #endfor */
+
+            /* #if not 'Water' in GEOMETRY_J */
+            /* Load parameters for j particles */
+            /*     #for J in PARTICLES_ELEC_J */
+            jq{J}              = gmx_mm256_load_8real_swizzle_ps(charge+jnrA+{J},charge+jnrB+{J},
+                                                                 charge+jnrC+{J},charge+jnrD+{J},
+                                                                 charge+jnrE+{J},charge+jnrF+{J},
+                                                                 charge+jnrG+{J},charge+jnrH+{J});
+            /*         #if KERNEL_ELEC=='GeneralizedBorn' */
+            isaj{J}            = gmx_mm256_load_8real_swizzle_ps(invsqrta+jnrA+{J},invsqrta+jnrB+{J},
+                                                                 invsqrta+jnrC+{J},invsqrta+jnrD+{J},
+                                                                 invsqrta+jnrE+{J},invsqrta+jnrF+{J},
+                                                                 invsqrta+jnrG+{J},invsqrta+jnrH+{J});
+            /*         #endif */
+            /*     #endfor */
+            /*     #for J in PARTICLES_VDW_J */
+            vdwjidx{J}A        = 2*vdwtype[jnrA+{J}];
+            vdwjidx{J}B        = 2*vdwtype[jnrB+{J}];
+            vdwjidx{J}C        = 2*vdwtype[jnrC+{J}];
+            vdwjidx{J}D        = 2*vdwtype[jnrD+{J}];
+            vdwjidx{J}E        = 2*vdwtype[jnrE+{J}];
+            vdwjidx{J}F        = 2*vdwtype[jnrF+{J}];
+            vdwjidx{J}G        = 2*vdwtype[jnrG+{J}];
+            vdwjidx{J}H        = 2*vdwtype[jnrH+{J}];
+            /*     #endfor */
+            /* #endif */
+
+            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_I */
+            /*     #for J in PARTICLES_J */
+            fjx{J}             = _mm256_setzero_ps();
+            fjy{J}             = _mm256_setzero_ps();
+            fjz{J}             = _mm256_setzero_ps();
+            /*     #endfor */
+            /* #endif */
+
+            /* #for I,J in PAIRS_IJ */
+
+            /**************************
+             * CALCULATE INTERACTIONS *
+             **************************/
+
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
+            /*         ## We always calculate rinv/rinvsq above to enable pipelineing in compilers (performance tested on x86) */
+            if (gmx_mm256_any_lt(rsq{I}{J},rcutoff2))
+            {
+                /*     #if 0    ## this and the next two lines is a hack to maintain auto-indentation in template file */
+            }
+            /*         #endif */
+            /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     #if 'r' in INTERACTION_FLAGS[I][J] */
+            r{I}{J}              = _mm256_mul_ps(rsq{I}{J},rinv{I}{J});
+            /*         #if ROUND == 'Epilogue' */
+            r{I}{J}              = _mm256_andnot_ps(dummy_mask,r{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     ## For water geometries we already loaded parameters at the start of the kernel */
+            /*     #if not 'Water' in GEOMETRY_J */
+            /* Compute parameters for interactions between i and j atoms */
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            qq{I}{J}             = _mm256_mul_ps(iq{I},jq{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+            gmx_mm256_load_8pair_swizzle_ps(vdwioffsetptr{I}+vdwjidx{J}A,
+                                            vdwioffsetptr{I}+vdwjidx{J}B,
+                                            vdwioffsetptr{I}+vdwjidx{J}C,
+                                            vdwioffsetptr{I}+vdwjidx{J}D,
+                                            vdwioffsetptr{I}+vdwjidx{J}E,
+                                            vdwioffsetptr{I}+vdwjidx{J}F,
+                                            vdwioffsetptr{I}+vdwjidx{J}G,
+                                            vdwioffsetptr{I}+vdwjidx{J}H,
+                                            &c6_{I}{J},&c12_{I}{J});
+            /*         #endif */
+            /*     #endif */
+
+            /*     #if 'table' in INTERACTION_FLAGS[I][J] */
+            /* Calculate table index by multiplying r with table scale and truncate to integer */
+            rt               = _mm256_mul_ps(r{I}{J},vftabscale);
+            vfitab           = _mm256_cvttps_epi32(rt);
+            vfeps            = _mm256_sub_ps(rt,_mm256_round_ps(rt, _MM_FROUND_FLOOR));
+            /*         #define INNERFLOPS INNERFLOPS+4                          */
+            /*         AVX1 does not support 256-bit integer operations, so now we go to 128-bit mode... */
+            vfitab_lo        = _mm256_extractf128_si256(vfitab,0x0);
+            vfitab_hi        = _mm256_extractf128_si256(vfitab,0x1);
+            /*         #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW     */
+            /*             ## 3 tables, 4 bytes per point: multiply index by 12 */
+            vfitab_lo        = _mm_slli_epi32(_mm_add_epi32(vfitab_lo,_mm_slli_epi32(vfitab_lo,1)),2);
+            vfitab_hi        = _mm_slli_epi32(_mm_add_epi32(vfitab_hi,_mm_slli_epi32(vfitab_hi,1)),2);
+            /*         #elif 'Table' in KERNEL_ELEC                             */
+            /*             ## 1 table, 4 bytes per point: multiply index by 4   */
+            vfitab_lo        = _mm_slli_epi32(vfitab_lo,2);
+            vfitab_hi        = _mm_slli_epi32(vfitab_hi,2);
+            /*         #elif 'Table' in KERNEL_VDW                              */
+            /*             ## 2 tables, 4 bytes per point: multiply index by 8  */
+            vfitab_lo        = _mm_slli_epi32(vfitab_lo,3);
+            vfitab_hi        = _mm_slli_epi32(vfitab_hi,3);
+            /*         #endif                                                   */
+            /*     #endif */
+
+            /*     ## ELECTROSTATIC INTERACTIONS */
+            /*     #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+
+            /*         #if KERNEL_ELEC=='Coulomb' */
+
+            /* COULOMB ELECTROSTATICS */
+            velec            = _mm256_mul_ps(qq{I}{J},rinv{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _mm256_mul_ps(velec,rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='ReactionField' */
+
+            /* REACTION-FIELD ELECTROSTATICS */
+            /*             #if 'Potential' in KERNEL_VF */
+            velec            = _mm256_mul_ps(qq{I}{J},_mm256_sub_ps(_mm256_add_ps(rinv{I}{J},_mm256_mul_ps(krf,rsq{I}{J})),crf));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _mm256_mul_ps(qq{I}{J},_mm256_sub_ps(_mm256_mul_ps(rinv{I}{J},rinvsq{I}{J}),krf2));
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='GeneralizedBorn' */
+
+            /* GENERALIZED BORN AND COULOMB ELECTROSTATICS */
+            isaprod          = _mm256_mul_ps(isai{I},isaj{J});
+            gbqqfactor       = _mm256_xor_ps(signbit,_mm256_mul_ps(qq{I}{J},_mm256_mul_ps(isaprod,gbinvepsdiff)));
+            gbscale          = _mm256_mul_ps(isaprod,gbtabscale);
+            /*             #define INNERFLOPS INNERFLOPS+5 */
+
+            /* Calculate generalized born table index - this is a separate table from the normal one,
+             * but we use the same procedure by multiplying r with scale and truncating to integer.
+             */
+            rt               = _mm256_mul_ps(r{I}{J},gbscale);
+            gbitab           = _mm256_cvttps_epi32(rt);
+            gbeps            = _mm256_sub_ps(rt,_mm256_round_ps(rt, _MM_FROUND_FLOOR));
+            /*         AVX1 does not support 256-bit integer operations, so now we go to 128-bit mode... */
+            gbitab_lo        = _mm256_extractf128_si256(gbitab,0x0);
+            gbitab_hi        = _mm256_extractf128_si256(gbitab,0x1);
+            gbitab_lo        = _mm_slli_epi32(gbitab_lo,2);
+            gbitab_hi        = _mm_slli_epi32(gbitab_hi,2);
+            Y                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,0)),
+                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,0)));
+            F                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,1)),
+                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,1)));
+            G                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,2)),
+                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,2)));
+            H                = gmx_mm256_set_m128(_mm_load_ps(gbtab + _mm_extract_epi32(gbitab_hi,3)),
+                                                  _mm_load_ps(gbtab + _mm_extract_epi32(gbitab_lo,3)));
+            GMX_MM256_HALFTRANSPOSE4_PS(Y,F,G,H);
+            Heps             = _mm256_mul_ps(gbeps,H);
+            Fp               = _mm256_add_ps(F,_mm256_mul_ps(gbeps,_mm256_add_ps(G,Heps)));
+            VV               = _mm256_add_ps(Y,_mm256_mul_ps(gbeps,Fp));
+            vgb              = _mm256_mul_ps(gbqqfactor,VV);
+            /*             #define INNERFLOPS INNERFLOPS+10 */
+
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _mm256_add_ps(Fp,_mm256_mul_ps(gbeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
+            fgb              = _mm256_mul_ps(gbqqfactor,_mm256_mul_ps(FF,gbscale));
+            dvdatmp          = _mm256_mul_ps(minushalf,_mm256_add_ps(vgb,_mm256_mul_ps(fgb,r{I}{J})));
+            /*                 #if ROUND == 'Epilogue' */
+            dvdatmp          = _mm256_andnot_ps(dummy_mask,dvdatmp);
+            /*                 #endif */
+            dvdasum          = _mm256_add_ps(dvdasum,dvdatmp);
+            /*                 #if ROUND == 'Loop' */
+            fjptrA           = dvda+jnrA;
+            fjptrB           = dvda+jnrB;
+            fjptrC           = dvda+jnrC;
+            fjptrD           = dvda+jnrD;
+            fjptrE           = dvda+jnrE;
+            fjptrF           = dvda+jnrF;
+            fjptrG           = dvda+jnrG;
+            fjptrH           = dvda+jnrH;
+            /*                 #else */
+            /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
+            fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
+            fjptrB             = (jnrlistB>=0) ? dvda+jnrB : scratch;
+            fjptrC             = (jnrlistC>=0) ? dvda+jnrC : scratch;
+            fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
+            fjptrE             = (jnrlistE>=0) ? dvda+jnrE : scratch;
+            fjptrF             = (jnrlistF>=0) ? dvda+jnrF : scratch;
+            fjptrG             = (jnrlistG>=0) ? dvda+jnrG : scratch;
+            fjptrH             = (jnrlistH>=0) ? dvda+jnrH : scratch;
+            /*                 #endif */
+            gmx_mm256_increment_8real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,
+                                                 _mm256_mul_ps(dvdatmp,_mm256_mul_ps(isaj{J},isaj{J})));
+            /*                 #define INNERFLOPS INNERFLOPS+12 */
+            /*             #endif */
+            velec            = _mm256_mul_ps(qq{I}{J},rinv{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(velec,rinv{I}{J}),fgb),rinv{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='Ewald' */
+            /* EWALD ELECTROSTATICS */
+            
+            /* Analytical PME correction */
+            zeta2            = _mm256_mul_ps(beta2,rsq{I}{J});
+            /*             #if 'Force' in KERNEL_VF */
+            rinv3            = _mm256_mul_ps(rinvsq{I}{J},rinv{I}{J});
+            pmecorrF         = gmx_mm256_pmecorrF_ps(zeta2);
+            felec            = _mm256_add_ps( _mm256_mul_ps(pmecorrF,beta3), rinv3);
+            felec            = _mm256_mul_ps(qq{I}{J},felec);
+            /*                 #define INNERFLOPS INNERFLOPS+31 */
+            /*             #endif */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
+            pmecorrV         = gmx_mm256_pmecorrV_ps(zeta2);
+            pmecorrV         = _mm256_mul_ps(pmecorrV,beta);
+            /*                 #define INNERFLOPS INNERFLOPS+27	*/
+            /*                 #if KERNEL_MOD_ELEC=='PotentialShift' */
+            velec            = _mm256_sub_ps(_mm256_sub_ps(rinv{I}{J},sh_ewald),pmecorrV);
+            /*                     #define INNERFLOPS INNERFLOPS+21 */
+            /*                 #else */
+            velec            = _mm256_sub_ps(rinv{I}{J},pmecorrV);
+            /*                 #endif */
+            velec            = _mm256_mul_ps(qq{I}{J},velec);
+            /*             #endif */
+            
+            /*         #elif KERNEL_ELEC=='CubicSplineTable' */
+
+            /* CUBIC SPLINE TABLE ELECTROSTATICS */
+            Y                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,0)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,0)));
+            F                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,1)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,1)));
+            G                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,2)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,2)));
+            H                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,3)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,3)));
+            GMX_MM256_HALFTRANSPOSE4_PS(Y,F,G,H);
+            Heps             = _mm256_mul_ps(vfeps,H);
+            Fp               = _mm256_add_ps(F,_mm256_mul_ps(vfeps,_mm256_add_ps(G,Heps)));
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _mm256_add_ps(Y,_mm256_mul_ps(vfeps,Fp));
+            velec            = _mm256_mul_ps(qq{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _mm256_add_ps(Fp,_mm256_mul_ps(vfeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
+            felec            = _mm256_xor_ps(signbit,_mm256_mul_ps(_mm256_mul_ps(qq{I}{J},FF),_mm256_mul_ps(vftabscale,rinv{I}{J})));
+            /*                 #define INNERFLOPS INNERFLOPS+7 */
+            /*             #endif */
+            /*         #endif */
+            /*         ## End of check for electrostatics interaction forms */
+            /*     #endif */
+            /*     ## END OF ELECTROSTATIC INTERACTION CHECK FOR PAIR I-J */
+
+            /*     #if 'vdw' in INTERACTION_FLAGS[I][J] */
+
+            /*         #if KERNEL_VDW=='LennardJones' */
+
+            /* LENNARD-JONES DISPERSION/REPULSION */
+
+            rinvsix          = _mm256_mul_ps(_mm256_mul_ps(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+2 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
+            vvdw6            = _mm256_mul_ps(c6_{I}{J},rinvsix);
+            vvdw12           = _mm256_mul_ps(c12_{I}{J},_mm256_mul_ps(rinvsix,rinvsix));
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
+            vvdw             = _mm256_sub_ps(_mm256_mul_ps( _mm256_sub_ps(vvdw12 , _mm256_mul_ps(c12_{I}{J},_mm256_mul_ps(sh_vdw_invrcut6,sh_vdw_invrcut6))), one_twelfth) ,
+                                          _mm256_mul_ps( _mm256_sub_ps(vvdw6,_mm256_mul_ps(c6_{I}{J},sh_vdw_invrcut6)),one_sixth));
+            /*                     #define INNERFLOPS INNERFLOPS+8 */
+            /*                 #else */
+            vvdw             = _mm256_sub_ps( _mm256_mul_ps(vvdw12,one_twelfth) , _mm256_mul_ps(vvdw6,one_sixth) );
+            /*                     #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #endif */
+            /*                 ## Check for force inside potential check, i.e. this means we already did the potential part */
+            /*                 #if 'Force' in KERNEL_VF */
+            fvdw             = _mm256_mul_ps(_mm256_sub_ps(vvdw12,vvdw6),rinvsq{I}{J});
+            /*                     #define INNERFLOPS INNERFLOPS+2 */
+            /*                 #endif */
+            /*             #elif KERNEL_VF=='Force' */
+            /*                 ## Force-only LennardJones makes it possible to save 1 flop (they do add up...) */
+            fvdw             = _mm256_mul_ps(_mm256_sub_ps(_mm256_mul_ps(c12_{I}{J},rinvsix),c6_{I}{J}),_mm256_mul_ps(rinvsix,rinvsq{I}{J}));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+
+            /*         #elif KERNEL_VDW=='CubicSplineTable' */
+
+            /* CUBIC SPLINE TABLE DISPERSION */
+            /*             #if 'Table' in KERNEL_ELEC */
+            vfitab_lo        = _mm_add_epi32(vfitab_lo,ifour);
+            vfitab_hi        = _mm_add_epi32(vfitab_hi,ifour);
+            /*             #endif                     */
+            Y                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,0)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,0)));
+            F                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,1)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,1)));
+            G                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,2)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,2)));
+            H                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,3)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,3)));
+            GMX_MM256_HALFTRANSPOSE4_PS(Y,F,G,H);
+            Heps             = _mm256_mul_ps(vfeps,H);
+            Fp               = _mm256_add_ps(F,_mm256_mul_ps(vfeps,_mm256_add_ps(G,Heps)));
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _mm256_add_ps(Y,_mm256_mul_ps(vfeps,Fp));
+            vvdw6            = _mm256_mul_ps(c6_{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _mm256_add_ps(Fp,_mm256_mul_ps(vfeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
+            fvdw6            = _mm256_mul_ps(c6_{I}{J},FF);
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+
+            /* CUBIC SPLINE TABLE REPULSION */
+            vfitab_lo        = _mm_add_epi32(vfitab_lo,ifour);
+            vfitab_hi        = _mm_add_epi32(vfitab_hi,ifour);
+            Y                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,0)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,0)));
+            F                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,1)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,1)));
+            G                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,2)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,2)));
+            H                = gmx_mm256_set_m128(_mm_load_ps(vftab + _mm_extract_epi32(vfitab_hi,3)),
+                                                  _mm_load_ps(vftab + _mm_extract_epi32(vfitab_lo,3)));
+            GMX_MM256_HALFTRANSPOSE4_PS(Y,F,G,H);
+            Heps             = _mm256_mul_ps(vfeps,H);
+            Fp               = _mm256_add_ps(F,_mm256_mul_ps(vfeps,_mm256_add_ps(G,Heps)));
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _mm256_add_ps(Y,_mm256_mul_ps(vfeps,Fp));
+            vvdw12           = _mm256_mul_ps(c12_{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _mm256_add_ps(Fp,_mm256_mul_ps(vfeps,_mm256_add_ps(G,_mm256_add_ps(Heps,Heps))));
+            fvdw12           = _mm256_mul_ps(c12_{I}{J},FF);
+            /*                 #define INNERFLOPS INNERFLOPS+5 */
+            /*             #endif */
+            /*             #if 'Potential' in KERNEL_VF */
+            vvdw             = _mm256_add_ps(vvdw12,vvdw6);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            fvdw             = _mm256_xor_ps(signbit,_mm256_mul_ps(_mm256_add_ps(fvdw6,fvdw12),_mm256_mul_ps(vftabscale,rinv{I}{J})));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*         #endif */
+            /*         ## End of check for vdw interaction forms */
+            /*     #endif */
+            /*     ## END OF VDW INTERACTION CHECK FOR PAIR I-J */
+
+            /*     #if 'switch' in INTERACTION_FLAGS[I][J] */
+            d                = _mm256_sub_ps(r{I}{J},rswitch);
+            d                = _mm256_max_ps(d,_mm256_setzero_ps());
+            d2               = _mm256_mul_ps(d,d);
+            sw               = _mm256_add_ps(one,_mm256_mul_ps(d2,_mm256_mul_ps(d,_mm256_add_ps(swV3,_mm256_mul_ps(d,_mm256_add_ps(swV4,_mm256_mul_ps(d,swV5)))))));
+            /*         #define INNERFLOPS INNERFLOPS+10 */
+
+            /*         #if 'Force' in KERNEL_VF */
+            dsw              = _mm256_mul_ps(d2,_mm256_add_ps(swF2,_mm256_mul_ps(d,_mm256_add_ps(swF3,_mm256_mul_ps(d,swF4)))));
+            /*             #define INNERFLOPS INNERFLOPS+5 */
+            /*         #endif */
+
+            /* Evaluate switch function */
+            /*         #if 'Force' in KERNEL_VF */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
+            felec            = _mm256_sub_ps( _mm256_mul_ps(felec,sw) , _mm256_mul_ps(rinv{I}{J},_mm256_mul_ps(velec,dsw)) );
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
+            fvdw             = _mm256_sub_ps( _mm256_mul_ps(fvdw,sw) , _mm256_mul_ps(rinv{I}{J},_mm256_mul_ps(vvdw,dsw)) );
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*         #endif */
+            /*         #if 'Potential' in KERNEL_VF */
+            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
+            velec            = _mm256_mul_ps(velec,sw);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
+            vvdw             = _mm256_mul_ps(vvdw,sw);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*         #endif */
+            /*     #endif */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
+            cutoff_mask      = _mm256_cmp_ps(rsq{I}{J},rcutoff2,_CMP_LT_OQ);
+            /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     #if 'Potential' in KERNEL_VF */
+            /* Update potential sum for this i atom from the interaction with this j atom. */
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            velec            = _mm256_and_ps(velec,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            velec            = _mm256_andnot_ps(dummy_mask,velec);
+            /*             #endif */
+            velecsum         = _mm256_add_ps(velecsum,velec);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if KERNEL_ELEC=='GeneralizedBorn' */
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            vgb              = _mm256_and_ps(vgb,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            vgb              = _mm256_andnot_ps(dummy_mask,vgb);
+            /*             #endif */
+            vgbsum           = _mm256_add_ps(vgbsum,vgb);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*         #endif */
+            /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
+            vvdw             = _mm256_and_ps(vvdw,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            vvdw             = _mm256_andnot_ps(dummy_mask,vvdw);
+            /*             #endif */
+            vvdwsum          = _mm256_add_ps(vvdwsum,vvdw);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*     #endif */
+
+            /*     #if 'Force' in KERNEL_VF */
+
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] and 'vdw' in INTERACTION_FLAGS[I][J] */
+            fscal            = _mm256_add_ps(felec,fvdw);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #elif 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            fscal            = felec;
+            /*         #elif 'vdw' in INTERACTION_FLAGS[I][J] */
+            fscal            = fvdw;
+            /*        #endif */
+
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
+            fscal            = _mm256_and_ps(fscal,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+
+            /*             #if ROUND == 'Epilogue' */
+            fscal            = _mm256_andnot_ps(dummy_mask,fscal);
+            /*             #endif */
+
+            /* Calculate temporary vectorial force */
+            tx               = _mm256_mul_ps(fscal,dx{I}{J});
+            ty               = _mm256_mul_ps(fscal,dy{I}{J});
+            tz               = _mm256_mul_ps(fscal,dz{I}{J});
+
+            /* Update vectorial force */
+            fix{I}             = _mm256_add_ps(fix{I},tx);
+            fiy{I}             = _mm256_add_ps(fiy{I},ty);
+            fiz{I}             = _mm256_add_ps(fiz{I},tz);
+            /*             #define INNERFLOPS INNERFLOPS+6 */
+
+            /* #if GEOMETRY_I == 'Particle'             */
+            /*     #if ROUND == 'Loop' */
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            fjptrE             = f+j_coord_offsetE;
+            fjptrF             = f+j_coord_offsetF;
+            fjptrG             = f+j_coord_offsetG;
+            fjptrH             = f+j_coord_offsetH;
+            /*     #else */
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            fjptrE             = (jnrlistE>=0) ? f+j_coord_offsetE : scratch;
+            fjptrF             = (jnrlistF>=0) ? f+j_coord_offsetF : scratch;
+            fjptrG             = (jnrlistG>=0) ? f+j_coord_offsetG : scratch;
+            fjptrH             = (jnrlistH>=0) ? f+j_coord_offsetH : scratch;
+            /*     #endif */
+            gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,tx,ty,tz);
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #else                                    */
+            fjx{J}             = _mm256_add_ps(fjx{J},tx);
+            fjy{J}             = _mm256_add_ps(fjy{J},ty);
+            fjz{J}             = _mm256_add_ps(fjz{J},tz);
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #endif                                   */
+
+            /*     #endif */
+
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
+            /*         #if 0    ## This and next two lines is a hack to maintain indentation in template file */
+            {
+                /*     #endif */
+            }
+            /*     #endif */
+            /*    ## End of check for the interaction being outside the cutoff */
+
+            /* #endfor */
+            /* ## End of loop over i-j interaction pairs */
+
+            /* #if GEOMETRY_I != 'Particle' */
+            /*     #if ROUND == 'Loop' */
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            fjptrE             = f+j_coord_offsetE;
+            fjptrF             = f+j_coord_offsetF;
+            fjptrG             = f+j_coord_offsetG;
+            fjptrH             = f+j_coord_offsetH;
+            /*     #else */
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            fjptrE             = (jnrlistE>=0) ? f+j_coord_offsetE : scratch;
+            fjptrF             = (jnrlistF>=0) ? f+j_coord_offsetF : scratch;
+            fjptrG             = (jnrlistG>=0) ? f+j_coord_offsetG : scratch;
+            fjptrH             = (jnrlistH>=0) ? f+j_coord_offsetH : scratch;
+            /*     #endif */
+            /* #endif */
+
+	    /* #if 'Water' in GEOMETRY_I and GEOMETRY_J == 'Particle' */
+            gmx_mm256_decrement_1rvec_8ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,fjx0,fjy0,fjz0);
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #elif GEOMETRY_J == 'Water3'             */
+            gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,
+                                                      fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2);
+            /*     #define INNERFLOPS INNERFLOPS+9      */
+            /* #elif GEOMETRY_J == 'Water4'             */
+            /*     #if 0 in PARTICLES_J                 */
+            gmx_mm256_decrement_4rvec_8ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjptrE,fjptrF,fjptrG,fjptrH,
+                                                      fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
+                                                      fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*     #define INNERFLOPS INNERFLOPS+12     */
+            /*     #else                                */
+            gmx_mm256_decrement_3rvec_8ptr_swizzle_ps(fjptrA+DIM,fjptrB+DIM,fjptrC+DIM,fjptrD+DIM,
+                                                      fjptrE+DIM,fjptrF+DIM,fjptrG+DIM,fjptrH+DIM,
+                                                      fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*     #define INNERFLOPS INNERFLOPS+9      */
+            /*     #endif                               */
+            /* #endif                                   */
+
+            /* Inner loop uses {INNERFLOPS} flops */
+        }
+
+        /* #endfor */
+
+        /* End of innermost loop */
+
+        /* #if 'Force' in KERNEL_VF */
+        /*     #if GEOMETRY_I == 'Particle'            */
+        gmx_mm256_update_iforce_1atom_swizzle_ps(fix0,fiy0,fiz0,
+                                                 f+i_coord_offset,fshift+i_shift_offset);
+        /*         #define OUTERFLOPS OUTERFLOPS+6     */
+        /*     #elif GEOMETRY_I == 'Water3'            */
+        gmx_mm256_update_iforce_3atom_swizzle_ps(fix0,fiy0,fiz0,fix1,fiy1,fiz1,fix2,fiy2,fiz2,
+                                                 f+i_coord_offset,fshift+i_shift_offset);
+        /*         #define OUTERFLOPS OUTERFLOPS+18    */
+        /*     #elif GEOMETRY_I == 'Water4'            */
+        /*         #if 0 in PARTICLES_I                */
+        gmx_mm256_update_iforce_4atom_swizzle_ps(fix0,fiy0,fiz0,fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,
+                                                 f+i_coord_offset,fshift+i_shift_offset);
+        /*             #define OUTERFLOPS OUTERFLOPS+24    */
+        /*         #else                               */
+        gmx_mm256_update_iforce_3atom_swizzle_ps(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,
+                                                 f+i_coord_offset+DIM,fshift+i_shift_offset);
+        /*             #define OUTERFLOPS OUTERFLOPS+18    */
+        /*         #endif                              */
+        /*     #endif                                  */
+        /* #endif                                      */
+
+        /* #if 'Potential' in KERNEL_VF */
+        ggid                        = gid[iidx];
+        /* Update potential energies */
+        /*     #if KERNEL_ELEC != 'None' */
+        gmx_mm256_update_1pot_ps(velecsum,kernel_data->energygrp_elec+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
+        gmx_mm256_update_1pot_ps(vgbsum,kernel_data->energygrp_polarization+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /*     #if KERNEL_VDW != 'None' */
+        gmx_mm256_update_1pot_ps(vvdwsum,kernel_data->energygrp_vdw+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /* #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
+        dvdasum = _mm256_mul_ps(dvdasum, _mm256_mul_ps(isai{I},isai{I}));
+        gmx_mm256_update_1pot_ps(dvdasum,dvda+inr);
+        /*     #endif */
+
+        /* Increment number of inner iterations */
+        inneriter                  += j_index_end - j_index_start;
+
+        /* Outer loop uses {OUTERFLOPS} flops */
+    }
+
+    /* Increment number of outer iterations */
+    outeriter        += nri;
+
+    /* Update outer/inner flops */
+    /* ## NB: This is not important, it just affects the flopcount. However, since our preprocessor is */
+    /* ## primitive and replaces aggressively even in strings inside these directives, we need to      */
+    /* ## assemble the main part of the name (containing KERNEL/ELEC/VDW) directly in the source.      */
+    /* #if GEOMETRY_I == 'Water3'            */
+    /*     #define ISUFFIX '_W3'             */
+    /* #elif GEOMETRY_I == 'Water4'          */
+    /*     #define ISUFFIX '_W4'             */
+    /* #else                                 */
+    /*     #define ISUFFIX ''                */
+    /* #endif                                */
+    /* #if GEOMETRY_J == 'Water3'            */
+    /*     #define JSUFFIX 'W3'              */
+    /* #elif GEOMETRY_J == 'Water4'          */
+    /*     #define JSUFFIX 'W4'              */
+    /* #else                                 */
+    /*     #define JSUFFIX ''                */
+    /* #endif                                */
+    /* #if 'PotentialAndForce' in KERNEL_VF  */
+    /*     #define VFSUFFIX  '_VF'           */
+    /* #elif 'Potential' in KERNEL_VF        */
+    /*     #define VFSUFFIX '_V'             */
+    /* #else                                 */
+    /*     #define VFSUFFIX '_F'             */
+    /* #endif                                */
+
+    /* #if KERNEL_ELEC != 'None' and KERNEL_VDW != 'None' */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #elif KERNEL_ELEC != 'None' */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #else */
+    inc_nrnb(nrnb,eNR_NBKERNEL_VDW{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #endif  */
+}

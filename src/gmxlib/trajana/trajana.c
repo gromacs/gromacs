@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \page libtrajana Library for trajectory analysis
  *
@@ -164,7 +171,7 @@ struct gmx_ana_traj_t
      * Flags for init_first_frame() to specify what to read from the
      * trajectory.
      */
-    int                       frflags;
+    int                           frflags;
     /** TRUE if molecules should be made whole for each frame. */
     gmx_bool                      bRmPBC;
     /*! \brief
@@ -189,15 +196,15 @@ struct gmx_ana_traj_t
     char                     *selection;
 
     /** The topology structure, or \p NULL if no topology loaded. */
-    t_topology               *top;
+    t_topology                   *top;
     /** TRUE if full tpx file was loaded, FALSE otherwise. */
     gmx_bool                      bTop;
     /** Coordinates from the topology (see \p bTopX). */
-    rvec                     *xtop;
+    rvec                         *xtop;
     /** The box loaded from the topology file. */
-    matrix                    boxtop;
+    matrix                        boxtop;
     /** The ePBC field loaded from the topology file. */
-    int                       ePBC;
+    int                           ePBC;
 
     /** The current frame, or \p NULL if no frame loaded yet. */
     t_trxframe               *fr;
@@ -291,7 +298,7 @@ gmx_ana_traj_create(gmx_ana_traj_t **data, unsigned long flags)
 
     d->flags           = flags;
     d->topfile_notnull = NULL;
-    rc = gmx_ana_poscalc_coll_create(&d->pcc);
+    rc                 = gmx_ana_poscalc_coll_create(&d->pcc);
     if (rc != 0)
     {
         sfree(d);
@@ -366,7 +373,7 @@ gmx_ana_add_flags(gmx_ana_traj_t *d, unsigned long flags)
  * \param[in,out] d      Trajectory analysis data structure.
  * \param[in]     bPBC   TRUE if periodic boundary conditions should be used.
  * \returns       0 on success.
- * 
+ *
  * If this function is called before parse_trjana_args(), it sets the default
  * for whether PBC are used in the analysis or not.
  * If \ref ANA_NOUSER_PBC is not set, a command-line option is provided for the
@@ -402,7 +409,7 @@ gmx_ana_has_pbc(gmx_ana_traj_t *d)
  * \param[in,out] d      Trajectory analysis data structure.
  * \param[in]     bRmPBC TRUE if molecules should be made whole.
  * \returns       0 on success.
- * 
+ *
  * If this function is called before parse_trjana_args(), it sets the default
  * for whether molecules are made whole.
  * If \ref ANA_NOUSER_RMPBC is not set, a command-line option is provided for
@@ -451,7 +458,7 @@ gmx_ana_set_frflags(gmx_ana_traj_t *d, int frflags)
         gmx_call("cannot set trajectory flags after the first frame has been read");
         return -1;
     }
-    frflags |= TRX_NEED_X;
+    frflags   |= TRX_NEED_X;
     d->frflags = frflags;
     return 0;
 }
@@ -677,39 +684,39 @@ parse_trjana_args(gmx_ana_traj_t *d,
                   int *argc, char *argv[], unsigned long pca_flags,
                   int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
                   int ndesc, const char **desc,
-		  int nbugs, const char **bugs,
+                  int nbugs, const char **bugs,
                   output_env_t *oenv)
 {
-    t_filenm           *all_fnm = NULL;
-    int                 max_fnm, nfall;
-    int                *fnm_map;
-    t_pargs            *all_pa = NULL;
-    int                 max_pa, npall;
-    size_t              i;
-    int                 k;
-    int                 rc;
-    const char         *tmp_fnm;
+    t_filenm               *all_fnm = NULL;
+    int                     max_fnm, nfall;
+    int                    *fnm_map;
+    t_pargs                *all_pa = NULL;
+    int                     max_pa, npall;
+    size_t                  i;
+    int                     k;
+    int                     rc;
+    const char             *tmp_fnm;
 
-    t_filenm            def_fnm[] = {
+    t_filenm                def_fnm[] = {
         {efTRX, NULL,  NULL,        ffOPTRD},
         {efTPS, NULL,  NULL,        ffREAD},
         {efDAT, "-sf", "selection", ffOPTRD},
         {efNDX, NULL,  NULL,        ffOPTRD},
     };
-    gmx_bool                bPBC = TRUE;
-    t_pargs             pbc_pa[] = {
+    gmx_bool                bPBC     = TRUE;
+    t_pargs                 pbc_pa[] = {
         {"-pbc",      FALSE, etBOOL, {&bPBC},
          "Use periodic boundary conditions for distance calculation"},
     };
-    gmx_bool                bRmPBC = TRUE;
-    t_pargs             rmpbc_pa[] = {
+    gmx_bool                bRmPBC     = TRUE;
+    t_pargs                 rmpbc_pa[] = {
         {"-rmpbc",    FALSE, etBOOL, {&bRmPBC},
          "Make molecules whole for each frame"},
     };
-    char               *selection = NULL;
-    const char        **rpost     = NULL;
+    char                   *selection = NULL;
+    const char            **rpost     = NULL;
     gmx_bool                bSelDump  = FALSE;
-    t_pargs             sel_pa[] = {
+    t_pargs                 sel_pa[]  = {
         {"-select",   FALSE, etSTR,  {&selection},
          "Selection string (use 'help' for help). Note that the "
          "whole selection string will need to be quoted so that "
@@ -719,12 +726,12 @@ parse_trjana_args(gmx_ana_traj_t *d,
         {"-seldebug", FALSE, etBOOL, {&bSelDump},
          "HIDDENPrint out the parsed and compiled selection trees"},
     };
-    t_pargs             dsel_pa[] = {
+    t_pargs                 dsel_pa[] = {
         {"-selrpos",  FALSE, etENUM, {NULL},
          "Selection reference position"},
     };
-    const char        **spost = NULL;
-    t_pargs             selpt_pa[] = {
+    const char            **spost      = NULL;
+    t_pargs                 selpt_pa[] = {
         {"-seltype",  FALSE, etENUM, {NULL},
          "Default analysis positions"},
     };
@@ -780,7 +787,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
         if (k < nfile)
         {
             fnm_map[k] = nfall;
-            nfall = add_fnmarg(nfall, all_fnm, &(fnm[k]));
+            nfall      = add_fnmarg(nfall, all_fnm, &(fnm[k]));
         }
         else
         {
@@ -793,7 +800,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
         if (fnm_map[k] == -1)
         {
             fnm_map[k] = nfall;
-            nfall = add_fnmarg(nfall, all_fnm, &(fnm[k]));
+            nfall      = add_fnmarg(nfall, all_fnm, &(fnm[k]));
         }
     }
 
@@ -846,7 +853,7 @@ parse_trjana_args(gmx_ana_traj_t *d,
 
     pca_flags |= PCA_CAN_TIME | PCA_BE_NICE;
     parse_common_args(argc, argv, pca_flags, nfall, all_fnm, npall, all_pa,
-                      ndesc, desc, nbugs, bugs,oenv);
+                      ndesc, desc, nbugs, bugs, oenv);
     d->oenv = *oenv;
 
     /* Process our own options.
@@ -1139,7 +1146,7 @@ init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
 
     /* Count the non-empty groups and check that there are no dynamic
      * selections. */
-    nr = gmx_ana_selcollection_get_count(sc);
+    nr          = gmx_ana_selcollection_get_count(sc);
     nr_notempty = 0;
     for (i = 0; i < nr; ++i)
     {
@@ -1194,11 +1201,11 @@ init_default_selections(gmx_ana_traj_t *d, gmx_ana_indexgrps_t **grps)
 int
 gmx_ana_init_selections(gmx_ana_traj_t *d)
 {
-    int                  rc;
-    int                  i;
-    int                  nr;
-    gmx_ana_indexgrps_t *grps;
-    int                  natoms;
+    int                      rc;
+    int                      i;
+    int                      nr;
+    gmx_ana_indexgrps_t     *grps;
+    int                      natoms;
     gmx_bool                 bStdIn;
     gmx_bool                 bInteractive;
     gmx_bool                 bOk;
@@ -1211,9 +1218,9 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     }
 
     gmx_ana_selcollection_set_veloutput(d->sc,
-            d->frflags & (TRX_READ_V | TRX_NEED_V));
+                                        d->frflags & (TRX_READ_V | TRX_NEED_V));
     gmx_ana_selcollection_set_forceoutput(d->sc,
-            d->frflags & (TRX_READ_F | TRX_NEED_F));
+                                          d->frflags & (TRX_READ_F | TRX_NEED_F));
     /* Check if we need some information from the topology */
     if (gmx_ana_selcollection_requires_top(d->sc))
     {
@@ -1236,8 +1243,8 @@ gmx_ana_init_selections(gmx_ana_traj_t *d)
     init_default_selections(d, &grps);
     /* Parse the selections */
     bStdIn = (d->selfile && d->selfile[0] == '-' && d->selfile[1] == 0)
-             || (d->selection && d->selection[0] == 0)
-             || (!d->selfile && !d->selection);
+        || (d->selection && d->selection[0] == 0)
+        || (!d->selfile && !d->selection);
     /* Behavior is not very pretty if we cannot check for interactive input,
      * but at least it should compile and work in most cases. */
 #ifdef HAVE_UNISTD_H
@@ -1618,8 +1625,8 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     t_pbc               pbc;
     t_pbc              *ppbc;
     int                 rc;
-    gmx_rmpbc_t         gpbc=NULL;
-    
+    gmx_rmpbc_t         gpbc = NULL;
+
     rc = init_first_frame(d);
     if (rc != 0)
     {
@@ -1631,16 +1638,16 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     {
         d->bRmPBC = FALSE;
     }
-    if (d->bRmPBC) 
+    if (d->bRmPBC)
     {
-	gpbc = gmx_rmpbc_init(&d->top->idef,d->ePBC,d->fr->natoms,d->fr->box);
+        gpbc = gmx_rmpbc_init(&d->top->idef, d->ePBC, d->fr->natoms, d->fr->box);
     }
     d->nframes = 0;
     do
     {
         if (d->bRmPBC)
         {
-  	    gmx_rmpbc_trxfr(gpbc,d->fr);
+            gmx_rmpbc_trxfr(gpbc, d->fr);
         }
         if (ppbc)
         {

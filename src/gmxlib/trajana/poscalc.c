@@ -1,32 +1,39 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2009, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal
  * \page poscalcengine Position calculation engine
@@ -132,11 +139,11 @@ struct gmx_ana_poscalc_coll_t
      * Can be NULL if none of the calculations require topology data or if
      * gmx_ana_poscalc_coll_set_topology() has not been called.
      */
-    t_topology               *top;
+    t_topology                   *top;
     /** Pointer to the first data structure. */
-    gmx_ana_poscalc_t        *first;
+    gmx_ana_poscalc_t            *first;
     /** Pointer to the last data structure. */
-    gmx_ana_poscalc_t        *last;
+    gmx_ana_poscalc_t            *last;
     /** Whether the collection has been initialized for evaluation. */
     gmx_bool                      bInit;
 };
@@ -208,7 +215,7 @@ struct gmx_ana_poscalc_t
     /** Collection this calculation belongs to. */
     gmx_ana_poscalc_coll_t   *coll;
 };
-    
+
 static const char *const poscalc_enum_strings[] = {
     "atom",
     "res_com",       "res_cog",
@@ -232,7 +239,7 @@ static const char *const poscalc_enum_strings[] = {
 static e_index_t
 index_type_for_poscalc(e_poscalc_t type)
 {
-    switch(type)
+    switch (type)
     {
         case POS_ATOM:    return INDEX_ATOM;
         case POS_RES:     return INDEX_RES;
@@ -278,18 +285,18 @@ gmx_ana_poscalc_type_from_enum(const char *post, e_poscalc_t *type, int *flags)
     {
         *flags &= ~POS_COMPLMAX;
         *flags |= POS_COMPLWHOLE;
-        ptr = post + 6;
+        ptr     = post + 6;
     }
     else if (post[0] == 'p')
     {
         *flags &= ~POS_COMPLWHOLE;
         *flags |= POS_COMPLMAX;
-        ptr = post + 5;
+        ptr     = post + 5;
     }
     else if (post[0] == 'd')
     {
         *flags &= ~(POS_COMPLMAX | POS_COMPLWHOLE);
-        ptr = post + 4;
+        ptr     = post + 4;
     }
 
     if (ptr[0] == 'r')
@@ -369,7 +376,7 @@ gmx_ana_poscalc_coll_create(gmx_ana_poscalc_coll_t **pccp)
     pcc->first = NULL;
     pcc->last  = NULL;
     pcc->bInit = FALSE;
-    *pccp = pcc;
+    *pccp      = pcc;
     return 0;
 }
 
@@ -525,7 +532,7 @@ gmx_ana_poscalc_coll_print_tree(FILE *fp, gmx_ana_poscalc_coll_t *pcc)
             gmx_ana_poscalc_t *base;
 
             fprintf(fp, "   Base: ");
-            j = 1;
+            j    = 1;
             base = pcc->first;
             while (base && base != pc->sbase)
             {
@@ -632,7 +639,7 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, gmx_bool bBase)
     /* Set the type to POS_ATOM if the calculation in fact is such. */
     if (pc->b.nr == pc->b.nra)
     {
-        pc->type   = POS_ATOM; 
+        pc->type   = POS_ATOM;
         pc->flags &= ~(POS_MASS | POS_COMPLMAX | POS_COMPLWHOLE);
     }
     /* Set the POS_COMPLWHOLE flag if the calculation in fact always uses
@@ -761,7 +768,7 @@ create_simple_base(gmx_ana_poscalc_t *pc)
     int                rc;
 
     flags = pc->flags & ~(POS_DYNAMIC | POS_MASKONLY);
-    rc = gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
+    rc    = gmx_ana_poscalc_create(&base, pc->coll, pc->type, flags);
     if (rc != 0)
     {
         gmx_fatal(FARGS, "position calculation base creation failed");
@@ -822,10 +829,10 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
         gmx_ana_index_merge(&g, &gb, &g);
         /* Merge the blocks */
         srenew(base->b.index, base->b.nr + bnr + 1);
-        i  = g.isize - 1;
-        bi = base->b.nr - 1;
-        bj = pc->b.nr - 1;
-        bo = base->b.nr + bnr - 1;
+        i                   = g.isize - 1;
+        bi                  = base->b.nr - 1;
+        bj                  = pc->b.nr - 1;
+        bo                  = base->b.nr + bnr - 1;
         base->b.index[bo+1] = i + 1;
         while (bo >= 0)
         {
@@ -912,7 +919,7 @@ setup_base(gmx_ana_poscalc_t *pc)
     gmx_ana_index_clear(&g);
     gmx_ana_index_reserve(&g, pc->b.nra);
     pbase = pc;
-    base = pc->coll->first;
+    base  = pc->coll->first;
     while (base)
     {
         /* Save the next calculation so that we can safely delete base */
@@ -1025,7 +1032,7 @@ gmx_ana_poscalc_create_enum(gmx_ana_poscalc_t **pcp, gmx_ana_poscalc_coll_t *pcc
     int          rc;
 
     cflags = flags;
-    rc = gmx_ana_poscalc_type_from_enum(post, &type, &cflags);
+    rc     = gmx_ana_poscalc_type_from_enum(post, &type, &cflags);
     if (rc != 0)
     {
         *pcp = NULL;
@@ -1179,7 +1186,7 @@ gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
  * After this function has been called, it is no longer possible to add new
  * calculations to the collection.
  *
- * This function is automatically called by gmx_ana_poscalc_init_frame() 
+ * This function is automatically called by gmx_ana_poscalc_init_frame()
  * if not called by the user earlier.
  * Multiple calls to the function are ignored.
  */
@@ -1260,7 +1267,7 @@ gmx_ana_poscalc_init_frame(gmx_ana_poscalc_coll_t *pcc)
     while (pc)
     {
         pc->bEval = FALSE;
-        pc = pc->next;
+        pc        = pc->next;
     }
 }
 
@@ -1280,7 +1287,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                        gmx_ana_index_t *g, t_trxframe *fr, t_pbc *pbc)
 {
     int  i, j, bi, bj;
-    
+
     if (pc->bEval == TRUE && !(pc->flags & POS_MASKONLY))
     {
         return;
@@ -1309,7 +1316,9 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         gmx_ana_indexmap_update(&p->m, g, TRUE);
         if (pc->bEval)
+        {
             return;
+        }
     }
     if (!(pc->flags & POS_DYNAMIC))
     {
@@ -1397,68 +1406,68 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
          * and do not check the return values of gmx_calc_comg*(). */
         switch (pc->type)
         {
-        case POS_ATOM:
-            for (i = 0; i < pc->b.nra; ++i)
-            {
-                copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
-            }
-            if (p->v && fr->bV)
-            {
+            case POS_ATOM:
                 for (i = 0; i < pc->b.nra; ++i)
                 {
-                    copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                    copy_rvec(fr->x[pc->b.a[i]], p->x[i]);
                 }
-            }
-            if (p->f && fr->bF)
-            {
-                for (i = 0; i < pc->b.nra; ++i)
+                if (p->v && fr->bV)
                 {
-                    copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                    for (i = 0; i < pc->b.nra; ++i)
+                    {
+                        copy_rvec(fr->v[pc->b.a[i]], p->v[i]);
+                    }
                 }
-            }
-            break;
-        case POS_ALL:
-            gmx_calc_comg(pc->coll->top, fr->x, pc->b.nra, pc->b.a,
-                          pc->flags & POS_MASS, p->x[0]);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
-                              pc->flags & POS_MASS, p->v[0]);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
-                                pc->flags & POS_MASS, p->f[0]);
-            }
-            break;
-        case POS_ALL_PBC:
-            gmx_calc_comg_pbc(pc->coll->top, fr->x, pbc, pc->b.nra, pc->b.a,
+                if (p->f && fr->bF)
+                {
+                    for (i = 0; i < pc->b.nra; ++i)
+                    {
+                        copy_rvec(fr->f[pc->b.a[i]], p->f[i]);
+                    }
+                }
+                break;
+            case POS_ALL:
+                gmx_calc_comg(pc->coll->top, fr->x, pc->b.nra, pc->b.a,
                               pc->flags & POS_MASS, p->x[0]);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
-                              pc->flags & POS_MASS, p->v[0]);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
-                                pc->flags & POS_MASS, p->f[0]);
-            }
-            break;
-        default:
-            gmx_calc_comg_blocka(pc->coll->top, fr->x, &pc->b,
-                                 pc->flags & POS_MASS, p->x);
-            if (p->v && fr->bV)
-            {
-                gmx_calc_comg_blocka(pc->coll->top, fr->v, &pc->b,
-                                     pc->flags & POS_MASS, p->v);
-            }
-            if (p->f && fr->bF)
-            {
-                gmx_calc_comg_blocka(pc->coll->top, fr->f, &pc->b,
-                                     pc->flags & POS_MASS, p->f);
-            }
-            break;
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
+                                  pc->flags & POS_MASS, p->v[0]);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
+                                    pc->flags & POS_MASS, p->f[0]);
+                }
+                break;
+            case POS_ALL_PBC:
+                gmx_calc_comg_pbc(pc->coll->top, fr->x, pbc, pc->b.nra, pc->b.a,
+                                  pc->flags & POS_MASS, p->x[0]);
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg(pc->coll->top, fr->v, pc->b.nra, pc->b.a,
+                                  pc->flags & POS_MASS, p->v[0]);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_f(pc->coll->top, fr->f, pc->b.nra, pc->b.a,
+                                    pc->flags & POS_MASS, p->f[0]);
+                }
+                break;
+            default:
+                gmx_calc_comg_blocka(pc->coll->top, fr->x, &pc->b,
+                                     pc->flags & POS_MASS, p->x);
+                if (p->v && fr->bV)
+                {
+                    gmx_calc_comg_blocka(pc->coll->top, fr->v, &pc->b,
+                                         pc->flags & POS_MASS, p->v);
+                }
+                if (p->f && fr->bF)
+                {
+                    gmx_calc_comg_blocka(pc->coll->top, fr->f, &pc->b,
+                                         pc->flags & POS_MASS, p->f);
+                }
+                break;
         }
     }
 }
