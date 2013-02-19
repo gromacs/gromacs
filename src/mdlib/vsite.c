@@ -477,7 +477,6 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
                 /* The vsite and constructing atoms */
                 avsite = ia[1];
                 ai     = ia[2];
-                aj     = ia[3];
 
                 /* Constants for constructing vsites */
                 a1   = ip[tp].vsite.a;
@@ -519,30 +518,36 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
                 switch (ftype)
                 {
                     case F_VSITE2:
+                        aj = ia[3];
                         constr_vsite2(x[ai], x[aj], x[avsite], a1, pbc_null2);
                         break;
                     case F_VSITE3:
+                        aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
                         constr_vsite3(x[ai], x[aj], x[ak], x[avsite], a1, b1, pbc_null2);
                         break;
                     case F_VSITE3FD:
+                        aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
                         constr_vsite3FD(x[ai], x[aj], x[ak], x[avsite], a1, b1, pbc_null2);
                         break;
                     case F_VSITE3FAD:
+                        aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
                         constr_vsite3FAD(x[ai], x[aj], x[ak], x[avsite], a1, b1, pbc_null2);
                         break;
                     case F_VSITE3OUT:
+                        aj = ia[3];
                         ak = ia[4];
                         b1 = ip[tp].vsite.b;
                         c1 = ip[tp].vsite.c;
                         constr_vsite3OUT(x[ai], x[aj], x[ak], x[avsite], a1, b1, c1, pbc_null2);
                         break;
                     case F_VSITE4FD:
+                        aj = ia[3];
                         ak = ia[4];
                         al = ia[5];
                         b1 = ip[tp].vsite.b;
@@ -551,6 +556,7 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
                                         pbc_null2);
                         break;
                     case F_VSITE4FDN:
+                        aj = ia[3];
                         ak = ia[4];
                         al = ia[5];
                         b1 = ip[tp].vsite.b;

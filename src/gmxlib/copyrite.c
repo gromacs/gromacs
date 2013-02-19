@@ -207,7 +207,6 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
             help[*cqnum][STRLEN-1] = '\0';
         }
         strncpy(retstring, help[*cqnum], retsize);
-        f(retstring);
         for (i = 0; (i < nhlp); i++)
         {
             sfree(help[i]);
