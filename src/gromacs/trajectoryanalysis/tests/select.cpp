@@ -40,7 +40,7 @@
  *  - Tests for XVG labels.  This is a limitation of the current testing
  *    framework.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include <gtest/gtest.h>

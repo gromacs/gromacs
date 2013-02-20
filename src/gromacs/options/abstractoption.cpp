@@ -32,7 +32,7 @@
  * \brief
  * Implements classes in abstractoption.h and abstractoptionstorage.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include "gromacs/options/abstractoption.h"

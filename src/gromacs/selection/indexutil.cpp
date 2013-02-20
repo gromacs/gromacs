@@ -32,7 +32,7 @@
  * \brief
  * Implements functions in indexutil.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/index.h"

@@ -32,7 +32,7 @@
  * \brief
  * Implements classes in selectionoption.h and selectionoptionstorage.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "selectionoption.h"

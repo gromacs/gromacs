@@ -31,7 +31,7 @@
 /*! \internal \brief
  * Implements command-line modules for pre-5.0 binaries.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "legacymodules.h"
 

@@ -32,7 +32,7 @@
  * \brief
  * Tests gmx::CommandLineModuleManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX

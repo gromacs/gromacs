@@ -32,7 +32,7 @@
  * \brief
  * Generic interface for accessing trajectory analysis modules.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */

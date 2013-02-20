@@ -52,7 +52,7 @@
  * For best results, the setup should probably be postponed (at least
  * partially) to gmx_ana_poscalc_init_eval().
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <string.h>

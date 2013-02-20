@@ -32,7 +32,7 @@
  * \brief
  * Implements gmx::AnalysisDataAverageModule.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
 #include "average.h"

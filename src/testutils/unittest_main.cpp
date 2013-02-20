@@ -32,7 +32,7 @@
  * \brief
  * main() for unit tests that use \ref module_testutils.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include <gtest/gtest.h>

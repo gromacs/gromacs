@@ -35,7 +35,7 @@
  * These tests check that methods in storage objects are called properly in all
  * situations, and also that the OptionStorageTemplate class behaves properly.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include <vector>

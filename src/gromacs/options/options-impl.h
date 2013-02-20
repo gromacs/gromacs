@@ -32,7 +32,7 @@
  * \brief
  * Declares private implementation class for gmx::Options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #ifndef GMX_OPTIONS_OPTIONS_IMPL_H

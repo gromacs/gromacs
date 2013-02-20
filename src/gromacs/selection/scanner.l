@@ -32,7 +32,7 @@
  * \brief
  * Tokenizer for the selection language.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  * \endcond
  */

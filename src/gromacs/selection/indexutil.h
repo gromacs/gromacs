@@ -50,7 +50,7 @@
  * Some of the checking functions can be useful outside the selection engine to
  * check the validity of input groups.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_selection
  */

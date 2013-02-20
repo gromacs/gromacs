@@ -33,7 +33,7 @@
  * Declares private implementation class for gmx::TrajectoryAnalysisSettings.
  *
  * \ingroup module_trajectoryanalysis
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #ifndef GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H
 #define GMX_TRAJECTORYANALYSIS_ANALYSISSETTINGS_IMPL_H

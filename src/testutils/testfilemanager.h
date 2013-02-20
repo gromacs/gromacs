@@ -32,7 +32,7 @@
  * \brief
  * Declares gmx::test::TestFileManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */

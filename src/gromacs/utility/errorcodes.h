@@ -32,7 +32,7 @@
  * \brief
  * Declares error codes and related functions for fatal error handling.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_utility
  */

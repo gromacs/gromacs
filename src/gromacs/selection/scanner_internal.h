@@ -31,7 +31,7 @@
 /*! \internal \file
  * \brief Internal header file used by the selection tokenizer.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef SELECTION_SCANNER_INTERNAL_H

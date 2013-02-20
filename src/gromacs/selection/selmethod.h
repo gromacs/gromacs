@@ -282,7 +282,7 @@
  * Instructions for implementing custom selection methods can be found
  * on a separate page: \ref page_module_selection_custom
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELMETHOD_H

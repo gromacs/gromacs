@@ -32,7 +32,7 @@
  * \brief
  * Implements gmx::CommandLineModuleManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include "cmdlinemodulemanager.h"

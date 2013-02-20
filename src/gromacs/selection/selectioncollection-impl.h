@@ -35,7 +35,7 @@
  * This header also defines ::gmx_ana_selcollection_t, which is used in the old
  * C code for handling selection collections.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELECTIONCOLLECTION_IMPL_H

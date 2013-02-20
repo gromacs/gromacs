@@ -43,7 +43,7 @@
  * but methods of OptionTemplate are visible even to the normal user through
  * its subclasses.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_options
  */

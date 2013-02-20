@@ -33,7 +33,7 @@
  * Implements internal selection methods for numeric and string keyword
  * evaluation.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <cctype>

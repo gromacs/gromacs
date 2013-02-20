@@ -32,7 +32,7 @@
  * \brief
  * Implements gmx::analysismodules::Distance.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "distance.h"

@@ -38,7 +38,7 @@
  * More details can be found on the page discussing
  * \ref page_module_selection_custom "custom selection methods".
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELPARAM_H

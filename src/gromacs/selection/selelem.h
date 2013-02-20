@@ -39,7 +39,7 @@
  * This is an implementation header: there should be no need to use it outside
  * this directory.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELELEM_H
