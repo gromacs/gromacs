@@ -606,7 +606,7 @@ shopt -s extglob
 _g_hbond_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -num -g -ac -dist -ang -hx -hbn -hbm -don -dan -life -nhbdist -h -version -nice -b -e -dt -tu -xvg -a -r -noda -r2 -abin -rbin -nonitacc -contact -shell -fitstart -fitstart -temp -smooth -dump -max_hb -nomerge -geminate -diff -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -num -g -ac -dist -ang -hx -hbn -hbm -don -dan -life -nhbdist -h -version -nice -b -e -dt -tu -xvg -a -r -noda -r2 -abin -rbin -nonitacc -contact -shell -fitstart -fitstart -temp -smooth -dump -max_hb -nomerge -geminate -diff -nthreads -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -tu) COMPREPLY=( $(compgen -W ' fs ps ns us ms s ' -- $c ));;
 -xvg) COMPREPLY=( $(compgen -W ' xmgrace xmgr none ' -- $c ));;
@@ -1121,7 +1121,7 @@ shopt -s extglob
 _g_sans_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -n -d -pr -sq -prframe -sqframe -h -version -nice -b -e -dt -tu -xvg -mode -mcover -nopbc -startq -endq -qstep -seed' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -n -d -pr -sq -prframe -sqframe -h -version -nice -b -e -dt -tu -xvg -mode -mcover -nopbc -startq -endq -qstep -seed -nt' -- $c)); return 0; fi
 case "$p" in
 -tu) COMPREPLY=( $(compgen -W ' fs ps ns us ms s ' -- $c ));;
 -xvg) COMPREPLY=( $(compgen -W ' xmgrace xmgr none ' -- $c ));;
@@ -1495,10 +1495,11 @@ shopt -s extglob
 _mdrun_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dhdl -field -table -tabletf -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -ro -ra -rs -rt -mtx -dn -multidir -membed -mp -mn -h -version -nice -deffnm -xvg -pd -dd -ddorder -npme -nt -ntmpi -ntomp -ntomp_pme -nopin -pinht -pinoffset -gpu_id -noddcheck -rdd -rcon -dlb -dds -gcom -nb -notunepme -testverlet -v -nocompact -seppot -pforce -reprod -cpt -cpnum -noappend -nsteps -maxh -multi -replex -nex -reseed -ionize' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dhdl -field -table -tabletf -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -ro -ra -rs -rt -mtx -dn -multidir -membed -mp -mn -h -version -nice -deffnm -xvg -pd -dd -ddorder -npme -nt -ntmpi -ntomp -ntomp_pme -pin -pinoffset -pinstride -gpu_id -noddcheck -rdd -rcon -dlb -dds -gcom -nb -notunepme -testverlet -v -nocompact -seppot -pforce -reprod -cpt -cpnum -noappend -nsteps -maxh -multi -replex -nex -reseed -ionize' -- $c)); return 0; fi
 case "$p" in
 -xvg) COMPREPLY=( $(compgen -W ' xmgrace xmgr none ' -- $c ));;
 -ddorder) COMPREPLY=( $(compgen -W ' interleave pp_pme cartesian ' -- $c ));;
+-pin) COMPREPLY=( $(compgen -W ' auto on off ' -- $c ));;
 -dlb) COMPREPLY=( $(compgen -W ' auto no yes ' -- $c ));;
 -nb) COMPREPLY=( $(compgen -W ' auto cpu gpu gpu_cpu ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1533,7 +1534,7 @@ case "$p" in
 -rt) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mtx) COMPREPLY=( $(compgen -X '!*.mtx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--multidir) COMPREPLY=( $(compgen -X '!*.rundir*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-multidir) COMPREPLY=( $(compgen -X '!*.*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -membed) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mp) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1543,10 +1544,11 @@ shopt -s extglob
 _mdrun_mpi_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dhdl -field -table -tabletf -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -ro -ra -rs -rt -mtx -dn -multidir -membed -mp -mn -h -version -nice -deffnm -xvg -pd -dd -ddorder -npme -nt -ntmpi -ntomp -ntomp_pme -nopin -pinht -pinoffset -gpu_id -noddcheck -rdd -rcon -dlb -dds -gcom -nb -notunepme -testverlet -v -nocompact -seppot -pforce -reprod -cpt -cpnum -noappend -nsteps -maxh -multi -replex -nex -reseed -ionize' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dhdl -field -table -tabletf -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -ro -ra -rs -rt -mtx -dn -multidir -membed -mp -mn -h -version -nice -deffnm -xvg -pd -dd -ddorder -npme -nt -ntmpi -ntomp -ntomp_pme -pin -pinoffset -pinstride -gpu_id -noddcheck -rdd -rcon -dlb -dds -gcom -nb -notunepme -testverlet -v -nocompact -seppot -pforce -reprod -cpt -cpnum -noappend -nsteps -maxh -multi -replex -nex -reseed -ionize' -- $c)); return 0; fi
 case "$p" in
 -xvg) COMPREPLY=( $(compgen -W ' xmgrace xmgr none ' -- $c ));;
 -ddorder) COMPREPLY=( $(compgen -W ' interleave pp_pme cartesian ' -- $c ));;
+-pin) COMPREPLY=( $(compgen -W ' auto on off ' -- $c ));;
 -dlb) COMPREPLY=( $(compgen -W ' auto no yes ' -- $c ));;
 -nb) COMPREPLY=( $(compgen -W ' auto cpu gpu gpu_cpu ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1567,7 +1569,7 @@ case "$p" in
 -tpi) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -tpid) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ei) COMPREPLY=( $(compgen -X '!*.edi*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--eo) COMPREPLY=( $(compgen -X '!*.edo*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-eo) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -j) COMPREPLY=( $(compgen -X '!*.gct*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -jo) COMPREPLY=( $(compgen -X '!*.gct*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ffout) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1581,7 +1583,7 @@ case "$p" in
 -rt) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mtx) COMPREPLY=( $(compgen -X '!*.mtx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--multidir) COMPREPLY=( $(compgen -X '!*.rundir*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-multidir) COMPREPLY=( $(compgen -X '!*.line_buf*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -membed) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mp) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
