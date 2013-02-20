@@ -738,8 +738,8 @@ int cmain(int argc, char *argv[])
     ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
 
     rc = mdrunner(&hw_opt, fplog, cr, NFILE, fnm, oenv, bVerbose, bCompact,
-                  nstglobalcomm, ddxyz, dd_node_order, rdd, rconstr,
-                  dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
+                  tng_compr[0], nstglobalcomm, ddxyz, dd_node_order, rdd,
+                  rconstr, dddlb_opt[0], dlb_scale, ddcsx, ddcsy, ddcsz,
                   nbpu_opt[0],
                   nsteps, nstepout, resetstep,
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,

@@ -122,6 +122,7 @@ struct mdrunner_arglist
     output_env_t    oenv;
     gmx_bool        bVerbose;
     gmx_bool        bCompact;
+    const char     *tng_compr;
     int             nstglobalcomm;
     ivec            ddxyz;
     int             dd_node_order;
@@ -173,7 +174,7 @@ static void mdrunner_start_fn(void *arg)
     }
 
     mda->ret = mdrunner(mc.hw_opt, fplog, cr, mc.nfile, fnm, mc.oenv,
-                        mc.bVerbose, mc.bCompact, mc.nstglobalcomm,
+                        mc.bVerbose, mc.bCompact, mc.tng_compr, mc.nstglobalcomm,
                         mc.ddxyz, mc.dd_node_order, mc.rdd,
                         mc.rconstr, mc.dddlb_opt, mc.dlb_scale,
                         mc.ddcsx, mc.ddcsy, mc.ddcsz,
@@ -906,7 +907,7 @@ typedef struct {
 int mdrunner(gmx_hw_opt_t *hw_opt,
              FILE *fplog, t_commrec *cr, int nfile,
              const t_filenm fnm[], const output_env_t oenv, gmx_bool bVerbose,
-             gmx_bool bCompact, int nstglobalcomm,
+             gmx_bool bCompact, const char *tng_compr, int nstglobalcomm,
              ivec ddxyz, int dd_node_order, real rdd, real rconstr,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
