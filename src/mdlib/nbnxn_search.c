@@ -576,15 +576,18 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 /* Sort particle index a on coordinates x along dim.
  * Backwards tells if we want decreasing iso increasing coordinates.
  * h0 is the minimum of the coordinate range.
- * invh is the inverse hole spacing.
- * nsort, the theortical hole limit, is only used for debugging.
+ * invh is the 1/length of the sorting range.
+ * n_per_h (>=n) is the expected average number of particles per 1/invh
  * sort is the sorting work array.
+ * sort should have a size of at least n_per_h*SORT_GRID_OVERSIZE + n,
+ * or easier, allocate at least n*SGSF elements.
  */
 static void sort_atoms(int dim, gmx_bool Backwards,
                        int *a, int n, rvec *x,
-                       real h0, real invh, int nsort, int *sort)
+                       real h0, real invh, int n_per_h,
+                       int *sort)
 {
-    int i, c;
+    int nsort, i, c;
     int zi, zim, zi_min, zi_max;
     int cp, tmp;
 
@@ -593,6 +596,21 @@ static void sort_atoms(int dim, gmx_bool Backwards,
         /* Nothing to do */
         return;
     }
+
+#ifndef NDEBUG
+    if (n > n_per_h)
+    {
+        gmx_incons("n > n_per_h");
+    }
+#endif
+
+    /* Transform the inverse range height into the inverse hole height */
+    invh *= n_per_h*SORT_GRID_OVERSIZE;
+
+    /* Set nsort to the maximum possible number of holes used.
+     * In worst case all n elements end up in the last bin.
+     */
+    nsort = n_per_h*SORT_GRID_OVERSIZE + n;
 
     /* Determine the index range used, so we can limit it for the second pass */
     zi_min = INT_MAX;
@@ -607,11 +625,13 @@ static void sort_atoms(int dim, gmx_bool Backwards,
          */
         zi = (int)((x[a[i]][dim] - h0)*invh);
 
-#ifdef DEBUG_NBNXN_GRIDDING
-        if (zi < 0 || zi >= nsort)
+#ifndef NDEBUG
+        /* As we can have rounding effect, we use > iso >= here */
+        if (zi < 0 || zi > n_per_h*SORT_GRID_OVERSIZE)
         {
-            gmx_fatal(FARGS, "(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d\n",
-                      a[i], 'x'+dim, x[a[i]][dim], h0, invh, zi, nsort);
+            gmx_fatal(FARGS, "(int)((x[%d][%c]=%f - %f)*%f) = %d, not in 0 - %d*%d\n",
+                      a[i], 'x'+dim, x[a[i]][dim], h0, invh, zi,
+                      n_per_h, SORT_GRID_OVERSIZE);
         }
 #endif
 
@@ -1240,8 +1260,8 @@ static void sort_columns_simple(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   ncz*grid->na_sc*SORT_GRID_OVERSIZE/nbs->box[ZZ][ZZ],
-                   ncz*grid->na_sc*SGSF, sort_work);
+                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   sort_work);
 
         /* Fill the ncz cells in this column */
         cfilled = grid->cxy_ind[cxy];
@@ -1326,8 +1346,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
         sort_atoms(ZZ, FALSE,
                    nbs->a+ash, na, x,
                    grid->c0[ZZ],
-                   ncz*grid->na_sc*SORT_GRID_OVERSIZE/nbs->box[ZZ][ZZ],
-                   ncz*grid->na_sc*SGSF, sort_work);
+                   1.0/nbs->box[ZZ][ZZ], ncz*grid->na_sc,
+                   sort_work);
 
         /* This loop goes over the supercells and subcells along z at once */
         for (sub_z = 0; sub_z < ncz*GPU_NSUBCELL_Z; sub_z++)
@@ -1357,8 +1377,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
             sort_atoms(YY, (sub_z & 1),
                        nbs->a+ash_z, na_z, x,
                        grid->c0[YY]+cy*grid->sy,
-                       subdiv_y*SORT_GRID_OVERSIZE*grid->inv_sy,
-                       subdiv_y*SGSF, sort_work);
+                       grid->inv_sy, subdiv_z,
+                       sort_work);
 #endif
 
             for (sub_y = 0; sub_y < GPU_NSUBCELL_Y; sub_y++)
@@ -1371,8 +1391,8 @@ static void sort_columns_supersub(const nbnxn_search_t nbs,
                 sort_atoms(XX, ((cz*GPU_NSUBCELL_Y + sub_y) & 1),
                            nbs->a+ash_y, na_y, x,
                            grid->c0[XX]+cx*grid->sx,
-                           subdiv_x*SORT_GRID_OVERSIZE*grid->inv_sx,
-                           subdiv_x*SGSF, sort_work);
+                           grid->inv_sx, subdiv_y,
+                           sort_work);
 #endif
 
                 for (sub_x = 0; sub_x < GPU_NSUBCELL_X; sub_x++)
@@ -1433,9 +1453,9 @@ static void calc_column_indices(nbnxn_grid_t *grid,
                 cx = (int)((x[i][XX] - grid->c0[XX])*grid->inv_sx);
                 cy = (int)((x[i][YY] - grid->c0[YY])*grid->inv_sy);
 
-#ifdef DEBUG_NBNXN_GRIDDING
-                if (cx < 0 || cx >= grid->ncx ||
-                    cy < 0 || cy >= grid->ncy)
+#ifndef NDEBUG
+                if (cx < 0 || cx > grid->ncx ||
+                    cy < 0 || cy > grid->ncy)
                 {
                     gmx_fatal(FARGS,
                               "grid cell cx %d cy %d out of range (max %d %d)\n"
