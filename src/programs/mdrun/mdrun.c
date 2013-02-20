@@ -441,6 +441,8 @@ int cmain(int argc, char *argv[])
     { NULL, "auto", "on", "off", NULL };
     const char   *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
+    const char   *tng_compr[] =
+    { NULL, "tng", "none", "xtc", "gzip", NULL };
     real          rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
     char         *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
     real          cpt_period            = 15.0, max_hours = -1;
@@ -508,6 +510,8 @@ int cmain(int argc, char *argv[])
           "Be loud and noisy" },
         { "-compact", FALSE, etBOOL, {&bCompact},
           "Write a compact log file" },
+        { "-tngcompr", FALSE, etENUM, {tng_compr},
+          "Compression for TNG output" },
         { "-seppot",  FALSE, etBOOL, {&bSepPot},
           "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
         { "-pforce",  FALSE, etREAL, {&pforce},
