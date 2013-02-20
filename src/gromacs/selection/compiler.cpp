@@ -45,7 +45,7 @@
  * Use of memory pooling could still be extended, and a lot of redundant
  * gmin/gmax data could be eliminated for complex arithmetic expressions.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 /*! \internal

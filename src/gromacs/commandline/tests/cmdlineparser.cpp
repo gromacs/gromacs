@@ -39,7 +39,7 @@
  * These tests exercise a large fraction of the code, so they may
  * catch errors in other parts than just in command-line parsing.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include <vector>

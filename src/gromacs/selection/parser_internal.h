@@ -40,7 +40,7 @@
  * They are in a separate file to make then easier to edit (no need to
  * regenerate the parser), and to keep parser.y as simple as possible.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_PARSER_INTERNAL_H

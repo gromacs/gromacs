@@ -42,7 +42,7 @@
  * internal implementation of the gmx::Options and gmx::AbstractOptionStorage
  * classes.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include <limits>

@@ -39,7 +39,7 @@
  * Most of the tests for the basic options are in optionsassigner.cpp.
  * This file only tests behavior that should fail in initialization.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include <vector>

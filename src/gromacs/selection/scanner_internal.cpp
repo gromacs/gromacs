@@ -38,7 +38,7 @@
  * This file implements the functions in the headers scanner.h and
  * scanner_internal.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 /*! \cond

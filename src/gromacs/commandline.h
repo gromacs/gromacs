@@ -42,13 +42,13 @@
  * gmx::CommandLineHelpWriter is also provided to write help text for a program
  * that uses the parser.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for handling command-line parameters.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_commandline
  */

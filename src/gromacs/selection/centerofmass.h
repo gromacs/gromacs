@@ -68,7 +68,7 @@
  * Finally, there is a function gmx_calc_comg_blocka() that takes both the
  * index group and the partitioning as a single \c t_blocka structure.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_CENTEROFMASS_H

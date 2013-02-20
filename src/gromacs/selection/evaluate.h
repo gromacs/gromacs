@@ -43,7 +43,7 @@
  * The functions defined in this header file are all the possible values
  * for the gmx::SelectionTreeElement::evaluate field (in addition to NULL).
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_EVALUATE_H

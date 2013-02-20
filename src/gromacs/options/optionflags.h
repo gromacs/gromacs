@@ -40,7 +40,7 @@
  * not be accessed outside the module.
  * Because of details in the implementation, it is still installed.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #ifndef GMX_OPTIONS_OPTIONFLAGS_H

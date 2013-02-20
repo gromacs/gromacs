@@ -36,7 +36,7 @@
  * \brief
  * Implements gmx::CommandLineHelpWriter.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include "cmdlinehelpwriter.h"

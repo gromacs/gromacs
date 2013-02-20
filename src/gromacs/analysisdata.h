@@ -101,13 +101,13 @@
  * existing extended) instead of implementing a local custom solution.
  * \endif
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for analysis data handling.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_analysisdata
  */

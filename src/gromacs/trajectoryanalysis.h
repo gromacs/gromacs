@@ -65,13 +65,13 @@
  * For an example of how to implement an analysis tool using the framework, see
  * \ref template.cpp.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for trajectory analysis framework
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_trajectoryanalysis
  */

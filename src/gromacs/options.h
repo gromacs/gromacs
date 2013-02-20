@@ -69,13 +69,13 @@
  * OptionsIterator to apply this visitor to the Options object.
  * \endif
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for handling of options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_options
  */

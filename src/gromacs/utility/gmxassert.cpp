@@ -36,7 +36,7 @@
  * \brief
  * Implements assertion handlers.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #include "gmxassert.h"

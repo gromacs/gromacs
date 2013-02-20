@@ -37,7 +37,7 @@
  * Implements classes in plot.h.
  *
  * \ingroup module_analysisdata
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/analysisdata/modules/plot.h"
 

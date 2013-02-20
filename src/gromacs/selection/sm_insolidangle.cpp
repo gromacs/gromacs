@@ -110,7 +110,7 @@
  * (along the lines it is handled in selection.h and trajana.h in the old C
  * API).
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <algorithm>

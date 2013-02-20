@@ -38,7 +38,7 @@
  *
  * Also related functionality in gmx::DoubleOptionStorage is tested.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include <gtest/gtest.h>

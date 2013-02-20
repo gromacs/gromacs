@@ -40,7 +40,7 @@
  * future, there is an obvious location for this documentation, we should
  * move it there.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \mainpage Gromacs
  * GROMACS is a versatile package to perform molecular dynamics, i.e. simulate

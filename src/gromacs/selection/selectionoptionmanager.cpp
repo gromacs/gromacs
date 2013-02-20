@@ -36,7 +36,7 @@
  * \brief
  * Implements gmx::SelectionOptionManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "selectionoptionmanager.h"

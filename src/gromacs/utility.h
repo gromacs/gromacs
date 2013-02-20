@@ -58,13 +58,13 @@
  * Header file gmxassert.h is also provided for assertions.  It declares macros
  * ::GMX_ASSERT and ::GMX_RELEASE_ASSERT that should be used for assertions.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for low-level utilities.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_utility
  */

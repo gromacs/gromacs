@@ -38,7 +38,7 @@
  *
  * \inpublicapi
  * \ingroup module_analysisdata
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #ifndef GMX_ANALYSISDATA_MODULES_PLOT_H
 #define GMX_ANALYSISDATA_MODULES_PLOT_H

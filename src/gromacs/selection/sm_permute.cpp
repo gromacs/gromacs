@@ -36,7 +36,7 @@
  * \brief
  * Implements the \p permute selection modifier.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"

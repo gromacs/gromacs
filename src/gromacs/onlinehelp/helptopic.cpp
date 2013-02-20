@@ -36,7 +36,7 @@
  * \brief
  * Implements classes and functions from helptopic.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
 #include "helptopic.h"

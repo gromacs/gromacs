@@ -42,7 +42,7 @@
  * to print out the help to stdout instead of using the XML reference
  * framework.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include <gtest/gtest.h>

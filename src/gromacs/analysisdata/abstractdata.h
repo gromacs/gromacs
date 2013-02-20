@@ -36,7 +36,7 @@
  * \brief
  * Declares gmx::AbstractAnalysisData.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_analysisdata
  */

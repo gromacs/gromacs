@@ -35,7 +35,7 @@
 /*! \file
  * \brief API for handling positions.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_POSITION_H

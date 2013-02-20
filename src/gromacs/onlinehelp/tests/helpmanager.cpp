@@ -36,7 +36,7 @@
  * \brief
  * Tests for help topic management and help topic formatting.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_onlinehelp
  */
 #include "gromacs/onlinehelp/helpmanager.h"
