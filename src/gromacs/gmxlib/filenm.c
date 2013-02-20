@@ -69,7 +69,7 @@
 
 enum
 {
-    eftASC, eftBIN, eftXDR, eftGEN, eftNR
+    eftASC, eftBIN, eftXDR, eftTNG, eftGEN, eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -161,6 +161,7 @@ static const t_deffile
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftXDR, ".xtc", "traj", NULL,
       "Compressed trajectory (portable xdr format)" },
+    { eftTNG, ".tng", "traj", NULL, "Trajectory file in TNG format" },
     { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
