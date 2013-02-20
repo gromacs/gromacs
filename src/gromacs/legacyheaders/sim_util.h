@@ -42,6 +42,7 @@
 #include "mdebin.h"
 #include "update.h"
 #include "vcm.h"
+#include "tng_io.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +61,7 @@ typedef struct {
     int         simulation_part;
     FILE       *fp_dhdl;
     FILE       *fp_field;
+    tng_trajectory_t tng;
 } gmx_mdoutf_t;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;

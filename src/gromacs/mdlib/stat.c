@@ -69,6 +69,8 @@
 #include "md_support.h"
 #include "mdrun.h"
 #include "sim_util.h"
+#include "tng_io.h"
+#include "copyrite.h"
 
 typedef struct gmx_global_stat
 {
@@ -447,6 +449,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 {
     gmx_mdoutf_t *of;
     char          filemode[3];
+    char          program_name[256];
     gmx_bool      bAppendFiles;
 
     snew(of, 1);
@@ -461,9 +464,21 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->bExpanded       = ir->bExpanded;
     of->elamstats       = ir->expandedvals->elamstats;
     of->simulation_part = ir->simulation_part;
+    
+    of->tng = NULL;
 
     if (MASTER(cr))
     {
+        if(tng_trajectory_init(&of->tng) != TNG_SUCCESS)
+        {
+            tng_trajectory_destroy(&of->tng);
+            gmx_fatal(FARGS, "Could not init TNG.\n");
+        }
+        
+        tng_output_file_set(of->tng, ftp2fn(efTNG, nfile, fnm));
+        sprintf(program_name, "%s, %s", ShortProgram(), GromacsVersion());
+        tng_first_program_name_set(of->tng, program_name);
+        
         bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
         of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
