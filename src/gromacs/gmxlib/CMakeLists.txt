@@ -4,7 +4,7 @@ add_subdirectory(nonbonded)
 
 # The nonbonded directory contains subdirectories that are only
 # conditionally built, so we cannot use a GLOB_RECURSE here.
-file(GLOB GMXLIB_SOURCES *.c *.cpp statistics/*.c)
+file(GLOB GMXLIB_SOURCES *.c *.cpp statistics/*.c tng/*.c)
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly
