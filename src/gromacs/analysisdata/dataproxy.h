@@ -35,7 +35,7 @@
  * This header is only meant for internal use to implement
  * gmx::AbstractAnalysisData::setColumnModule().
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
 #ifndef GMX_ANALYSISDATA_DATAPROXY_H

@@ -35,7 +35,7 @@
  * Together with options.h, this header forms the part of the public API
  * that most classes will use to provide options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_options
  */

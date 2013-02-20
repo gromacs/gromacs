@@ -43,7 +43,7 @@
  * converting selections by residue/molecule into selections by atom
  * when necessary.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <string.h>

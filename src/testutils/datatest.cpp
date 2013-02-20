@@ -32,7 +32,7 @@
  * \brief
  * Implements classes in datatest.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include "datatest.h"

@@ -31,7 +31,7 @@
 /*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"

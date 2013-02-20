@@ -32,7 +32,7 @@
  * \brief
  * Declares common string formatting routines for online help.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */

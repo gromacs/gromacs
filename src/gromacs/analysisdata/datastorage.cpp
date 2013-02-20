@@ -32,7 +32,7 @@
  * \brief
  * Implements classes in datastorage.h and paralleloptions.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
 #include "datastorage.h"

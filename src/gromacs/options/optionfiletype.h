@@ -32,7 +32,7 @@
  * \brief
  * Defines an enumeration type for specifying file types for options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_options
  */

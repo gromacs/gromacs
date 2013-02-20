@@ -32,7 +32,7 @@
  * \brief
  * Declares gmx::HelpTopicInterface.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_onlinehelp
  */

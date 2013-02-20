@@ -32,7 +32,7 @@
  * \brief
  * Implements the \p same selection method.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <stdlib.h>

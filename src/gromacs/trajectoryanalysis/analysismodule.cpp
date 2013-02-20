@@ -32,7 +32,7 @@
  * \brief
  * Implements classes in analysismodule.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"

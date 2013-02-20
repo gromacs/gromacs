@@ -38,7 +38,7 @@
  * Most checking is done using gmx::test::AnalysisDataTestFixture and mock
  * modules that implement gmx::AnalysisDataModuleInterface.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
 #include <gmock/gmock.h>

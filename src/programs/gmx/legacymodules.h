@@ -31,7 +31,7 @@
 /*! \internal \brief
  * Declares registerLegacyModules().
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #ifndef GMX_LEGACYMODULES_H
 #define GMX_LEGACYMODULES_H

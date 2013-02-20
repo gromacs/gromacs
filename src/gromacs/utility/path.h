@@ -32,7 +32,7 @@
  * \brief
  * Declares functions for OS-independent path handling.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  */
 #ifndef GMX_UTILITY_PATH_H

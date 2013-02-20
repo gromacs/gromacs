@@ -32,7 +32,7 @@
  * \brief
  * Declares gmx::TrajectoryAnalysisRunnerCommon.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #ifndef GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H

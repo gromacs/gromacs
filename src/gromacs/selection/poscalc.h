@@ -42,7 +42,7 @@
  *
  * The API is documented in more detail in gmx::PositionCalculationCollection.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_POSCALC_H

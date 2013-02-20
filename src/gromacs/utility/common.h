@@ -36,7 +36,7 @@
  * It is installed, because the helpers are used in installed headers, but
  * typically users of the library should not need to be aware of these helpers.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_utility
  */

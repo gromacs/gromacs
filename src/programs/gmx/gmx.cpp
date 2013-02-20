@@ -31,7 +31,7 @@
 /*! \internal \brief
  * Implements the gmx wrapper binary.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/legacyheaders/copyrite.h"
 

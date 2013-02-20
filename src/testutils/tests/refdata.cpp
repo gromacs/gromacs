@@ -32,7 +32,7 @@
  * \brief
  * Tests utilities for test reference data.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include <vector>

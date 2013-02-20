@@ -32,7 +32,7 @@
  * \brief
  * Declares an internal helper function for formatting standard error messages.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #ifndef GMX_UTILITY_ERRORFORMAT_H

@@ -32,7 +32,7 @@
  * \brief
  * Implements functions declared in errorformat.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #ifdef HAVE_CONFIG_H

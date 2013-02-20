@@ -32,7 +32,7 @@
  * \brief
  * Tests selection parsing and compilation.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <gtest/gtest.h>

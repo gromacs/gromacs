@@ -32,7 +32,7 @@
  * \brief
  * Functionality for writing tests that can produce their own reference data.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_testutils
  */
