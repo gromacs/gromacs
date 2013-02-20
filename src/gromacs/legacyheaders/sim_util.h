@@ -197,6 +197,9 @@ void init_md(FILE *fplog,
              t_state *state, unsigned long Flags);
 /* Routine in sim_util.c */
 
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop);
+/* Routine that sets molecular data in a TNG trajectory based on mtop */
+
 #ifdef __cplusplus
 }
 #endif

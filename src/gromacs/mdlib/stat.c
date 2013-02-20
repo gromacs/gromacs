@@ -477,6 +477,8 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
         
         tng_output_file_set(of->tng, ftp2fn(efTNG, nfile, fnm));
         sprintf(program_name, "%s, %s", ShortProgram(), GromacsVersion());
+        
+        /* FIXME: Check if we should be appending instead. */
         tng_first_program_name_set(of->tng, program_name);
         
         bAppendFiles = (mdrun_flags & MD_APPENDFILES);
@@ -545,6 +547,10 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 
 void done_mdoutf(gmx_mdoutf_t *of)
 {
+    if (of->tng != NULL)
+    {
+        tng_trajectory_destroy(&of->tng);
+    }
     if (of->fp_ene != NULL)
     {
         close_enx(of->fp_ene);

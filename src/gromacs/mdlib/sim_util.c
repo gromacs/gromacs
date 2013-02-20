@@ -92,6 +92,8 @@
 #include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
 #include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
+#include "mtop_util.h"
+#include "tng_io.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -2716,6 +2718,13 @@ void init_md(FILE *fplog,
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
                               mtop, ir, (*outf)->fp_dhdl);
     }
+    
+    if ((*outf)->tng)
+    {
+        init_tng_top((*outf)->tng, mtop);
+        
+        tng_file_headers_write((*outf)->tng, TNG_USE_HASH);
+    }
 
     if (ir->bAdress)
     {
@@ -2728,4 +2737,27 @@ void init_md(FILE *fplog,
     clear_rvec(mu_tot);
 
     debug_gmx();
+}
+
+void init_tng_top (tng_trajectory_t tng, gmx_mtop_t *mtop)
+{
+    int mit, ait;
+    gmx_moltype_t *molt;
+    t_atom *at;
+    t_resinfo *resin;
+    tng_molecule_t tng_mol;
+    
+    for (mit = 0; mit < mtop->nmoltype; mit++)
+    {
+        molt = &mtop->moltype[mit];
+        tng_molecule_add(tng, *molt->name, &tng_mol);
+        for (ait = 0; ait < molt->atoms.nr; ait++)
+        {
+            at = &molt->atoms.atom[ait];
+            if (molt->atoms.nres > 0)
+            {
+                resin = &molt->atoms.resinfo[at->resind];
+            }
+        }
+    }
 }
