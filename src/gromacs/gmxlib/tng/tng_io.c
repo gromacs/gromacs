@@ -540,8 +540,8 @@ static tng_function_status tng_block_hash_generate(tng_gen_block_t block)
  * calculated from the current contents.
  * If the current hash is not set skip the comparison.
  * @param block is a general block container.
- * @param results If the hashes match results is set to TRUE, otherwise it is
- * set to FALSE. If the hash was not set results is set to TRUE.
+ * @param results If the hashes match results is set to TNG_TRUE, otherwise it is
+ * set to TNG_FALSE. If the hash was not set results is set to TNG_TRUE.
  * @return TNG_SUCCESS (0) if successful or TNG_FAILURE (1) if the hash was not
  * set.
  */
@@ -553,7 +553,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
 
     if(strlen(block->hash) == 0)
     {
-        *results = TRUE;
+        *results = TNG_TRUE;
         return(TNG_FAILURE);
     }
     md5_init(&md5_state);
@@ -563,7 +563,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
 
     if(strncmp(block->hash, hash, 16) != 0)
     {
-        *results = FALSE;
+        *results = TNG_FALSE;
 //         int i;
 //         printf("Hash in file:  ");
 //         for(i = 0; i<16; i++)
@@ -587,7 +587,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
     }
     else
     {
-        *results = TRUE;
+        *results = TNG_TRUE;
     }
     
     return(TNG_SUCCESS);
@@ -885,7 +885,7 @@ static tng_function_status tng_block_header_read
         free(block->name);
         block->name = 0;
     }
-    len = min(strlen(block->header_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->header_contents+offset) + 1, TNG_MAX_STR_LEN);
     if(!block->name)
     {
         block->name = malloc(len);
@@ -989,7 +989,7 @@ static tng_function_status tng_block_header_write
         block->name[0] = 0;
     }
 
-    name_len = min(strlen(block->name) + 1, TNG_MAX_STR_LEN);
+    name_len = tng_min(strlen(block->name) + 1, TNG_MAX_STR_LEN);
 
     if(hash_mode == TNG_USE_HASH)
     {
@@ -1138,7 +1138,7 @@ static tng_function_status tng_general_info_block_read
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
-        if(same_hash != TRUE)
+        if(same_hash != TNG_TRUE)
         {
             printf("General info block contents corrupt. Hashes do not match. "
                 "%s: %d\n",
@@ -1147,7 +1147,7 @@ static tng_function_status tng_general_info_block_read
         }
     }
 
-    len = min(strlen(block->block_contents) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->first_program_name, len);
     if(!temp)
     {
@@ -1160,7 +1160,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->first_program_name, block->block_contents, len);
     offset += len;
     
-    len = min(strlen(block->block_contents) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_program_name, len);
     if(!temp)
     {
@@ -1173,7 +1173,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->last_program_name, block->block_contents, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->first_user_name, len);
     if(!temp)
     {
@@ -1186,7 +1186,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->first_user_name, block->block_contents+offset, len);
     offset += len;
     
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_user_name, len);
     if(!temp)
     {
@@ -1199,7 +1199,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->last_user_name, block->block_contents+offset, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->first_computer_name, len);
     if(!temp)
     {
@@ -1212,7 +1212,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->first_computer_name, block->block_contents+offset, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_computer_name, len);
     if(!temp)
     {
@@ -1225,7 +1225,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->last_computer_name, block->block_contents+offset, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->first_pgp_signature, len);
     if(!temp)
     {
@@ -1238,7 +1238,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->first_pgp_signature, block->block_contents+offset, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_pgp_signature, len);
     if(!temp)
     {
@@ -1251,7 +1251,7 @@ static tng_function_status tng_general_info_block_read
     strncpy(tng_data->last_pgp_signature, block->block_contents+offset, len);
     offset += len;
 
-    len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->forcefield_name, len);
     if(!temp)
     {
@@ -1502,23 +1502,23 @@ static tng_function_status tng_general_info_block_write
     strcpy(block->name, "GENERAL INFO");
     block->id = TNG_GENERAL_INFO;
 
-    first_program_name_len = min(strlen(tng_data->first_program_name) + 1,
+    first_program_name_len = tng_min(strlen(tng_data->first_program_name) + 1,
                            TNG_MAX_STR_LEN);
-    last_program_name_len = min(strlen(tng_data->last_program_name) + 1,
+    last_program_name_len = tng_min(strlen(tng_data->last_program_name) + 1,
                            TNG_MAX_STR_LEN);
-    first_user_name_len = min(strlen(tng_data->first_user_name) + 1,
+    first_user_name_len = tng_min(strlen(tng_data->first_user_name) + 1,
                         TNG_MAX_STR_LEN);
-    last_user_name_len = min(strlen(tng_data->last_user_name) + 1,
+    last_user_name_len = tng_min(strlen(tng_data->last_user_name) + 1,
                         TNG_MAX_STR_LEN);
-    first_computer_name_len = min(strlen(tng_data->first_computer_name) + 1,
+    first_computer_name_len = tng_min(strlen(tng_data->first_computer_name) + 1,
                             TNG_MAX_STR_LEN);
-    last_computer_name_len = min(strlen(tng_data->last_computer_name) + 1,
+    last_computer_name_len = tng_min(strlen(tng_data->last_computer_name) + 1,
                             TNG_MAX_STR_LEN);
-    first_pgp_signature_len = min(strlen(tng_data->first_pgp_signature) + 1,
+    first_pgp_signature_len = tng_min(strlen(tng_data->first_pgp_signature) + 1,
                             TNG_MAX_STR_LEN);
-    last_pgp_signature_len = min(strlen(tng_data->last_pgp_signature) + 1,
+    last_pgp_signature_len = tng_min(strlen(tng_data->last_pgp_signature) + 1,
                             TNG_MAX_STR_LEN);
-    forcefield_name_len = min(strlen(tng_data->forcefield_name) + 1,
+    forcefield_name_len = tng_min(strlen(tng_data->forcefield_name) + 1,
                               TNG_MAX_STR_LEN);
 
     block->block_contents_size = sizeof(tng_data->time) +
@@ -1747,7 +1747,7 @@ static tng_function_status tng_molecules_block_read
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
-        if(same_hash != TRUE)
+        if(same_hash != TNG_TRUE)
         {
             printf("Molecules block contents corrupt. Hashes do not match. "
                 "%s: %d\n",
@@ -1834,7 +1834,7 @@ static tng_function_status tng_molecules_block_read
         offset += sizeof(molecule->id);
         
 //         printf("Read id: %"PRId64" offset: %d\n", molecule->id, offset);
-        len = min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
+        len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
         molecule->name = malloc(len);
         strncpy(molecule->name, block->block_contents+offset, len);
         offset += len;
@@ -1972,7 +1972,7 @@ static tng_function_status tng_molecules_block_read
             }
             offset += sizeof(chain->id);
 
-            len = min(strlen(block->block_contents+offset) + 1,
+            len = tng_min(strlen(block->block_contents+offset) + 1,
                     TNG_MAX_STR_LEN);
             chain->name = malloc(len);
             strncpy(chain->name,
@@ -2012,7 +2012,7 @@ static tng_function_status tng_molecules_block_read
                 }
                 offset += sizeof(residue->id);
 
-                len = min(strlen(block->block_contents+offset) + 1,
+                len = tng_min(strlen(block->block_contents+offset) + 1,
                         TNG_MAX_STR_LEN);
                 residue->name = malloc(len);
                 strncpy(residue->name,
@@ -2053,14 +2053,14 @@ static tng_function_status tng_molecules_block_read
                     }
                     offset += sizeof(atom->id);
 
-                    len = min(strlen(block->block_contents+offset) + 1,
+                    len = tng_min(strlen(block->block_contents+offset) + 1,
                             TNG_MAX_STR_LEN);
                     atom->name = malloc(len);
                     strncpy(atom->name,
                             block->block_contents+offset, len);
                     offset += len;
 
-                    len = min(strlen(block->block_contents+offset) + 1,
+                    len = tng_min(strlen(block->block_contents+offset) + 1,
                             TNG_MAX_STR_LEN);
                     atom->atom_type = malloc(len);
                     strncpy(atom->atom_type,
@@ -2177,7 +2177,7 @@ static tng_function_status tng_molecules_block_write
             }
             molecule->name[0] = 0;
         }
-        len += min(strlen(molecule->name) + 1, TNG_MAX_STR_LEN);
+        len += tng_min(strlen(molecule->name) + 1, TNG_MAX_STR_LEN);
 
         chain = molecule->chains;
         for(j = molecule->n_chains; j--;)
@@ -2195,7 +2195,7 @@ static tng_function_status tng_molecules_block_write
                 }
                 chain->name[0] = 0;
             }
-            len += min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
+            len += tng_min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
 
             len += sizeof(chain->n_residues);
 
@@ -2218,7 +2218,7 @@ static tng_function_status tng_molecules_block_write
                 }
                 residue->name[0] = 0;
             }
-            len += min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
+            len += tng_min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
 
             len += sizeof(residue->n_atoms);
 
@@ -2240,7 +2240,7 @@ static tng_function_status tng_molecules_block_write
                 }
                 atom->name[0] = 0;
             }
-            len += min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
+            len += tng_min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
 
             if(!atom->atom_type)
             {
@@ -2253,7 +2253,7 @@ static tng_function_status tng_molecules_block_write
                 }
                 atom->atom_type[0] = 0;
             }
-            len += min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
+            len += tng_min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
 
             atom++;
         }
@@ -2338,7 +2338,7 @@ static tng_function_status tng_molecules_block_write
         offset += sizeof(molecule->id);
 
 //         printf("Wrote id: %"PRId64" offset: %d\n", molecule->id, offset);
-        len = min(strlen(molecule->name) + 1, TNG_MAX_STR_LEN);
+        len = tng_min(strlen(molecule->name) + 1, TNG_MAX_STR_LEN);
         strncpy(block->block_contents + offset, molecule->name, len);
         offset += len;
 
@@ -2431,7 +2431,7 @@ static tng_function_status tng_molecules_block_write
             }
             offset += sizeof(chain->id);
 
-            len = min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
+            len = tng_min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
             strncpy(block->block_contents + offset, chain->name, len);
             offset += len;
             
@@ -2465,7 +2465,7 @@ static tng_function_status tng_molecules_block_write
                 }
                 offset += sizeof(residue->id);
 
-                len = min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
+                len = tng_min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
                 strncpy(block->block_contents + offset, residue->name, len);
                 offset += len;
                 
@@ -2501,11 +2501,11 @@ static tng_function_status tng_molecules_block_write
                     }
                     offset += sizeof(atom->id);
 
-                    len = min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
+                    len = tng_min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
                     strncpy(block->block_contents + offset, atom->name, len);
                     offset += len;
 
-                    len = min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
+                    len = tng_min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
                     strncpy(block->block_contents + offset, atom->atom_type, len);
                     offset += len;
 
@@ -2644,7 +2644,7 @@ static tng_function_status tng_frame_set_block_read
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
-        if(same_hash != TRUE)
+        if(same_hash != TNG_TRUE)
         {
             printf("Frame set block contents corrupt. File pos %d Hashes do not match. "
                 "%s: %d\n",
@@ -3118,7 +3118,7 @@ static tng_function_status tng_trajectory_mapping_block_read
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
-        if(same_hash != TRUE)
+        if(same_hash != TNG_TRUE)
         {
             printf("Particle mapping block contents corrupt. Hashes do not match. "
                 "%s: %d\n",
@@ -3431,8 +3431,8 @@ static tng_function_status tng_allocate_particle_data_mem
         free(data->values[i]);
     }
     data->n_frames = n_frames;
-    n_frames = max(1, n_frames);
-    data->stride_length = max(1, stride_length);
+    n_frames = tng_max(1, n_frames);
+    data->stride_length = tng_max(1, stride_length);
     data->n_values_per_frame = n_values_per_frame;
     values = realloc(data->values, sizeof(union data_values **) * n_frames
                      / stride_length);
@@ -3647,7 +3647,7 @@ static tng_function_status tng_particle_data_read
 
     data->first_frame_with_data = first_frame_with_data;
     
-    n_frames = max(1, n_frames / stride_length);
+    n_frames = tng_max(1, n_frames / stride_length);
 
     /* FIXME: If not using a union to store data a whole dimension
      * or the whole block can be read at once if byte swapping is not needed */
@@ -3719,7 +3719,7 @@ static tng_function_status tng_particle_data_read
                 second_dim_values = first_dim_values[j];
                 for(k = 0; k < n_values; k++)
                 {
-                    len = min(strlen(block->block_contents+*offset) + 1,
+                    len = tng_min(strlen(block->block_contents+*offset) + 1,
                               TNG_MAX_STR_LEN);
                     if(second_dim_values[k].c)
                     {
@@ -3818,7 +3818,7 @@ static tng_function_status tng_particle_data_block_write
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
     {
         data = &frame_set->tr_particle_data[block_index];
-        stride_length = max(1, data->stride_length);
+        stride_length = tng_max(1, data->stride_length);
     }
     else
     {
@@ -3862,7 +3862,7 @@ static tng_function_status tng_particle_data_block_write
     /* If writing frame independent data data->n_frames is 0, but n_frames
        is used for the loop writing the data (and reserving memory) and needs
        to be at least 1 */
-    n_frames = max(1, data->n_frames);
+    n_frames = tng_max(1, data->n_frames);
 
     
     if(mapping && mapping->n_particles != 0)
@@ -4294,8 +4294,8 @@ static tng_function_status tng_allocate_data_mem
         free(data->values[i]);
     }
     data->n_frames = n_frames;
-    data->stride_length = max(1, stride_length);
-    n_frames = max(1, n_frames);
+    data->stride_length = tng_max(1, stride_length);
+    n_frames = tng_max(1, n_frames);
     data->n_values_per_frame = n_values_per_frame;
     values = realloc(data->values,
                      sizeof(union data_values *) *
@@ -4479,7 +4479,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
 
     data->first_frame_with_data = first_frame_with_data;
     
-    n_frames = max(1, n_frames / stride_length);
+    n_frames = tng_max(1, n_frames / stride_length);
 
     /* FIXME: If not using a union to store data a whole dimension
      * or the whole block can be read at once if byte swapping is not needed */
@@ -4532,7 +4532,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
         {
             for(j = 0; j < n_values; j++)
             {
-                len = min(strlen(block->block_contents+*offset) + 1,
+                len = tng_min(strlen(block->block_contents+*offset) + 1,
                           TNG_MAX_STR_LEN);
                 if(data->values[i][j].c)
                 {
@@ -4619,7 +4619,7 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
     {
         data = &frame_set->tr_data[block_index];
-        stride_length = max(1, data->stride_length);
+        stride_length = tng_max(1, data->stride_length);
     }
     else
     {
@@ -4663,7 +4663,7 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
     /* If writing frame independent data data->n_frames is be 0, but n_frames
        is used for the loop writing the data (and reserving memory) and needs
        to be at least 1 */
-    n_frames = max(1, data->n_frames);
+    n_frames = tng_max(1, data->n_frames);
 
     
     block->block_contents_size = sizeof(char) * 2 +
@@ -4976,7 +4976,7 @@ static tng_function_status tng_data_block_contents_read
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
-        if(same_hash != TRUE)
+        if(same_hash != TNG_TRUE)
         {
             printf("Data block contents corrupt. Hashes do not match. %s: %d\n",
                 __FILE__, __LINE__);
@@ -5485,7 +5485,7 @@ static tng_function_status tng_block_name_set(tng_trajectory_t tng_data,
 {
     int len;
     
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -5516,7 +5516,7 @@ tng_function_status tng_atom_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -5547,7 +5547,7 @@ tng_function_status tng_atom_type_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_type) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_type) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -5611,7 +5611,7 @@ tng_function_status tng_molecule_add(tng_trajectory_t tng_data,
     tng_molecule_t new_molecules;
     int64_t *new_molecule_cnt_list;
     int id, i;
-    tng_bool found_id = TRUE;
+    tng_bool found_id = TNG_TRUE;
     
     new_molecules = realloc(tng_data->molecules,
                             sizeof(struct tng_molecule) *
@@ -5654,12 +5654,12 @@ tng_function_status tng_molecule_add(tng_trajectory_t tng_data,
     id = 0;
     while(found_id)
     {
-        found_id = FALSE;
+        found_id = TNG_FALSE;
         for(i = tng_data->n_molecules; i--;)
         {
             if(tng_data->molecules[i].id == id)
             {
-                found_id = TRUE;
+                found_id = TNG_TRUE;
                 i = 0;
             }
         }
@@ -5682,7 +5682,7 @@ tng_function_status tng_molecule_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -5799,7 +5799,7 @@ tng_function_status tng_chain_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -5908,7 +5908,7 @@ tng_function_status tng_residue_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -6099,7 +6099,7 @@ tng_function_status tng_molecule_name_of_particle_nr_get
 {
     int64_t cnt = 0, i, *molecule_cnt_list;
     tng_molecule_t mol;
-    tng_bool found = FALSE;
+    tng_bool found = TNG_FALSE;
 
     if(tng_data->var_num_atoms_flag)
     {
@@ -6119,7 +6119,7 @@ tng_function_status tng_molecule_name_of_particle_nr_get
             cnt += mol->n_atoms * molecule_cnt_list[i];
             continue;
         }
-        found = TRUE;
+        found = TNG_TRUE;
         break;
     }
     if(!found)
@@ -6146,7 +6146,7 @@ tng_function_status tng_chain_name_of_particle_nr_get
     int64_t cnt = 0, i, *molecule_cnt_list;
     tng_molecule_t mol;
     tng_atom_t atom;
-    tng_bool found = FALSE;
+    tng_bool found = TNG_FALSE;
 
     if(tng_data->var_num_atoms_flag)
     {
@@ -6167,7 +6167,7 @@ tng_function_status tng_chain_name_of_particle_nr_get
             continue;
         }
         atom = &mol->atoms[nr % mol->n_atoms];
-        found = TRUE;
+        found = TNG_TRUE;
         break;
     }
     if(!found)
@@ -6198,7 +6198,7 @@ tng_function_status tng_residue_name_of_particle_nr_get
     int64_t cnt = 0, i, *molecule_cnt_list;
     tng_molecule_t mol;
     tng_atom_t atom;
-    tng_bool found = FALSE;
+    tng_bool found = TNG_FALSE;
 
     if(tng_data->var_num_atoms_flag)
     {
@@ -6219,7 +6219,7 @@ tng_function_status tng_residue_name_of_particle_nr_get
             continue;
         }
         atom = &mol->atoms[nr % mol->n_atoms];
-        found = TRUE;
+        found = TNG_TRUE;
         break;
     }
     if(!found)
@@ -6250,7 +6250,7 @@ tng_function_status tng_atom_name_of_particle_nr_get
     int64_t cnt = 0, i, *molecule_cnt_list;
     tng_molecule_t mol;
     tng_atom_t atom;
-    tng_bool found = FALSE;
+    tng_bool found = TNG_FALSE;
 
     if(tng_data->var_num_atoms_flag)
     {
@@ -6271,7 +6271,7 @@ tng_function_status tng_atom_name_of_particle_nr_get
             continue;
         }
         atom = &mol->atoms[nr % mol->n_atoms];
-        found = TRUE;
+        found = TNG_TRUE;
         break;
     }
     if(!found)
@@ -6298,7 +6298,7 @@ tng_function_status tng_atom_type_of_particle_nr_get
     int64_t cnt = 0, i, *molecule_cnt_list;
     tng_molecule_t mol;
     tng_atom_t atom;
-    tng_bool found = FALSE;
+    tng_bool found = TNG_FALSE;
 
     if(tng_data->var_num_atoms_flag)
     {
@@ -6319,7 +6319,7 @@ tng_function_status tng_atom_type_of_particle_nr_get
             continue;
         }
         atom = &mol->atoms[nr % mol->n_atoms];
-        found = TRUE;
+        found = TNG_TRUE;
         break;
     }
     if(!found)
@@ -6959,7 +6959,7 @@ tng_function_status tng_input_file_set(tng_trajectory_t tng_data,
         fclose(tng_data->input_file);
     }
 
-    len = min(strlen(file_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(file_name) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->input_file_path, len);
     if(!temp)
     {
@@ -7005,7 +7005,7 @@ tng_function_status tng_output_file_set(tng_trajectory_t tng_data,
         fclose(tng_data->output_file);
     }
 
-    len = min(strlen(file_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(file_name) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->output_file_path, len);
     if(!temp)
     {
@@ -7174,7 +7174,7 @@ tng_function_status tng_first_program_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     if(tng_data->first_program_name && strlen(tng_data->first_program_name) < len)
     {
@@ -7215,7 +7215,7 @@ tng_function_status tng_last_program_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     if(tng_data->last_program_name && strlen(tng_data->last_program_name) < len)
     {
@@ -7256,7 +7256,7 @@ tng_function_status tng_first_user_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7299,7 +7299,7 @@ tng_function_status tng_last_user_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7342,7 +7342,7 @@ tng_function_status tng_first_computer_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7385,7 +7385,7 @@ tng_function_status tng_last_computer_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7429,7 +7429,7 @@ tng_function_status tng_first_signature_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(signature) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(signature) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7473,7 +7473,7 @@ tng_function_status tng_last_signature_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(signature) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(signature) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -7517,7 +7517,7 @@ tng_function_status tng_forcefield_name_set(tng_trajectory_t tng_data,
 {
     int len;
 
-    len = min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
+    len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
      * string it is freed and reallocated. */
@@ -8087,7 +8087,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
     tng_gen_block_t block;
     tng_function_status stat;
 
-    first_frame = max(frame_set->first_frame, 0);
+    first_frame = tng_max(frame_set->first_frame, 0);
     last_frame = first_frame + frame_set->n_frames - 1;
     n_frames_per_frame_set = tng_data->frame_set_n_frames;
     long_stride_length = tng_data->long_stride_length;
@@ -8148,7 +8148,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
         }
     }
     
-    first_frame = max(frame_set->first_frame, 0);
+    first_frame = tng_max(frame_set->first_frame, 0);
     last_frame = first_frame + frame_set->n_frames - 1;
     
     if(frame >= first_frame && frame <= last_frame)
@@ -8183,7 +8183,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8218,7 +8218,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8251,7 +8251,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8286,7 +8286,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8321,7 +8321,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8354,7 +8354,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -8388,7 +8388,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
                 return(TNG_CRITICAL);
             }
         }
-        first_frame = max(frame_set->first_frame, 0);
+        first_frame = tng_max(frame_set->first_frame, 0);
         last_frame = first_frame + frame_set->n_frames - 1;
         if(frame >= first_frame && frame <= last_frame)
         {
@@ -9131,7 +9131,7 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
                 first_dim_values = data->values[i];
                 for(j = 0; j < n_values_per_frame; j++)
                 {
-                    len = min(strlen(new_data) + 1,
+                    len = tng_min(strlen(new_data) + 1,
                                 TNG_MAX_STR_LEN);
                     if(first_dim_values[j].c)
                     {
@@ -9360,7 +9360,7 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
                     second_dim_values = first_dim_values[j];
                     for(k = 0; k < n_values_per_frame; k++)
                     {
-                        len = min(strlen(new_data) + 1,
+                        len = tng_min(strlen(new_data) + 1,
                                 TNG_MAX_STR_LEN);
                         if(second_dim_values[k].c)
                         {
@@ -9717,7 +9717,7 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
 
     n_values_per_frame = data.n_values_per_frame;
 
-    file_pos = (frame_nr - max(frame_set->first_frame,
+    file_pos = (frame_nr - tng_max(frame_set->first_frame,
                                data.first_frame_with_data)) /
                 data.stride_length;
     file_pos *= size * n_values_per_frame;
@@ -10236,7 +10236,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
 
     n_values_per_frame = data.n_values_per_frame;
 
-    file_pos = (frame_nr - max(frame_set->first_frame,
+    file_pos = (frame_nr - tng_max(frame_set->first_frame,
                                data.first_frame_with_data)) /
                 data.stride_length;
     file_pos *= block_n_particles * size * n_values_per_frame;
@@ -10493,7 +10493,7 @@ tng_function_status tng_data_get(tng_trajectory_t tng_data,
         return(TNG_CRITICAL);
     }
 
-    *n_frames = max(1, data->n_frames);
+    *n_frames = tng_max(1, data->n_frames);
 
     *values = new_data->values;
     *type = data->datatype;
@@ -10854,7 +10854,7 @@ tng_function_status tng_particle_data_get(tng_trajectory_t tng_data,
             return(TNG_CRITICAL);
         }
 
-        *n_frames = max(1, data->n_frames);
+        *n_frames = tng_max(1, data->n_frames);
 
         *values = new_data->values;
         
