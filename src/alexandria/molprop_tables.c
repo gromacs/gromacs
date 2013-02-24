@@ -849,8 +849,8 @@ static void prop_header(FILE *fp,int caption,const char *property,real rtoler,re
     {
         fprintf(fp,"\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.}\n\\label{%s}\n",
                 property,ims_names[ims],
-                (atoler > 0) ? atoler   : 100*rtoler,(atoler > 0) ? "" : "\%",
-                (atoler > 0) ? 2*atoler : 200*rtoler,(atoler > 0) ? "" : "\%",
+                (atoler > 0) ? atoler   : 100*rtoler,(atoler > 0) ? "" : "\\%",
+                (atoler > 0) ? 2*atoler : 200*rtoler,(atoler > 0) ? "" : "\\%",
                 ims_names[ims]);
     }
     else 

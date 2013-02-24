@@ -1,5 +1,5 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: mptest.c,v 1.5 2009/04/05 11:46:57 spoel Exp $
+/*
+ * $Id: molprop_xml.hpp,v 1.3 2009/04/05 11:46:57 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -12,7 +12,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- *
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -33,41 +33,14 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
-#include <stdio.h>
-#include <stdlib.h>
-#include <gmx_fatal.h>
-#include "molprop_xml.h"
-#include "molprop_util.h"
-#include "atomprop.h"
-#include "poldata_xml.h"
 
-int main(int argc,char*argv[])
-{
-    gmx_atomprop_t ap;
-    gmx_poldata_t  pd;
-    gmx_molprop_t  *mpt;
-    int nmolprop;
-    
-    if (argc < 3) 
-    {
-        fprintf(stderr,"Usage: %s infile outfile\n",argv[0]);
-        exit(1);
-    }
-    if (1) 
-    {
-        mpt = gmx_molprops_read(argv[1],&nmolprop);
-    }
-    else 
-    {
-        ap = gmx_atomprop_init();
-        if ((pd = gmx_poldata_read("tune_pol.dat",ap)) == NULL)
-            gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
-        
-        mpt = merge_xml(1,&argv[1],NULL,
-                        NULL,(char *)"double_dip.dat",&nmolprop,ap,pd,TRUE,TRUE,170,15);
-    }
-    printf("Read %d molecules from %s\n",nmolprop,argv[1]);
-    gmx_molprops_write(argv[2],nmolprop,mpt,0);
-    
-    return 0;
-}
+#ifndef _molprop_xml_hpp
+#define _molprop_xml_hpp
+
+#include "molprop.hpp"
+
+extern void MolPropWrite(const char *fn,std::vector<alexandria::MolProp> mpt,gmx_bool bCompress);
+  
+extern void MolPropRead(const char *fn,std::vector<alexandria::MolProp>& mpt);
+
+#endif

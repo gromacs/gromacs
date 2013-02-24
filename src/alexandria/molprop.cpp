@@ -1,154 +1,82 @@
-class MolecularComposition {
-  const char *GetAtom(int *cnumber) 
+#include <string>
+#include <vector>
+#include "molprop.hpp"
+        
+namespace alexandria {
+  void MolecularComposition::ReplaceAtom(std::string oldatom,std::string newatom)
   {
-    std::string str = GetAtom(cnumber);
+    AtomNumIterator i;
     
-    return str.c_str();
-  }
-
-  const std::string GetAtom(int *cnumber) 
-  {
-    if (_catom_index < _catom.size())
-      { 
-        *cnumber = _cnumber[_catom_index]; 
-        return _catom[_catom_index++]; 
-      } 
-    else
+    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
       {
-        Reset();
-        *cnumber = 0;
-        return NULL;
-      }
-  }
-  
-  void AddAtom(std::string catom,const int cnumber)
-  {
-    int i;
-    
-    for(i=0; (i<_catom.size()); i++) 
-      {
-        if (_catom[i] == catom) 
+        if (oldatom == i->GetAtom())
           {
-            _cnumber[i] += cnumber;
-            break;
-          }
-      }
-    if (i == _catom.size()) 
-      {
-        _catom.push_back(catom);
-        _cnumber.push_back(cnumber);
-      }
-  
-  }
-  
-  void AddAtom(const char *catom,const int cnumber)
-  {
-    std::string str(catom);
-    
-    AddAtom(str,cnumber);
-  }
-  
-  void DeleteAtom(std::string catom)
-  {
-    int i;
-    
-    for(i=0; (i<_catom.size()); i++)
-      {
-        if (_catom[i].c_str() == catom)
-          {
-            _catom.erase(_catom.begin()+i-1);
-            _cnumber.erase(_cnumber.begin()+i-1);
-          }
-      }
-  }
-  
-  void DeleteAtom(const char *catom)
-  {
-    std::string str(catom);
-    
-    DeleteAtom(str);
-  }
-  
-  void ReplaceAtom(std::string oldatom,std::string newatom)
-  {
-    int i;
-    
-    for(i=0; (i<_catom.size); i++) 
-      {
-        if (oldatom == catom[i])
-          {
-            catom[i].assign(newatom);
+            i->SetAtom(newatom);
             break;
           }
       }
   }
   
-  void ReplaceAtom(const char *oldatom,const char *newatom)
+  int MolecularComposition::CountAtoms(std::string atom)
   {
-    std::string oa(oldatom);
-    std::string na(newatom);
+    AtomNumIterator i;
     
-    ReplaceAtom(oa,na);
-  }
-  
-  int CountAtoms(std::string atom)
-  {
-    int i;
-    
-    for(i=0; (i<_catom.size()); i++)
-      if (_catom[i] == atom)
-        return _cnumber[i];
+    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
+      {
+        if (atom == i->GetAtom())
+          return i->GetNumber();
+      }
     return 0;
   }
   
-  int CountAtoms(const char *atom)
+  int MolecularComposition::CountAtoms(const char *atom)
   {
     std::string str(atom);
     
     return CountAtoms(str);
   }
-}
-
-class MolProp {
-  const char *GetCategory() 
-  { 
-    if (_category_index < _category.size()) 
-      { 
-        return _category[_category_index++].c_str(); 
-      }
-    else {
-      ResetCategory();
-      return NULL; 
-    }
-  }
-  std::string GetCategory() 
-  { 
-    if (_category_index < _category.size()) 
-      { 
-        return _category[_category_index++]; 
-      }
-    else {
-      ResetCategory();
-      return NULL; 
-    }
-  }
-
-  int SearchCategory(const char *catname)
+  
+  int MolecularComposition::CountAtoms()
   {
-    std::string str(catname);
+    int nat = 0;
+    AtomNumIterator i;
     
-    return SearchCategory(str);
+    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
+      {
+        nat += i->GetNumber();
+      }
+    return nat;
+  }
+
+  void MolProp::CheckConsistency() 
+  {
   }
   
-  int SearchCategory(std::string catname)
+  int MolProp::SearchCategory(std::string catname)
   {
-    int i;
+    std::vector<std::string>::iterator i;
     
-    for(i=0; (i < _category.size()); i++)
-      if (_category[i] == catname)
-        return 1;
-    
+    for(i=BeginCategory(); (i < EndCategory()); i++)
+      {
+        if (*i == catname)
+          return 1;
+      }
     return 0;
   }
   
+  void MolProp::DeleteComposition(std::string compname)
+  {
+    MolecularCompositionIterator i;
+    
+    for(i=BeginMolecularComposition(); (i<=EndMolecularComposition()); i++) 
+      {
+        if (i->CompName() == compname) 
+          {
+            break;
+          }
+      }
+    if (i < EndMolecularComposition())
+      _mol_comp.erase(i);
+  }
 }
+

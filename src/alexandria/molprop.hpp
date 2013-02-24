@@ -37,6 +37,11 @@
 #ifndef _molprop_h
 #define _molprop_h
 
+#include <string.h>
+#include <string>
+#include <vector>
+#include "typedefs.h"
+
 enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
 
 enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY, 
@@ -44,10 +49,10 @@ enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY,
 
 extern const char *emp_name[empNR];
 
-#define assign_str(char *dst,char *src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
+#define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
 
-namespace gmx 
+namespace alexandria 
 {
   class AtomNum 
   {
@@ -55,50 +60,61 @@ namespace gmx
     std::string _catom;
     int _cnumber;
   public:
-    AtomNum(const char *catom,int cnumber) { _catom.assign(catom); _cnumber = cnumber; }
-    AtomNum(std::string catom,int cnumber) { _catom = catom; _cnumber = cnumber; }
+    AtomNum(const char *catom,int cnumber) { SetAtom(catom); SetNumber(cnumber); }
+    AtomNum(std::string catom,int cnumber) { SetAtom(catom); SetNumber(cnumber); }
     ~AtomNum() {};
-    
+    std::string GetAtom() { return _catom; }
+    void SetAtom(std::string catom) { _catom = catom; }
+    void SetAtom(const char *catom) { _catom.assign(catom); }
+    //const char *GetAtom() { return _catom.c_str(); }
+    int GetNumber() { return _cnumber; }
+    void SetNumber(int cnumber) { _cnumber = cnumber; }
   };
+  typedef std::vector<AtomNum>::iterator AtomNumIterator; 
   
   class MolecularComposition 
   {
   private:
     std::string _compname;
-    int _atomnum_index;
-    std::vector<t_atomnum> _atomnum;
+    std::vector<AtomNum> _atomnum;
   public:
-    MolecularComposition(char *compname) { _compname.assign(compname); }
+    MolecularComposition(const char *compname) { _compname.assign(compname); }
     MolecularComposition(std::string compname) { _compname = compname; }
     ~MolecularComposition() {}
-    void AddAtom(const char *catom,int cnumber) { _atomnum.push_back(catom,cnumber); }
-    void AddAtom(std::string catom,int cnumber) { _atomnum.push_back(catom,cnumber); }
+    std::string CompName() { return _compname; }
+    void AddAtom(const char *catom,int cnumber) { _atomnum.push_back(AtomNum(catom,cnumber); }
+    void AddAtom(std::string catom,int cnumber) { _atomnum.push_back(AtomNum(catom,cnumber)); }
     void DeleteAtom(const char *catom);
     void DeleteAtom(std::string catom);
-    void ReplaceAtom(const char *oldatom,const char *newatom);
+    void ReplaceAtom(const char *oldatom,const char *newatom) { std::string so(oldatom),sn(newatom); ReplaceAtom(so,sn); }
     void ReplaceAtom(std::string oldatom,std::string newatom);
-    void Reset() { _catom_index = 0; }
-    const char *GetAtom(int *cnumber);
-    const std::string GetAtom(int *cnumber);
+    AtomNumIterator BeginAtomNum() { return _atomnum.begin(); }
+    AtomNumIterator EndAtomNum() { return _atomnum.end(); }
     int CountAtoms(const char *atom);
     int CountAtoms(std::string atom);
+    int CountAtoms();
   };
-
+  typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
+  
   class GenericProperty 
   {
   private:
     std::string _type,_unit;
   public:
-    GenericProperty(char *type,char *unit) { _type.assign(type); _unit.assign(unit); };
-    GenericProperty(std::string type,std::string unit) { _type = type; _unit = unit; };
+    GenericProperty(char *type,char *unit) { SetType(type); SetUnit(unit); };
+    GenericProperty(std::string type,std::string unit) { SetType(type); SetUnit(unit); };
     ~GenericProperty() {};
-    const char *GetType() { return _type.c_str(); }
-    const char *GetUnit() { return _unit.c_str(); }
+    //const char *GetType() { return _type.c_str(); }
+    //const char *GetUnit() { return _unit.c_str(); }
     std::string GetType() { return _type; }
     std::string GetUnit() { return _unit; }
+    void SetType(std::string type) { _type = type; }
+    void SetUnit(std::string unit) { _unit = unit; }
+    void SetType(const char *type) { _type.assign(type); }
+    void SetUnit(const char *unit) { _unit.assign(unit); }
   };
   
-  class MolecularQuadrupole : GenericProperty
+  class MolecularQuadrupole : public GenericProperty
   {
   private:
     double _xx,_yy,_zz,_xy,_xz,_yz;
@@ -106,11 +122,12 @@ namespace gmx
     MolecularQuadrupole(char *type,char *unit,double xx,double yy,double zz,double xy,double xz,double yz) : GenericProperty(type,unit) { Set(xx,yy,zz,xy,xz,yz); };
     MolecularQuadrupole(std::string type,std::string unit,double xx,double yy,double zz,double xy,double xz,double yz) : GenericProperty(type,unit) { Set(xx,yy,zz,xy,xz,yz); };
     ~MolecularQuadrupole() {};
-    Set(double xx,double yy,double zz,double xy,double xz,double yz) { _xx=xx; _yy=yy; _zz=zz; _xy=xy; _xz=xz; _yz=yz; };
-    Get(double *xx,double *yy,double *zz,double *xy,double *xz,double *yz) { *xx=_xx; *yy=_yy; *zz=_zz; *xy=_xy; *xz=_xz; *yz=_yz; };
+    void Set(double xx,double yy,double zz,double xy,double xz,double yz) { _xx=xx; _yy=yy; _zz=zz; _xy=xy; _xz=xz; _yz=yz; };
+    void Get(double *xx,double *yy,double *zz,double *xy,double *xz,double *yz) { *xx=_xx; *yy=_yy; *zz=_zz; *xy=_xy; *xz=_xz; *yz=_yz; };
   };
-
-  class MolecularEnergy : GenericProperty
+  typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
+  
+  class MolecularEnergy : public GenericProperty
   {
   private:
     double _value,_error;
@@ -118,11 +135,12 @@ namespace gmx
     MolecularEnergy(char *type,char *unit,double value,double error) : GenericProperty(type,unit) { Set(value,error); };
     MolecularEnergy(std::string type,std::string unit,double value,double error) : GenericProperty(type,unit) { Set(value,error); };
     ~MolecularEnergy() {};
-    Set(double value,double error) { _value = value; _error = error; };
-    Get(double *value,double *error) { *vaue = _value; *error = _error };
+    void Set(double value,double error) { _value = value; _error = error; };
+    void Get(double *value,double *error) { *value = _value; *error = _error; };
   };
-
-  class MolecularDipPolar : GenericProperty
+  typedef std::vector<MolecularEnergy>::iterator MolecularEnergyIterator;
+  
+  class MolecularDipPolar : public GenericProperty
   {
   private:
     double _x,_y,_z;
@@ -131,10 +149,11 @@ namespace gmx
     MolecularDipPolar(char *type,char *unit,double x,double y,double z,double aver,double error) : GenericProperty(type,unit) { Set(x,y,z,aver,error); }
     MolecularDipPolar(std::string type,std::string unit,double x,double y,double z,double aver,double error) : GenericProperty(type,unit) { Set(x,y,z,aver,error); }
     ~MolecularDipPolar() {};
-    Set(double x,double y,double z,double aver,double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
-    Get(double *x,double *y,double *z,double *aver,double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
+    void Set(double x,double y,double z,double aver,double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
+    void Get(double *x,double *y,double *z,double *aver,double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
   };
-
+  typedef std::vector<MolecularDipPolar>::iterator MolecularDipPolarIterator;
+  
   class ElectrostaticPotential
   {  
   private:
@@ -144,9 +163,12 @@ namespace gmx
   public:
     ElectrostaticPotential(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { Set(xyz_unit,V_unit,espid,x,y,z,V); };
     ~ElectrostaticPotential() {};
-    Set(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { _xyz_unit.assign(xyz_unit); _V_unit.assign(V_unit); _espid = espid; _x = x; _y = y; _z = z; _V = V; };
-    Get(char **xyz_unit,char **V_unit,int *espid,double *x,double *y,double *z,double *V) { _xyz_unit.assign(xyz_unit); _V_unit.assign(V_unit); _espid = espid; _x = x; _y = y; _z = z; _V = V; };
+    void Set(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { _xyz_unit.assign(xyz_unit); _V_unit.assign(V_unit); _espid = espid; _x = x; _y = y; _z = z; _V = V; };
+    void Get(char **xyz_unit,char **V_unit,int *espid,double *x,double *y,double *z,double *V) { 
+      *xyz_unit = strdup(_xyz_unit.c_str()); *V_unit = strdup(_V_unit.c_str()); *espid = _espid; *x = _x; *y = _y; *z = _z; *V = _V; 
+    };
   };
+  typedef std::vector<ElectrostaticPotential>::iterator ElectrostaticPotentialIterator;
 
   class Bond
   {
@@ -155,20 +177,24 @@ namespace gmx
   public:
     Bond(int ai,int aj,int bondorder) { Set(ai,aj,bondorder); }
     ~Bond() {};
-    Set(int ai,int aj,int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder };
-    Get(int *ai,int *aj,int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder };
+    void Set(int ai,int aj,int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
+    void Get(int *ai,int *aj,int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
+    int GetAi() { return _ai; }
+    int GetAj() { return _aj; }
+    int GetBondOrder() { return _bondorder; }
   };
+  typedef std::vector<Bond>::iterator BondIterator; 
 
-  class AtomicCharge : GenericProperty
+  class AtomicCharge : public GenericProperty
   {
   private:
     double _q;
   public:
-    AtomicCharge(const char *type,const char *unit,double q) : GenericProperty(type,unit) { Set(q); };
-    AtomicCharge(std::string type,std::string unit,double q) : GenericProperty(type,unit) { Set(q); };
+    AtomicCharge(const char *type,const char *unit,double q) : GenericProperty(type,unit) { SetQ(q); };
+    AtomicCharge(std::string type,std::string unit,double q) : GenericProperty(type,unit) { SetQ(q); };
     ~AtomicCharge() {};
-    void Set(double q) { _q = q };
-    void Get(double *q) { *q = _q; }
+    void SetQ(double q) { _q = q; };
+    double GetQ() { return _q; }
   };
   typedef std::vector<AtomicCharge>::iterator AtomicChargeIterator; 
 
@@ -177,87 +203,126 @@ namespace gmx
   private:
     std::string _name,_obtype,_unit;
     double _x,_y,_z;
-    int _atomid,_charge_index;
+    int _atomid;
     std::vector<AtomicCharge> _q;
   public:
-    CalcAtom(const char *name,const char *obtype,const char *unit) {};
+    CalcAtom(const char *name,const char *obtype,int atomid) { 
+      _name.assign(name); _obtype.assign(obtype); _atomid = atomid;
+    };
     ~CalcAtom() {};
-    void AddCharge(const char *type,const char *unit,double q) { _q.push_back(type,unit,q); }
+    
+    void AddCharge(const char *type,const char *unit,double q) { 
+      _q.push_back(AtomicCharge(type,unit,q)); 
+    }
     /* Get through iterator */
     AtomicChargeIterator BeginQ() { return _q.begin(); }
     AtomicChargeIterator EndQ() { return _q.end(); }
+    
+    //char *GetUnit() { return _unit.c_str(); }
+    int GetAtomid() { return _atomid; }
+    std::string GetName() { return _name; }
+    std::string GetObtype() { return _obtype; }
+    std::string GetUnit() { return _unit; }
+    void SetUnit(std::string unit) { _unit = unit; }
+    void SetUnit(const char *unit) { _unit.assign(unit); }
+        
+    void SetCoords(double x,double y,double z) { _x = x; _y = y; _z = z; }
+    void GetCoords(double *x,double *y,double *z) { *x = _x; *y = _y; *z = _z; }
   };
-
+  typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
+   
   class Experiment
   {
   private:
-    int _eMP;
+    gmx_bool _bExperiment;
     std::string _reference,_conformation;
-    int _nprop_c[empNR];
     std::vector<MolecularDipPolar> _polar,_dipole;
     std::vector<MolecularEnergy> _energy;
     std::vector<MolecularQuadrupole> _quadrupole;
   public:
-    Experiment(std::string reference,std::string conformation) 
-    { 
-      _reference = reference;
-      _conformation = conformation;
+    Experiment(std::string reference,std::string conformation) { 
+      _reference = reference; _conformation = conformation; _bExperiment = TRUE;
     };
-    Experiment(const char *reference,const char *conformation) 
-    { 
-      _reference.assign(reference);
-      _conformation.assign(conformation);
+    Experiment(const char *reference,const char *conformation) { 
+      _reference.assign(reference); _conformation.assign(conformation);
     };
     ~Experiment() {};
-    void AddPolar(const char *type,const char *unit,
-                  double xx,double yy,double zz,
-                  double aver,double error) { _polar.push_back(type,unit,xx,yy,zz,aver,error); }
-    void AddEnergy(const char *type,const char *unit,
-                   double value,double error) { _energy.push_back(type,unit,value,error); };
-    /* Iterator ? */
-    int GetPolar(char **type,char **unit,
-                 double *xx,double *yy,double *zz,double *aver,double *error);
-    int GetEnergy(char **type,char **unit,
-                  double *value,double *error);
+    gmx_bool GetExperiment() { return _bExperiment; }
+    void SetExperiment(gmx_bool bExperiment) { _bExperiment = bExperiment; }
+
+    void AddPolar(MolecularDipPolar mdp) { _polar.push_back(mdp); }
+    MolecularDipPolarIterator BeginPolar() { return _polar.begin(); }
+    MolecularDipPolarIterator EndPolar()   { return _polar.end(); }
+                  
+    void AddDipole(MolecularDipPolar mdp) { _dipole.push_back(mdp); }
+    MolecularDipPolarIterator BeginDipole() { return _dipole.begin(); }
+    MolecularDipPolarIterator EndDipole()   { return _dipole.end(); }
+                  
+    void AddQuadrupole(MolecularQuadrupole mq) { _quadrupole.push_back(mq); }
+    MolecularQuadrupoleIterator BeginQuadrupole() { return _quadrupole.begin(); }
+    MolecularQuadrupoleIterator EndQuadrupole() { return _quadrupole.end(); }
+
+    void AddEnergy(MolecularEnergy me) { _energy.push_back(me); }
+    MolecularEnergyIterator BeginEnergy() { return _energy.begin(); }
+    MolecularEnergyIterator EndEnergy()   { return _energy.end(); }
+    
+    std::string GetConformation() { return _conformation; }
+    //const char *GetConformation() { return _conformation.c_str(); }
+    
+    std::string GetReference() { return _reference; }
+    //const char *GetReference() { return _reference.c_str(); }
   };
+  typedef std::vector<Experiment>::iterator ExperimentIterator; 
   
-  class Calculation : Experiment
+  class Calculation : public Experiment
   {
   private:
     std::string _program,_method,_basisset,_datafile;
-    int _catom_index;
     std::vector<CalcAtom> _catom;
     std::vector<ElectrostaticPotential> _potential;
   public:
-    Calculation() {};
+    Calculation(const char *program,const char *method,
+                const char *basisset,const char *reference,
+                const char *conformation,const char *datafile) : Experiment(reference,conformation) { 
+      _program.assign(program); _method.assign(method); 
+      _basisset.assign(basisset); _datafile.assign(datafile); 
+      SetExperiment(FALSE);
+    };
     ~Calculation() {};
-    CalcAtom GetAtom();
+    
+    void AddAtom(CalcAtom ca) { _catom.push_back(ca); }
+    int NAtom() { return _catom.size(); }
+    CalcAtomIterator BeginAtom() { return _catom.begin(); }
+    CalcAtomIterator EndAtom() { return _catom.end(); }
 
-    void AddPotential(const char *xyzUnit,const char *VUnit,int espid,
-                      double x,double y,double z,
-                      double V) { _potential.push_back(xyzUnit,VUnit,espid,x,y,z,V); };
-    int GetNPotential() { return _potential.size(); };
-
-    /* Iterator! */
-    int getPotential(char **xyzUnit,char **VUnit,int *espid,
-                     double *x,double *y,double *z,
-                     double *V);
+    void AddPotential(ElectrostaticPotential ep) { _potential.push_back(ep); }
+    int NPotential() { return _potential.size(); };
+    ElectrostaticPotentialIterator BeginPotential() { return _potential.begin(); }
+    ElectrostaticPotentialIterator EndPotential() { return _potential.end(); }
+    
+    std::string GetProgram() { return _program; }
+    //const char *GetProgram() { return _program.c_str(); }
+    
+    std::string GetBasisset() { return _basisset; }
+    //const char *GetBasisset() { return _basisset.c_str(); }
+    
+    std::string GetMethod() { return _method; }
+    //const char *GetMethod() { return _method.c_str(); }
+    
+    std::string GetDatafile() { return _datafile; }
+    //const char *GetDatafile() { return _datafile.c_str(); }
   };
-
+  typedef std::vector<Calculation>::iterator CalculationIterator;
+  
   class MolProp {
   private:
     double _mass;
     int _charge,_multiplicity;
     std::string _formula,_molname,_iupac,_cas,_cid,_inchi;
-    int _category_index;
     std::vector<std::string> _category;
-    int _mol_comp_index;
     std::vector<MolecularComposition> _mol_comp;
-    int _calc_index;
     std::vector<Calculation> _calc;
-    int _exper_index;
     std::vector<Experiment> _exper;
-    int _bond_index;
     std::vector<Bond> _bond;
   public:
     MolProp() {}
@@ -276,139 +341,81 @@ namespace gmx
     
     void SetFormula(const char *formula) { _formula.assign(formula); }
     void SetFormula(std::string formula) { _formula.assign(formula); }
-    char *GetFormula() { return _formula.c_str(); }
+    //char *GetFormula() { return _formula.c_str(); }
     std::string GetFormula() { return _formula; }
     
     void SetMolname(const char *molname) { _molname.assign(molname); }
     void SetMolname(std::string molname) { _molname.assign(molname); }
-    char *GetMolname() { return _molname.c_str(); }
+    //char *GetMolname() { return _molname.c_str(); }
     std::string GetMolname() { return _molname; }
     
     void SetIupac(const char *iupac) { _iupac.assign(iupac); }
     void SetIupac(std::string iupac) { _iupac.assign(iupac); }
     
     /* Return IUPAC name or, if not found, the molname */
-    char *GetIupac() { if (_iupac.size() > 0) return _iupac.c_str() else return _molname.c_str(); }
-    std::string GetIupac() { if (_iupac.size() > 0) return _iupac else return _molname; }
+    //char *GetIupac() { if (_iupac.size() > 0) return _iupac.c_str() else return _molname.c_str(); }
+    std::string GetIupac() { if (_iupac.size() > 0) return _iupac; else return _molname; }
     
     void SetCas(const char *cas) { _cas.assign(cas); }
     void SetCas(std::string cas) { _cas.assign(cas); }
-    char *GetCas() { return _cas.c_str(); }
+    //char *GetCas() { return _cas.c_str(); }
     std::string GetCas() { return _cas; }
     
     void SetCid(const char *cid) { _cid.assign(cid); }
     void SetCid(std::string cid) { _cid.assign(cid); }
-    char *GetCid() { return _cid.c_str(); }
+    //char *GetCid() { return _cid.c_str(); }
     std::string GetCid() { return _cid; }
     
     void SetInchi(const char *inchi) { _inchi.assign(inchi); }
     void SetInchi(std::string inchi) { _inchi.assign(inchi); }
-    char *GetInchi() { return _inchi.c_str(); }
+    //char *GetInchi() { return _inchi.c_str(); }
     std::string GetInchi() { return _inchi; }
     
     void AddCategory(const char *category) { _category.push_back(category); }
     void AddCategory(std::string category) { _category.push_back(category); }
     int NCategory() { return _category.size(); }
     
-    /* Returns one category at a time. If NULL, you got them all previously.
-     * Implement with iterators.
-     */
-    const char *GetCategory();
-    std::string GetCategory();
-    void ResetCategory() { _category_index = 0; }
-    int SearchCategory(const char *catname);
+    std::vector<std::string>::iterator BeginCategory() { return _category.begin(); }
+    std::vector<std::string>::iterator EndCategory() { return _category.end(); }
+
+    int SearchCategory(const char *catname) { std::string str(catname); return SearchCategory(str); }
     int SearchCategory(std::string catname);
     
-    void DeleteComposition(const char *compname);
-    MolecularComposition AddComposition(const char *compname) { _mol_comp.push_back(compname); return _mol_comp.back(); }
-    void ResetComposition() { _mol_comp_index = 0; }
-    MolecularComposition GetComposition() { if (_mol_comp_index < _mol_comp.size()) return _mol_comp[_mol_comp_index++]; else { ResetComposition(); return NULL; } }
-      
-    int GetNAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
-  
-    int GetBond(int *ai,int *aj,int *bondorder) { if(_bond_index < _bonds.size()) { _bonds[_bond_index].Get(ai,aj,*bondorder); _bond_index++; return 1 } else { _bond_index=0; return 0; } };
-    void AddBond(int ai,int aj,int bondorder) { _bonds.push_back(ai,aj,bondorder); }
+    void DeleteComposition(std::string compname);
+    void DeleteComposition(const char *compname) { 
+      std::string str(compname); DeleteComposition(compname); 
+    }
+    MolecularCompositionIterator AddComposition(const char *compname) { 
+      _mol_comp.push_back(MolecularComposition(compname)); return _mol_comp.end(); 
+    }
+    MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
+    MolecularCompositionIterator EndMolecularComposition()   { return _mol_comp.end(); }
+    
+    int NAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
 
-    Experiment AddExperiment(const char *reference,const char *conformation) { _exper.push_back(reference,conformation); return _exper.back(); };
+    void AddBond(Bond b) { _bond.push_back(b); }
+    int Nbond() { return _bond.size(); }
+    BondIterator BeginBond() { return _bond.begin(); }
+    BondIterator EndBond() { return _bond.end(); }
+    
+    void AddExperiment(Experiment myexp) { _exper.push_back(myexp); };
+    int NExperiment() { return _exper.size(); }
 
-    /* Replace by iterator ? */
-    int GetExperiment(char **reference,char **conformation);
-    void ResetExperiment() {};
+    ExperimentIterator BeginExperiment() { return _exper.begin(); }
+    ExperimentIterator EndExperiment() { return _exper.end(); }
+    Experiment *LastExperiment() { 
+      if (NExperiment() > 0) return &(_exper.back()); else return NULL; 
+    }
 
-
-/* Potential. Ref is a calc ref. from addCalc, or getCalc. */	    
-
-/* Dipoles. Ref is either exp or calc ref. from addExper,
-   addCalc, getExper or getCalc. */	    
-extern void addDipole(int ref,
-				   const char *type,const char *unit,
-				   double x,double y,double z,
-				   double aver,double error);
-				       
-extern int getDipole(int ref,
-				  char **type,char **unit,
-				  double *x,double *y,double *z,
-				  double *aver,double *error);
-
-/* Quadrupoles. Ref is either exp or calc ref. from addExper,
-   addCalc, getExper or getCalc. */	    
-extern void addQuadrupole(int ref,
-				       const char *type,const char *unit,
-				       double xx,double yy,double zz,
-				       double xy,double xz,double yz);
-				       
-extern int getQuadrupole(int ref,
-				      char **type,char **unit,
-				      double *xx,double *yy,double *zz,
-				      double *xy,double *xz,double *yz);
-
-extern void resetCalculation(t mpt);
-
-extern void reset(t mpt);
-
-extern int getNbond(t mpt);
-
-  
-/* Returns calcref that can be used to add properties later on */
-extern void addCalculation(
-					const char *program,const char *method,
-					const char *basisset,const char *reference,
-					const char *conformation,const char *datafile,
-                                        int *calcref);
-
-extern int getCalculation(char **program,char **method,
-				       char **basisset,char **reference,
-				       char **conformation,char **datafile,
-                                       int *calcref);
-
-/* Returns atomref that can be used to set coordinates and charges */
-extern void calcAddAtom(int calcref,
-				      const char *atomname,const char *obtype,int atomid,int *atomref);
-
-extern int calcGetNatom(int calcref);
-
-extern int calcGetAtom(int calcref,
-				     char **atomname,char **obtype,int *atomid,int *atomref);
-
-extern void calcSetAtomcoords(int calcref,int atomref,
-					    const char *unit,double x,double y,double z);
-					   
-extern int calcGetAtomcoords(int calcref,int atomref,
-					   char **unit,double *x,double *y,double *z);
-					   
-extern void calcSetAtomcharge(int calcref,int atomref,
-					   const char *type,const char *unit,double q);
-					   
-extern int calcGetAtomcharge(int calcref,int atomref,
-					   char **type,char **unit,double *q);
-
-/* Generic routines */					   
-extern t copy(t mpt);
-
-extern void merge(t dst,t src);
-
-#ifdef __cplusplus
+    void AddCalculation(Calculation calc) { _calc.push_back(calc); }
+    int NCalculation() { return _calc.size(); }
+    CalculationIterator BeginCalculation() { return _calc.begin(); }
+    CalculationIterator EndCalculation() { return _calc.end(); }
+    Calculation *LastCalculation() { 
+      if (NCalculation() > 0) return &(_calc.back()); else return NULL; 
+    }
+  };
+  typedef std::vector<MolProp>::iterator MolPropIterator;
 }
-#endif
-
+  
 #endif

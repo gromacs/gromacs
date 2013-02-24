@@ -90,7 +90,7 @@ enum {
     exmlMULTIPLICITY, exmlCHARGE,
     exmlCATEGORY, exmlCATNAME, exmlEXPERIMENT,
     exmlPOLARIZABILITY, exmlENERGY, exmlDIPOLE, exmlQUADRUPOLE, exmlPOTENTIAL,
-    exmlNAME, exmlVALUE, exmlERROR, 
+    exmlNAME, exmlAVERAGE, exmlERROR, 
     exmlMETHOD, exmlREFERENCE, exmlTYPE, exmlSOURCE,
     exmlBOND, exmlAI, exmlAJ, exmlBONDORDER,
     exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
@@ -190,7 +190,8 @@ static void process_children(xmlNodePtr tree,char *xbuf[])
             (NULL != tree->children) &&
             (NULL != tree->children->content))
         {
-            xbuf[node] = strdup((char *)tree->children->content);
+            if (NULL == xbuf[node])
+                xbuf[node] = strdup((char *)tree->children->content);
         }
         tree = tree->next;
     }
@@ -276,12 +277,12 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlPOLARIZABILITY:
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE])  && NN(xbuf[exmlUNIT]) &&
-                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]) &&
-                        NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]))
+                        NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]))
                         gmx_molprop_add_polar(mpt,expref,xbuf[exmlTYPE],xbuf[exmlUNIT],
-                                              my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
-                                              my_atof(xbuf[exmlZZ]),
-                                              my_atof(xbuf[exmlVALUE]),my_atof(xbuf[exmlERROR]));
+                                              NN(xbuf[exmlXX]) ? my_atof(xbuf[exmlXX]) : 0,
+                                              NN(xbuf[exmlYY]) ? my_atof(xbuf[exmlYY]) : 0,
+                                              NN(xbuf[exmlZZ]) ? my_atof(xbuf[exmlZZ]) : 0,
+                                              my_atof(xbuf[exmlAVERAGE]),my_atof(xbuf[exmlERROR]));
                     break;
                 case exmlPOTENTIAL:
                     process_children(tree->children,xbuf);
@@ -298,12 +299,12 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlDIPOLE: 
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                        NN(xbuf[exmlVALUE]) && NN(xbuf[exmlERROR]) &&
-                        NN(xbuf[exmlX]) && NN(xbuf[exmlY]) && NN(xbuf[exmlZ]))
+                        NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]))
                         gmx_molprop_add_dipole(mpt,expref,xbuf[exmlTYPE],xbuf[exmlUNIT],
-                                               my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),
-                                               my_atof(xbuf[exmlZ]),
-                                               my_atof(xbuf[exmlVALUE]),my_atof(xbuf[exmlERROR]));
+                                               NN(xbuf[exmlX]) ? my_atof(xbuf[exmlX]) : 0,
+                                               NN(xbuf[exmlY]) ? my_atof(xbuf[exmlY]) : 0,
+                                               NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
+                                               my_atof(xbuf[exmlAVERAGE]),my_atof(xbuf[exmlERROR]));
                     break;
                 case exmlQUADRUPOLE: 
                     process_children(tree->children,xbuf);
@@ -505,7 +506,7 @@ static void add_properties(xmlNodePtr exp,gmx_molprop_t mpt,int ref)
         add_xml_char(child,exml_names[exmlTYPE],type);
         add_xml_char(child,exml_names[exmlUNIT],unit);
         ptr = gmx_ftoa(value);
-        add_xml_child_val(child,exml_names[exmlVALUE],ptr);
+        add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
         sfree(ptr);
         ptr = gmx_ftoa(error);
         add_xml_child_val(child,exml_names[exmlERROR],ptr);
@@ -531,7 +532,7 @@ static void add_properties(xmlNodePtr exp,gmx_molprop_t mpt,int ref)
         add_xml_char(child,exml_names[exmlTYPE],type);
         add_xml_char(child,exml_names[exmlUNIT],unit);
         ptr = gmx_ftoa(value);
-        add_xml_child_val(child,exml_names[exmlVALUE],ptr);
+        add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
         sfree(ptr);
         ptr = gmx_ftoa(error);
         add_xml_child_val(child,exml_names[exmlERROR],ptr);
@@ -539,13 +540,13 @@ static void add_properties(xmlNodePtr exp,gmx_molprop_t mpt,int ref)
         if ((x != 0) || (y != 0) || (z != 0)) 
         {
             ptr = gmx_ftoa(x);
-            add_xml_child_val(child,exml_names[exmlX],ptr);
+            add_xml_child_val(child,exml_names[exmlXX],ptr);
             sfree(ptr);
             ptr = gmx_ftoa(y);
-            add_xml_child_val(child,exml_names[exmlY],ptr);
+            add_xml_child_val(child,exml_names[exmlYY],ptr);
             sfree(ptr);
             ptr = gmx_ftoa(z);
-            add_xml_child_val(child,exml_names[exmlZ],ptr);
+            add_xml_child_val(child,exml_names[exmlZZ],ptr);
             sfree(ptr);
         }
         sfree(type);

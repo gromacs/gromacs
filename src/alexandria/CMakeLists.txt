@@ -140,6 +140,11 @@ add_executable(gen_ff gen_ff.c)
 target_link_libraries(gen_ff ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_ff PROPERTIES OUTPUT_NAME "gen_ff${GMX_BINARY_SUFFIX}")
 
+add_executable(molprop_test molprop_test.cpp molprop.cpp molprop_xml.cpp)
+target_link_libraries(molprop_test ${GMX_EXTRA_LIBRARIES})
+set_target_properties(molprop_test PROPERTIES OUTPUT_NAME "molprop_test${GMX_BINARY_SUFFIX}")
+
+
 install(TARGETS alexandria DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 install(TARGETS 
         gentop

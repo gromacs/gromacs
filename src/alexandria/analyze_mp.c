@@ -267,7 +267,8 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
                                 gmx_atomprop_t ap,int iQM,char *lot,
                                 real rtoler,real atoler,real outlier,
                                 char *fc_str,gmx_bool bPrintAll,
-                                gmx_bool bStatsTable,gmx_bool bCategoryTable,
+                                gmx_bool bStatsTable,
+                                const char *categoryfn,
                                 gmx_bool bPropTable,gmx_bool bCompositionTable,
                                 gmx_bool bPrintBasis,gmx_bool bPrintMultQ,
                                 const char *texfn,
@@ -309,12 +310,14 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
     for(i=0; (i<np); i++) 
     {
         molname[cur] = gmx_molprop_get_molname(mp[i]);
-        if ((gmx_molprop_get_experiment(mp[i],&reference,&conformation,&expref) == 1) &&
-            (get_val(mp[i],expref,NULL,prop,&value,&error,vec,quadrupole)  == 1)) 
+        while (gmx_molprop_get_experiment(mp[i],&reference,&conformation,&expref) == 1)
         {
-            add_refc(rc,reference);
-            sfree(reference);
-            sfree(conformation);
+            if (get_val(mp[i],expref,NULL,prop,&value,&error,vec,quadrupole)  == 1)
+            {
+                add_refc(rc,reference);
+                sfree(reference);
+                sfree(conformation);
+            }
         }
         if (debug && ((i > 0) && (strcasecmp(molname[cur],molname[prev]) == 0)))
             fprintf(debug,"Double entry %s\n",molname[cur]);
@@ -372,11 +375,13 @@ static void gmx_molprop_analyze(int np,gmx_molprop_t mp[],int npd,
         gmx_molprop_composition_table(fp,np,mp,gms,imsTrain);
         gmx_molprop_composition_table(fp,np,mp,gms,imsTest);
     }
-    if (bCategoryTable)
-    {
-        gmx_molprop_category_table(fp,np,mp,gms,imsTrain);
-    }
     fclose(fp);
+    if (NULL != categoryfn)
+    {
+        fp = fopen(categoryfn,"w");
+        gmx_molprop_category_table(fp,np,mp,gms,imsTrain);
+        fclose(fp);
+    }
     if (NULL != xvgfn)
         write_corr_xvg(xvgfn,np,mp,prop,qmc,FALSE,lot,rtoler,atoler,oenv,gms);
 }
@@ -411,6 +416,7 @@ int main(int argc,char *argv[])
         { efDAT, "-m",    "allmols",   ffRDMULT },
         { efTEX, "-t",    "table",     ffWRITE  },
         { efTEX, "-atype","atomtypes", ffOPTWR  },
+        { efTEX, "-cat",  "category",  ffOPTWR  },
         { efDAT, "-sel",  "molselect", ffREAD   },
         { efDAT, "-selout","selout",   ffOPTWR  },
         { efXVG, "-c",    "correl",    ffWRITE  },
@@ -424,7 +430,7 @@ int main(int argc,char *argv[])
     static real rtoler = 0.15,atoler=0,outlier=1;
     static real th_toler=170,ph_toler=5;
     static gmx_bool bMerge = TRUE,bAll = FALSE,bCalcPol=TRUE, bPrintBasis = TRUE,bPrintMultQ=FALSE;
-    static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE,bCategoryTable=TRUE;
+    static gmx_bool bStatsTable = TRUE,bCompositionTable=FALSE,bPropTable=TRUE;
     t_pargs pa[] = {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
@@ -450,8 +456,6 @@ int main(int argc,char *argv[])
           "Calculate polarizabilities based on empirical methods" },
         { "-composition", FALSE, etBOOL, {&bCompositionTable},
           "Print a table of composition of the molecules" },
-        { "-category", FALSE, etBOOL, {&bCategoryTable},
-          "Print a table of the molecules that are part of each category" },
         { "-proptable", FALSE, etBOOL, {&bPropTable},
           "Print a table of properties (slect which with the [TT]-prop[tt] flag)." },
         { "-statstable", FALSE, etBOOL, {&bStatsTable},
@@ -536,7 +540,9 @@ int main(int argc,char *argv[])
     }
     gmx_molprop_analyze(np,mp,npdfile,pd,pdref,bCalcPol,
                         eprop,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
-                        bStatsTable,bCategoryTable,bPropTable,bCompositionTable,
+                        bStatsTable,
+                        opt2fn_null("-cat",NFILE,fnm),
+                        bPropTable,bCompositionTable,
                         bPrintBasis,bPrintMultQ,
                         opt2fn("-t",NFILE,fnm),opt2fn("-c",NFILE,fnm),
                         opt2fn("-his",NFILE,fnm),opt2fn("-atype",NFILE,fnm),oenv,gms,
