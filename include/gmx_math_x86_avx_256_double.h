@@ -35,9 +35,9 @@
 #ifndef _gmx_math_x86_avx_256_double_h_
 #define _gmx_math_x86_avx_256_double_h_
 
+#include <math.h>
+
 #include "gmx_x86_avx_256.h"
-
-
 
 #ifndef M_PI
 #  define M_PI 3.14159265358979323846264338327950288
