@@ -48,6 +48,24 @@ extern "C" {
 }
 #endif
 
+/*! \brief Typedefs for declaring lookup tables of kernel functions.
+ */
+typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
+                                const nbnxn_atomdata_t     *nbat,
+                                const interaction_const_t  *ic,
+                                rvec                       *shift_vec,
+                                real                       *f,
+                                real                       *fshift,
+                                real                       *Vvdw,
+                                real                       *Vc);
+
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+                                  const nbnxn_atomdata_t     *nbat,
+                                  const interaction_const_t  *ic,
+                                  rvec                       *shift_vec,
+                                  real                       *f,
+                                  real                       *fshift);
+
 /* Clear the force buffer f. Either the whole buffer or only the parts
  * used by the current thread when nbat->bUseBufferFlags is set.
  * In the latter case output_index is the task/thread list/buffer index.
