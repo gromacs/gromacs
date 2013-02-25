@@ -1,0 +1,47 @@
+/* Some target architectures compile kernels for only some NBNxN
+ * kernel flavours, but the code is generated before the target
+ * architecture is known. So compilation is conditional upon
+ * {0}, so that this file reduces to a stub
+ * function definition when the kernel will never be called.
+ */
+#define GMX_SIMD_J_UNROLL_SIZE {7}
+#include "{4}"
+
+{1}
+{2}
+{3}
+
+#ifdef {0}
+#include "nbnxn_kernel_simd_4xn_common.h"
+#endif /* {0} */
+
+#ifdef CALC_ENERGIES
+void
+{5}(const nbnxn_pairlist_t     *nbl,
+{6}const nbnxn_atomdata_t     *nbat,
+{6}const interaction_const_t  *ic,
+{6}rvec                       *shift_vec,
+{6}real                       *f,
+{6}real                       *fshift,
+{6}real                       *Vvdw,
+{6}real                       *Vc)
+#else /* CALC_ENERGIES */
+void
+{5}(const nbnxn_pairlist_t     *nbl,
+{6}const nbnxn_atomdata_t     *nbat,
+{6}const interaction_const_t  *ic,
+{6}rvec                       *shift_vec,
+{6}real                       *f,
+{6}real                       *fshift)
+#endif /* CALC_ENERGIES */
+#ifdef {0}
+#include "nbnxn_kernel_simd_4xn_outer.h"
+#else /* {0} */
+{{
+/* No need to call gmx_incons() here, because the only function
+ * that calls this one is also compiled conditionally. When
+ * {0} is not defined, it will call no kernel functions and
+ * instead call gmx_incons().
+ */
+}}
+#endif /* {0} */
