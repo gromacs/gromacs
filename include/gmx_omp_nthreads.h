@@ -41,7 +41,6 @@
 #include "visibility.h"
 #include "types/commrec.h"
 
-
 /*! Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
 {
