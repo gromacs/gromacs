@@ -34,7 +34,7 @@
 #
 # The nbnxn kernel files take the longest time to compile, so we sneak
 # them in first to take best advantage of make-time parallelisation.
-file(GLOB MDLIB_SOURCES nbnxn_kernels/*.c *.c)
+file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.c nbnxn_kernels/*.c *.c)
 
 if(GMX_GPU)
     add_subdirectory(nbnxn_cuda)

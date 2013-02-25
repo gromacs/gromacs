@@ -40,7 +40,7 @@
 #define GMX_OMP_NTHREADS
 #include "visibility.h"
 #include "types/commrec.h"
-
+#include <stdio.h>
 
 /*! Enum values corresponding to multithreaded algorithmic modules. */
 typedef enum module_nth
