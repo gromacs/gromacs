@@ -565,12 +565,15 @@ static void bc_fepvals(const t_commrec *cr, t_lambda *fep)
     block_bc(cr, fep->delta_lambda);
     block_bc(cr, fep->bPrintEnergy);
     block_bc(cr, fep->n_lambda);
-    snew_bc(cr, fep->all_lambda, efptNR);
-    nblock_bc(cr, efptNR, fep->all_lambda);
-    for (i = 0; i < efptNR; i++)
+    if (fep->n_lambda > 0)
     {
-        snew_bc(cr, fep->all_lambda[i], fep->n_lambda);
-        nblock_bc(cr, fep->n_lambda, fep->all_lambda[i]);
+        snew_bc(cr, fep->all_lambda, efptNR);
+        nblock_bc(cr, efptNR, fep->all_lambda);
+        for (i = 0; i < efptNR; i++)
+        {
+            snew_bc(cr, fep->all_lambda[i], fep->n_lambda);
+            nblock_bc(cr, fep->n_lambda, fep->all_lambda[i]);
+        }
     }
     block_bc(cr, fep->sc_alpha);
     block_bc(cr, fep->sc_power);
