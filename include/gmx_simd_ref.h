@@ -43,6 +43,8 @@
  * The SIMD width is set by defining GMX_SIMD_REF_WIDTH before including.
  */
 
+#include "math.h"
+
 
 /* float/double SIMD register type */
 typedef struct {
