@@ -82,7 +82,7 @@ gmx_mm_transpose_sum2_pr(gmx_mm_pr in0, gmx_mm_pr in1)
     tmp   = in0.y;
     in0.y = in1.x;
     in1.x = tmp;
-    
+
     return gmx_add_pr(in0, in1);
 }
 
