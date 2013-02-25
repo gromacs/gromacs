@@ -111,22 +111,6 @@
 #undef CALC_COUL_TAB
 
 
-typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
-                                const nbnxn_atomdata_t     *nbat,
-                                const interaction_const_t  *ic,
-                                rvec                       *shift_vec,
-                                real                       *f,
-                                real                       *fshift,
-                                real                       *Vvdw,
-                                real                       *Vc);
-
-typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
-                                  const nbnxn_atomdata_t     *nbat,
-                                  const interaction_const_t  *ic,
-                                  rvec                       *shift_vec,
-                                  real                       *f,
-                                  real                       *fshift);
-
 enum {
     coultRF, coultTAB, coultTAB_TWIN, coultNR
 };
