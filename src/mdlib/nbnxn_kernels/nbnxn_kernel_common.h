@@ -40,6 +40,7 @@
 #define _nbnxn_kernel_common_h
 
 #include "typedefs.h"
+#include "types/force_flags.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,6 +48,51 @@ extern "C" {
 #if 0
 }
 #endif
+
+/*! \brief Macro to make defining kernel functions in headers easy
+ *
+ * C doesn't let you declare or define functions using a typedef,
+ * because that's impossible to parse correctly in all cases. So these
+ * definitions support changing the NBNXN function signature at some
+ * future time.
+ */
+#define DECLARE_NBNXN_KERNEL_ENER(kernel_name) \
+void \
+kernel_name(const nbnxn_pairlist_t     *nbl,\
+            const nbnxn_atomdata_t     *nbat,\
+            const interaction_const_t  *ic,\
+            rvec                       *shift_vec,\
+            real                       *f,\
+            real                       *fshift,\
+            real                       *Vvdw,\
+            real                       *Vc)
+
+#define DECLARE_NBNXN_KERNEL_NOENER(kernel_name) \
+void \
+kernel_name(const nbnxn_pairlist_t     *nbl,\
+            const nbnxn_atomdata_t     *nbat,\
+            const interaction_const_t  *ic,\
+            rvec                       *shift_vec,\
+            real                       *f,\
+            real                       *fshift)
+
+/*! \brief Typedefs for declaring lookup tables of kernel functions.
+ */
+typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
+                                const nbnxn_atomdata_t     *nbat,
+                                const interaction_const_t  *ic,
+                                rvec                       *shift_vec,
+                                real                       *f,
+                                real                       *fshift,
+                                real                       *Vvdw,
+                                real                       *Vc);
+
+typedef void (*p_nbk_func_noener)(const nbnxn_pairlist_t     *nbl,
+                                  const nbnxn_atomdata_t     *nbat,
+                                  const interaction_const_t  *ic,
+                                  rvec                       *shift_vec,
+                                  real                       *f,
+                                  real                       *fshift);
 
 /* Clear the force buffer f. Either the whole buffer or only the parts
  * used by the current thread when nbat->bUseBufferFlags is set.
