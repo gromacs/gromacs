@@ -43,6 +43,8 @@
  * The SIMD width is set by defining GMX_SIMD_REF_WIDTH before including.
  */
 
+#include "math.h"
+
 
 #ifndef GMX_SIMD_REF_WIDTH
 #error "GMX_SIMD_REF_WIDTH should be defined before including gmx_simd_ref.h"
