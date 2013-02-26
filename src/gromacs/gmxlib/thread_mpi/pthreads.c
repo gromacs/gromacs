@@ -273,7 +273,19 @@ int tMPI_Thread_equal(tMPI_Thread_t t1, tMPI_Thread_t t2)
 enum tMPI_Thread_setaffinity_support tMPI_Thread_setaffinity_support(void)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY
-    return TMPI_SETAFFINITY_SUPPORT_YES;
+    cpu_set_t set;
+    int ret;
+
+    /* run getaffinity to check whether we get back ENOSYS */
+    ret=pthread_getaffinity_np(pthread_self(), sizeof(set), &set);
+    if (ret == 0)
+    {
+        return TMPI_SETAFFINITY_SUPPORT_YES;
+    }
+    else
+    {
+        return TMPI_SETAFFINITY_SUPPORT_NO;
+    }
 #else
     return TMPI_SETAFFINITY_SUPPORT_NO;
 #endif

@@ -432,7 +432,7 @@ cmake .. -DGMX_GPU=ON -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda
 (or whichever path has your installation). Note that this will require
 a working C++ compiler, and in some cases you might need to handle
 this manually, e.g. with the advanced option
-\verb+CUDA_NVCC_HOST_COMPILER+.
+\verb+CUDA_HOST_COMPILER+.
 
 Historically, Linux GPU builds have received most testing, but we 
 want to support GPU builds both under x86 Linux, Windows, Mac OS X and in the
