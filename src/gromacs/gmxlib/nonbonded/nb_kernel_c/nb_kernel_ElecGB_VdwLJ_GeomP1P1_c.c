@@ -133,7 +133,7 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_c
         vgbsum           = 0.0;
         vvdwsum          = 0.0;
         dvdasum          = 0.0;
-        printf("inr=%d\n",inr);
+
         /* Start inner kernel loop */
         for(jidx=j_index_start; jidx<j_index_end; jidx++)
         {
@@ -197,12 +197,9 @@ nb_kernel_ElecGB_VdwLJ_GeomP1P1_VF_c
 
             FF               = Fp+Geps+2.0*Heps2;
             fgb              = gbqqfactor*FF*gbscale;
-            printf("  jnr=%d  fgb=%g\n",jnr,fgb);
             dvdatmp          = -0.5*(vgb+fgb*r00);
             dvdasum          = dvdasum + dvdatmp;
-            printf("  dvdatmp=%g\n",dvdatmp);
             dvda[jnr]        = dvdaj+dvdatmp*isaj0*isaj0;
-            printf("  dvda, jcontrib=%g\n",dvdatmp*isaj0*isaj0);
             velec            = qq00*rinv00;
             felec            = (velec*rinv00-fgb)*rinv00;
 

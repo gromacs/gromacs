@@ -597,7 +597,10 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
     const char def_mpirun[]   = "mpirun";
     const char def_mdrun[]    = "mdrun";
     const char filename[]     = "benchtest.log";
-    const char match_mpi[]    = "NNODES=";
+
+    /* This string should always be identical to the one in copyrite.c,
+     * gmx_print_version_info() in the defined(GMX_MPI) section */
+    const char match_mpi[]    = "MPI library:        MPI";
     const char match_mdrun[]  = "Program: ";
     const char empty_mpirun[] = "";
     gmx_bool   bMdrun         = FALSE;
@@ -1735,9 +1738,10 @@ static void check_input(
 /* Returns TRUE when "opt" is needed at launch time */
 static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
-    /* Apart from the input .tpr and the error log we need all options that were set
-     * on the command line and that do not start with -b */
-    if (0 == strncmp(opt, "-b", 2) || 0 == strncmp(opt, "-s", 2) || 0 == strncmp(opt, "-err", 4))
+    /* Apart from the input .tpr and the output log files we need all options that 
+     * were set on the command line and that do not start with -b */
+    if    (0 == strncmp(opt, "-b"  , 2) || 0 == strncmp(opt, "-s", 2) 
+        || 0 == strncmp(opt, "-err", 4) || 0 == strncmp(opt, "-p", 2) )
     {
         return FALSE;
     }
