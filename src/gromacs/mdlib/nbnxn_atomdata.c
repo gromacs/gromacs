@@ -351,7 +351,7 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
             }
             break;
         default:
-            gmx_incons("Unsupported stride");
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
@@ -399,7 +399,12 @@ static void set_combination_rule_data(nbnxn_atomdata_t *nbat)
             }
             break;
         case ljcrNONE:
-            /* In nbfp_s4 we use a stride of 4 for storing two parameters */
+            /* nbfp_s4 stores two parameters using a stride of 4,
+             * because this would suit x86 SIMD single-precision
+             * quad-load intrinsics. There's a slight inefficiency in
+             * allocating and initializing nbfp_s4 when it might not
+             * be used, but introducing the conditional code is not
+             * really worth it. */
             nbat->alloc((void **)&nbat->nbfp_s4, nt*nt*4*sizeof(*nbat->nbfp_s4));
             for (i = 0; i < nt; i++)
             {
@@ -1210,6 +1215,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 }
             }
             break;
+    default:
+        gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 
