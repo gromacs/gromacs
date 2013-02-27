@@ -841,6 +841,8 @@ static void gen_local_top(const gmx_mtop_t *mtop,const t_inputrec *ir,
         }
         if (idef->il[F_POSRES].nr > nposre_old)
         {
+            /* Executing this line line stops gmxdump -sys working
+             * correctly. I'm not aware there's an elegant fix. */
             set_posres_params(idef,molb,nposre_old/2,natoms);
         }
 

@@ -122,15 +122,6 @@ void space(FILE *out, int n)
   fprintf(out,"%*s",n,"");
 }
 
-void f(char *a)
-{
-    int i;
-    int len=strlen(a);
-    
-    for(i=0;i<len;i++)
-        a[i]=~a[i]; 
-}
-
 static void sp_print(FILE *out,const char *s)
 {
   int slen;
@@ -169,7 +160,6 @@ static void pukeit(const char *db,const char *defstring, char *retstring,
     if (strlen(help[*cqnum]) >= STRLEN)
       help[*cqnum][STRLEN-1] = '\0';
     strncpy(retstring,help[*cqnum],retsize);
-    f(retstring);
     for(i=0; (i<nhlp); i++)
       sfree(help[i]);
     sfree(help);

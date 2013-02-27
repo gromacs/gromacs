@@ -1,8 +1,8 @@
-.TH g_tune_pme 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_tune_pme 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_tune_pme - time mdrun as a function of PME nodes to optimize settings
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_tune_pme\fP
 .BI "\-p" " perf.out "
@@ -410,7 +410,7 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
  If non\-negative, perform this many steps in the real run (overwrites nsteps from \fB .tpr\fR, add \fB .cpt\fR steps)
 
 .BI "\-[no]launch"  "no    "
- Lauch the real simulation after optimization
+ Launch the real simulation after optimization
 
 .BI "\-deffnm"  " string" " " 
  Set the default filename for all file options at launch time
@@ -467,7 +467,7 @@ g_tune_pme - time mdrun as a function of PME nodes to optimize settings
  Do multiple simulations in parallel
 
 .BI "\-replex"  " int" " 0" 
- Attempt replica exchange every  steps
+ Attempt replica exchange periodically with this period (steps)
 
 .BI "\-reseed"  " int" " \-1" 
  Seed for replica exchange, \-1 is generate a seed

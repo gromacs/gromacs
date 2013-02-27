@@ -1,8 +1,8 @@
-.TH mdrun 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH mdrun 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 mdrun - performs a simulation, do a normal mode analysis or an energy minimization
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "\-s" " topol.tpr "
@@ -40,6 +40,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .BI "\-xvg" " enum "
 .BI "\-[no]pd" ""
 .BI "\-dd" " vector "
+.BI "\-nt" " int "
 .BI "\-npme" " int "
 .BI "\-ddorder" " enum "
 .BI "\-[no]ddcheck" ""
@@ -470,6 +471,9 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
 .BI "\-dd"  " vector" " 0 0 0" 
  Domain decomposition grid, 0 is optimize
 
+.BI "\-nt"  " int" " 0" 
+ Number of threads to start (0 is guess)
+
 .BI "\-npme"  " int" " \-1" 
  Number of separate nodes to be used for PME, \-1 is guess
 
@@ -525,7 +529,7 @@ mdrun - performs a simulation, do a normal mode analysis or an energy minimizati
  Do multiple simulations in parallel
 
 .BI "\-replex"  " int" " 0" 
- Attempt replica exchange every  steps
+ Attempt replica exchange periodically with this period (steps)
 
 .BI "\-reseed"  " int" " \-1" 
  Seed for replica exchange, \-1 is generate a seed

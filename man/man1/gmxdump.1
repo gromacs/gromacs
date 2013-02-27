@@ -1,8 +1,8 @@
-.TH gmxdump 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH gmxdump 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 gmxdump - makes binary files human readable
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3gmxdump\fP
 .BI "\-s" " topol.tpr "
@@ -73,6 +73,9 @@ gmxdump - makes binary files human readable
 
 .BI "\-[no]sys"  "no    "
  List the atoms and bonded interactions for the whole system instead of for each molecule type
+
+.SH KNOWN PROBLEMS
+\- Position restraint output from \-sys \-s is broken
 
 .SH SEE ALSO
 .BR gromacs(7)

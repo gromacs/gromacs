@@ -1,8 +1,8 @@
-.TH g_chi 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_chi 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_chi - calculates everything you want to know about chi and other dihedrals
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_chi\fP
 .BI "\-s" " conf.gro "
@@ -61,7 +61,7 @@ g_chi - calculates everything you want to know about chi and other dihedrals
 
 \&If option \fB \-corr\fR is given, the program will
 \&calculate dihedral autocorrelation functions. The function used
-\&is C(t) =  cos(chi(tau)) cos(chi(tau+t)) . The use of cosines
+\&is C(t) = cos(chi(tau)) cos(chi(tau+t)). The use of cosines
 \&rather than angles themselves, resolves the problem of periodicity.
 \&(Van der Spoel & Berendsen (1997), Biophys. J. 72, 2032\-2041).
 \&Separate files for each dihedral of each residue
@@ -87,8 +87,8 @@ g_chi - calculates everything you want to know about chi and other dihedrals
 
 
 \&All rotamers are taken as 3\-fold, except for omega and chi dihedrals
-\&to planar groups (i.e. chi2 of aromatics, Asp and Asn; chi3 of Glu
-\&and Gln; and chi4 of Arg), which are 2\-fold. "rotamer 0" means 
+\&to planar groups (i.e. chi_2 of aromatics, Asp and Asn; chi_3 of Glu
+\&and Gln; and chi_4 of Arg), which are 2\-fold. "rotamer 0" means 
 \&that the dihedral was not in the core region of each rotamer. 
 \&The width of the core region can be set with \fB \-core_rotamer\fR
 
@@ -99,11 +99,13 @@ g_chi - calculates everything you want to know about chi and other dihedrals
 \&The total number of rotamer transitions per timestep
 \&(argument \fB \-ot\fR), the number of transitions per rotamer
 \&(argument \fB \-rt\fR), and the 3J couplings (argument \fB \-jc\fR), 
-\&can also be written to \fB .xvg\fR files.
+\&can also be written to \fB .xvg\fR files. Note that the analysis
+\&of rotamer transitions assumes that the supplied trajectory frames
+\&are equally spaced in time.
 
 
 \&If \fB \-chi_prod\fR is set (and \fB \-maxchi\fR  0), cumulative rotamers, e.g.
-\&1+9(chi1\-1)+3(chi2\-1)+(chi3\-1) (if the residue has three 3\-fold 
+\&1+9(chi_1\-1)+3(chi_2\-1)+(chi_3\-1) (if the residue has three 3\-fold 
 \&dihedrals and \fB \-maxchi\fR = 3)
 \&are calculated. As before, if any dihedral is not in the core region,
 \&the rotamer is taken to be 0. The occupancies of these cumulative 
@@ -204,7 +206,7 @@ g_chi - calculates everything you want to know about chi and other dihedrals
  Output for omega dihedrals (peptide bonds)
 
 .BI "\-[no]rama"  "no    "
- Generate phi/psi and chi1/chi2 Ramachandran plots
+ Generate phi/psi and chi_1/chi_2 Ramachandran plots
 
 .BI "\-[no]viol"  "no    "
  Write a file that gives 0 or 1 for violated Ramachandran angles
@@ -261,7 +263,7 @@ g_chi - calculates everything you want to know about chi and other dihedrals
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

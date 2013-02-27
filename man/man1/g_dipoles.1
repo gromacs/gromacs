@@ -1,8 +1,8 @@
-.TH g_dipoles 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_dipoles 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_dipoles - computes the total dipole plus fluctuations
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_dipoles\fP
 .BI "\-en" " ener.edr "
@@ -62,7 +62,7 @@ g_dipoles - computes the total dipole plus fluctuations
 
 \&The file \fB Mtot.xvg\fR contains the total dipole moment of a frame, the
 \&components as well as the norm of the vector.
-\&The file \fB aver.xvg\fR contains  |Mu|2  and | Mu |2 during the
+\&The file \fB aver.xvg\fR contains |mu|2 and |mu|2 during the
 \&simulation.
 \&The file \fB dipdist.xvg\fR contains the distribution of dipole moments during
 \&the simulation
@@ -92,14 +92,14 @@ g_dipoles - computes the total dipole plus fluctuations
 \&EXAMPLES
 
 
-\&\fB g_dipoles \-corr mol \-P1 \-o dip_sqr \-mu 2.273 \-mumax 5.0 \-nofft\fR
+\&\fB g_dipoles \-corr mol \-P 1 \-o dip_sqr \-mu 2.273 \-mumax 5.0\fR
 
 
 \&This will calculate the autocorrelation function of the molecular
 \&dipoles using a first order Legendre polynomial of the angle of the
 \&dipole vector and itself a time t later. For this calculation 1001
 \&frames will be used. Further, the dielectric constant will be calculated
-\&using an epsilonRF of infinity (default), temperature of 300 K (default) and
+\&using an \fB \-epsilonRF\fR of infinity (default), temperature of 300 K (default) and
 \&an average dipole moment of the molecule of 2.273 (SPC). For the
 \&distribution function a maximum of 5.0 will be used.
 .SH FILES
@@ -196,7 +196,7 @@ g_dipoles - computes the total dipole plus fluctuations
  dipole of a single molecule (in Debye)
 
 .BI "\-mumax"  " real" " 5     " 
- max dipole in Debye (for histrogram)
+ max dipole in Debye (for histogram)
 
 .BI "\-epsilonRF"  " real" " 0     " 
  epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default)
@@ -211,16 +211,16 @@ g_dipoles - computes the total dipole plus fluctuations
  Correlation function to calculate: \fB none\fR, \fB mol\fR, \fB molsep\fR or \fB total\fR
 
 .BI "\-[no]pairs"  "yes   "
- Calculate |cos theta| between all pairs of molecules. May be slow
+ Calculate |cos(theta)| between all pairs of molecules. May be slow
 
 .BI "\-ncos"  " int" " 1" 
- Must be 1 or 2. Determines whether the cos is computed between all molecules in one group, or between molecules in two different groups. This turns on the \fB \-gkr\fR flag.
+ Must be 1 or 2. Determines whether the cos(theta) is computed between all molecules in one group, or between molecules in two different groups. This turns on the \fB \-g\fR flag.
 
 .BI "\-axis"  " string" " Z" 
  Take the normal on the computational box in direction X, Y or Z.
 
 .BI "\-sl"  " int" " 10" 
- Divide the box in nr slices.
+ Divide the box into this number of slices.
 
 .BI "\-gkratom"  " int" " 0" 
  Use the n\-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors
@@ -253,7 +253,7 @@ g_dipoles - computes the total dipole plus fluctuations
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function

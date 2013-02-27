@@ -1,8 +1,8 @@
-.TH mk_angndx 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH mk_angndx 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 mk_angndx - generates index files for g_angle
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3mk_angndx\fP
 .BI "\-s" " topol.tpr "
@@ -43,7 +43,7 @@ mk_angndx - generates index files for g_angle
  Include angles with atoms with mass  1.5
 
 .BI "\-hq"  " real" " \-1    " 
- Ignore angles with atoms with mass  1.5 and |q|  hq
+ Ignore angles with atoms with mass  1.5 and magnitude of their charge less than this value
 
 .SH SEE ALSO
 .BR gromacs(7)

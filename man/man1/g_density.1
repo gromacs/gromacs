@@ -1,8 +1,8 @@
-.TH g_density 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_density 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_density - calculates the density of the system
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_density\fP
 .BI "\-f" " traj.xtc "
@@ -97,13 +97,13 @@ g_density - calculates the density of the system
  Take the normal on the membrane in direction X, Y or Z.
 
 .BI "\-sl"  " int" " 50" 
- Divide the box in nr slices.
+ Divide the box in this number of slices.
 
 .BI "\-dens"  " enum" " mass" 
  Density: \fB mass\fR, \fB number\fR, \fB charge\fR or \fB electron\fR
 
 .BI "\-ng"  " int" " 1" 
- Number of groups to compute densities of
+ Number of groups of which to compute densities.
 
 .BI "\-[no]symm"  "no    "
  Symmetrize the density along the axis, with respect to the center. Useful for bilayers.

@@ -469,6 +469,9 @@ int main(int argc,char *argv[])
     "Note that currently setting [TT]GMXLIB[tt] is the only way to customize",
     "directories used for searching include files.",
   };
+  const char *bugs[] = {
+    "Position restraint output from -sys -s is broken"
+  };
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
@@ -493,7 +496,7 @@ int main(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-		    asize(desc),desc,0,NULL,&oenv);
+                    asize(desc),desc,asize(bugs),bugs,&oenv);
 
 
   if (ftp2bSet(efTPX,NFILE,fnm))

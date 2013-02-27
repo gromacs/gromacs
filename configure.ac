@@ -9,7 +9,7 @@ AC_PREREQ(2.50)
 # machine with no git. 
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
-AC_INIT(gromacs, 4.5.5-dev, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.5.6-dev, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -20,7 +20,7 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="6:0:0"
+SHARED_VERSION_INFO="7:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 AC_ENABLE_SHARED

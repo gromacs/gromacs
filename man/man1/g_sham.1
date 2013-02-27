@@ -1,8 +1,8 @@
-.TH g_sham 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_sham 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_sham - read/write xmgr and xvgr data sets
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_sham\fP
 .BI "\-f" " graph.xvg "
@@ -140,7 +140,7 @@ g_sham - read/write xmgr and xvgr data sets
  Protein data bank file 
 
 .BI "\-mdata" " mapdata.xvg" 
-.B Output, Opt.
+.B Input, Opt.
  xvgr/xmgr file 
 
 .BI "\-g" " shamlog.log" 
@@ -176,7 +176,7 @@ g_sham - read/write xmgr and xvgr data sets
  Tolerance on time in appropriate units (usually ps)
 
 .BI "\-n"  " int" " 1" 
- Read  sets separated by &
+ Read this number of sets separated by lines containing only an ampersand
 
 .BI "\-[no]d"  "no    "
  Use the derivative

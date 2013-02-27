@@ -944,7 +944,9 @@ int gmx_trjconv(int argc,char *argv[])
 
         bSubTraj = opt2bSet("-sub",NFILE,fnm);
         if (bSubTraj) {
-            if ((ftp != efXTC) && (ftp != efTRN))
+            if ((ftp != efXTC) && (ftp != efTRR))
+                /* It seems likely that other trajectory file types
+                 * could work here. */
                 gmx_fatal(FARGS,"Can only use the sub option with output file types "
                           "xtc and trr");
             clust = cluster_index(NULL,opt2fn("-sub",NFILE,fnm));
@@ -1562,7 +1564,7 @@ int gmx_trjconv(int argc,char *argv[])
             ffclose(out);
         if (bSubTraj) {
             for(i=0; (i<clust->clust->nr); i++)
-                if (clust_status[i] )
+                if (clust_status_id[i] >= 0 )
                     close_trx(clust_status[i]);
         }
     }

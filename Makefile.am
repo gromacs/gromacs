@@ -31,6 +31,8 @@ EXTRA_DIST = config/depcomp \
 			 src/kernel/openmm_wrapper.h \
 			 src/ngmx/CMakeLists.txt \
 			 src/mdlib/CMakeLists.txt \
+			 src/mdlib/fftpack.c \
+			 src/mdlib/fftpack.h \
 			 src/config.h.cmakein \
 			 src/gmxlib/version.c.cmakein \
 			 src/gmxlib/thread_mpi/CMakeLists.txt \

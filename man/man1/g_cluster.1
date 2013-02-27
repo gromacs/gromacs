@@ -1,8 +1,8 @@
-.TH g_cluster 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_cluster 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_cluster - clusters structures
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_cluster\fP
 .BI "\-f" " traj.xtc "
@@ -121,7 +121,9 @@ g_cluster - clusters structures
 \&\fB \-cl\fR writes average (with option \fB \-av\fR) or central
 \&structure of each cluster or writes numbered files with cluster members
 \&for a selected set of clusters (with option \fB \-wcl\fR, depends on
-\&\fB \-nst\fR and \fB \-rmsmin\fR).
+\&\fB \-nst\fR and \fB \-rmsmin\fR). The center of a cluster is the
+\&structure with the smallest average RMSD from all other structures
+\&of the cluster.
 
 .SH FILES
 .BI "\-f" " traj.xtc" 
@@ -208,7 +210,7 @@ g_cluster - clusters structures
  Use RMSD of distances instead of RMS deviation
 
 .BI "\-nlevels"  " int" " 40" 
- Discretize RMSD matrix in  levels
+ Discretize RMSD matrix in this number of levels
 
 .BI "\-cutoff"  " real" " 0.1   " 
  RMSD cut\-off (nm) for two structures to be neighbor
@@ -226,10 +228,10 @@ g_cluster - clusters structures
  Write average iso middle structure for each cluster
 
 .BI "\-wcl"  " int" " 0" 
- Write all structures for first  clusters to numbered files
+ Write the structures for this number of clusters to numbered files
 
 .BI "\-nst"  " int" " 1" 
- Only write all structures if more than  per cluster
+ Only write all structures if more than this number of structures per cluster
 
 .BI "\-rmsmin"  " real" " 0     " 
  minimum rms difference with rest of cluster for writing structures

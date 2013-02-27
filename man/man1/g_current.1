@@ -1,8 +1,8 @@
-.TH g_current 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_current 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_current - calculate current autocorrelation function of system
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_current\fP
 .BI "\-s" " topol.tpr "
@@ -58,7 +58,7 @@ g_current - calculate current autocorrelation function of system
 
 
 \&Option \fB \-eps\fR controls the dielectric constant of the surrounding medium for simulations using
-\&a Reaction Field or dipole corrections of the Ewald summation (eps=0 corresponds to
+\&a Reaction Field or dipole corrections of the Ewald summation (\fB \-eps\fR=0 corresponds to
 \&tin\-foil boundary conditions).
 \&
 
@@ -140,7 +140,7 @@ g_current - calculate current autocorrelation function of system
  Removes jumps of atoms across the box.
 
 .BI "\-eps"  " real" " 0     " 
- Dielectric constant of the surrounding medium. eps=0.0 corresponds to eps=infinity (tin\-foil boundary conditions).
+ Dielectric constant of the surrounding medium. The value zero corresponds to infinity (tin\-foil boundary conditions).
 
 .BI "\-bfit"  " real" " 100   " 
  Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment.

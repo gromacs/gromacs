@@ -1,8 +1,8 @@
-.TH editconf 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH editconf 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 editconf - edits the box and writes subgroups 
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3editconf\fP
 .BI "\-f" " conf.gro "
@@ -32,7 +32,7 @@ editconf - edits the box and writes subgroups
 .BI "\-resnr" " int "
 .BI "\-[no]grasp" ""
 .BI "\-rvdw" " real "
-.BI "\-sig56" " real "
+.BI "\-[no]sig56" ""
 .BI "\-[no]vdwread" ""
 .BI "\-[no]atom" ""
 .BI "\-[no]legend" ""
@@ -198,7 +198,7 @@ editconf - edits the box and writes subgroups
  Choose output from default index groups
 
 .BI "\-bt"  " enum" " triclinic" 
- Box type for \-box and \-d: \fB triclinic\fR, \fB cubic\fR, \fB dodecahedron\fR or \fB octahedron\fR
+ Box type for \fB \-box\fR and \fB \-d\fR: \fB triclinic\fR, \fB cubic\fR, \fB dodecahedron\fR or \fB octahedron\fR
 
 .BI "\-box"  " vector" " 0 0 0" 
  Box vector lengths (a,b,c)
@@ -210,7 +210,7 @@ editconf - edits the box and writes subgroups
  Distance between the solute and the box
 
 .BI "\-[no]c"  "no    "
- Center molecule in box (implied by \-box and \-d)
+ Center molecule in box (implied by \fB \-box\fR and \fB \-d\fR)
 
 .BI "\-center"  " vector" " 0 0 0" 
  Coordinates of geometrical center
@@ -248,11 +248,11 @@ editconf - edits the box and writes subgroups
 .BI "\-rvdw"  " real" " 0.12  " 
  Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file
 
-.BI "\-sig56"  " real" " 0     " 
+.BI "\-[no]sig56"  "no    "
  Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2 
 
 .BI "\-[no]vdwread"  "no    "
- Read the Van der Waals radii from the file vdwradii.dat rather than computing the radii based on the force field
+ Read the Van der Waals radii from the file \fB vdwradii.dat\fR rather than computing the radii based on the force field
 
 .BI "\-[no]atom"  "no    "
  Force B\-factor attachment per atom

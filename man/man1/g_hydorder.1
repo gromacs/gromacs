@@ -1,7 +1,8 @@
-.TH g_hydorder 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_hydorder 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
-g_hydorder
-.B VERSION 4.5.4-dev-20110404-bc5695c
+g_hydorder - computes tetrahedrality parameters around a given atom
+
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_hydorder\fP
 .BI "\-f" " traj.xtc "
@@ -24,8 +25,8 @@ g_hydorder
 .BI "\-tblock" " int "
 .BI "\-nlevel" " int "
 .SH DESCRIPTION
-\&The tetrahedrality order parameters can be determined
-\&around an atom. Both angle an distance order parameters are calculated. See
+\&g_hydorder computes the tetrahedrality order parameters around a 
+\&given atom. Both angle an distance order parameters are calculated. See
 \&P.\-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511\-518.
 \&for more details.
 This application calculates the orderparameter in a 3d\-mesh in the box, and

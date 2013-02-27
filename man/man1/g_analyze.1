@@ -1,8 +1,8 @@
-.TH g_analyze 1 "Mon 4 Apr 2011" "" "GROMACS suite, VERSION 4.5.4-dev-20110404-bc5695c"
+.TH g_analyze 1 "Fri 18 Jan 2013" "" "GROMACS suite, VERSION 4.5.6"
 .SH NAME
 g_analyze - analyzes data sets
 
-.B VERSION 4.5.4-dev-20110404-bc5695c
+.B VERSION 4.5.6
 .SH SYNOPSIS
 \f3g_analyze\fP
 .BI "\-f" " graph.xvg "
@@ -69,11 +69,13 @@ g_analyze - analyzes data sets
 
 
 \&Option \fB \-ac\fR produces the autocorrelation function(s).
+\&Be sure that the time interval between data points is
+\&much shorter than the time scale of the autocorrelation.
 
 
 \&Option \fB \-cc\fR plots the resemblance of set i with a cosine of
 \&i/2 periods. The formula is:
-2 (int0\-T y(t) cos(i pi t) dt)2 / int0\-T y(t) y(t) dt
+2 (integral from 0 to T of y(t) cos(i pi t) dt)2 / integral from 0 to T of y2(t) dt
 
 \&This is useful for principal components obtained from covariance
 \&analysis, since the principal components of random diffusion are
@@ -98,19 +100,19 @@ g_analyze - analyzes data sets
 \&A set is divided in a number of blocks and averages are calculated for
 \&each block. The error for the total average is calculated from
 \&the variance between averages of the m blocks B_i as follows:
-\&error2 = Sum (B_i \- B)2 / (m*(m\-1)).
+\&error2 = sum (B_i \- B)2 / (m*(m\-1)).
 \&These errors are plotted as a function of the block size.
 \&Also an analytical block average curve is plotted, assuming
 \&that the autocorrelation is a sum of two exponentials.
 \&The analytical curve for the block average is:
 
-\&f(t) = sigma\fB *\fRsqrt(2/T (  alpha   (tau1 ((exp(\-t/tau1) \- 1) tau1/t + 1)) +
+\&f(t) = sigma\fB *\fRsqrt(2/T (  alpha   (tau_1 ((exp(\-t/tau_1) \- 1) tau_1/t + 1)) +
 
-\&                       (1\-alpha) (tau2 ((exp(\-t/tau2) \- 1) tau2/t + 1)))),
+\&                       (1\-alpha) (tau_2 ((exp(\-t/tau_2) \- 1) tau_2/t + 1)))),
 where T is the total time.
-\&alpha, tau1 and tau2 are obtained by fitting f2(t) to error2.
+\&alpha, tau_1 and tau_2 are obtained by fitting f2(t) to error2.
 \&When the actual block average is very close to the analytical curve,
-\&the error is sigma\fB *\fRsqrt(2/T (a tau1 + (1\-a) tau2)).
+\&the error is sigma\fB *\fRsqrt(2/T (a tau_1 + (1\-a) tau_2)).
 \&The complete derivation is given in
 \&B. Hess, J. Chem. Phys. 116:209\-217, 2002.
 
@@ -127,7 +129,7 @@ where T is the total time.
 \&Option \fB \-gem\fR fits bimolecular rate constants ka and kb
 \&(and optionally kD) to the hydrogen bond autocorrelation function
 \&according to the reversible geminate recombination model. Removal of
-\&the ballistic component first is strongly adviced. The model is presented in
+\&the ballistic component first is strongly advised. The model is presented in
 \&O. Markovitch, J. Chem. Phys. 129:084505, 2008.
 
 
@@ -213,7 +215,7 @@ Option \fB \-luzar\fR performs a Luzar & Chandler kinetics analysis
  Last time to read from set
 
 .BI "\-n"  " int" " 1" 
- Read  sets separated by &
+ Read this number of sets separated by &
 
 .BI "\-[no]d"  "no    "
  Use the derivative
@@ -234,13 +236,13 @@ Option \fB \-luzar\fR performs a Luzar & Chandler kinetics analysis
  Interpret second data set as error in the y values for integrating
 
 .BI "\-[no]regression"  "no    "
- Perform a linear regression analysis on the data. If \fB \-xydy\fR is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize chi2 = (y \- A0 x0 \- A1 x1 \- ... \- AN xN)2 where now Y is the first data set in the input file and xi the others. Do read the information at the option \fB \-time\fR.
+ Perform a linear regression analysis on the data. If \fB \-xydy\fR is set a second set will be interpreted as the error bar in the Y value. Otherwise, if multiple data sets are present a multilinear regression will be performed yielding the constant A that minimize chi2 = (y \- A_0 x_0 \- A_1 x_1 \- ... \- A_N x_N)2 where now Y is the first data set in the input file and x_i the others. Do read the information at the option \fB \-time\fR.
 
 .BI "\-[no]luzar"  "no    "
  Do a Luzar and Chandler analysis on a correlation function and related as produced by \fB g_hbond\fR. When in addition the \fB \-xydy\fR flag is given the second and fourth column will be interpreted as errors in c(t) and n(t).
 
 .BI "\-temp"  " real" " 298.15" 
- Temperature for the Luzar hydrogen bonding kinetics analysis
+ Temperature for the Luzar hydrogen bonding kinetics analysis (K)
 
 .BI "\-fitstart"  " real" " 1     " 
  Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation
@@ -249,10 +251,10 @@ Option \fB \-luzar\fR performs a Luzar & Chandler kinetics analysis
  Time (ps) where to stop fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation. Only with \fB \-gem\fR
 
 .BI "\-smooth"  " real" " \-1    " 
- If = 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(\-x/tau)
+ If this value is = 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(\-x/tau)
 
 .BI "\-filter"  " real" " 0     " 
- Print the high\-frequency fluctuation after filtering with a cosine filter of length 
+ Print the high\-frequency fluctuation after filtering with a cosine filter of this length
 
 .BI "\-[no]power"  "no    "
  Fit data to: b ta
@@ -276,7 +278,7 @@ Option \fB \-luzar\fR performs a Luzar & Chandler kinetics analysis
  Fit function: \fB none\fR, \fB exp\fR, \fB aexp\fR, \fB exp_exp\fR, \fB vac\fR, \fB exp5\fR, \fB exp7\fR, \fB exp9\fR or \fB erffit\fR
 
 .BI "\-ncskip"  " int" " 0" 
- Skip N points in the output file of correlation functions
+ Skip this many points in the output file of correlation functions
 
 .BI "\-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function
