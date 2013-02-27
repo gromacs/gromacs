@@ -42,10 +42,14 @@ if(REGRESSIONTEST_DOWNLOAD AND CMAKE_VERSION VERSION_LESS "2.8.2")
         "REGRESSIONTEST_DOWNLOAD not supported with cmake ${CMAKE_VERSION}" FORCE)
 endif()
 if(REGRESSIONTEST_DOWNLOAD)
-    if("${PROJECT_VERSION}" MATCHES "-dev")
-        set(REGRESSIONTEST_VERSION master)
+    if("${PROJECT_VERSION}" MATCHES "4.6")
+        # Strip off any suffix (e.g. -dev that will be present if this
+        # is a source repo) and capture just the version number, for
+        # which there will be a matching regressiontests tarball to
+        # download.
+        string(REGEX REPLACE "^(4\\.6\\.?[0-9]*).*" "\\1" REGRESSIONTEST_VERSION ${PROJECT_VERSION})
     else()
-        set(REGRESSIONTEST_VERSION ${PROJECT_VERSION})
+        set(REGRESSIONTEST_VERSION master)
     endif()
     set(REGRESSIONTEST_URL
         http://gerrit.gromacs.org/download/regressiontests-${REGRESSIONTEST_VERSION}.tar.gz)
