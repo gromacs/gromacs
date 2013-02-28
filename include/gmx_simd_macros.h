@@ -64,6 +64,11 @@
 #undef gmx_add_pr
 #undef gmx_sub_pr
 #undef gmx_mul_pr
+/* For the FMA macros below, aim for c=d in code, so FMA3 uses 1 instruction */
+/* d = gmx_madd_pr(a,b,c): d = a*b + c, could use FMA3 or FMA4 */
+#undef gmx_madd_pr
+/* d = gmx_nmsub_pr(a,b,c): d = -a*b + c, could use FMA3 or FMA4 */
+#undef gmx_nmsub_pr
 #undef gmx_max_pr
 #undef gmx_cmplt_pr
 /* gmx_blendzero_pr(real a, boolean b) does: (b ? a : 0) */
@@ -73,10 +78,12 @@
 #undef gmx_or_pr
 #undef gmx_andnot_pr
 
+/* Only used for PBC in bonded interactions, can be avoided */
+#undef gmx_round_pr
 /* Not required, only used to speed up the nbnxn tabulated PME kernels */
 #undef GMX_HAVE_SIMD_FLOOR
 #undef gmx_floor_pr
-/* Not required, only used with when blendv is faster than comparison */
+/* Not required, only used when blendv is faster than comparison */
 #undef GMX_HAVE_SIMD_BLENDV
 #undef gmx_blendv_pr
 /* Not required, gmx_anytrue(x) returns if any of the boolean is x is True.
@@ -107,6 +114,13 @@
 #undef gmx_cvtepi32_pr
 
 #undef gmx_invsqrt_pr
+/* sqrt+inv+sin+cos+acos+atan2 are only used for bonded potentials */
+#undef gmx_sqrt_pr
+#undef gmx_inv_pr
+#undef gmx_sincos_pr
+#undef gmx_acos_pr
+#undef gmx_atan_pr
+
 #undef gmx_calc_rsq_pr
 #undef gmx_sum4_pr
 
@@ -115,11 +129,26 @@
 #undef gmx_pmecorrV_pr
 
 
-/* The same SIMD macros, can be translated to SIMD intrinsics, and compiled
- * to instructions for, different SIMD width and float precision.
- * On x86, the gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
- * The _pr suffix is replaced by _ps or _pd (single or double precision).
- * Note that compiler settings will decide if 128-bit intrinsics will
+/* Half SIMD-width types and operations only for nbnxn 2xnn search+kernels */
+#undef gmx_mm_hpr
+
+#undef gmx_load_hpr
+#undef gmx_load1_hpr
+#undef gmx_store_hpr
+#undef gmx_add_hpr
+#undef gmx_sub_hpr
+
+#undef gmx_sum4_hpr
+
+#undef gmx_2hpr_to_pr
+
+
+/* The same SIMD macros can be translated to SIMD intrinsics (and compiled
+ * to instructions for) different SIMD width and float precision.
+ *
+ * On x86: The gmx_ prefix is replaced by _mm_ or _mm256_ (SSE or AVX).
+ * The _pr suffix is replaced by _ps or _pd (for single or double precision).
+ * Compiler settings will decide if 128-bit intrinsics will
  * be translated into SSE or AVX instructions.
  */
 
@@ -161,6 +190,13 @@
 #define gmx_add_pr        _mm_add_ps
 #define gmx_sub_pr        _mm_sub_ps
 #define gmx_mul_pr        _mm_mul_ps
+#ifdef GMX_X86_AVX_128_FMA
+#define gmx_madd_pr(a, b, c)   _mm_macc_ps(a, b, c)
+#define gmx_nmsub_pr(a, b, c)  _mm_nmacc_ps(a, b, c)
+#else
+#define gmx_madd_pr(a, b, c)   _mm_add_ps(c, _mm_mul_ps(a, b))
+#define gmx_nmsub_pr(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
+#endif
 #define gmx_max_pr        _mm_max_ps
 #define gmx_cmplt_pr      _mm_cmplt_ps
 #define gmx_blendzero_pr  _mm_and_ps
@@ -169,8 +205,13 @@
 #define gmx_andnot_pr     _mm_andnot_ps
 
 #ifdef GMX_X86_SSE4_1
+#define gmx_round_pr(x)   _mm_round_ps(x, 0x0)
 #define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm_floor_ps
+#else
+#define gmx_round_pr(x)   _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
+#endif
+#if defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256
 #define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm_blendv_ps
 #endif
@@ -187,6 +228,12 @@
 #define gmx_cvtepi32_pr   _mm_cvtepi32_ps
 
 #define gmx_invsqrt_pr    gmx_mm_invsqrt_ps
+#define gmx_sqrt_pr       gmx_mm_sqrt_ps
+#define gmx_inv_pr        gmx_mm_inv_ps
+#define gmx_sincos_pr     gmx_mm_sincos_ps
+#define gmx_acos_pr       gmx_mm_acos_ps
+#define gmx_atan2_pr      gmx_mm_atan2_ps
+
 #define gmx_calc_rsq_pr   gmx_mm_calc_rsq_ps
 #define gmx_sum4_pr       gmx_mm_sum4_ps
 
@@ -212,6 +259,13 @@
 #define gmx_add_pr        _mm_add_pd
 #define gmx_sub_pr        _mm_sub_pd
 #define gmx_mul_pr        _mm_mul_pd
+#ifdef GMX_X86_AVX_128_FMA
+#define gmx_madd_pr(a, b, c)   _mm_macc_pd(a, b, c)
+#define gmx_nmsub_pr(a, b, c)  _mm_nmacc_pd(a, b, c)
+#else
+#define gmx_madd_pr(a, b, c)   _mm_add_pd(c, _mm_mul_pd(a, b))
+#define gmx_nmsub_pr(a, b, c)  _mm_sub_pd(c, _mm_mul_pd(a, b))
+#endif
 #define gmx_max_pr        _mm_max_pd
 #define gmx_cmplt_pr      _mm_cmplt_pd
 #define gmx_blendzero_pr  _mm_and_pd
@@ -220,8 +274,15 @@
 #define gmx_andnot_pr     _mm_andnot_pd
 
 #ifdef GMX_X86_SSE4_1
+#define gmx_round_pr(x)   _mm_round_pd(x, 0x0)
 #define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm_floor_pd
+#else
+#define gmx_round_pr(x)   _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
+/* gmx_floor_pr is not used in code for pre-SSE4_1 hardware */
+#endif
+
+#if defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256
 #define GMX_HAVE_SIMD_BLENDV
 #define gmx_blendv_pr     _mm_blendv_pd
 #endif
@@ -238,6 +299,12 @@
 #define gmx_cvtepi32_pr   _mm_cvtepi32_pd
 
 #define gmx_invsqrt_pr    gmx_mm_invsqrt_pd
+#define gmx_sqrt_pr       gmx_mm_sqrt_pd
+#define gmx_inv_pr        gmx_mm_inv_pd
+#define gmx_sincos_pr     gmx_mm_sincos_pd
+#define gmx_acos_pr       gmx_mm_acos_pd
+#define gmx_atan2_pr      gmx_mm_atan2_pd
+
 #define gmx_calc_rsq_pr   gmx_mm_calc_rsq_pd
 #define gmx_sum4_pr       gmx_mm_sum4_pd
 
@@ -270,6 +337,8 @@
 #define gmx_add_pr        _mm256_add_ps
 #define gmx_sub_pr        _mm256_sub_ps
 #define gmx_mul_pr        _mm256_mul_ps
+#define gmx_madd_pr(a, b, c)   _mm256_add_ps(c, _mm256_mul_ps(a, b))
+#define gmx_nmsub_pr(a, b, c)  _mm256_sub_ps(c, _mm256_mul_ps(a, b))
 #define gmx_max_pr        _mm256_max_ps
 /* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
@@ -278,6 +347,7 @@
 #define gmx_or_pr         _mm256_or_ps
 #define gmx_andnot_pr     _mm256_andnot_ps
 
+#define gmx_round_pr(x)   _mm256_round_ps(x, 0x0)
 #define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm256_floor_ps
 #define GMX_HAVE_SIMD_BLENDV
@@ -297,6 +367,12 @@
 #define gmx_cvttpr_epi32  _mm256_cvttps_epi32
 
 #define gmx_invsqrt_pr    gmx_mm256_invsqrt_ps
+#define gmx_sqrt_pr       gmx_mm256_sqrt_ps
+#define gmx_inv_pr        gmx_mm256_inv_ps
+#define gmx_sincos_pr     gmx_mm256_sincos_ps
+#define gmx_acos_pr       gmx_mm256_acos_ps
+#define gmx_atan2_pr      gmx_mm256_atan2_ps
+
 #define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_ps
 #define gmx_sum4_pr       gmx_mm256_sum4_ps
 
@@ -323,6 +399,8 @@
 #define gmx_add_pr        _mm256_add_pd
 #define gmx_sub_pr        _mm256_sub_pd
 #define gmx_mul_pr        _mm256_mul_pd
+#define gmx_madd_pr(a, b, c)   _mm256_add_pd(c, _mm256_mul_pd(a, b))
+#define gmx_nmsub_pr(a, b, c)  _mm256_sub_pd(c, _mm256_mul_pd(a, b))
 #define gmx_max_pr        _mm256_max_pd
 /* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
@@ -331,6 +409,7 @@
 #define gmx_or_pr         _mm256_or_pd
 #define gmx_andnot_pr     _mm256_andnot_pd
 
+#define gmx_round_pr(x)   _mm256_round_pd(x, 0x0)
 #define GMX_HAVE_SIMD_FLOOR
 #define gmx_floor_pr      _mm256_floor_pd
 #define GMX_HAVE_SIMD_BLENDV
@@ -351,6 +430,12 @@
 #define gmx_cvttpr_epi32  _mm256_cvttpd_epi32
 
 #define gmx_invsqrt_pr    gmx_mm256_invsqrt_pd
+#define gmx_sqrt_pr       gmx_mm256_sqrt_pd
+#define gmx_inv_pr        gmx_mm256_inv_pd
+#define gmx_sincos_pr     gmx_mm256_sincos_pd
+#define gmx_acos_pr       gmx_mm256_acos_pd
+#define gmx_atan2_pr      gmx_mm256_atan2_pd
+
 #define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_pd
 #define gmx_sum4_pr       gmx_mm256_sum4_pd
 
