@@ -1092,11 +1092,8 @@ nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
 #include "gmx_simd_macros.h"
 
@@ -1129,9 +1126,6 @@ nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
             gmx_store_pr(dest+i, dest_SSE);
         }
     }
-
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
 #endif
 }
 
