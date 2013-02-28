@@ -58,9 +58,15 @@
 #include "force.h"
 #include "nonbonded.h"
 
-#if !defined GMX_DOUBLE && defined GMX_X86_SSE2
-#include "gmx_x86_simd_single.h"
-#define SSE_PROPER_DIHEDRALS
+#ifdef GMX_X86_SSE2
+#define SIMD_BONDEDS
+
+#ifdef GMX_X86_AVX_256
+#define GMX_MM256_HERE
+#else
+#define GMX_MM128_HERE
+#endif
+#include "gmx_simd_macros.h"
 #endif
 
 /* Find a better place for this? */
@@ -113,6 +119,141 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
         return CENTRAL;
     }
 }
+
+#ifdef SIMD_BONDEDS
+
+/* Below are 3 SIMD vector operations.
+ * Currently these are only used here, but they should be moved to
+ * a general SIMD include file when used elsewhere.
+ */
+
+/* SIMD inner-product of multiple vectors */
+static gmx_inline gmx_mm_pr
+gmx_iprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
+             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz)
+{
+    gmx_mm_pr ret;
+
+    ret = gmx_mul_pr(ax, bx);
+    ret = gmx_madd_pr(ay, by, ret);
+    ret = gmx_madd_pr(az, bz, ret);
+
+    return ret;
+}
+
+/* SIMD norm squared of multiple vectors */
+static gmx_inline gmx_mm_pr
+gmx_norm2_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az)
+{
+    gmx_mm_pr ret;
+
+    ret = gmx_mul_pr(ax, ax);
+    ret = gmx_madd_pr(ay, ay, ret);
+    ret = gmx_madd_pr(az, az, ret);
+
+    return ret;
+}
+
+/* SIMD cross-product of multiple vectors */
+static gmx_inline void
+gmx_cprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
+             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz,
+             gmx_mm_pr *cx, gmx_mm_pr *cy, gmx_mm_pr *cz)
+{
+    *cx = gmx_mul_pr(ay, bz);
+    *cx = gmx_nmsub_pr(az, by, *cx);
+
+    *cy = gmx_mul_pr(az, bx);
+    *cy = gmx_nmsub_pr(ax, bz, *cy);
+
+    *cz = gmx_mul_pr(ax, by);
+    *cz = gmx_nmsub_pr(ay, bx, *cz);
+}
+
+/* Return an pointer to the first element in ptr that is aligned
+ * to the SIMD register alignment requirement.
+ * ptr should be allocated GMX_SIMD_WIDTH_HERE - 1 larger than the number
+ * of entries entries you want to access.
+ */
+static real * simd_align_real(const real *ptr)
+{
+    return (real *)(((size_t)(ptr + GMX_SIMD_WIDTH_HERE - 1)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(real) - 1))));
+}
+
+/* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
+typedef struct {
+    gmx_mm_pr inv_bzz;
+    gmx_mm_pr inv_byy;
+    gmx_mm_pr inv_bxx;
+    gmx_mm_pr bzx;
+    gmx_mm_pr bzy;
+    gmx_mm_pr bzz;
+    gmx_mm_pr byx;
+    gmx_mm_pr byy;
+    gmx_mm_pr bxx;
+} pbc_simd_t;
+
+/* Set the SIMD pbc data from a normal t_pbc struct */
+static void set_pbc_simd(const t_pbc *pbc, pbc_simd_t *pbc_simd)
+{
+    rvec inv_bdiag;
+    int  d;
+
+    /* Setting inv_bdiag to 0 effectively turns off PBC */
+    clear_rvec(inv_bdiag);
+    if (pbc != NULL)
+    {
+        for (d = 0; d < pbc->ndim_ePBC; d++)
+        {
+            inv_bdiag[d] = 1.0/pbc->box[d][d];
+        }
+    }
+
+    pbc_simd->inv_bzz = gmx_set1_pr(inv_bdiag[ZZ]);
+    pbc_simd->inv_byy = gmx_set1_pr(inv_bdiag[YY]);
+    pbc_simd->inv_bxx = gmx_set1_pr(inv_bdiag[XX]);
+
+    if (pbc != NULL)
+    {
+        pbc_simd->bzx = gmx_set1_pr(pbc->box[ZZ][XX]);
+        pbc_simd->bzy = gmx_set1_pr(pbc->box[ZZ][YY]);
+        pbc_simd->bzz = gmx_set1_pr(pbc->box[ZZ][ZZ]);
+        pbc_simd->byx = gmx_set1_pr(pbc->box[YY][XX]);
+        pbc_simd->byy = gmx_set1_pr(pbc->box[YY][YY]);
+        pbc_simd->bxx = gmx_set1_pr(pbc->box[XX][XX]);
+    }
+    else
+    {
+        pbc_simd->bzx = gmx_setzero_pr();
+        pbc_simd->bzy = gmx_setzero_pr();
+        pbc_simd->bzz = gmx_setzero_pr();
+        pbc_simd->byx = gmx_setzero_pr();
+        pbc_simd->byy = gmx_setzero_pr();
+        pbc_simd->bxx = gmx_setzero_pr();
+    }
+}
+
+/* Correct distance vector *dx,*dy,*dz for PBC using SIMD */
+static gmx_inline void
+pbc_dx_simd(gmx_mm_pr *dx, gmx_mm_pr *dy, gmx_mm_pr *dz,
+            const pbc_simd_t *pbc)
+{
+    gmx_mm_pr sh;
+
+    sh  = gmx_round_pr(gmx_mul_pr(*dz, pbc->inv_bzz));
+    *dx = gmx_nmsub_pr(sh, pbc->bzx, *dx);
+    *dy = gmx_nmsub_pr(sh, pbc->bzy, *dy);
+    *dz = gmx_nmsub_pr(sh, pbc->bzz, *dz);
+
+    sh  = gmx_round_pr(gmx_mul_pr(*dy, pbc->inv_byy));
+    *dx = gmx_nmsub_pr(sh, pbc->byx, *dx);
+    *dy = gmx_nmsub_pr(sh, pbc->byy, *dy);
+
+    sh  = gmx_round_pr(gmx_mul_pr(*dx, pbc->inv_bxx));
+    *dx = gmx_nmsub_pr(sh, pbc->bxx, *dx);
+}
+
+#endif /* SIMD_BONDEDS */
 
 /*
  * Morse potential bond by Frank Everdij
@@ -958,6 +1099,161 @@ real angles(int nbonds,
     return vtot;
 }
 
+#ifdef SIMD_BONDEDS
+
+/* As angles, but using SIMD to calculate many dihedrals at once.
+ * This routines does not calculate energies and shift forces.
+ */
+static gmx_inline void
+angles_noener_simd(int nbonds,
+                   const t_iatom forceatoms[], const t_iparams forceparams[],
+                   const rvec x[], rvec f[],
+                   const t_pbc *pbc, const t_graph *g,
+                   real lambda,
+                   const t_mdatoms *md, t_fcdata *fcd,
+                   int *global_atom_index)
+{
+#define UNROLL GMX_SIMD_WIDTH_HERE
+    const int      nfa1 = 4;
+    int            i, iu, s, m;
+    int            type, ai[UNROLL], aj[UNROLL], ak[UNROLL];
+    real           coeff_array[2*UNROLL+UNROLL], *coeff;
+    real           dr_array[2*DIM*UNROLL+UNROLL], *dr;
+    real           f_buf_array[6*UNROLL+UNROLL], *f_buf;
+    gmx_mm_pr      k_S, theta0_S;
+    gmx_mm_pr      rijx_S, rijy_S, rijz_S;
+    gmx_mm_pr      rkjx_S, rkjy_S, rkjz_S;
+    gmx_mm_pr      one_S;
+    gmx_mm_pr      rij_rkj_S;
+    gmx_mm_pr      nrij2_S, nrij_1_S;
+    gmx_mm_pr      nrkj2_S, nrkj_1_S;
+    gmx_mm_pr      cos_S, sin_S;
+    gmx_mm_pr      theta_S;
+    gmx_mm_pr      st_S, sth_S;
+    gmx_mm_pr      cik_S, cii_S, ckk_S;
+    gmx_mm_pr      f_ix_S, f_iy_S, f_iz_S;
+    gmx_mm_pr      f_kx_S, f_ky_S, f_kz_S;
+    pbc_simd_t     pbc_simd;
+
+    /* Ensure register memory alignment */
+    coeff = simd_align_real(coeff_array);
+    dr    = simd_align_real(dr_array);
+    f_buf = simd_align_real(f_buf_array);
+
+    set_pbc_simd(pbc,&pbc_simd);
+
+    one_S = gmx_set1_pr(1.0);
+
+    /* nbonds is the number of angles times nfa1, here we step UNROLL angles */
+    for (i = 0; (i < nbonds); i += UNROLL*nfa1)
+    {
+        /* Collect atoms for UNROLL angles.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        iu = i;
+        for (s = 0; s < UNROLL; s++)
+        {
+            type  = forceatoms[iu];
+            ai[s] = forceatoms[iu+1];
+            aj[s] = forceatoms[iu+2];
+            ak[s] = forceatoms[iu+3];
+
+            coeff[s]        = forceparams[type].harmonic.krA;
+            coeff[UNROLL+s] = forceparams[type].harmonic.rA*DEG2RAD;
+
+            /* If you can't use pbc_dx_simd below for PBC, e.g. because
+             * you can't round in SIMD, use pbc_rvec_sub here.
+             */
+            /* Store the non PBC corrected distances packed and aligned */
+            for (m = 0; m < DIM; m++)
+            {
+                dr[s +      m *UNROLL] = x[ai[s]][m] - x[aj[s]][m];
+                dr[s + (DIM+m)*UNROLL] = x[ak[s]][m] - x[aj[s]][m];
+            }
+
+            /* At the end fill the arrays with identical entries */
+            if (iu + nfa1 < nbonds)
+            {
+                iu += nfa1;
+            }
+        }
+
+        k_S       = gmx_load_pr(coeff);
+        theta0_S  = gmx_load_pr(coeff+UNROLL);
+
+        rijx_S    = gmx_load_pr(dr + 0*UNROLL);
+        rijy_S    = gmx_load_pr(dr + 1*UNROLL);
+        rijz_S    = gmx_load_pr(dr + 2*UNROLL);
+        rkjx_S    = gmx_load_pr(dr + 3*UNROLL);
+        rkjy_S    = gmx_load_pr(dr + 4*UNROLL);
+        rkjz_S    = gmx_load_pr(dr + 5*UNROLL);
+
+        pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, &pbc_simd);
+        pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, &pbc_simd);
+
+        rij_rkj_S = gmx_iprod_pr(rijx_S, rijy_S, rijz_S,
+                                 rkjx_S, rkjy_S, rkjz_S);
+
+        nrij2_S   = gmx_norm2_pr(rijx_S, rijy_S, rijz_S);
+        nrkj2_S   = gmx_norm2_pr(rkjx_S, rkjy_S, rkjz_S);
+
+        nrij_1_S  = gmx_invsqrt_pr(nrij2_S);
+        nrkj_1_S  = gmx_invsqrt_pr(nrkj2_S);
+
+        cos_S     = gmx_mul_pr(rij_rkj_S, gmx_mul_pr(nrij_1_S, nrkj_1_S));
+
+        theta_S   = gmx_acos_pr(cos_S);
+
+        sin_S     = gmx_invsqrt_pr(gmx_max_pr(gmx_sub_pr(one_S, gmx_mul_pr(cos_S, cos_S)),
+                                              gmx_setzero_pr()));
+        st_S      = gmx_mul_pr(gmx_mul_pr(k_S, gmx_sub_pr(theta0_S, theta_S)),
+                               sin_S);
+        sth_S     = gmx_mul_pr(st_S, cos_S);
+
+        cik_S     = gmx_mul_pr(st_S,  gmx_mul_pr(nrij_1_S, nrkj_1_S));
+        cii_S     = gmx_mul_pr(sth_S, gmx_mul_pr(nrij_1_S, nrij_1_S));
+        ckk_S     = gmx_mul_pr(sth_S, gmx_mul_pr(nrkj_1_S, nrkj_1_S));
+
+        f_ix_S    = gmx_mul_pr(cii_S, rijx_S);
+        f_ix_S    = gmx_nmsub_pr(cik_S, rkjx_S, f_ix_S);
+        f_iy_S    = gmx_mul_pr(cii_S, rijy_S);
+        f_iy_S    = gmx_nmsub_pr(cik_S, rkjy_S, f_iy_S);
+        f_iz_S    = gmx_mul_pr(cii_S, rijz_S);
+        f_iz_S    = gmx_nmsub_pr(cik_S, rkjz_S, f_iz_S);
+        f_kx_S    = gmx_mul_pr(ckk_S, rkjx_S);
+        f_kx_S    = gmx_nmsub_pr(cik_S, rijx_S, f_kx_S);
+        f_ky_S    = gmx_mul_pr(ckk_S, rkjy_S);
+        f_ky_S    = gmx_nmsub_pr(cik_S, rijy_S, f_ky_S);
+        f_kz_S    = gmx_mul_pr(ckk_S, rkjz_S);
+        f_kz_S    = gmx_nmsub_pr(cik_S, rijz_S, f_kz_S);
+
+        gmx_store_pr(f_buf + 0*UNROLL, f_ix_S);
+        gmx_store_pr(f_buf + 1*UNROLL, f_iy_S);
+        gmx_store_pr(f_buf + 2*UNROLL, f_iz_S);
+        gmx_store_pr(f_buf + 3*UNROLL, f_kx_S);
+        gmx_store_pr(f_buf + 4*UNROLL, f_ky_S);
+        gmx_store_pr(f_buf + 5*UNROLL, f_kz_S);
+
+        iu = i;
+        s  = 0;
+        do
+        {
+            for (m = 0; m < DIM; m++)
+            {
+                f[ai[s]][m] += f_buf[s + m*UNROLL];
+                f[aj[s]][m] -= f_buf[s + m*UNROLL] + f_buf[s + (DIM+m)*UNROLL];
+                f[ak[s]][m] += f_buf[s + (DIM+m)*UNROLL];
+            }
+            s++;
+            iu += nfa1;
+        }
+        while (s < UNROLL && iu < nbonds);
+    }
+#undef UNROLL
+}
+
+#endif /* SIMD_BONDEDS */
+
 real linear_angles(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[], rvec fshift[],
@@ -1256,161 +1552,127 @@ real dih_angle(const rvec xi, const rvec xj, const rvec xk, const rvec xl,
 }
 
 
-#ifdef SSE_PROPER_DIHEDRALS
+#ifdef SIMD_BONDEDS
 
-/* x86 SIMD inner-product of 4 float vectors */
-#define GMX_MM_IPROD_PS(ax, ay, az, bx, by, bz)                 \
-    _mm_add_ps(_mm_add_ps(_mm_mul_ps(ax, bx), _mm_mul_ps(ay, by)), _mm_mul_ps(az, bz))
-
-/* x86 SIMD norm^2 of 4 float vectors */
-#define GMX_MM_NORM2_PS(ax, ay, az) GMX_MM_IPROD_PS(ax, ay, az, ax, ay, az)
-
-/* x86 SIMD cross-product of 4 float vectors */
-#define GMX_MM_CPROD_PS(ax, ay, az, bx, by, bz, cx, cy, cz)        \
-    {                                                          \
-        cx = _mm_sub_ps(_mm_mul_ps(ay, bz), _mm_mul_ps(az, by));  \
-        cy = _mm_sub_ps(_mm_mul_ps(az, bx), _mm_mul_ps(ax, bz));  \
-        cz = _mm_sub_ps(_mm_mul_ps(ax, by), _mm_mul_ps(ay, bx));  \
-    }
-
-/* load 4 rvec's into 3 x86 SIMD float registers */
-#define load_rvec4(r0, r1, r2, r3, rx_SSE, ry_SSE, rz_SSE)          \
-    {                                                             \
-        __m128 tmp;                                               \
-        rx_SSE = _mm_load_ps(r0);                                 \
-        ry_SSE = _mm_load_ps(r1);                                 \
-        rz_SSE = _mm_load_ps(r2);                                 \
-        tmp    = _mm_load_ps(r3);                                 \
-        _MM_TRANSPOSE4_PS(rx_SSE, ry_SSE, rz_SSE, tmp);              \
-    }
-
-#define store_rvec4(rx_SSE, ry_SSE, rz_SSE, r0, r1, r2, r3)         \
-    {                                                             \
-        __m128 tmp = _mm_setzero_ps();                              \
-        _MM_TRANSPOSE4_PS(rx_SSE, ry_SSE, rz_SSE, tmp);              \
-        _mm_store_ps(r0, rx_SSE);                                  \
-        _mm_store_ps(r1, ry_SSE);                                  \
-        _mm_store_ps(r2, rz_SSE);                                  \
-        _mm_store_ps(r3, tmp   );                                  \
-    }
-
-/* An rvec in a structure which can be allocated 16-byte aligned */
-typedef struct {
-    rvec  v;
-    float f;
-} rvec_sse_t;
-
-/* As dih_angle above, but calculates 4 dihedral angles at once using SSE,
+/* As dih_angle above, but calculates 4 dihedral angles at once using SIMD,
  * also calculates the pre-factor required for the dihedral force update.
- * Note that bv and buf should be 16-byte aligned.
+ * Note that bv and buf should be register aligned.
  */
-static void
-dih_angle_sse(const rvec *x,
-              int ai[4], int aj[4], int ak[4], int al[4],
-              const t_pbc *pbc,
-              int t1[4], int t2[4], int t3[4],
-              rvec_sse_t *bv,
-              real *buf)
+static gmx_inline void
+dih_angle_simd(const rvec *x,
+               const int *ai, const int *aj, const int *ak, const int *al,
+               const pbc_simd_t *pbc,
+               real *dr,
+               gmx_mm_pr *phi_S,
+               gmx_mm_pr *mx_S, gmx_mm_pr *my_S, gmx_mm_pr *mz_S,
+               gmx_mm_pr *nx_S, gmx_mm_pr *ny_S, gmx_mm_pr *nz_S,
+               gmx_mm_pr *nrkj_m2_S,
+               gmx_mm_pr *nrkj_n2_S,
+               real *p,
+               real *q)
 {
-    int    s;
-    __m128 rijx_SSE, rijy_SSE, rijz_SSE;
-    __m128 rkjx_SSE, rkjy_SSE, rkjz_SSE;
-    __m128 rklx_SSE, rkly_SSE, rklz_SSE;
-    __m128 mx_SSE, my_SSE, mz_SSE;
-    __m128 nx_SSE, ny_SSE, nz_SSE;
-    __m128 cx_SSE, cy_SSE, cz_SSE;
-    __m128 cn_SSE;
-    __m128 s_SSE;
-    __m128 phi_SSE;
-    __m128 ipr_SSE;
-    int    signs;
-    __m128 iprm_SSE, iprn_SSE;
-    __m128 nrkj2_SSE, nrkj_1_SSE, nrkj_2_SSE, nrkj_SSE;
-    __m128 nrkj_m2_SSE, nrkj_n2_SSE;
-    __m128 p_SSE, q_SSE;
-    __m128 fmin_SSE = _mm_set1_ps(GMX_FLOAT_MIN);
+#define UNROLL GMX_SIMD_WIDTH_HERE
+    int       s, m;
+    gmx_mm_pr rijx_S, rijy_S, rijz_S;
+    gmx_mm_pr rkjx_S, rkjy_S, rkjz_S;
+    gmx_mm_pr rklx_S, rkly_S, rklz_S;
+    gmx_mm_pr cx_S, cy_S, cz_S;
+    gmx_mm_pr cn_S;
+    gmx_mm_pr s_S;
+    gmx_mm_pr ipr_S;
+    gmx_mm_pr iprm_S, iprn_S;
+    gmx_mm_pr nrkj2_S, nrkj_1_S, nrkj_2_S, nrkj_S;
+    gmx_mm_pr p_S, q_S;
+    gmx_mm_pr fmin_S = gmx_set1_pr(GMX_FLOAT_MIN);
+    /* Using -0.0 should lead to only the sign bit being set */
+    gmx_mm_pr sign_mask_S = gmx_set1_pr(-0.0);
 
-    for (s = 0; s < 4; s++)
+    for (s = 0; s < UNROLL; s++)
     {
-        t1[s] = pbc_rvec_sub(pbc, x[ai[s]], x[aj[s]], bv[0+s].v);
-        t2[s] = pbc_rvec_sub(pbc, x[ak[s]], x[aj[s]], bv[4+s].v);
-        t3[s] = pbc_rvec_sub(pbc, x[ak[s]], x[al[s]], bv[8+s].v);
-    }
-
-    load_rvec4(bv[0].v, bv[1].v, bv[2].v, bv[3].v, rijx_SSE, rijy_SSE, rijz_SSE);
-    load_rvec4(bv[4].v, bv[5].v, bv[6].v, bv[7].v, rkjx_SSE, rkjy_SSE, rkjz_SSE);
-    load_rvec4(bv[8].v, bv[9].v, bv[10].v, bv[11].v, rklx_SSE, rkly_SSE, rklz_SSE);
-
-    GMX_MM_CPROD_PS(rijx_SSE, rijy_SSE, rijz_SSE,
-                    rkjx_SSE, rkjy_SSE, rkjz_SSE,
-                    mx_SSE, my_SSE, mz_SSE);
-
-    GMX_MM_CPROD_PS(rkjx_SSE, rkjy_SSE, rkjz_SSE,
-                    rklx_SSE, rkly_SSE, rklz_SSE,
-                    nx_SSE, ny_SSE, nz_SSE);
-
-    GMX_MM_CPROD_PS(mx_SSE, my_SSE, mz_SSE,
-                    nx_SSE, ny_SSE, nz_SSE,
-                    cx_SSE, cy_SSE, cz_SSE);
-
-    cn_SSE = gmx_mm_sqrt_ps(GMX_MM_NORM2_PS(cx_SSE, cy_SSE, cz_SSE));
-
-    s_SSE = GMX_MM_IPROD_PS(mx_SSE, my_SSE, mz_SSE, nx_SSE, ny_SSE, nz_SSE);
-
-    phi_SSE = gmx_mm_atan2_ps(cn_SSE, s_SSE);
-    _mm_store_ps(buf+16, phi_SSE);
-
-    ipr_SSE = GMX_MM_IPROD_PS(rijx_SSE, rijy_SSE, rijz_SSE,
-                              nx_SSE, ny_SSE, nz_SSE);
-
-    signs = _mm_movemask_ps(ipr_SSE);
-
-    for (s = 0; s < 4; s++)
-    {
-        if (signs & (1<<s))
+        /* If you can't use pbc_dx_simd below for PBC, e.g. because
+         * you can't round in SIMD, use pbc_rvec_sub here.
+         */
+        for (m = 0; m < DIM; m++)
         {
-            buf[16+s] = -buf[16+s];
+            dr[s + (0*DIM + m)*UNROLL] = x[ai[s]][m] - x[aj[s]][m];
+            dr[s + (1*DIM + m)*UNROLL] = x[ak[s]][m] - x[aj[s]][m];
+            dr[s + (2*DIM + m)*UNROLL] = x[ak[s]][m] - x[al[s]][m];
         }
     }
 
-    iprm_SSE    = GMX_MM_NORM2_PS(mx_SSE, my_SSE, mz_SSE);
-    iprn_SSE    = GMX_MM_NORM2_PS(nx_SSE, ny_SSE, nz_SSE);
+    rijx_S = gmx_load_pr(dr + 0*UNROLL);
+    rijy_S = gmx_load_pr(dr + 1*UNROLL);
+    rijz_S = gmx_load_pr(dr + 2*UNROLL);
+    rkjx_S = gmx_load_pr(dr + 3*UNROLL);
+    rkjy_S = gmx_load_pr(dr + 4*UNROLL);
+    rkjz_S = gmx_load_pr(dr + 5*UNROLL);
+    rklx_S = gmx_load_pr(dr + 6*UNROLL);
+    rkly_S = gmx_load_pr(dr + 7*UNROLL);
+    rklz_S = gmx_load_pr(dr + 8*UNROLL);
 
-    /* store_rvec4 messes with the input, don't use it after this! */
-    store_rvec4(mx_SSE, my_SSE, mz_SSE, bv[0].v, bv[1].v, bv[2].v, bv[3].v);
-    store_rvec4(nx_SSE, ny_SSE, nz_SSE, bv[4].v, bv[5].v, bv[6].v, bv[7].v);
+    pbc_dx_simd(&rijx_S, &rijy_S, &rijz_S, pbc);
+    pbc_dx_simd(&rkjx_S, &rkjy_S, &rkjz_S, pbc);
+    pbc_dx_simd(&rklx_S, &rkly_S, &rklz_S, pbc);
 
-    nrkj2_SSE   = GMX_MM_NORM2_PS(rkjx_SSE, rkjy_SSE, rkjz_SSE);
+    gmx_cprod_pr(rijx_S, rijy_S, rijz_S,
+                 rkjx_S, rkjy_S, rkjz_S,
+                 mx_S, my_S, mz_S);
+
+    gmx_cprod_pr(rkjx_S, rkjy_S, rkjz_S,
+                 rklx_S, rkly_S, rklz_S,
+                 nx_S, ny_S, nz_S);
+
+    gmx_cprod_pr(*mx_S, *my_S, *mz_S,
+                 *nx_S, *ny_S, *nz_S,
+                 &cx_S, &cy_S, &cz_S);
+
+    cn_S       = gmx_sqrt_pr(gmx_norm2_pr(cx_S, cy_S, cz_S));
+
+    s_S        = gmx_iprod_pr(*mx_S, *my_S, *mz_S, *nx_S, *ny_S, *nz_S);
+
+    /* Determine the dihedral angle, the sign might need correction */
+    *phi_S     = gmx_atan2_pr(cn_S, s_S);
+
+    ipr_S      = gmx_iprod_pr(rijx_S, rijy_S, rijz_S,
+                              *nx_S, *ny_S, *nz_S);
+
+    iprm_S     = gmx_norm2_pr(*mx_S, *my_S, *mz_S);
+    iprn_S     = gmx_norm2_pr(*nx_S, *ny_S, *nz_S);
+
+    nrkj2_S    = gmx_norm2_pr(rkjx_S, rkjy_S, rkjz_S);
 
     /* Avoid division by zero. When zero, the result is multiplied by 0
      * anyhow, so the 3 max below do not affect the final result.
      */
-    nrkj2_SSE   = _mm_max_ps(nrkj2_SSE, fmin_SSE);
-    nrkj_1_SSE  = gmx_mm_invsqrt_ps(nrkj2_SSE);
-    nrkj_2_SSE  = _mm_mul_ps(nrkj_1_SSE, nrkj_1_SSE);
-    nrkj_SSE    = _mm_mul_ps(nrkj2_SSE, nrkj_1_SSE);
+    nrkj2_S    = gmx_max_pr(nrkj2_S, fmin_S);
+    nrkj_1_S   = gmx_invsqrt_pr(nrkj2_S);
+    nrkj_2_S   = gmx_mul_pr(nrkj_1_S, nrkj_1_S);
+    nrkj_S     = gmx_mul_pr(nrkj2_S, nrkj_1_S);
 
-    iprm_SSE    = _mm_max_ps(iprm_SSE, fmin_SSE);
-    iprn_SSE    = _mm_max_ps(iprn_SSE, fmin_SSE);
-    nrkj_m2_SSE = _mm_mul_ps(nrkj_SSE, gmx_mm_inv_ps(iprm_SSE));
-    nrkj_n2_SSE = _mm_mul_ps(nrkj_SSE, gmx_mm_inv_ps(iprn_SSE));
+    iprm_S     = gmx_max_pr(iprm_S, fmin_S);
+    iprn_S     = gmx_max_pr(iprn_S, fmin_S);
+    *nrkj_m2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprm_S));
+    *nrkj_n2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprn_S));
 
-    _mm_store_ps(buf+0, nrkj_m2_SSE);
-    _mm_store_ps(buf+4, nrkj_n2_SSE);
+    /* Set sign of the angle with the sign of ipr_S.
+     * Since phi is currently positive, we can use OR instead of XOR.
+     */
+    *phi_S     = gmx_or_pr(*phi_S, gmx_and_pr(ipr_S, sign_mask_S));
 
-    p_SSE       = GMX_MM_IPROD_PS(rijx_SSE, rijy_SSE, rijz_SSE,
-                                  rkjx_SSE, rkjy_SSE, rkjz_SSE);
-    p_SSE       = _mm_mul_ps(p_SSE, nrkj_2_SSE);
+    p_S        = gmx_iprod_pr(rijx_S, rijy_S, rijz_S,
+                              rkjx_S, rkjy_S, rkjz_S);
+    p_S        = gmx_mul_pr(p_S, nrkj_2_S);
 
-    q_SSE       = GMX_MM_IPROD_PS(rklx_SSE, rkly_SSE, rklz_SSE,
-                                  rkjx_SSE, rkjy_SSE, rkjz_SSE);
-    q_SSE       = _mm_mul_ps(q_SSE, nrkj_2_SSE);
+    q_S        = gmx_iprod_pr(rklx_S, rkly_S, rklz_S,
+                              rkjx_S, rkjy_S, rkjz_S);
+    q_S        = gmx_mul_pr(q_S, nrkj_2_S);
 
-    _mm_store_ps(buf+8, p_SSE);
-    _mm_store_ps(buf+12, q_SSE);
+    gmx_store_pr(p, p_S);
+    gmx_store_pr(q, q_S);
+#undef UNROLL
 }
 
-#endif /* SSE_PROPER_DIHEDRALS */
+#endif /* SIMD_BONDEDS */
 
 
 void do_dih_fup(int i, int j, int k, int l, real ddphi,
@@ -1522,21 +1784,22 @@ do_dih_fup_noshiftf(int i, int j, int k, int l, real ddphi,
 }
 
 /* As do_dih_fup_noshiftf above, but with pre-calculated pre-factors */
-static void
-do_dih_fup_noshiftf_precalc(int i, int j, int k, int l, real ddphi,
-                            real nrkj_m2, real nrkj_n2,
+static gmx_inline void
+do_dih_fup_noshiftf_precalc(int i, int j, int k, int l,
                             real p, real q,
-                            rvec m, rvec n, rvec f[])
+                            real f_i_x, real f_i_y, real f_i_z,
+                            real mf_l_x, real mf_l_y, real mf_l_z,
+                            rvec f[])
 {
     rvec f_i, f_j, f_k, f_l;
-    rvec uvec, vvec, svec, dx_jl;
-    real a, b, toler;
-    ivec jt, dt_ij, dt_kj, dt_lj;
+    rvec uvec, vvec, svec;
 
-    a = -ddphi*nrkj_m2;
-    svmul(a, m, f_i);
-    b =  ddphi*nrkj_n2;
-    svmul(b, n, f_l);
+    f_i[XX] = f_i_x;
+    f_i[YY] = f_i_y;
+    f_i[ZZ] = f_i_z;
+    f_l[XX] = -mf_l_x;
+    f_l[YY] = -mf_l_y;
+    f_l[ZZ] = -mf_l_z;
     svmul(p, f_i, uvec);
     svmul(q, f_l, vvec);
     rvec_sub(uvec, vvec, svec);
@@ -1744,98 +2007,139 @@ pdihs_noener(int nbonds,
 }
 
 
-#ifdef SSE_PROPER_DIHEDRALS
+#ifdef SIMD_BONDEDS
 
-/* As pdihs_noner above, but using SSE to calculate 4 dihedrals at once */
+/* As pdihs_noner above, but using SIMD to calculate many dihedrals at once */
 static void
-pdihs_noener_sse(int nbonds,
-                 const t_iatom forceatoms[], const t_iparams forceparams[],
-                 const rvec x[], rvec f[],
-                 const t_pbc *pbc, const t_graph *g,
-                 real lambda,
-                 const t_mdatoms *md, t_fcdata *fcd,
-                 int *global_atom_index)
+pdihs_noener_simd(int nbonds,
+                  const t_iatom forceatoms[], const t_iparams forceparams[],
+                  const rvec x[], rvec f[],
+                  const t_pbc *pbc, const t_graph *g,
+                  real lambda,
+                  const t_mdatoms *md, t_fcdata *fcd,
+                  int *global_atom_index)
 {
-    int        i, i4, s;
-    int        type, ai[4], aj[4], ak[4], al[4];
-    int        t1[4], t2[4], t3[4];
-    int        mult[4];
-    real       cp[4], mdphi[4];
-    real       ddphi;
-    rvec_sse_t rs_array[13], *rs;
-    real       buf_array[24], *buf;
-    __m128     mdphi_SSE, sin_SSE, cos_SSE;
+#define UNROLL GMX_SIMD_WIDTH_HERE
+    const int      nfa1 = 5;
+    int            i, iu, s;
+    int            type, ai[UNROLL], aj[UNROLL], ak[UNROLL], al[UNROLL];
+    int            t1[UNROLL], t2[UNROLL], t3[UNROLL];
+    real           ddphi;
+    real           dr_array[3*DIM*UNROLL+UNROLL], *dr;
+    real           buf_array[7*UNROLL+UNROLL], *buf;
+    real           *cp, *phi0, *mult, *phi, *p, *q, *sf_i, *msf_l;
+    gmx_mm_pr      phi0_S, phi_S;
+    gmx_mm_pr      mx_S, my_S, mz_S;
+    gmx_mm_pr      nx_S, ny_S, nz_S;
+    gmx_mm_pr      nrkj_m2_S, nrkj_n2_S;
+    gmx_mm_pr      cp_S, mdphi_S, mult_S;
+    gmx_mm_pr      sin_S, cos_S;
+    gmx_mm_pr      mddphi_S;
+    gmx_mm_pr      sf_i_S, msf_l_S;
+    pbc_simd_t     pbc_simd;
 
-    /* Ensure 16-byte alignment */
-    rs  = (rvec_sse_t *)(((size_t)(rs_array +1)) & (~((size_t)15)));
-    buf =      (float *)(((size_t)(buf_array+3)) & (~((size_t)15)));
+    /* Ensure SIMD register alignment */
+    dr  = simd_align_real(dr_array);
+    buf = simd_align_real(buf_array);
 
-    for (i = 0; (i < nbonds); i += 20)
+    /* Extract aligned pointer for parameters and variables */
+    cp    = buf + 0*UNROLL;
+    phi0  = buf + 1*UNROLL;
+    mult  = buf + 2*UNROLL;
+    p     = buf + 3*UNROLL;
+    q     = buf + 4*UNROLL;
+    sf_i  = buf + 5*UNROLL;
+    msf_l = buf + 6*UNROLL;
+
+    set_pbc_simd(pbc, &pbc_simd);
+
+    /* nbonds is the number of dihedrals times nfa1, here we step UNROLL dihs */
+    for (i = 0; (i < nbonds); i += UNROLL*nfa1)
     {
-        /* Collect atoms quadruplets for 4 dihedrals */
-        i4 = i;
-        for (s = 0; s < 4; s++)
+        /* Collect atoms quadruplets for UNROLL dihedrals.
+         * iu indexes into forceatoms, we should not let iu go beyond nbonds.
+         */
+        iu = i;
+        for (s = 0; s < UNROLL; s++)
         {
-            ai[s] = forceatoms[i4+1];
-            aj[s] = forceatoms[i4+2];
-            ak[s] = forceatoms[i4+3];
-            al[s] = forceatoms[i4+4];
+            type  = forceatoms[iu];
+            ai[s] = forceatoms[iu+1];
+            aj[s] = forceatoms[iu+2];
+            ak[s] = forceatoms[iu+3];
+            al[s] = forceatoms[iu+4];
+
+            cp[s]   = forceparams[type].pdihs.cpA;
+            phi0[s] = forceparams[type].pdihs.phiA*DEG2RAD;
+            mult[s] = forceparams[type].pdihs.mult;
+
             /* At the end fill the arrays with identical entries */
-            if (i4 + 5 < nbonds)
+            if (iu + nfa1 < nbonds)
             {
-                i4 += 5;
+                iu += nfa1;
             }
         }
 
-        /* Caclulate 4 dihedral angles at once */
-        dih_angle_sse(x, ai, aj, ak, al, pbc, t1, t2, t3, rs, buf);
+        /* Caclulate UNROLL dihedral angles at once */
+        dih_angle_simd(x, ai, aj, ak, al, &pbc_simd,
+                       dr,
+                       &phi_S,
+                       &mx_S, &my_S, &mz_S,
+                       &nx_S, &ny_S, &nz_S,
+                       &nrkj_m2_S,
+                       &nrkj_n2_S,
+                       p, q);
 
-        i4 = i;
-        for (s = 0; s < 4; s++)
-        {
-            if (i4 < nbonds)
-            {
-                /* Calculate the coefficient and angle deviation */
-                type = forceatoms[i4];
-                dopdihs_mdphi(forceparams[type].pdihs.cpA,
-                              forceparams[type].pdihs.cpB,
-                              forceparams[type].pdihs.phiA,
-                              forceparams[type].pdihs.phiB,
-                              forceparams[type].pdihs.mult,
-                              buf[16+s], lambda, &cp[s], &buf[16+s]);
-                mult[s] = forceparams[type].pdihs.mult;
-            }
-            else
-            {
-                buf[16+s] = 0;
-            }
-            i4 += 5;
-        }
+        cp_S     = gmx_load_pr(cp);
+        phi0_S   = gmx_load_pr(phi0);
+        mult_S   = gmx_load_pr(mult);
 
-        /* Calculate 4 sines at once */
-        mdphi_SSE = _mm_load_ps(buf+16);
-        gmx_mm_sincos_ps(mdphi_SSE, &sin_SSE, &cos_SSE);
-        _mm_store_ps(buf+16, sin_SSE);
+        mdphi_S  = gmx_sub_pr(gmx_mul_pr(mult_S, phi_S), phi0_S);
 
-        i4 = i;
+        /* Calculate UNROLL sines at once */
+        gmx_sincos_pr(mdphi_S, &sin_S, &cos_S);
+        mddphi_S = gmx_mul_pr(gmx_mul_pr(cp_S, mult_S), sin_S);
+        sf_i_S   = gmx_mul_pr(mddphi_S, nrkj_m2_S);
+        msf_l_S  = gmx_mul_pr(mddphi_S, nrkj_n2_S);
+
+        /* After this m?_S will contain f[i] */
+        mx_S     = gmx_mul_pr(sf_i_S, mx_S);
+        my_S     = gmx_mul_pr(sf_i_S, my_S);
+        mz_S     = gmx_mul_pr(sf_i_S, mz_S);
+
+        /* After this m?_S will contain -f[l] */
+        nx_S     = gmx_mul_pr(msf_l_S, nx_S);
+        ny_S     = gmx_mul_pr(msf_l_S, ny_S);
+        nz_S     = gmx_mul_pr(msf_l_S, nz_S);
+
+        gmx_store_pr(dr + 0*UNROLL, mx_S);
+        gmx_store_pr(dr + 1*UNROLL, my_S);
+        gmx_store_pr(dr + 2*UNROLL, mz_S);
+        gmx_store_pr(dr + 3*UNROLL, nx_S);
+        gmx_store_pr(dr + 4*UNROLL, ny_S);
+        gmx_store_pr(dr + 5*UNROLL, nz_S);
+
+        iu = i;
         s  = 0;
         do
         {
-            ddphi = -cp[s]*mult[s]*buf[16+s];
-
-            do_dih_fup_noshiftf_precalc(ai[s], aj[s], ak[s], al[s], ddphi,
-                                        buf[ 0+s], buf[ 4+s],
-                                        buf[ 8+s], buf[12+s],
-                                        rs[0+s].v, rs[4+s].v,
+            do_dih_fup_noshiftf_precalc(ai[s], aj[s], ak[s], al[s],
+                                        p[s], q[s],
+                                        dr[     XX *UNROLL+s],
+                                        dr[     YY *UNROLL+s],
+                                        dr[     ZZ *UNROLL+s],
+                                        dr[(DIM+XX)*UNROLL+s],
+                                        dr[(DIM+YY)*UNROLL+s],
+                                        dr[(DIM+ZZ)*UNROLL+s],
                                         f);
             s++;
-            i4 += 5;
+            iu += nfa1;
         }
-        while (s < 4 && i4 < nbonds);
+        while (s < UNROLL && iu < nbonds);
     }
+#undef UNROLL
 }
 
-#endif /* SSE_PROPER_DIHEDRALS */
+#endif /* SIMD_BONDEDS */
 
 
 real idihs(int nbonds,
@@ -3694,14 +3998,27 @@ static real calc_one_bond(FILE *fplog, int thread,
                               pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]),
                               md, fcd, global_atom_index);
             }
+#ifdef SIMD_BONDEDS
+            else if (ftype == F_ANGLES &&
+                     !bCalcEnerVir && fr->efep == efepNO)
+            {
+                /* No energies, shift forces, dvdl */
+                angles_noener_simd(nbn, idef->il[ftype].iatoms+nb0,
+                                   idef->iparams,
+                                   (const rvec*)x, f,
+                                   pbc, g, lambda[efptFTYPE], md, fcd,
+                                   global_atom_index);
+                v = 0;
+            }
+#endif
             else if (ftype == F_PDIHS &&
                      !bCalcEnerVir && fr->efep == efepNO)
             {
                 /* No energies, shift forces, dvdl */
-#ifndef SSE_PROPER_DIHEDRALS
+#ifndef SIMD_BONDEDS
                 pdihs_noener
 #else
-                pdihs_noener_sse
+                pdihs_noener_simd
 #endif
                     (nbn, idef->il[ftype].iatoms+nb0,
                     idef->iparams,
