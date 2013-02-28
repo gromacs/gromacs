@@ -505,8 +505,9 @@ static inline bool atomic_cas(volatile unsigned int *ptr,
 void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
                          const nbnxn_atomdata_t *nbatom,
                          int flags, int aloc,
-                         float *e_lj, float *e_el, rvec *fshift)
+                         real *e_lj, real *e_el, rvec *fshift)
 {
+    /* NOTE:  only implemented for single-precision at this time */
     cudaError_t stat;
     int i, adat_end, iloc = -1;
     volatile unsigned int *poll_word;
