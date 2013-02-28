@@ -103,14 +103,8 @@ typedef struct {
 } nbnxn_grid_t;
 
 #ifdef GMX_NBNXN_SIMD
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
 #include "gmx_simd_macros.h"
 
@@ -177,9 +171,6 @@ static gmx_icell_set_x_t icell_set_x_supersub;
 #ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 #endif
-
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
 
 /* Local cycle count struct for profiling */
 typedef struct {
