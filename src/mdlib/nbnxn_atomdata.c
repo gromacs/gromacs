@@ -1221,8 +1221,8 @@ nbnxn_atomdata_add_nbat_f_to_f_part(const nbnxn_search_t nbs,
                 }
             }
             break;
-    default:
-        gmx_incons("Unsupported nbnxn_atomdata_t format");
+        default:
+            gmx_incons("Unsupported nbnxn_atomdata_t format");
     }
 }
 

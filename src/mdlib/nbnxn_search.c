@@ -2957,11 +2957,11 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
             if (d2 < rbb2 ||
                 (d2 < rl2 &&
 #ifdef NBNXN_PBB_SSE
-                subc_in_range_sse8
+                 subc_in_range_sse8
 #else
-                subc_in_range_x
+                 subc_in_range_x
 #endif
-                    (na_c, ci, x_ci, cj_gl, stride, x, rl2)))
+                     (na_c, ci, x_ci, cj_gl, stride, x, rl2)))
 #else
             /* Check if the distance between the two bounding boxes
              * in within the pair-list cut-off.
@@ -3904,7 +3904,7 @@ static void print_nblist_sci_cj(FILE *fp, const nbnxn_pairlist_t *nbl)
                 fprintf(fp, "  sj %5d  imask %x\n",
                         nbl->cj4[j4].cj[j],
                         nbl->cj4[j4].imei[0].imask);
-                for (si=0; si<GPU_NSUBCELL; si++)
+                for (si = 0; si < GPU_NSUBCELL; si++)
                 {
                     if (nbl->cj4[j4].imei[0].imask & (1U << (j*GPU_NSUBCELL + si)))
                     {
@@ -4831,19 +4831,19 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
     }
 
     /* Count the entries of each size */
-    for(i = 0; i <= m; i++)
+    for (i = 0; i <= m; i++)
     {
         work->sort[i] = 0;
     }
-    for(s = 0; s < nbl->nsci; s++)
+    for (s = 0; s < nbl->nsci; s++)
     {
         i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
         work->sort[i]++;
     }
     /* Calculate the offset for each count */
-    s0           = work->sort[m];
+    s0            = work->sort[m];
     work->sort[m] = 0;
-    for(i = m - 1; i >= 0; i--)
+    for (i = m - 1; i >= 0; i--)
     {
         s1            = work->sort[i];
         work->sort[i] = work->sort[i + 1] + s0;
@@ -4852,7 +4852,7 @@ static void sort_sci(nbnxn_pairlist_t *nbl)
 
     /* Sort entries directly into place */
     sci_sort = work->sci_sort;
-    for(s = 0; s < nbl->nsci; s++)
+    for (s = 0; s < nbl->nsci; s++)
     {
         i = min(m, nbl->sci[s].cj4_ind_end - nbl->sci[s].cj4_ind_start);
         sci_sort[work->sort[i]++] = nbl->sci[s];
