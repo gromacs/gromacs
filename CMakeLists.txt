@@ -543,11 +543,11 @@ endif (GMX_GSL)
 
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
-	find_package(X11)
-	# X11 includes/libraries are only set in the ngmx subdirectory!
-	if(X11_FOUND)
-    	set(HAVE_X11 1)
-	endif(X11_FOUND)
+    find_package(X11)
+    # X11 includes/libraries are only set in the ngmx subdirectory!
+    if(NOT X11_FOUND)
+        message(WARNING "X11 include files and/or libraries were not found. Will not build the GROMACS X11-binaries, such as ngmx")
+    endif()
 endif(GMX_X11)
 
 include(ThreadMPI)
