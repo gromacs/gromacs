@@ -57,7 +57,7 @@ endif()
 
 add_library(md ${MDLIB_SOURCES})
 
-target_link_libraries(md ${GMX_GPU_LIBRARIES} gmx ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${OpenMP_SHARED_LINKER_FLAGS})
+target_link_libraries(md ${GMX_GPU_LIBRARIES} gmx)
 if(GMX_BUILD_OWN_FFTW)
     # This dependency has to be made here rather than the CMakeLists.txt that
     # does the FFTW build, because of the order in which
