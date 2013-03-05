@@ -148,6 +148,6 @@ if(REGRESSIONTEST_PATH)
             #windows requires the command to be perl and not the script
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
         set_tests_properties(regressiontests/${subtest} PROPERTIES
-            ENVIRONMENT "PATH=${PATH}")
+            ENVIRONMENT "PATH=${PATH};GMXLIB=${CMAKE_SOURCE_DIR}/share/top")
     endforeach()
 endif()
