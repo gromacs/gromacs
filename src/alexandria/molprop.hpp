@@ -1,39 +1,18 @@
-/*
- * $Id: molprop.h,v 1.16 2009/05/29 15:01:18 spoel Exp $
- * 
- *                This source code is part of
- * 
- *                 G   R   O   M   A   C   S
- * 
- *          GROningen MAchine for Chemical Simulations
- * 
- *                        VERSION 4.0.99
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2008, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- * 
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
- * 
- * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- * 
- * For more info, check our website at http://www.gromacs.org
- * 
- * And Hey:
- * Groningen Machine for Chemical Simulation
+/*! \defgroup module_alexandria Processing of input files and force fields
+ * \ingroup group_preprocessing
+ * \brief
+ * Provides tools for input processing based on the alexandria force field 
+ *
+ * The tools in the alexandria directory are under heavy development still.
+ * Once finished they will provide processing of small molecules files based
+ * on quantum chemistry or other input source through the OpenBabel library.
+ * Assigning of atom types, derivation of charges, and generation of 
+ * molecular topology files (or objects) is implemented.
+ *
+ * \author David van der Spoel <david.vanderspoel@gmail.com>
+ * \inpublicapi
+ * \ingroup module_alexandria
  */
-
 #ifndef _molprop_h
 #define _molprop_h
 
@@ -41,281 +20,1008 @@
 #include <string>
 #include <vector>
 #include "typedefs.h"
+#include "atomprop.h"
+#include "poldata.h"
 
 enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
 
 enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY, 
        empENERGY, empNR };
 
+/*! \brief
+ * Enumerated type holding the result status of communication operations
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum CommunicationStatus { CS_RECV_DATA, 
+                           CS_RECV_EMPTY, 
+                           CS_SEND_DATA, 
+                           CS_SEND_EMPTY };
+
 extern const char *emp_name[empNR];
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
 
+/*! \brief
+ * Contains all classes related to alexandria force field tools
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
 namespace alexandria 
 {
-  class AtomNum 
-  {
-  private:
+/*! \brief
+ * Specifies the name of an atom type and the number in a molecular composition
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class AtomNum 
+{
+private:
     std::string _catom;
     int _cnumber;
-  public:
+public:
+    //! Empty constructor
+    AtomNum() {};
+    
+    /*! \brief
+     * Creates a new AtomNum object.
+     *
+     * \param[in] catom   Atom name
+     * \param[in] cnumber Number of copies of this atom
+     */
     AtomNum(const char *catom,int cnumber) { SetAtom(catom); SetNumber(cnumber); }
+    
+    /*! \brief
+     * Creates a new AtomNum object.
+     *
+     * \param[in] catom   Atom name
+     * \param[in] cnumber Number of copies of this atom
+     */
     AtomNum(std::string catom,int cnumber) { SetAtom(catom); SetNumber(cnumber); }
+    
+    //! Destructor
     ~AtomNum() {};
+    
+    //! Return the name of the atom for this AtomNum
     std::string GetAtom() { return _catom; }
+    
+    //! Set the name of the atom for this AtomNum
     void SetAtom(std::string catom) { _catom = catom; }
+    
+    //! Set the name of the atom for this AtomNum
     void SetAtom(const char *catom) { _catom.assign(catom); }
-    //const char *GetAtom() { return _catom.c_str(); }
+
+    //! Return the number of atoms for this AtomNum
     int GetNumber() { return _cnumber; }
+    
+    //! Set the number of atoms for this AtomNum
     void SetNumber(int cnumber) { _cnumber = cnumber; }
-  };
-  typedef std::vector<AtomNum>::iterator AtomNumIterator; 
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over a vector of AtomNum
+typedef std::vector<AtomNum>::iterator AtomNumIterator; 
   
-  class MolecularComposition 
-  {
-  private:
+/*! \brief
+ * Contains the molecular composition in terms of atoms
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolecularComposition 
+{
+private:
     std::string _compname;
     std::vector<AtomNum> _atomnum;
-  public:
+public:
+    //! Empty constructor
+    MolecularComposition() {}
+    
+    /*! \brief
+     * Creates a new MolecularComposition object.
+     *
+     * \param[in] compname  Name of the composition type
+     */
     MolecularComposition(const char *compname) { _compname.assign(compname); }
+
+    /*! \brief
+     * Creates a new MolecularComposition object.
+     *
+     * \param[in] compname  Name of the composition type
+     */
     MolecularComposition(std::string compname) { _compname = compname; }
+    
+    //! Destructor
     ~MolecularComposition() {}
-    std::string CompName() { return _compname; }
-    void AddAtom(const char *catom,int cnumber) { _atomnum.push_back(AtomNum(catom,cnumber); }
-    void AddAtom(std::string catom,int cnumber) { _atomnum.push_back(AtomNum(catom,cnumber)); }
-    void DeleteAtom(const char *catom);
+    
+    //! Return the composition name
+    std::string GetCompName() { return _compname; }
+    
+    //! Set the composition name
+    void SetCompName(std::string compname) { _compname = compname; }
+    
+    //! Set the composition name
+    void SetCompName(char *compname) { _compname.assign(compname); }
+    
+    //! Add an AtomNum struct to the composition
+    void AddAtom(AtomNum an);
+    
+    //! Remove the atom with name catom from the composition
+    void DeleteAtom(const char *catom) { 
+        std::string _str(catom); DeleteAtom(_str); 
+    }
+    
+    //! Remove the atom with name catom from the composition
     void DeleteAtom(std::string catom);
-    void ReplaceAtom(const char *oldatom,const char *newatom) { std::string so(oldatom),sn(newatom); ReplaceAtom(so,sn); }
+    
+    //! Replace the oldatom by newatom
+    void ReplaceAtom(const char *oldatom,const char *newatom) { 
+        std::string so(oldatom),sn(newatom); ReplaceAtom(so,sn); 
+    }
+    //! Replace the oldatom by newatom
     void ReplaceAtom(std::string oldatom,std::string newatom);
+    
+    //! Return iterator to begin looping over AtomNum
     AtomNumIterator BeginAtomNum() { return _atomnum.begin(); }
+    
+    //! Return iterator to end looping over AtomNum
     AtomNumIterator EndAtomNum() { return _atomnum.end(); }
+    
+    //! Return iterator pointing to a specific atom or EndAtomNum if not found
+    AtomNumIterator SearchAtom(std::string an); 
+    
+    //! Return the number of atoms of a certain type
     int CountAtoms(const char *atom);
+
+    //! Return the number of atoms of a certain type
     int CountAtoms(std::string atom);
+    
+    //! Return the total number of atoms
     int CountAtoms();
-  };
-  typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over MolecularComposition items
+typedef std::vector<MolecularComposition>::iterator MolecularCompositionIterator;
   
-  class GenericProperty 
-  {
-  private:
+/*! \brief
+ * Generic molecular property base clase
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class GenericProperty 
+{
+private:
     std::string _type,_unit;
-  public:
+public:
+    //! Empty constructor
+    GenericProperty() {}
+    
+    /*! \brief
+     * Creates a new GenericProperty object.
+     *
+     * \param[in] type  Type of the property
+     * \param[in] unit  Unit of the property
+     */
     GenericProperty(char *type,char *unit) { SetType(type); SetUnit(unit); };
+
+    /*! \brief
+     * Creates a new GenericProperty object.
+     *
+     * \param[in] type  Type of the property
+     * \param[in] unit  Unit of the property
+     */
     GenericProperty(std::string type,std::string unit) { SetType(type); SetUnit(unit); };
+    
+    //! Destructor
     ~GenericProperty() {};
-    //const char *GetType() { return _type.c_str(); }
-    //const char *GetUnit() { return _unit.c_str(); }
+    
+    //! Return the property type
     std::string GetType() { return _type; }
+    
+    //! Return the unit of the property
     std::string GetUnit() { return _unit; }
+    
+    //! Set the type of the property
     void SetType(std::string type) { _type = type; }
+    
+    //! Set the unit of the property
     void SetUnit(std::string unit) { _unit = unit; }
+    
+    //! Set the type of the property
     void SetType(const char *type) { _type.assign(type); }
+    
+    //! Set the unit of the property
     void SetUnit(const char *unit) { _unit.assign(unit); }
-  };
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
   
-  class MolecularQuadrupole : public GenericProperty
-  {
-  private:
+/*! \brief
+ * Contains the elements of the molecular quadrupole 
+ *
+ * The six elements of the upper diagonal of a quadrupole tensor are stored.
+ * The values are dependent on the orientation of the molecule and are relative
+ * to the center of charge in case that the total charge or total dipole of
+ * the molecules are non-zero.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolecularQuadrupole : public GenericProperty
+{
+private:
     double _xx,_yy,_zz,_xy,_xz,_yz;
-  public:
+public:
+    //! Empty constructor
+    MolecularQuadrupole() {}
+
+    //! Constructor initiating all elements of the quadrupole tensor
     MolecularQuadrupole(char *type,char *unit,double xx,double yy,double zz,double xy,double xz,double yz) : GenericProperty(type,unit) { Set(xx,yy,zz,xy,xz,yz); };
+    
+    //! Constructor initiating all elements of the quadrupole tensor
     MolecularQuadrupole(std::string type,std::string unit,double xx,double yy,double zz,double xy,double xz,double yz) : GenericProperty(type,unit) { Set(xx,yy,zz,xy,xz,yz); };
+    
+    //! Destructor
     ~MolecularQuadrupole() {};
+    
+    //! Set all the elements of the qudrupole tensor
     void Set(double xx,double yy,double zz,double xy,double xz,double yz) { _xx=xx; _yy=yy; _zz=zz; _xy=xy; _xz=xz; _yz=yz; };
+    
+    //! Get all the elements of the qudrupole tensor
     void Get(double *xx,double *yy,double *zz,double *xy,double *xz,double *yz) { *xx=_xx; *yy=_yy; *zz=_zz; *xy=_xy; *xz=_xz; *yz=_yz; };
-  };
-  typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
+    
+    //! Return the XX component of the quadrupole tensor
+    double GetXX() { return _xx; }
+
+    //! Return the YY component of the quadrupole tensor
+    double GetYY() { return _yy; }
+    
+    //! Return the ZZ component of the quadrupole tensor
+    double GetZZ() { return _zz; }
+    
+    //! Return the XY component of the quadrupole tensor
+    double GetXY() { return _xy; }
+    
+    //! Return the XZ component of the quadrupole tensor
+    double GetXZ() { return _xz; }
+    
+    //! Return the YZ component of the quadrupole tensor
+    double GetYZ() { return _yz; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over MolecularQuadrupole items
+typedef std::vector<MolecularQuadrupole>::iterator MolecularQuadrupoleIterator;
   
-  class MolecularEnergy : public GenericProperty
-  {
-  private:
+/*! \brief
+ * Contains a molecular energy
+ *
+ * Different energy terms associated with a molecule can be stored based
+ * on quantum chemistry calculations or experimental data.
+ * For example the Enthalpy of formation at different temperatures.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolecularEnergy : public GenericProperty
+{
+private:
     double _value,_error;
-  public:
+public:
+    //! Empty constructor
+    MolecularEnergy() {};
+    
+    //! Constructor storing all properties related to this energy term
     MolecularEnergy(char *type,char *unit,double value,double error) : GenericProperty(type,unit) { Set(value,error); };
+
+    //! Constructor storing all properties related to this energy term
     MolecularEnergy(std::string type,std::string unit,double value,double error) : GenericProperty(type,unit) { Set(value,error); };
+    
+    //! Destructor
     ~MolecularEnergy() {};
+    
+    //! Set the value and error for the energy
     void Set(double value,double error) { _value = value; _error = error; };
+    
+    //! Get the value and error for this energy
     void Get(double *value,double *error) { *value = _value; *error = _error; };
-  };
-  typedef std::vector<MolecularEnergy>::iterator MolecularEnergyIterator;
+    
+    //! Set the value for the energy
+    void SetValue(double value) { _value = value; };
+    
+    //! Return the energy value
+    double GetValue() { return _value; };
+
+    //! Set the error in the energy value
+    void SetError(double error) { _value = error; };
+    
+    //! Return the error in the energy
+    double GetError() { return _error; };
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over MolecularEnergy items
+typedef std::vector<MolecularEnergy>::iterator MolecularEnergyIterator;
   
-  class MolecularDipPolar : public GenericProperty
-  {
-  private:
+/*! \brief
+ * Contains either a dipole vector, or the diagonal of the polarizability tensor.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolecularDipPolar : public GenericProperty
+{
+private:
     double _x,_y,_z;
     double _aver,_error;
-  public:
+public:
+    //! Empty constructor
+    MolecularDipPolar() {}
+    
+    //! Constructor storing all properties related to this dipole/polarizability
     MolecularDipPolar(char *type,char *unit,double x,double y,double z,double aver,double error) : GenericProperty(type,unit) { Set(x,y,z,aver,error); }
+    
+    //! Constructor storing all properties related to this dipole/polarizability
     MolecularDipPolar(std::string type,std::string unit,double x,double y,double z,double aver,double error) : GenericProperty(type,unit) { Set(x,y,z,aver,error); }
+    
+    //! Destructor
     ~MolecularDipPolar() {};
+    
+    //! Set all properties related to this dipole/polarizability
     void Set(double x,double y,double z,double aver,double error) { _x = x; _y = y; _z = z; _aver = aver; _error = error; };
+    
+    //! Return all properties of this dipole/polarizability
     void Get(double *x,double *y,double *z,double *aver,double *error) { *x = _x; *y = _y; *z = _z; *aver = _aver; *error = _error; };
-  };
-  typedef std::vector<MolecularDipPolar>::iterator MolecularDipPolarIterator;
+    
+    //! Return the average dipole/polarizability value
+    double GetAver() { return _aver; }
+    
+    //! Return the error in the average dipole/polarizability
+    double GetError() { return _error; }
+    
+    //! Return the X component of the dipole/polarizability
+    double GetX() { return _x; }
+    
+    //! Return the Y component of the dipole/polarizability
+    double GetY() { return _y; }
+
+    //! Return the Z component of the dipole/polarizability
+    double GetZ() { return _z; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over a vector of MolecularDipPolar
+typedef std::vector<MolecularDipPolar>::iterator MolecularDipPolarIterator;
   
-  class ElectrostaticPotential
-  {  
-  private:
+/*! \brief
+ * Contains the electrostatic potential in a coordinate close to a molecule.
+ *
+ * The electrostatic potential (ESP) can be computed using quantum chemistry and
+ * stored in this class.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class ElectrostaticPotential
+{  
+private:
     std::string _xyz_unit,_V_unit;
     int _espid;
     double _x,_y,_z,_V;
-  public:
+public:
+    //! Empty constructor
+    ElectrostaticPotential() {}
+    
+    //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
+    ElectrostaticPotential(std::string xyz_unit,std::string V_unit,int espid,double x,double y,double z,double V) { Set(xyz_unit,V_unit,espid,x,y,z,V); };
+
+    //! Constructor that set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
     ElectrostaticPotential(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { Set(xyz_unit,V_unit,espid,x,y,z,V); };
+    
+    //! Destructor
     ~ElectrostaticPotential() {};
-    void Set(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { _xyz_unit.assign(xyz_unit); _V_unit.assign(V_unit); _espid = espid; _x = x; _y = y; _z = z; _V = V; };
+    
+    //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
+    void Set(std::string xyz_unit,std::string V_unit,int espid,double x,double y,double z,double V) { _xyz_unit = xyz_unit; _V_unit = V_unit; _espid = espid; _x = x; _y = y; _z = z; _V = V; };
+    
+    //! Set the units of coordinates and potential, the ESP id, the coordinates and the potential itself
+    void Set(const char *xyz_unit,const char *V_unit,int espid,double x,double y,double z,double V) { 
+        std::string _x(xyz_unit),_V(V_unit); Set(_x,_V,espid,x,y,z,V); }
+        
+    //! Return the units of coordinates and potential, the ESP id, the coordinates and the potential itself
     void Get(char **xyz_unit,char **V_unit,int *espid,double *x,double *y,double *z,double *V) { 
-      *xyz_unit = strdup(_xyz_unit.c_str()); *V_unit = strdup(_V_unit.c_str()); *espid = _espid; *x = _x; *y = _y; *z = _z; *V = _V; 
+        *xyz_unit = strdup(_xyz_unit.c_str()); *V_unit = strdup(_V_unit.c_str()); *espid = _espid; *x = _x; *y = _y; *z = _z; *V = _V; 
     };
-  };
-  typedef std::vector<ElectrostaticPotential>::iterator ElectrostaticPotentialIterator;
+    
+    //! Return the unit of the coordinates
+    std::string GetXYZunit() { return _xyz_unit; }
+    
+    //! Return the unit of the potential
+    std::string GetVunit() { return _V_unit; }
+    
+    //! Return the ESP id from the original calculation
+    int GetEspid() { return _espid; }
 
-  class Bond
-  {
-  private:
+    //! Return the X coordinate of the ESP point
+    double GetX() { return _x; }
+
+    //! Return the Y coordinate of the ESP point
+    double GetY() { return _y; }
+
+    //! Return the Z coordinate of the ESP point
+    double GetZ() { return _z; }
+
+    //! Return the electrostatic potential at this point in space
+    double GetV() { return _V; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over ElectrostaticPotential items
+typedef std::vector<ElectrostaticPotential>::iterator ElectrostaticPotentialIterator;
+
+/*! \brief
+ * Chemical bond in a molecule with associated bond order.
+ *
+ * The chemical bonds in a molecule are stored here along with the bond order
+ * which together can be used for determining the atom types in a force field
+ * calculation. In the present implementation this data is generated by OpenBabel.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Bond
+{
+private:
     int _ai,_aj,_bondorder;
-  public:
+public:
+    //! Empty constructor
+    Bond() {}
+    
+    //! Constructor setting the ids of the atoms and the bondorder
     Bond(int ai,int aj,int bondorder) { Set(ai,aj,bondorder); }
+    
+    //! Destructor
     ~Bond() {};
+    
+    //! Sets the ids of the atoms and the bondorder
     void Set(int ai,int aj,int bondorder) {_ai = ai; _aj = aj; _bondorder = bondorder; };
+
+    //! Returns the ids of the atoms and the bondorder
     void Get(int *ai,int *aj,int *bondorder) { *ai = _ai; *aj = _aj; *bondorder = _bondorder; };
+
+    //! Returns the first atom id
     int GetAi() { return _ai; }
+
+    //! Returns the second atom id
     int GetAj() { return _aj; }
+    
+    //! Returns the bondorder
     int GetBondOrder() { return _bondorder; }
-  };
-  typedef std::vector<Bond>::iterator BondIterator; 
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over Bond items
+typedef std::vector<Bond>::iterator BondIterator; 
 
-  class AtomicCharge : public GenericProperty
-  {
-  private:
+/*! \brief
+ * Contains the charge of an atom
+ *
+ * The charge of an atom can be derived from quantum chemistry codes in different
+ * ways, despite it not being a physical observable.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class AtomicCharge : public GenericProperty
+{
+private:
     double _q;
-  public:
+public:
+    //! Empty constructor
+    AtomicCharge() {}
+    
+    //! Constructor setting type, unit and charge itself
     AtomicCharge(const char *type,const char *unit,double q) : GenericProperty(type,unit) { SetQ(q); };
+    
+    //! Constructor setting type, unit and charge itself
     AtomicCharge(std::string type,std::string unit,double q) : GenericProperty(type,unit) { SetQ(q); };
+    
+    //! Destructor
     ~AtomicCharge() {};
+    
+    //! Set the charge to q
     void SetQ(double q) { _q = q; };
+    
+    //! Return the charge
     double GetQ() { return _q; }
-  };
-  typedef std::vector<AtomicCharge>::iterator AtomicChargeIterator; 
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over AtomicCharge items
+typedef std::vector<AtomicCharge>::iterator AtomicChargeIterator; 
 
-  class CalcAtom 
-  {
-  private:
+/*! \brief
+ * Contains data on an atom based on a calculation.
+ *
+ * This class coordinates, name, atom type and an array of
+ * AtomicCharge values based on different methods.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class CalcAtom 
+{
+private:
     std::string _name,_obtype,_unit;
     double _x,_y,_z;
     int _atomid;
     std::vector<AtomicCharge> _q;
-  public:
+public:
+    //! Empty constructor
+    CalcAtom() {}
+    
+    //! Constructor initiating the name, type and atomid
     CalcAtom(const char *name,const char *obtype,int atomid) { 
-      _name.assign(name); _obtype.assign(obtype); _atomid = atomid;
+        _name.assign(name); _obtype.assign(obtype); _atomid = atomid;
     };
+
+    //! Constructor initiating the name, type and atomid
+    CalcAtom(std::string name,std::string obtype,int atomid) { 
+        _name = name; _obtype = obtype; _atomid = atomid;
+    };
+    
+    //! Destructur
     ~CalcAtom() {};
     
-    void AddCharge(const char *type,const char *unit,double q) { 
-      _q.push_back(AtomicCharge(type,unit,q)); 
-    }
-    /* Get through iterator */
+    //! Add an AtomicCharge element to the atom
+    void AddCharge(AtomicCharge aq) { _q.push_back(aq); }
+    
+    //! Begin Iterator over AtomicCharge items 
     AtomicChargeIterator BeginQ() { return _q.begin(); }
+    
+    //! End Iterator over AtomicCharge items 
     AtomicChargeIterator EndQ() { return _q.end(); }
     
-    //char *GetUnit() { return _unit.c_str(); }
+    //! Return the atom id of the atom
     int GetAtomid() { return _atomid; }
+
+    //! Return the name of the atom
     std::string GetName() { return _name; }
+
+    //! Return the OpenBabel type of the atom
     std::string GetObtype() { return _obtype; }
+
+    //! Return the unit of the coordinates of the atom
     std::string GetUnit() { return _unit; }
+
+    //! Set the unit of the coordinates of the atom
     void SetUnit(std::string unit) { _unit = unit; }
+
+    //! Set the unit of the coordinates of the atom
     void SetUnit(const char *unit) { _unit.assign(unit); }
-        
+    
+    //! Set the coordinates of the atom
     void SetCoords(double x,double y,double z) { _x = x; _y = y; _z = z; }
+
+    //! Return all the coordinates of the atom
     void GetCoords(double *x,double *y,double *z) { *x = _x; *y = _y; *z = _z; }
-  };
-  typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
+
+    //! Return the X coordinate of the atom
+    double GetX() { return _x; }
+
+    //! Return the Y coordinate of the atom
+    double GetY() { return _y; }
+    
+    //! Return the Z coordinate of the atom
+    double GetZ() { return _z; }
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over CalcAtom items
+typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
    
-  class Experiment
-  {
-  private:
+/*! \brief
+ * Contains molecular data based on experiments
+ *
+ * This is a composite class holding the results from experiment, either
+ * the dipole, polarizability, energy or the quadrupole. A reference to the
+ * publication (or handbook) containing the data is stored, as well as the
+ * conformation of the molecule (if known).
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Experiment
+{
+private:
     gmx_bool _bExperiment;
     std::string _reference,_conformation;
     std::vector<MolecularDipPolar> _polar,_dipole;
     std::vector<MolecularEnergy> _energy;
     std::vector<MolecularQuadrupole> _quadrupole;
-  public:
+public:
+    //! Empty constructor
+    Experiment() {}
+    
+    //! Constructor initiating an Experiment with reference and conformation
     Experiment(std::string reference,std::string conformation) { 
-      _reference = reference; _conformation = conformation; _bExperiment = TRUE;
+        _reference = reference; _conformation = conformation; _bExperiment = TRUE;
     };
+    
+    //! Constructor initiating an Experiment with reference and conformation
     Experiment(const char *reference,const char *conformation) { 
-      _reference.assign(reference); _conformation.assign(conformation);
+        _reference.assign(reference); _conformation.assign(conformation);
     };
+    
+    //! Destructor
     ~Experiment() {};
+    
+    //! Return whether this object contains experimental data
     gmx_bool GetExperiment() { return _bExperiment; }
+    
+    //! Set the flag determining  whether this object contains experimental data
     void SetExperiment(gmx_bool bExperiment) { _bExperiment = bExperiment; }
 
+    //! Add a MolecularDipPolar element containing polarizability data
     void AddPolar(MolecularDipPolar mdp) { _polar.push_back(mdp); }
+    
+    //! Return Begin Iterator over polarizability elements
     MolecularDipPolarIterator BeginPolar() { return _polar.begin(); }
+
+    //! Return End Iterator over polarizability elements
     MolecularDipPolarIterator EndPolar()   { return _polar.end(); }
                   
+    //! Add a MolecularDipPolar element containing dipole data
     void AddDipole(MolecularDipPolar mdp) { _dipole.push_back(mdp); }
+    
+    //! Return Begin Iterator over dipole elements
     MolecularDipPolarIterator BeginDipole() { return _dipole.begin(); }
+
+    //! Return End Iterator over dipole elements
     MolecularDipPolarIterator EndDipole()   { return _dipole.end(); }
                   
+    //! Add a MolecularQuadrupole element
     void AddQuadrupole(MolecularQuadrupole mq) { _quadrupole.push_back(mq); }
+    
+    //! Return Begin Iterator over quadrupole elements
     MolecularQuadrupoleIterator BeginQuadrupole() { return _quadrupole.begin(); }
+    
+    //! Return End Iterator over quadrupole elements
     MolecularQuadrupoleIterator EndQuadrupole() { return _quadrupole.end(); }
 
+    //! Add a MolecularEnergy element
     void AddEnergy(MolecularEnergy me) { _energy.push_back(me); }
+    
+    //! Return Begin Iterator over energy elements
     MolecularEnergyIterator BeginEnergy() { return _energy.begin(); }
+
+    //! Return End Iterator over energy elements
     MolecularEnergyIterator EndEnergy()   { return _energy.end(); }
     
+    //! Return the molecular conformation
     std::string GetConformation() { return _conformation; }
-    //const char *GetConformation() { return _conformation.c_str(); }
-    
+
+    //! Return the literature reference    
     std::string GetReference() { return _reference; }
-    //const char *GetReference() { return _reference.c_str(); }
-  };
-  typedef std::vector<Experiment>::iterator ExperimentIterator; 
+
+    /*! \brief
+     * Convenience function that fetches a value from this experiment
+     *
+     * \param[in]  type   The type of the data (dependent on whether it is dipole, energy etc.)
+     * \param[in]  emp    Enum selecting the type of data to fetch
+     * \param[out] value  The value of e.g. the energy
+     * \param[out] error  The error in the value of e.g. the energy
+     * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
+     * \param[out] quadrupole The quadrupole tensor
+     * \return 1 on success or 0 otherwise
+     */
+    int GetVal(const char *type,int emp,
+               double *value,double *error,double vec[3],
+               tensor quadrupole);
+        
+    //! Merge in another object
+    void Merge(Experiment& src);
+           
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over Experiment items
+typedef std::vector<Experiment>::iterator ExperimentIterator; 
   
-  class Calculation : public Experiment
-  {
-  private:
+/*! \brief
+ * Contains data on a molecule based on a calculation.
+ *
+ * This is a composite class holding the results from a calculation, either
+ * the dipole, polarizability, energy, the quadrupole, or the electrostatic
+ * potential. The type of method used and basisset where appropriate are stored,
+ * along with the program used and the datafile where the data came from.
+ * The conformation of the molecule (if known) is stored.
+ * 
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class Calculation : public Experiment
+{
+private:
     std::string _program,_method,_basisset,_datafile;
     std::vector<CalcAtom> _catom;
     std::vector<ElectrostaticPotential> _potential;
-  public:
+public:
+    //! Empty constructor
+    Calculation() {}
+
+    //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
+    Calculation(std::string program,std::string method,
+                std::string basisset,std::string reference,
+                std::string conformation,std::string datafile) : Experiment(reference,conformation) { 
+        _program = program; _method = method; 
+        _basisset = basisset; _datafile = datafile; 
+        SetExperiment(FALSE);
+    };
+    
+    //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
     Calculation(const char *program,const char *method,
                 const char *basisset,const char *reference,
                 const char *conformation,const char *datafile) : Experiment(reference,conformation) { 
-      _program.assign(program); _method.assign(method); 
-      _basisset.assign(basisset); _datafile.assign(datafile); 
-      SetExperiment(FALSE);
+        _program.assign(program); _method.assign(method); 
+        _basisset.assign(basisset); _datafile.assign(datafile); 
+        SetExperiment(FALSE);
     };
+    
+    //! Destructor
     ~Calculation() {};
     
+    //! Add a CalcAtom object to the list of atoms
     void AddAtom(CalcAtom ca) { _catom.push_back(ca); }
+    
+    //! Return the number of atoms
     int NAtom() { return _catom.size(); }
+    
+    //! Iterator Begin over CalcAtom objects
     CalcAtomIterator BeginAtom() { return _catom.begin(); }
+    
+    //! Iterator End over CalcAtom objects
     CalcAtomIterator EndAtom() { return _catom.end(); }
 
+    //! Add ElectrostaticPotential element to the array
     void AddPotential(ElectrostaticPotential ep) { _potential.push_back(ep); }
+    
+    //! Return the number of potential points
     int NPotential() { return _potential.size(); };
+    
+    //! Iterator Begin over ElectrostaticPotential objects
     ElectrostaticPotentialIterator BeginPotential() { return _potential.begin(); }
+    
+    //! Iterator End over ElectrostaticPotential objects
     ElectrostaticPotentialIterator EndPotential() { return _potential.end(); }
     
+    //! Return the program used to perform the calculation
     std::string GetProgram() { return _program; }
-    //const char *GetProgram() { return _program.c_str(); }
     
+    //! Return the basis set used to perform the calculation
     std::string GetBasisset() { return _basisset; }
-    //const char *GetBasisset() { return _basisset.c_str(); }
     
+    //! Return the method used to perform the calculation
     std::string GetMethod() { return _method; }
-    //const char *GetMethod() { return _method.c_str(); }
     
+    //! Return the datafile from which the calculation output was extracted
     std::string GetDatafile() { return _datafile; }
-    //const char *GetDatafile() { return _datafile.c_str(); }
-  };
-  typedef std::vector<Calculation>::iterator CalculationIterator;
+
+    //! Merge in another object
+    void Merge(Calculation& src);
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+
+};
+//! Iterates over Calculation items
+typedef std::vector<Calculation>::iterator CalculationIterator;
+//typedef ExperimentIterator CalculationIterator;
   
-  class MolProp {
-  private:
+/*! \brief
+ * Contains molecular properties from a range of sources.
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+class MolProp {
+private:
     double _mass;
     int _charge,_multiplicity;
     std::string _formula,_molname,_iupac,_cas,_cid,_inchi;
@@ -324,78 +1030,188 @@ namespace alexandria
     std::vector<Calculation> _calc;
     std::vector<Experiment> _exper;
     std::vector<Bond> _bond;
-  public:
+public:
+    //! Construct a number MolProp object
     MolProp() {}
+    
+    //! Destructor
     ~MolProp() {}
     
+    /*! \brief
+     * Check the internal consistency of this object
+     *
+     * \todo Implement this
+     */
     void CheckConsistency();
     
+    //! Set the molecular mass
     void SetMass(double mass) { _mass = mass; }
+    
+    //! Return the molecular mass
     double GetMass() { return _mass; }
     
+    //! Set the total charge of the molecule
     void SetCharge(double charge) { _charge = charge; }
+    
+    //! Return the total charge of the molecule
     int GetCharge() { return _charge; }
     
+    //! Set the multiplicity of the molecule
     void SetMultiplicity(int multiplicity) { _multiplicity = multiplicity; }
+
+    //! Return the multiplicity  of the molecule
     int GetMultiplicity() { return _multiplicity; }
     
+    /*! \brief
+     * Merge the content of another MolProp into this one
+     *
+     * \param[in] mpi The object to be merged into the present one
+     * \todo Check and double check
+     */
+    void Merge(MolProp& mpi);
+    
+    //! Dump the contents of this object to a file
+    void Dump(FILE *fp);
+    
+    //! Set the formula
     void SetFormula(const char *formula) { _formula.assign(formula); }
-    void SetFormula(std::string formula) { _formula.assign(formula); }
-    //char *GetFormula() { return _formula.c_str(); }
+
+    //! Set the formula
+    void SetFormula(std::string formula) { _formula = formula; }
+    
+    //! Return the formula
     std::string GetFormula() { return _formula; }
     
+    /*! \brief
+     * Generate the chemical formula for this molecule based on atoms
+     * present in a calculation
+     *
+     * \param[in] ap Data structure containing information about atoms
+     * \todo Check and double check. If there is no calculation data no 
+     * formula anbe generated
+     */
+    gmx_bool GenerateFormula(gmx_atomprop_t ap);
+    
+    //! Set the molname
     void SetMolname(const char *molname) { _molname.assign(molname); }
-    void SetMolname(std::string molname) { _molname.assign(molname); }
-    //char *GetMolname() { return _molname.c_str(); }
+
+    //! Set the molname
+    void SetMolname(std::string molname) { _molname = molname; }
+    
+    //! Return the molname
     std::string GetMolname() { return _molname; }
     
+    //! Set the IUPAC name
     void SetIupac(const char *iupac) { _iupac.assign(iupac); }
-    void SetIupac(std::string iupac) { _iupac.assign(iupac); }
+
+    //! Set the IUPAC name
+    void SetIupac(std::string iupac) { _iupac = iupac; }
     
-    /* Return IUPAC name or, if not found, the molname */
-    //char *GetIupac() { if (_iupac.size() > 0) return _iupac.c_str() else return _molname.c_str(); }
+    //! Return IUPAC name or, if not found, the molname
     std::string GetIupac() { if (_iupac.size() > 0) return _iupac; else return _molname; }
     
+    //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
     void SetCas(const char *cas) { _cas.assign(cas); }
+
+    //! Set the CAS (Chemical Abstract Service) identifier, see http://www.cas.org/
     void SetCas(std::string cas) { _cas.assign(cas); }
-    //char *GetCas() { return _cas.c_str(); }
+    
+    //! Return the CAS (Chemical Abstract Service) identifier, see http:://www.cas.org
     std::string GetCas() { return _cas; }
     
+    //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
     void SetCid(const char *cid) { _cid.assign(cid); }
-    void SetCid(std::string cid) { _cid.assign(cid); }
-    //char *GetCid() { return _cid.c_str(); }
+    
+    //! Set the CID (Chemspider identifier) see http:://www.chemspider.com
+    void SetCid(std::string cid) { _cid = cid; }
+
+    //! Return the CID (Chemspider identifier) see http:://www.chemspider.com
     std::string GetCid() { return _cid; }
     
+    //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     void SetInchi(const char *inchi) { _inchi.assign(inchi); }
-    void SetInchi(std::string inchi) { _inchi.assign(inchi); }
-    //char *GetInchi() { return _inchi.c_str(); }
+    
+    //! Set the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
+    void SetInchi(std::string inchi) { _inchi = inchi; }
+    
+    //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     std::string GetInchi() { return _inchi; }
     
-    void AddCategory(const char *category) { _category.push_back(category); }
-    void AddCategory(std::string category) { _category.push_back(category); }
+    //! Add a classification category for this molecule
+    void AddCategory(const char *category) { 
+        std::string _str(category); AddCategory(_str); 
+    }
+    
+    //! Add a classification category for this molecule
+    void AddCategory(std::string category) { 
+        if (SearchCategory(category) == 0) { _category.push_back(category); } 
+    }
+    
+    //! Return the number of categories
     int NCategory() { return _category.size(); }
     
+    //! Return iterator Begin over categories
     std::vector<std::string>::iterator BeginCategory() { return _category.begin(); }
+    
+    //! Return iterator End over categories
     std::vector<std::string>::iterator EndCategory() { return _category.end(); }
 
-    int SearchCategory(const char *catname) { std::string str(catname); return SearchCategory(str); }
+    
+    int SearchCategory(const char *catname) { 
+        std::string _str(catname); return SearchCategory(_str); 
+    }
     int SearchCategory(std::string catname);
     
+    //! Delete a composition type if present
     void DeleteComposition(std::string compname);
-    void DeleteComposition(const char *compname) { 
-      std::string str(compname); DeleteComposition(compname); 
-    }
-    MolecularCompositionIterator AddComposition(const char *compname) { 
-      _mol_comp.push_back(MolecularComposition(compname)); return _mol_comp.end(); 
-    }
-    MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
-    MolecularCompositionIterator EndMolecularComposition()   { return _mol_comp.end(); }
     
-    int NAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
+    //! Delete a composition type if present
+    void DeleteComposition(const char *compname) { 
+        std::string _str(compname); DeleteComposition(_str); 
+    }
+    
+    //! Add a composition entry
+    void AddComposition(MolecularComposition mc);
+    
+    //! Begin Iterator over MolecularCompostion items
+    MolecularCompositionIterator BeginMolecularComposition() { return _mol_comp.begin(); }
 
+    //! End Iterator over MolecularCompostion items
+    MolecularCompositionIterator EndMolecularComposition()   { return _mol_comp.end();}
+    
+    //! Last Iterator over MolecularCompostion items
+    MolecularComposition *LastMolecularComposition()   { return &(_mol_comp.back());}
+    
+    //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
+    MolecularCompositionIterator SearchMolecularComposition(const char *str) {
+        std::string _str(str); return SearchMolecularComposition(_str);
+    }
+    
+    //! Search for particular MolecularCompostion item or return EndMolecularComposition if not found
+    MolecularCompositionIterator SearchMolecularComposition(std::string str);
+    
+    //! Return number of atoms in the first composition if present, or 0 otherwise
+    int NAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
+    
+    //! Routine to generate composition based on calculation data
+    gmx_bool GenerateComposition(gmx_poldata_t pd);
+    
+    //! Returns boolean stating whether a particular composition is present
+    gmx_bool HasComposition(char *composition) { std::string _str(composition); return HasComposition(_str); }
+
+    //! Returns boolean stating whether a particular composition is present
+    gmx_bool HasComposition(std::string composition);
+
+    //! Add a Bond element
     void AddBond(Bond b) { _bond.push_back(b); }
-    int Nbond() { return _bond.size(); }
+
+    //! Return the number of Bond elements
+    int NBond() { return _bond.size(); }
+    
+    //! Begin Iterator over Bond elements
     BondIterator BeginBond() { return _bond.begin(); }
+    
+    //! End Iterator over Bond elements
     BondIterator EndBond() { return _bond.end(); }
     
     void AddExperiment(Experiment myexp) { _exper.push_back(myexp); };
@@ -404,7 +1220,7 @@ namespace alexandria
     ExperimentIterator BeginExperiment() { return _exper.begin(); }
     ExperimentIterator EndExperiment() { return _exper.end(); }
     Experiment *LastExperiment() { 
-      if (NExperiment() > 0) return &(_exper.back()); else return NULL; 
+        if (NExperiment() > 0) return &(_exper.back()); else return NULL; 
     }
 
     void AddCalculation(Calculation calc) { _calc.push_back(calc); }
@@ -412,10 +1228,30 @@ namespace alexandria
     CalculationIterator BeginCalculation() { return _calc.begin(); }
     CalculationIterator EndCalculation() { return _calc.end(); }
     Calculation *LastCalculation() { 
-      if (NCalculation() > 0) return &(_calc.back()); else return NULL; 
+        if (NCalculation() > 0) return &(_calc.back()); else return NULL; 
     }
-  };
-  typedef std::vector<MolProp>::iterator MolPropIterator;
+    CalculationIterator GetLot(const char *lot);
+    
+    /*! \brief
+     * Sends this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] dest      Destination processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Send(t_commrec *cr,int dest);
+    
+    /*! \brief
+     * Receives this object over an MPI connection
+     *
+     * \param[in] commrec   GROMACS data structure for MPI communication
+     * \param[in] src       Source processor
+     * \return the CommunicationStatus of the operation
+     */
+    CommunicationStatus Receive(t_commrec *cr,int src);
+};
+//! Iterates over MolProp items
+typedef std::vector<MolProp>::iterator MolPropIterator;
 }
   
 #endif

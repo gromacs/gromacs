@@ -687,7 +687,7 @@ int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *gt_type,double *polar
     return 0;
 }
 
-char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,char *gt_type)
+char *gmx_poldata_get_miller_equiv(gmx_poldata_t pd,const char *gt_type)
 {
     t_ffatype *sp;
     int i;

@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/* 
  * $Id: molprop_xml.c,v 1.23 2009/06/01 06:13:18 spoel Exp $
  * 
  *                This source code is part of
@@ -118,8 +118,8 @@ static const char *exml_names[exmlNR] = {
 
 static void add_xml_string(xmlNodePtr ptr,const char *name,std::string val)
 {
-  if (xmlSetProp(ptr,(xmlChar *)name,(xmlChar *)val.c_str()) == 0)
-    gmx_fatal(FARGS,"Setting",(char *)name);
+    if (xmlSetProp(ptr,(xmlChar *)name,(xmlChar *)val.c_str()) == 0)
+        gmx_fatal(FARGS,"Setting",(char *)name);
 }
 
 static char *sp(int n, char buf[], int maxindent)
@@ -207,7 +207,6 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
     char buf[100];
     alexandria::MolProp *mpt;
     alexandria::CalcAtomIterator atom_it;
-    alexandria::MolecularCompositionIterator comp_it;
     gmx_bool bCompIt = FALSE;
     int  i;
     char *xbuf[exmlNR];
@@ -254,8 +253,8 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlMOLECULES:
                     break;
                 case exmlMOLECULE:
-                  molprops.push_back(alexandria::MolProp());
-                  mpt = &(molprops.back());
+                    molprops.push_back(alexandria::MolProp());
+                    mpt = &(molprops.back());
                     if (NN(xbuf[exmlFORMULA]))
                         mpt->SetFormula(xbuf[exmlFORMULA]);
                     if (NN(xbuf[exmlMOLNAME]))
@@ -306,9 +305,9 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                         NN(xbuf[exmlZ]) && NN(xbuf[exmlV]))
                     {
                         alexandria::ElectrostaticPotential ep(xbuf[exmlX_UNIT],xbuf[exmlV_UNIT],
-                                                       atoi(xbuf[exmlESPID]),
-                                                       my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),
-                                                       my_atof(xbuf[exmlZ]),my_atof(xbuf[exmlV]));
+                                                              atoi(xbuf[exmlESPID]),
+                                                              my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),
+                                                              my_atof(xbuf[exmlZ]),my_atof(xbuf[exmlV]));
                         mpt->LastCalculation()->AddPotential(ep);
                     }
                     break;
@@ -316,18 +315,18 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                     process_children(tree->children,xbuf);
                     if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
                         NN(xbuf[exmlAVERAGE]) && NN(xbuf[exmlERROR]))
-                      {
-                          alexandria::MolecularDipPolar mdp(xbuf[exmlTYPE],xbuf[exmlUNIT],
-                                                     NN(xbuf[exmlX]) ? my_atof(xbuf[exmlX]) : 0,
-                                                     NN(xbuf[exmlY]) ? my_atof(xbuf[exmlY]) : 0,
-                                                     NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
-                                                     my_atof(xbuf[exmlAVERAGE]),my_atof(xbuf[exmlERROR]));
+                    {
+                        alexandria::MolecularDipPolar mdp(xbuf[exmlTYPE],xbuf[exmlUNIT],
+                                                          NN(xbuf[exmlX]) ? my_atof(xbuf[exmlX]) : 0,
+                                                          NN(xbuf[exmlY]) ? my_atof(xbuf[exmlY]) : 0,
+                                                          NN(xbuf[exmlZ]) ? my_atof(xbuf[exmlZ]) : 0,
+                                                          my_atof(xbuf[exmlAVERAGE]),my_atof(xbuf[exmlERROR]));
                     
-                          if (*bExperiment)
-                              mpt->LastExperiment()->AddDipole(mdp);
-                          else
-                              mpt->LastCalculation()->AddDipole(mdp);
-                      }
+                        if (*bExperiment)
+                            mpt->LastExperiment()->AddDipole(mdp);
+                        else
+                            mpt->LastCalculation()->AddDipole(mdp);
+                    }
                     break;
                 case exmlQUADRUPOLE: 
                     process_children(tree->children,xbuf);
@@ -335,67 +334,69 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                         NN(xbuf[exmlXX]) && NN(xbuf[exmlYY]) && NN(xbuf[exmlZZ]) &&
                         NN(xbuf[exmlXY]) && NN(xbuf[exmlXZ]) && NN(xbuf[exmlYZ]))
                     {
-                          alexandria::MolecularQuadrupole mq(xbuf[exmlTYPE],xbuf[exmlUNIT],
-                                                      my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
-                                                      my_atof(xbuf[exmlZZ]),my_atof(xbuf[exmlXY]),
-                                                      my_atof(xbuf[exmlXZ]),my_atof(xbuf[exmlYZ]));
-                          if (*bExperiment)
-                              mpt->LastExperiment()->AddQuadrupole(mq);
-                          else
-                              mpt->LastCalculation()->AddQuadrupole(mq);
+                        alexandria::MolecularQuadrupole mq(xbuf[exmlTYPE],xbuf[exmlUNIT],
+                                                           my_atof(xbuf[exmlXX]),my_atof(xbuf[exmlYY]),
+                                                           my_atof(xbuf[exmlZZ]),my_atof(xbuf[exmlXY]),
+                                                           my_atof(xbuf[exmlXZ]),my_atof(xbuf[exmlYZ]));
+                        if (*bExperiment)
+                            mpt->LastExperiment()->AddQuadrupole(mq);
+                        else
+                            mpt->LastCalculation()->AddQuadrupole(mq);
                     }
                     break;
                 case exmlBOND: 
-                  process_children(tree->children,xbuf);
-                  if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
-                      NN(xbuf[exmlBONDORDER]))
-                  {
-                      alexandria::Bond b(atoi(xbuf[exmlAI]),atoi(xbuf[exmlAJ]),
-                                  atoi(xbuf[exmlBONDORDER]));
-                      mpt->AddBond(b);
-                  }
-                  break;
+                    process_children(tree->children,xbuf);
+                    if (NN(xbuf[exmlAI]) && NN(xbuf[exmlAJ]) &&
+                        NN(xbuf[exmlBONDORDER]))
+                    {
+                        alexandria::Bond b(atoi(xbuf[exmlAI]),atoi(xbuf[exmlAJ]),
+                                           atoi(xbuf[exmlBONDORDER]));
+                        mpt->AddBond(b);
+                    }
+                    break;
                 case exmlENERGY:
-                  process_children(tree,xbuf);
-                  if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
-                      NN(xbuf[exmlENERGY]))
-                  {
-                      alexandria::MolecularEnergy me(xbuf[exmlTYPE],xbuf[exmlUNIT],
-                                                     my_atof(xbuf[exmlENERGY]),
-                                                     xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
-                      if (*bExperiment)
-                          mpt->LastExperiment()->AddEnergy(me);
-                      else
-                          mpt->LastCalculation()->AddEnergy(me);
-                  }
-                  break;
+                    process_children(tree,xbuf);
+                    if (NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]) &&
+                        NN(xbuf[exmlENERGY]))
+                    {
+                        alexandria::MolecularEnergy me(xbuf[exmlTYPE],xbuf[exmlUNIT],
+                                                       my_atof(xbuf[exmlENERGY]),
+                                                       xbuf[exmlERROR] ? my_atof(xbuf[exmlERROR]) : 0.0);
+                        if (*bExperiment)
+                            mpt->LastExperiment()->AddEnergy(me);
+                        else
+                            mpt->LastCalculation()->AddEnergy(me);
+                    }
+                    break;
                     
                 case exmlCOMPOSITION: 
                     if (NN(xbuf[exmlCOMPNAME]))
                     {
-                        comp_it = mpt->AddComposition(xbuf[exmlCOMPNAME]);
+                        alexandria::MolecularComposition mc(xbuf[exmlCOMPNAME]);
+                        mpt->AddComposition(mc);
                         bCompIt =TRUE;
                     }
                     break;
                 case exmlCATOM:
                     if (NN(xbuf[exmlC_NAME]) && NN(xbuf[exmlC_NUMBER]) && bCompIt)
                     {
-                        comp_it->AddAtom(xbuf[exmlC_NAME],atoi(xbuf[exmlC_NUMBER]));
+                        alexandria::AtomNum an(xbuf[exmlC_NAME],atoi(xbuf[exmlC_NUMBER]));
+                        mpt->LastMolecularComposition()->AddAtom(an);
                     }
                     break;
                 case exmlCALCULATION:
                     if (NN(xbuf[exmlPROGRAM]) && NN(xbuf[exmlMETHOD]) && 
                         NN(xbuf[exmlBASISSET]) && NN(xbuf[exmlREFERENCE]) &&
                         NN(xbuf[exmlCONFORMATION]) && NN(xbuf[exmlDATAFILE]))
-                      {
-                          alexandria::Calculation mycalc(xbuf[exmlPROGRAM],xbuf[exmlMETHOD],
-                                                  xbuf[exmlBASISSET],xbuf[exmlREFERENCE],
-                                                  xbuf[exmlCONFORMATION],xbuf[exmlDATAFILE]);
-                          mpt->AddCalculation(mycalc);
-                          *bExperiment = FALSE;
-                      }
+                    {
+                        alexandria::Calculation mycalc(xbuf[exmlPROGRAM],xbuf[exmlMETHOD],
+                                                       xbuf[exmlBASISSET],xbuf[exmlREFERENCE],
+                                                       xbuf[exmlCONFORMATION],xbuf[exmlDATAFILE]);
+                        mpt->AddCalculation(mycalc);
+                        *bExperiment = FALSE;
+                    }
                     else 
-                      gmx_fatal(FARGS,"Trying to add calculation with program %s, method %s, basisset %s and reference %s conformation %s datafile %s",
+                        gmx_fatal(FARGS,"Trying to add calculation with program %s, method %s, basisset %s and reference %s conformation %s datafile %s",
                                   xbuf[exmlPROGRAM],xbuf[exmlMETHOD],
                                   xbuf[exmlBASISSET],xbuf[exmlREFERENCE],
                                   xbuf[exmlCONFORMATION],xbuf[exmlDATAFILE]);
@@ -418,16 +419,17 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                             if (NN(xbuf[exmlX]) && NN(xbuf[exmlY]) && NN(xbuf[exmlZ])
                                 && NN(xbuf[exmlUNIT])) 
                             {
-                              ca.SetUnit(xbuf[exmlUNIT]);
-                              ca.SetCoords(my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),my_atof(xbuf[exmlZ]));
-                              sfree(xbuf[exmlX]); xbuf[exmlX] = NULL;
-                              sfree(xbuf[exmlY]); xbuf[exmlY] = NULL;
-                              sfree(xbuf[exmlZ]); xbuf[exmlZ] = NULL;
-                              sfree(xbuf[exmlUNIT]); xbuf[exmlUNIT] = NULL;
+                                ca.SetUnit(xbuf[exmlUNIT]);
+                                ca.SetCoords(my_atof(xbuf[exmlX]),my_atof(xbuf[exmlY]),my_atof(xbuf[exmlZ]));
+                                sfree(xbuf[exmlX]); xbuf[exmlX] = NULL;
+                                sfree(xbuf[exmlY]); xbuf[exmlY] = NULL;
+                                sfree(xbuf[exmlZ]); xbuf[exmlZ] = NULL;
+                                sfree(xbuf[exmlUNIT]); xbuf[exmlUNIT] = NULL;
                             }
                             if (NN(xbuf[exmlQ]) && NN(xbuf[exmlTYPE]) && NN(xbuf[exmlUNIT]))
                             {
-                                ca.AddCharge(xbuf[exmlTYPE],xbuf[exmlUNIT],my_atof(xbuf[exmlQ]));
+                                alexandria::AtomicCharge aq(xbuf[exmlTYPE],xbuf[exmlUNIT],my_atof(xbuf[exmlQ]));
+                                ca.AddCharge(aq);
                                 sfree(xbuf[exmlQ]);    xbuf[exmlQ]    = NULL;
                                 sfree(xbuf[exmlUNIT]); xbuf[exmlUNIT] = NULL;
                                 sfree(xbuf[exmlTYPE]); xbuf[exmlTYPE] = NULL;
@@ -458,8 +460,8 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
             if (tree->children) {
                 if ((elem = find_elem((char *)tree->name,exmlNR,exml_names)) != -1)
                 {
-                  mp_process_tree(fp,tree->children,elem,indent+2,
-                                  molprops,bExperiment);
+                    mp_process_tree(fp,tree->children,elem,indent+2,
+                                    molprops,bExperiment);
                 }
             }
             break;
@@ -505,92 +507,92 @@ static void add_exper_properties(xmlNodePtr exp,alexandria::ExperimentIterator e
     alexandria::MolecularQuadrupoleIterator mq_it;
 
     for(me_it = e_it->BeginEnergy(); (me_it < e_it->EndEnergy()); me_it++) {
-      me_it->Get(&value,&error);
+        me_it->Get(&value,&error);
       
-      ptr = gmx_ftoa(value);
-      child = add_xml_child_val(exp,exml_names[exmlENERGY],ptr);
-      add_xml_string(child,exml_names[exmlTYPE],me_it->GetType());
-      add_xml_string(child,exml_names[exmlUNIT],me_it->GetUnit());
-      sfree(ptr);
+        ptr = gmx_ftoa(value);
+        child = add_xml_child_val(exp,exml_names[exmlENERGY],ptr);
+        add_xml_string(child,exml_names[exmlTYPE],me_it->GetType());
+        add_xml_string(child,exml_names[exmlUNIT],me_it->GetUnit());
+        sfree(ptr);
     }
     
     for(mdp_it = e_it->BeginDipole(); (mdp_it < e_it->EndDipole()); mdp_it++) 
     {
         mdp_it->Get(&x,&y,&z,&value,&error);
 
-      child = add_xml_child(exp,exml_names[exmlDIPOLE]);
-      add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
-      add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
-      ptr = gmx_ftoa(value);
-      add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(error);
-      add_xml_child_val(child,exml_names[exmlERROR],ptr);
-      sfree(ptr);
-      if ((x != 0) || (y != 0) || (z != 0)) 
+        child = add_xml_child(exp,exml_names[exmlDIPOLE]);
+        add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
+        add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
+        ptr = gmx_ftoa(value);
+        add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(error);
+        add_xml_child_val(child,exml_names[exmlERROR],ptr);
+        sfree(ptr);
+        if ((x != 0) || (y != 0) || (z != 0)) 
         {
-          ptr = gmx_ftoa(x);
-          add_xml_child_val(child,exml_names[exmlX],ptr);
-          sfree(ptr);
-          ptr = gmx_ftoa(y);
-          add_xml_child_val(child,exml_names[exmlY],ptr);
-          sfree(ptr);
-          ptr = gmx_ftoa(z);
-          add_xml_child_val(child,exml_names[exmlZ],ptr);
-          sfree(ptr);
+            ptr = gmx_ftoa(x);
+            add_xml_child_val(child,exml_names[exmlX],ptr);
+            sfree(ptr);
+            ptr = gmx_ftoa(y);
+            add_xml_child_val(child,exml_names[exmlY],ptr);
+            sfree(ptr);
+            ptr = gmx_ftoa(z);
+            add_xml_child_val(child,exml_names[exmlZ],ptr);
+            sfree(ptr);
         }   
     }
 
     for(mdp_it = e_it->BeginPolar(); (mdp_it < e_it->EndPolar()); mdp_it++) {
-      mdp_it->Get(&x,&y,&z,&value,&error);
+        mdp_it->Get(&x,&y,&z,&value,&error);
 
-      child = add_xml_child(exp,exml_names[exmlPOLARIZABILITY]);
-      add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
-      add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
-      ptr = gmx_ftoa(value);
-      add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(error);
-      add_xml_child_val(child,exml_names[exmlERROR],ptr);
-      sfree(ptr);
-      if ((x != 0) || (y != 0) || (z != 0)) 
+        child = add_xml_child(exp,exml_names[exmlPOLARIZABILITY]);
+        add_xml_string(child,exml_names[exmlTYPE],mdp_it->GetType());
+        add_xml_string(child,exml_names[exmlUNIT],mdp_it->GetUnit());
+        ptr = gmx_ftoa(value);
+        add_xml_child_val(child,exml_names[exmlAVERAGE],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(error);
+        add_xml_child_val(child,exml_names[exmlERROR],ptr);
+        sfree(ptr);
+        if ((x != 0) || (y != 0) || (z != 0)) 
         {
-          ptr = gmx_ftoa(x);
-          add_xml_child_val(child,exml_names[exmlXX],ptr);
-          sfree(ptr);
-          ptr = gmx_ftoa(y);
-          add_xml_child_val(child,exml_names[exmlYY],ptr);
-          sfree(ptr);
-          ptr = gmx_ftoa(z);
-          add_xml_child_val(child,exml_names[exmlZZ],ptr);
-          sfree(ptr);
+            ptr = gmx_ftoa(x);
+            add_xml_child_val(child,exml_names[exmlXX],ptr);
+            sfree(ptr);
+            ptr = gmx_ftoa(y);
+            add_xml_child_val(child,exml_names[exmlYY],ptr);
+            sfree(ptr);
+            ptr = gmx_ftoa(z);
+            add_xml_child_val(child,exml_names[exmlZZ],ptr);
+            sfree(ptr);
         }   
     }
     
     for(mq_it = e_it->BeginQuadrupole(); (mq_it < e_it->EndQuadrupole()); mq_it++) {
-      mq_it->Get(&xx,&yy,&zz,&xy,&xz,&yz);
+        mq_it->Get(&xx,&yy,&zz,&xy,&xz,&yz);
     
-      child = add_xml_child(exp,exml_names[exmlQUADRUPOLE]);
-      add_xml_string(child,exml_names[exmlTYPE],mq_it->GetType());
-      add_xml_string(child,exml_names[exmlUNIT],mq_it->GetUnit());
-      ptr = gmx_ftoa(xx);
-      add_xml_child_val(child,exml_names[exmlXX],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(yy);
-      add_xml_child_val(child,exml_names[exmlYY],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(zz);
-      add_xml_child_val(child,exml_names[exmlZZ],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(xy);
-      add_xml_child_val(child,exml_names[exmlXY],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(xz);
-      add_xml_child_val(child,exml_names[exmlXZ],ptr);
-      sfree(ptr);
-      ptr = gmx_ftoa(yz);
-      add_xml_child_val(child,exml_names[exmlYZ],ptr);
-      sfree(ptr);
+        child = add_xml_child(exp,exml_names[exmlQUADRUPOLE]);
+        add_xml_string(child,exml_names[exmlTYPE],mq_it->GetType());
+        add_xml_string(child,exml_names[exmlUNIT],mq_it->GetUnit());
+        ptr = gmx_ftoa(xx);
+        add_xml_child_val(child,exml_names[exmlXX],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(yy);
+        add_xml_child_val(child,exml_names[exmlYY],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(zz);
+        add_xml_child_val(child,exml_names[exmlZZ],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(xy);
+        add_xml_child_val(child,exml_names[exmlXY],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(xz);
+        add_xml_child_val(child,exml_names[exmlXZ],ptr);
+        sfree(ptr);
+        ptr = gmx_ftoa(yz);
+        add_xml_child_val(child,exml_names[exmlYZ],ptr);
+        sfree(ptr);
     }
     
 }
@@ -720,22 +722,22 @@ static void add_xml_molprop(xmlNodePtr parent,
         }
     }
     for(s_it=mp_it->BeginCategory(); (s_it<mp_it->EndCategory()); s_it++) 
-      {
+    {
         child = add_xml_child(ptr,exml_names[exmlCATEGORY]);
         add_xml_string(child,exml_names[exmlCATNAME],*s_it);
-      }
+    }
     
     for(mc_it=mp_it->BeginMolecularComposition(); (mc_it<mp_it->EndMolecularComposition()); mc_it++) 
-      {
+    {
         child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
-        add_xml_string(child,exml_names[exmlCOMPNAME],mc_it->CompName());
+        add_xml_string(child,exml_names[exmlCOMPNAME],mc_it->GetCompName());
         for(an_it=mc_it->BeginAtomNum(); (an_it<mc_it->EndAtomNum()); an_it++) 
-          {
+        {
             grandchild = add_xml_child(child,exml_names[exmlCATOM]);
             add_xml_string(grandchild,exml_names[exmlC_NAME],an_it->GetAtom());
             add_xml_int(grandchild,exml_names[exmlC_NUMBER],an_it->GetNumber());
-          }
-      }
+        }
+    }
 }
 
 void MolPropWrite(const char *fn,std::vector<alexandria::MolProp> mpt,gmx_bool bCompress)
@@ -765,8 +767,8 @@ void MolPropWrite(const char *fn,std::vector<alexandria::MolProp> mpt,gmx_bool b
     for(mp_it=mpt.begin(); (mp_it<mpt.end()); mp_it++)
     {
         if (NULL != debug)
-          fprintf(debug,"Adding %d/%d %s\n",(int)(mp_it - mpt.begin()),
-                  (int)mpt.size(),mp_it->GetMolname().c_str());
+            fprintf(debug,"Adding %d/%d %s\n",(int)(mp_it - mpt.begin()),
+                    (int)mpt.size(),mp_it->GetMolname().c_str());
         add_xml_molprop(myroot,mp_it);
     }
     xmlSetDocCompressMode(doc,(int)bCompress);

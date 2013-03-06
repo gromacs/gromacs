@@ -407,7 +407,7 @@ static void generate_nbparam(int ftype,int comb,double ci[],double cj[],
 }
 
 static void do_init_mtop(gmx_mtop_t *mtop,int nmoltype,char **molname,
-                         int natoms,t_atoms **atoms,gmx_poldata_t pd)
+                         int natoms,gmx_poldata_t pd)
 {
     init_mtop(mtop);
     if (nmoltype <= 0)
@@ -429,7 +429,6 @@ static void do_init_mtop(gmx_mtop_t *mtop,int nmoltype,char **molname,
     
     mtop->natoms = natoms;
     init_t_atoms(&(mtop->moltype[0].atoms),natoms,FALSE);
-    *atoms = &(mtop->moltype[0].atoms);
 }
 
 static void mk_ff_mtop(gmx_mtop_t *mtop,gmx_poldata_t pd)
@@ -675,8 +674,8 @@ static int init_mymol(FILE *fp,t_mymol *mymol,gmx_molprop_t mp,
         molnameptr = put_symtab(&(mymol->symtab),mymol->molname);
         if (strcmp(mymol->molname,"benzene") == 0)
             printf("BOE\n");
-        do_init_mtop(&mymol->mtop,1,molnameptr,
-                     mymol->natom,&(mymol->topology->atoms),pd);
+        do_init_mtop(&mymol->mtop,1,molnameptr,mymol->natom,pd);
+        mymol->topology->atoms = mymol->mtop.moltype[0].atoms;
         snew(mymol->topology,1);
         init_top(mymol->topology);
         if (molprop_2_topology(mp,aps,pd,&(mymol->symtab),lot,mymol->topology,

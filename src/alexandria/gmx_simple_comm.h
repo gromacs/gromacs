@@ -1,6 +1,5 @@
 #ifndef _GMX_SIMPLE_COMM_H
 #define _GMX_SIMPLE_COMM_H
-#endif
 
 #include "network.h"
 
@@ -13,9 +12,4 @@ extern double gmx_recv_double(t_commrec *cr,int src);
 extern void gmx_send_int(t_commrec *cr,int dest,int d);
 extern int gmx_recv_int(t_commrec *cr,int src);
 
-
-
-
-
-
-
+#endif
