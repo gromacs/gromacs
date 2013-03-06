@@ -461,7 +461,6 @@ directive of {\tt forcefield.itp} (see \ssecref{topfile}).
 When {\tt gen-pairs} is set to ``no,'' {\tt \normindex{grompp}}
 will give a warning for each pair type for which no parameters are given.
 
-\ifthenelse{\equal{\gmxmajor}{4}}{
 The normal pair interactions, intended for \normindex{1-4 interaction}s,
 have function type 1. Function type 2 and the {\tt [~pairs_nb~]} are intended
 for free-energy simulations. When determining hydration
@@ -490,7 +489,6 @@ are selected for the non-bonded interactions.
 Energies for types 1 and 2 are written to the energy and log file
 in separate ``LJ-14'' and ``Coulomb-14'' entries per energy group pair.
 Energies for {\tt [~pairs_nb~]} are added to the ``LJ-(SR)'' and ``Coulomb-(SR)'' terms.
-}{}
 
 \subsection{Implicit solvation parameters\index{implicit solvation parameters}}
 Starting with {\gromacs} 4.5, implicit solvent is supported. A section in the
