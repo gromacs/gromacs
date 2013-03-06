@@ -153,6 +153,8 @@ if(UNIX AND NOT APPLE)
     mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 endif()
 
+option(BUILD_MANUAL "Build the PDF manual" OFF)
+
 ########################################################################
 # Set up binary and library suffixing 
 ########################################################################
@@ -893,4 +895,12 @@ IF(BUILD_TESTING)
 	enable_testing()
 	add_subdirectory(tests)
 ENDIF()
+
+########################################################################
+# Manual                                                               #
+########################################################################
+
+if(BUILD_MANUAL)
+    add_subdirectory(manual)
+endif()
 
