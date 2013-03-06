@@ -894,3 +894,11 @@ IF(BUILD_TESTING)
 	add_subdirectory(tests)
 ENDIF()
 
+########################################################################
+# Manual                                                               #
+########################################################################
+
+add_subdirectory(manual)
+if(BUILD_MANUAL)
+  add_custom_target(manual DEPENDS manual/pdf)
+endif()
