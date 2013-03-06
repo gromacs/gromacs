@@ -52,7 +52,8 @@
 #
 #       The dvi target is added to the ALL.  That is, it will be the target
 #       built by default.  If the DEFAULT_PDF argument is given, then the
-#       pdf target will be the default instead of dvi.
+#       pdf target will be the default instead of dvi.  In GROMACS, we
+#       have hacked this - no target is ever added to ALL.
 #
 #       If the argument MANGLE_TARGET_NAMES is given, then each of the
 #       target names above will be mangled with the <tex_file> name.  This
@@ -302,13 +303,13 @@ MACRO(LATEX_SETUP_VARIABLES)
     LATEX2HTML_CONVERTER
     )
 
-  LATEX_NEEDIT(LATEX_COMPILER latex)
-  LATEX_WANTIT(PDFLATEX_COMPILER pdflatex)
-  LATEX_NEEDIT(BIBTEX_COMPILER bibtex)
-  LATEX_NEEDIT(MAKEINDEX_COMPILER makeindex)
-  LATEX_WANTIT(DVIPS_CONVERTER dvips)
-  LATEX_WANTIT(PS2PDF_CONVERTER ps2pdf)
-  LATEX_WANTIT(LATEX2HTML_CONVERTER latex2html)
+#  LATEX_NEEDIT(LATEX_COMPILER latex)
+#  LATEX_WANTIT(PDFLATEX_COMPILER pdflatex)
+#  LATEX_NEEDIT(BIBTEX_COMPILER bibtex)
+#  LATEX_NEEDIT(MAKEINDEX_COMPILER makeindex)
+#  LATEX_WANTIT(DVIPS_CONVERTER dvips)
+#  LATEX_WANTIT(PS2PDF_CONVERTER ps2pdf)
+#  LATEX_WANTIT(LATEX2HTML_CONVERTER latex2html)
 
   SET(LATEX_COMPILER_FLAGS "-interaction=nonstopmode"
     CACHE STRING "Flags passed to latex.")
@@ -348,9 +349,6 @@ MACRO(LATEX_SETUP_VARIABLES)
   FIND_PROGRAM(IMAGEMAGICK_CONVERT convert
     DOC "The convert program that comes with ImageMagick (available at http://www.imagemagick.org)."
     )
-  IF (NOT IMAGEMAGICK_CONVERT)
-    MESSAGE(SEND_ERROR "Could not find convert program.  Please download ImageMagick from http://www.imagemagick.org and install.")
-  ENDIF (NOT IMAGEMAGICK_CONVERT)
 
   OPTION(LATEX_SMALL_IMAGES
     "If on, the raster images will be converted to 1/6 the original size.  This is because papers usually require 600 dpi images whereas most monitors only require at most 96 dpi.  Thus, smaller images make smaller files for web distributation and can make it faster to read dvi files."
@@ -730,7 +728,7 @@ MACRO(ADD_LATEX_TARGETS)
     ADD_CUSTOM_TARGET(${dvi_target}
       DEPENDS ${output_dir}/${LATEX_TARGET}.dvi)
   ELSE (LATEX_DEFAULT_PDF OR LATEX_DEFAULT_SAFEPDF)
-    ADD_CUSTOM_TARGET(${dvi_target} ALL
+    ADD_CUSTOM_TARGET(${dvi_target}
       DEPENDS ${output_dir}/${LATEX_TARGET}.dvi)
   ENDIF (LATEX_DEFAULT_PDF OR LATEX_DEFAULT_SAFEPDF)
 
@@ -741,7 +739,7 @@ MACRO(ADD_LATEX_TARGETS)
       DEPENDS ${make_pdf_depends}
       )
     IF (LATEX_DEFAULT_PDF)
-      ADD_CUSTOM_TARGET(${pdf_target} ALL
+      ADD_CUSTOM_TARGET(${pdf_target}
         DEPENDS ${output_dir}/${LATEX_TARGET}.pdf)
     ELSE (LATEX_DEFAULT_PDF)
       ADD_CUSTOM_TARGET(${pdf_target}
@@ -761,7 +759,7 @@ MACRO(ADD_LATEX_TARGETS)
       # cannot properly do the dependencies for both.  When selecting safepdf,
       # simply force a recompile every time.
       IF (LATEX_DEFAULT_SAFEPDF)
-        ADD_CUSTOM_TARGET(${safepdf_target} ALL
+        ADD_CUSTOM_TARGET(${safepdf_target}
           ${CMAKE_COMMAND} -E chdir ${output_dir}
           ${PS2PDF_CONVERTER} ${PS2PDF_CONVERTER_FLAGS} ${LATEX_TARGET}.ps ${LATEX_TARGET}.pdf
           )

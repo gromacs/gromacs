@@ -23,6 +23,10 @@ foreach(PROG ${NGMX_PROGRAMS})
         set_target_properties(${PROG} PROPERTIES OUTPUT_NAME "${PROG}${GMX_BINARY_SUFFIX}")
 endforeach(PROG) 
 
+list(APPEND TARGETS_NEEDED_BY_MANUAL_BUILD ${NGMX_PROGRAMS})
+# Set global variable from the local variable's value
+set(TARGETS_NEEDED_BY_MANUAL_BUILD ${TARGETS_NEEDED_BY_MANUAL_BUILD} PARENT_SCOPE)
+
 install(TARGETS ${NGMX_PROGRAMS}
         COMPONENT ngmx
         RUNTIME DESTINATION ${BIN_INSTALL_DIR})
