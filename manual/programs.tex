@@ -1,0 +1,71 @@
+%
+% 
+%       This source code is part of
+% 
+%        G   R   O   M   A   C   S
+% 
+% GROningen MAchine for Chemical Simulations
+% 
+%               VERSION 2.0
+% 
+% Copyright (c) 1991-1999
+% BIOSON Research Institute, Dept. of Biophysical Chemistry
+% University of Groningen, The Netherlands
+% 
+% Please refer to:
+% GROMACS: A message-passing parallel molecular dynamics implementation
+% H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+% Comp. Phys. Comm. 91, 43-56 (1995)
+% 
+% Also check out our WWW page:
+% http://md.chem.rug.nl/~gmx
+% or e-mail to:
+% gromacs@chem.rug.nl
+% 
+% And Hey:
+% Giving Russians Opium May Alter Current Situation
+%
+
+\chapter{Run parameters and Programs}
+\label{ch:programs}
+
+\section{On-line and HTML manuals}
+\index{online manual}
+\index{html manual}
+All the information in this chapter can also be found in HTML
+format in your GROMACS data directory. The path depends on
+where your files are installed, but the default location is \\
+\centerline{\tt /usr/local/gromacs/share/html/online.html}
+Or, if you installed from Linux packages it can be found as\\
+\centerline{\tt /usr/local/share/gromacs/html/online.html}
+You can also use the online from our web site,\\
+\centerline{\href{http://manual.gromacs.org/current/}{http://manual.gromacs.org/current/}}
+
+In addition, we install standard UNIX manuals for all the programs. If
+you have sourced the {\tt GMXRC} script in the GROMACS binary directory for
+your host they should already be present in your {\tt \$MANPATH}, and you
+should be able to type {\eg} {\tt man grompp}.
+
+The program manual pages can also be found in
+\appref{progman} in this manual.
+
+\section{File types\swapindexquiet{file}{type}}
+\label{sec:fileformats}
+\tabref{form} lists the file types used by {\gromacs} along with
+a short description, and you can find a more detail description for
+each file in your HTML reference, or in our online version.
+
+{\gromacs} files written in \normindex{XDR} format can be read on any
+architecture with {\gromacs} version 1.6 or later if the configuration
+script found the XDR libraries on your system. They should always be
+present on UNIX since they are necessary for NFS support.
+
+\input{files}
+
+\section{Run Parameters\swapindexquiet{run}{parameter}}
+\input{mdp_opt}
+
+\section{Programs by topic\index{programs by topic}}
+\input{proglist}
+
+% LocalWords:  online html GMXRC MANPATH grompp progman xdr NFS
