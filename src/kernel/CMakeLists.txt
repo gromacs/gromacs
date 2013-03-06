@@ -97,6 +97,10 @@ add_executable(mdrun ${MDRUN_SOURCES})
 target_link_libraries(mdrun ${GMX_EXTRA_LIBRARIES} ${GMX_OPENMM_LIBRARIES})
 set_target_properties(mdrun PROPERTIES OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}")
 
+list(APPEND TARGETS_NEEDED_BY_MANUAL_BUILD grompp tpbconv pdb2gmx g_protonate gmxdump g_x2top gmxcheck mdrun)
+# Set global variable from the local variable's value
+set(TARGETS_NEEDED_BY_MANUAL_BUILD ${TARGETS_NEEDED_BY_MANUAL_BUILD} PARENT_SCOPE)
+
 # this is to circumvent the following MSVC error: 
 # warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs
 # fatal error LNK1169: one or more multiply defined symbols found
