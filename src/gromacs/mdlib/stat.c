@@ -469,6 +469,9 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 
     if (MASTER(cr))
     {
+        /* The trajectory output file is backed up here since gmx_fio_open is
+         * not used */
+        make_backup(ftp2fn(efTNG, nfile, fnm));
         if(tng_trajectory_init(&of->tng) != TNG_SUCCESS)
         {
             tng_trajectory_destroy(&of->tng);

@@ -2739,25 +2739,50 @@ void init_md(FILE *fplog,
     debug_gmx();
 }
 
-void init_tng_top (tng_trajectory_t tng, gmx_mtop_t *mtop)
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
+/* This function converts the current topology to TNG molecular data */
 {
-    int mit, ait;
-    gmx_moltype_t *molt;
+    int mol_it, at_it;
+    char chain_name[2];
+    gmx_moltype_t *mol_type;
     t_atom *at;
     t_resinfo *resin;
     tng_molecule_t tng_mol;
+    tng_chain_t tng_chain;
+    tng_residue_t tng_res;
     
-    for (mit = 0; mit < mtop->nmoltype; mit++)
+    for (mol_it = 0; mol_it < mtop->nmoltype; mol_it++)
     {
-        molt = &mtop->moltype[mit];
-        tng_molecule_add(tng, *molt->name, &tng_mol);
-        for (ait = 0; ait < molt->atoms.nr; ait++)
+        mol_type = &mtop->moltype[mol_it];
+        
+        /* Add a molecule to the TNG trajectory with the same name as the
+         * current molecule. */
+        tng_molecule_add(tng, *mol_type->name, &tng_mol);
+        /* FIXME: The TNG atoms should contain mass and atomB info (for free
+         * energy calculations */
+        for (at_it = 0; at_it < mol_type->atoms.nr; at_it++)
         {
-            at = &molt->atoms.atom[ait];
-            if (molt->atoms.nres > 0)
+            at = &mol_type->atoms.atom[at_it];
+            if (mol_type->atoms.nres > 0)
             {
-                resin = &molt->atoms.resinfo[at->resind];
+                resin = &mol_type->atoms.resinfo[at->resind];
+                chain_name[0] = resin->chainid;
+                chain_name[1] = 0;
+                if (tng_molecule_chain_find (tng, tng_mol, chain_name,
+                                             (int64_t)-1, &tng_chain) !=
+                   TNG_SUCCESS)
+                {
+                    tng_molecule_chain_add (tng, tng_mol, chain_name, 
+                                            &tng_chain);
+                }
+                
+                if (tng_chain_residue_find(tng, tng_chain, *resin->name,
+                    &tng_res) != TNG_SUCCESS)
+                {
+                    tng_chain_residue_add(tng, tng_chain, *resin->name, &tng_res);
+                }
             }
+            
         }
     }
 }
