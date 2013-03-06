@@ -1,0 +1,9 @@
+Code-Review+1: Roland Schulz <roland@rschulz.eu>
+Code-Review+2: Szilárd Páll <pszilard@kth.se>
+Verified+1: Jenkins Buildbot
+Code-Review-1: Mikhail Plotnikov <mplotnik18@gmail.com>
+Submitted-by: Roland Schulz <roland@rschulz.eu>
+Submitted-at: Wed, 06 Mar 2013 05:57:14 +0100
+Reviewed-on: https://gerrit.gromacs.org/2199
+Project: gromacs
+Branch: refs/heads/release-4-6
