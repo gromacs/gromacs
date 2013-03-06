@@ -203,7 +203,95 @@ static gmx_bool do_htrn(t_fileio *fio, gmx_bool bRead, t_trnheader *sh,
     return bOK;
 }
 
+static gmx_bool do_htng(t_fileio *fio, gmx_bool bRead, t_trnheader *sh,
+                        rvec *box, rvec *x, rvec *v, rvec *f)
+{
+    matrix   pv;
+    gmx_bool bOK;
+
+    bOK = TRUE;
+    if (sh->box_size != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, box, DIM);
+    }
+    if (sh->vir_size != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
+    }
+    if (sh->pres_size != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
+    }
+    if (sh->x_size   != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, x, sh->natoms);
+    }
+    if (sh->v_size   != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, v, sh->natoms);
+    }
+    if (sh->f_size   != 0)
+    {
+        bOK = bOK && gmx_fio_ndo_rvec(fio, f, sh->natoms);
+    }
+
+    return bOK;
+}
+
 static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
+                       rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+{
+    t_trnheader *sh;
+    gmx_bool     bOK;
+
+    snew(sh, 1);
+    if (!bRead)
+    {
+        sh->box_size = (box) ? sizeof(matrix) : 0;
+        sh->x_size   = ((x) ? (*natoms*sizeof(x[0])) : 0);
+        sh->v_size   = ((v) ? (*natoms*sizeof(v[0])) : 0);
+        sh->f_size   = ((f) ? (*natoms*sizeof(f[0])) : 0);
+        sh->natoms   = *natoms;
+        sh->step     = *step;
+        sh->nre      = 0;
+        sh->t        = *t;
+        sh->lambda   = *lambda;
+    }
+    if (!do_trnheader(fio, bRead, sh, &bOK))
+    {
+        return FALSE;
+    }
+    if (bRead)
+    {
+        *natoms = sh->natoms;
+        *step   = sh->step;
+        *t      = sh->t;
+        *lambda = sh->lambda;
+        if (sh->ir_size)
+        {
+            gmx_file("inputrec in trn file");
+        }
+        if (sh->e_size)
+        {
+            gmx_file("energies in trn file");
+        }
+        if (sh->top_size)
+        {
+            gmx_file("topology in trn file");
+        }
+        if (sh->sym_size)
+        {
+            gmx_file("symbol table in trn file");
+        }
+    }
+    bOK = do_htrn(fio, bRead, sh, box, x, v, f);
+
+    sfree(sh);
+
+    return bOK;
+}
+
+static gmx_bool do_tng(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
                        rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     t_trnheader *sh;
@@ -309,6 +397,14 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
     }
 }
 
+void fwrite_tng(t_fileio *fio, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+{
+    if (do_tng(fio, FALSE, &step, &t, &lambda, box, &natoms, x, v, f) == FALSE)
+    {
+        gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
+    }
+}
 
 gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
                    rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)

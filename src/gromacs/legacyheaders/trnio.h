@@ -108,6 +108,10 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
+void fwrite_tng(t_fileio *fio, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+/* Write a frame to a TNG file fp, box, x, v, f may be NULL */
+
 gmx_bool fread_htrn(t_fileio *fio, t_trnheader *sh,
                     rvec *box, rvec *x, rvec *v, rvec *f);
 /* Extern read a frame except the header (that should be pre-read,
