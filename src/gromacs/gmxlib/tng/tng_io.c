@@ -1692,6 +1692,290 @@ static tng_function_status tng_general_info_block_write
     return(TNG_SUCCESS);
 }
 
+/** Read the chain data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param chain is the chain data container.
+ * @param offset is the offset of the block input and is updated when reading.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_chain_data_read(tng_trajectory_t tng_data,
+                                               tng_gen_block_t block,
+                                               tng_chain_t chain,
+                                               int *offset)
+{
+    int len;
+    
+    memcpy(&chain->id, block->block_contents+*offset,
+            sizeof(chain->id));
+    if(tng_data->input_endianness_swap_func_64)
+    {
+        if(tng_data->input_endianness_swap_func_64(tng_data,
+                                                   &chain->id)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(chain->id);
+
+    len = tng_min(strlen(block->block_contents+*offset) + 1,
+            TNG_MAX_STR_LEN);
+    chain->name = malloc(len);
+    strncpy(chain->name,
+            block->block_contents+*offset, len);
+    *offset += len;
+
+    memcpy(&chain->n_residues, block->block_contents+*offset,
+        sizeof(chain->n_residues));
+    if(tng_data->input_endianness_swap_func_64)
+    {
+        if(tng_data->input_endianness_swap_func_64(tng_data,
+                                                   &chain->n_residues)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(chain->n_residues);
+
+    return(TNG_SUCCESS);
+}
+
+/** Write the chain data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param chain is the chain data container.
+ * @param offset is the offset of the block output and is updated when writing.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_chain_data_write(tng_trajectory_t tng_data,
+                                                tng_gen_block_t block,
+                                                tng_chain_t chain,
+                                                int *offset)
+{
+    int len;
+    
+    memcpy(block->block_contents+*offset, &chain->id, sizeof(chain->id));
+    if(tng_data->output_endianness_swap_func_64)
+    {
+        if(tng_data->output_endianness_swap_func_64(tng_data,
+                                    (int64_t *)block->header_contents+*offset)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(chain->id);
+
+    len = tng_min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
+    strncpy(block->block_contents + *offset, chain->name, len);
+    *offset += len;
+
+    memcpy(block->block_contents+*offset, &chain->n_residues,
+        sizeof(chain->n_residues));
+    if(tng_data->output_endianness_swap_func_64)
+    {
+        if(tng_data->output_endianness_swap_func_64(tng_data,
+                                    (int64_t *)block->header_contents+*offset)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(chain->n_residues);
+
+    return(TNG_SUCCESS);
+}
+
+/** Read the residue data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param residue is the residue data container.
+ * @param offset is the offset of the block input and is updated when reading.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_residue_data_read(tng_trajectory_t tng_data,
+                                                 tng_gen_block_t block,
+                                                 tng_residue_t residue,
+                                                 int *offset)
+{
+    int len;
+    
+    memcpy(&residue->id, block->block_contents+*offset,
+        sizeof(residue->id));
+    if(tng_data->input_endianness_swap_func_64)
+    {
+        if(tng_data->input_endianness_swap_func_64(tng_data,
+                                                   &residue->id)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(residue->id);
+
+    len = tng_min(strlen(block->block_contents+*offset) + 1,
+            TNG_MAX_STR_LEN);
+    residue->name = malloc(len);
+    strncpy(residue->name,
+            block->block_contents+*offset, len);
+    *offset += len;
+
+    memcpy(&residue->n_atoms, block->block_contents+*offset,
+            sizeof(residue->n_atoms));
+    if(tng_data->input_endianness_swap_func_64)
+    {
+        if(tng_data->input_endianness_swap_func_64(tng_data,
+                                                   &residue->n_atoms)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(residue->n_atoms);
+
+    return(TNG_SUCCESS);
+}
+
+/** Write the residue data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param residue is the residue data container.
+ * @param offset is the offset of the block output and is updated when writing.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_residue_data_write(tng_trajectory_t tng_data,
+                                                  tng_gen_block_t block,
+                                                  tng_residue_t residue,
+                                                  int *offset)
+{
+    int len;
+
+    memcpy(block->block_contents+*offset, &residue->id, sizeof(residue->id));
+    if(tng_data->output_endianness_swap_func_64)
+    {
+        if(tng_data->output_endianness_swap_func_64(tng_data,
+                                    (int64_t *)block->header_contents+*offset)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(residue->id);
+
+    len = tng_min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
+    strncpy(block->block_contents + *offset, residue->name, len);
+    *offset += len;
+
+    memcpy(block->block_contents+*offset, &residue->n_atoms,
+        sizeof(residue->n_atoms));
+    if(tng_data->output_endianness_swap_func_64)
+    {
+        if(tng_data->output_endianness_swap_func_64(tng_data,
+                                    (int64_t *)block->header_contents+*offset)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(residue->n_atoms);
+
+    return(TNG_SUCCESS);
+}
+
+/** Read the atom data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param atom is the atom data container.
+ * @param offset is the offset of the block input and is updated when reading.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_atom_data_read(tng_trajectory_t tng_data,
+                                              tng_gen_block_t block,
+                                              tng_atom_t atom,
+                                              int *offset)
+{
+    int len;
+    
+    memcpy(&atom->id, block->block_contents+*offset,
+        sizeof(atom->id));
+    if(tng_data->input_endianness_swap_func_64)
+    {
+        if(tng_data->input_endianness_swap_func_64(tng_data,
+                                                    &atom->id)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(atom->id);
+
+    len = tng_min(strlen(block->block_contents+*offset) + 1,
+            TNG_MAX_STR_LEN);
+    atom->name = malloc(len);
+    strncpy(atom->name,
+            block->block_contents+*offset, len);
+    *offset += len;
+
+    len = tng_min(strlen(block->block_contents+*offset) + 1,
+            TNG_MAX_STR_LEN);
+    atom->atom_type = malloc(len);
+    strncpy(atom->atom_type,
+            block->block_contents+*offset, len);
+    *offset += len;
+
+    return(TNG_SUCCESS);
+}
+
+/** Write the atom data of a molecules block.
+ * @param tng_data is a trajectory data container.
+ * @param block is a general block container.
+ * @param atom is the atom data container.
+ * @param offset is the offset of the block output and is updated when writing.
+ * @return TNG_SUCCESS(0) is successful.
+ */
+static tng_function_status tng_atom_data_write(tng_trajectory_t tng_data,
+                                               tng_gen_block_t block,
+                                               tng_atom_t atom,
+                                               int *offset)
+{
+    int len;
+
+    memcpy(block->block_contents+*offset, &atom->id,
+            sizeof(atom->id));
+    if(tng_data->output_endianness_swap_func_64)
+    {
+        if(tng_data->output_endianness_swap_func_64(tng_data,
+                                    (int64_t *)block->header_contents+*offset)
+            != TNG_SUCCESS)
+        {
+            printf("Cannot swap byte order. %s: %d\n",
+                    __FILE__, __LINE__);
+        }
+    }
+    *offset += sizeof(atom->id);
+
+    len = tng_min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
+    strncpy(block->block_contents + *offset, atom->name, len);
+    *offset += len;
+
+    len = tng_min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
+    strncpy(block->block_contents + *offset, atom->atom_type, len);
+    *offset += len;
+
+    return(TNG_SUCCESS);
+}
+
 /** Read a molecules block. Contains chain, residue and atom data
  * @param tng_data is a trajectory data container.
  * @param block is a general block container.
@@ -1916,29 +2200,43 @@ static tng_function_status tng_molecules_block_read
         tng_data->n_particles += molecule->n_atoms *
                                  tng_data->molecule_cnt_list[i];
 
-        molecule->chains = malloc(molecule->n_chains *
-                                  sizeof(struct tng_chain));
-        if(!molecule->chains)
+        if(molecule->n_chains > 0)
         {
-            printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
-                   molecule->n_chains * sizeof(struct tng_chain),
-                   __FILE__, __LINE__);
-            return(TNG_CRITICAL);
+            molecule->chains = malloc(molecule->n_chains *
+                                    sizeof(struct tng_chain));
+            if(!molecule->chains)
+            {
+                printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
+                    molecule->n_chains * sizeof(struct tng_chain),
+                    __FILE__, __LINE__);
+                return(TNG_CRITICAL);
+            }
+
+            chain = molecule->chains;
+        }
+        else
+        {
+            chain = 0;
         }
 
-        chain = molecule->chains;
-
-        molecule->residues = malloc(molecule->n_residues *
-                             sizeof(struct tng_residue));
-        if(!molecule->residues)
+        if(molecule->n_residues > 0)
         {
-            printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
-                   molecule->n_residues * sizeof(struct tng_residue),
-                   __FILE__, __LINE__);
-            return(TNG_CRITICAL);
-        }
+            molecule->residues = malloc(molecule->n_residues *
+                                sizeof(struct tng_residue));
+            if(!molecule->residues)
+            {
+                printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
+                    molecule->n_residues * sizeof(struct tng_residue),
+                    __FILE__, __LINE__);
+                return(TNG_CRITICAL);
+            }
 
-        residue = molecule->residues;
+            residue = molecule->residues;
+        }
+        else
+        {
+            residue = 0;
+        }
 
         molecule->atoms = malloc(molecule->n_atoms *
                                  sizeof(struct tng_atom));
@@ -1952,125 +2250,73 @@ static tng_function_status tng_molecules_block_read
 
         atom = molecule->atoms;
 
-        /* Each molecule contains chains - read them */
-        for(j=molecule->n_chains; j--;)
+        if(molecule->n_chains > 0)
         {
-            chain->molecule = molecule;
-            
-            memcpy(&chain->id, block->block_contents+offset,
-                   sizeof(chain->id));
-            if(tng_data->input_endianness_swap_func_64)
+            /* Read the chains of the molecule */
+            for(j=molecule->n_chains; j--;)
             {
-                if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                           &chain->id)
-                    != TNG_SUCCESS)
+                chain->molecule = molecule;
+
+                tng_chain_data_read(tng_data, block, chain, &offset);
+
+                chain->residues = residue;
+                
+                /* Read the residues of the chain */
+                for(k=chain->n_residues; k--;)
                 {
-                    printf("Cannot swap byte order. %s: %d\n",
-                            __FILE__, __LINE__);
+                    residue->chain = chain;
+
+                    tng_residue_data_read(tng_data, block, residue, &offset);
+
+                    residue->atoms = atom;
+                    /* Read the atoms of the residue */
+                    for(l=residue->n_atoms; l--;)
+                    {
+                        atom->residue = residue;
+
+                        tng_atom_data_read(tng_data, block, atom, &offset);
+
+                        atom++;
+                    }
+                    residue++;
                 }
-            }
-            offset += sizeof(chain->id);
-
-            len = tng_min(strlen(block->block_contents+offset) + 1,
-                    TNG_MAX_STR_LEN);
-            chain->name = malloc(len);
-            strncpy(chain->name,
-                    block->block_contents+offset, len);
-            offset += len;
-
-            memcpy(&chain->n_residues, block->block_contents+offset,
-                sizeof(chain->n_residues));
-        if(tng_data->input_endianness_swap_func_64)
-        {
-            if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                       &chain->n_residues)
-                != TNG_SUCCESS)
-            {
-                printf("Cannot swap byte order. %s: %d\n",
-                        __FILE__, __LINE__);
+                chain++;
             }
         }
-            offset += sizeof(chain->n_residues);
-
-            chain->residues = residue;
-            /* Read the residues of the chain */
-            for(k=chain->n_residues; k--;)
+        else
+        {
+            if(molecule->n_residues > 0)
             {
-                residue->chain = chain;
-                memcpy(&residue->id, block->block_contents+offset,
-                    sizeof(residue->id));
-                if(tng_data->input_endianness_swap_func_64)
+                for(k=molecule->n_residues; k--;)
                 {
-                    if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                               &residue->id)
-                        != TNG_SUCCESS)
+                    residue->chain = 0;
+
+                    tng_residue_data_read(tng_data, block, residue, &offset);
+
+                    residue->atoms = atom;
+                    /* Read the atoms of the residue */
+                    for(l=residue->n_atoms; l--;)
                     {
-                        printf("Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
+                        atom->residue = residue;
+
+                        tng_atom_data_read(tng_data, block, atom, &offset);
+
+                        atom++;
                     }
+                    residue++;
                 }
-                offset += sizeof(residue->id);
-
-                len = tng_min(strlen(block->block_contents+offset) + 1,
-                        TNG_MAX_STR_LEN);
-                residue->name = malloc(len);
-                strncpy(residue->name,
-                        block->block_contents+offset, len);
-                offset += len;
-
-                memcpy(&residue->n_atoms, block->block_contents+offset,
-                       sizeof(residue->n_atoms));
-                if(tng_data->input_endianness_swap_func_64)
+            }
+            else
+            {
+                for(l=molecule->n_atoms; l--;)
                 {
-                    if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                             &residue->n_atoms)
-                        != TNG_SUCCESS)
-                    {
-                        printf("Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
-                    }
-                }
-                offset += sizeof(residue->n_atoms);
+                    atom->residue = 0;
 
-                residue->atoms = atom;
-                /* Read the atoms of the residue */
-                for(l=residue->n_atoms; l--;)
-                {
-                    atom->residue = residue;
-                    
-                    memcpy(&atom->id, block->block_contents+offset,
-                        sizeof(atom->id));
-                    if(tng_data->input_endianness_swap_func_64)
-                    {
-                        if(tng_data->input_endianness_swap_func_64(tng_data,
-                                                                   &atom->id)
-                            != TNG_SUCCESS)
-                        {
-                            printf("Cannot swap byte order. %s: %d\n",
-                                    __FILE__, __LINE__);
-                        }
-                    }
-                    offset += sizeof(atom->id);
-
-                    len = tng_min(strlen(block->block_contents+offset) + 1,
-                            TNG_MAX_STR_LEN);
-                    atom->name = malloc(len);
-                    strncpy(atom->name,
-                            block->block_contents+offset, len);
-                    offset += len;
-
-                    len = tng_min(strlen(block->block_contents+offset) + 1,
-                            TNG_MAX_STR_LEN);
-                    atom->atom_type = malloc(len);
-                    strncpy(atom->atom_type,
-                            block->block_contents+offset, len);
-                    offset += len;
+                    tng_atom_data_read(tng_data, block, atom, &offset);
 
                     atom++;
                 }
-                residue++;
             }
-            chain++;
         }
 
         memcpy(&molecule->n_bonds, block->block_contents+offset,
@@ -2414,105 +2660,58 @@ static tng_function_status tng_molecules_block_write
         }
         offset += sizeof(molecule->n_atoms);
 
-        chain = molecule->chains;
-        for(j = molecule->n_chains; j--;)
+        if(molecule->n_chains > 0)
         {
-            memcpy(block->block_contents+offset, &chain->id, sizeof(chain->id));
-            if(tng_data->output_endianness_swap_func_64)
+            chain = molecule->chains;
+            for(j = molecule->n_chains; j--;)
             {
-                if(tng_data->output_endianness_swap_func_64(tng_data,
-                                            (int64_t *)block->header_contents+offset)
-                    != TNG_SUCCESS)
-                {
-                    printf("Cannot swap byte order. %s: %d\n",
-                            __FILE__, __LINE__);
-                }
-            }
-            offset += sizeof(chain->id);
+                tng_chain_data_write(tng_data, block, chain, &offset);
 
-            len = tng_min(strlen(chain->name) + 1, TNG_MAX_STR_LEN);
-            strncpy(block->block_contents + offset, chain->name, len);
-            offset += len;
-            
-            memcpy(block->block_contents+offset, &chain->n_residues,
-                sizeof(chain->n_residues));
-            if(tng_data->output_endianness_swap_func_64)
-            {
-                if(tng_data->output_endianness_swap_func_64(tng_data,
-                                            (int64_t *)block->header_contents+offset)
-                    != TNG_SUCCESS)
+                residue = chain->residues;
+                for(k = chain->n_residues; k--;)
                 {
-                    printf("Cannot swap byte order. %s: %d\n",
-                            __FILE__, __LINE__);
-                }
-            }
-            offset += sizeof(chain->n_residues);
+                    tng_residue_data_write(tng_data, block, residue, &offset);
 
-            residue = chain->residues;
-            for(k = chain->n_residues; k--;)
-            {
-                memcpy(block->block_contents+offset, &residue->id, sizeof(residue->id));
-                if(tng_data->output_endianness_swap_func_64)
-                {
-                    if(tng_data->output_endianness_swap_func_64(tng_data,
-                                                (int64_t *)block->header_contents+offset)
-                        != TNG_SUCCESS)
+                    atom = residue->atoms;
+                    for(l = residue->n_atoms; l--;)
                     {
-                        printf("Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
-                    }
-                }
-                offset += sizeof(residue->id);
+                        tng_atom_data_write(tng_data, block, atom, &offset);
 
-                len = tng_min(strlen(residue->name) + 1, TNG_MAX_STR_LEN);
-                strncpy(block->block_contents + offset, residue->name, len);
-                offset += len;
-                
-                memcpy(block->block_contents+offset, &residue->n_atoms,
-                    sizeof(residue->n_atoms));
-                if(tng_data->output_endianness_swap_func_64)
+                        atom++;
+                    }
+                    residue++;
+                }
+                chain++;
+            }
+        }
+        else
+        {
+            if(molecule->n_residues > 0)
+            {
+                for(k = chain->n_residues; k--;)
                 {
-                    if(tng_data->output_endianness_swap_func_64(tng_data,
-                                                (int64_t *)block->header_contents+offset)
-                        != TNG_SUCCESS)
-                    {
-                        printf("Cannot swap byte order. %s: %d\n",
-                                __FILE__, __LINE__);
-                    }
-                }
-                offset += sizeof(residue->n_atoms);
+                    tng_residue_data_write(tng_data, block, residue, &offset);
 
-                atom = residue->atoms;
+                    atom = residue->atoms;
+                    for(l = residue->n_atoms; l--;)
+                    {
+                        tng_atom_data_write(tng_data, block, atom, &offset);
+
+                        atom++;
+                    }
+                    residue++;
+                }                
+            }
+            else
+            {
+                atom = molecule->atoms;
                 for(l = residue->n_atoms; l--;)
                 {
-        //             printf("j=%d\n", j);
-                    memcpy(block->block_contents+offset, &atom->id,
-                           sizeof(atom->id));
-                    if(tng_data->output_endianness_swap_func_64)
-                    {
-                        if(tng_data->output_endianness_swap_func_64(tng_data,
-                                                    (int64_t *)block->header_contents+offset)
-                            != TNG_SUCCESS)
-                        {
-                            printf("Cannot swap byte order. %s: %d\n",
-                                    __FILE__, __LINE__);
-                        }
-                    }
-                    offset += sizeof(atom->id);
-
-                    len = tng_min(strlen(atom->name) + 1, TNG_MAX_STR_LEN);
-                    strncpy(block->block_contents + offset, atom->name, len);
-                    offset += len;
-
-                    len = tng_min(strlen(atom->atom_type) + 1, TNG_MAX_STR_LEN);
-                    strncpy(block->block_contents + offset, atom->atom_type, len);
-                    offset += len;
+                    tng_atom_data_write(tng_data, block, atom, &offset);
 
                     atom++;
                 }
-                residue++;
             }
-            chain++;
         }
                 
         memcpy(block->block_contents+offset, &molecule->n_bonds,
@@ -5759,7 +5958,7 @@ tng_function_status tng_molecule_cnt_set(tng_trajectory_t tng_data,
 tng_function_status tng_molecule_chain_find(tng_trajectory_t tng_data,
                                             tng_molecule_t molecule,
                                             const char *name,
-                                            int64_t id,
+                                            int64_t nr,
                                             tng_chain_t *chain)
 {
     int i, n_chains;
@@ -5771,7 +5970,7 @@ tng_function_status tng_molecule_chain_find(tng_trajectory_t tng_data,
         *chain = &molecule->chains[i];
         if(name[0] != 0 || strcmp(name, (*chain)->name) == 0)
         {
-            if(id == -1 || id == (*chain)->id)
+            if(nr == -1 || nr == (*chain)->id)
             {
                 return(TNG_SUCCESS);
             }
@@ -5783,6 +5982,7 @@ tng_function_status tng_molecule_chain_find(tng_trajectory_t tng_data,
     return(TNG_FAILURE);
 }
 
+/* FIXME: For v. 2 the chain nr should also be possible to specify. */
 tng_function_status tng_molecule_chain_add(tng_trajectory_t tng_data,
                                            tng_molecule_t molecule,
                                            const char *name,
@@ -5811,11 +6011,12 @@ tng_function_status tng_molecule_chain_add(tng_trajectory_t tng_data,
     tng_chain_name_set(tng_data, *chain, name);
 
     (*chain)->molecule = molecule;
-    (*chain)->id = molecule->n_chains;
     (*chain)->n_residues = 0;
 
     molecule->n_chains++;
 
+    (*chain)->id = molecule->n_chains;
+    
     return(TNG_SUCCESS);
 }
 
@@ -5853,6 +6054,7 @@ tng_function_status tng_chain_name_set(tng_trajectory_t tng_data,
 tng_function_status tng_chain_residue_find(tng_trajectory_t tng_data,
                                            tng_chain_t chain,
                                            const char *name,
+                                           int64_t nr,
                                            tng_residue_t *residue)
 {
     int i, n_residues;
@@ -5864,7 +6066,10 @@ tng_function_status tng_chain_residue_find(tng_trajectory_t tng_data,
         *residue = &chain->residues[i];
         if(name[0] != 0 || strcmp(name, (*residue)->name) == 0)
         {
-            return(TNG_SUCCESS);
+            if(nr == -1 || nr == (*residue)->id)
+            {
+                return(TNG_SUCCESS);
+            }
         }
     }
 
@@ -5873,6 +6078,7 @@ tng_function_status tng_chain_residue_find(tng_trajectory_t tng_data,
     return(TNG_FAILURE);
 }
 
+/* FIXME: For v. 2 the residue nr should also be possible to specify. */
 tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
                                              tng_chain_t chain,
                                              const char *name,
@@ -5941,13 +6147,14 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
     tng_residue_name_set(tng_data, *residue, name);
 
     (*residue)->chain = chain;
-    (*residue)->id = chain->n_residues;
     (*residue)->n_atoms = 0;
     (*residue)->atoms = 0;
 
     chain->n_residues++;
     molecule->n_residues++;
 
+    (*residue)->id = chain->n_residues;
+    
     return(TNG_SUCCESS);
 }
 
@@ -5982,6 +6189,7 @@ tng_function_status tng_residue_name_set(tng_trajectory_t tng_data,
     return(TNG_SUCCESS);
 }
 
+/* FIXME: For v. 2 the atom nr should also be possible to specify. */
 tng_function_status tng_residue_atom_add(tng_trajectory_t tng_data,
                                          tng_residue_t residue,
                                          const char *atom_name,
@@ -6052,10 +6260,11 @@ tng_function_status tng_residue_atom_add(tng_trajectory_t tng_data,
     tng_atom_type_set(tng_data, *atom, atom_type);
 
     (*atom)->residue = residue;
-    (*atom)->id = molecule->n_atoms;
 
     residue->n_atoms++;
     molecule->n_atoms++;
+    
+    (*atom)->id = molecule->n_atoms;
     
     return(TNG_SUCCESS);
 }

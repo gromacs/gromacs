@@ -981,6 +981,7 @@ tng_function_status tng_chain_name_set(tng_trajectory_t tng_data,
 tng_function_status tng_chain_residue_find(tng_trajectory_t tng_data,
                                            tng_chain_t chain,
                                            const char *name,
+                                           int64_t id,
                                            tng_residue_t *residue);
 
 /**
