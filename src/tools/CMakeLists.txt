@@ -54,14 +54,14 @@ set(GMX_TOOLS_PROGRAMS
     g_rmsf g_rotacf g_saltbr g_sas g_select g_sgangle g_sham g_sorient
     g_spol g_spatial g_tcaf g_traj g_tune_pme g_vanhove
     g_velacc g_clustsize g_mdmat g_wham g_sigeps g_bar
-    g_membed g_pme_error g_rmsdist g_rotmat g_options
+    g_membed g_pme_error g_rmsdist g_rotmat
     g_dos    g_hydorder  g_densorder
     )
 
 set(GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION
   # names of any executables that should be built but not installed can go here
+  g_options
     )
-
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     add_executable(${TOOL} ${TOOL}.c)
@@ -69,6 +69,9 @@ foreach(TOOL ${GMX_TOOLS_PROGRAMS} ${GMX_TOOLS_PROGRAMS_NOT_FOR_INSTALLATION})
     set_target_properties(${TOOL} PROPERTIES OUTPUT_NAME "${TOOL}${GMX_BINARY_SUFFIX}")
 endforeach(TOOL ${GMX_TOOLS_PROGRAMS}) 
 
+list(APPEND TARGETS_NEEDED_BY_MANUAL_BUILD ${GMX_TOOLS_PROGRAMS})
+# Set global variable from the local variable's value
+set(TARGETS_NEEDED_BY_MANUAL_BUILD ${TARGETS_NEEDED_BY_MANUAL_BUILD} PARENT_SCOPE)
 
 install(TARGETS gmxana DESTINATION ${LIB_INSTALL_DIR} COMPONENT runtime)
 install(TARGETS ${GMX_TOOLS_PROGRAMS}
