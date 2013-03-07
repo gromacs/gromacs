@@ -46,6 +46,7 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "force.h"
 #include "macros.h"
+#include "md_logging.h"
 #include "pme_loadbal.h"
 
 /* Parameters and setting for one PP-PME setup */
@@ -701,6 +702,22 @@ static int pme_grid_points(const pme_setup_t *setup)
     return setup->grid[XX]*setup->grid[YY]*setup->grid[ZZ];
 }
 
+static real pme_loadbal_rlist(const pme_setup_t *setup)
+{
+    /* With the group cut-off scheme we can have twin-range either
+     * for Coulomb or for VdW, so we need a check here.
+     * With the Verlet cut-off scheme rlist=rlistlong.
+     */
+    if (setup->rcut_coulomb > setup->rlist)
+    {
+        return setup->rlistlong;
+    }
+    else
+    {
+        return setup->rlist;
+    }
+}
+
 static void print_pme_loadbal_setting(FILE              *fplog,
                                       char              *name,
                                       const pme_setup_t *setup)
@@ -708,17 +725,19 @@ static void print_pme_loadbal_setting(FILE              *fplog,
     fprintf(fplog,
             "   %-7s %6.3f nm %6.3f nm     %3d %3d %3d   %5.3f nm  %5.3f nm\n",
             name,
-            setup->rcut_coulomb, setup->rlist,
+            setup->rcut_coulomb, pme_loadbal_rlist(setup),
             setup->grid[XX], setup->grid[YY], setup->grid[ZZ],
             setup->spacing, 1/setup->ewaldcoeff);
 }
 
 static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
-                                       FILE                *fplog)
+                                       t_commrec           *cr,
+                                       FILE                *fplog,
+                                       gmx_bool             bNonBondedOnGPU)
 {
     double pp_ratio, grid_ratio;
 
-    pp_ratio   = pow(pme_lb->setup[pme_lb->cur].rlist/pme_lb->setup[0].rlistlong, 3.0);
+    pp_ratio   = pow(pme_loadbal_rlist(&pme_lb->setup[pme_lb->cur])/pme_loadbal_rlist(&pme_lb->setup[0]), 3.0);
     grid_ratio = pme_grid_points(&pme_lb->setup[pme_lb->cur])/
         (double)pme_grid_points(&pme_lb->setup[0]);
 
@@ -746,14 +765,27 @@ static void print_pme_loadbal_settings(pme_load_balancing_t pme_lb,
     fprintf(fplog, " cost-ratio           %4.2f             %4.2f\n",
             pp_ratio, grid_ratio);
     fprintf(fplog, " (note that these numbers concern only part of the total PP and PME load)\n");
-    fprintf(fplog, "\n");
+
+    if (pp_ratio > 1.5 && !bNonBondedOnGPU)
+    {
+        md_print_warn(cr, fplog,
+                      "NOTE: PME load balancing increased the non-bonded workload by more than 50%%.\n"
+                      "      For better performance use (more) PME nodes (mdrun -npme),\n"
+                      "      or in case you are beyond the scaling limit, use less nodes in total.\n");
+    }
+    else
+    {
+        fprintf(fplog, "\n");
+    }
 }
 
-void pme_loadbal_done(pme_load_balancing_t pme_lb, FILE *fplog)
+void pme_loadbal_done(pme_load_balancing_t pme_lb,
+                      t_commrec *cr, FILE *fplog,
+                      gmx_bool bNonBondedOnGPU)
 {
     if (fplog != NULL && (pme_lb->cur > 0 || pme_lb->elimited != epmelblimNO))
     {
-        print_pme_loadbal_settings(pme_lb, fplog);
+        print_pme_loadbal_settings(pme_lb, cr, fplog, bNonBondedOnGPU);
     }
 
     /* TODO: Here we should free all pointers in pme_lb,

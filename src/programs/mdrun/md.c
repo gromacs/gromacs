@@ -532,10 +532,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         repl_ex_nst, repl_ex_nex, repl_ex_seed);
     }
 
-    /* PME tuning is only supported with GPUs or PME nodes and not with rerun */
+    /* PME tuning is only supported with GPUs or PME nodes and not with rerun.
+     * With perturbed charges with soft-core we should not change the cut-off.
+     */
     if ((Flags & MD_TUNEPME) &&
         EEL_PME(fr->eeltype) &&
         ( (fr->cutoff_scheme == ecutsVERLET && fr->nbv->bUseGPU) || !(cr->duty & DUTY_PME)) &&
+        !(ir->efep != efepNO && mdatoms->nChargePerturbed > 0 && ir->fepvals->bScCoul) &&
         !bRerunMD)
     {
         pme_loadbal_init(&pme_loadbal, ir, state->box, fr->ic, fr->pmedata);
@@ -1107,7 +1110,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) ||
+                  do_per_step(step, nstglobalcomm) || (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)) ||
                   (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
@@ -2204,7 +2207,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (pme_loadbal != NULL)
     {
-        pme_loadbal_done(pme_loadbal, fplog);
+        pme_loadbal_done(pme_loadbal, cr, fplog,
+                         fr->nbv != NULL && fr->nbv->bUseGPU);
     }
 
     if (shellfc && fplog)
