@@ -529,16 +529,16 @@ void nbnxn_cuda_init(FILE *fplog,
         }
         else
         {
-            /* Can/should turn of cudaStreamSynchronize wait only if
+            /* Can/should turn off cudaStreamSynchronize wait only if:
+             *   - driver is old
              *   - we're on x86/x86_64
              *   - atomics are available
              *   - GPUs are not being shared
-             *   - and driver is old. */
+             */
             nb->bUseStreamSync =
-                (bX86 && bTMPIAtomics && !gpu_info->bDevShare && bOldDriver) ?
-                true : false;
+                !(bOldDriver && bX86 && bTMPIAtomics && !gpu_info->bDevShare);
 
-            if (nb->bUseStreamSync)
+            if (!nb->bUseStreamSync)
             {
                 md_print_warn(fplog,
                               "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
