@@ -43,14 +43,14 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
-                    const AnalysisDataParallelOptions &opt,
-                    const SelectionCollection &selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -113,7 +113,7 @@ AnalysisTemplate::AnalysisTemplate()
 
 
 void
-AnalysisTemplate::initOptions(Options *options,
+AnalysisTemplate::initOptions(Options                    *options,
                               TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -135,19 +135,19 @@ AnalysisTemplate::initOptions(Options *options,
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o")
-        .filetype(eftPlot).outputFile()
-        .store(&fnDist_).defaultBasename("avedist")
-        .description("Average distances from reference group"));
+                           .filetype(eftPlot).outputFile()
+                           .store(&fnDist_).defaultBasename("avedist")
+                           .description("Average distances from reference group"));
 
     options->addOption(SelectionOption("reference")
-        .store(&refsel_).required()
-        .description("Reference group to calculate distances from"));
+                           .store(&refsel_).required()
+                           .description("Reference group to calculate distances from"));
     options->addOption(SelectionOption("select")
-        .storeVector(&sel_).required().multiValue()
-        .description("Groups to calculate distances to"));
+                           .storeVector(&sel_).required().multiValue()
+                           .description("Groups to calculate distances to"));
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
-        .description("Cutoff for distance calculation (0 = no cutoff)"));
+                           .description("Cutoff for distance calculation (0 = no cutoff)"));
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 }
@@ -155,7 +155,7 @@ AnalysisTemplate::initOptions(Options *options,
 
 void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                               const TopologyInformation & /*top*/)
+                               const TopologyInformation         & /*top*/)
 {
     data_.setColumnCount(sel_.size());
 
@@ -165,7 +165,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnDist_.empty())
     {
         AnalysisDataPlotModulePointer plotm(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnDist_);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
@@ -177,7 +177,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 TrajectoryAnalysisModuleDataPointer
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
-                              const SelectionCollection &selections)
+                              const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new ModuleData(this, opt, selections, cutoff_, refsel_.posCount()));
@@ -188,17 +188,17 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh = pdata->dataHandle(data_);
-    NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->nb_;
+    AnalysisDataHandle  dh     = pdata->dataHandle(data_);
+    NeighborhoodSearch &nb     = static_cast<ModuleData *>(pdata)->nb_;
     const Selection    &refsel = pdata->parallelSelection(refsel_);
 
     nb.init(pbc, refsel.positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
-        const Selection &sel = pdata->parallelSelection(sel_[g]);
-        int   nr = sel.posCount();
-        real  frave = 0.0;
+        const Selection &sel   = pdata->parallelSelection(sel_[g]);
+        int              nr    = sel.posCount();
+        real             frave = 0.0;
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel.position(i);
@@ -237,7 +237,7 @@ main(int argc, char *argv[])
     ProgramInfo::init(argc, argv);
     try
     {
-        AnalysisTemplate module;
+        AnalysisTemplate                    module;
         TrajectoryAnalysisCommandLineRunner runner(&module);
         return runner.run(argc, argv);
     }
