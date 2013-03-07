@@ -731,6 +731,23 @@ static void do_nb_verlet(t_forcerec *fr,
              nbvg->nbl_lists.natpair_q);
 }
 
+/* FIXME: This should be included from domdec_setup.c instead. */
+static int lcd(int n1, int n2)
+{
+    int d, i;
+
+    d = 1;
+    for (i = 2; (i <= n1 && i <= n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+
+    return d;
+}
+
 void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -2663,8 +2680,10 @@ void init_md(FILE *fplog,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, t_state *state, unsigned long Flags)
 {
-    int  i, j, n;
+    int  i, j, n, lowcd;
     real tmpt, mod;
+    tng_data_type datatype;
+    int64_t n_particles, n_frames_per_frame_set;
 
     /* Initial values */
     *t = *t0       = ir->init_t;
@@ -2724,6 +2743,47 @@ void init_md(FILE *fplog,
         init_tng_top((*outf)->tng, mtop);
         
         tng_file_headers_write((*outf)->tng, TNG_USE_HASH);
+
+        if (sizeof(real) == sizeof(double))
+        {
+            datatype = TNG_DOUBLE_DATA;
+        }
+        else
+        {
+            datatype = TNG_FLOAT_DATA;
+        }
+
+        lowcd = lcd(ir->nstxout, ir->nstvout);
+
+        tng_num_frames_per_frame_set_get((*outf)->tng, &n_frames_per_frame_set);
+        tng_num_particles_get((*outf)->tng, &n_particles);
+        
+        if(tng_data_block_add((*outf)->tng, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
+            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 9, 1,
+            TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Could not create TNG data block.\n");
+        }
+        if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_POSITIONS, "POSITIONS",
+            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 3, 1, 0, n_particles,
+            TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Could not create TNG data block.\n");
+        }
+        if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_VELOCITIES, "VELOCITIES",
+            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 3, 1, 0, n_particles,
+            TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Could not create TNG data block.\n");
+        }
+        if(tng_frame_set_write((*outf)->tng, TNG_USE_HASH) != TNG_SUCCESS)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Error writing frame set.");
+        }
     }
 
     if (ir->bAdress)
@@ -2792,5 +2852,6 @@ void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
                 tng_residue_atom_add(tng, tng_res, *(atoms->atomname[at_it]), *(atoms->atomtype[at_it]), &tng_atom);
             }
         }
+        tng_molecule_cnt_set(tng, tng_mol, mtop->molblock[mol_it].nmol);
     }
 }

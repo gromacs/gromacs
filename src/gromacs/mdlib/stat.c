@@ -721,6 +721,15 @@ void write_traj(FILE *fplog, t_commrec *cr,
                 gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_trn);
+            fwrite_tng(of->fp_trn, step, t, state_local->lambda[efptFEP],
+                       state_local->box, top_global->natoms,
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
+            if (gmx_fio_flush(of->fp_trn) != 0)
+            {
+                gmx_file("Cannot write trajectory; maybe you are out of disk space?");
+            }
         }
         if (mdof_flags & MDOF_XTC)
         {
