@@ -1078,6 +1078,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         warning_note(wi, warn_buf);
     }
 
+    if (ir->coulombtype == eelPMESWITCH)
+    {
+        sprintf(warn_buf, "%s is deprecated. For energy conservation, we advice using %s with cut-off scheme %s or cut-off scheme %s with coulomb-modifier %s.",
+                eel_names[ir->coulombtype],
+                eel_names[eelPME],
+                ecutscheme_names[ecutsVERLET],
+                ecutscheme_names[ecutsGROUP], INTMODIFIER(eintmodPOTSHIFT));
+        warning_note(wi, warn_buf);
+
+        if (ir->rcoulomb_switch/ir->rcoulomb < 0.94)
+        {
+            sprintf(warn_buf, "The switching range for %s should be 5%% or less, energy conservation will be good anyhow, since ewald_rtol = %g",
+                    eel_names[ir->coulombtype],
+                    ir->ewald_rtol);
+            warning(wi, warn_buf);
+        }
+    }
+
     if (EEL_FULL(ir->coulombtype))
     {
         if (ir->coulombtype == eelPMESWITCH || ir->coulombtype == eelPMEUSER ||
@@ -1144,6 +1162,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     }
     if (ir->cutoff_scheme == ecutsGROUP)
     {
+        if (((ir->coulomb_modifier != eintmodNONE && ir->rcoulomb == ir->rlist) ||
+             (ir->vdw_modifier != eintmodNONE && ir->rvdw == ir->rlist)) &&
+            ir->nstlist != 1)
+        {
+            warning_note(wi, "With exact cut-off's rlist should be larger than rcoulomb and rvdw to provide a buffer region for particle motion between neighborsearch steps");
+        }
+
         if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype)
             && (ir->rlistlong <= ir->rcoulomb))
         {
@@ -1188,15 +1213,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
         {
-            sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                    evdw_names[evdwSHIFT]);
+            sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use an exact cut-off and with a potential shift by setting: vdw-modifier = %s",
+                    INTMODIFIER(eintmodPOTSHIFT));
             warning_note(wi, warn_buf);
         }
         if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
         {
-            sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-                    eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
-            warning_note(wi, warn_buf);
+            if (EEL_FULL(ir->coulombtype))
+            {
+                sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use an exact cut-off with a potential shift by setting: coulomb-modifier = %s",
+                        INTMODIFIER(eintmodPOTSHIFT));
+                warning_note(wi, warn_buf);
+            }
+            else
+            {
+                /* We use RF or plain cut-off, in either case advice RF-zero */
+                sprintf(warn_buf, "You are using a cut-off for reaction-field electrostatics with NVE, for good energy conservation use coulombtype = %s",
+                    eel_names[eelRF_ZERO]);
+            }
         }
     }
 
@@ -3805,12 +3839,15 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * since user defined interactions might purposely
              * not be zero at the cut-off.
              */
-            if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
+            if ((EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) ||
+                 ir->vdw_modifier != eintmodNONE) &&
                 rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
+                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f).\n"
+                        "Also note that with exact cut-off's using cutoff-scheme = %s, which doesn't use charge groups at all, will give better performance.",
                         rvdw1+rvdw2,
-                        ir->rlist, ir->rvdw);
+                        ir->rlist, ir->rvdw,
+                        ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {
                     warning(wi, warn_buf);
@@ -3820,13 +3857,16 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
                     warning_note(wi, warn_buf);
                 }
             }
-            if (EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) &&
+            if ((EEL_IS_ZERO_AT_CUTOFF(ir->coulombtype) ||
+                 ir->coulomb_modifier != eintmodNONE) &&
                 rcoul1 + rcoul2 > ir->rlistlong - ir->rcoulomb)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f)\n",
+                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rcoulomb (%f).\n"
+                        "Also note that with exact cut-off's using cutoff-scheme = %s, which doesn't use charge groups at all, will give better performance.",
                         rcoul1+rcoul2,
                         ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
-                        ir->rlistlong, ir->rcoulomb);
+                        ir->rlistlong, ir->rcoulomb,
+                        ecutscheme_names[ecutsVERLET]);
                 if (ir_NVE(ir))
                 {
                     warning(wi, warn_buf);
