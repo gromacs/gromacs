@@ -56,6 +56,7 @@
 #include "gromacs/utility/stringutil.h"
 
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
@@ -78,7 +79,7 @@ class SelectionCollectionTest : public ::testing::Test
 
         void setAtomCount(int natoms)
         {
-            ASSERT_NO_THROW(sc_.setTopology(NULL, natoms));
+            ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, natoms));
         }
         void loadTopology(const char *filename);
 
@@ -147,7 +148,7 @@ SelectionCollectionTest::loadTopology(const char *filename)
 
     sfree(xtop);
 
-    ASSERT_NO_THROW(sc_.setTopology(top_, -1));
+    ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
 }
 
 
@@ -281,7 +282,7 @@ SelectionCollectionDataTest::runParser(const char *const *selections,
         SCOPED_TRACE(std::string("Parsing selection \"")
                      + selections[i] + "\"");
         gmx::SelectionList result;
-        ASSERT_NO_THROW(result = sc_.parseFromString(selections[i]));
+        ASSERT_NO_THROW_GMX(result = sc_.parseFromString(selections[i]));
         sel_.insert(sel_.end(), result.begin(), result.end());
         if (sel_.size() == count_)
         {
@@ -309,7 +310,7 @@ SelectionCollectionDataTest::runParser(const char *const *selections,
 void
 SelectionCollectionDataTest::runCompiler()
 {
-    ASSERT_NO_THROW(sc_.compile());
+    ASSERT_NO_THROW_GMX(sc_.compile());
     ASSERT_EQ(count_, sel_.size());
     checkCompiled();
 }
@@ -343,7 +344,7 @@ SelectionCollectionDataTest::runEvaluate()
     using gmx::test::TestReferenceChecker;
 
     ++framenr_;
-    ASSERT_NO_THROW(sc_.evaluate(frame_, NULL));
+    ASSERT_NO_THROW_GMX(sc_.evaluate(frame_, NULL));
     std::string          frame = gmx::formatString("Frame%d", framenr_);
     TestReferenceChecker compound(
             checker_.checkCompound("EvaluatedSelections", frame.c_str()));
@@ -362,7 +363,7 @@ SelectionCollectionDataTest::runEvaluate()
 void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
-    ASSERT_NO_THROW(sc_.evaluateFinal(framenr_));
+    ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
     if (!checker_.isWriteMode())
     {
         checkCompiled();
@@ -403,19 +404,19 @@ SelectionCollectionDataTest::runTest(const char         *filename,
 TEST_F(SelectionCollectionTest, HandlesNoSelections)
 {
     EXPECT_FALSE(sc_.requiresTopology());
-    EXPECT_NO_THROW(sc_.compile());
+    EXPECT_NO_THROW_GMX(sc_.compile());
 }
 
 TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 {
-    ASSERT_NO_THROW(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromString("atomnr 1 to 10; none"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
     ASSERT_EQ(2U, sel_.size());
-    ASSERT_NO_THROW(sel_[0].setEvaluateVelocities(true));
-    ASSERT_NO_THROW(sel_[1].setEvaluateVelocities(true));
-    ASSERT_NO_THROW(sel_[0].setEvaluateForces(true));
-    ASSERT_NO_THROW(sel_[1].setEvaluateForces(true));
-    ASSERT_NO_THROW(sc_.compile());
+    ASSERT_NO_THROW_GMX(sel_[0].setEvaluateVelocities(true));
+    ASSERT_NO_THROW_GMX(sel_[1].setEvaluateVelocities(true));
+    ASSERT_NO_THROW_GMX(sel_[0].setEvaluateForces(true));
+    ASSERT_NO_THROW_GMX(sel_[1].setEvaluateForces(true));
+    ASSERT_NO_THROW_GMX(sc_.compile());
     EXPECT_TRUE(sel_[0].hasVelocities());
     EXPECT_TRUE(sel_[1].hasVelocities());
     EXPECT_TRUE(sel_[0].hasForces());
@@ -424,8 +425,8 @@ TEST_F(SelectionCollectionTest, HandlesVelocityAndForceRequests)
 
 TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 {
-    ASSERT_NO_THROW(sel_ = sc_.parseFromFile(
-                                gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
+    ASSERT_NO_THROW_GMX(sel_ = sc_.parseFromFile(
+                                    gmx::test::TestFileManager::getInputFilePath("selfile.dat")));
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel_.size());
     EXPECT_STREQ("resname RA RB", sel_[0].selectionText());
@@ -435,10 +436,10 @@ TEST_F(SelectionCollectionTest, ParsesSelectionsFromFile)
 TEST_F(SelectionCollectionTest, HandlesInvalidRegularExpressions)
 {
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW({
-                     sc_.parseFromString("resname ~ \"R[A\"");
-                     sc_.compile();
-                 }, gmx::InvalidInputError);
+    EXPECT_THROW_GMX({
+                         sc_.parseFromString("resname ~ \"R[A\"");
+                         sc_.compile();
+                     }, gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
@@ -446,88 +447,88 @@ TEST_F(SelectionCollectionTest, HandlesUnsupportedRegularExpressions)
     if (!gmx::Regex::isSupported())
     {
         ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-        EXPECT_THROW({
-                         sc_.parseFromString("resname \"R[AD]\"");
-                         sc_.compile();
-                     }, gmx::InvalidInputError);
+        EXPECT_THROW_GMX({
+                             sc_.parseFromString("resname \"R[AD]\"");
+                             sc_.compile();
+                         }, gmx::InvalidInputError);
     }
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue)
 {
-    EXPECT_THROW(sc_.parseFromString("mindist from atomnr 1 cutoff"),
-                 gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("mindist from atomnr 1 cutoff"),
+                     gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue2)
 {
-    EXPECT_THROW(sc_.parseFromString("within 1 of"),
-                 gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("within 1 of"),
+                     gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesMissingMethodParamValue3)
 {
-    EXPECT_THROW(sc_.parseFromString("within of atomnr 1"),
-                 gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("within of atomnr 1"),
+                     gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
 {
-    EXPECT_THROW(sc_.parseFromString("resname help"),
-                 gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("resname help"),
+                     gmx::InvalidInputError);
 }
 
 // TODO: Tests for more parser errors
 
 TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("group \"foo\""));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
-    EXPECT_THROW(sc_.compile(), gmx::APIError);
+    EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingMoleculeInfo)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("molindex 1 to 5"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("molindex 1 to 5"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingAtomTypes)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("type CA"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("type CA"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromMissingPDBInfo)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("altloc A"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("altloc A"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("all permute 1 1"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("all permute 1 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(sc_.compile(), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InvalidInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation2)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("all permute 3 2 1"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("all permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW(sc_.compile(), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, RecoversFromInvalidPermutation3)
 {
-    ASSERT_NO_THROW(sc_.parseFromString("x < 1.5 permute 3 2 1"));
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("x < 1.5 permute 3 2 1"));
     ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
-    ASSERT_NO_THROW(sc_.compile());
-    EXPECT_THROW(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
+    ASSERT_NO_THROW_GMX(sc_.compile());
+    EXPECT_THROW_GMX(sc_.evaluate(frame_, NULL), gmx::InconsistentInputError);
 }
 
 // TODO: Tests for evaluation errors

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 #include "gromacs/legacyheaders/thread_mpi/system_error.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "errorformat.h"
 
@@ -354,6 +355,98 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     }
     printExceptionMessage(fp, ex, 0);
     internal::printFatalErrorFooter(fp);
+}
+
+std::string formatException(const std::exception &ex)
+{
+    // TODO: It would be nicer to not duplicate the logic from
+    // printExceptionMessage().
+    const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
+    if (boostEx != NULL)
+    {
+        const char *const *funcPtr =
+            boost::get_error_info<boost::throw_function>(*boostEx);
+        const char *const *filePtr =
+            boost::get_error_info<boost::throw_file>(*boostEx);
+        const int         *linePtr =
+            boost::get_error_info<boost::throw_line>(*boostEx);
+
+        std::string        result;
+        if (filePtr != NULL && linePtr != NULL)
+        {
+            result = formatString("%s:%d: %s\n", *filePtr, *linePtr,
+                                  funcPtr != NULL ? *funcPtr : "");
+        }
+
+        // TODO: Remove duplicate context if present in multiple nested exceptions.
+        const ErrorMessage *msg =
+            boost::get_error_info<errinfo_message>(*boostEx);
+        if (msg != NULL)
+        {
+            while (msg != NULL && msg->isContext())
+            {
+                result.append(msg->text());
+                result.append("\n");
+                msg = &msg->child();
+            }
+            if (msg != NULL && !msg->text().empty())
+            {
+                result.append(msg->text());
+                result.append("\n");
+            }
+        }
+        else
+        {
+            result.append(ex.what());
+            result.append("\n");
+        }
+
+        const int *errorNumber
+            = boost::get_error_info<boost::errinfo_errno>(*boostEx);
+        if (errorNumber != NULL)
+        {
+            result.append(formatString("Reason: %s\n",
+                                       std::strerror(*errorNumber)));
+            const char * const *funcName
+                = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
+            if (funcName != NULL)
+            {
+                result.append(formatString("(call to %s() returned error code %d)\n",
+                                           *funcName, *errorNumber));
+            }
+        }
+
+        // TODO: Treat also boost::nested_exception (not currently used, though)
+
+        const internal::NestedExceptionList *nested
+            = boost::get_error_info<errinfo_nested_exceptions>(*boostEx);
+        if (nested != NULL)
+        {
+            internal::NestedExceptionList::const_iterator ni;
+            for (ni = nested->begin(); ni != nested->end(); ++ni)
+            {
+                try
+                {
+                    rethrow_exception(*ni);
+                }
+                catch (const std::exception &nestedEx)
+                {
+                    result.append(formatException(nestedEx));
+                    result.append("\n");
+                }
+            }
+        }
+        // Remove terminating line feed.
+        if (result.size() > 0U)
+        {
+            result.erase(result.size() - 1);
+        }
+        return result;
+    }
+    else
+    {
+        return ex.what();
+    }
 }
 
 } // namespace gmx

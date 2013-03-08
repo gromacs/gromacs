@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "testutils/cmdlinetest.h"
 #include "testutils/datatest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace gmx
@@ -216,7 +217,7 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
     TrajectoryAnalysisCommandLineRunner runner(&module);
     runner.setPrintCopyright(false);
     int rc = 0;
-    EXPECT_NO_THROW(rc = runner.run(impl_->cmdline_.argc(), impl_->cmdline_.argv()));
+    EXPECT_NO_THROW_GMX(rc = runner.run(impl_->cmdline_.argc(), impl_->cmdline_.argv()));
     EXPECT_EQ(0, rc);
 
     if (!impl_->outputFiles_.empty())

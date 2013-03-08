@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,6 +51,7 @@
 #include "gromacs/options/options.h"
 
 #include "testutils/cmdlinetest.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -87,8 +88,8 @@ TEST_F(CommandLineParserTest, HandlesSingleValues)
         "test", "-flag", "yes", "-mvi", "2", "-mvd", "2.7"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
-    ASSERT_NO_THROW(options_.finish());
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
 
     EXPECT_TRUE(flag_);
     ASSERT_EQ(1U, ivalues_.size());
@@ -103,8 +104,8 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
         "test", "-mvi", "1", "-2", "-mvd", "-2.7"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    ASSERT_NO_THROW(parser_.parse(&args.argc(), args.argv()));
-    ASSERT_NO_THROW(options_.finish());
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
 
     ASSERT_EQ(2U, ivalues_.size());
     EXPECT_EQ(1, ivalues_[0]);

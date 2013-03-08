@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,6 +52,7 @@
 #include "gromacs/analysisdata/modules/average.h"
 
 #include "testutils/datatest.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -93,10 +94,10 @@ TEST_F(AverageModuleTest, BasicTest)
             new gmx::AnalysisDataAverageModule);
     data.addModule(module);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module.get()));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 TEST_F(AverageModuleTest, HandlesMultipointData)
@@ -109,10 +110,10 @@ TEST_F(AverageModuleTest, HandlesMultipointData)
             new gmx::AnalysisDataAverageModule);
     data.addModule(module);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module.get()));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 TEST_F(AverageModuleTest, CanCustomizeXAxis)
@@ -124,10 +125,10 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
     data.addModule(module);
     module->setXAxis(0.5, 0.5);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("Average", module.get()));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 /********************************************************************
@@ -146,10 +147,10 @@ TEST_F(FrameAverageModuleTest, BasicTest)
             new gmx::AnalysisDataFrameAverageModule);
     data.addModule(module);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("InputData", &data));
-    ASSERT_NO_THROW(addReferenceCheckerModule("FrameAverage", module.get()));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("FrameAverage", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 } // namespace

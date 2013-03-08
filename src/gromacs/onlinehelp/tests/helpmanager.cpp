@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,6 +53,7 @@
 
 #include "testutils/mock_helptopic.h"
 #include "testutils/stringtest.h"
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 namespace
@@ -106,8 +107,8 @@ TEST_F(HelpManagerTest, HandlesSubTopics)
 
     using ::testing::_;
     EXPECT_CALL(firstSub, writeHelp(_));
-    ASSERT_NO_THROW(manager_.enterTopic("first"));
-    ASSERT_NO_THROW(manager_.enterTopic("firstsub"));
+    ASSERT_NO_THROW_GMX(manager_.enterTopic("first"));
+    ASSERT_NO_THROW_GMX(manager_.enterTopic("firstsub"));
     manager_.writeCurrentTopic();
 }
 
@@ -118,11 +119,11 @@ TEST_F(HelpManagerTest, HandlesInvalidTopics)
     first.addSubTopic("firstsub", "First subtopic", "First subtopic text");
     rootTopic_.addSubTopic("second", "Second topic", "Second topic text");
 
-    ASSERT_THROW(manager_.enterTopic("unknown"), gmx::InvalidInputError);
-    ASSERT_NO_THROW(manager_.enterTopic("first"));
-    ASSERT_THROW(manager_.enterTopic("unknown"), gmx::InvalidInputError);
-    ASSERT_THROW(manager_.enterTopic("second"), gmx::InvalidInputError);
-    ASSERT_NO_THROW(manager_.enterTopic("firstsub"));
+    ASSERT_THROW_GMX(manager_.enterTopic("unknown"), gmx::InvalidInputError);
+    ASSERT_NO_THROW_GMX(manager_.enterTopic("first"));
+    ASSERT_THROW_GMX(manager_.enterTopic("unknown"), gmx::InvalidInputError);
+    ASSERT_THROW_GMX(manager_.enterTopic("second"), gmx::InvalidInputError);
+    ASSERT_NO_THROW_GMX(manager_.enterTopic("firstsub"));
 }
 
 /********************************************************************
@@ -151,8 +152,8 @@ class HelpTopicFormattingTest : public HelpTestBase
 
 void HelpTopicFormattingTest::checkHelpFormatting()
 {
-    ASSERT_NO_THROW(manager_.enterTopic("testtopic"));
-    ASSERT_NO_THROW(manager_.writeCurrentTopic());
+    ASSERT_NO_THROW_GMX(manager_.enterTopic("testtopic"));
+    ASSERT_NO_THROW_GMX(manager_.writeCurrentTopic());
     helpFile_.close();
 
     checkFileContents(filename_, "HelpText");

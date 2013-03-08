@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/selection/selectionoptionmanager.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 
 using gmx::test::TestFileManager;
@@ -97,16 +98,16 @@ TEST_F(SelectionOptionTest, ParsesSimpleSelection)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(SelectionOption("sel").store(&sel)));
+    ASSERT_NO_THROW_GMX(options_.addOption(SelectionOption("sel").store(&sel)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -114,17 +115,17 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").store(&sel).onlyStatic()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(&sel).onlyStatic()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_THROW(assigner.appendValue("resname RA RB and x < 5"), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_THROW_GMX(assigner.appendValue("resname RA RB and x < 5"), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -132,17 +133,17 @@ TEST_F(SelectionOptionTest, HandlesTooManySelections)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(SelectionOption("sel").store(&sel)));
+    ASSERT_NO_THROW_GMX(options_.addOption(SelectionOption("sel").store(&sel)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_THROW(assigner.appendValue("resname RB RC"), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_THROW_GMX(assigner.appendValue("resname RB RC"), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -150,17 +151,17 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelections)
 {
     gmx::Selection sel[2];
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").store(sel).valueCount(2)));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(sel).valueCount(2)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_THROW(assigner.finishOption(), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_THROW_GMX(assigner.finishOption(), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -173,14 +174,14 @@ TEST_F(SelectionOptionTest, HandlesAdjuster)
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RB RC"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(info->setValueCount(2));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RB RC"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_NO_THROW_GMX(info->setValueCount(2));
 }
 
 
@@ -193,13 +194,13 @@ TEST_F(SelectionOptionTest, HandlesDynamicWhenStaticRequiredWithAdjuster)
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("x < 5"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_THROW(info->setOnlyStatic(true), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("x < 5"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_THROW_GMX(info->setOnlyStatic(true), gmx::InvalidInputError);
 }
 
 
@@ -212,14 +213,14 @@ TEST_F(SelectionOptionTest, HandlesTooManySelectionsWithAdjuster)
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RB RC"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_THROW(info->setValueCount(1), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RB RC"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_THROW_GMX(info->setValueCount(1), gmx::InvalidInputError);
 }
 
 
@@ -232,13 +233,13 @@ TEST_F(SelectionOptionTest, HandlesTooFewSelectionsWithAdjuster)
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RA RB"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_THROW(info->setValueCount(2), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_THROW_GMX(info->setValueCount(2), gmx::InvalidInputError);
 }
 
 
@@ -246,15 +247,15 @@ TEST_F(SelectionOptionTest, HandlesDelayedRequiredSelection)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").store(&sel).required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(&sel).required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    ASSERT_NO_THROW_GMX(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
@@ -263,16 +264,16 @@ TEST_F(SelectionOptionTest, HandlesTooFewDelayedRequiredSelections)
 {
     gmx::Selection sel[2];
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").store(sel).required()
-                                .valueCount(2)));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(sel).required()
+                                    .valueCount(2)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_THROW(manager_.parseRequestedFromString("resname RA RB"), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_THROW_GMX(manager_.parseRequestedFromString("resname RA RB"), gmx::InvalidInputError);
 }
 
 
@@ -280,16 +281,16 @@ TEST_F(SelectionOptionTest, HandlesDelayedOptionalSelection)
 {
     gmx::Selection sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(SelectionOption("sel").store(&sel)));
+    ASSERT_NO_THROW_GMX(options_.addOption(SelectionOption("sel").store(&sel)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    ASSERT_NO_THROW(manager_.parseRequestedFromString("resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    ASSERT_NO_THROW_GMX(manager_.parseRequestedFromString("resname RA RB"));
     ASSERT_STREQ("resname RA RB", sel.selectionText());
 }
 
@@ -303,13 +304,13 @@ TEST_F(SelectionOptionTest, HandlesDelayedSelectionWithAdjuster)
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(info->setValueCount(2));
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RA RB; resname RB RC"));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_NO_THROW_GMX(info->setValueCount(2));
+    EXPECT_NO_THROW_GMX(manager_.parseRequestedFromString("resname RA RB; resname RB RC"));
 }
 
 
@@ -334,22 +335,22 @@ TEST_F(SelectionFileOptionTest, HandlesSingleSelectionOptionFromFile)
     gmx::SelectionList sel;
     gmx::SelectionList reqsel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").storeVector(&sel).multiValue()));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("reqsel").storeVector(&reqsel)
-                                .multiValue().required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").storeVector(&sel).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("reqsel").storeVector(&reqsel)
+                                    .multiValue().required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel.size());
@@ -364,27 +365,27 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSeparateSelectionOptions)
     gmx::SelectionList sel1;
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel1").storeVector(&sel1).multiValue()));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel2").storeVector(&sel2).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel1").storeVector(&sel1).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel2").storeVector(&sel2).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel1"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(value));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sel2"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(value));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel1"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(value));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel2"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(value));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel1.size());
@@ -401,24 +402,24 @@ TEST_F(SelectionFileOptionTest, HandlesTwoSelectionOptionsFromSingleFile)
     gmx::SelectionList sel1;
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel1").storeVector(&sel1)));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel2").storeVector(&sel2)));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel1").storeVector(&sel1)));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel2").storeVector(&sel2)));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel1"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sel2"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(value));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel1"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel2"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(value));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(1U, sel1.size());
@@ -433,24 +434,24 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFile)
     gmx::SelectionList sel;
     gmx::SelectionList optsel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").storeVector(&sel)
-                                .multiValue().required()));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("optsel").storeVector(&optsel)
-                                .multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").storeVector(&sel)
+                                    .multiValue().required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("optsel").storeVector(&optsel)
+                                    .multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.startOption("optsel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
-    EXPECT_NO_THROW(manager_.parseRequestedFromString("resname RC RD"));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.startOption("optsel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+    EXPECT_NO_THROW_GMX(manager_.parseRequestedFromString("resname RC RD"));
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel.size());
@@ -467,24 +468,24 @@ TEST_F(SelectionFileOptionTest, HandlesRequiredOptionFromFileWithOtherOptionSet)
     gmx::SelectionList sel1;
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel1").storeVector(&sel1)
-                                .multiValue().required()));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel2").storeVector(&sel2)
-                                .multiValue().required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel1").storeVector(&sel1)
+                                    .multiValue().required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel2").storeVector(&sel2)
+                                    .multiValue().required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    EXPECT_NO_THROW(assigner.startOption("sel1"));
-    EXPECT_NO_THROW(assigner.appendValue("resname RC RD"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("sel1"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("resname RC RD"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(2U, sel2.size());
@@ -500,20 +501,20 @@ TEST_F(SelectionFileOptionTest, HandlesTwoRequiredOptionsFromSingleFile)
     gmx::SelectionList sel1;
     gmx::SelectionList sel2;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel1").storeVector(&sel1).required()));
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel2").storeVector(&sel2).required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel1").storeVector(&sel1).required()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel2").storeVector(&sel2).required()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
     std::string          value(TestFileManager::getInputFilePath("selfile.dat"));
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(value));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(value));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 
     // These should match the contents of selfile.dat
     ASSERT_EQ(1U, sel1.size());
@@ -527,18 +528,18 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithNoFile)
 {
     gmx::SelectionList sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").storeVector(&sel).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_THROW(assigner.finishOption(), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_THROW_GMX(assigner.finishOption(), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -546,22 +547,22 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithNonExistentFile)
 {
     gmx::SelectionList sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").storeVector(&sel).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
     // TODO: Should this be changed to an InvalidInputError?
-    EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::FileIOError);
-    EXPECT_THROW(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")),
-                 gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_THROW_GMX(assigner.appendValue("nonexistentfile"), gmx::FileIOError);
+    EXPECT_THROW_GMX(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")),
+                     gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 
@@ -569,20 +570,20 @@ TEST_F(SelectionFileOptionTest, GivesErrorWithMultipleFiles)
 {
     gmx::SelectionList sel;
     using gmx::SelectionOption;
-    ASSERT_NO_THROW(options_.addOption(
-                            SelectionOption("sel").storeVector(&sel).multiValue()));
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").storeVector(&sel).multiValue()));
     setManager();
 
     gmx::OptionsAssigner assigner(&options_);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("sel"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("sf"));
-    EXPECT_NO_THROW(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
-    EXPECT_THROW(assigner.appendValue("nonexistentfile"), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options_.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sf"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue(TestFileManager::getInputFilePath("selfile.dat")));
+    EXPECT_THROW_GMX(assigner.appendValue("nonexistentfile"), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
 }
 
 } // namespace
