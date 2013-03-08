@@ -45,6 +45,7 @@
 #include "futil.h"
 #include "trnio.h"
 #include "gmxfio.h"
+#include "tng_io.h"
 
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993
@@ -203,36 +204,44 @@ static gmx_bool do_htrn(t_fileio *fio, gmx_bool bRead, t_trnheader *sh,
     return bOK;
 }
 
-static gmx_bool do_htng(t_fileio *fio, gmx_bool bRead, t_trnheader *sh,
+static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
                         rvec *box, rvec *x, rvec *v, rvec *f)
 {
-    matrix   pv;
     gmx_bool bOK;
-
+    tng_function_status stat;
+    int64_t n_particles;
+    
     bOK = TRUE;
+    
+    tng_num_particles_get(tng, &n_particles);
+    
     if (sh->box_size != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, box, DIM);
+//         stat = tng_frame_data_write(tng, sh->step, TNG_TRAJ_BOX_SHAPE, box, TNG_USE_HASH);
+//         bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->vir_size != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
+        /* FIXME: Not implemented yet */
     }
     if (sh->pres_size != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, pv, DIM);
+        /* FIXME: Not implemented yet */
     }
     if (sh->x_size   != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, x, sh->natoms);
+        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_POSITIONS, 0, n_particles, x, TNG_USE_HASH);
+        bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->v_size   != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, v, sh->natoms);
+        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_VELOCITIES, 0, n_particles, v, TNG_USE_HASH);
+        bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->f_size   != 0)
     {
-        bOK = bOK && gmx_fio_ndo_rvec(fio, f, sh->natoms);
+        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_FORCES, 0, n_particles, f, TNG_USE_HASH);
+        bOK = bOK && stat == TNG_SUCCESS;
     }
 
     return bOK;
@@ -291,7 +300,7 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
     return bOK;
 }
 
-static gmx_bool do_tng(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
+static gmx_bool do_tng(tng_trajectory_t tng, gmx_bool bRead, int *step, real *t, real *lambda,
                        rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
     t_trnheader *sh;
@@ -310,10 +319,7 @@ static gmx_bool do_tng(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
         sh->t        = *t;
         sh->lambda   = *lambda;
     }
-    if (!do_trnheader(fio, bRead, sh, &bOK))
-    {
-        return FALSE;
-    }
+    /* FIXME: Reading does not work yet. */
     if (bRead)
     {
         *natoms = sh->natoms;
@@ -337,7 +343,7 @@ static gmx_bool do_tng(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
             gmx_file("symbol table in trn file");
         }
     }
-    bOK = do_htrn(fio, bRead, sh, box, x, v, f);
+    bOK = do_htng(tng, bRead, sh, box, x, v, f);
 
     sfree(sh);
 
@@ -397,10 +403,10 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
     }
 }
 
-void fwrite_tng(t_fileio *fio, int step, real t, real lambda,
+void fwrite_tng(tng_trajectory_t tng, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
 {
-    if (do_tng(fio, FALSE, &step, &t, &lambda, box, &natoms, x, v, f) == FALSE)
+    if (do_tng(tng, FALSE, &step, &t, &lambda, box, &natoms, x, v, f) == FALSE)
     {
         gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
     }

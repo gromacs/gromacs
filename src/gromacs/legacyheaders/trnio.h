@@ -53,6 +53,7 @@
 
 #include "typedefs.h"
 #include "gmxfio.h"
+#include "tng_io.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,7 +109,7 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
 
-void fwrite_tng(t_fileio *fio, int step, real t, real lambda,
+void fwrite_tng(tng_trajectory_t tng, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a frame to a TNG file fp, box, x, v, f may be NULL */
 
