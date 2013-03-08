@@ -75,7 +75,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 83;
+static const int tpx_version = 84;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -634,6 +634,55 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead, int file_version)
     {
         do_rotgrp(fio, &rot->grp[g], bRead, file_version);
     }
+}
+
+
+static void do_swapcoords(t_fileio *fio,t_swapcoords *swap,gmx_bool bRead, int file_version)
+{
+    int i, j;
+
+
+    gmx_fio_do_int(fio,swap->nat);
+    gmx_fio_do_int(fio,swap->nat_sol);
+    for (j=0; j<2; j++)
+    {
+        gmx_fio_do_int(fio,swap->nat_split[j]);
+        gmx_fio_do_int(fio,swap->massw_split[j]);
+    }
+    gmx_fio_do_int(fio,swap->nstswap);
+    gmx_fio_do_int(fio,swap->csteps);
+    gmx_fio_do_real(fio,swap->threshold);
+    gmx_fio_do_real(fio,swap->r_sol);
+    gmx_fio_do_real(fio,swap->cyl0r);
+    gmx_fio_do_real(fio,swap->cyl0u);
+    gmx_fio_do_real(fio,swap->cyl0l);
+    gmx_fio_do_real(fio,swap->cyl1r);
+    gmx_fio_do_real(fio,swap->cyl1u);
+    gmx_fio_do_real(fio,swap->cyl1l);
+
+    if (bRead)
+    {
+      snew(swap->ind         , swap->nat       );
+      snew(swap->ind_sol     , swap->nat_sol   );
+      for (j=0; j<2; j++)
+      {
+          snew(swap->ind_split[j], swap->nat_split[j]);
+      }
+    }
+
+    gmx_fio_ndo_int(fio,swap->ind,swap->nat);
+    gmx_fio_ndo_int(fio,swap->ind_sol,swap->nat_sol);
+    for (j=0; j<2; j++)
+    {
+        gmx_fio_ndo_int(fio,swap->ind_split[j],swap->nat_split[j]);
+    }
+
+    for (j=0; j<eCompNr; j++)
+    {
+        gmx_fio_do_int(fio,swap->nanions[j]);
+        gmx_fio_do_int(fio,swap->ncations[j]);
+    }
+
 }
 
 
@@ -1530,6 +1579,20 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         bDum = gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
         bDum = gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
         bDum = gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
+    }
+
+    /* Swap ions */
+    if (file_version >= 84)
+    {
+        gmx_fio_do_int(fio,ir->eSwapCoords);
+        if (ir->eSwapCoords != eswapNO)
+        {
+            if (bRead)
+            {
+                snew(ir->swap, 1);
+            }
+            do_swapcoords(fio,ir->swap,bRead,file_version);
+        }
     }
 
     /* QMMM stuff */

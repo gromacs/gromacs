@@ -643,6 +643,31 @@ static void bc_simtempvals(const t_commrec *cr, t_simtemp *simtemp, int n_lambda
     }
 }
 
+
+static void bc_swapions(const t_commrec *cr, t_swapcoords *swap)
+{
+    int i;
+
+
+    block_bc(cr,*swap);
+
+    /* Broadcast ion group atom indices */
+    snew_bc(cr,swap->ind,swap->nat);
+    nblock_bc(cr,swap->nat,swap->ind);
+
+    /* Broadcast split groups atom indices */
+    for (i=0; i<2; i++)
+    {
+        snew_bc(cr,swap->ind_split[i],swap->nat_split[i]);
+        nblock_bc(cr,swap->nat_split[i],swap->ind_split[i]);
+    }
+
+    /* Broadcast solvent group atom indices */
+    snew_bc(cr,swap->ind_sol,swap->nat_sol);
+    nblock_bc(cr,swap->nat_sol,swap->ind_sol);
+}
+
+
 static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
 {
     gmx_bool bAlloc = TRUE;
@@ -685,6 +710,11 @@ static void bc_inputrec(const t_commrec *cr, t_inputrec *inputrec)
     {
         bc_cosines(cr, &(inputrec->ex[i]));
         bc_cosines(cr, &(inputrec->et[i]));
+    }
+    if (inputrec->eSwapCoords != eswapNO)
+    {
+        snew_bc(cr,inputrec->swap,1);
+        bc_swapions(cr,inputrec->swap);
     }
     if (inputrec->bAdress)
     {

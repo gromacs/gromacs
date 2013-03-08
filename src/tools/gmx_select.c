@@ -372,7 +372,7 @@ gmx_select(int argc, char *argv[])
     }
     if (d.block)
     {
-        write_index(fnNdx, d.block, d.gnames);
+        write_index(fnNdx, d.block, d.gnames, FALSE, 0);
     }
     if (d.mfp)
     {

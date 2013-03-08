@@ -102,7 +102,7 @@ gmx_ctime_r(const time_t *clock, char *buf, int n);
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 15;
+static const int cpt_version = 16;
 
 
 const char *est_names[estNR] =
@@ -811,6 +811,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
                           gmx_large_int_t *step, double *t,
                           int *nnodes, int *dd_nc, int *npme,
                           int *natoms, int *ngtc, int *nnhpres, int *nhchainlength,
+                          int *eSwapCoords,
                           int *nlambda, int *flags_state,
                           int *flags_eks, int *flags_enh, int *flags_dfh,
                           int *nED,
@@ -963,6 +964,10 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     {
         *nED = 0;
     }
+    if (*file_version >= 16)
+    {
+        do_cpt_int_err(xd,"swap",eSwapCoords,list);
+    }
 }
 
 static int do_cpt_footer(XDR *xd, gmx_bool bRead, int file_version)
@@ -1090,6 +1095,117 @@ static int do_cpt_ekinstate(XDR *xd, gmx_bool bRead,
             }
         }
     }
+
+    return ret;
+}
+
+
+static int do_cpt_swapstate(XDR *xd,gmx_bool bRead,
+        int fflags, swapstate_t *swapstate,
+        FILE *list)
+{
+    int ii,ic,j;
+    int ret=0;
+
+
+    if (eswapNO == swapstate->eSwapCoords)
+    {
+        return ret;
+    }
+
+    /* When reading, ion swapping is not initialized yet,
+     * so we have to allocate memory first. */
+    do_cpt_int_err(xd,"swap coupling steps",&swapstate->csteps,list);
+
+    for (ic=0; ic<eCompNr; ic++)
+    {
+        for (ii=0; ii<eIonNr; ii++)
+        {
+            if (bRead)
+            {
+                do_cpt_int_err(xd,"swap requested atoms",&swapstate->nat_req[ic][ii],list);
+            }
+            else
+            {
+                do_cpt_int_err(xd,"swap requested atoms p",swapstate->nat_req_p[ic][ii],list);
+            }
+
+            if (bRead)
+            {
+                do_cpt_int_err(xd,"swap influx netto",&swapstate->inflow_netto[ic][ii],list);
+            }
+            else
+            {
+                do_cpt_int_err(xd,"swap influx netto p",swapstate->inflow_netto_p[ic][ii],list);
+            }
+
+            if ( bRead && (NULL == swapstate->nat_past[ic][ii]) )
+            {
+                snew(swapstate->nat_past[ic][ii], swapstate->csteps);
+            }
+
+            for (j=0; j<swapstate->csteps; j++)
+            {
+                if (bRead)
+                {
+                    do_cpt_int_err(xd, "swap past atom counts", &swapstate->nat_past[ic][ii][j],list);
+                }
+                else
+                {
+                    do_cpt_int_err(xd, "swap past atom counts p", &swapstate->nat_past_p[ic][ii][j],list);
+                }
+            }
+        }
+    }
+
+    /* Ion flux per channel */
+    for (ic=0; ic<eChanNr; ic++)
+    {
+        for (ii=0; ii<eIonNr; ii++)
+        {
+            if (bRead)
+            {
+                do_cpt_int_err(xd, "channel flux", &swapstate->fluxfromAtoB[ic][ii], list);
+            }
+            else
+            {
+                do_cpt_int_err(xd, "channel flux p", swapstate->fluxfromAtoB_p[ic][ii], list);
+            }
+        }
+    }
+
+    /* Ion flux leakage */
+    if (bRead)
+    {
+        snew(swapstate->fluxleak, 1);
+    }
+    do_cpt_int_err(xd, "flux leakage", swapstate->fluxleak, list);
+
+    /* Ion history */
+    do_cpt_int_err(xd, "number of ions", &swapstate->nions, list);
+
+    fprintf(stderr, "\nHistory for %d ions in cpt file.\n", swapstate->nions);
+    if (bRead)
+    {
+        snew(swapstate->chan_pass, swapstate->nions);
+        snew(swapstate->dom_from , swapstate->nions);
+    }
+
+//    fprintf(stderr, "Channel history for all %d ions:\n", swapstate->nions);
+    do_cpt_u_chars(xd, "channel history", swapstate->nions, swapstate->chan_pass, list);
+//    for (j=0; j<swapstate->nions; j++)
+//    {
+//        fprintf(stderr, " %d", swapstate->chan_pass[j]);
+//    }
+//    fprintf(stderr, "\n");
+
+//    fprintf(stderr, "Domain history for all %d ions:\n", swapstate->nions);
+    do_cpt_u_chars(xd, "domain history", swapstate->nions, swapstate->dom_from, list);
+//    for (j=0; j<swapstate->nions; j++)
+//    {
+//        fprintf(stderr, " %d", swapstate->dom_from[j]);
+//    }
+//    fprintf(stderr, "\n");
 
     return ret;
 }
@@ -1538,7 +1654,8 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL, &npmenodes,
                   &state->natoms, &state->ngtc, &state->nnhpres,
-                  &state->nhchainlength, &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
+                  &state->nhchainlength, &state->swapstate.eSwapCoords,
+                  &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED,
                   NULL);
 
@@ -1551,6 +1668,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, TRUE, NULL) < 0)        ||
         (do_cpt_ekinstate(gmx_fio_getxdr(fp), FALSE, flags_eks, &state->ekinstate, NULL) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
+        (do_cpt_swapstate(gmx_fio_getxdr(fp), FALSE, 0, &state->swapstate, NULL) < 0)        ||
         (do_cpt_df_hist(gmx_fio_getxdr(fp), FALSE, flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, NULL,
@@ -1796,7 +1914,8 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator_f, simulation_part, step, t,
                   &nppnodes_f, dd_nc_f, &npmenodes_f,
-                  &natoms, &ngtc, &nnhpres, &nhchainlength, &nlambda,
+                  &natoms, &ngtc, &nnhpres, &nhchainlength, 
+                  &state->swapstate.eSwapCoords, &nlambda,
                   &fflags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, NULL);
 
@@ -1982,6 +2101,13 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
 
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &state->enerhist, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE,
+                           0, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2231,6 +2357,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, simulation_part, step, t, &nppnodes, dd_nc, &npme,
                   &state->natoms, &state->ngtc, &state->nnhpres, &state->nhchainlength,
+                  &state->swapstate.eSwapCoords,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, NULL);
     ret =
@@ -2247,6 +2374,12 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &state->enerhist, NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+    ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE,
+                           0, &state->swapstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2373,6 +2506,7 @@ void list_checkpoint(const char *fn, FILE *out)
                   &version, &btime, &buser, &bhost, &double_prec, &fprog, &ftime,
                   &eIntegrator, &simulation_part, &step, &t, &nppnodes, dd_nc, &npme,
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
+                  &state.swapstate.eSwapCoords,
                   &(state.dfhist.nlambda), &state.flags,
                   &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED, out);
     ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, TRUE, out);
@@ -2388,6 +2522,12 @@ void list_checkpoint(const char *fn, FILE *out)
     }
     ret = do_cpt_enerhist(gmx_fio_getxdr(fp), TRUE,
                           flags_enh, &state.enerhist, out);
+
+    if (ret == 0)
+    {
+        ret = do_cpt_swapstate(gmx_fio_getxdr(fp), TRUE,
+                               0, &state.swapstate, out);
+    }
 
     if (ret == 0)
     {

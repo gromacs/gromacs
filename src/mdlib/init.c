@@ -188,9 +188,10 @@ void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes)
 
     init_gtc_state(state, state->ngtc, state->nnhpres, ir->opts.nhchainlength); /* allocate the space for nose-hoover chains */
     init_ekinstate(&state->ekinstate, ir);
-
     init_energyhistory(&state->enerhist);
     init_df_history(&state->dfhist, ir->fepvals->n_lambda, ir->expandedvals->init_wl_delta);
+    state->swapstate.eSwapCoords = ir->eSwapCoords;
+
 }
 
 

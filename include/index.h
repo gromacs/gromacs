@@ -161,7 +161,7 @@ t_blocka *new_blocka(void);
 /* allocate new block */
 
 GMX_LIBGMX_EXPORT
-void write_index(const char *outf, t_blocka *b, char **gnames);
+void write_index(const char *outf, t_blocka *b, char **gnames, gmx_bool bDuplic, int natoms);
 /* Writes index blocks to outf (writes an indexfile) */
 
 GMX_LIBGMX_EXPORT

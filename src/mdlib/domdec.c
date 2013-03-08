@@ -73,6 +73,7 @@
 #include "nbnxn_search.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
+#include "swapcoords.h"
 
 #ifdef GMX_LIB_MPI
 #include <mpi.h>
@@ -9685,6 +9686,11 @@ void dd_partition_system(FILE                *fplog,
         dd_make_local_rotation_groups(dd, ir->rot);
     }
 
+    if ( ir->eSwapCoords != eswapNO) // && do_per_step(step, ir->swap->nstswap) )
+    {
+        /* Update the local groups needed for ion swapping */
+        dd_make_local_swap_groups(dd,ir->swap);
+    }
 
     add_dd_statistics(dd);
 

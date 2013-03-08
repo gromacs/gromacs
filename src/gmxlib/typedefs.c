@@ -482,6 +482,25 @@ static void zero_ekinstate(ekinstate_t *eks)
     eks->mvcos          = 0;
 }
 
+static void init_swapstate(swapstate_t *swapstate)
+{
+    int ii,ic;
+
+
+    /* Coordinate swapping */
+    for (ic=0; ic<eCompNr; ic++)
+    {
+        for (ii=0; ii<eIonNr; ii++)
+        {
+            swapstate->nat_past[ic][ii]   = NULL;
+            swapstate->nat_past_p[ic][ii] = NULL;
+            swapstate->nat_req[ic][ii]    = 0;
+            swapstate->nat_req_p[ic][ii]  = NULL;
+        }
+    }
+    swapstate->csteps = 0;
+}
+
 void init_energyhistory(energyhistory_t * enerhist)
 {
     enerhist->nener = 0;
@@ -615,6 +634,8 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     zero_ekinstate(&state->ekinstate);
 
     init_energyhistory(&state->enerhist);
+
+    init_swapstate(&state->swapstate);
 
     init_df_history(&state->dfhist, nlambda, 0);
 

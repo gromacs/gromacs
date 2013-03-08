@@ -1741,6 +1741,11 @@ static void check_input(
 /* Returns TRUE when "opt" is needed at launch time */
 static gmx_bool is_launch_file(char *opt, gmx_bool bSet)
 {
+    if (0 == strncmp(opt, "-swap", 5))
+    {
+        return bSet;
+    }
+
     /* Apart from the input .tpr and the output log files we need all options that
      * were set on the command line and that do not start with -b */
     if    (0 == strncmp(opt, "-b", 2) || 0 == strncmp(opt, "-s", 2)
@@ -1916,6 +1921,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     gmx_bool     bTpi;      /* Is test particle insertion requested?          */
     gmx_bool     bFree;     /* Is a free energy simulation requested?         */
     gmx_bool     bNM;       /* Is a normal mode analysis requested?           */
+    gmx_bool     bSwap;     /* Is water/ion position swapping requested?      */
     t_inputrec   ir;
     t_state      state;
     gmx_mtop_t   mtop;
@@ -1926,6 +1932,7 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     bPull = (epullNO != ir.ePull);
     bFree = (efepNO  != ir.efep );
     bNM   = (eiNM    == ir.eI   );
+    bSwap = (eswapNO != ir.eSwapCoords);
     bTpi  = EI_TPI(ir.eI);
 
     /* Set these output files on the tuning command-line */
@@ -1946,6 +1953,10 @@ static float inspect_tpr(int nfile, t_filenm fnm[], real *rcoulomb)
     if (bNM)
     {
         setopt("-mtx", nfile, fnm);
+    }
+    if (bSwap)
+    {
+        setopt("-swap", nfile, fnm);
     }
 
     *rcoulomb = ir.rcoulomb;
@@ -2135,6 +2146,7 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-rt",     "rottorque", ffOPTWR },
         { efMTX, "-mtx",    "nm",       ffOPTWR },
         { efNDX, "-dn",     "dipole",   ffOPTWR },
+        { efXVG, "-swap",   "swapions", ffOPTWR },
         /* Output files that are deleted after each benchmark run */
         { efTRN, "-bo",     "bench",    ffWRITE },
         { efXTC, "-bx",     "bench",    ffWRITE },
@@ -2158,7 +2170,8 @@ int gmx_tune_pme(int argc, char *argv[])
         { efLOG, "-brs",    "benchrots", ffOPTWR },
         { efLOG, "-brt",    "benchrott", ffOPTWR },
         { efMTX, "-bmtx",   "benchn",   ffOPTWR },
-        { efNDX, "-bdn",    "bench",    ffOPTWR }
+        { efNDX, "-bdn",    "bench",    ffOPTWR },
+        { efXVG, "-bswap",  "benchswp", ffOPTWR }
     };
 
     gmx_bool        bThreads     = FALSE;

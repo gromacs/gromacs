@@ -121,6 +121,15 @@ extern void communicate_group_positions(t_commrec *cr, rvec *xcoll, ivec *shifts
                                         int *anrs_loc, int *coll_ind, rvec *xcoll_old,
                                         matrix box);
 
+extern void communicate_group_positions_noshift(
+        t_commrec  *cr,
+        rvec       *xcoll,        /* OUT: Collective array of positions */
+        rvec       *x_loc,        /* IN:  Local positions on this node */
+        const int  nr,            /* IN:  Total number of atoms in the group */
+        const int  nr_loc,        /* IN:  Local number of atoms in the group */
+        int        *anrs_loc,     /* IN:  Local atom numbers */
+        int        *coll_ind);    /* IN:  Collective index */
+
 
 /*! \brief Calculates the center of the positions x locally.
  *

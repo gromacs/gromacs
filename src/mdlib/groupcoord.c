@@ -269,6 +269,41 @@ extern void communicate_group_positions(
 }
 
 
+/* Assemble the positions of the group such that every node has all of them.
+ * The atom indices are retrieved from anrs_loc[0..nr_loc]
+ * Note that coll_ind[i] = i is needed in the serial case */
+extern void communicate_group_positions_noshift(
+        t_commrec  *cr,
+        rvec       *xcoll,        /* OUT: Collective array of positions */
+        rvec       *x_loc,        /* IN:  Local positions on this node */
+        const int  nr,            /* IN:  Total number of atoms in the group */
+        const int  nr_loc,        /* IN:  Local number of atoms in the group */
+        int        *anrs_loc,     /* IN:  Local atom numbers */
+        int        *coll_ind)     /* IN:  Collective index */
+{
+    int i;
+
+
+    GMX_MPE_LOG(ev_get_group_x_start);
+
+    /* Zero out the groups' global position array */
+    clear_rvecs(nr, xcoll);
+
+    /* Put the local positions that this node has into the right place of
+     * the collective array. Note that in the serial case, coll_ind[i] = i */
+    for (i=0; i<nr_loc; i++)
+        copy_rvec(x_loc[anrs_loc[i]], xcoll[coll_ind[i]]);
+
+    if (PAR(cr))
+    {
+        /* Add the arrays from all nodes together */
+        gmx_sum(nr*3, xcoll[0], cr);
+    }
+
+    GMX_MPE_LOG(ev_get_group_x_finish);
+}
+
+
 /* Determine the (weighted) sum vector from positions x */
 extern double get_sum_of_positions(rvec x[], real weight[], const int nat, dvec dsumvec)
 {

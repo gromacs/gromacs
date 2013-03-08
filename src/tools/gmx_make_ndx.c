@@ -1512,14 +1512,20 @@ int gmx_make_ndx(int argc, char *argv[])
         "When a run input file is supplied you can also select on atom type.",
         "You can use NOT, AND and OR, you can split groups",
         "into chains, residues or atoms. You can delete and rename groups.[PAR]",
-        "The atom numbering in the editor and the index file starts at 1."
+        "The atom numbering in the editor and the index file starts at 1.[PAR]",
+        "The [TT]-twin[tt] switch duplicates all index groups with an offset of",
+        "[TT]-natoms[tt], which is useful for Computational Electrophysiology",
+        "double-layer membrane setups."
     };
 
     static int      natoms   = 0;
     static gmx_bool bVerbose = FALSE;
+    static gmx_bool bDuplic  = FALSE;
     t_pargs         pa[]     = {
         { "-natoms",  FALSE, etINT, {&natoms},
           "set number of atoms (default: read from coordinate or index file)" },
+        { "-twin",     FALSE, etBOOL, {&bDuplic},
+          "Duplicate all index groups with an offset of -natoms" },
         { "-verbose", FALSE, etBOOL, {&bVerbose},
           "HIDDENVerbose output" }
     };
@@ -1622,7 +1628,7 @@ int gmx_make_ndx(int argc, char *argv[])
 
     edit_index(natoms, atoms, x, block, &gnames, bVerbose);
 
-    write_index(ndxoutfile, block, gnames);
+    write_index(ndxoutfile, block, gnames, bDuplic, natoms);
 
     thanx(stderr);
 

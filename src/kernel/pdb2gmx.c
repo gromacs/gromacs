@@ -1945,7 +1945,7 @@ int cmain(int argc, char *argv[])
                             "(the index file is generated before hydrogens are added)",
                             ftp2fn(efNDX, NFILE, fnm));
                 }
-                write_index(ftp2fn(efNDX, NFILE, fnm), block, gnames);
+                write_index(ftp2fn(efNDX, NFILE, fnm), block, gnames, FALSE, 0);
             }
             for (i = 0; i < block->nr; i++)
             {

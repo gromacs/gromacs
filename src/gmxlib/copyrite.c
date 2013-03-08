@@ -612,7 +612,13 @@ void please_cite(FILE *fp, const char *key)
           "Garmay Yu, Shvetsov A, Karelov D, Lebedev D, Radulescu A, Petukhov M, Isaev-Ivanov V",
           "Correlated motion of protein subdomains and large-scale conformational flexibility of RecA protein filament",
           "Journal of Physics: Conference Series",
-          340, 2012, "012094" }
+          340, 2012, "012094" },
+        { "Kutzner2011",
+          "C. Kutzner, H. Grubmuller, B. L. de Groot, and U. Zachariae",
+          "Computational Electrophysiology: The Molecular Dynamics of Ion Channel Permeation and Selectivity in Atomistic Detail",
+          "Biophys. J.",
+          101, 2011, "809-817"
+        }
     };
 #define NSTR (int)asize(citedb)
 
