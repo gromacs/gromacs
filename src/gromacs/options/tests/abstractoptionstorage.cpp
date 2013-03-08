@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -53,6 +53,8 @@
 #include "gromacs/options/optionstoragetemplate.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/utility/exceptions.h"
+
+#include "testutils/testasserts.h"
 #include "testutils/testexceptions.h"
 
 namespace
@@ -194,9 +196,9 @@ TEST(AbstractOptionStorageTest, HandlesSetInFinish)
     }
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_EQ(1U, values.size());
     EXPECT_EQ("dummy", values[0]);
@@ -227,14 +229,14 @@ TEST(AbstractOptionStorageTest, HandlesValueRemoval)
     }
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("name"));
-    EXPECT_NO_THROW(assigner.appendValue("a"));
-    EXPECT_NO_THROW(assigner.appendValue("b"));
-    EXPECT_NO_THROW(assigner.appendValue("c"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("name"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("a"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("b"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("c"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_EQ(2U, values.size());
     EXPECT_EQ("a", values[0]);
@@ -267,13 +269,13 @@ TEST(AbstractOptionStorageTest, HandlesValueAddition)
     }
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("name"));
-    EXPECT_NO_THROW(assigner.appendValue("a"));
-    EXPECT_NO_THROW(assigner.appendValue("b"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("name"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("a"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("b"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_EQ(3U, values.size());
     EXPECT_EQ("a", values[0]);
@@ -306,13 +308,13 @@ TEST(AbstractOptionStorageTest, HandlesTooManyValueAddition)
     }
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("name"));
-    EXPECT_NO_THROW(assigner.appendValue("a"));
-    EXPECT_THROW(assigner.appendValue("b"), gmx::InvalidInputError);
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("name"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("a"));
+    EXPECT_THROW_GMX(assigner.appendValue("b"), gmx::InvalidInputError);
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_TRUE(values.empty());
 }
@@ -341,12 +343,12 @@ TEST(AbstractOptionStorageTest, AllowsEmptyValues)
     }
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    EXPECT_NO_THROW(assigner.startOption("name"));
-    EXPECT_NO_THROW(assigner.appendValue("a"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    EXPECT_NO_THROW_GMX(assigner.startOption("name"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("a"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     ASSERT_EQ(0U, values.size());
 }

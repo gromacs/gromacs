@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/analysisdata/arraydata.h"
 
 #include "testutils/datatest.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -76,9 +77,9 @@ TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(data.valuesReady());
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(data.valuesReady());
 }
 
 TEST_F(AnalysisArrayDataTest, StorageWorks)
@@ -88,8 +89,8 @@ TEST_F(AnalysisArrayDataTest, StorageWorks)
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 
-    ASSERT_NO_THROW(addStaticStorageCheckerModule(input, -1, &data));
-    ASSERT_NO_THROW(data.valuesReady());
+    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, -1, &data));
+    ASSERT_NO_THROW_GMX(data.valuesReady());
 }
 
 } // namespace

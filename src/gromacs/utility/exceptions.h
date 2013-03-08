@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -386,6 +386,9 @@ class NotImplementedError : public APIError
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.
  *
+ * \param[in] fp  File to format the message to.
+ * \param[in] ex  Exception to format.
+ *
  * Does not throw.  If memory allocation fails or some other error occurs
  * while formatting the error, tries to print a reasonable alternative message.
  *
@@ -408,6 +411,18 @@ class NotImplementedError : public APIError
  * \endcode
  */
 void printFatalErrorMessage(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Formats an error message for reporting an exception.
+ *
+ * \param[in] ex  Exception to format.
+ * \returns   Formatted string containing details of \p ex.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * Currently, the output format is useful mainly for tests and debugging
+ * purposes; additional flags for controlling the format can be added if other
+ * uses for the function arise.
+ */
+std::string formatException(const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.

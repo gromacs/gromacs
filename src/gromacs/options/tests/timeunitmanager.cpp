@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,6 +48,8 @@
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/options/timeunitmanager.h"
 
+#include "testutils/testasserts.h"
+
 namespace
 {
 
@@ -69,21 +71,21 @@ TEST(TimeUnitManagerTest, ScalesAssignedOptionValue)
     gmx::Options         options(NULL, NULL);
     double               value = 0.0;
     using gmx::DoubleOption;
-    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1.5"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
     manager.setTimeUnit(gmx::eTimeUnit_ns);
     manager.scaleTimeOptions(&options);
     EXPECT_DOUBLE_EQ(1500, value);
 
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     manager.setTimeUnit(gmx::eTimeUnit_us);
     manager.scaleTimeOptions(&options);
@@ -105,16 +107,16 @@ TEST(TimeUnitManagerTest, DoesNotScaleDefaultValues)
     gmx::Options         options(NULL, NULL);
     double               value = 1.5, value2 = 0.0;
     using gmx::DoubleOption;
-    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
-    ASSERT_NO_THROW(options.addOption(DoubleOption("q").store(&value2).timeValue()
-                                          .defaultValueIfSet(2.5)));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("q").store(&value2).timeValue()
+                                              .defaultValueIfSet(2.5)));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("q"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("q"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_DOUBLE_EQ(2.5, value2);
     manager.setTimeUnit(gmx::eTimeUnit_ns);
@@ -130,18 +132,18 @@ TEST(TimeUnitManagerTest, ScalesUserInputWithMultipleSources)
     gmx::Options         options(NULL, NULL);
     double               value = 0.0;
     using gmx::DoubleOption;
-    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1.5"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
     gmx::OptionsAssigner assigner2(&options);
-    EXPECT_NO_THROW(assigner2.start());
-    EXPECT_NO_THROW(assigner2.finish());
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(assigner2.start());
+    EXPECT_NO_THROW_GMX(assigner2.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
     manager.setTimeUnit(gmx::eTimeUnit_ns);
@@ -156,25 +158,25 @@ TEST(TimeUnitManagerTest, TimeUnitOptionWorks)
     gmx::Options         options(NULL, NULL);
     double               value = 0.0;
     using gmx::DoubleOption;
-    ASSERT_NO_THROW(options.addOption(DoubleOption("p").store(&value).timeValue()));
-    ASSERT_NO_THROW(manager.addTimeUnitOption(&options, "tu"));
+    ASSERT_NO_THROW_GMX(options.addOption(DoubleOption("p").store(&value).timeValue()));
+    ASSERT_NO_THROW_GMX(manager.addTimeUnitOption(&options, "tu"));
 
     gmx::OptionsAssigner assigner(&options);
-    EXPECT_NO_THROW(assigner.start());
-    ASSERT_NO_THROW(assigner.startOption("p"));
-    ASSERT_NO_THROW(assigner.appendValue("1.5"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    ASSERT_NO_THROW(assigner.startOption("tu"));
-    ASSERT_NO_THROW(assigner.appendValue("ns"));
-    EXPECT_NO_THROW(assigner.finishOption());
-    EXPECT_NO_THROW(assigner.finish());
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("p"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("1.5"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    ASSERT_NO_THROW_GMX(assigner.startOption("tu"));
+    ASSERT_NO_THROW_GMX(assigner.appendValue("ns"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
 
     EXPECT_DOUBLE_EQ(1.5, value);
     EXPECT_EQ(gmx::eTimeUnit_ns, manager.timeUnit());
     manager.scaleTimeOptions(&options);
     EXPECT_DOUBLE_EQ(1500, value);
 
-    EXPECT_NO_THROW(options.finish());
+    EXPECT_NO_THROW_GMX(options.finish());
 }
 
 } // namespace

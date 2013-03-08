@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mock_helptopic.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -152,7 +153,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -168,7 +169,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -184,7 +185,7 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     using ::testing::_;
     EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -203,7 +204,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -222,7 +223,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -241,7 +242,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 

@@ -51,6 +51,8 @@
 #include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 
+#include "testutils/testasserts.h"
+
 namespace
 {
 
@@ -59,9 +61,9 @@ TEST(OptionsTest, FailsOnNonsafeStorage)
     gmx::Options options(NULL, NULL);
     int          value = -1;
     using gmx::IntegerOption;
-    ASSERT_THROW(options.addOption(IntegerOption("name").store(&value)
-                                       .multiValue()),
-                 gmx::APIError);
+    ASSERT_THROW_GMX(options.addOption(IntegerOption("name").store(&value)
+                                           .multiValue()),
+                     gmx::APIError);
 }
 
 TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
@@ -70,10 +72,10 @@ TEST(OptionsTest, FailsOnIncorrectEnumDefaultValue)
     std::string                 value;
     const char * const          allowed[] = { "none", "test", "value" };
     using gmx::StringOption;
-    ASSERT_THROW(options.addOption(StringOption("name").store(&value)
-                                       .enumValue(allowed)
-                                       .defaultValue("unknown")),
-                 gmx::APIError);
+    ASSERT_THROW_GMX(options.addOption(StringOption("name").store(&value)
+                                           .enumValue(allowed)
+                                           .defaultValue("unknown")),
+                     gmx::APIError);
 }
 
 } // namespace

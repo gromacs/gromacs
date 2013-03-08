@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 
 #include "testutils/datatest.h"
 #include "testutils/mock_datamodule.h"
+#include "testutils/testasserts.h"
 
 using gmx::test::MockAnalysisDataModule;
 using gmx::test::MockAnalysisDataModulePointer;
@@ -99,11 +100,11 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
     data.setColumnCount(2);
 
     MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
-    EXPECT_THROW(data.addModule(mod1), gmx::APIError);
+    EXPECT_THROW_GMX(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
             new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMulticolumn));
-    EXPECT_NO_THROW(data.addModule(mod2));
+    EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
 /*
@@ -117,11 +118,11 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
     data.setMultipoint(true);
 
     MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
-    EXPECT_THROW(data.addModule(mod1), gmx::APIError);
+    EXPECT_THROW_GMX(data.addModule(mod1), gmx::APIError);
 
     MockAnalysisDataModulePointer mod2(
             new MockAnalysisDataModule(gmx::AnalysisDataModuleInterface::efAllowMultipoint));
-    EXPECT_NO_THROW(data.addModule(mod2));
+    EXPECT_NO_THROW_GMX(data.addModule(mod2));
 }
 
 
@@ -147,9 +148,9 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectly)
     gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 /*
@@ -163,9 +164,9 @@ TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
     gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 0, 2, &data));
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 2, 1, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 2, 1, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 /*
@@ -178,18 +179,18 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
     gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 1, 2, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 1, 2, &data));
     gmx::AnalysisDataHandle          handle1;
     gmx::AnalysisDataHandle          handle2;
     gmx::AnalysisDataParallelOptions options(2);
-    ASSERT_NO_THROW(handle1 = data.startData(options));
-    ASSERT_NO_THROW(handle2 = data.startData(options));
-    ASSERT_NO_THROW(presentDataFrame(input, 1, handle1));
-    ASSERT_NO_THROW(presentDataFrame(input, 0, handle2));
-    ASSERT_NO_THROW(presentDataFrame(input, 2, handle1));
-    ASSERT_NO_THROW(handle1.finishData());
-    ASSERT_NO_THROW(handle2.finishData());
+    ASSERT_NO_THROW_GMX(handle1 = data.startData(options));
+    ASSERT_NO_THROW_GMX(handle2 = data.startData(options));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input, 1, handle1));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input, 0, handle2));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input, 2, handle1));
+    ASSERT_NO_THROW_GMX(handle1.finishData());
+    ASSERT_NO_THROW_GMX(handle2.finishData());
 }
 
 /*
@@ -202,8 +203,8 @@ TEST_F(AnalysisDataTest, FullStorageWorks)
     gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
-    ASSERT_NO_THROW(addStaticStorageCheckerModule(input, -1, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, -1, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 /*
@@ -217,8 +218,8 @@ TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
     data.setColumnCount(input.columnCount());
     ASSERT_TRUE(data.requestStorage(-1));
 
-    ASSERT_NO_THROW(presentAllData(input, &data));
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
 }
 
 /*
@@ -231,8 +232,8 @@ TEST_F(AnalysisDataTest, LimitedStorageWorks)
     gmx::AnalysisData                data;
     data.setColumnCount(input.columnCount());
 
-    ASSERT_NO_THROW(addStaticStorageCheckerModule(input, 1, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, 1, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 //! Input data for multipoint gmx::AnalysisData tests.
@@ -253,9 +254,9 @@ TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
 
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 /*
@@ -270,9 +271,9 @@ TEST_F(AnalysisDataTest, MultipointCallsColumnModuleCorrectly)
     data.setColumnCount(input.columnCount());
     data.setMultipoint(true);
 
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 0, 2, &data));
-    ASSERT_NO_THROW(addStaticColumnCheckerModule(input, 2, 1, &data));
-    ASSERT_NO_THROW(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 2, 1, &data));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
 } // namespace
