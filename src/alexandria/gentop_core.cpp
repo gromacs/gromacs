@@ -116,28 +116,28 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
         pr_rvecs(debug,0,"GENTOP",box,DIM);
     for(i=0; (i<ang->nr); i++) 
     {
-        ai = ang->param[i].AI;
-        aj = ang->param[i].AJ;
-        ak = ang->param[i].AK;
+        ai = ang->param[i].a[0];
+        aj = ang->param[i].a[1];
+        ak = ang->param[i].a[2];
         th = RAD2DEG*bond_angle(x[ai],x[aj],x[ak],bPBC ? &pbc : NULL,
                                 r_ij,r_kj,&costh,&t1,&t2);
         if (debug)
             fprintf(debug,"GENTOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
                     ai,aj,ak,norm(r_ij),norm(r_kj),th);
-        ang->param[i].C0 = th;
+        ang->param[i].c[0] = th;
     }
     for(i=0; (i<dih->nr); i++) 
     {
-        ai = dih->param[i].AI;
-        aj = dih->param[i].AJ;
-        ak = dih->param[i].AK;
-        al = dih->param[i].AL;
+        ai = dih->param[i].a[0];
+        aj = dih->param[i].a[1];
+        ak = dih->param[i].a[2];
+        al = dih->param[i].a[3];
         ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],bPBC ? & pbc : NULL,
                                r_ij,r_kj,r_kl,m,n,&sign,&t1,&t2,&t3);
         if (debug)
             fprintf(debug,"GENTOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
                     ai,aj,ak,al,norm(r_ij),norm(r_kj),norm(r_kl),ph);
-        dih->param[i].C0 = ph;
+        dih->param[i].c[0] = ph;
     }
 }
 
@@ -204,13 +204,13 @@ static int pcompar(const void *a, const void *b)
     pa=(t_param *)a;
     pb=(t_param *)b;
   
-    d = pa->AI - pb->AI;
+    d = pa->a[0] - pb->a[0];
     if (d == 0) 
-        d = pa->AJ - pb->AJ;
+        d = pa->a[1] - pb->a[1];
     if (d == 0) 
-        d = pa->AK - pb->AK;
+        d = pa->a[2] - pb->a[2];
     if (d == 0) 
-        d = pa->AL - pb->AL;
+        d = pa->a[3] - pb->a[3];
     /*if (d == 0)
       return strlen(pb->s) - strlen(pa->s);
       else*/
@@ -250,20 +250,20 @@ static void my_clean_excls(int nr,t_excls excls[])
 static void clean_thole(t_params *ps)
 {
     int     i,j;
-    atom_id a,ai,aj,ak,al;
+    atom_id a;
   
     if (ps->nr > 0) 
     {
         /* swap atomnumbers in bond if first larger than second: */
         for(i=0; (i<ps->nr); i++)
-            if ( ps->param[i].AK < ps->param[i].AI ) 
+            if ( ps->param[i].a[2] < ps->param[i].a[0] ) 
             {
-                a = ps->param[i].AI;
-                ps->param[i].AI = ps->param[i].AK;
-                ps->param[i].AK = a;
-                a = ps->param[i].AJ;
-                ps->param[i].AJ = ps->param[i].AL;
-                ps->param[i].AL = a;
+                a = ps->param[i].a[0];
+                ps->param[i].a[0] = ps->param[i].a[2];
+                ps->param[i].a[2] = a;
+                a = ps->param[i].a[1];
+                ps->param[i].a[1] = ps->param[i].a[3];
+                ps->param[i].a[3] = a;
             }
     
         /* Sort bonds */
@@ -273,10 +273,10 @@ static void clean_thole(t_params *ps)
         j = 1;
         for(i=1; (i<ps->nr); i++) 
         {
-            if ((ps->param[i].AI != ps->param[j-1].AI) ||
-                (ps->param[i].AJ != ps->param[j-1].AJ) ||
-                (ps->param[i].AK != ps->param[j-1].AK) ||
-                (ps->param[i].AL != ps->param[j-1].AL) ) 
+            if ((ps->param[i].a[0] != ps->param[j-1].a[0]) ||
+                (ps->param[i].a[1] != ps->param[j-1].a[1]) ||
+                (ps->param[i].a[2] != ps->param[j-1].a[2]) ||
+                (ps->param[i].a[3] != ps->param[j-1].a[3]) ) 
             {
                 cp_param(&(ps->param[j]),&(ps->param[i]));
                 j++;
@@ -436,9 +436,9 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
             (1 == gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol)))
         { 
             ns++;
-            p.AI = renum[i];
-            p.AJ = renum[i]+1;
-            p.C0 = 0.001*pol;
+            p.a[0] = renum[i];
+            p.a[1] = renum[i]+1;
+            p.c[0] = 0.001*pol;
             add_param_to_list(&(plist[F_POLARIZATION]),&p);
         }
     }
@@ -459,8 +459,8 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
         snew(newexcls,newa->nr);
         for(j=0; (j<plist[F_POLARIZATION].nr); j++) 
         {
-            ai = plist[F_POLARIZATION].param[j].AI;
-            aj = plist[F_POLARIZATION].param[j].AJ;
+            ai = plist[F_POLARIZATION].param[j].a[0];
+            aj = plist[F_POLARIZATION].param[j].a[1];
             add_excl(&newexcls[ai],aj);
             add_excl(&newexcls[aj],ai);
         }
@@ -604,8 +604,8 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
                         nh = 0;
                         for(j=0; (j<bonds->nr); j++) 
                         {
-                            ai = bonds->param[j].AI;
-                            aj = bonds->param[j].AJ;
+                            ai = bonds->param[j].a[0];
+                            aj = bonds->param[j].a[1];
                             anri = atoms->atom[ai].atomnumber;
                             anrj = atoms->atom[aj].atomnumber;
                             
@@ -659,7 +659,7 @@ static int *generate_cg_neutral(t_atoms *atoms,gmx_bool bUsePDBcharge)
 {
     int    i,n=1;
     int    *cgnr;
-    double qt=0,mt=0;
+    double qt=0;
   
     snew(cgnr,atoms->nr);
     for(i=0; (i<atoms->nr); i++) 
@@ -683,7 +683,7 @@ static int *generate_cg_group(t_atoms *atoms,t_params *bonds,t_params *pols)
     int    *cgnr;
     gmx_bool   bMV;
     int    monovalent[] = { 0, 1, 9, 17, 35, 53, 85 };
-#define nmv asize(monovalent)
+    int    nmv = asize(monovalent);
     double qaver;
     
     /* Assume that shells and masses have atomnumber 0 */
@@ -704,8 +704,8 @@ static int *generate_cg_group(t_atoms *atoms,t_params *bonds,t_params *pols)
        atoms are bound to something */
     for(j=0; (j<bonds->nr); j++) 
     {
-        ai  = bonds->param[j].AI;
-        aj  = bonds->param[j].AJ;
+        ai  = bonds->param[j].a[0];
+        aj  = bonds->param[j].a[1];
         bMV = FALSE;
         atn = atoms->atom[ai].atomnumber;
         for(k=0; (k<nmv) && !bMV; k++)
@@ -732,8 +732,8 @@ static int *generate_cg_group(t_atoms *atoms,t_params *bonds,t_params *pols)
     /* Rely on the notion that all shells are bound to something */
     for(j=0; (j<pols->nr); j++) 
     {
-        ai = pols->param[j].AI;
-        aj = pols->param[j].AJ;
+        ai = pols->param[j].a[0];
+        aj = pols->param[j].a[1];
         cgnr[aj] = cgnr[ai];
     }
     for(i=0; (i<atoms->nr); i++) 

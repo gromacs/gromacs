@@ -110,7 +110,7 @@ typedef struct {
 
 /* Check the available molprops to see what kind of calculations are stored in there */
 extern t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
-                                    int emp,char *fc_str);
+                                    int emp,const char *fc_str);
 				
 extern void MolPropSort(std::vector<alexandria::MolProp> mp,
                         int alg,gmx_atomprop_t apt,

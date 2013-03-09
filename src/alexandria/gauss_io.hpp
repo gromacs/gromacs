@@ -1,4 +1,5 @@
-/*
+/* 
+ * $Id: gauss_io.h,v 1.8 2009/02/02 21:11:11 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -6,10 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
+ *                        VERSION 4.0.99
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -30,26 +31,34 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _convparm_h
-#define _convparm_h
+#ifndef _gauss_io_h
+#define _gauss_io_h
 
-#include "typedefs.h"
+#include "molprop.hpp"
 
-#ifdef __cplusplus
-extern "C"
+typedef struct gau_atomprop *gau_atomprop_t;
+
+/* read composite method atom data */
+gau_atomprop_t read_gauss_data(void);
+
+void done_gauss_data(gau_atomprop_t gaps);
+
+int gau_atomprop_get_value(gau_atomprop_t gaps,const char *element,
+                           const char *method,
+                           char *desc,double temp,double *value);
+
+void ReadGauss(const char *g98,
+               alexandria::MolProp& mpt,
+               gmx_bool bBabel,
+               gmx_atomprop_t aps,gmx_poldata_t pd,
+               char *molnm,char *iupac,char *conformation,
+               char *basisset,gau_atomprop_t gaps,
+               real th_toler,real ph_toler,
+               int maxpot,gmx_bool bVerbose);
+
+void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield);
+
 #endif
-void convert_params(int atnr,t_params nbtypes[],
-                    t_molinfo *mi,int comb,double reppow,real fudgeQQ,
-                    gmx_mtop_t *mtop);
-
-#ifdef __cplusplus
-extern "C"
-#endif
-int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
-                 real forceparams[MAXFORCEPARAM],int comb,real reppow,
-                 int start,gmx_bool bAppend);
-
-#endif	/* _convparm_h */

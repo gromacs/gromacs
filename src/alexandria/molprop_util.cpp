@@ -796,7 +796,8 @@ static void add_qmc_calc(t_qmcount *qmc,const char *method,const char *basis,con
     }
 }
 
-t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,int emp,char *fc_str)
+t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,int emp,
+                             const char *fc_str)
 {
     alexandria::MolPropIterator     mpi;
     alexandria::ExperimentIterator  ei;

@@ -100,9 +100,9 @@ static gmx_bool is_planar(rvec xi,rvec xj,rvec xk,rvec xl,t_pbc *pbc,
 static gmx_bool is_linear(rvec xi,rvec xj,rvec xk,t_pbc *pbc,
                       real th_toler)
 {
-    int t1,t2,t3;
+    int t1,t2;
     rvec r_ij,r_kj;
-    real costh,sign,th;
+    real costh,th;
   
     th = fabs(RAD2DEG*bond_angle(xi,xj,xk,pbc,r_ij,r_kj,&costh,&t1,&t2));
 		  
@@ -114,19 +114,18 @@ static void calc_bondorder(FILE *fp,
                            double bondorder[])
 {
     int    ai,aj,j,lu;
-    double toler,vtol,tol,dist,bo;
+    double toler,tol,dist,bo;
     char   *unit;
     
     unit = gmx_poldata_get_length_unit(pd);
     lu = string2unit(unit);
     /* Tolerance is 0.002 nm */
     toler = gmx2convert(0.002,lu);
-    vtol = 1e-4;
 
     for(j=0; (j<bonds->nr); j++) 
     {
-        ai = bonds->param[j].AI;
-        aj = bonds->param[j].AJ;
+        ai = bonds->param[j].a[0];
+        aj = bonds->param[j].a[1];
 
         if ((NULL != ats[ai].tp[ats[ai].myat]) && (NULL != ats[aj].tp[ats[aj].myat]))
         {
@@ -285,9 +284,9 @@ static void get_bondorders(FILE *fp,const char *molname,rvec x[],
                            gmx_poldata_t pd,double bondorder[])
 {
     int    lu;
-    int    i,j,ai,aj,bi,nbtot,nbonds;
+    int    i,ai,aj,nbtot,nbonds;
     t_bondsel *bts;
-    int    naW,naG,naB,nbW,nbG,nbB,nbWi;
+    int    naW,naG,naB,nbW,nbG,nbB;
     int    fW,fG,*ibo_grey;
     char   *elem_i,*elem_j,*unit;
     rvec   dx;
@@ -402,7 +401,7 @@ static double minimize_valence(FILE *fp,
                                double bondorder[])
 {
     int    iter,iter2,maxiter=10,iAroma;
-    int    i,j,ai,aj,ntot,j_best,jjj,nnull;
+    int    i,j,ai,aj,ntot,jjj,nnull;
     double valence,ddval,dval,dval_best;
     char   buf[1024],b2[64];
     
@@ -471,7 +470,6 @@ static double minimize_valence(FILE *fp,
         if (ntot < 10000) 
         {
             /* Loop over all possibilities */
-            j_best = NOTSET;
             for(j=0; (j<ntot) && (dval_best > 0); j++)
             {
                 /* Set the atomtypes */
@@ -518,7 +516,6 @@ static double minimize_valence(FILE *fp,
                 if (dval < dval_best)
                 {
                     dval_best = dval;
-                    j_best = j;
                 }
             }
         }
@@ -540,16 +537,14 @@ int nm2type(FILE *fp,const char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
 {
     int     cur = 0;
 #define   prev (1-cur)
-    int     i,j,k,m,n,nonebond,nresolved;
+    int     i,j,nonebond,nresolved;
     int     ai,aj;
     int     type;
-    char    *aname_m,*aname_n,*gt_type;
+    char    *gt_type;
     char    *envptr;
-    char    **ptr;
-    char    *empty_string = "";
+    char    *empty_string = (char *) "";
     t_atsel *ats;
     double  mm,dval;
-    int     bLinear,bPlanar,imm,iter,bbk;
     real    value;
     t_atom  *atom;
     t_param *param;
@@ -585,8 +580,8 @@ int nm2type(FILE *fp,const char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
     }
     /* Fill local bonding arrays */
     for(j=0; (j<bonds->nr); j++) {
-        ai = bonds->param[j].AI;
-        aj = bonds->param[j].AJ;
+        ai = bonds->param[j].a[0];
+        aj = bonds->param[j].a[1];
         ats[ai].bbb[ats[ai].nb++] = aj;
         ats[aj].bbb[ats[aj].nb++] = ai;
     }

@@ -6,6 +6,11 @@
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
       
+const char *emp_name[empNR] = 
+{ 
+    "potential", "dipole", "quadrupole", "polarizability", "energy" 
+};
+
 #define GMX_SEND_DATA 19823
 #define GMX_SEND_DONE -666
 CommunicationStatus gmx_send_data(t_commrec *cr,int dest)

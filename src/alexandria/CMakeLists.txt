@@ -5,6 +5,7 @@ set(ALEXANDRIA_SOURCES
 	poldata_xml.c
 	gaussian_integrals.c
 	gmx_simple_comm.c
+	molselect.c
 	gmx_resp.cpp
 	gentop_qgen.cpp
 	gentop_core.cpp
@@ -15,7 +16,6 @@ set(ALEXANDRIA_SOURCES
 	molprop_xml.cpp
         molprop_sqlite3.cpp
         mymol.cpp
-	molselect.c
         gauss_io.cpp
 	slater_integrals.cpp
 	DSlater_1S_1S.cpp
@@ -84,7 +84,7 @@ add_executable(gentop gentop.cpp)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gentop PROPERTIES OUTPUT_NAME "gentop${GMX_BINARY_SUFFIX}")
 
-add_executable(gauss2molprop gauss2molprop.c)
+add_executable(gauss2molprop gauss2molprop.cpp)
 target_link_libraries(gauss2molprop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gauss2molprop PROPERTIES OUTPUT_NAME "gauss2molprop${GMX_BINARY_SUFFIX}")
 
@@ -100,11 +100,11 @@ add_executable(tune_dip tune_dip.cpp)
 target_link_libraries(tune_dip ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_dip PROPERTIES OUTPUT_NAME "tune_dip${GMX_BINARY_SUFFIX}")
 
-add_executable(bastat bastat.c)
+add_executable(bastat bastat.cpp)
 target_link_libraries(bastat ${GMX_EXTRA_LIBRARIES})
 set_target_properties(bastat PROPERTIES OUTPUT_NAME "bastat${GMX_BINARY_SUFFIX}")
 
-add_executable(analyze_mp analyze_mp.c molprop_tables.c)
+add_executable(analyze_mp analyze_mp.cpp molprop_tables.cpp)
 target_link_libraries(analyze_mp ${GMX_EXTRA_LIBRARIES})
 set_target_properties(analyze_mp PROPERTIES OUTPUT_NAME "analyze_mp${GMX_BINARY_SUFFIX}")
 
@@ -120,21 +120,17 @@ add_executable(gen_table gen_table.c)
 target_link_libraries(gen_table ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_table PROPERTIES OUTPUT_NAME "gen_table${GMX_BINARY_SUFFIX}")
 
-add_executable(g_mptest g_mptest.c)
-target_link_libraries(g_mptest ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_mptest PROPERTIES OUTPUT_NAME "g_mptest${GMX_BINARY_SUFFIX}")
+#add_executable(g_mptest g_mptest.c)
+#target_link_libraries(g_mptest ${GMX_EXTRA_LIBRARIES})
+#set_target_properties(g_mptest PROPERTIES OUTPUT_NAME "g_mptest${GMX_BINARY_SUFFIX}")
 
-add_executable(g_merge_mp g_merge_mp.c)
+add_executable(g_merge_mp g_merge_mp.cpp)
 target_link_libraries(g_merge_mp ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_merge_mp PROPERTIES OUTPUT_NAME "g_merge_mp${GMX_BINARY_SUFFIX}")
 
-add_executable(g_mp2csv g_mp2csv.c)
+add_executable(g_mp2csv g_mp2csv.cpp)
 target_link_libraries(g_mp2csv ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_mp2csv PROPERTIES OUTPUT_NAME "g_mp2csv${GMX_BINARY_SUFFIX}")
-
-add_executable(addquote addquote.c)
-target_link_libraries(addquote ${GMX_EXTRA_LIBRARIES})
-set_target_properties(addquote PROPERTIES OUTPUT_NAME "addquote${GMX_BINARY_SUFFIX}")
 
 add_executable(gen_ff gen_ff.c)
 target_link_libraries(gen_ff ${GMX_EXTRA_LIBRARIES})
@@ -155,7 +151,6 @@ install(TARGETS
 	bastat
 	analyze_mp
 	mkyaw
-	addquote
 	gen_ff
 	gen_table
         g_merge_mp

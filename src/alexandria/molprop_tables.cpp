@@ -951,11 +951,11 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
 #define BLEN 1024
     char   lbuf[BLEN],myline[BLEN],mylbuf[BLEN],vbuf[BLEN];
     double calc_val,calc_err,vc;
-    int    nprint;
+    int    nprint,header;
     double dvec[DIM];
     tensor quadrupole;
     real   ds_fac;
-    gmx_bool bSideways,bPrintConf;
+    gmx_bool bSideways,bPrintConf,bOutlier;
   
     bSideways = (qmc->n > 1);
     
@@ -1143,7 +1143,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                         iline++;/*=(1+strlen(molname)/25);*/
                         /*}*/
                 }
-                if ((iline >= (maxline-7*caption)*ds_fac))) 
+                if ((iline >= (maxline-7*caption)*ds_fac)) 
                 {
                     caption = 0;
                     prop_end(fp,bSideways);
