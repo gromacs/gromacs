@@ -116,7 +116,7 @@ static const char *eg2c_names[eg2c_NR] = {
     "Debye", "Electron", "Buckingham" 
 };
 
-int string2unit(char *string)
+int string2unit(const char *string)
 {
     int i;
     

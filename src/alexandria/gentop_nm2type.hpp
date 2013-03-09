@@ -1,5 +1,5 @@
 /*
- * $Id: gentop_qgen.h,v 1.7 2009/01/28 00:04:17 spoel Exp $
+ * $Id: gentop_nm2type.h,v 1.5 2009/02/02 21:11:11 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -34,55 +34,27 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_qgen_h
-#define _gentop_qgen_h
+#ifndef _gentop_nm2type_h
+#define _gentop_nm2type_h
 
-#include <stdio.h>
-#include "grompp.h"
-#include "poldata.h"
-#include "gmx_resp.hpp"
 	
-enum { eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR };
+#include <stdio.h>
+#include "atomprop.h"
+#include "grompp.h"
+#include "gpp_atomtype.h"
+#include "poldata.h"
+#include "gentop_vsite.h"
 
-typedef struct gentop_qgen *gentop_qgen_t;
-
-extern gentop_qgen_t 
-gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,
-		 gmx_atomprop_t aps,
-		 rvec *x,int eqg_model,real hfac,int qtotal,
-		 real epsr);
-
-extern void 
-gentop_qgen_done(t_atoms *atoms,gentop_qgen_t qgen);
-
-extern int 
-generate_charges_sm(FILE *fp,gentop_qgen_t qgen,
-		    gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-		    real tol,int maxiter,gmx_atomprop_t aps,
-		    real hfac,real *chieq);
-
-extern int 
-generate_charges(FILE *fp,
-		 gentop_qgen_t qgen,
-		 gmx_resp_t gr,char *molname,
-		 gmx_poldata_t pd,
-		 t_atoms *atoms,rvec x[],
-		 real tol,int maxiter,int maxcycle,
-		 gmx_atomprop_t aps,real hfac);
-
-extern void 
-qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);
-
-extern gmx_bool 
-bSplitQ(int iModel);
-
-/* The routines below return NOTSET if something is out of the ordinary */
-extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom);
-
-extern int gentop_qgen_get_row(gentop_qgen_t qgen,int atom,int z);
-
-extern double gentop_qgen_get_q(gentop_qgen_t qgen,int atom,int z);
-
-extern double gentop_qgen_get_zeta(gentop_qgen_t qgen,int atom,int z);
-
+extern int nm2type(FILE *fp,const char *molname,
+		   gmx_poldata_t pd,gmx_atomprop_t aps,
+		   t_symtab *tab,t_atoms *atoms,gmx_bool bRing[],
+                   double bondorder[],
+		   gpp_atomtype_t atype,int *nbonds,t_params *bond,
+		   char **smname,
+		   rvec x[],t_pbc *pbc,real th_toler,real phi_toler,
+		   gentop_vsite_t gvt);
+/* Try to determine the atomtype (force field dependent) for the atoms 
+ * with help of the bond list and the coordinates!
+ */
+ 
 #endif

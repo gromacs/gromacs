@@ -13,12 +13,12 @@
  * \inpublicapi
  * \ingroup module_alexandria
  */
-#ifndef _molprop_h
-#define _molprop_h
+#ifndef _molprop_hpp
+#define _molprop_hpp
 
-#include <string.h>
 #include <string>
 #include <vector>
+#include <string.h>
 #include "typedefs.h"
 #include "atomprop.h"
 #include "poldata.h"

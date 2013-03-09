@@ -58,14 +58,14 @@
 #include <vec.h>
 #include <atomprop.h>
 #include <grompp.h>
-#include "molprop.h"
+#include "molprop.hpp"
 #include "gentop_nm2type.h"
 #include "gentop_qgen.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "gaussian_integrals.h"
 #include "slater_integrals.h"
-#include "gmx_resp.h"
+#include "gmx_resp.hpp"
 
 typedef struct gentop_qgen
 {
@@ -220,8 +220,8 @@ static real calc_jab(int iModel,
 
 static void solve_q_eem(FILE *fp,gentop_qgen *qgen,real hardness_factor)
 {
-    double **a,**b,qtot,q;
-    int i,j,n,nn;
+    double **a,qtot,q;
+    int i,j,n;
 
     n = qgen->natom+1;
     a = alloc_matrix(n,n);
@@ -273,8 +273,8 @@ static void solve_q_eem(FILE *fp,gentop_qgen *qgen,real hardness_factor)
 
 static void qgen_update_J00(gentop_qgen *qgen)
 {
-    int    i,j;
-    double zeta_i,zeta_j,j0,j00,hj0,qq;
+    int    i;
+    double j0,qq;
     double zetaH = 1.0698;
   
     for(i=0; (i<qgen->natom); i++) 
@@ -293,7 +293,7 @@ static void qgen_update_J00(gentop_qgen *qgen)
                 qgen->bWarned = TRUE;
             }
         }
-        qgen->Jab[i][i] = max(0,j0);
+        qgen->Jab[i][i] = (j0 > 0) ? j0 : 0;
     }
 }
 
@@ -608,7 +608,7 @@ gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,gmx_atomprop_t aps,
 
 static void qgen_print(FILE *fp,t_atoms *atoms,gentop_qgen *qgen) 
 {
-    int  i,j,k,l,m;
+    int  i,j,k,m;
     rvec mu = { 0, 0, 0 };
     real qq;
     
@@ -761,8 +761,8 @@ int generate_charges_sm(FILE *fp,
                         real hfac,real *chieq)
 {
     real       *qq = NULL;
-    int        i,j,iter,eQGEN;
-    real       rms,mu;
+    int        i,j,iter;
+    real       rms;
 
     qgen_check_support(qgen,pd,aps);
     if (eQGEN_OK == qgen->eQGEN) 
@@ -852,7 +852,7 @@ int generate_charges(FILE *fp,
                      real tol,int maxiter,int maxcycle,
                      gmx_atomprop_t aps,real hfac)
 {
-    int  i,j,cc,eQGEN_min = eQGEN_NOTCONVERGED;
+    int  cc,eQGEN_min = eQGEN_NOTCONVERGED;
     real chieq,chi2,chi2min=GMX_REAL_MAX;
     
     /* Generate charges */

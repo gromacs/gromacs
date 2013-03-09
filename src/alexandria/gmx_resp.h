@@ -41,7 +41,6 @@
 #include <stdio.h>
 #include "grompp.h"
 #include "poldata.h"
-#include "molprop.h"
 #include "atomprop.h"
 #include "gmx_statistics.h"
 
@@ -116,7 +115,9 @@ extern void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,
 extern void gmx_resp_read_log(gmx_resp_t grt,gmx_atomprop_t aps,
 			      gmx_poldata_t pd,const char *fn);
 
-extern void gmx_resp_import_molprop(gmx_resp_t grt,gmx_molprop_t mp,gmx_atomprop_t aps,
+extern void gmx_resp_import_molprop(gmx_resp_t grt,
+                                    gmx_molprop_t mp,
+                                    gmx_atomprop_t aps,
                                     gmx_poldata_t pd,const char *lot);
   
 extern int  gmx_resp_optimize_charges(FILE *fp,gmx_resp_t grt,int maxiter,

@@ -1,5 +1,5 @@
 /*
- * $Id: gentop_qgen.h,v 1.7 2009/01/28 00:04:17 spoel Exp $
+ * $Id: molprop_sqlite3.h,v 1.3 2009/04/05 11:46:57 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -34,55 +34,12 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_qgen_h
-#define _gentop_qgen_h
+#ifndef _molprop_sqlite3_hpp
+#define _molprop_sqlite3_hpp
 
-#include <stdio.h>
-#include "grompp.h"
-#include "poldata.h"
-#include "gmx_resp.hpp"
-	
-enum { eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR };
+#include "molprop.hpp"
 
-typedef struct gentop_qgen *gentop_qgen_t;
-
-extern gentop_qgen_t 
-gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,
-		 gmx_atomprop_t aps,
-		 rvec *x,int eqg_model,real hfac,int qtotal,
-		 real epsr);
-
-extern void 
-gentop_qgen_done(t_atoms *atoms,gentop_qgen_t qgen);
-
-extern int 
-generate_charges_sm(FILE *fp,gentop_qgen_t qgen,
-		    gmx_poldata_t pd,t_atoms *atoms,rvec x[],
-		    real tol,int maxiter,gmx_atomprop_t aps,
-		    real hfac,real *chieq);
-
-extern int 
-generate_charges(FILE *fp,
-		 gentop_qgen_t qgen,
-		 gmx_resp_t gr,char *molname,
-		 gmx_poldata_t pd,
-		 t_atoms *atoms,rvec x[],
-		 real tol,int maxiter,int maxcycle,
-		 gmx_atomprop_t aps,real hfac);
-
-extern void 
-qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);
-
-extern gmx_bool 
-bSplitQ(int iModel);
-
-/* The routines below return NOTSET if something is out of the ordinary */
-extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom);
-
-extern int gentop_qgen_get_row(gentop_qgen_t qgen,int atom,int z);
-
-extern double gentop_qgen_get_q(gentop_qgen_t qgen,int atom,int z);
-
-extern double gentop_qgen_get_zeta(gentop_qgen_t qgen,int atom,int z);
+void ReadSqlite3(const char *sqlite_file,
+                 std::vector<alexandria::MolProp> mp);
 
 #endif

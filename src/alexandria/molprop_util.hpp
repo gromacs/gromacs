@@ -47,9 +47,9 @@ enum { iqmExp, iqmBoth, iqmQM, iqmNR };
 
 /* Returns 1 when OK, 0 otherwise. Level of theory and/or conformation
    and/or type (elec, ESP, RESP) may be set. */
-extern int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
-                   double *value,double *error,double vec[3],
-                   tensor quadrupole);
+//extern int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
+//                   double *value,double *error,double vec[3],
+//                   tensor quadrupole);
 		   
 extern int mp_get_prop(alexandria::MolProp mp,int eGP,int iQM,char *lot,
                        char *conf,char *type,double *value);
@@ -112,9 +112,8 @@ typedef struct {
 extern t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
                                     int emp,char *fc_str);
 				
-/* Routines for sending and receiving a molprop */
-extern void gmx_molprop_send(t_commrec *cr,int dest,alexandria::MolProp mp);
-
-extern alexandria::MolProp gmx_molprop_receive(t_commrec *cr,int from);
+extern void MolPropSort(std::vector<alexandria::MolProp> mp,
+                        int alg,gmx_atomprop_t apt,
+                        gmx_molselect_t gms);
 
 #endif

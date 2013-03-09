@@ -1,5 +1,5 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- * $Id: gentop_resp.c,v 1.3 2009/01/28 00:04:17 spoel Exp $
+/* 
+ * $Id: gmx_resp.cpp,v 1.3 2009/01/28 00:04:17 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -72,8 +72,7 @@
 #include <atomprop.h>
 #include "gaussian_integrals.h"
 #include "slater_integrals.h"
-#include "molprop.h"
-#include "gmx_resp.h"
+#include "gmx_resp.hpp"
 #include "gentop_qgen.h"
 #include "nmsimplex.h"
 
@@ -106,7 +105,7 @@ typedef struct gmx_resp
 } gmx_resp;
 
 void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
-                 char *atomtype,gmx_poldata_t pd,
+                 const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms)
 {
     int  k,zz;
@@ -175,9 +174,6 @@ gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int iModel,
                          const char *dzatoms)
 {
     gmx_resp_t gr;
-    double     x,y,z,V;
-    int        i,m;
-    rvec       ccc;
     
     snew(gr,1);
     gr->qtot      = qtot;
@@ -212,7 +208,7 @@ gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int iModel,
 void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
                             t_symtab *symtab,rvec **x)
 {
-    int   i,j;
+    int   i;
     const char  *rnm;
     
     init_t_atoms(atoms,gr->natom,TRUE);
@@ -353,9 +349,7 @@ void gmx_resp_add_param(gmx_resp_t gr,int atom,int eparm,int zz)
 
 void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,int *symmetric_atoms)
 {
-    double     x,y,z,V,q;
-    int        i,j,k,m,zz,z2gsl;
-    rvec       ccc;
+    int        i,k,zz;
     
     if (NULL == gr->ra)
         gmx_fatal(FARGS,"resp_atom struct not initialized");
@@ -446,7 +440,6 @@ void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,int *symmetric_at
 void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,char *title,output_env_t oenv)
 {
     FILE   *fp;
-    real   *pot;
     gmx_stats_t gs;
     real   *x,*y;
     int    i,nbin=100;
@@ -474,7 +467,7 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,const char *cube_fn
 {
     FILE   *fp;
     int    i,m,ix,iy,iz,zz;
-    real   pp,q,r,rmin,dr=0.01;
+    real   pp,q,r,rmin;
     rvec   dx;
     gmx_stats_t gst = NULL,ppcorr = NULL;
     
@@ -596,8 +589,7 @@ void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly)
     char   **strings;
     gmx_bool   bOK;
     double lx,ly,lz,pp,qq; 
-    int    nlines,line=0,k,m,ix,iy,iz,j,n,anr,nxyz[DIM];
-    rvec   sub;
+    int    nlines,line=0,m,ix,iy,iz,n,anr,nxyz[DIM];
     double origin[DIM],space[DIM];
     const  char   *forms[] = { "%lf", "%*s%lf", "%*s%*s%lf", "%*s%*s%*s%lf", 
                         "%*s%*s%*s%*s%lf", "%*s%*s%*s%*s%*s%lf" };
@@ -719,7 +711,6 @@ void gmx_resp_copy_grid(gmx_resp_t dest,gmx_resp_t src)
 void gmx_resp_make_grid(gmx_resp_t gr,real spacing,matrix box,rvec x[])
 {
     int  i,j,k,m,n;
-    real bbb,xx,yy,zz;
     rvec xyz;
   
     if (0 != gr->nesp)
@@ -865,7 +856,6 @@ void gmx_resp_read(gmx_resp_t gr,const char *fn)
     FILE *fp;
     double x,y,z,V;
     int i,natom,nesp,charge;
-    rvec ccc;
     
     fp = ffopen(fn,"r");
     (void) fscanf(fp,"%d%d%d",&natom,&nesp,&charge);
@@ -920,12 +910,11 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
 /* Read a gaussian log file */
     char **strings=NULL;
     char sbuf[STRLEN];
-    int  nstrings,atomiccenter=-1,atomicnumber=-1;
+    int  nstrings,atomicnumber=-1;
     double x,y,z,V;
-    int i,k,kk,zz,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
+    int i,k,kk,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
     gmx_bool bWarnESP=FALSE;
     gmx_bool bAtomicCenter=FALSE;
-    gmx_bool bGINC=FALSE;
     
     nstrings = get_file(fn,&strings);
     natom = 0;
@@ -1064,7 +1053,6 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
         }
         else if (strstr(strings[i],"GINC")) 
         {
-            bGINC = TRUE;
             trim(strings[i]);
         }
         sfree(strings[i]);
@@ -1091,72 +1079,67 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     }
 }
 
-void gmx_resp_import_molprop(gmx_resp_t gr,gmx_molprop_t mp,gmx_atomprop_t aps,gmx_poldata_t pd,const char *lot)
+void gmx_resp_import_molprop(gmx_resp_t gr,
+                             alexandria::MolProp& mp,
+                             gmx_atomprop_t aps,gmx_poldata_t pd,const char *lot)
 {
-    int i,ref,calcref,espid,atomid,atomref,atomnumber;
-    char *method,*basisset,*xyz_unit,*V_unit,*atomname;
-    char buf[STRLEN];
-    double x,y,z,V;
+    alexandria::CalculationIterator ci;
+    alexandria::CalcAtomIterator cai;
+    alexandria::ElectrostaticPotentialIterator epi;
     
-    gr->stoichiometry = gmx_molprop_get_formula(mp);
-    gr->qsum = gr->qtot = gmx_molprop_get_charge(mp);
+    int espid,atomid,atomnumber,xunit;
+    std::string xyz_unit,V_unit;
+    double x,y,z;
     
-    ref = 0;
-    while (1 == gmx_molprop_get_calculation(mp,NULL,&method,&basisset,NULL,NULL,NULL,&calcref)) 
-    {
-        sprintf(buf,"%s/%s",method,basisset);
-        sfree(method);
-        sfree(basisset);
-        if (strcasecmp(lot,buf) == 0) 
-        {
-            ref = calcref;
-            break;
-        }
-    }
-    if (0 != ref)
+    gr->stoichiometry = strdup(mp.GetFormula().c_str());
+    gr->qsum = gr->qtot = mp.GetCharge();
+    
+    ci = mp.GetLot(lot);
+    if (ci != mp.EndCalculation())
     {
         /* Atoms first */
-        gr->natom = gmx_molprop_calc_get_natom(mp,ref);
+        gr->natom = mp.NAtom();
         
         snew(gr->x,gr->natom);
         snew(gr->ra,gr->natom);
-        while(1 == gmx_molprop_calc_get_atom(mp,ref,&atomname,NULL,&atomid,&atomref))
+        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
         {
+            atomid = cai->GetAtomid();
             range_check(atomid,1,gr->natom+1);
-            atomnumber = gmx_atomprop_atomnumber(aps,atomname);
-            gmx_ra_init(&gr->ra[atomid-1],atomnumber,-1,atomname,pd,
-                        gr->iModel,gr->dzatoms);
-            if (1 == gmx_molprop_calc_get_atomcoords(mp,ref,atomref,
-                                                     &xyz_unit,&x,&y,&z))
-            {
-                gr->x[atomid-1][XX] = convert2gmx(x,string2unit(xyz_unit));
-                gr->x[atomid-1][YY] = convert2gmx(y,string2unit(xyz_unit));
-                gr->x[atomid-1][ZZ] = convert2gmx(z,string2unit(xyz_unit));
-            }
+            atomnumber = gmx_atomprop_atomnumber(aps,cai->GetName().c_str());
+            gmx_ra_init(&gr->ra[atomid-1],atomnumber,-1,cai->GetName().c_str(),
+                        pd,gr->iModel,gr->dzatoms);
+            xyz_unit = cai->GetUnit().c_str();
+            xunit = string2unit(xyz_unit.c_str());
+            cai->GetCoords(&x,&y,&z);
+            gr->x[atomid-1][XX] = convert2gmx(x,xunit);
+            gr->x[atomid-1][YY] = convert2gmx(y,xunit);
+            gr->x[atomid-1][ZZ] = convert2gmx(z,xunit);
         }
         
         /* ESP points then */
-        gr->nesp = gmx_molprop_get_npotential(mp,ref);
+        gr->nesp = ci->NPotential();
         snew(gr->pot,gr->nesp);
         snew(gr->pot_calc,gr->nesp);
         snew(gr->esp,gr->nesp);
-        while(1 == gmx_molprop_get_potential(mp,ref,&xyz_unit,&V_unit,
-                                             &espid,&x,&y,&z,&V)) 
+        for(epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
         {
+            espid = epi->GetEspid();
             range_check(espid,1,gr->nesp+1);
-            gr->esp[espid-1][XX] = convert2gmx(x,string2unit(xyz_unit));
-            gr->esp[espid-1][YY] = convert2gmx(y,string2unit(xyz_unit));
-            gr->esp[espid-1][ZZ] = convert2gmx(z,string2unit(xyz_unit));
-            gr->pot[espid-1]     = convert2gmx(V,string2unit(V_unit));
-            sfree(xyz_unit);
-            sfree(V_unit);
+            xyz_unit = epi->GetXYZunit();
+            xunit = string2unit(xyz_unit.c_str());
+            V_unit = epi->GetVunit();
+            gr->esp[espid-1][XX] = convert2gmx(epi->GetX(),xunit);
+            gr->esp[espid-1][YY] = convert2gmx(epi->GetY(),xunit);
+            gr->esp[espid-1][ZZ] = convert2gmx(epi->GetZ(),xunit);
+            gr->pot[espid-1]     = convert2gmx(epi->GetV(),string2unit(V_unit.c_str()));
         }
     }
     else 
     {
         gr->natom = 0;
         gr->nesp = 0;
-        fprintf(stderr,"No calculation for %s with LOT %s\n",gmx_molprop_get_molname(mp),lot);
+        fprintf(stderr,"No calculation for %s with LOT %s\n",mp.GetMolname().c_str(),lot);
     }
 }
 
@@ -1546,11 +1529,10 @@ void gmx_resp_destroy(gmx_resp_t gr)
 void gmx_resp_potcomp(gmx_resp_t gr,const char *potcomp,
                       const char *pdbdiff,output_env_t oenv)
 {
-    int i;
-    double ad,rd,pp,exp,eem;
-    FILE *fp;
-    char buf[STRLEN];
-    int unit = eg2c_Hartree_e;
+    int    i;
+    double pp,exp,eem;
+    FILE   *fp;
+    int    unit = eg2c_Hartree_e;
     
     if (NULL != potcomp) 
     {

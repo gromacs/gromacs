@@ -1,22 +1,22 @@
 
 set(ALEXANDRIA_SOURCES
 	xml_util.c
-        mymol.c
 	poldata.c
 	poldata_xml.c
 	gaussian_integrals.c
 	gmx_simple_comm.c
-	gmx_resp.c
-	gentop_qgen.c
-	gentop_core.c
-	gentop_nm2type.c
-	gentop_vsite.c
-	molprop.c
-	molprop_util.c
-	molprop_xml.c
-        molprop_sqlite3.c
+	gmx_resp.cpp
+	gentop_qgen.cpp
+	gentop_core.cpp
+	gentop_nm2type.cpp
+	gentop_vsite.cpp
+	molprop.cpp
+	molprop_util.cpp
+	molprop_xml.cpp
+        molprop_sqlite3.cpp
+        mymol.cpp
 	molselect.c
-        gmx_gauss_io.cpp
+        gauss_io.cpp
 	slater_integrals.cpp
 	DSlater_1S_1S.cpp
 	DSlater_1S_2S.cpp 
@@ -80,7 +80,7 @@ add_executable(g_slater_test g_slater_test.c)
 target_link_libraries(g_slater_test ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_slater_test PROPERTIES OUTPUT_NAME "g_slater_test${GMX_BINARY_SUFFIX}")
 
-add_executable(gentop gentop.c)
+add_executable(gentop gentop.cpp)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gentop PROPERTIES OUTPUT_NAME "gentop${GMX_BINARY_SUFFIX}")
 
@@ -88,15 +88,15 @@ add_executable(gauss2molprop gauss2molprop.c)
 target_link_libraries(gauss2molprop ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gauss2molprop PROPERTIES OUTPUT_NAME "gauss2molprop${GMX_BINARY_SUFFIX}")
 
-add_executable(tune_pol tune_pol.c)
+add_executable(tune_pol tune_pol.cpp)
 target_link_libraries(tune_pol ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_pol PROPERTIES OUTPUT_NAME "tune_pol${GMX_BINARY_SUFFIX}")
 
-add_executable(tune_fc tune_fc.c)
+add_executable(tune_fc tune_fc.cpp)
 target_link_libraries(tune_fc ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_fc PROPERTIES OUTPUT_NAME "tune_fc${GMX_BINARY_SUFFIX}")
 
-add_executable(tune_dip tune_dip.c)
+add_executable(tune_dip tune_dip.cpp)
 target_link_libraries(tune_dip ${GMX_EXTRA_LIBRARIES})
 set_target_properties(tune_dip PROPERTIES OUTPUT_NAME "tune_dip${GMX_BINARY_SUFFIX}")
 

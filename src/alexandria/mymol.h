@@ -6,9 +6,9 @@
 #include "vsite.h"
 #include "gpp_atomtype.h"
 #include "atomprop.h"
-#include "gmx_resp.h"
+#include "gmx_resp.hpp"
 #include "gentop_qgen.h"
-#include "molprop.h"
+//#include "molprop.h"
 #include "molselect.h"
 #include "poldata.h"
 

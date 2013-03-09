@@ -152,7 +152,7 @@ extern "C" {
   extern double gmx2convert(double x,int unit);
 
   /* Convert the string to one of the units supported. Returns -1 if not found. */
-  extern int string2unit(char *string);
+  extern int string2unit(const char *string);
   
   /* Convert the unit to a string. Return NULL when unit is out of range. */
   extern const char *unit2string(int unit);

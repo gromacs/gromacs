@@ -864,6 +864,25 @@ CommunicationStatus Experiment::Send(t_commrec *cr,int dest)
     return cs;
 }
 
+CommunicationStatus ElectrostaticPotential::Receive(t_commrec *cr,int src)
+{
+    CommunicationStatus cs;
+    
+    cs = gmx_recv_data(cr,src);
+    
+    if (CS_RECV_DATA == cs)
+    {
+        _xyz_unit.assign(gmx_recv_str(cr,src));
+        _V_unit.assign(gmx_recv_str(cr,src));
+        _espid = gmx_recv_int(cr,src);
+        _x = gmx_recv_double(cr,src);
+        _y = gmx_recv_double(cr,src);
+        _z = gmx_recv_double(cr,src);
+        _V = gmx_recv_double(cr,src);
+    }
+    return cs;
+}
+
 CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr,int dest)
 {
     CommunicationStatus cs;
@@ -879,6 +898,23 @@ CommunicationStatus ElectrostaticPotential::Send(t_commrec *cr,int dest)
         gmx_send_double(cr,dest,_y);
         gmx_send_double(cr,dest,_z);
         gmx_send_double(cr,dest,_V);
+    }
+    return cs;
+}
+
+CommunicationStatus AtomicCharge::Receive(t_commrec *cr,int src)
+{
+    CommunicationStatus cs;
+    
+    cs = GenericProperty::Receive(cr,src);
+    
+    if (CS_RECV_DATA == cs)
+    {
+        cs = gmx_recv_data(cr,src);
+    }
+    if (CS_RECV_DATA == cs)
+    {
+        _q = gmx_recv_double(cr,src);
     }
     return cs;
 }
@@ -949,6 +985,48 @@ CommunicationStatus CalcAtom::Send(t_commrec *cr,int dest)
             cs = qi->Send(cr,dest);
         }
         gmx_send_done(cr,dest);
+    }
+    return cs;
+}
+
+CommunicationStatus Calculation::Receive(t_commrec *cr,int src)
+{
+    CommunicationStatus cs;
+    ElectrostaticPotentialIterator epi;
+    CalcAtomIterator cai;
+    
+    cs = Experiment::Receive(cr,src);
+    
+    if (CS_RECV_DATA == cs)
+    {
+        cs = gmx_recv_data(cr,src);
+    }
+    if (CS_RECV_DATA == cs)
+    {
+        _program.assign(gmx_recv_str(cr,src));
+        _method.assign(gmx_recv_str(cr,src));
+        _basisset.assign(gmx_recv_str(cr,src));
+        _datafile.assign(gmx_recv_str(cr,src));
+
+        cs = gmx_recv_data(cr,src);
+        while (CS_RECV_DATA == cs)
+        {
+            ElectrostaticPotential ep;
+            
+            cs = ep.Receive(cr,src);
+            if (CS_RECV_DATA == cs)
+                AddPotential(ep);
+        }
+        
+        cs = gmx_recv_data(cr,src);
+        while (CS_RECV_DATA == cs)
+        {
+            CalcAtom ca;
+            
+            cs = ca.Receive(cr,src);
+            if (CS_RECV_DATA == cs)
+                AddAtom(ca);
+        }
     }
     return cs;
 }

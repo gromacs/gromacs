@@ -613,7 +613,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
         if (!gmx_fexist(filens[i]))
             continue;
         MolPropRead(filens[i],mp);
-        generate_composition(mp,pd,ap,bForceGenComp,th_toler,ph_toler);
+        generate_composition(mp,pd);//,ap,bForceGenComp,th_toler,ph_toler);
         generate_formula(mp,ap);
         for(mpi=mp.begin(); (mpi<mp.end());)
         {
@@ -622,7 +622,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
         }
     }
     tmp = mpout.size();
-    gmx_molprop_sort(mpout,empSORT_Molname,NULL,NULL);
+    MolPropSort(mpout,empSORT_Molname,NULL,NULL);
     merge_doubles(mpout,doubles,bForceMerge);
     printf("There are %d total molecules after merging.\n",tmp);
       
@@ -633,7 +633,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
     }
     if (sorted) 
     {
-        gmx_molprop_sort(mpout,empSORT_Formula,NULL,NULL);
+        MolPropSort(mpout,empSORT_Formula,NULL,NULL);
         MolPropWrite(sorted,mpout,FALSE);
         dump_mp(mpout);
     }
