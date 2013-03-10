@@ -2721,10 +2721,18 @@ static real cellsize_min_dlb(gmx_domdec_comm_t *comm, int dim_ind, int dim)
 
     cellsize_min = comm->cellsize_min[dim];
 
-    if (!comm->bVacDLBNoLimit && comm->bPMELoadBalDLBLimits)
+    if (!comm->bVacDLBNoLimit)
     {
-        cellsize_min = max(cellsize_min,
-                           comm->PMELoadBal_max_cutoff/comm->cd[dim_ind].np_dlb);
+        /* The cut-off might have changed, e.g. by PME load balacning,
+         * from the value used to set comm->cellsize_min, so check it.
+         */
+        cellsize_min = max(cellsize_min, comm->cutoff/comm->cd[dim_ind].np_dlb);
+
+        if (comm->bPMELoadBalDLBLimits)
+        {
+            /* Check for the cut-off limit set by the PME load balancing */
+            cellsize_min = max(cellsize_min, comm->PMELoadBal_max_cutoff/comm->cd[dim_ind].np_dlb);
+        }
     }
 
     return cellsize_min;

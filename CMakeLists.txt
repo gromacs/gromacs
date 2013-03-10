@@ -23,6 +23,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
 set(PROJECT_VERSION "5.0-dev")
+# The version number of the regressiontest tarball against which this
+# git branch can be tested. Normally, this will be the version of the
+# last patch release. Comment the next line out for branches leading
+# to a major/minor release.
+set(REGRESSIONTEST_VERSION "4.6.1")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -481,11 +486,11 @@ endif (GMX_GSL)
 
 option(GMX_X11 "Use X window system" OFF)
 if (GMX_X11)
-	find_package(X11)
-	# X11 includes/libraries are only set in the ngmx subdirectory!
-	if(X11_FOUND)
-    	set(HAVE_X11 1)
-	endif(X11_FOUND)
+    find_package(X11)
+    # X11 includes/libraries are only set in the ngmx subdirectory!
+    if(NOT X11_FOUND)
+        message(WARNING "X11 include files and/or libraries were not found. Will not build the GROMACS X11-binaries, such as ngmx")
+    endif()
 endif(GMX_X11)
 
 include(ThreadMPI)
