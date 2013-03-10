@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_options Extensible Handling of Options
+/*! \defgroup module_options Extensible Handling of Options (options)
  * \ingroup group_utilitymodules
  * \brief
  * Provides functionality for handling options.
@@ -45,6 +45,70 @@
  * When creating an Options object and adding options, it is possible to add
  * descriptions for individual options as well as for the whole set of options.
  * These can then be used to write out help text.
+ *
+ * The sequence charts below provides an overview of how the options work from
+ * usage perspective.  They include two fictional modules, A and B, that provide
+ * options, and a main routine that manages these.  The first chart shows a
+ * typical initialization sequence, where the main routine creates an options
+ * object, and calls an initOptions() method in each module that can provide
+ * options (the modules may also request their submodules to add their own
+ * options).  Each module uses gmx::Options::addOption() to add the options
+ * they require, and specify output variables into which the options values are
+ * stored.
+ * \msc
+ *     main,
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main box B [ label="main owns all objects" ];
+ *     main => options [ label="create", URL="\ref gmx::Options::Options()" ];
+ *     main => A [ label="initOptions()" ];
+ *     A => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << A;
+ *     main => B [ label="initOptions()" ];
+ *     B => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << B;
+ * \endmsc
+ *
+ * After all options have been specified, they can be parsed.  A parser splits
+ * the input into option-value pairs (one option may have multiple values), and
+ * passes these into the gmx::Options object, which is responsible for
+ * converting them into the appropriate types and storing the values into the
+ * variables provided in the calls to gmx::Options::addOption().
+ * \msc
+ *     main,
+ *     parser [ label="parser" ],
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main => parser [ label="parse()" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> A [ label="set variable" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ * \endmsc
+ *
+ * After all options have been parsed (possibly using multiple different
+ * parsers), gmx::Options::finish() is called.  This performs final
+ * validation of the options and may further adjust the values stored in the
+ * output variables (see documentation on individual option types on when this
+ * may happen).
+ * \msc
+ *     main,
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main => options [ label="finish()", URL="\ref gmx::Options::finish()" ];
+ *     options -> A [ label="set variable" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ * \endmsc
  *
  * Module \ref module_commandline implements classes that assign option values
  * from command line and produce help for programs that use the command line
