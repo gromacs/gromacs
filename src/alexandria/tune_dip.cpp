@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: tune_dip.c,v 1.39 2009/04/12 21:24:26 spoel Exp $
  * 
  *                This source code is part of
@@ -80,18 +80,18 @@
 #include "grompp.h"
 #include "gen_ad.h"
 #include "slater_integrals.h"
-#include "gentop_qgen.h"
-#include "gentop_core.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molprop.h"
-#include "molprop_xml.h"
-#include "molprop_util.h"
 #include "molselect.h"
 #include "mtop_util.h"
 #include "gentop_comm.h"
 #include "nmsimplex.h"
-#include "mymol.h"
+#include "gentop_qgen.hpp"
+#include "gentop_core.hpp"
+#include "molprop.hpp"
+#include "molprop_xml.hpp"
+#include "molprop_util.hpp"
+#include "mymol.hpp"
 
 static void print_stats(FILE *fp,const char *prop,gmx_stats_t lsq,gmx_bool bHeader,
                         char *xaxis,char *yaxis)

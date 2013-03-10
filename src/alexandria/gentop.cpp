@@ -66,17 +66,18 @@
 #include "topdirs.h"
 #include "slater_integrals.h"
 #include "gpp_atomtype.h"
-#include "gmx_resp.h"
-#include "gentop_vsite.h"
-#include "gentop_nm2type.h"
-#include "gentop_core.h"
-#include "gentop_qgen.h"
 #include "atomprop.h"
-#include "molprop_util.h"
-#include "molprop_xml.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "gmx_gauss_io.h"
+#include "gmx_resp.hpp"
+#include "gentop_vsite.hpp"
+#include "gentop_nm2type.hpp"
+#include "gentop_core.hpp"
+#include "gentop_qgen.hpp"
+#include "molprop_util.hpp"
+#include "molprop_xml.hpp"
+#include "gauss_io.hpp"
+#include "mymol.hpp"
 
 enum { edihNo, edihOne, edihAll, edihNR };
 
@@ -118,7 +119,7 @@ static void clean_pdb_names(t_atoms *atoms,t_symtab *tab)
 static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
 {
     int    i,np;
-    double poltot,pol,sigpol,qtot,sptot;
+    double poltot,pol,sigpol,sptot;
     char   *gt_type;
     
     poltot = 0;
@@ -141,9 +142,7 @@ static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
 void put_in_box(int natom,matrix box,rvec x[],real dbox)
 {
     int  i,m;
-    real xx,yy,zz;
-    rvec invxyz;
-    rvec xmin,xmax,xcom,xcob;
+    rvec xmin,xmax,xcom;
   
     clear_rvec(xcom);
     copy_rvec(x[0],xmin);
@@ -163,7 +162,6 @@ void put_in_box(int natom,matrix box,rvec x[],real dbox)
     {
         xcom[m] /= natom;
         box[m][m] = (dbox+xmax[m]-xmin[m]);
-        xcob[m] = box[m][m]/2;
     }
 }
 
@@ -258,11 +256,10 @@ void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
 
 static void get_force_constants(gmx_poldata_t pd,t_params plist[],t_atoms *atoms)
 {
-    int i,j,n,length,ft,k;
-    double xx,sx,cc,bo;
+    int j,n,ft,k;
+    double xx,sx,bo;
     char *params,**ptr;
     
-    length = string2unit(gmx_poldata_get_length_unit(pd));
     ft = gmx_poldata_get_bond_ftype(pd);
     for(j=0; (j<plist[ft].nr); j++) {
         if (1 == gmx_poldata_search_bond(pd,
@@ -376,18 +373,17 @@ int main(int argc, char *argv[])
     matrix     box;          /* box length matrix */
     t_pbc      pbc;
     int        natoms;       /* number of atoms in one molecule  */
-    int        nres;         /* number of molecules? */
-    int        i,j,k,l,m,ndih,dih,cgtp,eQGEN,*symmetric_charges=NULL;
+    int        i,j,dih,cgtp,eQGEN,*symmetric_charges=NULL;
     real       mu;
     gmx_bool   bPDB,bRTP,bTOP;
     t_symtab   symtab;
-    int        nqa=0,iModel,nbond;
+    int        iModel,nbond;
     double     *bondorder;
-    real       cutoff,qtot,mtot;
+    real       qtot,mtot;
     char       *gentop_version = (char *)"v0.99b";
     const char *fn,*xmlf;
-    char       rtp[STRLEN],forcefield[STRLEN],ffdir[STRLEN];
-    char       ffname[STRLEN],suffix[STRLEN],buf[STRLEN],gentopdat[STRLEN];
+    char       forcefield[STRLEN],ffdir[STRLEN];
+    char       ffname[STRLEN],gentopdat[STRLEN];
     gmx_conect gc = NULL;
     const char *potfn,*rhofn,*hisfn,*difffn,*diffhistfn,*reffn;
     gmx_resp_t gr = NULL;
@@ -396,7 +392,8 @@ int main(int argc, char *argv[])
     gentop_qgen_t  qqgen = NULL;
     char qgen_msg[STRLEN];
     gmx_bool   *bRing;
-    gmx_molprop_t *mps=NULL,*mymp=NULL;
+    std::vector<alexandria::MolProp> mps;
+    alexandria::MolPropIterator mpi;
     gau_atomprop_t gaps;
 
     t_filenm fnm[] = {
@@ -421,7 +418,7 @@ int main(int argc, char *argv[])
         { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
+    static real kb = 4e5,kt = 400,kp = 5;
     static real btol=0.2,qtol=1e-6,zmin=5,zmax=100,delta_z=-1;
     static real hfac=0,qweight=1e-3,bhyper=0.1;
     static real th_toler=170,ph_toler=5,watoms=0,spacing=0.1;
@@ -438,7 +435,7 @@ int main(int argc, char *argv[])
 #endif
     static gmx_bool bRemoveDih=FALSE,bQsym=TRUE,bZatype=TRUE,bFitCube=FALSE;
     static gmx_bool bParam=FALSE,bH14=TRUE,bRound=TRUE,bITP,bAddShells=FALSE;
-    static gmx_bool bPairs = TRUE, bPBC = TRUE, bResp = FALSE;
+    static gmx_bool bPairs = TRUE, bPBC = TRUE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
     static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE,bUnique=FALSE;
@@ -448,7 +445,7 @@ int main(int argc, char *argv[])
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
     static const char *cgopt[] = { NULL, "Atom", "Group", "Neutral", NULL };
-    static const char *lot = "B3LYP/aug-cc-pVTZ",*cat="Other";
+    static const char *lot = "B3LYP/aug-cc-pVTZ";
     static const char *dzatoms = "";
     static const char *ff = "alexandria";
     t_pargs pa[] = {
@@ -651,37 +648,41 @@ int main(int argc, char *argv[])
 
     if (strlen(dbname) > 0) 
     {
-        int np;
-    
         mymol.name = strdup(dbname);
         mymol.nr   = 1;
         if (bVerbose)
             printf("Reading molecule database.\n");
-        mps = gmx_molprops_read(opt2fn_null("-mpdb",NFILE,fnm),&np);
-        for(i=0; (i<np); i++) 
+        MolPropRead(opt2fn_null("-mpdb",NFILE,fnm),mps);
+        
+        for(mpi=mps.begin(); (mpi<mps.end()); mpi++)
         {
-            if (strcasecmp(dbname,gmx_molprop_get_molname(mps[i])) == 0)
+            if (strcasecmp(dbname,mpi->GetMolname().c_str()) == 0)
                 break;
         }
-        if (i == np)
+        if (mpi == mps.end())
             gmx_fatal(FARGS,"Molecule %s not found in database",dbname);
-        mymp = &(mps[i]);
     }
     else if (opt2bSet("-g03",NFILE,fnm))
     {
+        alexandria::MolProp mp;
+
         gaps = read_gauss_data();
-        snew(mps,1);
-        mymp = &(mps[0]);
-        mps[0]   = gmx_molprop_read_gauss(opt2fn("-g03",NFILE,fnm),bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
-                                          th_toler,ph_toler,maxpot,bVerbose);
+        ReadGauss(opt2fn("-g03",NFILE,fnm),mp,
+                  bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
+                  th_toler,ph_toler,maxpot,bVerbose);
+        mps.push_back(mp);
+        mpi = mps.begin();
         done_gauss_data(gaps);
     }
     else if (bBabel) 
     {
-        snew(mps,1);
-        mymp = &(mps[0]);
-        mps[0]   = gmx_molprop_read_gauss(opt2fn("-f",NFILE,fnm),bBabel,aps,pd,molnm,iupac,conf,basis,NULL,
-                                          th_toler,ph_toler,maxpot,bVerbose);
+        alexandria::MolProp mp;
+
+        ReadGauss(opt2fn("-f",NFILE,fnm),mp,
+                  bBabel,aps,pd,molnm,iupac,conf,basis,NULL,
+                  th_toler,ph_toler,maxpot,bVerbose);
+        mps.push_back(mp);
+        mpi = mps.begin();
     }
     else
     {
@@ -745,15 +746,15 @@ int main(int argc, char *argv[])
             gmx_conect_dump(debug,gc);
     }
 
-    if (NULL != *mymp)
+    if ((mps.size() > 0) && (mpi != mps.end()))
     {
         gr = gmx_resp_init(pd,iModel,bAXpRESP,qweight,bhyper,qtotref,
                            zmin,zmax,delta_z,
                            bZatype,watoms,rDecrZeta,bRandZeta,pfac,bFitZeta,
                            bEntropy,dzatoms);
         /* gmx_resp_read_log(gr,aps,pd,opt2fn("-g03",NFILE,fnm)); */
-        gmx_resp_import_molprop(gr,*mymp,aps,pd,lot);
-        if (molprop_2_topology(*mymp,aps,pd,&symtab,lot,topology,
+        gmx_resp_import_molprop(gr,*mpi,aps,pd,lot);
+        if (molprop_2_topology(*mpi,aps,pd,&symtab,lot,topology,
                                get_eemtype_name(iModel),&x,plist,
                                nexcl,&excls) == 0)
             gmx_fatal(FARGS,"Could not convert molprop to atoms structure");
@@ -784,7 +785,8 @@ int main(int argc, char *argv[])
     snew(nbonds,topology->atoms.nr);
     snew(smnames,topology->atoms.nr);
     snew(bRing,topology->atoms.nr);
-    nbond = mk_bonds(pd,&topology->atoms,x,gc,plist,nbonds,bRing,bH14,(dih == edihAll),bRemoveDih,
+    nbond = mk_bonds(pd,&topology->atoms,x,gc,plist,nbonds,
+                     bRing,bH14,(dih == edihAll),bRemoveDih,
                      nexcl,&excls,bPBC,box,aps,btol,TRUE);
     snew(bondorder,nbond);
 
@@ -1043,10 +1045,10 @@ int main(int argc, char *argv[])
         /* Write coordinates */ 
         if ((xmlf = opt2fn_null("-x",NFILE,fnm)) != NULL) 
         {
-            gmx_molprop_t mp;
-            mp = atoms_2_molprop(molnm,&topology->atoms,smnames,aps,pd,TRUE,th_toler,ph_toler);
-            gmx_molprops_write(xmlf,1,&mp,0);
-            gmx_molprop_delete(mp);
+            alexandria::MolProp mp;
+            mp = atoms_2_molprop(molnm,topology->atoms.nr,smnames,aps,pd);
+            mps.push_back(mp);
+            MolPropWrite(xmlf,mps,0);
         }
     
         close_symtab(&symtab);

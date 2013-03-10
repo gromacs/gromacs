@@ -59,15 +59,15 @@
 #include "string2.h"
 #include "gen_ad.h"
 #include "gpp_atomtype.h"
+#include "poldata.h"
+#include "poldata_xml.h"
+#include "gmx_simple_comm.h"
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "gmx_simple_comm.h"
-#include "gauss_io.h"
+#include "gauss_io.hpp"
 
 const char *immsg(int imm)  
 { 

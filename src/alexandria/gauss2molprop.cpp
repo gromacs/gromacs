@@ -64,12 +64,12 @@
 #include "pdbio.h"
 #include "gpp_atomtype.h"
 #include "atomprop.h"
+#include "poldata.h"
+#include "poldata_xml.h"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
-#include "poldata.h"
-#include "poldata_xml.h"
-#include "gauss_io.h"
+#include "gauss_io.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -118,11 +118,11 @@ int main(int argc, char *argv[])
   output_env_t oenv;
   gmx_atomprop_t aps;
   gmx_poldata_t  pd;
-  gmx_molprop_t mp,*mps=NULL;
+  std::vector<alexandria::MolProp> mp;
   gau_atomprop_t gp;
   char **fns=NULL;
   const char *g98;
-  int i,nmp,nfn;
+  int i,nfn;
   FILE *fp;
   gau_atomprop_t gaps;
   
@@ -141,25 +141,22 @@ int main(int argc, char *argv[])
   gaps = read_gauss_data();
 
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
-  nmp = 0;
   for(i=0; (i<nfn); i++) 
   {
-      mp = gmx_molprop_read_gauss(fns[i],bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
-                                  th_toler,ph_toler,maxpot,bVerbose);
-      if (NULL != mp) 
-      {
-          srenew(mps,++nmp);
-          mps[nmp-1] = mp;
-      }
+      alexandria::MolProp mmm;
+      
+      ReadGauss(fns[i],mmm,bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
+                th_toler,ph_toler,maxpot,bVerbose);
+      mp.push_back(mmm);
   }
   done_gauss_data(gaps);
   
-  printf("Succesfully read %d molprops from %d Gaussian files.\n",nmp,nfn);
-  gmx_molprop_sort(nmp,mps,empSORT_Molname,NULL,NULL);
-  merge_doubles(&nmp,mps,NULL,TRUE);
-  if (nmp > 0)
+  printf("Succesfully read %d molprops from %d Gaussian files.\n",mp.size(),nfn);
+  MolPropSort(mp,MPSA_MOLNAME,NULL,NULL);
+  merge_doubles(mp,NULL,TRUE);
+  if (mp.size() > 0)
   {
-      gmx_molprops_write(opt2fn("-o",NFILE,fnm),nmp,mps,(int)compress);
+      MolPropWrite(opt2fn("-o",NFILE,fnm),mp,(int)compress);
   }
       
   thanx(stderr);

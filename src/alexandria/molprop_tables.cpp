@@ -947,7 +947,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
     std::vector<int> found_calc;
     std::string exp_conf;
     
-    int    i,j,iprint=0,ne,iline,caption=1,maxline;
+    int    j,iprint=0,ne,iline,caption=1,maxline;
 #define BLEN 1024
     char   lbuf[BLEN],myline[BLEN],mylbuf[BLEN],vbuf[BLEN];
     double calc_val,calc_err,vc;

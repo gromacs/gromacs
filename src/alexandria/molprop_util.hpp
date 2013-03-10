@@ -45,12 +45,6 @@
 
 enum { iqmExp, iqmBoth, iqmQM, iqmNR };
 
-/* Returns 1 when OK, 0 otherwise. Level of theory and/or conformation
-   and/or type (elec, ESP, RESP) may be set. */
-//extern int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
-//                   double *value,double *error,double vec[3],
-//                   tensor quadrupole);
-		   
 extern int mp_get_prop(alexandria::MolProp mp,int eGP,int iQM,char *lot,
                        char *conf,char *type,double *value);
 
@@ -68,14 +62,13 @@ extern void generate_formula(std::vector<alexandria::MolProp> mp,gmx_atomprop_t 
 /* Returns TRUE if the present molecule has the indicated composition */
 extern gmx_bool gmx_molprop_support_composition(alexandria::MolProp mp,char *composition);
 
-void generate_composition(std::vector<alexandria::MolProp> mp,
-                          gmx_poldata_t pd,
-                          gmx_atomprop_t ap,gmx_bool bForceGenComp,
-                          double th_toler,double phi_toler);
+//void generate_composition(std::vector<alexandria::MolProp> mp,
+//                          gmx_poldata_t pd,
+//                          gmx_atomprop_t ap,gmx_bool bForceGenComp,
+//                          double th_toler,double phi_toler);
 
-extern alexandria::MolProp atoms_2_molprop(char *molname,t_atoms*atoms,char **smnames,
-                                           gmx_atomprop_t ap,gmx_poldata_t pd,gmx_bool bForce,
-                                           double th_toler,double ph_toler);
+alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
+                                    gmx_atomprop_t ap,gmx_poldata_t pd);
 
 /* Return number of atoms, 0 means failure */
 extern int molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
@@ -94,12 +87,6 @@ extern std::vector<alexandria::MolProp> merge_xml(int nfile,char **infiles,char 
                                                   gmx_bool bForceMerge,gmx_bool bForceGenComp,
                                                   double th_toler,double ph_toler);
 
-enum { empSORT_Molname, empSORT_Formula, empSORT_Composition, empSORT_Selection, empSORT_NR };
-	       
-extern void gmx_molprop_sort(std::vector<alexandria::MolProp> mp,
-                             int alg,gmx_atomprop_t ap,gmx_molselect_t gms);
-/* gms may be NULL if the alg is not empSORT_Selection */
-
 typedef struct {
     int  n;
     int  *count;
@@ -111,9 +98,35 @@ typedef struct {
 /* Check the available molprops to see what kind of calculations are stored in there */
 extern t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
                                     int emp,const char *fc_str);
-				
+
+/*! \brief
+ * Enumerated type for MolPropSort function
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum MolPropSortAlgorithm { 
+    MPSA_MOLNAME, 
+    MPSA_FORMULA, 
+    MPSA_COMPOSITION, 
+    MPSA_SELECTION,
+    MPSA_NR
+};
+
+/*! \brief
+ * Sorts a vector of molprops
+ *
+ * Function that uses the std::sort routine and can apply different sorting
+ * keys.
+ * 
+ * \param[in/out] mp        The vector of MolProp
+ * \param[in]     mpsa      The algorithm used for sorting
+ * \param[in]     apt       Database of atom properties
+ * \param[in]     mgs       Optional structure containing selection criteria
+ * \ingroup module_alexandria
+ */
 extern void MolPropSort(std::vector<alexandria::MolProp> mp,
-                        int alg,gmx_atomprop_t apt,
+                        MolPropSortAlgorithm mpsa,gmx_atomprop_t apt,
                         gmx_molselect_t gms);
 
 #endif

@@ -42,13 +42,13 @@
 #include "strdb.h" 
 #include "futil.h"
 #include "symtab.h"
+#include "string2.h"
+#include "vec.h"
 #include "poldata.h"
 #include "atomprop.h"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
-#include "string2.h"
-#include "gauss_io.h"
-#include "vec.h"
+#include "gauss_io.hpp"
 
 // Include Open Babel classes for OBMol and OBConversion
 #ifdef HAVE_LIBOPENBABEL2

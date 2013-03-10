@@ -43,7 +43,11 @@ typedef struct tagDirStack {
   struct tagDirStack *prev;
 } DirStack;
 
-extern int ifunc_index(directive d,int type);
+
+#ifdef __cplusplus
+extern "C"
+#endif
+int ifunc_index(directive d,int type);
 
 extern const char *dir2str (directive d);
 

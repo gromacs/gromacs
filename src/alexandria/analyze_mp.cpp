@@ -478,11 +478,11 @@ int main(int argc,char *argv[])
           "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
     };
     int        npa;
-    int        i,alg,eprop;
-    int        cur = 0;
-#define prev   (1-cur)
+    int        i;
 
     std::vector<alexandria::MolProp> mp;
+    MolPropSortAlgorithm mpsa;
+    MolPropObservable eprop;
     gmx_atomprop_t  ap;
     gmx_poldata_t   *pd,pdref=NULL;
     output_env_t    oenv;
@@ -505,27 +505,27 @@ int main(int argc,char *argv[])
     npdfile = opt2fns(&fns,"-p",NFILE,fnm);
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
     
-    alg = -1;
+    mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort",npa,pa)) 
     {
-        for(i=0; (i<empSORT_NR); i++)
+        for(i=0; (i<MPSA_NR); i++)
             if (strcasecmp(sort[0],sort[i+1]) == 0) 
             {
-                alg = i;
+                mpsa = (MolPropSortAlgorithm) i;
                 break;
             }
     }
-    eprop = -1;
+    eprop = empNR;
     if (opt2parg_bSet("-prop",npa,pa)) 
     {
         for(i=0; (i<empNR); i++)
             if (strcasecmp(prop[0],prop[i+1]) == 0) 
             {
-                eprop = i;
+                eprop = (MolPropObservable) i;
                 break;
             }
     }
-    if (eprop == -1)
+    if (eprop == empNR)
     {
         eprop = empDIPOLE;
     }
@@ -542,9 +542,9 @@ int main(int argc,char *argv[])
         mp = merge_xml(nmpfile,mpname,NULL,NULL,NULL,ap,pd[0],TRUE,TRUE,th_toler,ph_toler);
     else 
         MolPropRead(mpname[0],mp);
-    if (alg != -1)
+    if (mpsa != MPSA_NR)
     {
-        MolPropSort(mp,alg,ap,gms);
+        MolPropSort(mp,mpsa,ap,gms);
     }
     gmx_molprop_analyze(mp,npdfile,pd,pdref,bCalcPol,
                         eprop,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,

@@ -1654,7 +1654,7 @@ int gmx_poldata_get_numprops(gmx_poldata_t pd,int eqg_model)
     return n;
 }
 
-int gmx_poldata_have_pol_support(gmx_poldata_t pd,char *gt_type)
+int gmx_poldata_have_pol_support(gmx_poldata_t pd,const char *gt_type)
 {
     int i;
     

@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: tune_pol.c,v 1.32 2009/05/20 06:25:20 spoel Exp $
  * 
  *                This source code is part of
@@ -51,60 +51,64 @@
 #include "gstat.h"
 #include "gmx_fatal.h"
 #include "names.h"
-#include "molprop.h"
-#include "molprop_util.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
-#include "poldata_xml.h"
-#include "molprop_xml.h"
-#include "molprop_tables.h"
 #include "molselect.h"
+#include "poldata_xml.h"
+#include "molprop.hpp"
+#include "molprop_xml.hpp"
+#include "molprop_tables.hpp"
+#include "molprop_util.hpp"
 
 static int decompose_frag(FILE *fp,int bTrain,
-                          gmx_poldata_t pd,int np,gmx_molprop_t mp[],
+                          gmx_poldata_t pd,
+                          std::vector<alexandria::MolProp> mp,
                           int iQM,char *lot,int mindata,gmx_molselect_t gms,
                           real sigma,gmx_bool bZero,gmx_bool bForceFit)
 {
+    alexandria::MolPropIterator mpi;
+    alexandria::MolecularCompositionIterator mci;
+    alexandria::AtomNumIterator ani;
+
     FILE   *csv;
     double *x,*atx;
     double **a,**at,**ata,*fpp;
-    double pol,poltot,a0,da0,ax,sig_pol,blength,pval,chi2;
-    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type,*atomname;
-    const char *iupac,*molname;
-    char   *neighbors,*geometry,*desc,*charge;
-    int    i,j,niter=0,nusemol=0,nn,nnn,nexp,numbonds,ntp,natom,natom_tot,ca;
-    double valence;
+    double pol,poltot,a0,da0,ax,sig_pol,chi2;
+    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type;
+    const char *iupac,*molname,*atomname;
+    char   *desc,*charge;
+    int    i,j,niter=0,nusemol=0,nn,nnn,ntp,natom,natom_tot;
     int    *test=NULL,ntest=0,row,ims;
     gmx_bool   bPol,*bUseMol;
 
-    snew(bUseMol,np+1);
-    snew(x,np+1);
+    snew(bUseMol,mp.size()+1);
+    snew(x,mp.size()+1);
     poltot = 0;
-    for(j=0; (j<np); j++) 
+    j=0;
+    for(mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
     {
-        iupac = gmx_molprop_get_iupac(mp[j]);
-        molname  = gmx_molprop_get_molname(mp[j]);
+        iupac    = mpi->GetIupac().c_str();
+        molname  = mpi->GetMolname().c_str();
         pol  = 0;
         ims  = gmx_molselect_status(gms,iupac);
-        bPol = (mp_get_prop(mp[j],empPOLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
+        bPol = (mp_get_prop(*mpi,empPOLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
         bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0));
+        mci=mpi->SearchMolecularComposition((char *)"spoel");
 
         /* Now check for the right composition */        
-        if (bUseMol[j])
+        if ((bUseMol[j]) && (mci != mpi->EndMolecularComposition()))
         {
             natom_tot = 0;
-            do {
-                ca = gmx_molprop_get_composition_atom(mp[j],(char *)"spoel",&atomname,&natom);
-                if (ca != 0) 
-                {
-                    bUseMol[j] = gmx_poldata_have_pol_support(pd,atomname);
-                    sfree(atomname);
-                    if (bUseMol[j])
-                        natom_tot += natom;
-                }
-                else if (natom_tot == 0)
-                    bUseMol[j] = FALSE;
-            } while (bUseMol[j] && (ca != 0));
+            for(ani=mci->BeginAtomNum(); bUseMol[j] && (ani<mci->EndAtomNum()); ani++)
+            {
+                atomname = ani->GetAtom().c_str();
+                natom = ani->GetNumber();
+                bUseMol[j] = gmx_poldata_have_pol_support(pd,atomname);
+                if (bUseMol[j])
+                    natom_tot += natom;
+            }
+            if (natom_tot == 0)
+                bUseMol[j] = FALSE;
         }
         if (NULL != debug)
         {
@@ -125,10 +129,12 @@ static int decompose_frag(FILE *fp,int bTrain,
     {
         if ((pol == 0) || bForceFit) {
             ntp = 0;
-            for(j=0; (j<np); j++) 
+            j=0;
+            for(mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
             {
-                if ((bUseMol[j]) &&
-                    ((nnn = gmx_molprop_count_composition_atoms(mp[j],(char *)"spoel",gt_type)) > 0))
+                mci = mpi->SearchMolecularComposition((char *)"spoel");
+                if ((bUseMol[j]) && (mci != mpi->EndMolecularComposition()) &&
+                    ((nnn = mci->CountAtoms(gt_type)) > 0))
                 {
                     ntp += nnn;
                 }
@@ -169,14 +175,16 @@ static int decompose_frag(FILE *fp,int bTrain,
            ntest);
     printf("There are %d (experimental) reference polarizabilities.\n",nusemol);
     csv = ffopen("out.csv","w");
-    for(i=nn=0; (i<np); i++) 
+    nn=0;
+    for(mpi=mp.begin(); (mpi<mp.end()); mpi++,nn++)
     {
         if (bUseMol[i])
         {
-            fprintf(csv,"\"%s\",",gmx_molprop_get_molname(mp[i]));
+            mci = mpi->SearchMolecularComposition((char *)"spoel");
+            fprintf(csv,"\"%s\",",mpi->GetMolname().c_str());
             for(j=0; (j<ntest); j++) {
                 a[nn][j] = at[j][nn] = 
-                    gmx_molprop_count_composition_atoms(mp[i],(char *)"spoel",atype[j]);
+                    mci->CountAtoms(atype[j]);
                 fprintf(csv,"\"%g\",",a[nn][j]);
             }
             fprintf(csv,"\"%.3f\"\n",x[nn]);
@@ -279,7 +287,6 @@ int main(int argc,char *argv[])
     static char *lot = "B3LYP/aug-cc-pVTZ";
     static real th_toler=170,ph_toler=5;
     static real sigma=0;
-    static int seed=1993;
     static gmx_bool bZero=FALSE,bForceFit=FALSE,bCompress=TRUE;
     t_pargs pa[] = 
     {
@@ -304,14 +311,13 @@ int main(int argc,char *argv[])
         { "-compress", FALSE, etBOOL, {&bCompress},
           "Compress output XML files" }
     };
-    FILE  *fp,*gp;
-    int    i,alg,np,nspoel,nbosque,nhandbook,ntot,nqm,nalexandria_atypes,eMP,*qm_count;
+    int    i,nalexandria_atypes;
     char   **fns;
     int    nfiles;
-    char   *ref,*molname[2],*prop_name;
-    int    cur = 0;
-#define prev (1-cur)
-    gmx_molprop_t   *mp=NULL;
+    std::vector<alexandria::MolProp> mp;
+    alexandria::MolPropIterator mpi;
+    MolPropSortAlgorithm mpsa;
+    
     gmx_atomprop_t  ap;
     gmx_poldata_t   pd;
     output_env_t    oenv;
@@ -327,29 +333,30 @@ int main(int argc,char *argv[])
         gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
     mp = merge_xml(nfiles,fns,NULL,
-                   NULL,(char *)"double_dip.dat",&np,ap,pd,TRUE,TRUE,th_toler,ph_toler);
-    for(i=0; (i<np); i++) 
-        gmx_molprop_check_consistency(mp[i]);
-
+                   NULL,(char *)"double_dip.dat",ap,pd,TRUE,TRUE,th_toler,ph_toler);
+    for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
+    {
+        mpi->CheckConsistency();
+    }
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    nalexandria_atypes = decompose_frag(debug,0,pd,np,mp,iQM,lot,mindata,gms,sigma,bZero,bForceFit);
+    nalexandria_atypes = decompose_frag(debug,0,pd,mp,iQM,lot,mindata,gms,sigma,bZero,bForceFit);
 
-    alg = -1;
+    mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort",npa,pa))
     {
-        for(i=0; (i<empSORT_NR); i++)
+        for(i=0; (i<MPSA_NR); i++)
             if (strcasecmp(sort[0],sort[i+1]) == 0) 
             {
-                alg = i;
+                mpsa = (MolPropSortAlgorithm) i;
                 break;
             }
     }
-    if (alg != -1)
+    if (mpsa != MPSA_NR)
     {
-        gmx_molprop_sort(np,mp,alg,ap,NULL);
+        MolPropSort(mp,mpsa,ap,NULL);
     }
     gmx_poldata_write(opt2fn("-do",NFILE,fnm),pd,ap,bCompress);
-    gmx_molprops_write(opt2fn("-o",NFILE,fnm),np,mp,bCompress);
+    MolPropWrite(opt2fn("-o",NFILE,fnm),mp,bCompress);
     thanx(stdout);
   
     return 0;

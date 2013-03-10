@@ -303,7 +303,7 @@ extern char *gmx_poldata_get_eemref(gmx_poldata_t pd,int eqg_model);
 
 extern int gmx_poldata_get_numprops(gmx_poldata_t pd,int eqg_model);
 
-extern int gmx_poldata_have_pol_support(gmx_poldata_t pd,char *gt_type);
+extern int gmx_poldata_have_pol_support(gmx_poldata_t pd,const char *gt_type);
 
 extern int gmx_poldata_have_eem_support(gmx_poldata_t pd,int eqg_model,char *name,
                                         gmx_bool bAllowZeroParameters);

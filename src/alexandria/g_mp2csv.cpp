@@ -189,7 +189,7 @@ int main(int argc,char*argv[])
     MolPropRead(opt2fn("-f",NFILE,fnm),mp);
     ap = gmx_atomprop_init();
     
-    MolPropSort(mp,empSORT_Composition,ap,NULL);
+    MolPropSort(mp,MPSA_COMPOSITION,ap,NULL);
     
     gmx_molprop_csv(opt2fn("-o",NFILE,fnm),mp,
                     strlen(dip_str) > 0  ? dip_str : NULL,

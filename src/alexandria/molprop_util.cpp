@@ -622,7 +622,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
         }
     }
     tmp = mpout.size();
-    MolPropSort(mpout,empSORT_Molname,NULL,NULL);
+    MolPropSort(mpout,MPSA_MOLNAME,NULL,NULL);
     merge_doubles(mpout,doubles,bForceMerge);
     printf("There are %d total molecules after merging.\n",tmp);
       
@@ -633,7 +633,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
     }
     if (sorted) 
     {
-        MolPropSort(mpout,empSORT_Formula,NULL,NULL);
+        MolPropSort(mpout,MPSA_FORMULA,NULL,NULL);
         MolPropWrite(sorted,mpout,FALSE);
         dump_mp(mpout);
     }
@@ -704,22 +704,22 @@ static int comp_mp_selection(alexandria::MolProp ma,alexandria::MolProp mb)
 }
 
 void MolPropSort(std::vector<alexandria::MolProp> mp,
-                 int alg,gmx_atomprop_t apt,
+                 MolPropSortAlgorithm mpsa,gmx_atomprop_t apt,
                  gmx_molselect_t gms)
 {
-    switch(alg) {
-    case empSORT_Molname:
+    switch(mpsa) {
+    case MPSA_MOLNAME:
         std::sort (mp.begin(),mp.end(),comp_mp_molname);
         break;
-    case empSORT_Formula:
+    case MPSA_FORMULA:
         std::sort (mp.begin(),mp.end(),comp_mp_formula);
         break;
-    case empSORT_Composition:
+    case MPSA_COMPOSITION:
         my_aps = apt;
         std::sort (mp.begin(),mp.end(),comp_mp_elem);
         my_aps = NULL;
         break;
-    case empSORT_Selection:
+    case MPSA_SELECTION:
         if (NULL != gms) 
         {
             my_gms = gms;
@@ -729,7 +729,7 @@ void MolPropSort(std::vector<alexandria::MolProp> mp,
             gmx_fatal(FARGS,"Need molecule selection to sort on");
         break;
     default:
-        gmx_incons("Invalid algorithm for gmx_molprop_sort");
+        gmx_incons("Invalid algorithm for MolPropSort");
     }
 }
 

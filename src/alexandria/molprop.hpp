@@ -25,8 +25,19 @@
 
 enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
 
-enum { empPOTENTIAL, empDIPOLE, empQUADRUPOLE, empPOLARIZABILITY, 
-       empENERGY, empNR };
+/*! \brief
+ * Enumerated type holding the types of observables stored in MolProp 
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+enum MolPropObservable { 
+    empPOTENTIAL, 
+    empDIPOLE,
+    empQUADRUPOLE,
+    empPOLARIZABILITY, 
+    empENERGY,
+    empNR };
 
 /*! \brief
  * Enumerated type holding the result status of communication operations

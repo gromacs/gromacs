@@ -156,9 +156,8 @@ int main(int argc,char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML files" }
     };
-    FILE   *fp,*gp;
     char   **fns;
-    int    i,alg,np,eMP,nfiles;
+    int    nfiles;
     int    cur = 0;
 #define prev (1-cur)
     std::vector<alexandria::MolProp> mp;

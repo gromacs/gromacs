@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: gentop_qgen.c,v 1.16 2009/05/20 10:48:03 spoel Exp $
  * 
  *                This source code is part of
@@ -59,12 +59,12 @@
 #include <atomprop.h>
 #include <grompp.h>
 #include "molprop.hpp"
-#include "gentop_nm2type.h"
-#include "gentop_qgen.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "gaussian_integrals.h"
 #include "slater_integrals.h"
+#include "gentop_nm2type.hpp"
+#include "gentop_qgen.hpp"
 #include "gmx_resp.hpp"
 
 typedef struct gentop_qgen
