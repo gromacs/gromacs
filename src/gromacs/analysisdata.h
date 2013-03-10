@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_analysisdata Parallelizable Handling of Output Data
+/*! \defgroup module_analysisdata Parallelizable Handling of Output Data (analysisdata)
  * \ingroup group_analysismodules
  * \brief
  * Provides functionality for handling and processing output data from
@@ -48,34 +48,103 @@
  * frames is collected and output in the correct order.
  *
  * This module consists of two main parts.  The first is formed by the
- * AbstractAnalysisData class and classes that derive from it:
- * AnalysisData and AnalysisArrayData.  These classes are used to process and
- * store raw data as produced by the analysis tool.  They also provide an
- * interface to attach data modules that implement AnalysisDataModuleInterface.
+ * gmx::AbstractAnalysisData class and classes that derive from it:
+ * gmx::AnalysisData and gmx::AnalysisArrayData.  These classes are used to
+ * process and store raw data as produced by the analysis tool.  They also
+ * provide an interface to attach data modules that implement
+ * gmx::AnalysisDataModuleInterface.
  * Modules that implement this interface form the second part of the module,
  * and they provide functionality to do processing operations on the data.
- * These modules can also derive from AbstractAnalysisData, allowing other
+ * These modules can also derive from gmx::AbstractAnalysisData, allowing other
  * modules to be attached to them to form a processing chain that best suits
  * the analysis tool.  Typically, such a processing chain ends in a plotting
  * module that writes the data into a file, but the final module can also
  * provide direct access to the processed data, allowing the analysis tool to
  * do custom postprocessing outside the module framework.
  *
+ * \if msc
+ * The sequence chart below shows an overview of how analysis data objects
+ * and modules interact.
+ * \msc
+ *     caller,
+ *     data [ label="AnalysisData", URL="\ref gmx::AnalysisData" ],
+ *     module1 [ label="data module", URL="\ref gmx::AnalysisDataModuleInterface" ];
+ *
+ *     caller box module1 [ label="caller creates and initializes all objects" ];
+ *     caller => data [ label="addModule(module1)",
+ *                      URL="\ref gmx::AbstractAnalysisData::addModule() " ];
+ *     caller => data [ label="startData()",
+ *                      URL="\ref gmx::AnalysisData::startData()" ];
+ *     data => module1 [ label="dataStarted()",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::dataStarted()" ];
+ *     caller << data [ label="handle1",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     caller => data [ label="startData()",
+ *                      URL="\ref gmx::AnalysisData::startData()" ];
+ *     caller << data [ label="handle2",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     caller => data [ label="handle1->startFrame(0)",
+ *                      URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
+ *     caller => data [ label="handle2->startFrame(1)",
+ *                      URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
+ *     caller => data [ label="add data for handle1",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     caller => data [ label="add data for handle2",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     caller => data [ label="handle2->finishFrame() (frame 1)",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
+ *     caller => data [ label="handle1->finishFrame() (frame 0)",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
+ *     data => module1 [ label="frameStarted(0)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ];
+ *     data => module1 [ label="pointsAdded()",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ];
+ *     data => module1 [ label="frameFinished(0)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ];
+ *     data => module1 [ label="frameStarted(1)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ];
+ *     data => module1 [ label="pointsAdded()",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ];
+ *     data => module1 [ label="frameFinished(1)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ];
+ *     caller => data [ label="handle2->startFrame(2)",
+ *                      URL="\ref gmx::AnalysisDataHandle::startFrame()" ];
+ *     caller => data [ label="add data for handle2",
+ *                      URL="\ref gmx::AnalysisDataHandle" ];
+ *     caller => data [ label="handle2->finishFrame() (frame 2)",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishFrame()" ];
+ *     data => module1 [ label="frameStarted(2)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameStarted()" ];
+ *     data => module1 [ label="pointsAdded()",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::pointsAdded()" ];
+ *     data => module1 [ label="frameFinished(2)",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::frameFinished()" ];
+ *     ...;
+ *     caller => data [ label="handle1->finishData()",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishData()" ];
+ *     caller => data [ label="handle2->finishData()",
+ *                      URL="\ref gmx::AnalysisDataHandle::finishData()" ];
+ *     data => module1 [ label="dataFinished()",
+ *                       URL="\ref gmx::AnalysisDataModuleInterface::dataFinished()" ];
+ * \endmsc
+ * \endif
+ *
  * <H3>Using Data Objects and Modules</H3>
  *
  * To use the functionality in this module, you typically declare one or more
  * AnalysisData objects and set its properties.  You then create some module
  * objects and set their properties (see the list of classes that implement
- * AnalysisDataModuleInterface) and attach them to the data objects or to one
- * another using AbstractAnalysisData::addModule().  Then you add the actual
- * data values to the AnalysisData object, which automatically passes it on to
- * the modules.  After all data is added, you may optionally access some
+ * gmx::AnalysisDataModuleInterface) and attach them to the data objects or to
+ * one another using gmx::AbstractAnalysisData::addModule().  Then you add the
+ * actual data values to the gmx::AnalysisData object, which automatically
+ * passes it on to the modules.
+ * After all data is added, you may optionally access some
  * results directly from the module objects.  However, in many cases it is
  * sufficient to initially add a plotting module to the processing chain, which
  * will then automatically write the results into a file.
  *
  * For simple processing needs with a small amount of data, an
- * AnalysisArrayData class is also provided, which keeps all the data in an
+ * gmx::AnalysisArrayData class is also provided, which keeps all the data in an
  * in-memory array and allows you to manipulate the data as you wish before you
  * pass the data to the attached modules.
  *
@@ -84,17 +153,17 @@
  *
  * New data modules can be implemented to perform custom operations that are
  * not supported by the modules provided in this module.  This is done by
- * creating a new class that implements AnalysisDataModuleInterface.
+ * creating a new class that implements gmx::AnalysisDataModuleInterface.
  * If the new module computes values that can be used as input for other
- * modules, the new class should also derive from AbstractAnalysisData, and
- * preferably use AnalysisDataStorage internally to implement storage of
+ * modules, the new class should also derive from gmx::AbstractAnalysisData, and
+ * preferably use gmx::AnalysisDataStorage internally to implement storage of
  * values.  See the documentation of the mentioned classes for more details on
  * how to implement custom modules.
  * When implementing a new module, it should be considered whether it can be of
  * more general use, and if so, it should be added to this module.
  *
  * It is also possible to implement new data source objects by deriving a class
- * from AbstractAnalysisData.  This should not normally be necessary, since
+ * from gmx::AbstractAnalysisData.  This should not normally be necessary, since
  * this module provides general data source objects for most typical uses.
  * If the classes in this module are not suitable for some specific use, it
  * should be considered whether a new generic class could be added (or an

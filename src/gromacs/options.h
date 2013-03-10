@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,7 +32,7 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_options Extensible Handling of Options
+/*! \defgroup module_options Extensible Handling of Options (options)
  * \ingroup group_utilitymodules
  * \brief
  * Provides functionality for handling options.
@@ -45,6 +45,43 @@
  * When creating an Options object and adding options, it is possible to add
  * descriptions for individual options as well as for the whole set of options.
  * These can then be used to write out help text.
+ *
+ * \if msc
+ * The sequence chart below provides an overview of how the options work from
+ * usage perspective.  It includes two fictional modules, A and B, that provide
+ * options, and a main routine that manages these.
+ * \msc
+ *     main,
+ *     parser [ label="parser" ],
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main box B [ label="main owns all objects" ];
+ *     main => options [ label="create", URL="\ref gmx::Options::Options()" ];
+ *     main => A [ label="initOptions()" ];
+ *     A => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << A;
+ *     main => B [ label="initOptions()" ];
+ *     B => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << B;
+ *     --- [ label="Options initialized" ];
+ *     main => parser [ label="parse() (create parser)" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> A [ label="set variable" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ *     --- [ label="Options parsed (parser is destroyed)" ];
+ *     main => options [ label="optionsFinished()", URL="\ref gmx::Options::optionsFinished()" ];
+ *     options -> A [ label="set variable" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ *     --- [ label="Options processed (Options can be destroyed)" ];
+ * \endmsc
+ * \endif
  *
  * Module \ref module_commandline implements classes that assign option values
  * from command line and produce help for programs that use the command line
