@@ -510,7 +510,8 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
 }
 
 static void print_cycles(FILE *fplog, double c2t, const char *name,
-                         int nnodes_tot, int nnodes, int nthreads,
+                         int nthreads_tot,
+                         int nnodes, int nthreads,
                          int n, double c, double tot)
 {
     char   num[11];
@@ -536,7 +537,19 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
             sprintf(num, "          ");
             sprintf(thstr, "    ");
         }
-        wallt = c*c2t*nnodes_tot/(double)nnodes;
+        /* Convert the cycle count to wallclock time for this task */
+        if (nthreads > 0)
+        {
+            /* Cycle count has been multiplied by the thread count,
+             * correct for the number of threads used.
+             */
+            wallt = c*c2t*nthreads_tot/(double)(nnodes*nthreads);
+        }
+        else
+        {
+            /* nthreads=-1 signals total run time, no correction required */
+            wallt = c*c2t;
+        }
         fprintf(fplog, " %-19s %4d %4s %10s  %10.3f %12.3f   %5.1f\n",
                 name, nnodes, thstr, num, wallt, c*1e-9, 100*c/tot);
     }
@@ -575,7 +588,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 {
     double     *cycles;
     double      c2t, tot, tot_gpu, tot_cpu_overlap, gpu_cpu_ratio, sum, tot_k;
-    int         i, j, npp, nth_pp, nth_pme;
+    int         i, j, npp, nth_pp, nth_pme, nth_tot;
     char        buf[STRLEN];
     const char *hline = "-----------------------------------------------------------------------------";
 
@@ -598,6 +611,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         npp  = nnodes;
         npme = nnodes;
     }
+    nth_tot = npp*nth_pp + npme*nth_pme;
+
     tot = cycles[ewcRUN];
 
     /* Conversion factor from cycles to seconds */
@@ -619,7 +634,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     {
         if (!is_pme_subcounter(i))
         {
-            print_cycles(fplog, c2t, wcn[i], nnodes,
+            print_cycles(fplog, c2t, wcn[i], nth_tot,
                          is_pme_counter(i) ? npme : npp,
                          is_pme_counter(i) ? nth_pme : nth_pp,
                          wc->wcc[i].n, cycles[i], tot);
@@ -636,7 +651,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
                 buf[9] = ' ';
                 snprintf(buf+10, 9, "%-9s", wcn[j]);
                 buf[19] = '\0';
-                print_cycles(fplog, c2t, buf, nnodes,
+                print_cycles(fplog, c2t, buf, nth_tot,
                              is_pme_counter(i) ? npme : npp,
                              is_pme_counter(i) ? nth_pme : nth_pp,
                              wc->wcc_all[i*ewcNR+j].n,
@@ -645,9 +660,9 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
             }
         }
     }
-    print_cycles(fplog, c2t, "Rest", npp, npp, -1, 0, tot-sum, tot);
+    print_cycles(fplog, c2t, "Rest", nth_tot, npp, -1, 0, tot-sum, tot);
     fprintf(fplog, "%s\n", hline);
-    print_cycles(fplog, c2t, "Total", nnodes, nnodes, -1, 0, tot, tot);
+    print_cycles(fplog, c2t, "Total", nth_tot, nnodes, -1, 0, tot, tot);
     fprintf(fplog, "%s\n", hline);
 
     if (wc->wcc[ewcPMEMESH].n > 0)
@@ -657,7 +672,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             if (is_pme_subcounter(i))
             {
-                print_cycles(fplog, c2t, wcn[i], nnodes,
+                print_cycles(fplog, c2t, wcn[i], nth_tot,
                              is_pme_counter(i) ? npme : npp,
                              is_pme_counter(i) ? nth_pme : nth_pp,
                              wc->wcc[i].n, cycles[i], tot);
@@ -670,7 +685,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog, "%s\n", hline);
     for (i = 0; i < ewcsNR; i++)
     {
-        print_cycles(fplog, c2t, wcsn[i], nnodes, npp, nth_pp,
+        print_cycles(fplog, c2t, wcsn[i], nth_tot, npp, nth_pp,
                      wc->wcsc[i].n, cycles[ewcNR+i], tot);
     }
     fprintf(fplog, "%s\n", hline);
