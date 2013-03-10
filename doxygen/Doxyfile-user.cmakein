@@ -1,6 +1,5 @@
 @INCLUDE               = Doxyfile-common
 
-ENABLED_SECTIONS       =
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
 HIDE_FRIEND_COMPOUNDS  = YES

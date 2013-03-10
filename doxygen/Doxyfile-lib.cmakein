@@ -1,6 +1,6 @@
 @INCLUDE               = Doxyfile-common
 
-ENABLED_SECTIONS       = libapi
+ENABLED_SECTIONS      += libapi
 INTERNAL_DOCS          = NO
 HIDE_UNDOC_CLASSES     = YES
 WARN_LOGFILE           = doxygen-lib.log
