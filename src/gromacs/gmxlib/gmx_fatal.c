@@ -53,12 +53,7 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 static gmx_bool bDebug         = FALSE;
 static char    *fatal_tmp_file = NULL;

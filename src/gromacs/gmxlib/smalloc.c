@@ -38,10 +38,7 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi/threads.h"
-#endif
-
+#include "gmxmpi.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -162,7 +159,6 @@ void *save_calloc(const char *name, const char *file, int line,
         if (nelem*elsize >= PRINT_ALLOC_KB*1024)
         {
 #ifdef GMX_MPI
-#include <mpi.h>
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
             printf("Allocating %.1f MB for %s (called from file %s, line %d on %d)\n",
@@ -217,7 +213,6 @@ void *save_realloc(const char *name, const char *file, int line, void *ptr,
         if (size >= PRINT_ALLOC_KB*1024)
         {
 #ifdef GMX_MPI
-#include <mpi.h>
             MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #endif
             printf("Reallocating %.1f MB for %s (called from file %s, line %d on %d)\n",

@@ -51,12 +51,7 @@
 #endif
 #endif
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 #ifdef GMX_OPENMP
 /* TODO: Do we still need this? Are we still planning ot use fftw + OpenMP? */

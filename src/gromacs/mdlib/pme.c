@@ -60,12 +60,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 #include <stdio.h>
 #include <string.h>

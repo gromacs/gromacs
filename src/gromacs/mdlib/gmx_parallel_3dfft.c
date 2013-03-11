@@ -23,12 +23,7 @@
 #include <string.h>
 #include <errno.h>
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 #include "smalloc.h"
 #include "gmx_parallel_3dfft.h"

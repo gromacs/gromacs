@@ -83,12 +83,7 @@
 #include "gmx_omp.h"
 #include "gmx_thread_affinity.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

@@ -83,12 +83,7 @@
 #include "gmx_wallcycle.h"
 #include "macros.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREADS
-#include "tmpi.h"
-#endif
+#include "gmxmpi.h"
 
 void GenerateGibbsProbabilities(real *ene, real *p_k, real *pks, int minfep, int maxfep)
 {
