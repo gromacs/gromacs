@@ -51,12 +51,7 @@
 #include "domdec.h"
 #include "sighandler.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 #define PP_PME_CHARGE         (1<<0)
 #define PP_PME_CHARGEB        (1<<1)

@@ -14,6 +14,7 @@ set(UTILITY_PUBLIC_HEADERS
     flags.h
     gmx_header_config.h
     gmxassert.h
+    gmxmpi.h
     programinfo.h
     stringutil.h
     uniqueptr.h)
