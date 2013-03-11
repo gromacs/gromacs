@@ -23,12 +23,7 @@
 #include <string.h>
 #include "domdec_network.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 
 #define DDMASTERRANK(dd)   (dd->masterrank)
