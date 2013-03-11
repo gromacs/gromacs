@@ -442,7 +442,9 @@ for \lapack{}. By default, the \cmake{} optionv
 \blas{}. If one is found, then it is used. Otherwise, \cmake{} falls
 back on internal versions provided in the \gromacs{} source. These are
 fine for normal use. If you need to specify a non-standard path to
-search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+. If you need to
+specify a library with a non-standard name (e.g. ESSL on AIX), then
+set \verb+-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a+.
 
 If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
 \lapack{} it provides are used automatically.
