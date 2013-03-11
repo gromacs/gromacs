@@ -758,7 +758,7 @@ void gmx_print_version_info(FILE *fp)
     }
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
-    fprintf(fp, "Linked with Intel MKL version %s.%s.%s.\n",
+    fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
             __INTEL_MKL__, __INTEL_MKL_MINOR__, __INTEL_MKL_UPDATE__);
 #endif
 #ifdef GMX_GPU

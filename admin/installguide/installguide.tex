@@ -255,11 +255,12 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} requires a set of linker flags that \gromacs{} is not
-able to detect for you, so setting up optimal linking is tricky at the
-moment. You will need to consult your compiler documentation and
-use \verb+CMAKE_C_FLAGS+ and \verb+-DCMAKE_EXE_LINKER_FLAGS+
-accordingly.
+Using \mkl{} with \icc{} 11 or higher is very simple. Set up your
+compiler environment correctly, perhaps with a command like
+\verb+source /path/to/compilervars.sh intel64+ (or consult your local
+documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
+\cmake{}. In this case, \gromacs{} will also use \mkl{} for \blas{}
+and \lapack{} (see \hyperref{linear-algebra}{here}).
 
 \subsection{Optional build components}
 
@@ -436,6 +437,9 @@ for \lapack{}. By default, the \cmake{} optionv
 back on internal versions provided in the \gromacs{} source. These are
 fine for normal use. If you need to specify a non-standard path to
 search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+
+If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
+\lapack{} it provides are used automatically.
 
 On Apple platforms where the Accelerate Framework is available, these
 will be automatically used for \blas{} and \lapack{}.
