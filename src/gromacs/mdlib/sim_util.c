@@ -95,12 +95,7 @@
 #include "mtop_util.h"
 #include "tng_io.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 #include "adress.h"
 #include "qmmm.h"
