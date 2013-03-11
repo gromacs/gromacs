@@ -54,7 +54,7 @@
  * \ingroup module_alexandria
  */
 void MolPropWrite(const char *fn,
-                  std::vector<alexandria::MolProp> mpt,
+                  const std::vector<alexandria::MolProp> mpt,
                   gmx_bool bCompress);
   
 /*! \brief

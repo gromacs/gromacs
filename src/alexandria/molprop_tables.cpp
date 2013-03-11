@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: molprop_tables.c,v 1.21 2009/05/29 15:01:18 spoel Exp $
  * 
  *                This source code is part of
@@ -115,7 +115,8 @@ static void stats_footer(FILE *fp,gmx_bool bSideways)
             (bSideways) ? "sideways" : "");
 }
 
-static void stats_header(FILE *fp,int emp,int caption,gmx_bool bSideways,
+static void stats_header(FILE *fp,MolPropObservable mpo,
+                         int caption,gmx_bool bSideways,
                          t_qmcount *qmc,int ims)
 {
     char unit[32];
@@ -127,25 +128,25 @@ static void stats_header(FILE *fp,int emp,int caption,gmx_bool bSideways,
     fprintf(fp,"\\begin{%stable}[H]\n\\centering\n",bSideways ? "sideways" : "");
     if (caption) 
     {
-        switch (emp) 
+        switch (mpo) 
         {
-        case empPOLARIZABILITY:
+        case MPO_POLARIZABILITY:
             sprintf(unit,"\\AA$^3$");
             break;
-        case empDIPOLE:
+        case MPO_DIPOLE:
             sprintf(unit,"D");
             break;
-        case empQUADRUPOLE:
+        case MPO_QUADRUPOLE:
             sprintf(unit,"B");
             break;
-        case empENERGY:
+        case MPO_ENERGY:
             sprintf(unit,"kJ/mol");
             break;
         default:
-            gmx_fatal(FARGS,"Unknown property %s",emp_name[emp]);
+            gmx_fatal(FARGS,"Unknown property %s",mpo_name[mpo]);
         }
         fprintf(fp,"\\caption{Performance of the different methods for predicting the molecular %s for molecules containing different chemical groups, given as the RMSD from experimental values (%s), and in brackets the number of molecules in this particular subset. {\\bf Data set: %s.} At the bottom the correlation coefficient R, the regression coefficient a and the intercept b are given as well as the normalized quality of the fit $\\chi^2$.}\n\\label{%s_rmsd}\n",
-                emp_name[emp],unit,ims_names[ims],emp_name[emp]);
+                mpo_name[mpo],unit,ims_names[ims],mpo_name[mpo]);
     }
     else 
     {
@@ -175,7 +176,7 @@ static void stats_header(FILE *fp,int emp,int caption,gmx_bool bSideways,
     fprintf(fp,"\\\\\n\\hline\n");
 }
 
-void gmx_molprop_stats_table(FILE *fp,int emp,
+void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                              std::vector<alexandria::MolProp> mp,
                              int ntot,
                              t_qmcount *qmc,int iQM,char *lot,
@@ -211,7 +212,7 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
         return;
     }
     
-    stats_header(fp,emp,1,bSideways,qmc,ims);
+    stats_header(fp,mpo,1,bSideways,qmc,ims);
     
     qsort(cats->catli,cats->ncat,sizeof(cats->catli[0]),comp_catli);
     line = 0;
@@ -233,11 +234,11 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                     {
                         /*for(m=0; (m<qmc->nconf); m++) 
                           {*/
-                            if (mp_get_prop(*mpi,emp,iqmExp,NULL,
+                            if (mp_get_prop(*mpi,mpo,iqmExp,NULL,
                                             NULL/*qmc->conf[m]*/,NULL,&exp_val) > 0)
                             {
                                 nexpres = 1;
-                                if (mp_get_prop(*mpi,emp,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
+                                if (mp_get_prop(*mpi,mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
                                                 qmc->type[k],&qm_val) > 0)
                                 {
                                     if (debug)
@@ -276,7 +277,7 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
         if (line == 20)
         {
             stats_footer(fp,bSideways);
-            stats_header(fp,emp,0,bSideways,qmc,ims);
+            stats_header(fp,mpo,0,bSideways,qmc,ims);
             line = 0;
         }
     }
@@ -292,8 +293,8 @@ void gmx_molprop_stats_table(FILE *fp,int emp,
                 (mpi->HasComposition(SPOEL)))
             {
                 for(m=0; (m<qmc->nconf); m++) {
-                    if ((mp_get_prop(*mpi,emp,iqmExp,NULL,qmc->conf[m],NULL,&exp_val) > 0) &&
-                        (mp_get_prop(*mpi,emp,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val) > 0)) 
+                    if ((mp_get_prop(*mpi,mpo,iqmExp,NULL,qmc->conf[m],NULL,&exp_val) > 0) &&
+                        (mp_get_prop(*mpi,mpo,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val) > 0)) 
                     {
                         gmx_stats_add_point(lsqtot[k],exp_val,qm_val,0,0);
                     }
@@ -608,7 +609,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     char   *charge;
     int    nsmlsq=0,estats,N,nset;
     t_sm_lsq *smlsq=NULL;
-    int    cur = 0,emp=empPOLARIZABILITY;
+    int    cur = 0;
+    MolPropObservable mpo=MPO_POLARIZABILITY;
 #define prev (1-cur)
 
     /* First gather statistics from different input files. Note that the input files
@@ -649,9 +651,9 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     if (mci != mpi->EndMolecularComposition())
                     {
                         int ngt = mci->CountAtoms(gt_type[cur]);
-                        if (mp_get_prop(*mpi,emp,iqmExp,lot,NULL,NULL,&exp_val) > 0)
+                        if (mp_get_prop(*mpi,mpo,iqmExp,lot,NULL,NULL,&exp_val) > 0)
                             nfitexp += ngt;
-                        else if (mp_get_prop(*mpi,emp,iqmQM,lot,NULL,NULL,&qm_val) > 0)
+                        else if (mp_get_prop(*mpi,mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
                             nfitqm += ngt;
                     }
                 }
@@ -929,7 +931,7 @@ static int outside(real vexp,real vcalc,real rtoler,real atoler)
     }
 }
 
-void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
+void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atoler,
                             std::vector<alexandria::MolProp> mp,
                             int bDS,
                             t_qmcount *qmc,gmx_bool bPrintAll,
@@ -975,8 +977,8 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
     }
     if (nprint <= 0)
         return;
-    bPrintConf = (emp == empDIPOLE);
-    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,bSideways,ims,bPrintConf,
+    bPrintConf = (mpo == MPO_DIPOLE);
+    prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,bSideways,ims,bPrintConf,
                 bPrintBasis,bPrintMultQ);  
     header  = 1;
     iline   = 0;
@@ -987,9 +989,9 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
         {
             for(ei=mpi->BeginExperiment(); (ei<mpi->EndExperiment()); ei++)
             {
-                switch (emp) 
+                switch (mpo) 
                 {
-                case empDIPOLE:
+                case MPO_DIPOLE:
                     for(mdi=ei->BeginDipole(); (mdi<ei->EndDipole()); mdi++)
                     {
                         val_exp.push_back(mdi->GetAver());
@@ -999,7 +1001,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                         type_exp.push_back(mdi->GetType());
                     }
                     break;
-                case empPOLARIZABILITY:
+                case MPO_POLARIZABILITY:
                     for(mdi=ei->BeginPolar(); (mdi<ei->EndPolar()); mdi++)
                     {
                         val_exp.push_back(mdi->GetAver());
@@ -1009,7 +1011,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                         type_exp.push_back(mdi->GetType());
                     }
                     break;
-                case empENERGY:
+                case MPO_ENERGY:
                     for(mei=ei->BeginEnergy(); (mei<ei->EndEnergy()); mei++)
                     {
                         val_exp.push_back(mei->GetValue());
@@ -1020,7 +1022,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                     }
                     break;
                 default:
-                    gmx_fatal(FARGS,"No support for for emp %d",emp);
+                    gmx_fatal(FARGS,"No support for for mpo %d",mpo);
                     break;
                 }
             }
@@ -1037,7 +1039,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                 for(j=0; (j<qmc->n); j++) 
                 {
                     sprintf(lbuf,"%s/%s",qmc->method[j],qmc->basis[j]);
-                    if (mp_get_prop_ref(*mpi,emp,iqmQM,lbuf,exp_conf.c_str(),
+                    if (mp_get_prop_ref(*mpi,mpo,iqmQM,lbuf,exp_conf.c_str(),
                                         qmc->type[j],&calc_val,&calc_err,
                                         NULL,NULL,dvec,quadrupole) == 1) 
                     {
@@ -1147,7 +1149,7 @@ void gmx_molprop_prop_table(FILE *fp,int emp,real rtoler,real atoler,
                 {
                     caption = 0;
                     prop_end(fp,bSideways);
-                    prop_header(fp,caption,emp_name[emp],rtoler,atoler,qmc,
+                    prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,
                                 bSideways,ims,bPrintConf,bPrintBasis,bPrintMultQ);
                     header  = 1;
                     iline   = 0;

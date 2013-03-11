@@ -56,17 +56,17 @@ static void gmx_molprop_csv(const char *fn,
     tensor quadrupole;
     char *ref;
 #define NEMP 3
-    int emp[NEMP] = { empDIPOLE, empPOLARIZABILITY, empENERGY  };
-    char *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
+    MolPropObservable mpo[NEMP] = { MPO_DIPOLE, MPO_POLARIZABILITY, MPO_ENERGY  };
+    const char *ename[NEMP] = { "Dipole", "Polarizability", "Heat of formation" };
     t_qmcount *qmc[NEMP];
     
-    qmc[0] = find_calculations(mp,emp[0],dip_str);
-    qmc[1] = find_calculations(mp,emp[1],pol_str);
-    qmc[2] = find_calculations(mp,emp[2],ener_str);
+    qmc[0] = find_calculations(mp,mpo[0],dip_str);
+    qmc[1] = find_calculations(mp,mpo[1],pol_str);
+    qmc[2] = find_calculations(mp,mpo[2],ener_str);
     for(k=0; (k<NEMP); k++) 
     {
         printf("--------------------------------------------------\n");
-        printf("      Some statistics for %s\n",emp_name[emp[k]]);
+        printf("      Some statistics for %s\n",mpo_name[mpo[k]]);
         for(i=0; (i<qmc[k]->n); i++) 
             printf("There are %d calculation results using %s/%s type %s\n",
                    qmc[k]->count[i],qmc[k]->method[i],
@@ -125,7 +125,7 @@ static void gmx_molprop_csv(const char *fn,
                 mpi->GetMass());
         for(k=0; (k<NEMP); k++) 
         {
-            if (mp_get_prop_ref(*mpi,emp[k],iqmExp,
+            if (mp_get_prop_ref(*mpi,mpo[k],iqmExp,
                                 NULL,NULL,NULL,&d,&err,&ref,NULL,vec,
                                 quadrupole) == 1)
             {
@@ -136,7 +136,7 @@ static void gmx_molprop_csv(const char *fn,
                 fprintf(fp,",\"\",\"\"");
             for(j=0; (j<qmc[k]->n); j++) 
             {
-                if (mp_get_prop(*mpi,emp[k],iqmQM,qmc[k]->lot[j],NULL,qmc[k]->type[j],&d) == 1)
+                if (mp_get_prop(*mpi,mpo[k],iqmQM,qmc[k]->lot[j],NULL,qmc[k]->type[j],&d) == 1)
                     fprintf(fp,",\"%.4f\"",d);
                 else
                     fprintf(fp,",\"\"");
@@ -174,8 +174,6 @@ int main(int argc,char*argv[])
         { "-ener_str", FALSE, etSTR, {&ener_str},
           "Same but for energies" }
     };
-    int    cur = 0;
-#define prev (1-cur)
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t ap;
     output_env_t   oenv;

@@ -91,7 +91,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         molname  = mpi->GetMolname().c_str();
         pol  = 0;
         ims  = gmx_molselect_status(gms,iupac);
-        bPol = (mp_get_prop(*mpi,empPOLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
+        bPol = (mp_get_prop(*mpi,MPO_POLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
         bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0));
         mci=mpi->SearchMolecularComposition((char *)"spoel");
 
@@ -332,8 +332,8 @@ int main(int argc,char *argv[])
     if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),ap)) == NULL)
         gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
-    mp = merge_xml(nfiles,fns,NULL,
-                   NULL,(char *)"double_dip.dat",ap,pd,TRUE,TRUE,th_toler,ph_toler);
+    merge_xml(nfiles,fns,mp,NULL,NULL,(char *)"double_dip.dat",ap,pd,
+              TRUE,TRUE,th_toler,ph_toler);
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
         mpi->CheckConsistency();

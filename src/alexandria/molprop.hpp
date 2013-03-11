@@ -23,7 +23,7 @@
 #include "atomprop.h"
 #include "poldata.h"
 
-enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
+// enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
 
 /*! \brief
  * Enumerated type holding the types of observables stored in MolProp 
@@ -32,12 +32,14 @@ enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
  * \ingroup module_alexandria
  */
 enum MolPropObservable { 
-    empPOTENTIAL, 
-    empDIPOLE,
-    empQUADRUPOLE,
-    empPOLARIZABILITY, 
-    empENERGY,
-    empNR };
+    MPO_POTENTIAL, 
+    MPO_DIPOLE,
+    MPO_QUADRUPOLE,
+    MPO_POLARIZABILITY, 
+    MPO_ENERGY,
+    MPO_NR };
+
+extern const char *mpo_name[MPO_NR];
 
 /*! \brief
  * Enumerated type holding the result status of communication operations
@@ -48,9 +50,10 @@ enum MolPropObservable {
 enum CommunicationStatus { CS_RECV_DATA, 
                            CS_RECV_EMPTY, 
                            CS_SEND_DATA, 
-                           CS_SEND_EMPTY };
+                           CS_SEND_EMPTY,
+                           CS_NR };
 
-extern const char *emp_name[empNR];
+extern const char *cs_name[CS_NR];
 
 #define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
 #define assign_scal(dst,src) if (NULL != dst) *dst = src
@@ -885,20 +888,20 @@ public:
      * Convenience function that fetches a value from this experiment
      *
      * \param[in]  type   The type of the data (dependent on whether it is dipole, energy etc.)
-     * \param[in]  emp    Enum selecting the type of data to fetch
+     * \param[in]  mpo    Enum selecting the type of data to fetch
      * \param[out] value  The value of e.g. the energy
      * \param[out] error  The error in the value of e.g. the energy
      * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
      * \param[out] quadrupole The quadrupole tensor
      * \return 1 on success or 0 otherwise
      */
-    int GetVal(const char *type,int emp,
+    int GetVal(const char *type,MolPropObservable mpo,
                double *value,double *error,double vec[3],
                tensor quadrupole);
-        
+    
     //! Merge in another object
     void Merge(Experiment& src);
-           
+    
     /*! \brief
      * Sends this object over an MPI connection
      *
@@ -1214,7 +1217,7 @@ public:
     gmx_bool HasComposition(std::string composition);
 
     //! Add a Bond element
-    void AddBond(Bond b) { _bond.push_back(b); }
+    void AddBond(Bond b);
 
     //! Return the number of Bond elements
     int NBond() { return _bond.size(); }

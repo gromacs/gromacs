@@ -182,7 +182,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
 
 static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> mp,
-                           int emp,t_qmcount *qmc,
+                           MolPropObservable mpo,t_qmcount *qmc,
                            int iQM,char *lot,real rtoler,real atoler,
                            output_env_t oenv,gmx_molselect_t gms)
 {
@@ -217,8 +217,8 @@ static void write_corr_xvg(const char *fn,
             {
                 for(k=0; (k<qmc->nconf); k++)
                 {
-                    if ((mp_get_prop(*mpi,emp,iqmExp,NULL,NULL,NULL,&exp_val) > 0)  &&
-                        (mp_get_prop(*mpi,emp,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
+                    if ((mp_get_prop(*mpi,mpo,iqmExp,NULL,NULL,NULL,&exp_val) > 0)  &&
+                        (mp_get_prop(*mpi,mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
                         diff = fabs(qm_val-exp_val);
@@ -273,7 +273,7 @@ static void add_refc(t_refcount *rc,const char *ref)
 
 static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
                                 int npd,gmx_poldata_t *pd,gmx_poldata_t pdref,
-                                gmx_bool bCalcPol,int prop,
+                                gmx_bool bCalcPol,MolPropObservable prop,
                                 gmx_atomprop_t ap,int iQM,char *lot,
                                 real rtoler,real atoler,real outlier,
                                 char *fc_str,gmx_bool bPrintAll,
@@ -307,7 +307,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
     if (NULL != atype)
     {
         fp = fopen(atype,"w");
-        gmx_molprop_atomtype_table(fp,(prop == empPOLARIZABILITY),
+        gmx_molprop_atomtype_table(fp,(prop == MPO_POLARIZABILITY),
                                    npd,pd,pdref,mp,iQM,lot,oenv,histo);
         fclose(fp);
         do_view(oenv,histo,NULL);
@@ -335,7 +335,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
     }
     
     printf("--------------------------------------------------\n");
-    printf("      Some statistics for %s\n",emp_name[prop]);
+    printf("      Some statistics for %s\n",mpo_name[prop]);
     ntot = 0;
     for(i=0; (i<rc->nref); i++)
     {
@@ -482,7 +482,7 @@ int main(int argc,char *argv[])
 
     std::vector<alexandria::MolProp> mp;
     MolPropSortAlgorithm mpsa;
-    MolPropObservable eprop;
+    MolPropObservable mpo;
     gmx_atomprop_t  ap;
     gmx_poldata_t   *pd,pdref=NULL;
     output_env_t    oenv;
@@ -515,19 +515,19 @@ int main(int argc,char *argv[])
                 break;
             }
     }
-    eprop = empNR;
+    mpo = MPO_NR;
     if (opt2parg_bSet("-prop",npa,pa)) 
     {
-        for(i=0; (i<empNR); i++)
+        for(i=0; (i<MPO_NR); i++)
             if (strcasecmp(prop[0],prop[i+1]) == 0) 
             {
-                eprop = (MolPropObservable) i;
+                mpo = (MolPropObservable) i;
                 break;
             }
     }
-    if (eprop == empNR)
+    if (mpo == MPO_NR)
     {
-        eprop = empDIPOLE;
+        mpo = MPO_DIPOLE;
     }
     snew(pd,npdfile);
     for(i=0; (i<npdfile); i++) {
@@ -539,7 +539,8 @@ int main(int argc,char *argv[])
     if (NULL != fn)
         pdref = gmx_poldata_read(fn,ap);
     if (bMerge)
-        mp = merge_xml(nmpfile,mpname,NULL,NULL,NULL,ap,pd[0],TRUE,TRUE,th_toler,ph_toler);
+        merge_xml(nmpfile,mpname,mp,NULL,NULL,NULL,ap,pd[0],
+                  TRUE,TRUE,th_toler,ph_toler);
     else 
         MolPropRead(mpname[0],mp);
     if (mpsa != MPSA_NR)
@@ -547,7 +548,7 @@ int main(int argc,char *argv[])
         MolPropSort(mp,mpsa,ap,gms);
     }
     gmx_molprop_analyze(mp,npdfile,pd,pdref,bCalcPol,
-                        eprop,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
+                        mpo,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
                         bStatsTable,
                         opt2fn_null("-cat",NFILE,fnm),
                         bPropTable,bCompositionTable,

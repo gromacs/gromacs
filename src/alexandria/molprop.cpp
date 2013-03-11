@@ -3,12 +3,18 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "maths.h"
+#include "poldata.h"
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
       
-const char *emp_name[empNR] = 
+const char *mpo_name[MPO_NR] = 
 { 
     "potential", "dipole", "quadrupole", "polarizability", "energy" 
+};
+
+const char *cs_name[CS_NR] =
+{
+    "recv_data", "recv_empty", "send_data", "send_empty" 
 };
 
 #define GMX_SEND_DATA 19823
@@ -57,6 +63,26 @@ void MolecularComposition::AddAtom(AtomNum an)
     }
 }
 
+void MolProp::AddBond(Bond b)
+{
+    BondIterator bi;
+    gmx_bool bFound = FALSE;
+    
+    for(bi=BeginBond(); !bFound && (bi<EndBond()); bi++)
+    {
+        bFound = (((bi->GetAi() == b.GetAi()) && (bi->GetAj() == b.GetAj())) ||
+                  ((bi->GetAi() == b.GetAj()) && (bi->GetAj() == b.GetAi())));
+    }
+    if (!bFound)
+    {
+        _bond.push_back(b); 
+    }
+    else if (bi->GetBondOrder() != b.GetBondOrder())
+    {
+        fprintf(stderr,"Different bond orders in molecule\n");
+    }
+}
+
 void MolecularComposition::DeleteAtom(std::string catom)
 {
     AtomNumIterator ani;
@@ -83,7 +109,7 @@ void MolecularComposition::ReplaceAtom(std::string oldatom,std::string newatom)
 {
     AtomNumIterator i;
     
-    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
+    for(i=BeginAtomNum(); (i<EndAtomNum()); i++) 
     {
         if (oldatom == i->GetAtom())
         {
@@ -97,7 +123,7 @@ int MolecularComposition::CountAtoms(std::string atom)
 {
     AtomNumIterator i;
     
-    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
+    for(i=BeginAtomNum(); (i<EndAtomNum()); i++) 
     {
         if (atom == i->GetAtom())
             return i->GetNumber();
@@ -117,7 +143,7 @@ int MolecularComposition::CountAtoms()
     int nat = 0;
     AtomNumIterator i;
     
-    for(i=BeginAtomNum(); (i<=EndAtomNum()); i++) 
+    for(i=BeginAtomNum(); (i<EndAtomNum()); i++) 
     {
         nat += i->GetNumber();
     }
@@ -356,7 +382,7 @@ void MolProp::Dump(FILE *fp)
 gmx_bool MolProp::GenerateComposition(gmx_poldata_t pd)
 {
     gmx_bool bDone = FALSE;
-    std::string miller;
+    char *miller;
     CalculationIterator ci;
     CalcAtomIterator cai;
     MolecularComposition mci_bosque("bosque"),mci_spoel("spoel"),mci_miller("miller");
@@ -374,7 +400,7 @@ gmx_bool MolProp::GenerateComposition(gmx_poldata_t pd)
             mci_spoel.AddAtom(ans);
             
             miller = gmx_poldata_get_miller_equiv(pd,cai->GetObtype().c_str());
-            if (miller.size() > 0)
+            if (NULL != miller)
             {
                 AtomNum anm(miller,1);
                 mci_miller.AddAtom(anm);
@@ -500,7 +526,7 @@ gmx_bool MolProp::HasComposition(std::string composition)
     return bComp;   
 }
 
-int Experiment::GetVal(const char *type,int emp,
+int Experiment::GetVal(const char *type,MolPropObservable mpo,
                        double *value,double *error,double vec[3],
                        tensor quadrupole) 
 {
@@ -512,9 +538,9 @@ int Experiment::GetVal(const char *type,int emp,
     MolecularQuadrupoleIterator mqi;
     std::string mtype;
     
-    switch (emp) 
+    switch (mpo) 
     {
-    case empENERGY:
+    case MPO_ENERGY:
         for(mei=BeginEnergy(); !done && (mei<EndEnergy()); mei++) 
         {
             mtype = mei->GetType();
@@ -525,7 +551,7 @@ int Experiment::GetVal(const char *type,int emp,
             }
         }
         break;
-    case empDIPOLE:
+    case MPO_DIPOLE:
         for(mdp=BeginDipole(); !done && (mdp<EndDipole()); mdp++)
         {
             mtype = mdp->GetType();
@@ -539,7 +565,7 @@ int Experiment::GetVal(const char *type,int emp,
             }
         }
         break;
-    case empPOLARIZABILITY:
+    case MPO_POLARIZABILITY:
         for(mdp=BeginPolar(); !done && (mdp<EndPolar()); mdp++)
         {
             mtype = mdp->GetType();
@@ -553,7 +579,7 @@ int Experiment::GetVal(const char *type,int emp,
             }
         }
         break;
-    case empQUADRUPOLE:
+    case MPO_QUADRUPOLE:
         for(mqi=BeginQuadrupole(); !done && (mqi<EndQuadrupole()); mqi++)
         {
             mtype = mqi->GetType();

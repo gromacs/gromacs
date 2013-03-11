@@ -51,21 +51,19 @@
 #include "gpp_nextnb.h"
 #include "toputil.h"
 #include "gen_ad.h"
+#include "gmx_simple_comm.h"
 #include "poldata.h"
 #include "poldata_xml.h"
+#include "molselect.h"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
-//#include "molprop_tables.h"
-#include "gentop_vsite.h"
-#include "gentop_core.h"
-#include "gentop_comm.h"
-//#include "gmx_gauss_io.h"
-//#include "molselect.h"
+#include "gentop_vsite.hpp"
+#include "gentop_core.hpp"
 
-int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
-            double *value,double *error,double vec[3],
-            tensor quadrupole) 
+int get_val2(alexandria::ExperimentIterator mp,char *type,MolPropObservable mpo,
+             double *value,double *error,double vec[3],
+             tensor quadrupole) 
 {
     int    done = 0;
     double x,y,z,xx,yy,zz,xy,xz,yz;
@@ -75,8 +73,8 @@ int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
     alexandria::MolecularQuadrupoleIterator mqi;
     std::string mtype;
     
-    switch (emp) {
-    case empENERGY:
+    switch (mpo) {
+    case MPO_ENERGY:
         for(mei=mp->BeginEnergy(); !done && (mei<mp->EndEnergy()); mei++) 
         {
             mtype = mei->GetType();
@@ -87,7 +85,7 @@ int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
             }
         }
         break;
-    case empDIPOLE:
+    case MPO_DIPOLE:
         for(mdp=mp->BeginDipole(); !done && (mdp<mp->EndDipole()); mdp++)
         {
             mtype = mdp->GetType();
@@ -101,7 +99,7 @@ int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
             }
         }
         break;
-    case empPOLARIZABILITY:
+    case MPO_POLARIZABILITY:
         for(mdp=mp->BeginPolar(); !done && (mdp<mp->EndPolar()); mdp++)
         {
             mtype = mdp->GetType();
@@ -115,7 +113,7 @@ int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
             }
         }
         break;
-    case empQUADRUPOLE:
+    case MPO_QUADRUPOLE:
         for(mqi=mp->BeginQuadrupole(); !done && (mqi<mp->EndQuadrupole()); mqi++)
         {
             mtype = mqi->GetType();
@@ -141,7 +139,7 @@ int get_val(alexandria::ExperimentIterator mp,char *type,int emp,
     return done;
 }
 
-int mp_get_prop_ref(alexandria::MolProp mp,int emp,int iQM,char *lot,
+int mp_get_prop_ref(alexandria::MolProp mp,MolPropObservable mpo,int iQM,char *lot,
                     const char *conf,const char *type,double *value,double *error,
                     char **ref,char **mylot,
                     double vec[3],tensor quadrupole)
@@ -161,7 +159,7 @@ int mp_get_prop_ref(alexandria::MolProp mp,int emp,int iQM,char *lot,
             expconf   = ei->GetConformation();
             
             if ((NULL == conf) || (strcasecmp(conf,expconf.c_str()) == 0))
-                done = ei->GetVal(type,emp,value,error,vec,quadrupole);
+                done = ei->GetVal(type,mpo,value,error,vec,quadrupole);
         }
         if (done != 0) {
             if (NULL != ref)
@@ -193,7 +191,7 @@ int mp_get_prop_ref(alexandria::MolProp mp,int emp,int iQM,char *lot,
                              (strcasecmp(basisset.c_str(),ll[1]) == 0)) &&
                             ((NULL == conf) || (strcasecmp(conf,conformation.c_str()) == 0)))
                         {
-                            done = ci->GetVal(type,emp,value,error,vec,quadrupole);
+                            done = ci->GetVal(type,mpo,value,error,vec,quadrupole);
                         }
                         if ((done != 0) && (NULL != ref))
                             *ref = strdup(reference.c_str());
@@ -224,13 +222,13 @@ int mp_get_prop_ref(alexandria::MolProp mp,int emp,int iQM,char *lot,
     return done;
 }
 
-int mp_get_prop(alexandria::MolProp mp,int emp,int iQM,char *lot,
+int mp_get_prop(alexandria::MolProp mp,MolPropObservable mpo,int iQM,char *lot,
                 char *conf,char *type,double *value)
 {
     double error,vec[3];
     tensor quad;
 
-    return mp_get_prop_ref(mp,emp,iQM,lot,conf,type,value,&error,
+    return mp_get_prop_ref(mp,mpo,iQM,lot,conf,type,value,&error,
                            NULL,NULL,vec,quad);
 }                
 
@@ -361,7 +359,7 @@ void generate_formula(std::vector<alexandria::MolProp> mp,gmx_atomprop_t ap)
                 ncomp[1] = 0;
             }
         }
-        for(j=110; (j>=1); j--) 
+        for(j=109; (j>=1); j--) 
         {
             if (ncomp[j] > 0)
             {
@@ -521,10 +519,10 @@ int my_strcmp(const char *a,const char *b)
         return 1;
 }
 
-void merge_doubles(std::vector<alexandria::MolProp> mp,char *doubles,
+void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,
                    gmx_bool bForceMerge)
 {
-    alexandria::MolPropIterator mpi[2];
+    alexandria::MolPropIterator mpi,mmm[2];
     std::string molname[2];
     std::string form[2];
     
@@ -539,12 +537,13 @@ void merge_doubles(std::vector<alexandria::MolProp> mp,char *doubles,
     else
         fp = NULL;
     i = 0;
-    for(mpi[cur]=mp.begin(); (mpi[cur]<mp.end()); )
+    for(mpi=mp.begin(); (mpi<mp.end()); )
     {
         bDouble = FALSE;
-        mpi[cur]->Dump(debug);
-        molname[cur] = mpi[cur]->GetMolname();
-        form[cur]    = mpi[cur]->GetFormula();
+        mpi->Dump(debug);
+        mmm[cur] = mpi;
+        molname[cur] = mpi->GetMolname();
+        form[cur]    = mpi->GetFormula();
         if (i > 0) {
             bForm = (form[prev] == form[cur]);
             bName = (molname[prev] == molname[cur]);
@@ -556,25 +555,29 @@ void merge_doubles(std::vector<alexandria::MolProp> mp,char *doubles,
                 if (bForceMerge || bForm) {
                     if (fp)
                         fprintf(fp,"%5d  %s\n",ndouble+1,molname[prev].c_str());
-                    mpi[prev]->Merge(*mpi[cur]);
-                    mpi[cur] = mp.erase(mpi[cur]);
+                    mmm[prev]->Merge(*(mmm[cur]));
+                    mpi = mp.erase(mmm[cur]);
                     
                     bDouble = TRUE;
                     ndouble++;
-                    molname[cur]  = mpi[cur]->GetMolname();
-                    form[cur]     = mpi[cur]->GetFormula();
+                    if (mpi != mp.end())
+                    {
+                        mmm[cur]      = mpi;
+                        molname[cur]  = mmm[cur]->GetMolname();
+                        form[cur]     = mmm[cur]->GetFormula();
+                    }
                 }
             }
         }
         if (!bDouble) {
             cur = prev;
-            mpi[cur]++;
+            mpi++;
             i++;
         }
     }
-    for(mpi[cur]=mp.begin(); (mpi[cur]<mp.end()); )
+    for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
-        mpi[cur]->Dump(debug);
+        mpi->Dump(debug);
     }
     if (fp)
         fclose(fp);
@@ -598,13 +601,14 @@ static void dump_mp(std::vector<alexandria::MolProp> mp)
     fclose(fp);
 }
 
-std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
-                                           char *sorted,char *doubles,
-                                           gmx_atomprop_t ap,gmx_poldata_t pd,
-                                           gmx_bool bForceMerge,gmx_bool bForceGenComp,
-                                           double th_toler,double ph_toler)
+void merge_xml(int nfile,char **filens,
+               std::vector<alexandria::MolProp> &mpout, 
+               char *outf,char *sorted,char *doubles,
+               gmx_atomprop_t ap,gmx_poldata_t pd,
+               gmx_bool bForceMerge,gmx_bool bForceGenComp,
+               double th_toler,double ph_toler)
 {
-    std::vector<alexandria::MolProp> mp,mpout;
+    std::vector<alexandria::MolProp> mp;
     alexandria::MolPropIterator mpi;
     int       i,npout=0,tmp;
   
@@ -613,7 +617,7 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
         if (!gmx_fexist(filens[i]))
             continue;
         MolPropRead(filens[i],mp);
-        generate_composition(mp,pd);//,ap,bForceGenComp,th_toler,ph_toler);
+        generate_composition(mp,pd);
         generate_formula(mp,ap);
         for(mpi=mp.begin(); (mpi<mp.end());)
         {
@@ -624,7 +628,8 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
     tmp = mpout.size();
     MolPropSort(mpout,MPSA_MOLNAME,NULL,NULL);
     merge_doubles(mpout,doubles,bForceMerge);
-    printf("There are %d total molecules after merging.\n",tmp);
+    printf("There are %d total molecules before merging, %d after.\n",
+           tmp,(int)mpout.size());
       
     if (outf) 
     {
@@ -637,25 +642,26 @@ std::vector<alexandria::MolProp> merge_xml(int nfile,char **filens,char *outf,
         MolPropWrite(sorted,mpout,FALSE);
         dump_mp(mpout);
     }
-  
-    return mpout;
 }
 
-static int comp_mp_molname(alexandria::MolProp ma,alexandria::MolProp mb)
+static int comp_mp_molname(alexandria::MolProp ma,
+                           alexandria::MolProp mb)
 {
     std::string mma = ma.GetMolname();
     std::string mmb = mb.GetMolname();
   
-    return strcasecmp(mma.c_str(),mmb.c_str());
+    //return 0;
+    return mma.compare(mmb);
 }
 
-static int comp_mp_formula(alexandria::MolProp ma,alexandria::MolProp mb)
+static int comp_mp_formula(alexandria::MolProp ma,
+                           alexandria::MolProp mb)
 {
     int r;
     std::string fma = ma.GetFormula();
     std::string fmb = mb.GetFormula();
   
-    r = strcasecmp(fma.c_str(),fmb.c_str());
+    r = fma.compare(fmb);
   
     if (r == 0) 
         return comp_mp_molname(ma,mb);
@@ -665,7 +671,8 @@ static int comp_mp_formula(alexandria::MolProp ma,alexandria::MolProp mb)
 
 gmx_atomprop_t my_aps;
 
-static int comp_mp_elem(alexandria::MolProp ma,alexandria::MolProp mb)
+static int comp_mp_elem(alexandria::MolProp ma,
+                        alexandria::MolProp mb)
 {
     int i,r;
     alexandria::MolecularCompositionIterator mcia,mcib;
@@ -703,7 +710,7 @@ static int comp_mp_selection(alexandria::MolProp ma,alexandria::MolProp mb)
     return (ia - ib);
 }
 
-void MolPropSort(std::vector<alexandria::MolProp> mp,
+void MolPropSort(std::vector<alexandria::MolProp> &mp,
                  MolPropSortAlgorithm mpsa,gmx_atomprop_t apt,
                  gmx_molselect_t gms)
 {
@@ -796,7 +803,8 @@ static void add_qmc_calc(t_qmcount *qmc,const char *method,const char *basis,con
     }
 }
 
-t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,int emp,
+t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
+                             MolPropObservable mpo,
                              const char *fc_str)
 {
     alexandria::MolPropIterator     mpi;
@@ -858,7 +866,7 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,int emp,
             {
                 if ((NULL == fc_str) || (get_qmc_count(qmc,method,basis,ti->c_str()) > 0))
                 {
-                    if (ci->GetVal(ti->c_str(),emp,&value,&error,vec,quadrupole) == 1) 
+                    if (ci->GetVal(ti->c_str(),mpo,&value,&error,vec,quadrupole) == 1) 
                     {
                         add_qmc_calc(qmc,method,basis,ti->c_str());
                     }

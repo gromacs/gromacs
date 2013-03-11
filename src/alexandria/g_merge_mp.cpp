@@ -176,7 +176,8 @@ int main(int argc,char *argv[])
     if ((pd = gmx_poldata_read(opt2fn_null("-di",NFILE,fnm),ap)) == NULL)
       gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
     nfiles = opt2fns(&fns,"-f",NFILE,fnm);
-    mp = merge_xml(nfiles,fns,NULL,NULL,NULL,ap,pd,TRUE,TRUE,th_toler,ph_toler);
+    merge_xml(nfiles,fns,mp,NULL,NULL,NULL,ap,pd,
+              TRUE,TRUE,th_toler,ph_toler);
     
     ReadSqlite3(opt2fn_null("-db",NFILE,fnm),mp);
         

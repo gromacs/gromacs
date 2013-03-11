@@ -92,7 +92,7 @@
 #include "molprop_util.h"
 #include "molselect.h"
 #include "mtop_util.h"
-#include "gentop_comm.h"
+#include "gmx_simple_comm.h"
 #include "nmsimplex.h"
 #include "mymol.h"
 

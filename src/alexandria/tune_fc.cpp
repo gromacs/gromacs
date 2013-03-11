@@ -85,7 +85,7 @@
 #include "slater_integrals.h"
 #include "molselect.h"
 #include "mtop_util.h"
-#include "gentop_comm.h"
+#include "gmx_simple_comm.h"
 #include "nmsimplex.h"
 #include "poldata.h"
 #include "poldata_xml.h"
@@ -167,7 +167,7 @@ static void opt2list(opt_param_t *opt)
 static void list2opt(opt_param_t *opt)
 {
     gmx_poldata_t pd = opt->md->pd;
-    int i,j,p,n,nparam;
+    int i,j,p,n;
     char buf[STRLEN],*ptr;
     
     for(i=n=0; (i<ebtsNR); i++) {
@@ -561,9 +561,9 @@ static void done_opt_mask(opt_mask_t **omt)
 static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                                 gmx_bool bOpt[])
 {
-    int  gt,i,bt,n,tp,ai,aj,ak,al,ft;
+    int  gt,i,bt,n,ai,aj,ak,al,ft;
     int  ntot[ebtsNR];
-    char *aai,*aaj,*aak,*aal,*params,**ptr;
+    char *aai,*aaj,*aak,*aal,*params;
     t_mymol *mymol;
     opt_mask_t *omt;
     const char *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
@@ -601,7 +601,6 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                 mymol = &(mm[n]);
             
                 for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
-                    tp = mymol->ltop->idef.il[ft].iatoms[i];
                     ai = mymol->ltop->idef.il[ft].iatoms[i+1];
                     aai = *mymol->topology->atoms.atomtype[ai];
                     aj = mymol->ltop->idef.il[ft].iatoms[i+2];
@@ -800,9 +799,9 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
 
 static double calc_opt_deviation(opt_param_t *opt)
 {
-    int    i,j,count,atomnr;
+    int    i,j,count;
     int    flags;
-    double qq,qtot,rr2,ener;
+    double ener;
     real   lambda,t = 0;
     rvec   mu_tot = {0,0,0};
     tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
@@ -810,10 +809,6 @@ static double calc_opt_deviation(opt_param_t *opt)
     gmx_wallcycle_t wcycle;
     gmx_bool        bConverged;
     t_mymol *mymol;
-    int     eQ;
-    gmx_mtop_atomloop_all_t aloop;
-    t_atom *atom; 
-    int    at_global,resnr;
     FILE   *dbcopy;
     
     if (PAR(opt->md->cr)) 
@@ -922,7 +917,6 @@ static double calc_opt_deviation(opt_param_t *opt)
 static double energy_function(void *params,double v[])
 {
     opt_param_t *opt = (opt_param_t *)params;
-    t_moldip *md = opt->md;
     int      i;
     
     /* Copy parameters to topologies */
@@ -996,7 +990,6 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
     double *ssum,*s2sum;
 #define prev (1-cur)
     gmx_rng_t rng;
-    real r;
     FILE *fpc=NULL,*fpe=NULL;
   
     beta = 1/(BOLTZ*temperature);
@@ -1081,12 +1074,9 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                             const char *xvgconv,const char *xvgepot,
                             real temperature)
 {
-    double chi2,chi2_min,wj,rms_nw;
-    int    status = 0;
-    int    i,k,index,n,nparam;
+    double chi2,chi2_min;
+    int    k,n,nparam;
     gmx_bool bMinimum=FALSE;
-    char   *name,*qstr,*rowstr;
-    char   buf[STRLEN];
     gmx_rng_t rng;
     opt_param_t *opt;
     
@@ -1285,7 +1275,7 @@ int main(int argc, char *argv[])
     static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
     static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
     static real factor=0.8;
-    static real th_toler=170,ph_toler=5,dip_toler=0.5,quad_toler=5,q_toler=0.25;
+    static real th_toler=170,ph_toler=5,dip_toler=0.5;
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
@@ -1358,7 +1348,7 @@ int main(int argc, char *argv[])
           "Compress output XML file" }
     };
     t_moldip  *md;
-    FILE      *fp,*out;
+    FILE      *fp;
     int       iModel;
     t_commrec *cr;
     output_env_t oenv;

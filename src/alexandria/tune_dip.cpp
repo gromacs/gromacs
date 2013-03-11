@@ -84,7 +84,7 @@
 #include "poldata_xml.h"
 #include "molselect.h"
 #include "mtop_util.h"
-#include "gentop_comm.h"
+#include "gmx_simple_comm.h"
 #include "nmsimplex.h"
 #include "gentop_qgen.hpp"
 #include "gentop_core.hpp"
@@ -209,8 +209,8 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
 {
     FILE   *xvgf,*qdiff,*mud,*tdiff,*hh,*espd;
     double d2=0;
-    real   rms,sigma,aver,error,xESP,xEEM,qq,chi2,espx,espy,espdx,espdy,wtot;
-    int    i,j,k,n,nout,nlsqt=0,mm,nn,nesp;
+    real   rms,sigma,aver,error,qq,chi2,espx,espy,espdx,espdy,wtot;
+    int    i,j,k,n,nout,nlsqt=0,mm,nn;
     char   *resnm,*atomnm;
     const  char **atomtypes=NULL;
     enum { eprEEM, eprESP, eprNR };
@@ -417,7 +417,7 @@ static void mymol_calc_multipoles(t_mymol *mol,int iModel,gmx_bool bGaussianBug)
     real r2,dfac,q;
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom;     
-    int    at_global,resnr;
+    int    at_global;
     rvec   coq;
     
     clear_rvec(mu);
@@ -450,11 +450,11 @@ static void mymol_calc_multipoles(t_mymol *mol,int iModel,gmx_bool bGaussianBug)
 
 static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
 {
-    int i,k,tp,ai,aj;
+    int k,tp,ai,aj;
     real q,Z;
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom,*atom_i,*atom_j;     
-    int    at_global,resnr;
+    int    at_global;
     gmx_mtop_atomlookup_t alook;
     
     alook = gmx_mtop_atomlookup_init(mtop);
@@ -498,7 +498,7 @@ static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
 static void calc_moldip_deviation(t_moldip *md)
 {
     int    i,j,count,atomnr;
-    double qq,qtot,rr2,ener[ermsNR],etot[ermsNR];
+    double qq,qtot,ener[ermsNR],etot[ermsNR];
     real   t = 0;
     rvec   mu_tot = {0,0,0};
     gmx_enerdata_t *epot;
@@ -510,7 +510,7 @@ static void calc_moldip_deviation(t_moldip *md)
     int     eQ;
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom; 
-    int    at_global,resnr;
+    int    at_global;
     
     if (PAR(md->cr)) 
     {
@@ -677,9 +677,9 @@ static void calc_moldip_deviation(t_moldip *md)
 static double dipole_function(void *params,double v[])
 {
     t_moldip *md = (t_moldip *) params;
-    int      i,j,k,zz,nzeta;
+    int      j,k,zz,nzeta;
     double   chi0,z,J0,bounds=0;
-    char     *name,*zeta,*qstr,*rowstr;
+    char     *name,*qstr,*rowstr;
     char     zstr[STRLEN],buf[STRLEN];
     
 #define HARMONIC(x,xmin,xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
@@ -845,10 +845,9 @@ static void optimize_moldip(FILE *fp,FILE *fplog,const char *convfn,
                             gmx_bool bRandom,real stol,output_env_t oenv)
 {
     FILE   *cfp=NULL;
-    double chi2,chi2_min,wj,rms_nw;
+    double chi2,chi2_min;
     int    nzeta,zz;
-    int    status = 0;
-    int    i,k,index,n,nparam;
+    int    i,k,n,nparam;
     double *test_param,*orig_param,*best_param,*start;
     gmx_bool   bMinimum=FALSE;
     double J00,chi0,zeta;
@@ -1154,7 +1153,7 @@ int main(int argc, char *argv[])
           "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" }
     };
     t_moldip  *md;
-    FILE      *fp,*out;
+    FILE      *fp;
     int       iModel;
     t_commrec *cr;
     output_env_t oenv;

@@ -119,11 +119,8 @@ int main(int argc, char *argv[])
   gmx_atomprop_t aps;
   gmx_poldata_t  pd;
   std::vector<alexandria::MolProp> mp;
-  gau_atomprop_t gp;
   char **fns=NULL;
-  const char *g98;
   int i,nfn;
-  FILE *fp;
   gau_atomprop_t gaps;
   
   CopyRight(stdout,argv[0]);
@@ -151,7 +148,8 @@ int main(int argc, char *argv[])
   }
   done_gauss_data(gaps);
   
-  printf("Succesfully read %d molprops from %d Gaussian files.\n",mp.size(),nfn);
+  printf("Succesfully read %d molprops from %d Gaussian files.\n",
+         (int)mp.size(),nfn);
   MolPropSort(mp,MPSA_MOLNAME,NULL,NULL);
   merge_doubles(mp,NULL,TRUE);
   if (mp.size() > 0)

@@ -58,7 +58,7 @@
 //#include "molprop_tables.h"
 #include "gentop_vsite.h"
 #include "gentop_core.h"
-#include "gentop_comm.h"
+#include "gmx_simple_comm.h"
 #include "gmx_gauss_io.h"
 //#include "molselect.h"
 

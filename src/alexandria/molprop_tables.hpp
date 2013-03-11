@@ -53,7 +53,7 @@ extern char *itoa(int f);
    experiment are not taken into account when computing
    statistics. Moreover, the outliers are printed to the standard
    error. If outlier is 0, no action is taken. */
-extern void gmx_molprop_stats_table(FILE *fp,int eprop,
+extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
                                     int ntot,
                                     t_qmcount *qmc,int iQM,char *lot,
@@ -67,7 +67,7 @@ extern void gmx_molprop_category_table(FILE *fp,
                                        std::vector<alexandria::MolProp> mp,
                                        gmx_molselect_t gms,int ims);
 
-extern void gmx_molprop_prop_table(FILE *fp,int eprop,real rtoler,real atoler,
+extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,real rtoler,real atoler,
                                    std::vector<alexandria::MolProp> mp,
                                    int bDS,t_qmcount *qmc,
                                    gmx_bool bPrintAll,gmx_bool bPrintBasis,

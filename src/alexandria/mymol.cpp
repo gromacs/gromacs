@@ -791,7 +791,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
         close_symtab(&(mymol->symtab));
 
         mymol->eSupport = eSupportLocal;
-        if (mp_get_prop_ref(mp,empDIPOLE,(bQM ? iqmQM : iqmBoth),
+        if (mp_get_prop_ref(mp,MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
                             lot,NULL,(char *)"elec",
                             &value,&error,&myref,&mylot,
                             vec,quadrupole) == 0)
@@ -823,7 +823,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
             }
             mymol->dip_weight = sqr(1.0/error);
         }
-        if (mp_get_prop_ref(mp,empDIPOLE,iqmQM,
+        if (mp_get_prop_ref(mp,MPO_DIPOLE,iqmQM,
                             lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
         {
             for(m=0; (m<DIM); m++)
@@ -831,16 +831,16 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
                 mymol->mu_esp[m] = vec[m];
             }
         }
-        if (mp_get_prop(mp,empENERGY,(bQM ? iqmQM : iqmBoth),
-                        lot,NULL,"DHf(298.15K)",&value) != 0)
+        if (mp_get_prop(mp,MPO_ENERGY,(bQM ? iqmQM : iqmBoth),
+                        lot,NULL,(char *)"DHf(298.15K)",&value) != 0)
         {
             mymol->Hform = value;
             mymol->Emol = value;
             for(ia=0; (ia<mymol->topology->atoms.nr); ia++) {
                 if (gau_atomprop_get_value(gaps,*mymol->topology->atoms.atomname[ia],
-                                           "exp","DHf(0K)",0,&dv0) &&
+                                           (char *)"exp",(char *)"DHf(0K)",0,&dv0) &&
                     gau_atomprop_get_value(gaps,*mymol->topology->atoms.atomname[ia],
-                                           "exp","H(0K)-H(298.15K)",
+                                           (char *)"exp",(char *)"H(0K)-H(298.15K)",
                                            298.15,&dv298))
                 {
                     mymol->Emol -= convert2gmx(dv0+dv298,eg2c_Hartree);
@@ -872,13 +872,13 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
     {
         if (bQM)
         {
-            if (mp_get_prop_ref(mp,empQUADRUPOLE,iqmQM,
+            if (mp_get_prop_ref(mp,MPO_QUADRUPOLE,iqmQM,
                                 lot,NULL,(char *)"elec",&value,&error,
                                 NULL,NULL,vec,quadrupole) == 0)
                 imm = immNoQuad;
             else
                 copy_mat(quadrupole,mymol->Q_exp);
-            if (mp_get_prop_ref(mp,empQUADRUPOLE,iqmQM,
+            if (mp_get_prop_ref(mp,MPO_QUADRUPOLE,iqmQM,
                                 lot,NULL,(char *)"ESP",&value,&error,
                                 NULL,NULL,vec,quadrupole) != 0)
                 copy_mat(quadrupole,mymol->Q_esp);
@@ -1472,7 +1472,7 @@ void read_moldip(t_moldip *md,
         for(i=0; (i<immNR); i++)
             if (imm_count[i] > 0)
                 fprintf(fp,"%d molecules - %s.\n",imm_count[i],immsg(i));
-        if (imm_count[immOK] != mp.size())
+        if (imm_count[immOK] != (int)mp.size())
         {
             fprintf(fp,"Check %s.debug for more information.\nYou may have to use the -debug 1 flag.\n\n",ShortProgram());
         }
