@@ -570,11 +570,6 @@ if(GMX_GPU)
     gmx_gpu_setup()
 endif(GMX_GPU)
 
-if(APPLE)
-   find_library(ACCELERATE_FRAMEWORK Accelerate)
-   list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
-endif(APPLE)
-
 if(CYGWIN)
     set(GMX_CYGWIN 1)
 endif(CYGWIN)
@@ -966,11 +961,21 @@ if(FFTW3_THREADS OR FFTW3F_THREADS)
     add_definitions(-DFFT5D_FFTW_THREADS)
 endif()
 
-set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
-set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
-# MKL has BLAS/LAPACK routines
-if(NOT HAVE_LIBMKL AND NOT ACCELERATE_FRAMEWORK)
-  if(GMX_EXTERNAL_BLAS)
+if(APPLE)
+   find_library(ACCELERATE_FRAMEWORK Accelerate)
+   list(APPEND GMX_EXTRA_LIBRARIES ${ACCELERATE_FRAMEWORK})
+endif(APPLE)
+
+if(HAVE_LIBMKL OR ACCELERATE_FRAMEWORK)
+    # In either case, we have BLAS/LAPACK routines already organized
+    # so no need to detect anything at all
+    set(WANT_EXTERNAL_LINEAR_ALGEBRA_LIBS FALSE)
+else()
+    set(WANT_EXTERNAL_LINEAR_ALGEBRA_LIBS TRUE)
+set(GMX_EXTERNAL_BLAS ${WANT_EXTERNAL_LINEAR_ALGEBRA_LIBS} CACHE BOOL "Use external BLAS instead of built-in")
+set(GMX_EXTERNAL_LAPACK ${WANT_EXTERNAL_LINEAR_ALGEBRA_LIBS} CACHE BOOL "Use external LAPACK instead of built-in")
+
+if(GMX_EXTERNAL_BLAS)
     if (GMX_BLAS_USER)
         list(APPEND GMX_EXTRA_LIBRARIES ${GMX_BLAS_USER})
     else(GMX_BLAS_USER)
