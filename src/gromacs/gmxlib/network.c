@@ -46,13 +46,7 @@
 #include <ctype.h>
 #include "macros.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/gmxmpi.h"
 
 
 /* The source code in this file should be thread-safe.

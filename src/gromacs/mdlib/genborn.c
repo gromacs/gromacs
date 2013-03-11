@@ -57,12 +57,7 @@
 #include "nrnb.h"
 #include "bondf.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/gmxmpi.h"
 
 #ifdef GMX_X86_SSE2
 #  ifdef GMX_DOUBLE

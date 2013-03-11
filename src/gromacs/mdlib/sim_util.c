@@ -93,12 +93,7 @@
 #include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/gmxmpi.h"
 
 #include "adress.h"
 #include "qmmm.h"

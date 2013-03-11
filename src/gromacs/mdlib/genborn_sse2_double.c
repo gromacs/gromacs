@@ -54,12 +54,7 @@
 #include "mtop_util.h"
 #include "genborn.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/gmxmpi.h"
 
 /* Only compile this file if SSE2 intrinsics are available */
 #if 0 && defined (GMX_X86_SSE2)
