@@ -934,14 +934,48 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     endif()
 
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-#    MESSAGE(STATUS "Using external FFT library - Intel MKL")
-    find_package(MKL REQUIRED)
-    include_directories(${MKL_INCLUDE_DIR})
-    set(FFT_LIBRARIES ${MKL_LIBRARIES})
-    set(PKG_FFT_LIBS ${MKL_LIBRARIES})
+    MESSAGE(STATUS "Using external FFT library - Intel MKL")
 
+    # Intel 11 and up makes life somewhat easy if you just want to use
+    # all their stuff. It's not easy if you only want some of their
+    # stuff...
+    if (CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_GREATER "11")
+        # The next line takes care of everything for MKL
+        set(FFT_LINKER_FLAGS "-mkl=sequential")
+        set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
+    else()
+        # The user will have to provide the set of magic libraries in
+        # MKL_LIBRARIES, which we cache (non-advanced), so that they
+        # don't have to keep specifying it, and can easily see that
+        # CMake is still using that information.
+        set(MKL_LIBRARIES "${MKL_LIBRARIES" CACHE STRING "User-specified libraries for linking to MKL")
+        set(FFT_LIBRARIES "${MKL_LIBRARIES}")
+        set(MKL_ERROR_MESSAGE "The link libraries in MKL_LIBRARIES=${MKL_LIBRARIES} need to match what the MKL documentation says you need for your system (and be full paths to library files, in the right order, and separated by semicolons).")
+        # Convert the semi-colon separated list to a list of
+        # command-line linker arguments so that code using our
+        # pkgconfig setup can use it.
+        string(REGEX REPLACE ";" " " PKG_FFT_LIBS "${MKL_LIBRARIES}")
+    endif()
+
+    # Check MKL works. If we were in a non-global scope, we wouldn't
+    # have to play nicely.
+    set(old_CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_FLAGS "${FFT_LINKER_FLAGS}")
+    set(old_CMAKE_REQUIRED_LIBRARIES "${CMAKE_REQUIRED_LIBRARIES}")
+    set(CMAKE_REQUIRED_LIBRARIES "${FFT_LIBRARIES}")
+
+    check_function_exists(DftiCreateDescriptor TEST_MKL)
+
+    set(CMAKE_REQUIRED_FLAGS "${old_CMAKE_REQUIRED_FLAGS}")
+    set(CMAKE_REQUIRED_LIBRARIES "${old_CMAKE_REQUIRED_LIBRARIES}")
+
+    if(NOT TEST_MKL)
+        message(FATAL_ERROR "Linking with MKL was requested, but was not successful. ${MKL_ERROR_MESSAGE}")
+    endif()
+
+    # Set variables to signal that we have MKL available and should use it for FFTs.
     set(GMX_FFT_MKL 1)
-    set(HAVE_MKL 1)
+    set(HAVE_LIBMKL 1)
 
 #elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
 #    MESSAGE(STATUS "Using external FFT library - AMD core math library")
@@ -961,7 +995,7 @@ endif()
 set(GMX_EXTERNAL_BLAS TRUE CACHE BOOL "Use external BLAS instead of built-in")
 set(GMX_EXTERNAL_LAPACK TRUE CACHE BOOL "Use external LAPACK instead of built-in")
 # MKL has BLAS/LAPACK routines
-if(NOT HAVE_MKL AND NOT ACCELERATE_FRAMEWORK)
+if(NOT HAVE_LIBMKL AND NOT ACCELERATE_FRAMEWORK)
   if(GMX_EXTERNAL_BLAS)
     if (GMX_BLAS_USER)
         list(APPEND GMX_EXTRA_LIBRARIES ${GMX_BLAS_USER})
@@ -1056,7 +1090,7 @@ endif(GMX_FAHCORE)
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
@@ -1068,7 +1102,7 @@ else()
         message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
         message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     endif()
-    message("CMAKE_EXE_LINKER_FLAGS: ${MPI_LINKER_FLAGS}")
+    message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
     message("CMAKE_SHARED_LINKER_FLAGS: ${MPI_LINKER_FLAGS}")
 endif()
 
