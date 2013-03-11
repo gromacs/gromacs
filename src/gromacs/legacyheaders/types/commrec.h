@@ -35,20 +35,7 @@
 #ifndef _commrec_h
 #define _commrec_h
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#else
-#ifdef GMX_THREAD_MPI
-#include "../thread_mpi/tmpi.h"
-#include "../thread_mpi/mpi_bindings.h"
-#else
-typedef void* MPI_Comm;
-typedef void* MPI_Request;
-typedef void* MPI_Group;
-#define MPI_COMM_NULL NULL
-#endif
-#endif
-
+#include "../../utility/gmxmpi.h"
 #include "idef.h"
 
 #ifdef __cplusplus
