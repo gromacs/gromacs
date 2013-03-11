@@ -437,18 +437,22 @@ As mentioned above, sometimes vendor \blas{} and \lapack{} libraries
 can provide performance enhancements for \gromacs{} when doing
 normal-mode analysis or covariance analysis. For simplicity, the text
 below will refer only to \blas{}, but the same options are available
-for \lapack{}. By default, the \cmake{} optionv
-\verb+GMX_EXTERNAL_BLAS+ is on, which triggers \cmake{} to search for
-\blas{}. If one is found, then it is used. Otherwise, \cmake{} falls
-back on internal versions provided in the \gromacs{} source. These are
-fine for normal use. If you need to specify a non-standard path to
-search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+for \lapack{}. By default, CMake will search for \blas{}, use it if it
+is found, and otherwise fall back on a version of \blas{} internal to
+\gromacs{}. The \cmake{} option \verb+GMX_EXTERNAL_BLAS+ will be set
+accordingly. The internal versions are fine for normal use. If you
+need to specify a non-standard path to search, use
+\verb+-DCMAKE_PREFIX_PATH=/path/to/search+. If you need to specify a
+library with a non-standard name (e.g. ESSL on AIX), then set
+\verb+-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a+.
 
 If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
-\lapack{} it provides are used automatically.
+\lapack{} it provides are used automatically. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
 
 On Apple platforms where the Accelerate Framework is available, these
-will be automatically used for \blas{} and \lapack{}.
+will be automatically used for \blas{} and \lapack{}. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
 
 \subsection{Native GPU acceleration}
 If you have the \cuda{} Software Development Kit installed, you can
