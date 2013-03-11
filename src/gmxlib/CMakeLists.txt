@@ -75,13 +75,13 @@ set_source_files_properties(${CMAKE_CURRENT_BINARY_DIR}/version.c
                 PROPERTIES GENERATED true)
 endif()
 
-if(NOT GMX_EXTERNAL_BLAS)
+if(NOT HAVE_EXTERNAL_BLAS)
   file(GLOB BLAS_SOURCES gmx_blas/*.c)
-endif(NOT GMX_EXTERNAL_BLAS)
+endif()
 
-if(NOT GMX_EXTERNAL_LAPACK)
+if(NOT HAVE_EXTERNAL_LAPACK)
   file(GLOB LAPACK_SOURCES gmx_lapack/*.c)
-endif(NOT GMX_EXTERNAL_LAPACK)
+endif()
 
 # This would be the standard way to include thread_mpi, but we want libgmx
 # to link the functions directly
