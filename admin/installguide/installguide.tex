@@ -264,9 +264,11 @@ accordingly.
 \subsection{Optional build components}
 
 \begin{itemize}
-\item Hardware-optimized \blas{} and \lapack{} libraries are useful for
-  a few of the \gromacs{} utilities focused on normal modes and matrix manipulation, 
-  but they does not provide any benefits for normal simulations.
+\item Hardware-optimized \blas{} and \lapack{} libraries are useful
+  for a few of the \gromacs{} utilities focused on normal modes and
+  matrix manipulation, but they do not provide any benefits for normal
+  simulations. Configuring these are discussed
+  \hyperlink{linear-algebra}{here}.
 \item The built-in \gromacs{} trajectory viewer \verb+ngmx+ requires
   X11 and Motif/Lesstif libraries and header files. Generally, the
   \gromacs{} team rather recommends you use third-party software for
@@ -422,6 +424,21 @@ some of this with advanced options such as \verb+CMAKE_C_FLAGS+
 and its relatives.
 
 See also: \url{http://cmake.org/Wiki/CMake_Useful_Variables#Environment_Variables}
+
+\subsection{Linear algebra libraries}\hypertarget{linear-algebra}
+As mentioned above, sometimes vendor \blas{} and \lapack{} libraries
+can provide performance enhancements for \gromacs{} when doing
+normal-mode analysis or covariance analysis. For simplicity, the text
+below will refer only to \blas{}, but the same options are available
+for \lapack{}. By default, the \cmake{} optionv
+\verb+GMX_EXTERNAL_BLAS+ is on, which triggers \cmake{} to search for
+\blas{}. If one is found, then it is used. Otherwise, \cmake{} falls
+back on internal versions provided in the \gromacs{} source. These are
+fine for normal use. If you need to specify a non-standard path to
+search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+
+On Apple platforms where the Accelerate Framework is available, these
+will be automatically used for \blas{} and \lapack{}.
 
 \subsection{Native GPU acceleration}
 If you have the \cuda{} Software Development Kit installed, you can
