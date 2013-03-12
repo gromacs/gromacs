@@ -61,84 +61,6 @@
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 
-int get_val2(alexandria::ExperimentIterator mp,char *type,MolPropObservable mpo,
-             double *value,double *error,double vec[3],
-             tensor quadrupole) 
-{
-    int    done = 0;
-    double x,y,z,xx,yy,zz,xy,xz,yz;
-    
-    alexandria::MolecularEnergyIterator mei;
-    alexandria::MolecularDipPolarIterator mdp;
-    alexandria::MolecularQuadrupoleIterator mqi;
-    std::string mtype;
-    
-    switch (mpo) {
-    case MPO_ENERGY:
-        for(mei=mp->BeginEnergy(); !done && (mei<mp->EndEnergy()); mei++) 
-        {
-            mtype = mei->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
-            {
-                mei->Get(value,error);
-                done = 1;
-            }
-        }
-        break;
-    case MPO_DIPOLE:
-        for(mdp=mp->BeginDipole(); !done && (mdp<mp->EndDipole()); mdp++)
-        {
-            mtype = mdp->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
-            {
-                mdp->Get(&x,&y,&z,value,error);
-                vec[XX] = x;
-                vec[YY] = y;
-                vec[ZZ] = z;
-                done = 1;
-            }
-        }
-        break;
-    case MPO_POLARIZABILITY:
-        for(mdp=mp->BeginPolar(); !done && (mdp<mp->EndPolar()); mdp++)
-        {
-            mtype = mdp->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
-            {
-                mdp->Get(&x,&y,&z,value,error);
-                vec[XX] = x;
-                vec[YY] = y;
-                vec[ZZ] = z;
-                done = 1;
-            }
-        }
-        break;
-    case MPO_QUADRUPOLE:
-        for(mqi=mp->BeginQuadrupole(); !done && (mqi<mp->EndQuadrupole()); mqi++)
-        {
-            mtype = mqi->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
-            {
-                mqi->Get(&xx,&yy,&zz,&xy,&xz,&yz);
-                quadrupole[XX][XX] = xx;
-                quadrupole[XX][YY] = xy;
-                quadrupole[XX][ZZ] = xz;
-                quadrupole[YY][XX] = 0;
-                quadrupole[YY][YY] = yy;
-                quadrupole[YY][ZZ] = yz;
-                quadrupole[ZZ][XX] = 0;
-                quadrupole[ZZ][YY] = 0;
-                quadrupole[ZZ][ZZ] = zz;
-                done = 1;
-            }
-        }
-        break;
-    default:
-        break;
-    }
-    return done;
-}
-
 int mp_get_prop_ref(alexandria::MolProp mp,MolPropObservable mpo,int iQM,char *lot,
                     const char *conf,const char *type,double *value,double *error,
                     char **ref,char **mylot,
@@ -626,6 +548,8 @@ void merge_xml(int nfile,char **filens,
         }
     }
     tmp = mpout.size();
+    printf("mpout.size() = %u mpout.max_size() = %u\n",
+           mpout.size(),mpout.max_size());
     for(mpi=mpout.begin(); (mpi<mpout.end()); mpi++)
     {
         mpi->Dump(debug);
@@ -655,7 +579,8 @@ static bool comp_mp_molname(alexandria::MolProp ma,
     std::string mmb = mb.GetMolname();
   
     //return 0;
-    return mma.compare(mmb);
+    return (mma.compare(mmb) <= 0); 
+        //(strcmp(mma.c_str(),mmb.c_str()) <= 0);
 }
 
 static bool comp_mp_formula(alexandria::MolProp ma,
@@ -664,7 +589,7 @@ static bool comp_mp_formula(alexandria::MolProp ma,
     std::string fma = ma.GetFormula();
     std::string fmb = mb.GetFormula();
   
-    if (fma.compare(fmb))
+    if (fma.compare(fmb) <= 0)
         return true;
     else
         return comp_mp_molname(ma,mb);
@@ -682,14 +607,14 @@ static bool comp_mp_elem(alexandria::MolProp ma,
     mcia = ma.SearchMolecularComposition(bosque);
     mcib = mb.SearchMolecularComposition(bosque);
 
-    if (mcia->CountAtoms(C) < mcib->CountAtoms(C))
+    if (mcia->CountAtoms(C) <= mcib->CountAtoms(C))
         return true;
   
     for(i=1; (i<=109); i++) {
         if (i != 6) {
             std::string elem(gmx_atomprop_element(my_aps,i));
             
-            if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
+            if (mcia->CountAtoms(elem) <= mcib->CountAtoms(elem))
                 return true;
         }
     }
