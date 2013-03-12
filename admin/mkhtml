@@ -12,7 +12,8 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 4.6
+set VER		= 4.6.2
+set DATE        = `date "+%B %d, %Y`
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -51,13 +52,13 @@ cat > $HTMLIDX << EOD
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
-GROMACS 4.6<br>
+GROMACS $VER<br>
 Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION 4.6<br>
-Sat 19 Jan 2013</B></td>
+<B>VERSION $VER<br>
+$DATE</B></td>
 </tr>
 </table>
 
@@ -140,6 +141,7 @@ foreach program ( $PROGRAMS )
     echo -n "$program "
     cd $HTMLOL
     $GMXBINDIR/$program -quiet -man html >& /dev/null
+    cd ..
     endif
   endif
 end
