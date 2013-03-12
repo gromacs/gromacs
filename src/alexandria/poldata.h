@@ -73,22 +73,23 @@ extern int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
                                         double *valence,int *iAromatic,
                                         char **neighbors);
 
-extern void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
-                                  char *gt_type,char *miller_equiv,
-                                  char *charge,
+extern void gmx_poldata_add_atype(gmx_poldata_t pd,const char *elem,
+                                  const char *desc,
+                                  const char *gt_type,const char *miller_equiv,
+                                  const char *charge,
                                   double polarizability,double sig_pol,
-                                  char *vdwparams);
+                                  const char *vdwparams);
     
 extern void gmx_poldata_set_atype_polarizability(gmx_poldata_t pd,char *gt_type,
                                                  double polarizability,double sig_pol);
 		
-extern void gmx_poldata_set_force_field(gmx_poldata_t pd,char *forcefield);
+extern void gmx_poldata_set_force_field(gmx_poldata_t pd,const char *forcefield);
 
-extern void gmx_poldata_set_polar_unit(gmx_poldata_t pd,char *polar_unit);
+extern void gmx_poldata_set_polar_unit(gmx_poldata_t pd,const char *polar_unit);
 
-extern void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit);
+extern void gmx_poldata_set_length_unit(gmx_poldata_t pd,const char *length_unit);
 
-extern void gmx_poldata_set_vdw_function(gmx_poldata_t pd,char *func);
+extern void gmx_poldata_set_vdw_function(gmx_poldata_t pd,const char *func);
 
 extern char *gmx_poldata_get_vdw_function(gmx_poldata_t pd);
 

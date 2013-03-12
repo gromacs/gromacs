@@ -738,7 +738,7 @@ public:
     ~CalcAtom() {};
     
     //! Add an AtomicCharge element to the atom
-    void AddCharge(AtomicCharge aq) { _q.push_back(aq); }
+    void AddCharge(AtomicCharge aq);
     
     //! Begin Iterator over AtomicCharge items 
     AtomicChargeIterator BeginQ() { return _q.begin(); }
@@ -835,6 +835,9 @@ public:
     
     //! Destructor
     ~Experiment() {};
+    
+    //! Dump the contents of this object to a file
+    void Dump(FILE *fp);
     
     //! Return whether this object contains experimental data
     gmx_bool GetExperiment() { return _bExperiment; }
@@ -965,6 +968,9 @@ public:
     
     //! Destructor
     ~Calculation() {};
+    
+    //! Dump the contents of this object to a file
+    void Dump(FILE *fp);
     
     //! Add a CalcAtom object to the list of atoms
     void AddAtom(CalcAtom ca) { _catom.push_back(ca); }

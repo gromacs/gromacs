@@ -309,25 +309,25 @@ void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
   
     for(i=0; (i<b->nbond); i++) {
         sprintf(buf,"bond-%s-%s.xvg",b->bond[i].a1,b->bond[i].a2);
-        lo_dump_histo(buf,"Distance (pm)",oenv,
+        lo_dump_histo(buf,(char *)"Distance (pm)",oenv,
                       b->bond[i].nhisto,b->bond[i].histo,bspacing);
     }
     for(i=0; (i<b->nangle); i++) {
         sprintf(buf,"angle-%s-%s-%s.xvg",
                 b->angle[i].a1,b->angle[i].a2,b->angle[i].a3);
-        lo_dump_histo(buf,"Angle (deg.)",oenv,
+        lo_dump_histo(buf,(char *)"Angle (deg.)",oenv,
                       b->angle[i].nhisto,b->angle[i].histo,aspacing);
     }
     for(i=0; (i<b->ndih); i++) {
         sprintf(buf,"dih-%s-%s-%s-%s.xvg",
                 b->dih[i].a1,b->dih[i].a2,b->dih[i].a3,b->dih[i].a4);
-        lo_dump_histo(buf,"Dihedral angle (deg.)",oenv,
+        lo_dump_histo(buf,(char *)"Dihedral angle (deg.)",oenv,
                       b->dih[i].nhisto,b->dih[i].histo,aspacing);
     }
     for(i=0; (i<b->nimp); i++) {
         sprintf(buf,"imp-%s-%s-%s-%s.xvg",
                 b->imp[i].a1,b->imp[i].a2,b->imp[i].a3,b->imp[i].a4);
-        lo_dump_histo(buf,"Improper angle (deg.)",oenv,
+        lo_dump_histo(buf,(char *)"Improper angle (deg.)",oenv,
                       b->imp[i].nhisto,b->imp[i].histo,aspacing);
     }
 }
@@ -339,8 +339,8 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
     real av,sig;
     char pbuf[256];
     double bondorder;
-        
-    gmx_poldata_set_length_unit(pd,"pm");
+    
+    gmx_poldata_set_length_unit(pd,unit2string(eg2c_pm));
     for(i=0; (i<b->nbond); i++) {
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);

@@ -617,6 +617,7 @@ static gmx_bool is_symmetric(t_mymol *mymol,real toler)
 
 static int init_mymol(FILE *fp,t_mymol *mymol,
                       alexandria::MolProp& mp,
+                      alexandria::GaussAtomProp &gap,
                       gmx_bool bQM,char *lot,gmx_bool bZero,
                       gmx_poldata_t pd,gmx_atomprop_t aps,
                       int  iModel,t_commrec *cr,int *nwarn,
@@ -625,8 +626,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
                       real dip_toler,real hfac,gmx_bool bH14,
                       gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
                       int nexcl,gmx_bool bESP,
-                      real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta,
-                      gau_atomprop_t gaps)
+                      real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
 {
     int      ftb,i,ia,m,nbond,*nbonds,tatomnumber,imm=immOK;
     char     *mylot=NULL,*myref=NULL;
@@ -837,11 +837,11 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
             mymol->Hform = value;
             mymol->Emol = value;
             for(ia=0; (ia<mymol->topology->atoms.nr); ia++) {
-                if (gau_atomprop_get_value(gaps,*mymol->topology->atoms.atomname[ia],
-                                           (char *)"exp",(char *)"DHf(0K)",0,&dv0) &&
-                    gau_atomprop_get_value(gaps,*mymol->topology->atoms.atomname[ia],
-                                           (char *)"exp",(char *)"H(0K)-H(298.15K)",
-                                           298.15,&dv298))
+                if (gap.GetValue(*mymol->topology->atoms.atomname[ia],
+                                  (char *)"exp",(char *)"DHf(0K)",0,&dv0) &&
+                    gap.GetValue(*mymol->topology->atoms.atomname[ia],
+                                  (char *)"exp",(char *)"H(0K)-H(298.15K)",
+                                  298.15,&dv298))
                 {
                     mymol->Emol -= convert2gmx(dv0+dv298,eg2c_Hartree);
                 }
@@ -1342,7 +1342,7 @@ void read_moldip(t_moldip *md,
     int      nexcl,imm,imm_count[immNR];
     std::vector<alexandria::MolProp> mp;
     alexandria::MolPropIterator mpi;
-    gau_atomprop_t gaps = read_gauss_data();
+    alexandria::GaussAtomProp gap;
     
     for(imm = 0; (imm<immNR); imm++)
         imm_count[imm] = 0;
@@ -1395,13 +1395,14 @@ void read_moldip(t_moldip *md,
             {
                 int dest = (n % md->cr->nnodes);
                 
-                imm = init_mymol(fp,&(md->mymol[n]),*mpi,md->bQM,lot,bZero,
+                imm = init_mymol(fp,&(md->mymol[n]),*mpi,gap,
+                                 md->bQM,lot,bZero,
                                  md->pd,md->atomprop,
                                  md->iModel,md->cr,&nwarn,bCharged,oenv,
                                  th_toler,ph_toler,dip_toler,md->hfac,bH14,
                                  bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
                                  (md->fc[ermsESP] > 0),watoms,md->decrzeta,
-                                 md->bPol,md->bFitZeta,gaps);
+                                 md->bPol,md->bFitZeta);
                 if (immOK == imm)
                 {
                     if (dest > 0)
@@ -1445,14 +1446,13 @@ void read_moldip(t_moldip *md,
             alexandria::MolProp mpnew;
             
             mpnew.Receive(md->cr,0);
-            imm = init_mymol(fp,&(md->mymol[n]),mpnew,md->bQM,lot,bZero,
+            imm = init_mymol(fp,&(md->mymol[n]),mpnew,gap,md->bQM,lot,bZero,
                              md->pd,md->atomprop,
                              md->iModel,md->cr,&nwarn,bCharged,oenv,
                              th_toler,ph_toler,dip_toler,md->hfac,
                              bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                              nexcl,(md->fc[ermsESP] > 0),
-                             watoms,md->decrzeta,md->bPol,md->bFitZeta,
-                             gaps);
+                             watoms,md->decrzeta,md->bPol,md->bFitZeta);
             md->mymol[n].eSupport = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
@@ -1491,7 +1491,6 @@ void read_moldip(t_moldip *md,
     else {
         md->nmol_support = md->nmol;
     }
-    done_gauss_data(gaps);
 }
 
 

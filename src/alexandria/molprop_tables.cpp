@@ -953,7 +953,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
 #define BLEN 1024
     char   lbuf[BLEN],myline[BLEN],mylbuf[BLEN],vbuf[BLEN];
     double calc_val,calc_err,vc;
-    int    nprint,header;
+    int    nprint;
     double dvec[DIM];
     tensor quadrupole;
     real   ds_fac;
@@ -980,7 +980,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
     bPrintConf = (mpo == MPO_DIPOLE);
     prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,bSideways,ims,bPrintConf,
                 bPrintBasis,bPrintMultQ);  
-    header  = 1;
     iline   = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
@@ -1026,7 +1025,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
                     break;
                 }
             }
-            for(ne=0; (ne < (val_exp.size() > 1 ? val_exp.size() : 1)); ne++)
+            for(ne=0; (ne < ((int)val_exp.size() > 1 ? (int)val_exp.size() : 1)); ne++)
             {
                 if (val_exp.size() <= 1) 
                 {
@@ -1071,7 +1070,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
                             sprintf(myline,"%d. %-15s & %s",
                                     iprint,mpi->GetIupac().c_str(),
                                     mpi->GetFormula().c_str());
-                        header = 0;
                     }
                     else 
                     {
@@ -1151,7 +1149,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
                     prop_end(fp,bSideways);
                     prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,
                                 bSideways,ims,bPrintConf,bPrintBasis,bPrintMultQ);
-                    header  = 1;
                     iline   = 0;
                 }
             }

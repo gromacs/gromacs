@@ -1403,7 +1403,7 @@ int main(int argc, char *argv[])
     if (0 == md->nmol)
         gmx_fatal(FARGS,"No molecules!");
     print_moldip_mols(fp,md,FALSE,FALSE);
-    print_moldip_specs(fp,md,"Before optimization",NULL,oenv);
+    print_moldip_specs(fp,md,(char *)"Before optimization",NULL,oenv);
     omt = analyze_idef(fp,md->nmol,md->mymol,md->pd,bOpt);
 
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
@@ -1415,7 +1415,8 @@ int main(int argc, char *argv[])
                     temperature);
     done_opt_mask(&omt);
     print_moldip_mols(fp,md,TRUE,TRUE);
-    print_moldip_specs(fp,md,"After optimization",opt2fn("-x",NFILE,fnm),oenv);
+    print_moldip_specs(fp,md,(char *)"After optimization",
+                       opt2fn("-x",NFILE,fnm),oenv);
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
     
     if (MASTER(cr)) 

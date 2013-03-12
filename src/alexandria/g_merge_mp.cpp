@@ -111,8 +111,9 @@ static void add_properties(const char *fn,std::vector<alexandria::MolProp> mp)
             if (NULL != key.iupac) {
                 tpp = (t_prop *) bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
                 if (NULL != tpp) {
-                    alexandria::Experiment ex(tpp->ref,"minimum");
-                    alexandria::MolecularEnergy me(tpp->prop,"kJ/mol",
+                    alexandria::Experiment ex(tpp->ref,(char *)"minimum");
+                    alexandria::MolecularEnergy me(tpp->prop,
+                                                   unit2string(eg2c_kJ_mole),
                                                    atof(tpp->value),0);
                     ex.AddEnergy(me);
                     mpi->AddExperiment(ex);
@@ -158,8 +159,6 @@ int main(int argc,char *argv[])
     };
     char   **fns;
     int    nfiles;
-    int    cur = 0;
-#define prev (1-cur)
     std::vector<alexandria::MolProp> mp;
     gmx_atomprop_t ap;
     gmx_poldata_t  pd;

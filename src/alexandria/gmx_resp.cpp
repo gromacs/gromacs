@@ -70,11 +70,11 @@
 #include <symtab.h>
 #include <gpp_atomtype.h>
 #include <atomprop.h>
+#include "nmsimplex.h"
 #include "gaussian_integrals.h"
 #include "slater_integrals.h"
 #include "gmx_resp.hpp"
-#include "gentop_qgen.h"
-#include "nmsimplex.h"
+#include "gentop_qgen.hpp"
 
 typedef struct 
 {

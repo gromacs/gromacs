@@ -44,7 +44,7 @@
 #include "gmx_fatal.h"
 #include "poldata.h"
 #include "toputil.h"
-#include "gentop_vsite.h"
+#include "gentop_vsite.hpp"
 
 typedef struct {
     int nline; /* Must be 3 or 4 */
@@ -276,7 +276,7 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
     const   char    *ml = "ML";
     double  mI,mJ,mK,mL,mT,com,I;
     double  rB,rC,rD,rVV,mV,ac[4];
-    rvec    dx,mcom;
+    rvec    dx;
     t_param pp,nbml;
     t_atom  aml;
 
@@ -379,7 +379,7 @@ static void calc_vsite2parm(t_atoms *atoms,t_params plist[],rvec **x,
 
 void gentop_vsite_merge_linear(gentop_vsite_t gvt,int natom,gmx_bool bGenVsites)
 {
-    int i,j,k,l,ai,aj,ndbl,found;
+    int i,j,k,l,ai,aj,ndbl;
     
     for(i=0; (i<gvt->nlinear); i++)
         gvt->lin[i].nline = 3;
@@ -460,7 +460,7 @@ void gentop_vsite_generate_special(gentop_vsite_t gvt,gmx_bool bGenVsites,
                                    gpp_atomtype_t atype,t_excls **excls,
                                    gmx_poldata_t pd)
 {
-    int     i,j,k,l,natoms_old,nlin_at;
+    int     i,j,nlin_at;
     int     a[MAXATOMLIST],aa[2];
     t_param pp;
     int     ftb,fta,ftp,fti;

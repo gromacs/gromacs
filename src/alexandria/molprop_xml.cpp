@@ -253,18 +253,21 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                 case exmlMOLECULES:
                     break;
                 case exmlMOLECULE:
-                    molprops.push_back(alexandria::MolProp());
-                    mpt = &(molprops.back());
-                    if (NN(xbuf[exmlFORMULA]))
-                        mpt->SetFormula(xbuf[exmlFORMULA]);
-                    if (NN(xbuf[exmlMOLNAME]))
-                        mpt->SetMolname(xbuf[exmlMOLNAME]);
-                    if (NN(xbuf[exmlMASS]))
-                        mpt->SetMass(atof(xbuf[exmlMASS]));
-                    if (NN(xbuf[exmlCHARGE]))
-                        mpt->SetCharge(atoi(xbuf[exmlCHARGE]));
-                    if (NN(xbuf[exmlMULTIPLICITY]))
-                        mpt->SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY]));
+                    {
+                        alexandria::MolProp mp;
+                        if (NN(xbuf[exmlFORMULA]))
+                            mp.SetFormula(xbuf[exmlFORMULA]);
+                        if (NN(xbuf[exmlMOLNAME]))
+                            mp.SetMolname(xbuf[exmlMOLNAME]);
+                        if (NN(xbuf[exmlMASS]))
+                            mp.SetMass(atof(xbuf[exmlMASS]));
+                        if (NN(xbuf[exmlCHARGE]))
+                            mp.SetCharge(atoi(xbuf[exmlCHARGE]));
+                        if (NN(xbuf[exmlMULTIPLICITY]))
+                            mp.SetMultiplicity(atoi(xbuf[exmlMULTIPLICITY]));
+                        molprops.push_back(mp);
+                        mpt = &(molprops.back());
+                    }
                     break;
                     /* The items below are handled when treating attributes */
                 case exmlMOLINFO:

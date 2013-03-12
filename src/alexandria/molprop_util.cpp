@@ -626,6 +626,10 @@ void merge_xml(int nfile,char **filens,
         }
     }
     tmp = mpout.size();
+    for(mpi=mpout.begin(); (mpi<mpout.end()); mpi++)
+    {
+        mpi->Dump(debug);
+    }
     MolPropSort(mpout,MPSA_MOLNAME,NULL,NULL);
     merge_doubles(mpout,doubles,bForceMerge);
     printf("There are %d total molecules before merging, %d after.\n",
@@ -644,8 +648,8 @@ void merge_xml(int nfile,char **filens,
     }
 }
 
-static int comp_mp_molname(alexandria::MolProp ma,
-                           alexandria::MolProp mb)
+static bool comp_mp_molname(alexandria::MolProp ma,
+                            alexandria::MolProp mb)
 {
     std::string mma = ma.GetMolname();
     std::string mmb = mb.GetMolname();
@@ -654,45 +658,39 @@ static int comp_mp_molname(alexandria::MolProp ma,
     return mma.compare(mmb);
 }
 
-static int comp_mp_formula(alexandria::MolProp ma,
-                           alexandria::MolProp mb)
+static bool comp_mp_formula(alexandria::MolProp ma,
+                            alexandria::MolProp mb)
 {
-    int r;
     std::string fma = ma.GetFormula();
     std::string fmb = mb.GetFormula();
   
-    r = fma.compare(fmb);
-  
-    if (r == 0) 
+    if (fma.compare(fmb))
+        return true;
+    else
         return comp_mp_molname(ma,mb);
-    else 
-        return r;
 }
 
 gmx_atomprop_t my_aps;
 
-static int comp_mp_elem(alexandria::MolProp ma,
-                        alexandria::MolProp mb)
+static bool comp_mp_elem(alexandria::MolProp ma,
+                         alexandria::MolProp mb)
 {
-    int i,r;
+    int i;
     alexandria::MolecularCompositionIterator mcia,mcib;
     std::string bosque("bosque"),C("C");
  
     mcia = ma.SearchMolecularComposition(bosque);
     mcib = mb.SearchMolecularComposition(bosque);
-    r = mcia->CountAtoms(C) - mcib->CountAtoms(C);
-    
-    if (r != 0)
-        return r;
+
+    if (mcia->CountAtoms(C) < mcib->CountAtoms(C))
+        return true;
   
     for(i=1; (i<=109); i++) {
         if (i != 6) {
             std::string elem(gmx_atomprop_element(my_aps,i));
             
-            r = mcia->CountAtoms(elem) - mcib->CountAtoms(elem);
-            
-            if (r != 0)
-                return r;
+            if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
+                return true;
         }
     }
     return comp_mp_molname(ma,mb);
@@ -716,21 +714,21 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
 {
     switch(mpsa) {
     case MPSA_MOLNAME:
-        std::sort (mp.begin(),mp.end(),comp_mp_molname);
+        std::sort(mp.begin(),mp.end(),comp_mp_molname);
         break;
     case MPSA_FORMULA:
-        std::sort (mp.begin(),mp.end(),comp_mp_formula);
+        std::sort(mp.begin(),mp.end(),comp_mp_formula);
         break;
     case MPSA_COMPOSITION:
         my_aps = apt;
-        std::sort (mp.begin(),mp.end(),comp_mp_elem);
+        std::sort(mp.begin(),mp.end(),comp_mp_elem);
         my_aps = NULL;
         break;
     case MPSA_SELECTION:
         if (NULL != gms) 
         {
             my_gms = gms;
-            std::sort (mp.begin(),mp.end(),comp_mp_selection);
+            std::sort(mp.begin(),mp.end(),comp_mp_selection);
         }
         else
             gmx_fatal(FARGS,"Need molecule selection to sort on");
@@ -881,7 +879,6 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
         {
             qmc->count[i]--;
         }
-        
     }
     
     return qmc;

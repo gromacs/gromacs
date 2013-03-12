@@ -84,8 +84,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = FALSE;
-  static char *molnm=NULL,*iupac=NULL,*conf="minimum",*basis=NULL;
-  static real th_toler=170,ph_toler=5;
+  static char *molnm=NULL,*iupac=NULL,*conf=(char *)"minimum",*basis=NULL;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
 #ifdef HAVE_LIBOPENBABEL2
@@ -94,10 +93,6 @@ int main(int argc, char *argv[])
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose terminal output." },
-    { "-th_toler", FALSE, etREAL, {&th_toler},
-      "HIDDENMinimum angle to be considered a linear A-B-C bond" },
-    { "-ph_toler", FALSE, etREAL, {&ph_toler},
-      "HIDDENMaximum angle to be considered a planar A-B-C/B-C-D torsion" },
     { "-compress", FALSE, etBOOL, {&compress},
       "Compress output XML files" },
 #ifdef HAVE_LIBOPENBABEL2
@@ -119,9 +114,9 @@ int main(int argc, char *argv[])
   gmx_atomprop_t aps;
   gmx_poldata_t  pd;
   std::vector<alexandria::MolProp> mp;
+  alexandria::GaussAtomProp gap;
   char **fns=NULL;
   int i,nfn;
-  gau_atomprop_t gaps;
   
   CopyRight(stdout,argv[0]);
 
@@ -135,18 +130,15 @@ int main(int argc, char *argv[])
   if ((pd = gmx_poldata_read(NULL,aps)) == NULL)
     gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
 
-  gaps = read_gauss_data();
-
   nfn = ftp2fns(&fns,efLOG,NFILE,fnm);
   for(i=0; (i<nfn); i++) 
   {
       alexandria::MolProp mmm;
       
-      ReadGauss(fns[i],mmm,bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
-                th_toler,ph_toler,maxpot,bVerbose);
+      ReadGauss(fns[i],mmm,gap,bBabel,aps,pd,molnm,iupac,conf,basis,
+                maxpot,bVerbose);
       mp.push_back(mmm);
   }
-  done_gauss_data(gaps);
   
   printf("Succesfully read %d molprops from %d Gaussian files.\n",
          (int)mp.size(),nfn);

@@ -61,8 +61,8 @@
 #include "names.h"
 #include "atomprop.h"
 #include "poldata.h"
-#include "gentop_nm2type.h"
-#include "gentop_vsite.h"
+#include "gentop_nm2type.hpp"
+#include "gentop_vsite.hpp"
 
 enum { egmLinear, egmPlanar, egmTetrahedral, egmNR };
 static const char *geoms[egmNR] = { "linear", "planar", "tetrahedral" };
@@ -535,8 +535,6 @@ int nm2type(FILE *fp,const char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
             char **gt_atoms,rvec x[],t_pbc *pbc,real th_toler,real phi_toler,
             gentop_vsite_t gvt)
 {
-    int     cur = 0;
-#define   prev (1-cur)
     int     i,j,nonebond,nresolved;
     int     ai,aj;
     int     type;

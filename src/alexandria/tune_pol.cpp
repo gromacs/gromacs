@@ -284,7 +284,7 @@ int main(int argc,char *argv[])
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
     static int iQM = FALSE,mindata=1;
-    static char *lot = "B3LYP/aug-cc-pVTZ";
+    static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static real th_toler=170,ph_toler=5;
     static real sigma=0;
     static gmx_bool bZero=FALSE,bForceFit=FALSE,bCompress=TRUE;

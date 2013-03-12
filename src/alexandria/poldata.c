@@ -182,7 +182,7 @@ void gmx_poldata_set_filename(gmx_poldata_t pd,char *fn2)
     pd->filename = strdup(fn2);
 }
     
-void gmx_poldata_set_vdw_function(gmx_poldata_t pd,char *func)
+void gmx_poldata_set_vdw_function(gmx_poldata_t pd,const char *func)
 {
     int i;
     
@@ -276,11 +276,11 @@ int gmx_poldata_get_comb_rule(gmx_poldata_t pd)
     return pd->gt_comb_rule;
 }
 
-void gmx_poldata_add_atype(gmx_poldata_t pd,char *elem,char *desc,
-                           char *gt_type,
-                           char *miller_equiv,char *charge,
+void gmx_poldata_add_atype(gmx_poldata_t pd,const char *elem,const char *desc,
+                           const char *gt_type,
+                           const char *miller_equiv,const char *charge,
                            double polarizability,double sig_pol,
-                           char *vdwparams)
+                           const char *vdwparams)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;
@@ -500,7 +500,7 @@ char *gmx_poldata_get_length_unit(gmx_poldata_t pd)
     return pd->gt_length_unit;
 }
 
-void gmx_poldata_set_polar_unit(gmx_poldata_t pd,char *polar_unit)
+void gmx_poldata_set_polar_unit(gmx_poldata_t pd,const char *polar_unit)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
 
@@ -514,14 +514,14 @@ char *gmx_poldata_get_force_field(gmx_poldata_t pd)
     return pold->alexandria_forcefield;
 }
 
-void gmx_poldata_set_force_field(gmx_poldata_t pd,char *forcefield)
+void gmx_poldata_set_force_field(gmx_poldata_t pd,const char *forcefield)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
 
     pold->alexandria_forcefield   = strdup(forcefield);
 }
 
-void gmx_poldata_set_length_unit(gmx_poldata_t pd,char *length_unit)
+void gmx_poldata_set_length_unit(gmx_poldata_t pd,const char *length_unit)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
 

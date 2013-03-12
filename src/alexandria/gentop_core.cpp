@@ -65,9 +65,9 @@
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
 #include "poldata.h"
-#include "gentop_nm2type.h"
-#include "gentop_core.h"
-#include "gentop_vsite.h"
+#include "gentop_nm2type.hpp"
+#include "gentop_core.hpp"
+#include "gentop_vsite.hpp"
 
 gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
                              t_symtab *tab,t_atoms *atoms,t_params *bonds,
@@ -684,7 +684,6 @@ static int *generate_cg_group(t_atoms *atoms,t_params *bonds,t_params *pols)
     gmx_bool   bMV;
     int    monovalent[] = { 0, 1, 9, 17, 35, 53, 85 };
     int    nmv = asize(monovalent);
-    double qaver;
     
     /* Assume that shells and masses have atomnumber 0 */
     snew(cgnr,atoms->nr);

@@ -65,19 +65,6 @@
 
 using namespace std;
 
-typedef struct gap {
-    char *element, *method,*desc;
-    real temp;
-    real value;
-} gap_t;
-
-typedef struct gau_atomprop
-{
-    int   ngap;
-    gap_t *gap;
-} gau_atomprop;
-
-
 typedef struct {
     int  id;
     real x,y,z;
@@ -174,8 +161,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp& mpt,
                                    gmx_atomprop_t aps,gmx_poldata_t pd,
                                    char *molnm,char *iupac,char *conformation,
-                                   char *basisset,real th_toler,real ph_toler,
-                                   int maxpot,gmx_bool bVerbose)
+                                   char *basisset,int maxpot,gmx_bool bVerbose)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol mol,mol2;
@@ -495,13 +481,11 @@ static int get_lib_file(const char *db,char ***strings)
 }
 
 /* read composite method atom data */
-gau_atomprop_t read_gauss_data()
+alexandria::GaussAtomProp::GaussAtomProp()
 {
     char **strings=NULL,**ptr;
-    int nstrings,i,j=0;
-    gau_atomprop_t gaps;
+    int nstrings,i;
 
-    snew(gaps,1);
     nstrings = get_lib_file("atomization_energies.dat",&strings);
     
     /* First loop over strings to deduct basic stuff */
@@ -517,52 +501,38 @@ gau_atomprop_t read_gauss_data()
             (NULL != ptr[2]) && (NULL != ptr[3]) &&
             (NULL != ptr[4]))
         {
-            srenew(gaps->gap,j+1); 
-            gaps->gap[j].element = ptr[0];
-            gaps->gap[j].method = ptr[1];
-            gaps->gap[j].desc = ptr[2];
-            gaps->gap[j].temp = atof(ptr[3]);
-            gaps->gap[j].value = atof(ptr[4]);
-            j++;
+            std::string elem(ptr[0]);
+            std::string method(ptr[1]);
+            std::string desc(ptr[2]);
+            alexandria::GaussAtomPropVal gapv(elem,method,desc,atof(ptr[3]),atof(ptr[4]));
+            
+            _gapv.push_back(gapv);
         }
         sfree(strings[i]);
     }
     sfree(strings);
-    
-    gaps->ngap = j;
-    return gaps;
 }
 
-void done_gauss_data(gau_atomprop_t gaps)
+int alexandria::GaussAtomProp::GetValue(const char *element,
+                                        const char *method,
+                                        const char *desc,
+                                        double temp,
+                                        double *value)
 {
-    int j;
-    for(j=0; (j<gaps->ngap); j++) 
-    {
-        sfree(gaps->gap[j].element);
-        sfree(gaps->gap[j].method);
-        sfree(gaps->gap[j].desc);
-    }
-    sfree(gaps->gap);
-    gaps->gap = NULL;
-    gaps->ngap = 0;
-}
-
-int gau_atomprop_get_value(gau_atomprop_t gaps,const char *element,
-                           const char *method,char *desc,
-                           double temp,double *value)
-{
-    int i,found;
+    std::vector<alexandria::GaussAtomPropVal>::iterator g;
+    int found;
     double ttol = 0.01; /* K */
     
     found = 0;
-    for(i=0; (i<gaps->ngap); i++) 
+    
+    for(g=_gapv.begin(); (g<_gapv.end()); g++)
     {
-        if ((0 == strcasecmp(gaps->gap[i].element,element)) &&
-            (0 == strcasecmp(gaps->gap[i].method,method)) &&
-            (0 == strcasecmp(gaps->gap[i].desc,desc)) &&
-            (fabs(temp - gaps->gap[i].temp) < ttol)) 
+        if ((0 == strcasecmp(g->GetElement().c_str(),element)) &&
+            (0 == strcasecmp(g->GetMethod().c_str(),method)) &&
+            (0 == strcasecmp(g->GetDesc().c_str(),desc)) &&
+            (fabs(temp - g->GetTemp()) < ttol)) 
         {
-            *value = gaps->gap[i].value;
+            *value = g->GetValue();
             found = 1;
             break;
         }
@@ -571,7 +541,7 @@ int gau_atomprop_get_value(gau_atomprop_t gaps,const char *element,
 }
 
 static int gmx_molprop_add_dhform(alexandria::MolProp& mpt,
-                                  gau_atomprop_t gaps,
+                                  alexandria::GaussAtomProp& gap,
                                   const char *method,double temp,
                                   double eg34,double ezpe,double etherm,
                                   gmx_bool bVerbose)
@@ -592,14 +562,14 @@ static int gmx_molprop_add_dhform(alexandria::MolProp& mpt,
     for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
     {
         /* There are natom atoms with name atomname */
-        if ((1 == gau_atomprop_get_value(gaps,ani->GetAtom().c_str(),
-                                         method,desc,0,&vvm)) &&
-            (1 == gau_atomprop_get_value(gaps,ani->GetAtom().c_str(),
-                                         (char *)"exp",
-                                         (char *)"DHf(0K)",0,&vve)) &&
-            (1 == gau_atomprop_get_value(gaps,ani->GetAtom().c_str(),
-                                         (char *)"exp",
-                                         (char *)"H(0K)-H(298.15K)",298.15,&vvdh)))
+        if ((1 == gap.GetValue(ani->GetAtom().c_str(),
+                               method,desc,0,&vvm)) &&
+            (1 == gap.GetValue(ani->GetAtom().c_str(),
+                               (char *)"exp",
+                               (char *)"DHf(0K)",0,&vve)) &&
+            (1 == gap.GetValue(ani->GetAtom().c_str(),
+                               (char *)"exp",
+                               (char *)"H(0K)-H(298.15K)",298.15,&vvdh)))
         {
             natom = ani->GetNumber();
             vm  += natom*vvm;
@@ -751,11 +721,11 @@ static gmx_bool read_quad(char *str1,char *str2,tensor Q)
 }
 
 static void gmx_molprop_read_log(const char *fn,
-                                 alexandria::MolProp& mpt,
+                                 alexandria::MolProp &mpt,
+                                 alexandria::GaussAtomProp &gap,
                                  gmx_atomprop_t aps,gmx_poldata_t pd,
                                  char *molnm,char *iupac,char *conformation,
-                                 char *basisset,gau_atomprop_t gaps,
-                                 real th_toler,real ph_toler,
+                                 char *basisset,
                                  int maxpot,gmx_bool bVerbose)
 {
     /* Read a gaussian log file */
@@ -954,20 +924,24 @@ static void gmx_molprop_read_log(const char *fn,
                                      reference,conformation,fn);
         if (bPolar)
         {
-            alexandria::MolecularDipPolar mdi("elec","A^3",polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
+            alexandria::MolecularDipPolar mdi(unit2string(eg2c_Electron),
+                                              unit2string(eg2c_Angstrom3),
+                                              polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
                                               trace(polar)/3.0,0);
             calc.AddPolar(mdi);
         }
         if (bDipole)
         {
-            alexandria::MolecularDipPolar mdi("elec","Debye",
+            alexandria::MolecularDipPolar mdi(unit2string(eg2c_Electron),
+                                              unit2string(eg2c_Debye),
                                               dipole[XX],dipole[YY],dipole[ZZ],
                                               norm(dipole),0);
             calc.AddDipole(mdi);
         }
         if (bQuad)
         {
-            alexandria::MolecularQuadrupole mq("elec","Buckingham",
+            alexandria::MolecularQuadrupole mq(unit2string(eg2c_Electron),
+                                               unit2string(eg2c_Buckingham),
                                                quad[XX][XX],quad[YY][YY],quad[ZZ][ZZ],
                                                quad[XX][YY],quad[XX][ZZ],quad[YY][ZZ]);
             calc.AddQuadrupole(mq);
@@ -1164,7 +1138,7 @@ static void gmx_molprop_read_log(const char *fn,
                 printf("myener %f\n",myener);
             if (bEtherm && bEzpe && bTemp)
             {
-                if (0 == gmx_molprop_add_dhform(mpt,gaps,mymeth,temp,myener,ezpe,etherm,bVerbose))
+                if (0 == gmx_molprop_add_dhform(mpt,gap,mymeth,temp,myener,ezpe,etherm,bVerbose))
                 {
                     fprintf(stderr,"No support for atomic energies in %s, method %s\n",
                             mpt.GetMolname().c_str(),mymeth);
@@ -1197,29 +1171,30 @@ static void gmx_molprop_read_log(const char *fn,
 
 void ReadGauss(const char *g98,
                alexandria::MolProp &mp,
+               alexandria::GaussAtomProp &gap,
                gmx_bool bBabel,
                gmx_atomprop_t aps,gmx_poldata_t pd,
                char *molnm,char *iupac,char *conf,
-               char *basis,gau_atomprop_t gaps,
-               real th_toler,real ph_toler,
+               char *basis,
                int maxpot,gmx_bool bVerbose)
 {
 #ifdef HAVE_LIBOPENBABEL2
     if (bBabel)
         gmx_molprop_read_babel(g98,mp,aps,pd,molnm,iupac,conf,basis,
-                               th_toler,ph_toler,maxpot,bVerbose);
+                               maxpot,bVerbose);
     else
-        gmx_molprop_read_log(g98,mp,aps,pd,molnm,iupac,conf,basis,gaps,
-                             th_toler,ph_toler,maxpot,bVerbose);
+        gmx_molprop_read_log(g98,mp,gap,aps,pd,molnm,iupac,conf,basis,
+                             maxpot,bVerbose);
 #else
-    gmx_molprop_read_log(g98,mp,aps,pd,molnm,iupac,conf,basis,gaps,
-                         th_toler,ph_toler,maxpot,bVerbose);
+    gmx_molprop_read_log(g98,mp,gap,aps,pd,molnm,iupac,conf,basis,
+                         maxpot,bVerbose);
 #endif
 }
 
 #ifndef HAVE_LIBOPENBABEL2
 void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
 {
+    fprintf(stderr,"The library function translate_atomtypes works only when OpenBabel is installed.\n");
 }
 #endif
 

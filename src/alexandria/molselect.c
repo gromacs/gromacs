@@ -42,7 +42,7 @@
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 
 typedef struct {
-    const char *iupac;
+    char *iupac;
     int  status,index;
 } t_ims;
 
@@ -130,8 +130,9 @@ int gmx_molselect_status(gmx_molselect_t gms,const char *iupac)
 
     if (NULL == iupac)
         return imsUnknown;
-    key.iupac = iupac;
+    key.iupac = strdup(iupac);
     ims = (t_ims *)bsearch(&key,g->ims,g->nmol,sizeof(g->ims[0]),ims_comp);
+    sfree(key.iupac);
     if (NULL != ims)
         return ims->status;
     else
@@ -146,10 +147,11 @@ int gmx_molselect_index(gmx_molselect_t gms,const char *iupac)
 
     if (NULL == iupac)
         return g->nmol;
-    key.iupac = iupac;
+    key.iupac = strdup(iupac);
     key.status = 1;
     key.index = 0;
     ims = (t_ims *)bsearch(&key,g->ims,g->nmol,sizeof(g->ims[0]),ims_comp);
+    sfree(key.iupac);
     if (NULL != ims)
         return ims->index;
     else

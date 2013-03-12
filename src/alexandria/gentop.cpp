@@ -394,7 +394,6 @@ int main(int argc, char *argv[])
     gmx_bool   *bRing;
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator mpi;
-    gau_atomprop_t gaps;
 
     t_filenm fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
@@ -439,7 +438,7 @@ int main(int argc, char *argv[])
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
     static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
     static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE,bUnique=FALSE;
-    static char *molnm = "",*iupac = "",*dbname = "", *symm_string = "",*conf="minimum",*basis="";
+    static char *molnm = (char *)"",*iupac = (char *)"",*dbname = (char *)"", *symm_string = (char *)"",*conf=(char *)"minimum",*basis=(char *)"";
     static int maxpot = 0;
     static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
                                    "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
@@ -665,22 +664,22 @@ int main(int argc, char *argv[])
     else if (opt2bSet("-g03",NFILE,fnm))
     {
         alexandria::MolProp mp;
+        alexandria::GaussAtomProp gap;
 
-        gaps = read_gauss_data();
-        ReadGauss(opt2fn("-g03",NFILE,fnm),mp,
-                  bBabel,aps,pd,molnm,iupac,conf,basis,gaps,
-                  th_toler,ph_toler,maxpot,bVerbose);
+        ReadGauss(opt2fn("-g03",NFILE,fnm),mp,gap,
+                  bBabel,aps,pd,molnm,iupac,conf,basis,
+                  maxpot,bVerbose);
         mps.push_back(mp);
         mpi = mps.begin();
-        done_gauss_data(gaps);
     }
     else if (bBabel) 
     {
         alexandria::MolProp mp;
+        alexandria::GaussAtomProp gap;
 
-        ReadGauss(opt2fn("-f",NFILE,fnm),mp,
-                  bBabel,aps,pd,molnm,iupac,conf,basis,NULL,
-                  th_toler,ph_toler,maxpot,bVerbose);
+        ReadGauss(opt2fn("-f",NFILE,fnm),mp,gap,
+                  bBabel,aps,pd,molnm,iupac,conf,basis,
+                  maxpot,bVerbose);
         mps.push_back(mp);
         mpi = mps.begin();
     }

@@ -72,6 +72,8 @@ void MolProp::AddBond(Bond b)
     {
         bFound = (((bi->GetAi() == b.GetAi()) && (bi->GetAj() == b.GetAj())) ||
                   ((bi->GetAi() == b.GetAj()) && (bi->GetAj() == b.GetAi())));
+        if (bFound)
+            break;
     }
     if (!bFound)
     {
@@ -180,7 +182,28 @@ void MolProp::DeleteComposition(std::string compname)
     if (i < EndMolecularComposition())
         _mol_comp.erase(i);
 }
-  
+
+void Experiment::Dump(FILE *fp)
+{
+    if (NULL != fp)
+    {
+        fprintf(fp,"reference    = %s\n",_reference.c_str());
+        fprintf(fp,"conformation = %s\n",_conformation.c_str());
+    }
+}
+
+void Calculation::Dump(FILE *fp)
+{
+    Experiment::Dump(fp);
+    if (NULL != fp)
+    {
+        fprintf(fp,"program    = %s\n",_program.c_str());
+        fprintf(fp,"method     = %s\n",_method.c_str());
+        fprintf(fp,"basisset   = %s\n",_basisset.c_str());
+        fprintf(fp,"datafile   = %s\n",_datafile.c_str());
+    }
+}
+
 void Experiment::Merge(Experiment& src)
 {
     alexandria::MolecularEnergyIterator mei;
@@ -231,7 +254,22 @@ void Calculation::Merge(Calculation& src)
         AddPotential(ep);
     }
 }
-  
+
+void CalcAtom::AddCharge(AtomicCharge q)
+{
+    AtomicChargeIterator aci;
+
+    for(aci=BeginQ(); (aci<EndQ()); aci++)
+    {
+        if ((aci->GetType() == q.GetType()) &&
+            (aci->GetUnit() == q.GetUnit()) &&
+            (aci->GetQ() == q.GetQ()))
+            break;
+    }
+    if (aci == EndQ())
+        _q.push_back(q);
+}
+
 void MolProp::AddComposition(MolecularComposition mc)
 {
     MolecularCompositionIterator mci = SearchMolecularComposition(mc.GetCompName());
@@ -361,21 +399,33 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
 void MolProp::Dump(FILE *fp)
 {
     std::vector<std::string>::iterator si;
-      
+    ExperimentIterator ei;
+    CalculationIterator ci;
+    
     if (fp) {
+        fprintf(fp,"formula:      %s\n",GetFormula().c_str());
         fprintf(fp,"molname:      %s\n",GetMolname().c_str());
         fprintf(fp,"iupac:        %s\n",GetIupac().c_str());
+        fprintf(fp,"CAS:          %s\n",GetCas().c_str());
+        fprintf(fp,"cis:          %s\n",GetCid().c_str());
         fprintf(fp,"InChi:        %s\n",GetInchi().c_str());
-        fprintf(fp,"formula:      %s\n",GetFormula().c_str());
         fprintf(fp,"mass:         %g\n",GetMass());
         fprintf(fp,"charge:       %d\n",GetCharge());
         fprintf(fp,"multiplicity: %d\n",GetMultiplicity());
         fprintf(fp,"category:    ");
         for(si=BeginCategory(); (si<EndCategory()); si++)
         {
-            fprintf(fp," %s",si->c_str());
+            fprintf(fp," '%s'",si->c_str());
         }
         fprintf(fp,"\n");
+        for(ei=BeginExperiment(); (ei<EndExperiment()); ei++)
+        {
+            ei->Dump(fp);
+        }
+        for(ci=BeginCalculation(); (ci<EndCalculation()); ci++)
+        {
+            ci->Dump(fp);
+        }
     }
 }
 
