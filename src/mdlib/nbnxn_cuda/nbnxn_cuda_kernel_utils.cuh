@@ -69,6 +69,46 @@ float interpolate_coulomb_force_r(float r, float scale)
             + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
 }
 
+/*! Calculate analytical Ewald correction term. */
+static inline __device__
+float pmecorrF(float z2)
+{
+    const float FN6 = -1.7357322914161492954e-8f;
+    const float FN5 = 1.4703624142580877519e-6f;
+    const float FN4 = -0.000053401640219807709149f;
+    const float FN3 = 0.0010054721316683106153f;
+    const float FN2 = -0.019278317264888380590f;
+    const float FN1 = 0.069670166153766424023f;
+    const float FN0 = -0.75225204789749321333f;
+
+    const float FD4 = 0.0011193462567257629232f;
+    const float FD3 = 0.014866955030185295499f;
+    const float FD2 = 0.11583842382862377919f;
+    const float FD1 = 0.50736591960530292870f;
+    const float FD0 = 1.0f;
+
+    float       z4;
+    float       polyFN0,polyFN1,polyFD0,polyFD1;
+
+    z4          = z2*z2;
+
+    polyFD0     = FD4*z4 + FD2;
+    polyFD1     = FD3*z4 + FD1;
+    polyFD0     = polyFD0*z4 + FD0;
+    polyFD0     = polyFD1*z2 + polyFD0;
+
+    polyFD0     = 1.0f/polyFD0;
+
+    polyFN0     = FN6*z4 + FN4;
+    polyFN1     = FN5*z4 + FN3;
+    polyFN0     = polyFN0*z4 + FN2;
+    polyFN1     = polyFN1*z4 + FN1;
+    polyFN0     = polyFN0*z4 + FN0;
+    polyFN0     = polyFN1*z2 + polyFN0;
+
+    return polyFN0*polyFD0;
+}
+
 /*! Final j-force reduction; this generic implementation works with
  *  arbitrary array sizes.
  */

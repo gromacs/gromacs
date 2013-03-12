@@ -180,10 +180,65 @@ static void init_atomdata_first(cu_atomdata_t *ad, int ntypes)
     ad->nalloc = -1;
 }
 
+/*! Selects the Ewald kernel type, analytical on SM 3.0 and later, tabulated on
+    earlier GPUs, single or twin cut-off. */
+static int pick_ewald_kernel_type(bool                   bTwinCut,
+                                  const cuda_dev_info_t *dev_info)
+{
+    bool bUseAnalyticalEwald, bForceAnalyticalEwald, bForceTabulatedEwald;
+    int  kernel_type;
+
+    /* Benchmarking/development environment variables to force the use of
+       analytical or tabulated Ewald kernel. */
+    bForceAnalyticalEwald = (getenv("GMX_CUDA_NB_ANA_EWALD") != NULL);
+    bForceTabulatedEwald  = (getenv("GMX_CUDA_NB_TAB_EWALD") != NULL);
+
+    if (bForceAnalyticalEwald && bForceTabulatedEwald)
+    {
+        gmx_incons("Both analytical and tabulated Ewald CUDA non-bonded kernels "
+                   "requested through environment variables.");
+    }
+
+    /* By default, on SM 3.0 and later use analytical Ewald, on earlier tabulated. */
+    if (dev_info->prop.major >= 3 || bForceAnalyticalEwald && !bForceTabulatedEwald)
+    {
+        bUseAnalyticalEwald = true;
+
+        if (debug)
+        {
+            fprintf(debug, "Using analytical Ewald CUDA kernels\n");
+        }
+    }
+    else
+    {
+        bUseAnalyticalEwald = false;
+
+        if (debug)
+        {
+            fprintf(debug, "Using tabulated Ewald CUDA kernels\n");
+        }
+    }
+
+    /* Use twin cut-off kernels if requested by bTwinCut or the env. var.
+       forces it (use it for debugging/benchmarking only). */
+    if (!bTwinCut && (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL))
+    {
+        kernel_type = bUseAnalyticalEwald ? eelCuEWALD : eelCuEWALD_TAB;
+    }
+    else
+    {
+        kernel_type = bUseAnalyticalEwald ? eelCuEWALD_TWIN : eelCuEWALD_TAB_TWIN;
+    }
+
+    return kernel_type;
+}
+
+
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t *nbp,
                          const interaction_const_t *ic,
-                         const nonbonded_verlet_t *nbv)
+                         const nonbonded_verlet_t *nbv,
+                         const cuda_dev_info_t *dev_info)
 {
     cudaError_t stat;
     int         ntypes, nnbfp;
@@ -210,16 +265,8 @@ static void init_nbparam(cu_nbparam_t *nbp,
     }
     else if ((EEL_PME(ic->eeltype) || ic->eeltype==eelEWALD))
     {
-        /* Initially rcoulomb == rvdw, so it's surely not twin cut-off, unless
-           forced by the env. var. (used only for benchmarking). */
-        if (getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL)
-        {
-            nbp->eeltype = eelCuEWALD;
-        }
-        else
-        {
-            nbp->eeltype = eelCuEWALD_TWIN;
-        }
+        /* Initially rcoulomb == rvdw, so it's surely not twin cut-off. */
+        nbp->eeltype = pick_ewald_kernel_type(false, dev_info);
     }
     else
     {
@@ -228,9 +275,9 @@ static void init_nbparam(cu_nbparam_t *nbp,
     }
 
     /* generate table for PME */
-    if (nbp->eeltype == eelCuEWALD)
+    nbp->coulomb_tab = NULL;
+    if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        nbp->coulomb_tab = NULL;
         init_ewald_coulomb_force_table(nbp);
     }
 
@@ -256,17 +303,8 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
     nbp->rcoulomb_sq    = ic->rcoulomb * ic->rcoulomb;
     nbp->ewald_beta     = ic->ewaldcoeff;
 
-    /* When switching to/from twin cut-off, the electrostatics type needs updating.
-       (The env. var. that forces twin cut-off is for benchmarking only!) */
-    if (ic->rcoulomb == ic->rvdw &&
-        getenv("GMX_CUDA_NB_EWALD_TWINCUT") == NULL)
-    {
-        nbp->eeltype = eelCuEWALD;
-    }
-    else
-    {
-        nbp->eeltype = eelCuEWALD_TWIN;
-    }
+    nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
+                                                 cu_nb->dev_info);
 
     init_ewald_coulomb_force_table(cu_nb->nbparam);
 }
@@ -609,7 +647,7 @@ void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
                            const nonbonded_verlet_t *nbv)
 {
     init_atomdata_first(cu_nb->atdat, nbv->grp[0].nbat->ntype);
-    init_nbparam(cu_nb->nbparam, ic, nbv);
+    init_nbparam(cu_nb->nbparam, ic, nbv, cu_nb->dev_info);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(cu_nb);
@@ -804,7 +842,7 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
     plist_nl    = cu_nb->plist[eintNonlocal];
     timers      = cu_nb->timers;
 
-    if (nbparam->eeltype == eelCuEWALD || nbparam->eeltype == eelCuEWALD_TWIN)
+    if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
       stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
       CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
