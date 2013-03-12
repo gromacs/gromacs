@@ -6,7 +6,7 @@
  * Copyright (c) 2012, The GROMACS development team.
  * Check out http://www.gromacs.org for more information.
  *
- * 
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
  * as published by the Free Software Foundation; either version 2.1
@@ -138,6 +138,10 @@ struct tng_trajectory_frame_set {
     int64_t first_frame;
     /** The number of frames in this frame set */
     int64_t n_frames;
+    /** The number of written frames in this frame set (used when writing one
+     * frame at a time. */
+    int64_t n_written_frames;
+
     /** A list of the number of each molecule type - only used when using
      * variable number of atoms */
     int64_t *molecule_cnt_list;
@@ -550,7 +554,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
     md5_state_t md5_state;
     char hash[TNG_HASH_LEN];
 
-    if(strlen(block->hash) == 0)
+    if(strncmp(block->hash, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 16) == 0)
     {
         *results = TNG_TRUE;
         return(TNG_FAILURE);
@@ -588,7 +592,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
     {
         *results = TNG_TRUE;
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -596,7 +600,7 @@ static tng_function_status hash_match_verify(tng_gen_block_t block,
  * @param tng_data is a trajectory data container.
  * @return TNG_SUCCESS (0) if successful or TNG_CRITICAL (2) if a major
  * error has occured.
- */ 
+ */
 static tng_function_status tng_input_file_init(tng_trajectory_t tng_data)
 {
     if(!tng_data->input_file)
@@ -635,7 +639,7 @@ static tng_function_status tng_output_file_init(tng_trajectory_t tng_data)
         }
 
         tng_data->output_file = fopen(tng_data->output_file_path, "w+");
-        
+
         if(!tng_data->output_file)
         {
             printf("Cannot open file %s. %s: %d\n",
@@ -651,7 +655,7 @@ static tng_function_status tng_output_file_init(tng_trajectory_t tng_data)
  * @details Memory is allocated during initialisation.
  * @return TNG_SUCCESS (0) if successful or TNG_CRITICAL (2) if a major
  * error has occured.
- */ 
+ */
 static tng_function_status tng_block_init(struct tng_gen_block **block_p)
 {
 //     printf("In tng_block_init\n");
@@ -666,9 +670,9 @@ static tng_function_status tng_block_init(struct tng_gen_block **block_p)
                sizeof(struct tng_gen_block), __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
-    
+
     block = *block_p;
-    
+
     block->id = -1;
     /* Reset the hash */
     memcpy(block->hash, "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", TNG_HASH_LEN);
@@ -697,7 +701,7 @@ static tng_function_status tng_block_destroy(struct tng_gen_block **block_p)
     {
         return(TNG_SUCCESS);
     }
-    
+
 //     printf("Destroying block\n");
     if(block->name)
     {
@@ -736,7 +740,7 @@ static tng_function_status tng_block_header_read
     {
         return(TNG_CRITICAL);
     }
-    
+
     /* First read the header size to be able to read the whole header. */
     if(fread(&block->header_contents_size, sizeof(block->header_contents_size),
         1, tng_data->input_file) == 0)
@@ -875,7 +879,7 @@ static tng_function_status tng_block_header_read
     }
 
     offset += sizeof(block->id);
-    
+
     memcpy(block->hash, block->header_contents+offset, TNG_HASH_LEN);
     offset += TNG_HASH_LEN;
 
@@ -974,7 +978,7 @@ static tng_function_status tng_block_header_write
                __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
-    
+
 
     if(!block->name)
     {
@@ -1031,7 +1035,7 @@ static tng_function_status tng_block_header_write
         }
     }
     offset += sizeof(block->header_contents_size);
-    
+
     memcpy(block->header_contents+offset, &block->block_contents_size,
            sizeof(block->block_contents_size));
     if(tng_data->output_endianness_swap_func_64)
@@ -1045,7 +1049,7 @@ static tng_function_status tng_block_header_write
         }
     }
     offset += sizeof(block->block_contents_size);
-    
+
     memcpy(block->header_contents+offset, &block->id, sizeof(block->id));
     if(tng_data->output_endianness_swap_func_64)
     {
@@ -1158,8 +1162,8 @@ static tng_function_status tng_general_info_block_read
     tng_data->first_program_name = temp;
     strncpy(tng_data->first_program_name, block->block_contents, len);
     offset += len;
-    
-    len = tng_min(strlen(block->block_contents) + 1, TNG_MAX_STR_LEN);
+
+    len = tng_min(strlen(block->block_contents + offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_program_name, len);
     if(!temp)
     {
@@ -1184,7 +1188,7 @@ static tng_function_status tng_general_info_block_read
     tng_data->first_user_name = temp;
     strncpy(tng_data->first_user_name, block->block_contents+offset, len);
     offset += len;
-    
+
     len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
     temp = realloc(tng_data->last_user_name, len);
     if(!temp)
@@ -1294,7 +1298,7 @@ static tng_function_status tng_general_info_block_read
         }
     }
     offset += sizeof(tng_data->frame_set_n_frames);
-    
+
     memcpy(&tng_data->first_trajectory_frame_set_input_file_pos,
            block->block_contents+offset,
            sizeof(tng_data->first_trajectory_frame_set_input_file_pos));
@@ -1309,11 +1313,11 @@ static tng_function_status tng_general_info_block_read
         }
     }
     offset += sizeof(tng_data->first_trajectory_frame_set_input_file_pos);
-    
+
     tng_data->current_trajectory_frame_set.next_frame_set_file_pos =
     tng_data->first_trajectory_frame_set_input_file_pos;
-    
-    
+
+
     memcpy(&tng_data->last_trajectory_frame_set_input_file_pos,
            block->block_contents+offset,
            sizeof(tng_data->last_trajectory_frame_set_input_file_pos));
@@ -1355,7 +1359,7 @@ static tng_function_status tng_general_info_block_read
                     __FILE__, __LINE__);
         }
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -1497,7 +1501,7 @@ static tng_function_status tng_general_info_block_write
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
-    
+
     strcpy(block->name, "GENERAL INFO");
     block->id = TNG_GENERAL_INFO;
 
@@ -1599,7 +1603,7 @@ static tng_function_status tng_general_info_block_write
     memcpy(block->block_contents+offset, &tng_data->var_num_atoms_flag,
            sizeof(tng_data->var_num_atoms_flag));
     offset += sizeof(tng_data->var_num_atoms_flag);
-    
+
     memcpy(block->block_contents+offset, &tng_data->frame_set_n_frames,
            sizeof(tng_data->frame_set_n_frames));
     if(tng_data->output_endianness_swap_func_64)
@@ -1643,7 +1647,7 @@ static tng_function_status tng_general_info_block_write
         }
     }
     offset += sizeof(tng_data->last_trajectory_frame_set_input_file_pos);
-    
+
     memcpy(block->block_contents+offset, &tng_data->medium_stride_length,
            sizeof(tng_data->medium_stride_length));
     if(tng_data->output_endianness_swap_func_64)
@@ -1688,7 +1692,7 @@ static tng_function_status tng_general_info_block_write
     }
 
     tng_block_destroy(&block);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -1705,7 +1709,7 @@ static tng_function_status tng_chain_data_read(tng_trajectory_t tng_data,
                                                int *offset)
 {
     int len;
-    
+
     memcpy(&chain->id, block->block_contents+*offset,
             sizeof(chain->id));
     if(tng_data->input_endianness_swap_func_64)
@@ -1757,7 +1761,7 @@ static tng_function_status tng_chain_data_write(tng_trajectory_t tng_data,
                                                 int *offset)
 {
     int len;
-    
+
     memcpy(block->block_contents+*offset, &chain->id, sizeof(chain->id));
     if(tng_data->output_endianness_swap_func_64)
     {
@@ -1805,7 +1809,7 @@ static tng_function_status tng_residue_data_read(tng_trajectory_t tng_data,
                                                  int *offset)
 {
     int len;
-    
+
     memcpy(&residue->id, block->block_contents+*offset,
         sizeof(residue->id));
     if(tng_data->input_endianness_swap_func_64)
@@ -1905,7 +1909,7 @@ static tng_function_status tng_atom_data_read(tng_trajectory_t tng_data,
                                               int *offset)
 {
     int len;
-    
+
     memcpy(&atom->id, block->block_contents+*offset,
         sizeof(atom->id));
     if(tng_data->input_endianness_swap_func_64)
@@ -2096,7 +2100,7 @@ static tng_function_status tng_molecules_block_read
             return(TNG_CRITICAL);
         }
     }
-    
+
     /* Read each molecule from file */
     for(i=0; i < tng_data->n_molecules; i++)
     {
@@ -2115,7 +2119,7 @@ static tng_function_status tng_molecules_block_read
             }
         }
         offset += sizeof(molecule->id);
-        
+
 //         printf("Read id: %"PRId64" offset: %d\n", molecule->id, offset);
         len = tng_min(strlen(block->block_contents+offset) + 1, TNG_MAX_STR_LEN);
         molecule->name = malloc(len);
@@ -2153,7 +2157,7 @@ static tng_function_status tng_molecules_block_read
             }
             offset += sizeof(int64_t);
         }
-        
+
 
         memcpy(&molecule->n_chains, block->block_contents+offset,
                sizeof(molecule->n_chains));
@@ -2260,7 +2264,7 @@ static tng_function_status tng_molecules_block_read
                 tng_chain_data_read(tng_data, block, chain, &offset);
 
                 chain->residues = residue;
-                
+
                 /* Read the residues of the chain */
                 for(k=chain->n_residues; k--;)
                 {
@@ -2332,7 +2336,7 @@ static tng_function_status tng_molecules_block_read
             }
         }
         offset += sizeof(molecule->n_bonds);
-        
+
         molecule->bonds = malloc(molecule->n_bonds *
                                  sizeof(struct tng_bond));
         if(!molecule->bonds)
@@ -2374,11 +2378,11 @@ static tng_function_status tng_molecules_block_read
                 }
             }
             offset += sizeof(bond->to_atom_id);
-            
+
             bond++;
         }
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -2428,7 +2432,7 @@ static tng_function_status tng_molecules_block_write
         for(j = molecule->n_chains; j--;)
         {
             len += sizeof(chain->id);
-            
+
             if(!chain->name)
             {
                 chain->name = malloc(1);
@@ -2522,10 +2526,10 @@ static tng_function_status tng_molecules_block_write
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
-    
+
     strcpy(block->name, "MOLECULES");
     block->id = TNG_MOLECULES;
-    
+
     block->block_contents_size = sizeof(tng_data->n_molecules) +
                                  (sizeof(molecule->id) +
                                  sizeof(molecule->quaternary_str) +
@@ -2540,7 +2544,7 @@ static tng_function_status tng_molecules_block_write
     {
         block->block_contents_size += tng_data->n_molecules * sizeof(int64_t);
     }
-    
+
     block->block_contents = malloc(block->block_contents_size);
     if(!block->block_contents)
     {
@@ -2600,7 +2604,7 @@ static tng_function_status tng_molecules_block_write
             }
         }
         offset += sizeof(molecule->quaternary_str);
-        
+
         if(!tng_data->var_num_atoms_flag)
         {
             memcpy(block->block_contents+offset,
@@ -2700,7 +2704,7 @@ static tng_function_status tng_molecules_block_write
                         atom++;
                     }
                     residue++;
-                }                
+                }
             }
             else
             {
@@ -2713,7 +2717,7 @@ static tng_function_status tng_molecules_block_write
                 }
             }
         }
-                
+
         memcpy(block->block_contents+offset, &molecule->n_bonds,
                sizeof(molecule->n_bonds));
         if(tng_data->output_endianness_swap_func_64)
@@ -2727,7 +2731,7 @@ static tng_function_status tng_molecules_block_write
             }
         }
         offset += sizeof(molecule->n_bonds);
-        
+
         bond = molecule->bonds;
         for(j = molecule->n_bonds; j--;)
         {
@@ -2744,7 +2748,7 @@ static tng_function_status tng_molecules_block_write
                 }
             }
             offset += sizeof(bond->from_atom_id);
-            
+
             memcpy(block->block_contents+offset, &bond->to_atom_id,
                    sizeof(bond->to_atom_id));
             if(tng_data->output_endianness_swap_func_64)
@@ -2838,7 +2842,7 @@ static tng_function_status tng_frame_set_block_read
 
     file_pos = ftell(tng_data->input_file) -
                (block->block_contents_size + block->header_contents_size);
-               
+
     if(hash_mode == TNG_USE_HASH)
     {
         hash_match_verify(block, &same_hash);
@@ -2893,7 +2897,7 @@ static tng_function_status tng_frame_set_block_read
         }
     }
     offset += sizeof(frame_set->first_frame);
-    
+
     memcpy(&frame_set->n_frames, block->block_contents + offset,
            sizeof(frame_set->n_frames));
     if(tng_data->input_endianness_swap_func_64)
@@ -2918,7 +2922,7 @@ static tng_function_status tng_frame_set_block_read
         {
                 frame_set->molecule_cnt_list =
                 malloc(sizeof(int64_t) * tng_data->n_molecules);
-                
+
                 if(!frame_set->molecule_cnt_list)
                 {
                     printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
@@ -2966,7 +2970,7 @@ static tng_function_status tng_frame_set_block_read
         }
     }
     offset += sizeof(frame_set->next_frame_set_file_pos);
-    
+
     memcpy(&frame_set->prev_frame_set_file_pos,
            block->block_contents + offset,
            sizeof(frame_set->prev_frame_set_file_pos));
@@ -3041,7 +3045,7 @@ static tng_function_status tng_frame_set_block_read
         }
     }
     offset += sizeof(frame_set->long_stride_prev_frame_set_file_pos);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -3153,7 +3157,7 @@ static tng_function_status tng_frame_set_block_write
         }
     }
 
-    
+
     memcpy(block->block_contents+offset, &frame_set->next_frame_set_file_pos,
            sizeof(frame_set->next_frame_set_file_pos));
     if(tng_data->output_endianness_swap_func_64)
@@ -3280,7 +3284,7 @@ static tng_function_status tng_trajectory_mapping_block_read
     tng_bool same_hash;
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_particle_mapping_t mapping, mappings;
 
     if(tng_input_file_init(tng_data) != TNG_SUCCESS)
@@ -3338,7 +3342,7 @@ static tng_function_status tng_trajectory_mapping_block_read
     }
     frame_set->mappings = mappings;
     mapping = &mappings[frame_set->n_mapping_blocks - 1];
-    
+
 
     memcpy(&mapping->num_first_particle, block->block_contents+offset,
            sizeof(mapping->num_first_particle));
@@ -3402,7 +3406,7 @@ static tng_function_status tng_trajectory_mapping_block_read
         memcpy(mapping->real_particle_numbers, block->block_contents + offset,
                mapping->n_particles * sizeof(int64_t));
     }
-    
+
 
     return(TNG_SUCCESS);
 }
@@ -3539,7 +3543,7 @@ static tng_function_status tng_trajectory_mapping_block_write
     return(TNG_SUCCESS);
 }
 
-/** Prepare a block for storing particle data 
+/** Prepare a block for storing particle data
  * @param tng_data is a trajectory data container.
  * @param block_type_flag specifies if this is a trajectory block or a
  * non-trajectory block. (TNG_TRAJECTORY_BLOCK or TNG_NON_TRAJECTORY_BLOCK)
@@ -3552,9 +3556,9 @@ static tng_function_status tng_particle_data_block_create
 {
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_particle_data_t data;
-    
+
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
     {
         frame_set->n_particle_data_blocks++;
@@ -3632,8 +3636,8 @@ static tng_function_status tng_allocate_particle_data_mem
     n_frames = tng_max(1, n_frames);
     data->stride_length = tng_max(1, stride_length);
     data->n_values_per_frame = n_values_per_frame;
-    values = realloc(data->values, sizeof(union data_values **) * n_frames
-                     / stride_length);
+    values = realloc(data->values, sizeof(union data_values **) * n_frames);
+
     if(!values)
     {
         printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
@@ -3644,7 +3648,7 @@ static tng_function_status tng_allocate_particle_data_mem
     }
     data->values = values;
 
-    for(i = n_frames / stride_length; i-- ;)
+    for(i = n_frames; i-- ;)
     {
         data->values[i] = malloc(sizeof(union data_values *) *
                                  n_particles);
@@ -3751,7 +3755,7 @@ static tng_function_status tng_particle_data_read
     {
         block_type_flag = TNG_NON_TRAJECTORY_BLOCK;
     }
-    
+
     block_index = -1;
     /* See if there is already a data block of this ID */
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
@@ -3800,7 +3804,7 @@ static tng_function_status tng_particle_data_read
                                                    n_particle_data_blocks - 1];
         }
         data->block_id = block->id;
-        
+
         data->block_name = malloc(strlen(block->name) + 1);
         if(!data->block_name)
         {
@@ -3827,7 +3831,7 @@ static tng_function_status tng_particle_data_read
     {
         tot_n_particles = tng_data->n_particles;
     }
-    
+
     /* Allocate memory */
     if(!data->values || data->n_frames != n_frames ||
        data->n_values_per_frame != n_values)
@@ -3844,7 +3848,7 @@ static tng_function_status tng_particle_data_read
     }
 
     data->first_frame_with_data = first_frame_with_data;
-    
+
     n_frames = tng_max(1, n_frames / stride_length);
 
     /* FIXME: If not using a union to store data a whole dimension
@@ -3993,7 +3997,7 @@ static tng_function_status tng_particle_data_block_write
     union data_values **first_dim_values, *second_dim_values;
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_particle_data_t data;
     tng_block_type block_type_flag;
 
@@ -4062,7 +4066,7 @@ static tng_function_status tng_particle_data_block_write
        to be at least 1 */
     n_frames = tng_max(1, data->n_frames);
 
-    
+
     if(mapping && mapping->n_particles != 0)
     {
         n_particles = mapping->n_particles;
@@ -4080,7 +4084,7 @@ static tng_function_status tng_particle_data_block_write
             n_particles = tng_data->n_particles;
         }
     }
-    
+
     block->block_contents_size = sizeof(char) * 2 +
                                  sizeof(data->n_values_per_frame) +
                                  sizeof(data->codec_id) +
@@ -4133,7 +4137,7 @@ static tng_function_status tng_particle_data_block_write
     {
         block->block_contents_size += sizeof(char);
     }
-    
+
     if(block->block_contents)
     {
         free(block->block_contents);
@@ -4246,7 +4250,7 @@ static tng_function_status tng_particle_data_block_write
         offset += sizeof(stride_length);
     }
 
-    
+
     memcpy(block->block_contents+offset, &num_first_particle,
            sizeof(num_first_particle));
     if(tng_data->output_endianness_swap_func_64)
@@ -4274,7 +4278,7 @@ static tng_function_status tng_particle_data_block_write
     }
     offset += sizeof(n_particles);
 
-    
+
     /* FIXME: If not using a union to store data a whole dimension or the
      * whole block can be written at once if byte swapping is not needed */
     switch(data->datatype)
@@ -4307,7 +4311,7 @@ static tng_function_status tng_particle_data_block_write
             }
         }
         break;
-        
+
     case TNG_INT_DATA:
         for(i = 0; i < data->n_frames / stride_length; i++)
         {
@@ -4416,9 +4420,9 @@ static tng_function_status tng_data_block_create
 {
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_non_particle_data_t data;
-    
+
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
     {
         frame_set->n_data_blocks++;
@@ -4501,14 +4505,14 @@ static tng_function_status tng_allocate_data_mem
     if(!values)
     {
         printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
-            sizeof(union data_values **) * n_frames / stride_length,
+            sizeof(union data_values *) * n_frames,
             __FILE__, __LINE__);
         free(data->values);
         return(TNG_CRITICAL);
     }
     data->values = values;
 
-    for(i = n_frames / stride_length; i-- ;)
+    for(i = n_frames; i-- ;)
     {
         data->values[i] = malloc(sizeof(union data_values) *
                                  n_values_per_frame);
@@ -4595,7 +4599,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
     default:
         size = sizeof(double);
     }
-    
+
     block_index = -1;
     /* See if there is already a data block of this ID */
     /* FIXME: Do not compare with block->id. Use ID as parameter instead. */
@@ -4623,7 +4627,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* Otherwise create a data block */
     if(block_index == -1)
     {
@@ -4676,7 +4680,7 @@ static tng_function_status tng_data_read(tng_trajectory_t tng_data,
     }
 
     data->first_frame_with_data = first_frame_with_data;
-    
+
     n_frames = tng_max(1, n_frames / stride_length);
 
     /* FIXME: If not using a union to store data a whole dimension
@@ -4794,7 +4798,7 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
     char temp, dependency, *temp_name;
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_non_particle_data_t data;
     tng_block_type block_type_flag;
 
@@ -4863,7 +4867,7 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
        to be at least 1 */
     n_frames = tng_max(1, data->n_frames);
 
-    
+
     block->block_contents_size = sizeof(char) * 2 +
                                  sizeof(data->n_values_per_frame) +
                                  sizeof(data->codec_id);
@@ -4873,12 +4877,12 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
         block->block_contents_size += sizeof(data->first_frame_with_data) +
                                       sizeof(data->stride_length);
     }
-                                 
+
     if(data->codec_id != TNG_UNCOMPRESSED)
     {
         block->block_contents_size += sizeof(data->compression_multiplier);
     }
-    
+
     if(data->datatype == TNG_CHAR_DATA)
     {
         for(i = n_frames; i--;)
@@ -4902,7 +4906,7 @@ static tng_function_status tng_data_block_write(tng_trajectory_t tng_data,
     else
     {
         dependency = 0;
-    }    
+    }
     if(dependency & TNG_FRAME_DEPENDENT)
     {
         block->block_contents_size += sizeof(char);
@@ -5176,8 +5180,8 @@ static tng_function_status tng_data_block_contents_read
         hash_match_verify(block, &same_hash);
         if(same_hash != TNG_TRUE)
         {
-            printf("Data block contents corrupt. Hashes do not match. %s: %d\n",
-                __FILE__, __LINE__);
+            printf("'%s' data block contents corrupt. Hashes do not match. %s: %d\n",
+                block->name, __FILE__, __LINE__);
     //         return(TNG_FAILURE);
         }
     }
@@ -5264,7 +5268,7 @@ static tng_function_status tng_data_block_contents_read
                 }
             }
             offset += sizeof(first_frame_with_data);
-            
+
             memcpy(&stride_length, block->block_contents+offset,
                 sizeof(stride_length));
             if(tng_data->input_endianness_swap_func_64)
@@ -5292,7 +5296,7 @@ static tng_function_status tng_data_block_contents_read
         stride_length = 1;
         n_frames = 0;
     }
-    
+
     if (dependency & TNG_PARTICLE_DEPENDENT)
     {
         memcpy(&num_first_particle, block->block_contents+offset,
@@ -5364,7 +5368,7 @@ static tng_function_status tng_md5_hash_update(tng_trajectory_t tng_data,
     {
         free(block->block_contents);
     }
-    
+
     block->block_contents = malloc(block->block_contents_size);
     fseek(tng_data->output_file, contents_start_pos, SEEK_SET);
     if(fread(block->block_contents, block->block_contents_size, 1,
@@ -5406,7 +5410,7 @@ static tng_function_status tng_header_pointers_update
     }
 
     tng_data->input_file = tng_data->output_file;
-    
+
     tng_block_init(&block);
 
     output_file_pos = ftell(tng_data->output_file);
@@ -5429,7 +5433,7 @@ static tng_function_status tng_header_pointers_update
     tng_data->input_file = temp;
 
     pos = tng_data->first_trajectory_frame_set_output_file_pos;
-    
+
     if(tng_data->input_endianness_swap_func_64)
     {
         if(tng_data->input_endianness_swap_func_64(tng_data,
@@ -5440,15 +5444,15 @@ static tng_function_status tng_header_pointers_update
                     __FILE__, __LINE__);
         }
     }
-        
+
     if(fwrite(&pos, sizeof(int64_t), 1, tng_data->output_file) != 1)
     {
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
-    
+
     pos = tng_data->last_trajectory_frame_set_output_file_pos;
-    
+
     if(tng_data->input_endianness_swap_func_64)
     {
         if(tng_data->input_endianness_swap_func_64(tng_data,
@@ -5473,7 +5477,7 @@ static tng_function_status tng_header_pointers_update
     }
 
     tng_block_destroy(&block);
-    
+
     fseek(tng_data->output_file, output_file_pos, SEEK_SET);
 
     return(TNG_SUCCESS);
@@ -5504,7 +5508,7 @@ static tng_function_status tng_frame_set_pointers_update
 
     tng_block_init(&block);
     output_file_pos = ftell(tng_data->output_file);
-    
+
     tng_data->input_file = tng_data->output_file;
 
     frame_set = &tng_data->current_trajectory_frame_set;
@@ -5517,7 +5521,7 @@ static tng_function_status tng_frame_set_pointers_update
               SEEK_SET);
 
         header_start_pos = frame_set->prev_frame_set_file_pos;
-        
+
         if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
         {
             printf("Cannot read frame header. %s: %d\n",
@@ -5557,7 +5561,7 @@ static tng_function_status tng_frame_set_pointers_update
             tng_md5_hash_update(tng_data, block, header_start_pos,
                                 contents_start_pos);
         }
-        
+
         fseek(tng_data->output_file, output_file_pos, SEEK_SET);
     }
 
@@ -5579,7 +5583,7 @@ static tng_function_status tng_frame_set_pointers_update
         }
 
         contents_start_pos = ftell(tng_data->output_file);
-        
+
         fseek(tng_data->output_file, block->block_contents_size - 4 *
             sizeof(int64_t), SEEK_CUR);
 
@@ -5602,7 +5606,7 @@ static tng_function_status tng_frame_set_pointers_update
             tng_block_destroy(&block);
             return(TNG_CRITICAL);
         }
-        
+
         if(hash_mode == TNG_USE_HASH)
         {
             tng_md5_hash_update(tng_data, block,
@@ -5660,15 +5664,110 @@ static tng_function_status tng_frame_set_pointers_update
                                 contents_start_pos);
         }
     }
-    
+
     fseek(tng_data->output_file, output_file_pos, SEEK_SET);
-    
+
     tng_data->input_file = temp;
 
     tng_block_destroy(&block);
 
     return(TNG_SUCCESS);
 }
+
+/** Finish writing the current frame set. Update the number of frames
+ * and the hashes of the frame set and all its data blocks (if hash_mode
+ * == TNG_USE_HASH).
+ * @param tng_data is a trajectory data container.
+ * @param hash_mode specifies whether to update the block md5 hash when
+ * updating the pointers.
+ * @return TNG_SUCCESS (0) if successful or TNG_CRITICAL (2) if a major
+ * error has occured.
+ */
+static tng_function_status tng_frame_set_finalize
+                (tng_trajectory_t tng_data, const tng_hash_mode hash_mode)
+{
+    tng_gen_block_t block;
+    tng_trajectory_frame_set_t frame_set;
+    FILE *temp = tng_data->input_file;
+    int64_t pos, output_file_pos, contents_start_pos,
+            output_file_len;
+
+    frame_set = &tng_data->current_trajectory_frame_set;
+
+    if(frame_set->n_written_frames == frame_set->n_frames)
+    {
+        return(TNG_SUCCESS);
+    }
+
+    if(tng_output_file_init(tng_data) != TNG_SUCCESS)
+    {
+        printf("Cannot initialise destination file. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
+
+    tng_block_init(&block);
+    output_file_pos = ftell(tng_data->output_file);
+
+    tng_data->input_file = tng_data->output_file;
+
+    pos = tng_data->current_trajectory_frame_set_output_file_pos;
+
+    fseek(tng_data->output_file, pos, SEEK_SET);
+
+    if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
+    {
+        printf("Cannot read frame set header. %s: %d\n",
+            __FILE__, __LINE__);
+        tng_data->input_file = temp;
+        tng_block_destroy(&block);
+        return(TNG_CRITICAL);
+    }
+
+    contents_start_pos = ftell(tng_data->output_file);
+
+    fseek(tng_data->output_file, sizeof(frame_set->first_frame), SEEK_CUR);
+    if(fwrite(&frame_set->n_written_frames, sizeof(frame_set->n_frames),
+              1, tng_data->output_file) != 1)
+    {
+        tng_data->input_file = temp;
+        tng_block_destroy(&block);
+        return(TNG_CRITICAL);
+    }
+
+
+    if(hash_mode == TNG_SKIP_HASH)
+    {
+        fseek(tng_data->output_file, output_file_pos, SEEK_SET);
+        return(TNG_SUCCESS);
+    }
+
+    tng_md5_hash_update(tng_data, block, pos, pos + block->header_contents_size);
+
+    fseek(tng_data->output_file, 0, SEEK_END);
+    output_file_len = ftell(tng_data->output_file);
+    pos = contents_start_pos + block->block_contents_size;
+    fseek(tng_data->output_file, pos,
+          SEEK_SET);
+
+    while(pos < output_file_len)
+    {
+        if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
+        {
+            printf("Cannot read block header. %s: %d\n", __FILE__, __LINE__);
+            tng_data->input_file = temp;
+            tng_block_destroy(&block);
+            return(TNG_CRITICAL);
+        }
+        tng_md5_hash_update(tng_data, block, pos,
+                            pos + block->header_contents_size);
+        pos += block->header_contents_size + block->block_contents_size;
+        fseek(tng_data->output_file, pos, SEEK_SET);
+    }
+
+    return(TNG_SUCCESS);
+}
+
 
 /** Sets the name of a file contents block
  * @param tng_data is a trajectory data container.
@@ -5682,7 +5781,7 @@ static tng_function_status tng_block_name_set(tng_trajectory_t tng_data,
                                               const char *new_name)
 {
     int len;
-    
+
     len = tng_min(strlen(new_name) + 1, TNG_MAX_STR_LEN);
 
     /* If the currently stored string length is not enough to store the new
@@ -5701,10 +5800,10 @@ static tng_function_status tng_block_name_set(tng_trajectory_t tng_data,
                    __FILE__, __LINE__);
             return(TNG_CRITICAL);
         }
-    }    
-    
+    }
+
     strncpy(block->name, new_name, len);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -5778,7 +5877,7 @@ static tng_function_status tng_atom_init(tng_atom_t atom)
 {
     atom->name = 0;
     atom->atom_type = 0;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -5798,7 +5897,7 @@ static tng_function_status tng_atom_destroy(tng_atom_t atom)
         free(atom->atom_type);
         atom->atom_type = 0;
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -5810,7 +5909,7 @@ tng_function_status tng_molecule_add(tng_trajectory_t tng_data,
     int64_t *new_molecule_cnt_list;
     int id, i;
     tng_bool found_id = TNG_TRUE;
-    
+
     new_molecules = realloc(tng_data->molecules,
                             sizeof(struct tng_molecule) *
                             (tng_data->n_molecules + 1));
@@ -5827,7 +5926,7 @@ tng_function_status tng_molecule_add(tng_trajectory_t tng_data,
     new_molecule_cnt_list = realloc(tng_data->molecule_cnt_list,
                                     sizeof(int64_t) *
                                     (tng_data->n_molecules + 1));
-    
+
     if(!new_molecule_cnt_list)
     {
         printf("Cannot allocate memory (%"PRId64" bytes). %s: %d\n",
@@ -5866,7 +5965,7 @@ tng_function_status tng_molecule_add(tng_trajectory_t tng_data,
             id++;
         }
     }
-    
+
     (*molecule)->id = id;
 
     tng_data->n_molecules++;
@@ -5962,9 +6061,9 @@ tng_function_status tng_molecule_chain_find(tng_trajectory_t tng_data,
                                             tng_chain_t *chain)
 {
     int i, n_chains;
-    
+
     n_chains = molecule->n_chains;
-    
+
     for(i = 0; i < n_chains; i++)
     {
         *chain = &molecule->chains[i];
@@ -5976,9 +6075,9 @@ tng_function_status tng_molecule_chain_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     *chain = 0;
-    
+
     return(TNG_FAILURE);
 }
 
@@ -6016,7 +6115,7 @@ tng_function_status tng_molecule_chain_add(tng_trajectory_t tng_data,
     molecule->n_chains++;
 
     (*chain)->id = molecule->n_chains;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6142,7 +6241,7 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
     {
         chain->residues = *residue;
     }
-    
+
     (*residue)->name = 0;
     tng_residue_name_set(tng_data, *residue, name);
 
@@ -6154,7 +6253,7 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
     molecule->n_residues++;
 
     (*residue)->id = chain->n_residues;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6263,9 +6362,9 @@ tng_function_status tng_residue_atom_add(tng_trajectory_t tng_data,
 
     residue->n_atoms++;
     molecule->n_atoms++;
-    
+
     (*atom)->id = molecule->n_atoms;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6283,7 +6382,7 @@ tng_function_status tng_molecule_init(const tng_trajectory_t tng_data,
     molecule->atoms = 0;
     molecule->n_bonds = 0;
     molecule->bonds = 0;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6297,7 +6396,7 @@ tng_function_status tng_molecule_destroy(const tng_trajectory_t tng_data,
         free(molecule->name);
         molecule->name = 0;
     }
-    
+
     if(molecule->chains)
     {
         for(i = molecule->n_chains; i--;)
@@ -6338,7 +6437,7 @@ tng_function_status tng_molecule_destroy(const tng_trajectory_t tng_data,
         molecule->atoms = 0;
     }
     molecule->n_atoms = 0;
-    
+
     if(molecule->bonds)
     {
         free(molecule->bonds);
@@ -6536,7 +6635,7 @@ tng_function_status tng_atom_name_of_particle_nr_get
     {
         return(TNG_FAILURE);
     }
-    
+
     strncpy(name, atom->name, max_len - 1);
     name[max_len - 1] = 0;
 
@@ -6662,7 +6761,7 @@ tng_function_status tng_particle_mapping_add
 
     mapping->num_first_particle = num_first_particle;
     mapping->n_particles = n_particles;
-    
+
     mapping->real_particle_numbers = malloc(sizeof(int64_t) * n_particles);
     if(!mapping->real_particle_numbers)
     {
@@ -6675,7 +6774,7 @@ tng_function_status tng_particle_mapping_add
     {
         mapping->real_particle_numbers[i] = mapping_table[i];
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6696,7 +6795,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     tng_data = *tng_data_p;
 
     frame_set = &tng_data->current_trajectory_frame_set;
-    
+
     tng_data->input_file_path = 0;
     tng_data->input_file = 0;
     tng_data->input_file_len = 0;
@@ -6712,7 +6811,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     tng_data->last_computer_name = 0;
     tng_data->last_pgp_signature = 0;
     tng_data->forcefield_name = 0;
-    
+
     seconds = time(0);
     if ( seconds == -1)
     {
@@ -6746,7 +6845,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     frame_set->n_mapping_blocks = 0;
     frame_set->mappings = 0;
     frame_set->molecule_cnt_list = 0;
-    
+
     frame_set->n_particle_data_blocks = 0;
     frame_set->n_data_blocks = 0;
 
@@ -6759,7 +6858,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     frame_set->medium_stride_prev_frame_set_file_pos = -1;
     frame_set->long_stride_next_frame_set_file_pos = -1;
     frame_set->long_stride_prev_frame_set_file_pos = -1;
-    
+
     tng_data->n_molecules = 0;
     tng_data->molecules = 0;
     tng_data->molecule_cnt_list = 0;
@@ -6779,7 +6878,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
         tng_data->endianness_32 = TNG_LITTLE_ENDIAN_32;
 
     }
-    
+
     /* 0x45670123 */
     else if ( *(const uint8_t*)&endianness_32 == 0x45 )
     {
@@ -6792,7 +6891,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     {
         tng_data->endianness_64 = TNG_BIG_ENDIAN_64;
     }
-    
+
     /* 0xEFCDAB8967452301 */
     else if ( *(const uint8_t*)&endianness_64 == 0xEF )
     {
@@ -6810,7 +6909,7 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     {
         tng_data->endianness_64 = TNG_BYTE_PAIR_SWAP_64;
     }
-    
+
     /* 0x23016745AB89EFCD */
     else if ( *(const uint8_t*)&endianness_64 == 0x23 )
     {
@@ -6825,11 +6924,11 @@ tng_function_status tng_trajectory_init(tng_trajectory_t *tng_data_p)
     tng_data->input_endianness_swap_func_64 = 0;
     tng_data->output_endianness_swap_func_32 = 0;
     tng_data->output_endianness_swap_func_64 = 0;
-    
+
     tng_data->current_trajectory_frame_set.next_frame_set_file_pos = -1;
     tng_data->current_trajectory_frame_set.prev_frame_set_file_pos = -1;
     tng_data->current_trajectory_frame_set.n_frames = 0;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -6847,31 +6946,33 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
     {
         return(TNG_SUCCESS);
     }
-    
+
     if(tng_data->input_file_path)
     {
         free(tng_data->input_file_path);
         tng_data->input_file_path = 0;
     }
-    
+
     if(tng_data->input_file)
     {
         fclose(tng_data->input_file);
         tng_data->input_file = 0;
     }
-    
+
     if(tng_data->output_file_path)
     {
         free(tng_data->output_file_path);
         tng_data->output_file_path = 0;
     }
-    
+
     if(tng_data->output_file)
     {
+        /* FIXME: Do not always write the hash */
+        tng_frame_set_finalize(tng_data, TNG_USE_HASH);
         fclose(tng_data->output_file);
         tng_data->output_file = 0;
     }
-    
+
     if(tng_data->first_program_name)
     {
         free(tng_data->first_program_name);
@@ -6889,7 +6990,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(tng_data->first_user_name);
         tng_data->first_user_name = 0;
     }
-    
+
     if(tng_data->last_user_name)
     {
         free(tng_data->last_user_name);
@@ -6947,7 +7048,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(frame_set->molecule_cnt_list);
         frame_set->molecule_cnt_list = 0;
     }
-    
+
     if(tng_data->var_num_atoms_flag)
     {
         n_particles = tng_data->current_trajectory_frame_set.n_particles;
@@ -6969,7 +7070,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
                                        n_values_per_frame,
                                        tng_data->non_tr_particle_data[i].
                                        datatype);
-                                          
+
             if(tng_data->non_tr_particle_data[i].block_name)
             {
                 free(tng_data->non_tr_particle_data[i].block_name);
@@ -6979,7 +7080,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(tng_data->non_tr_particle_data);
         tng_data->non_tr_particle_data = 0;
     }
-    
+
     if(tng_data->non_tr_data)
     {
         for(i = tng_data->n_data_blocks; i--;)
@@ -6988,7 +7089,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
                                  tng_data->non_tr_data[i].values, 1,
                                  tng_data->non_tr_data[i].n_values_per_frame,
                                  tng_data->non_tr_data[i].datatype);
-            
+
             if(tng_data->non_tr_data[i].block_name)
             {
                 free(tng_data->non_tr_data[i].block_name);
@@ -6998,10 +7099,10 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(tng_data->non_tr_data);
         tng_data->non_tr_data = 0;
     }
-    
+
     tng_data->n_particle_data_blocks = 0;
     tng_data->n_data_blocks = 0;
-    
+
     if(frame_set->tr_particle_data)
     {
         for(i = frame_set->n_particle_data_blocks; i--; )
@@ -7010,15 +7111,13 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
                                           frame_set->tr_particle_data[i].
                                           values,
                                           frame_set->tr_particle_data[i].
-                                          n_frames /
-                                          frame_set->tr_particle_data[i].
-                                          stride_length,
+                                          n_frames,
                                           n_particles,
                                           frame_set->tr_particle_data[i].
                                           n_values_per_frame,
                                           frame_set->tr_particle_data[i].
                                           datatype);
-            
+
             if(frame_set->tr_particle_data[i].block_name)
             {
                 free(frame_set->tr_particle_data[i].block_name);
@@ -7028,15 +7127,14 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(frame_set->tr_particle_data);
         frame_set->tr_particle_data = 0;
     }
-    
+
     if(frame_set->tr_data)
     {
         for(i = frame_set->n_data_blocks; i--;)
         {
             tng_data_values_free(tng_data,
                                  frame_set->tr_data[i].values,
-                                 frame_set->tr_data[i].n_frames /
-                                 frame_set->tr_data[i].stride_length,
+                                 frame_set->tr_data[i].n_frames,
                                  frame_set->tr_data[i].
                                  n_values_per_frame,
                                  frame_set->tr_data[i].datatype);
@@ -7049,10 +7147,10 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
         free(frame_set->tr_data);
         frame_set->tr_data = 0;
     }
-    
+
     frame_set->n_particle_data_blocks = 0;
     frame_set->n_data_blocks = 0;
-    
+
     if(tng_data->molecules)
     {
         for(i=tng_data->n_molecules; i--;)
@@ -7071,7 +7169,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p)
 
     free(*tng_data_p);
     *tng_data_p = 0;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -7102,7 +7200,7 @@ tng_function_status tng_trajectory_init_from_src(tng_trajectory_t src,
     {
         dest->input_file = 0;
     }
-    
+
     dest->input_file_len = src->input_file_len;
     dest->output_file_path = 0;
     if(src->output_file)
@@ -7205,13 +7303,13 @@ tng_function_status tng_input_file_set(tng_trajectory_t tng_data,
 {
     int len;
     char *temp;
-    
+
     if(tng_data->input_file_path && strcmp(tng_data->input_file_path,
                                            file_name) == 0)
     {
         return(TNG_SUCCESS);
     }
-    
+
     if(tng_data->input_file)
     {
         fclose(tng_data->input_file);
@@ -7227,7 +7325,7 @@ tng_function_status tng_input_file_set(tng_trajectory_t tng_data,
         return(TNG_CRITICAL);
     }
     tng_data->input_file_path = temp;
-        
+
     strncpy(tng_data->input_file_path, file_name, len);
 
     return(tng_input_file_init(tng_data));
@@ -7273,7 +7371,7 @@ tng_function_status tng_output_file_set(tng_trajectory_t tng_data,
         return(TNG_CRITICAL);
     }
     tng_data->output_file_path = temp;
-        
+
     strncpy(tng_data->output_file_path, file_name, len);
 
     return(tng_output_file_init(tng_data));
@@ -7284,7 +7382,7 @@ tng_function_status tng_output_file_endianness_get
 {
     tng_endianness_32 end_32;
     tng_endianness_64 end_64;
-    
+
     if(tng_data->output_endianness_swap_func_32)
     {
         /* If other endianness variants are added they must be added here as well */
@@ -7307,7 +7405,7 @@ tng_function_status tng_output_file_endianness_get
     {
         end_32 = tng_data->endianness_32;
     }
-    
+
     if(tng_data->output_endianness_swap_func_64)
     {
         /* If other endianness variants are added they must be added here as well */
@@ -7349,7 +7447,7 @@ tng_function_status tng_output_file_endianness_get
     {
         return(TNG_FAILURE);
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -7867,7 +7965,7 @@ tng_function_status tng_num_molecules_get(const tng_trajectory_t tng_data,
                                           int64_t *n)
 {
     int64_t *cnt_list, cnt = 0, i;
-    
+
     if(tng_data->var_num_atoms_flag == TNG_CONSTANT_N_ATOMS)
     {
         cnt_list = tng_data->molecule_cnt_list;
@@ -7883,7 +7981,7 @@ tng_function_status tng_num_molecules_get(const tng_trajectory_t tng_data,
     }
 
     *n = cnt;
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -7906,9 +8004,9 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
     tng_gen_block_t block;
     tng_function_status stat;
     int64_t cnt = 0;
-    
+
     file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
-    
+
     tng_block_init(&block);
     fseek(tng_data->input_file,
         file_pos,
@@ -7930,7 +8028,7 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
     }
 
     ++cnt;
-    
+
     file_pos = tng_data->current_trajectory_frame_set_input_file_pos;
 
     long_stride_length = tng_data->long_stride_length;
@@ -8021,7 +8119,7 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
     }
 
     tng_block_destroy(&block);
-    
+
     *n = tng_data->n_trajectory_frame_sets = cnt;
 
     return(TNG_SUCCESS);
@@ -8047,7 +8145,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
     tng_function_status stat;
 
     stat = tng_num_frame_sets_get(tng_data, &n_frame_sets);
-    
+
     if(nr >= n_frame_sets)
     {
         return(TNG_FAILURE);
@@ -8165,12 +8263,12 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* Take one step forward until the right frame set is found */
     while(file_pos > 0 && curr_nr < nr)
     {
         file_pos = frame_set->next_frame_set_file_pos;
-        
+
         if(file_pos > 0)
         {
             ++curr_nr;
@@ -8198,7 +8296,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* Take long steps backward until a long step backward would be too long
      * or the right frame set is found */
     while(file_pos > 0 && curr_nr - long_stride_length >= nr)
@@ -8231,7 +8329,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* Take medium steps backward until a medium step backward would be too long
      * or the right frame set is found */
     while(file_pos > 0 && curr_nr - medium_stride_length >= nr)
@@ -8264,7 +8362,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* Take one step backward until the right frame set is found */
     while(file_pos > 0 && curr_nr > nr)
     {
@@ -8296,7 +8394,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     /* If for some reason the current frame set is not yet found,
      * take one step forward until the right frame set is found */
     while(file_pos > 0 && curr_nr < nr)
@@ -8329,7 +8427,7 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     tng_block_destroy(&block);
     return(TNG_FAILURE);
 }
@@ -8405,10 +8503,10 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     first_frame = tng_max(frame_set->first_frame, 0);
     last_frame = first_frame + frame_set->n_frames - 1;
-    
+
     if(frame >= first_frame && frame <= last_frame)
     {
         tng_block_destroy(&block);
@@ -8449,7 +8547,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* Take medium steps forward until a medium step forward would be too long
      * or the right frame set is found */
     while(file_pos > 0 && first_frame + medium_stride_length *
@@ -8484,7 +8582,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* Take one step forward until the right frame set is found */
     while(file_pos > 0 && first_frame < frame && last_frame < frame)
     {
@@ -8517,7 +8615,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* Take long steps backward until a long step backward would be too long
      * or the right frame set is found */
     while(file_pos > 0 && first_frame - long_stride_length *
@@ -8552,7 +8650,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* Take medium steps backward until a medium step backward would be too long
      * or the right frame set is found */
     while(file_pos > 0 && first_frame - medium_stride_length *
@@ -8587,7 +8685,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* Take one step backward until the right frame set is found */
     while(file_pos > 0 && first_frame > frame && last_frame > frame)
     {
@@ -8620,7 +8718,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     /* If for some reason the current frame set is not yet found,
      * take one step forward until the right frame set is found */
     while(file_pos > 0 && first_frame < frame && last_frame < frame)
@@ -8654,7 +8752,7 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             return(TNG_SUCCESS);
         }
     }
-    
+
     tng_block_destroy(&block);
     return(TNG_FAILURE);
 }
@@ -8770,7 +8868,7 @@ tng_function_status tng_file_headers_read(tng_trajectory_t tng_data,
     tng_gen_block_t block;
 
     tng_data->n_trajectory_frame_sets = 0;
-    
+
     if(tng_input_file_init(tng_data) != TNG_SUCCESS)
     {
         return(TNG_CRITICAL);
@@ -8782,7 +8880,7 @@ tng_function_status tng_file_headers_read(tng_trajectory_t tng_data,
         tng_data->input_file_len = ftell(tng_data->input_file);
         fseek(tng_data->input_file, 0, SEEK_SET);
     }
-        
+
     tng_block_init(&block);
     /* Non trajectory blocks (they come before the trajectory
      * blocks in the file) */
@@ -8806,7 +8904,7 @@ tng_function_status tng_file_headers_read(tng_trajectory_t tng_data,
     }
 
     tng_block_destroy(&block);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -8829,7 +8927,7 @@ tng_function_status tng_file_headers_write(tng_trajectory_t tng_data,
                 tng_data->input_file_path, __FILE__, __LINE__);
         return(TNG_CRITICAL);
     }
-    
+
     if(tng_molecules_block_write(tng_data, hash_mode)
         != TNG_SUCCESS)
     {
@@ -8856,7 +8954,7 @@ tng_function_status tng_file_headers_write(tng_trajectory_t tng_data,
     }
 
     tng_block_destroy(&data_block);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -8907,7 +9005,7 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
     {
         file_pos = tng_data->first_trajectory_frame_set_input_file_pos;
     }
-    
+
     if(file_pos > 0)
     {
         fseek(tng_data->input_file,
@@ -8918,7 +9016,7 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
     {
         return(TNG_FAILURE);
     }
-    
+
     tng_block_init(&block);
 
     if(!tng_data->input_file_len)
@@ -8937,7 +9035,7 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
     }
 
     tng_data->current_trajectory_frame_set_input_file_pos = file_pos;
-    
+
     if(tng_block_read_next(tng_data, block,
                            hash_mode) == TNG_SUCCESS)
     {
@@ -8973,7 +9071,7 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
     }
 
     tng_block_destroy(&block);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -8984,11 +9082,11 @@ tng_function_status tng_frame_set_write(tng_trajectory_t tng_data,
     tng_gen_block_t block;
     tng_trajectory_frame_set_t frame_set =
     &tng_data->current_trajectory_frame_set;
-    
+
     tng_function_status stat;
 
     tng_data->current_trajectory_frame_set_output_file_pos =
-    tng_data->last_trajectory_frame_set_output_file_pos = 
+    tng_data->last_trajectory_frame_set_output_file_pos =
     ftell(tng_data->output_file);
 
     if(tng_data->current_trajectory_frame_set_output_file_pos <= 0)
@@ -9048,14 +9146,14 @@ tng_function_status tng_frame_set_write(tng_trajectory_t tng_data,
 
     /* Update pointers in the general info block */
     stat = tng_header_pointers_update(tng_data, hash_mode);
-    
+
     if(stat == TNG_SUCCESS)
     {
         stat = tng_frame_set_pointers_update(tng_data, hash_mode);
     }
 
     tng_block_destroy(&block);
-    
+
     return(stat);
 }
 
@@ -9081,7 +9179,7 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
         frame_set->prev_frame_set_file_pos =
         tng_data->current_trajectory_frame_set_output_file_pos;
     }
-    
+
     tng_data->current_trajectory_frame_set_output_file_pos =
     ftell(tng_data->output_file);
 
@@ -9119,12 +9217,12 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
         {
             tng_block_init(&block);
             tng_data->input_file = tng_data->output_file;
-            
+
             curr_pos = ftell(tng_data->output_file);
             fseek(tng_data->output_file,
                   frame_set->medium_stride_prev_frame_set_file_pos,
                   SEEK_SET);
-            
+
             if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
             {
                 printf("Cannot read frame header. %s: %d\n",
@@ -9158,9 +9256,9 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
                             __FILE__, __LINE__);
                 }
             }
-            
+
             tng_block_destroy(&block);
-            
+
             /* Set the long range pointers */
             if(tng_data->n_trajectory_frame_sets == tng_data->long_stride_length + 1)
             {
@@ -9196,7 +9294,7 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
                         sizeof(int64_t), SEEK_CUR);
 
                     tng_block_destroy(&block);
-                    
+
                     if(fread(&frame_set->long_stride_prev_frame_set_file_pos,
                     sizeof(frame_set->long_stride_prev_frame_set_file_pos),
                     1, tng_data->output_file) == 0)
@@ -9219,7 +9317,7 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
 
                 }
             }
-        
+
             tng_data->input_file = temp;
             fseek(tng_data->output_file, curr_pos, SEEK_SET);
         }
@@ -9227,6 +9325,7 @@ tng_function_status tng_frame_set_new(tng_trajectory_t tng_data,
 
     frame_set->first_frame = first_frame;
     frame_set->n_frames = n_frames;
+    frame_set->n_written_frames = 0;
 
     if(tng_data->first_trajectory_frame_set_output_file_pos == -1 ||
        tng_data->first_trajectory_frame_set_output_file_pos == 0)
@@ -9369,6 +9468,11 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
     {
         orig = new_data;
 
+        if(n_frames > frame_set->n_written_frames)
+        {
+            frame_set->n_written_frames = n_frames;
+        }
+
         switch(datatype)
         {
         case TNG_FLOAT_DATA:
@@ -9447,7 +9551,7 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -9470,9 +9574,9 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
     tng_trajectory_frame_set_t frame_set;
     tng_particle_data_t data;
     void *orig;
-    
+
     frame_set = &tng_data->current_trajectory_frame_set;
-    
+
     block_index = -1;
     /* See if there is already a data block of this ID */
     if(block_type_flag == TNG_TRAJECTORY_BLOCK)
@@ -9569,6 +9673,11 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
     if(new_data)
     {
         orig = new_data;
+
+        if(n_frames > frame_set->n_written_frames)
+        {
+            frame_set->n_written_frames = n_frames;
+        }
 
         switch(datatype)
         {
@@ -9678,8 +9787,8 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
             }
         }
     }
-    
-    
+
+
     return(TNG_SUCCESS);
 }
 
@@ -9717,13 +9826,13 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     tng_data->last_trajectory_frame_set_output_file_pos;
     tng_data->current_trajectory_frame_set_input_file_pos =
     tng_data->current_trajectory_frame_set_output_file_pos;
-    
+
     tng_data->input_file = tng_data->output_file;
 
     stat = tng_frame_set_of_frame_find(tng_data, frame_nr);
 
     frame_set = &tng_data->current_trajectory_frame_set;
-    
+
     if(stat != TNG_SUCCESS)
     {
         last_frame = tng_data->current_trajectory_frame_set.first_frame +
@@ -9756,13 +9865,13 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     }
 
     tng_block_init(&block);
-    
+
     file_pos = tng_data->current_trajectory_frame_set_output_file_pos;
-    
+
     fseek(tng_data->output_file, 0, SEEK_END);
     output_file_len = ftell(tng_data->output_file);
     fseek(tng_data->output_file, file_pos, SEEK_SET);
-    
+
     /* Read past the frame set block first */
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL)
@@ -9841,14 +9950,14 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
-    
+
     if(fread(&data.n_values_per_frame, sizeof(data.n_values_per_frame), 1,
              tng_data->input_file) == 0)
     {
         printf("Error reading file. %s: %d\n", __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
-    }        
+    }
     if(tng_data->output_endianness_swap_func_64)
     {
         if(tng_data->output_endianness_swap_func_64(tng_data,
@@ -10037,7 +10146,13 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     }
 
     fflush(tng_data->output_file);
-    
+
+    /* Update the number of written frames in the frame set. */
+    if(frame_nr - frame_set->first_frame + 1 > frame_set->n_written_frames)
+    {
+        frame_set->n_written_frames = frame_nr - frame_set->first_frame + 1;
+    }
+
     /* If the last frame has been written update the hash */
     if(hash_mode == TNG_USE_HASH && (frame_nr + data.stride_length -
        data.first_frame_with_data) >=
@@ -10048,7 +10163,7 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     }
 
     tng_block_destroy(&block);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -10073,7 +10188,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     tng_particle_mapping_t mapping;
     char dependency, sparse_data, datatype;
     void *copy;
-    
+
     if(tng_output_file_init(tng_data) != TNG_SUCCESS)
     {
         printf("Cannot initialise destination file. %s: %d\n",
@@ -10094,7 +10209,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     tng_data->input_file = tng_data->output_file;
 
     stat = tng_frame_set_of_frame_find(tng_data, frame_nr);
-    
+
     frame_set = &tng_data->current_trajectory_frame_set;
 
     if(stat != TNG_SUCCESS)
@@ -10120,7 +10235,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
 
             /* Read mapping blocks from the last frame set */
             tng_block_init(&block);
-            
+
             stat = tng_block_header_read(tng_data, block);
             while(file_pos < output_file_len &&
                   stat != TNG_CRITICAL &&
@@ -10163,7 +10278,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
 
 
     tng_block_init(&block);
-    
+
     file_pos = tng_data->current_trajectory_frame_set_output_file_pos;
 
     fseek(tng_data->output_file, 0, SEEK_END);
@@ -10184,7 +10299,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     }
     fseek(tng_data->output_file, block->block_contents_size,
             SEEK_CUR);
-    
+
     if(tng_data->var_num_atoms_flag)
     {
         tot_n_particles = frame_set->n_particles;
@@ -10193,7 +10308,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     {
         tot_n_particles = tng_data->n_particles;
     }
-    
+
     if(val_n_particles < tot_n_particles)
     {
         mapping_block_end_pos = -1;
@@ -10252,7 +10367,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         }
         fseek(tng_data->output_file, mapping_block_end_pos, SEEK_SET);
     }
-    
+
     /* Read all block headers until next frame set block or
      * until the wanted block id is found */
     stat = tng_block_header_read(tng_data, block);
@@ -10282,7 +10397,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
 
     contents_size = block->block_contents_size;
     header_size = block->header_contents_size;
-    
+
     header_pos = ftell(tng_data->output_file) - header_size;
     frame_set = &tng_data->current_trajectory_frame_set;
 
@@ -10292,9 +10407,9 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
-    
+
     data.datatype = datatype;
-    
+
     if(fread(&dependency, sizeof(dependency), 1, tng_data->input_file) == 0)
     {
         printf("Error reading file. %s: %d\n", __FILE__, __LINE__);
@@ -10313,14 +10428,14 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         tng_data->current_trajectory_frame_set_input_file_pos = temp_current;
         return(TNG_FAILURE);
     }
-    
+
     if(fread(&sparse_data, sizeof(sparse_data), 1, tng_data->input_file) == 0)
     {
         printf("Error reading file. %s: %d\n", __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
-    }        
-    
+    }
+
     if(fread(&data.n_values_per_frame, sizeof(data.n_values_per_frame), 1,
              tng_data->input_file) == 0)
     {
@@ -10345,7 +10460,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         printf("Error reading file. %s: %d\n", __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
-    }        
+    }
     if(tng_data->output_endianness_swap_func_64)
     {
         if(tng_data->output_endianness_swap_func_64(tng_data,
@@ -10356,7 +10471,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
                     __FILE__, __LINE__);
         }
     }
-    
+
     if(data.codec_id != TNG_UNCOMPRESSED)
     {
         if(fread(&data.compression_multiplier,
@@ -10367,7 +10482,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
             tng_block_destroy(&block);
             return(TNG_CRITICAL);
         }
-            
+
         if(tng_data->output_endianness_swap_func_64)
         {
             if(tng_data->output_endianness_swap_func_64(tng_data,
@@ -10466,14 +10581,14 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         }
     }
 
-        
+
     tng_data->input_file = temp;
 
     tng_data->first_trajectory_frame_set_input_file_pos = temp_first;
     tng_data->last_trajectory_frame_set_input_file_pos = temp_last;
     tng_data->current_trajectory_frame_set_input_file_pos = temp_current;
 
-    
+
     switch(data.datatype)
     {
         case(TNG_INT_DATA):
@@ -10506,7 +10621,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         tng_block_destroy(&block);
         return(TNG_FAILURE);
     }
-    
+
     fseek(tng_data->output_file, file_pos, SEEK_CUR);
 
     /* If the endianness is not big endian the data needs to be swapped */
@@ -10557,6 +10672,12 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     }
     fflush(tng_data->output_file);
 
+    /* Update the number of written frames in the frame set. */
+    if(frame_nr - frame_set->first_frame + 1 > frame_set->n_written_frames)
+    {
+        frame_set->n_written_frames = frame_nr - frame_set->first_frame + 1;
+    }
+
     /* If the last frame has been written update the hash */
     if(hash_mode == TNG_USE_HASH && (frame_nr + data.stride_length -
        data.first_frame_with_data) >=
@@ -10565,7 +10686,7 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         tng_md5_hash_update(tng_data, block, header_pos, header_pos +
                             header_size);
     }
-    
+
     tng_block_destroy(&block);
     return(TNG_SUCCESS);
 }
@@ -10577,7 +10698,7 @@ tng_function_status tng_data_values_free(const tng_trajectory_t tng_data,
                                          const tng_data_type type)
 {
     int i, j;
-    
+
     if(values)
     {
         for(i = 0; i < n_frames; i++)
@@ -10719,7 +10840,7 @@ tng_function_status tng_data_get(tng_trajectory_t tng_data,
             {
                 return(stat);
             }
-            
+
             for(i = frame_set->n_data_blocks; i-- ;)
             {
                 data = &frame_set->tr_data[i];
@@ -10798,7 +10919,7 @@ tng_function_status tng_data_get(tng_trajectory_t tng_data,
     }
 
     free(new_data);
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -10909,6 +11030,15 @@ tng_function_status tng_data_interval_get(tng_trajectory_t tng_data,
     case TNG_CHAR_DATA:
         for(i=0; i<n_frames; i++)
         {
+            if(current_frame_pos == frame_set->n_frames)
+            {
+                stat = tng_frame_set_read_next(tng_data, hash_mode);
+                if(stat != TNG_SUCCESS)
+                {
+                    return(stat);
+                }
+                current_frame_pos = 0;
+            }
             for(j=*n_values_per_frame; j--;)
             {
                 len = strlen(data->values[current_frame_pos][j].c) + 1;
@@ -10916,44 +11046,30 @@ tng_function_status tng_data_interval_get(tng_trajectory_t tng_data,
                 strncpy((*values)[i][j].c, data->values[current_frame_pos][j].c, len);
             }
             current_frame_pos++;
-            if(current_frame_pos == frame_set->n_frames)
-            {
-                stat = tng_frame_set_read_next(tng_data, hash_mode);
-                if(stat != TNG_SUCCESS)
-                {
-                    return(stat);
-                }
-                current_frame_pos = 0;
-            }
         }
         break;
     case TNG_INT_DATA:
         for(i=0; i<n_frames; i++)
         {
+            if(current_frame_pos == frame_set->n_frames)
+            {
+                stat = tng_frame_set_read_next(tng_data, hash_mode);
+                if(stat != TNG_SUCCESS)
+                {
+                    return(stat);
+                }
+                current_frame_pos = 0;
+            }
             for(j=*n_values_per_frame; j--;)
             {
                 (*values)[i][j].i = data->values[current_frame_pos][j].i;
             }
             current_frame_pos++;
-            if(current_frame_pos == frame_set->n_frames)
-            {
-                stat = tng_frame_set_read_next(tng_data, hash_mode);
-                if(stat != TNG_SUCCESS)
-                {
-                    return(stat);
-                }
-                current_frame_pos = 0;
-            }
         }
         break;
     case TNG_FLOAT_DATA:
         for(i=0; i<n_frames; i++)
         {
-            for(j=*n_values_per_frame; j--;)
-            {
-                (*values)[i][j].f = data->values[current_frame_pos][j].f;
-            }
-            current_frame_pos++;
             if(current_frame_pos == frame_set->n_frames)
             {
                 stat = tng_frame_set_read_next(tng_data, hash_mode);
@@ -10963,17 +11079,17 @@ tng_function_status tng_data_interval_get(tng_trajectory_t tng_data,
                 }
                 current_frame_pos = 0;
             }
+            for(j=*n_values_per_frame; j--;)
+            {
+                (*values)[i][j].f = data->values[current_frame_pos][j].f;
+            }
+            current_frame_pos++;
         }
         break;
     case TNG_DOUBLE_DATA:
     default:
         for(i=0; i<n_frames; i++)
         {
-            for(j=*n_values_per_frame; j--;)
-            {
-                (*values)[i][j].d = data->values[current_frame_pos][j].d;
-            }
-            current_frame_pos++;
             if(current_frame_pos == frame_set->n_frames)
             {
                 stat = tng_frame_set_read_next(tng_data, hash_mode);
@@ -10983,6 +11099,11 @@ tng_function_status tng_data_interval_get(tng_trajectory_t tng_data,
                 }
                 current_frame_pos = 0;
             }
+            for(j=*n_values_per_frame; j--;)
+            {
+                (*values)[i][j].d = data->values[current_frame_pos][j].d;
+            }
+            current_frame_pos++;
         }
     }
 
@@ -11115,10 +11236,10 @@ tng_function_status tng_particle_data_get(tng_trajectory_t tng_data,
         *n_frames = tng_max(1, data->n_frames);
 
         *values = new_data->values;
-        
+
         free(new_data);
     }
-    
+
     *type = data->datatype;
     /* It's not very elegant to reuse so much of the code in the different case
      * statements, but it's unnecessarily slow to have the switch-case block
@@ -11180,7 +11301,7 @@ tng_function_status tng_particle_data_get(tng_trajectory_t tng_data,
             }
         }
     }
-    
+
     return(TNG_SUCCESS);
 }
 
@@ -11211,7 +11332,7 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
         return(stat);
     }
 
-    
+
     tng_block_init(&block);
     file_pos = ftell(tng_data->input_file);
     /* Read all blocks until next frame set block */
@@ -11236,7 +11357,7 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
     {
         return(stat);
     }
-        
+
     frame_set = &tng_data->current_trajectory_frame_set;
 
     /* See if there is already a data block of this ID.
@@ -11283,7 +11404,7 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
         new_data->datatype = data->datatype;
         *n_values_per_frame = data->n_values_per_frame;
         if(tng_allocate_particle_data_mem(tng_data, new_data, n_frames,
-                                          data->stride_length, 
+                                          data->stride_length,
                                           *n_particles, data->n_values_per_frame) !=
            TNG_SUCCESS)
         {
@@ -11306,6 +11427,15 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
     case TNG_CHAR_DATA:
         for(i=0; i<n_frames; i++)
         {
+            if(current_frame_pos == frame_set->n_frames)
+            {
+                stat = tng_frame_set_read_next(tng_data, hash_mode);
+                if(stat != TNG_SUCCESS)
+                {
+                    return(stat);
+                }
+                current_frame_pos = 0;
+            }
             for(j=*n_particles; j--;)
             {
                 tng_particle_mapping_get_real_particle(frame_set, j, &mapping);
@@ -11317,6 +11447,11 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
             }
             current_frame_pos++;
+        }
+        break;
+    case TNG_INT_DATA:
+        for(i=0; i<n_frames; i++)
+        {
             if(current_frame_pos == frame_set->n_frames)
             {
                 stat = tng_frame_set_read_next(tng_data, hash_mode);
@@ -11326,11 +11461,6 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
                 current_frame_pos = 0;
             }
-        }
-        break;
-    case TNG_INT_DATA:
-        for(i=0; i<n_frames; i++)
-        {
             for(j=*n_particles; j--;)
             {
                 tng_particle_mapping_get_real_particle(frame_set, j, &mapping);
@@ -11340,6 +11470,11 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
             }
             current_frame_pos++;
+        }
+        break;
+    case TNG_FLOAT_DATA:
+        for(i=0; i<n_frames; i++)
+        {
             if(current_frame_pos == frame_set->n_frames)
             {
                 stat = tng_frame_set_read_next(tng_data, hash_mode);
@@ -11349,11 +11484,6 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
                 current_frame_pos = 0;
             }
-        }
-        break;
-    case TNG_FLOAT_DATA:
-        for(i=0; i<n_frames; i++)
-        {
             for(j=*n_particles; j--;)
             {
                 tng_particle_mapping_get_real_particle(frame_set, j, &mapping);
@@ -11363,6 +11493,12 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
             }
             current_frame_pos++;
+        }
+        break;
+    case TNG_DOUBLE_DATA:
+    default:
+        for(i=0; i<n_frames; i++)
+        {
             if(current_frame_pos == frame_set->n_frames)
             {
                 stat = tng_frame_set_read_next(tng_data, hash_mode);
@@ -11372,12 +11508,6 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
                 current_frame_pos = 0;
             }
-        }
-        break;
-    case TNG_DOUBLE_DATA:
-    default:
-        for(i=0; i<n_frames; i++)
-        {
             for(j=*n_particles; j--;)
             {
                 tng_particle_mapping_get_real_particle(frame_set, j, &mapping);
@@ -11387,15 +11517,6 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
                 }
             }
             current_frame_pos++;
-            if(current_frame_pos == frame_set->n_frames)
-            {
-                stat = tng_frame_set_read_next(tng_data, hash_mode);
-                if(stat != TNG_SUCCESS)
-                {
-                    return(stat);
-                }
-                current_frame_pos = 0;
-            }
         }
     }
 
@@ -11835,7 +11956,7 @@ tng_function_status tng_molecule_chain_find_(tng_trajectory_t tng_data,
 {
     char *n = malloc(name_len + 1);
     tng_function_status stat;
-    
+
     strncpy(n, name, name_len);
     n[name_len] = 0;
     stat = tng_molecule_chain_find(tng_data, molecule, n, id, chain);

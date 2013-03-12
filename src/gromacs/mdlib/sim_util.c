@@ -2761,15 +2761,22 @@ void init_md(FILE *fplog,
 
         tng_num_frames_per_frame_set_get((*outf)->tng, &n_frames_per_frame_set);
         tng_num_particles_get((*outf)->tng, &n_particles);
+
+        if(tng_frame_set_new((*outf)->tng, 0, n_frames_per_frame_set)
+            == TNG_CRITICAL)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Could not create TNG frame set.\n");
+        }
         
         /* Always add at least box shape, positions and velocities data blocks */
-//         if(tng_data_block_add((*outf)->tng, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
-//             datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 9, 1,
-//             TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
-//         {
-//             tng_trajectory_destroy(&(*outf)->tng);
-//             gmx_fatal(FARGS, "Could not create TNG data block.\n");
-//         }
+        if(tng_data_block_add((*outf)->tng, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
+            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 9, 1,
+            TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
+        {
+            tng_trajectory_destroy(&(*outf)->tng);
+            gmx_fatal(FARGS, "Could not create TNG data block.\n");
+        }
         if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_POSITIONS, 
             "POSITIONS", datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set,
             3, ir->nstxout/lowcd, 0, n_particles, TNG_UNCOMPRESSED, 0) 

@@ -210,6 +210,7 @@ static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
     gmx_bool bOK;
     tng_function_status stat;
     int64_t n_particles;
+    static int64_t frame_nr = 0;
     
     bOK = TRUE;
     
@@ -217,8 +218,8 @@ static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
     
     if (sh->box_size != 0)
     {
-//         stat = tng_frame_data_write(tng, sh->step, TNG_TRAJ_BOX_SHAPE, box, TNG_USE_HASH);
-//         bOK = bOK && stat == TNG_SUCCESS;
+        stat = tng_frame_data_write(tng, frame_nr, TNG_TRAJ_BOX_SHAPE, box, TNG_USE_HASH);
+        bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->vir_size != 0)
     {
@@ -230,19 +231,21 @@ static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
     }
     if (sh->x_size   != 0)
     {
-        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_POSITIONS, 0, n_particles, x, TNG_USE_HASH);
+        stat = tng_frame_particle_data_write(tng, frame_nr, TNG_TRAJ_POSITIONS, 0, n_particles, x, TNG_USE_HASH);
         bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->v_size   != 0)
     {
-        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_VELOCITIES, 0, n_particles, v, TNG_USE_HASH);
+        stat = tng_frame_particle_data_write(tng, frame_nr, TNG_TRAJ_VELOCITIES, 0, n_particles, v, TNG_USE_HASH);
         bOK = bOK && stat == TNG_SUCCESS;
     }
     if (sh->f_size   != 0)
     {
-        stat = tng_frame_particle_data_write(tng, sh->step, TNG_TRAJ_FORCES, 0, n_particles, f, TNG_USE_HASH);
+        stat = tng_frame_particle_data_write(tng, frame_nr, TNG_TRAJ_FORCES, 0, n_particles, f, TNG_USE_HASH);
         bOK = bOK && stat == TNG_SUCCESS;
     }
+
+    frame_nr++;
 
     return bOK;
 }
