@@ -549,7 +549,7 @@ void merge_xml(int nfile,char **filens,
     }
     tmp = mpout.size();
     printf("mpout.size() = %u mpout.max_size() = %u\n",
-           mpout.size(),mpout.max_size());
+           (unsigned int)mpout.size(),(unsigned int)mpout.max_size());
     for(mpi=mpout.begin(); (mpi<mpout.end()); mpi++)
     {
         mpi->Dump(debug);
@@ -579,7 +579,7 @@ static bool comp_mp_molname(alexandria::MolProp ma,
     std::string mmb = mb.GetMolname();
   
     //return 0;
-    return (mma.compare(mmb) <= 0); 
+    return (mma.compare(mmb) < 0); 
         //(strcmp(mma.c_str(),mmb.c_str()) <= 0);
 }
 
@@ -589,7 +589,7 @@ static bool comp_mp_formula(alexandria::MolProp ma,
     std::string fma = ma.GetFormula();
     std::string fmb = mb.GetFormula();
   
-    if (fma.compare(fmb) <= 0)
+    if (fma.compare(fmb) < 0)
         return true;
     else
         return comp_mp_molname(ma,mb);
@@ -607,15 +607,19 @@ static bool comp_mp_elem(alexandria::MolProp ma,
     mcia = ma.SearchMolecularComposition(bosque);
     mcib = mb.SearchMolecularComposition(bosque);
 
-    if (mcia->CountAtoms(C) <= mcib->CountAtoms(C))
-        return true;
+    if ((mcia != ma.EndMolecularComposition()) &&
+        (mcib != mb.EndMolecularComposition()))
+    {
+        if (mcia->CountAtoms(C) < mcib->CountAtoms(C))
+            return true;
   
-    for(i=1; (i<=109); i++) {
-        if (i != 6) {
-            std::string elem(gmx_atomprop_element(my_aps,i));
-            
-            if (mcia->CountAtoms(elem) <= mcib->CountAtoms(elem))
-                return true;
+        for(i=1; (i<=109); i++) {
+            if (i != 6) {
+                std::string elem(gmx_atomprop_element(my_aps,i));
+                
+                if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
+                    return true;
+            }
         }
     }
     return comp_mp_molname(ma,mb);
@@ -623,14 +627,17 @@ static bool comp_mp_elem(alexandria::MolProp ma,
 
 gmx_molselect_t my_gms;
 
-static int comp_mp_selection(alexandria::MolProp ma,alexandria::MolProp mb)
+static bool comp_mp_selection(alexandria::MolProp ma,alexandria::MolProp mb)
 {
     int ia,ib;
 
     ia = gmx_molselect_index(my_gms,ma.GetIupac().c_str());
     ib = gmx_molselect_index(my_gms,mb.GetIupac().c_str());
     
-    return (ia - ib);
+    if (ia < ib)
+        return true;
+    else
+        return false;
 }
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,

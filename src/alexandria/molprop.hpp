@@ -570,6 +570,9 @@ public:
     //! Return the electrostatic potential at this point in space
     double GetV() { return _V; }
     
+    //! Set the potential for this instance of the class
+    void SetV(double V) { _V = V; }
+    
     /*! \brief
      * Sends this object over an MPI connection
      *

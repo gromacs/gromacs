@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: gentop.c,v 1.26 2009/05/20 10:48:03 spoel Exp $
  * 
  *                This source code is part of
@@ -65,22 +65,13 @@
 
 using namespace std;
 
-typedef struct {
-    int  id;
-    real x,y,z;
-    real V;
-} t_espv;
-
-static int esp_comp(const void *a,const void *b)
+static bool comp_esp(alexandria::ElectrostaticPotential ea,
+                     alexandria::ElectrostaticPotential eb)
 {
-    t_espv *ea = (t_espv *)a;
-    t_espv *eb = (t_espv *)b;
-  
-    if (ea->V < eb->V)
-        return -1;
-    else if (ea->V > ea->V)
-        return 1;
-    return 0;
+    if (ea.GetV() < eb.GetV())
+        return true;
+    else
+        return false;
 }
  
 static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol)
@@ -157,6 +148,31 @@ void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
     }
 }
 
+static void merge_electrostatic_potential(alexandria::MolProp &mpt,
+                                          std::vector<alexandria::ElectrostaticPotential> &espv,
+                                          int natom,int maxpot)
+{
+    alexandria::ElectrostaticPotentialIterator esi;
+    int i;
+    
+    if ((maxpot > 0) && (maxpot < espv.size())) 
+    {
+        std::sort(espv.begin()+natom,espv.end(),comp_esp);
+    }
+    else 
+    {
+        maxpot = espv.size();
+    }
+    i  = 0;
+    for(esi=espv.begin(); (esi<espv.end()); esi++,i++)
+    {
+        if ((i<natom) || (((i-natom) % (maxpot-natom)) == 0))
+        {
+            mpt.LastCalculation()->AddPotential(*esi);
+        }
+    }
+}
+
 static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp& mpt,
                                    gmx_atomprop_t aps,gmx_poldata_t pd,
@@ -177,7 +193,8 @@ static void gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBElementTable *OBet;
     std::string formula,attr,value,inchi;
     
-    t_espv *espv = NULL;
+    std::vector<alexandria::ElectrostaticPotential> espv;
+    
     const char *reference="Spoel2013a",*unknown="unknown";
     char *program,*method,*basis,*charge_model,*ptr,*g98ptr;
     int i,ii0,atomid,bondid,natom;
@@ -394,55 +411,21 @@ static void gmx_molprop_read_babel(const char *g98,
     {
         OpenBabel::OBFreeGridPoint *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
+        std::string xyz_unit(unit2string(eg2c_pm));
+        std::string V_unit(unit2string(eg2c_Hartree_e));
         int espid=0;
       
         fgpi = esp->BeginPoints();
-        snew(espv,esp->NumPoints());
         for(fgp = esp->BeginPoint(fgpi); (NULL != fgp); fgp = esp->NextPoint(fgpi))
         {
-            espv[espid].id = espid+1;
-            espv[espid].x = 100*fgp->GetX();
-            espv[espid].y = 100*fgp->GetY();
-            espv[espid].z = 100*fgp->GetZ();
-            espv[espid].V = fgp->GetV();
-            espid++;
+            alexandria::ElectrostaticPotential ep(xyz_unit,V_unit,++espid,
+                                                  100*fgp->GetX(),
+                                                  100*fgp->GetY(),
+                                                  100*fgp->GetZ(),
+                                                  fgp->GetV());
+            espv.push_back(ep);
         }
-        natom = mol.NumAtoms();
-      
-        if ((maxpot > 0) && (maxpot < esp->NumPoints())) 
-        {
-            qsort(espv+natom,espid-natom,sizeof(espv[0]),esp_comp);
-            deltai = (esp->NumPoints()-natom)/maxpot;
-        }
-        else 
-        {
-            maxpot = esp->NumPoints();
-            deltai = 1;
-        }
-        for(i=0; (i<natom); i++) 
-        {
-            alexandria::ElectrostaticPotential ep(unit2string(eg2c_pm),
-                                                  unit2string(eg2c_Hartree_e),
-                                                  espv[i].id,
-                                                  espv[i].x,espv[i].y,espv[i].z,
-                                                  espv[i].V);
-            mpt.LastCalculation()->AddPotential(ep);
-        }
-        ii = natom;
-        for(; (i<maxpot); i++) 
-        {
-            /* Convert to integer */
-            ii0 = ii;
-            alexandria::ElectrostaticPotential ep(unit2string(eg2c_pm),
-                                                  unit2string(eg2c_Hartree_e),
-                                                  i,
-                                                  espv[ii0].x,espv[ii0].y,espv[ii0].z,
-                                                  espv[ii0].V);
-            mpt.LastCalculation()->AddPotential(ep);
-                                      
-            ii+=deltai;
-        }
-        sfree(espv);
+        merge_electrostatic_potential(mpt,espv,mol.NumAtoms(),maxpot);
     }
 }
 
@@ -742,13 +725,16 @@ static void gmx_molprop_read_log(const char *fn,
     char *reference = (char *)"This Work";
     char *program=NULL,*method=NULL,*basis=NULL;
     char **ptr,**qtr,*mymeth;
-    t_espv *espv=NULL;
     real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,ii,deltai;
     gmx_bool bEtherm = FALSE, bEzpe = FALSE, bTemp = FALSE;
     gmx_bool bPolar, bQuad, bDipole;
     tensor polar,quad;
     rvec dipole;
     int status,ii0;
+    
+    std::vector<alexandria::ElectrostaticPotential> espv;
+    std::string xyz_unit(unit2string(eg2c_pm));
+    std::string V_unit(unit2string(eg2c_Hartree_e));
 
     nstrings = get_file(fn,&strings);
     
@@ -1040,14 +1026,9 @@ static void gmx_molprop_read_log(const char *fn,
                         if (NULL != debug)
                             fprintf(debug,"Coordinates for atom %d found on line %d %8.3f  %8.3f  %8.3f\n",k,i,x,y,z);
                     }
-                    if (k > nesp)
-                    {
-                        nesp++;
-                        srenew(espv,nesp);
-                    }
-                    espv[k-1].x = 100*x;
-                    espv[k-1].y = 100*y;
-                    espv[k-1].z = 100*z;
+                    alexandria::ElectrostaticPotential ep(xyz_unit,V_unit,++nesp,100*x,100*y,100*z,0);
+                    espv.push_back(ep);
+                        
                     if (NULL != debug)
                         fprintf(debug,"Coordinates for fit %d found on line %d\n",k,i);
                 }
@@ -1070,7 +1051,7 @@ static void gmx_molprop_read_log(const char *fn,
                 if (k-1 >= nesp)
                     fprintf(stderr,"More potential points (%d) than fit centers (%d). Check line %d of file %s\n",
                             k,nesp,i+1,fn);
-                espv[k-1].V = V;
+                espv[k-1].SetV(V);
                 if (NULL != debug)
                     fprintf(debug,"Potential %d found on line %d\n",k,i);
             }
@@ -1085,28 +1066,8 @@ static void gmx_molprop_read_log(const char *fn,
                       charge,natom);
         mpt.SetCharge(charge);
         mpt.SetMass(mass);
-      
-        if ((maxpot > 0) && (maxpot < nesp)) {
-            qsort(espv,nesp,sizeof(espv[0]),esp_comp);
-            deltai = nesp/maxpot;
-        }
-        else {
-            maxpot = nesp;
-            deltai = 1;
-        }
-        ii = 0;
-        for(i=0; (i<maxpot); i++) 
-        {
-            /* Convert to integer */
-            ii0 = ii;
-            
-            alexandria::ElectrostaticPotential ep("pm","Hartree/e",i,
-                                                  espv[ii0].x,espv[ii0].y,espv[ii0].z,
-                                                  espv[ii0].V);
-            calc.AddPotential(ep);
-            ii+=deltai;
-        }
-        sfree(espv);
+
+        merge_electrostatic_potential(mpt,espv,natom,maxpot);      
       
         /* Generate atomic composition, needed for energetics */
         (void) mpt.GenerateComposition(pd);
