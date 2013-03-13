@@ -69,6 +69,7 @@ if(GMX_BUILD_OWN_FFTW)
     add_dependencies(libgromacs gmxfftw)
 endif()
 
+
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
@@ -76,6 +77,13 @@ set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${SOVERSION}
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+
+find_package(ZLIB)
+if(ZLIB_FOUND)
+    set_target_properties(libgromacs PROPERTIES
+                          COMPILE_DEFINITIONS USE_ZLIB=1)
+    target_link_libraries(libgromacs ${ZLIB_LIBRARIES})
+endif()
 
 install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
 

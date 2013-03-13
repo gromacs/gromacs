@@ -276,7 +276,8 @@ typedef enum {TNG_BIG_ENDIAN_64,
 /** Compression mode is specified in each data block */
 typedef enum {TNG_UNCOMPRESSED,
               TNG_XTC_COMPRESSION,
-              TNG_TNG_COMPRESSION} tng_compression;
+              TNG_TNG_COMPRESSION,
+              TNG_GZIP_COMPRESSION} tng_compression;
 
 /** Non trajectory blocks come before the first frame set block */
 typedef enum {TNG_NON_TRAJECTORY_BLOCK, TNG_TRAJECTORY_BLOCK} tng_block_type;
@@ -396,7 +397,7 @@ tng_function_status tng_trajectory_destroy(tng_trajectory_t *tng_data_p);
  * @brief Copy a trajectory data container (dest is setup as well).
  * @details This initialises dest and copies only what is absolute necessary for
  * parallel i/o. This can be used inside pragma omp for setting up a thread
- * local copy of src. It can be freed (using tng_trajectory_destroy at the
+ * local copy of src. It can be freed (using tng_trajectory_destroy) at the
  * end of the parallel block.
  * @param src the original trajectory.
  * @param dest_p a pointer to memory to initialise as a trajectory.
