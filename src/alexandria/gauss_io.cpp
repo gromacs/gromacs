@@ -33,6 +33,9 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
+#include <iostream>
+#include <fstream>
+#include <algorithm>
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -50,19 +53,6 @@
 #include "molprop_util.hpp"
 #include "gauss_io.hpp"
 
-// Include Open Babel classes for OBMol and OBConversion
-#ifdef HAVE_LIBOPENBABEL2
-#include <iostream>
-#include <fstream>
-#include <openbabel/babelconfig.h>
-#include <openbabel/obmolecformat.h>
-#include <openbabel/mol.h>
-#include <openbabel/atom.h>
-#include <openbabel/residue.h>
-#include <openbabel/obiter.h>
-#include <openbabel/obconversion.h>
-#include <openbabel/math/vector3.h>
-
 using namespace std;
 
 static bool comp_esp(alexandria::ElectrostaticPotential ea,
@@ -74,6 +64,42 @@ static bool comp_esp(alexandria::ElectrostaticPotential ea,
         return false;
 }
  
+static void merge_electrostatic_potential(alexandria::MolProp &mpt,
+                                          std::vector<alexandria::ElectrostaticPotential> &espv,
+                                          int natom,int maxpot)
+{
+    alexandria::ElectrostaticPotentialIterator esi;
+    int i;
+    
+    if ((maxpot > 0) && (maxpot < espv.size())) 
+    {
+        std::sort(espv.begin()+natom,espv.end(),comp_esp);
+    }
+    else 
+    {
+        maxpot = espv.size();
+    }
+    i  = 0;
+    for(esi=espv.begin(); (esi<espv.end()); esi++,i++)
+    {
+        if ((i<natom) || (((i-natom) % (maxpot-natom)) == 0))
+        {
+            mpt.LastCalculation()->AddPotential(*esi);
+        }
+    }
+}
+
+// Include Open Babel classes for OBMol and OBConversion
+#ifdef HAVE_LIBOPENBABEL2
+#include <openbabel/babelconfig.h>
+#include <openbabel/obmolecformat.h>
+#include <openbabel/mol.h>
+#include <openbabel/atom.h>
+#include <openbabel/residue.h>
+#include <openbabel/obiter.h>
+#include <openbabel/obconversion.h>
+#include <openbabel/math/vector3.h>
+
 static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol)
 {
     ifstream         g98f;
@@ -148,31 +174,6 @@ void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
     }
 }
 
-static void merge_electrostatic_potential(alexandria::MolProp &mpt,
-                                          std::vector<alexandria::ElectrostaticPotential> &espv,
-                                          int natom,int maxpot)
-{
-    alexandria::ElectrostaticPotentialIterator esi;
-    int i;
-    
-    if ((maxpot > 0) && (maxpot < espv.size())) 
-    {
-        std::sort(espv.begin()+natom,espv.end(),comp_esp);
-    }
-    else 
-    {
-        maxpot = espv.size();
-    }
-    i  = 0;
-    for(esi=espv.begin(); (esi<espv.end()); esi++,i++)
-    {
-        if ((i<natom) || (((i-natom) % (maxpot-natom)) == 0))
-        {
-            mpt.LastCalculation()->AddPotential(*esi);
-        }
-    }
-}
-
 static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp& mpt,
                                    gmx_atomprop_t aps,gmx_poldata_t pd,
@@ -197,8 +198,8 @@ static void gmx_molprop_read_babel(const char *g98,
     
     const char *reference="Spoel2013a",*unknown="unknown";
     char *program,*method,*basis,*charge_model,*ptr,*g98ptr;
-    int i,ii0,atomid,bondid,natom;
-    double ii,deltai,dval;
+    int atomid,bondid;
+    double dval;
     int k;
     const char *etypes[] = { "DHf(0K)", "DHf(298.15K)" };
   
@@ -725,12 +726,12 @@ static void gmx_molprop_read_log(const char *fn,
     char *reference = (char *)"This Work";
     char *program=NULL,*method=NULL,*basis=NULL;
     char **ptr,**qtr,*mymeth;
-    real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy,ii,deltai;
+    real temp,pres,ezpe,ezpe2,etherm,etherm2,comp_0K,comp_energy,comp_enthalpy,comp_free_energy;
     gmx_bool bEtherm = FALSE, bEzpe = FALSE, bTemp = FALSE;
     gmx_bool bPolar, bQuad, bDipole;
     tensor polar,quad;
     rvec dipole;
-    int status,ii0;
+    int status;
     
     std::vector<alexandria::ElectrostaticPotential> espv;
     std::string xyz_unit(unit2string(eg2c_pm));
