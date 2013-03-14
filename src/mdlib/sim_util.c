@@ -1115,6 +1115,16 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         }
     }
 
+    if (inputrec->bRot)
+    {
+        /* Enforced rotation has its own cycle counter that starts after the collective
+         * coordinates have been communicated. It is added to ddCyclF to allow
+         * for proper load-balancing */
+        wallcycle_start(wcycle, ewcROT);
+        do_rotation(cr, inputrec, box, x, t, step, wcycle, bNS);
+        wallcycle_stop(wcycle, ewcROT);
+    }
+
     /* Start the force cycle counter.
      * This counter is stopped in do_forcelow_level.
      * No parallel communication should occur while this counter is running,
@@ -1421,6 +1431,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         pull_potential_wrapper(fplog, bSepDVDL, cr, inputrec, box, x,
                                f, vir_force, mdatoms, enerd, lambda, t);
+    }
+
+    /* Add the forces from enforced rotation potentials (if any) */
+    if (inputrec->bRot)
+    {
+        wallcycle_start(wcycle, ewcROTadd);
+        enerd->term[F_COM_PULL] += add_rot_forces(inputrec->rot, f, cr, step, t);
+        wallcycle_stop(wcycle, ewcROTadd);
     }
 
     if (PAR(cr) && !(cr->duty & DUTY_PME))
