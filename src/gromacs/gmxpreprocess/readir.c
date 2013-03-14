@@ -3831,11 +3831,12 @@ void check_chargegroup_radii(const gmx_mtop_t *mtop, const t_inputrec *ir,
              * not be zero at the cut-off.
              */
             if (EVDW_IS_ZERO_AT_CUTOFF(ir->vdwtype) &&
-                rvdw1 + rvdw2 > ir->rlist - ir->rvdw)
+                rvdw1 + rvdw2 > ir->rlistlong - ir->rvdw)
             {
-                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than rlist (%f) - rvdw (%f)\n",
+                sprintf(warn_buf, "The sum of the two largest charge group radii (%f) is larger than %s (%f) - rvdw (%f)\n",
                         rvdw1+rvdw2,
-                        ir->rlist, ir->rvdw);
+                        ir->rlistlong > ir->rlist ? "rlistlong" : "rlist",
+                        ir->rlistlong, ir->rvdw);
                 if (ir_NVE(ir))
                 {
                     warning(wi, warn_buf);
