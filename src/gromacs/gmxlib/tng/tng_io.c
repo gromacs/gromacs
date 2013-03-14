@@ -4625,7 +4625,7 @@ static tng_function_status tng_particle_data_block_write
         break;
 #endif
     }
-    
+
     if(tng_block_header_write(tng_data, block, hash_mode) != TNG_SUCCESS)
     {
         printf("Cannot write header of file %s. %s: %d\n",
@@ -6028,6 +6028,83 @@ static tng_function_status tng_frame_set_pointers_update
     return(TNG_SUCCESS);
 }
 
+/** Move the blocks in a frame set so that there is no unused space between
+ * them. This can only be done on the last frame set in the file and should
+ * be done e.g. if the last frame set in the file has fewer frames than
+ * default or after compressing data blocks in a frame set.
+ * @param tng_data is a trajectory data container.
+ * @details the current_trajectory_frame_set is the one that will be modified.
+ * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if the frame set
+ * cannot be aligned or TNG_CRITICAL (2) if a major error has occured.
+ * FIXME: This function is not finished!!!
+ */
+static tng_function_status tng_frame_set_align(tng_trajectory_t tng_data)
+{
+    tng_gen_block_t block;
+    tng_trajectory_frame_set_t frame_set;
+    FILE *temp = tng_data->input_file;
+    int64_t pos, contents_start_pos, output_file_len;
+
+    frame_set = &tng_data->current_trajectory_frame_set;
+
+    if(frame_set->n_written_frames == frame_set->n_frames)
+    {
+        return(TNG_SUCCESS);
+    }
+
+    if(tng_data->current_trajectory_frame_set_output_file_pos !=
+       tng_data->last_trajectory_frame_set_output_file_pos)
+    {
+    }
+
+    if(tng_output_file_init(tng_data) != TNG_SUCCESS)
+    {
+        printf("Cannot initialise destination file. %s: %d\n",
+               __FILE__, __LINE__);
+        return(TNG_CRITICAL);
+    }
+
+    tng_block_init(&block);
+//     output_file_pos = ftell(tng_data->output_file);
+
+    tng_data->input_file = tng_data->output_file;
+
+    pos = tng_data->current_trajectory_frame_set_output_file_pos;
+
+    fseek(tng_data->output_file, pos, SEEK_SET);
+    if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
+    {
+        printf("Cannot read frame set header. %s: %d\n",
+            __FILE__, __LINE__);
+        tng_data->input_file = temp;
+        tng_block_destroy(&block);
+        return(TNG_CRITICAL);
+    }
+
+    contents_start_pos = ftell(tng_data->output_file);
+
+    fseek(tng_data->output_file, 0, SEEK_END);
+    output_file_len = ftell(tng_data->output_file);
+    pos = contents_start_pos + block->block_contents_size;
+    fseek(tng_data->output_file, pos,
+          SEEK_SET);
+
+    while(pos < output_file_len)
+    {
+        if(tng_block_header_read(tng_data, block) != TNG_SUCCESS)
+        {
+            printf("Cannot read block header. %s: %d\n", __FILE__, __LINE__);
+            tng_data->input_file = temp;
+            tng_block_destroy(&block);
+            return(TNG_CRITICAL);
+        }
+        pos += block->header_contents_size + block->block_contents_size;
+        fseek(tng_data->output_file, pos, SEEK_SET);
+    }
+
+    return(TNG_SUCCESS);
+}
+
 /** Finish writing the current frame set. Update the number of frames
  * and the hashes of the frame set and all its data blocks (if hash_mode
  * == TNG_USE_HASH).
@@ -6043,8 +6120,7 @@ static tng_function_status tng_frame_set_finalize
     tng_gen_block_t block;
     tng_trajectory_frame_set_t frame_set;
     FILE *temp = tng_data->input_file;
-    int64_t pos, output_file_pos, contents_start_pos,
-            output_file_len;
+    int64_t pos, contents_start_pos, output_file_len;
 
     frame_set = &tng_data->current_trajectory_frame_set;
 
@@ -6061,7 +6137,7 @@ static tng_function_status tng_frame_set_finalize
     }
 
     tng_block_init(&block);
-    output_file_pos = ftell(tng_data->output_file);
+//     output_file_pos = ftell(tng_data->output_file);
 
     tng_data->input_file = tng_data->output_file;
 
@@ -6090,19 +6166,16 @@ static tng_function_status tng_frame_set_finalize
     }
 
 
-    if(hash_mode == TNG_SKIP_HASH)
+    if(hash_mode == TNG_USE_HASH)
     {
-        fseek(tng_data->output_file, output_file_pos, SEEK_SET);
-        return(TNG_SUCCESS);
+        tng_md5_hash_update(tng_data, block, pos,
+                            pos + block->header_contents_size);
     }
-
-    tng_md5_hash_update(tng_data, block, pos, pos + block->header_contents_size);
 
     fseek(tng_data->output_file, 0, SEEK_END);
     output_file_len = ftell(tng_data->output_file);
     pos = contents_start_pos + block->block_contents_size;
-    fseek(tng_data->output_file, pos,
-          SEEK_SET);
+    fseek(tng_data->output_file, pos, SEEK_SET);
 
     while(pos < output_file_len)
     {
@@ -6113,12 +6186,18 @@ static tng_function_status tng_frame_set_finalize
             tng_block_destroy(&block);
             return(TNG_CRITICAL);
         }
-        tng_md5_hash_update(tng_data, block, pos,
-                            pos + block->header_contents_size);
+
+        if(hash_mode == TNG_USE_HASH)
+        {
+            tng_md5_hash_update(tng_data, block, pos,
+                                pos + block->header_contents_size);
+        }
         pos += block->header_contents_size + block->block_contents_size;
         fseek(tng_data->output_file, pos, SEEK_SET);
     }
 
+    tng_data->input_file = temp;
+    tng_block_destroy(&block);
     return(TNG_SUCCESS);
 }
 
@@ -10191,18 +10270,49 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
 
     if(stat != TNG_SUCCESS)
     {
-        last_frame = tng_data->current_trajectory_frame_set.first_frame +
-                     tng_data->current_trajectory_frame_set.n_frames - 1;
+        last_frame = frame_set->first_frame +
+                     frame_set->n_frames - 1;
         /* If the wanted frame would be in the frame set after the last
             * frame set create a new frame set. */
         if(stat == TNG_FAILURE &&
            (last_frame < frame_nr &&
             tng_data->current_trajectory_frame_set.first_frame +
-            tng_data->frame_set_n_frames > frame_nr))
+            tng_data->frame_set_n_frames >= frame_nr))
         {
             tng_frame_set_new(tng_data,
                               last_frame+1,
                               tng_data->frame_set_n_frames);
+            file_pos = ftell(tng_data->output_file);
+            fseek(tng_data->output_file, 0, SEEK_END);
+            output_file_len = ftell(tng_data->output_file);
+            fseek(tng_data->output_file, file_pos, SEEK_SET);
+
+            /* Read mapping blocks from the last frame set */
+            tng_block_init(&block);
+
+            stat = tng_block_header_read(tng_data, block);
+            while(file_pos < output_file_len &&
+                  stat != TNG_CRITICAL &&
+                  block->id != TNG_TRAJECTORY_FRAME_SET)
+            {
+                if(block->id == TNG_PARTICLE_MAPPING)
+                {
+                    tng_trajectory_mapping_block_read(tng_data, block,
+                                                      hash_mode);
+                }
+                else
+                {
+                    fseek(tng_data->output_file, block->block_contents_size,
+                        SEEK_CUR);
+                }
+                file_pos = ftell(tng_data->output_file);
+                if(file_pos < output_file_len)
+                {
+                    stat = tng_block_header_read(tng_data, block);
+                }
+            }
+
+            tng_block_destroy(&block);
             /* Write the frame set to disk */
             if(tng_frame_set_write(tng_data, hash_mode) != TNG_SUCCESS)
             {
@@ -10570,8 +10680,8 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
 
     if(stat != TNG_SUCCESS)
     {
-        last_frame = tng_data->current_trajectory_frame_set.first_frame +
-                     tng_data->current_trajectory_frame_set.n_frames - 1;
+        last_frame = frame_set->first_frame +
+                     frame_set->n_frames - 1;
 //         printf("Frame %"PRId64" not found. Last frame: %"PRId64"\n", frame_nr,
 //                last_frame);
         /* If the wanted frame would be in the frame set after the last
