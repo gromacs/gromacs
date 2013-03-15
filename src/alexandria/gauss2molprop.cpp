@@ -87,9 +87,7 @@ int main(int argc, char *argv[])
   static char *molnm=NULL,*iupac=NULL,*conf=(char *)"minimum",*basis=NULL;
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
-#ifdef HAVE_LIBOPENBABEL2
   static gmx_bool bBabel=TRUE;
-#endif
   t_pargs pa[] = {
     { "-v",      FALSE, etBOOL, {&bVerbose},
       "Generate verbose terminal output." },

@@ -23,8 +23,6 @@
 #include "atomprop.h"
 #include "poldata.h"
 
-// enum { eMOLPROP_Exp, eMOLPROP_Calc, eMOLPROP_Any, eMOLPROP_NR };
-
 /*! \brief
  * Enumerated type holding the types of observables stored in MolProp 
  *
@@ -39,6 +37,7 @@ enum MolPropObservable {
     MPO_ENERGY,
     MPO_NR };
 
+//! Strings describing the MolPropObservable enum elements
 extern const char *mpo_name[MPO_NR];
 
 /*! \brief
@@ -53,10 +52,8 @@ enum CommunicationStatus { CS_RECV_DATA,
                            CS_SEND_EMPTY,
                            CS_NR };
 
+//! String describing the CommunicationStatus enum elements
 extern const char *cs_name[CS_NR];
-
-#define assign_str(dst,src)  if (NULL != src) { if (NULL != dst) *dst = strdup(src); } else { *dst = NULL; }
-#define assign_scal(dst,src) if (NULL != dst) *dst = src
 
 /*! \brief
  * Contains all classes related to alexandria force field tools
@@ -836,7 +833,7 @@ public:
         _reference.assign(reference); _conformation.assign(conformation);
     };
     
-    //! Destructor
+    //! Default destructor
     ~Experiment() {};
     
     //! Dump the contents of this object to a file
@@ -1179,11 +1176,13 @@ public:
     //! Return iterator End over categories
     std::vector<std::string>::iterator EndCategory() { return _category.end(); }
 
-    
-    int SearchCategory(const char *catname) { 
+    //! Return true if catname is an existing category
+    bool SearchCategory(const char *catname) { 
         std::string _str(catname); return SearchCategory(_str); 
     }
-    int SearchCategory(std::string catname);
+    
+    //! Return true if catname is an existing category
+    bool SearchCategory(std::string catname);
     
     //! Delete a composition type if present
     void DeleteComposition(std::string compname);
@@ -1236,23 +1235,42 @@ public:
     
     //! End Iterator over Bond elements
     BondIterator EndBond() { return _bond.end(); }
-    
+
+    //! Add an experiment    
     void AddExperiment(Experiment myexp) { _exper.push_back(myexp); };
+    
+    //! Return the number of experiments
     int NExperiment() { return _exper.size(); }
 
+    //! Iterator Begin over experiments
     ExperimentIterator BeginExperiment() { return _exper.begin(); }
+    
+    //! Iterator End over experiments
     ExperimentIterator EndExperiment() { return _exper.end(); }
+    
+    //! Return pointer to the last inserted experiment or NULL if the number of experiments is zero
     Experiment *LastExperiment() { 
         if (NExperiment() > 0) return &(_exper.back()); else return NULL; 
     }
 
+    //! Add a calculation 
     void AddCalculation(Calculation calc) { _calc.push_back(calc); }
+    
+    //! Return the number of calculations
     int NCalculation() { return _calc.size(); }
+    
+    //! Iterator Begin over calculations
     CalculationIterator BeginCalculation() { return _calc.begin(); }
+    
+    //! Iterator End over calculations
     CalculationIterator EndCalculation() { return _calc.end(); }
+    
+    //! Return pointer to the last inserted calculation or NULL if the number of calculations is zero
     Calculation *LastCalculation() { 
         if (NCalculation() > 0) return &(_calc.back()); else return NULL; 
     }
+    
+    //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
     CalculationIterator GetLot(const char *lot);
     
     /*! \brief

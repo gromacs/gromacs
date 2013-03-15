@@ -156,16 +156,16 @@ void MolProp::CheckConsistency()
 {
 }
   
-int MolProp::SearchCategory(std::string catname)
+bool MolProp::SearchCategory(std::string catname)
 {
     std::vector<std::string>::iterator i;
     
     for(i=BeginCategory(); (i < EndCategory()); i++)
     {
         if (*i == catname)
-            return 1;
+            return true;
     }
-    return 0;
+    return false;
 }
   
 void MolProp::DeleteComposition(std::string compname)

@@ -71,7 +71,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
     alexandria::ElectrostaticPotentialIterator esi;
     int i;
     
-    if ((maxpot > 0) && (maxpot < espv.size())) 
+    if ((maxpot > 0) && (maxpot < (int)espv.size())) 
     {
         std::sort(espv.begin()+natom,espv.end(),comp_esp);
     }
