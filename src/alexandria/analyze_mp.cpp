@@ -357,9 +357,9 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
     }
     if (bPropTable)
     {
-        gmx_molprop_prop_table(fp,prop,rtoler,atoler,mp,0,qmc,bPrintAll,bPrintBasis,
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,mp,qmc,bPrintAll,bPrintBasis,
                                bPrintMultQ,gms,imsTrain);
-        gmx_molprop_prop_table(fp,prop,rtoler,atoler,mp,0,qmc,bPrintAll,bPrintBasis,
+        gmx_molprop_prop_table(fp,prop,rtoler,atoler,mp,qmc,bPrintAll,bPrintBasis,
                                bPrintMultQ,gms,imsTest);
         if (NULL != selout) 
         {

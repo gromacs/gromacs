@@ -847,7 +847,7 @@ void gmx_molprop_atomtype_table(FILE *fp,gmx_bool bPolar,
 }
                                
 
-static void prop_header(FILE *fp,int caption,const char *property,real rtoler,real atoler,
+static void prop_header(FILE *fp,int caption,const char *property,real rel_toler,real abs_toler,
                         t_qmcount *qmc,gmx_bool bSideways,int ims,gmx_bool bPrintConf,
                         gmx_bool bPrintBasis,gmx_bool bPrintMultQ)
 {
@@ -860,8 +860,8 @@ static void prop_header(FILE *fp,int caption,const char *property,real rtoler,re
     {
         fprintf(fp,"\\caption{Comparison of experimental %s to calculated values. {\\bf Data set: %s}. Calculated numbers that are more than %.0f%s off the experimental values are printed in bold, more than %.0f%s off in bold red.}\n\\label{%s}\n",
                 property,ims_names[ims],
-                (atoler > 0) ? atoler   : 100*rtoler,(atoler > 0) ? "" : "\\%",
-                (atoler > 0) ? 2*atoler : 200*rtoler,(atoler > 0) ? "" : "\\%",
+                (abs_toler > 0) ? abs_toler   : 100*rel_toler,(abs_toler > 0) ? "" : "\\%",
+                (abs_toler > 0) ? 2*abs_toler : 200*rel_toler,(abs_toler > 0) ? "" : "\\%",
                 ims_names[ims]);
     }
     else 
@@ -906,14 +906,14 @@ static void prop_end(FILE *fp,gmx_bool bSideways)
             bSideways ? "sideways" : "");
 }
 
-static int outside(real vexp,real vcalc,real rtoler,real atoler)
+static int outside(real vexp,real vcalc,real rel_toler,real abs_toler)
 {
     real rdv,adv = fabs(vexp-vcalc);
-    if (atoler > 0) 
+    if (abs_toler > 0) 
     {
-        if (adv > 2*atoler)
+        if (adv > 2*abs_toler)
             return 2;
-        else if (adv > atoler)
+        else if (adv > abs_toler)
             return 1;
         return 0;
     }
@@ -923,17 +923,16 @@ static int outside(real vexp,real vcalc,real rtoler,real atoler)
             return 0;
         rdv = adv/vexp;
         
-        if (rdv > 2*rtoler)
+        if (rdv > 2*rel_toler)
             return 2;
-        else if (rdv > rtoler)
+        else if (rdv > rel_toler)
             return 1;
         return 0;
     }
 }
 
-void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atoler,
+void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real abs_toler,
                             std::vector<alexandria::MolProp> mp,
-                            int bDS,
                             t_qmcount *qmc,gmx_bool bPrintAll,
                             gmx_bool bPrintBasis,gmx_bool bPrintMultQ,
                             gmx_molselect_t gms,int ims)
@@ -965,8 +964,6 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
         maxline = 20;
     else
         maxline = 40;
-    /* Double spaced text ? */
-    ds_fac = 1-0.4*bDS;
 
     nprint = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
@@ -978,7 +975,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
     if (nprint <= 0)
         return;
     bPrintConf = (mpo == MPO_DIPOLE);
-    prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,bSideways,ims,bPrintConf,
+    prop_header(fp,caption,mpo_name[mpo],rel_toler,abs_toler,qmc,bSideways,ims,bPrintConf,
                 bPrintBasis,bPrintMultQ);  
     iline   = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
@@ -1111,7 +1108,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
                             }
                             if (val_exp.size() > 0) 
                             {
-                                int oo = outside(val_exp[ne],vc,rtoler,atoler);
+                                int oo = outside(val_exp[ne],vc,rel_toler,abs_toler);
                                 switch(oo) {
                                 case 2:
                                     sprintf(mylbuf,"& \\textcolor{Red}{\\bf %s} ",vbuf);
@@ -1147,7 +1144,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rtoler,real atol
                 {
                     caption = 0;
                     prop_end(fp,bSideways);
-                    prop_header(fp,caption,mpo_name[mpo],rtoler,atoler,qmc,
+                    prop_header(fp,caption,mpo_name[mpo],rel_toler,abs_toler,qmc,
                                 bSideways,ims,bPrintConf,bPrintBasis,bPrintMultQ);
                     iline   = 0;
                 }
