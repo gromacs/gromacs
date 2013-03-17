@@ -287,23 +287,6 @@ main(int argc, char *argv[])
     t_sc  *sc;
     char  *fn;
 
-<<<<<<< HEAD
-  x11=GetX11(&argc,argv);
-  if (argc > 1)
-    fn=argv[1];
-  else
-    fn=(char *)"/usr/lib/X11/rgb.txt";
-  if (!gmx_fexist(fn)) {
-    fprintf(stderr,"Usage: %s rgb.txt\n",argv[0]);
-    fprintf(stderr,"rgb.txt is usually somewhere in your X windows directories.\n");
-    exit(1);
-  }
-  sc=init_sc(x11,x11->root,fn);
-  XMapWindow(x11->disp,sc->wd.self);
-  XMapSubwindows(x11->disp,sc->wd.self);
-  x11->MainLoop(x11);
-  x11->CleanUp(x11);
-=======
     x11 = GetX11(&argc, argv);
     if (argc > 1)
     {
@@ -324,7 +307,6 @@ main(int argc, char *argv[])
     XMapSubwindows(x11->disp, sc->wd.self);
     x11->MainLoop(x11);
     x11->CleanUp(x11);
->>>>>>> master
 
     return 0;
 }
