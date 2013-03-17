@@ -9,7 +9,7 @@
  * 
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2010, The GROMACS development team,
+ * Copyright (c) 2001-2010,2012 The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -57,9 +57,6 @@
 #define TIMED_TESTS     MOD_20_32BIT | LOGIC_4_ITER_SHMEM | RANDOM_BLOCKS /*!< Bit flag with type of tests to
                                                                             run in time constrained memtest. */
 
-/*! Number of supported GPUs */
-#define NB_GPUS (sizeof(SupportedGPUs)/sizeof(SupportedGPUs[0]))
-
 static int cuda_max_device_count = 32; /*! Max number of devices supported by CUDA (for consistency checking).
                                            In reality it 16 with CUDA <=v5.0, but let's stay on the safe side. */
 
@@ -84,55 +81,6 @@ enum memtest_G80_test_types {
     LOGIC_4_ITER_SHMEM =        0x1000
 };
 
-// TODO put this list into an external file and include it so that the list is easily accessible
-/*! List of supported GPUs. */
-static const char * const SupportedGPUs[] = {
-    /* GT400 */
-    "Geforce GTX 480",
-    "Geforce GTX 470",
-    "Geforce GTX 465",
-    "Geforce GTX 460",
-
-    "Tesla C2070",
-    "Tesla C2050",
-    "Tesla S2070",
-    "Tesla S2050",
-    "Tesla M2070",
-    "Tesla M2050",
-
-    "Quadro 5000",
-    "Quadro 6000",
-
-    /* GT200 */
-    "Geforce GTX 295",
-    "Geforce GTX 285",
-    "Geforce GTX 280",
-    "Geforce GTX 275",
-    "Geforce GTX 260",
-    "GeForce GTS 250",
-    "GeForce GTS 150",
-
-    "GeForce GTX 285M",
-    "GeForce GTX 280M",
-
-    "Tesla S1070",
-    "Tesla C1060",
-    "Tesla M1060",
-
-    "Quadro FX 5800",
-    "Quadro FX 4800",
-    "Quadro CX",
-    "Quadro Plex 2200 D2",
-    "Quadro Plex 2200 S4",
-
-    /* G90 */
-    "GeForce 9800 G", /* GX2, GTX, GTX+, GT */
-    "GeForce 9800M GTX",
-
-    "Quadro FX 4700",
-    "Quadro Plex 2100 D4"
-};
-
 
 /*! 
   * \brief Runs GPU sanity checks.
@@ -145,6 +93,8 @@ static const char * const SupportedGPUs[] = {
   * \param[in]  dev_id      the device ID of the GPU or -1 if the device has already been initialized
   * \param[out] dev_prop    pointer to the structure in which the device properties will be returned
   * \returns                0 if the device looks OK
+  *
+  * TODO: introduce errors codes and handle errors more smoothly.
   */
 static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 {
@@ -217,7 +167,10 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
 
     /* try to execute a dummy kernel */
     k_dummy_test<<<1, 512>>>();
-    CU_LAUNCH_ERR_SYNC("dummy test kernel");
+    if (cudaThreadSynchronize() != cudaSuccess)
+    {
+        return -1;
+    }
 
     /* destroy context if we created one */
     if (id != -1)
@@ -232,48 +185,6 @@ static int do_sanity_checks(int dev_id, cudaDeviceProp *dev_prop)
     }
 
     return 0;
-}
-
-
-/*! 
- * \brief Checks whether the GPU with the given name is supported in Gromacs-OpenMM.
- * 
- * \param[in] gpu_name  the name of the CUDA device
- * \returns             TRUE if the device is supported, otherwise FALSE
- */
-static bool is_gmx_openmm_supported_gpu_name(char *gpuName)
-{
-    size_t i;
-    for (i = 0; i < NB_GPUS; i++)
-    {
-        trim(gpuName);
-        if (gmx_strncasecmp(gpuName, SupportedGPUs[i], strlen(SupportedGPUs[i])) == 0)
-            return 1;
-    }
-    return 0;
-}
-
-/*! \brief Checks whether the GPU with the given device id is supported in Gromacs-OpenMM.
- *
- * \param[in] dev_id    the device id of the GPU or -1 if the device has already been selected
- * \param[out] gpu_name Set to contain the name of the CUDA device, if NULL passed, no device name is set. 
- * \returns             TRUE if the device is supported, otherwise FALSE
- * 
- */
-gmx_bool is_gmx_openmm_supported_gpu(int dev_id, char *gpu_name)
-{
-    cudaDeviceProp dev_prop;
-
-    if (debug) fprintf(debug, "Checking compatibility with device #%d, %s\n", dev_id, gpu_name);
-
-    if (do_sanity_checks(dev_id, &dev_prop) != 0)
-        return -1;
-
-    if (gpu_name != NULL)
-    { 
-        strcpy(gpu_name, dev_prop.name);
-    }
-    return is_gmx_openmm_supported_gpu_name(dev_prop.name);
 }
 
 
@@ -681,13 +592,21 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
     int         ndev;
 
     stat = cudaGetDeviceCount(&ndev);
-    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
+    if (stat != cudaSuccess)
+    {
+        return egpuInsane;
+    }
 
     if (dev_id > ndev - 1)
     {
         return egpuNonexistent;
     }
 
+    /* TODO: currently we do not make a distinction between the type of errors
+     * that can appear during sanity checks. This needs to be improved, e.g if
+     * the dummy test kernel fails to execute with a "device busy message" we
+     * should appropriately report that the device is busy instead of insane.
+     */
     if (do_sanity_checks(dev_id, dev_prop) == 0)
     {
         if (is_gmx_supported_gpu(dev_prop))
@@ -714,31 +633,55 @@ static int is_gmx_supported_gpu_id(int dev_id, cudaDeviceProp *dev_prop)
  *  status.
  *
  *  \param[in] gpu_info    pointer to structure holding GPU information.
+ *  \param[out] err_str    The error message of any CUDA API error that caused
+ *                         the detection to fail (if there was any). The memory
+ *                         the pointer points to should be managed externally.
+ *  \returns               non-zero if the detection encountered a failure, zero otherwise.
  */
-void detect_cuda_gpus(gmx_gpu_info_t *gpu_info)
+int detect_cuda_gpus(gmx_gpu_info_t *gpu_info, char *err_str)
 {
-    int             i, ndev, checkres;
+    int             i, ndev, checkres, retval;
     cudaError_t     stat;
     cudaDeviceProp  prop;
     cuda_dev_info_t *devs;
 
     assert(gpu_info);
+    assert(err_str);
+
+    ndev    = 0;
+    devs    = NULL;
 
     stat = cudaGetDeviceCount(&ndev);
-    CU_RET_ERR(stat, "cudaGetDeviceCount failed");
-
-    snew(devs, ndev);
-    for (i = 0; i < ndev; i++)
+    if (stat != cudaSuccess)
     {
-        checkres = is_gmx_supported_gpu_id(i, &prop);
+        const char *s;
 
-        devs[i].id   = i;
-        devs[i].prop = prop;
-        devs[i].stat = checkres;
+        /* cudaGetDeviceCount failed which means that there is something
+         * wrong with the machine: driver-runtime mismatch, all GPUs being
+         * busy in exclusive mode, or some other condition which should
+         * result in us issuing a warning a falling back to CPUs. */
+        retval = -1;
+        s = cudaGetErrorString(stat);
+        strncpy(err_str, s, STRLEN*sizeof(err_str[0]));
+    }
+    else
+    {
+        snew(devs, ndev);
+        for (i = 0; i < ndev; i++)
+        {
+            checkres = is_gmx_supported_gpu_id(i, &prop);
+
+            devs[i].id   = i;
+            devs[i].prop = prop;
+            devs[i].stat = checkres;
+        }
+        retval = 0;
     }
 
     gpu_info->ncuda_dev = ndev;
     gpu_info->cuda_dev  = devs;
+
+    return retval;
 }
 
 /*! \brief Select the GPUs compatible with the native GROMACS acceleration.

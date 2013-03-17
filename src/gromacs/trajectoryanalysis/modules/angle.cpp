@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::analysismodules::Angle.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "angle.h"
@@ -58,7 +62,7 @@ namespace gmx
 namespace analysismodules
 {
 
-const char Angle::name[] = "angle";
+const char Angle::name[]             = "gangle";
 const char Angle::shortDescription[] =
     "Calculate angles";
 
@@ -124,15 +128,15 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "[TT]-oall[tt] writes all the individual angles."
         /* TODO: Consider if the dump option is necessary and how to best
          * implement it.
-        "[TT]-od[tt] can be used to dump all the individual angles,",
-        "each on a separate line. This format is better suited for",
-        "further processing, e.g., if angles from multiple runs are needed."
-        */
+           "[TT]-od[tt] can be used to dump all the individual angles,",
+           "each on a separate line. This format is better suited for",
+           "further processing, e.g., if angles from multiple runs are needed."
+         */
     };
     static const char *const cGroup1TypeEnum[] =
-        { "angle", "dihedral", "vector", "plane", NULL };
+    { "angle", "dihedral", "vector", "plane" };
     static const char *const cGroup2TypeEnum[] =
-        { "none", "vector", "plane", "t0", "z", "sphnorm", NULL };
+    { "none", "vector", "plane", "t0", "z", "sphnorm" };
 
     options->setDescription(concatenateStrings(desc));
 
@@ -145,11 +149,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     // TODO: Add histogram output.
 
     options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
-        .defaultEnumIndex(0).store(&g1type_)
-        .description("Type of analysis/first vector group"));
+                           .defaultEnumIndex(0).store(&g1type_)
+                           .description("Type of analysis/first vector group"));
     options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
-        .defaultEnumIndex(0).store(&g2type_)
-        .description("Type of second vector group"));
+                           .defaultEnumIndex(0).store(&g2type_)
+                           .description("Type of second vector group"));
 
     // TODO: Allow multiple angles to be computed in one invocation.
     // Most of the code already supports it, but requires a solution for
@@ -158,11 +162,11 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     // Again, most of the code already supports it, but it needs to be
     // considered how should -oall work, and additional checks should be added.
     sel1info_ = options->addOption(SelectionOption("group1")
-        .required().onlyStatic().storeVector(&sel1_)
-        .description("First analysis/vector selection"));
+                                       .required().onlyStatic().storeVector(&sel1_)
+                                       .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-        .onlyStatic().storeVector(&sel2_)
-        .description("Second analysis/vector selection"));
+                                       .onlyStatic().storeVector(&sel2_)
+                                       .description("Second analysis/vector selection"));
 }
 
 
@@ -222,7 +226,7 @@ Angle::checkSelections(const SelectionList &sel1,
     if (natoms2_ > 0 && sel1.size() != sel2.size())
     {
         GMX_THROW(InconsistentInputError(
-                    "-group1 and -group2 should specify the same number of selections"));
+                          "-group1 and -group2 should specify the same number of selections"));
     }
 
     for (size_t g = 0; g < sel1.size(); ++g)
@@ -232,24 +236,24 @@ Angle::checkSelections(const SelectionList &sel1,
         if (natoms1_ > 1 && na1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the first group not divisible by %d",
-                static_cast<int>(g + 1), natoms1_)));
+                                                     "Number of positions in selection %d in the first group not divisible by %d",
+                                                     static_cast<int>(g + 1), natoms1_)));
         }
         if (natoms2_ > 1 && na2 % natoms2_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                "Number of positions in selection %d in the second group not divisible by %d",
-                static_cast<int>(g + 1), natoms2_)));
+                                                     "Number of positions in selection %d in the second group not divisible by %d",
+                                                     static_cast<int>(g + 1), natoms2_)));
         }
         if (natoms1_ > 0 && natoms2_ > 1 && na1 / natoms1_ != na2 / natoms2_)
         {
             GMX_THROW(InconsistentInputError(
-                      "Number of vectors defined by the two groups are not the same"));
+                              "Number of vectors defined by the two groups are not the same"));
         }
         if (g2type_[0] == 's' && sel2[g].posCount() != 1)
         {
             GMX_THROW(InconsistentInputError(
-                      "The second group should contain a single position with -g2 sphnorm"));
+                              "The second group should contain a single position with -g2 sphnorm"));
         }
     }
 }
@@ -257,7 +261,7 @@ Angle::checkSelections(const SelectionList &sel1,
 
 void
 Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                    const TopologyInformation &top)
+                    const TopologyInformation        &top)
 {
     checkSelections(sel1_, sel2_);
 
@@ -275,7 +279,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnAverage_.empty())
     {
         AnalysisDataPlotModulePointer plotm(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnAverage_);
         plotm->setTitle("Average angle");
         plotm->setXAxisIsTime();
@@ -287,7 +291,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnAll_.empty())
     {
         AnalysisDataPlotModulePointer plotm(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnAll_);
         plotm->setTitle("Angle");
         plotm->setXAxisIsTime();
@@ -327,7 +331,8 @@ calc_vec(int natoms, rvec x[], t_pbc *pbc, rvec xout, rvec cout)
             svmul(0.5, xout, cout);
             rvec_add(x[0], cout, cout);
             break;
-        case 3: {
+        case 3:
+        {
             rvec v1, v2;
             if (pbc)
             {
@@ -355,7 +360,7 @@ void
 Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle       dh = pdata->dataHandle(angles_);
+    AnalysisDataHandle       dh   = pdata->dataHandle(angles_);
     const SelectionList     &sel1 = pdata->parallelSelections(sel1_);
     const SelectionList     &sel2 = pdata->parallelSelections(sel2_);
 
@@ -400,7 +405,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                     }
                     angle = gmx_angle(v1, v2);
                     break;
-                case 'd': {
+                case 'd':
+                {
                     rvec dx[3];
                     if (pbc)
                     {
@@ -465,9 +471,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             }
             /* TODO: Should we also calculate distances like g_sgangle?
              * Could be better to leave that for a separate tool.
-            real dist = 0.0;
-            if (bDumpDist_)
-            {
+               real dist = 0.0;
+               if (bDumpDist_)
+               {
                 if (pbc)
                 {
                     rvec dx;
@@ -478,8 +484,8 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 {
                     dist = sqrt(distance2(c1, c2));
                 }
-            }
-            */
+               }
+             */
             dh.setPoint(n, angle * RAD2DEG);
         }
     }

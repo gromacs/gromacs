@@ -340,7 +340,7 @@ void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
     char pbuf[256];
     double bondorder;
     
-    gmx_poldata_set_length_unit(pd,unit2string(eg2c_pm));
+    gmx_poldata_set_length_unit(pd,unit2string(eg2cPm));
     for(i=0; (i<b->nbond); i++) {
         gmx_stats_get_average(b->bond[i].lsq,&av);
         gmx_stats_get_sigma(b->bond[i].lsq,&sig);

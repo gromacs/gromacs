@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
@@ -38,7 +42,7 @@
  * to print out the help to stdout instead of using the XML reference
  * framework.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include <gtest/gtest.h>
@@ -72,8 +76,8 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    std::string filename = tempFiles_.getTemporaryFilePath("helptext.txt");
-    gmx::File file(filename, "w");
+    std::string            filename = tempFiles_.getTemporaryFilePath("helptext.txt");
+    gmx::File              file(filename, "w");
     gmx::HelpWriterContext context(&file, gmx::eHelpOutputFormat_Console);
     writer->writeHelp(context);
     file.close();
@@ -96,44 +100,44 @@ TEST_F(CommandLineHelpWriterTest, HandlesOptionTypes)
 
     Options options("test", "Short Description");
     options.addOption(BooleanOption("bool").description("Boolean option")
-                        .defaultValue(true));
+                          .defaultValue(true));
     options.addOption(BooleanOption("hidden").description("Hidden option")
-                        .hidden().defaultValue(true));
+                          .hidden().defaultValue(true));
     options.addOption(IntegerOption("int").description("Integer option")
-                        .defaultValue(2));
+                          .defaultValue(2));
     ivec intvec = {1, 2, 3};
     options.addOption(IntegerOption("ivec").description("Integer vector option")
-                        .vector().store(intvec));
+                          .vector().store(intvec));
     options.addOption(DoubleOption("double").description("Double option")
-                        .defaultValue(2.5));
+                          .defaultValue(2.5));
     dvec dblvec = {1.1, 2.3, 3.2};
     options.addOption(DoubleOption("dvec").description("Double vector option")
-                        .vector().store(dblvec));
+                          .vector().store(dblvec));
     options.addOption(DoubleOption("time").description("Time option (%t)")
-                        .timeValue().defaultValue(10.0));
+                          .timeValue().defaultValue(10.0));
     options.addOption(StringOption("string").description("String option")
-                        .defaultValue("test"));
-    const char * const enumValues[] = {"no", "opt1", "opt2", NULL};
+                          .defaultValue("test"));
+    const char * const enumValues[] = { "no", "opt1", "opt2" };
     options.addOption(StringOption("enum").description("Enum option")
-                        .enumValue(enumValues).defaultEnumIndex(0));
+                          .enumValue(enumValues).defaultEnumIndex(0));
 
     std::string filename;
     options.addOption(FileNameOption("f")
-                        .description("Input file description")
-                        .filetype(eftTrajectory).inputFile().required()
-                        .defaultBasename("traj"));
+                          .description("Input file description")
+                          .filetype(eftTrajectory).inputFile().required()
+                          .defaultBasename("traj"));
     options.addOption(FileNameOption("lib")
-                        .description("Library file description")
-                        .filetype(eftGenericData).inputFile().libraryFile()
-                        .defaultBasename("libdata"));
+                          .description("Library file description")
+                          .filetype(eftGenericData).inputFile().libraryFile()
+                          .defaultBasename("libdata"));
     options.addOption(FileNameOption("io")
-                        .store(&filename)
-                        .description("Input/Output file description")
-                        .filetype(eftGenericData).inputOutputFile()
-                        .defaultBasename("inout"));
+                          .store(&filename)
+                          .description("Input/Output file description")
+                          .filetype(eftGenericData).inputOutputFile()
+                          .defaultBasename("inout"));
     options.addOption(FileNameOption("o")
-                        .description("Output file description")
-                        .filetype(eftPlot).outputFile());
+                          .description("Output file description")
+                          .filetype(eftPlot).outputFile());
 
     options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("sel").description("Selection option"));
@@ -155,25 +159,25 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongFileOptions)
 
     gmx::Options options(NULL, NULL);
     options.addOption(FileNameOption("f")
-                        .description("File name option with a long value")
-                        .filetype(eftTrajectory).inputFile().required()
-                        .defaultBasename("path/to/long/trajectory/name"));
+                          .description("File name option with a long value")
+                          .filetype(eftTrajectory).inputFile().required()
+                          .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("f2")
-                        .description("File name option with a long value")
-                        .filetype(eftTrajectory).inputFile().required()
-                        .defaultBasename("path/to/long/trajectory"));
+                          .description("File name option with a long value")
+                          .filetype(eftTrajectory).inputFile().required()
+                          .defaultBasename("path/to/long/trajectory"));
     options.addOption(FileNameOption("lib")
-                        .description("File name option with a long value and type")
-                        .filetype(eftTrajectory).inputFile().libraryFile()
-                        .defaultBasename("path/to/long/trajectory/name"));
+                          .description("File name option with a long value and type")
+                          .filetype(eftTrajectory).inputFile().libraryFile()
+                          .defaultBasename("path/to/long/trajectory/name"));
     options.addOption(FileNameOption("longfileopt")
-                        .description("File name option with a long name")
-                        .filetype(eftGenericData).inputFile()
-                        .defaultBasename("deffile"));
+                          .description("File name option with a long name")
+                          .filetype(eftGenericData).inputFile()
+                          .defaultBasename("deffile"));
     options.addOption(FileNameOption("longfileopt2")
-                        .description("File name option with multiple long fields")
-                        .filetype(eftGenericData).inputFile().libraryFile()
-                        .defaultBasename("path/to/long/file/name"));
+                          .description("File name option with multiple long fields")
+                          .filetype(eftGenericData).inputFile().libraryFile()
+                          .defaultBasename("path/to/long/file/name"));
 
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
@@ -191,19 +195,19 @@ TEST_F(CommandLineHelpWriterTest, HandlesLongOptions)
 
     gmx::Options options(NULL, NULL);
     options.addOption(BooleanOption("longboolean")
-                        .description("Boolean option with a long name")
-                        .defaultValue(true));
+                          .description("Boolean option with a long name")
+                          .defaultValue(true));
     dvec dblvec = {1.135, 2.32, 3.2132};
     options.addOption(DoubleOption("dvec").description("Double vector option")
-                        .vector().store(dblvec));
+                          .vector().store(dblvec));
     std::vector<std::string> values;
     values.push_back("A very long string value that overflows even the description column");
     values.push_back("Another very long string value that overflows even the description column");
     options.addOption(StringOption("string")
-                        .description("String option with very long values (may "
-                                     "be less relevant with selections having "
-                                     "their own option type)")
-                        .storeVector(&values));
+                          .description("String option with very long values (may "
+                                       "be less relevant with selections having "
+                                       "their own option type)")
+                          .storeVector(&values));
 
     gmx::CommandLineHelpWriter writer(options);
     checkHelp(&writer);
@@ -220,10 +224,10 @@ TEST_F(CommandLineHelpWriterTest, HandlesSelectionOptions)
     gmx::Options options(NULL, NULL);
     options.addOption(SelectionFileOption("sf"));
     options.addOption(SelectionOption("refsel").required()
-                        .description("Reference selection option"));
+                          .description("Reference selection option"));
     options.addOption(SelectionOption("sel").required().valueCount(2)
-                        .description("Selection option"));
-    gmx::SelectionCollection selections;
+                          .description("Selection option"));
+    gmx::SelectionCollection    selections;
     gmx::SelectionOptionManager manager(&selections);
     setManagerForSelectionOptions(&options, &manager);
     options.finish();
@@ -256,11 +260,11 @@ TEST_F(CommandLineHelpWriterTest, HandlesMultipleSections)
     subSect2.setDescription("Description for subsection 2.");
     subSect3.setDescription("Description for subsection 3.");
     options.addOption(IntegerOption("main")
-                        .description("Option in main section"));
+                          .description("Option in main section"));
     subSect1.addOption(IntegerOption("sub1")
-                         .description("Option in subsection 1"));
+                           .description("Option in subsection 1"));
     subSect2.addOption(IntegerOption("sub2")
-                         .description("Option in subsection 2"));
+                           .description("Option in subsection 2"));
 
     CommandLineHelpWriter writer(options);
     writer.setShowDescriptions(true);

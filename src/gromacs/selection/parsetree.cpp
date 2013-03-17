@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements functions in parsetree.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 /*! \internal
@@ -258,7 +262,7 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     // FIXME: Use an arbitrary length buffer.
-    char buf[1024];
+    char    buf[1024];
     va_list ap;
     va_start(ap, fmt);
     vsprintf(buf, fmt, ap);
@@ -267,7 +271,7 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 }
 
 bool
-_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception &/*ex*/)
+_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception & /*ex*/)
 {
     _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
     return false;
@@ -298,11 +302,11 @@ SelectionParserValue::SelectionParserValue(
  */
 
 SelectionParserParameter::SelectionParserParameter(
-        const char *name,
+        const char                     *name,
         SelectionParserValueListPointer values)
     : name_(name != NULL ? name : ""),
       values_(values ? move(values)
-                     : SelectionParserValueListPointer(new SelectionParserValueList))
+              : SelectionParserValueListPointer(new SelectionParserValueList))
 {
 }
 
@@ -329,9 +333,9 @@ SelectionParserParameter::SelectionParserParameter(
  */
 void
 _gmx_selelem_update_flags(const SelectionTreeElementPointer &sel,
-                          yyscan_t scanner)
+                          yyscan_t                           scanner)
 {
-    bool                bUseChildType=false;
+    bool                bUseChildType = false;
     bool                bOnlySingleChildren;
 
     /* Return if the flags have already been set */
@@ -344,7 +348,7 @@ _gmx_selelem_update_flags(const SelectionTreeElementPointer &sel,
     {
         case SEL_CONST:
         case SEL_GROUPREF:
-            sel->flags |= SEL_SINGLEVAL;
+            sel->flags   |= SEL_SINGLEVAL;
             bUseChildType = false;
             break;
 
@@ -369,7 +373,7 @@ _gmx_selelem_update_flags(const SelectionTreeElementPointer &sel,
             break;
 
         case SEL_ARITHMETIC:
-            sel->flags |= SEL_ATOMVAL;
+            sel->flags   |= SEL_ATOMVAL;
             bUseChildType = false;
             break;
 
@@ -446,7 +450,7 @@ _gmx_selelem_update_flags(const SelectionTreeElementPointer &sel,
  */
 void
 _gmx_selelem_init_method_params(const SelectionTreeElementPointer &sel,
-                                yyscan_t scanner)
+                                yyscan_t                           scanner)
 {
     int                 nparams;
     gmx_ana_selparam_t *orgparam;
@@ -508,8 +512,8 @@ _gmx_selelem_init_method_params(const SelectionTreeElementPointer &sel,
  */
 void
 _gmx_selelem_set_method(const SelectionTreeElementPointer &sel,
-                        gmx_ana_selmethod_t *method,
-                        yyscan_t scanner)
+                        gmx_ana_selmethod_t               *method,
+                        yyscan_t                           scanner)
 {
     _gmx_selelem_set_vtype(sel, method->type);
     sel->setName(method->name);
@@ -569,7 +573,7 @@ _gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
 {
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_ARITHMETIC));
     sel->v.type        = REAL_VALUE;
-    switch(op)
+    switch (op)
     {
         case '+': sel->u.arith.type = ARITH_PLUS; break;
         case '-': sel->u.arith.type = (right ? ARITH_MINUS : ARITH_NEG); break;
@@ -603,13 +607,13 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
                          const char *cmpop, yyscan_t scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx::MessageStringContext  context(errors, "In comparison initialization");
+    gmx::MessageStringContext    context(errors, "In comparison initialization");
 
-    SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_EXPRESSION));
+    SelectionTreeElementPointer  sel(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(sel, &sm_compare, scanner);
 
     SelectionParserParameterList params;
-    const char        *name;
+    const char                  *name;
     // Create the parameter for the left expression.
     name  = left->v.type == INT_VALUE ? "int1" : "real1";
     params.push_back(SelectionParserParameter::createFromExpression(name, left));
@@ -619,7 +623,7 @@ _gmx_sel_init_comparison(const SelectionTreeElementPointer &left,
     // Create the parameter for the operator.
     params.push_back(
             SelectionParserParameter::create(
-                "op", SelectionParserValue::createString(cmpop)));
+                    "op", SelectionParserValue::createString(cmpop)));
     if (!_gmx_sel_parse_params(params, sel->u.expr.method->nparams,
                                sel->u.expr.method->param, sel, scanner))
     {
@@ -649,7 +653,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
                       SelectionParserValueListPointer args,
                       const char *rpost, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -660,7 +664,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
     {
         // TODO: Would assert be better?
         GMX_THROW(gmx::InternalError(
-                "Keyword initialization called with non-keyword method"));
+                          "Keyword initialization called with non-keyword method"));
     }
 
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION));
@@ -678,7 +682,7 @@ init_keyword_internal(gmx_ana_selmethod_t *method,
             case STR_VALUE:  kwmethod = &sm_keyword_str;  break;
             default:
                 GMX_THROW(gmx::InternalError(
-                        "Unknown type for keyword selection"));
+                                  "Unknown type for keyword selection"));
         }
         /* Initialize the selection element */
         root.reset(new SelectionTreeElement(SEL_EXPRESSION));
@@ -739,9 +743,9 @@ _gmx_sel_init_keyword_strmatch(gmx_ana_selmethod_t *method,
                                const char *rpost, yyscan_t scanner)
 {
     GMX_RELEASE_ASSERT(method->type == STR_VALUE,
-            "String keyword method called for a non-string-valued method");
+                       "String keyword method called for a non-string-valued method");
     GMX_RELEASE_ASSERT(args && !args->empty(),
-            "String keyword matching method called without any values");
+                       "String keyword matching method called without any values");
     return init_keyword_internal(method, matchType, move(args), rpost, scanner);
 }
 
@@ -765,8 +769,8 @@ _gmx_sel_init_method(gmx_ana_selmethod_t *method,
                      SelectionParserParameterListPointer params,
                      const char *rpost, yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    int              rc;
+    gmx_ana_selcollection_t     *sc = _gmx_sel_lexer_selcollection(scanner);
+    int                          rc;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
@@ -859,7 +863,7 @@ _gmx_sel_init_position(const SelectionTreeElementPointer &expr,
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[128];
     sprintf(buf, "In position evaluation");
-    gmx::MessageStringContext  context(errors, buf);
+    gmx::MessageStringContext   context(errors, buf);
 
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_EXPRESSION));
     _gmx_selelem_set_method(root, &sm_keyword_pos, scanner);
@@ -884,7 +888,7 @@ _gmx_sel_init_position(const SelectionTreeElementPointer &expr,
 SelectionTreeElementPointer
 _gmx_sel_init_const_position(real x, real y, real z)
 {
-    rvec       pos;
+    rvec                        pos;
 
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_CONST));
     _gmx_selelem_set_vtype(sel, POS_VALUE);
@@ -916,7 +920,7 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
         _gmx_selelem_set_vtype(sel, GROUP_VALUE);
         sel->setName(name);
         sel->u.gref.name = strdup(name);
-        sel->u.gref.id = -1;
+        sel->u.gref.id   = -1;
         return sel;
     }
     if (!grps)
@@ -952,7 +956,7 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
         SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
         _gmx_selelem_set_vtype(sel, GROUP_VALUE);
         sel->u.gref.name = NULL;
-        sel->u.gref.id = id;
+        sel->u.gref.id   = id;
         return sel;
     }
     if (!grps)
@@ -1008,9 +1012,9 @@ _gmx_sel_init_variable_ref(const SelectionTreeElementPointer &sel)
  * gmx::SelectionTreeElement objects for selections.
  */
 SelectionTreeElementPointer
-_gmx_sel_init_selection(const char *name,
+_gmx_sel_init_selection(const char                        *name,
                         const SelectionTreeElementPointer &sel,
-                        yyscan_t scanner)
+                        yyscan_t                           scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[1024];
@@ -1021,7 +1025,7 @@ _gmx_sel_init_selection(const char *name,
     {
         /* FIXME: Better handling of this error */
         GMX_THROW(gmx::InternalError(
-                "Each selection must evaluate to a position"));
+                          "Each selection must evaluate to a position"));
     }
 
     SelectionTreeElementPointer root(new SelectionTreeElement(SEL_ROOT));
@@ -1090,13 +1094,13 @@ _gmx_sel_init_selection(const char *name,
  * element are both created.
  */
 SelectionTreeElementPointer
-_gmx_sel_assign_variable(const char *name,
+_gmx_sel_assign_variable(const char                        *name,
                          const SelectionTreeElementPointer &expr,
-                         yyscan_t scanner)
+                         yyscan_t                           scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
-    const char              *pselstr = _gmx_sel_lexer_pselstr(scanner);
-    SelectionTreeElementPointer root;
+    gmx_ana_selcollection_t     *sc      = _gmx_sel_lexer_selcollection(scanner);
+    const char                  *pselstr = _gmx_sel_lexer_pselstr(scanner);
+    SelectionTreeElementPointer  root;
 
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
     char  buf[1024];
@@ -1154,8 +1158,8 @@ finish:
  */
 SelectionTreeElementPointer
 _gmx_sel_append_selection(const SelectionTreeElementPointer &sel,
-                          SelectionTreeElementPointer last,
-                          yyscan_t scanner)
+                          SelectionTreeElementPointer        last,
+                          yyscan_t                           scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
@@ -1189,7 +1193,7 @@ _gmx_sel_append_selection(const SelectionTreeElementPointer &sel,
         {
             gmx::SelectionDataPointer selPtr(
                     new gmx::internal::SelectionData(
-                        sel.get(), _gmx_sel_lexer_pselstr(scanner)));
+                            sel.get(), _gmx_sel_lexer_pselstr(scanner)));
             sc->sel.push_back(gmx::move(selPtr));
         }
     }
@@ -1221,12 +1225,14 @@ _gmx_sel_parser_should_finish(yyscan_t scanner)
 void
 _gmx_sel_handle_empty_cmd(yyscan_t scanner)
 {
-    gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
+    gmx_ana_selcollection_t *sc   = _gmx_sel_lexer_selcollection(scanner);
     gmx_ana_indexgrps_t     *grps = _gmx_sel_lexer_indexgrps(scanner);
     int                      i;
 
     if (!_gmx_sel_is_lexer_interactive(scanner))
+    {
         return;
+    }
 
     if (grps)
     {
@@ -1256,7 +1262,7 @@ _gmx_sel_handle_empty_cmd(yyscan_t scanner)
  */
 void
 _gmx_sel_handle_help_cmd(const SelectionParserValueListPointer &topic,
-                         yyscan_t scanner)
+                         yyscan_t                               scanner)
 {
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
@@ -1266,7 +1272,7 @@ _gmx_sel_handle_help_cmd(const SelectionParserValueListPointer &topic,
     }
     gmx::HelpWriterContext context(&gmx::File::standardError(),
                                    gmx::eHelpOutputFormat_Console);
-    gmx::HelpManager manager(*sc->rootHelp, context);
+    gmx::HelpManager       manager(*sc->rootHelp, context);
     try
     {
         SelectionParserValueList::const_iterator value;

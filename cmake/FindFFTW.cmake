@@ -4,7 +4,8 @@
 #  ${FFTW}_INCLUDE_DIRS - where to find FFTW headers
 #  ${FFTW}_LIBRARIES    - List of libraries when using FFTW.
 #  ${FFTW}_PKG          - The name of the pkg-config package needed
-#  ${FFTW}_HAVE_SIMD    - True if FFTW was build with SIMD support
+#  ${FFTW}_HAVE_SIMD    - True if FFTW was built with SIMD support
+#  ${FFTW}_HAVE_AVX     - True if FFTW was built with AVX support
 #  ${FFTW}_FOUND        - True if FFTW was found
 #  where ${FFTW} is FFTW or FFTWF
 #
@@ -38,6 +39,9 @@ endif()
 find_package(PkgConfig)
 if(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
   pkg_check_modules(PC_${FFTW} "${${FFTW}_PKG}")
+  if(NOT PC_${FFTW}_FOUND)
+    message(STATUS "pkg-config could not detect ${${FFTW}_PKG}, trying generic detection")
+  endif()
 endif(NOT __pkg_config_checked_PC_${FFTW} OR NOT ${FFTW}_LIBRARY)
 
 find_path(${FFTW}_INCLUDE_DIR "fftw3.h" HINTS ${PC_${FFTW}_INCLUDE_DIRS})
@@ -50,7 +54,7 @@ set(${FFTW}_INCLUDE_DIRS "${${FFTW}_INCLUDE_DIR}")
 if (${FFTW}_LIBRARY AND ${FFTW}_INCLUDE_DIR)
   set(${FFTW}_FOUND TRUE)
 elseif (NOT ${FFTW}_LIBRARY)
-  message("Could not find ${${FFTW}_PKG} library named lib${${FFTW}_PKG}, please specify its location in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so')")
+  message("Could not find ${${FFTW}_PKG} library named lib${${FFTW}_PKG}, please specify its location in CMAKE_PREFIX_PATH or ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so')")
 elseif (NOT ${FFTW}_INCLUDE_DIR)
   message("Could not the ${${FFTW}_PKG} header fftw3.h, please specify its path in ${FFTW}_INCLUDE_DIR by hand (e.g. -D${FFTW}_INCLUDE_DIR='/path/to/include')")
 endif()
@@ -66,11 +70,21 @@ if (${FFTW}_FOUND)
   if(NOT FOUND_${FFTW}_PLAN)
     message(FATAL_ERROR "Could not find ${${FFTW}_FUNCTION_PREFIX}_plan_r2r_1d in ${${FFTW}_LIBRARY}, take a look at the error message in ${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/CMakeError.log to find out what went wrong. If you are using a static lib (.a) make sure you have specified all dependencies of ${${FFTW}_PKG} in ${FFTW}_LIBRARY by hand (e.g. -D${FFTW}_LIBRARY='/path/to/lib${${FFTW}_PKG}.so;/path/to/libm.so') !")
   endif(NOT FOUND_${FFTW}_PLAN)
+
+  # Check for FFTW3 compiled with --enable-avx, which is slower for GROMACS than --enable-sse or --enable-sse2
+  foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
+    check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_FUNCTION}" "" ${FFTW}_HAVE_${AVX_FUNCTION})
+    if(${FFTW}_HAVE_${AVX_FUNCTION})
+      set(${FFTW}_HAVE_AVX TRUE)
+      break()
+    endif(${FFTW}_HAVE_${AVX_FUNCTION})
+  endforeach()
+
   #in 3.3 sse function name has changed
   foreach(SIMD_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_simd_avx;${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec;${${FFTW}_FUNCTION_PREFIX}_have_simd_neon;${${FFTW}_FUNCTION_PREFIX}_have_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse;${${FFTW}_FUNCTION_PREFIX}_have_altivec)
     check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
     if(${FFTW}_HAVE_${SIMD_FCT})
-      set(${FFTW}_HAVE_SIMD TRUE CACHE  BOOL "If ${${FFTW}_PKG} was built with SIMD support")
+      set(${FFTW}_HAVE_SIMD TRUE)
       break()
     endif(${FFTW}_HAVE_${SIMD_FCT})
   endforeach()
@@ -84,6 +98,5 @@ if (${FFTW}_FOUND)
   endif ()
   set(CMAKE_REQUIRED_LIBRARIES)
 endif (${FFTW}_FOUND)
-set(${FFTW}_HAVE_SIMD FALSE CACHE BOOL "If ${${FFTW}_PKG} was built with SIMD support")
 
-mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY ${FFTW}_HAVE_SIMD)
+mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY)

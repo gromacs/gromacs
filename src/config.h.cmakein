@@ -34,33 +34,6 @@
 /* Default location of data files */
 #define GMXLIBDIR "@GMXLIBDIR@"
 
-/* Hardware and OS version for build host */
-#define BUILD_HOST "@BUILD_HOST@"
-
-/* CPU information for build host */
-#define BUILD_CPU_VENDOR "@BUILD_CPU_VENDOR@"
-
-#define BUILD_CPU_BRAND "@BUILD_CPU_BRAND@"
-
-#define BUILD_CPU_FAMILY @BUILD_CPU_FAMILY@
-
-#define BUILD_CPU_MODEL @BUILD_CPU_MODEL@
-
-#define BUILD_CPU_STEPPING @BUILD_CPU_STEPPING@
-
-#define BUILD_CPU_FEATURES "@BUILD_CPU_FEATURES@"
-
-/* Compiler and CFLAGS from build */
-#define BUILD_COMPILER "@BUILD_COMPILER@"
-
-#define BUILD_CFLAGS   "@BUILD_CFLAGS@"
-
-/* Date and time for build */
-#define BUILD_TIME "@BUILD_TIME@"
-
-/* User doing build */
-#define BUILD_USER "@BUILD_USER@"
-
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
 
@@ -76,23 +49,10 @@
 /* Turn off all water neighborlist optimization - not used right now */
 #cmakedefine DISABLE_WATER_NLIST
 
-/* Fortran support */
-#cmakedefine GMX_FORTRAN
-
-/* Define to a macro mangling the given C identifier (in lower and upper
-   case), which must not contain underscores, for linking with Fortran. */
-#define F77_FUNC(name,NAME)     @F77_FUNCDEF@
-
 /* IEEE754 floating-point format. Memory layout is defined by macros
  * GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER and GMX_IEEE754_BIG_ENDIAN_WORD_ORDER. 
  */
 #cmakedefine GMX_FLOAT_FORMAT_IEEE754
-
-/* Use assembly intrinsics kernels for BlueGene */
-#cmakedefine GMX_BLUEGENE
-
-/* Power6 acceleration */
-#cmakedefine GMX_POWER6
 
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
@@ -130,6 +90,9 @@
 /* AVX 256-bit instructions available */
 #cmakedefine GMX_X86_AVX_256
 
+/* GCC bug in AVX maskload/maskstore arguments - worked around internally */
+#cmakedefine GMX_X86_AVX_GCC_MASKLOAD_BUG
+
 /* SSE2 was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_SSE2
 
@@ -141,6 +104,9 @@
 
 /* AVX 256-bit was selected as CPU acceleration level */
 #cmakedefine GMX_CPU_ACCELERATION_X86_AVX_256
+
+/* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
+#cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
 
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
@@ -184,9 +150,6 @@
 
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
-
-/* Use the PowerPC hardware 1/sqrt(x) */
-#cmakedefine GMX_POWERPC_INVSQRT
 
 /* Use sub-counters */
 #cmakedefine GMX_CYCLE_SUBCOUNTERS
@@ -292,9 +255,6 @@
 
 /* Define to 1 if you have the _fileno() function. */
 #cmakedefine HAVE__FILENO
-
-/* Define to 1 if you have the lstat() function. */
-#cmakedefine HAVE_LSTAT
 
 /* Define to 1 if you have the sigaction() function. */
 #cmakedefine HAVE_SIGACTION
@@ -404,11 +364,17 @@
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
+/* Enable gromacs quotes */
+#cmakedefine GMX_COOL_QUOTES
+
 #ifdef GMX_FAHCORE
 #define FULLINDIRECT 1
 #define USE_FAH_XDR  1
 #include "swindirect.h"
 #endif
+
+/* default name mangling maybe wrong on exotic plattforms */
+#define F77_FUNC(name,NAME) name ## _
 
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES

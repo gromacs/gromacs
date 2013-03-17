@@ -34,7 +34,7 @@
  */
 
 #ifndef _nbnxn_internal_h
-#define _nsnxn_internal_h
+#define _nbnxn_internal_h
 
 #include "typedefs.h"
 #include "domdec.h"
@@ -46,148 +46,140 @@ extern "C" {
 
 
 #ifdef GMX_X86_SSE2
-#define NBNXN_SEARCH_SSE
+/* Use 4-way SIMD for, always, single precision bounding box calculations */
+#define NBNXN_SEARCH_BB_SSE
 #endif
 
 
-/* Block size for the non-bonded thread force-buffer reduction,
- * should be a multiple of 2 in case of AVX256.
- */
-#define NBNXN_CELLBLOCK_SIZE       4
-#define NBNXN_CELLBLOCK_SIZE_2LOG  2
+#ifdef GMX_NBNXN_SIMD
+/* Memory alignment in bytes as required by SIMD aligned loads/stores */
+#define NBNXN_MEM_ALIGN  (GMX_NBNXN_SIMD_BITWIDTH/8)
+#else
+/* No alignment required, but set it so we can call the same routines */
+#define NBNXN_MEM_ALIGN  32
+#endif
 
-/* We currently store the reduction flags as bits in an unsigned int.
- * In most cases this limits the number of flags to 32.
- * The reduction will automatically disable the flagging and do a full
- * reduction when the flags won't fit, but this will lead to very slow
- * reduction. As we anyhow don't expect reasonable performance with
- * more than 32 threads, we put in this hard limit.
- * You can increase this number, but the reduction will be very slow.
- */
-#define NBNXN_CELLBLOCK_MAX_THREADS  32
-
-/* Flags for telling if threads write to force output buffers */
-typedef struct {
-    int ncb;         /* The number of cell blocks                         */
-    gmx_bool bUse;   /* Should we use these flags?                        */
-    unsigned *flag;  /* Bit i is set when thread i writes to a cell-block */
-    int flag_nalloc; /* Allocation size of cxy_flag                       */
-} nbnxn_cellblock_flags;
 
 /* A pair-search grid struct for one domain decomposition zone */
 typedef struct {
-    rvec c0;             /* The lower corner of the (local) grid        */
-    rvec c1;             /* The upper corner of the (local) grid        */
-    real atom_density;   /* The atom number density for the local grid  */
+    rvec     c0;               /* The lower corner of the (local) grid        */
+    rvec     c1;               /* The upper corner of the (local) grid        */
+    real     atom_density;     /* The atom number density for the local grid  */
 
-    gmx_bool bSimple;    /* Is this grid simple or super/sub            */
-    int  na_c;           /* Number of atoms per cluster                 */
-    int  na_cj;          /* Number of atoms for list j-clusters         */
-    int  na_sc;          /* Number of atoms per super-cluster           */
-    int  na_c_2log;      /* 2log of na_c                                */
+    gmx_bool bSimple;          /* Is this grid simple or super/sub            */
+    int      na_c;             /* Number of atoms per cluster                 */
+    int      na_cj;            /* Number of atoms for list j-clusters         */
+    int      na_sc;            /* Number of atoms per super-cluster           */
+    int      na_c_2log;        /* 2log of na_c                                */
 
-    int  ncx;            /* Number of (super-)cells along x             */
-    int  ncy;            /* Number of (super-)cells along y             */
-    int  nc;             /* Total number of (super-)cells               */
+    int      ncx;              /* Number of (super-)cells along x             */
+    int      ncy;              /* Number of (super-)cells along y             */
+    int      nc;               /* Total number of (super-)cells               */
 
-    real sx;             /* x-size of a (super-)cell                    */
-    real sy;             /* y-size of a (super-)cell                    */
-    real inv_sx;         /* 1/sx                                        */
-    real inv_sy;         /* 1/sy                                        */
+    real     sx;               /* x-size of a (super-)cell                    */
+    real     sy;               /* y-size of a (super-)cell                    */
+    real     inv_sx;           /* 1/sx                                        */
+    real     inv_sy;           /* 1/sy                                        */
 
-    int  cell0;          /* Index in nbs->cell corresponding to cell 0  */
+    int      cell0;            /* Index in nbs->cell corresponding to cell 0  */
 
-    int  *cxy_na;        /* The number of atoms for each column in x,y  */
-    int  *cxy_ind;       /* Grid (super)cell index, offset from cell0   */
-    int  cxy_nalloc;     /* Allocation size for cxy_na and cxy_ind      */
+    int     *cxy_na;           /* The number of atoms for each column in x,y  */
+    int     *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
+    int      cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
 
-    int   *nsubc;        /* The number of sub cells for each super cell */
-    float *bbcz;         /* Bounding boxes in z for the super cells     */
-    float *bb;           /* 3D bounding boxes for the sub cells         */
-    float *bbj;          /* 3D j-b.boxes for SSE-double or AVX-single   */
-    int   *flags;        /* Flag for the super cells                    */
-    int   nc_nalloc;     /* Allocation size for the pointers above      */
+    int     *nsubc;            /* The number of sub cells for each super cell */
+    float   *bbcz;             /* Bounding boxes in z for the super cells     */
+    float   *bb;               /* 3D bounding boxes for the sub cells         */
+    float   *bbj;              /* 3D j-b.boxes for SSE-double or AVX-single   */
+    int     *flags;            /* Flag for the super cells                    */
+    int      nc_nalloc;        /* Allocation size for the pointers above      */
 
-    float *bbcz_simple;  /* bbcz for simple grid converted from super   */
-    float *bb_simple;    /* bb for simple grid converted from super     */
-    int   *flags_simple; /* flags for simple grid converted from super  */
-    int   nc_nalloc_simple; /* Allocation size for the pointers above   */
+    float   *bbcz_simple;      /* bbcz for simple grid converted from super   */
+    float   *bb_simple;        /* bb for simple grid converted from super     */
+    int     *flags_simple;     /* flags for simple grid converted from super  */
+    int      nc_nalloc_simple; /* Allocation size for the pointers above   */
 
-    nbnxn_cellblock_flags cellblock_flags; /* Flags for F output buffers */
-
-    int  nsubc_tot;      /* Total number of subcell, used for printing  */
+    int      nsubc_tot;        /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
 
-#ifdef NBNXN_SEARCH_SSE
+#ifdef GMX_NBNXN_SIMD
+#if GMX_NBNXN_SIMD_BITWIDTH == 128
 #define GMX_MM128_HERE
-#include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd128 {
-    /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
-    gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
-    gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
-    gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
-} nbnxn_x_ci_x86_simd128_t;
-#undef GMX_MM128_HERE
-#ifdef GMX_X86_AVX_256
+#else
+#if GMX_NBNXN_SIMD_BITWIDTH == 256
 #define GMX_MM256_HERE
-#include "gmx_x86_simd_macros.h"
-typedef struct nbnxn_x_ci_x86_simd256 {
-    /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_SSE0,iy_SSE0,iz_SSE0;
-    gmx_mm_pr ix_SSE1,iy_SSE1,iz_SSE1;
-    gmx_mm_pr ix_SSE2,iy_SSE2,iz_SSE2;
-    gmx_mm_pr ix_SSE3,iy_SSE3,iz_SSE3;
-} nbnxn_x_ci_x86_simd256_t;
-#undef GMX_MM256_HERE
+#else
+#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
+#endif
+#include "gmx_simd_macros.h"
+
+typedef struct nbnxn_x_ci_simd_4xn {
+    /* The i-cluster coordinates for simple search */
+    gmx_mm_pr ix_SSE0, iy_SSE0, iz_SSE0;
+    gmx_mm_pr ix_SSE1, iy_SSE1, iz_SSE1;
+    gmx_mm_pr ix_SSE2, iy_SSE2, iz_SSE2;
+    gmx_mm_pr ix_SSE3, iy_SSE3, iz_SSE3;
+} nbnxn_x_ci_simd_4xn_t;
+
+typedef struct nbnxn_x_ci_simd_2xnn {
+    /* The i-cluster coordinates for simple search */
+    gmx_mm_pr ix_SSE0, iy_SSE0, iz_SSE0;
+    gmx_mm_pr ix_SSE2, iy_SSE2, iz_SSE2;
+} nbnxn_x_ci_simd_2xnn_t;
+
 #endif
 
 /* Working data for the actual i-supercell during pair search */
 typedef struct nbnxn_list_work {
-    gmx_cache_protect_t cp0; /* Protect cache between threads               */
+    gmx_cache_protect_t     cp0;   /* Protect cache between threads               */
 
-    float *bb_ci;      /* The bounding boxes, pbc shifted, for each cluster */
-    real  *x_ci;       /* The coordinates, pbc shifted, for each atom       */
-#ifdef NBNXN_SEARCH_SSE
-    nbnxn_x_ci_x86_simd128_t *x_ci_x86_simd128;
-#ifdef GMX_X86_AVX_256
-    nbnxn_x_ci_x86_simd256_t *x_ci_x86_simd256;
+    float                  *bb_ci; /* The bounding boxes, pbc shifted, for each cluster */
+    real                   *x_ci;  /* The coordinates, pbc shifted, for each atom       */
+#ifdef GMX_NBNXN_SIMD
+    nbnxn_x_ci_simd_4xn_t  *x_ci_simd_4xn;
+    nbnxn_x_ci_simd_2xnn_t *x_ci_simd_2xnn;
 #endif
-#endif
-    int  cj_ind;       /* The current cj_ind index for the current list     */
-    int  cj4_init;     /* The first unitialized cj4 block                   */
+    int                     cj_ind;    /* The current cj_ind index for the current list     */
+    int                     cj4_init;  /* The first unitialized cj4 block                   */
 
-    float *d2;         /* Bounding box distance work array                  */
+    float                  *d2;        /* Bounding box distance work array                  */
 
-    nbnxn_cj_t *cj;    /* The j-cell list                                   */
-    int  cj_nalloc;    /* Allocation size of cj                             */
+    nbnxn_cj_t             *cj;        /* The j-cell list                                   */
+    int                     cj_nalloc; /* Allocation size of cj                             */
 
-    int ncj_noq;       /* Nr. of cluster pairs without Coul for flop count  */
-    int ncj_hlj;       /* Nr. of cluster pairs with 1/2 LJ for flop count   */
+    int                     ncj_noq;   /* Nr. of cluster pairs without Coul for flop count  */
+    int                     ncj_hlj;   /* Nr. of cluster pairs with 1/2 LJ for flop count   */
 
-    gmx_cache_protect_t cp1; /* Protect cache between threads               */
+    int                    *sort;            /* Sort index                    */
+    int                     sort_nalloc;     /* Allocation size of sort       */
+
+    nbnxn_sci_t            *sci_sort;        /* Second sci array, for sorting */
+    int                     sci_sort_nalloc; /* Allocation size of sci_sort   */
+
+    gmx_cache_protect_t     cp1;       /* Protect cache between threads               */
 } nbnxn_list_work_t;
 
 /* Function type for setting the i-atom coordinate working data */
 typedef void
-gmx_icell_set_x_t(int ci,
-                  real shx,real shy,real shz,
-                  int na_c,
-                  int stride,const real *x,
-                  nbnxn_list_work_t *work);
+    gmx_icell_set_x_t (int ci,
+                       real shx, real shy, real shz,
+                       int na_c,
+                       int stride, const real *x,
+                       nbnxn_list_work_t *work);
 
 static gmx_icell_set_x_t icell_set_x_simple;
-#ifdef NBNXN_SEARCH_SSE
-static gmx_icell_set_x_t icell_set_x_simple_x86_simd128;
-#ifdef GMX_X86_AVX_256
-static gmx_icell_set_x_t icell_set_x_simple_x86_simd256;
-#endif
+#ifdef GMX_NBNXN_SIMD
+static gmx_icell_set_x_t icell_set_x_simple_simd_4xn;
+static gmx_icell_set_x_t icell_set_x_simple_simd_2xnn;
 #endif
 static gmx_icell_set_x_t icell_set_x_supersub;
 #ifdef NBNXN_SEARCH_SSE
 static gmx_icell_set_x_t icell_set_x_supersub_sse8;
 #endif
+
+#undef GMX_MM128_HERE
+#undef GMX_MM256_HERE
 
 /* Local cycle count struct for profiling */
 typedef struct {
@@ -197,56 +189,57 @@ typedef struct {
 } nbnxn_cycle_t;
 
 /* Local cycle count enum for profiling */
-enum { enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr };
+enum {
+    enbsCCgrid, enbsCCsearch, enbsCCcombine, enbsCCreducef, enbsCCnr
+};
 
 /* Thread-local work struct, contains part of nbnxn_grid_t */
 typedef struct {
-    gmx_cache_protect_t cp0;
+    gmx_cache_protect_t  cp0;
 
-    int *cxy_na;
-    int cxy_na_nalloc;
+    int                 *cxy_na;
+    int                  cxy_na_nalloc;
 
-    int  *sort_work;
-    int  sort_work_nalloc;
+    int                 *sort_work;
+    int                  sort_work_nalloc;
 
-    nbnxn_cellblock_flags gridi_flags; /* Flags for i-grid f buffer     */
-    nbnxn_cellblock_flags gridj_flags; /* Flags for j-grid f buffer     */
+    nbnxn_buffer_flags_t buffer_flags; /* Flags for force buffer access */
 
-    int  ndistc;         /* Number of distance checks for flop counting */
+    int                  ndistc;       /* Number of distance checks for flop counting */
 
-    nbnxn_cycle_t cc[enbsCCnr];
+    nbnxn_cycle_t        cc[enbsCCnr];
 
-    gmx_cache_protect_t cp1;
+    gmx_cache_protect_t  cp1;
 } nbnxn_search_work_t;
 
 /* Main pair-search struct, contains the grid(s), not the pair-list(s) */
 typedef struct nbnxn_search {
-    int  ePBC;            /* PBC type enum                              */
-    matrix box;           /* The periodic unit-cell                     */
+    int                 ePBC;            /* PBC type enum                              */
+    matrix              box;             /* The periodic unit-cell                     */
 
-    gmx_bool DomDec;      /* Are we doing domain decomposition?         */
-    ivec dd_dim;          /* Are we doing DD in x,y,z?                  */
-    gmx_domdec_zones_t *zones; /* The domain decomposition zones        */
+    gmx_bool            DomDec;          /* Are we doing domain decomposition?         */
+    ivec                dd_dim;          /* Are we doing DD in x,y,z?                  */
+    gmx_domdec_zones_t *zones;           /* The domain decomposition zones        */
 
-    int  ngrid;           /* The number of grids, equal to #DD-zones    */
-    nbnxn_grid_t *grid;   /* Array of grids, size ngrid                 */
-    int  *cell;           /* Actual allocated cell array for all grids  */
-    int  cell_nalloc;     /* Allocation size of cell                    */
-    int  *a;              /* Atom index for grid, the inverse of cell   */
-    int  a_nalloc;        /* Allocation size of a                       */
+    int                 ngrid;           /* The number of grids, equal to #DD-zones    */
+    nbnxn_grid_t       *grid;            /* Array of grids, size ngrid                 */
+    int                *cell;            /* Actual allocated cell array for all grids  */
+    int                 cell_nalloc;     /* Allocation size of cell                    */
+    int                *a;               /* Atom index for grid, the inverse of cell   */
+    int                 a_nalloc;        /* Allocation size of a                       */
 
-    int  natoms_local;    /* The local atoms run from 0 to natoms_local */
-    int  natoms_nonlocal; /* The non-local atoms run from natoms_local
-                           * to natoms_nonlocal */
+    int                 natoms_local;    /* The local atoms run from 0 to natoms_local */
+    int                 natoms_nonlocal; /* The non-local atoms run from natoms_local
+                                          * to natoms_nonlocal */
 
-    gmx_bool print_cycles;
-    int      search_count;
-    nbnxn_cycle_t cc[enbsCCnr];
+    gmx_bool             print_cycles;
+    int                  search_count;
+    nbnxn_cycle_t        cc[enbsCCnr];
 
-    gmx_icell_set_x_t *icell_set_x; /* Function for setting i-coords    */
+    gmx_icell_set_x_t   *icell_set_x; /* Function for setting i-coords    */
 
-    int  nthread_max;     /* Maximum number of threads for pair-search  */
-    nbnxn_search_work_t *work; /* Work array, size nthread_max          */
+    int                  nthread_max; /* Maximum number of threads for pair-search  */
+    nbnxn_search_work_t *work;        /* Work array, size nthread_max          */
 } nbnxn_search_t_t;
 
 

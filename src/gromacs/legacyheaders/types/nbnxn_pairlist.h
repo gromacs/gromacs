@@ -56,18 +56,26 @@ typedef struct nbnxn_search * nbnxn_search_t;
  * of size nbytes.
  * Error handling should be done within this function.
  */
-typedef void nbnxn_alloc_t(void **ptr,size_t nbytes);
+typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
 
 /* Function that should free the memory pointed to by *ptr.
  * NULL should not be passed to this function.
  */
-typedef void nbnxn_free_t(void *ptr);
+typedef void nbnxn_free_t (void *ptr);
 
 typedef struct {
     int      cj;    /* The j-cluster                    */
     unsigned excl;  /* The exclusion (interaction) bits */
 } nbnxn_cj_t;
 
+/* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
+ * The upper bits contain information for non-bonded kernel optimization.
+ * Simply calculating LJ and Coulomb for all pairs in a cluster pair is fine.
+ * But three flags can be used to skip interactions, currently only for subc=0
+ * !(shift & NBNXN_CI_DO_LJ(subc))   => we can skip LJ for all pairs
+ * shift & NBNXN_CI_HALF_LJ(subc)    => we can skip LJ for the second half of i
+ * !(shift & NBNXN_CI_DO_COUL(subc)) => we can skip Coulomb for all pairs
+ */
 #define NBNXN_CI_SHIFT          127
 #define NBNXN_CI_DO_LJ(subc)    (1<<(7+3*(subc)))
 #define NBNXN_CI_HALF_LJ(subc)  (1<<(8+3*(subc)))
@@ -76,7 +84,7 @@ typedef struct {
 /* Simple pair-list i-unit */
 typedef struct {
     int ci;             /* i-cluster             */
-    int shift;          /* Shift vector index plus possible flags */
+    int shift;          /* Shift vector index plus possible flags, see above */
     int cj_ind_start;   /* Start index into cj   */
     int cj_ind_end;     /* End index into cj     */
 } nbnxn_ci_t;
@@ -91,11 +99,11 @@ typedef struct {
 
 typedef struct {
     unsigned imask;        /* The i-cluster interactions mask for 1 warp  */
-    int excl_ind;          /* Index into the exclusion array for 1 warp   */
+    int      excl_ind;     /* Index into the exclusion array for 1 warp   */
 } nbnxn_im_ei_t;
 
 typedef struct {
-    int cj[4];             /* The 4 j-clusters                            */
+    int           cj[4];   /* The 4 j-clusters                            */
     nbnxn_im_ei_t imei[2]; /* The i-cluster mask data       for 2 warps   */
 } nbnxn_cj4_t;
 
@@ -107,94 +115,133 @@ typedef struct {
 typedef struct {
     gmx_cache_protect_t cp0;
 
-    nbnxn_alloc_t *alloc;
-    nbnxn_free_t  *free;
+    nbnxn_alloc_t      *alloc;
+    nbnxn_free_t       *free;
 
-    gmx_bool bSimple;      /* Simple list has na_sc=na_s and uses cj   *
-                            * Complex list uses cj4                    */
+    gmx_bool            bSimple;         /* Simple list has na_sc=na_s and uses cj   *
+                                          * Complex list uses cj4                    */
 
-    int      na_ci;        /* The number of atoms per i-cluster        */
-    int      na_cj;        /* The number of atoms per j-cluster        */
-    int      na_sc;        /* The number of atoms per super cluster    */
-    real     rlist;        /* The radius for constructing the list     */
-    int      nci;          /* The number of i-clusters in the list     */
-    nbnxn_ci_t *ci;        /* The i-cluster list, size nci             */
-    int      ci_nalloc;    /* The allocation size of ci                */
-    int      nsci;         /* The number of i-super-clusters in the list */
-    nbnxn_sci_t *sci;      /* The i-super-cluster list                 */
-    int      sci_nalloc;   /* The allocation size of sci               */
+    int                     na_ci;       /* The number of atoms per i-cluster        */
+    int                     na_cj;       /* The number of atoms per j-cluster        */
+    int                     na_sc;       /* The number of atoms per super cluster    */
+    real                    rlist;       /* The radius for constructing the list     */
+    int                     nci;         /* The number of i-clusters in the list     */
+    nbnxn_ci_t             *ci;          /* The i-cluster list, size nci             */
+    int                     ci_nalloc;   /* The allocation size of ci                */
+    int                     nsci;        /* The number of i-super-clusters in the list */
+    nbnxn_sci_t            *sci;         /* The i-super-cluster list                 */
+    int                     sci_nalloc;  /* The allocation size of sci               */
 
-    int      ncj;          /* The number of j-clusters in the list     */
-    nbnxn_cj_t *cj;        /* The j-cluster list, size ncj             */
-    int      cj_nalloc;    /* The allocation size of cj                */
+    int                     ncj;         /* The number of j-clusters in the list     */
+    nbnxn_cj_t             *cj;          /* The j-cluster list, size ncj             */
+    int                     cj_nalloc;   /* The allocation size of cj                */
 
-    int      ncj4;         /* The total number of 4*j clusters         */
-    nbnxn_cj4_t *cj4;      /* The 4*j cluster list, size ncj4          */
-    int      cj4_nalloc;   /* The allocation size of cj4               */
-    int      nexcl;        /* The count for excl                       */
-    nbnxn_excl_t *excl;    /* Atom interaction bits (non-exclusions)   */
-    int      excl_nalloc;  /* The allocation size for excl             */
-    int      nci_tot;      /* The total number of i clusters           */
+    int                     ncj4;        /* The total number of 4*j clusters         */
+    nbnxn_cj4_t            *cj4;         /* The 4*j cluster list, size ncj4          */
+    int                     cj4_nalloc;  /* The allocation size of cj4               */
+    int                     nexcl;       /* The count for excl                       */
+    nbnxn_excl_t           *excl;        /* Atom interaction bits (non-exclusions)   */
+    int                     excl_nalloc; /* The allocation size for excl             */
+    int                     nci_tot;     /* The total number of i clusters           */
 
     struct nbnxn_list_work *work;
 
-    gmx_cache_protect_t cp1;
+    gmx_cache_protect_t     cp1;
 } nbnxn_pairlist_t;
 
 typedef struct {
-    int          nnbl;      /* number of lists */
-    nbnxn_pairlist_t **nbl; /* lists */
-    gmx_bool     bCombined; /* TRUE if lists get combined into one (the 1st) */
-    gmx_bool     bSimple;   /* TRUE if the list of of type "simple"
-                               (na_sc=na_s, no super-clusters used) */
-    int          natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
-    int          natpair_lj;  /* Total number of atom pairs for LJ kernel   */
-    int          natpair_q;   /* Total number of atom pairs for Q kernel    */
+    int                nnbl;        /* number of lists */
+    nbnxn_pairlist_t **nbl;         /* lists */
+    gmx_bool           bCombined;   /* TRUE if lists get combined into one (the 1st) */
+    gmx_bool           bSimple;     /* TRUE if the list of of type "simple"
+                                       (na_sc=na_s, no super-clusters used) */
+    int                natpair_ljq; /* Total number of atom pairs for LJ+Q kernel */
+    int                natpair_lj;  /* Total number of atom pairs for LJ kernel   */
+    int                natpair_q;   /* Total number of atom pairs for Q kernel    */
 } nbnxn_pairlist_set_t;
 
-enum { nbatXYZ, nbatXYZQ, nbatX4, nbatX8 };
+enum {
+    nbatXYZ, nbatXYZQ, nbatX4, nbatX8
+};
 
 typedef struct {
     real *f;      /* f, size natoms*fstride                             */
     real *fshift; /* Shift force array, size SHIFTS*DIM                 */
-    int  nV;      /* The size of *Vvdw and *Vc                          */
+    int   nV;     /* The size of *Vvdw and *Vc                          */
     real *Vvdw;   /* Temporary Van der Waals group energy storage       */
     real *Vc;     /* Temporary Coulomb group energy storage             */
-    int  nVS;     /* The size of *VSvdw and *VSc                        */
+    int   nVS;    /* The size of *VSvdw and *VSc                        */
     real *VSvdw;  /* Temporary SIMD Van der Waals group energy storage  */
     real *VSc;    /* Temporary SIMD Coulomb group energy storage        */
 } nbnxn_atomdata_output_t;
 
+/* Block size in atoms for the non-bonded thread force-buffer reduction,
+ * should be a multiple of all cell and x86 SIMD sizes (i.e. 2, 4 and 8).
+ * Should be small to reduce the reduction and zeroing cost,
+ * but too small will result in overhead.
+ * Currently the block size is NBNXN_BUFFERFLAG_SIZE*3*sizeof(real)=192 bytes.
+ */
+#ifdef GMX_DOUBLE
+#define NBNXN_BUFFERFLAG_SIZE   8
+#else
+#define NBNXN_BUFFERFLAG_SIZE  16
+#endif
+
+/* We currently store the reduction flags as bits in an unsigned int.
+ * In most cases this limits the number of flags to 32.
+ * The reduction will automatically disable the flagging and do a full
+ * reduction when the flags won't fit, but this will lead to very slow
+ * reduction. As we anyhow don't expect reasonable performance with
+ * more than 32 threads, we put in this hard limit.
+ * You can increase this number, but the reduction will be very slow.
+ */
+#define NBNXN_BUFFERFLAG_MAX_THREADS  32
+
+/* Flags for telling if threads write to force output buffers */
+typedef struct {
+    int       nflag;       /* The number of flag blocks                         */
+    unsigned *flag;        /* Bit i is set when thread i writes to a cell-block */
+    int       flag_nalloc; /* Allocation size of cxy_flag                       */
+} nbnxn_buffer_flags_t;
+
 /* LJ combination rules: geometric, Lorentz-Berthelot, none */
-enum { ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR };
+enum {
+    ljcrGEOM, ljcrLB, ljcrNONE, ljcrNR
+};
 
 typedef struct {
-    nbnxn_alloc_t *alloc;
-    nbnxn_free_t  *free;
-    int  ntype;      /* The number of different atom types                 */
-    real *nbfp;      /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
-    int  comb_rule;  /* Combination rule, see enum above                   */
-    real *nbfp_comb; /* LJ parameter per atom type, size ntype*2           */
-    real *nbfp_s4;   /* As nbfp, but with stride 4, size ntype^2*4         */
-    int  natoms;     /* Number of atoms                                    */
-    int  natoms_local;  /* Number of local atoms                           */
-    int  *type;      /* Atom types                                         */
-    real *lj_comb;   /* LJ parameters per atom for combining for pairs     */
-    int  XFormat;    /* The format of x (and q), enum                      */
-    int  FFormat;    /* The format of f, enum                              */
-    real *q;         /* Charges, can be NULL if incorporated in x          */
-    int  na_c;       /* The number of atoms per cluster                    */
-    int  nenergrp;   /* The number of energy groups                        */
-    int  neg_2log;   /* Log2 of nenergrp                                   */
-    int  *energrp;   /* The energy groups per cluster, can be NULL         */
-    gmx_bool bDynamicBox; /* Do we need to update shift_vec every step?    */
-    rvec *shift_vec; /* Shift vectors, copied from t_forcerec              */
-    int  xstride;    /* stride for a coordinate in x (usually 3 or 4)      */
-    int  fstride;    /* stride for a coordinate in f (usually 3 or 4)      */
-    real *x;         /* x and possibly q, size natoms*xstride              */
-    int  nout;       /* The number of force arrays                         */
-    nbnxn_atomdata_output_t *out;  /* Output data structures               */
-    int  nalloc;     /* Allocation size of all arrays (for x/f *x/fstride) */
+    nbnxn_alloc_t           *alloc;
+    nbnxn_free_t            *free;
+    int                      ntype;           /* The number of different atom types                 */
+    real                    *nbfp;            /* Lennard-Jones 6*C6 and 12*C12 params, size ntype^2*2 */
+    int                      comb_rule;       /* Combination rule, see enum above                   */
+    real                    *nbfp_comb;       /* LJ parameter per atom type, size ntype*2           */
+    real                    *nbfp_s4;         /* As nbfp, but with stride 4, size ntype^2*4. This
+                                               * might suit 4-wide SIMD loads of two values (e.g.
+                                               * two floats in single precision on x86).            */
+    int                      natoms;          /* Number of atoms                                    */
+    int                      natoms_local;    /* Number of local atoms                           */
+    int                     *type;            /* Atom types                                         */
+    real                    *lj_comb;         /* LJ parameters per atom for combining for pairs     */
+    int                      XFormat;         /* The format of x (and q), enum                      */
+    int                      FFormat;         /* The format of f, enum                              */
+    real                    *q;               /* Charges, can be NULL if incorporated in x          */
+    int                      na_c;            /* The number of atoms per cluster                    */
+    int                      nenergrp;        /* The number of energy groups                        */
+    int                      neg_2log;        /* Log2 of nenergrp                                   */
+    int                     *energrp;         /* The energy groups per cluster, can be NULL         */
+    gmx_bool                 bDynamicBox;     /* Do we need to update shift_vec every step?    */
+    rvec                    *shift_vec;       /* Shift vectors, copied from t_forcerec              */
+    int                      xstride;         /* stride for a coordinate in x (usually 3 or 4)      */
+    int                      fstride;         /* stride for a coordinate in f (usually 3 or 4)      */
+    real                    *x;               /* x and possibly q, size natoms*xstride              */
+    real                    *simd_4xn_diag;   /* indices to set the SIMD 4xN diagonal masks    */
+    real                    *simd_2xnn_diag;  /* indices to set the SIMD 2x(N+N)diagonal masks */
+    int                      nout;            /* The number of force arrays                         */
+    nbnxn_atomdata_output_t *out;             /* Output data structures               */
+    int                      nalloc;          /* Allocation size of all arrays (for x/f *x/fstride) */
+    gmx_bool                 bUseBufferFlags; /* Use the flags or operate on all atoms     */
+    nbnxn_buffer_flags_t     buffer_flags;    /* Flags for buffer zeroing+reduc.  */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus

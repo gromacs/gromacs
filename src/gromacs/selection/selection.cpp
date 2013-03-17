@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in selection.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "selection.h"
@@ -48,7 +52,7 @@ namespace internal
 {
 
 SelectionData::SelectionData(SelectionTreeElement *elem,
-                             const char *selstr)
+                             const char           *selstr)
     : name_(elem->name()), selectionText_(selstr),
       rootElement_(*elem), coveredFractionType_(CFRAC_NONE),
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
@@ -112,59 +116,80 @@ SelectionData::initCoveredFraction(e_coverfrac_t type)
     }
     else if (!_gmx_selelem_can_estimate_cover(rootElement()))
     {
-        coveredFractionType_ = CFRAC_NONE;
+        coveredFractionType_     = CFRAC_NONE;
         bDynamicCoveredFraction_ = false;
     }
     else
     {
         bDynamicCoveredFraction_ = true;
     }
-    coveredFraction_ = bDynamicCoveredFraction_ ? 0.0 : 1.0;
+    coveredFraction_        = bDynamicCoveredFraction_ ? 0.0 : 1.0;
     averageCoveredFraction_ = coveredFraction_;
     return type == CFRAC_NONE || coveredFractionType_ != CFRAC_NONE;
 }
 
+namespace
+{
+
+/*! \brief
+ * Helper function to compute total masses and charges for positions.
+ *
+ * \param[in]  top     Topology to take atom masses from.
+ * \param[in]  pos     Positions to compute masses and charges for.
+ * \param[out] masses  Output masses.
+ * \param[out] charges Output charges.
+ *
+ * Does not throw if enough space has been reserved for the output vectors.
+ */
+void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
+                             std::vector<real> *masses,
+                             std::vector<real> *charges)
+{
+    GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
+    masses->clear();
+    charges->clear();
+    for (int b = 0; b < pos.nr; ++b)
+    {
+        real mass   = 0.0;
+        real charge = 0.0;
+        for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
+        {
+            int index = pos.g->index[i];
+            mass   += top->atoms.atom[index].m;
+            charge += top->atoms.atom[index].q;
+        }
+        masses->push_back(mass);
+        charges->push_back(charge);
+    }
+}
+
+}       // namespace
 
 void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
 {
-    posInfo_.reserve(posCount());
-    for (int b = 0; b < posCount(); ++b)
+    GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
+               "Should not be called more than once");
+    posMass_.reserve(posCount());
+    posCharge_.reserve(posCount());
+    if (top == NULL)
     {
-        real mass   = 1.0;
-        real charge = 0.0;
-        if (top != NULL)
-        {
-            mass = 0.0;
-            for (int i = rawPositions_.m.mapb.index[b];
-                     i < rawPositions_.m.mapb.index[b+1];
-                     ++i)
-            {
-                int index = rawPositions_.g->index[i];
-                mass   += top->atoms.atom[index].m;
-                charge += top->atoms.atom[index].q;
-            }
-        }
-        posInfo_.push_back(PositionInfo(mass, charge));
+        posMass_.resize(posCount(), 1.0);
+        posCharge_.resize(posCount(), 0.0);
     }
-    if (isDynamic() && !hasFlag(efSelection_DynamicMask))
+    else
     {
-        originalPosInfo_ = posInfo_;
+        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
     }
 }
 
 
 void
-SelectionData::refreshMassesAndCharges()
+SelectionData::refreshMassesAndCharges(const t_topology *top)
 {
-    if (!originalPosInfo_.empty())
+    if (top != NULL && isDynamic() && !hasFlag(efSelection_DynamicMask))
     {
-        posInfo_.clear();
-        for (int i = 0; i < posCount(); ++i)
-        {
-            int refid  = rawPositions_.m.refid[i];
-            posInfo_.push_back(originalPosInfo_[refid]);
-        }
+        computeMassesAndCharges(top, rawPositions_, &posMass_, &posCharge_);
     }
 }
 
@@ -175,7 +200,7 @@ SelectionData::updateCoveredFractionForFrame()
     if (isCoveredFractionDynamic())
     {
         real cfrac = _gmx_selelem_estimate_coverfrac(rootElement());
-        coveredFraction_ = cfrac;
+        coveredFraction_         = cfrac;
         averageCoveredFraction_ += cfrac;
     }
 }
@@ -192,7 +217,7 @@ SelectionData::computeAverageCoveredFraction(int nframes)
 
 
 void
-SelectionData::restoreOriginalPositions()
+SelectionData::restoreOriginalPositions(const t_topology *top)
 {
     if (isDynamic())
     {
@@ -201,11 +226,11 @@ SelectionData::restoreOriginalPositions()
         p.g->name = NULL;
         gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;
-        refreshMassesAndCharges();
+        refreshMassesAndCharges(top);
     }
 }
 
-} // namespace internal
+}   // namespace internal
 
 
 void
@@ -238,17 +263,25 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     {
         int n = p.m.mapb.nr;
         if (nmaxind >= 0 && n > nmaxind)
+        {
             n = nmaxind;
+        }
         for (int i = 0; i <= n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapb.index[i]);
+        }
         if (n < p.m.mapb.nr)
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
     int n = posCount();
     if (nmaxind >= 0 && n > nmaxind)
+    {
         n = nmaxind;
+    }
     fprintf(fp, "    RefId:");
     if (!p.m.refid)
     {
@@ -257,9 +290,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.refid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 
@@ -271,9 +308,13 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     else
     {
         for (int i = 0; i < n; ++i)
+        {
             fprintf(fp, " %d", p.m.mapid[i]);
+        }
         if (n < posCount())
+        {
             fprintf(fp, " ...");
+        }
     }
     fprintf(fp, "\n");
 }

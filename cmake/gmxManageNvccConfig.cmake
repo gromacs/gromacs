@@ -1,11 +1,15 @@
 # Manage CUDA nvcc compilation configuration, try to be smart to ease the users'
 # pain as much as possible:
-# - use the CUDA_NVCC_HOST_COMPILER if defined by the user, otherwise
+# - use the CUDA_HOST_COMPILER if defined by the user, otherwise
 # - auto-detect compatible nvcc host compiler and set nvcc -ccbin (if not MPI wrapper)
 # - set icc compatibility mode to gcc 4.4/4.5 (CUDA 4.0 is not compatible with gcc >v4.4)
 # - (advanced) variables set:
-#   * CUDA_NVCC_HOST_COMPILER       - the compiler nvcc is forced to use (via -ccbin)
-#   * CUDA_NVCC_HOST_COMPILER_OPTIONS   - the full host-compiler related option list passed to nvcc
+#   * CUDA_HOST_COMPILER            - the host compiler for nvcc (only with cmake <2.8.10)
+#   * CUDA_HOST_COMPILER_OPTIONS    - the full host-compiler related option list passed to nvcc
+#
+# Note that from CMake 2.8.10 FindCUDA defines CUDA_HOST_COMPILER internally,
+# so we won't set it ourselves, but hope that the module does a good job.
+
 if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     set(CUDA_NVCC_FLAGS_SET TRUE CACHE INTERNAL "True if NVCC flags have been set" FORCE)
 
@@ -20,18 +24,20 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     # Also note that with MSVC nvcc sets the -compiler-bindir option behind the
     # scenes; to avoid conflicts we don't set -ccbin automatically.
 
-    if (NOT DEFINED CUDA_NVCC_HOST_COMPILER AND NOT MSVC)
+    if (NOT DEFINED CUDA_HOST_COMPILER AND NOT MSVC)
         if (NOT CMAKE_COMPILER_IS_GNUCC AND
             NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND UNIX AND NOT APPLE))
             message(WARNING "
             Will not set the nvcc host compiler because the current C compiler is not
             compatible with nvcc:
             ${CMAKE_C_COMPILER} (ID: ${CMAKE_C_COMPILER_ID})
-            Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on
-            64-bit Linux and MSVC on Windows. If nothing specified, nvcc will automatically
-            pick the platform-default compiler; However, as mixing compilers can cause errors.
+            Compatible compilers are: gcc on Linux and Mac OS X, the Intel Compiler on 64-bit
+            Linux and MSVC on Windows. Note that with newer CUDA releases this might change,
+            for up-to-date compatibility information check the NVIDIA documentation.
+            If nothing specified, nvcc will automatically pick the platform-default compiler;
+            Note that mixing compilers can cause errors.
             To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_NVCC_HOST_COMPILER to the full path of a compatible compiler.
+            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
             ")
         else()
             # do not use MPI compiler wrappers, as these are prone to brake nvcc
@@ -45,41 +51,44 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
             but the safest is to use the C compiler that the MPI compiler wrapper uses
             (if this is compatible).
             To manually set the nvcc host compiler, edit CUDA_NVCC_FLAGS or re-configure
-            setting CUDA_NVCC_HOST_COMPILER to the full path of a compatible compiler.
+            setting CUDA_HOST_COMPILER to the full path of a compatible compiler.
             ")
             else()
-                set(CUDA_NVCC_HOST_COMPILER "${CMAKE_C_COMPILER}")
-                set(CUDA_NVCC_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
-                    "True if CUDA_NVCC_HOST_COMPILER is automatically set" FORCE)
+                set(CUDA_HOST_COMPILER "${CMAKE_C_COMPILER}")
+                set(CUDA_HOST_COMPILER_AUTOSET TRUE CACHE INTERNAL
+                    "True if CUDA_HOST_COMPILER is automatically set" FORCE)
             endif()
         endif()
     endif()
 
-    if(DEFINED CUDA_NVCC_HOST_COMPILER)
-        message(STATUS "Setting the nvcc host compiler to: ${CUDA_NVCC_HOST_COMPILER}")
-        set(CUDA_NVCC_HOST_COMPILER ${CUDA_NVCC_HOST_COMPILER}
-            CACHE PATH "Host compiler for nvcc (do not edit!)" FORCE)
+    if(DEFINED CUDA_HOST_COMPILER)
+        # FindCUDA in CMake 2.8.10 sets the host compiler internally
+        if (CMAKE_VERSION VERSION_LESS "2.8.10")
+            message(STATUS "Setting the nvcc host compiler to: ${CUDA_HOST_COMPILER}")
+            set(CUDA_HOST_COMPILER ${CUDA_HOST_COMPILER}
+                CACHE PATH "Host compiler for nvcc (do not edit!)" FORCE)
+            set(_HOST_COMPILER_OPTION_STRING "-ccbin=${CUDA_HOST_COMPILER};")
+        endif()
 
-        set(CUDA_NVCC_HOST_COMPILER_OPTIONS "-ccbin=${CUDA_NVCC_HOST_COMPILER}")
-        # On *nix force icc in gcc 4.4 compatibility with CUDA 3.2/4.0 and
+        # On *nix force icc in gcc 4.4 compatibility mode with CUDA 3.2/4.0 and
         # gcc 4.5 compatibility mode with later CUDA versions. This is needed
         # as even with icc use as host compiler, when icc's gcc compatibility
         # mode is higher than the max gcc version officially supported by CUDA,
         # nvcc will freak out.
         if (UNIX AND CMAKE_C_COMPILER_ID MATCHES "Intel" AND
-            CUDA_NVCC_HOST_COMPILER_AUTOSET)
+            CUDA_HOST_COMPILER_AUTOSET)
             if (CUDA_VERSION VERSION_LESS "4.1")
                 message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.4 for nvcc host compilation")
-                set(CUDA_NVCC_HOST_COMPILER_OPTIONS "${CUDA_NVCC_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=440;")
+                set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=440;")
             else()
                 message(STATUS "Setting Intel Compiler compatibity mode to gcc 4.5 for nvcc host compilation")
-                set(CUDA_NVCC_HOST_COMPILER_OPTIONS "${CUDA_NVCC_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=450;")
+                set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS};-Xcompiler;-gcc-version=450;")
             endif()
         endif()
-        set(CUDA_NVCC_HOST_COMPILER_OPTIONS "${CUDA_NVCC_HOST_COMPILER_OPTIONS}"
-            CACHE STRING "Host-side compiler and options for it (do not edit!)." FORCE)
+        set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}"
+            CACHE STRING "Options for nvcc host compiler (do not edit!)." FORCE)
 
-        mark_as_advanced(CUDA_NVCC_HOST_COMPILER CUDA_NVCC_HOST_COMPILER_OPTIONS)
+        mark_as_advanced(CUDA_HOST_COMPILER CUDA_HOST_COMPILER_OPTIONS)
     endif()
 
     # on Linux we need to add -fPIC when building shared gmx libs
@@ -87,7 +96,7 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     if(BUILD_SHARED_LIBS)
         GMX_TEST_CXXFLAG(CXXFLAG_FPIC "-fPIC" _FPIC_NVCC_FLAG)
         if(_FPIC_NVCC_FLAG)
-            set(_FPIC_NVCC_FLAG "-Xcompiler;${_FPIC_NVCC_FLAG}")
+            set(CUDA_HOST_COMPILER_OPTIONS "${CUDA_HOST_COMPILER_OPTIONS}-Xcompiler;${_FPIC_NVCC_FLAG}")
         endif()
     endif()
 
@@ -106,6 +115,36 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
 
     # finally set the damn flags
     set(CUDA_NVCC_FLAGS
-        "${_CUDA_ARCH_STR};-use_fast_math;${CUDA_NVCC_HOST_COMPILER_OPTIONS};${_FPIC_NVCC_FLAG}"
+        "${_CUDA_ARCH_STR};-use_fast_math;${_HOST_COMPILER_OPTION_STRING}${CUDA_HOST_COMPILER_OPTIONS}"
         CACHE STRING "Compiler flags for nvcc." FORCE)
 endif()
+
+
+# Try to execute ${CUDA_NVCC_EXECUTABLE} --version and set the output
+# (or an error string) in the argument variable.
+#
+# returned in argument: CUDA nvcc compiler version string
+#
+macro(get_nvcc_version_info)
+    if(CUDA_NVCC_EXECUTABLE AND NOT CUDA_NVCC_COMPILER_INFO)
+
+        # Get the nvcc version string. This is multi-line, but since it is only 4 lines
+        # and might change in the future it is better to store than trying to parse out
+        # the version from the current format.
+        execute_process(COMMAND ${CUDA_NVCC_EXECUTABLE} --version
+            RESULT_VARIABLE _nvcc_version_res
+            OUTPUT_VARIABLE _nvcc_version_out
+            ERROR_VARIABLE  _nvcc_version_err
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
+        if (${_nvcc_version_res} EQUAL 0)
+            # Fix multi-line mess: Replace newline with ";" so we can use it in a define
+            string(REPLACE "\n" ";" _nvcc_info_singleline ${_nvcc_version_out})
+            SET(CUDA_NVCC_COMPILER_INFO ${_nvcc_info_singleline}
+                CACHE STRING "CUDA nvcc compiler version string" FORCE)
+        else ()
+            SET(CUDA_NVCC_COMPILER_INFO ""
+                CACHE STRING "CUDA nvcc compiler version string not available" FORCE)
+        endif ()
+    endif ()
+    mark_as_advanced(CUDA_NVCC_COMPILER_INFO)
+endmacro ()

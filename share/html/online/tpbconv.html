@@ -9,29 +9,31 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>tpbconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 tpbconv can edit run input files in four ways.<p>
-<b>1st.</b> by modifying the number of steps in a run input file
+<b>1.</b> by modifying the number of steps in a run input file
 with options <tt>-extend</tt>, <tt>-until</tt> or <tt>-nsteps</tt>
 (nsteps=-1 means unlimited number of steps)<p>
-<b>2nd.</b> (OBSOLETE) by creating a run input file
+<b>2.</b> (OBSOLETE) by creating a run input file
 for a continuation run when your simulation has crashed due to e.g.
 a full disk, or by making a continuation run input file.
 This option is obsolete, since <a href="mdrun.html">mdrun</a> now writes and reads
 checkpoint files.
-Note that a frame with coordinates and velocities is needed.
+<b>Note</b> that a frame with coordinates and velocities is needed.
 When pressure and/or Nose-Hoover temperature coupling is used
 an energy file can be supplied to get an exact continuation
 of the original run.<p>
-<b>3rd.</b> by creating a tpx file for a subset of your original
+<b>3.</b> by creating a <tt>.tpx</tt> file for a subset of your original
 tpx file, which is useful when you want to remove the solvent from
-your tpx file, or when you want to make e.g. a pure Ca tpx file.
-<b>WARNING: this tpx file is not fully functional</b>.
-<b>4th.</b> by setting the charges of a specified group
+your <tt>.tpx</tt> file, or when you want to make e.g. a pure C&alpha; <tt>.tpx</tt> file.
+Note that you may need to use <tt>-nsteps -1</tt> (or similar) to get
+this to work.
+<b>WARNING: this <tt>.tpx</tt> file is not fully functional</b>.<p>
+<b>4.</b> by setting the charges of a specified group
 to zero. This is useful when doing free energy estimates
 using the LIE (Linear Interaction Energy) method.
 <P>
@@ -48,16 +50,17 @@ using the LIE (Linear Interaction Energy) method.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-extend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Extend runtime by this amount (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-until</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Extend runtime until this ending time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Change the number of steps </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Continue from frame at this time (ps) instead of the last frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroq</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the charges of a group (from the index) to zero </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Require velocities from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cont</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> For exact continuation, the constraints should not be applied before the first step </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroq</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the charges of a group (from the index) to zero </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Require velocities from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cont</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> For exact continuation, the constraints should not be applied before the first step </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-init_fep_state</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> fep state to initialize from </TD></TD>
 </TABLE>
 <P>
 <hr>

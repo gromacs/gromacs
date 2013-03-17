@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include <cuda.h>
+
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "tables.h"
@@ -67,6 +69,34 @@ static unsigned int gpu_min_ci_balanced_factor = 40;
 extern void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo);
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref();
 extern const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref();
+
+/* We should actually be using md_print_warn in md_logging.c,
+ * but we can't include mpi.h in CUDA code.
+ */
+static void md_print_warn(FILE       *fplog,
+                          const char *fmt, ...)
+{
+    va_list ap;
+
+    if (fplog != NULL)
+    {
+        /* We should only print to stderr on the master node,
+         * in most cases fplog is only set on the master node, so this works.
+         */
+        va_start(ap, fmt);
+        fprintf(stderr, "\n");
+        vfprintf(stderr, fmt, ap);
+        fprintf(stderr, "\n");
+        va_end(ap);
+
+        va_start(ap, fmt);
+        fprintf(fplog, "\n");
+        vfprintf(fplog, fmt, ap);
+        fprintf(fplog, "\n");
+        va_end(ap);
+    }
+}
+
 
 /* Fw. decl. */
 static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
@@ -316,23 +346,24 @@ static void init_timings(wallclock_gpu_t *t)
 }
 
 /* Decide which kernel version to use (default or legacy) based on:
- *  - CUDA version
+ *  - CUDA version used for compilation
  *  - non-bonded kernel selector environment variables
- *  - GPU SM version TODO ???
+ *  - GPU architecture version
  */
-static int pick_nbnxn_kernel_version()
+static int pick_nbnxn_kernel_version(FILE            *fplog,
+                                     cuda_dev_info_t *devinfo)
 {
-    bool bLegacyKernel, bDefaultKernel, bCUDA40, bCUDA32;
+    bool bForceLegacyKernel, bForceDefaultKernel, bCUDA40, bCUDA32;
     char sbuf[STRLEN];
     int  kver;
 
-    /* legacy kernel (former k2), kept for now for backward compatibility,
-       faster than the default with  CUDA 3.2/4.0 (TODO: on Kepler?). */
-    bLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
+    /* Legacy kernel (former k2), kept for backward compatibility as it is
+       faster than the default with CUDA 3.2/4.0 on Fermi (not on Kepler). */
+    bForceLegacyKernel  = (getenv("GMX_CUDA_NB_LEGACY") != NULL);
     /* default kernel (former k3). */
-    bDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
+    bForceDefaultKernel = (getenv("GMX_CUDA_NB_DEFAULT") != NULL);
 
-    if ((unsigned)(bLegacyKernel + bDefaultKernel) > 1)
+    if ((unsigned)(bForceLegacyKernel + bForceDefaultKernel) > 1)
     {
         gmx_fatal(FARGS, "Multiple CUDA non-bonded kernels requested; to manually pick a kernel set only one \n"
                   "of the following environment variables: \n"
@@ -351,17 +382,18 @@ static int pick_nbnxn_kernel_version()
     /* default is default ;) */
     kver = eNbnxnCuKDefault;
 
-    if (bCUDA32 || bCUDA40)
+    /* Consider switching to legacy kernels only on Fermi */
+    if (devinfo->prop.major < 3 && (bCUDA32 || bCUDA40))
     {
         /* use legacy kernel unless something else is forced by an env. var */
-        if (bDefaultKernel)
+        if (bForceDefaultKernel)
         {
-            fprintf(stderr,
-                    "\nNOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
-                    "      non-bonded kernels perform best. However, the default kernels were\n"
-                    "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
-                    "      For best performance upgrade your CUDA toolkit.",
-                    sbuf);
+            md_print_warn(fplog,
+                          "NOTE: CUDA %s compilation detected; with this compiler version the legacy\n"
+                          "      non-bonded kernels perform best. However, the default kernels were\n"
+                          "      selected by the GMX_CUDA_NB_DEFAULT environment variable.\n"
+                          "      For best performance upgrade your CUDA toolkit.\n",
+                          sbuf);
         }
         else
         {
@@ -370,11 +402,11 @@ static int pick_nbnxn_kernel_version()
     }
     else
     {
-        /* issue not if the non-default kernel is forced by an env. var */
-        if (bLegacyKernel)
+        /* issue note if the non-default kernel is forced by an env. var */
+        if (bForceLegacyKernel)
         {
-            fprintf(stderr,
-                    "\nNOTE: Legacy non-bonded CUDA kernels were selected by the GMX_CUDA_NB_LEGACY\n"
+            md_print_warn(fplog,
+                    "NOTE: Legacy non-bonded CUDA kernels selected by the GMX_CUDA_NB_LEGACY\n"
                     "      env. var. Consider using using the default kernels which should be faster!\n");
 
             kver = eNbnxnCuKLegacy;
@@ -392,7 +424,8 @@ void nbnxn_cuda_init(FILE *fplog,
     cudaError_t stat;
     nbnxn_cuda_ptr_t  nb;
     char sbuf[STRLEN];
-    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86;
+    bool bStreamSync, bNoStreamSync, bTMPIAtomics, bX86, bOldDriver;
+    int cuda_drv_ver;
 
     assert(gpu_info);
 
@@ -444,6 +477,13 @@ void nbnxn_cuda_init(FILE *fplog,
      * waiting to preserve performance. This requires support for atomic
      * operations and only works on x86/x86_64.
      * With polling wait event-timing also needs to be disabled.
+     *
+     * The overhead is greatly reduced in API v5.0 drivers and the improvement
+     $ is independent of runtime version. Hence, with API v5.0 drivers and later
+     * we won't switch to polling.
+     *
+     * NOTE: Unfortunately, this is known to fail when GPUs are shared by (t)MPI,
+     * ranks so we will also disable it in that case.
      */
 
     bStreamSync    = getenv("GMX_CUDA_STREAMSYNC") != NULL;
@@ -466,61 +506,55 @@ void nbnxn_cuda_init(FILE *fplog,
         gmx_fatal(FARGS, "Conflicting environment variables: both GMX_CUDA_STREAMSYNC and GMX_NO_CUDA_STREAMSYNC defined");
     }
 
+    stat = cudaDriverGetVersion(&cuda_drv_ver);
+    CU_RET_ERR(stat, "cudaDriverGetVersion failed");
+    bOldDriver = (cuda_drv_ver < 5000);
+
     if (nb->dev_info->prop.ECCEnabled == 1)
     {
         if (bStreamSync)
         {
             nb->bUseStreamSync = true;
 
-            sprintf(sbuf,
-                    "NOTE: Using a GPU with ECC enabled, but cudaStreamSynchronize-based waiting is\n"
-                    "      forced by the GMX_CUDA_STREAMSYNC env. var. Due to a CUDA bug, this \n"
-                    "      combination causes performance loss.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
+            /* only warn if polling should be used */
+            if (bOldDriver && !gpu_info->bDevShare)
             {
-                fprintf(fplog, "\n%s\n", sbuf);
+                md_print_warn(fplog,
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
+                              "      cudaStreamSynchronize waiting is forced by the GMX_CUDA_STREAMSYNC env. var.\n");
             }
         }
         else
         {
-            /* can use polling wait only on x86/x86_64 *if* atomics are available */
-            nb->bUseStreamSync = ((bX86 && bTMPIAtomics) == false);
+            /* Can/should turn of cudaStreamSynchronize wait only if
+             *   - we're on x86/x86_64
+             *   - atomics are available
+             *   - GPUs are not being shared
+             *   - and driver is old. */
+            nb->bUseStreamSync =
+                (bX86 && bTMPIAtomics && !gpu_info->bDevShare && bOldDriver) ?
+                true : false;
 
-            if (!bX86)
+            if (nb->bUseStreamSync)
             {
-                sprintf(sbuf,
-                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
-                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
-                        "      However, the polling waiting workaround can not be used as it is only\n"
-                        "      supported on x86/x86_64, but not on the current architecture.");
-                gmx_warning("%s\n", sbuf);
-                if (fplog)
-                {
-                    fprintf(fplog, "\n%s\n", sbuf);
-                }
-
+                md_print_warn(fplog,
+                              "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
+                              "      cause performance loss. Switching to the alternative polling GPU waiting.\n"
+                              "      If you encounter issues, switch back to standard GPU waiting by setting\n"
+                              "      the GMX_CUDA_STREAMSYNC environment variable.\n");
             }
-            else if (bTMPIAtomics)
+            else if (bOldDriver)
             {
-                if (fplog)
-                {
-                    fprintf(fplog,
-                            "NOTE: Using a GPU with ECC enabled; will use polling waiting.\n");
-                }
-            }
-            else
-            {
+                /* Tell the user that the ECC+old driver combination can be bad */
                 sprintf(sbuf,
-                        "Using a GPU with ECC on; the standard cudaStreamSynchronize waiting, due to a\n"
-                        "      CUDA bug, causes performance loss when used in combination with ECC.\n"
-                        "      However, the polling waiting workaround can not be used as atomic\n"
-                        "      operations are not supported by the current CPU+compiler combination.");
-                gmx_warning("%s\n", sbuf);
-                if (fplog)
-                {
-                    fprintf(fplog, "\n%s\n", sbuf);
-                }
+                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0. A bug in this\n"
+                        "      driver can cause performance loss.\n"
+                        "      However, the polling waiting workaround can not be used because\n%s\n"
+                        "      Consider updating the driver or turning ECC off.",
+                        (!bX86 || !bTMPIAtomics) ?
+                           "         atomic operations are not supported by the platform/CPU+compiler." :
+                           "         GPU(s) are being oversubscribed.");
+                md_print_warn(fplog, sbuf);
             }
         }
     }
@@ -530,14 +564,8 @@ void nbnxn_cuda_init(FILE *fplog,
         {
             nb->bUseStreamSync = false;
 
-            sprintf(sbuf,
-                    "NOTE: Using a GPU with no/disabled ECC, but cudaStreamSynchronize-based waiting\n"
-                    "      is turned off and polling turned on by the GMX_NO_CUDA_STREAMSYNC env. var.");
-            fprintf(stderr, "\n%s\n", sbuf);
-            if (fplog)
-            {
-                fprintf(fplog, "\n%s\n", sbuf);
-            }
+            md_print_warn(fplog,
+                          "NOTE: Polling wait for GPU synchronization requested by GMX_NO_CUDA_STREAMSYNC\n");
         }
         else
         {
@@ -561,7 +589,7 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 
     /* set the kernel type for the current GPU */
-    nb->kernel_ver = pick_nbnxn_kernel_version();
+    nb->kernel_ver = pick_nbnxn_kernel_version(fplog, nb->dev_info);
     /* pick L1 cache configuration */
     nbnxn_cuda_set_cacheconfig(nb->dev_info);
 
@@ -847,6 +875,17 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         cu_free_buffered(plist_nl->cj4, &plist_nl->ncj4, &plist_nl->cj4_nalloc);
         cu_free_buffered(plist_nl->excl, &plist_nl->nexcl, &plist->excl_nalloc);
     }
+
+    sfree(atdat);
+    sfree(nbparam);
+    sfree(plist);
+    if (cu_nb->bUseTwoStreams)
+    {
+        sfree(plist_nl);
+    }
+    sfree(timers);
+    sfree(cu_nb->timings);
+    sfree(cu_nb);
 
     if (debug)
     {

@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -26,6 +26,10 @@
 #ifdef HAVE_X86INTRIN_H
 #include <x86intrin.h> /* FMA */
 #endif
+#ifdef HAVE_INTRIN_H
+#include <intrin.h> /* FMA MSVC */
+#endif
+
 
 #include <stdio.h>
 
@@ -34,14 +38,15 @@
 
 #define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
+#define _GMX_MM_BLEND(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 
-#define _GMX_MM_PERMUTE128D(fp1,fp0)         (((fp1) << 1) | ((fp0)))
+#define _GMX_MM_PERMUTE128D(fp1, fp0)         (((fp1) << 1) | ((fp0)))
 
 
 #define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
-    __m128d __gmx_t1 = row0;                         \
-    row0           = _mm_unpacklo_pd(row0,row1);     \
-    row1           = _mm_unpackhi_pd(__gmx_t1,row1); \
+        __m128d __gmx_t1 = row0;                         \
+        row0           = _mm_unpacklo_pd(row0, row1);     \
+        row1           = _mm_unpackhi_pd(__gmx_t1, row1); \
 }
 
 
@@ -80,90 +85,91 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 }
 #endif
 
-#ifndef _MSC_VER
-/* The warning directive is not supported by MSVC, and that compiler
- * does not support overriding built-in functions anyway...
- */
-#if !defined(HAVE_X86INTRIN_H) || !defined(__FMA4__)
-#warning Emulating FMA instructions - this is probably not what you want!
-/* Wrapper routines so we can do test builds on non-FMA hardware */
+#if GMX_EMULATE_AMD_FMA
+/* Wrapper routines so we can do test builds on non-FMA or non-AMD hardware */
 static __m128
 _mm_macc_ps(__m128 a, __m128 b, __m128 c)
 {
-
-    return _mm_add_ps(c,_mm_mul_ps(a,b));
+    return _mm_add_ps(c, _mm_mul_ps(a, b));
 }
 
 static __m128
 _mm_nmacc_ps(__m128 a, __m128 b, __m128 c)
 {
+    return _mm_sub_ps(c, _mm_mul_ps(a, b));
+}
 
-    return _mm_sub_ps(c,_mm_mul_ps(a,b));
+static __m128
+_mm_msub_ps(__m128 a, __m128 b, __m128 c)
+{
+    return _mm_sub_ps(_mm_mul_ps(a, b), c);
 }
 
 static __m128d
 _mm_macc_pd(__m128d a, __m128d b, __m128d c)
 {
-
-    return _mm_add_pd(c,_mm_mul_pd(a,b));
+    return _mm_add_pd(c, _mm_mul_pd(a, b));
 }
 
 static __m128d
 _mm_nmacc_pd(__m128d a, __m128d b, __m128d c)
 {
-
-    return _mm_sub_pd(c,_mm_mul_pd(a,b));
+    return _mm_sub_pd(c, _mm_mul_pd(a, b));
 }
-#endif /* FMA4 support */
 
-#endif /* _MSC_VER */
+static __m128d
+_mm_msub_pd(__m128d a, __m128d b, __m128d c)
+{
+    return _mm_sub_pd(_mm_mul_pd(a, b), c);
+}
+#endif /* AMD FMA emulation support */
 
 static void
-gmx_mm_printxmm_ps(const char *s,__m128 xmm)
+gmx_mm_printxmm_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s: %15.10e %15.10e %15.10e %15.10e\n",s,f[0],f[1],f[2],f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s: %15.10e %15.10e %15.10e %15.10e\n", s, f[0], f[1], f[2], f[3]);
 }
 
 
 static void
-gmx_mm_printxmmsum_ps(const char *s,__m128 xmm)
+gmx_mm_printxmmsum_ps(const char *s, __m128 xmm)
 {
     float f[4];
 
-    _mm_storeu_ps(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]+f[2]+f[3]);
+    _mm_storeu_ps(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]+f[2]+f[3]);
 }
 
 
 static void
-gmx_mm_printxmm_pd(const char *s,__m128d xmm)
+gmx_mm_printxmm_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s: %30.20e %30.20e\n",s,f[0],f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s: %30.20e %30.20e\n", s, f[0], f[1]);
 }
 
 static void
-gmx_mm_printxmmsum_pd(const char *s,__m128d xmm)
+gmx_mm_printxmmsum_pd(const char *s, __m128d xmm)
 {
     double f[2];
 
-    _mm_storeu_pd(f,xmm);
-    printf("%s (sum): %15.10g\n",s,f[0]+f[1]);
+    _mm_storeu_pd(f, xmm);
+    printf("%s (sum): %15.10g\n", s, f[0]+f[1]);
 }
 
 
 static void
-gmx_mm_printxmm_epi32(const char *s,__m128i xmmi)
+gmx_mm_printxmm_epi32(const char *s, __m128i xmmi)
 {
     int i[4];
 
-    _mm_storeu_si128((__m128i *)i,xmmi);
-    printf("%10s: %2d %2d %2d %2d\n",s,i[0],i[1],i[2],i[3]);
+    _mm_storeu_si128((__m128i *)i, xmmi);
+    printf("%10s: %2d %2d %2d %2d\n", s, i[0], i[1], i[2], i[3]);
 }
 
 
@@ -189,6 +195,19 @@ static int gmx_mm_check_and_reset_overflow(void)
 
     return sse_overflow;
 }
+
+/* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
+#ifdef GMX_X86_AVX_GCC_MASKLOAD_BUG
+#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
+#    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))
+#    define gmx_mm256_maskstore_ps(mem, mask, x) _mm256_maskstore_ps((mem), _mm256_castsi256_ps(mask), (x))
+#else
+#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
+#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), (mask), (x))
+#    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), (mask))
+#    define gmx_mm256_maskstore_ps(mem, mask, x) _mm256_maskstore_ps((mem), (mask), (x))
+#endif
 
 
 

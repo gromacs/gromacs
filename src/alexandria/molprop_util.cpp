@@ -403,7 +403,8 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     int natom,ftb;
     t_param b;
     t_nextnb nnb;
-        
+    t_restp rtp;
+            
     /* Get atoms */
     if (FALSE == molprop_2_atoms(mp,ap,tab,lot,&(top->atoms),q_algorithm,x))
         return FALSE;
@@ -426,7 +427,11 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     //detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     //nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
-    gen_pad(&nnb,&top->atoms,TRUE,TRUE,TRUE,nexcl,plist,*excls,NULL,FALSE);
+    rtp.bKeepAllGeneratedDihedrals = TRUE;
+    rtp.bRemoveDihedralIfWithImproper = TRUE;
+    rtp.bGenerateHH14Interactions = TRUE;
+    rtp.nrexcl = nexcl;
+    gen_pad(&nnb,&top->atoms,&rtp,plist,*excls,NULL,FALSE);
     generate_excls(&nnb,nexcl,*excls);
     done_nnb(&nnb);
 

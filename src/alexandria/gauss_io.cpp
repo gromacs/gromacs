@@ -319,9 +319,9 @@ static void gmx_molprop_read_babel(const char *g98,
         if (NULL != OBdhf)
         {
             value = OBdhf->GetValue();
-            dval = convert2gmx(atof(value.c_str()),eg2c_kcal_mole);
+            dval = convert2gmx(atof(value.c_str()),eg2cKcal_Mole);
             
-            alexandria::MolecularEnergy me(etypes[k],unit2string(eg2c_kJ_mole),dval,0);
+            alexandria::MolecularEnergy me(etypes[k],unit2string(eg2cKj_Mole),dval,0);
             mpt.LastCalculation()->AddEnergy(me);
         }
     }
@@ -342,7 +342,7 @@ static void gmx_molprop_read_babel(const char *g98,
                                 OBa->GetType(),atomid);
         alexandria::AtomicCharge aq(charge_model,"e",OBa->GetPartialCharge());
         
-        ca.SetUnit(unit2string(eg2c_pm));
+        ca.SetUnit(unit2string(eg2cPm));
         ca.SetCoords(100*OBa->x(),100*OBa->y(),100*OBa->z());
         ca.AddCharge(aq);
         mpt.LastCalculation()->AddAtom(ca);
@@ -366,7 +366,7 @@ static void gmx_molprop_read_babel(const char *g98,
     {
         OpenBabel::vector3 v3 = dipole->GetData();
         alexandria::MolecularDipPolar dp("electronic",
-                                         unit2string(eg2c_Debye),
+                                         unit2string(eg2cDebye),
                                          v3.GetX(),v3.GetY(),v3.GetZ(),
                                          v3.length(),0.0);
         mpt.LastCalculation()->AddDipole(dp);
@@ -380,7 +380,7 @@ static void gmx_molprop_read_babel(const char *g98,
         double mm[9];
         m3.GetArray(mm);
         alexandria::MolecularQuadrupole mq("electronic",
-                                           unit2string(eg2c_Buckingham),
+                                           unit2string(eg2cBuckingham),
                                            mm[0],mm[4],mm[8],
                                            mm[1],mm[2],mm[5]);
         mpt.LastCalculation()->AddQuadrupole(mq);
@@ -394,14 +394,14 @@ static void gmx_molprop_read_babel(const char *g98,
         double mm[9],alpha,fac;
         int i;
         m3.GetArray(mm);
-        fac = 1000*pow(convert2gmx(1,eg2c_Bohr),3);
+        fac = 1000*pow(convert2gmx(1,eg2cBohr),3);
         for(i=0; (i<9); i++)
             mm[i] *= fac; 
         //cout << "fac = " << fac << "\n";
         alpha = (mm[0]+mm[4]+mm[8])/3.0;
         
         alexandria::MolecularDipPolar mdp("electronic",
-                                          unit2string(eg2c_Angstrom3),
+                                          unit2string(eg2cAngstrom3),
                                           mm[0],mm[4],mm[8],alpha,0);
         mpt.LastCalculation()->AddPolar(mdp);
     }
@@ -412,8 +412,8 @@ static void gmx_molprop_read_babel(const char *g98,
     {
         OpenBabel::OBFreeGridPoint *fgp;
         OpenBabel::OBFreeGridPointIterator fgpi;
-        std::string xyz_unit(unit2string(eg2c_pm));
-        std::string V_unit(unit2string(eg2c_Hartree_e));
+        std::string xyz_unit(unit2string(eg2cPm));
+        std::string V_unit(unit2string(eg2cHartree_e));
         int espid=0;
       
         fgpi = esp->BeginPoints();
@@ -570,18 +570,18 @@ static int gmx_molprop_add_dhform(alexandria::MolProp& mpt,
     e0Hartree = eg34+ve-vm;
     eTHartree = eg34-ezpe+etherm+ve-vm-vdh;
     
-    ee = convert2gmx(e0Hartree,eg2c_Hartree);
+    ee = convert2gmx(e0Hartree,eg2cHartree);
     
-    alexandria::MolecularEnergy me("DHf(0K)",unit2string(eg2c_kJ_mole),ee,0);
+    alexandria::MolecularEnergy me("DHf(0K)",unit2string(eg2cKj_Mole),ee,0);
     mpt.LastCalculation()->AddEnergy(me);
 
     if (bVerbose)
         printf("natom %d e0Hartree %f eTHartree %f eg34 %f ve %f vm %f vdh %f ezpe %f etherm %f \n",
                ntot,e0Hartree,eTHartree,eg34,ve,vm,vdh,ezpe,etherm);
            
-    ee = convert2gmx(eTHartree,eg2c_Hartree);
+    ee = convert2gmx(eTHartree,eg2cHartree);
     
-    alexandria::MolecularEnergy me2("DHf(298.15K)",unit2string(eg2c_kJ_mole),ee,0);
+    alexandria::MolecularEnergy me2("DHf(298.15K)",unit2string(eg2cKj_Mole),ee,0);
     mpt.LastCalculation()->AddEnergy(me2);
     
     return 1;
@@ -734,8 +734,8 @@ static void gmx_molprop_read_log(const char *fn,
     int status;
     
     std::vector<alexandria::ElectrostaticPotential> espv;
-    std::string xyz_unit(unit2string(eg2c_pm));
-    std::string V_unit(unit2string(eg2c_Hartree_e));
+    std::string xyz_unit(unit2string(eg2cPm));
+    std::string V_unit(unit2string(eg2cHartree_e));
 
     nstrings = get_file(fn,&strings);
     
@@ -911,24 +911,24 @@ static void gmx_molprop_read_log(const char *fn,
                                      reference,conformation,fn);
         if (bPolar)
         {
-            alexandria::MolecularDipPolar mdi(unit2string(eg2c_Electron),
-                                              unit2string(eg2c_Angstrom3),
+            alexandria::MolecularDipPolar mdi(unit2string(eg2cElectron),
+                                              unit2string(eg2cAngstrom3),
                                               polar[XX][XX],polar[YY][YY],polar[ZZ][ZZ],
                                               trace(polar)/3.0,0);
             calc.AddPolar(mdi);
         }
         if (bDipole)
         {
-            alexandria::MolecularDipPolar mdi(unit2string(eg2c_Electron),
-                                              unit2string(eg2c_Debye),
+            alexandria::MolecularDipPolar mdi(unit2string(eg2cElectron),
+                                              unit2string(eg2cDebye),
                                               dipole[XX],dipole[YY],dipole[ZZ],
                                               norm(dipole),0);
             calc.AddDipole(mdi);
         }
         if (bQuad)
         {
-            alexandria::MolecularQuadrupole mq(unit2string(eg2c_Electron),
-                                               unit2string(eg2c_Buckingham),
+            alexandria::MolecularQuadrupole mq(unit2string(eg2cElectron),
+                                               unit2string(eg2cBuckingham),
                                                quad[XX][XX],quad[YY][YY],quad[ZZ][ZZ],
                                                quad[XX][YY],quad[XX][ZZ],quad[YY][ZZ]);
             calc.AddQuadrupole(mq);
@@ -1109,14 +1109,14 @@ static void gmx_molprop_read_log(const char *fn,
         }		
         else if (NULL != mp2ener)
         {
-            ee = convert2gmx(atof(mp2ener),eg2c_Hartree);
-            alexandria::MolecularEnergy me("MP2",unit2string(eg2c_kJ_mole),ee,0);
+            ee = convert2gmx(atof(mp2ener),eg2cHartree);
+            alexandria::MolecularEnergy me("MP2",unit2string(eg2cKj_Mole),ee,0);
             calc.AddEnergy(me);
         }
         else if (NULL != hfener)
         {
-            ee = convert2gmx(atof(hfener),eg2c_Hartree);
-            alexandria::MolecularEnergy me("HF",unit2string(eg2c_kJ_mole),ee,0);
+            ee = convert2gmx(atof(hfener),eg2cHartree);
+            alexandria::MolecularEnergy me("HF",unit2string(eg2cKj_Mole),ee,0);
             calc.AddEnergy(me);
         }
         mpt.AddCalculation(calc);

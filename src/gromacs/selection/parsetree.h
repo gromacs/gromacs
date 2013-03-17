@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
@@ -41,7 +45,7 @@
  * This is an implementation header: there should be no need to use it outside
  * this directory.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_PARSETREE_H
@@ -86,10 +90,10 @@ class SelectionParserValue;
 
 //! Container for a list of SelectionParserValue objects.
 typedef std::list<SelectionParserValue>
-        SelectionParserValueList;
+    SelectionParserValueList;
 //! Smart pointer type for managing a SelectionParserValueList.
 typedef gmx::gmx_unique_ptr<SelectionParserValueList>::type
-        SelectionParserValueListPointer;
+    SelectionParserValueListPointer;
 
 /*! \internal \brief
  * Describes a parsed value, possibly resulting from expression evaluation.
@@ -221,11 +225,11 @@ class SelectionParserValue
 
         // TODO: boost::any or similar could be nicer for the implementation.
         //! Type of the value.
-        e_selvalue_t            type;
+        e_selvalue_t                     type;
         //! Expression pointer if the value is the result of an expression.
         gmx::SelectionTreeElementPointer expr;
         //! String value for \a type ::STR_VALUE.
-        std::string             str;
+        std::string                      str;
         //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
         union {
             //! The integer value/range (\a type ::INT_VALUE).
@@ -265,10 +269,10 @@ class SelectionParserParameter;
 
 //! Container for a list of SelectionParserParameter objects.
 typedef std::list<SelectionParserParameter>
-        SelectionParserParameterList;
+    SelectionParserParameterList;
 //! Smart pointer type for managing a SelectionParserParameterList.
 typedef gmx::gmx_unique_ptr<SelectionParserParameterList>::type
-        SelectionParserParameterListPointer;
+    SelectionParserParameterListPointer;
 
 /*! \internal \brief
  * Describes a parsed method parameter.
@@ -333,14 +337,14 @@ class SelectionParserParameter
          * expression value is necessary.
          */
         static SelectionParserParameter
-        createFromExpression(const char *name,
+        createFromExpression(const char                        *name,
                              const SelectionTreeElementPointer &expr)
         {
             return create(name, SelectionParserValue::createExpr(expr));
         }
         //! \copydoc createFromExpression(const char *, const SelectionTreeElementPointer &)
         static SelectionParserParameter
-        createFromExpression(const std::string &name,
+        createFromExpression(const std::string                 &name,
                              const SelectionTreeElementPointer &expr)
         {
             return create(name.c_str(), SelectionParserValue::createExpr(expr));
@@ -353,7 +357,7 @@ class SelectionParserParameter
          * \param[in] values  List of values for the parameter.
          * \throws    std::bad_alloc if out of memory.
          */
-        SelectionParserParameter(const char *name,
+        SelectionParserParameter(const char                     *name,
                                  SelectionParserValueListPointer values);
 
         //! Returns the name of the parameter (may be empty).
@@ -362,7 +366,7 @@ class SelectionParserParameter
         const SelectionParserValueList &values() const { return *values_; }
 
         //! Name of the parameter.
-        std::string             name_;
+        std::string                     name_;
         //! Values for this parameter.
         SelectionParserValueListPointer values_;
 };
@@ -379,13 +383,13 @@ _gmx_selparser_handle_exception(void *scanner, const std::exception &ex);
 /** Propagates the flags for selection elements. */
 void
 _gmx_selelem_update_flags(const gmx::SelectionTreeElementPointer &sel,
-                          void *scanner);
+                          void                                   *scanner);
 
 /** Initializes the method parameter data of \ref SEL_EXPRESSION and
  * \ref SEL_MODIFIER elements. */
 void
 _gmx_selelem_init_method_params(const gmx::SelectionTreeElementPointer &sel,
-                                void *scanner);
+                                void                                   *scanner);
 /** Initializes the method for a \ref SEL_EXPRESSION selection element. */
 void
 _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
@@ -419,10 +423,10 @@ _gmx_sel_init_method(struct gmx_ana_selmethod_t *method,
                      const char *rpost, void *scanner);
 /** Creates a gmx::SelectionTreeElement for a modifier expression from the parsed data. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_modifier(struct gmx_ana_selmethod_t *mod,
+_gmx_sel_init_modifier(struct gmx_ana_selmethod_t              *mod,
                        gmx::SelectionParserParameterListPointer params,
-                       const gmx::SelectionTreeElementPointer &sel,
-                       void *scanner);
+                       const gmx::SelectionTreeElementPointer  &sel,
+                       void                                    *scanner);
 /** Creates a gmx::SelectionTreeElement for evaluation of reference positions. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_position(const gmx::SelectionTreeElementPointer &expr,
@@ -443,19 +447,19 @@ _gmx_sel_init_variable_ref(const gmx::SelectionTreeElementPointer &sel);
 
 /** Creates a root gmx::SelectionTreeElement for a selection. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_init_selection(const char *name,
+_gmx_sel_init_selection(const char                             *name,
                         const gmx::SelectionTreeElementPointer &sel,
-                        void *scanner);
+                        void                                   *scanner);
 /** Creates a root gmx::SelectionTreeElement elements for a variable assignment. */
 gmx::SelectionTreeElementPointer
-_gmx_sel_assign_variable(const char *name,
+_gmx_sel_assign_variable(const char                             *name,
                          const gmx::SelectionTreeElementPointer &expr,
-                         void *scanner);
+                         void                                   *scanner);
 /** Appends a root gmx::SelectionTreeElement to a selection collection. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_append_selection(const gmx::SelectionTreeElementPointer &sel,
-                          gmx::SelectionTreeElementPointer last,
-                          void *scanner);
+                          gmx::SelectionTreeElementPointer        last,
+                          void                                   *scanner);
 /** Check whether the parser should finish. */
 bool
 _gmx_sel_parser_should_finish(void *scanner);
@@ -466,7 +470,7 @@ _gmx_sel_handle_empty_cmd(void *scanner);
 /** Process help commands. */
 void
 _gmx_sel_handle_help_cmd(const gmx::SelectionParserValueListPointer &topic,
-                         void *scanner);
+                         void                                       *scanner);
 
 /* In params.c */
 /** Initializes an array of parameters based on input from the selection parser. */

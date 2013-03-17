@@ -448,7 +448,7 @@ void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,char *title,output_env_t 
         return;
     gs = gmx_stats_init();
     for(i=0; (i<gr->nesp); i++)
-        gmx_stats_add_point(gs,i,gmx2convert(gr->pot_calc[i],eg2c_Hartree_e),0,0);
+        gmx_stats_add_point(gs,i,gmx2convert(gr->pot_calc[i],eg2cHartree_e),0,0);
 
     gmx_stats_make_histogram(gs,0,&nbin,ehistoY,1,&x,&y);
 
@@ -483,15 +483,15 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,const char *cube_fn
         fprintf(fp,"POTENTIAL\n");
         fprintf(fp,"%5d%12.6f%12.6f%12.6f\n",
                 gr->natom,
-                gmx2convert(gr->origin[XX],eg2c_Bohr),
-                gmx2convert(gr->origin[YY],eg2c_Bohr),
-                gmx2convert(gr->origin[ZZ],eg2c_Bohr));
+                gmx2convert(gr->origin[XX],eg2cBohr),
+                gmx2convert(gr->origin[YY],eg2cBohr),
+                gmx2convert(gr->origin[ZZ],eg2cBohr));
         fprintf(fp,"%5d%12.6f%12.6f%12.6f\n",gr->nxyz[XX],
-                gmx2convert(gr->space[XX],eg2c_Bohr),0.0,0.0);
+                gmx2convert(gr->space[XX],eg2cBohr),0.0,0.0);
         fprintf(fp,"%5d%12.6f%12.6f%12.6f\n",gr->nxyz[YY],
-                0.0,gmx2convert(gr->space[YY],eg2c_Bohr),0.0);
+                0.0,gmx2convert(gr->space[YY],eg2cBohr),0.0);
         fprintf(fp,"%5d%12.6f%12.6f%12.6f\n",gr->nxyz[ZZ],
-                0.0,0.0,gmx2convert(gr->space[ZZ],eg2c_Bohr));
+                0.0,0.0,gmx2convert(gr->space[ZZ],eg2cBohr));
         
         for(m=0; (m<gr->natom); m++) 
         {
@@ -500,9 +500,9 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,const char *cube_fn
                 q += gr->ra[m].q[zz];
             fprintf(fp,"%5d%12.6f%12.6f%12.6f%12.6f\n",
                     gr->ra[m].atomnumber,q,
-                    gmx2convert(gr->x[m][XX],eg2c_Bohr),
-                    gmx2convert(gr->x[m][YY],eg2c_Bohr),
-                    gmx2convert(gr->x[m][ZZ],eg2c_Bohr));
+                    gmx2convert(gr->x[m][XX],eg2cBohr),
+                    gmx2convert(gr->x[m][YY],eg2cBohr),
+                    gmx2convert(gr->x[m][ZZ],eg2cBohr));
         }
         
         for (ix=m=0;ix<gr->nxyz[XX];ix++) 
@@ -516,13 +516,13 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,const char *cube_fn
                         pp = gr->pot_calc[m] - grref->pot[m];
                         if (NULL != ppcorr)
                             gmx_stats_add_point(ppcorr,
-                                                gmx2convert(grref->pot[m],eg2c_Hartree_e),
-                                                gmx2convert(gr->pot_calc[m],eg2c_Hartree_e),0,0);
+                                                gmx2convert(grref->pot[m],eg2cHartree_e),
+                                                gmx2convert(gr->pot_calc[m],eg2cHartree_e),0,0);
                     }
                     else
                     {
                         if (rho == 0)
-                            pp = gmx2convert(gr->pot_calc[m],eg2c_Hartree_e);
+                            pp = gmx2convert(gr->pot_calc[m],eg2cHartree_e);
                         else
                             pp = gr->rho[m]*pow(BOHR2NM,3);
                     }
@@ -629,8 +629,8 @@ void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly)
         }
         for(m=0; (m<DIM); m++) 
         {
-            gr->origin[m] = convert2gmx(gr->origin[m],eg2c_Bohr);
-            gr->space[m]  = convert2gmx(gr->space[m],eg2c_Bohr);
+            gr->origin[m] = convert2gmx(gr->origin[m],eg2cBohr);
+            gr->space[m]  = convert2gmx(gr->space[m],eg2cBohr);
         }
     }
     if (bOK && ((line+gr->natom) < nlines))
@@ -648,9 +648,9 @@ void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly)
                     if (gr->ra[m].nZeta > 0)
                         gr->ra[m].q[gr->ra[m].nZeta-1] = qq;
                 }
-                gr->x[m][XX] = convert2gmx(lx,eg2c_Bohr);
-                gr->x[m][YY] = convert2gmx(ly,eg2c_Bohr);
-                gr->x[m][ZZ] = convert2gmx(lz,eg2c_Bohr);
+                gr->x[m][XX] = convert2gmx(lx,eg2cBohr);
+                gr->x[m][YY] = convert2gmx(ly,eg2cBohr);
+                gr->x[m][ZZ] = convert2gmx(lz,eg2cBohr);
             }
         }
     }
@@ -670,7 +670,7 @@ void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly)
                     gr->esp[m][ZZ] = gr->origin[ZZ] + iz*gr->space[ZZ];
                     bOK = (1 == sscanf(strings[line],forms[iz % 6],&pp));
                     if (bOK)
-                        gr->pot[m] = convert2gmx(pp,eg2c_Hartree_e);
+                        gr->pot[m] = convert2gmx(pp,eg2cHartree_e);
                     if (iz % 6 == 5)
                         line++;
                 }
@@ -876,18 +876,18 @@ void gmx_resp_read(gmx_resp_t gr,const char *fn)
     for(i=0; (i<gr->natom); i++) 
     {
         (void) fscanf(fp,"%lf%lf%lf",&x,&y,&z);
-        gr->x[i][XX] = convert2gmx(x,eg2c_Angstrom);
-        gr->x[i][YY] = convert2gmx(y,eg2c_Angstrom);
-        gr->x[i][ZZ] = convert2gmx(z,eg2c_Angstrom);
+        gr->x[i][XX] = convert2gmx(x,eg2cAngstrom);
+        gr->x[i][YY] = convert2gmx(y,eg2cAngstrom);
+        gr->x[i][ZZ] = convert2gmx(z,eg2cAngstrom);
     }
 
     for(i=0; (i<gr->nesp); i++) 
     {
         (void) fscanf(fp,"%lf%lf%lf%lf",&V,&x,&y,&z);
-        gr->pot[i] = convert2gmx(V,eg2c_Hartree_e);
-        gr->esp[i][XX] = convert2gmx(x,eg2c_Angstrom);
-        gr->esp[i][YY] = convert2gmx(y,eg2c_Angstrom);
-        gr->esp[i][ZZ] = convert2gmx(z,eg2c_Angstrom);
+        gr->pot[i] = convert2gmx(V,eg2cHartree_e);
+        gr->esp[i][XX] = convert2gmx(x,eg2cAngstrom);
+        gr->esp[i][YY] = convert2gmx(y,eg2cAngstrom);
+        gr->esp[i][ZZ] = convert2gmx(z,eg2cAngstrom);
     }
   
     ffclose(fp);
@@ -982,9 +982,9 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
                                 anumber,-1,gmx_atomprop_element(aps,anumber),pd,
                                 gr->iModel,gr->dzatoms);
                 }
-                gr->x[k-1][XX] = convert2gmx(x,eg2c_Angstrom);
-                gr->x[k-1][YY] = convert2gmx(y,eg2c_Angstrom);
-                gr->x[k-1][ZZ] = convert2gmx(z,eg2c_Angstrom);
+                gr->x[k-1][XX] = convert2gmx(x,eg2cAngstrom);
+                gr->x[k-1][YY] = convert2gmx(y,eg2cAngstrom);
+                gr->x[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
                 if (NULL != debug)
                     fprintf(debug,"Coordinates for atom %d found on line %d %8.3f  %8.3f  %8.3f\n",k,i,x,y,z);
             }
@@ -1010,9 +1010,9 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
                         natom++;
                         srenew(gr->x,natom);
                     }
-                    gr->x[k-1][XX] = convert2gmx(x,eg2c_Angstrom);
-                    gr->x[k-1][YY] = convert2gmx(y,eg2c_Angstrom);
-                    gr->x[k-1][ZZ] = convert2gmx(z,eg2c_Angstrom);
+                    gr->x[k-1][XX] = convert2gmx(x,eg2cAngstrom);
+                    gr->x[k-1][YY] = convert2gmx(y,eg2cAngstrom);
+                    gr->x[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
                     if (NULL != debug)
                         fprintf(debug,"Coordinates for atom %d found on line %d %8.3f  %8.3f  %8.3f\n",k,i,x,y,z);
                 }
@@ -1021,9 +1021,9 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
                     nesp++;
                     srenew(gr->esp,nesp);
                 }
-                gr->esp[k-1][XX] = convert2gmx(x,eg2c_Angstrom);
-                gr->esp[k-1][YY] = convert2gmx(y,eg2c_Angstrom);
-                gr->esp[k-1][ZZ] = convert2gmx(z,eg2c_Angstrom);
+                gr->esp[k-1][XX] = convert2gmx(x,eg2cAngstrom);
+                gr->esp[k-1][YY] = convert2gmx(y,eg2cAngstrom);
+                gr->esp[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
                 if (NULL != debug)
                     fprintf(debug,"Coordinates for fit %d found on line %d\n",k,i);
             }
@@ -1047,7 +1047,7 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
             if (k-1 >= nesp)
                 fprintf(stderr,"More potential points (%d) than fit centers (%d). Check line %d of file %s\n",
                         k,nesp,i+1,fn);
-            gr->pot[k-1] = convert2gmx(V,eg2c_Hartree_e);
+            gr->pot[k-1] = convert2gmx(V,eg2cHartree_e);
             if (NULL != debug)
                 fprintf(debug,"Potential %d found on line %d\n",k,i);
         }
@@ -1371,8 +1371,8 @@ void gmx_resp_pot_lsq(gmx_resp_t gr,gmx_stats_t lsq)
         if (w > 0)
         {
             gmx_stats_add_point(lsq,
-                                gmx2convert(gr->pot[i],eg2c_Hartree_e),
-                                gmx2convert(gr->pot_calc[i],eg2c_Hartree_e),0,0);
+                                gmx2convert(gr->pot[i],eg2cHartree_e),
+                                gmx2convert(gr->pot_calc[i],eg2cHartree_e),0,0);
         }
     }    
 }
@@ -1405,8 +1405,8 @@ void gmx_resp_calc_rms(gmx_resp_t gr)
     gr->wtot = wtot;
     if (wtot > 0)
     {
-        gr->rms = gmx2convert(sqrt(sum2/wtot),eg2c_Hartree_e);
-        gr->entropy = gmx2convert(entropy/wtot,eg2c_Hartree_e);
+        gr->rms = gmx2convert(sqrt(sum2/wtot),eg2cHartree_e);
+        gr->entropy = gmx2convert(entropy/wtot,eg2cHartree_e);
     }
     else
     {
@@ -1532,7 +1532,7 @@ void gmx_resp_potcomp(gmx_resp_t gr,const char *potcomp,
     int    i;
     double pp,exp,eem;
     FILE   *fp;
-    int    unit = eg2c_Hartree_e;
+    int    unit = eg2cHartree_e;
     
     if (NULL != potcomp) 
     {
@@ -1552,8 +1552,8 @@ void gmx_resp_potcomp(gmx_resp_t gr,const char *potcomp,
         fprintf(fp,"REMARK All distances are scaled by a factor of two.\n");
         for(i=0; (i<gr->nesp); i++)
         {
-            exp = gmx2convert(gr->pot[i],eg2c_Hartree_e);
-            eem = gmx2convert(gr->pot_calc[i],eg2c_Hartree_e);
+            exp = gmx2convert(gr->pot[i],eg2cHartree_e);
+            eem = gmx2convert(gr->pot_calc[i],eg2cHartree_e);
             pp  = gr->pot[i]-gr->pot_calc[i];
             fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f\n",
                     "ATOM",1,"HE","HE",' ',i+1,' ',20*gr->esp[i][XX],

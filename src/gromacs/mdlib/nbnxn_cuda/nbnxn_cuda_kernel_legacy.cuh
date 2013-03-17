@@ -33,6 +33,12 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+#include "maths.h"
+/* Note that floating-point constants in CUDA code should be suffixed
+ * with f (e.g. 0.5f), to stop the compiler producing intermediate
+ * code that is in double precision.
+ */
+
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
@@ -167,7 +173,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #ifdef EL_RF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
-        E_el *= -nbparam.epsfac*beta*0.56418958f; /* last factor 1/sqrt(pi) */
+        E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
     }
 #endif
@@ -200,9 +206,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #if CUDA_VERSION >= 4010
             #pragma unroll 4
 #endif
-            for (jm = 0; jm < 4; jm++)
+            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
-                imask_j = (imask >> (jm * 8)) & 255U;
+                imask_j = (imask >> (jm * CL_SIZE)) & supercl_interaction_mask;
                 if (imask_j)
                 {
                     nsubi = __popc(imask_j);

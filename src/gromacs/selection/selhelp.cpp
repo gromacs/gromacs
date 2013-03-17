@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements functions in selhelp.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <string>
@@ -56,13 +60,13 @@ namespace
 
 struct CommonHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char CommonHelpText::name[] = "selections";
-const char CommonHelpText::title[] =
+const char        CommonHelpText::name[]  = "selections";
+const char        CommonHelpText::title[] =
     "Selection syntax and usage";
 const char *const CommonHelpText::text[] = {
     "Selections are used to select atoms/molecules/residues for analysis.",
@@ -89,13 +93,13 @@ const char *const CommonHelpText::text[] = {
 
 struct ArithmeticHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char ArithmeticHelpText::name[] = "arithmetic";
-const char ArithmeticHelpText::title[] =
+const char        ArithmeticHelpText::name[]  = "arithmetic";
+const char        ArithmeticHelpText::title[] =
     "Arithmetic expressions in selections";
 const char *const ArithmeticHelpText::text[] = {
     "Basic arithmetic evaluation is supported for numeric expressions.",
@@ -106,13 +110,13 @@ const char *const ArithmeticHelpText::text[] = {
 
 struct CmdLineHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char CmdLineHelpText::name[] = "cmdline";
-const char CmdLineHelpText::title[] =
+const char        CmdLineHelpText::name[]  = "cmdline";
+const char        CmdLineHelpText::title[] =
     "Specifying selections from command line";
 const char *const CmdLineHelpText::text[] = {
     "If no selections are provided on the command line, you are prompted to",
@@ -162,13 +166,13 @@ const char *const CmdLineHelpText::text[] = {
 
 struct EvaluationHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char EvaluationHelpText::name[] = "evaluation";
-const char EvaluationHelpText::title[] =
+const char        EvaluationHelpText::name[]  = "evaluation";
+const char        EvaluationHelpText::title[] =
     "Selection evaluation and optimization";
 const char *const EvaluationHelpText::text[] = {
     "Boolean evaluation proceeds from left to right and is short-circuiting",
@@ -201,13 +205,13 @@ const char *const EvaluationHelpText::text[] = {
 
 struct ExamplesHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char ExamplesHelpText::name[] = "examples";
-const char ExamplesHelpText::title[] =
+const char        ExamplesHelpText::name[]  = "examples";
+const char        ExamplesHelpText::title[] =
     "Selection examples";
 const char *const ExamplesHelpText::text[] = {
     // TODO: Once there are more tools available, use examples that invoke
@@ -245,13 +249,13 @@ const char *const ExamplesHelpText::text[] = {
 
 struct KeywordsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char KeywordsHelpText::name[] = "keywords";
-const char KeywordsHelpText::title[] =
+const char        KeywordsHelpText::name[]  = "keywords";
+const char        KeywordsHelpText::title[] =
     "Selection keywords";
 const char *const KeywordsHelpText::text[] = {
     "The following selection keywords are currently available.",
@@ -261,13 +265,13 @@ const char *const KeywordsHelpText::text[] = {
 
 struct LimitationsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char LimitationsHelpText::name[] = "limitations";
-const char LimitationsHelpText::title[] =
+const char        LimitationsHelpText::name[]  = "limitations";
+const char        LimitationsHelpText::title[] =
     "Selection limitations";
 const char *const LimitationsHelpText::text[] = {
     "Some analysis programs may require a special structure for the input",
@@ -294,13 +298,13 @@ const char *const LimitationsHelpText::text[] = {
 
 struct PositionsHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char PositionsHelpText::name[] = "positions";
-const char PositionsHelpText::title[] =
+const char        PositionsHelpText::name[]  = "positions";
+const char        PositionsHelpText::title[] =
     "Specifying positions in selections";
 const char *const PositionsHelpText::text[] = {
     "Possible ways of specifying positions in selections are:[PAR]",
@@ -347,13 +351,13 @@ const char *const PositionsHelpText::text[] = {
 
 struct SyntaxHelpText
 {
-    static const char name[];
-    static const char title[];
+    static const char        name[];
+    static const char        title[];
     static const char *const text[];
 };
 
-const char SyntaxHelpText::name[] = "syntax";
-const char SyntaxHelpText::title[] =
+const char        SyntaxHelpText::name[]  = "syntax";
+const char        SyntaxHelpText::title[] =
     "Selection syntax";
 const char *const SyntaxHelpText::text[] = {
     "A set of selections consists of one or more selections, separated by",
@@ -437,7 +441,7 @@ class KeywordDetailsHelpTopic : public AbstractSimpleHelpTopic
 {
     public:
         //! Initialize help topic for the given selection method.
-        KeywordDetailsHelpTopic(const std::string &name,
+        KeywordDetailsHelpTopic(const std::string         &name,
                                 const gmx_ana_selmethod_t &method)
             : name_(name), method_(method)
         {
@@ -489,7 +493,7 @@ class KeywordsHelpTopic : public CompositeHelpTopic<KeywordsHelpText>
          */
         typedef std::vector<std::pair<std::string,
                                       const gmx_ana_selmethod_t *> >
-                MethodList;
+            MethodList;
 
         /*! \brief
          * Prints a brief list of keywords (selection methods) available.
@@ -518,13 +522,13 @@ KeywordsHelpTopic::KeywordsHelpTopic()
         = symtab->beginIterator(SelectionParserSymbol::MethodSymbol);
     while (symbol != symtab->endIterator())
     {
-        const std::string &symname = symbol->name();
-        const gmx_ana_selmethod_t *method = symbol->methodValue();
+        const std::string         &symname = symbol->name();
+        const gmx_ana_selmethod_t *method  = symbol->methodValue();
         methods_.push_back(std::make_pair(std::string(symname), method));
         if (method->help.nlhelp > 0 && method->help.help != NULL)
         {
             addSubTopic(HelpTopicPointer(
-                        new KeywordDetailsHelpTopic(symname, *method)));
+                                new KeywordDetailsHelpTopic(symname, *method)));
         }
         ++symbol;
     }
@@ -535,7 +539,7 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
     if (context.outputFormat() != eHelpOutputFormat_Console)
     {
         GMX_THROW(NotImplementedError(
-                    "Selection help is not implemented for this output format"));
+                          "Selection help is not implemented for this output format"));
     }
     // TODO: The markup here is not really appropriate, and printKeywordList()
     // still prints raw text, but these are waiting for discussion of the
@@ -579,15 +583,15 @@ void KeywordsHelpTopic::writeHelp(const HelpWriterContext &context) const
 }
 
 void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
-                                         e_selvalue_t type,
-                                         bool bModifiers) const
+                                         e_selvalue_t             type,
+                                         bool                     bModifiers) const
 {
     File &file = context.outputFile();
     MethodList::const_iterator iter;
     for (iter = methods_.begin(); iter != methods_.end(); ++iter)
     {
         const gmx_ana_selmethod_t &method = *iter->second;
-        bool bIsModifier = (method.flags & SMETH_MODIFIER) != 0;
+        bool bIsModifier                  = (method.flags & SMETH_MODIFIER) != 0;
         if (method.type == type && bModifiers == bIsModifier)
         {
             bool bHasHelp = (method.help.nlhelp > 0 && method.help.help != NULL);
@@ -609,7 +613,7 @@ void KeywordsHelpTopic::printKeywordList(const HelpWriterContext &context,
     }
 }
 
-} // namespace
+}   // namespace
 
 /*! \cond internal */
 HelpTopicPointer createSelectionHelpTopic()

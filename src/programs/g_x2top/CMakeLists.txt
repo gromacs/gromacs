@@ -1,6 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-file(GLOB X2TOP_SOURCES g_x2top.c nm2type.c)
+file(GLOB X2TOP_SOURCES g_x2top.c nm2type.c ../main.cpp)
 
 add_executable(g_x2top ${X2TOP_SOURCES})
 gmx_add_man_page(g_x2top)

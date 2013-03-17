@@ -35,14 +35,52 @@
 
 #include "nbnxn_kernel_common.h"
 
-void
-clear_f(const nbnxn_atomdata_t *nbat,real *f)
+static void
+clear_f_all(const nbnxn_atomdata_t *nbat, real *f)
 {
     int i;
 
-    for(i=0; i<nbat->natoms*nbat->fstride; i++)
+    for (i = 0; i < nbat->natoms*nbat->fstride; i++)
     {
         f[i] = 0;
+    }
+}
+
+static void
+clear_f_flagged(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+{
+    const nbnxn_buffer_flags_t *flags;
+    unsigned                    our_flag;
+    int g, b, a0, a1, i;
+
+    flags = &nbat->buffer_flags;
+
+    our_flag = (1U << output_index);
+
+    for (b = 0; b < flags->nflag; b++)
+    {
+        if (flags->flag[b] & our_flag)
+        {
+            a0 = b*NBNXN_BUFFERFLAG_SIZE;
+            a1 = a0 + NBNXN_BUFFERFLAG_SIZE;
+            for (i = a0*nbat->fstride; i < a1*nbat->fstride; i++)
+            {
+                f[i] = 0;
+            }
+        }
+    }
+}
+
+void
+clear_f(const nbnxn_atomdata_t *nbat, int output_index, real *f)
+{
+    if (nbat->bUseBufferFlags)
+    {
+        clear_f_flagged(nbat, output_index, f);
+    }
+    else
+    {
+        clear_f_all(nbat, f);
     }
 }
 
@@ -51,7 +89,7 @@ clear_fshift(real *fshift)
 {
     int i;
 
-    for(i=0; i<SHIFTS*DIM; i++)
+    for (i = 0; i < SHIFTS*DIM; i++)
     {
         fshift[i] = 0;
     }
@@ -59,28 +97,28 @@ clear_fshift(real *fshift)
 
 void
 reduce_energies_over_lists(const nbnxn_atomdata_t     *nbat,
-                           int                        nlist,
+                           int                         nlist,
                            real                       *Vvdw,
                            real                       *Vc)
 {
     int nb;
-    int i,j,ind,indr;
+    int i, j, ind, indr;
 
-    for(nb=0; nb<nlist; nb++)
+    for (nb = 0; nb < nlist; nb++)
     {
-        for(i=0; i<nbat->nenergrp; i++)
+        for (i = 0; i < nbat->nenergrp; i++)
         {
             /* Reduce the diagonal terms */
-            ind = i*nbat->nenergrp + i;
+            ind        = i*nbat->nenergrp + i;
             Vvdw[ind] += nbat->out[nb].Vvdw[ind];
             Vc[ind]   += nbat->out[nb].Vc[ind];
 
             /* Reduce the off-diagonal terms */
-            for(j=i+1; j<nbat->nenergrp; j++)
+            for (j = i+1; j < nbat->nenergrp; j++)
             {
                 /* The output should contain only one off-diagonal part */
-                ind  = i*nbat->nenergrp + j;
-                indr = j*nbat->nenergrp + i;
+                ind        = i*nbat->nenergrp + j;
+                indr       = j*nbat->nenergrp + i;
                 Vvdw[ind] += nbat->out[nb].Vvdw[ind] + nbat->out[nb].Vvdw[indr];
                 Vc[ind]   += nbat->out[nb].Vc[ind]   + nbat->out[nb].Vc[indr];
             }

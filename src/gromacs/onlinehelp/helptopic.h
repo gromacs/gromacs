@@ -1,39 +1,43 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \libinternal \file
  * \brief
  * Declares helper classes and functions for implementing
  * gmx::HelpTopicInterface.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_onlinehelp
  */
@@ -64,9 +68,9 @@ namespace gmx
  *
  * \inlibraryapi
  */
-void writeBasicHelpTopic(const HelpWriterContext &context,
+void writeBasicHelpTopic(const HelpWriterContext  &context,
                          const HelpTopicInterface &topic,
-                         const std::string &text);
+                         const std::string        &text);
 //! \endcond
 
 /*! \libinternal \brief
@@ -85,7 +89,7 @@ void writeBasicHelpTopic(const HelpWriterContext &context,
 class AbstractSimpleHelpTopic : public HelpTopicInterface
 {
     public:
-        virtual const char *name() const = 0;
+        virtual const char *name() const  = 0;
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
@@ -125,7 +129,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
         AbstractCompositeHelpTopic();
         virtual ~AbstractCompositeHelpTopic();
 
-        virtual const char *name() const = 0;
+        virtual const char *name() const  = 0;
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
@@ -187,7 +191,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
          * implementation.
          */
         bool writeSubTopicList(const HelpWriterContext &context,
-                               const std::string &title) const;
+                               const std::string       &title) const;
 
     private:
         class Impl;
@@ -202,7 +206,7 @@ class AbstractCompositeHelpTopic : public HelpTopicInterface
  * \inlibraryapi
  */
 typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
-        CompositeHelpTopicPointer;
+    CompositeHelpTopicPointer;
 //! \endcond
 
 /*! \libinternal \brief
@@ -215,22 +219,22 @@ typedef gmx_unique_ptr<AbstractCompositeHelpTopic>::type
  *
  * Typical use:
  * \code
-struct ExampleHelpText
-{
-    static const char name[];
-    static const char title[];
-    static const char *const text[];
-};
+   struct ExampleHelpText
+   {
+       static const char name[];
+       static const char title[];
+       static const char *const text[];
+   };
 
-const char ExampleHelpText::name[] = "example";
-const char ExampleHelpText::title[] =
-    "Example title";
-const char *const ExampleHelpText::text[] = {
-    "Text for the topic.",
-    "More text for the topic."
-};
+   const char ExampleHelpText::name[] = "example";
+   const char ExampleHelpText::title[] =
+       "Example title";
+   const char *const ExampleHelpText::text[] = {
+       "Text for the topic.",
+       "More text for the topic."
+   };
 
-typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
+   typedef SimpleHelpTopic<ExampleHelpText> ExampleHelpTopic;
  * \endcode
  *
  * \inlibraryapi

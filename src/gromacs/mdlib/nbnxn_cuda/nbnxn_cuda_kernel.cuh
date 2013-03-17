@@ -33,6 +33,12 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
+#include "maths.h"
+/* Note that floating-point constants in CUDA code should be suffixed
+ * with f (e.g. 0.5f), to stop the compiler producing intermediate
+ * code that is in double precision.
+ */
+
 #if __CUDA_ARCH__ >= 300
 #define REDUCE_SHUFFLE
 /* On Kepler pre-loading i-atom types to shmem gives a few %,
@@ -133,9 +139,11 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
     /* shmem buffer for i x+q pre-loading */
     extern __shared__  float4 xqib[];
+    /* shmem buffer for cj, for both warps separately */
+    int *cjs     = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
 #ifdef IATYPE_SHMEM
     /* shmem buffer for i atom-type pre-loading */
-    int *atib = (int *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    int *atib = (int *)(cjs + 2 * NBNXN_GPU_JGROUP_SIZE);
 #endif
 
 #ifndef REDUCE_SHUFFLE
@@ -143,7 +151,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef IATYPE_SHMEM
     float *f_buf = (float *)(atib + NCL_PER_SUPERCL * CL_SIZE);
 #else
-    float *f_buf = (float *)(xqib + NCL_PER_SUPERCL * CL_SIZE);
+    float *f_buf = (float *)(cjs + 2 * NBNXN_GPU_JGROUP_SIZE);
 #endif
 #endif
 
@@ -188,7 +196,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_RF
         E_el *= -nbparam.epsfac*0.5f*c_rf;
 #else
-        E_el *= -nbparam.epsfac*beta*0.56418958f; /* last factor 1/sqrt(pi) */
+        E_el *= -nbparam.epsfac*beta*M_FLOAT_1_SQRTPI; /* last factor 1/sqrt(pi) */
 #endif
     }
 #endif
@@ -213,6 +221,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
         if (imask)
 #endif
         {
+            /* Pre-load cj into shared memory on both warps separately */
+            if ((tidxj == 0 || tidxj == 4) && tidxi < NBNXN_GPU_JGROUP_SIZE)
+            {
+                cjs[tidxi + tidxj * NBNXN_GPU_JGROUP_SIZE / 4] = pl_cj4[j4].cj[tidxi];
+            }
+
             /* Unrolling this loop
                - with pruning leads to register spilling;
                - on Kepler is much slower;
@@ -221,13 +235,13 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #if !defined PRUNE_NBL && __CUDA_ARCH__ < 300 && CUDA_VERSION >= 4010
 #pragma unroll 4
 #endif
-            for (jm = 0; jm < 4; jm++)
+            for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
-                if (imask & (255U << (jm * NCL_PER_SUPERCL)))
+                if (imask & (supercl_interaction_mask << (jm * NCL_PER_SUPERCL)))
                 {
                     mask_ji = (1U << (jm * NCL_PER_SUPERCL));
 
-                    cj      = pl_cj4[j4].cj[jm];
+                    cj      = cjs[jm + (tidxj & 4) * NBNXN_GPU_JGROUP_SIZE / 4];
                     aj      = cj * CL_SIZE + tidxj;
 
                     /* load j atom data */

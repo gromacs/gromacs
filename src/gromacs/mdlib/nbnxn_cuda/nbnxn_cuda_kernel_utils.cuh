@@ -32,6 +32,12 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+
+/* Note that floating-point constants in CUDA code should be suffixed
+ * with f (e.g. 0.5f), to stop the compiler producing intermediate
+ * code that is in double precision.
+ */
+
 #include "../../gmxlib/cuda_tools/vectype_ops.cuh"
 
 #ifndef NBNXN_CUDA_KERNEL_UTILS_CUH
@@ -41,6 +47,9 @@
 #define CL_SIZE_POW2_EXPONENT       (3)  /* change this together with GPU_NS_CLUSTER_SIZE !*/
 #define CL_SIZE_SQ                  (CL_SIZE * CL_SIZE)
 #define FBUF_STRIDE                 (CL_SIZE_SQ)
+
+/*! i-cluster interaction mask for a super-cluster with all NCL_PER_SUPERCL bits set */
+const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
  *  Original idea: OpenMM

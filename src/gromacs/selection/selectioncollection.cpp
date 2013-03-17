@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::SelectionCollection.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "selectioncollection.h"
@@ -135,7 +139,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
     {
         return false;
     }
-    while(endsWith(*line, "\\\n"))
+    while (endsWith(*line, "\\\n"))
     {
         line->resize(line->length() - 2);
         if (bInteractive)
@@ -173,12 +177,12 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
 int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
                   bool bInteractive)
 {
-    int status = YYPUSH_MORE;
+    int status    = YYPUSH_MORE;
     int prevToken = 0;
     do
     {
         YYSTYPE value;
-        int token = _gmx_sel_yylex(&value, scanner);
+        int     token = _gmx_sel_yylex(&value, scanner);
         if (bInteractive)
         {
             if (token == 0)
@@ -219,23 +223,23 @@ int runParserLoop(yyscan_t scanner, _gmx_sel_yypstate *parserState,
  */
 SelectionList runParser(yyscan_t scanner, bool bStdIn, int maxnr)
 {
-    boost::shared_ptr<void> scannerGuard(scanner, &_gmx_sel_free_lexer);
+    boost::shared_ptr<void>  scannerGuard(scanner, &_gmx_sel_free_lexer);
     gmx_ana_selcollection_t *sc = _gmx_sel_lexer_selcollection(scanner);
 
-    MessageStringCollector errors;
+    MessageStringCollector   errors;
     _gmx_sel_set_lexer_error_reporter(scanner, &errors);
 
-    int oldCount = sc->sel.size();
-    bool bOk = false;
+    int  oldCount = sc->sel.size();
+    bool bOk      = false;
     {
         boost::shared_ptr<_gmx_sel_yypstate> parserState(
                 _gmx_sel_yypstate_new(), &_gmx_sel_yypstate_delete);
         if (bStdIn)
         {
-            File &stdinFile(File::standardInput());
-            bool bInteractive = _gmx_sel_is_lexer_interactive(scanner);
+            File       &stdinFile(File::standardInput());
+            bool        bInteractive = _gmx_sel_is_lexer_interactive(scanner);
             std::string line;
-            int status;
+            int         status;
             while (promptLine(&stdinFile, bInteractive, &line))
             {
                 line.append("\n");
@@ -280,7 +284,7 @@ early_termination:
         GMX_THROW(InvalidInputError(errors.toString()));
     }
 
-    SelectionList result;
+    SelectionList                     result;
     SelectionDataList::const_iterator i;
     result.reserve(nr);
     for (i = sc->sel.begin() + oldCount; i != sc->sel.end(); ++i)
@@ -290,12 +294,12 @@ early_termination:
     return result;
 }
 
-} // namespace
+}   // namespace
 
 
 void SelectionCollection::Impl::resolveExternalGroups(
         const SelectionTreeElementPointer &root,
-        MessageStringCollector *errors)
+        MessageStringCollector            *errors)
 {
 
     if (root->type == SEL_GROUPREF)
@@ -365,23 +369,25 @@ SelectionCollection::~SelectionCollection()
 void
 SelectionCollection::initOptions(Options *options)
 {
-    static const char * const debug_levels[]
-        = {"no", "basic", "compile", "eval", "full", NULL};
+    const char * const debug_levels[]
+        = {"no", "basic", "compile", "eval", "full" };
     /*
-    static const char * const desc[] = {
+       static const char * const desc[] = {
         "This program supports selections in addition to traditional",
         "index files. Use [TT]-select help[tt] for additional information,",
         "or type 'help' in the selection prompt.",
         NULL,
-    };
-    options.setDescription(desc);
-    */
+       };
+       options.setDescription(desc);
+     */
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
-    options->addOption(StringOption("selrpos").enumValue(postypes)
+    options->addOption(StringOption("selrpos")
+                           .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->rpost_).defaultValue(postypes[0])
                            .description("Selection reference positions"));
-    options->addOption(StringOption("seltype").enumValue(postypes)
+    options->addOption(StringOption("seltype")
+                           .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->spost_).defaultValue(postypes[0])
                            .description("Default selection output positions"));
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
@@ -429,7 +435,7 @@ void
 SelectionCollection::setTopology(t_topology *top, int natoms)
 {
     GMX_RELEASE_ASSERT(natoms > 0 || top != NULL,
-        "The number of atoms must be given if there is no topology");
+                       "The number of atoms must be given if there is no topology");
     // Get the number of atoms from the topology if it is not given.
     if (natoms <= 0)
     {
@@ -448,10 +454,10 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
 {
     GMX_RELEASE_ASSERT(grps == NULL || !impl_->bExternalGroupsSet_,
                        "Can only set external groups once or clear them afterwards");
-    impl_->grps_ = grps;
+    impl_->grps_               = grps;
     impl_->bExternalGroupsSet_ = true;
 
-    MessageStringCollector errors;
+    MessageStringCollector      errors;
     SelectionTreeElementPointer root = impl_->sc_.root;
     while (root)
     {
@@ -526,7 +532,7 @@ SelectionCollection::parseFromFile(const std::string &filename)
     try
     {
         yyscan_t scanner;
-        File file(filename, "r");
+        File     file(filename, "r");
         // TODO: Exception-safe way of using the lexer.
         _gmx_sel_init_lexer(&scanner, &impl_->sc_, false, -1,
                             impl_->bExternalGroupsSet_,
@@ -537,8 +543,8 @@ SelectionCollection::parseFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in parsing selections from file '%s'",
-                    filename.c_str()));
+                                  "Error in parsing selections from file '%s'",
+                                  filename.c_str()));
         throw;
     }
 }

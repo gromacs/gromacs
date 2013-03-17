@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief
  * Declares common exception classes for fatal error handling.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_utility
  */
@@ -60,7 +64,7 @@ namespace internal
 {
 //! Internal container type for storing a list of nested exceptions.
 typedef std::vector<boost::exception_ptr> NestedExceptionList;
-} // namespace internal
+}   // namespace internal
 
 /*! \addtopublicapi
  * \{
@@ -339,10 +343,10 @@ class NotImplementedError : public APIError
  *
  * Basic usage:
  * \code
-if (value < 0)
-{
-    GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
-}
+   if (value < 0)
+   {
+       GMX_THROW(InconsistentUserInput("Negative values not allowed for value"));
+   }
  * \endcode
  */
 #define GMX_THROW(e) \
@@ -365,45 +369,60 @@ if (value < 0)
  *
  * Typical usage (note that gmx::File wraps this particular case):
  * \code
-FILE *fp = fopen("filename.txt", "r");
-if (fp == NULL)
-{
-    GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
-}
+   FILE *fp = fopen("filename.txt", "r");
+   if (fp == NULL)
+   {
+       GMX_THROW(FileIOError("Could not open file"), "fopen", errno);
+   }
  * \endcode
  */
 #define GMX_THROW_WITH_ERRNO(e, syscall, err) \
     do { \
         int stored_errno_ = (err); \
         GMX_THROW((e) << boost::errinfo_errno(stored_errno_) \
-                      << boost::errinfo_api_function(syscall)); \
-    } while(0)
+                  << boost::errinfo_api_function(syscall)); \
+    } while (0)
 
 /*! \brief
  * Formats a standard fatal error message for reporting an exception.
+ *
+ * \param[in] fp  File to format the message to.
+ * \param[in] ex  Exception to format.
  *
  * Does not throw.  If memory allocation fails or some other error occurs
  * while formatting the error, tries to print a reasonable alternative message.
  *
  * Normal usage in Gromacs command-line programs is like this:
  * \code
-int main(int argc, char *argv[])
-{
-    gmx::ProgramInfo::init(argc, argv);
-    try
-    {
-        // The actual code for the program
-        return 0;
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
-}
+   int main(int argc, char *argv[])
+   {
+       gmx::ProgramInfo::init(argc, argv);
+       try
+       {
+           // The actual code for the program
+           return 0;
+       }
+       catch (const std::exception &ex)
+       {
+           gmx::printFatalErrorMessage(stderr, ex);
+           return 1;
+       }
+   }
  * \endcode
  */
 void printFatalErrorMessage(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Formats an error message for reporting an exception.
+ *
+ * \param[in] ex  Exception to format.
+ * \returns   Formatted string containing details of \p ex.
+ * \throws    std::bad_alloc if out of memory.
+ *
+ * Currently, the output format is useful mainly for tests and debugging
+ * purposes; additional flags for controlling the format can be added if other
+ * uses for the function arise.
+ */
+std::string formatException(const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.
@@ -428,11 +447,11 @@ int translateException(const std::exception &ex);
  *
  * Usage:
  * \code
-try
-{
-    // C++ code
-}
-GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+   try
+   {
+       // C++ code
+   }
+   GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
  * \endcode
  *
  * \inlibraryapi

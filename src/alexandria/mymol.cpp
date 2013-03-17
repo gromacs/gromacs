@@ -296,6 +296,7 @@ int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     char     *elem_i,*elem_j;
     char     *length_unit;
     t_nextnb nnb;
+    t_restp rtp;
 
     for(i=0; (i<MAXATOMLIST); i++)
         b.a[i] = -1;
@@ -356,7 +357,11 @@ int mk_bonds(gmx_poldata_t pd,t_atoms *atoms,rvec x[],
     detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
-    gen_pad(&nnb,atoms,TRUE,TRUE,TRUE,nexcl,plist,*excls,NULL,FALSE);
+    rtp.bKeepAllGeneratedDihedrals = TRUE;
+    rtp.bRemoveDihedralIfWithImproper = TRUE;
+    rtp.bGenerateHH14Interactions = TRUE;
+    rtp.nrexcl = nexcl;
+    gen_pad(&nnb,atoms,&rtp,plist,*excls,NULL,FALSE);
     generate_excls(&nnb,nexcl,*excls);
     done_nnb(&nnb);
     
@@ -843,7 +848,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
                                   (char *)"exp",(char *)"H(0K)-H(298.15K)",
                                   298.15,&dv298))
                 {
-                    mymol->Emol -= convert2gmx(dv0+dv298,eg2c_Hartree);
+                    mymol->Emol -= convert2gmx(dv0+dv298,eg2cHartree);
                 }
                 else {
                     mymol->Emol = 0;
@@ -915,9 +920,9 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
                     xu = string2unit(epi->GetXYZunit().c_str());
                     vu = string2unit(epi->GetVunit().c_str());
                     if (-1 == xu)
-                        xu = eg2c_Angstrom;
+                        xu = eg2cAngstrom;
                     if (-1 == vu)
-                        vu = eg2c_Hartree_e;
+                        vu = eg2cHartree_e;
                     gmx_resp_add_point(mymol->gr,
                                        convert2gmx(epi->GetX(),xu),
                                        convert2gmx(epi->GetY(),xu),

@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::CommandLineHelpWriter.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 #include "cmdlinehelpwriter.h"
@@ -76,16 +80,16 @@ class OptionsFormatterInterface
 
         //! Formats the description text block for a section.
         virtual void formatDescription(const HelpWriterContext &context,
-                                       const Options &section) = 0;
+                                       const Options           &section) = 0;
         //! Formats a single file option.
-        virtual void formatFileOption(const HelpWriterContext &context,
+        virtual void formatFileOption(const HelpWriterContext  &context,
                                       const FileNameOptionInfo &option) = 0;
         //! Formats a single non-file, non-selection option.
         virtual void formatOption(const HelpWriterContext &context,
-                                  const OptionInfo &option) = 0;
+                                  const OptionInfo        &option) = 0;
         //! Formats a single selection option.
         virtual void formatSelectionOption(const HelpWriterContext &context,
-                                           const OptionInfo &option) = 0;
+                                           const OptionInfo        &option) = 0;
 };
 
 /********************************************************************
@@ -123,7 +127,7 @@ class OptionsFilter : public OptionsVisitor
          *
          * Does not throw.
          */
-        OptionsFilter(const HelpWriterContext &context,
+        OptionsFilter(const HelpWriterContext   &context,
                       OptionsFormatterInterface *formatter)
             : context_(context), formatter_(*formatter),
               filterType_(eSelectOtherOptions), bShowHidden_(false),
@@ -244,19 +248,19 @@ class OptionsConsoleFormatter : public OptionsFormatterInterface
         explicit OptionsConsoleFormatter(const CommonFormatterData &common);
 
         virtual void formatDescription(const HelpWriterContext &context,
-                                       const Options &section);
-        virtual void formatFileOption(const HelpWriterContext &context,
+                                       const Options           &section);
+        virtual void formatFileOption(const HelpWriterContext  &context,
                                       const FileNameOptionInfo &option);
         virtual void formatOption(const HelpWriterContext &context,
-                                  const OptionInfo &option);
+                                  const OptionInfo        &option);
         virtual void formatSelectionOption(const HelpWriterContext &context,
-                                           const OptionInfo &option);
+                                           const OptionInfo        &option);
 
     private:
         const CommonFormatterData &common_;
-        TextTableFormatter       fileOptionFormatter_;
-        TextTableFormatter       genericOptionFormatter_;
-        TextTableFormatter       selectionOptionFormatter_;
+        TextTableFormatter         fileOptionFormatter_;
+        TextTableFormatter         genericOptionFormatter_;
+        TextTableFormatter         selectionOptionFormatter_;
 };
 
 OptionsConsoleFormatter::OptionsConsoleFormatter(const CommonFormatterData &common)
@@ -281,7 +285,7 @@ void OptionsConsoleFormatter::formatDescription(
 {
     if (!section.description().empty())
     {
-        File &file = context.outputFile();
+        File              &file  = context.outputFile();
         const std::string &title = section.title();
         if (!title.empty())
         {
@@ -295,9 +299,9 @@ void OptionsConsoleFormatter::formatDescription(
 void OptionsConsoleFormatter::formatFileOption(
         const HelpWriterContext &context, const FileNameOptionInfo &option)
 {
-    int firstShortValue = 0; // The first value after which the type fits.
-    int firstLongValue = -1; // First value that overlaps description column.
-    int lastLongValue = -1;  // Last value like the above.
+    int firstShortValue = 0;  // The first value after which the type fits.
+    int firstLongValue  = -1; // First value that overlaps description column.
+    int lastLongValue   = -1; // Last value like the above.
 
     // Get the values to write and check where text overflows the columns.
     fileOptionFormatter_.clear();
@@ -386,15 +390,16 @@ void OptionsConsoleFormatter::formatOption(
         const HelpWriterContext &context, const OptionInfo &option)
 {
     genericOptionFormatter_.clear();
-    bool bIsBool = option.isType<BooleanOptionInfo>();
+    bool        bIsBool = option.isType<BooleanOptionInfo>();
     std::string name(formatString("-%s%s", bIsBool ? "[no]" : "",
-                                           option.name().c_str()));
+                                  option.name().c_str()));
     genericOptionFormatter_.addColumnLine(0, name);
     genericOptionFormatter_.addColumnLine(1, option.type());
     if (name.length() > 12U)
     {
         genericOptionFormatter_.setColumnFirstLineOffset(1, 1);
     }
+
     // TODO: Better handling of multiple long values
     std::string values;
     for (int i = 0; i < option.valueCount(); ++i)
@@ -406,11 +411,28 @@ void OptionsConsoleFormatter::formatOption(
         values.append(option.formatValue(i));
     }
     genericOptionFormatter_.addColumnLine(2, values);
-    std::string description(context.substituteMarkup(option.description()));
+
+    std::string             description(context.substituteMarkup(option.description()));
     const DoubleOptionInfo *doubleOption = option.toType<DoubleOptionInfo>();
     if (doubleOption != NULL && doubleOption->isTime())
     {
         description = replaceAll(description, "%t", common_.timeUnit);
+    }
+    const StringOptionInfo *stringOption = option.toType<StringOptionInfo>();
+    if (stringOption != NULL && stringOption->isEnumerated())
+    {
+        const std::vector<std::string> &allowedValues
+            = stringOption->allowedValues();
+        description.append(": ");
+        for (size_t i = 0; i < allowedValues.size(); ++i)
+        {
+            if (i > 0)
+            {
+                description.append(i + 1 < allowedValues.size()
+                                   ? ", " : ", or ");
+            }
+            description.append(allowedValues[i]);
+        }
     }
     genericOptionFormatter_.addColumnLine(3, description);
     if (values.length() > 6U)
@@ -446,7 +468,7 @@ void OptionsConsoleFormatter::formatSelectionOption(
     }
 }
 
-} // namespace
+}   // namespace
 
 /********************************************************************
  * CommandLineHelpWriter::Impl
@@ -523,7 +545,7 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
             // TODO: Implement once the situation with Redmine issue #969 is
             // more clear.
             GMX_THROW(NotImplementedError(
-                        "Command-line help is not implemented for this output format"));
+                              "Command-line help is not implemented for this output format"));
     }
     OptionsFilter filter(context, formatter.get());
     filter.setShowHidden(impl_->bShowHidden_);

@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Selection compilation and optimization.
@@ -41,7 +45,7 @@
  * Use of memory pooling could still be extended, and a lot of redundant
  * gmin/gmax data could be eliminated for complex arithmetic expressions.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 /*! \internal
@@ -335,13 +339,13 @@ typedef struct t_compiler_data
     /** The real evaluation method. */
     gmx::sel_evalfunc evaluate;
     /** Number of references to a \ref SEL_SUBEXPR element. */
-    int              refcount;
+    int               refcount;
     /** Flags for specifying how to treat this element during compilation. */
-    int              flags;
+    int               flags;
     /** Smallest selection that can be selected by the subexpression. */
-    gmx_ana_index_t *gmin;
+    gmx_ana_index_t  *gmin;
     /** Largest selection that can be selected by the subexpression. */
-    gmx_ana_index_t *gmax;
+    gmx_ana_index_t  *gmax;
 } t_compiler_data;
 
 
@@ -477,7 +481,7 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
     int        nalloc;
 
     GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
-            "Wrong allocation method called");
+                       "Wrong allocation method called");
     if (sel->mempool)
     {
         return;
@@ -502,10 +506,10 @@ alloc_selection_data(const SelectionTreeElementPointer &sel,
         if (sel->type == SEL_SUBEXPRREF)
         {
             GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
-                "Subexpression expected for subexpression reference");
+                               "Subexpression expected for subexpression reference");
             child = sel->child->child;
             GMX_RELEASE_ASSERT(child,
-                "Subexpression elements should always have a child element");
+                               "Subexpression elements should always have a child element");
         }
         nalloc = child->v.nr;
     }
@@ -535,9 +539,9 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
     int nalloc, isize;
 
     GMX_RELEASE_ASSERT(sel->v.type == POS_VALUE,
-            "Wrong allocation method called");
+                       "Wrong allocation method called");
     GMX_RELEASE_ASSERT(!(sel->flags & SEL_ATOMVAL),
-            "Per-atom evaluated positions not implemented");
+                       "Per-atom evaluated positions not implemented");
     if (sel->mempool)
     {
         return;
@@ -547,13 +551,13 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
     if (sel->type == SEL_SUBEXPRREF)
     {
         GMX_RELEASE_ASSERT(sel->child && sel->child->type == SEL_SUBEXPR,
-            "Subexpression expected for subexpression reference");
+                           "Subexpression expected for subexpression reference");
         child = sel->child->child;
         GMX_RELEASE_ASSERT(child,
-            "Subexpression elements should always have a child element");
+                           "Subexpression elements should always have a child element");
     }
     nalloc = child->v.u.p->nr;
-    isize = child->v.u.p->m.b.nra;
+    isize  = child->v.u.p->m.b.nra;
 
     /* For positions, we want to allocate just a single structure
      * for nalloc positions. */
@@ -577,7 +581,7 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
  */
 static void
 set_evaluation_function(const SelectionTreeElementPointer &sel,
-                        gmx::sel_evalfunc eval)
+                        gmx::sel_evalfunc                  eval)
 {
     sel->evaluate = eval;
     if (sel->type != SEL_SUBEXPRREF)
@@ -615,7 +619,7 @@ init_pos_keyword_defaults(SelectionTreeElement *root,
     if (root->type == SEL_EXPRESSION)
     {
         bool bSelection = (sel != NULL);
-        int flags = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
+        int  flags      = bSelection ? POS_COMPLMAX : POS_COMPLWHOLE;
         if (bSelection)
         {
             if (sel->hasFlag(gmx::efSelection_DynamicMask))
@@ -669,8 +673,8 @@ reverse_selelem_chain(const SelectionTreeElementPointer &root)
     {
         SelectionTreeElementPointer next = item->next;
         item->next = prev;
-        prev = item;
-        item = next;
+        prev       = item;
+        item       = next;
     }
     return prev;
 }
@@ -751,7 +755,7 @@ create_subexpression_name(const SelectionTreeElementPointer &sel, int i)
  */
 static SelectionTreeElementPointer
 extract_item_subselections(const SelectionTreeElementPointer &sel,
-                           int *subexprn)
+                           int                               *subexprn)
 {
     SelectionTreeElementPointer root;
     SelectionTreeElementPointer subexpr;
@@ -808,7 +812,7 @@ extract_item_subselections(const SelectionTreeElementPointer &sel,
 
 /*! \brief
  * Extracts subexpressions of the selection chain.
- * 
+ *
  * \param   sel First selection in the whole selection chain.
  * \returns The new first element for the chain.
  *
@@ -824,7 +828,7 @@ extract_subexpressions(SelectionTreeElementPointer sel)
 {
     SelectionTreeElementPointer root;
     SelectionTreeElementPointer next = sel;
-    int subexprn = 0;
+    int subexprn                     = 0;
     while (next)
     {
         SelectionTreeElementPointer item
@@ -849,7 +853,7 @@ extract_subexpressions(SelectionTreeElementPointer sel)
         {
             root = next;
         }
-        sel = next;
+        sel  = next;
         next = next->next;
     }
     return root;
@@ -932,7 +936,7 @@ optimize_boolean_expressions(const SelectionTreeElementPointer &sel)
         }
         else
         {
-            prev = child;
+            prev  = child;
             child = child->next;
         }
     }
@@ -1051,7 +1055,7 @@ optimize_arithmetic_expressions(const SelectionTreeElementPointer &sel)
             snew(r, 1);
             r[0] = child->v.u.i[0];
             sfree(child->v.u.i);
-            child->v.u.r = r;
+            child->v.u.r  = r;
             child->v.type = REAL_VALUE;
         }
         else if (child->v.type != REAL_VALUE)
@@ -1160,7 +1164,7 @@ init_item_evalfunc(const SelectionTreeElementPointer &sel)
  */
 static void
 setup_memory_pooling(const SelectionTreeElementPointer &sel,
-                     gmx_sel_mempool_t *mempool)
+                     gmx_sel_mempool_t                 *mempool)
 {
     if (sel->type != SEL_SUBEXPRREF)
     {
@@ -1224,10 +1228,10 @@ init_item_evaloutput(const SelectionTreeElementPointer &sel)
     else if (sel->type == SEL_SUBEXPR
              && (sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
+        sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
         sel->cdata->evaluate = sel->evaluate;
-        sel->child->mempool = NULL;
-        sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->child->mempool  = NULL;
+        sel->flags          &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
         {
             _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
@@ -1353,7 +1357,7 @@ init_item_compilerdata(const SelectionTreeElementPointer &sel)
         while (child)
         {
             child->cdata->flags |= SEL_CDATA_EVALMAX;
-            child = child->next;
+            child                = child->next;
         }
     }
 }
@@ -1416,7 +1420,7 @@ init_item_staticeval(const SelectionTreeElementPointer &sel)
             while (child)
             {
                 child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
-                child = child->next;
+                child                = child->next;
             }
         }
 
@@ -1609,7 +1613,7 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
  */
 static void
 mark_subexpr_dynamic(const SelectionTreeElementPointer &sel,
-                     bool bDynamic)
+                     bool                               bDynamic)
 {
     if (!bDynamic && !(sel->flags & SEL_DYNAMIC))
     {
@@ -1689,14 +1693,14 @@ make_static(const SelectionTreeElementPointer &sel)
     {
         if (sel->child->child->flags & SEL_ALLOCDATA)
         {
-            sel->flags |= SEL_ALLOCDATA;
+            sel->flags               |= SEL_ALLOCDATA;
             sel->child->child->flags &= ~SEL_ALLOCDATA;
         }
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags |= SEL_ALLOCVAL;
-            sel->v.nalloc = sel->child->child->v.nalloc;
-            sel->child->child->flags &= ~SEL_ALLOCVAL;
+            sel->flags                 |= SEL_ALLOCVAL;
+            sel->v.nalloc               = sel->child->child->v.nalloc;
+            sel->child->child->flags   &= ~SEL_ALLOCVAL;
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -1727,9 +1731,9 @@ make_static(const SelectionTreeElementPointer &sel)
  * \returns       0 on success, a non-zero error code on error.
  */
 static void
-process_const(gmx_sel_evaluate_t *data,
+process_const(gmx_sel_evaluate_t                *data,
               const SelectionTreeElementPointer &sel,
-              gmx_ana_index_t *g)
+              gmx_ana_index_t                   *g)
 {
     if (sel->v.type == GROUP_VALUE)
     {
@@ -1793,7 +1797,7 @@ static void
 init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
 {
     /* Find out whether there are any atom-valued parameters */
-    bool bAtomVal = false;
+    bool bAtomVal                     = false;
     SelectionTreeElementPointer child = sel->child;
     while (child)
     {
@@ -1810,7 +1814,7 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
     {
         sel->flags |= SEL_METHODINIT;
         sel->u.expr.method->init(top, sel->u.expr.method->nparams,
-                sel->u.expr.method->param, sel->u.expr.mdata);
+                                 sel->u.expr.method->param, sel->u.expr.mdata);
     }
     if (bAtomVal || !(sel->flags & SEL_OUTINIT))
     {
@@ -1827,11 +1831,11 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
         else
         {
             GMX_RELEASE_ASSERT(sel->v.type != POS_VALUE,
-                    "Output initialization must be provided for "
-                    "position-valued selection methods");
+                               "Output initialization must be provided for "
+                               "position-valued selection methods");
             GMX_RELEASE_ASSERT(!(sel->flags & SEL_VARNUMVAL),
-                    "Output initialization must be provided for "
-                    "SMETH_VARNUMVAL selection methods");
+                               "Output initialization must be provided for "
+                               "SMETH_VARNUMVAL selection methods");
             alloc_selection_data(sel, isize, true);
             if ((sel->flags & SEL_DYNAMIC)
                 && sel->v.type != GROUP_VALUE && sel->v.type != POS_VALUE)
@@ -1883,9 +1887,9 @@ init_method(const SelectionTreeElementPointer &sel, t_topology *top, int isize)
  * reorder_item_static_children() should have been called.
  */
 static void
-evaluate_boolean_static_part(gmx_sel_evaluate_t *data,
+evaluate_boolean_static_part(gmx_sel_evaluate_t                *data,
                              const SelectionTreeElementPointer &sel,
-                             gmx_ana_index_t *g)
+                             gmx_ana_index_t                   *g)
 {
     /* Find the last static subexpression */
     SelectionTreeElementPointer child = sel->child;
@@ -1915,7 +1919,7 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t *data,
         init_item_minmax_groups(child);
         child->cdata->flags &= ~SEL_CDATA_STATICEVAL;
         child->cdata->flags |= sel->cdata->flags & SEL_CDATA_STATICEVAL;
-        child->next = next;
+        child->next          = next;
         // Frees the old static subexpressions.
         sel->child = child;
     }
@@ -2039,8 +2043,8 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
                 && sel->child->v.u.g->isize < gmin->isize)
             {
                 GMX_RELEASE_ASSERT(sel->child->type == SEL_CONST,
-                        "The first child should have already been evaluated "
-                        "to a constant expression");
+                                   "The first child should have already been evaluated "
+                                   "to a constant expression");
                 gmx_ana_index_reserve(sel->child->v.u.g, gmin->isize);
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, false);
                 if (sel->child->u.cgrp.nalloc_index > 0)
@@ -2054,7 +2058,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
                 else
                 {
                     GMX_RELEASE_ASSERT(sel->child->u.cgrp.index == sel->child->v.u.g->index,
-                            "If not allocated, the static group should equal the value");
+                                       "If not allocated, the static group should equal the value");
                     sel->child->u.cgrp.isize = sel->child->v.u.g->isize;
                 }
             }
@@ -2068,7 +2072,7 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
 
 /*! \brief
  * Evaluates the static parts of \p sel and analyzes the structure.
- * 
+ *
  * \param[in]     data Evaluation data.
  * \param[in,out] sel  Selection currently being evaluated.
  * \param[in]     g    Group for which \p sel should be evaluated.
@@ -2079,16 +2083,16 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
  * It does the single most complex task in the compiler: after all elements
  * have been processed, the \p gmin and \p gmax fields of \p t_compiler_data
  * have been properly initialized, enough memory has been allocated for
- * storing the value of each expression, and the static parts of the 
+ * storing the value of each expression, and the static parts of the
  * expressions have been evaluated.
  * The above is exactly true only for elements other than subexpressions:
  * another pass is required for subexpressions that are referred to more than
  * once and whose evaluation group is not known in advance.
  */
 static void
-analyze_static(gmx_sel_evaluate_t *data,
+analyze_static(gmx_sel_evaluate_t                *data,
                const SelectionTreeElementPointer &sel,
-               gmx_ana_index_t *g)
+               gmx_ana_index_t                   *g)
 {
     bool             bDoMinMax;
 
@@ -2335,7 +2339,7 @@ analyze_static(gmx_sel_evaluate_t *data,
  */
 static void
 init_root_item(const SelectionTreeElementPointer &root,
-               gmx_ana_index_t *gall)
+               gmx_ana_index_t                   *gall)
 {
     const SelectionTreeElementPointer &expr = root->child;
     /* Subexpressions with non-static evaluation group should not be
@@ -2456,7 +2460,7 @@ postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
         gmx_ana_index_deinit(&sel->u.cgrp);
         sel->u.cgrp.name = name;
 
-        sel->evaluate = &_gmx_sel_evaluate_subexpr_staticeval;
+        sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
         sel->cdata->evaluate = sel->evaluate;
 
         sel->child->freeValues();
@@ -2473,10 +2477,10 @@ postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
     {
         if (sel->child->child->flags & SEL_ALLOCVAL)
         {
-            sel->flags |= SEL_ALLOCVAL;
-            sel->flags |= (sel->child->child->flags & SEL_ALLOCDATA);
-            sel->v.nalloc = sel->child->child->v.nalloc;
-            sel->child->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+            sel->flags                 |= SEL_ALLOCVAL;
+            sel->flags                 |= (sel->child->child->flags & SEL_ALLOCDATA);
+            sel->v.nalloc               = sel->child->child->v.nalloc;
+            sel->child->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
             sel->child->child->v.nalloc = -1;
         }
     }
@@ -2486,10 +2490,10 @@ postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
         && !(sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
         && (sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        sel->flags |= SEL_ALLOCVAL;
-        sel->flags |= (sel->child->flags & SEL_ALLOCDATA);
-        sel->v.nalloc = sel->child->v.nalloc;
-        sel->child->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
+        sel->flags          |= SEL_ALLOCVAL;
+        sel->flags          |= (sel->child->flags & SEL_ALLOCDATA);
+        sel->v.nalloc        = sel->child->v.nalloc;
+        sel->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         sel->child->v.nalloc = -1;
     }
 }
@@ -2535,7 +2539,7 @@ init_item_comg(const SelectionTreeElementPointer &sel,
             }
             if (!sel->u.expr.pc)
             {
-                cflags |= flags;
+                cflags        |= flags;
                 sel->u.expr.pc = pcc->createCalculation(type, cflags);
             }
             else
@@ -2618,14 +2622,14 @@ SelectionCompiler::SelectionCompiler()
 void
 SelectionCompiler::compile(SelectionCollection *coll)
 {
-    gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
-    gmx_sel_evaluate_t  evaldata;
+    gmx_ana_selcollection_t    *sc = &coll->impl_->sc_;
+    gmx_sel_evaluate_t          evaldata;
     SelectionTreeElementPointer item;
-    e_poscalc_t  post;
-    size_t       i;
-    int          flags;
-    bool         bDebug = (coll->impl_->debugLevel_ >= 2
-                           && coll->impl_->debugLevel_ != 3);
+    e_poscalc_t                 post;
+    size_t                      i;
+    int                         flags;
+    bool                        bDebug = (coll->impl_->debugLevel_ >= 2
+                                          && coll->impl_->debugLevel_ != 3);
 
     /* FIXME: Clean up the collection on exceptions */
 

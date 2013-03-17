@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -22,6 +22,7 @@
 #define GMX_CPUID_H_
 
 #include <stdio.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -129,7 +130,7 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS];
 
 /* Abstract data type with CPU detection information. Set by gmx_cpuid_init(). */
 typedef struct gmx_cpuid *
-gmx_cpuid_t;
+    gmx_cpuid_t;
 
 
 /* Fill the data structure by using CPU detection instructions.
@@ -173,6 +174,39 @@ gmx_cpuid_feature           (gmx_cpuid_t                cpuid,
                              enum gmx_cpuid_feature     feature);
 
 
+/* Return pointers to cpu topology information.
+ *
+ * Important: CPU topology requires more OS support than most other
+ * functions in this file, including support for thread pinning to hardware.
+ * This means it will not work on some platforms, including e.g. Mac OS X.
+ * Thus, it is IMPERATIVE that you check the return value from this routine
+ * before doing anything with the information. It is only if the return
+ * value is zero that the data is valid.
+ *
+ * For the returned values we have:
+ * - nprocessors         Total number of logical processors reported by OS
+ * - npackages           Usually number of CPU sockets
+ * - ncores_per_package  Number of cores in each package
+ * - nhwthreads_per_core Number of hardware threads per core; 2 for hyperthreading.
+ * - package_id          Array with the package index for each logical cpu
+ * - core_id             Array with local core index for each logical cpu
+ * - hwthread_id         Array with local hwthread index for each logical cpu
+ * - locality_order      Array with logical cpu numbers, sorted in order
+ *                       of physical and logical locality in the system.
+ *
+ * All arrays are of length nprocessors.
+ */
+int
+gmx_cpuid_topology(gmx_cpuid_t        cpuid,
+                   int *              nprocessors,
+                   int *              npackages,
+                   int *              ncores_per_package,
+                   int *              nhwthreads_per_core,
+                   const int **       package_id,
+                   const int **       core_id,
+                   const int **       hwthread_id,
+                   const int **       locality_order);
+
 /* Enumerated values for x86 SMT enabled-status. Note that this does not refer
  * to Hyper-Threading support (that is the flag GMX_CPUID_FEATURE_X86_HTT), but
  * whether Hyper-Threading is _enabled_ and _used_ in bios right now.
@@ -211,10 +245,12 @@ enum gmx_cpuid_x86_smt
  * in order not to give the impression we can detect any SMT. We haven't
  * even tested the performance on other SMT implementations, so it is not
  * obvious we shouldn't use SMT there.
+ *
+ * Note that you can get more complete topology information from
+ * gmx_cpuid_topology(), although that requires slightly more OS support.
  */
 enum gmx_cpuid_x86_smt
 gmx_cpuid_x86_smt(gmx_cpuid_t cpuid);
-
 
 
 /* Formats a text string (up to n characters) from the data structure.

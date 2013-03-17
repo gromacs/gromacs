@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::analysismodules::Select.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "select.h"
@@ -178,7 +182,7 @@ void IndexFileWriterModule::dataStarted(AbstractAnalysisData * /*data*/)
 
 void IndexFileWriterModule::frameStarted(const AnalysisDataFrameHeader & /*header*/)
 {
-    bAnyWritten_ = false;
+    bAnyWritten_  = false;
     currentGroup_ = -1;
 }
 
@@ -241,14 +245,14 @@ void IndexFileWriterModule::dataFinished()
     closeFile();
 }
 
-} // namespace
+}       // namespace
 
 
 /********************************************************************
  * Select
  */
 
-const char Select::name[] = "select";
+const char Select::name[]             = "select";
 const char Select::shortDescription[] =
     "Print general information about selections";
 
@@ -364,27 +368,27 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                            .description("PDB file with occupied fraction for selected positions"));
 
     selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
-        .required().multiValue()
-        .description("Selections to analyze"));
+                                     .required().multiValue()
+                                     .description("Selections to analyze"));
 
     options->addOption(BooleanOption("dump").store(&bDump_)
-        .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
+                           .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
     options->addOption(BooleanOption("norm").store(&bTotNorm_)
-        .description("Normalize by total number of positions with -os"));
+                           .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
-        .description("Normalize by covered fraction with -os"));
-    const char *const cResNumberEnum[] = { "number", "index", NULL };
+                           .description("Normalize by covered fraction with -os"));
+    const char *const cResNumberEnum[] = { "number", "index" };
     options->addOption(StringOption("resnr").store(&resNumberType_)
-        .enumValue(cResNumberEnum).defaultEnumIndex(0)
-        .description("Residue number output type with -oi and -on"));
-    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected", NULL };
+                           .enumValue(cResNumberEnum).defaultEnumIndex(0)
+                           .description("Residue number output type with -oi and -on"));
+    const char *const cPDBAtomsEnum[] = { "all", "maxsel", "selected" };
     options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
-        .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
-        .description("Atoms to write with -ofpdb"));
+                           .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
+                           .description("Atoms to write with -ofpdb"));
 }
 
 void
-Select::optionsFinished(Options * /*options*/,
+Select::optionsFinished(Options                     * /*options*/,
                         TrajectoryAnalysisSettings *settings)
 {
     if (!fnPDB_.empty())
@@ -401,12 +405,12 @@ Select::optionsFinished(Options * /*options*/,
 
 void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                     const TopologyInformation &top)
+                     const TopologyInformation        &top)
 {
     if (!sel_[0].isDynamic() && (!fnMask_.empty() || !fnOccupancy_.empty()))
     {
         GMX_THROW(InconsistentInputError(
-                    "-om or -of are not meaningful with a static selection"));
+                          "-om or -of are not meaningful with a static selection"));
     }
     bResInd_ = (resNumberType_ == "index");
 
@@ -425,7 +429,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnSize_.empty())
     {
         AnalysisDataPlotModulePointer plot(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnSize_);
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
@@ -437,7 +441,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnFrac_.empty())
     {
         AnalysisDataPlotModulePointer plot(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnFrac_);
         plot->setTitle("Covered fraction");
         plot->setXAxisIsTime();
@@ -450,7 +454,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnIndex_.empty())
     {
         AnalysisDataPlotModulePointer plot(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnIndex_);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
@@ -480,7 +484,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnMask_.empty())
     {
         AnalysisDataPlotModulePointer plot(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnMask_);
         plot->setPlainOutput(bDump_);
         plot->setOmitX(bDump_);
@@ -493,7 +497,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnOccupancy_.empty())
     {
         AnalysisDataPlotModulePointer plot(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnOccupancy_);
         plot->setTitle("Fraction of time selection matches");
         plot->setXLabel("Selected position");
@@ -509,12 +513,12 @@ void
 Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                      TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle sdh = pdata->dataHandle(sdata_);
-    AnalysisDataHandle cdh = pdata->dataHandle(cdata_);
-    AnalysisDataHandle idh = pdata->dataHandle(idata_);
-    AnalysisDataHandle mdh = pdata->dataHandle(mdata_);
+    AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);
+    AnalysisDataHandle   cdh = pdata->dataHandle(cdata_);
+    AnalysisDataHandle   idh = pdata->dataHandle(idata_);
+    AnalysisDataHandle   mdh = pdata->dataHandle(mdata_);
     const SelectionList &sel = pdata->parallelSelections(sel_);
-    t_topology *top = top_->topology();
+    t_topology          *top = top_->topology();
 
     sdh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel.size(); ++g)
@@ -581,10 +585,10 @@ Select::writeOutput()
     if (!fnPDB_.empty())
     {
         GMX_RELEASE_ASSERT(top_->hasTopology(),
-                "Topology should have been loaded or an error given earlier");
-        t_atoms atoms;
+                           "Topology should have been loaded or an error given earlier");
+        t_atoms          atoms;
         atoms = top_->topology()->atoms;
-        t_pdbinfo *pdbinfo;
+        t_pdbinfo       *pdbinfo;
         snew(pdbinfo, atoms.nr);
         scoped_ptr_sfree pdbinfoGuard(pdbinfo);
         if (atoms.pdbinfo != NULL)
@@ -598,7 +602,7 @@ Select::writeOutput()
         }
         for (int i = 0; i < sel_[0].posCount(); ++i)
         {
-            ConstArrayRef<int> atomIndices = sel_[0].position(i).atomIndices();
+            ConstArrayRef<int>                 atomIndices = sel_[0].position(i).atomIndices();
             ConstArrayRef<int>::const_iterator ai;
             for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
             {
@@ -623,7 +627,7 @@ Select::writeOutput()
         else if (pdbAtoms_ == "maxsel")
         {
             ConstArrayRef<int> atomIndices = sel_[0].atomIndices();
-            t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");
+            t_trxstatus       *status      = open_trx(fnPDB_.c_str(), "w");
             write_trxframe_indexed(status, &fr, atomIndices.size(),
                                    atomIndices.data(), NULL);
             close_trx(status);
@@ -635,7 +639,7 @@ Select::writeOutput()
             {
                 if (occupancyModule_->average(i) > 0)
                 {
-                    ConstArrayRef<int> atomIndices = sel_[0].position(i).atomIndices();
+                    ConstArrayRef<int>                 atomIndices = sel_[0].position(i).atomIndices();
                     ConstArrayRef<int>::const_iterator ai;
                     for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
                     {
@@ -650,7 +654,7 @@ Select::writeOutput()
         else
         {
             GMX_RELEASE_ASSERT(false,
-                    "Mismatch between -pdbatoms enum values and implementation");
+                               "Mismatch between -pdbatoms enum values and implementation");
         }
     }
 }

@@ -1,11 +1,11 @@
 /*
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -16,19 +16,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
@@ -46,7 +46,7 @@ extern "C" {
 
 #define eNR_NBKERNEL_NONE -1
 
-enum 
+enum
 {
     eNR_NBKERNEL_VDW_VF,
     eNR_NBKERNEL_VDW_F,
@@ -71,20 +71,24 @@ enum
     eNR_NBKERNEL_ELEC_VDW_W4W4_VF,
     eNR_NBKERNEL_ELEC_VDW_W4W4_F,
 
-    eNR_NBKERNEL_NR,  /* Total number of interaction-specific kernel entries */
+    eNR_NBKERNEL_NR,                        /* Total number of interaction-specific kernel entries */
 
     eNR_NBKERNEL_GENERIC = eNR_NBKERNEL_NR, /* Reuse number; KERNEL_NR is not an entry itself */
+    eNR_NBKERNEL_GENERIC_CG,
+    eNR_NBKERNEL_GENERIC_ADRESS,
     eNR_NBKERNEL_FREE_ENERGY,               /* Add other generic kernels _before_ the free energy one */
 
     eNR_NBKERNEL_ALLVSALL,
     eNR_NBKERNEL_ALLVSALLGB,
 
     eNR_NBNXN_DIST2,
-    eNR_NBNXN_LJ_RF,  eNR_NBNXN_LJ_RF_E,
-    eNR_NBNXN_LJ_TAB, eNR_NBNXN_LJ_TAB_E,
-    eNR_NBNXN_LJ,     eNR_NBNXN_LJ_E,
-    eNR_NBNXN_RF,     eNR_NBNXN_RF_E,
-    eNR_NBNXN_TAB,    eNR_NBNXN_TAB_E,
+    eNR_NBNXN_LJ_RF,    eNR_NBNXN_LJ_RF_E,
+    eNR_NBNXN_LJ_TAB,   eNR_NBNXN_LJ_TAB_E,
+    eNR_NBNXN_LJ_EWALD, eNR_NBNXN_LJ_EWALD_E,
+    eNR_NBNXN_LJ,       eNR_NBNXN_LJ_E,
+    eNR_NBNXN_RF,       eNR_NBNXN_RF_E,
+    eNR_NBNXN_TAB,      eNR_NBNXN_TAB_E,
+    eNR_NBNXN_EWALD,    eNR_NBNXN_EWALD_E,
     eNR_NB14,
     eNR_BORN_RADII_STILL,     eNR_BORN_RADII_HCT_OBC,
     eNR_BORN_CHAINRULE,
@@ -92,7 +96,7 @@ enum
     eNR_BORN_AVA_CHAINRULE,
     eNR_WEIGHTS,              eNR_SPREADQ,              eNR_SPREADQBSP,
     eNR_GATHERF,              eNR_GATHERFBSP,           eNR_FFT,
-    eNR_CONV,                 eNR_SOLVEPME,eNR_NS,      eNR_RESETX,
+    eNR_CONV,                 eNR_SOLVEPME, eNR_NS,      eNR_RESETX,
     eNR_SHIFTX,               eNR_CGCM,                 eNR_FSUM,
     eNR_BONDS,                eNR_G96BONDS,             eNR_FENEBONDS,
     eNR_TABBONDS,             eNR_RESTRBONDS,           eNR_LINEAR_ANGLES,

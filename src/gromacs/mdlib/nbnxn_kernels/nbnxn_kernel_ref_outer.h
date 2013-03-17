@@ -12,16 +12,16 @@
  * written by Erik Lindahl, David van der Spoel, Berk Hess, and others - for
  * a full list of developers and information, check out http://www.gromacs.org
  *
- * This program is free software; you can redistribute it and/or modify it under 
- * the terms of the GNU Lesser General Public License as published by the Free 
- * Software Foundation; either version 2 of the License, or (at your option) any 
+ * This program is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License as published by the Free
+ * Software Foundation; either version 2 of the License, or (at your option) any
  * later version.
  * As a special exception, you may use this file as part of a free software
  * library without restriction.  Specifically, if other files instantiate
  * templates or use macros or inline functions from this file, or you compile
  * this file and link it with other files to produce an executable, this
  * file does not by itself cause the resulting executable to be covered by
- * the GNU Lesser General Public License.  
+ * the GNU Lesser General Public License.
  *
  * In plain-speak: do not worry about classes/macros/templates either - only
  * changes to the library have to be LGPL, not an application linking with it.
@@ -50,42 +50,42 @@
 #define CALC_SHIFTFORCES
 
 #ifdef CALC_COUL_RF
-#define NBK_FUNC_NAME(x,y) x##_rf_##y
+#define NBK_FUNC_NAME(base, ene) base ## _rf_ ## ene
 #endif
 #ifdef CALC_COUL_TAB
 #ifndef VDW_CUTOFF_CHECK
-#define NBK_FUNC_NAME(x,y) x##_tab_##y
+#define NBK_FUNC_NAME(base, ene) base ## _tab_ ## ene
 #else
-#define NBK_FUNC_NAME(x,y) x##_tab_twin_##y
+#define NBK_FUNC_NAME(base, ene) base ## _tab_twin_ ## ene
 #endif
 #endif
 
 static void
 #ifndef CALC_ENERGIES
-NBK_FUNC_NAME(nbnxn_kernel_ref,noener)
+NBK_FUNC_NAME(nbnxn_kernel_ref, noener)
 #else
 #ifndef ENERGY_GROUPS
-NBK_FUNC_NAME(nbnxn_kernel_ref,ener)
+NBK_FUNC_NAME(nbnxn_kernel_ref, ener)
 #else
-NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
+NBK_FUNC_NAME(nbnxn_kernel_ref, energrp)
 #endif
 #endif
 #undef NBK_FUNC_NAME
-                            (const nbnxn_pairlist_t     *nbl,
-                             const nbnxn_atomdata_t     *nbat,
-                             const interaction_const_t  *ic,
-                             rvec                       *shift_vec,
-                             real                       *f
+(const nbnxn_pairlist_t     *nbl,
+ const nbnxn_atomdata_t     *nbat,
+ const interaction_const_t  *ic,
+ rvec                       *shift_vec,
+ real                       *f
 #ifdef CALC_SHIFTFORCES
-                             ,
-                             real                       *fshift
+ ,
+ real                       *fshift
 #endif
 #ifdef CALC_ENERGIES
-                             ,
-                             real                       *Vvdw,
-                             real                       *Vc
+ ,
+ real                       *Vvdw,
+ real                       *Vc
 #endif
-                            )
+)
 {
     const nbnxn_ci_t   *nbln;
     const nbnxn_cj_t   *l_cj;
@@ -94,27 +94,27 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     const real         *shiftvec;
     const real         *x;
     const real         *nbfp;
-    real       rcut2;
+    real                rcut2;
 #ifdef VDW_CUTOFF_CHECK
-    real       rvdw2;
+    real                rvdw2;
 #endif
-    int        ntype2;
-    real       facel;
-    real       *nbfp_i;
-    int        n,ci,ci_sh;
-    int        ish,ishf;
-    gmx_bool   half_LJ,do_coul;
-    int        cjind0,cjind1,cjind;
-    int        ip,jp;
+    int                 ntype2;
+    real                facel;
+    real               *nbfp_i;
+    int                 n, ci, ci_sh;
+    int                 ish, ishf;
+    gmx_bool            do_LJ, half_LJ, do_coul;
+    int                 cjind0, cjind1, cjind;
+    int                 ip, jp;
 
-    real       xi[UNROLLI*XI_STRIDE];
-    real       fi[UNROLLI*FI_STRIDE];
-    real       qi[UNROLLI];
+    real                xi[UNROLLI*XI_STRIDE];
+    real                fi[UNROLLI*FI_STRIDE];
+    real                qi[UNROLLI];
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
 
-    real       Vvdw_ci,Vc_ci;
+    real       Vvdw_ci, Vc_ci;
 #else
     int        egp_mask;
     int        egp_sh_i[UNROLLI];
@@ -125,7 +125,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #ifdef CALC_COUL_RF
     real       k_rf2;
 #ifdef CALC_ENERGIES
-    real       k_rf,c_rf;
+    real       k_rf, c_rf;
 #endif
 #endif
 #ifdef CALC_COUL_TAB
@@ -144,7 +144,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     int ninner;
 
 #ifdef COUNT_PAIRS
-    int npair=0;
+    int npair = 0;
 #endif
 
 #ifdef CALC_ENERGIES
@@ -193,9 +193,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
     l_cj = nbl->cj;
 
     ninner = 0;
-    for(n=0; n<nbl->nci; n++)
+    for (n = 0; n < nbl->nci; n++)
     {
-        int i,d;
+        int i, d;
 
         nbln = &nbl->ci[n];
 
@@ -208,32 +208,38 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ci               = nbln->ci;
         ci_sh            = (ish == CENTRAL ? ci : -1);
 
-        half_LJ = (nbln->shift & NBNXN_CI_HALF_LJ(0));
+        /* We have 5 LJ/C combinations, but use only three inner loops,
+         * as the other combinations are unlikely and/or not much faster:
+         * inner half-LJ + C for half-LJ + C / no-LJ + C
+         * inner LJ + C      for full-LJ + C
+         * inner LJ          for full-LJ + no-C / half-LJ + no-C
+         */
+        do_LJ   = (nbln->shift & NBNXN_CI_DO_LJ(0));
         do_coul = (nbln->shift & NBNXN_CI_DO_COUL(0));
+        half_LJ = ((nbln->shift & NBNXN_CI_HALF_LJ(0)) || !do_LJ) && do_coul;
 
 #ifdef CALC_ENERGIES
 #ifndef ENERGY_GROUPS
         Vvdw_ci = 0;
         Vc_ci   = 0;
 #else
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
             egp_sh_i[i] = ((nbat->energrp[ci]>>(i*nbat->neg_2log)) & egp_mask)*nbat->nenergrp;
         }
 #endif
 #endif
 
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d = 0; d < DIM; d++)
             {
                 xi[i*XI_STRIDE+d] = x[(ci*UNROLLI+i)*X_STRIDE+d] + shiftvec[ishf+d];
                 fi[i*FI_STRIDE+d] = 0;
             }
         }
 
-        /* With half_LJ we currently always calculate Coulomb interactions */
-        if (do_coul || half_LJ)
+        if (do_coul)
         {
 #ifdef CALC_ENERGIES
             real Vc_sub_self;
@@ -250,7 +256,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
 #endif
 #endif
 
-            for(i=0; i<UNROLLI; i++)
+            for (i = 0; i < UNROLLI; i++)
             {
                 qi[i] = facel*q[ci*UNROLLI+i];
 
@@ -295,7 +301,7 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
             cjind++;
         }
 
-        for(; (cjind<cjind1); cjind++)
+        for (; (cjind < cjind1); cjind++)
         {
             if (half_LJ)
             {
@@ -320,9 +326,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-        for(i=0; i<UNROLLI; i++)
+        for (i = 0; i < UNROLLI; i++)
         {
-            for(d=0; d<DIM; d++)
+            for (d = 0; d < DIM; d++)
             {
                 f[(ci*UNROLLI+i)*F_STRIDE+d] += fi[i*FI_STRIDE+d];
             }
@@ -331,9 +337,9 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         if (fshift != NULL)
         {
             /* Add i forces to shifted force list */
-            for(i=0; i<UNROLLI; i++)
+            for (i = 0; i < UNROLLI; i++)
             {
-                for(d=0; d<DIM; d++)
+                for (d = 0; d < DIM; d++)
                 {
                     fshift[ishf+d] += fi[i*FI_STRIDE+d];
                 }
@@ -347,10 +353,10 @@ NBK_FUNC_NAME(nbnxn_kernel_ref,energrp)
         *Vc   += Vc_ci;
 #endif
 #endif
-	}
+    }
 
 #ifdef COUNT_PAIRS
-    printf("atom pairs %d\n",npair);
+    printf("atom pairs %d\n", npair);
 #endif
 }
 

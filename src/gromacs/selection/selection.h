@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief
  * Declares gmx::Selection and supporting classes.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_selection
  */
@@ -117,9 +121,9 @@ class SelectionData
          * \param[in] top   Topology information.
          * \throws    std::bad_alloc if out of memory.
          *
-         * Computed values are cached, and need to be updated for dynamic
-         * selections with refreshMassesAndCharges() after the selection has
-         * been evaluated.  This is done by SelectionEvaluator.
+         * For dynamic selections, the values need to be updated after each
+         * evaluation with refreshMassesAndCharges().
+         * This is done by SelectionEvaluator.
          *
          * This function is called by SelectionCompiler.
          *
@@ -130,9 +134,11 @@ class SelectionData
          * Updates masses and charges after dynamic selection has been
          * evaluated.
          *
+         * \param[in] top   Topology information.
+         *
          * Called by SelectionEvaluator.
          */
-        void refreshMassesAndCharges();
+        void refreshMassesAndCharges(const t_topology *top);
         /*! \brief
          * Updates the covered fraction after a selection has been evaluated.
          *
@@ -152,57 +158,38 @@ class SelectionData
         /*! \brief
          * Restores position information to state it was in after compilation.
          *
+         * \param[in] top   Topology information.
+         *
          * Depends on SelectionCompiler storing the original atoms in the
          * \a rootElement_ object.
          * Called by SelectionEvaluator::evaluateFinal().
          */
-        void restoreOriginalPositions();
+        void restoreOriginalPositions(const t_topology *top);
 
     private:
-        /*! \brief
-         * Additional information about positions.
-         *
-         * This structure contains information about positions in the
-         * selection that is not stored in ::gmx_ana_pos_t.
-         *
-         * Methods in this class do not throw.
-         */
-        struct PositionInfo
-        {
-            //! Construct position information with unit mass and no charge.
-            PositionInfo() : mass(1.0), charge(0.0) {}
-            //! Construct position information with the given information.
-            PositionInfo(real mass, real charge) : mass(mass), charge(charge) {}
-
-            //! Total mass of atoms that make up the position.
-            real                mass;
-            //! Total charge of atoms that make up the position.
-            real                charge;
-        };
-
         //! Name of the selection.
-        std::string             name_;
+        std::string               name_;
         //! The actual selection string.
-        std::string             selectionText_;
+        std::string               selectionText_;
         //! Low-level representation of selected positions.
-        gmx_ana_pos_t           rawPositions_;
-        //! Information associated with the current positions.
-        std::vector<PositionInfo> posInfo_;
-        //! Information for all possible positions.
-        std::vector<PositionInfo> originalPosInfo_;
-        SelectionFlags          flags_;
+        gmx_ana_pos_t             rawPositions_;
+        //! Total masses for the current positions.
+        std::vector<real>         posMass_;
+        //! Total charges for the current positions.
+        std::vector<real>         posCharge_;
+        SelectionFlags            flags_;
         //! Root of the selection evaluation tree.
-        SelectionTreeElement   &rootElement_;
+        SelectionTreeElement     &rootElement_;
         //! Type of the covered fraction.
-        e_coverfrac_t           coveredFractionType_;
+        e_coverfrac_t             coveredFractionType_;
         //! Covered fraction of the selection for the current frame.
-        real                    coveredFraction_;
+        real                      coveredFraction_;
         //! The average covered fraction (over the trajectory).
-        real                    averageCoveredFraction_;
+        real                      averageCoveredFraction_;
         //! true if the value can change as a function of time.
-        bool                    bDynamic_;
+        bool                      bDynamic_;
         //! true if the covered fraction depends on the frame.
-        bool                    bDynamicCoveredFraction_;
+        bool                      bDynamicCoveredFraction_;
 
         /*! \brief
          * Needed to wrap access to information.
@@ -216,7 +203,7 @@ class SelectionData
         GMX_DISALLOW_COPY_AND_ASSIGN(SelectionData);
 };
 
-} // namespace internal
+}   // namespace internal
 
 /*! \brief
  * Provides access to a single selection.
@@ -226,6 +213,11 @@ class SelectionData
  * selectionText(), isDynamic(), and type().  The first three can be accessed
  * any time after the selection has been parsed, and type() can be accessed
  * after the selection has been compiled.
+ *
+ * There are a few methods that can be used to change the behavior of the
+ * selection.  setEvaluateVelocities() and setEvaluateForces() can be called
+ * before the selection is compiled to request evaluation of velocities and/or
+ * forces in addition to coordinates.
  *
  * Each selection is made of a set of positions.  Each position has associated
  * coordinates, and possibly velocities and forces if they have been requested
@@ -240,6 +232,9 @@ class SelectionData
  * It is also possible to access the list of atoms that make up all the
  * positions directly: atomCount() returns the total number of atoms in the
  * selection and atomIndices() an array of their indices.
+ * Similarly, it is possible to access the coordinates and other properties
+ * of the positions as continuous arrays through coordinates(), velocities(),
+ * forces(), masses(), charges(), refIds(), and mappedIds().
  *
  * Both positions and atoms can be accessed after the selection has been
  * compiled.  For dynamic selections, the return values of these methods change
@@ -308,13 +303,137 @@ class Selection
             {
                 return ConstArrayRef<int>();
             }
-            return ConstArrayRef<int>(data().rawPositions_.g->isize,
-                                      data().rawPositions_.g->index);
+            return ConstArrayRef<int>(data().rawPositions_.g->index,
+                                      data().rawPositions_.g->isize);
         }
         //! Number of positions in the selection.
         int posCount() const { return data().posCount(); }
         //! Access a single position.
         SelectionPosition position(int i) const;
+        //! Returns coordinates for this selection as a continuous array.
+        ConstArrayRef<rvec> coordinates() const
+        {
+            return ConstArrayRef<rvec>(data().rawPositions_.x, posCount());
+        }
+        //! Returns whether velocities are available for this selection.
+        bool hasVelocities() const { return data().rawPositions_.v != NULL; }
+        /*! \brief
+         * Returns velocities for this selection as a continuous array.
+         *
+         * Must not be called if hasVelocities() returns false.
+         */
+        ConstArrayRef<rvec> velocities() const
+        {
+            GMX_ASSERT(hasVelocities(), "Velocities accessed, but unavailable");
+            return ConstArrayRef<rvec>(data().rawPositions_.v, posCount());
+        }
+        //! Returns whether forces are available for this selection.
+        bool hasForces() const { return sel_->rawPositions_.f != NULL; }
+        /*! \brief
+         * Returns forces for this selection as a continuous array.
+         *
+         * Must not be called if hasForces() returns false.
+         */
+        ConstArrayRef<rvec> forces() const
+        {
+            GMX_ASSERT(hasForces(), "Forces accessed, but unavailable");
+            return ConstArrayRef<rvec>(data().rawPositions_.f, posCount());
+        }
+        //! Returns masses for this selection as a continuous array.
+        ConstArrayRef<real> masses() const
+        {
+            // posMass_ may have more entries than posCount() in the case of
+            // dynamic selections that don't have a topology
+            // (and thus the masses and charges are fixed).
+            GMX_ASSERT(data().posMass_.size() >= static_cast<size_t>(posCount()),
+                       "Internal inconsistency");
+            return ConstArrayRef<real>(data().posMass_.begin(),
+                                       data().posMass_.begin() + posCount());
+        }
+        //! Returns charges for this selection as a continuous array.
+        ConstArrayRef<real> charges() const
+        {
+            // posCharge_ may have more entries than posCount() in the case of
+            // dynamic selections that don't have a topology
+            // (and thus the masses and charges are fixed).
+            GMX_ASSERT(data().posCharge_.size() >= static_cast<size_t>(posCount()),
+                       "Internal inconsistency");
+            return ConstArrayRef<real>(data().posCharge_.begin(),
+                                       data().posCharge_.begin() + posCount());
+        }
+        /*! \brief
+         * Returns reference IDs for this selection as a continuous array.
+         *
+         * \see SelectionPosition::refId()
+         */
+        ConstArrayRef<int> refIds() const
+        {
+            return ConstArrayRef<int>(data().rawPositions_.m.refid, posCount());
+        }
+        /*! \brief
+         * Returns mapped IDs for this selection as a continuous array.
+         *
+         * \see SelectionPosition::mappedId()
+         */
+        ConstArrayRef<int> mappedIds() const
+        {
+            return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
+        }
+
+        //! Deprecated method for direct access to position data.
+        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
+
+        //! Returns whether the covered fraction can change between frames.
+        bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
+        //! Returns the covered fraction for the current frame.
+        real coveredFraction() const { return data().coveredFraction_; }
+
+        /*! \brief
+         * Initializes information about covered fractions.
+         *
+         * \param[in] type Type of covered fraction required.
+         * \returns   true if the covered fraction can be calculated for the
+         *      selection.
+         */
+        bool initCoveredFraction(e_coverfrac_t type)
+        {
+            return data().initCoveredFraction(type);
+        }
+        /*! \brief
+         * Sets whether this selection evaluates velocities for positions.
+         *
+         * \param[in] bEnabled  If true, velocities are evaluated.
+         *
+         * If you request the evaluation, but then evaluate the selection for
+         * a frame that does not contain velocity information, results are
+         * undefined.
+         *
+         * \todo
+         * Implement it such that in the above case, hasVelocities() will
+         * return false for such frames.
+         *
+         * Does not throw.
+         */
+        void setEvaluateVelocities(bool bEnabled)
+        {
+            data().flags_.set(efSelection_EvaluateVelocities, bEnabled);
+        }
+        /*! \brief
+         * Sets whether this selection evaluates forces for positions.
+         *
+         * \param[in] bEnabled  If true, forces are evaluated.
+         *
+         * If you request the evaluation, but then evaluate the selection for
+         * a frame that does not contain force information, results are
+         * undefined.
+         *
+         * Does not throw.
+         */
+        void setEvaluateForces(bool bEnabled)
+        {
+            data().flags_.set(efSelection_EvaluateForces, bEnabled);
+        }
+
         /*! \brief
          * Sets the ID for the \p i'th position for use with
          * SelectionPosition::mappedId().
@@ -331,25 +450,6 @@ class Selection
          * \see SelectionPosition::mappedId()
          */
         void setOriginalId(int i, int id) { data().rawPositions_.m.orgid[i] = id; }
-
-        //! Deprecated method for direct access to position data.
-        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
-
-        //! Returns whether the covered fraction can change between frames.
-        bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
-        //! Returns the covered fraction for the current frame.
-        real coveredFraction() const { return data().coveredFraction_; }
-        /*! \brief
-         * Initializes information about covered fractions.
-         *
-         * \param[in] type Type of covered fraction required.
-         * \returns   true if the covered fraction can be calculated for the
-         *      selection.
-         */
-        bool initCoveredFraction(e_coverfrac_t type)
-        {
-            return data().initCoveredFraction(type);
-        }
 
         /*! \brief
          * Prints out one-line description of the selection.
@@ -454,28 +554,26 @@ class SelectionPosition
         {
             return sel_->rawPositions_.x[i_];
         }
-        //! Returns whether velocity is available for this position.
-        bool hasVelocity() const { return sel_->rawPositions_.v != NULL; }
         /*! \brief
          * Returns velocity for this position.
          *
-         * Must not be called if hasVelocity() returns false.
+         * Must not be called if Selection::hasVelocities() returns false.
          */
         const rvec &v() const
         {
-            GMX_ASSERT(hasVelocity(), "Velocities accessed, but unavailable");
+            GMX_ASSERT(sel_->rawPositions_.v != NULL,
+                       "Velocities accessed, but unavailable");
             return sel_->rawPositions_.v[i_];
         }
-        //! Returns whether force is available for this position.
-        bool hasForce() const { return sel_->rawPositions_.f != NULL; }
         /*! \brief
          * Returns force for this position.
          *
-         * Must not be called if hasForce() returns false.
+         * Must not be called if Selection::hasForces() returns false.
          */
         const rvec &f() const
         {
-            GMX_ASSERT(hasForce(), "Forces accessed, but unavailable");
+            GMX_ASSERT(sel_->rawPositions_.f != NULL,
+                       "Velocities accessed, but unavailable");
             return sel_->rawPositions_.f[i_];
         }
         /*! \brief
@@ -487,7 +585,7 @@ class SelectionPosition
          */
         real mass() const
         {
-            return sel_->posInfo_[i_].mass;
+            return sel_->posMass_[i_];
         }
         /*! \brief
          * Returns total charge for this position.
@@ -498,13 +596,13 @@ class SelectionPosition
          */
         real charge() const
         {
-            return sel_->posInfo_[i_].charge;
+            return sel_->posCharge_[i_];
         }
         //! Returns the number of atoms that make up this position.
         int atomCount() const
         {
             return sel_->rawPositions_.m.mapb.index[i_ + 1]
-                 - sel_->rawPositions_.m.mapb.index[i_];
+                   - sel_->rawPositions_.m.mapb.index[i_];
         }
         //! Return atom indices that make up this position.
         ConstArrayRef<int> atomIndices() const
@@ -514,8 +612,8 @@ class SelectionPosition
                 return ConstArrayRef<int>();
             }
             int first = sel_->rawPositions_.m.mapb.index[i_];
-            return ConstArrayRef<int>(atomCount(),
-                                      &sel_->rawPositions_.g->index[first]);
+            return ConstArrayRef<int>(&sel_->rawPositions_.g->index[first],
+                                      atomCount());
         }
         /*! \brief
          * Returns whether this position is selected in the current frame.

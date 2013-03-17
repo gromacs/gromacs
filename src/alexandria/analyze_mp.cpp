@@ -78,7 +78,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     const char *program;
     const char *ang3;
     
-    ang3    = unit2string(eg2c_Angstrom3);
+    ang3    = unit2string(eg2cAngstrom3);
     program = ShortProgram();
     if (gmx_poldata_get_bosque(pd,null,null,&bos0) == NULL)
         gmx_fatal(FARGS,"Can not find Bosque polarizability for 0");

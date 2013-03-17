@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::TrajectoryAnalysisRunnerCommon.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "runnercommon.h"
@@ -75,29 +79,29 @@ class TrajectoryAnalysisRunnerCommon::Impl
         void finishTrajectory();
 
         TrajectoryAnalysisSettings &settings_;
-        TopologyInformation     topInfo_;
+        TopologyInformation         topInfo_;
 
-        bool                    bHelp_;
-        bool                    bShowHidden_;
-        bool                    bQuiet_;
+        bool                        bHelp_;
+        bool                        bShowHidden_;
+        bool                        bQuiet_;
         //! Name of the trajectory file (empty if not provided).
-        std::string             trjfile_;
+        std::string                 trjfile_;
         //! Name of the topology file (empty if no topology provided).
-        std::string             topfile_;
+        std::string                 topfile_;
         //! Name of the index file (empty if no index file provided).
-        std::string             ndxfile_;
-        double                  startTime_;
-        double                  endTime_;
-        double                  deltaTime_;
+        std::string                 ndxfile_;
+        double                      startTime_;
+        double                      endTime_;
+        double                      deltaTime_;
 
-        gmx_ana_indexgrps_t    *grps_;
-        bool                    bTrajOpen_;
+        gmx_ana_indexgrps_t        *grps_;
+        bool                        bTrajOpen_;
         //! The current frame, or \p NULL if no frame loaded yet.
-        t_trxframe          *fr;
-        gmx_rmpbc_t             gpbc_;
+        t_trxframe                 *fr;
+        gmx_rmpbc_t                 gpbc_;
         //! Used to store the status variable from read_first_frame().
-        t_trxstatus            *status_;
-        output_env_t            oenv_;
+        t_trxstatus                *status_;
+        output_env_t                oenv_;
 };
 
 
@@ -249,11 +253,17 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     }
 
     if (options->isSet("b"))
+    {
         setTimeValue(TBEGIN, impl_->startTime_);
+    }
     if (options->isSet("e"))
+    {
         setTimeValue(TEND, impl_->endTime_);
+    }
     if (options->isSet("dt"))
+    {
         setTimeValue(TDELTA, impl_->deltaTime_);
+    }
 
     return true;
 }
@@ -293,7 +303,7 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     const TrajectoryAnalysisSettings &settings = impl_->settings_;
     bool bRequireTop
         = settings.hasFlag(TrajectoryAnalysisSettings::efRequireTop)
-          || selections->requiresTopology();
+            || selections->requiresTopology();
     if (bRequireTop && impl_->topfile_.empty())
     {
         GMX_THROW(InconsistentInputError("No topology provided, but one is required for analysis"));
@@ -306,8 +316,8 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
 
         snew(impl_->topInfo_.top_, 1);
         impl_->topInfo_.bTop_ = read_tps_conf(impl_->topfile_.c_str(), title,
-                impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
-                &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
+                                              impl_->topInfo_.top_, &impl_->topInfo_.ePBC_,
+                                              &impl_->topInfo_.xtop_, NULL, impl_->topInfo_.boxtop_, TRUE);
         if (hasTrajectory()
             && !settings.hasFlag(TrajectoryAnalysisSettings::efUseTopX))
         {
@@ -327,12 +337,12 @@ TrajectoryAnalysisRunnerCommon::initTopology(SelectionCollection *selections)
     selections->setTopology(impl_->topInfo_.topology(), natoms);
 
     /*
-    if (impl_->bSelDump)
-    {
+       if (impl_->bSelDump)
+       {
         gmx_ana_poscalc_coll_print_tree(stderr, impl_->pcc);
         fprintf(stderr, "\n");
-    }
-    */
+       }
+     */
 }
 
 
@@ -366,20 +376,20 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
         if (top.hasTopology() && impl_->fr->natoms > top.topology()->atoms.nr)
         {
             GMX_THROW(InconsistentInputError(formatString(
-                      "Trajectory (%d atoms) does not match topology (%d atoms)",
-                      impl_->fr->natoms, top.topology()->atoms.nr)));
+                                                     "Trajectory (%d atoms) does not match topology (%d atoms)",
+                                                     impl_->fr->natoms, top.topology()->atoms.nr)));
         }
         // Check index groups if they have been initialized based on the topology.
         /*
-        if (top)
-        {
+           if (top)
+           {
             for (int i = 0; i < impl_->sel->nr(); ++i)
             {
                 gmx_ana_index_check(impl_->sel->sel(i)->indexGroup(),
                                     impl_->fr->natoms);
             }
-        }
-        */
+           }
+         */
     }
     else
     {

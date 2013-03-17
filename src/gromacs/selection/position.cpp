@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements functions in position.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <string.h>
@@ -58,7 +62,7 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
     pos->v  = NULL;
     pos->f  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
-    pos->g  = NULL;
+    pos->g        = NULL;
     pos->nalloc_x = 0;
 }
 
@@ -73,6 +77,14 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
 {
+    GMX_RELEASE_ASSERT(n >= 0, "Invalid position allocation count");
+    // Always reserve at least one entry to make NULL checks against pos->x
+    // and gmx_ana_pos_reserve_velocities/forces() work as expected in the case
+    // that there are actually no positions.
+    if (n == 0)
+    {
+        n = 1;
+    }
     if (pos->nalloc_x < n)
     {
         pos->nalloc_x = n;
@@ -96,7 +108,7 @@ gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize)
  * \param[in,out] pos   Position data structure.
  *
  * Currently, this function can only be called after gmx_ana_pos_reserve()
- * has been called at least once with a \p n > 0.
+ * has been called at least once with a \p n >= 0.
  */
 void
 gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
@@ -113,7 +125,7 @@ gmx_ana_pos_reserve_velocities(gmx_ana_pos_t *pos)
  * \param[in,out] pos   Position data structure.
  *
  * Currently, this function can only be called after gmx_ana_pos_reserve()
- * has been called at least once with a \p n > 0.
+ * has been called at least once with a \p n >= 0.
  */
 void
 gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
@@ -156,11 +168,11 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
+    pos->nr               = 0;
     sfree(pos->x); pos->x = NULL;
     sfree(pos->v); pos->v = NULL;
     sfree(pos->f); pos->f = NULL;
-    pos->nalloc_x = 0;
+    pos->nalloc_x         = 0;
     gmx_ana_indexmap_deinit(&pos->m);
 }
 
@@ -252,17 +264,17 @@ gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
-    pos->m.b.nr = 0;
-    pos->m.b.nra = 0;
+    pos->m.b.nr    = 0;
+    pos->m.b.nra   = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    pos->m.b.index[0] = 0;
+    pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic = true;
+    pos->m.bStatic    = true;
     pos->m.bMapStatic = true;
 }
 
@@ -274,8 +286,8 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
-    pos->m.nr = 0;
+    pos->nr        = 0;
+    pos->m.nr      = 0;
     pos->m.mapb.nr = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
@@ -283,7 +295,7 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
      * should be false. This makes it possible to update the flags in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic = true;
+    pos->m.bStatic    = true;
     pos->m.bMapStatic = true;
 }
 
@@ -334,9 +346,9 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     dest->m.mapb.index[j+1] = g->isize;
     dest->m.b.index[j+1]    = g->isize;
     dest->nr++;
-    dest->m.nr = dest->nr;
+    dest->m.nr      = dest->nr;
     dest->m.mapb.nr = dest->nr;
-    dest->m.b.nr = dest->nr;
+    dest->m.b.nr    = dest->nr;
 }
 
 /*!
@@ -389,7 +401,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         if (refid < 0)
         {
             dest->m.refid[j] = -1;
-            dest->m.bStatic = false;
+            dest->m.bStatic  = false;
             /* If we are using masks, there is no need to alter the
              * mapid field. */
         }
@@ -397,7 +409,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         {
             if (refid != j)
             {
-                dest->m.bStatic = false;
+                dest->m.bStatic    = false;
                 dest->m.bMapStatic = false;
             }
             dest->m.refid[j] = refid;
@@ -407,7 +419,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
         }
         dest->m.mapb.index[j+1] = g->isize;
         dest->nr++;
-        dest->m.nr = dest->nr;
+        dest->m.nr      = dest->nr;
         dest->m.mapb.nr = dest->nr;
     }
 }
@@ -424,7 +436,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic = false;
+        pos->m.bStatic    = false;
         pos->m.bMapStatic = false;
     }
 }

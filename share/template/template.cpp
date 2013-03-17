@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #include <string>
 #include <vector>
@@ -43,14 +47,14 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
     public:
         AnalysisTemplate();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual TrajectoryAnalysisModuleDataPointer startFrames(
-                    const AnalysisDataParallelOptions &opt,
-                    const SelectionCollection &selections);
+            const AnalysisDataParallelOptions &opt,
+            const SelectionCollection         &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -113,7 +117,7 @@ AnalysisTemplate::AnalysisTemplate()
 
 
 void
-AnalysisTemplate::initOptions(Options *options,
+AnalysisTemplate::initOptions(Options                    *options,
                               TrajectoryAnalysisSettings *settings)
 {
     static const char *const desc[] = {
@@ -135,19 +139,19 @@ AnalysisTemplate::initOptions(Options *options,
     options->setDescription(concatenateStrings(desc));
 
     options->addOption(FileNameOption("o")
-        .filetype(eftPlot).outputFile()
-        .store(&fnDist_).defaultBasename("avedist")
-        .description("Average distances from reference group"));
+                           .filetype(eftPlot).outputFile()
+                           .store(&fnDist_).defaultBasename("avedist")
+                           .description("Average distances from reference group"));
 
     options->addOption(SelectionOption("reference")
-        .store(&refsel_).required()
-        .description("Reference group to calculate distances from"));
+                           .store(&refsel_).required()
+                           .description("Reference group to calculate distances from"));
     options->addOption(SelectionOption("select")
-        .storeVector(&sel_).required().multiValue()
-        .description("Groups to calculate distances to"));
+                           .storeVector(&sel_).required().multiValue()
+                           .description("Groups to calculate distances to"));
 
     options->addOption(DoubleOption("cutoff").store(&cutoff_)
-        .description("Cutoff for distance calculation (0 = no cutoff)"));
+                           .description("Cutoff for distance calculation (0 = no cutoff)"));
 
     settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
 }
@@ -155,7 +159,7 @@ AnalysisTemplate::initOptions(Options *options,
 
 void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                               const TopologyInformation & /*top*/)
+                               const TopologyInformation         & /*top*/)
 {
     data_.setColumnCount(sel_.size());
 
@@ -165,7 +169,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
     if (!fnDist_.empty())
     {
         AnalysisDataPlotModulePointer plotm(
-            new AnalysisDataPlotModule(settings.plotSettings()));
+                new AnalysisDataPlotModule(settings.plotSettings()));
         plotm->setFileName(fnDist_);
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
@@ -177,7 +181,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 TrajectoryAnalysisModuleDataPointer
 AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
-                              const SelectionCollection &selections)
+                              const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new ModuleData(this, opt, selections, cutoff_, refsel_.posCount()));
@@ -188,17 +192,17 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh = pdata->dataHandle(data_);
-    NeighborhoodSearch &nb = static_cast<ModuleData *>(pdata)->nb_;
+    AnalysisDataHandle  dh     = pdata->dataHandle(data_);
+    NeighborhoodSearch &nb     = static_cast<ModuleData *>(pdata)->nb_;
     const Selection    &refsel = pdata->parallelSelection(refsel_);
 
     nb.init(pbc, refsel.positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
-        const Selection &sel = pdata->parallelSelection(sel_[g]);
-        int   nr = sel.posCount();
-        real  frave = 0.0;
+        const Selection &sel   = pdata->parallelSelection(sel_[g]);
+        int              nr    = sel.posCount();
+        real             frave = 0.0;
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel.position(i);
@@ -237,7 +241,7 @@ main(int argc, char *argv[])
     ProgramInfo::init(argc, argv);
     try
     {
-        AnalysisTemplate module;
+        AnalysisTemplate                    module;
         TrajectoryAnalysisCommandLineRunner runner(&module);
         return runner.run(argc, argv);
     }

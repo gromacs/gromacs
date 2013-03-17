@@ -77,10 +77,13 @@ void
     int              i_shift_offset,i_coord_offset,outeriter,inneriter;
     int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
     int              jnrA,jnrB,jnrC,jnrD;
+    int              jnrlistA,jnrlistB,jnrlistC,jnrlistD;
     int              j_coord_offsetA,j_coord_offsetB,j_coord_offsetC,j_coord_offsetD;
     int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
-    real             shX,shY,shZ,rcutoff_scalar;
+    real             rcutoff_scalar;
     real             *shiftvec,*fshift,*x,*f;
+    real             *fjptrA,*fjptrB,*fjptrC,*fjptrD;
+    real             scratch[4*DIM];
     __m128           tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
     /* #for I in PARTICLES_I */
     int              vdwioffset{I};
@@ -99,7 +102,7 @@ void
     /* #endif */
     /* #if 'GeneralizedBorn' in KERNEL_ELEC */
     __m128i          gbitab;
-    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,dvdatmp;
+    __m128           vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,gbeps,dvdatmp;
     __m128           minushalf = _mm_set1_ps(-0.5);
     real             *invsqrta,*dvda,*gbtab;
     /* #endif */
@@ -266,14 +269,16 @@ void
     outeriter        = 0;
     inneriter        = 0;
 
+    for(iidx=0;iidx<4*DIM;iidx++)
+    {
+        scratch[iidx] = 0.0;
+    }  
+
     /* Start outer loop over neighborlists */
     for(iidx=0; iidx<nri; iidx++)
     {
         /* Load shift vector for this list */
         i_shift_offset   = DIM*shiftidx[iidx];
-        shX              = shiftvec[i_shift_offset+XX];
-        shY              = shiftvec[i_shift_offset+YY];
-        shZ              = shiftvec[i_shift_offset+ZZ];
 
         /* Load limits for loop over neighbors */
         j_index_start    = jindex[iidx];
@@ -284,14 +289,21 @@ void
         i_coord_offset   = DIM*inr;
 
         /* Load i particle coords and add shift vector */
-        /* ## Loop over i particles, but only include ones that we use - skip e.g. vdw-only sites for elec-only kernel */
-        /*     #for I in PARTICLES_I */
-        ix{I}              = _mm_set1_ps(shX + x[i_coord_offset+DIM*{I}+XX]);
-        iy{I}              = _mm_set1_ps(shY + x[i_coord_offset+DIM*{I}+YY]);
-        iz{I}              = _mm_set1_ps(shZ + x[i_coord_offset+DIM*{I}+ZZ]);
-        /*     #define OUTERFLOPS OUTERFLOPS+3 */
-        /* #endfor */
-
+        /* #if GEOMETRY_I == 'Particle' */
+        gmx_mm_load_shift_and_1rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,&ix0,&iy0,&iz0);
+        /* #elif GEOMETRY_I == 'Water3' */
+        gmx_mm_load_shift_and_3rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2);
+        /* #elif GEOMETRY_I == 'Water4' */
+        /*     #if 0 in PARTICLES_I                 */
+        gmx_mm_load_shift_and_4rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #else                                */
+        gmx_mm_load_shift_and_3rvec_broadcast_ps(shiftvec+i_shift_offset,x+i_coord_offset+DIM,
+                                                 &ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #endif                               */
+        /* #endif                                   */
+        
         /* #if 'Force' in KERNEL_VF */
         /*     #for I in PARTICLES_I */
         fix{I}             = _mm_setzero_ps();
@@ -349,22 +361,25 @@ void
         /* #define INNERFLOPS 0 */
 
             /* Get j neighbor index, and coordinate index */
+            /* #if ROUND =='Loop' */
             jnrA             = jjnr[jidx];
             jnrB             = jjnr[jidx+1];
             jnrC             = jjnr[jidx+2];
             jnrD             = jjnr[jidx+3];
-
-            /* #if ROUND =='Epilogue' */
+            /* #else */
+            jnrlistA         = jjnr[jidx];
+            jnrlistB         = jjnr[jidx+1];
+            jnrlistC         = jjnr[jidx+2];
+            jnrlistD         = jjnr[jidx+3];
             /* Sign of each element will be negative for non-real atoms.
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_ps(mask,val) to clear dummy entries.
              */
             dummy_mask = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
-            jnrA       = (jnrA>=0) ? jnrA : 0;
-            jnrB       = (jnrB>=0) ? jnrB : 0;
-            jnrC       = (jnrC>=0) ? jnrC : 0;
-            jnrD       = (jnrD>=0) ? jnrD : 0;
-
+            jnrA       = (jnrlistA>=0) ? jnrlistA : 0;
+            jnrB       = (jnrlistB>=0) ? jnrlistB : 0;
+            jnrC       = (jnrlistC>=0) ? jnrlistC : 0;
+            jnrD       = (jnrlistD>=0) ? jnrlistD : 0;
             /* #endif */
             j_coord_offsetA  = DIM*jnrA;
             j_coord_offsetB  = DIM*jnrB;
@@ -444,7 +459,7 @@ void
             /*     #endfor */
             /* #endif */
 
-            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_J */
+            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_I */
             /*     #for J in PARTICLES_J */
             fjx{J}             = _mm_setzero_ps();
             fjy{J}             = _mm_setzero_ps();
@@ -458,7 +473,8 @@ void
              * CALCULATE INTERACTIONS *
              **************************/
 
-            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             /*         ## We always calculate rinv/rinvsq above to enable pipelineing in compilers (performance tested on x86) */
             if (gmx_mm_any_lt(rsq{I}{J},rcutoff2))
             {
@@ -542,7 +558,6 @@ void
             isaprod          = _mm_mul_ps(isai{I},isaj{J});
             gbqqfactor       = _mm_xor_ps(signbit,_mm_mul_ps(qq{I}{J},_mm_mul_ps(isaprod,gbinvepsdiff)));
             gbscale          = _mm_mul_ps(isaprod,gbtabscale);
-            dvdaj            = gmx_mm_load_4real_swizzle_ps(dvda+jnrA+{J},dvda+jnrB+{J},dvda+jnrC+{J},dvda+jnrD+{J});
             /*             #define INNERFLOPS INNERFLOPS+5 */
 
             /* Calculate generalized born table index - this is a separate table from the normal one,
@@ -568,9 +583,23 @@ void
             FF               = _mm_add_ps(Fp,_mm_mul_ps(gbeps,_mm_add_ps(G,_mm_add_ps(Heps,Heps))));
             fgb              = _mm_mul_ps(gbqqfactor,_mm_mul_ps(FF,gbscale));
             dvdatmp          = _mm_mul_ps(minushalf,_mm_add_ps(vgb,_mm_mul_ps(fgb,r{I}{J})));
+            /*                 #if ROUND == 'Epilogue' */
+            dvdatmp          = _mm_andnot_ps(dummy_mask,dvdatmp);
+            /*                 #endif */
             dvdasum          = _mm_add_ps(dvdasum,dvdatmp);
-            gmx_mm_store_4real_swizzle_ps(dvda+jnrA,dvda+jnrB,dvda+jnrC,dvda+jnrD,
-                                          _mm_mul_ps(dvdatmp,_mm_mul_ps(isaj{J},isaj{J})));
+            /*                 #if ROUND == 'Loop' */
+            fjptrA           = dvda+jnrA;
+            fjptrB           = dvda+jnrB;
+            fjptrC           = dvda+jnrC;
+            fjptrD           = dvda+jnrD;
+            /*                 #else */
+            /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
+            fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
+            fjptrB             = (jnrlistB>=0) ? dvda+jnrB : scratch;
+            fjptrC             = (jnrlistC>=0) ? dvda+jnrC : scratch;
+            fjptrD             = (jnrlistD>=0) ? dvda+jnrD : scratch;
+            /*                 #endif */
+            gmx_mm_increment_4real_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,_mm_mul_ps(dvdatmp,_mm_mul_ps(isaj{J},isaj{J})));
             /*                 #define INNERFLOPS INNERFLOPS+13 */
             /*             #endif */
             velec            = _mm_mul_ps(qq{I}{J},rinv{I}{J});
@@ -769,7 +798,8 @@ void
             /*             #endif */
             /*         #endif */
             /*     #endif */
-            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             cutoff_mask      = _mm_cmplt_ps(rsq{I}{J},rcutoff2);
             /*         #define INNERFLOPS INNERFLOPS+1 */
             /*     #endif */
@@ -799,7 +829,8 @@ void
             /*             #endif */
             /*         #endif */
             /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
-            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             vvdw             = _mm_and_ps(vvdw,cutoff_mask);
             /*                 #define INNERFLOPS INNERFLOPS+1 */
             /*             #endif                                       */
@@ -822,10 +853,11 @@ void
             fscal            = fvdw;
             /*        #endif */
 
-            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*        ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*        #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             fscal            = _mm_and_ps(fscal,cutoff_mask);
-            /*                 #define INNERFLOPS INNERFLOPS+1 */
-            /*             #endif                                       */
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif                                       */
 
             /*             #if ROUND == 'Epilogue' */
             fscal            = _mm_andnot_ps(dummy_mask,fscal);
@@ -842,10 +874,19 @@ void
             fiz{I}             = _mm_add_ps(fiz{I},tz);
             /*             #define INNERFLOPS INNERFLOPS+6 */
 
-            /* #if GEOMETRY_J == 'Particle'             */
-            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
-                                                   tx,ty,tz);
+            /* #if GEOMETRY_I == 'Particle'             */
+            /*     #if ROUND == 'Loop' */
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            /*     #else */
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            /*     #endif */
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,tx,ty,tz);
             /*     #define INNERFLOPS INNERFLOPS+3      */
             /* #else                                    */
             fjx{J}             = _mm_add_ps(fjx{J},tx);
@@ -853,10 +894,11 @@ void
             fjz{J}             = _mm_add_ps(fjz{J},tz);
             /*     #define INNERFLOPS INNERFLOPS+3      */
             /* #endif                                   */
-
+            
             /*     #endif */
 
-            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*     ## Note special check for TIP4P-TIP4P. Since we are cutting of all hydrogen interactions we also cut the LJ-only O-O interaction */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] or (GEOMETRY_I=='Water4' and GEOMETRY_J=='Water4' and 'exactcutoff' in INTERACTION_FLAGS[1][1]) */
             /*         #if 0    ## This and next two lines is a hack to maintain indentation in template file */
             {
                 /*     #endif */
@@ -867,21 +909,34 @@ void
             /* #endfor */
             /* ## End of loop over i-j interaction pairs */
 
-            /* #if GEOMETRY_J == 'Water3'               */
-            gmx_mm_decrement_3rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            /* #if GEOMETRY_I != 'Particle' */
+            /*     #if ROUND == 'Loop' */
+            fjptrA             = f+j_coord_offsetA;
+            fjptrB             = f+j_coord_offsetB;
+            fjptrC             = f+j_coord_offsetC;
+            fjptrD             = f+j_coord_offsetD;
+            /*     #else */
+            fjptrA             = (jnrlistA>=0) ? f+j_coord_offsetA : scratch;
+            fjptrB             = (jnrlistB>=0) ? f+j_coord_offsetB : scratch;
+            fjptrC             = (jnrlistC>=0) ? f+j_coord_offsetC : scratch;
+            fjptrD             = (jnrlistD>=0) ? f+j_coord_offsetD : scratch;
+            /*     #endif */
+            /* #endif */
+
+            /* #if 'Water' in GEOMETRY_I and GEOMETRY_J == 'Particle' */
+            gmx_mm_decrement_1rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,fjx0,fjy0,fjz0);
+            /* #elif GEOMETRY_J == 'Water3'             */
+            gmx_mm_decrement_3rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2);
             /*     #define INNERFLOPS INNERFLOPS+9      */
             /* #elif GEOMETRY_J == 'Water4'             */
             /*     #if 0 in PARTICLES_J                 */
-            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(f+j_coord_offsetA,f+j_coord_offsetB,
-                                                   f+j_coord_offsetC,f+j_coord_offsetD,
+            gmx_mm_decrement_4rvec_4ptr_swizzle_ps(fjptrA,fjptrB,fjptrC,fjptrD,
                                                    fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,
                                                    fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
             /*     #define INNERFLOPS INNERFLOPS+12     */
             /*     #else                                */
-            gmx_mm_decrement_3rvec_4ptr_swizzle_ps(f+j_coord_offsetA+DIM,f+j_coord_offsetB+DIM,
-                                                   f+j_coord_offsetC+DIM,f+j_coord_offsetD+DIM,
+            gmx_mm_decrement_3rvec_4ptr_swizzle_ps(fjptrA+DIM,fjptrB+DIM,fjptrC+DIM,fjptrD+DIM,
                                                    fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
             /*     #define INNERFLOPS INNERFLOPS+9      */
             /*     #endif                               */
