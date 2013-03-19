@@ -108,6 +108,7 @@ double gmx2convert(double x, int unit)
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
     "Angstrom", "Nm", "Pm", "Bohr", "Kcal_Mole",
+    "Kj_Mole",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
     "Debye", "Electron", "Buckingham"
 };
