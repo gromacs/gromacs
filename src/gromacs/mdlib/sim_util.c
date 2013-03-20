@@ -2867,9 +2867,11 @@ void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
                     tng_molecule_chain_add (tng, tng_mol, chain_name, 
                                             &tng_chain);
                 }
-                
+
+                /* FIXME: When TNG supports both residue index and residue
+                 * number the latter should be used. */
                 if (tng_chain_residue_find(tng, tng_chain, *resin->name,
-                                           resin->nr, &tng_res)
+                                           at->resind + 1, &tng_res)
                     != TNG_SUCCESS)
                 {
                     tng_chain_residue_add(tng, tng_chain, *resin->name, &tng_res);

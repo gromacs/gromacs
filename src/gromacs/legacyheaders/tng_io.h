@@ -225,7 +225,66 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+
+#ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
+#else
+
+/* Visual Studio does not contain inttypes.h and stdint.h. Some defines and
+ * typedefs are used from the GNU C Library */
+
+/* This first part is from stdint.h (GNU C Library) */
+#ifndef __int8_t_defined
+# define __int8_t_defined
+typedef signed char             int8_t;
+typedef short int               int16_t;
+typedef int                     int32_t;
+# if __WORDSIZE == 64
+typedef long int                int64_t;
+# else
+__extension__
+typedef long long int           int64_t;
+# endif
+#endif
+
+typedef unsigned char           uint8_t;
+typedef unsigned short int      uint16_t;
+#ifndef __uint32_t_defined
+typedef unsigned int            uint32_t;
+# define __uint32_t_defined
+#endif
+#if __WORDSIZE == 64
+typedef unsigned long int       uint64_t;
+#else
+__extension__
+typedef unsigned long long int  uint64_t;
+#endif
+
+/* This is from inttypes.h  (GNU C Library) */
+/* The ISO C99 standard specifies that these macros must only be
+   defined if explicitly requested.  */
+#if !defined __cplusplus || defined __STDC_FORMAT_MACROS
+
+# if __WORDSIZE == 64
+#  define __PRI64_PREFIX        "l"
+#  define __PRIPTR_PREFIX       "l"
+# else
+#  define __PRI64_PREFIX        "ll"
+#  define __PRIPTR_PREFIX
+# endif
+
+/* From stdint.h (GNU C Library) */
+/* Macros for printing format specifiers. */
+/* Decimal notation.  */
+# define PRId8          "d"
+# define PRId16         "d"
+# define PRId32         "d"
+# define PRId64         __PRI64_PREFIX "d"
+#endif
+
+#endif
+
 
 /** The version of this TNG build */
 #define TNG_VERSION 2
@@ -1281,7 +1340,7 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
                                        const tng_block_type block_type_flag,
                                        int64_t n_frames,
                                        const int64_t n_values_per_frame,
-                                       const int64_t stride_length,
+                                       int64_t stride_length,
                                        const int64_t codec_id,
                                        void *new_data);
 
@@ -1316,7 +1375,7 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
                                         const tng_block_type block_type_flag,
                                         int64_t n_frames,
                                         const int64_t n_values_per_frame,
-                                        const int64_t stride_length,
+                                        int64_t stride_length,
                                         const int64_t first_particle_number,
                                         const int64_t n_particles,
                                         const int64_t codec_id,

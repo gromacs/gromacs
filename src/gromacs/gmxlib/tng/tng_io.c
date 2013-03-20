@@ -13,12 +13,14 @@
  * of the License, or (at your option) any later version.
  */
 
+#ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
+#endif
+
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #ifdef USE_ZLIB
 #include <zlib.h>
 #endif
@@ -55,7 +57,7 @@ struct tng_residue {
     /** The number of atoms in the residue */
     int64_t n_atoms;
     /** A list of atoms in the residue */
-    tng_atom_t atoms;
+    int64_t atoms_offset;
 };
 
 struct tng_chain {
@@ -2275,7 +2277,7 @@ static tng_function_status tng_molecules_block_read
 
                     tng_residue_data_read(tng_data, block, residue, &offset);
 
-                    residue->atoms = atom;
+                    residue->atoms_offset = atom - molecule->atoms;
                     /* Read the atoms of the residue */
                     for(l=residue->n_atoms; l--;)
                     {
@@ -2300,7 +2302,7 @@ static tng_function_status tng_molecules_block_read
 
                     tng_residue_data_read(tng_data, block, residue, &offset);
 
-                    residue->atoms = atom;
+                    residue->atoms_offset = atom - molecule->atoms;
                     /* Read the atoms of the residue */
                     for(l=residue->n_atoms; l--;)
                     {
@@ -2679,7 +2681,7 @@ static tng_function_status tng_molecules_block_write
                 {
                     tng_residue_data_write(tng_data, block, residue, &offset);
 
-                    atom = residue->atoms;
+                    atom = molecule->atoms + residue->atoms_offset;
                     for(l = residue->n_atoms; l--;)
                     {
                         tng_atom_data_write(tng_data, block, atom, &offset);
@@ -2699,7 +2701,7 @@ static tng_function_status tng_molecules_block_write
                 {
                     tng_residue_data_write(tng_data, block, residue, &offset);
 
-                    atom = residue->atoms;
+                    atom = molecule->atoms + residue->atoms_offset;
                     for(l = residue->n_atoms; l--;)
                     {
                         tng_atom_data_write(tng_data, block, atom, &offset);
@@ -6622,8 +6624,7 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
 
     if(chain->n_residues)
     {
-        curr_index = (chain->residues - molecule->residues) /
-                     sizeof(struct tng_residue);
+        curr_index = chain->residues - molecule->residues;
     }
     else
     {
@@ -6647,10 +6648,10 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
 
     if(curr_index != -1)
     {
-        chain->residues = new_residues + curr_index * sizeof(struct tng_residue);
+        chain->residues = new_residues + curr_index;
         if(molecule->n_residues)
         {
-            last_residue = &new_residues[molecule->n_atoms-1];
+            last_residue = &new_residues[molecule->n_residues - 1];
 
             temp_residue = chain->residues + (chain->n_residues - 1);
             /* Make space in list of residues to add the new residues together with the other
@@ -6680,7 +6681,7 @@ tng_function_status tng_chain_residue_add(tng_trajectory_t tng_data,
 
     (*residue)->chain = chain;
     (*residue)->n_atoms = 0;
-    (*residue)->atoms = 0;
+    (*residue)->atoms_offset = 0;
 
     chain->n_residues++;
     molecule->n_residues++;
@@ -6728,18 +6729,12 @@ tng_function_status tng_residue_atom_add(tng_trajectory_t tng_data,
                                          const char *atom_type,
                                          tng_atom_t *atom)
 {
-    int curr_index;
-    tng_atom_t new_atoms, temp_atom, last_atom;
+    tng_atom_t new_atoms;
     tng_molecule_t molecule = residue->chain->molecule;
 
-    if(residue->n_atoms)
+    if(!residue->n_atoms)
     {
-        curr_index = (residue->atoms - molecule->atoms) /
-                     sizeof(struct tng_atom);
-    }
-    else
-    {
-        curr_index = -1;
+        residue->atoms_offset = molecule->n_atoms;
     }
 
     new_atoms = realloc(molecule->atoms,
@@ -6757,35 +6752,7 @@ tng_function_status tng_residue_atom_add(tng_trajectory_t tng_data,
 
     molecule->atoms = new_atoms;
 
-    if(curr_index != -1)
-    {
-        residue->atoms = new_atoms + curr_index * sizeof(struct tng_atom);
-        if(molecule->n_atoms)
-        {
-            last_atom = &new_atoms[molecule->n_atoms-1];
-
-            temp_atom = residue->atoms + (residue->n_atoms - 1);
-            /* Make space in list of atoms to add the new atoms together with the other
-            * atoms of this residue */
-            if(temp_atom != last_atom)
-            {
-                temp_atom++;
-                memmove(temp_atom + 1, temp_atom,
-                        last_atom - temp_atom);
-            }
-        }
-    }
-    else
-    {
-        curr_index = molecule->n_atoms;
-    }
-
-    *atom = &new_atoms[curr_index + residue->n_atoms];
-
-    if(!residue->n_atoms)
-    {
-        residue->atoms = *atom;
-    }
+    *atom = &new_atoms[molecule->n_atoms];
 
     tng_atom_init(*atom);
     tng_atom_name_set(tng_data, *atom, atom_name);
@@ -9789,7 +9756,7 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
                                         const tng_block_type block_type_flag,
                                         int64_t n_frames,
                                         const int64_t n_values_per_frame,
-                                        const int64_t stride_length,
+                                        int64_t stride_length,
                                         const int64_t codec_id,
                                         void *new_data)
 {
@@ -9800,6 +9767,11 @@ tng_function_status tng_data_block_add(tng_trajectory_t tng_data,
     void *orig;
 
     frame_set = &tng_data->current_trajectory_frame_set;
+
+    if(stride_length <= 0)
+    {
+        stride_length = 1;
+    }
 
     block_index = -1;
     /* See if there is already a data block of this ID */
@@ -9996,7 +9968,7 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
                                         const tng_block_type block_type_flag,
                                         int64_t n_frames,
                                         const int64_t n_values_per_frame,
-                                        const int64_t stride_length,
+                                        int64_t stride_length,
                                         const int64_t num_first_particle,
                                         const int64_t n_particles,
                                         const int64_t codec_id,
@@ -10010,6 +9982,11 @@ tng_function_status tng_particle_data_block_add(tng_trajectory_t tng_data,
     void *orig;
 
     frame_set = &tng_data->current_trajectory_frame_set;
+
+    if(stride_length <= 0)
+    {
+        stride_length = 1;
+    }
 
     block_index = -1;
     /* See if there is already a data block of this ID */
