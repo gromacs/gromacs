@@ -271,7 +271,8 @@ typedef struct gmx_pme {
     MPI_Datatype  rvec_mpi;      /* the pme vector's MPI type */
 #endif
 
-    int        nthread;       /* The number of threads doing PME */
+    gmx_bool   bUseThreads;   /* Does any of the PME ranks have nthread>1 ?  */
+    int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
     gmx_bool   bFEP;          /* Compute Free energy contribution */
@@ -1711,6 +1712,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
 static void pmegrids_init(pmegrids_t *grids,
                           int nx, int ny, int nz, int nz_base,
                           int pme_order,
+                          gmx_bool bUseThreads,
                           int nthread,
                           int overlap_x,
                           int overlap_y)
@@ -1733,7 +1735,7 @@ static void pmegrids_init(pmegrids_t *grids,
 
     make_subgrid_division(n_base, pme_order-1, grids->nthread, grids->nc);
 
-    if (grids->nthread > 1)
+    if (bUseThreads)
     {
         ivec nst;
         int gridsize;
@@ -1782,6 +1784,10 @@ static void pmegrids_init(pmegrids_t *grids,
                 }
             }
         }
+    }
+    else
+    {
+        grids->grid_th = NULL;
     }
 
     snew(grids->g2t, DIM);
@@ -3063,7 +3069,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 {
     gmx_pme_t pme = NULL;
 
-    pme_atomcomm_t *atc;
+    int  use_threads, sum_use_threads;
     ivec ndata;
 
     if (debug)
@@ -3162,6 +3168,21 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     pme->nthread = nthread;
+
+     /* Check if any of the PME MPI ranks uses threads */
+    use_threads = (pme->nthread > 1 ? 1 : 0);
+#ifdef GMX_MPI
+    if (pme->nnodes > 1)
+    {
+        MPI_Allreduce(&use_threads, &sum_use_threads, 1, MPI_INT,
+                      MPI_SUM, pme->mpi_comm);
+    }
+    else
+#endif
+    {
+        sum_use_threads = use_threads;
+    }
+    pme->bUseThreads = (sum_use_threads > 0);
 
     if (ir->ePBC == epbcSCREW)
     {
@@ -3267,7 +3288,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     /* Check for a limitation of the (current) sum_fftgrid_dd code.
      * We only allow multiple communication pulses in dim 1, not in dim 0.
      */
-    if (pme->nthread > 1 && (pme->overlap[0].noverlap_nodes > 1 ||
+    if (pme->bUseThreads && (pme->overlap[0].noverlap_nodes > 1 ||
                              pme->nkx < pme->nnodes_major*pme->pme_order))
     {
         gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x and should be >= pme_order (%d). To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
@@ -3310,6 +3331,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                   pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
                   pme->pmegrid_nz_base,
                   pme->pme_order,
+                  pme->bUseThreads,
                   pme->nthread,
                   pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                   pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
@@ -3333,6 +3355,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                       pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
                       pme->pmegrid_nz_base,
                       pme->pme_order,
+                      pme->bUseThreads,
                       pme->nthread,
                       pme->nkx % pme->nnodes_major != 0,
                       pme->nky % pme->nnodes_minor != 0);
@@ -3406,7 +3429,7 @@ static void reuse_pmegrids(const pmegrids_t *old, pmegrids_t *new)
     sfree_aligned(new->grid.grid);
     new->grid.grid = old->grid.grid;
 
-    if (new->nthread > 1 && new->nthread == old->nthread)
+    if (new->grid_th != NULL && new->nthread == old->nthread)
     {
         sfree_aligned(new->grid_all);
         for (t = 0; t < new->nthread; t++)
@@ -3937,22 +3960,34 @@ static void spread_on_grid(gmx_pme_t pme,
     for (thread = 0; thread < nthread; thread++)
     {
         splinedata_t *spline;
-        pmegrid_t *grid;
+        pmegrid_t *grid = NULL;
 
         /* make local bsplines  */
-        if (grids == NULL || grids->nthread == 1)
+        if (grids == NULL || !pme->bUseThreads)
         {
             spline = &atc->spline[0];
 
             spline->n = atc->n;
 
-            grid = &grids->grid;
+            if (bSpread)
+            {
+                grid = &grids->grid;
+            }
         }
         else
         {
             spline = &atc->spline[thread];
 
-            make_thread_local_ind(atc, thread, spline);
+            if (grids->nthread == 1)
+            {
+                /* One thread, we operate on all charges */
+                spline->n = atc->n;
+            }
+            else
+            {
+                /* Get the indices our thread should operate on */
+                make_thread_local_ind(atc, thread, spline);
+            }
 
             grid = &grids->grid_th[thread];
         }
@@ -3971,7 +4006,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #endif
             spread_q_bsplines_thread(grid, atc, spline, pme->spline_work);
 
-            if (grids->nthread > 1)
+            if (pme->bUseThreads)
             {
                 copy_local_grid(pme, grids, thread, fftgrid);
             }
@@ -3986,7 +4021,7 @@ static void spread_on_grid(gmx_pme_t pme,
     cs2 += (double)c2;
 #endif
 
-    if (bSpread && grids->nthread > 1)
+    if (bSpread && pme->bUseThreads)
     {
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
@@ -4006,7 +4041,10 @@ static void spread_on_grid(gmx_pme_t pme,
 
         if (pme->nnodes > 1)
         {
-            /* Communicate the overlapping part of the fftgrid */
+            /* Communicate the overlapping part of the fftgrid.
+             * For this communication call we need to check pme->bUseThreads
+             * to have all ranks communicate here, regardless of pme->nthread.
+             */
             sum_fftgrid_dd(pme, fftgrid);
         }
     }
@@ -4101,6 +4139,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
     /* We only use the A-charges grid */
     grid = &pme->pmegridA;
 
+    /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgridA);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
@@ -4421,7 +4460,7 @@ int gmx_pme_do(gmx_pme_t pme,
             inc_nrnb(nrnb, eNR_SPREADQBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
 
-            if (pme->nthread == 1)
+            if (!pme->bUseThreads)
             {
                 wrap_periodic_pmegrid(pme, grid);
 
