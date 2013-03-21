@@ -2317,6 +2317,21 @@ static int dd_simnode2pmenode(t_commrec *cr, int sim_nodeid)
     return pmenode;
 }
 
+void get_pme_nnodes(const gmx_domdec_t *dd,
+                    int *npmenodes_x, int *npmenodes_y)
+{
+    if (dd != NULL)
+    {
+        *npmenodes_x = dd->comm->npmenodes_x;
+        *npmenodes_y = dd->comm->npmenodes_y;
+    }
+    else
+    {
+        *npmenodes_x = 1;
+        *npmenodes_y = 1;
+    }
+}
+
 gmx_bool gmx_pmeonlynode(t_commrec *cr, int sim_nodeid)
 {
     gmx_bool bPMEOnlyNode;
