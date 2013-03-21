@@ -3032,29 +3032,49 @@ static pme_spline_work_t *make_pme_spline_work(int order)
     return work;
 }
 
-static void
-gmx_pme_check_grid_restrictions(FILE *fplog, char dim, int nnodes, int *nk)
+int gmx_pme_check_restrictions(int pme_order,
+                               int nkx, int nky, int nkz,
+                               int nnodes_major,
+                               int nnodes_minor,
+                               gmx_bool bUseThreads,
+                               gmx_bool bFatal)
 {
-    int nk_new;
-
-    if (*nk % nnodes != 0)
+    if (pme_order > PME_ORDER_MAX)
     {
-        nk_new = nnodes*(*nk/nnodes + 1);
-
-        if (2*nk_new >= 3*(*nk))
+        if (!bFatal)
         {
-            gmx_fatal(FARGS, "The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). The grid size would have to be increased by more than 50%% to make the grid divisible. Change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).",
-                      dim, *nk, dim, nnodes, dim);
+            return 1;
         }
-
-        if (fplog != NULL)
-        {
-            fprintf(fplog, "\nNOTE: The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). Increasing the PME grid size in dim %c to %d. This will increase the accuracy and will not decrease the performance significantly on this number of nodes. For optimal performance change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).\n\n",
-                    dim, *nk, dim, nnodes, dim, nk_new, dim);
-        }
-
-        *nk = nk_new;
+        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
+                  pme_order, PME_ORDER_MAX);
     }
+
+    if (nkx <= pme_order*(nnodes_major > 1 ? 2 : 1) ||
+        nky <= pme_order*(nnodes_minor > 1 ? 2 : 1) ||
+        nkz <= pme_order)
+    {
+        if (!bFatal)
+        {
+            return 1;
+        }
+        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
+                  pme_order);
+    }
+
+    /* Check for a limitation of the (current) sum_fftgrid_dd code.
+     * We only allow multiple communication pulses in dim 1, not in dim 0.
+     */
+    if (bUseThreads && nkx < nnodes_major*pme_order)
+    {
+        if (!bFatal)
+        {
+            return 1;
+        }
+        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x and should be >= pme_order (%d). To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
+                  nkx/(double)nnodes_major, pme_order);
+    }
+
+    return 0;
 }
 
 int gmx_pme_init(gmx_pme_t *         pmedata,
@@ -3197,37 +3217,13 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
 
-    if (pme->pme_order > PME_ORDER_MAX)
-    {
-        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
-                  pme->pme_order, PME_ORDER_MAX);
-    }
-
-    /* Currently pme.c supports only the fft5d FFT code.
-     * Therefore the grid always needs to be divisible by nnodes.
-     * When the old 1D code is also supported again, change this check.
-     *
-     * This check should be done before calling gmx_pme_init
-     * and fplog should be passed iso stderr.
-     *
-       if (pme->ndecompdim >= 2)
-     */
-    if (pme->ndecompdim >= 1)
-    {
-        /*
-           gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
-                                        'x',nnodes_major,&pme->nkx);
-           gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
-                                        'y',nnodes_minor,&pme->nky);
-         */
-    }
-
-    if (pme->nkx <= pme->pme_order*(pme->nnodes_major > 1 ? 2 : 1) ||
-        pme->nky <= pme->pme_order*(pme->nnodes_minor > 1 ? 2 : 1) ||
-        pme->nkz <= pme->pme_order)
-    {
-        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order", pme->pme_order);
-    }
+    /* If we violate restrictions, generate a fatal error here */
+    gmx_pme_check_restrictions(pme->pme_order,
+                               pme->nkx, pme->nky, pme->nkz,
+                               pme->nnodes_major,
+                               pme->nnodes_minor,
+                               pme->bUseThreads,
+                               TRUE);
 
     if (pme->nnodes > 1)
     {
@@ -3285,14 +3281,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                       pme->nky,
                       (div_round_up(pme->nkx, pme->nnodes_major)+pme->pme_order+1)*pme->nkz);
 
-    /* Check for a limitation of the (current) sum_fftgrid_dd code.
-     * We only allow multiple communication pulses in dim 1, not in dim 0.
+    /* Double-check for a limitation of the (current) sum_fftgrid_dd code.
+     * Note that gmx_pme_check_restrictions checked for this already.
      */
-    if (pme->bUseThreads && (pme->overlap[0].noverlap_nodes > 1 ||
-                             pme->nkx < pme->nnodes_major*pme->pme_order))
+    if (pme->bUseThreads && pme->overlap[0].noverlap_nodes > 1)
     {
-        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x and should be >= pme_order (%d). To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
-                  pme->nkx/(double)pme->nnodes_major, pme->pme_order);
+        gmx_incons("More than one communication pulse required for grid overlap communication along the major dimension while using threads");
     }
 
     snew(pme->bsp_mod[XX], pme->nkx);

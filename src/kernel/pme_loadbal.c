@@ -80,11 +80,11 @@ typedef struct {
 #define PME_LB_ACCEL_TOL 1.02
 
 enum {
-    epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimNR
+    epmelblimNO, epmelblimBOX, epmelblimDD, epmelblimPMEGRID, epmelblimNR
 };
 
 const char *pmelblim_str[epmelblimNR] =
-{ "no", "box size", "domain decompostion" };
+{ "no", "box size", "domain decompostion", "PME grid restriction" };
 
 struct pme_load_balancing {
     int          nstage;             /* the current maximum number of stages */
@@ -229,12 +229,12 @@ static gmx_bool pme_loadbal_increase_cutoff(pme_load_balancing_t pme_lb,
                        &set->grid[YY],
                        &set->grid[ZZ]);
 
-        /* In parallel we can't have grids smaller than 2*pme_order,
-         * and we would anyhow not gain much speed at these grid sizes.
+        /* The grid has to be larger than pme_order
+         * (in parallel larger than 2*pme_order, but that is checked later).
          */
         for (d = 0; d < DIM; d++)
         {
-            if (set->grid[d] <= 2*pme_order)
+            if (set->grid[d] <= pme_order)
             {
                 pme_lb->n--;
 
@@ -363,7 +363,7 @@ static void print_loadbal_limited(FILE *fp_err, FILE *fp_log,
 {
     char buf[STRLEN], sbuf[22];
 
-    sprintf(buf, "step %4s: the %s limited the PME load balancing to a coulomb cut-off of %.3f",
+    sprintf(buf, "step %4s: the %s limits the PME load balancing to a coulomb cut-off of %.3f",
             gmx_step_str(step, sbuf),
             pmelblim_str[pme_lb->elimited],
             pme_lb->setup[pme_loadbal_end(pme_lb)-1].rcut_coulomb);
@@ -532,6 +532,11 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
             {
                 /* Find the next setup */
                 OK = pme_loadbal_increase_cutoff(pme_lb, ir->pme_order);
+
+                if (!OK)
+                {
+                    pme_lb->elimited = epmelblimPMEGRID;
+                }
             }
 
             if (OK && ir->ePBC != epbcNONE)
@@ -541,6 +546,28 @@ gmx_bool pme_load_balance(pme_load_balancing_t pme_lb,
                 if (!OK)
                 {
                     pme_lb->elimited = epmelblimBOX;
+                }
+            }
+
+            if (OK)
+            {
+                int npmenodes_x, npmenodes_y;
+
+                get_pme_nnodes(cr->dd, &npmenodes_x, &npmenodes_y);
+
+                /* As here we can't easily check if one of the PME nodes
+                 * uses threading, we do a conservative grid check.
+                 * This means we can't use pme_order or less grid lines
+                 * per PME node along x, which is not a strong restriction.
+                 */
+                OK = (gmx_pme_check_restrictions(ir->pme_order,
+                                                 pme_lb->setup[pme_lb->cur+1].grid[XX], pme_lb->setup[pme_lb->cur+1].grid[YY], pme_lb->setup[pme_lb->cur+1].grid[ZZ],
+                                                 npmenodes_x, npmenodes_y,
+                                                 TRUE,
+                                                 FALSE) == 0);
+                if (!OK)
+                {
+                    pme_lb->elimited = epmelblimPMEGRID;
                 }
             }
 
