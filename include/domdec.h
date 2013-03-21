@@ -79,6 +79,10 @@ real dd_cutoff_mbody(gmx_domdec_t *dd);
 
 real dd_cutoff_twobody(gmx_domdec_t *dd);
 
+void get_pme_nnodes(const gmx_domdec_t *dd,
+                    int *npmenodes_x, int *npmenodes_y);
+/* Get the number of PME nodes along x and y, can be called with dd=NULL */
+
 gmx_bool gmx_pmeonlynode(t_commrec *cr, int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 
