@@ -526,13 +526,13 @@ pass
 # Write out the list of settings and corresponding kernels to the declaration file
 fpdecl.write( '\n\n' )
 fpdecl.write( 'nb_kernel_info_t\n' )
-fpdecl.write( 'kernellist_'+Arch+'[] =\n' )
+fpdecl.write( '    kernellist_'+Arch+'[] =\n' )
 fpdecl.write( '{\n' )
 for decl in kerneldecl[0:-1]:
     fpdecl.write( decl + ',\n' )
 fpdecl.write( kerneldecl[-1] + '\n' )
 fpdecl.write( '};\n\n' )
 fpdecl.write( 'int\n' )
-fpdecl.write( 'kernellist_'+Arch+'_size = sizeof(kernellist_'+Arch+')/sizeof(kernellist_'+Arch+'[0]);\n\n')
+fpdecl.write( '    kernellist_'+Arch+'_size = sizeof(kernellist_'+Arch+')/sizeof(kernellist_'+Arch+'[0]);\n\n')
 fpdecl.write( '#endif\n')
 fpdecl.close()
