@@ -50,6 +50,40 @@ CommunicationStatus gmx_recv_data(t_commrec *cr,int src)
 #undef GMX_SEND_DONE
     
 namespace alexandria {
+
+void GenericProperty::SetType(std::string type) 
+{ 
+    if ((_type.size() == 0) && (type.size() > 0))
+        _type = type; 
+    else
+    {
+        if (_type.size() == 0)
+            fprintf(stderr,"Replacing GenericProperty type '%s' by '%s'\n",_type.c_str(),type.c_str());
+    }
+}
+    
+void GenericProperty::SetUnit(std::string unit)
+{ 
+    if ((_unit.size() == 0) && (unit.size() > 0))
+        _unit = unit; 
+    else
+    {
+        if (_unit.size() == 0)
+            fprintf(stderr,"Replacing GenericProperty unit '%s' by '%s'\n",_unit.c_str(),unit.c_str());
+    }
+}
+   
+void CalcAtom::SetUnit(std::string unit)
+{ 
+    if ((_unit.size() == 0) && (unit.size() > 0))
+        _unit = unit; 
+    else
+    {
+        if (_unit.size() == 0)
+            fprintf(stderr,"Replacing CalcAtom unit '%s' by '%s'\n",_unit.c_str(),unit.c_str());
+    }
+}
+   
 void MolecularComposition::AddAtom(AtomNum an)
 {
     AtomNumIterator mci = SearchAtom(an.GetAtom());
@@ -243,10 +277,14 @@ void Experiment::Merge(Experiment& src)
 
 void Calculation::Merge(Calculation& src)
 {
-    alexandria::ElectrostaticPotentialIterator mep;
-        
-    Experiment::Merge(src);
+    ElectrostaticPotentialIterator mep;
+    CalcAtomIterator cai;
     
+    Experiment::Merge(src);
+    for(cai=src.BeginAtom(); (cai<src.EndAtom()); cai++)
+    {
+        AddAtom(*cai);
+    }
     for(mep=src.BeginPotential(); (mep<src.EndPotential()); mep++)
     {
         alexandria::ElectrostaticPotential ep(mep->GetXYZunit(),mep->GetVunit(),mep->GetEspid(),
@@ -268,6 +306,43 @@ void CalcAtom::AddCharge(AtomicCharge q)
     }
     if (aci == EndQ())
         _q.push_back(q);
+}
+
+bool CalcAtom::Equal(CalcAtom ca)
+{
+    if ((_name != ca.GetName()) ||
+        (_obtype != ca.GetObtype()) ||
+        (_x != ca.GetX()) ||
+        (_y != ca.GetY()) ||
+        (_z != ca.GetZ()) ||
+        (_atomid != ca.GetAtomid()))
+        return false;
+    return true;
+}
+
+CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
+{
+    CalcAtomIterator cai;
+    for(cai=BeginAtom(); (cai<EndAtom()); cai++)
+    {
+        if (cai->Equal(ca))
+            break;
+    }
+    return cai;
+}
+
+void Calculation::AddAtom(CalcAtom ca)
+{
+    CalcAtomIterator cai;
+    
+    if ((cai = SearchAtom(ca)) == EndAtom())
+    { 
+        _catom.push_back(ca); 
+    }
+    else
+    {
+        printf("Trying to add identical atom twice\n");
+    }
 }
 
 void MolProp::AddComposition(MolecularComposition mc)

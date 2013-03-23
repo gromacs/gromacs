@@ -51,6 +51,8 @@ double convert2gmx(double x, int unit)
             return x*BOHR2NM;
         case eg2cKcal_Mole:
             return x/CAL2JOULE;
+        case eg2cKj_Mole:
+            return x;
         case eg2cHartree:
             return x*ONE_4PI_EPS0/BOHR2NM;
         case eg2cHartree_e:
@@ -66,7 +68,7 @@ double convert2gmx(double x, int unit)
         case eg2cBuckingham:
             return x*A2NM*DEBYE2ENM;
         default:
-            fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
+            fprintf(stderr, "Unknown unit %d, not converting to gmx.\n", unit);
     }
     return x;
 }
@@ -85,6 +87,8 @@ double gmx2convert(double x, int unit)
             return x/BOHR2NM;
         case eg2cKcal_Mole:
             return x*CAL2JOULE;
+        case eg2cKj_Mole:
+            return x;
         case eg2cHartree:
             return x/(ONE_4PI_EPS0/BOHR2NM);
         case eg2cHartree_e:
@@ -100,7 +104,7 @@ double gmx2convert(double x, int unit)
         case eg2cBuckingham:
             return x/(A2NM*DEBYE2ENM);
         default:
-            fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
+            fprintf(stderr, "Unknown unit %d, not converting from gmx.\n", unit);
     }
     return x;
 }
@@ -110,7 +114,7 @@ static const char *eg2c_names[eg2cNR] = {
     "Angstrom", "Nm", "Pm", "Bohr", "Kcal_Mole",
     "Kj_Mole",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
-    "Debye", "Electron", "Buckingham"
+    "Debye", "e", "Buckingham"
 };
 
 int string2unit(const char *string)

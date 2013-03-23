@@ -271,16 +271,16 @@ public:
     std::string GetUnit() { return _unit; }
     
     //! Set the type of the property
-    void SetType(std::string type) { _type = type; }
+    void SetType(std::string type);
     
     //! Set the unit of the property
-    void SetUnit(std::string unit) { _unit = unit; }
+    void SetUnit(std::string unit);
     
     //! Set the type of the property
-    void SetType(const char *type) { _type.assign(type); }
+    void SetType(const char *type) { std::string s(type); SetType(s); }
     
     //! Set the unit of the property
-    void SetUnit(const char *unit) { _unit.assign(unit); }
+    void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
     
     /*! \brief
      * Sends this object over an MPI connection
@@ -737,6 +737,10 @@ public:
     //! Destructur
     ~CalcAtom() {};
     
+    
+    //! Function returning true if the two atoms are equal
+    bool Equal(CalcAtom ca);
+    
     //! Add an AtomicCharge element to the atom
     void AddCharge(AtomicCharge aq);
     
@@ -759,10 +763,10 @@ public:
     std::string GetUnit() { return _unit; }
 
     //! Set the unit of the coordinates of the atom
-    void SetUnit(std::string unit) { _unit = unit; }
+    void SetUnit(std::string unit);
 
     //! Set the unit of the coordinates of the atom
-    void SetUnit(const char *unit) { _unit.assign(unit); }
+    void SetUnit(const char *unit) { std::string s(unit); SetUnit(s); }
     
     //! Set the coordinates of the atom
     void SetCoords(double x,double y,double z) { _x = x; _y = y; _z = z; }
@@ -973,7 +977,7 @@ public:
     void Dump(FILE *fp);
     
     //! Add a CalcAtom object to the list of atoms
-    void AddAtom(CalcAtom ca) { _catom.push_back(ca); }
+    void AddAtom(CalcAtom ca);
     
     //! Return the number of atoms
     int NAtom() { return _catom.size(); }
@@ -983,6 +987,9 @@ public:
     
     //! Iterator End over CalcAtom objects
     CalcAtomIterator EndAtom() { return _catom.end(); }
+
+    //! Return iterator pointint to this particular atom or EndAtom() if not found
+    CalcAtomIterator SearchAtom(CalcAtom ca);
 
     //! Add ElectrostaticPotential element to the array
     void AddPotential(ElectrostaticPotential ep) { _potential.push_back(ep); }

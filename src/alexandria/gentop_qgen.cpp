@@ -190,7 +190,7 @@ static real calc_jab(int iModel,
     r = norm(dx);
     if (r == 0)
         gmx_fatal(FARGS,"Zero distance between atoms!\n");
-    if ((zeta_i <= 0) || (zeta_j <= 0)) 
+    if ((*zeta_i <= 0) || (*zeta_j <= 0)) 
         iModel = eqgAXp;
     switch (iModel) 
     {

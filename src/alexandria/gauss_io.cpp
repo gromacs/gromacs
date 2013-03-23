@@ -1002,7 +1002,7 @@ static void gmx_molprop_read_log(const char *fn,
                         if (TRUE == gmx_atomprop_query(aps,epropMass,"",atomname,&mm)) {
                             mass += mm;
                         }
-                        caa.SetUnit("pm");
+                        caa.SetUnit(unit2string(eg2cPm));
                         caa.SetCoords(100*x,100*y,100*z);
                         calc.AddAtom(caa);
                     }

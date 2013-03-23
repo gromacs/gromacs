@@ -753,7 +753,7 @@ int main(int argc, char *argv[])
                            bEntropy,dzatoms);
         /* gmx_resp_read_log(gr,aps,pd,opt2fn("-g03",NFILE,fnm)); */
         gmx_resp_import_molprop(gr,*mpi,aps,pd,lot);
-        if (molprop_2_topology(*mpi,aps,pd,&symtab,lot,topology,
+        if (molprop_2_topology(*mpi,aps,pd,&symtab,lot,&topology,
                                get_eemtype_name(iModel),&x,plist,
                                nexcl,&excls) == 0)
             gmx_fatal(FARGS,"Could not convert molprop to atoms structure");

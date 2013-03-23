@@ -70,7 +70,7 @@ alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
 extern int molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
                               gmx_poldata_t pd,
                               t_symtab *tab,const char *lot,
-                              t_topology *top,const char *q_algorithm,
+                              t_topology **top,const char *q_algorithm,
                               rvec **x,t_params plist[F_NRE],
                               int nexcl,t_excls **excls);
 

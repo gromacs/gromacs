@@ -572,9 +572,12 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
     snew(omt,1);
     for(bt=0; (bt<ebtsNR); bt++)
         ntot[bt] = 0;
-    for(bt=0; (bt<=ebtsIDIHS); bt++) {
-        if (bOpt[bt]) {
-            switch (bt) {
+    for(bt=0; (bt<=ebtsIDIHS); bt++) 
+    {
+        if (bOpt[bt]) 
+        {
+            switch (bt) 
+            {
             case ebtsBONDS:
                 omt->nb[bt] = gmx_poldata_get_ngt_bond(pd);
                 ft = gmx_poldata_get_bond_ftype(pd);
@@ -597,16 +600,19 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
             snew(omt->ngtb[bt],omt->nb[bt]);
             snew(omt->cgt[bt],omt->nb[bt]);
             
-            for(n=0; (n<nmol); n++) { 
+            for(n=0; (n<nmol); n++) 
+            { 
                 mymol = &(mm[n]);
             
-                for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
+                for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) 
+                {
                     tp = mymol->ltop->idef.il[ft].iatoms[i];
                     ai = mymol->ltop->idef.il[ft].iatoms[i+1];
                     aai = *mymol->topology->atoms.atomtype[ai];
                     aj = mymol->ltop->idef.il[ft].iatoms[i+2];
                     aaj = *mymol->topology->atoms.atomtype[aj];
-                    switch (bt) {
+                    switch (bt) 
+                    {
                     case ebtsBONDS:
                         gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,
                                                      NULL,NULL,NULL,&params);
@@ -628,9 +634,11 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                                                          NULL,NULL,NULL,&params);
                         break;                              
                     }
-                    if (gt > 0) {
+                    if (gt > 0) 
+                    {
                         omt->ngtb[bt][gt-1]++;
-                        if (NULL == omt->cgt[bt][gt-1]) {
+                        if (NULL == omt->cgt[bt][gt-1]) 
+                        {
                             snew(omt->cgt[bt][gt-1],strlen(aai)+strlen(aaj)+2);
                             sprintf(omt->cgt[bt][gt-1],"%s-%s",aai,aaj);
                         }
@@ -640,8 +648,10 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
                 }
             }
         }
-        for(i=0; (i<omt->nb[bt]); i++) {
-            if (omt->ngtb[bt][i] > 0) {
+        for(i=0; (i<omt->nb[bt]); i++) 
+        {
+            if (omt->ngtb[bt][i] > 0) 
+            {
                 fprintf(fp,"%-8s  %6d  %-20s  %d\n",btsnames[bt],i,
                         omt->cgt[bt][i],omt->ngtb[bt][i]);
                 sfree(omt->cgt[bt][i]);
@@ -651,9 +661,11 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
         sfree(omt->cgt[bt]);
     }
     for(bt=0; (bt<ebtsNR); bt++) 
+    {
         if (bOpt[bt])
             fprintf(fp,"%-8s %d of %4d types\n",btsnames[bt],ntot[bt],omt->nb[bt]);
-            
+    }
+           
     return omt;
 }
 

@@ -343,7 +343,7 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
     
     int myunit;
     double q,xx,yy,zz;
-    int    i,natom;
+    int    natom;
     gmx_bool bDone = FALSE;
     
     (*x)  = NULL;
@@ -356,8 +356,7 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
         init_t_atoms(atoms,mp.NAtom(),FALSE);
         snew(*x,mp.NAtom());
         
-        i = 0;
-        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++,i++)
+        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
         {
             myunit = string2unit((char *)cai->GetUnit().c_str());
             cai->GetCoords(&xx,&yy,&zz);
@@ -372,18 +371,21 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
                 {
                     myunit = string2unit((char *)qi->GetUnit().c_str());
                     q = convert2gmx(qi->GetQ(),myunit);
+                    break;
                 }
             }
             
-            t_atoms_set_resinfo(atoms,i,tab,molnm.c_str(),1,' ',1,' ');
-            atoms->atomname[i] = put_symtab(tab,cai->GetName().c_str());
-            atoms->atom[i].atomnumber = gmx_atomprop_atomnumber(ap,cai->GetName().c_str());
-            strcpy(atoms->atom[i].elem,gmx_atomprop_element(ap,atoms->atom[i].atomnumber));
-            atoms->atom[i].q = q; 
-            atoms->atom[i].resind = 0;
+            t_atoms_set_resinfo(atoms,natom,tab,molnm.c_str(),1,' ',1,' ');
+            atoms->atomname[natom] = put_symtab(tab,cai->GetName().c_str());
+            atoms->atom[natom].atomnumber = gmx_atomprop_atomnumber(ap,cai->GetName().c_str());
+            strcpy(atoms->atom[natom].elem,gmx_atomprop_element(ap,atoms->atom[natom].atomnumber));
+            atoms->atom[natom].q = q; 
+            atoms->atom[natom].resind = 0;
+            natom++;
         }
+        atoms->nr = natom;
         atoms->nres = 1;
-        bDone = TRUE;
+        bDone = ((natom == mp.NAtom()) && (natom > 0));
     }
     if (NULL != debug)
         fprintf(debug,"Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
@@ -394,7 +396,7 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
 gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
                             gmx_poldata_t pd,
                             t_symtab *tab,const char *lot,
-                            t_topology *top,const char *q_algorithm,
+                            t_topology **mytop,const char *q_algorithm,
                             rvec **x,t_params plist[F_NRE],
                             int nexcl,t_excls **excls)
 {
@@ -403,8 +405,14 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     int natom,ftb;
     t_param b;
     t_nextnb nnb;
-    t_restp rtp;
-            
+    t_restp *rtp;
+    t_topology *top;
+    
+    snew(rtp,1);
+    snew(*mytop,1);
+    top = *mytop;
+    init_top(top);
+        
     /* Get atoms */
     if (FALSE == molprop_2_atoms(mp,ap,tab,lot,&(top->atoms),q_algorithm,x))
         return FALSE;
@@ -427,14 +435,15 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     //detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     //nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
-    rtp.bKeepAllGeneratedDihedrals = TRUE;
-    rtp.bRemoveDihedralIfWithImproper = TRUE;
-    rtp.bGenerateHH14Interactions = TRUE;
-    rtp.nrexcl = nexcl;
-    gen_pad(&nnb,&top->atoms,&rtp,plist,*excls,NULL,FALSE);
+    rtp->bKeepAllGeneratedDihedrals = TRUE;
+    rtp->bRemoveDihedralIfWithImproper = TRUE;
+    rtp->bGenerateHH14Interactions = TRUE;
+    rtp->nrexcl = nexcl;
     generate_excls(&nnb,nexcl,*excls);
+    gen_pad(&nnb,&(top->atoms),rtp,plist,*excls,NULL,FALSE);
     done_nnb(&nnb);
-
+    sfree(rtp);
+    
     return TRUE;
 }
 

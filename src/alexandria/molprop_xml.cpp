@@ -408,7 +408,9 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
                     if (NN(xbuf[exmlNAME]) && NN(xbuf[exmlOBTYPE]) && NN(xbuf[exmlATOMID]))
                     {
                         alexandria::CalcAtom ca(xbuf[exmlNAME],xbuf[exmlOBTYPE],atoi(xbuf[exmlATOMID]));
-                        
+                        sfree(xbuf[exmlNAME]);   xbuf[exmlNAME] = NULL;
+                        sfree(xbuf[exmlOBTYPE]); xbuf[exmlOBTYPE] = NULL;
+                        sfree(xbuf[exmlATOMID]); xbuf[exmlATOMID] = NULL;
                         for(tc = tree->children; (NULL != tc); tc = tc->next)
                         {
                             get_attributes(fp,FALSE,indent,tc->properties,xbuf);

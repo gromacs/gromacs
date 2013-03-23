@@ -832,8 +832,8 @@ static double calc_opt_deviation(opt_param_t *opt)
     flags = GMX_FORCE_NS | GMX_FORCE_BONDED | GMX_FORCE_NONBONDED;
     for(i=0; (i<opt->md->nmol); i++) {
         mymol = &(opt->md->mymol[i]);
-        if ((mymol->eSupport == eSupportLocal) ||
-            (opt->md->bFinal && (mymol->eSupport == eSupportRemote)))
+        if ((mymol->eSupp == eSupportLocal) ||
+            (opt->md->bFinal && (mymol->eSupp == eSupportRemote)))
         {
             /* Update topology for this molecule */
             update_idef(mymol,opt->md->pd,opt->bOpt);

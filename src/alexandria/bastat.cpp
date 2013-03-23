@@ -51,7 +51,7 @@
 #include "main.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "mymol.h"
+#include "mymol.hpp"
 #include "gmx_statistics.h"
 #include "poldata_xml.h"
 

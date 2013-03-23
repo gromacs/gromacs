@@ -53,7 +53,7 @@
 #include "shellfc.h"
 #include "mdatoms.h"
 #include "symtab.h"
-#include "mymol.h"
+#include "mymol.hpp"
 #include "gpp_nextnb.h"
 #include "statutil.h"
 #include "string2.h"
@@ -681,16 +681,16 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
         if (strcmp(mymol->molname,"benzene") == 0)
             printf("BOE\n");
         do_init_mtop(&mymol->mtop,1,molnameptr,mymol->natom,pd);
-        mymol->topology->atoms = mymol->mtop.moltype[0].atoms;
-        snew(mymol->topology,1);
-        init_top(mymol->topology);
-        if (molprop_2_topology(mp,aps,pd,&(mymol->symtab),lot,mymol->topology,
+        if (molprop_2_topology(mp,aps,pd,&(mymol->symtab),lot,&mymol->topology,
                                (const char *)"ESP",&(mymol->x),
                                plist,nexcl,&mymol->excls) == 0)
             imm = immMolpropConv;
         /* Change their atomtype from the OpenBabel internal type to the
          * one specified in our force field file (gentop.dat).
          */
+    }
+    if (immOK == imm) 
+    {
         translate_atomtypes(&mymol->topology->atoms,&(mymol->symtab),
                             gmx_poldata_get_force_field(pd));
     }
@@ -795,7 +795,7 @@ static int init_mymol(FILE *fp,t_mymol *mymol,
         gentop_vsite_done(&gvt);
         close_symtab(&(mymol->symtab));
 
-        mymol->eSupport = eSupportLocal;
+        mymol->eSupp = eSupportLocal;
         if (mp_get_prop_ref(mp,MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
                             lot,NULL,(char *)"elec",
                             &value,&error,&myref,&mylot,
@@ -1196,12 +1196,12 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
     sum_index_count(ic,cr);
     dump_index_count(ic,debug,iModel,pd,bFitZeta);
     for(i=0; (i<nmol); i++) {
-        if (mol[i].eSupport != eSupportNo) 
+        if (mol[i].eSupp != eSupportNo) 
         {
             aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
             k = 0;
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom) &&
-                   (mol[i].eSupport != eSupportNo)) 
+                   (mol[i].eSupp != eSupportNo)) 
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
@@ -1210,12 +1210,12 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
                         if (debug)
                             fprintf(debug,"Removing %s because of lacking support for atom %s\n",
                                     mol[i].molname,*(mol[i].topology->atoms.atomtype[k]));
-                        mol[i].eSupport = eSupportNo;
+                        mol[i].eSupp = eSupportNo;
                     }
                 }
                 k++;
             }
-            if (mol[i].eSupport != eSupportNo) {
+            if (mol[i].eSupp != eSupportNo) {
                 gmx_assert(k,mol[i].topology->atoms.nr);
                 aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
                 k = 0;
@@ -1234,7 +1234,7 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
         dump_index_count(ic,debug,iModel,pd,bFitZeta);
         nremove = 0;
         for(i=0; (i<nmol); i++) {
-            if (mol[i].eSupport != eSupportNo) {
+            if (mol[i].eSupp != eSupportNo) {
                 j = 0;
                 aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
@@ -1251,7 +1251,7 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
                     k = 0;
                     while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
                         dec_index_count(ic,*(mol[i].topology->atoms.atomtype[k++]));
-                    mol[i].eSupport = eSupportNo;
+                    mol[i].eSupp = eSupportNo;
                     nremove++;
                 }
             }
@@ -1269,7 +1269,7 @@ static int check_data_sufficiency(FILE *fp,int nmol,t_mymol mol[],
     nsupported = 0;
     for(i=0; (i<nmol); i++) 
     {
-        if (mol[i].eSupport == eSupportLocal)
+        if (mol[i].eSupp == eSupportLocal)
         {
             if (NULL != debug)
                 fprintf(debug,"Supported molecule %s on CPU %d\n",
@@ -1377,6 +1377,10 @@ void read_moldip(t_moldip *md,
         MolPropRead(fn,mp);
         for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
         {
+            if (FALSE == mpi->GenerateComposition(md->pd))
+            {
+                mpi = mp.erase(mpi);
+            }
             mpi->CheckConsistency();
         }
         nmol_cpu = mp.size()/md->cr->nnodes + 1;
@@ -1412,7 +1416,7 @@ void read_moldip(t_moldip *md,
                 {
                     if (dest > 0)
                     {
-                        md->mymol[n].eSupport = eSupportRemote;
+                        md->mymol[n].eSupp = eSupportRemote;
                         /* Send another molecule */
                         gmx_send_int(md->cr,dest,1);
                         mpi->Send(md->cr,dest);
@@ -1422,7 +1426,7 @@ void read_moldip(t_moldip *md,
                                     md->mymol[n].molname,dest,immsg(imm));
                     }
                     else
-                        md->mymol[n].eSupport = eSupportLocal;
+                        md->mymol[n].eSupp = eSupportLocal;
                     if (immOK == imm)
                         n++;
                 }
@@ -1458,7 +1462,7 @@ void read_moldip(t_moldip *md,
                              bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                              nexcl,(md->fc[ermsESP] > 0),
                              watoms,md->decrzeta,md->bPol,md->bFitZeta);
-            md->mymol[n].eSupport = eSupportLocal;
+            md->mymol[n].eSupp = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
             {

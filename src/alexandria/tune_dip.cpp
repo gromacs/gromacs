@@ -230,7 +230,7 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
     for(i=n=0; (i<nmol); i++) {
-        if (mol[i].eSupport != eSupportNo) {
+        if (mol[i].eSupp != eSupportNo) {
             fprintf(fp,"Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
                     n+1, mol[i].molname,mol[i].qtotal,mol[i].mult);
             fprintf(fp,"Data source: %s (%s)\n",mol[i].lot,mol[i].ref);
@@ -382,7 +382,7 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
     for(i=0; (i<nmol); i++) {
         rvec dmu;
         rvec_sub(mol[i].mu_exp,mol[i].mu_calc,dmu);
-        if ((mol[i].eSupport != eSupportNo) &&
+        if ((mol[i].eSupp != eSupportNo) &&
             (mol[i].dip_exp > sigma) && 
             (norm(dmu) > 2*sigma)) {
             fprintf(fp,"%-20s  %12.3f  %12.3f  %12.3f\n",
@@ -534,8 +534,8 @@ static void calc_moldip_deviation(t_moldip *md)
     }
     for(i=0; (i<md->nmol); i++) {
         mymol = &(md->mymol[i]);
-        if ((mymol->eSupport == eSupportLocal) ||
-            (md->bFinal && (mymol->eSupport == eSupportRemote)))
+        if ((mymol->eSupp == eSupportLocal) ||
+            (md->bFinal && (mymol->eSupp == eSupportRemote)))
         {
             /* Reset energies */
             for(j=0; (j<ermsNR); j++)
