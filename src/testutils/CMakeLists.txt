@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 include_directories(${GMOCK_INCLUDE_DIRS})
+include_directories(${LIBXML2_INCLUDE_DIR})
 file(GLOB TESTUTILS_SOURCES *.cpp)
 
 add_library(testutils STATIC ${TESTUTILS_SOURCES})
