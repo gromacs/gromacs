@@ -55,7 +55,6 @@
 #include "gmxfio.h"
 #include "xvgr.h"
 #include "matio.h"
-#include "gmx_ana.h"
 #include "names.h"
 #include "sfactor.h"
 

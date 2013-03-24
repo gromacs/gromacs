@@ -226,9 +226,6 @@ int
 gmx_sas(int argc, char *argv[]);
 
 int
-gmx_sdf(int argc, char *argv[]);
-
-int
 gmx_select(int argc, char *argv[]);
 
 int

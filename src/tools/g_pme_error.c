@@ -31,13 +31,7 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <gmx_ana.h>
-
+#include "gromacs/gmxana/gmx_ana.h"
 
 /* This is just a wrapper binary.
  */
