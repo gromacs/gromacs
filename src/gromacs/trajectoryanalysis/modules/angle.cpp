@@ -68,13 +68,16 @@ const char Angle::shortDescription[] =
 
 Angle::Angle()
     : TrajectoryAnalysisModule(name, shortDescription),
-      sel1info_(NULL), sel2info_(NULL), natoms1_(0), natoms2_(0)
+      sel1info_(NULL), sel2info_(NULL), binWidth_(1.0), natoms1_(0), natoms2_(0)
 {
     averageModule_.reset(new AnalysisDataFrameAverageModule());
     angles_.addModule(averageModule_);
+    histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
+    angles_.addModule(histogramModule_);
 
     registerAnalysisDataset(&angles_, "angle");
     registerBasicDataset(averageModule_.get(), "average");
+    registerBasicDataset(&histogramModule_->averager(), "histogram");
 }
 
 
@@ -122,10 +125,12 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "between the first vectors and the positive Z axis are calculated.[PAR]",
         "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
         "are calculated from the vectors as they are in the first frame.[PAR]",
-        "There are two options for output:",
+        "There are three options for output:",
         "[TT]-oav[tt] writes an xvgr file with the time and the average angle",
         "for each frame.",
-        "[TT]-oall[tt] writes all the individual angles."
+        "[TT]-oall[tt] writes all the individual angles.",
+        "[TT]-oh[tt] writes a histogram of the angles. The bin width can be",
+        "set with [TT]-binw[tt]."
         /* TODO: Consider if the dump option is necessary and how to best
          * implement it.
            "[TT]-od[tt] can be used to dump all the individual angles,",
@@ -146,7 +151,9 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(FileNameOption("oall").filetype(eftPlot).outputFile()
                            .store(&fnAll_).defaultBasename("angles")
                            .description("All angles as a function of time"));
-    // TODO: Add histogram output.
+    options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile()
+                           .store(&fnHistogram_).defaultBasename("anghist")
+                           .description("Histogram of the angles"));
 
     options->addOption(StringOption("g1").enumValue(cGroup1TypeEnum)
                            .defaultEnumIndex(0).store(&g1type_)
@@ -154,6 +161,8 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(StringOption("g2").enumValue(cGroup2TypeEnum)
                            .defaultEnumIndex(0).store(&g2type_)
                            .description("Type of second vector group"));
+    options->addOption(DoubleOption("binw").store(&binWidth_)
+                           .description("Binwidth for -oh in degrees"));
 
     // TODO: Allow multiple angles to be computed in one invocation.
     // Most of the code already supports it, but requires a solution for
@@ -266,6 +275,9 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     checkSelections(sel1_, sel2_);
 
     angles_.setColumnCount(sel1_[0].posCount() / natoms1_);
+    double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
+    histogramModule_->init(histogramFromRange(histogramMin, 180.0)
+                               .binWidth(binWidth_).includeAll());
 
     if (g2type_ == "t0")
     {
@@ -298,6 +310,18 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setYLabel("Angle (degrees)");
         // TODO: Add legends? (there can be a massive amount of columns)
         angles_.addModule(plotm);
+    }
+
+    if (!fnHistogram_.empty())
+    {
+        AnalysisDataPlotModulePointer plotm(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnHistogram_);
+        plotm->setTitle("Angle histogram");
+        plotm->setXLabel("Angle (degrees)");
+        plotm->setYLabel("Probability");
+        // TODO: Add legends
+        histogramModule_->averager().addModule(plotm);
     }
 }
 
@@ -496,6 +520,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
 void
 Angle::finishAnalysis(int /*nframes*/)
 {
+    AbstractAverageHistogram &averageHistogram = histogramModule_->averager();
+    averageHistogram.normalizeProbability();
+    averageHistogram.done();
 }
 
 

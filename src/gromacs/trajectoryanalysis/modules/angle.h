@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -84,22 +85,25 @@ class Angle : public TrajectoryAnalysisModule
         void checkSelections(const SelectionList &sel1,
                              const SelectionList &sel2) const;
 
-        SelectionList                         sel1_;
-        SelectionList                         sel2_;
-        SelectionOptionInfo                  *sel1info_;
-        SelectionOptionInfo                  *sel2info_;
-        std::string                           fnAverage_;
-        std::string                           fnAll_;
+        SelectionList                            sel1_;
+        SelectionList                            sel2_;
+        SelectionOptionInfo                     *sel1info_;
+        SelectionOptionInfo                     *sel2info_;
+        std::string                              fnAverage_;
+        std::string                              fnAll_;
+        std::string                              fnHistogram_;
 
-        std::string                           g1type_;
-        std::string                           g2type_;
+        std::string                              g1type_;
+        std::string                              g2type_;
+        double                                   binWidth_;
 
-        AnalysisData                          angles_;
-        AnalysisDataFrameAverageModulePointer averageModule_;
-        int                                   natoms1_;
-        int                                   natoms2_;
+        AnalysisData                             angles_;
+        AnalysisDataFrameAverageModulePointer    averageModule_;
+        AnalysisDataSimpleHistogramModulePointer histogramModule_;
+        int                                      natoms1_;
+        int                                      natoms2_;
         // TODO: It is not possible to put rvec into a container.
-        std::vector<rvec *>                   vt0_;
+        std::vector<rvec *>                      vt0_;
 
         // Copy and assign disallowed by base.
 };
