@@ -608,13 +608,16 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     if (npme > 0)
     {
         npp = nnodes - npme;
+
+        nth_tot = npp*nth_pp + npme*nth_pme;
     }
     else
     {
         npp  = nnodes;
         npme = nnodes;
+
+        nth_tot = npp*nth_pp;
     }
-    nth_tot = npp*nth_pp + npme*nth_pme;
 
     tot = cycles[ewcRUN];
 
