@@ -106,10 +106,15 @@ AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*heade
 void
 AnalysisDataAverageModule::dataFinished()
 {
+    real ave,var,std;
     for (int i = 0; i < rowCount(); ++i)
     {
-        real ave = value(i, 0) / nsamples_[i];
-        real std = sqrt(value(i, 1) / nsamples_[i] - ave * ave);
+        ave = value(i, 0) / nsamples_[i];
+        var = (value(i, 1) / nsamples_[i] - ave * ave);
+        if (var <= 0)
+            std = 0;
+        else
+            std = sqrt(var);
         setValue(i, 0, ave);
         setValue(i, 1, std);
     }

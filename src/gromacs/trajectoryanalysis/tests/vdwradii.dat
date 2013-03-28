@@ -1,0 +1,12 @@
+; Very approximate VanderWaals radii
+; Source: http://en.wikipedia.org/wiki/Van_der_Waals_radius
+; '???' or '*' matches any residue name
+; 'AAA' matches any protein residue name
+???  H     0.12
+???  C     0.17
+???  N     0.155
+???  O     0.152
+???  F     0.147
+???  P     0.18
+???  S     0.18
+???  Cl    0.175
