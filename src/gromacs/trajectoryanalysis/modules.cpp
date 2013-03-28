@@ -47,6 +47,7 @@
 
 #include "modules/angle.h"
 #include "modules/distance.h"
+#include "modules/freevolume.h"
 #include "modules/select.h"
 
 namespace gmx
@@ -128,6 +129,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     using namespace gmx::analysismodules;
     manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
+    manager->registerModule<TrajAnalysisCmdLineWrapper<FreeVolume> >();
     manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
 }
 

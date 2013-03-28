@@ -651,6 +651,16 @@ void done_state(t_state *state)
         sfree(state->cg_gl);
     }
     state->cg_gl_nalloc = 0;
+    if (state->lambda)
+    {
+        sfree(state->lambda);
+    }
+    if (state->ngtc > 0)
+    {
+        sfree(state->nosehoover_xi);
+        sfree(state->nosehoover_vxi);
+        sfree(state->therm_integral);
+    }
 }
 
 static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)
