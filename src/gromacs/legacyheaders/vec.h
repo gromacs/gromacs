@@ -709,6 +709,13 @@ static gmx_inline real det(matrix a)
              +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
 }
 
+static gmx_inline real det_c(const matrix a)
+{
+    return ( a[XX][XX]*(a[YY][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[YY][ZZ])
+             -a[YY][XX]*(a[XX][YY]*a[ZZ][ZZ]-a[ZZ][YY]*a[XX][ZZ])
+             +a[ZZ][XX]*(a[XX][YY]*a[YY][ZZ]-a[YY][YY]*a[XX][ZZ]));
+}
+
 static gmx_inline void m_add(matrix a, matrix b, matrix dest)
 {
     dest[XX][XX] = a[XX][XX]+b[XX][XX];
@@ -795,6 +802,13 @@ static gmx_inline void m_inv(matrix src, matrix dest)
 }
 
 static gmx_inline void mvmul(matrix a, const rvec src, rvec dest)
+{
+    dest[XX] = a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
+    dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
+    dest[ZZ] = a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
+}
+
+static gmx_inline void mvmul_c(const matrix a, const rvec src, rvec dest)
 {
     dest[XX] = a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
     dest[YY] = a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
