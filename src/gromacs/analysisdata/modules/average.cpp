@@ -109,7 +109,10 @@ AnalysisDataAverageModule::dataFinished()
     for (int i = 0; i < rowCount(); ++i)
     {
         real ave = value(i, 0) / nsamples_[i];
-        real std = sqrt(value(i, 1) / nsamples_[i] - ave * ave);
+        real var = (value(i, 1) / nsamples_[i] - ave * ave);
+        real std = 0;
+        if (var > 0)
+            std = sqrt(var);
         setValue(i, 0, ave);
         setValue(i, 1, std);
     }
