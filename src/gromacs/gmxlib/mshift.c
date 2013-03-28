@@ -495,7 +495,10 @@ void done_graph(t_graph *g)
         sfree(g->edge);
         sfree(g->egc);
     }
-    sfree(g->ishift);
+    if (NULL != g->ishift)
+    {
+        sfree(g->ishift);
+    }
 }
 
 /************************************************************
