@@ -2100,6 +2100,10 @@ static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_ver
     }
     if (bRead)
     {
+        if ((block->nalloc_index > 0) && (NULL != block->index))
+        {
+            sfree(block->index);
+        }
         block->nalloc_index = block->nr+1;
         snew(block->index, block->nalloc_index);
     }
@@ -2856,6 +2860,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     {
         if (file_version >= 57)
         {
+            done_block(&mtop->mols);
             mtop->mols = mtop_mols(mtop);
         }
         if (gmx_debug_at)
@@ -3437,6 +3442,27 @@ gmx_bool fn2bTPX(const char *file)
     }
 }
 
+static void done_gmx_groups_t(gmx_groups_t *g)
+{
+    int i;
+    
+    for(i=0; (i<egcNR); i++)
+    {
+        if (NULL != g->grps[i].nm_ind)
+        {
+            sfree(g->grps[i].nm_ind);
+            g->grps[i].nm_ind = NULL;
+        }
+        if (NULL != g->grpnr[i])
+        {
+            sfree(g->grpnr[i]);
+            g->grpnr[i] = NULL;
+        }
+    }
+    /* The contents of this array is in symtab, don't free it here */
+    sfree(g->grpname);
+}
+
 gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *ePBC,
                        rvec **x, rvec **v, matrix box, gmx_bool bMass)
 {
@@ -3464,6 +3490,8 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         *ePBC = read_tpx(infile, NULL, box, &natoms,
                          (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
         *top = gmx_mtop_t_to_t_topology(mtop);
+        /* In this case we need to throw away the group data too */
+        done_gmx_groups_t(&mtop->groups);
         sfree(mtop);
         strcpy(title, *top->name);
         tpx_make_chain_identifiers(&top->atoms, &top->mols);
