@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">freevolume -select 'not resname = CO2' -o freevolume -seed 17</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="freevolume">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">38.77912</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">68.9215</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>
