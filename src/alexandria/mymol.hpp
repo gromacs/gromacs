@@ -20,37 +20,6 @@ enum immStatus {
 
 enum eSupport { eSupportNo, eSupportLocal, eSupportRemote, eSupportNR };
 
-namespace alexandria {
-
-class MyMol : public MolProp 
-{
-private:
-    eSupport       eSupp;
-    int            nshell;
-    real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc,Force2;
-    tensor         Q_exp,Q_calc,Q_esp;
-    //! Gromacs structures
-    gmx_mtop_t     mtop;
-    gmx_localtop_t *ltop;
-    gpp_atomtype_t atype;
-    t_symtab       symtab;
-    t_inputrec     ir;
-    gmx_shellfc_t  shell;
-    gmx_enerdata_t enerd;
-    t_mdatoms      *md;
-    t_topology     *topology;
-    t_excls        *excls;
-    t_forcerec     *fr;
-    gmx_vsite_t    *vs;
-    gmx_resp_t     gr;
-    int            *symmetric_charges;
-    rvec           *x,*f,*buf,mu_exp,mu_calc,mu_esp,coq;
-    t_state        state;
-    matrix         box;
-    gentop_qgen_t  qgen;
-};
-}
-
 typedef struct {
   /* Primary properties */
     char           *molname,*lot,*ref;

@@ -91,7 +91,7 @@
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
-#include "mymol.hpp"
+#include "mymol2.hpp"
 
 static void print_stats(FILE *fp,const char *prop,gmx_stats_t lsq,gmx_bool bHeader,
                         char *xaxis,char *yaxis)

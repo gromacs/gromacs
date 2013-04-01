@@ -131,14 +131,14 @@ public:
  * \param[out] mpt       The MolProp
  * \param[in] gap        Helper data for reading atomization energies
  * \param[in] bBabel     Whether or not to use the OpenBabel library
- * \param[in] aps
- * \param[in] pd
- * \param[in] molnm
- * \param[in] iupac
- * \param[in] conformation
- * \param[in] basisset
- * \param[in] maxpot
- * \param[in] bVerbose
+ * \param[in] aps        Structure containing atomic data
+ * \param[in] pd         The force field information
+ * \param[in] molnm      Molecule name to override the one from the filename [ maybe NULL ]
+ * \param[in] iupac      IUPAC name to override the one from the filename [ maybe NULL ]
+ * \param[in] conformation  Conformation the molecule is in [ maybe NULL ]
+ * \param[in] basisset   Basis set used for the calculation [ maybe NULL ]
+ * \param[in] maxpot     Maximum number of electrostatic potential data points to store
+ * \param[in] bVerbose   Whether or not to write to the terminal during processing
  * \ingroup module_alexandria
  */
 void ReadGauss(const char *g98,

@@ -560,7 +560,7 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
 
 int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
                         t_params *bonds,gmx_poldata_t pd,
-                        gmx_atomprop_t aps,char *symm_string)
+                        gmx_atomprop_t aps,const char *symm_string)
 {
     char *central,*attached,**ss;
     int nattached,i,j,nh,ai,aj,anri,anrj;

@@ -76,34 +76,6 @@
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
 
-typedef struct 
-{
-    int  *row,atomnumber,atype;
-    gmx_bool bRestrained;
-    char *atomtype;
-    int  nZeta;
-    real *q,*zeta,*zeta_ref;
-    int  *iq,*iz;
-} gmx_ra;
-
-typedef struct gmx_resp 
-{
-    int    nesp,nrho,natom,natype,ngridp,iModel;
-    double qtot,qsum,watoms;
-    double rms,rrms,penalty,pfac,entropy,wtot;
-    dvec   origin,space;
-    gmx_bool   bZatype,bRandZeta,bFitZeta,bEntropy;
-    ivec   nxyz;
-    gmx_bool   bAXpRESP;
-    real   qfac,b_hyper,zmin,zmax,delta_z,qmin,qmax,rDecrZeta;
-    int    nparam; /* Total number of parameters */
-    gmx_ra *ra;
-    char   **dzatoms;
-    const char   *stoichiometry;
-    real   *pot,*pot_calc,*rho;
-    rvec   *x,*esp;
-} gmx_resp;
-
 void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms)
@@ -1076,70 +1048,6 @@ void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
     }
     if (gr->nesp > 0) {
         snew(gr->pot_calc,gr->nesp);
-    }
-}
-
-void gmx_resp_import_molprop(gmx_resp_t gr,
-                             alexandria::MolProp& mp,
-                             gmx_atomprop_t aps,gmx_poldata_t pd,const char *lot)
-{
-    alexandria::CalculationIterator ci;
-    alexandria::CalcAtomIterator cai;
-    alexandria::ElectrostaticPotentialIterator epi;
-    
-    int espid,atomid,atomnumber,xunit;
-    std::string xyz_unit,V_unit;
-    double x,y,z;
-    
-    gr->stoichiometry = strdup(mp.GetFormula().c_str());
-    gr->qsum = gr->qtot = mp.GetCharge();
-    
-    ci = mp.GetLot(lot);
-    if (ci != mp.EndCalculation())
-    {
-        /* Atoms first */
-        gr->natom = mp.NAtom();
-        
-        snew(gr->x,gr->natom);
-        snew(gr->ra,gr->natom);
-        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
-        {
-            atomid = cai->GetAtomid();
-            range_check(atomid,1,gr->natom+1);
-            atomnumber = gmx_atomprop_atomnumber(aps,cai->GetName().c_str());
-            gmx_ra_init(&gr->ra[atomid-1],atomnumber,-1,cai->GetName().c_str(),
-                        pd,gr->iModel,gr->dzatoms);
-            xyz_unit = cai->GetUnit().c_str();
-            xunit = string2unit(xyz_unit.c_str());
-            cai->GetCoords(&x,&y,&z);
-            gr->x[atomid-1][XX] = convert2gmx(x,xunit);
-            gr->x[atomid-1][YY] = convert2gmx(y,xunit);
-            gr->x[atomid-1][ZZ] = convert2gmx(z,xunit);
-        }
-        
-        /* ESP points then */
-        gr->nesp = ci->NPotential();
-        snew(gr->pot,gr->nesp);
-        snew(gr->pot_calc,gr->nesp);
-        snew(gr->esp,gr->nesp);
-        for(epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
-        {
-            espid = epi->GetEspid();
-            range_check(espid,1,gr->nesp+1);
-            xyz_unit = epi->GetXYZunit();
-            xunit = string2unit(xyz_unit.c_str());
-            V_unit = epi->GetVunit();
-            gr->esp[espid-1][XX] = convert2gmx(epi->GetX(),xunit);
-            gr->esp[espid-1][YY] = convert2gmx(epi->GetY(),xunit);
-            gr->esp[espid-1][ZZ] = convert2gmx(epi->GetZ(),xunit);
-            gr->pot[espid-1]     = convert2gmx(epi->GetV(),string2unit(V_unit.c_str()));
-        }
-    }
-    else 
-    {
-        gr->natom = 0;
-        gr->nesp = 0;
-        fprintf(stderr,"No calculation for %s with LOT %s\n",mp.GetMolname().c_str(),lot);
     }
 }
 

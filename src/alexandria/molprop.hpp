@@ -37,6 +37,9 @@ enum MolPropObservable {
     MPO_ENERGY,
     MPO_NR };
 
+//! Enum to select either QM or Experimental data or either    
+enum { iqmExp, iqmBoth, iqmQM, iqmNR };
+
 //! Strings describing the MolPropObservable enum elements
 extern const char *mpo_name[MPO_NR];
 
@@ -906,6 +909,8 @@ public:
                double *value,double *error,double vec[3],
                tensor quadrupole);
     
+    
+
     //! Merge in another object
     void Merge(Experiment& src);
     
@@ -1163,7 +1168,17 @@ public:
     
     //! Return the IUPAC International Chemical Identifier (InChI) see http://www.iupac.org/home/publications/e-resources/inchi.html
     std::string GetInchi() { return _inchi; }
-    
+
+    //! Convenience function
+    int GetPropRef(MolPropObservable mpo,int iQM,char *lot,
+                   const char *conf,const char *type,double *value,double *error,
+                   char **ref,char **mylot,
+                   double vec[3],tensor quadrupole);
+                   
+    //! And another one
+    int GetProp(MolPropObservable mpo,int iQM,char *lot,
+                char *conf,char *type,double *value);
+        
     //! Add a classification category for this molecule
     void AddCategory(const char *category) { 
         std::string _str(category); AddCategory(_str); 

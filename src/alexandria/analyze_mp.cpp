@@ -217,8 +217,8 @@ static void write_corr_xvg(const char *fn,
             {
                 for(k=0; (k<qmc->nconf); k++)
                 {
-                    if ((mp_get_prop(*mpi,mpo,iqmExp,NULL,NULL,NULL,&exp_val) > 0)  &&
-                        (mp_get_prop(*mpi,mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
+                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,NULL,&exp_val) > 0)  &&
+                        (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
                         diff = fabs(qm_val-exp_val);
@@ -369,7 +369,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
                 iupac = mpi->GetIupac().c_str();
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
-                    if (mp_get_prop_ref(*mpi,prop,iqmBoth,lot,NULL,NULL,
+                    if (mpi->GetPropRef(prop,iqmBoth,lot,NULL,NULL,
                                         &value,&error,&ref,&mylot,
                                         vec,quadrupole) == 1)
                     {

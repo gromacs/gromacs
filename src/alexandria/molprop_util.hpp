@@ -43,18 +43,16 @@
 #include "poldata.h"
 #include "molselect.h"
 
-enum { iqmExp, iqmBoth, iqmQM, iqmNR };
-
-extern int mp_get_prop(alexandria::MolProp mp,MolPropObservable mpi,
-                       int iQM,char *lot,char *conf,char *type,double *value);
+//extern int mp_get_prop(alexandria::MolProp mp,MolPropObservable mpi,
+//                       int iQM,char *lot,char *conf,char *type,double *value);
 
 /* mylot returns the used level of theory. mylot and ref may be NULL */
-extern int mp_get_prop_ref(alexandria::MolProp mp,MolPropObservable mpo,
-                           int iQM,char *lot,
-                           const char *conf,const char *type,
-                           double *value,double *err,
-                           char **ref,char **mylot,
-                           double vec[3],tensor quadrupole);
+//extern int mp_get_prop_ref(alexandria::MolProp mp,MolPropObservable mpo,
+//                           int iQM,char *lot,
+//                           const char *conf,const char *type,
+//                           double *value,double *err,
+//                           char **ref,char **mylot,
+//                           double vec[3],tensor quadrupole);
 
 //extern int gmx_molprop_get_calc_lot(alexandria::MolProp mp,char *lot);
 

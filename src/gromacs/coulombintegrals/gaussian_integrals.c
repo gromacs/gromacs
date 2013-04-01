@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
  * $Id: gentop.c,v 1.26 2009/05/20 10:48:03 spoel Exp $
  * 
  *                This source code is part of
@@ -39,7 +39,7 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include "gaussian_integrals.h"
+#include "gromacs/coulombintegrals.h"
 
 static double sqr(double x)
 {

@@ -38,23 +38,19 @@
 #define _gaussian_integrals_h
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
+
 double Coulomb_GG(double r,double xi,double xj);
 
-#ifdef __cplusplus
-extern "C"
-#endif
 double Nuclear_GG(double r,double xi);
 
-#ifdef __cplusplus
-extern "C"
-#endif
 double DCoulomb_GG(double r,double xi,double xj);
 
-#ifdef __cplusplus
-extern "C"
-#endif
 double DNuclear_GG(double r,double xi);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

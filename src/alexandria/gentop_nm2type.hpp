@@ -34,16 +34,15 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_nm2type_h
-#define _gentop_nm2type_h
+#ifndef _gentop_nm2type_hpp
+#define _gentop_nm2type_hpp
 
-	
 #include <stdio.h>
 #include "atomprop.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 #include "poldata.h"
-#include "gentop_vsite.h"
+#include "gentop_vsite.hpp"
 
 extern int nm2type(FILE *fp,const char *molname,
 		   gmx_poldata_t pd,gmx_atomprop_t aps,

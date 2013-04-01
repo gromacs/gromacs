@@ -46,6 +46,7 @@ add_subdirectory(options)
 add_subdirectory(selection)
 add_subdirectory(trajectoryanalysis)
 add_subdirectory(utility)
+add_subdirectory(coulombintegrals)
 
 file(GLOB LIBGROMACS_HEADERS *.h)
 install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs

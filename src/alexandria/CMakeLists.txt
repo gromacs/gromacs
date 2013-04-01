@@ -3,7 +3,6 @@ set(ALEXANDRIA_SOURCES
 	xml_util.c
 	poldata.c
 	poldata_xml.c
-	gaussian_integrals.c
 	gmx_simple_comm.c
 	molselect.c
 	gmx_resp.cpp
@@ -15,51 +14,8 @@ set(ALEXANDRIA_SOURCES
 	molprop_util.cpp
 	molprop_xml.cpp
         molprop_sqlite3.cpp
-        mymol.cpp
+        mymol2.cpp
         gauss_io.cpp
-	slater_integrals.cpp
-	DSlater_1S_1S.cpp
-	DSlater_1S_2S.cpp 
-	DSlater_1S_3S.cpp 
-#	DSlater_1S_4S.cpp 
-#	DSlater_1S_5S.cpp 
-	DSlater_2S_2S.cpp 
-	DSlater_2S_3S.cpp 
-#	DSlater_2S_4S.cpp 
-#	DSlater_2S_5S.cpp 
-	DSlater_3S_3S.cpp 
-#	DSlater_3S_4S.cpp 
-#	DSlater_3S_5S.cpp
-#	DSlater_4S_4S.cpp 
-#	DSlater_4S_5S.cpp 
-#	DSlater_5S_5S.cpp 
-	Slater_1S_1S.cpp 
-	Slater_1S_2S.cpp 
-	Slater_1S_3S.cpp 
-#	Slater_1S_4S.cpp 
-#	Slater_1S_5S.cpp 
-	Slater_2S_2S.cpp 
-	Slater_2S_3S.cpp 
-#	Slater_2S_4S.cpp 
-#	Slater_2S_5S.cpp 
-#	Slater_4S_4S.cpp 
-#	Slater_4S_5S.cpp 
-#	Slater_5S_5S.cpp 
-#	DSlater_1S_6S.cpp 
-#	DSlater_2S_6S.cpp 
-#	DSlater_3S_6S.cpp 
-#	DSlater_4S_6S.cpp 
-#	DSlater_5S_6S.cpp 
-#	DSlater_6S_6S.cpp 
-#	Slater_1S_6S.cpp 
-#	Slater_2S_6S.cpp 
-	Slater_3S_3S.cpp 
-#	Slater_3S_4S.cpp 
-#	Slater_3S_5S.cpp 
-#	Slater_3S_6S.cpp 
-#	Slater_4S_6S.cpp 
-#	Slater_5S_6S.cpp 
-#	Slater_6S_6S.cpp
 	)
 	
 add_library(alexandria ${ALEXANDRIA_SOURCES})	

@@ -94,7 +94,7 @@
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
-#include "mymol.hpp"
+#include "mymol2.hpp"
 
 typedef struct {
     int nb[ebtsNR],*ngtb[ebtsNR];

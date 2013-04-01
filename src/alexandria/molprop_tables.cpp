@@ -234,11 +234,11 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                     {
                         /*for(m=0; (m<qmc->nconf); m++) 
                           {*/
-                            if (mp_get_prop(*mpi,mpo,iqmExp,NULL,
+                            if (mpi->GetProp(mpo,iqmExp,NULL,
                                             NULL/*qmc->conf[m]*/,NULL,&exp_val) > 0)
                             {
                                 nexpres = 1;
-                                if (mp_get_prop(*mpi,mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
+                                if (mpi->GetProp(mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
                                                 qmc->type[k],&qm_val) > 0)
                                 {
                                     if (debug)
@@ -293,8 +293,8 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                 (mpi->HasComposition(SPOEL)))
             {
                 for(m=0; (m<qmc->nconf); m++) {
-                    if ((mp_get_prop(*mpi,mpo,iqmExp,NULL,qmc->conf[m],NULL,&exp_val) > 0) &&
-                        (mp_get_prop(*mpi,mpo,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val) > 0)) 
+                    if ((mpi->GetProp(mpo,iqmExp,NULL,qmc->conf[m],NULL,&exp_val) > 0) &&
+                        (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val) > 0)) 
                     {
                         gmx_stats_add_point(lsqtot[k],exp_val,qm_val,0,0);
                     }
@@ -651,9 +651,9 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     if (mci != mpi->EndMolecularComposition())
                     {
                         int ngt = mci->CountAtoms(gt_type[cur]);
-                        if (mp_get_prop(*mpi,mpo,iqmExp,lot,NULL,NULL,&exp_val) > 0)
+                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,NULL,&exp_val) > 0)
                             nfitexp += ngt;
-                        else if (mp_get_prop(*mpi,mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
+                        else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
                             nfitqm += ngt;
                     }
                 }
@@ -1035,7 +1035,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                 for(j=0; (j<qmc->n); j++) 
                 {
                     sprintf(lbuf,"%s/%s",qmc->method[j],qmc->basis[j]);
-                    if (mp_get_prop_ref(*mpi,mpo,iqmQM,lbuf,exp_conf.c_str(),
+                    if (mpi->GetPropRef(mpo,iqmQM,lbuf,exp_conf.c_str(),
                                         qmc->type[j],&calc_val,&calc_err,
                                         NULL,NULL,dvec,quadrupole) == 1) 
                     {

@@ -730,6 +730,99 @@ int Experiment::GetVal(const char *type,MolPropObservable mpo,
     return done;
 }
   
+int MolProp::GetPropRef(MolPropObservable mpo,int iQM,char *lot,
+                        const char *conf,const char *type,double *value,double *error,
+                        char **ref,char **mylot,
+                        double vec[3],tensor quadrupole)
+{
+    alexandria::ExperimentIterator ei;
+    alexandria::CalculationIterator ci;
+    std::string reference,method,name,basisset,program,conformation,expconf;
+    
+    int n,k,done=0;
+    char **qm,**ll;
+    
+    if ((iQM == iqmExp) || (iQM == iqmBoth)) 
+    {
+        for(ei=BeginExperiment(); (ei<EndExperiment()); ei++)
+        {
+            reference = ei->GetReference();
+            expconf   = ei->GetConformation();
+            
+            if ((NULL == conf) || (strcasecmp(conf,expconf.c_str()) == 0))
+                done = ei->GetVal(type,mpo,value,error,vec,quadrupole);
+        }
+        if (done != 0) {
+            if (NULL != ref)
+                *ref = strdup(reference.c_str());
+            if (NULL != mylot)
+                *mylot = strdup("Experiment");
+        }
+    }
+    
+    if ((done == 0) && ((iQM == iqmBoth) || (iQM == iqmQM)))
+    {
+        if (NULL != lot) 
+        {
+            qm = split(':',lot);
+            n = 0;
+            while ((done == 0) && (NULL != qm[n]))
+            {
+                ll = split('/',qm[n]);
+                if ((NULL != ll[0]) && (NULL != ll[1])) 
+                {
+                    for(ci=BeginCalculation(); (ci<EndCalculation()); ci++)
+                    {
+                        basisset     = ci->GetBasisset();
+                        method       = ci->GetMethod();
+                        reference    = ci->GetReference();
+                        conformation = ci->GetConformation();
+                      
+                        if (((strcasecmp(method.c_str(),ll[0]) == 0) &&
+                             (strcasecmp(basisset.c_str(),ll[1]) == 0)) &&
+                            ((NULL == conf) || (strcasecmp(conf,conformation.c_str()) == 0)))
+                        {
+                            done = ci->GetVal(type,mpo,value,error,vec,quadrupole);
+                        }
+                        if ((done != 0) && (NULL != ref))
+                            *ref = strdup(reference.c_str());
+                    }
+                }
+                k = 0;
+                while (ll[k] != NULL)
+                {
+                    sfree(ll[k]);
+                    k++;
+                }
+                sfree(ll);
+                if (done != 0) 
+                {
+                    if (NULL != mylot)
+                        *mylot = strdup(qm[n]);
+                }
+                n++;
+            }
+            k = 0;
+            while (qm[k] != NULL)
+            {
+                sfree(qm[k]);
+                k++;
+            }
+        }
+    }
+    return done;
+}
+
+int MolProp::GetProp(MolPropObservable mpo,int iQM,char *lot,
+                     char *conf,char *type,double *value)
+{
+    double error,vec[3];
+    tensor quad;
+
+    return GetPropRef(mpo,iQM,lot,conf,type,value,&error,NULL,NULL,vec,quad);
+}                
+
+
 CalculationIterator MolProp::GetLot(const char *lot)
 {
     int  k,done = 0;

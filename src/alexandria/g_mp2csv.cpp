@@ -125,7 +125,7 @@ static void gmx_molprop_csv(const char *fn,
                 mpi->GetMass());
         for(k=0; (k<NEMP); k++) 
         {
-            if (mp_get_prop_ref(*mpi,mpo[k],iqmExp,
+            if (mpi->GetPropRef(mpo[k],iqmExp,
                                 NULL,NULL,NULL,&d,&err,&ref,NULL,vec,
                                 quadrupole) == 1)
             {
@@ -136,7 +136,7 @@ static void gmx_molprop_csv(const char *fn,
                 fprintf(fp,",\"\",\"\"");
             for(j=0; (j<qmc[k]->n); j++) 
             {
-                if (mp_get_prop(*mpi,mpo[k],iqmQM,qmc[k]->lot[j],NULL,qmc[k]->type[j],&d) == 1)
+                if (mpi->GetProp(mpo[k],iqmQM,qmc[k]->lot[j],NULL,qmc[k]->type[j],&d) == 1)
                     fprintf(fp,",\"%.4f\"",d);
                 else
                     fprintf(fp,",\"\"");

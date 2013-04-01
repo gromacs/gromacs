@@ -34,14 +34,13 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _gentop_core_h
-#define _gentop_core_h
+#ifndef _gentop_core_hpp
+#define _gentop_core_hpp
 
-	
 #include <stdio.h>
 #include "typedefs.h"
 #include "pdbio.h"
-#include "gentop_nm2type.h"
+#include "gentop_nm2type.hpp"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
 #include "poldata.h"
@@ -73,7 +72,7 @@ extern void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
 		       
 extern int *symmetrize_charges(gmx_bool bQsym,
                                t_atoms *atoms,t_params *bonds,gmx_poldata_t pd,
-                               gmx_atomprop_t aps,char *symm_string);
+                               gmx_atomprop_t aps,const char *symm_string);
 
 enum { ecgAtom, ecgGroup, ecgNeutral, ecgNR };
 

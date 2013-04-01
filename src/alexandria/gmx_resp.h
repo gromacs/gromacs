@@ -53,11 +53,11 @@ typedef struct gmx_resp *gmx_resp_t;
 extern int atomicnumber2row(int elem);
 
 extern gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int eqg_model,
-				gmx_bool bAXpRESP,real qfac,real b_hyper,real qtot,
-				real zmin,real zmax,real delta_z,gmx_bool bZatyp,
-				real watoms,real rDecrZeta,
-				gmx_bool bRandZeta,real penalty_fac,gmx_bool bFitZeta,
-				gmx_bool bEntropy,const char *dzatoms);
+                                gmx_bool bAXpRESP,real qfac,real b_hyper,real qtot,
+                                real zmin,real zmax,real delta_z,gmx_bool bZatyp,
+                                real watoms,real rDecrZeta,
+                                gmx_bool bRandZeta,real penalty_fac,gmx_bool bFitZeta,
+                                gmx_bool bEntropy,const char *dzatoms);
 				
 extern void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[]);
   

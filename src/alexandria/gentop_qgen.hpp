@@ -64,7 +64,7 @@ generate_charges_sm(FILE *fp,gentop_qgen_t qgen,
 extern int 
 generate_charges(FILE *fp,
 		 gentop_qgen_t qgen,
-		 gmx_resp_t gr,char *molname,
+		 gmx_resp_t gr,const char *molname,
 		 gmx_poldata_t pd,
 		 t_atoms *atoms,rvec x[],
 		 real tol,int maxiter,int maxcycle,

@@ -847,7 +847,7 @@ static int generate_charges_bultinck(FILE *fp,
 
 int generate_charges(FILE *fp,
                      gentop_qgen_t qgen,gmx_resp_t gr,
-                     char *molname,gmx_poldata_t pd,
+                     const char *molname,gmx_poldata_t pd,
                      t_atoms *atoms,rvec x[],
                      real tol,int maxiter,int maxcycle,
                      gmx_atomprop_t aps,real hfac)
