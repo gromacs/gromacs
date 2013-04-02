@@ -1,10 +1,13 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
+set(exename mdrun)
+configure_file(../main.cpp main.cpp)
+
 set(MDRUN_SOURCES
     do_gct.c      gctio.c       genalg.c    ionize.c
     md.c          mdrun.c     membed.c
     pme_loadbal.c repl_ex.c     runner.c    xutils.c
-    ../main.cpp)
+    ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 if(GMX_OPENMM)
     # Even though the OpenMM build has "moved to contrib", many things
@@ -42,3 +45,7 @@ else(GMX_FAHCORE)
     endif (BUILD_SHARED_LIBS)
     add_dependencies(install-mdrun mdrun)
 endif(GMX_FAHCORE)
+
+if (BUILD_TESTING)
+    add_subdirectory(tests)
+endif (BUILD_TESTING)

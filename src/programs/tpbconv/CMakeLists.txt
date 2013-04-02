@@ -1,6 +1,8 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-file(GLOB TPBCONV_SOURCES tpbconv.c ../main.cpp)
+set(exename tpbconv)
+configure_file(../main.cpp main.cpp)
+file(GLOB TPBCONV_SOURCES tpbconv.c ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 add_executable(tpbconv ${TPBCONV_SOURCES})
 gmx_add_man_page(tpbconv)
