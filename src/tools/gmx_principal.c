@@ -135,7 +135,7 @@ int gmx_principal(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
 
     do
     {
@@ -148,7 +148,7 @@ int gmx_principal(int argc, char *argv[])
         fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][ZZ], axes[YY][ZZ], axes[ZZ][ZZ]);
         fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

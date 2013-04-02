@@ -65,6 +65,7 @@
 #include "gmxfio.h"
 #include "string2.h"
 #include "copyrite.h"
+#include "types/simple.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"

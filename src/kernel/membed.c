@@ -237,7 +237,7 @@ static void get_input(const char *membed_input, real *xy_fac, real *xy_max, real
 
     wi = init_warning(TRUE, 0);
 
-    inp = read_inpfile(membed_input, &ninp, NULL, wi);
+    inp = read_inpfile(membed_input, &ninp, wi);
     ITYPE ("nxy", *it_xy, 1000);
     ITYPE ("nz", *it_z, 0);
     RTYPE ("xyinit", *xy_fac, 0.5);

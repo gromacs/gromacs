@@ -1640,7 +1640,7 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     }
     if (d->bRmPBC)
     {
-        gpbc = gmx_rmpbc_init(&d->top->idef, d->ePBC, d->fr->natoms, d->fr->box);
+        gpbc = gmx_rmpbc_init(&d->top->idef, d->ePBC, d->fr->natoms);
     }
     d->nframes = 0;
     do

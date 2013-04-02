@@ -154,7 +154,7 @@ int gmx_rotacf(int argc, char *argv[])
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(x_s, natoms);
 
-    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms);
 
     /* Start the loop over frames */
     t1      = t0 = t;
@@ -209,7 +209,7 @@ int gmx_rotacf(int argc, char *argv[])
         /* Increment loop counter */
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     fprintf(stderr, "\nDone with trajectory\n");
 

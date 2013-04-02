@@ -695,7 +695,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
 
     if (bMol)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
 
     /* the loop over all frames */
@@ -826,7 +826,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
 
         curr->nframes++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x[cur], box));
+    while (read_next_x(oenv, status, &t, x[cur], box));
     fprintf(stderr, "\nUsed %d restart points spaced %g %s over %g %s\n\n",
             curr->nrestart,
             output_env_conv_time(oenv, dt), output_env_get_time_unit(oenv),

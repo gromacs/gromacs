@@ -215,7 +215,7 @@ int gmx_vanhove(int argc, char *argv[])
 
         nfr++;
     }
-    while (read_next_x(oenv, status, &t, natom, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     /* clean up */
     sfree(x);

@@ -1083,7 +1083,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
 }
 
 gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
-                     int natoms, rvec x[], matrix box)
+                     rvec x[], matrix box)
 {
     gmx_bool bRet;
 

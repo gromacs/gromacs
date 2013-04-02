@@ -54,6 +54,7 @@
 #include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
+#include "types/simple.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -198,7 +199,7 @@ const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf)
 
 
 /* check the number of items given against the type */
-void gmx_fio_check_nitem(t_fileio *fio, int eio, int nitem, const char *file,
+void gmx_fio_check_nitem(t_fileio * gmx_unused fio, int eio, int nitem, const char *file,
                          int line)
 {
     if ((nitem != 1) && !((eio == eioNRVEC) || (eio == eioNUCHAR)))

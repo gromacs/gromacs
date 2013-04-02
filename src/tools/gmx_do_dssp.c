@@ -639,7 +639,7 @@ int gmx_do_dssp(int argc, char *argv[])
     accr  = NULL;
     naccr = 0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     do
     {
         t = output_env_conv_time(oenv, t);
@@ -683,7 +683,7 @@ int gmx_do_dssp(int argc, char *argv[])
         remove(pdbfile);
         nframe++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trj(status);
     if (fTArea)

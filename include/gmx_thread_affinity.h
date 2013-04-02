@@ -53,9 +53,7 @@ void
 gmx_set_thread_affinity(FILE                *fplog,
                         const t_commrec     *cr,
                         gmx_hw_opt_t        *hw_opt,
-                        int                  nthreads_pme,
-                        const gmx_hw_info_t *hwinfo,
-                        const t_inputrec    *inputrec);
+                        const gmx_hw_info_t *hwinfo);
 
 /* Check the process affinity mask and if it is found to be non-zero,
  * will honor it and disable mdrun internal affinity setting.

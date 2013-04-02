@@ -773,7 +773,7 @@ rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
         }
         i++;
     }
-    while (read_next_x(oenv, status, &t, natom, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "Allocated %lu bytes for frames\n",
             (unsigned long) (max_nf*isize*sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
@@ -1556,7 +1556,7 @@ int gmx_cluster(int argc, char *argv[])
                       TRUE);
         if (bPBC)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, box);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
         }
 
         fprintf(stderr, "\nSelect group for least squares fit%s:\n",

@@ -49,6 +49,7 @@
 #include "txtdump.h"
 #include "symtab.h"
 #include "macros.h"
+#include "types/simple.h"
 
 #define BUFSIZE         1024
 #define TABLESIZE       5
@@ -209,7 +210,7 @@ void open_symtab(t_symtab *symtab)
     symtab->symbuf = NULL;
 }
 
-void close_symtab(t_symtab *symtab)
+void close_symtab(t_symtab * gmx_unused symtab)
 {
 }
 

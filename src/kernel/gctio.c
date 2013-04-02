@@ -503,7 +503,7 @@ void read_gct(const char *fn, t_coupl_rec *tcr)
 
     wi = init_warning(FALSE, 0);
 
-    inp = read_inpfile(fn, &ninp, NULL, wi);
+    inp = read_inpfile(fn, &ninp, wi);
 
     for (i = 0; (i < eoObsNR); i++)
     {

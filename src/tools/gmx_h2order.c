@@ -129,7 +129,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -209,7 +209,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");

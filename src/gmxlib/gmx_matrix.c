@@ -63,7 +63,7 @@ double **alloc_matrix(int n, int m)
     return ptr;
 }
 
-void free_matrix(double **a, int n)
+void free_matrix(double **a)
 {
     int i;
 
@@ -179,8 +179,8 @@ int matrix_invert(FILE *fp, int n, double **a)
         id = alloc_matrix(n, n);
         matrix_multiply(fp, n, n, test, a, id);
         dump_matrix(fp, "And here is the product of A and Ainv", n, id);
-        free_matrix(id, n);
-        free_matrix(test, n);
+        free_matrix(id);
+        free_matrix(test);
     }
 #endif
     sfree(ipiv);
@@ -241,9 +241,9 @@ double multi_regression(FILE *fp, int nrow, double *y, int ncol,
     }
 
     sfree(atx);
-    free_matrix(a, nrow);
-    free_matrix(at, ncol);
-    free_matrix(ata, ncol);
+    free_matrix(a);
+    free_matrix(at);
+    free_matrix(ata);
 
     return chi2;
 }

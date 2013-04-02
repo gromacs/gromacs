@@ -309,7 +309,7 @@ int gmx_mdmat(int argc, char *argv[])
     rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
     rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
 
     if (bFrames)
     {
@@ -344,7 +344,7 @@ int gmx_mdmat(int argc, char *argv[])
                       nres, nres, resnr, resnr, mdmat, 0, truncate, rlo, rhi, &nlevels);
         }
     }
-    while (read_next_x(oenv, status, &t, trxnat, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trj(status);
     gmx_rmpbc_done(gpbc);

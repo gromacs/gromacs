@@ -68,7 +68,7 @@ static tMPI_Thread_mutex_t shift_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 
-void set_shift_consts(FILE *log, real r1, real rc, rvec box, t_forcerec *fr)
+void set_shift_consts(real r1, real rc, rvec box)
 {
 #ifdef GMX_THREAD_MPI
     /* at the very least we shouldn't allow multiple threads to set these

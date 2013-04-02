@@ -483,7 +483,7 @@ static t_border *mk_border(FILE *fp, int natom, atom_id *invcgs,
     return bor;
 }
 
-static void split_blocks(FILE *fp, t_inputrec *ir, int nnodes,
+static void split_blocks(FILE *fp, int nnodes,
                          t_block *cgs, t_blocka *sblock, real capacity[],
                          int *multinr_cgs)
 {
@@ -602,7 +602,7 @@ static int sid_comp(const void *a, const void *b)
     }
 }
 
-static int mk_grey(int nnodes, egCol egc[], t_graph *g, int *AtomI,
+static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
                    int maxsid, t_sid sid[])
 {
     int  j, ng, ai, aj, g0;
@@ -737,7 +737,7 @@ static int mk_sblocks(FILE *fp, t_graph *g, int maxsid, t_sid sid[])
             /* Make all the neighbours of this black node grey
              * and set their block number
              */
-            ng = mk_grey(nnodes, egc, g, &fG, maxsid, sid);
+            ng = mk_grey(egc, g, &fG, maxsid, sid);
             /* ng is the number of white nodes made grey */
             nG += ng;
             nW -= ng;
@@ -775,7 +775,7 @@ static int ms_comp(const void *a, const void *b)
     }
 }
 
-static int merge_sid(int i0, int at_start, int at_end, int nsid, t_sid sid[],
+static int merge_sid(int at_start, int at_end, int nsid, t_sid sid[],
                      t_blocka *sblock)
 {
     int          i, j, k, n, isid, ndel;
@@ -943,7 +943,7 @@ void gen_sblocks(FILE *fp, int at_start, int at_end,
      * part of the shake block too. There may be cases where blocks overlap
      * and they will have to be merged.
      */
-    nsid = merge_sid(i0, at_start, at_end, nsid, sid, sblock);
+    nsid = merge_sid(at_start, at_end, nsid, sid, sblock);
     /* Now sort the shake blocks again... */
     /*qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);*/
 
@@ -1118,7 +1118,7 @@ void split_top(FILE *fp, int nnodes, gmx_localtop_t *top, t_inputrec *ir, t_bloc
 #endif
     }
 
-    split_blocks(fp, ir, nnodes, &top->cgs, &sblock, capacity, multinr_cgs);
+    split_blocks(fp, nnodes, &top->cgs, &sblock, capacity, multinr_cgs);
 
     homeind = home_index(nnodes, &top->cgs, multinr_cgs);
 

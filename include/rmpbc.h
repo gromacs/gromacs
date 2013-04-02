@@ -48,8 +48,7 @@ extern "C" {
 typedef struct gmx_rmpbc *gmx_rmpbc_t;
 
 GMX_LIBGMX_EXPORT
-gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms,
-                           matrix box);
+gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms);
 
 GMX_LIBGMX_EXPORT
 void gmx_rmpbc_done(gmx_rmpbc_t gpbc);

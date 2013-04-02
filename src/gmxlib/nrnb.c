@@ -324,10 +324,9 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     }
 }
 
-void print_perf(FILE *out, double nodetime, double realtime, int nprocs,
+void print_perf(FILE *out, double nodetime, double realtime,
                 gmx_large_int_t nsteps, real delta_t,
-                double nbfs, double mflop,
-                int omp_nth_pp)
+                double nbfs, double mflop)
 {
     real runtime;
 

@@ -421,7 +421,7 @@ void pr_fns(FILE *fp, int nf, const t_filenm tfn[])
         for (f = 0; (f < tfn[i].nfiles); f++)
         {
             sprintf(buf, "%4s %14s  %-12s ", (f == 0) ? tfn[i].opt : "",
-                    tfn[i].fns[f], (f == 0) ? fileopt(tfn[i].flag, opt_buf, 32)
+                    tfn[i].fns[f], (f == 0) ? fileopt(tfn[i].flag, opt_buf)
                     : "");
             if (f < tfn[i].nfiles - 1)
             {
