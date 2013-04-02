@@ -316,7 +316,7 @@ int gmx_genconf(int argc, char *argv[])
                 }
                 if (bTRX)
                 {
-                    if (!read_next_x(oenv, status, &t, natoms, xx, boxx) &&
+                    if (!read_next_x(oenv, status, &t, xx, boxx) &&
                         ((i+1)*(j+1)*(k+1) < vol))
                     {
                         gmx_fatal(FARGS, "Not enough frames in trajectory");

@@ -84,7 +84,7 @@ static void calc_dihs(t_xrama *xr)
     t_dih       *dd;
     gmx_rmpbc_t  gpbc = NULL;
 
-    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms, xr->box);
+    gpbc = gmx_rmpbc_init(xr->idef, xr->ePBC, xr->natoms);
     gmx_rmpbc(gpbc, xr->natoms, xr->box, xr->x);
     gmx_rmpbc_done(gpbc);
 
@@ -100,7 +100,7 @@ static void calc_dihs(t_xrama *xr)
 
 gmx_bool new_data(t_xrama *xr)
 {
-    if (!read_next_x(xr->oenv, xr->traj, &xr->t, xr->natoms, xr->x, xr->box))
+    if (!read_next_x(xr->oenv, xr->traj, &xr->t, xr->x, xr->box))
     {
         return FALSE;
     }

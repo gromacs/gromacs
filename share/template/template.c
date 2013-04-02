@@ -194,7 +194,7 @@ gmx_template(int argc, char *argv[])
     }
 
     /* Now, we do the actual analysis */
-    gmx_ana_do(trj, 0, &analyze_frame, &d);
+    gmx_ana_do(trj, &analyze_frame, &d);
 
     /* Now, the analysis has been done for all frames, and you can access the
      * results in d. Here, you should post-process your data and write out any

@@ -1606,8 +1606,6 @@ int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr)
 
 /*!
  * \param[in,out] d   Trajectory analysis data structure.
- * \param[in] flags   Combination of flags
- *      (currently, there are no flags defined).
  * \param[in] analyze Pointer to frame analysis function.
  * \param     data    User data to be passed to \p analyze.
  * \returns   0 on success, a non-zero error code on error.
@@ -1620,7 +1618,7 @@ int gmx_ana_get_first_frame(gmx_ana_traj_t *d, t_trxframe **fr)
  *
  * This function also calculates the number of frames during the run.
  */
-int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data)
+int gmx_ana_do(gmx_ana_traj_t *d, gmx_analysisfunc analyze, void *data)
 {
     t_pbc               pbc;
     t_pbc              *ppbc;
@@ -1640,7 +1638,7 @@ int gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *dat
     }
     if (d->bRmPBC)
     {
-        gpbc = gmx_rmpbc_init(&d->top->idef, d->ePBC, d->fr->natoms, d->fr->box);
+        gpbc = gmx_rmpbc_init(&d->top->idef, d->ePBC, d->fr->natoms);
     }
     d->nframes = 0;
     do

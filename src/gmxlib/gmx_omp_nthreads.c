@@ -242,7 +242,7 @@ void gmx_omp_nthreads_init(FILE *fplog, t_commrec *cr,
                            int nthreads_hw_avail,
                            int omp_nthreads_req,
                            int omp_nthreads_pme_req,
-                           gmx_bool bThisNodePMEOnly,
+                           gmx_bool gmx_unused bThisNodePMEOnly,
                            gmx_bool bFullOmpSupport)
 {
     int      nth, nth_pmeonly, gmx_maxth, nppn;

@@ -796,7 +796,7 @@ int gmx_rmsdist (int argc, char *argv[])
         rmsnow = rms_diff(isize, d, d_r);
         fprintf(fp, "%g  %g\n", t, rmsnow);
     }
-    while (read_next_x(oenv, status, &t, natom, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     ffclose(fp);

@@ -93,7 +93,7 @@ static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip
         w_rls[a]  = (bMW ? top->atoms.atom[index[a]].m : 1.0);
         tot_mass += w_rls[a];
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     do
     {
@@ -115,7 +115,7 @@ static void get_refx(output_env_t oenv, const char *trxfn, int nfitdim, int skip
         }
         nfr_all++;
     }
-    while (read_next_x(oenv, status, &ti[nfr], natoms, x, box));
+    while (read_next_x(oenv, status, &ti[nfr], x, box));
     close_trj(status);
     sfree(x);
 
@@ -253,7 +253,7 @@ int gmx_rotmat(int argc, char *argv[])
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &x_ref, NULL, box, bMW);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
 
     gmx_rmpbc(gpbc, top.atoms.nr, box, x_ref);
 
@@ -306,7 +306,7 @@ int gmx_rotmat(int argc, char *argv[])
                 R[YY][XX], R[YY][YY], R[YY][ZZ],
                 R[ZZ][XX], R[ZZ][YY], R[ZZ][ZZ]);
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

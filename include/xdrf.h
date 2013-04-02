@@ -96,7 +96,7 @@ int xdr_real(XDR *xdrs, real *r);
 int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision);
 
 
-int xdr_gmx_large_int(XDR *xdrs, gmx_large_int_t *i, const char *warn);
+int xdr_gmx_large_int(XDR *xdrs, gmx_large_int_t *i);
 /* Read or write a gmx_large_int_t value.
  * 32bit code reading a 64bit gmx_large_int_t value from xdrs could
  * lead to values out of int range.

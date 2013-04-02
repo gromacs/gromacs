@@ -92,7 +92,7 @@ int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
 
 t_complex *** rc_tensor_allocation(int x, int y, int z);
 
-real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t * sft, int *nsftable);
+real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t * sft);
 
 #ifdef __cplusplus
 }

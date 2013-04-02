@@ -355,7 +355,7 @@ gmx_select(int argc, char *argv[])
     }
 
     /* Do the analysis and write out results */
-    gmx_ana_do(trj, 0, &print_data, &d);
+    gmx_ana_do(trj, &print_data, &d);
 
     /* Close the files */
     if (d.sfp)

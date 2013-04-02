@@ -824,8 +824,7 @@ void gmx_mtop_make_atomic_charge_groups(gmx_mtop_t *mtop,
  * The cat routines below are old code from src/kernel/topcat.c
  */
 
-static void blockcat(t_block *dest, t_block *src, int copies,
-                     int dnum, int snum)
+static void blockcat(t_block *dest, t_block *src, int copies)
 {
     int i, j, l, nra, size;
 
@@ -998,7 +997,7 @@ static void gen_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir,
         srcnr  = molt->atoms.nr;
         destnr = natoms;
 
-        blockcat(&top->cgs, &molt->cgs, molb->nmol, destnr, srcnr);
+        blockcat(&top->cgs, &molt->cgs, molb->nmol);
 
         blockacat(&top->excls, &molt->excls, molb->nmol, destnr, srcnr);
 

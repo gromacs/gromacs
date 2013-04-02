@@ -256,8 +256,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status,
  */
 
 GMX_LIBGMX_EXPORT
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
-                     int natoms, rvec x[], matrix box);
+gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.

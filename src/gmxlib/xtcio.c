@@ -52,7 +52,7 @@
 #define XTC_MAGIC 1995
 
 
-static int xdr_r2f(XDR *xdrs, real *r, gmx_bool bRead)
+static int xdr_r2f(XDR *xdrs, real *r, gmx_bool gmx_unused bRead)
 {
 #ifdef GMX_DOUBLE
     float f;

@@ -177,7 +177,7 @@ static int load_sharedlibrary_plugins(const char *fullpath, t_gmxvmdplugin* vmdp
 }
 
 /*return: 1: success, 0: last frame, -1: error*/
-gmx_bool read_next_vmd_frame(int status, t_trxframe *fr)
+gmx_bool read_next_vmd_frame(t_trxframe *fr)
 {
     int                rc, i;
     rvec               vec, angle;
@@ -388,7 +388,7 @@ static int load_vmd_library(const char *fn, t_gmxvmdplugin *vmdplugin)
 
 }
 
-int read_first_vmd_frame(int *status, const char *fn, t_trxframe *fr, int flags)
+int read_first_vmd_frame(const char *fn, t_trxframe *fr)
 {
     molfile_timestep_metadata_t *metadata = NULL;
 

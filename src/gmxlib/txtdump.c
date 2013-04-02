@@ -564,7 +564,7 @@ static void pr_pullgrp(FILE *fp, int indent, int g, t_pullgrp *pg)
     PR("kB", pg->kB);
 }
 
-static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda, gmx_bool bMDPformat)
+static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambda)
 {
     PR("simtemp_low", simtemp->simtemp_low);
     PR("simtemp_high", simtemp->simtemp_high);
@@ -572,7 +572,7 @@ static void pr_simtempvals(FILE *fp, int indent, t_simtemp *simtemp, int n_lambd
     pr_rvec(fp, indent, "simulated tempering temperatures", simtemp->temperatures, n_lambda, TRUE);
 }
 
-static void pr_expandedvals(FILE *fp, int indent, t_expanded *expand, int n_lambda, gmx_bool bMDPformat)
+static void pr_expandedvals(FILE *fp, int indent, t_expanded *expand, int n_lambda)
 {
 
     PI("nstexpanded", expand->nstexpanded);
@@ -844,7 +844,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PS("bSimTemp", EBOOL(ir->bSimTemp));
         if (ir->bSimTemp)
         {
-            pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda, bMDPformat);
+            pr_simtempvals(fp, indent, ir->simtempvals, ir->fepvals->n_lambda);
         }
         PS("free-energy", EFEPTYPE(ir->efep));
         if (ir->efep != efepNO || ir->bSimTemp)
@@ -853,7 +853,7 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         }
         if (ir->bExpanded)
         {
-            pr_expandedvals(fp, indent, ir->expandedvals, ir->fepvals->n_lambda, bMDPformat);
+            pr_expandedvals(fp, indent, ir->expandedvals, ir->fepvals->n_lambda);
         }
 
         PI("nwall", ir->nwall);
@@ -1525,8 +1525,8 @@ static void pr_atom(FILE *fp, int indent, const char *title, t_atom *atom, int n
     }
 }
 
-static void pr_grps(FILE *fp, int indent, const char *title, t_grps grps[],
-                    char **grpname[], gmx_bool bShowNumbers)
+static void pr_grps(FILE *fp, const char *title, t_grps grps[],
+                    char **grpname[])
 {
     int i, j;
 
@@ -1541,14 +1541,14 @@ static void pr_grps(FILE *fp, int indent, const char *title, t_grps grps[],
     }
 }
 
-static void pr_groups(FILE *fp, int indent, const char *title,
+static void pr_groups(FILE *fp, int indent,
                       gmx_groups_t *groups,
                       gmx_bool bShowNumbers)
 {
     int grpnr[egcNR];
     int nat_max, i, g;
 
-    pr_grps(fp, indent, "grp", groups->grps, groups->grpname, bShowNumbers);
+    pr_grps(fp, "grp", groups->grps, groups->grpname);
     pr_strings(fp, indent, "grpname", groups->grpname, groups->ngrpname, bShowNumbers);
 
     (void) pr_indent(fp, indent);
@@ -1650,8 +1650,7 @@ static void pr_moltype(FILE *fp, int indent, const char *title,
 
 static void pr_molblock(FILE *fp, int indent, const char *title,
                         gmx_molblock_t *molb, int n,
-                        gmx_moltype_t *molt,
-                        gmx_bool bShowNumbers)
+                        gmx_moltype_t *molt)
 {
     indent = pr_title_n(fp, indent, title, n);
     (void) pr_indent(fp, indent);
@@ -1686,7 +1685,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             pr_molblock(fp, indent, "molblock", &mtop->molblock[mb], mb,
-                        mtop->moltype, bShowNumbers);
+                        mtop->moltype);
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
@@ -1695,7 +1694,7 @@ void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
             pr_moltype(fp, indent, "moltype", &mtop->moltype[mt], mt,
                        &mtop->ffparams, bShowNumbers);
         }
-        pr_groups(fp, indent, "groups", &mtop->groups, bShowNumbers);
+        pr_groups(fp, indent, &mtop->groups, bShowNumbers);
     }
 }
 

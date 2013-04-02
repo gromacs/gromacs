@@ -302,7 +302,7 @@ typedef int (*gmx_analysisfunc)(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 /** Loops through all frames in the trajectory. */
 GMX_LIBGMX_EXPORT
 int
-gmx_ana_do(gmx_ana_traj_t *d, int flags, gmx_analysisfunc analyze, void *data);
+gmx_ana_do(gmx_ana_traj_t *d, gmx_analysisfunc analyze, void *data);
 /** Gets the total number of frames analyzed. */
 int
 gmx_ana_get_nframes(gmx_ana_traj_t *d, int *nframes);

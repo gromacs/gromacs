@@ -162,9 +162,7 @@ void
 gmx_set_thread_affinity(FILE                *fplog,
                         const t_commrec     *cr,
                         gmx_hw_opt_t        *hw_opt,
-                        int                  nthreads_pme,
-                        const gmx_hw_info_t *hwinfo,
-                        const t_inputrec    *inputrec)
+                        const gmx_hw_info_t *hwinfo)
 {
     int        nth_affinity_set, thread_id_node, thread_id,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;

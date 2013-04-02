@@ -76,6 +76,8 @@
 
 #include "buildinfo.h"
 
+#include "types/simple.h"
+
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
 #endif
@@ -299,7 +301,7 @@ static void do_cpt_step_err(XDR *xd, const char *desc, gmx_large_int_t *i, FILE 
     bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_gmx_large_int(xd, i, "reading checkpoint file");
+    res = xdr_gmx_large_int(xd, i);
     if (res == 0)
     {
         cp_error();
@@ -325,7 +327,7 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
     }
 }
 
-static void do_cpt_real_err(XDR *xd, const char *desc, real *f)
+static void do_cpt_real_err(XDR *xd, real *f)
 {
     bool_t res = 0;
 
@@ -348,7 +350,7 @@ static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE 
     {
         for (j = 0; j < DIM; j++)
         {
-            do_cpt_real_err(xd, desc, &f[i][j]);
+            do_cpt_real_err(xd, &f[i][j]);
         }
     }
 
@@ -965,7 +967,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     }
 }
 
-static int do_cpt_footer(XDR *xd, gmx_bool bRead, int file_version)
+static int do_cpt_footer(XDR *xd, gmx_bool gmx_unused bRead, int file_version)
 {
     bool_t res = 0;
     int    magic;
@@ -987,7 +989,7 @@ static int do_cpt_footer(XDR *xd, gmx_bool bRead, int file_version)
     return 0;
 }
 
-static int do_cpt_state(XDR *xd, gmx_bool bRead,
+static int do_cpt_state(XDR *xd, gmx_bool gmx_unused bRead,
                         int fflags, t_state *state,
                         gmx_bool bReadRNG, FILE *list)
 {
@@ -1058,7 +1060,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
-static int do_cpt_ekinstate(XDR *xd, gmx_bool bRead,
+static int do_cpt_ekinstate(XDR *xd, gmx_bool gmx_unused bRead,
                             int fflags, ekinstate_t *ekins,
                             FILE *list)
 {
@@ -1194,7 +1196,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
-static int do_cpt_df_hist(XDR *xd, gmx_bool bRead, int fflags, df_history_t *dfhist, FILE *list)
+static int do_cpt_df_hist(XDR *xd, gmx_bool gmx_unused bRead, int fflags, df_history_t *dfhist, FILE *list)
 {
     int  i, nlambda;
     int  ret;

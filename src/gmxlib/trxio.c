@@ -871,7 +871,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                 break;
             default:
 #ifdef GMX_USE_PLUGINS
-                bRet = read_next_vmd_frame(dummy, fr);
+                bRet = read_next_vmd_frame(fr);
 #else
                 gmx_fatal(FARGS, "DEATH HORROR in read_next_frame ftp=%s,status=%s",
                           ftp2ext(gmx_fio_getftp(status->fio)),
@@ -1030,7 +1030,7 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
                     "GROMACS will now assume it to be a trajectory and will try to open it using the VMD plug-ins.\n"
                     "This will only work in case the VMD plugins are found and it is a trajectory format supported by VMD.\n", fn);
             gmx_fio_fp_close(fio); /*only close the file without removing FIO entry*/
-            if (!read_first_vmd_frame(&dummy, fn, fr, flags))
+            if (!read_first_vmd_frame(fn, fr))
             {
                 gmx_fatal(FARGS, "Not supported in read_first_frame: %s", fn);
             }
@@ -1083,7 +1083,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status, const char *fn,
 }
 
 gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
-                     int natoms, rvec x[], matrix box)
+                     rvec x[], matrix box)
 {
     gmx_bool bRet;
 

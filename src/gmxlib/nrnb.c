@@ -235,7 +235,7 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
     }
 }
 
-void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char *file, int line)
+void _inc_nrnb(t_nrnb *nrnb, int enr, int inc, char gmx_unused *file, int gmx_unused line)
 {
     nrnb->n[enr] += inc;
 #ifdef DEBUG_NRNB
@@ -324,10 +324,9 @@ void print_flop(FILE *out, t_nrnb *nrnb, double *nbfs, double *mflop)
     }
 }
 
-void print_perf(FILE *out, double nodetime, double realtime, int nprocs,
+void print_perf(FILE *out, double nodetime, double realtime,
                 gmx_large_int_t nsteps, real delta_t,
-                double nbfs, double mflop,
-                int omp_nth_pp)
+                double nbfs, double mflop)
 {
     real runtime;
 

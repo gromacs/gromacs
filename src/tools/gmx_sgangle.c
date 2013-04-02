@@ -249,7 +249,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
         sg_distance2 = xvgropen(d2file, buf, "Time (ps", "Distance (nm)", oenv);
     }
 
-    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms);
 
     do
     {
@@ -275,7 +275,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -452,7 +452,7 @@ void sgangle_plot_single(const char *fn, const char *afile, const char *dfile,
     }
 
     snew(xzero, natoms);
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     do
     {
@@ -487,7 +487,7 @@ void sgangle_plot_single(const char *fn, const char *afile, const char *dfile,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     gmx_rmpbc_done(gpbc);
 
     fprintf(stderr, "\n");

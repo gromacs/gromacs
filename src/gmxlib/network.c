@@ -74,7 +74,7 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-int gmx_setup(int *argc, char **argv, int *nnodes)
+int gmx_setup(int gmx_unused *argc, char gmx_unused **argv, int *nnodes)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_setup");
@@ -312,7 +312,7 @@ int gmx_hostname_num()
 #endif
 }
 
-void gmx_setup_nodecomm(FILE *fplog, t_commrec *cr)
+void gmx_setup_nodecomm(FILE gmx_unused *fplog, t_commrec *cr)
 {
     gmx_nodecomm_t *nc;
     int             n, rank, hostnum, ng, ni;
@@ -494,7 +494,7 @@ void gmx_barrier(const t_commrec *cr)
 #endif
 }
 
-void gmx_abort(int noderank, int nnodes, int errorno)
+void gmx_abort(int gmx_unused noderank, int gmx_unused nnodes, int gmx_unused errorno)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_abort");

@@ -351,7 +351,7 @@ int gmx_bundle(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, TRX_NEED_X);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, fr.box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
 
     do
     {

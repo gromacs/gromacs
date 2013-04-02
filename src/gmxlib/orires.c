@@ -50,6 +50,7 @@
 #include "copyrite.h"
 #include "pbc.h"
 #include "mtop_util.h"
+#include "types/simple.h"
 
 void init_orires(FILE *fplog, const gmx_mtop_t *mtop,
                  rvec xref[],
@@ -590,9 +591,9 @@ real calc_orires_dev(const gmx_multisim_t *ms,
 real orires(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
             const rvec x[], rvec f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
-            real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index)
+            real gmx_unused lambda, real gmx_unused *dvdlambda,
+            const t_mdatoms gmx_unused *md, t_fcdata *fcd,
+            int gmx_unused *global_atom_index)
 {
     atom_id             ai, aj;
     int                 fa, d, i, type, ex, power, ki = CENTRAL;

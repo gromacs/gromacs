@@ -118,7 +118,7 @@ void maxwell_speed(real tempi, int seed, gmx_mtop_t *mtop, rvec v[])
     gmx_rng_destroy(rng);
 }
 
-real calc_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[],
+real calc_cm(FILE gmx_unused *log, int natoms, real mass[], rvec x[], rvec v[],
              rvec xcm, rvec vcm, rvec acm, matrix L)
 {
     rvec dx, a0;

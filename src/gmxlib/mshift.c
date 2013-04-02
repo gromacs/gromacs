@@ -631,7 +631,7 @@ static void mk_1shift_screw(matrix box, rvec hbox,
     }
 }
 
-static int mk_grey(FILE *log, int nnodes, egCol egc[], t_graph *g, int *AtomI,
+static int mk_grey(egCol egc[], t_graph *g, int *AtomI,
                    int npbcdim, matrix box, rvec x[], int *nerror)
 {
     int          m, j, ng, ai, aj, g0;
@@ -811,7 +811,7 @@ void mk_mshift(FILE *log, t_graph *g, int ePBC, matrix box, rvec x[])
             /* Make all the neighbours of this black node grey
              * and set their periodicity
              */
-            ng = mk_grey(log, nnodes, g->egc, g, &fG, npbcdim, box, x, &nerror);
+            ng = mk_grey(g->egc, g, &fG, npbcdim, box, x, &nerror);
             /* ng is the number of white nodes made grey */
             nG += ng;
             nW -= ng;

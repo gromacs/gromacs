@@ -147,7 +147,7 @@ void calc_chargegroup_radii(const gmx_mtop_t *mtop, rvec *x,
     *rcoul2 = sqrt(r2c2);
 }
 
-void calc_cgcm(FILE *fplog, int cg0, int cg1, t_block *cgs,
+void calc_cgcm(FILE gmx_unused *fplog, int cg0, int cg1, t_block *cgs,
                rvec pos[], rvec cg_cm[])
 {
     int      icg, k, k0, k1, d;
@@ -191,7 +191,7 @@ void calc_cgcm(FILE *fplog, int cg0, int cg1, t_block *cgs,
     }
 }
 
-void put_charge_groups_in_box(FILE *fplog, int cg0, int cg1,
+void put_charge_groups_in_box(FILE gmx_unused *fplog, int cg0, int cg1,
                               int ePBC, matrix box, t_block *cgs,
                               rvec pos[], rvec cg_cm[])
 

@@ -47,7 +47,7 @@ F77_FUNC(dorml2,DORML2)(const char *side,
 	double *c,
 	int *ldc,
 	double *work,
-	int *info)
+    int * info)
 {
   const char xside=toupper(*side);
   const char xtrans=toupper(*trans);

@@ -4535,7 +4535,7 @@ int gmx_hbond(int argc, char *argv[])
 
 #pragma omp single
             {
-                trrStatus = (read_next_x(oenv, status, &t, natoms, x, box));
+                trrStatus = (read_next_x(oenv, status, &t, x, box));
                 nframes++;
             }
 

@@ -58,7 +58,6 @@ static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
-                        char **cppopts,
                         warninp_t wi)
 {
     FILE      *in;
@@ -66,7 +65,6 @@ t_inpfile *read_inpfile(const char *fn, int *ninp,
     char      *ptr, *cptr;
     t_inpfile *inp = NULL;
     int        nin, lc, i, j, k;
-    /* setting cppopts from command-line options would be cooler */
     gmx_bool   allow_override = FALSE;
 
 

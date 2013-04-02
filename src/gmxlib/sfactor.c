@@ -535,7 +535,7 @@ extern int do_scattering_intensity (const char* fnTPS, const char* fnNDX,
         index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
     }
 
-    sf_table = compute_scattering_factor_table (gmx_sf, (structure_factor_t *)sf, &nsftable);
+    sf_table = compute_scattering_factor_table (gmx_sf, (structure_factor_t *)sf);
 
 
     /* This is the main loop over frames */
@@ -723,7 +723,7 @@ extern void gmx_structurefactors_done(gmx_structurefactors_t *gsf)
 
 }
 
-extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t *sft, int *nsftable)
+extern real **compute_scattering_factor_table (gmx_structurefactors_t *gsf, structure_factor_t *sft)
 {
 /*
  *  this function build up a table of scattering factors for every atom
