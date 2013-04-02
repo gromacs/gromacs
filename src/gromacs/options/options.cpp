@@ -171,6 +171,12 @@ bool Options::isSet(const char *name) const
     return (option != NULL ? option->isSet() : false);
 }
 
+bool Options::isDefined(const char *name) const
+{
+    AbstractOptionStorage *option = impl_->findOption(name);
+    return (option != NULL);
+}
+
 void Options::finish()
 {
     // TODO: Consider how to customize these error messages based on context.

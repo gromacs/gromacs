@@ -72,6 +72,9 @@ class TestFileManager::Impl
         //! Global test input data path set with setDataInputDirectory().
         static const char *s_inputDirectory;
 
+        //! Global temporary output directory for tests, set with setOutputTempDirectory().
+        static const char *s_outputTempDirectory;
+
         //! Container type for names of temporary files.
         typedef std::set<std::string> FileNameList;
 
@@ -87,6 +90,7 @@ class TestFileManager::Impl
 };
 
 const char *TestFileManager::Impl::s_inputDirectory = NULL;
+const char *TestFileManager::Impl::s_outputTempDirectory = NULL;
 
 void TestFileManager::Impl::removeFiles()
 {
@@ -109,13 +113,28 @@ TestFileManager::TestFileManager()
 
 TestFileManager::~TestFileManager()
 {
-    impl_->removeFiles();
+    //    impl_->removeFiles();
 }
 
 std::string TestFileManager::getTemporaryFilePath(const char *suffix)
 {
-    // TODO: Add the path of the test binary
-    std::string filename = getTestSpecificFileName(suffix);
+    /* There was a TODO here about getting the path of the test binary
+     * so that temporary files can use that in their names. However,
+     * that path is not very useful if all the binaries are written to
+     * the same directory (e.g. "build/bin"). It makes more sense to
+     * configure a temporary directory from CMake, so that temporary
+     * output from a test goes to a location relevant to that
+     * test. Currently, files whose names are returned by this method
+     * get cleaned up at the end of all tests, so the point is
+     * moot. However, if we might ever change that, we probably want
+     * each test executable to write output to different
+     * location. Also, while setting up a new test, things crash and
+     * its nice to have a top-level build directory that is not
+     * littered with files left over from every test that has ever
+     * failed before the clean-up phase. */
+    std::string filename =
+        Path::join(getOutputTempDirectory(),
+                   getTestSpecificFileName(suffix));
     impl_->files_.insert(filename);
     return filename;
 }
@@ -142,8 +161,14 @@ std::string TestFileManager::getInputFilePath(const char *filename)
 
 const char *TestFileManager::getInputDataDirectory()
 {
-    GMX_RELEASE_ASSERT(Impl::s_inputDirectory != NULL, "Test data path not set");
+    GMX_RELEASE_ASSERT(Impl::s_inputDirectory != NULL, "Path for test input files is not set");
     return Impl::s_inputDirectory;
+}
+
+const char *TestFileManager::getOutputTempDirectory()
+{
+    GMX_RELEASE_ASSERT(Impl::s_outputTempDirectory != NULL, "Path for temporary output files from tests is not set");
+    return Impl::s_outputTempDirectory;
 }
 
 void TestFileManager::setInputDataDirectory(const char *path)
@@ -153,6 +178,15 @@ void TestFileManager::setInputDataDirectory(const char *path)
     GMX_RELEASE_ASSERT(Directory::exists(path),
                        "Test data directory does not exist");
     Impl::s_inputDirectory = path;
+}
+
+void TestFileManager::setOutputTempDirectory(const char *path)
+{
+    // There is no need to protect this by a mutex, as this is called in early
+    // initialization of the tests.
+    GMX_RELEASE_ASSERT(Directory::exists(path),
+                       "Directory for tests' temporary files does not exist");
+    Impl::s_outputTempDirectory = path;
 }
 
 } // namespace test

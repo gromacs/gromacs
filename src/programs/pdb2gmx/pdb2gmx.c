@@ -1089,7 +1089,7 @@ typedef struct {
     rvec         *x;
 } t_chain;
 
-int cmain(int argc, char *argv[])
+int pdb2gmx_cmain(int argc, char *argv[])
 {
     const char *desc[] = {
         "This program reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",

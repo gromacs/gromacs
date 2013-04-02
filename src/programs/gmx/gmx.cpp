@@ -48,7 +48,7 @@
 #include "legacymodules.h"
 
 int
-main(int argc, char *argv[])
+gmx_cmain(int argc, char *argv[])
 {
     const gmx::ProgramInfo &info =
         gmx::ProgramInfo::init("gmx", argc, argv);

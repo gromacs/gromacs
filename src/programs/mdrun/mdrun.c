@@ -56,7 +56,7 @@
 /* afm stuf */
 #include "pull.h"
 
-int cmain(int argc, char *argv[])
+int mdrun_cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
         "The [TT]mdrun[tt] program is the main computational chemistry engine",

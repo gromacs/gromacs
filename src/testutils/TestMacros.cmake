@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-function (gmx_add_unit_test NAME EXENAME)
+function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
@@ -41,11 +41,37 @@ function (gmx_add_unit_test NAME EXENAME)
         if (NOT DEFS)
             set(DEFS)
         endif ()
-        list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
-        set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
+        set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/TemporaryFiles")
+        file(MAKE_DIRECTORY ${_temporary_files_path})
+
+        # Note that the quotation marks in the next line form part of
+        # the defined symbol, so that the macro replacement in the
+        # source file is as a string.
+        list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
+
+        set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS "${DEFS}")
+    endif ()
+endfunction ()
+
+function (gmx_register_unit_test NAME EXENAME)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         add_test(NAME ${NAME}
                  COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${EXENAME}.xml)
-        set_tests_properties(${NAME} PROPERTIES LABELS "GTest")
+        set_tests_properties(${NAME} PROPERTIES LABELS "UnitTest")
         add_dependencies(tests ${EXENAME})
     endif ()
 endfunction ()
+
+function (gmx_register_integration_test NAME EXENAME)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        add_test(NAME ${NAME}
+                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${EXENAME}.xml ${ARGN})
+        set_tests_properties(${testname} PROPERTIES LABELS "IntegrationTest")
+        add_dependencies(tests ${EXENAME})
+    endif ()
+endfunction ()
+
+function (gmx_add_unit_test NAME EXENAME)
+    gmx_build_unit_test(${NAME} ${EXENAME} ${ARGN})
+    gmx_register_unit_test(${NAME} ${EXENAME})
+endfunction()

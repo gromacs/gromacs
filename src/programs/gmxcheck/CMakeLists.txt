@@ -1,4 +1,6 @@
-file(GLOB GMXCHECK_SOURCES gmxcheck.c tpbcmp.c ../main.cpp)
+set(exename gmxcheck)
+configure_file(../main.cpp main.cpp)
+file(GLOB GMXCHECK_SOURCES gmxcheck.c tpbcmp.c ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 add_executable(gmxcheck ${GMXCHECK_SOURCES})
 gmx_add_man_page(gmxcheck)

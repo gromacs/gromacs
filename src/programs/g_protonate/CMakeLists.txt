@@ -1,6 +1,8 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-file(GLOB PROTONATE_SOURCES g_protonate.c ../main.cpp)
+set(exename g_protonate)
+configure_file(../main.cpp main.cpp)
+file(GLOB PROTONATE_SOURCES g_protonate.c ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 add_executable(g_protonate ${PROTONATE_SOURCES})
 gmx_add_man_page(g_protonate)

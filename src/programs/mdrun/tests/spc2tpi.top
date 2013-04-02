@@ -1,0 +1,14 @@
+#include "oplsaa.ff/forcefield.itp"
+
+; Include water topology
+#include "oplsaa.ff/tip3p.itp"
+#include "oplsaa.ff/ions.itp"
+
+[ system ]
+; Name
+spc2 doing TPI with Cl- ion
+
+[ molecules ]
+; Compound        #mols
+SOL              2
+CL               1 ; will become the test particle

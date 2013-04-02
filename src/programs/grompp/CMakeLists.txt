@@ -1,6 +1,8 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-file(GLOB GROMPP_SOURCES *.c  ../main.cpp)
+set(exename grompp)
+configure_file(../main.cpp main.cpp)
+file(GLOB GROMPP_SOURCES *.c ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 add_executable(grompp ${GROMPP_SOURCES})
 gmx_add_man_page(grompp)

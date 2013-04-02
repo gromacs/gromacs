@@ -321,7 +321,7 @@ static void zeroq(int n, atom_id index[], gmx_mtop_t *mtop)
     }
 }
 
-int cmain (int argc, char *argv[])
+int tpbconv_cmain (int argc, char *argv[])
 {
     const char       *desc[] = {
         "tpbconv can edit run input files in four ways.[PAR]",
