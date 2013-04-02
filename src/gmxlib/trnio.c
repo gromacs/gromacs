@@ -171,7 +171,7 @@ void pr_trnheader(FILE *fp, int indent, char *title, t_trnheader *sh)
     }
 }
 
-static gmx_bool do_htrn(t_fileio *fio, gmx_bool bRead, t_trnheader *sh,
+static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
                         rvec *box, rvec *x, rvec *v, rvec *f)
 {
     matrix   pv;
@@ -252,7 +252,7 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
             gmx_file("symbol table in trn file");
         }
     }
-    bOK = do_htrn(fio, bRead, sh, box, x, v, f);
+    bOK = do_htrn(fio, sh, box, x, v, f);
 
     sfree(sh);
 
@@ -322,7 +322,7 @@ gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
 gmx_bool fread_htrn(t_fileio *fio, t_trnheader *trn, rvec *box, rvec *x, rvec *v,
                     rvec *f)
 {
-    return do_htrn(fio, TRUE, trn, box, x, v, f);
+    return do_htrn(fio, trn, box, x, v, f);
 }
 
 t_fileio *open_trn(const char *fn, const char *mode)

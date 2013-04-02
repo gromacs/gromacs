@@ -2567,16 +2567,12 @@ void finish_run(FILE *fplog, t_commrec *cr, const char *confout,
         if (fplog)
         {
             print_perf(fplog, runtime->proctime, runtime->realtime,
-                       cr->nnodes-cr->npmenodes,
-                       runtime->nsteps_done, delta_t, nbfs, mflop,
-                       omp_nth_pp);
+                       runtime->nsteps_done, delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
             print_perf(stderr, runtime->proctime, runtime->realtime,
-                       cr->nnodes-cr->npmenodes,
-                       runtime->nsteps_done, delta_t, nbfs, mflop,
-                       omp_nth_pp);
+                       runtime->nsteps_done, delta_t, nbfs, mflop);
         }
     }
 }

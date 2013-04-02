@@ -2469,7 +2469,7 @@ void init_forcerec(FILE              *fp,
 
         if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
         {
-            set_shift_consts(fp, fr->rcoulomb_switch, fr->rcoulomb, box_size, fr);
+            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
         }
     }
 

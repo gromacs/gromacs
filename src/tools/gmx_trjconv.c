@@ -1084,7 +1084,7 @@ int gmx_trjconv(int argc, char *argv[])
             }
             if (bRmPBC)
             {
-                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, top_box);
+                gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
             }
         }
 

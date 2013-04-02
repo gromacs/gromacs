@@ -558,7 +558,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
 
         if (top)
         {
-            gpbc = gmx_rmpbc_init(&top->idef, ePBC, nat, box);
+            gpbc = gmx_rmpbc_init(&top->idef, ePBC, nat);
         }
 
         for (i = 0; i < nat; i++)
@@ -627,7 +627,7 @@ static void project(const char *trajfile, t_topology *top, int ePBC, matrix topb
             }
             nfr++;
         }
-        while (read_next_x(oenv, status, &t, nat, xread, box));
+        while (read_next_x(oenv, status, &t, xread, box));
         close_trx(status);
         sfree(x);
         if (filterfile)
@@ -1248,7 +1248,7 @@ int gmx_anaeig(int argc, char *argv[])
         bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm),
                              title, &top, &ePBC, &xtop, NULL, topbox, bM);
         atoms = &top.atoms;
-        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr, topbox);
+        gpbc  = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, topbox, xtop);
         /* Fitting is only required for the projection */
         if (bProj && bFit1)

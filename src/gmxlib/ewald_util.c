@@ -52,6 +52,7 @@
 #include "names.h"
 #include "writeps.h"
 #include "macros.h"
+#include "unused.h"
 
 real calc_ewaldcoeff(real rc, real dtol)
 {
@@ -86,7 +87,7 @@ real calc_ewaldcoeff(real rc, real dtol)
 
 
 
-real ewald_LRcorrection(FILE *fplog,
+real ewald_LRcorrection(FILE * UNUSED(fplog),
                         int start, int end,
                         t_commrec *cr, int thread, t_forcerec *fr,
                         real *chargeA, real *chargeB,

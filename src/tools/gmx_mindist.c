@@ -153,7 +153,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
 
     if (NULL != top)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
 
     bFirst = TRUE;
@@ -180,7 +180,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
                 output_env_conv_time(oenv, t), rmin, rmax, norm(box[0]), norm(box[1]), norm(box[2]));
         bFirst = FALSE;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     if (NULL != top)
     {
@@ -533,7 +533,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
             fprintf(respertime, "\n");
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     close_trj(status);
     ffclose(dist);

@@ -436,7 +436,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
     invvol_sum = 0;
     if (bPBC && (NULL != top))
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
 
     do
@@ -619,7 +619,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         }
         nframes++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     if (bPBC && (NULL != top))

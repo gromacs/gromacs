@@ -56,6 +56,7 @@
 #include "string2.h"
 #include "gmxfio.h"
 #include "md5.h"
+#include "unused.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -88,15 +89,15 @@ const t_iotype dummy_iotype = {do_dummyread, do_dummywrite};
 
 
 
-static gmx_bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
-                             const char *desc, const char *srcfile, int line)
+static gmx_bool do_dummyread(t_fileio * UNUSED(fio), void * UNUSED(item), int UNUSED(nitem), int UNUSED(eio),
+                             const char * UNUSED(desc), const char * UNUSED(srcfile), int UNUSED(line))
 {
     gmx_fatal(FARGS, "File type not set!");
     return FALSE;
 }
 
-static gmx_bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
-                              const char *desc, const char *srcfile, int line)
+static gmx_bool do_dummywrite(t_fileio * UNUSED(fio), const void * UNUSED(item), int UNUSED(nitem), int UNUSED(eio),
+                              const char * UNUSED(desc), const char * UNUSED(srcfile), int UNUSED(line))
 {
     gmx_fatal(FARGS, "File type not set!");
     return FALSE;

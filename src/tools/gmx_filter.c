@@ -145,7 +145,7 @@ int gmx_filter(int argc, char *argv[])
                              &xtop, NULL, topbox, TRUE);
         if (bTop)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, topbox);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
             gmx_rmpbc(gpbc, top.atoms.nr, topbox, xtop);
         }
     }
@@ -345,7 +345,7 @@ int gmx_filter(int argc, char *argv[])
         x[nffr - 1] = ptr;
         fr++;
     }
-    while (read_next_x(oenv, in, &(t[nffr - 1]), nat, x[nffr - 1], box[nffr - 1]));
+    while (read_next_x(oenv, in, &(t[nffr - 1]), x[nffr - 1], box[nffr - 1]));
 
     if (bTop)
     {

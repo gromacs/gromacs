@@ -102,8 +102,7 @@ ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
  */
 GMX_LIBGMX_EXPORT
 void
-set_shift_consts(FILE *log, real r1, real rc, rvec box,
-                 t_forcerec *fr);
+set_shift_consts(real r1, real rc, rvec box);
 
 #ifdef __cplusplus
 }

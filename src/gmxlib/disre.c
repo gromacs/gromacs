@@ -54,6 +54,7 @@
 #include "disre.h"
 #include "main.h"
 #include "mtop_util.h"
+#include "unused.h"
 
 void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
                  t_inputrec *ir, const t_commrec *cr, gmx_bool bPartDecomp,
@@ -374,9 +375,9 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
-               real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               real UNUSED(lambda), real * UNUSED(dvdlambda),
+               const t_mdatoms * UNUSED(md), t_fcdata *fcd,
+               int * UNUSED(global_atom_index))
 {
     const real      sixth       = 1.0/6.0;
     const real      seven_three = 7.0/3.0;

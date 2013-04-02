@@ -65,6 +65,7 @@
 #include "gmxfio.h"
 #include "string2.h"
 #include "copyrite.h"
+#include "unused.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
@@ -518,7 +519,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     }
 }
 
-t_commrec *init_par(int *argc, char ***argv_ptr)
+t_commrec *init_par(int * UNUSED(argc), char ***argv_ptr)
 {
     t_commrec    *cr;
     char        **argv;

@@ -274,7 +274,7 @@ int gmx_helix(int argc, char *argv[])
         pr_bb(stdout, nres, bb);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     snew(xav, natoms);
     teller = 0;
@@ -331,7 +331,7 @@ int gmx_helix(int argc, char *argv[])
             }
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_rmpbc_done(gpbc);

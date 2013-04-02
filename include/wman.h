@@ -59,7 +59,7 @@ void write_man(FILE *out, const char *mantp, const char *program,
                int nbug, const char **bugs,
                gmx_bool bHidden);
 
-char *fileopt(unsigned long flag, char buf[], int maxsize);
+char *fileopt(unsigned long flag, char buf[]);
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
  * You have to provide a buffer and buffer length in which

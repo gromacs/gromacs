@@ -214,7 +214,7 @@ int gmx_dist(int argc, char *argv[])
         pbc = NULL;
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     do
     {
         /* initialisation for correct distance calculations */
@@ -310,7 +310,7 @@ int gmx_dist(int argc, char *argv[])
 
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     gmx_rmpbc_done(gpbc);
 
     if (!bCutoff)

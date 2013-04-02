@@ -837,7 +837,7 @@ int gmx_disre(int argc, char *argv[])
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ir.ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ir.ePBC, natoms);
     }
 
     j = 0;
@@ -906,7 +906,7 @@ int gmx_disre(int argc, char *argv[])
         }
         j++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     if (ir.ePBC != epbcNONE)
     {

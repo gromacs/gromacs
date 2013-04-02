@@ -589,7 +589,7 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
 }
 
 
-static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead, int file_version)
+static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead)
 {
     gmx_bool bDum = TRUE;
     int      i;
@@ -619,7 +619,7 @@ static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead, int file_ve
     gmx_fio_do_real(fio, rotg->PotAngle_step);
 }
 
-static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead, int file_version)
+static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
 {
     int g;
 
@@ -632,7 +632,7 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead, int file_version)
     }
     for (g = 0; g < rot->ngrp; g++)
     {
-        do_rotgrp(fio, &rot->grp[g], bRead, file_version);
+        do_rotgrp(fio, &rot->grp[g], bRead);
     }
 }
 
@@ -1366,7 +1366,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             {
                 snew(ir->rot, 1);
             }
-            do_rot(fio, ir->rot, bRead, file_version);
+            do_rot(fio, ir->rot, bRead);
         }
     }
     else
@@ -1574,7 +1574,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
 }
 
 
-static void do_harm(t_fileio *fio, t_iparams *iparams, gmx_bool bRead)
+static void do_harm(t_fileio *fio, t_iparams *iparams)
 {
     gmx_fio_do_real(fio, iparams->harmonic.rA);
     gmx_fio_do_real(fio, iparams->harmonic.krA);
@@ -1601,7 +1601,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
         case F_G96BONDS:
         case F_HARMONIC:
         case F_IDIHS:
-            do_harm(fio, iparams, bRead);
+            do_harm(fio, iparams);
             if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead)
             {
                 /* Correct incorrect storage of parameters */
@@ -2364,7 +2364,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
 }
 
 static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
-                         t_symtab *symtab, int file_version)
+                         int file_version)
 {
     int      i, j;
     gmx_bool bDum = TRUE;
@@ -2560,8 +2560,7 @@ static void do_moltype(t_fileio *fio, gmx_moltype_t *molt, gmx_bool bRead,
     do_blocka(fio, &molt->excls, bRead, file_version);
 }
 
-static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead,
-                        int file_version)
+static void do_molblock(t_fileio *fio, gmx_molblock_t *molb, gmx_bool bRead)
 {
     int i;
 
@@ -2766,7 +2765,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
     {
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
-            do_molblock(fio, &mtop->molblock[mb], bRead, file_version);
+            do_molblock(fio, &mtop->molblock[mb], bRead);
         }
         gmx_fio_do_int(fio, mtop->natoms);
     }
@@ -2779,7 +2778,7 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->molblock[0].nposres_xB = 0;
     }
 
-    do_atomtypes (fio, &(mtop->atomtypes), bRead, &(mtop->symtab), file_version);
+    do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
     if (bRead && debug)
     {
         pr_atomtypes(debug, 0, "atomtypes", &mtop->atomtypes, TRUE);

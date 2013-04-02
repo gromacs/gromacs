@@ -174,7 +174,7 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], int grp
     /****Start trajectory processing***/
 
     /*Initialize Densdevel and PBC-remove*/
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
 
     *Densdevel = NULL;
 
@@ -262,7 +262,7 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], int grp
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
 
     /*Free memory we no longer need and exit.*/

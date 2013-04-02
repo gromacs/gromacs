@@ -995,7 +995,7 @@ void read_ang_dih(const char *trj_fn,
         /* Increment loop counter */
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     sfree(x);

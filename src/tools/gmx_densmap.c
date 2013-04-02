@@ -369,7 +369,7 @@ int gmx_densmap(int argc, char *argv[])
         }
         nfr++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize gridpoints */

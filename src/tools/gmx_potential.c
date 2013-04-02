@@ -170,7 +170,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     }
 
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     /*********** Start processing trajectory ***********/
     do
@@ -230,7 +230,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
         }
         nr_frames++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 

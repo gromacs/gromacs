@@ -238,7 +238,7 @@ int gmx_sans(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
         gmx_rmpbc(gpbc, top->atoms.nr, box, x);
     }
 
@@ -343,7 +343,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent->s);
         sfree(sqframecurrent);
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize histo */

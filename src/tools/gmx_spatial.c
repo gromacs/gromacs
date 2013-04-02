@@ -249,7 +249,7 @@ int gmx_spatial(int argc, char *argv[])
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     /* This is the main loop over frames */
     do

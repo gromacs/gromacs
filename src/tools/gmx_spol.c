@@ -267,7 +267,7 @@ int gmx_spol(int argc, char *argv[])
     molindex = top->mols.index;
     atom     = top->atoms.atom;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
 
     /* start analysis of trajectory */
     do
@@ -347,7 +347,7 @@ int gmx_spol(int argc, char *argv[])
         nf++;
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 

@@ -1652,7 +1652,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
-    inp = read_inpfile(mdparin, &ninp, NULL, wi);
+    inp = read_inpfile(mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);

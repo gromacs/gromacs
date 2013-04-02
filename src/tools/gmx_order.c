@@ -306,7 +306,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                     oenv);
 
     /* loop over frames */
-    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     nframes = 0;
     do
     {
@@ -321,7 +321,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         fprintf(fpsk, "%f %f\n", t, sk);
         nframes++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     gmx_rmpbc_done(gpbc);
 
@@ -493,7 +493,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -707,7 +707,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
         nr_frames++;
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");
