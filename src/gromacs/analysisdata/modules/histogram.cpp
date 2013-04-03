@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,6 +49,8 @@
 #include "gromacs/analysisdata/datastorage.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+
+#include "frameaverager.h"
 
 namespace
 {
@@ -403,14 +405,13 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
         virtual void dataFinished();
 
     private:
-        //! Number of frames accumulated so far.
-        int                     frameCount_;
+        //! Averaging helper object.
+        AnalysisDataFrameAverager averager_;
 
         // Copy and assign disallowed by base.
 };
 
 BasicAverageHistogramModule::BasicAverageHistogramModule()
-    : frameCount_(0)
 {
     setColumnCount(2);
 }
@@ -418,7 +419,7 @@ BasicAverageHistogramModule::BasicAverageHistogramModule()
 
 BasicAverageHistogramModule::BasicAverageHistogramModule(
         const AnalysisHistogramSettings &settings)
-    : AbstractAverageHistogram(settings), frameCount_(0)
+    : AbstractAverageHistogram(settings)
 {
     setColumnCount(2);
 }
@@ -436,7 +437,7 @@ BasicAverageHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     GMX_RELEASE_ASSERT(rowCount() == data->columnCount(),
                        "Inconsistent data sizes, something is wrong in the initialization");
-    allocateValues();
+    averager_.setColumnCount(rowCount());
 }
 
 
@@ -449,32 +450,25 @@ BasicAverageHistogramModule::frameStarted(const AnalysisDataFrameHeader & /*head
 void
 BasicAverageHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    int firstcol = points.firstColumn();
-    for (int i = 0; i < points.columnCount(); ++i)
-    {
-        real y = points.y(i);
-        value(firstcol + i, 0) += y;
-        value(firstcol + i, 1) += y * y;
-    }
+    averager_.addPoints(points);
 }
 
 
 void
 BasicAverageHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*header*/)
 {
-    ++frameCount_;
 }
 
 
 void
 BasicAverageHistogramModule::dataFinished()
 {
+    averager_.finish();
+    allocateValues();
     for (int i = 0; i < rowCount(); ++i)
     {
-        real ave = value(i, 0) / frameCount_;
-        real std = sqrt(value(i, 1) / frameCount_ - ave * ave);
-        setValue(i, 0, ave);
-        setValue(i, 1, std);
+        setValue(i, 0, averager_.average(i));
+        setValue(i, 1, sqrt(averager_.variance(i)));
     }
 }
 
