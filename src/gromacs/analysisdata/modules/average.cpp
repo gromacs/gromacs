@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -46,6 +46,8 @@
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 
+#include "frameaverager.h"
+
 namespace gmx
 {
 
@@ -53,7 +55,15 @@ namespace gmx
  * AnalysisDataAverageModule
  */
 
+class AnalysisDataAverageModule::Impl
+{
+    public:
+        //! Averaging helper object.
+        AnalysisDataFrameAverager averager_;
+};
+
 AnalysisDataAverageModule::AnalysisDataAverageModule()
+    : impl_(new Impl())
 {
     setColumnCount(2);
 }
@@ -71,10 +81,9 @@ AnalysisDataAverageModule::flags() const
 void
 AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 {
-    int nrows = data->columnCount();
-    setRowCount(nrows);
-    allocateValues();
-    nsamples_.resize(nrows);
+    const int valueCount = data->columnCount();
+    impl_->averager_.setColumnCount(valueCount);
+    setRowCount(valueCount);
 }
 
 void
@@ -85,17 +94,7 @@ AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header
 void
 AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    int firstcol = points.firstColumn();
-    for (int i = 0; i < points.columnCount(); ++i)
-    {
-        if (points.present(i))
-        {
-            real y = points.y(i);
-            value(firstcol + i, 0)  += y;
-            value(firstcol + i, 1)  += y * y;
-            nsamples_[firstcol + i] += 1;
-        }
-    }
+    impl_->averager_.addPoints(points);
 }
 
 void
@@ -106,12 +105,12 @@ AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*heade
 void
 AnalysisDataAverageModule::dataFinished()
 {
+    impl_->averager_.finish();
+    allocateValues();
     for (int i = 0; i < rowCount(); ++i)
     {
-        real ave = value(i, 0) / nsamples_[i];
-        real std = sqrt(value(i, 1) / nsamples_[i] - ave * ave);
-        setValue(i, 0, ave);
-        setValue(i, 1, std);
+        setValue(i, 0, impl_->averager_.average(i));
+        setValue(i, 1, sqrt(impl_->averager_.variance(i)));
     }
     valuesReady();
 }
