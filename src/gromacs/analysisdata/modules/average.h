@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -54,16 +54,22 @@ namespace gmx
 {
 
 /*! \brief
- * Data module for simple averaging of columns.
+ * Data module for independently averaging each column in input data.
  *
- * Output data contains a frame for each column of input data.
- * There are two columns: the average and standard deviation of
- * that column.
- * The data becomes available only after the original data has been
+ * Computes the average and standard deviation independently for each column in
+ * the input data.  Multipoint data and missing data points are both supported.
+ * The average is always calculated over all frames and data points for a
+ * column.
+ *
+ * Output data contains a frame for each column in the input data.
+ * The first column of each output frame is the average of the corresponding
+ * input column.  The second output column is the standard deviation of the
+ * corresponding input column.
+ * average() and stddev() methods are also provided for convenient access to
+ * these properties.
+ *
+ * The output data becomes available only after the input data has been
  * finished.
- *
- * Multipoint data and missing data points are both supported. The average
- * is always calculated over all data points present in a column.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -91,9 +97,9 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         real stddev(int index) const;
 
     private:
-        std::vector<int>        nsamples_;
+        class Impl;
 
-        // Copy and assign disallowed by base.
+        PrivateImplPointer<Impl> impl_;
 };
 
 //! Smart pointer to manage an AnalysisDataAverageModule object.
