@@ -95,7 +95,7 @@
           <Real Name="Value">1.333333</Real>
         </DataValue>
         <DataValue>
-          <Real Name="Value">0.745356</Real>
+          <Real Name="Value">0.816497</Real>
         </DataValue>
       </Sequence>
     </DataFrame>
@@ -107,7 +107,7 @@
           <Real Name="Value">0.500000</Real>
         </DataValue>
         <DataValue>
-          <Real Name="Value">0.500000</Real>
+          <Real Name="Value">0.577350</Real>
         </DataValue>
       </Sequence>
     </DataFrame>
@@ -119,7 +119,7 @@
           <Real Name="Value">1.000000</Real>
         </DataValue>
         <DataValue>
-          <Real Name="Value">1.000000</Real>
+          <Real Name="Value">1.414214</Real>
         </DataValue>
       </Sequence>
     </DataFrame>
