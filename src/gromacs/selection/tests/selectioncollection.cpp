@@ -1108,4 +1108,16 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups2)
+{
+    static const char * const selections[] = {
+        "foo = atomnr 1 to 8 and x < 10",
+        "atomnr 1 to 5 and y < 10 and foo",
+        "foo"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
 } // namespace
