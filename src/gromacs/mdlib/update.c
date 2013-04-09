@@ -698,6 +698,7 @@ static void do_update_sd1(gmx_stochd_t *sd,
     int             gf = 0, ga = 0, gt = 0;
     real            ism, sd_V;
     int             n, d;
+    real            vn;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
@@ -731,11 +732,12 @@ static void do_update_sd1(gmx_stochd_t *sd,
             {
                 sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
 
-                v[n][d] = v[n][d]*sdc[gt].em
-                    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + sd_V;
+                vn = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                
+                v[n][d] = vn*sdc[gt].em + sd_V;
 
-                xprime[n][d] = x[n][d] + v[n][d]*dt;
+                xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                
             }
             else
             {
