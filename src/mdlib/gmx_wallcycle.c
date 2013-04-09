@@ -432,6 +432,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc)
     {
         wcc[ewcPME_FFT].c -= wcc[ewcPME_FFTCOMM].c;
     }
+    if (wcc[ewcPME_FFTCOMM2].n > 0)
+    {
+        wcc[ewcPME_FFT].c -= wcc[ewcPME_FFTCOMM2].c;
+    }
 
     if (cr->npmenodes == 0)
     {
