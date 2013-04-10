@@ -2774,6 +2774,13 @@ gmx_ana_selcollection_compile(gmx_ana_selcollection_t *sc)
         }
         /* Initialize the compiler data */
         init_item_compilerdata(item);
+        item = item->next;
+    }
+    /* Initialize the static evaluation compiler flags.
+     * Requires the FULLEVAL compiler flag for the whole tree. */
+    item = sc->root;
+    while (item)
+    {
         init_item_staticeval(item);
         item = item->next;
     }
