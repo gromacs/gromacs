@@ -2401,6 +2401,715 @@ real unimplemented(int nbonds,
     return 0.0; /* To make the compiler happy */
 }
 
+
+/* Monica and Nicu: Implementation of different new potential variants  */
+
+
+/*****		NEW RESTRICTED BENDING POTENTIAL 		********
+* This potential replaces the potential (cos(theta)-cos(theta0))^2 with 
+* (cos(theta)-cos(theta0))^2 / sin^(theta) to keep the theta far from
+* the 0 and 180 degrees values.
+* It cannot be used for theta0 values too close to 0 or 180
+* (10 degrees difference is advised).
+*   - in *.itp: i j k 1 theta0 k_B
+*/
+
+ 
+real restrangles(int nbonds,
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],rvec fshift[],
+	    const t_pbc *pbc,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
+{
+  int  i,ai,aj,ak,t1,t2,type, m;
+  rvec r_ij,r_kj;
+  real cos_theta,cos_theta2,theta,dVdt,va,vtot;
+  ivec jt,dt_ij,dt_kj;
+  rvec f_i, f_j, f_k;
+ 
+
+// Monica and Nicu
+
+  real theta_equil, k_bending;
+  real v, prefactor, ratio_ante, ratio_post, 
+       cosine_theta_equil, 
+       f_be_ante_x, f_be_ante_y, f_be_ante_z,
+       f_be_crnt_x, f_be_crnt_y, f_be_crnt_z,
+       f_be_post_x, f_be_post_y, f_be_post_z,
+       norm,
+       delta_ante_x, delta_ante_y, delta_ante_z,
+       delta_cosine, cosine_theta, 
+       delta_post_x, delta_post_y, delta_post_z,
+       sine_theta_sq,
+       c_ante, c_cros, c_post, term_theta_theta_equil;
+  real L1    = 1.0-lambda;
+  rvec vec_temp;
+
+ 
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+
+
+    k_bending    = L1*forceparams[type].harmonic.krA+lambda*forceparams[type].harmonic.krB;
+    theta_equil = L1*forceparams[type].harmonic.rA*DEG2RAD+lambda*forceparams[type].harmonic.rB*DEG2RAD;
+    
+//  The suplement of theta_equil is needed.    
+    theta_equil = 3.141592 - theta_equil;
+    cosine_theta_equil = cos(theta_equil);
+  
+
+
+	t1=pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp); 
+
+        pbc_rvec_sub(pbc,x[aj],x[ai],vec_temp); 
+	delta_ante_x = vec_temp[XX]; // x[aj] - x[ai];
+	delta_ante_y = vec_temp[YY]; // y[aj] - y[ai];
+	delta_ante_z = vec_temp[ZZ]; // z[aj] - z[ai];
+
+	t2=pbc_rvec_sub(pbc,x[ak],x[aj],vec_temp);
+	
+	delta_post_x = vec_temp[XX]; //x[ak] - x[aj];
+	delta_post_y = vec_temp[YY]; //y[ak] - y[aj];
+	delta_post_z = vec_temp[ZZ]; //z[ak] - z[aj];
+
+
+	c_ante = delta_ante_x * delta_ante_x + delta_ante_y * delta_ante_y + delta_ante_z * delta_ante_z;
+	c_cros = delta_ante_x * delta_post_x + delta_ante_y * delta_post_y + delta_ante_z * delta_post_z;
+	c_post = delta_post_x * delta_post_x + delta_post_y * delta_post_y + delta_post_z * delta_post_z;
+	
+	norm = 1.0 / sqrt(c_ante * c_post);
+	
+	cosine_theta = c_cros * norm;
+	sine_theta_sq = 1 - cosine_theta * cosine_theta;
+	
+	ratio_ante = c_cros / c_ante;
+	ratio_post = c_cros / c_post;
+	
+	delta_cosine = cosine_theta - cosine_theta_equil;
+	term_theta_theta_equil = 1 - cosine_theta * cosine_theta_equil;
+	
+/*      IMPORTANT POINT: calculez fortele pe componente */
+	prefactor = -(k_bending) * delta_cosine * norm * term_theta_theta_equil / (sine_theta_sq * sine_theta_sq)
+		;
+	f_be_ante_x = prefactor * (ratio_ante * delta_ante_x - delta_post_x);
+	f_be_ante_y = prefactor * (ratio_ante * delta_ante_y - delta_post_y);
+	f_be_ante_z = prefactor * (ratio_ante * delta_ante_z - delta_post_z);
+	f_be_crnt_x = prefactor * ((ratio_post + 1.0) * delta_post_x - (ratio_ante + 1.0) * delta_ante_x);
+	f_be_crnt_y = prefactor * ((ratio_post + 1.0) * delta_post_y - (ratio_ante + 1.0) * delta_ante_y);
+	f_be_crnt_z = prefactor * ((ratio_post + 1.0) * delta_post_z - (ratio_ante + 1.0) * delta_ante_z);
+	f_be_post_x = prefactor * (delta_ante_x - ratio_post * delta_post_x);
+	f_be_post_y = prefactor * (delta_ante_y - ratio_post * delta_post_y);
+	f_be_post_z = prefactor * (delta_ante_z - ratio_post * delta_post_z);
+
+/*      Acumulez la rezultante */
+/*      Pe bila i - 1 */
+	f_i[XX] = f_be_ante_x; // i
+	f_i[YY] = f_be_ante_y;
+	f_i[ZZ] = f_be_ante_z;
+/*      Pe bila i */
+	f_j[XX]  = f_be_crnt_x;  //j
+	f_j[YY]  = f_be_crnt_y;
+	f_j[ZZ]  = f_be_crnt_z;
+/*       Pe bila i + 1 */
+	f_k[XX] = f_be_post_x;  //k
+	f_k[YY] = f_be_post_y;
+	f_k[ZZ] = f_be_post_z;
+	
+/*      IMPORTANT POINT: calculez energia potentiala local */
+	v = k_bending * 0.5 * delta_cosine * delta_cosine / sine_theta_sq;
+/*      Acumulez la energia potentiala a integului sistem */
+        vtot +=v;
+
+/*      Update forces */
+
+        for (m=0; (m<DIM); m++) {	
+        f[ai][m]+=f_i[m];
+	f[aj][m]+=f_j[m];
+	f[ak][m]+=f_k[m];
+      }
+
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
+      rvec_inc(fshift[t1],f_i);
+      rvec_inc(fshift[CENTRAL],f_j);
+      rvec_inc(fshift[t2],f_k);
+                                    
+    
+  }
+  return vtot;
+}
+
+
+/*****		NEW RESTRICTED TORSION POTENTIAL 		********
+* This potential replaces the potential (cos(phi)-cos(phi0))^2 with 
+* (cos(phi)-cos(phi0))^2 / sin^2(phi) to keep the phi angle far from
+* the 0 and 180 degrees values.
+* It cannot be used for phi0 values too close to 0 or 180
+* (10 degrees difference is advised).
+*   - in *.itp: i j k l 1 phi0 k_T 1
+*   - the multiplicity is m = 1, no other m is implemented
+*/
+
+
+real restrdihs(int nbonds,
+	   const t_iatom forceatoms[],const t_iparams forceparams[],
+	   const rvec x[],rvec f[],rvec fshift[],
+	   const t_pbc *pbc,const t_graph *g,
+	   real lambda,real *dvdlambda,
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
+{
+  int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real phi,cos_phi,sign,ddphi,vpd,vtot;
+
+  // Monica and Nicu
+  rvec  vec_temp;
+  rvec f_i,f_j,f_k,f_l;
+  rvec uvec,vvec,svec,dx_jl;
+  real iprm,iprn,nrkj,nrkj2;
+  real a,p,q,toler;
+  ivec jt,dt_ij,dt_kj,dt_lj;  
+  int i1;
+  real r1, r2;
+  real k_torsion;
+  real norm_phi, sine_phi0;
+  real v, cosine_phi, cosine_phi0,
+       c_self_ante, c_cros_ante, c_cros_acrs, c_self_crnt,
+       f_phi_middle_ante_x, f_phi_middle_ante_y, f_phi_middle_ante_z,
+       c_self_post, sine_phi_sq, phi0, c_cros_post,
+       f_phi_middle_post_x, f_phi_middle_post_y, f_phi_middle_post_z, 
+       f_phi_extrem_ante_x, f_phi_extrem_ante_y, f_phi_extrem_ante_z,
+       factor_phi_middle_ante_ante, factor_phi_middle_ante_crnt,
+       f_phi_extrem_post_x, f_phi_extrem_post_y, f_phi_extrem_post_z, 
+       factor_phi_middle_ante_post, factor_phi_middle_post_ante, 
+       factor_phi_extrem_ante_ante, factor_phi_middle_post_crnt, 
+       delta_ante_x, delta_ante_y, delta_ante_z, delta_cosine, 
+       factor_phi_extrem_ante_crnt, factor_phi_middle_post_post, 
+       delta_crnt_x, delta_crnt_y, delta_crnt_z, 
+       factor_phi_extrem_ante_post, factor_phi_extrem_post_ante, 
+       delta_post_x, delta_post_y, delta_post_z, 
+       factor_phi_extrem_post_crnt, factor_phi_extrem_post_post, 
+       term_phi_phi0, prefactor_phi, d_ante, c_prod, d_post, 
+       ratio_phi_ante, ratio_phi_post;
+
+  real L1   = 1.0 - lambda;
+
+ 
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+  type = forceatoms[i++];
+  ai   = forceatoms[i++];
+  aj   = forceatoms[i++];
+  ak   = forceatoms[i++];
+  al   = forceatoms[i++];
+
+  phi0 = (L1*forceparams[type].restrdihs.phiA + lambda*forceparams[type].restrdihs.phiB)*DEG2RAD;
+  cosine_phi0 = cos(phi0);
+  sine_phi0 = sin(phi0);
+  k_torsion=L1*forceparams[type].restrdihs.cpA + lambda*forceparams[type].restrdihs.cpB; //??
+
+
+
+
+        t1 = pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp); 
+
+        pbc_rvec_sub(pbc,x[aj],x[ai],vec_temp); 
+	delta_ante_x = vec_temp[XX]; // x[aj] - x[ai];
+	delta_ante_y = vec_temp[YY]; // y[aj] - y[ai];
+	delta_ante_z = vec_temp[ZZ]; // z[aj] - z[ai];
+
+        t2 = pbc_rvec_sub(pbc,x[ak],x[aj],vec_temp);
+	
+	delta_crnt_x = vec_temp[XX]; //x[ak] - x[aj];
+	delta_crnt_y = vec_temp[YY]; //y[ak] - y[aj];
+	delta_crnt_z = vec_temp[ZZ]; //z[ak] - z[aj];
+
+        t3 = pbc_rvec_sub(pbc,x[ak],x[al],vec_temp);
+
+        pbc_rvec_sub(pbc,x[al],x[ak],vec_temp);
+	delta_post_x = vec_temp[XX]; // x[al] - x[ak];
+	delta_post_y = vec_temp[YY]; // y[al] - y[ak];
+	delta_post_z = vec_temp[ZZ]; // z[al] - z[ak];
+
+	c_self_ante = delta_ante_x * delta_ante_x + delta_ante_y * delta_ante_y + delta_ante_z * delta_ante_z;
+	c_self_crnt = delta_crnt_x * delta_crnt_x + delta_crnt_y * delta_crnt_y + delta_crnt_z * delta_crnt_z;
+	c_self_post = delta_post_x * delta_post_x + delta_post_y * delta_post_y + delta_post_z * delta_post_z;
+	c_cros_ante = delta_ante_x * delta_crnt_x + delta_ante_y * delta_crnt_y + delta_ante_z * delta_crnt_z;
+	c_cros_acrs = delta_ante_x * delta_post_x + delta_ante_y * delta_post_y + delta_ante_z * delta_post_z;
+	c_cros_post = delta_crnt_x * delta_post_x + delta_crnt_y * delta_post_y + delta_crnt_z * delta_post_z;
+	c_prod = c_cros_ante * c_cros_post - c_self_crnt * c_cros_acrs;
+	d_ante = c_self_ante * c_self_crnt - c_cros_ante * c_cros_ante;
+	d_post = c_self_post * c_self_crnt - c_cros_post * c_cros_post;
+	
+/*      Take good care of the singularity !!! */
+	if (d_ante < 1e-5f) {
+	    d_ante = 1e-5f;
+	}
+	if (d_post < 1e-5f) {
+	    d_post = 1e-5f;
+	}
+	
+	norm_phi = 1.0 / sqrt(d_ante * d_post);
+	cosine_phi = c_prod * norm_phi;
+	sine_phi_sq = 1.0 - cosine_phi * cosine_phi;
+	
+/* 	Take good care of trig functions !!! */
+	if (sine_phi_sq < 0.0) {
+	    sine_phi_sq = 0.0;
+	}
+				
+	delta_cosine = cosine_phi - cosine_phi0;
+	term_phi_phi0 = 1 - cosine_phi * cosine_phi0;
+	
+	
+/*      Computing forces due to the derivative with repect to the dehidral angle 'PHI': 4 beads */
+/*      Computation of ratios */
+	ratio_phi_ante = c_prod / d_ante;
+	ratio_phi_post = c_prod / d_post;
+	
+/*      IMPORTANT POINT: computation of the prefactor */
+	prefactor_phi = -(k_torsion) * delta_cosine * norm_phi * term_phi_phi0 / (sine_phi_sq * sine_phi_sq);
+	
+	
+/*      IMPORTANT POINT: computation of factors (important for gaining speed) */
+	factor_phi_extrem_ante_ante = ratio_phi_ante * c_self_crnt;
+	factor_phi_extrem_ante_crnt = -c_cros_post - ratio_phi_ante * c_cros_ante;
+	factor_phi_extrem_ante_post = c_self_crnt;
+	factor_phi_middle_ante_ante = -c_cros_post - ratio_phi_ante * (c_self_crnt + c_cros_ante);
+	factor_phi_middle_ante_crnt = c_cros_post + c_cros_acrs * 2.0 + ratio_phi_ante * (c_self_ante + c_cros_ante) + ratio_phi_post * c_self_post;
+	factor_phi_middle_ante_post = -(c_cros_ante + c_self_crnt) - ratio_phi_post * c_cros_post;
+	factor_phi_middle_post_ante = c_cros_post + c_self_crnt + ratio_phi_ante * c_cros_ante;
+	factor_phi_middle_post_crnt = -(c_cros_ante + c_cros_acrs * 2.0)- ratio_phi_ante * c_self_ante - ratio_phi_post * (c_self_post + c_cros_post);
+	factor_phi_middle_post_post = c_cros_ante + ratio_phi_post * (c_self_crnt + c_cros_post);
+	factor_phi_extrem_post_ante = -c_self_crnt;
+	factor_phi_extrem_post_crnt = c_cros_ante + ratio_phi_post * c_cros_post;
+	factor_phi_extrem_post_post = -ratio_phi_post * c_self_crnt;
+	
+	
+/*      Calculez fortele pe componente */
+	f_phi_extrem_ante_x = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_x + factor_phi_extrem_ante_crnt * delta_crnt_x + factor_phi_extrem_ante_post * delta_post_x);
+	f_phi_extrem_ante_y = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_y + factor_phi_extrem_ante_crnt * delta_crnt_y + factor_phi_extrem_ante_post * delta_post_y);
+	f_phi_extrem_ante_z = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_z + factor_phi_extrem_ante_crnt * delta_crnt_z + factor_phi_extrem_ante_post * delta_post_z);
+	f_phi_middle_ante_x = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_x + factor_phi_middle_ante_crnt * delta_crnt_x + factor_phi_middle_ante_post * delta_post_x);
+	f_phi_middle_ante_y = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_y + factor_phi_middle_ante_crnt * delta_crnt_y + factor_phi_middle_ante_post * delta_post_y);
+	f_phi_middle_ante_z = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_z + factor_phi_middle_ante_crnt * delta_crnt_z + factor_phi_middle_ante_post * delta_post_z);
+	f_phi_middle_post_x = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_x + factor_phi_middle_post_crnt * delta_crnt_x + factor_phi_middle_post_post * delta_post_x);
+	f_phi_middle_post_y = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_y + factor_phi_middle_post_crnt * delta_crnt_y + factor_phi_middle_post_post * delta_post_y);
+	f_phi_middle_post_z = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_z + factor_phi_middle_post_crnt * delta_crnt_z + factor_phi_middle_post_post * delta_post_z);
+	f_phi_extrem_post_x = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_x + factor_phi_extrem_post_crnt * delta_crnt_x + factor_phi_extrem_post_post * delta_post_x);
+	f_phi_extrem_post_y = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_y + factor_phi_extrem_post_crnt * delta_crnt_y + factor_phi_extrem_post_post * delta_post_y);
+	f_phi_extrem_post_z = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_z + factor_phi_extrem_post_crnt * delta_crnt_z + factor_phi_extrem_post_post * delta_post_z);
+
+/*      Computation of the local energy */
+	v = k_torsion * 0.5 * delta_cosine * delta_cosine / sine_phi_sq;
+/*      Accumulate to the total energy */
+	vtot += v; 
+
+/* 	Acumulate the resuts per beads */
+/* 	On bead ai */
+	f_i[XX] = f_phi_extrem_ante_x;
+	f_i[YY] = f_phi_extrem_ante_y;
+	f_i[ZZ] = f_phi_extrem_ante_z;
+/* 	On bead aj */
+	f_j[XX] = f_phi_middle_ante_x;
+	f_j[YY] = f_phi_middle_ante_y;
+	f_j[ZZ] = f_phi_middle_ante_z;
+/* 	On bead ak */
+	f_k[XX] = f_phi_middle_post_x;
+	f_k[YY] = f_phi_middle_post_y;
+	f_k[ZZ] = f_phi_middle_post_z;
+/* 	On bead al */
+	f_l[XX] = f_phi_extrem_post_x;
+	f_l[YY] = f_phi_extrem_post_y;
+	f_l[ZZ] = f_phi_extrem_post_z;
+
+
+// Updating the forces
+ 
+    rvec_inc(f[ai],f_i);   	/*  3	*/
+    rvec_inc(f[aj],f_j);
+    rvec_inc(f[ak],f_k); 
+    rvec_inc(f[al],f_l);   	/*  3	*/
+
+
+// Updating the fshift forces for the pressure coupling
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+      ivec_sub(SHIFT_IVEC(g,al),jt,dt_lj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+      t3=IVEC2IS(dt_lj);
+    } else if (pbc) {
+      t3 = pbc_rvec_sub(pbc,x[al],x[aj],dx_jl);
+    } else {
+      t3 = CENTRAL;
+    }
+    
+    rvec_inc(fshift[t1],f_i);
+    rvec_inc(fshift[CENTRAL],f_j); // Monica and Nicu: original Gromacs _dec
+    rvec_inc(fshift[t2],f_k);      // Monica and Nicu: original Gromacs _dec
+    rvec_inc(fshift[t3],f_l);
+
+
+#ifdef DEBUG
+    fprintf(debug,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	    ai,aj,ak,al,cosine_phi,phi0);
+#endif
+  }
+
+  return vtot;
+}
+
+
+/*****	    COMBINED BENDING TORSION POTENTIAL (CBT) 		********
+* This potential replaces the potential Ryckaert-Bellemans (VRB) potential 
+* with the form sin^3(theta_1) * sin^3(theta_2) * VRB(phi) that cancels the 
+* potential if one of the adjacent bending angles is 180 degrees.
+* At the limit it can be particularized to the form
+* sin^3(theta_1) * sin^3(theta_2) * (cos(phi) - cos(phi_0))^2 by considering the 
+* coefficients of VRB: c_0 = cos^2(phi_0); c_1 = -2 * cos(phi_0); c_2 = 1.0
+* and c_3 = c_4 = 0.0.
+* REF: Monica Bulacu and Erik van der Giessen. "Effect of bending and torsion
+* rigidity on self-diffusion in polymer melts: A molecular-dynamics study",
+* J. Chem. Phys., 123 (11) 114902 (September, 2005).
+*    - in *.itp:  i j k l 3 k_T c_0 c_1 c_2 c_3 c_4
+*    - in this implementation c_4 = 0.0 
+*/
+
+real cbtdihs(int nbonds,
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],rvec fshift[],
+	    const t_pbc *pbc,const t_graph *g,
+	    real lambda,real *dvdlambda,
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
+{
+  const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
+  int  type,ai,aj,ak,al,i,j;
+  int  t1,t2,t3;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real parmA[NR_CBTDIHS];
+  real parmB[NR_CBTDIHS];
+  real parm[NR_CBTDIHS];
+  real phi,cos_phi,rbp,rbpBA;
+  real v,sign,ddphi,sin_phi;
+  real cosfac,vtot;
+  real L1   = 1.0-lambda;
+  real dvdl=0;
+
+  // Monica and Nicu
+  rvec  vec_temp;
+  rvec f_i,f_j,f_k,f_l;
+  rvec uvec,vvec,svec,dx_jl;
+  real iprm,iprn,nrkj,nrkj2;
+  real a,p,q,toler;
+  ivec jt,dt_ij,dt_kj,dt_lj;  
+  int i1;
+  real r1, r2;
+  real sine_theta_post, norm_theta_post, norm_phi;
+  real  cosine_theta_ante, cosine_theta_post, cosine_phi, 
+	    f_theta_ante_middle_ante_x, f_theta_ante_middle_ante_y, 
+	    f_theta_ante_middle_ante_z, sine_theta_ante_sq, 
+	    f_theta_ante_middle_post_x, f_theta_ante_middle_post_y, 
+	    f_theta_ante_middle_post_z, f_theta_post_middle_ante_x, 
+	    f_theta_post_middle_ante_y, f_theta_post_middle_ante_z, 
+	    sine_theta_post_sq, f_theta_ante_extrem_ante_x, 
+	    f_theta_ante_extrem_ante_y, f_theta_ante_extrem_ante_z, 
+	    c_self_ante, c_cros_ante, c_cros_acrs, c_self_crnt, 
+	    f_theta_post_middle_post_x, f_theta_post_middle_post_y, 
+	    f_theta_post_middle_post_z, f_phi_middle_ante_x, 
+	    f_phi_middle_ante_y, f_phi_middle_ante_z, c_self_post, 
+	    c_cros_post, f_theta_post_extrem_post_x, 
+	    f_theta_post_extrem_post_y, f_phi_middle_post_x, 
+	    f_phi_middle_post_y, f_phi_middle_post_z, 
+	    f_theta_post_extrem_post_z, f_phi_extrem_ante_x, 
+	    f_phi_extrem_ante_y, f_phi_extrem_ante_z, 
+	    factor_phi_middle_ante_ante, factor_phi_middle_ante_crnt, 
+	    f_phi_extrem_post_x, f_phi_extrem_post_y, 
+	    f_phi_extrem_post_z, factor_phi_middle_ante_post, 
+	    factor_phi_middle_post_ante, factor_phi_extrem_ante_ante, 
+	    factor_phi_middle_post_crnt, delta_ante_x, delta_ante_y, 
+	    delta_ante_z, factor_phi_extrem_ante_crnt, 
+	    factor_phi_middle_post_post, delta_crnt_x, delta_crnt_y, 
+	    delta_crnt_z, factor_phi_extrem_ante_post, 
+	    factor_phi_extrem_post_ante, delta_post_x, delta_post_y, 
+	    delta_post_z, factor_phi_extrem_post_crnt,
+	    factor_phi_extrem_post_post, prefactor_theta_ante, 
+	    prefactor_theta_post, prefactor_phi, ratio_theta_ante_ante, 
+	    d_ante, ratio_theta_ante_crnt, c_prod, d_post, 
+	    ratio_theta_post_crnt, ratio_theta_post_post, 
+	    ratio_phi_ante, ratio_phi_post, sine_theta_ante, 
+	    norm_theta_ante;
+
+ real torsion_coef[7];
+ real k_torsion;
+
+
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    al   = forceatoms[i++];
+
+    
+  
+
+     k_torsion = forceparams[type].cbtdihs.rbcA[0];
+     for(j=1; (j<NR_CBTDIHS); j++)
+       torsion_coef[j]  = forceparams[type].cbtdihs.rbcA[j];
+           
+       
+     
+     
+
+        t1 = pbc_rvec_sub(pbc,x[ai],x[aj],vec_temp); 
+
+        pbc_rvec_sub(pbc,x[aj],x[ai],vec_temp);
+	delta_ante_x = vec_temp[XX]; // x[aj] - x[ai];
+	delta_ante_y = vec_temp[YY]; // y[aj] - y[ai];
+	delta_ante_z = vec_temp[ZZ]; // z[aj] - z[ai];
+
+        t2 = pbc_rvec_sub(pbc,x[ak],x[aj],vec_temp);
+	
+	pbc_rvec_sub(pbc,x[ak],x[aj],vec_temp);
+	delta_crnt_x = vec_temp[XX]; //x[ak] - x[aj];
+	delta_crnt_y = vec_temp[YY]; //y[ak] - y[aj];
+	delta_crnt_z = vec_temp[ZZ]; //z[ak] - z[aj];
+
+        t3 = pbc_rvec_sub(pbc,x[ak],x[al],vec_temp);
+
+        pbc_rvec_sub(pbc,x[al],x[ak],vec_temp);
+	delta_post_x = vec_temp[XX]; // x[al] - x[ak];
+	delta_post_y = vec_temp[YY]; // y[al] - y[ak];
+	delta_post_z = vec_temp[ZZ]; // z[al] - z[ak];
+
+	c_self_ante = delta_ante_x * delta_ante_x + delta_ante_y * delta_ante_y + delta_ante_z * delta_ante_z;
+	c_self_crnt = delta_crnt_x * delta_crnt_x + delta_crnt_y * delta_crnt_y + delta_crnt_z * delta_crnt_z;
+	c_self_post = delta_post_x * delta_post_x + delta_post_y * delta_post_y + delta_post_z * delta_post_z;
+	c_cros_ante = delta_ante_x * delta_crnt_x + delta_ante_y * delta_crnt_y + delta_ante_z * delta_crnt_z;
+	c_cros_acrs = delta_ante_x * delta_post_x + delta_ante_y * delta_post_y + delta_ante_z * delta_post_z;
+	c_cros_post = delta_crnt_x * delta_post_x + delta_crnt_y * delta_post_y + delta_crnt_z * delta_post_z;
+	
+	c_prod = c_cros_ante * c_cros_post - c_self_crnt * c_cros_acrs;
+	d_ante = c_self_ante * c_self_crnt - c_cros_ante * c_cros_ante;
+	d_post = c_self_post * c_self_crnt - c_cros_post * c_cros_post;
+	
+/* 	Take good care of the singularity !!! */
+	if (d_ante < 10e-6) {
+	    d_ante = 10e-6;
+	}
+	if (d_post < 10e-6) {
+	    d_post = 10e-6;
+	}
+	
+	
+	norm_phi = 1.0 / sqrt(d_ante * d_post);
+	norm_theta_ante = 1.0 / sqrt(c_self_ante * c_self_crnt);
+	norm_theta_post = 1.0 / sqrt(c_self_crnt * c_self_post);
+	
+	cosine_phi = c_prod * norm_phi;
+	cosine_theta_ante = c_cros_ante * norm_theta_ante;
+	cosine_theta_post = c_cros_post * norm_theta_post;
+	
+	sine_theta_ante_sq = 1 - cosine_theta_ante * cosine_theta_ante;
+	sine_theta_post_sq = 1 - cosine_theta_post * cosine_theta_post;
+	
+/* 	Take good care of trig functions !!! */
+	if (sine_theta_ante_sq < 0.0) {
+	    sine_theta_ante_sq = 0.0;
+	}
+	if (sine_theta_post_sq < 0.0) {
+	    sine_theta_post_sq = 0.0;
+	}
+	
+	sine_theta_ante = sqrt(sine_theta_ante_sq);
+	sine_theta_post = sqrt(sine_theta_post_sq);
+	
+/*      Computing forces due to the derivative with repect to the dehidral angle 'PHI': 4 beads */
+
+/*      IMPORTANT POINT: computation of ratios */
+	ratio_phi_ante = c_prod / d_ante;
+	ratio_phi_post = c_prod / d_post;
+	
+/*      IMPORTANT POINT: computation of the prefactor */
+/*      Computing 2nd power */
+	r1 = cosine_phi;
+	
+	prefactor_phi = -k_torsion * norm_phi * (torsion_coef[2] + torsion_coef[3] * 2.0 * cosine_phi + torsion_coef[4] * 3.0 * (r1 * r1) + 4*torsion_coef[5]*r1*r1*r1) * 
+	        sine_theta_ante_sq * sine_theta_ante * sine_theta_post_sq * sine_theta_post;
+		
+/*      IMPORTANT POINT: computation of factors (important for gaining speed) */
+	factor_phi_extrem_ante_ante = ratio_phi_ante * c_self_crnt;
+	factor_phi_extrem_ante_crnt = -c_cros_post - ratio_phi_ante * c_cros_ante;
+	factor_phi_extrem_ante_post = c_self_crnt;
+	factor_phi_middle_ante_ante = -c_cros_post - ratio_phi_ante * (c_self_crnt + c_cros_ante);
+	factor_phi_middle_ante_crnt = c_cros_post + c_cros_acrs * 2.0 + ratio_phi_ante * (c_self_ante + c_cros_ante) +	ratio_phi_post * c_self_post;
+	factor_phi_middle_ante_post = -(c_cros_ante + c_self_crnt) - ratio_phi_post * c_cros_post;
+	factor_phi_middle_post_ante = c_cros_post + c_self_crnt + ratio_phi_ante * c_cros_ante;
+	factor_phi_middle_post_crnt = -(c_cros_ante + c_cros_acrs * 2.0) - ratio_phi_ante * c_self_ante - ratio_phi_post * (c_self_post + c_cros_post);
+	factor_phi_middle_post_post = c_cros_ante + ratio_phi_post * (c_self_crnt + c_cros_post);
+	factor_phi_extrem_post_ante = -c_self_crnt;
+	factor_phi_extrem_post_crnt = c_cros_ante + ratio_phi_post * c_cros_post;
+	factor_phi_extrem_post_post = -ratio_phi_post * c_self_crnt;
+	
+/*      IMPORTANT POINT: calculez fortele pe componente */
+	f_phi_extrem_ante_x = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_x + factor_phi_extrem_ante_crnt * delta_crnt_x + factor_phi_extrem_ante_post * delta_post_x);
+	f_phi_extrem_ante_y = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_y + factor_phi_extrem_ante_crnt * delta_crnt_y + factor_phi_extrem_ante_post * delta_post_y);
+	f_phi_extrem_ante_z = prefactor_phi * (factor_phi_extrem_ante_ante * delta_ante_z + factor_phi_extrem_ante_crnt * delta_crnt_z + factor_phi_extrem_ante_post * delta_post_z);
+	f_phi_middle_ante_x = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_x + factor_phi_middle_ante_crnt * delta_crnt_x + factor_phi_middle_ante_post * delta_post_x);
+	f_phi_middle_ante_y = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_y + factor_phi_middle_ante_crnt * delta_crnt_y + factor_phi_middle_ante_post * delta_post_y);
+	f_phi_middle_ante_z = prefactor_phi * (factor_phi_middle_ante_ante * delta_ante_z + factor_phi_middle_ante_crnt * delta_crnt_z + factor_phi_middle_ante_post * delta_post_z);
+	f_phi_middle_post_x = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_x + factor_phi_middle_post_crnt * delta_crnt_x + factor_phi_middle_post_post * delta_post_x);
+	f_phi_middle_post_y = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_y + factor_phi_middle_post_crnt * delta_crnt_y + factor_phi_middle_post_post * delta_post_y);
+	f_phi_middle_post_z = prefactor_phi * (factor_phi_middle_post_ante * delta_ante_z + factor_phi_middle_post_crnt * delta_crnt_z + factor_phi_middle_post_post * delta_post_z);
+	f_phi_extrem_post_x = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_x + factor_phi_extrem_post_crnt * delta_crnt_x + factor_phi_extrem_post_post * delta_post_x);
+	f_phi_extrem_post_y = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_y + factor_phi_extrem_post_crnt * delta_crnt_y + factor_phi_extrem_post_post * delta_post_y);
+	f_phi_extrem_post_z = prefactor_phi * (factor_phi_extrem_post_ante * delta_ante_z + factor_phi_extrem_post_crnt * delta_crnt_z + factor_phi_extrem_post_post * delta_post_z);
+		
+		
+/*      Computing forces due to the derivative with repect to the bending angle 'THETA_ANTE': 3 beads */
+/*      IMPORTANT POINT: computation of ratios */
+	ratio_theta_ante_ante = c_cros_ante / c_self_ante;
+	ratio_theta_ante_crnt = c_cros_ante / c_self_crnt;
+	
+/*      IMPORTANT POINT: computation of the prefactor */
+/*      Computing 2nd power */
+	r1 = cosine_phi;
+/*      Computing 3rd power */
+	r2 = cosine_phi;
+	
+	prefactor_theta_ante = -k_torsion * norm_theta_ante * (	torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) +
+	        torsion_coef[4] * (r2 * (r2 * r2))+ torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * (-3.0) * cosine_theta_ante * sine_theta_ante * sine_theta_post_sq * sine_theta_post; // TO BE VERIFIED
+		
+		
+/*      IMPORTANT POINT: calculez fortele pe componente */
+	f_theta_ante_extrem_ante_x = prefactor_theta_ante * (ratio_theta_ante_ante * delta_ante_x - delta_crnt_x);
+	f_theta_ante_extrem_ante_y = prefactor_theta_ante * (ratio_theta_ante_ante * delta_ante_y - delta_crnt_y);
+	f_theta_ante_extrem_ante_z = prefactor_theta_ante * (ratio_theta_ante_ante * delta_ante_z - delta_crnt_z);
+	f_theta_ante_middle_ante_x = prefactor_theta_ante * ((ratio_theta_ante_crnt + 1.0) * delta_crnt_x - (ratio_theta_ante_ante + 1.0) * delta_ante_x);
+	f_theta_ante_middle_ante_y = prefactor_theta_ante * ((ratio_theta_ante_crnt + 1.0) * delta_crnt_y - (ratio_theta_ante_ante + 1.0) * delta_ante_y);
+	f_theta_ante_middle_ante_z = prefactor_theta_ante * ((ratio_theta_ante_crnt + 1.0) * delta_crnt_z - (ratio_theta_ante_ante + 1.0) * delta_ante_z);
+	f_theta_ante_middle_post_x = prefactor_theta_ante * (delta_ante_x - ratio_theta_ante_crnt * delta_crnt_x);
+	f_theta_ante_middle_post_y = prefactor_theta_ante * (delta_ante_y - ratio_theta_ante_crnt * delta_crnt_y);
+	f_theta_ante_middle_post_z = prefactor_theta_ante * (delta_ante_z - ratio_theta_ante_crnt * delta_crnt_z);
+	
+	
+/*      Computing forces due to the derivative with repect to the bending angle 'THETA_POST': 3 beads */
+/*      IMPORTANT POINT: computation of ratios */
+	ratio_theta_post_crnt = c_cros_post / c_self_crnt;
+	ratio_theta_post_post = c_cros_post / c_self_post;
+	
+/* 	IMPORTANT POINT: computation of the prefactor */
+/* 	Computing 2nd power */
+	r1 = cosine_phi;
+/* 	Computing 3rd power */
+	r2 = cosine_phi;
+	
+	prefactor_theta_post = -k_torsion * norm_theta_post * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) +
+	        torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * sine_theta_ante_sq * sine_theta_ante * (-3.0) * cosine_theta_post * sine_theta_post;  // To be Verified
+		 
+		 
+/* 	IMPORTANT POINT: calculez fortele pe componente */
+	f_theta_post_middle_ante_x = prefactor_theta_post * (ratio_theta_post_crnt * delta_crnt_x - delta_post_x);
+	f_theta_post_middle_ante_y = prefactor_theta_post * (ratio_theta_post_crnt * delta_crnt_y - delta_post_y);
+	f_theta_post_middle_ante_z = prefactor_theta_post * (ratio_theta_post_crnt * delta_crnt_z - delta_post_z);
+	f_theta_post_middle_post_x = prefactor_theta_post * ((ratio_theta_post_post + 1.0) * delta_post_x - (ratio_theta_post_crnt + 1.0) * delta_crnt_x);
+	f_theta_post_middle_post_y = prefactor_theta_post * ((ratio_theta_post_post + 1.0) * delta_post_y - (ratio_theta_post_crnt + 1.0) * delta_crnt_y);
+	f_theta_post_middle_post_z = prefactor_theta_post * ((ratio_theta_post_post + 1.0) * delta_post_z - (ratio_theta_post_crnt + 1.0) * delta_crnt_z);
+	f_theta_post_extrem_post_x = prefactor_theta_post * (delta_crnt_x - ratio_theta_post_post * delta_post_x);
+	f_theta_post_extrem_post_y = prefactor_theta_post * (delta_crnt_y - ratio_theta_post_post * delta_post_y);
+	f_theta_post_extrem_post_z = prefactor_theta_post * (delta_crnt_z - ratio_theta_post_post * delta_post_z);
+
+
+
+/* 	Acumulate the resuts per beads */
+/* 	On bead ai */
+	f_i[XX] = f_phi_extrem_ante_x + f_theta_ante_extrem_ante_x;
+	f_i[YY] = f_phi_extrem_ante_y + f_theta_ante_extrem_ante_y;
+	f_i[ZZ] = f_phi_extrem_ante_z + f_theta_ante_extrem_ante_z;
+/* 	On bead aj */
+	f_j[XX] = f_phi_middle_ante_x + f_theta_ante_middle_ante_x + f_theta_post_middle_ante_x;
+	f_j[YY] = f_phi_middle_ante_y + f_theta_ante_middle_ante_y + f_theta_post_middle_ante_y;
+	f_j[ZZ] = f_phi_middle_ante_z + f_theta_ante_middle_ante_z + f_theta_post_middle_ante_z;
+/* 	On bead ak */
+	f_k[XX] = f_phi_middle_post_x + f_theta_ante_middle_post_x + f_theta_post_middle_post_x;
+	f_k[YY] = f_phi_middle_post_y +	f_theta_ante_middle_post_y + f_theta_post_middle_post_y;
+	f_k[ZZ] = f_phi_middle_post_z + f_theta_ante_middle_post_z + f_theta_post_middle_post_z;
+/* 	On bead al */
+	f_l[XX] = f_phi_extrem_post_x + f_theta_post_extrem_post_x;
+	f_l[YY] = f_phi_extrem_post_y + f_theta_post_extrem_post_y;
+	f_l[ZZ] = f_phi_extrem_post_z + f_theta_post_extrem_post_z;
+	
+	
+/* 	IMPORTANT POINT: compute the locap potential energy */
+/* 	Computing 2nd power */
+	r1 = cosine_phi;
+/* 	Computing 3rd power */
+	r2 = cosine_phi;
+	v = k_torsion * (torsion_coef[1] + torsion_coef[2] * cosine_phi + torsion_coef[3] * (r1 * r1) + 
+		torsion_coef[4] * (r2 * (r2 * r2)) + torsion_coef[5] * (r2 * (r2 * (r2 * r2)))) * sine_theta_ante_sq * sine_theta_ante * sine_theta_post_sq * sine_theta_post;  // To be Verified
+		
+        vtot += v;
+
+
+ // Updating the forces
+ 
+    rvec_inc(f[ai],f_i);   	/*  3	*/
+    rvec_inc(f[aj],f_j);
+    rvec_inc(f[ak],f_k); 
+    rvec_inc(f[al],f_l);   	/*  3	*/
+
+
+// Updating the fshift forces for the pressure coupling
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,aj),jt);
+      ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+      ivec_sub(SHIFT_IVEC(g,al),jt,dt_lj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+      t3=IVEC2IS(dt_lj);
+    } else if (pbc) {
+      t3 = pbc_rvec_sub(pbc,x[al],x[aj],dx_jl);
+    } else {
+      t3 = CENTRAL;
+    }
+    
+    rvec_inc(fshift[t1],f_i);
+    rvec_inc(fshift[CENTRAL],f_j); 
+    rvec_inc(fshift[t2],f_k);     
+    rvec_inc(fshift[t3],f_l);
+
+    }
+ 
+ 
+
+  return vtot;
+}
+
+
+
+/* Monica and Nicu: End */
+
 real rbdihs(int nbonds,
             const t_iatom forceatoms[], const t_iparams forceparams[],
             const rvec x[], rvec f[], rvec fshift[],
