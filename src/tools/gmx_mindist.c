@@ -68,7 +68,7 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
     real sqr_box, r2min, r2max, r2;
     rvec shift[NSHIFT], d0, d;
 
-    sqr_box = sqr(min(box[XX][XX], min(box[YY][YY], box[ZZ][ZZ])));
+    sqr_box = sqr(min(norm(box[XX]), min(norm(box[YY]), norm(box[ZZ]))));
 
     s = 0;
     for (sz = -1; sz <= 1; sz++)
