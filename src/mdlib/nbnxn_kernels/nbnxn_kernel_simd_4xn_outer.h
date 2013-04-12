@@ -35,15 +35,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
-
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
@@ -249,7 +240,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#if defined GMX_X86_AVX_256 && GMX_SIMD_WIDTH_HERE == 8
+#define STORE_TABLE_INDICES
+#endif
+#ifdef STORE_TABLE_INDICES
     int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0;
     int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1;
     int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2;
@@ -386,7 +380,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #endif
 
 #ifdef CALC_COUL_TAB
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#ifdef STORE_TABLE_INDICES
     /* Generate aligned table index pointers */
     ti0 = gmx_simd_align_int(ti0_array);
     ti1 = gmx_simd_align_int(ti1_array);
@@ -796,6 +790,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #undef gmx_load_pr4
 #undef gmx_store_pr4
 #undef gmx_store_pr4
+
+#undef STORE_TABLE_INDICES
 
 #undef CALC_SHIFTFORCES
 

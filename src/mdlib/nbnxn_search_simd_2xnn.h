@@ -36,11 +36,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH != 256
-#error "unsupported SIMD width"
-#endif
-
-#include "gmx_simd_macros.h"
 
 /* Define a few macros for half-width SIMD */
 #if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
@@ -113,7 +108,7 @@ icell_set_x_simd_2xnn(int ci,
     x_ci->iz_SSE2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
 }
 
-#ifndef GMX_HAVE_SIMD_ANYTRUE
+#ifndef GMX_SIMD_HAVE_ANYTRUE
 /* Fallback function in case gmx_anytrue_pr is not present */
 static gmx_inline gmx_bool
 gmx_anytrue_2xn_pr(gmx_mm_pr bool_S)
@@ -223,7 +218,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
+#ifdef GMX_SIMD_HAVE_ANYTRUE
             InRange            = gmx_anytrue_pr(wco_any_SSE);
 #else
             InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
@@ -281,7 +276,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 
             wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
+#ifdef GMX_SIMD_HAVE_ANYTRUE
             InRange            = gmx_anytrue_pr(wco_any_SSE);
 #else
             InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
