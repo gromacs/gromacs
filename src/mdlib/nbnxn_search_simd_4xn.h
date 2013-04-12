@@ -36,14 +36,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
 
 #if GMX_SIMD_WIDTH_HERE >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_WIDTH_HERE)
@@ -80,7 +72,7 @@ icell_set_x_simd_4xn(int ci,
     x_ci->iz_SSE3 = gmx_set1_pr(x[ia + 2*STRIDE_S + 3] + shz);
 }
 
-#ifndef GMX_HAVE_SIMD_ANYTRUE
+#ifndef GMX_SIMD_HAVE_ANYTRUE
 /* Fallback function in case gmx_anytrue_pr is not present */
 static gmx_inline gmx_bool
 gmx_anytrue_4xn_pr(gmx_mm_pr bool_S)
@@ -209,7 +201,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
+#ifdef GMX_SIMD_HAVE_ANYTRUE
             InRange            = gmx_anytrue_pr(wco_any_SSE);
 #else
             InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);
@@ -279,7 +271,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
             wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
+#ifdef GMX_SIMD_HAVE_ANYTRUE
             InRange            = gmx_anytrue_pr(wco_any_SSE);
 #else
             InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);

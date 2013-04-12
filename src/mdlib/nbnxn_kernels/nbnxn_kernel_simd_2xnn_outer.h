@@ -36,10 +36,6 @@
  */
 
 
-/* Include the full width SIMD macros */
-#include "gmx_simd_macros.h"
-
-
 /* Define a few macros for half-width SIMD */
 #if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
 
