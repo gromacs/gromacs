@@ -43,6 +43,16 @@
 #include "domdec.h"
 #include "gmx_cyclecounter.h"
 
+#ifdef GMX_NBNXN_SIMD
+/* The include below sets the SIMD instruction type (precision+width)
+ * for all nbnxn SIMD search and non-bonded kernel code.
+ */
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
+#endif
+#include "gmx_simd_macros.h"
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -106,10 +116,6 @@ typedef struct {
 } nbnxn_grid_t;
 
 #ifdef GMX_NBNXN_SIMD
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */

@@ -92,10 +92,22 @@
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 
-/* Single precision, with SSE2 or higher available */
+/* Here we currently only check for x86 SIMD, but it works with all SIMD.
+ * We need to add a general setup mechanism for the use of gmx_simd_macros.h.
+ */
+#ifdef GMX_X86_SSE2
+/* Turn on SIMD intrinsics for PME solve */
+#define PME_SIMD
+#include "gmx_simd_macros.h"
+#endif
+
+/* SIMD spread+gather only in single precision with SSE2 or higher available.
+ * We might want to switch to use gmx_simd_macros.h, but this is somewhat
+ * complicated, as we use unaligned and/or 4-wide only loads.
+ */
 #if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
 
-#include "gmx_x86_simd_single.h"
+#include <emmintrin.h>
 
 #define PME_SSE
 /* Some old AMD processors could have problems with unaligned loads+stores */
@@ -1867,15 +1879,21 @@ static void realloc_work(pme_work_t *work, int nkx)
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SSE operations, including 3 extra
-         * elements at the end since SSE operates on 4 elements at a time.
+        /* Allocate an aligned pointer for SIMD operations, including extra
+         * elements at the end for padding.
          */
+#ifdef PME_SIMD
+#define ALIGN_HERE  GMX_SIMD_WIDTH_HERE
+#else
+/* We can use any alignment, apart from 0, so we use 4 */
+#define ALIGN_HERE  4
+#endif
         sfree_aligned(work->denom);
         sfree_aligned(work->tmp1);
         sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+3, 16);
-        snew_aligned(work->tmp1, work->nalloc+3, 16);
-        snew_aligned(work->eterm, work->nalloc+3, 16);
+        snew_aligned(work->denom, work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
+        snew_aligned(work->tmp1,  work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
+        snew_aligned(work->eterm, work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
         srenew(work->m2inv, work->nalloc);
     }
 }
@@ -1894,27 +1912,26 @@ static void free_work(pme_work_t *work)
 }
 
 
-#ifdef PME_SSE
-/* Calculate exponentials through SSE in float precision */
+#ifdef PME_SIMD
+/* Calculate exponentials through SIMD */
 inline static void calc_exponentials(int start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const __m128 two = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
-        __m128 f_sse;
-        __m128 lu;
-        __m128 tmp_d1, d_inv, tmp_r, tmp_e;
+        const gmx_mm_pr two = gmx_set1_pr(2.0);
+        gmx_mm_pr f_simd;
+        gmx_mm_pr lu;
+        gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
-        f_sse = _mm_load1_ps(&f);
-        for (kx = 0; kx < end; kx += 4)
+        f_simd = gmx_load1_pr(&f);
+        for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
         {
-            tmp_d1   = _mm_load_ps(d_aligned+kx);
-            lu       = _mm_rcp_ps(tmp_d1);
-            d_inv    = _mm_mul_ps(lu, _mm_sub_ps(two, _mm_mul_ps(lu, tmp_d1)));
-            tmp_r    = _mm_load_ps(r_aligned+kx);
-            tmp_r    = gmx_mm_exp_ps(tmp_r);
-            tmp_e    = _mm_mul_ps(f_sse, d_inv);
-            tmp_e    = _mm_mul_ps(tmp_e, tmp_r);
-            _mm_store_ps(e_aligned+kx, tmp_e);
+            tmp_d1   = gmx_load_pr(d_aligned+kx);
+            d_inv    = gmx_inv_pr(tmp_d1);
+            tmp_r    = gmx_load_pr(r_aligned+kx);
+            tmp_r    = gmx_exp_pr(tmp_r);
+            tmp_e    = gmx_mul_pr(f_simd, d_inv);
+            tmp_e    = gmx_mul_pr(tmp_e, tmp_r);
+            gmx_store_pr(e_aligned+kx, tmp_e);
         }
     }
 }
