@@ -41,107 +41,110 @@
  * all that is needed.
  */
 
-/* Undefine all defines used below so we can include this file multiple times
- * with different settings from the same source file.
- */
+#ifdef _gmx_simd_macros_h_
+#error "gmx_simd_macros.h included twice"
+#else
+#define _gmx_simd_macros_h_
 
 /* NOTE: SSE2 acceleration does not include floor or blendv */
 
 #undef GMX_SIMD_WIDTH_HERE
 
+
+#ifdef GMX_SIMD_PLAIN_C
+/* Plain C 1-way SIMD reference implementation, also serves as documentation */
+#define GMX_HAVE_SIMD_MACROS
+
+#define GMX_SIMD_WIDTH_HERE  1
+
 /* float/double SIMD register type */
-#undef gmx_mm_pr
+typedef real gmx_mm_pr;
 
-/* integer SIMD register type, only used in the tabulated PME kernels */
-#undef gmx_epi32
+/* integer SIMD register type, only used in tabulated non-bonded kernels */
+#define int gmx_mm_epi32;
 
-#undef gmx_load_pr
-#undef gmx_load1_pr
-#undef gmx_set1_pr
-#undef gmx_setzero_pr
-#undef gmx_store_pr
+/* Load GMX_SIMD_WIDTH_HERE reals for memory starting at r */
+static gmx_inline gmx_mm_pr gmx_load_pr(real *r) { return r[0]; };
+/* Set all SIMD register elements to *r */
+static gmx_inline gmx_mm_pr gmx_load1_pr(real *r) { return *r; };
+static gmx_inline gmx_mm_pr gmx_set1_pr(real r) { return r; };
+static gmx_inline gmx_mm_pr gmx_setzero_pr() { return 0.0; };
+static gmx_inline gmx_store_pr(rela *dest, gmx_mm_pr src) { dest[0] = src; };
 
-#undef gmx_add_pr
-#undef gmx_sub_pr
-#undef gmx_mul_pr
+static gmx_inline gmx_mm_pr gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b) { return a + b;};
+static gmx_inline gmx_mm_pr gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b) { return a - b; };
+static gmx_inline gmx_mm_pr gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b) { return a*b; };
 /* For the FMA macros below, aim for c=d in code, so FMA3 uses 1 instruction */
-/* d = gmx_madd_pr(a,b,c): d = a*b + c, could use FMA3 or FMA4 */
-#undef gmx_madd_pr
-/* d = gmx_nmsub_pr(a,b,c): d = -a*b + c, could use FMA3 or FMA4 */
-#undef gmx_nmsub_pr
-#undef gmx_max_pr
-#undef gmx_cmplt_pr
-/* gmx_blendzero_pr(real a, boolean b) does: (b ? a : 0) */
-#undef gmx_blendzero_pr
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c) { return a*b + c; };
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c) { return -a*b + c; };
+static gmx_inline gmx_mm_pr gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b) { return (a >= b) ? a : b};
+static gmx_inline gmx_mm_pr gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b) { return (a < b); };
+static gmx_inline gmx_mm_pr gmx_blendzero_pr(real a, gmx_mm_pr b) { return b ? a : 0.0; };
 /* Logical operations on SIMD booleans */
-#undef gmx_and_pr
-#undef gmx_or_pr
-#undef gmx_andnot_pr
+static gmx_inline gmx_mm_pr  gmx_and_pr(gmx_mm_pr a, gmx_mm_pr b) { return a && b; };
+static gmx_inline gmx_mm_pr gmx_or_pr(gmx_mm_pr a, gmx_mm_pr b) { return a || b};
+static gmx_inline gmx_mm_pr gmx_andnot_pr(gmx_mm_pr a, gmx_mm_pr b) { return a && !b; };
 
-/* Only used for PBC in bonded interactions, can be avoided */
-#undef gmx_round_pr
+static gmx_inline gmx_mm_pr gmx_round_pr(real *r) { return (real)(int)(r + (r >= 0 ? 0.5 : -0.5)); };
 /* Not required, only used to speed up the nbnxn tabulated PME kernels */
-#undef GMX_HAVE_SIMD_FLOOR
-#undef gmx_floor_pr
+/* #ifdef GMX_SIMD_HAVE_FLOOR */
+static gmx_inline gmx_mm_pr gmx_floor_pr(real *r) { return (real)(int)((r >= 0) r : r - 1); };
 
 /* Not required, only used when blendv is faster than comparison */
-#undef GMX_HAVE_SIMD_BLENDV
-#undef gmx_blendv_pr
+#define GMX_SIMD_HAVE_BLENDV
+#ifdef GMX_SIMD_HAVE_BLENDV
+static gmx_inline gmx_mm_pr gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c) { return (c >= 0) ? a : b; };
+#endif
 /* Not required, gmx_anytrue(x) returns if any of the boolean is x is True.
  * If this is not present, define GMX_SIMD_IS_TRUE(real x),
  * which should return x==True, where True is True as defined in SIMD.
  */
-#undef GMX_HAVE_SIMD_ANYTRUE
-#undef gmx_anytrue_pr
+#ifdef GMX_SIMD_HAVE_ANYTRUE
+static gmx_inline int gmx_anytrue_pr(gmx_mm_pr r) { return (r != 0.0) };
+#endif
 
 /* Integer set and cast are only used for nbnxn exclusion masks */
-#undef gmx_set1_epi32
-#undef gmx_castsi_pr
+static gmx_inline gmx_mm_epi32 gmx_set1_epi32(int i) { return i; };
+static gmx_inline gmx_mm_epi32 gmx_castsi_pr(gmx_mm_pr r) { return *(int *)(&r); };
 /* For topology exclusion pair checking we need: ((a & b) ? True : False)
  * when we do a bit-wise and between a and b.
  * When integer SIMD operations are present, we use gmx_checkbitmask_epi32(a, b)
  * Otherwise we do all operations, except for the set1, in reals.
  */
-#undef gmx_load_si
-/* If the same bit is set in both input masks, return all bits 1, otherwise 0 */
-#undef gmx_checkbitmask_epi32
+static gmx_inline gmx_mm_epi32 gmx_load_si(int *i) { return i[0]; };
+/* If the same bit is set in both input masks, return TRUE, else FALSE */
+static gmx_inline gmx_mm_epi32 gmx_checkbitmask_epi32(gmx_mm_epi32 a, gmx_mm_epi32 b) { return a & b; };
 /* As gmx_checkbitmask_epi32, but operates on reals. In double precision two
  * identical 32-bit masks are set in one double and one or both can be used.
  */
-#undef gmx_checkbitmask_pr
+static gmx_inline gmx_mm_pr gmx_checkbitmask_pr(gmx_mm_pr a, gmx_mm_pr b) { return a & b; };
 
 /* Conversions only used for PME table lookup */
-#undef gmx_cvttpr_epi32
-#undef gmx_cvtepi32_pr
+static gmx_inline gmx_mm_epi32 gmx_cvttpr_epi32(gmx_mm_pr r) { return (int)r; };
+static gmx_inline gmx_mm_pr gmx_cvtepi32_pr(gmx_mm_epi32 i) { return (real)i; };
 
-#undef gmx_invsqrt_pr
-/* sqrt+inv+sin+cos+acos+atan2 are only used for bonded potentials */
-#undef gmx_sqrt_pr
-#undef gmx_inv_pr
-#undef gmx_sincos_pr
-#undef gmx_acos_pr
-#undef gmx_atan_pr
+/* The 7 math functions below will soon be moved to gmx_simd_math.h */
 
-#undef gmx_calc_rsq_pr
-#undef gmx_sum4_pr
+static gmx_inline gmx_mm_pr gmx_invsqrt_pr(gmx_mm_pr r) { return 1.0/sqrt(r); };
+/* sqrt+inv+sin+cos+acos+atan2 are used for bonded potentials, exp for PME */
+static gmx_inline gmx_mm_pr gmx_sqrt_pr(gmx_mm_pr r) { return sqrt(r); };
+static gmx_inline gmx_mm_pr gmx_inv_pr(gmx_mm_pr r) { return 1.0/r; };
+#define GMX_SIMD_HAVE_EXP
+#ifdef GMX_SIMD_HAVE_EXP
+static gmx_inline gmx_mm_pr gmx_exp_pr(gmx_mm_pr r) { return exp(r); };
+#endif
+#define GMX_SIMD_HAVE_TRIGONOMETRIC
+#ifdef GMX_SIMD_HAVE_TRIGONOMETRIC
+static gmx_inline gmx_mm_pr gmx_sincos_pr(gmx_mm_pr r, gmx_mm_pr *s, gmx_mm_pr *c) { *s = sin(r); *c = cos(r); };
+static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr r) { return acos(r); };
+static gmx_inline gmx_mm_pr gmx_atan_pr(gmx_mm_pr r) { return atan(r); };
+#endif
 
 /* Only required for nbnxn analytical PME kernels */
-#undef gmx_pmecorrF_pr
-#undef gmx_pmecorrV_pr
+static gmx_inline gmx_mm_pr gmx_pmecorrF_pr(gmx_mm_pr r) {};
+static gmx_inline gmx_mm_pr gmx_pmecorrV_pr(gmx_mm_pr r) {};
 
-
-/* Half SIMD-width types and operations only for nbnxn 2xnn search+kernels */
-#undef gmx_mm_hpr
-
-#undef gmx_load_hpr
-#undef gmx_load1_hpr
-#undef gmx_store_hpr
-#undef gmx_add_hpr
-#undef gmx_sub_hpr
-
-#undef gmx_sum4_hpr
-
-#undef gmx_2hpr_to_pr
+#endif /* GMX_SIMD_PLAIN_C */
 
 
 /* The same SIMD macros can be translated to SIMD intrinsics (and compiled
@@ -154,11 +157,6 @@
  */
 
 
-/* Generic macros for obtaining a SIMD aligned pointer from pointer x */
-#undef gmx_simd_align_real
-#undef gmx_simd_align_int
-
-
 #ifdef GMX_USE_HALF_WIDTH_SIMD_HERE
 #if defined GMX_X86_AVX_256
 /* We have half SIMD width support, continue */
@@ -169,12 +167,54 @@
 
 
 #ifdef GMX_X86_SSE2
+/* This is for general x86 SIMD instruction sets that also support SSE2 */
+#define GMX_HAVE_SIMD_MACROS
+
+/* Include the highest supported x86 SIMD intrisics + math functions */
+#ifdef GMX_X86_AVX_256
+#include "gmx_x86_avx_256.h"
+#ifdef GMX_DOUBLE
+#include "gmx_math_x86_avx_256_double.h"
+#else
+#include "gmx_math_x86_avx_256_single.h"
+#endif
+#else
+#ifdef GMX_X86_AVX_128_FMA
+#include "gmx_x86_avx_128_fma.h"
+#ifdef GMX_DOUBLE
+#include "gmx_math_x86_avx_128_fma_double.h"
+#else
+#include "gmx_math_x86_avx_128_fma_single.h"
+#endif
+#else
+#ifdef GMX_X86_SSE4_1
+#include "gmx_x86_sse4_1.h"
+#ifdef GMX_DOUBLE
+#include "gmx_math_x86_sse4_1_double.h"
+#else
+#include "gmx_math_x86_sse4_1_single.h"
+#endif
+#else
+#ifdef GMX_X86_SSE2
+#include "gmx_x86_sse2.h"
+#ifdef GMX_DOUBLE
+#include "gmx_math_x86_sse2_double.h"
+#else
+#include "gmx_math_x86_sse2_single.h"
+#endif
+#else
+#error No x86 acceleration defined
+#endif
+#endif
+#endif
+#endif
+/* exp and trigonometric functions are included above */
+#define GMX_SIMD_HAVE_EXP
+#define GMX_SIMD_HAVE_TRIGONOMETRIC
 
 #if !defined GMX_X86_AVX_256 || defined GMX_USE_HALF_WIDTH_SIMD_HERE
 
 #ifndef GMX_DOUBLE
-
-#include "gmx_x86_simd_single.h"
 
 #define GMX_SIMD_WIDTH_HERE  4
 
@@ -207,18 +247,18 @@
 
 #ifdef GMX_X86_SSE4_1
 #define gmx_round_pr(x)   _mm_round_ps(x, 0x0)
-#define GMX_HAVE_SIMD_FLOOR
+#define GMX_SIMD_HAVE_FLOOR
 #define gmx_floor_pr      _mm_floor_ps
 #else
 #define gmx_round_pr(x)   _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
 #endif
 
 #ifdef GMX_X86_SSE4_1
-#define GMX_HAVE_SIMD_BLENDV
+#define GMX_SIMD_HAVE_BLENDV
 #define gmx_blendv_pr     _mm_blendv_ps
 #endif
 
-#define GMX_HAVE_SIMD_ANYTRUE
+#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pr    _mm_movemask_ps
 
 #define gmx_set1_epi32    _mm_set1_epi32
@@ -232,19 +272,15 @@
 #define gmx_invsqrt_pr    gmx_mm_invsqrt_ps
 #define gmx_sqrt_pr       gmx_mm_sqrt_ps
 #define gmx_inv_pr        gmx_mm_inv_ps
+#define gmx_exp_pr        gmx_mm_exp_ps
 #define gmx_sincos_pr     gmx_mm_sincos_ps
 #define gmx_acos_pr       gmx_mm_acos_ps
 #define gmx_atan2_pr      gmx_mm_atan2_ps
-
-#define gmx_calc_rsq_pr   gmx_mm_calc_rsq_ps
-#define gmx_sum4_pr       gmx_mm_sum4_ps
 
 #define gmx_pmecorrF_pr   gmx_mm_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm_pmecorrV_ps
 
 #else /* ifndef GMX_DOUBLE */
-
-#include "gmx_x86_simd_double.h"
 
 #define GMX_SIMD_WIDTH_HERE  2
 
@@ -277,7 +313,7 @@
 
 #ifdef GMX_X86_SSE4_1
 #define gmx_round_pr(x)   _mm_round_pd(x, 0x0)
-#define GMX_HAVE_SIMD_FLOOR
+#define GMX_SIMD_HAVE_FLOOR
 #define gmx_floor_pr      _mm_floor_pd
 #else
 #define gmx_round_pr(x)   _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
@@ -285,11 +321,11 @@
 #endif
 
 #ifdef GMX_X86_SSE4_1
-#define GMX_HAVE_SIMD_BLENDV
+#define GMX_SIMD_HAVE_BLENDV
 #define gmx_blendv_pr     _mm_blendv_pd
 #endif
 
-#define GMX_HAVE_SIMD_ANYTRUE
+#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pr    _mm_movemask_pd
 
 #define gmx_set1_epi32    _mm_set1_epi32
@@ -303,12 +339,10 @@
 #define gmx_invsqrt_pr    gmx_mm_invsqrt_pd
 #define gmx_sqrt_pr       gmx_mm_sqrt_pd
 #define gmx_inv_pr        gmx_mm_inv_pd
+#define gmx_exp_pr        gmx_mm_exp_pd
 #define gmx_sincos_pr     gmx_mm_sincos_pd
 #define gmx_acos_pr       gmx_mm_acos_pd
 #define gmx_atan2_pr      gmx_mm_atan2_pd
-
-#define gmx_calc_rsq_pr   gmx_mm_calc_rsq_pd
-#define gmx_sum4_pr       gmx_mm_sum4_pd
 
 #define gmx_pmecorrF_pr   gmx_mm_pmecorrF_pd
 #define gmx_pmecorrV_pr   gmx_mm_pmecorrV_pd
@@ -321,8 +355,6 @@
  */
 
 #ifndef GMX_DOUBLE
-
-#include "gmx_x86_simd_single.h"
 
 #define GMX_SIMD_WIDTH_HERE  8
 
@@ -350,13 +382,13 @@
 #define gmx_andnot_pr     _mm256_andnot_ps
 
 #define gmx_round_pr(x)   _mm256_round_ps(x, 0x0)
-#define GMX_HAVE_SIMD_FLOOR
+#define GMX_SIMD_HAVE_FLOOR
 #define gmx_floor_pr      _mm256_floor_ps
 
-#define GMX_HAVE_SIMD_BLENDV
+#define GMX_SIMD_HAVE_BLENDV
 #define gmx_blendv_pr     _mm256_blendv_ps
 
-#define GMX_HAVE_SIMD_ANYTRUE
+#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pr    _mm256_movemask_ps
 
 #define gmx_set1_epi32    _mm256_set1_epi32
@@ -372,19 +404,15 @@
 #define gmx_invsqrt_pr    gmx_mm256_invsqrt_ps
 #define gmx_sqrt_pr       gmx_mm256_sqrt_ps
 #define gmx_inv_pr        gmx_mm256_inv_ps
+#define gmx_exp_pr        gmx_mm256_exp_ps
 #define gmx_sincos_pr     gmx_mm256_sincos_ps
 #define gmx_acos_pr       gmx_mm256_acos_ps
 #define gmx_atan2_pr      gmx_mm256_atan2_ps
-
-#define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_ps
-#define gmx_sum4_pr       gmx_mm256_sum4_ps
 
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_ps
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_ps
 
 #else
-
-#include "gmx_x86_simd_double.h"
 
 #define GMX_SIMD_WIDTH_HERE  4
 
@@ -413,13 +441,13 @@
 #define gmx_andnot_pr     _mm256_andnot_pd
 
 #define gmx_round_pr(x)   _mm256_round_pd(x, 0x0)
-#define GMX_HAVE_SIMD_FLOOR
+#define GMX_SIMD_HAVE_FLOOR
 #define gmx_floor_pr      _mm256_floor_pd
 
-#define GMX_HAVE_SIMD_BLENDV
+#define GMX_SIMD_HAVE_BLENDV
 #define gmx_blendv_pr     _mm256_blendv_pd
 
-#define GMX_HAVE_SIMD_ANYTRUE
+#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pr    _mm256_movemask_pd
 
 #define gmx_set1_epi32    _mm256_set1_epi32
@@ -436,12 +464,10 @@
 #define gmx_invsqrt_pr    gmx_mm256_invsqrt_pd
 #define gmx_sqrt_pr       gmx_mm256_sqrt_pd
 #define gmx_inv_pr        gmx_mm256_inv_pd
+#define gmx_exp_pr        gmx_mm256_exp_pd
 #define gmx_sincos_pr     gmx_mm256_sincos_pd
 #define gmx_acos_pr       gmx_mm256_acos_pd
 #define gmx_atan2_pr      gmx_mm256_atan2_pd
-
-#define gmx_calc_rsq_pr   gmx_mm256_calc_rsq_pd
-#define gmx_sum4_pr       gmx_mm256_sum4_pd
 
 #define gmx_pmecorrF_pr   gmx_mm256_pmecorrF_pd
 #define gmx_pmecorrV_pr   gmx_mm256_pmecorrV_pd
@@ -453,11 +479,24 @@
 #endif /* GMX_X86_SSE2 */
 
 
-/* Generic macros to extract a SIMD aligned pointer from a pointer x.
+#ifdef GMX_HAVE_SIMD_MACROS
+/* Generic functions to extract a SIMD aligned pointer from a pointer x.
  * x should have at least GMX_SIMD_WIDTH_HERE elements extra compared
  * to how many you want to use, to avoid indexing outside the aligned region.
  */
 
-#define gmx_simd_align_real(x)  (real *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(real)-1))))
+static gmx_inline real *
+gmx_simd_align_real(const real *x)
+{
+    return (real *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(real)-1))));
+}
 
-#define gmx_simd_align_int(x)   (int  *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int )-1))))
+static gmx_inline int *
+gmx_simd_align_int(const int *x)
+{
+    return (int  *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int )-1))));
+}
+
+#endif /* GMX_HAVE_SIMD_MACROS */
+
+#endif /* _gmx_simd_macros_h_ */
