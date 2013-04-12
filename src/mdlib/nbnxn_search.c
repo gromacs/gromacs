@@ -49,7 +49,11 @@
 #include "vec.h"
 #include "pbc.h"
 #include "nbnxn_consts.h"
+/* nbnxn_internal.h included gmx_simd_macros.h */
 #include "nbnxn_internal.h"
+#ifdef GMX_NBNXN_SIMD
+#include "gmx_simd_vec.h"
+#endif
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "gmx_cyclecounter.h"
@@ -2231,8 +2235,20 @@ static gmx_bool subc_in_range_x(int na_c,
     return FALSE;
 }
 
+#ifdef NBNXN_SEARCH_SSE_SINGLE
+/* When we make seperate single/double precision SIMD vector operation
+ * include files, this function should be moved there (also using FMA).
+ */
+static inline __m128
+gmx_mm_calc_rsq_ps(__m128 x, __m128 y, __m128 z)
+{
+    return _mm_add_ps( _mm_add_ps( _mm_mul_ps(x, x), _mm_mul_ps(y, y) ), _mm_mul_ps(z, z) );
+}
+#endif
+
 /* SSE function which determines if any atom pair between two cells,
  * both with 8 atoms, is within distance sqrt(rl2).
+ * Not performance critical, so only uses plain SSE.
  */
 static gmx_bool subc_in_range_sse8(int na_c,
                                    int si, const real *x_i,
