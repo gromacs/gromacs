@@ -36,27 +36,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH != 256
-#error "unsupported SIMD width"
-#endif
-
-#include "gmx_simd_macros.h"
-
-/* Define a few macros for half-width SIMD */
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-/* Half-width SIMD real type */
-#define gmx_mm_hpr  __m128
-/* Half-width SIMD operations */
-/* Load reals at half-width aligned pointer b into half-width SIMD register a */
-#define gmx_load_hpr(a,b)       a = _mm_load_ps(b)
-#define gmx_set1_hpr                _mm_set1_ps
-/* Load reals at half-width aligned pointer b into two halves of a */
-#define gmx_loaddh_pr(a, b)     a = gmx_mm256_load4_ps(b)
-/* Store half width SIMD registers b and c in ful width register a */
-#define gmx_2hpr_to_pr(a, b, c) a = _mm256_insertf128_ps(_mm256_castps128_ps256(b), c, 0x1)
-#else
-#error "Half-width SIMD macros are not yet defined"
-#endif
+/* Get the half-width SIMD stuff from the kernel utils files */
+#include "nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 
 
 #if GMX_SIMD_WIDTH_HERE >= 2*NBNXN_CPU_CLUSTER_I_SIZE
@@ -70,9 +51,9 @@ static gmx_inline gmx_mm_pr gmx_load_hpr_hilo_pr(const real *a)
     gmx_mm_hpr a_S;
     gmx_mm_pr  a_a_S;
 
-    gmx_load_hpr(a_S, a);
+    gmx_load_hpr(&a_S, a);
 
-    gmx_2hpr_to_pr(a_a_S, a_S, a_S);
+    gmx_2hpr_to_pr(a_S, a_S, &a_a_S);
 
     return a_a_S;
 }
@@ -82,10 +63,10 @@ static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a, real shift)
     gmx_mm_hpr a0_S, a1_S;
     gmx_mm_pr  a0_a1_S;
 
-    a0_S = gmx_set1_hpr(a[0] + shift);
-    a1_S = gmx_set1_hpr(a[1] + shift);
+    gmx_set1_hpr(&a0_S, a[0] + shift);
+    gmx_set1_hpr(&a1_S, a[1] + shift);
 
-    gmx_2hpr_to_pr(a0_a1_S, a0_S, a1_S);
+    gmx_2hpr_to_pr(a0_S, a1_S, &a0_a1_S);
 
     return a0_a1_S;
 }
@@ -113,10 +94,10 @@ icell_set_x_simd_2xnn(int ci,
     x_ci->iz_SSE2 = gmx_set_2real_shift_pr(x + ia + 2*STRIDE_S + 2, shz);
 }
 
-#ifndef GMX_HAVE_SIMD_ANYTRUE
+#ifndef GMX_SIMD_HAVE_ANYTRUE
 /* Fallback function in case gmx_anytrue_pr is not present */
 static gmx_inline gmx_bool
-gmx_anytrue_2xn_pr(gmx_mm_pr bool_S)
+gmx_anytrue_2xn_pb(gmx_mm_pb bool_S)
 {
     real     bools_array[2*GMX_SIMD_WIDTH_HERE], *bools;
     gmx_bool any;
@@ -124,7 +105,7 @@ gmx_anytrue_2xn_pr(gmx_mm_pr bool_S)
 
     bools = gmx_simd_align_real(bools_array);
 
-    gmx_store_pr(bools, bool_S);
+    gmx_store_pb(bools, bool_S);
 
     any = FALSE;
     for (s = 0; s < GMX_SIMD_WIDTH_HERE; s++)
@@ -164,9 +145,9 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     gmx_mm_pr                     rsq_SSE0;
     gmx_mm_pr                     rsq_SSE2;
 
-    gmx_mm_pr                     wco_SSE0;
-    gmx_mm_pr                     wco_SSE2;
-    gmx_mm_pr                     wco_any_SSE;
+    gmx_mm_pb                     wco_SSE0;
+    gmx_mm_pb                     wco_SSE2;
+    gmx_mm_pb                     wco_any_SSE;
 
     gmx_mm_pr                     rc2_SSE;
 
@@ -186,7 +167,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SSE
+        d2 = subc_bb_dist2_sse(0, bb_ci, cjf, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjf, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -221,12 +206,12 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
             wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
+            wco_any_SSE        = gmx_or_pb(wco_SSE0, wco_SSE2);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
-            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#ifdef GMX_SIMD_HAVE_ANYTRUE
+            InRange            = gmx_anytrue_pb(wco_any_SSE);
 #else
-            InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
+            InRange            = gmx_anytrue_2xn_pb(wco_any_SSE);
 #endif
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
@@ -244,7 +229,11 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SSE
+        d2 = subc_bb_dist2_sse(0, bb_ci, cjl, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjl, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -279,12 +268,12 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
             wco_SSE0           = gmx_cmplt_pr(rsq_SSE0, rc2_SSE);
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
 
-            wco_any_SSE        = gmx_or_pr(wco_SSE0, wco_SSE2);
+            wco_any_SSE        = gmx_or_pb(wco_SSE0, wco_SSE2);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
-            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#ifdef GMX_SIMD_HAVE_ANYTRUE
+            InRange            = gmx_anytrue_pb(wco_any_SSE);
 #else
-            InRange            = gmx_anytrue_2xn_pr(wco_any_SSE);
+            InRange            = gmx_anytrue_2xn_pb(wco_any_SSE);
 #endif
 
             *ndistc += 2*GMX_SIMD_WIDTH_HERE;
@@ -310,8 +299,3 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
 }
 
 #undef STRIDE_S
-
-#undef gmx_mm_hpr
-#undef gmx_load_hpr
-#undef gmx_set1_hpr
-#undef gmx_2hpr_to_pr
