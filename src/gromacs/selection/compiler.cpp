@@ -458,8 +458,6 @@ void SelectionTreeElement::freeCompilerData()
         evaluate = cdata->evaluate;
         if (cdata->flags & SEL_CDATA_MINMAXALLOC)
         {
-            cdata->gmin->name = NULL;
-            cdata->gmax->name = NULL;
             gmx_ana_index_deinit(cdata->gmin);
             gmx_ana_index_deinit(cdata->gmax);
             sfree(cdata->gmin);
@@ -748,7 +746,6 @@ create_subexpression_name(const SelectionTreeElementPointer &sel, int i)
 {
     std::string name(gmx::formatString("SubExpr %d", i));
     sel->setName(name);
-    sel->u.cgrp.name = strdup(name.c_str());
 }
 
 /*! \brief
@@ -1621,12 +1618,11 @@ initialize_evalgrps(gmx_ana_selcollection_t *sc)
         if (root->child->type != SEL_SUBEXPR
             || (root->child->v.type != GROUP_VALUE && !(root->flags & SEL_ATOMVAL)))
         {
-            gmx_ana_index_set(&root->u.cgrp, -1, 0, root->u.cgrp.name, 0);
+            gmx_ana_index_set(&root->u.cgrp, -1, 0, 0);
         }
         else if (root->child->cdata->flags & SEL_CDATA_FULLEVAL)
         {
-            gmx_ana_index_set(&root->u.cgrp, sc->gall.isize, sc->gall.index,
-                              root->u.cgrp.name, 0);
+            gmx_ana_index_set(&root->u.cgrp, sc->gall.isize, sc->gall.index, 0);
         }
         root = root->next;
     }
@@ -1755,7 +1751,7 @@ make_static(const SelectionTreeElementPointer &sel)
      * */
     if (sel->v.type == GROUP_VALUE)
     {
-        gmx_ana_index_set(&sel->u.cgrp, sel->v.u.g->isize, sel->v.u.g->index, NULL, 0);
+        gmx_ana_index_set(&sel->u.cgrp, sel->v.u.g->isize, sel->v.u.g->index, 0);
     }
 }
 
@@ -1990,10 +1986,8 @@ evaluate_boolean_static_part(gmx_sel_evaluate_t                *data,
          * and hence we can overwrite it safely. */
         if (child->u.cgrp.nalloc_index > 0)
         {
-            char *name = child->u.cgrp.name;
             gmx_ana_index_copy(&child->u.cgrp, child->v.u.g, false);
             gmx_ana_index_squeeze(&child->u.cgrp);
-            child->u.cgrp.name = name;
         }
         else
         {
@@ -2088,11 +2082,8 @@ evaluate_boolean_minmax_grps(const SelectionTreeElementPointer &sel,
                 gmx_ana_index_copy(sel->child->v.u.g, gmin, false);
                 if (sel->child->u.cgrp.nalloc_index > 0)
                 {
-                    /* Keep the name as in evaluate_boolean_static_part(). */
-                    char *name = sel->child->u.cgrp.name;
                     gmx_ana_index_reserve(&sel->child->u.cgrp, gmin->isize);
                     gmx_ana_index_copy(&sel->child->u.cgrp, gmin, false);
-                    sel->child->u.cgrp.name = name;
                 }
                 else
                 {
@@ -2339,10 +2330,6 @@ analyze_static(gmx_sel_evaluate_t                *data,
     {
         gmx_ana_index_squeeze(sel->cdata->gmin);
         gmx_ana_index_squeeze(sel->cdata->gmax);
-        sfree(sel->cdata->gmin->name);
-        sfree(sel->cdata->gmax->name);
-        sel->cdata->gmin->name = NULL;
-        sel->cdata->gmax->name = NULL;
     }
 
     /* Replace the result of the evaluation */
@@ -2399,7 +2386,6 @@ init_root_item(const SelectionTreeElementPointer &root,
     }
 
     /* Set the evaluation group */
-    char *name = root->u.cgrp.name;
     if (root->evaluate)
     {
         /* Non-atom-valued non-group expressions don't care about the group, so
@@ -2407,12 +2393,12 @@ init_root_item(const SelectionTreeElementPointer &root,
         if ((expr->flags & SEL_VARNUMVAL)
             || ((expr->flags & SEL_SINGLEVAL) && expr->v.type != GROUP_VALUE))
         {
-            gmx_ana_index_set(&root->u.cgrp, -1, NULL, NULL, 0);
+            gmx_ana_index_set(&root->u.cgrp, -1, NULL, 0);
         }
         else if (expr->cdata->gmax->isize == gall->isize)
         {
             /* Save some memory by only referring to the global group. */
-            gmx_ana_index_set(&root->u.cgrp, gall->isize, gall->index, NULL, 0);
+            gmx_ana_index_set(&root->u.cgrp, gall->isize, gall->index, 0);
         }
         else
         {
@@ -2452,7 +2438,6 @@ init_root_item(const SelectionTreeElementPointer &root,
     {
         gmx_ana_index_clear(&root->u.cgrp);
     }
-    root->u.cgrp.name = name;
 }
 
 
@@ -2492,14 +2477,10 @@ postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
         && (sel->cdata->flags & SEL_CDATA_STATICEVAL)
         && !(sel->cdata->flags & SEL_CDATA_FULLEVAL))
     {
-        char *name;
-
         /* We need to free memory allocated for the group, because it is no
          * longer needed (and would be lost on next call to the evaluation
-         * function). But we need to preserve the name. */
-        name = sel->u.cgrp.name;
+         * function). */
         gmx_ana_index_deinit(&sel->u.cgrp);
-        sel->u.cgrp.name = name;
 
         sel->evaluate        = &_gmx_sel_evaluate_subexpr_staticeval;
         sel->cdata->evaluate = sel->evaluate;

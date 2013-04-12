@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -658,12 +658,10 @@ set_poscalc_maxindex(gmx_ana_poscalc_t *pc, gmx_ana_index_t *g, bool bBase)
     if ((pc->flags & POS_COMPLWHOLE) && !bBase && pc->b.nra > g->isize)
     {
         gmx_ana_index_copy(&pc->gmax, g, true);
-        sfree(pc->gmax.name);
-        pc->gmax.name  = NULL;
     }
     else
     {
-        gmx_ana_index_set(&pc->gmax, pc->b.nra, pc->b.a, NULL, 0);
+        gmx_ana_index_set(&pc->gmax, pc->b.nra, pc->b.a, 0);
     }
 }
 
@@ -728,7 +726,7 @@ should_merge(gmx_ana_poscalc_t *pc1, gmx_ana_poscalc_t *pc2,
         return false;
     }
     /* Find the overlap between the calculations. */
-    gmx_ana_index_set(&g2, pc2->b.nra, pc2->b.a, NULL, 0);
+    gmx_ana_index_set(&g2, pc2->b.nra, pc2->b.a, 0);
     gmx_ana_index_intersection(g, g1, &g2);
     /* Do not merge if there is no overlap. */
     if (g->isize == 0)
@@ -801,8 +799,8 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
     int              i, bi, bj, bo;
 
     base->flags |= pc->flags & (POS_VELOCITIES | POS_FORCES);
-    gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
-    gmx_ana_index_set(&gb, base->b.nra, base->b.a, NULL, 0);
+    gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, 0);
+    gmx_ana_index_set(&gb, base->b.nra, base->b.a, 0);
     isize = gmx_ana_index_difference_size(&gp, &gb);
     if (isize > 0)
     {
@@ -857,7 +855,7 @@ merge_to_base(gmx_ana_poscalc_t *base, gmx_ana_poscalc_t *pc)
         base->b.a        = g.index;
         base->b.nalloc_a = g.isize;
         /* Refresh the gmax field */
-        gmx_ana_index_set(&base->gmax, base->b.nra, base->b.a, NULL, 0);
+        gmx_ana_index_set(&base->gmax, base->b.nra, base->b.a, 0);
     }
 }
 
@@ -912,7 +910,7 @@ setup_base(gmx_ana_poscalc_t *pc)
         return;
     }
 
-    gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, NULL, 0);
+    gmx_ana_index_set(&gp, pc->b.nra, pc->b.a, 0);
     gmx_ana_index_clear(&g);
     gmx_ana_index_reserve(&g, pc->b.nra);
     pbase = pc;
@@ -963,7 +961,7 @@ setup_base(gmx_ana_poscalc_t *pc)
                     merge_bases(pbase, base);
                 }
             }
-            gmx_ana_index_set(&gp, pbase->b.nra, pbase->b.a, NULL, 0);
+            gmx_ana_index_set(&gp, pbase->b.nra, pbase->b.a, 0);
             gmx_ana_index_reserve(&g, pc->b.nra);
         }
         /* Proceed to the next unchecked calculation */
