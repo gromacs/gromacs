@@ -47,7 +47,7 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #endif
 
 
@@ -56,7 +56,7 @@
  */
 #define GMX_SIMD4_SINGLE
 /* Include the 4-wide SIMD macro file */
-#include "gmx_simd4_macros.h"
+#include "gromacs/simd/four_wide_macros.h"
 /* Check if we have 4-wide SIMD macro support */
 #ifdef GMX_HAVE_SIMD4_MACROS
 #define NBNXN_SEARCH_BB_SIMD4

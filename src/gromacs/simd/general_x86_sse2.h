@@ -18,8 +18,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _gmx_x86_sse2_h_
-#define _gmx_x86_sse2_h_
+#ifndef GMX_SIMD_GENERAL_SSE2_H
+#define GMX_SIMD_GENERAL_SSE2_H
 
 #include <emmintrin.h>
 
@@ -152,4 +152,4 @@ static int gmx_mm_check_and_reset_overflow(void)
 }
 
 
-#endif /* _gmx_x86_sse2_h_ */
+#endif

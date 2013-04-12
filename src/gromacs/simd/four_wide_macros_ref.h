@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gmx_simd4_ref_h_
-#define _gmx_simd4_ref_h_
+#ifndef GMX_SIMD_FOUR_WIDE_MACROS_REF_H
+#define GMX_SIMD_FOUR_WIDE_MACROS_REF_H
 
 /* This file contains a reference plain-C implementation of 4-wide SIMD.
  * This code is only useful for testing and documentation.
@@ -305,4 +305,4 @@ gmx_simd4_ref_anytrue_pb(gmx_simd4_ref_pb a)
     return anytrue;
 }
 
-#endif /* _gmx_simd4_ref_h_ */
+#endif

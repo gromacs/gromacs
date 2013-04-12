@@ -18,12 +18,12 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _gmx_math_x86_avx_256_double_h_
-#define _gmx_math_x86_avx_256_double_h_
+#ifndef GMX_SIMD_MATH_AVX_256_DOUBLE_H
+#define GMX_SIMD_MATH_AVX_256_DOUBLE_H
 
 #include <math.h>
 
-#include "gmx_x86_avx_256.h"
+#include "general_x86_avx_256.h"
 
 #ifndef M_PI
 #  define M_PI 3.14159265358979323846264338327950288
@@ -2819,4 +2819,4 @@ gmx_mm_atan2_pd(__m128d y, __m128d x)
     return z;
 }
 
-#endif /* _gmx_math_x86_avx_256_double_h_ */
+#endif

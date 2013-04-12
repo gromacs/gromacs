@@ -58,10 +58,10 @@
 #include "nonbonded.h"
 
 /* Include the SIMD macro file and then check for support */
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_TRIGONOMETRIC
 #define SIMD_BONDEDS
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/vector_operations.h"
 #endif
 
 /* Find a better place for this? */

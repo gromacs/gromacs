@@ -18,30 +18,22 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _gmx_x86_avx_128_fma_h_
-#define _gmx_x86_avx_128_fma_h_
+#ifndef GMX_SIMD_GENERAL_SSE4_1_H
+#define GMX_SIMD_GENERAL_SSE4_1_H
 
-
-#include <immintrin.h>
-#ifdef HAVE_X86INTRIN_H
-#include <x86intrin.h> /* FMA */
-#endif
-#ifdef HAVE_INTRIN_H
-#include <intrin.h> /* FMA MSVC */
-#endif
-
+#include <smmintrin.h>
 
 #include <stdio.h>
 
 #include "types/simple.h"
 
+/* Create some basic definitions that are not 100% SSE2 standard and thus not
+ * available on all compilers. These should be fairly self-evident by comparing
+ * with an arbitrary emmintrin.h.
+ */
 
-#define gmx_mm_extract_epi32(x, imm) _mm_cvtsi128_si32(_mm_srli_si128((x), 4 * (imm)))
 
-#define _GMX_MM_BLEND(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
-
-#define _GMX_MM_PERMUTE128D(fp1, fp0)         (((fp1) << 1) | ((fp0)))
-
+#define gmx_mm_extract_epi32(x, imm) _mm_extract_epi32((x), (imm))
 
 #define GMX_MM_TRANSPOSE2_PD(row0, row1) {           \
         __m128d __gmx_t1 = row0;                         \
@@ -49,6 +41,7 @@
         row1           = _mm_unpackhi_pd(__gmx_t1, row1); \
 }
 
+#define _GMX_MM_BLEND(b3, b2, b1, b0) (((b3) << 3) | ((b2) << 2) | ((b1) << 1) | ((b0)))
 
 #if (defined (_MSC_VER) || defined(__INTEL_COMPILER))
 #  define gmx_mm_castsi128_ps(a) _mm_castsi128_ps(a)
@@ -85,44 +78,6 @@ static __m128i gmx_mm_castpd_si128(__m128d a)
 }
 #endif
 
-#if GMX_EMULATE_AMD_FMA
-/* Wrapper routines so we can do test builds on non-FMA or non-AMD hardware */
-static __m128
-_mm_macc_ps(__m128 a, __m128 b, __m128 c)
-{
-    return _mm_add_ps(c, _mm_mul_ps(a, b));
-}
-
-static __m128
-_mm_nmacc_ps(__m128 a, __m128 b, __m128 c)
-{
-    return _mm_sub_ps(c, _mm_mul_ps(a, b));
-}
-
-static __m128
-_mm_msub_ps(__m128 a, __m128 b, __m128 c)
-{
-    return _mm_sub_ps(_mm_mul_ps(a, b), c);
-}
-
-static __m128d
-_mm_macc_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_add_pd(c, _mm_mul_pd(a, b));
-}
-
-static __m128d
-_mm_nmacc_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_sub_pd(c, _mm_mul_pd(a, b));
-}
-
-static __m128d
-_mm_msub_pd(__m128d a, __m128d b, __m128d c)
-{
-    return _mm_sub_pd(_mm_mul_pd(a, b), c);
-}
-#endif /* AMD FMA emulation support */
 
 static void
 gmx_mm_printxmm_ps(const char *s, __m128 xmm)
@@ -196,19 +151,5 @@ static int gmx_mm_check_and_reset_overflow(void)
     return sse_overflow;
 }
 
-/* Work around gcc bug with wrong type for mask formal parameter to maskload/maskstore */
-#ifdef GMX_X86_AVX_GCC_MASKLOAD_BUG
-#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), _mm_castsi128_ps(mask))
-#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), _mm_castsi128_ps(mask), (x))
-#    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), _mm256_castsi256_ps(mask))
-#    define gmx_mm256_maskstore_ps(mem, mask, x) _mm256_maskstore_ps((mem), _mm256_castsi256_ps(mask), (x))
-#else
-#    define gmx_mm_maskload_ps(mem, mask)       _mm_maskload_ps((mem), (mask))
-#    define gmx_mm_maskstore_ps(mem, mask, x)    _mm_maskstore_ps((mem), (mask), (x))
-#    define gmx_mm256_maskload_ps(mem, mask)    _mm256_maskload_ps((mem), (mask))
-#    define gmx_mm256_maskstore_ps(mem, mask, x) _mm256_maskstore_ps((mem), (mask), (x))
+
 #endif
-
-
-
-#endif /* _gmx_x86_avx_128_fma_h_ */
