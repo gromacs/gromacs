@@ -36,10 +36,6 @@
  */
 
 
-/* Include the full width SIMD macros */
-#include "gmx_simd_macros.h"
-
-
 /* Define a few macros for half-width SIMD */
 #if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
 
@@ -95,6 +91,9 @@
  */
 #define TAB_FDV0
 #endif
+
+/* Currently stride 4 for the 2 LJ parameters is hard coded */
+#define NBFP_STRIDE  4
 
 
 #define SIMD_MASK_ALL   0xffffffff
@@ -226,10 +225,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 
     gmx_mm_pr  diag_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_mm_pr  diag_S0, diag_S2;
+    gmx_mm_pb  diag_S0, diag_S2;
 #else
-    gmx_mm_pr  diag0_S0, diag0_S2;
-    gmx_mm_pr  diag1_S0, diag1_S2;
+    gmx_mm_pb  diag0_S0, diag0_S2;
+    gmx_mm_pb  diag1_S0, diag1_S2;
 #endif
 
     gmx_mm_pr  mask_S0, mask_S2;
@@ -319,12 +318,14 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     ljc = nbat->lj_comb;
 #else
     /* No combination rule used */
-#ifndef GMX_DOUBLE
-    nbfp_ptr    = nbat->nbfp_s4;
-#define NBFP_STRIDE  4
-#else
+#if NBFP_STRIDE == 2
     nbfp_ptr    = nbat->nbfp;
-#define NBFP_STRIDE  2
+#else
+#if NBFP_STRIDE == 4
+    nbfp_ptr    = nbat->nbfp_s4;
+#else
+#error "Only NBFP_STRIDE 2 and 4 are currently supported"
+#endif
 #endif
     nbfp_stride = NBFP_STRIDE;
 #endif
@@ -684,13 +685,13 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #else
 #error "You need to define 4-width SIM macros for i-force reduction"
 #endif
-        GMX_MM_TRANSPOSE_SUM4H_PR(fix_S0, fix_S2, fix_S);
+        fix_S = gmx_mm_transpose_sum4h_pr(fix_S0, fix_S2);
         gmx_store_pr4(f+scix, gmx_add_pr4(fix_S, gmx_load_pr4(f+scix)));
 
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiy_S0, fiy_S2, fiy_S);
+        fiy_S = gmx_mm_transpose_sum4h_pr(fiy_S0, fiy_S2);
         gmx_store_pr4(f+sciy, gmx_add_pr4(fiy_S, gmx_load_pr4(f+sciy)));
 
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiz_S0, fiz_S2, fiz_S);
+        fiz_S = gmx_mm_transpose_sum4h_pr(fiz_S0, fiz_S2);
         gmx_store_pr4(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES

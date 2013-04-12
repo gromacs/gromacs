@@ -669,7 +669,7 @@ void nbnxn_atomdata_init(FILE *fp,
          * we substract 0.5 to avoid rounding issues.
          * In the kernel we can subtract 1 to generate the subsequent mask.
          */
-        const int simd_width = GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
+        const int simd_width = GMX_SIMD_WIDTH_HERE;
         int       simd_4xn_diag_size, real_excl, simd_excl_size, j, s;
 
         simd_4xn_diag_size = max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
@@ -1092,11 +1092,6 @@ nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
-
     int       i, s;
     gmx_mm_pr dest_SSE, src_SSE;
 
