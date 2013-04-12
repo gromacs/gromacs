@@ -35,8 +35,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gmx_simd_ref_h_
-#define _gmx_simd_ref_h_
+#ifndef GMX_SIMD_MACROS_REF_H
+#define GMX_SIMD_MACROS_REF_H
 
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
@@ -45,7 +45,7 @@
 
 
 #ifndef GMX_SIMD_REF_WIDTH
-#error "GMX_SIMD_REF_WIDTH should be defined before including gmx_simd_ref.h"
+#error "GMX_SIMD_REF_WIDTH should be defined before including gromacs/simd/macros_ref.h"
 #endif
 
 #include <math.h>
@@ -525,4 +525,4 @@ gmx_simd_ref_atan2_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
     return c;
 }
 
-#endif /* _gmx_simd_ref_h_ */
+#endif

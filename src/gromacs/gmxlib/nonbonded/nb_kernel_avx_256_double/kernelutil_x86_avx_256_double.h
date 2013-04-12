@@ -36,7 +36,7 @@
 #define _kernelutil_x86_avx_256_double_h_
 
 
-#include "gmx_x86_avx_256.h"
+#include "gromacs/simd/general_x86_avx_256.h"
 
 
 static int

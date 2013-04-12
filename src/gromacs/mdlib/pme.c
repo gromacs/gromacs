@@ -86,14 +86,14 @@
 #include "gromacs/utility/gmxmpi.h"
 
 /* Include the SIMD macro file and then check for support */
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
 /* Turn on arbitrary width SIMD intrinsics for PME solve */
 #define PME_SIMD
 #endif
 
 /* Include the 4-wide SIMD macro file */
-#include "gmx_simd4_macros.h"
+#include "gromacs/simd/four_wide_macros.h"
 /* Check if we have 4-wide SIMD macro support */
 #ifdef GMX_HAVE_SIMD4_MACROS
 /* Do PME spread and gather with 4-wide SIMD.

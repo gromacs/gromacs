@@ -97,17 +97,6 @@ prepare_table_load_buffer(const int *array)
 #define TAB_FDV0
 #endif
 
-/*
-Berk, 2xnn.c had the following code, but I think it is safe to remove now, given the code immediately above.
-
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-/ * AVX-256 single precision 2x(4+4) kernel,
- * we can do half SIMD-width aligned FDV0 table loads.
- * /
-#define TAB_FDV0
-#endif
-*/
-
 #ifdef GMX_DOUBLE
 #include "nbnxn_kernel_simd_utils_x86_256d.h"
 #else  /* GMX_DOUBLE */

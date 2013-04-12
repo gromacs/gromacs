@@ -42,14 +42,14 @@
  */
 
 /* This file contains vector operation functions using SIMD intrinsics.
- * gmx_simd_macros.h should be included before including this file.
+ * gromacs/simd/macros.h should be included before including this file.
  */
 
-#ifndef _gmx_simd_vec_h_
-#define _gmx_simd_vec_h_
+#ifndef GMX_SIMD_VECTOR_OPERATIONS_H
+#define GMX_SIMD_VECTOR_OPERATIONS_H
 
-#ifndef _gmx_simd_macros_h_
-#error "gmx_simd_macros.h was not included before including gmx_simd_vec.h"
+#ifndef GMX_SIMD_MACROS_H
+#error "gromacs/simd/macros.h was not included before including gromacs/simd/vector_operations.h"
 #endif
 
 
@@ -111,4 +111,4 @@ gmx_sum4_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c, gmx_mm_pr d)
 }
 
 
-#endif /* _gmx_simd_vec_h_ */
+#endif
