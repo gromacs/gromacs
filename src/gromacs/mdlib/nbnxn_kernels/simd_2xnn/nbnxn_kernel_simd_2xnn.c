@@ -45,10 +45,10 @@
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 
-/* Include the full-width SIMD macros */
+/* Include the full width SIMD macros */
+#include "gromacs/simd/macros.h"
+#include "gromacs/simd/vector_operations.h"
 
-#include "gmx_simd_macros.h"
-#include "gmx_simd_vec.h"
 #if !(GMX_SIMD_WIDTH_HERE == 8 || GMX_SIMD_WIDTH_HERE == 16)
 #error "unsupported SIMD width"
 #endif
