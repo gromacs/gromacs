@@ -46,10 +46,10 @@
  * not necessarily equal to 4.
  */
 
-#ifdef _gmx_simd4_macros_h_
-#error "gmx_simd4_macros.h included twice"
+#ifdef GMX_SIMD_FOUR_WIDE_MACROS_H
+#error "four_wide_macros.h included twice"
 #else
-#define _gmx_simd4_macros_h_
+#define GMX_SIMD_FOUR_WIDE_MACROS_H
 
 
 /* The SIMD width here is always 4, since that is the whole point */
@@ -468,4 +468,4 @@ gmx_simd4_align_real(const gmx_simd4_real *x)
 #endif
 
 
-#endif /* _gmx_simd4_macros_h_ */
+#endif

@@ -46,7 +46,7 @@
 #include "vec.h"
 #include "nrnb.h"
 
-#include "gmx_math_x86_avx_128_fma_double.h"
+#include "gromacs/simd/math_x86_avx_128_fma_double.h"
 #include "kernelutil_x86_avx_128_fma_double.h"
 
 /*

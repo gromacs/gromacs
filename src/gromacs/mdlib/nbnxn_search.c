@@ -43,10 +43,10 @@
 #include "vec.h"
 #include "pbc.h"
 #include "nbnxn_consts.h"
-/* nbnxn_internal.h included gmx_simd_macros.h */
+/* nbnxn_internal.h included gromacs/simd/macros.h */
 #include "nbnxn_internal.h"
 #ifdef GMX_NBNXN_SIMD
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/vector_operations.h"
 #endif
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"

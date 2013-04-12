@@ -32,7 +32,7 @@
 
 #include <math.h>
 
-#include "gmx_x86_avx_128_fma.h"
+#include "gromacs/simd/general_x86_avx_128_fma.h"
 
 /* Normal sum of four xmm registers */
 #define gmx_mm_sum4_ps(t0, t1, t2, t3)  _mm_add_ps(_mm_add_ps(t0, t1), _mm_add_ps(t2, t3))

@@ -18,25 +18,20 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _gmx_math_x86_avx_128_fma_double_h_
-#define _gmx_math_x86_avx_128_fma_double_h_
+#ifndef GMX_SIMD_MATH_SSE2_DOUBLE_H
+#define GMX_SIMD_MATH_SSE2_DOUBLE_H
 
-#include <immintrin.h> /* AVX */
-#ifdef HAVE_X86INTRIN_H
-#include <x86intrin.h> /* FMA */
-#endif
-#ifdef HAVE_INTRIN_H
-#include <intrin.h> /* FMA MSVC */
-#endif
 
+#include <stdio.h>
 #include <math.h>
 
-#include "gmx_x86_avx_128_fma.h"
+#include "general_x86_sse2.h"
 
 
 #ifndef M_PI
 #  define M_PI 3.14159265358979323846264338327950288
 #endif
+
 
 
 /************************
@@ -55,8 +50,8 @@ gmx_mm_invsqrt_pd(__m128d x)
     /* Lookup instruction only exists in single precision, convert back and forth... */
     __m128d lu = _mm_cvtps_pd(_mm_rsqrt_ps( _mm_cvtpd_ps(x)));
 
-    lu = _mm_mul_pd(_mm_mul_pd(half, lu), _mm_nmacc_pd(_mm_mul_pd(lu, lu), x, three));
-    return _mm_mul_pd(_mm_mul_pd(half, lu), _mm_nmacc_pd(_mm_mul_pd(lu, lu), x, three));
+    lu = _mm_mul_pd(half, _mm_mul_pd(_mm_sub_pd(three, _mm_mul_pd(_mm_mul_pd(lu, lu), x)), lu));
+    return _mm_mul_pd(half, _mm_mul_pd(_mm_sub_pd(three, _mm_mul_pd(_mm_mul_pd(lu, lu), x)), lu));
 }
 
 /* 1.0/sqrt(x), done for a pair of arguments to improve throughput */
@@ -74,16 +69,15 @@ gmx_mm_invsqrt_pair_pd(__m128d x1, __m128d x2, __m128d *invsqrt1, __m128d *invsq
     /* Do first N-R step in float for 2x throughput */
     xf  = _mm_shuffle_ps(_mm_cvtpd_ps(x1), _mm_cvtpd_ps(x2), _MM_SHUFFLE(1, 0, 1, 0));
     luf = _mm_rsqrt_ps(xf);
-
-    luf = _mm_mul_ps(_mm_mul_ps(halff, luf), _mm_nmacc_ps(_mm_mul_ps(luf, luf), xf, threef));
-
+    luf = _mm_mul_ps(halff, _mm_mul_ps(_mm_sub_ps(threef, _mm_mul_ps(_mm_mul_ps(luf, luf), xf)), luf));
 
     lu2 = _mm_cvtps_pd(_mm_shuffle_ps(luf, luf, _MM_SHUFFLE(3, 2, 3, 2)));
     lu1 = _mm_cvtps_pd(luf);
 
-    *invsqrt1 = _mm_mul_pd(_mm_mul_pd(half, lu1), _mm_nmacc_pd(_mm_mul_pd(lu1, lu1), x1, three));
-    *invsqrt2 = _mm_mul_pd(_mm_mul_pd(half, lu2), _mm_nmacc_pd(_mm_mul_pd(lu2, lu2), x2, three));
+    *invsqrt1 = _mm_mul_pd(half, _mm_mul_pd(_mm_sub_pd(three, _mm_mul_pd(_mm_mul_pd(lu1, lu1), x1)), lu1));
+    *invsqrt2 = _mm_mul_pd(half, _mm_mul_pd(_mm_sub_pd(three, _mm_mul_pd(_mm_mul_pd(lu2, lu2), x2)), lu2));
 }
+
 
 /* sqrt(x) - Do NOT use this (but rather invsqrt) if you actually need 1.0/sqrt(x) */
 static gmx_inline __m128d
@@ -110,8 +104,8 @@ gmx_mm_inv_pd(__m128d x)
     __m128d lu = _mm_cvtps_pd(_mm_rcp_ps( _mm_cvtpd_ps(x)));
 
     /* Perform two N-R steps for double precision */
-    lu         = _mm_mul_pd(lu, _mm_nmacc_pd(lu, x, two));
-    return _mm_mul_pd(lu, _mm_nmacc_pd(lu, x, two));
+    lu         = _mm_mul_pd(lu, _mm_sub_pd(two, _mm_mul_pd(x, lu)));
+    return _mm_mul_pd(lu, _mm_sub_pd(two, _mm_mul_pd(x, lu)));
 }
 
 static gmx_inline __m128d
@@ -156,7 +150,7 @@ gmx_mm_exp2_pd(__m128d x)
     __m128d       PolyP, PolyQ;
 
     iexppart  = _mm_cvtpd_epi32(x);
-    intpart   = _mm_round_pd(x, _MM_FROUND_TO_NEAREST_INT);
+    intpart   = _mm_cvtepi32_pd(iexppart);
 
     /* The two lowest elements of iexppart now contains 32-bit numbers with a correctly biased exponent.
      * To be able to shift it into the exponent for a double precision number we first need to
@@ -177,14 +171,17 @@ gmx_mm_exp2_pd(__m128d x)
     z         = _mm_sub_pd(x, intpart);
     z2        = _mm_mul_pd(z, z);
 
-    PolyP     = _mm_macc_pd(P2, z2, P1);
+    PolyP     = _mm_mul_pd(P2, z2);
+    PolyP     = _mm_add_pd(PolyP, P1);
     PolyQ     = _mm_add_pd(z2, Q1);
-    PolyP     = _mm_macc_pd(PolyP, z2, P0);
-    PolyQ     = _mm_macc_pd(PolyQ, z2, Q0);
+    PolyP     = _mm_mul_pd(PolyP, z2);
+    PolyQ     = _mm_mul_pd(PolyQ, z2);
+    PolyP     = _mm_add_pd(PolyP, P0);
+    PolyQ     = _mm_add_pd(PolyQ, Q0);
     PolyP     = _mm_mul_pd(PolyP, z);
 
     z         = _mm_mul_pd(PolyP, gmx_mm_inv_pd(_mm_sub_pd(PolyQ, PolyP)));
-    z         = _mm_macc_pd(two, z, one);
+    z         = _mm_add_pd(one, _mm_mul_pd(two, z));
 
     z         = _mm_mul_pd(z, fexppart);
 
@@ -230,7 +227,7 @@ gmx_mm_exp_pd(__m128d exparg)
     x             = _mm_mul_pd(exparg, argscale);
 
     iexppart  = _mm_cvtpd_epi32(x);
-    intpart   = _mm_round_pd(x, _MM_FROUND_TO_NEAREST_INT);
+    intpart   = _mm_cvtepi32_pd(iexppart);
 
     /* The two lowest elements of iexppart now contains 32-bit numbers with a correctly biased exponent.
      * To be able to shift it into the exponent for a double precision number we first need to
@@ -253,17 +250,21 @@ gmx_mm_exp_pd(__m128d exparg)
 
     z2        = _mm_mul_pd(z, z);
 
-    PolyQ     = _mm_macc_pd(Q3, z2, Q2);
-    PolyP     = _mm_macc_pd(P2, z2, P1);
-    PolyQ     = _mm_macc_pd(PolyQ, z2, Q1);
-
-    PolyP     = _mm_macc_pd(PolyP, z2, one);
-    PolyQ     = _mm_macc_pd(PolyQ, z2, two);
+    PolyQ     = _mm_mul_pd(Q3, z2);
+    PolyQ     = _mm_add_pd(PolyQ, Q2);
+    PolyP     = _mm_mul_pd(P2, z2);
+    PolyQ     = _mm_mul_pd(PolyQ, z2);
+    PolyP     = _mm_add_pd(PolyP, P1);
+    PolyQ     = _mm_add_pd(PolyQ, Q1);
+    PolyP     = _mm_mul_pd(PolyP, z2);
+    PolyQ     = _mm_mul_pd(PolyQ, z2);
+    PolyP     = _mm_add_pd(PolyP, one);
+    PolyQ     = _mm_add_pd(PolyQ, two);
 
     PolyP     = _mm_mul_pd(PolyP, z);
 
     z         = _mm_mul_pd(PolyP, gmx_mm_inv_pd(_mm_sub_pd(PolyQ, PolyP)));
-    z         = _mm_macc_pd(two, z, one);
+    z         = _mm_add_pd(one, _mm_mul_pd(two, z));
 
     z         = _mm_mul_pd(z, fexppart);
 
@@ -337,28 +338,32 @@ gmx_mm_log_pd(__m128d x)
 
     /* If mask1 is set ('A') */
     zA     = _mm_sub_pd(x, half);
-    t1     = _mm_blendv_pd( zA, x, mask2 );
+    t1     = _mm_or_pd( _mm_andnot_pd(mask2, zA), _mm_and_pd(mask2, x) );
     zA     = _mm_sub_pd(t1, half);
-    t2     = _mm_blendv_pd( x, zA, mask2 );
+    t2     = _mm_or_pd( _mm_andnot_pd(mask2, x), _mm_and_pd(mask2, zA) );
     yA     = _mm_mul_pd(half, _mm_add_pd(t2, one));
 
     xA     = _mm_mul_pd(zA, gmx_mm_inv_pd(yA));
     zA     = _mm_mul_pd(xA, xA);
 
     /* EVALUATE POLY */
-    polyR  = _mm_macc_pd(R2, zA, R1);
-    polyR  = _mm_macc_pd(polyR, zA, R0);
+    polyR  = _mm_mul_pd(R2, zA);
+    polyR  = _mm_add_pd(polyR, R1);
+    polyR  = _mm_mul_pd(polyR, zA);
+    polyR  = _mm_add_pd(polyR, R0);
 
     polyS  = _mm_add_pd(zA, S2);
-    polyS  = _mm_macc_pd(polyS, zA, S1);
-    polyS  = _mm_macc_pd(polyS, zA, S0);
+    polyS  = _mm_mul_pd(polyS, zA);
+    polyS  = _mm_add_pd(polyS, S1);
+    polyS  = _mm_mul_pd(polyS, zA);
+    polyS  = _mm_add_pd(polyS, S0);
 
     q      = _mm_mul_pd(polyR, gmx_mm_inv_pd(polyS));
     zA     = _mm_mul_pd(_mm_mul_pd(xA, zA), q);
 
-    zA     = _mm_macc_pd(corr1, fexp, zA);
+    zA     = _mm_add_pd(zA, _mm_mul_pd(corr1, fexp));
     zA     = _mm_add_pd(zA, xA);
-    zA     = _mm_macc_pd(corr2, fexp, zA);
+    zA     = _mm_add_pd(zA, _mm_mul_pd(corr2, fexp));
 
     /* If mask1 is not set ('B') */
     corr   = _mm_and_pd(mask2, x);
@@ -366,28 +371,38 @@ gmx_mm_log_pd(__m128d x)
     xB     = _mm_sub_pd(xB, one);
     zB     = _mm_mul_pd(xB, xB);
 
-    polyP1 = _mm_macc_pd(P5, zB, P3);
-    polyP2 = _mm_macc_pd(P4, zB, P2);
-    polyP1 = _mm_macc_pd(polyP1, zB, P1);
-    polyP2 = _mm_macc_pd(polyP2, zB, P0);
-    polyP1 = _mm_macc_pd(polyP1, xB, polyP2);
+    polyP1 = _mm_mul_pd(P5, zB);
+    polyP2 = _mm_mul_pd(P4, zB);
+    polyP1 = _mm_add_pd(polyP1, P3);
+    polyP2 = _mm_add_pd(polyP2, P2);
+    polyP1 = _mm_mul_pd(polyP1, zB);
+    polyP2 = _mm_mul_pd(polyP2, zB);
+    polyP1 = _mm_add_pd(polyP1, P1);
+    polyP2 = _mm_add_pd(polyP2, P0);
+    polyP1 = _mm_mul_pd(polyP1, xB);
+    polyP1 = _mm_add_pd(polyP1, polyP2);
 
-    polyQ2 = _mm_macc_pd(Q4, zB, Q2);
+    polyQ2 = _mm_mul_pd(Q4, zB);
     polyQ1 = _mm_add_pd(zB, Q3);
-    polyQ1 = _mm_macc_pd(polyQ1, zB, Q1);
-    polyQ2 = _mm_macc_pd(polyQ2, zB, Q0);
-    polyQ1 = _mm_macc_pd(polyQ1, xB, polyQ2);
+    polyQ2 = _mm_add_pd(polyQ2, Q2);
+    polyQ1 = _mm_mul_pd(polyQ1, zB);
+    polyQ2 = _mm_mul_pd(polyQ2, zB);
+    polyQ1 = _mm_add_pd(polyQ1, Q1);
+    polyQ2 = _mm_add_pd(polyQ2, Q0);
+    polyQ1 = _mm_mul_pd(polyQ1, xB);
+    polyQ1 = _mm_add_pd(polyQ1, polyQ2);
 
     fexp   = _mm_and_pd(fexp, _mm_cmpneq_pd(fexp, _mm_setzero_pd()));
 
     q      = _mm_mul_pd(polyP1, gmx_mm_inv_pd(polyQ1));
-    yB     = _mm_macc_pd(_mm_mul_pd(xB, zB), q, _mm_mul_pd(corr1, fexp));
+    yB     = _mm_mul_pd(_mm_mul_pd(xB, zB), q);
 
-    yB     = _mm_nmacc_pd(half, zB, yB);
+    yB     = _mm_add_pd(yB, _mm_mul_pd(corr1, fexp));
+    yB     = _mm_sub_pd(yB, _mm_mul_pd(half, zB));
     zB     = _mm_add_pd(xB, yB);
-    zB     = _mm_macc_pd(corr2, fexp, zB);
+    zB     = _mm_add_pd(zB, _mm_mul_pd(corr2, fexp));
 
-    z      = _mm_blendv_pd( zB, zA, mask1 );
+    z      = _mm_or_pd( _mm_andnot_pd(mask1, zB), _mm_and_pd(mask1, zA) );
 
     return z;
 }
@@ -464,38 +479,61 @@ gmx_mm_erf_pd(__m128d x)
     x2       = _mm_mul_pd(x, x);
     x4       = _mm_mul_pd(x2, x2);
 
-    PolyAP0  = _mm_macc_pd(CAP4, x4, CAP2);
-    PolyAP1  = _mm_macc_pd(CAP3, x4, CAP1);
-    PolyAP0  = _mm_macc_pd(PolyAP0, x4, CAP0);
-    PolyAP0  = _mm_macc_pd(PolyAP1, x2, PolyAP0);
+    PolyAP0  = _mm_mul_pd(CAP4, x4);
+    PolyAP1  = _mm_mul_pd(CAP3, x4);
+    PolyAP0  = _mm_add_pd(PolyAP0, CAP2);
+    PolyAP1  = _mm_add_pd(PolyAP1, CAP1);
+    PolyAP0  = _mm_mul_pd(PolyAP0, x4);
+    PolyAP1  = _mm_mul_pd(PolyAP1, x2);
+    PolyAP0  = _mm_add_pd(PolyAP0, CAP0);
+    PolyAP0  = _mm_add_pd(PolyAP0, PolyAP1);
 
-    PolyAQ1  = _mm_macc_pd(CAQ5, x4, CAQ3);
-    PolyAQ0  = _mm_macc_pd(CAQ4, x4, CAQ2);
-    PolyAQ1  = _mm_macc_pd(PolyAQ1, x4, CAQ1);
-    PolyAQ0  = _mm_macc_pd(PolyAQ0, x4, one);
-    PolyAQ0  = _mm_macc_pd(PolyAQ1, x2, PolyAQ0);
+    PolyAQ1  = _mm_mul_pd(CAQ5, x4);
+    PolyAQ0  = _mm_mul_pd(CAQ4, x4);
+    PolyAQ1  = _mm_add_pd(PolyAQ1, CAQ3);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, CAQ2);
+    PolyAQ1  = _mm_mul_pd(PolyAQ1, x4);
+    PolyAQ0  = _mm_mul_pd(PolyAQ0, x4);
+    PolyAQ1  = _mm_add_pd(PolyAQ1, CAQ1);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, one);
+    PolyAQ1  = _mm_mul_pd(PolyAQ1, x2);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, PolyAQ1);
 
-    res_erf  = _mm_macc_pd(PolyAP0, gmx_mm_inv_pd(PolyAQ0), CAoffset);
+    res_erf  = _mm_mul_pd(PolyAP0, gmx_mm_inv_pd(PolyAQ0));
+    res_erf  = _mm_add_pd(CAoffset, res_erf);
     res_erf  = _mm_mul_pd(x, res_erf);
 
     /* Calculate erfc() in range [1,4.5] */
     t       = _mm_sub_pd(xabs, one);
     t2      = _mm_mul_pd(t, t);
 
-    PolyBP0  = _mm_macc_pd(CBP6, t2, CBP4);
-    PolyBP1  = _mm_macc_pd(CBP5, t2, CBP3);
-    PolyBP0  = _mm_macc_pd(PolyBP0, t2, CBP2);
-    PolyBP1  = _mm_macc_pd(PolyBP1, t2, CBP1);
-    PolyBP0  = _mm_macc_pd(PolyBP0, t2, CBP0);
-    PolyBP0  = _mm_macc_pd(PolyBP1, t, PolyBP0);
+    PolyBP0  = _mm_mul_pd(CBP6, t2);
+    PolyBP1  = _mm_mul_pd(CBP5, t2);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP4);
+    PolyBP1  = _mm_add_pd(PolyBP1, CBP3);
+    PolyBP0  = _mm_mul_pd(PolyBP0, t2);
+    PolyBP1  = _mm_mul_pd(PolyBP1, t2);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP2);
+    PolyBP1  = _mm_add_pd(PolyBP1, CBP1);
+    PolyBP0  = _mm_mul_pd(PolyBP0, t2);
+    PolyBP1  = _mm_mul_pd(PolyBP1, t);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP0);
+    PolyBP0  = _mm_add_pd(PolyBP0, PolyBP1);
 
-    PolyBQ1 = _mm_macc_pd(CBQ7, t2, CBQ5);
-    PolyBQ0 = _mm_macc_pd(CBQ6, t2, CBQ4);
-    PolyBQ1 = _mm_macc_pd(PolyBQ1, t2, CBQ3);
-    PolyBQ0 = _mm_macc_pd(PolyBQ0, t2, CBQ2);
-    PolyBQ1 = _mm_macc_pd(PolyBQ1, t2, CBQ1);
-    PolyBQ0 = _mm_macc_pd(PolyBQ0, t2, one);
-    PolyBQ0 = _mm_macc_pd(PolyBQ1, t, PolyBQ0);
+    PolyBQ1 = _mm_mul_pd(CBQ7, t2);
+    PolyBQ0 = _mm_mul_pd(CBQ6, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ5);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, CBQ4);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t2);
+    PolyBQ0 = _mm_mul_pd(PolyBQ0, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ3);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, CBQ2);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t2);
+    PolyBQ0 = _mm_mul_pd(PolyBQ0, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ1);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, one);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, PolyBQ1);
 
     res_erfcB = _mm_mul_pd(PolyBP0, gmx_mm_inv_pd(PolyBQ0));
 
@@ -505,37 +543,50 @@ gmx_mm_erf_pd(__m128d x)
     w       = gmx_mm_inv_pd(xabs);
     w2      = _mm_mul_pd(w, w);
 
-    PolyCP0  = _mm_macc_pd(CCP6, w2, CCP4);
-    PolyCP1  = _mm_macc_pd(CCP5, w2, CCP3);
-    PolyCP0  = _mm_macc_pd(PolyCP0, w2, CCP2);
-    PolyCP1  = _mm_macc_pd(PolyCP1, w2, CCP1);
-    PolyCP0  = _mm_macc_pd(PolyCP0, w2, CCP0);
-    PolyCP0  = _mm_macc_pd(PolyCP1, w, PolyCP0);
+    PolyCP0  = _mm_mul_pd(CCP6, w2);
+    PolyCP1  = _mm_mul_pd(CCP5, w2);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP4);
+    PolyCP1  = _mm_add_pd(PolyCP1, CCP3);
+    PolyCP0  = _mm_mul_pd(PolyCP0, w2);
+    PolyCP1  = _mm_mul_pd(PolyCP1, w2);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP2);
+    PolyCP1  = _mm_add_pd(PolyCP1, CCP1);
+    PolyCP0  = _mm_mul_pd(PolyCP0, w2);
+    PolyCP1  = _mm_mul_pd(PolyCP1, w);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP0);
+    PolyCP0  = _mm_add_pd(PolyCP0, PolyCP1);
 
-    PolyCQ0  = _mm_macc_pd(CCQ6, w2, CCQ4);
-    PolyCQ1  = _mm_macc_pd(CCQ5, w2, CCQ3);
-    PolyCQ0  = _mm_macc_pd(PolyCQ0, w2, CCQ2);
-    PolyCQ1  = _mm_macc_pd(PolyCQ1, w2, CCQ1);
-    PolyCQ0  = _mm_macc_pd(PolyCQ0, w2, one);
-    PolyCQ0  = _mm_macc_pd(PolyCQ1, w, PolyCQ0);
+    PolyCQ0  = _mm_mul_pd(CCQ6, w2);
+    PolyCQ1  = _mm_mul_pd(CCQ5, w2);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, CCQ4);
+    PolyCQ1  = _mm_add_pd(PolyCQ1, CCQ3);
+    PolyCQ0  = _mm_mul_pd(PolyCQ0, w2);
+    PolyCQ1  = _mm_mul_pd(PolyCQ1, w2);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, CCQ2);
+    PolyCQ1  = _mm_add_pd(PolyCQ1, CCQ1);
+    PolyCQ0  = _mm_mul_pd(PolyCQ0, w2);
+    PolyCQ1  = _mm_mul_pd(PolyCQ1, w);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, one);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, PolyCQ1);
 
     expmx2   = gmx_mm_exp_pd( _mm_or_pd(signbit, x2) );
 
-    res_erfcC = _mm_macc_pd(PolyCP0, gmx_mm_inv_pd(PolyCQ0), CCoffset);
+    res_erfcC = _mm_mul_pd(PolyCP0, gmx_mm_inv_pd(PolyCQ0));
+    res_erfcC = _mm_add_pd(res_erfcC, CCoffset);
     res_erfcC = _mm_mul_pd(res_erfcC, w);
 
     mask     = _mm_cmpgt_pd(xabs, _mm_set1_pd(4.5));
-    res_erfc = _mm_blendv_pd(res_erfcB, res_erfcC, mask);
+    res_erfc = _mm_or_pd(_mm_andnot_pd(mask, res_erfcB), _mm_and_pd(mask, res_erfcC));
 
     res_erfc = _mm_mul_pd(res_erfc, expmx2);
 
     /* erfc(x<0) = 2-erfc(|x|) */
     mask     = _mm_cmplt_pd(x, _mm_setzero_pd());
-    res_erfc = _mm_blendv_pd(res_erfc, _mm_sub_pd(two, res_erfc), mask);
+    res_erfc = _mm_or_pd(_mm_andnot_pd(mask, res_erfc), _mm_and_pd(mask, _mm_sub_pd(two, res_erfc)));
 
     /* Select erf() or erfc() */
     mask = _mm_cmplt_pd(xabs, one);
-    res  = _mm_blendv_pd(_mm_sub_pd(one, res_erfc), res_erf, mask);
+    res  = _mm_or_pd(_mm_andnot_pd(mask, _mm_sub_pd(one, res_erfc)), _mm_and_pd(mask, res_erf));
 
     return res;
 }
@@ -611,38 +662,61 @@ gmx_mm_erfc_pd(__m128d x)
     x2       = _mm_mul_pd(x, x);
     x4       = _mm_mul_pd(x2, x2);
 
-    PolyAP0  = _mm_macc_pd(CAP4, x4, CAP2);
-    PolyAP1  = _mm_macc_pd(CAP3, x4, CAP1);
-    PolyAP0  = _mm_macc_pd(PolyAP0, x4, CAP0);
-    PolyAP0  = _mm_macc_pd(PolyAP1, x2, PolyAP0);
+    PolyAP0  = _mm_mul_pd(CAP4, x4);
+    PolyAP1  = _mm_mul_pd(CAP3, x4);
+    PolyAP0  = _mm_add_pd(PolyAP0, CAP2);
+    PolyAP1  = _mm_add_pd(PolyAP1, CAP1);
+    PolyAP0  = _mm_mul_pd(PolyAP0, x4);
+    PolyAP1  = _mm_mul_pd(PolyAP1, x2);
+    PolyAP0  = _mm_add_pd(PolyAP0, CAP0);
+    PolyAP0  = _mm_add_pd(PolyAP0, PolyAP1);
 
-    PolyAQ1  = _mm_macc_pd(CAQ5, x4, CAQ3);
-    PolyAQ0  = _mm_macc_pd(CAQ4, x4, CAQ2);
-    PolyAQ1  = _mm_macc_pd(PolyAQ1, x4, CAQ1);
-    PolyAQ0  = _mm_macc_pd(PolyAQ0, x4, one);
-    PolyAQ0  = _mm_macc_pd(PolyAQ1, x2, PolyAQ0);
+    PolyAQ1  = _mm_mul_pd(CAQ5, x4);
+    PolyAQ0  = _mm_mul_pd(CAQ4, x4);
+    PolyAQ1  = _mm_add_pd(PolyAQ1, CAQ3);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, CAQ2);
+    PolyAQ1  = _mm_mul_pd(PolyAQ1, x4);
+    PolyAQ0  = _mm_mul_pd(PolyAQ0, x4);
+    PolyAQ1  = _mm_add_pd(PolyAQ1, CAQ1);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, one);
+    PolyAQ1  = _mm_mul_pd(PolyAQ1, x2);
+    PolyAQ0  = _mm_add_pd(PolyAQ0, PolyAQ1);
 
-    res_erf  = _mm_macc_pd(PolyAP0, gmx_mm_inv_pd(PolyAQ0), CAoffset);
+    res_erf  = _mm_mul_pd(PolyAP0, gmx_mm_inv_pd(PolyAQ0));
+    res_erf  = _mm_add_pd(CAoffset, res_erf);
     res_erf  = _mm_mul_pd(x, res_erf);
 
     /* Calculate erfc() in range [1,4.5] */
     t       = _mm_sub_pd(xabs, one);
     t2      = _mm_mul_pd(t, t);
 
-    PolyBP0  = _mm_macc_pd(CBP6, t2, CBP4);
-    PolyBP1  = _mm_macc_pd(CBP5, t2, CBP3);
-    PolyBP0  = _mm_macc_pd(PolyBP0, t2, CBP2);
-    PolyBP1  = _mm_macc_pd(PolyBP1, t2, CBP1);
-    PolyBP0  = _mm_macc_pd(PolyBP0, t2, CBP0);
-    PolyBP0  = _mm_macc_pd(PolyBP1, t, PolyBP0);
+    PolyBP0  = _mm_mul_pd(CBP6, t2);
+    PolyBP1  = _mm_mul_pd(CBP5, t2);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP4);
+    PolyBP1  = _mm_add_pd(PolyBP1, CBP3);
+    PolyBP0  = _mm_mul_pd(PolyBP0, t2);
+    PolyBP1  = _mm_mul_pd(PolyBP1, t2);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP2);
+    PolyBP1  = _mm_add_pd(PolyBP1, CBP1);
+    PolyBP0  = _mm_mul_pd(PolyBP0, t2);
+    PolyBP1  = _mm_mul_pd(PolyBP1, t);
+    PolyBP0  = _mm_add_pd(PolyBP0, CBP0);
+    PolyBP0  = _mm_add_pd(PolyBP0, PolyBP1);
 
-    PolyBQ1 = _mm_macc_pd(CBQ7, t2, CBQ5);
-    PolyBQ0 = _mm_macc_pd(CBQ6, t2, CBQ4);
-    PolyBQ1 = _mm_macc_pd(PolyBQ1, t2, CBQ3);
-    PolyBQ0 = _mm_macc_pd(PolyBQ0, t2, CBQ2);
-    PolyBQ1 = _mm_macc_pd(PolyBQ1, t2, CBQ1);
-    PolyBQ0 = _mm_macc_pd(PolyBQ0, t2, one);
-    PolyBQ0 = _mm_macc_pd(PolyBQ1, t, PolyBQ0);
+    PolyBQ1 = _mm_mul_pd(CBQ7, t2);
+    PolyBQ0 = _mm_mul_pd(CBQ6, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ5);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, CBQ4);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t2);
+    PolyBQ0 = _mm_mul_pd(PolyBQ0, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ3);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, CBQ2);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t2);
+    PolyBQ0 = _mm_mul_pd(PolyBQ0, t2);
+    PolyBQ1 = _mm_add_pd(PolyBQ1, CBQ1);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, one);
+    PolyBQ1 = _mm_mul_pd(PolyBQ1, t);
+    PolyBQ0 = _mm_add_pd(PolyBQ0, PolyBQ1);
 
     res_erfcB = _mm_mul_pd(PolyBP0, gmx_mm_inv_pd(PolyBQ0));
 
@@ -652,41 +726,53 @@ gmx_mm_erfc_pd(__m128d x)
     w       = gmx_mm_inv_pd(xabs);
     w2      = _mm_mul_pd(w, w);
 
-    PolyCP0  = _mm_macc_pd(CCP6, w2, CCP4);
-    PolyCP1  = _mm_macc_pd(CCP5, w2, CCP3);
-    PolyCP0  = _mm_macc_pd(PolyCP0, w2, CCP2);
-    PolyCP1  = _mm_macc_pd(PolyCP1, w2, CCP1);
-    PolyCP0  = _mm_macc_pd(PolyCP0, w2, CCP0);
-    PolyCP0  = _mm_macc_pd(PolyCP1, w, PolyCP0);
+    PolyCP0  = _mm_mul_pd(CCP6, w2);
+    PolyCP1  = _mm_mul_pd(CCP5, w2);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP4);
+    PolyCP1  = _mm_add_pd(PolyCP1, CCP3);
+    PolyCP0  = _mm_mul_pd(PolyCP0, w2);
+    PolyCP1  = _mm_mul_pd(PolyCP1, w2);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP2);
+    PolyCP1  = _mm_add_pd(PolyCP1, CCP1);
+    PolyCP0  = _mm_mul_pd(PolyCP0, w2);
+    PolyCP1  = _mm_mul_pd(PolyCP1, w);
+    PolyCP0  = _mm_add_pd(PolyCP0, CCP0);
+    PolyCP0  = _mm_add_pd(PolyCP0, PolyCP1);
 
-    PolyCQ0  = _mm_macc_pd(CCQ6, w2, CCQ4);
-    PolyCQ1  = _mm_macc_pd(CCQ5, w2, CCQ3);
-    PolyCQ0  = _mm_macc_pd(PolyCQ0, w2, CCQ2);
-    PolyCQ1  = _mm_macc_pd(PolyCQ1, w2, CCQ1);
-    PolyCQ0  = _mm_macc_pd(PolyCQ0, w2, one);
-    PolyCQ0  = _mm_macc_pd(PolyCQ1, w, PolyCQ0);
+    PolyCQ0  = _mm_mul_pd(CCQ6, w2);
+    PolyCQ1  = _mm_mul_pd(CCQ5, w2);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, CCQ4);
+    PolyCQ1  = _mm_add_pd(PolyCQ1, CCQ3);
+    PolyCQ0  = _mm_mul_pd(PolyCQ0, w2);
+    PolyCQ1  = _mm_mul_pd(PolyCQ1, w2);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, CCQ2);
+    PolyCQ1  = _mm_add_pd(PolyCQ1, CCQ1);
+    PolyCQ0  = _mm_mul_pd(PolyCQ0, w2);
+    PolyCQ1  = _mm_mul_pd(PolyCQ1, w);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, one);
+    PolyCQ0  = _mm_add_pd(PolyCQ0, PolyCQ1);
 
     expmx2   = gmx_mm_exp_pd( _mm_or_pd(signbit, x2) );
 
-    res_erfcC = _mm_macc_pd(PolyCP0, gmx_mm_inv_pd(PolyCQ0), CCoffset);
+    res_erfcC = _mm_mul_pd(PolyCP0, gmx_mm_inv_pd(PolyCQ0));
+    res_erfcC = _mm_add_pd(res_erfcC, CCoffset);
     res_erfcC = _mm_mul_pd(res_erfcC, w);
 
     mask     = _mm_cmpgt_pd(xabs, _mm_set1_pd(4.5));
-    res_erfc = _mm_blendv_pd(res_erfcB, res_erfcC, mask);
+    res_erfc = _mm_or_pd(_mm_andnot_pd(mask, res_erfcB), _mm_and_pd(mask, res_erfcC));
 
     res_erfc = _mm_mul_pd(res_erfc, expmx2);
 
     /* erfc(x<0) = 2-erfc(|x|) */
     mask     = _mm_cmplt_pd(x, _mm_setzero_pd());
-    res_erfc = _mm_blendv_pd(res_erfc, _mm_sub_pd(two, res_erfc), mask);
+    res_erfc = _mm_or_pd(_mm_andnot_pd(mask, res_erfc), _mm_and_pd(mask, _mm_sub_pd(two, res_erfc)));
 
     /* Select erf() or erfc() */
     mask = _mm_cmplt_pd(xabs, one);
-    res  = _mm_blendv_pd(res_erfc, _mm_sub_pd(one, res_erf), mask);
+    res  = _mm_or_pd(_mm_andnot_pd(mask, res_erfc), _mm_and_pd(mask, _mm_sub_pd(one, res_erf)));
 
     return res;
 }
-
 
 
 /* Calculate the force correction due to PME analytically.
@@ -784,31 +870,49 @@ gmx_mm_pmecorrF_pd(__m128d z2)
 
     z4             = _mm_mul_pd(z2, z2);
 
-    polyFD1        = _mm_macc_pd(FD5, z4, FD3);
-    polyFD1        = _mm_macc_pd(polyFD1, z4, FD1);
+    polyFD1        = _mm_mul_pd(FD5, z4);
+    polyFD0        = _mm_mul_pd(FD4, z4);
+    polyFD1        = _mm_add_pd(polyFD1, FD3);
+    polyFD0        = _mm_add_pd(polyFD0, FD2);
+    polyFD1        = _mm_mul_pd(polyFD1, z4);
+    polyFD0        = _mm_mul_pd(polyFD0, z4);
+    polyFD1        = _mm_add_pd(polyFD1, FD1);
+    polyFD0        = _mm_add_pd(polyFD0, FD0);
     polyFD1        = _mm_mul_pd(polyFD1, z2);
-    polyFD0        = _mm_macc_pd(FD4, z4, FD2);
-    polyFD0        = _mm_macc_pd(polyFD0, z4, FD0);
     polyFD0        = _mm_add_pd(polyFD0, polyFD1);
 
     polyFD0        = gmx_mm_inv_pd(polyFD0);
 
-    polyFN0        = _mm_macc_pd(FN10, z4, FN8);
-    polyFN0        = _mm_macc_pd(polyFN0, z4, FN6);
-    polyFN0        = _mm_macc_pd(polyFN0, z4, FN4);
-    polyFN0        = _mm_macc_pd(polyFN0, z4, FN2);
-    polyFN0        = _mm_macc_pd(polyFN0, z4, FN0);
-    polyFN1        = _mm_macc_pd(FN9, z4, FN7);
-    polyFN1        = _mm_macc_pd(polyFN1, z4, FN5);
-    polyFN1        = _mm_macc_pd(polyFN1, z4, FN3);
-    polyFN1        = _mm_macc_pd(polyFN1, z4, FN1);
-    polyFN0        = _mm_macc_pd(polyFN1, z2, polyFN0);
+    polyFN0        = _mm_mul_pd(FN10, z4);
+    polyFN1        = _mm_mul_pd(FN9, z4);
+    polyFN0        = _mm_add_pd(polyFN0, FN8);
+    polyFN1        = _mm_add_pd(polyFN1, FN7);
+    polyFN0        = _mm_mul_pd(polyFN0, z4);
+    polyFN1        = _mm_mul_pd(polyFN1, z4);
+    polyFN0        = _mm_add_pd(polyFN0, FN6);
+    polyFN1        = _mm_add_pd(polyFN1, FN5);
+    polyFN0        = _mm_mul_pd(polyFN0, z4);
+    polyFN1        = _mm_mul_pd(polyFN1, z4);
+    polyFN0        = _mm_add_pd(polyFN0, FN4);
+    polyFN1        = _mm_add_pd(polyFN1, FN3);
+    polyFN0        = _mm_mul_pd(polyFN0, z4);
+    polyFN1        = _mm_mul_pd(polyFN1, z4);
+    polyFN0        = _mm_add_pd(polyFN0, FN2);
+    polyFN1        = _mm_add_pd(polyFN1, FN1);
+    polyFN0        = _mm_mul_pd(polyFN0, z4);
+    polyFN1        = _mm_mul_pd(polyFN1, z2);
+    polyFN0        = _mm_add_pd(polyFN0, FN0);
+    polyFN0        = _mm_add_pd(polyFN0, polyFN1);
 
     return _mm_mul_pd(polyFN0, polyFD0);
 }
 
 
+
+
 /* Calculate the potential correction due to PME analytically.
+ *
+ * See gmx_mm256_pmecorrF_ps() for details about the approximation.
  *
  * This routine calculates Erf(z)/z, although you should provide z^2
  * as the input argument.
@@ -861,26 +965,41 @@ gmx_mm_pmecorrV_pd(__m128d z2)
 
     z4             = _mm_mul_pd(z2, z2);
 
-    polyVD1        = _mm_macc_pd(VD5, z4, VD3);
-    polyVD0        = _mm_macc_pd(VD4, z4, VD2);
-    polyVD1        = _mm_macc_pd(polyVD1, z4, VD1);
-    polyVD0        = _mm_macc_pd(polyVD0, z4, VD0);
-    polyVD0        = _mm_macc_pd(polyVD1, z2, polyVD0);
+    polyVD1        = _mm_mul_pd(VD5, z4);
+    polyVD0        = _mm_mul_pd(VD4, z4);
+    polyVD1        = _mm_add_pd(polyVD1, VD3);
+    polyVD0        = _mm_add_pd(polyVD0, VD2);
+    polyVD1        = _mm_mul_pd(polyVD1, z4);
+    polyVD0        = _mm_mul_pd(polyVD0, z4);
+    polyVD1        = _mm_add_pd(polyVD1, VD1);
+    polyVD0        = _mm_add_pd(polyVD0, VD0);
+    polyVD1        = _mm_mul_pd(polyVD1, z2);
+    polyVD0        = _mm_add_pd(polyVD0, polyVD1);
 
     polyVD0        = gmx_mm_inv_pd(polyVD0);
 
-    polyVN1        = _mm_macc_pd(VN9, z4, VN7);
-    polyVN0        = _mm_macc_pd(VN8, z4, VN6);
-    polyVN1        = _mm_macc_pd(polyVN1, z4, VN5);
-    polyVN0        = _mm_macc_pd(polyVN0, z4, VN4);
-    polyVN1        = _mm_macc_pd(polyVN1, z4, VN3);
-    polyVN0        = _mm_macc_pd(polyVN0, z4, VN2);
-    polyVN1        = _mm_macc_pd(polyVN1, z4, VN1);
-    polyVN0        = _mm_macc_pd(polyVN0, z4, VN0);
-    polyVN0        = _mm_macc_pd(polyVN1, z2, polyVN0);
+    polyVN1        = _mm_mul_pd(VN9, z4);
+    polyVN0        = _mm_mul_pd(VN8, z4);
+    polyVN1        = _mm_add_pd(polyVN1, VN7);
+    polyVN0        = _mm_add_pd(polyVN0, VN6);
+    polyVN1        = _mm_mul_pd(polyVN1, z4);
+    polyVN0        = _mm_mul_pd(polyVN0, z4);
+    polyVN1        = _mm_add_pd(polyVN1, VN5);
+    polyVN0        = _mm_add_pd(polyVN0, VN4);
+    polyVN1        = _mm_mul_pd(polyVN1, z4);
+    polyVN0        = _mm_mul_pd(polyVN0, z4);
+    polyVN1        = _mm_add_pd(polyVN1, VN3);
+    polyVN0        = _mm_add_pd(polyVN0, VN2);
+    polyVN1        = _mm_mul_pd(polyVN1, z4);
+    polyVN0        = _mm_mul_pd(polyVN0, z4);
+    polyVN1        = _mm_add_pd(polyVN1, VN1);
+    polyVN0        = _mm_add_pd(polyVN0, VN0);
+    polyVN1        = _mm_mul_pd(polyVN1, z2);
+    polyVN0        = _mm_add_pd(polyVN0, polyVN1);
 
     return _mm_mul_pd(polyVN0, polyVD0);
 }
+
 
 
 static int
@@ -934,7 +1053,6 @@ gmx_mm_sincos_pd(__m128d  x,
 #endif
 
     const __m128d signmask       = gmx_mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF) );
-    const __m128i signbit_epi32  = _mm_set1_epi32(0x80000000);
 
     const __m128d tabscale      = _mm_set1_pd(32.0/M_PI);
     const __m128d invtabscale0  = _mm_set1_pd(9.81747508049011230469e-02);
@@ -962,7 +1080,6 @@ gmx_mm_sincos_pd(__m128d  x,
     __m128d       sinpoint, cospoint;
     __m128d       xsign, ssign, csign;
     __m128i       imask, sswapsign, cswapsign;
-    __m128d       minusone;
 
     xsign    = _mm_andnot_pd(signmask, x);
     xabs     = _mm_and_pd(x, signmask);
@@ -970,11 +1087,11 @@ gmx_mm_sincos_pd(__m128d  x,
     scalex   = _mm_mul_pd(tabscale, xabs);
     tabidx   = _mm_cvtpd_epi32(scalex);
 
-    xpoint   = _mm_round_pd(scalex, _MM_FROUND_TO_NEAREST_INT);
+    xpoint   = _mm_cvtepi32_pd(tabidx);
 
     /* Extended precision arithmetics */
-    z        = _mm_nmacc_pd(invtabscale0, xpoint, xabs);
-    z        = _mm_nmacc_pd(invtabscale1, xpoint, z);
+    z        = _mm_sub_pd(xabs, _mm_mul_pd(invtabscale0, xpoint));
+    z        = _mm_sub_pd(z, _mm_mul_pd(invtabscale1, xpoint));
 
     /* Range reduction to 0..2*Pi */
     tabidx   = _mm_and_si128(tabidx, tabmask);
@@ -990,17 +1107,17 @@ gmx_mm_sincos_pd(__m128d  x,
     imask     = _mm_cmpgt_epi32(tabidx, i16);
     cswapsign = _mm_xor_si128(cswapsign, imask);
     corridx   = _mm_sub_epi32(i32, tabidx);
-    tabidx    = _mm_blendv_epi8(tabidx, corridx, imask);
+    tabidx    = _mm_or_si128( _mm_and_si128(imask, corridx), _mm_andnot_si128(imask, tabidx) );
     /* tabidx is now in range [0..16] */
     ssign     = _mm_cvtepi32_pd( _mm_or_si128( sswapsign, ione ) );
     csign     = _mm_cvtepi32_pd( _mm_or_si128( cswapsign, ione ) );
 
 #ifdef _MSC_VER
-    ypoint0  = _mm_load_pd(sintable + 2*_mm_extract_epi32(tabidx, 0));
-    ypoint1  = _mm_load_pd(sintable + 2*_mm_extract_epi32(tabidx, 1));
+    ypoint0  = _mm_load_pd(sintable + 2*gmx_mm_extract_epi32(tabidx, 0));
+    ypoint1  = _mm_load_pd(sintable + 2*gmx_mm_extract_epi32(tabidx, 1));
 #else
-    ypoint0  = sintable[_mm_extract_epi32(tabidx, 0)];
-    ypoint1  = sintable[_mm_extract_epi32(tabidx, 1)];
+    ypoint0  = sintable[gmx_mm_extract_epi32(tabidx, 0)];
+    ypoint1  = sintable[gmx_mm_extract_epi32(tabidx, 1)];
 #endif
     sinpoint = _mm_unpackhi_pd(ypoint0, ypoint1);
     cospoint = _mm_unpacklo_pd(ypoint0, ypoint1);
@@ -1010,14 +1127,20 @@ gmx_mm_sincos_pd(__m128d  x,
 
     z2       = _mm_mul_pd(z, z);
 
-    polySin  = _mm_macc_pd(sinP7, z2, sinP5);
-    polySin  = _mm_macc_pd(polySin, z2, sinP3);
-    polySin  = _mm_macc_pd(polySin, z2, sinP1);
+    polySin  = _mm_mul_pd(sinP7, z2);
+    polySin  = _mm_add_pd(polySin, sinP5);
+    polySin  = _mm_mul_pd(polySin, z2);
+    polySin  = _mm_add_pd(polySin, sinP3);
+    polySin  = _mm_mul_pd(polySin, z2);
+    polySin  = _mm_add_pd(polySin, sinP1);
     polySin  = _mm_mul_pd(polySin, z);
 
-    polyCos  = _mm_macc_pd(cosP6, z2, cosP4);
-    polyCos  = _mm_macc_pd(polyCos, z2, cosP2);
-    polyCos  = _mm_macc_pd(polyCos, z2, cosP0);
+    polyCos  = _mm_mul_pd(cosP6, z2);
+    polyCos  = _mm_add_pd(polyCos, cosP4);
+    polyCos  = _mm_mul_pd(polyCos, z2);
+    polyCos  = _mm_add_pd(polyCos, cosP2);
+    polyCos  = _mm_mul_pd(polyCos, z2);
+    polyCos  = _mm_add_pd(polyCos, cosP0);
 
     *sinval  = _mm_xor_pd(_mm_add_pd( _mm_mul_pd(sinpoint, polyCos), _mm_mul_pd(cospoint, polySin) ), xsign);
     *cosval  = _mm_sub_pd( _mm_mul_pd(cospoint, polyCos), _mm_mul_pd(sinpoint, polySin) );
@@ -1074,7 +1197,6 @@ gmx_mm_asin_pd(__m128d x)
     const __m128d limit1    = _mm_set1_pd(0.625);
     const __m128d limit2    = _mm_set1_pd(1e-8);
     const __m128d one       = _mm_set1_pd(1.0);
-    const __m128d halfpi    = _mm_set1_pd(M_PI/2.0);
     const __m128d quarterpi = _mm_set1_pd(M_PI/4.0);
     const __m128d morebits  = _mm_set1_pd(6.123233995736765886130e-17);
 
@@ -1105,7 +1227,7 @@ gmx_mm_asin_pd(__m128d x)
     __m128d       sign;
     __m128d       mask;
     __m128d       xabs;
-    __m128d       zz, ww, z, q, w, y, zz2, ww2;
+    __m128d       zz, ww, z, q, w, zz2, ww2;
     __m128d       PA, PB;
     __m128d       QA, QB;
     __m128d       RA, RB;
@@ -1123,36 +1245,52 @@ gmx_mm_asin_pd(__m128d x)
     ww2   = _mm_mul_pd(ww, ww);
 
     /* R */
-    RA    = _mm_macc_pd(R4, zz2, R2);
-    RB    = _mm_macc_pd(R3, zz2, R1);
-    RA    = _mm_macc_pd(RA, zz2, R0);
-    RA    = _mm_macc_pd(RB, zz, RA);
+    RA    = _mm_mul_pd(R4, zz2);
+    RB    = _mm_mul_pd(R3, zz2);
+    RA    = _mm_add_pd(RA, R2);
+    RB    = _mm_add_pd(RB, R1);
+    RA    = _mm_mul_pd(RA, zz2);
+    RB    = _mm_mul_pd(RB, zz);
+    RA    = _mm_add_pd(RA, R0);
+    RA    = _mm_add_pd(RA, RB);
 
     /* S, SA = zz2 */
-    SB    = _mm_macc_pd(S3, zz2, S1);
+    SB    = _mm_mul_pd(S3, zz2);
     SA    = _mm_add_pd(zz2, S2);
-    SA    = _mm_macc_pd(SA, zz2, S0);
-    SA    = _mm_macc_pd(SB, zz, SA);
+    SB    = _mm_add_pd(SB, S1);
+    SA    = _mm_mul_pd(SA, zz2);
+    SB    = _mm_mul_pd(SB, zz);
+    SA    = _mm_add_pd(SA, S0);
+    SA    = _mm_add_pd(SA, SB);
 
     /* P */
-    PA    = _mm_macc_pd(P5, ww2, P3);
-    PB    = _mm_macc_pd(P4, ww2, P2);
-    PA    = _mm_macc_pd(PA, ww2, P1);
-    PB    = _mm_macc_pd(PB, ww2, P0);
-    PA    = _mm_macc_pd(PA, ww, PB);
+    PA    = _mm_mul_pd(P5, ww2);
+    PB    = _mm_mul_pd(P4, ww2);
+    PA    = _mm_add_pd(PA, P3);
+    PB    = _mm_add_pd(PB, P2);
+    PA    = _mm_mul_pd(PA, ww2);
+    PB    = _mm_mul_pd(PB, ww2);
+    PA    = _mm_add_pd(PA, P1);
+    PB    = _mm_add_pd(PB, P0);
+    PA    = _mm_mul_pd(PA, ww);
+    PA    = _mm_add_pd(PA, PB);
 
     /* Q, QA = ww2 */
-    QB    = _mm_macc_pd(Q4, ww2, Q2);
+    QB    = _mm_mul_pd(Q4, ww2);
     QA    = _mm_add_pd(ww2, Q3);
-    QA    = _mm_macc_pd(QA, ww2, Q1);
-    QB    = _mm_macc_pd(QB, ww2, Q0);
-    QA    = _mm_macc_pd(QA, ww, QB);
+    QB    = _mm_add_pd(QB, Q2);
+    QA    = _mm_mul_pd(QA, ww2);
+    QB    = _mm_mul_pd(QB, ww2);
+    QA    = _mm_add_pd(QA, Q1);
+    QB    = _mm_add_pd(QB, Q0);
+    QA    = _mm_mul_pd(QA, ww);
+    QA    = _mm_add_pd(QA, QB);
 
     RA    = _mm_mul_pd(RA, zz);
     PA    = _mm_mul_pd(PA, ww);
 
-    nom   = _mm_blendv_pd( PA, RA, mask );
-    denom = _mm_blendv_pd( QA, SA, mask );
+    nom   = _mm_or_pd( _mm_andnot_pd(mask, PA), _mm_and_pd(mask, RA) );
+    denom = _mm_or_pd( _mm_andnot_pd(mask, QA), _mm_and_pd(mask, SA) );
 
     q     = _mm_mul_pd( nom, gmx_mm_inv_pd(denom) );
 
@@ -1164,12 +1302,13 @@ gmx_mm_asin_pd(__m128d x)
     z     = _mm_sub_pd(z, zz);
     z     = _mm_add_pd(z, quarterpi);
 
-    w     = _mm_macc_pd(xabs, q, xabs);
+    w     = _mm_mul_pd(xabs, q);
+    w     = _mm_add_pd(w, xabs);
 
-    z     = _mm_blendv_pd( w, z, mask );
+    z     = _mm_or_pd( _mm_andnot_pd(mask, w), _mm_and_pd(mask, z) );
 
     mask  = _mm_cmpgt_pd(xabs, limit2);
-    z     = _mm_blendv_pd( xabs, z, mask );
+    z     = _mm_or_pd( _mm_andnot_pd(mask, xabs), _mm_and_pd(mask, z) );
 
     z = _mm_xor_pd(z, sign);
 
@@ -1180,10 +1319,8 @@ gmx_mm_asin_pd(__m128d x)
 static __m128d
 gmx_mm_acos_pd(__m128d x)
 {
-    const __m128d signmask   = gmx_mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF) );
     const __m128d one        = _mm_set1_pd(1.0);
     const __m128d half       = _mm_set1_pd(0.5);
-    const __m128d pi         = _mm_set1_pd(M_PI);
     const __m128d quarterpi0 = _mm_set1_pd(7.85398163397448309616e-1);
     const __m128d quarterpi1 = _mm_set1_pd(6.123233995736765886130e-17);
 
@@ -1195,7 +1332,7 @@ gmx_mm_acos_pd(__m128d x)
     mask1 = _mm_cmpgt_pd(x, half);
     z1    = _mm_mul_pd(half, _mm_sub_pd(one, x));
     z1    = gmx_mm_sqrt_pd(z1);
-    z     = _mm_blendv_pd( x, z1, mask1 );
+    z     = _mm_or_pd( _mm_andnot_pd(mask1, x), _mm_and_pd(mask1, z1) );
 
     z     = gmx_mm_asin_pd(z);
 
@@ -1205,7 +1342,7 @@ gmx_mm_acos_pd(__m128d x)
     z2    = _mm_add_pd(z2, quarterpi1);
     z2    = _mm_add_pd(z2, quarterpi0);
 
-    z     = _mm_blendv_pd(z2, z1, mask1);
+    z     = _mm_or_pd(_mm_andnot_pd(mask1, z2), _mm_and_pd(mask1, z1));
 
     return z;
 }
@@ -1259,21 +1396,30 @@ gmx_mm_atan_pd(__m128d x)
     z      = _mm_mul_pd(x, x);
     z2     = _mm_mul_pd(z, z);
 
-    P_A    = _mm_macc_pd(P4, z2, P2);
-    P_B    = _mm_macc_pd(P3, z2, P1);
-    P_A    = _mm_macc_pd(P_A, z2, P0);
-    P_A    = _mm_macc_pd(P_B, z, P_A);
+    P_A    = _mm_mul_pd(P4, z2);
+    P_B    = _mm_mul_pd(P3, z2);
+    P_A    = _mm_add_pd(P_A, P2);
+    P_B    = _mm_add_pd(P_B, P1);
+    P_A    = _mm_mul_pd(P_A, z2);
+    P_B    = _mm_mul_pd(P_B, z);
+    P_A    = _mm_add_pd(P_A, P0);
+    P_A    = _mm_add_pd(P_A, P_B);
 
     /* Q_A = z2 */
-    Q_B    = _mm_macc_pd(Q4, z2, Q2);
+    Q_B    = _mm_mul_pd(Q4, z2);
     Q_A    = _mm_add_pd(z2, Q3);
-    Q_A    = _mm_macc_pd(Q_A, z2, Q1);
-    Q_B    = _mm_macc_pd(Q_B, z2, Q0);
-    Q_A    = _mm_macc_pd(Q_A, z, Q_B);
+    Q_B    = _mm_add_pd(Q_B, Q2);
+    Q_A    = _mm_mul_pd(Q_A, z2);
+    Q_B    = _mm_mul_pd(Q_B, z2);
+    Q_A    = _mm_add_pd(Q_A, Q1);
+    Q_B    = _mm_add_pd(Q_B, Q0);
+    Q_A    = _mm_mul_pd(Q_A, z);
+    Q_A    = _mm_add_pd(Q_A, Q_B);
 
     z      = _mm_mul_pd(z, P_A);
     z      = _mm_mul_pd(z, gmx_mm_inv_pd(Q_A));
-    z      = _mm_macc_pd(z, x, x);
+    z      = _mm_mul_pd(z, x);
+    z      = _mm_add_pd(z, x);
 
     t1     = _mm_and_pd(mask1, morebits1);
     t1     = _mm_or_pd( _mm_and_pd(mask2, morebits2), _mm_andnot_pd(mask2, t1) );
@@ -1323,7 +1469,7 @@ gmx_mm_atan2_pd(__m128d y, __m128d x)
 
     z         = _mm_or_pd( _mm_or_pd(z, z1), _mm_or_pd(z3, z4) );
 
-    w         = _mm_blendv_pd(pi, minuspi, masky_lt);
+    w         = _mm_or_pd(_mm_andnot_pd(masky_lt, pi), _mm_and_pd(masky_lt, minuspi));
     w         = _mm_and_pd(w, maskx_lt);
 
     w         = _mm_andnot_pd(maskall, w);
@@ -1333,4 +1479,4 @@ gmx_mm_atan2_pd(__m128d y, __m128d x)
     return z;
 }
 
-#endif /*_gmx_math_x86_avx_128_fma_double_h_ */
+#endif
