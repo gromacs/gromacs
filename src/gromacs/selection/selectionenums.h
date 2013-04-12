@@ -71,6 +71,8 @@ enum SelectionFlag
     efSelection_OnlyAtoms               = 1<<1,
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
     efSelection_DynamicMask             = 1<<2,
+    //! If set, unconditionally empty selections result in compilation errors.
+    efSelection_DisallowEmpty           = 1<<3,
     //! Whether velocities of output positions should be evaluated.
     efSelection_EvaluateVelocities      = 1<<5,
     //! Whether forces on output positions should be evaluated.

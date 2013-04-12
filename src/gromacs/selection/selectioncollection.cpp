@@ -624,6 +624,16 @@ SelectionCollection::compile()
                 GMX_THROW(InvalidInputError(message));
             }
         }
+        if (sel.hasFlag(efSelection_DisallowEmpty))
+        {
+            if (sel.posCount() == 0)
+            {
+                std::string message = formatString(
+                            "Selection '%s' never matches any atoms.",
+                            sel.selectionText());
+                GMX_THROW(InvalidInputError(message));
+            }
+        }
     }
 }
 
