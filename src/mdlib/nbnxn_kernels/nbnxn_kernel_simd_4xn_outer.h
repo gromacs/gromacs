@@ -35,15 +35,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
-
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
 #define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
@@ -212,19 +203,19 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
     __m256d    fix_S, fiy_S, fiz_S;
 #endif
 #else
-    __m128d    fix0_S, fiy0_S, fiz0_S;
-    __m128d    fix2_S, fiy2_S, fiz2_S;
+    gmx_mm_pr  fix0_S, fiy0_S, fiz0_S;
+    gmx_mm_pr  fix2_S, fiy2_S, fiz2_S;
 #endif
 
     gmx_mm_pr diag_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_mm_pr diag_S0, diag_S1, diag_S2, diag_S3;
+    gmx_mm_pb diag_S0, diag_S1, diag_S2, diag_S3;
 #else
-    gmx_mm_pr diag0_S0, diag0_S1, diag0_S2, diag0_S3;
-    gmx_mm_pr diag1_S0, diag1_S1, diag1_S2, diag1_S3;
+    gmx_mm_pb diag0_S0, diag0_S1, diag0_S2, diag0_S3;
+    gmx_mm_pb diag1_S0, diag1_S1, diag1_S2, diag1_S3;
 #endif
 
-#ifdef gmx_checkbitmask_epi32
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
     gmx_epi32 mask_S0, mask_S1, mask_S2, mask_S3;
 #else
     gmx_mm_pr mask_S0, mask_S1, mask_S2, mask_S3;
@@ -249,7 +240,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#if GMX_SIMD_WIDTH_HERE >= 8 || (defined GMX_DOUBLE && GMX_SIMD_WIDTH_HERE >= 4)
+#define STORE_TABLE_INDICES
+#endif
+#ifdef STORE_TABLE_INDICES
     int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0;
     int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1;
     int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2;
@@ -373,7 +367,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #endif
 
     /* Load masks for topology exclusion masking */
-#ifdef gmx_checkbitmask_epi32
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
     mask_S0    = gmx_load_si(nbat->simd_excl_mask + 0*GMX_NBNXN_SIMD_BITWIDTH/32);
     mask_S1    = gmx_load_si(nbat->simd_excl_mask + 1*GMX_NBNXN_SIMD_BITWIDTH/32);
     mask_S2    = gmx_load_si(nbat->simd_excl_mask + 2*GMX_NBNXN_SIMD_BITWIDTH/32);
@@ -386,7 +380,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #endif
 
 #ifdef CALC_COUL_TAB
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#ifdef STORE_TABLE_INDICES
     /* Generate aligned table index pointers */
     ti0 = gmx_simd_align_int(ti0_array);
     ti1 = gmx_simd_align_int(ti1_array);
@@ -748,27 +742,27 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
         fshift[ish3+2] += SUM_SIMD4(shf);
 #endif
 #else
-        GMX_MM_TRANSPOSE_SUM2_PD(fix_S0, fix_S1, fix0_S);
-        _mm_store_pd(f+scix, _mm_add_pd(fix0_S, _mm_load_pd(f+scix)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fix_S2, fix_S3, fix2_S);
-        _mm_store_pd(f+scix+2, _mm_add_pd(fix2_S, _mm_load_pd(f+scix+2)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fix_S0, fix_S1, fix0_S);
+        gmx_store_pr(f+scix, gmx_add_pr(fix0_S, gmx_load_pr(f+scix)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fix_S2, fix_S3, fix2_S);
+        gmx_store_pr(f+scix+2, gmx_add_pr(fix2_S, gmx_load_pr(f+scix+2)));
 
-        GMX_MM_TRANSPOSE_SUM2_PD(fiy_S0, fiy_S1, fiy0_S);
-        _mm_store_pd(f+sciy, _mm_add_pd(fiy0_S, _mm_load_pd(f+sciy)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fiy_S2, fiy_S3, fiy2_S);
-        _mm_store_pd(f+sciy+2, _mm_add_pd(fiy2_S, _mm_load_pd(f+sciy+2)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fiy_S0, fiy_S1, fiy0_S);
+        gmx_store_pr(f+sciy, gmx_add_pr(fiy0_S, gmx_load_pr(f+sciy)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fiy_S2, fiy_S3, fiy2_S);
+        gmx_store_pr(f+sciy+2, gmx_add_pr(fiy2_S, gmx_load_pr(f+sciy+2)));
 
-        GMX_MM_TRANSPOSE_SUM2_PD(fiz_S0, fiz_S1, fiz0_S);
-        _mm_store_pd(f+sciz, _mm_add_pd(fiz0_S, _mm_load_pd(f+sciz)));
-        GMX_MM_TRANSPOSE_SUM2_PD(fiz_S2, fiz_S3, fiz2_S);
-        _mm_store_pd(f+sciz+2, _mm_add_pd(fiz2_S, _mm_load_pd(f+sciz+2)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fiz_S0, fiz_S1, fiz0_S);
+        gmx_store_pr(f+sciz, gmx_add_pr(fiz0_S, gmx_load_pr(f+sciz)));
+        GMX_MM_TRANSPOSE_SUM2_PR(fiz_S2, fiz_S3, fiz2_S);
+        gmx_store_pr(f+sciz+2, gmx_add_pr(fiz2_S, gmx_load_pr(f+sciz+2)));
 
 #ifdef CALC_SHIFTFORCES
-        _mm_store_pd(shf, _mm_add_pd(fix0_S, fix2_S));
+        gmx_store_pr(shf, gmx_add_pr(fix0_S, fix2_S));
         fshift[ish3+0] += shf[0] + shf[1];
-        _mm_store_pd(shf, _mm_add_pd(fiy0_S, fiy2_S));
+        gmx_store_pr(shf, gmx_add_pr(fiy0_S, fiy2_S));
         fshift[ish3+1] += shf[0] + shf[1];
-        _mm_store_pd(shf, _mm_add_pd(fiz0_S, fiz2_S));
+        gmx_store_pr(shf, gmx_add_pr(fiz0_S, fiz2_S));
         fshift[ish3+2] += shf[0] + shf[1];
 #endif
 #endif
@@ -796,6 +790,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #undef gmx_load_pr4
 #undef gmx_store_pr4
 #undef gmx_store_pr4
+
+#undef STORE_TABLE_INDICES
 
 #undef CALC_SHIFTFORCES
 

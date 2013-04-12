@@ -45,6 +45,45 @@
  *   energy group pair energy storage
  */
 
+
+#ifdef GMX_SIMD_PLAIN_C
+
+#define load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S) \
+    {                                                        \
+        ctab0_S.x = tab_coul_F[ti_S.x];                      \
+        ctab1_S.x = tab_coul_F[ti_S.x+1] - ctab0_S.x;        \
+        ctab0_S.y = tab_coul_F[ti_S.y];                      \
+        ctab1_S.y = tab_coul_F[ti_S.y+1] - ctab0_S.y;        \
+    }
+
+#define load_table_f_v(tab_coul_F, tab_coul_V, ti_S, ti, ctab0_S, ctab1_S, ctabv_S) \
+    {                                                         \
+        load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S); \
+        ctabv_S.x = tab_coul_V[ti_S.x];                       \
+        ctabv_S.y = tab_coul_V[ti_S.y];                       \
+    }
+
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM2_PR(in0, in1, out) \
+    {                                           \
+        real tmp;                               \
+        tmp   = in0.y;                          \
+        in0.y = in1.x;                          \
+        in1.x = tmp;                            \
+        out = gmx_add_pr(in0, in1);             \
+    }
+
+#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE) \
+    {                                                        \
+        c6_SSE.x  = nbfp[type[aj+0]*NBFP_STRIDE];            \
+        c12_SSE.x = nbfp[type[aj+0]*NBFP_STRIDE+1];          \
+        c6_SSE.y  = nbfp[type[aj+1]*NBFP_STRIDE];            \
+        c12_SSE.y = nbfp[type[aj+1]*NBFP_STRIDE+1];          \
+    }
+
+#endif /* GMX_SIMD_PLAIN_C */
+
+
 #ifdef GMX_X86_SSE2
 
 /* Transpose 2 double precision registers */
@@ -97,7 +136,7 @@
     }
 #else
 /* Sum the elements within each input register and store the sums in out */
-#define GMX_MM_TRANSPOSE_SUM2_PD(in0, in1, out)                           \
+#define GMX_MM_TRANSPOSE_SUM2_PR(in0, in1, out)                           \
     {                                                                       \
         GMX_MM_TRANSPOSE2_PD(in0, in1);                                      \
         out  = _mm_add_pd(in0, in1);                                         \
@@ -516,11 +555,11 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
+#endif /* GMX_X86_SSE2 */
 
-/* Add energy register to possibly multiple terms in the energy array.
- * This function is the same for SSE/AVX single/double.
- */
-static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
+
+/* Add energy register to possibly multiple terms in the energy array */
+static inline void add_ener_grp(gmx_mm_pr e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -530,10 +569,10 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
      */
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_pr v_SSE;
+        gmx_mm_pr v_S;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
-        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_SSE, e_SSE));
+        v_S = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_S, e_S));
     }
 }
 
@@ -566,7 +605,5 @@ static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
     }
 }
 #endif
-
-#endif /* GMX_X86_SSE2 */
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */
