@@ -58,10 +58,11 @@
 #include "force.h"
 #include "nonbonded.h"
 
-#ifdef GMX_X86_SSE2
-#define SIMD_BONDEDS
-
+/* Include the SIMD macro file and then check for support */
 #include "gmx_simd_macros.h"
+#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_TRIGONOMETRIC
+#define SIMD_BONDEDS
+#include "gmx_simd_vec.h"
 #endif
 
 /* Find a better place for this? */
@@ -116,54 +117,6 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 }
 
 #ifdef SIMD_BONDEDS
-
-/* Below are 3 SIMD vector operations.
- * Currently these are only used here, but they should be moved to
- * a general SIMD include file when used elsewhere.
- */
-
-/* SIMD inner-product of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_iprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz)
-{
-    gmx_mm_pr ret;
-
-    ret = gmx_mul_pr(ax, bx);
-    ret = gmx_madd_pr(ay, by, ret);
-    ret = gmx_madd_pr(az, bz, ret);
-
-    return ret;
-}
-
-/* SIMD norm squared of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_norm2_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az)
-{
-    gmx_mm_pr ret;
-
-    ret = gmx_mul_pr(ax, ax);
-    ret = gmx_madd_pr(ay, ay, ret);
-    ret = gmx_madd_pr(az, az, ret);
-
-    return ret;
-}
-
-/* SIMD cross-product of multiple vectors */
-static gmx_inline void
-gmx_cprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz,
-             gmx_mm_pr *cx, gmx_mm_pr *cy, gmx_mm_pr *cz)
-{
-    *cx = gmx_mul_pr(ay, bz);
-    *cx = gmx_nmsub_pr(az, by, *cx);
-
-    *cy = gmx_mul_pr(az, bx);
-    *cy = gmx_nmsub_pr(ax, bz, *cy);
-
-    *cz = gmx_mul_pr(ax, by);
-    *cz = gmx_nmsub_pr(ay, bx, *cz);
-}
 
 /* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
 typedef struct {
@@ -1569,8 +1522,6 @@ dih_angle_simd(const rvec *x,
     gmx_mm_pr nrkj2_S, nrkj_1_S, nrkj_2_S, nrkj_S;
     gmx_mm_pr p_S, q_S;
     gmx_mm_pr fmin_S = gmx_set1_pr(GMX_FLOAT_MIN);
-    /* Using -0.0 should lead to only the sign bit being set */
-    gmx_mm_pr sign_mask_S = gmx_set1_pr(-0.0);
 
     for (s = 0; s < UNROLL; s++)
     {
@@ -1639,10 +1590,8 @@ dih_angle_simd(const rvec *x,
     *nrkj_m2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprm_S));
     *nrkj_n2_S = gmx_mul_pr(nrkj_S, gmx_inv_pr(iprn_S));
 
-    /* Set sign of the angle with the sign of ipr_S.
-     * Since phi is currently positive, we can use OR instead of XOR.
-     */
-    *phi_S     = gmx_or_pr(*phi_S, gmx_and_pr(ipr_S, sign_mask_S));
+    /* Set sign of phi_S with the sign of ipr_S; phi_S is currently positive */
+    *phi_S     = gmx_cpsgn_nonneg_pr(ipr_S, *phi_S);
 
     p_S        = gmx_iprod_pr(rijx_S, rijy_S, rijz_S,
                               rkjx_S, rkjy_S, rkjz_S);
