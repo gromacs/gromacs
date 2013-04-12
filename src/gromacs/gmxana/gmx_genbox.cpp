@@ -103,7 +103,7 @@ static gmx_bool in_box(t_pbc *pbc, rvec x)
 }
 
 static void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
-                   real r_distance)
+                   real r_distance,real r_scale)
 {
     int i;
 
@@ -116,6 +116,10 @@ static void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
                                 *(a->atomname[i]), &(rvdw[i])))
         {
             rvdw[i] = r_distance;
+        }
+        else 
+        {
+            rvdw[i] *= r_scale;
         }
     }
 }
@@ -379,7 +383,8 @@ enum {
 
 static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int seed,
                          t_atoms *atoms, rvec **x, real **r, int ePBC, matrix box,
-                         gmx_atomprop_t aps, real r_distance, real rshell,
+                         gmx_atomprop_t aps, 
+                         real r_distance, real r_scale, real rshell,
                          const output_env_t oenv,
                          const char* posfn, const rvec deltaR, int enum_rot,
                          gmx_bool bCheckAllPairDist)
@@ -424,7 +429,7 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
     srenew(atoms_insrt.resinfo, atoms_insrt.nres);
 
     /* initialise van der waals arrays of insert molecules */
-    mk_vdw(&atoms_insrt, r_insrt, aps, r_distance);
+    mk_vdw(&atoms_insrt, r_insrt, aps, r_distance, r_scale);
 
     /* With -ip, take nmol_insrt from file posfn */
     if (posfn != NULL)
@@ -532,7 +537,8 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
 
 static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **r,
                      int ePBC, matrix box,
-                     gmx_atomprop_t aps, real r_distance, int *atoms_added,
+                     gmx_atomprop_t aps, 
+                     real r_distance, real r_scale, int *atoms_added,
                      int *residues_added, real rshell, int max_sol,
                      const output_env_t oenv)
 {
@@ -580,7 +586,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
     rm_res_pbc(atoms_solvt, x_solvt, box_solvt);
 
     /* initialise van der waals arrays of solvent configuration */
-    mk_vdw(atoms_solvt, r_solvt, aps, r_distance);
+    mk_vdw(atoms_solvt, r_solvt, aps, r_distance, r_scale);
 
     /* calculate the box multiplication factors n_box[0...DIM] */
     nmol = 1;
@@ -637,7 +643,7 @@ static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **
 
 static char *read_prot(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
                        real **r, int *ePBC, matrix box, gmx_atomprop_t aps,
-                       real r_distance)
+                       real r_distance, real r_scale)
 {
     char *title;
     int   natoms;
@@ -661,7 +667,7 @@ static char *read_prot(const char *confin, t_atoms *atoms, rvec **x, rvec **v,
             title, atoms->nr, atoms->nres);
 
     /* initialise van der waals arrays of configuration 1 */
-    mk_vdw(atoms, *r, aps, r_distance);
+    mk_vdw(atoms, *r, aps, r_distance, r_scale);
 
     return title;
 }
@@ -919,7 +925,7 @@ int gmx_genbox(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     static int      nmol_ins   = 0, nmol_try = 10, seed = 1997, enum_rot;
-    static real     r_distance = 0.105, r_shell = 0;
+    static real     r_distance = 0.105, r_shell = 0, r_scale = 0.57;
     static rvec     new_box    = {0.0, 0.0, 0.0}, deltaR = {0.0, 0.0, 0.0};
     static gmx_bool bReadV     = FALSE, bCheckAllPairDist = FALSE;
     static int      max_sol    = 0;
@@ -936,6 +942,8 @@ int gmx_genbox(int argc, char *argv[])
           "Random generator seed"},
         { "-vdwd",   FALSE, etREAL, {&r_distance},
           "Default van der Waals distance"},
+        { "-vdwscale", FALSE, etREAL, {&r_scale},
+          "HIDDENScale factor to multiply Van der Waals radii from the database in share/gromacs/top/vdwradii.dat" },
         { "-shell",  FALSE, etREAL, {&r_shell},
           "Thickness of optional water layer around solute" },
         { "-maxsol", FALSE, etINT,  {&max_sol},
@@ -978,7 +986,7 @@ int gmx_genbox(int argc, char *argv[])
         /*generate a solute configuration */
         conf_prot = opt2fn("-cp", NFILE, fnm);
         title     = read_prot(conf_prot, &atoms, &x, bReadV ? &v : NULL, &r, &ePBC, box,
-                              aps, r_distance);
+                              aps, r_distance, r_scale);
         if (bReadV && !v)
         {
             fprintf(stderr, "Note: no velocities found\n");
@@ -1019,7 +1027,8 @@ int gmx_genbox(int argc, char *argv[])
     if (bInsert)
     {
         title_ins = insert_mols(opt2fn("-ci", NFILE, fnm), nmol_ins, nmol_try, seed,
-                                &atoms, &x, &r, ePBC, box, aps, r_distance, r_shell,
+                                &atoms, &x, &r, ePBC, box, aps, 
+                                r_distance, r_scale, r_shell,
                                 oenv, opt2fn_null("-ip", NFILE, fnm), deltaR, enum_rot,
                                 bCheckAllPairDist);
     }
@@ -1032,7 +1041,7 @@ int gmx_genbox(int argc, char *argv[])
     if (bSol)
     {
         add_solv(opt2fn("-cs", NFILE, fnm), &atoms, &x, v ? &v : NULL, &r, ePBC, box,
-                 aps, r_distance, &atoms_added, &residues_added, r_shell, max_sol,
+                 aps, r_distance, r_scale, &atoms_added, &residues_added, r_shell, max_sol,
                  oenv);
     }
 

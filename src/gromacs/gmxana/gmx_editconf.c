@@ -842,6 +842,11 @@ int gmx_editconf(int argc, char *argv[])
         }
         snew(atoms.pdbinfo, top->atoms.nr);
         ntype = top->idef.atnr;
+        printf("NOTE: From version 5.0 %s uses the Van der Waals radii\n",
+               ShortProgram());
+        printf("from the source below. This means the results may be different\n");
+        printf("compared to previous GROMACS versions.\n");
+        please_cite(stdout,"Bondi1964a");
         for (i = 0; (i < atoms.nr); i++)
         {
             /* Determine the Van der Waals radius from the force field */
