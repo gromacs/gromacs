@@ -67,7 +67,7 @@
 /* Without exclusions and energies we only need to mask the cut-off,
  * this can be faster with blendv.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_HAVE_SIMD_BLENDV && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_SIMD_HAVE_BLENDV && !defined COUNT_PAIRS
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
@@ -460,7 +460,7 @@
     /* Truncate scaled r to an int */
     ti_S0       = gmx_cvttpr_epi32(rs_S0);
     ti_S2       = gmx_cvttpr_epi32(rs_S2);
-#ifdef GMX_HAVE_SIMD_FLOOR
+#ifdef GMX_SIMD_HAVE_FLOOR
     rf_S0       = gmx_floor_pr(rs_S0);
     rf_S2       = gmx_floor_pr(rs_S2);
 #else
