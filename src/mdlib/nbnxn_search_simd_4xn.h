@@ -36,14 +36,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#if !(GMX_NBNXN_SIMD_BITWIDTH == 128 || GMX_NBNXN_SIMD_BITWIDTH == 256)
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
 
 #if GMX_SIMD_WIDTH_HERE >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_WIDTH_HERE)
@@ -80,10 +72,10 @@ icell_set_x_simd_4xn(int ci,
     x_ci->iz_SSE3 = gmx_set1_pr(x[ia + 2*STRIDE_S + 3] + shz);
 }
 
-#ifndef GMX_HAVE_SIMD_ANYTRUE
+#ifndef GMX_SIMD_HAVE_ANYTRUE
 /* Fallback function in case gmx_anytrue_pr is not present */
 static gmx_inline gmx_bool
-gmx_anytrue_4xn_pr(gmx_mm_pr bool_S)
+gmx_anytrue_4xn_pb(gmx_mm_pb bool_S)
 {
     real     bools_array[2*GMX_SIMD_WIDTH_HERE], *bools;
     gmx_bool any;
@@ -91,7 +83,7 @@ gmx_anytrue_4xn_pr(gmx_mm_pr bool_S)
 
     bools = gmx_simd_align_real(bools_array);
 
-    gmx_store_pr(bools, bool_S);
+    gmx_store_pb(bools, bool_S);
 
     any = FALSE;
     for (s = 0; s < GMX_SIMD_WIDTH_HERE; s++)
@@ -135,11 +127,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     gmx_mm_pr                    rsq_SSE2;
     gmx_mm_pr                    rsq_SSE3;
 
-    gmx_mm_pr                    wco_SSE0;
-    gmx_mm_pr                    wco_SSE1;
-    gmx_mm_pr                    wco_SSE2;
-    gmx_mm_pr                    wco_SSE3;
-    gmx_mm_pr                    wco_any_SSE01, wco_any_SSE23, wco_any_SSE;
+    gmx_mm_pb                    wco_SSE0;
+    gmx_mm_pb                    wco_SSE1;
+    gmx_mm_pb                    wco_SSE2;
+    gmx_mm_pb                    wco_SSE3;
+    gmx_mm_pb                    wco_any_SSE01, wco_any_SSE23, wco_any_SSE;
 
     gmx_mm_pr                    rc2_SSE;
 
@@ -159,7 +151,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SSE
+        d2 = subc_bb_dist2_sse(0, bb_ci, cjf, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjf, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -205,14 +201,14 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
             wco_SSE3           = gmx_cmplt_pr(rsq_SSE3, rc2_SSE);
 
-            wco_any_SSE01      = gmx_or_pr(wco_SSE0, wco_SSE1);
-            wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
-            wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
+            wco_any_SSE01      = gmx_or_pb(wco_SSE0, wco_SSE1);
+            wco_any_SSE23      = gmx_or_pb(wco_SSE2, wco_SSE3);
+            wco_any_SSE        = gmx_or_pb(wco_any_SSE01, wco_any_SSE23);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
-            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#ifdef GMX_SIMD_HAVE_ANYTRUE
+            InRange            = gmx_anytrue_pb(wco_any_SSE);
 #else
-            InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);
+            InRange            = gmx_anytrue_4xn_pb(wco_any_SSE);
 #endif
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;
@@ -230,7 +226,11 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
+#ifdef NBNXN_SEARCH_BB_SSE
+        d2 = subc_bb_dist2_sse(0, bb_ci, cjl, gridj->bbj);
+#else
+        d2 = subc_bb_dist2(0, bb_ci, cjl, gridj->bbj);
+#endif
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -275,14 +275,14 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
             wco_SSE2           = gmx_cmplt_pr(rsq_SSE2, rc2_SSE);
             wco_SSE3           = gmx_cmplt_pr(rsq_SSE3, rc2_SSE);
 
-            wco_any_SSE01      = gmx_or_pr(wco_SSE0, wco_SSE1);
-            wco_any_SSE23      = gmx_or_pr(wco_SSE2, wco_SSE3);
-            wco_any_SSE        = gmx_or_pr(wco_any_SSE01, wco_any_SSE23);
+            wco_any_SSE01      = gmx_or_pb(wco_SSE0, wco_SSE1);
+            wco_any_SSE23      = gmx_or_pb(wco_SSE2, wco_SSE3);
+            wco_any_SSE        = gmx_or_pb(wco_any_SSE01, wco_any_SSE23);
 
-#ifdef GMX_HAVE_SIMD_ANYTRUE
-            InRange            = gmx_anytrue_pr(wco_any_SSE);
+#ifdef GMX_SIMD_HAVE_ANYTRUE
+            InRange            = gmx_anytrue_pb(wco_any_SSE);
 #else
-            InRange            = gmx_anytrue_4xn_pr(wco_any_SSE);
+            InRange            = gmx_anytrue_4xn_pb(wco_any_SSE);
 #endif
 
             *ndistc += 4*GMX_SIMD_WIDTH_HERE;

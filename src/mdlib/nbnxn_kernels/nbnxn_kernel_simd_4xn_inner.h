@@ -55,7 +55,7 @@
  * this can be faster when we have defined gmx_blendv_pr, i.e. an instruction
  * that selects from two SIMD registers based on the contents of a third.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_HAVE_SIMD_BLENDV && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_SIMD_HAVE_BLENDV
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
@@ -82,10 +82,10 @@
 
 #ifdef CHECK_EXCLS
     /* Interaction (non-exclusion) mask of all 1's or 0's */
-    gmx_mm_pr  int_S0;
-    gmx_mm_pr  int_S1;
-    gmx_mm_pr  int_S2;
-    gmx_mm_pr  int_S3;
+    gmx_mm_pb  int_S0;
+    gmx_mm_pb  int_S1;
+    gmx_mm_pb  int_S2;
+    gmx_mm_pb  int_S3;
 #endif
 
     gmx_mm_pr  jx_S, jy_S, jz_S;
@@ -103,17 +103,17 @@
     gmx_mm_pr  rsq_S3, rinv_S3, rinvsq_S3;
 #ifndef NBNXN_CUTOFF_USE_BLENDV
     /* wco: within cut-off, mask of all 1's or 0's */
-    gmx_mm_pr  wco_S0;
-    gmx_mm_pr  wco_S1;
-    gmx_mm_pr  wco_S2;
-    gmx_mm_pr  wco_S3;
+    gmx_mm_pb  wco_S0;
+    gmx_mm_pb  wco_S1;
+    gmx_mm_pb  wco_S2;
+    gmx_mm_pb  wco_S3;
 #endif
 #ifdef VDW_CUTOFF_CHECK
-    gmx_mm_pr  wco_vdw_S0;
-    gmx_mm_pr  wco_vdw_S1;
+    gmx_mm_pb  wco_vdw_S0;
+    gmx_mm_pb  wco_vdw_S1;
 #ifndef HALF_LJ
-    gmx_mm_pr  wco_vdw_S2;
-    gmx_mm_pr  wco_vdw_S3;
+    gmx_mm_pb  wco_vdw_S2;
+    gmx_mm_pb  wco_vdw_S3;
 #endif
 #endif
 #ifdef CALC_COULOMB
@@ -283,17 +283,18 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-#ifdef gmx_checkbitmask_epi32
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
     {
         /* Integer mask set and operations, cast result to real */
         gmx_epi32 mask_pr_S = gmx_set1_epi32(l_cj[cjind].excl);
 
-        int_S0  = gmx_castsi_pr(gmx_checkbitmask_epi32(mask_pr_S, mask_S0));
-        int_S1  = gmx_castsi_pr(gmx_checkbitmask_epi32(mask_pr_S, mask_S1));
-        int_S2  = gmx_castsi_pr(gmx_checkbitmask_epi32(mask_pr_S, mask_S2));
-        int_S3  = gmx_castsi_pr(gmx_checkbitmask_epi32(mask_pr_S, mask_S3));
+        int_S0  = gmx_checkbitmask_epi32(mask_pr_S, mask_S0);
+        int_S1  = gmx_checkbitmask_epi32(mask_pr_S, mask_S1);
+        int_S2  = gmx_checkbitmask_epi32(mask_pr_S, mask_S2);
+        int_S3  = gmx_checkbitmask_epi32(mask_pr_S, mask_S3);
     }
 #else
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_PR
     {
         /* Integer mask set, cast to real and real mask operations */
         gmx_mm_pr mask_pr_S = gmx_castsi_pr(gmx_set1_epi32(l_cj[cjind].excl));
@@ -303,8 +304,11 @@
         int_S2  = gmx_checkbitmask_pr(mask_pr_S, mask_S2);
         int_S3  = gmx_checkbitmask_pr(mask_pr_S, mask_S3);
     }
+#else
+#error "No SIMD bitmask operation available"
 #endif
 #endif
+#endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
     jx_S        = gmx_load_pr(x+ajx);
@@ -344,50 +348,50 @@
 #if UNROLLJ == UNROLLI
     if (cj == ci_sh)
     {
-        wco_S0  = gmx_and_pr(wco_S0, diag_S0);
-        wco_S1  = gmx_and_pr(wco_S1, diag_S1);
-        wco_S2  = gmx_and_pr(wco_S2, diag_S2);
-        wco_S3  = gmx_and_pr(wco_S3, diag_S3);
+        wco_S0  = gmx_and_pb(wco_S0, diag_S0);
+        wco_S1  = gmx_and_pb(wco_S1, diag_S1);
+        wco_S2  = gmx_and_pb(wco_S2, diag_S2);
+        wco_S3  = gmx_and_pb(wco_S3, diag_S3);
     }
 #else
 #if UNROLLJ < UNROLLI
     if (cj == ci_sh*2)
     {
-        wco_S0  = gmx_and_pr(wco_S0, diag0_S0);
-        wco_S1  = gmx_and_pr(wco_S1, diag0_S1);
-        wco_S2  = gmx_and_pr(wco_S2, diag0_S2);
-        wco_S3  = gmx_and_pr(wco_S3, diag0_S3);
+        wco_S0  = gmx_and_pb(wco_S0, diag0_S0);
+        wco_S1  = gmx_and_pb(wco_S1, diag0_S1);
+        wco_S2  = gmx_and_pb(wco_S2, diag0_S2);
+        wco_S3  = gmx_and_pb(wco_S3, diag0_S3);
     }
     if (cj == ci_sh*2 + 1)
     {
-        wco_S0  = gmx_and_pr(wco_S0, diag1_S0);
-        wco_S1  = gmx_and_pr(wco_S1, diag1_S1);
-        wco_S2  = gmx_and_pr(wco_S2, diag1_S2);
-        wco_S3  = gmx_and_pr(wco_S3, diag1_S3);
+        wco_S0  = gmx_and_pb(wco_S0, diag1_S0);
+        wco_S1  = gmx_and_pb(wco_S1, diag1_S1);
+        wco_S2  = gmx_and_pb(wco_S2, diag1_S2);
+        wco_S3  = gmx_and_pb(wco_S3, diag1_S3);
     }
 #else
     if (cj*2 == ci_sh)
     {
-        wco_S0  = gmx_and_pr(wco_S0, diag0_S0);
-        wco_S1  = gmx_and_pr(wco_S1, diag0_S1);
-        wco_S2  = gmx_and_pr(wco_S2, diag0_S2);
-        wco_S3  = gmx_and_pr(wco_S3, diag0_S3);
+        wco_S0  = gmx_and_pb(wco_S0, diag0_S0);
+        wco_S1  = gmx_and_pb(wco_S1, diag0_S1);
+        wco_S2  = gmx_and_pb(wco_S2, diag0_S2);
+        wco_S3  = gmx_and_pb(wco_S3, diag0_S3);
     }
     else if (cj*2 + 1 == ci_sh)
     {
-        wco_S0  = gmx_and_pr(wco_S0, diag1_S0);
-        wco_S1  = gmx_and_pr(wco_S1, diag1_S1);
-        wco_S2  = gmx_and_pr(wco_S2, diag1_S2);
-        wco_S3  = gmx_and_pr(wco_S3, diag1_S3);
+        wco_S0  = gmx_and_pb(wco_S0, diag1_S0);
+        wco_S1  = gmx_and_pb(wco_S1, diag1_S1);
+        wco_S2  = gmx_and_pb(wco_S2, diag1_S2);
+        wco_S3  = gmx_and_pb(wco_S3, diag1_S3);
     }
 #endif
 #endif
 #else /* EXCL_FORCES */
     /* No exclusion forces: remove all excluded atom pairs from the list */
-    wco_S0      = gmx_and_pr(wco_S0, int_S0);
-    wco_S1      = gmx_and_pr(wco_S1, int_S1);
-    wco_S2      = gmx_and_pr(wco_S2, int_S2);
-    wco_S3      = gmx_and_pr(wco_S3, int_S3);
+    wco_S0      = gmx_and_pb(wco_S0, int_S0);
+    wco_S1      = gmx_and_pb(wco_S1, int_S1);
+    wco_S2      = gmx_and_pb(wco_S2, int_S2);
+    wco_S3      = gmx_and_pb(wco_S3, int_S3);
 #endif
 #endif
 
@@ -398,10 +402,10 @@
         tmp = gmx_simd_align_real(tmpa);
         for (i = 0; i < UNROLLI; i++)
         {
-            gmx_store_pr(tmp, i == 0 ? wco_S0 : (i == 1 ? wco_S1 : (i == 2 ? wco_S2 : wco_S3)));
+            gmx_store_pr(tmp, gmx_sub_pr(rc2_S, i == 0 ? rsq_S0 : (i == 1 ? rsq_S1 : (i == 2 ? rsq_S2 : rsq_S3))));
             for (j = 0; j < UNROLLJ; j++)
             {
-                if (!(tmp[j] == 0))
+                if (tmp[j] >= 0)
                 {
                     npair++;
                 }
@@ -412,10 +416,10 @@
 
 #ifdef CHECK_EXCLS
     /* For excluded pairs add a small number to avoid r^-6 = NaN */
-    rsq_S0      = gmx_add_pr(rsq_S0, gmx_andnot_pr(int_S0, avoid_sing_S));
-    rsq_S1      = gmx_add_pr(rsq_S1, gmx_andnot_pr(int_S1, avoid_sing_S));
-    rsq_S2      = gmx_add_pr(rsq_S2, gmx_andnot_pr(int_S2, avoid_sing_S));
-    rsq_S3      = gmx_add_pr(rsq_S3, gmx_andnot_pr(int_S3, avoid_sing_S));
+    rsq_S0      = gmx_masknot_add_pr(int_S0, rsq_S0, avoid_sing_S);
+    rsq_S1      = gmx_masknot_add_pr(int_S1, rsq_S1, avoid_sing_S);
+    rsq_S2      = gmx_masknot_add_pr(int_S2, rsq_S2, avoid_sing_S);
+    rsq_S3      = gmx_masknot_add_pr(int_S3, rsq_S3, avoid_sing_S);
 #endif
 
     /* Calculate 1/r */
@@ -425,8 +429,8 @@
     rinv_S2     = gmx_invsqrt_pr(rsq_S2);
     rinv_S3     = gmx_invsqrt_pr(rsq_S3);
 #else
-    GMX_MM_INVSQRT2_PD(rsq_S0, rsq_S1, rinv_S0, rinv_S1);
-    GMX_MM_INVSQRT2_PD(rsq_S2, rsq_S3, rinv_S2, rinv_S3);
+    gmx_mm_invsqrt2_pd(rsq_S0, rsq_S1, &rinv_S0, &rinv_S1);
+    gmx_mm_invsqrt2_pd(rsq_S2, rsq_S3, &rinv_S2, &rinv_S3);
 #endif
 
 #ifdef CALC_COULOMB
@@ -441,11 +445,11 @@
 #ifdef CALC_LJ
 
 #if !defined LJ_COMB_GEOM && !defined LJ_COMB_LB && !defined FIX_LJ_C
-    load_lj_pair_params(nbfp0, type, aj, c6_S0, c12_S0);
-    load_lj_pair_params(nbfp1, type, aj, c6_S1, c12_S1);
+    load_lj_pair_params(nbfp0, type, aj, &c6_S0, &c12_S0);
+    load_lj_pair_params(nbfp1, type, aj, &c6_S1, &c12_S1);
 #ifndef HALF_LJ
-    load_lj_pair_params(nbfp2, type, aj, c6_S2, c12_S2);
-    load_lj_pair_params(nbfp3, type, aj, c6_S3, c12_S3);
+    load_lj_pair_params(nbfp2, type, aj, &c6_S2, &c12_S2);
+    load_lj_pair_params(nbfp3, type, aj, &c6_S3, &c12_S3);
 #endif
 #endif /* not defined any LJ rule */
 
@@ -588,7 +592,7 @@
     ti_S1       = gmx_cvttpr_epi32(rs_S1);
     ti_S2       = gmx_cvttpr_epi32(rs_S2);
     ti_S3       = gmx_cvttpr_epi32(rs_S3);
-#ifdef GMX_HAVE_SIMD_FLOOR
+#ifdef GMX_SIMD_HAVE_FLOOR
     /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
     rf_S0       = gmx_floor_pr(rs_S0);
     rf_S1       = gmx_floor_pr(rs_S1);
@@ -611,21 +615,21 @@
      * Currently single precision uses FDV0, double F and V.
      */
 #ifndef CALC_ENERGIES
-    load_table_f(tab_coul_F, ti_S0, ti0, ctab0_S0, ctab1_S0);
-    load_table_f(tab_coul_F, ti_S1, ti1, ctab0_S1, ctab1_S1);
-    load_table_f(tab_coul_F, ti_S2, ti2, ctab0_S2, ctab1_S2);
-    load_table_f(tab_coul_F, ti_S3, ti3, ctab0_S3, ctab1_S3);
+    load_table_f(tab_coul_F, ti_S0, ti0, &ctab0_S0, &ctab1_S0);
+    load_table_f(tab_coul_F, ti_S1, ti1, &ctab0_S1, &ctab1_S1);
+    load_table_f(tab_coul_F, ti_S2, ti2, &ctab0_S2, &ctab1_S2);
+    load_table_f(tab_coul_F, ti_S3, ti3, &ctab0_S3, &ctab1_S3);
 #else
 #ifdef TAB_FDV0
-    load_table_f_v(tab_coul_F, ti_S0, ti0, ctab0_S0, ctab1_S0, ctabv_S0);
-    load_table_f_v(tab_coul_F, ti_S1, ti1, ctab0_S1, ctab1_S1, ctabv_S1);
-    load_table_f_v(tab_coul_F, ti_S2, ti2, ctab0_S2, ctab1_S2, ctabv_S2);
-    load_table_f_v(tab_coul_F, ti_S3, ti3, ctab0_S3, ctab1_S3, ctabv_S3);
+    load_table_f_v(tab_coul_F, ti_S0, ti0, &ctab0_S0, &ctab1_S0, &ctabv_S0);
+    load_table_f_v(tab_coul_F, ti_S1, ti1, &ctab0_S1, &ctab1_S1, &ctabv_S1);
+    load_table_f_v(tab_coul_F, ti_S2, ti2, &ctab0_S2, &ctab1_S2, &ctabv_S2);
+    load_table_f_v(tab_coul_F, ti_S3, ti3, &ctab0_S3, &ctab1_S3, &ctabv_S3);
 #else
-    load_table_f_v(tab_coul_F, tab_coul_V, ti_S0, ti0, ctab0_S0, ctab1_S0, ctabv_S0);
-    load_table_f_v(tab_coul_F, tab_coul_V, ti_S1, ti1, ctab0_S1, ctab1_S1, ctabv_S1);
-    load_table_f_v(tab_coul_F, tab_coul_V, ti_S2, ti2, ctab0_S2, ctab1_S2, ctabv_S2);
-    load_table_f_v(tab_coul_F, tab_coul_V, ti_S3, ti3, ctab0_S3, ctab1_S3, ctabv_S3);
+    load_table_f_v(tab_coul_F, tab_coul_V, ti_S0, ti0, &ctab0_S0, &ctab1_S0, &ctabv_S0);
+    load_table_f_v(tab_coul_F, tab_coul_V, ti_S1, ti1, &ctab0_S1, &ctab1_S1, &ctabv_S1);
+    load_table_f_v(tab_coul_F, tab_coul_V, ti_S2, ti2, &ctab0_S2, &ctab1_S2, &ctabv_S2);
+    load_table_f_v(tab_coul_F, tab_coul_V, ti_S3, ti3, &ctab0_S3, &ctab1_S3, &ctabv_S3);
 #endif
 #endif
     fsub_S0     = gmx_add_pr(ctab0_S0, gmx_mul_pr(frac_S0, ctab1_S0));
