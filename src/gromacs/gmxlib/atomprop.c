@@ -49,6 +49,7 @@
 #include "index.h"
 #include "strdb.h"
 #include "copyrite.h"
+#include "statutil.h"
 
 typedef struct {
     gmx_bool    bSet;
@@ -62,7 +63,7 @@ typedef struct {
 } aprop_t;
 
 typedef struct gmx_atomprop {
-    gmx_bool          bWarned;
+    gmx_bool          bWarned,bWarnVDW;
     aprop_t           prop[epropNR];
     gmx_residuetype_t restype;
 } gmx_atomprop;
@@ -284,7 +285,8 @@ gmx_atomprop_t gmx_atomprop_init(void)
 
     gmx_residuetype_init(&aps->restype);
     aps->bWarned = FALSE;
-
+    aps->bWarnVDW = FALSE;
+    
     return (gmx_atomprop_t)aps;
 }
 
@@ -329,6 +331,18 @@ void gmx_atomprop_destroy(gmx_atomprop_t aps)
     sfree(ap);
 }
 
+static void vdw_warning(FILE *fp)
+{
+    if (NULL != fp)
+    {
+        fprintf(fp,"NOTE: From version 5.0 %s uses the Van der Waals radii\n",
+                ShortProgram());
+        fprintf(fp,"from the source below. This means the results may be different\n");
+        fprintf(fp,"compared to previous GROMACS versions.\n");
+        please_cite(fp,"Bondi1964a");
+    }
+}
+
 gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
                             int eprop, const char *resnm, const char *atomnm,
                             real *value)
@@ -368,6 +382,11 @@ gmx_bool gmx_atomprop_query(gmx_atomprop_t aps,
     j = get_prop_index(&(ap->prop[eprop]), ap->restype, resname,
                        atomname, &bExact);
 
+    if (!ap->bWarnVDW)
+    {
+        vdw_warning(stdout);
+        ap->bWarnVDW = TRUE;
+    }
     if (j >= 0)
     {
         *value = ap->prop[eprop].value[j];
