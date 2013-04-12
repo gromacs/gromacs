@@ -1,36 +1,51 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+/*
+ * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
  *
- * This file is part of GROMACS.
- * Copyright (c) 2012-
- *
- * Written by the Gromacs development team under coordination of
- * David van der Spoel, Berk Hess, and Erik Lindahl.
- *
- * This library is free software; you can redistribute it and/or
+ * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
  *
- * And Hey:
- * Gnomes, ROck Monsters And Chili Sauce
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _gmx_math_x86_sse2_single_h_
-#define _gmx_math_x86_sse2_single_h_
-
+#ifndef GMX_SIMD_MATH_SSE4_1_SINGLE_H
+#define GMX_SIMD_MATH_SSE4_1_SINGLE_H
 
 #include <stdio.h>
 #include <math.h>
 
-#include "gmx_x86_sse2.h"
+#include "general_x86_sse4_1.h"
+
 
 
 #ifndef M_PI
 #  define M_PI 3.14159265358979323846264338327950288
 #endif
+
 
 
 
@@ -85,6 +100,7 @@ gmx_mm_abs_ps(__m128 x)
 
     return _mm_and_ps(x, signmask);
 }
+
 
 
 static __m128
@@ -199,16 +215,15 @@ gmx_mm_exp2_ps(__m128 x)
     const __m128  CA1      = _mm_set1_ps(6.931472028550421E-001);
     const __m128  CA0      = _mm_set1_ps(1.0f);
 
-
-    __m128  valuemask;
-    __m128i iexppart;
-    __m128  fexppart;
-    __m128  intpart;
-    __m128  x2;
-    __m128  p0, p1;
+    __m128        valuemask;
+    __m128i       iexppart;
+    __m128        fexppart;
+    __m128        intpart;
+    __m128        x2;
+    __m128        p0, p1;
 
     iexppart  = _mm_cvtps_epi32(x);
-    intpart   = _mm_cvtepi32_ps(iexppart);
+    intpart   = _mm_round_ps(x, _MM_FROUND_TO_NEAREST_INT);
     iexppart  = _mm_slli_epi32(_mm_add_epi32(iexppart, expbase), 23);
     valuemask = _mm_cmpge_ps(arglimit, gmx_mm_abs_ps(x));
     fexppart  = _mm_and_ps(valuemask, gmx_mm_castsi128_ps(iexppart));
@@ -272,7 +287,7 @@ gmx_mm_exp_ps(__m128 x)
     y = _mm_mul_ps(x, argscale);
 
     iexppart  = _mm_cvtps_epi32(y);
-    intpart   = _mm_cvtepi32_ps(iexppart);
+    intpart   = _mm_round_ps(y, _MM_FROUND_TO_NEAREST_INT);
 
     iexppart  = _mm_slli_epi32(_mm_add_epi32(iexppart, expbase), 23);
     valuemask = _mm_cmpge_ps(arglimit, gmx_mm_abs_ps(y));
@@ -453,23 +468,19 @@ gmx_mm_erf_ps(__m128 x)
 
     /* SELECT pB0 or pC0 for erfc() */
     mask     = _mm_cmplt_ps(two, y);
-    res_erfc = _mm_or_ps(_mm_andnot_ps(mask, pB0), _mm_and_ps(mask, pC0));
+    res_erfc = _mm_blendv_ps(pB0, pC0, mask);
     res_erfc = _mm_mul_ps(res_erfc, expmx2);
 
     /* erfc(x<0) = 2-erfc(|x|) */
     mask     = _mm_cmplt_ps(x, _mm_setzero_ps());
-    res_erfc = _mm_or_ps(_mm_andnot_ps(mask, res_erfc),
-                         _mm_and_ps(mask, _mm_sub_ps(two, res_erfc)));
+    res_erfc = _mm_blendv_ps(res_erfc, _mm_sub_ps(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
     mask = _mm_cmplt_ps(y, _mm_set1_ps(0.75f));
-    res  = _mm_or_ps(_mm_andnot_ps(mask, _mm_sub_ps(one, res_erfc)), _mm_and_ps(mask, res_erf));
+    res  = _mm_blendv_ps(_mm_sub_ps(one, res_erfc), res_erf, mask);
 
     return res;
 }
-
-
-
 
 
 /* FULL precision. Only errors in LSB */
@@ -621,16 +632,16 @@ gmx_mm_erfc_ps(__m128 x)
 
     /* SELECT pB0 or pC0 for erfc() */
     mask     = _mm_cmplt_ps(two, y);
-    res_erfc = _mm_or_ps(_mm_andnot_ps(mask, pB0), _mm_and_ps(mask, pC0));
+    res_erfc = _mm_blendv_ps(pB0, pC0, mask);
     res_erfc = _mm_mul_ps(res_erfc, expmx2);
 
     /* erfc(x<0) = 2-erfc(|x|) */
     mask     = _mm_cmplt_ps(x, _mm_setzero_ps());
-    res_erfc = _mm_or_ps(_mm_andnot_ps(mask, res_erfc), _mm_and_ps(mask, _mm_sub_ps(two, res_erfc)));
+    res_erfc = _mm_blendv_ps(res_erfc, _mm_sub_ps(two, res_erfc), mask);
 
     /* Select erf() or erfc() */
     mask = _mm_cmplt_ps(y, _mm_set1_ps(0.75f));
-    res  = _mm_or_ps(_mm_andnot_ps(mask, res_erfc), _mm_and_ps(mask, _mm_sub_ps(one, res_erf)));
+    res  = _mm_blendv_ps(res_erfc, _mm_sub_ps(one, res_erf), mask);
 
     return res;
 }
@@ -867,7 +878,7 @@ gmx_mm_sincos_ps(__m128  x,
     y          = _mm_add_ps(y, _mm_or_ps(_mm_and_ps(y, signbit), half));
 
     iz         = _mm_cvttps_epi32(y);
-    z          = _mm_cvtepi32_ps(iz);
+    z          = _mm_round_ps(y, _MM_FROUND_TO_ZERO);
 
     offset_sin = _mm_and_si128(iz, ithree);
     offset_cos = _mm_add_epi32(iz, ione);
@@ -900,8 +911,8 @@ gmx_mm_sincos_ps(__m128  x,
     mask_sin        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_sin, ione), izero));
     mask_cos        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_cos, ione), izero));
 
-    tmp_sin         = _mm_or_ps( _mm_andnot_ps(mask_sin, tmp1), _mm_and_ps(mask_sin, tmp2) );
-    tmp_cos         = _mm_or_ps( _mm_andnot_ps(mask_cos, tmp1), _mm_and_ps(mask_cos, tmp2) );
+    tmp_sin         = _mm_blendv_ps(tmp1, tmp2, mask_sin);
+    tmp_cos         = _mm_blendv_ps(tmp1, tmp2, mask_cos);
 
     mask_sin        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_sin, itwo), izero));
     mask_cos        = gmx_mm_castsi128_ps(_mm_cmpeq_epi32( _mm_and_si128(offset_cos, itwo), izero));
@@ -909,8 +920,8 @@ gmx_mm_sincos_ps(__m128  x,
     tmp1            = _mm_xor_ps(signbit, tmp_sin);
     tmp2            = _mm_xor_ps(signbit, tmp_cos);
 
-    *sinval         = _mm_or_ps( _mm_andnot_ps(mask_sin, tmp1), _mm_and_ps(mask_sin, tmp_sin) );
-    *cosval         = _mm_or_ps( _mm_andnot_ps(mask_cos, tmp2), _mm_and_ps(mask_cos, tmp_cos) );
+    *sinval         = _mm_blendv_ps(tmp1, tmp_sin, mask_sin);
+    *cosval         = _mm_blendv_ps(tmp2, tmp_cos, mask_cos);
 
     return 0;
 }
@@ -1045,15 +1056,15 @@ gmx_mm_acos_ps(__m128 x)
     z     = _mm_mul_ps(z, gmx_mm_invsqrt_ps(z));
     z     = _mm_andnot_ps(_mm_cmpeq_ps(xabs, one_ps), z);
 
-    z     = _mm_or_ps( _mm_and_ps(mask1, z), _mm_andnot_ps(mask1, x) );
+    z     = _mm_blendv_ps(x, z, mask1);
     z     = gmx_mm_asin_ps(z);
 
     z2    = _mm_add_ps(z, z);
     z1    = _mm_sub_ps(pi_ps, z2);
     z3    = _mm_sub_ps(halfpi_ps, z);
 
-    z     = _mm_or_ps( _mm_and_ps(mask2, z2), _mm_andnot_ps(mask2, z1) );
-    z     = _mm_or_ps( _mm_and_ps(mask1, z), _mm_andnot_ps(mask1, z3) );
+    z     = _mm_blendv_ps(z1, z2, mask2);
+    z     = _mm_blendv_ps(z3, z, mask1);
 
     return z;
 }
@@ -1090,10 +1101,10 @@ gmx_mm_atan_ps(__m128 x)
     z2    = _mm_mul_ps(mone, gmx_mm_inv_ps(x));
 
     y     = _mm_and_ps(mask1, quarterpi);
-    y     = _mm_or_ps( _mm_and_ps(mask2, halfpi), _mm_andnot_ps(mask2, y) );
+    y     = _mm_blendv_ps(y, halfpi, mask2);
 
-    x     = _mm_or_ps( _mm_and_ps(mask1, z1), _mm_andnot_ps(mask1, x) );
-    x     = _mm_or_ps( _mm_and_ps(mask2, z2), _mm_andnot_ps(mask2, x) );
+    x     = _mm_blendv_ps(x, z1, mask1);
+    x     = _mm_blendv_ps(x, z2, mask2);
 
     x2    = _mm_mul_ps(x, x);
     x4    = _mm_mul_ps(x2, x2);
@@ -1164,4 +1175,5 @@ gmx_mm_atan2_ps(__m128 y, __m128 x)
 }
 
 
-#endif /* _gmx_math_x86_sse2_single_h_ */
+
+#endif

@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -41,10 +39,10 @@
  * all that is needed.
  */
 
-#ifdef _gmx_simd_macros_h_
-#error "gmx_simd_macros.h included twice"
+#ifdef GMX_SIMD_MACROS_H
+#error "gromacs/simd/macros.h included twice"
 #else
-#define _gmx_simd_macros_h_
+#define GMX_SIMD_MACROS_H
 
 /* NOTE: SSE2 acceleration does not include floor or blendv */
 
@@ -61,7 +59,7 @@
 #define GMX_SIMD_REF_WIDTH  4
 
 /* Include plain-C reference implementation, also serves as documentation */
-#include "gmx_simd_ref.h"
+#include "gromacs/simd/macros_ref.h"
 
 #define GMX_SIMD_WIDTH_HERE  GMX_SIMD_REF_WIDTH
 
@@ -175,35 +173,35 @@
 
 /* Include the highest supported x86 SIMD intrisics + math functions */
 #ifdef GMX_X86_AVX_256
-#include "gmx_x86_avx_256.h"
+#include "general_x86_avx_256.h"
 #ifdef GMX_DOUBLE
-#include "gmx_math_x86_avx_256_double.h"
+#include "math_x86_avx_256_double.h"
 #else  /* GMX_DOUBLE */
-#include "gmx_math_x86_avx_256_single.h"
+#include "math_x86_avx_256_single.h"
 #endif /* GMX_DOUBLE */
 #else  /* GMX_X86_AVX_256 */
 #ifdef GMX_X86_AVX_128_FMA
-#include "gmx_x86_avx_128_fma.h"
+#include "general_x86_avx_128_fma.h"
 #ifdef GMX_DOUBLE
-#include "gmx_math_x86_avx_128_fma_double.h"
+#include "math_x86_avx_128_fma_double.h"
 #else  /* GMX_DOUBLE */
-#include "gmx_math_x86_avx_128_fma_single.h"
+#include "math_x86_avx_128_fma_single.h"
 #endif /* GMX_DOUBLE */
 #else  /* GMX_X86_AVX_128_FMA */
 #ifdef GMX_X86_SSE4_1
-#include "gmx_x86_sse4_1.h"
+#include "general_x86_sse4_1.h"
 #ifdef GMX_DOUBLE
-#include "gmx_math_x86_sse4_1_double.h"
+#include "math_x86_sse4_1_double.h"
 #else  /* GMX_DOUBLE */
-#include "gmx_math_x86_sse4_1_single.h"
+#include "math_x86_sse4_1_single.h"
 #endif /* GMX_DOUBLE */
 #else  /* GMX_X86_SSE4_1 */
 #ifdef GMX_X86_SSE2
-#include "gmx_x86_sse2.h"
+#include "general_x86_sse2.h"
 #ifdef GMX_DOUBLE
-#include "gmx_math_x86_sse2_double.h"
+#include "math_x86_sse2_double.h"
 #else  /* GMX_DOUBLE */
-#include "gmx_math_x86_sse2_single.h"
+#include "math_x86_sse2_single.h"
 #endif /* GMX_DOUBLE */
 #else  /* GMX_X86_SSE2 */
 #error No x86 acceleration defined
@@ -807,12 +805,12 @@ gmx_simd_align_int(const int *x)
  * generally these are the ones that don't need masking operations.
  */
 #ifdef GMX_DOUBLE
-#include "gmx_simd_math_double.h"
+#include "math_double.h"
 #else
-#include "gmx_simd_math_single.h"
+#include "math_single.h"
 #endif
 
 
 #endif /* GMX_HAVE_SIMD_MACROS */
 
-#endif /* _gmx_simd_macros_h_ */
+#endif

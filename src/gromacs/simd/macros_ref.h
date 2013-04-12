@@ -1,9 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,8 +33,8 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef _gmx_simd_ref_h_
-#define _gmx_simd_ref_h_
+#ifndef GMX_SIMD_MACROS_REF_H
+#define GMX_SIMD_MACROS_REF_H
 
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
@@ -45,7 +43,7 @@
 
 
 #ifndef GMX_SIMD_REF_WIDTH
-#error "GMX_SIMD_REF_WIDTH should be defined before including gmx_simd_ref.h"
+#error "GMX_SIMD_REF_WIDTH should be defined before including gromacs/simd/macros_ref.h"
 #endif
 
 #include <math.h>
@@ -525,4 +523,4 @@ gmx_simd_ref_atan2_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
     return c;
 }
 
-#endif /* _gmx_simd_ref_h_ */
+#endif

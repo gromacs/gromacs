@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "nrnb.h"
 
-#include "gmx_math_x86_avx_256_single.h"
+#include "gromacs/simd/math_x86_avx_256_single.h"
 #include "kernelutil_x86_avx_256_single.h"
 /* #endif */
 

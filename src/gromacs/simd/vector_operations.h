@@ -1,8 +1,6 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -42,14 +40,14 @@
  */
 
 /* This file contains vector operation functions using SIMD intrinsics.
- * gmx_simd_macros.h should be included before including this file.
+ * gromacs/simd/macros.h should be included before including this file.
  */
 
-#ifndef _gmx_simd_vec_h_
-#define _gmx_simd_vec_h_
+#ifndef GMX_SIMD_VECTOR_OPERATIONS_H
+#define GMX_SIMD_VECTOR_OPERATIONS_H
 
-#ifndef _gmx_simd_macros_h_
-#error "gmx_simd_macros.h was not included before including gmx_simd_vec.h"
+#ifndef GMX_SIMD_MACROS_H
+#error "gromacs/simd/macros.h was not included before including gromacs/simd/vector_operations.h"
 #endif
 
 
@@ -111,4 +109,4 @@ gmx_sum4_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c, gmx_mm_pr d)
 }
 
 
-#endif /* _gmx_simd_vec_h_ */
+#endif

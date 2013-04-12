@@ -1,8 +1,6 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2012, The GROMACS Development Team.
  * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
@@ -46,10 +44,10 @@
  * not necessarily equal to 4.
  */
 
-#ifdef _gmx_simd4_macros_h_
-#error "gmx_simd4_macros.h included twice"
+#ifdef GMX_SIMD_FOUR_WIDE_MACROS_H
+#error "four_wide_macros.h included twice"
 #else
-#define _gmx_simd4_macros_h_
+#define GMX_SIMD_FOUR_WIDE_MACROS_H
 
 
 /* The SIMD width here is always 4, since that is the whole point */
@@ -81,7 +79,7 @@ typedef float   gmx_simd4_real;
 #define GMX_HAVE_SIMD4_MACROS
 
 /* Include plain-C reference implementation, also serves as documentation */
-#include "gmx_simd4_ref.h"
+#include "four_wide_macros_ref.h"
 
 /* float/double SIMD register type */
 #define gmx_simd4_pr  gmx_simd4_ref_pr
@@ -468,4 +466,4 @@ gmx_simd4_align_real(const gmx_simd4_real *x)
 #endif
 
 
-#endif /* _gmx_simd4_macros_h_ */
+#endif
