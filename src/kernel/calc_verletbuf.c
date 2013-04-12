@@ -53,6 +53,16 @@
 #include "calc_verletbuf.h"
 #include "../mdlib/nbnxn_consts.h"
 
+#ifdef GMX_NBNXN_SIMD
+/* The include below sets the SIMD instruction type (precision+width)
+ * for all nbnxn SIMD search and non-bonded kernel code.
+ */
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
+#endif
+#include "gmx_simd_macros.h"
+#endif
+
 /* Struct for unique atom type for calculating the energy drift.
  * The atom displacement depends on mass and constraints.
  * The energy jump for given distance depend on LJ type and q.
@@ -81,7 +91,7 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
 #ifndef GMX_NBNXN_SIMD
         list_setup->cluster_size_j = NBNXN_CPU_CLUSTER_I_SIZE;
 #else
-        list_setup->cluster_size_j = GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
+        list_setup->cluster_size_j = GMX_SIMD_WIDTH_HERE;
 #ifdef GMX_NBNXN_SIMD_2XNN
         /* We assume the smallest cluster size to be on the safe side */
         list_setup->cluster_size_j /= 2;
