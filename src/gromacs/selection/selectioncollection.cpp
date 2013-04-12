@@ -304,7 +304,8 @@ void SelectionCollection::Impl::resolveExternalGroups(
 
     if (root->type == SEL_GROUPREF)
     {
-        bool bOk = true;
+        bool        bOk = true;
+        std::string foundName;
         if (grps_ == NULL)
         {
             // TODO: Improve error messages
@@ -314,20 +315,18 @@ void SelectionCollection::Impl::resolveExternalGroups(
         else if (root->u.gref.name != NULL)
         {
             char *name = root->u.gref.name;
-            if (!gmx_ana_indexgrps_find(&root->u.cgrp, grps_, name))
+            bOk = gmx_ana_indexgrps_find(&root->u.cgrp, &foundName, grps_, name);
+            sfree(name);
+            root->u.gref.name = NULL;
+            if (!bOk)
             {
                 // TODO: Improve error messages
                 errors->append("Unknown group referenced in a selection");
-                bOk = false;
-            }
-            else
-            {
-                sfree(name);
             }
         }
         else
         {
-            if (!gmx_ana_indexgrps_extract(&root->u.cgrp, grps_,
+            if (!gmx_ana_indexgrps_extract(&root->u.cgrp, &foundName, grps_,
                                            root->u.gref.id))
             {
                 // TODO: Improve error messages
@@ -338,7 +337,7 @@ void SelectionCollection::Impl::resolveExternalGroups(
         if (bOk)
         {
             root->type = SEL_CONST;
-            root->setName(root->u.cgrp.name);
+            root->setName(foundName);
         }
     }
 
@@ -443,7 +442,7 @@ SelectionCollection::setTopology(t_topology *top, int natoms)
     }
     gmx_ana_selcollection_t *sc = &impl_->sc_;
     // Do this first, as it allocates memory, while the others don't throw.
-    gmx_ana_index_init_simple(&sc->gall, natoms, NULL);
+    gmx_ana_index_init_simple(&sc->gall, natoms);
     sc->pcc.setTopology(top);
     sc->top = top;
 }

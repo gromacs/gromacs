@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -39,13 +39,16 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gromacs/selection/indexutil.h"
+
+#include <string>
+#include <vector>
+
 #include "gromacs/legacyheaders/index.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include "gromacs/selection/indexutil.h"
 
 /********************************************************************
  * gmx_ana_indexgrps_t functions
@@ -56,23 +59,28 @@
  */
 struct gmx_ana_indexgrps_t
 {
-    /** Number of index groups. */
-    int                 nr;
-    /** Array of index groups. */
-    gmx_ana_index_t    *g;
-};
+    //! Initializes an empty set of groups.
+    explicit gmx_ana_indexgrps_t(int nr) : nr(nr), g(NULL)
+    {
+        names.reserve(nr);
+        snew(g, nr);
+    }
+    ~gmx_ana_indexgrps_t()
+    {
+        for (int i = 0; i < nr; ++i)
+        {
+            gmx_ana_index_deinit(&g[i]);
+        }
+        sfree(g);
+    }
 
-/*!
- * \param[out] g     Index group structure.
- * \param[in]  ngrps Number of groups for which memory is allocated.
- */
-void
-gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps)
-{
-    snew(*g, 1);
-    (*g)->nr = ngrps;
-    snew((*g)->g,    ngrps);
-}
+    /** Number of index groups. */
+    int                       nr;
+    /** Array of index groups. */
+    gmx_ana_index_t          *g;
+    /** Group names. */
+    std::vector<std::string>  names;
+};
 
 /*!
  * \param[out] g     Index group structure.
@@ -93,7 +101,6 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
 {
     t_blocka *block = NULL;
     char    **names = NULL;
-    int       i, j;
 
     if (fnm)
     {
@@ -106,29 +113,44 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     }
     else
     {
-        snew(*g, 1);
-        (*g)->nr    = 0;
-        (*g)->g     = NULL;
+        *g = new gmx_ana_indexgrps_t(0);
         return;
     }
 
-    gmx_ana_indexgrps_alloc(g, block->nr);
-    for (i = 0; i < block->nr; ++i)
+    try
     {
-        gmx_ana_index_t *grp = &(*g)->g[i];
-
-        grp->isize = block->index[i+1] - block->index[i];
-        snew(grp->index, grp->isize);
-        for (j = 0; j < grp->isize; ++j)
+        *g = new gmx_ana_indexgrps_t(block->nr);
+        for (int i = 0; i < block->nr; ++i)
         {
-            grp->index[j] = block->a[block->index[i]+j];
-        }
-        grp->name         = names[i];
-        grp->nalloc_index = grp->isize;
-    }
+            gmx_ana_index_t *grp = &(*g)->g[i];
 
+            grp->isize = block->index[i+1] - block->index[i];
+            snew(grp->index, grp->isize);
+            for (int j = 0; j < grp->isize; ++j)
+            {
+                grp->index[j] = block->a[block->index[i]+j];
+            }
+            grp->nalloc_index = grp->isize;
+            (*g)->names.push_back(names[i]);
+        }
+    }
+    catch (...)
+    {
+        done_blocka(block);
+        sfree(block);
+        for (int i = 0; i < block->nr; ++i)
+        {
+            sfree(names[i]);
+        }
+        sfree(names);
+        throw;
+    }
     done_blocka(block);
     sfree(block);
+    for (int i = 0; i < block->nr; ++i)
+    {
+        sfree(names[i]);
+    }
     sfree(names);
 }
 
@@ -140,39 +162,7 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
 void
 gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g)
 {
-    int  i;
-
-    if (g->nr == 0)
-    {
-        sfree(g);
-        return;
-    }
-    for (i = 0; i < g->nr; ++i)
-    {
-        gmx_ana_index_deinit(&g->g[i]);
-    }
-    sfree(g->g);
-    g->nr    = 0;
-    g->g     = NULL;
-    sfree(g);
-}
-
-/*!
- * \param[out] dest Destination index groups.
- * \param[in]  src  Source index groups.
- *
- * A deep copy is made for all fields, including the group names.
- */
-void
-gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src)
-{
-    int g;
-
-    gmx_ana_indexgrps_alloc(dest, src->nr);
-    for (g = 0; g < src->nr; ++g)
-    {
-        gmx_ana_index_copy(&(*dest)->g[g], &src->g[g], true);
-    }
+    delete g;
 }
 
 /*!
@@ -203,53 +193,64 @@ gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n)
 }
 
 /*!
- * \param[out] dest Output structure.
- * \param[in]  src  Input index groups.
- * \param[in]  n    Number of the group to extract.
+ * \param[out] dest     Output structure.
+ * \param[out] destName Receives the name of the group if found.
+ * \param[in]  src      Input index groups.
+ * \param[in]  n        Number of the group to extract.
  * \returns true if \p n is a valid group in \p src, false otherwise.
  */
 bool
-gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n)
+gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
+                          gmx_ana_indexgrps_t *src, int n)
 {
+    destName->clear();
     if (n < 0 || n >= src->nr)
     {
         dest->isize = 0;
         return false;
     }
 
+    if (destName != NULL)
+    {
+        *destName = src->names[n];
+    }
     gmx_ana_index_copy(dest, &src->g[n], true);
     return true;
 }
 
 /*!
- * \param[out] dest Output structure.
- * \param[in]  src  Input index groups.
- * \param[in]  name Name (or part of the name) of the group to extract.
+ * \param[out] dest     Output structure.
+ * \param[out] destName Receives the name of the group if found.
+ * \param[in]  src      Input index groups.
+ * \param[in]  name     Name (or part of the name) of the group to extract.
  * \returns true if \p name is a valid group in \p src, false otherwise.
  *
  * Uses the Gromacs routine find_group() to find the actual group;
  * the comparison is case-insensitive.
  */
 bool
-gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name)
+gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
+                       gmx_ana_indexgrps_t *src,
+                       const char *name)
 {
-    int    i;
-    char **names;
+    const char **names;
 
+    destName->clear();
     snew(names, src->nr);
-    for (i = 0; i < src->nr; ++i)
+    for (int i = 0; i < src->nr; ++i)
     {
-        names[i] = src->g[i].name;
+        names[i] = src->names[i].c_str();
     }
-    i = find_group(name, src->nr, names);
+    int n = find_group(const_cast<char *>(name), src->nr,
+                       const_cast<char **>(names));
     sfree(names);
-    if (i == NOTSET)
+    if (n == NOTSET)
     {
         dest->isize = 0;
         return false;
     }
 
-    return gmx_ana_indexgrps_extract(dest, src, i);
+    return gmx_ana_indexgrps_extract(dest, destName, src, n);
 }
 
 /*!
@@ -261,12 +262,10 @@ gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *na
 void
 gmx_ana_indexgrps_print(FILE *fp, gmx_ana_indexgrps_t *g, int maxn)
 {
-    int  i;
-
-    for (i = 0; i < g->nr; ++i)
+    for (int i = 0; i < g->nr; ++i)
     {
-        fprintf(fp, " %2d: ", i);
-        gmx_ana_index_dump(fp, &g->g[i], i, maxn);
+        fprintf(fp, " Group %2d \"%s\" ", i + 1, g->names[i].c_str());
+        gmx_ana_index_dump(fp, &g->g[i], maxn);
     }
 }
 
@@ -311,7 +310,6 @@ gmx_ana_index_clear(gmx_ana_index_t *g)
 {
     g->isize        = 0;
     g->index        = NULL;
-    g->name         = NULL;
     g->nalloc_index = 0;
 }
 
@@ -319,29 +317,25 @@ gmx_ana_index_clear(gmx_ana_index_t *g)
  * \param[out] g      Output structure.
  * \param[in]  isize  Number of atoms in the new group.
  * \param[in]  index  Array of \p isize atoms (can be NULL if \p isize is 0).
- * \param[in]  name   Name for the new group (can be NULL).
  * \param[in]  nalloc Number of elements allocated for \p index
  *   (if 0, \p index is not freed in gmx_ana_index_deinit())
  *
  * No copy if \p index is made.
  */
 void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, char *name,
-                  int nalloc)
+gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, int nalloc)
 {
     g->isize        = isize;
     g->index        = index;
-    g->name         = name;
     g->nalloc_index = nalloc;
 }
 
 /*!
  * \param[out] g      Output structure.
  * \param[in]  natoms Number of atoms.
- * \param[in]  name   Name for the new group (can be NULL).
  */
 void
-gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name)
+gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms)
 {
     int  i;
 
@@ -351,7 +345,6 @@ gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name)
     {
         g->index[i] = i;
     }
-    g->name         = name;
     g->nalloc_index = natoms;
 }
 
@@ -367,7 +360,6 @@ gmx_ana_index_deinit(gmx_ana_index_t *g)
     {
         sfree(g->index);
     }
-    sfree(g->name);
     gmx_ana_index_clear(g);
 }
 
@@ -392,36 +384,19 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc)
         }
         memcpy(dest->index, src->index, dest->isize*sizeof(*dest->index));
     }
-    if (bAlloc && src->name)
-    {
-        dest->name = strdup(src->name);
-    }
-    else if (bAlloc || src->name)
-    {
-        dest->name = src->name;
-    }
 }
 
 /*!
  * \param[in]  fp     Where to print the output.
  * \param[in]  g      Index group to print.
- * \param[in]  i      Group number to use if the name is NULL.
  * \param[in]  maxn   Maximum number of indices to print (-1 = print all).
  */
 void
-gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn)
+gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn)
 {
     int  j, n;
 
-    if (g->name)
-    {
-        fprintf(fp, "\"%s\"", g->name);
-    }
-    else
-    {
-        fprintf(fp, "Group %d", i+1);
-    }
-    fprintf(fp, " (%d atoms)", g->isize);
+    fprintf(fp, "(%d atoms)", g->isize);
     if (maxn != 0)
     {
         fprintf(fp, ":");
@@ -440,35 +415,6 @@ gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn)
         }
     }
     fprintf(fp, "\n");
-}
-
-/*!
- * \param[in]  g      Input index group.
- * \param[in]  natoms Number of atoms to check against.
- *
- * If any atom index in the index group is less than zero or >= \p natoms,
- * gmx_fatal() is called.
- */
-void
-gmx_ana_index_check(gmx_ana_index_t *g, int natoms)
-{
-    int  j;
-
-    for (j = 0; j < g->isize; ++j)
-    {
-        if (g->index[j] >= natoms)
-        {
-            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
-                      "larger than number of atoms in trajectory (%d atoms)",
-                      g->index[j], g->name, g->isize, natoms);
-        }
-        else if (g->index[j] < 0)
-        {
-            gmx_fatal(FARGS, "Atom index (%d) in index group %s (%d atoms) "
-                      "is less than zero",
-                      g->index[j], g->name, g->isize);
-        }
-    }
 }
 
 /*!

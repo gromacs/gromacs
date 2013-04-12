@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -379,7 +379,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
                                                      "Trajectory (%d atoms) does not match topology (%d atoms)",
                                                      impl_->fr->natoms, top.topology()->atoms.nr)));
         }
-        // Check index groups if they have been initialized based on the topology.
+        // TODO: Check index groups if they have been initialized based on the topology.
         /*
            if (top)
            {

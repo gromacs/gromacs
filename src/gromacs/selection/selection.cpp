@@ -223,7 +223,6 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
     {
         gmx_ana_pos_t &p = rawPositions_;
         gmx_ana_index_copy(p.g, rootElement().v.u.g, false);
-        p.g->name = NULL;
         gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;
         refreshMassesAndCharges(top);
@@ -251,8 +250,8 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 
     fprintf(fp, "  ");
     printInfo(fp);
-    fprintf(fp, "    ");
-    gmx_ana_index_dump(fp, p.g, -1, nmaxind);
+    fprintf(fp, "    Group ");
+    gmx_ana_index_dump(fp, p.g, nmaxind);
 
     fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
     if (!p.m.mapb.index)

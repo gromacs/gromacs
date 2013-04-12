@@ -590,7 +590,7 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
         }
         else
         {
-            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, 0);
         }
     }
 }
@@ -629,18 +629,13 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
             SelelemTemporaryValueAssigner assigner(sel->child, *sel);
             sel->child->evaluate(data, sel->child, g);
         }
-        /* We need to keep the name for the cgrp across the copy to avoid
-         * problems if g has a name set. */
-        char *name = sel->u.cgrp.name;
         gmx_ana_index_copy(&sel->u.cgrp, g, false);
-        sel->u.cgrp.name = name;
         gmiss.isize      = 0;
     }
     else
     {
         gmissreserver.reserve(&gmiss, g->isize);
         gmx_ana_index_difference(&gmiss, g, &sel->u.cgrp);
-        gmiss.name = NULL;
     }
     if (gmiss.isize > 0)
     {
@@ -1130,7 +1125,6 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
     child = child->next;
     while (child && tmp.isize > 0)
     {
-        tmp.name = NULL;
         {
             MempoolSelelemReserver reserver(child, tmp.isize);
             child->evaluate(data, child, &tmp);
