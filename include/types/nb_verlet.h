@@ -46,6 +46,14 @@
 extern "C" {
 #endif
 
+/* For testing plain-C 2-way SIMD, uncomment the next lines,
+ * as well as the GMX_SIMD_PLAIN_C define in gmx_simd_macros.h
+ */
+/*
+#define GMX_NBNXN_SIMD
+#define GMX_NBNXN_SIMD_4XN
+*/
+
 #ifdef GMX_X86_SSE2
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
@@ -53,19 +61,13 @@ extern "C" {
 /* Uncomment the next line to use, slower, 128-bit SIMD with AVX-256 */
 /* #define GMX_NBNXN_HALF_WIDTH_SIMD */
 
-#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_NBNXN_SIMD_BITWIDTH  256
-#else
-#define GMX_NBNXN_SIMD_BITWIDTH  128
-#endif
-
 /* The nbnxn SIMD 4xN and 2x(N+N) kernels can be added independently.
  * Currently the 2xNN SIMD kernels only make sense with:
  *  8-way SIMD: 4x4 setup, works with AVX-256 in single precision
  * 16-way SIMD: 4x8 setup, not used, but most of the kernel code is there
  */
 #define GMX_NBNXN_SIMD_4XN
-#if GMX_NBNXN_SIMD_BITWIDTH == 256 && !defined GMX_DOUBLE
+#if defined GMX_X86_AVX_256 && !(defined GMX_DOUBLE || defined GMX_NBNXN_HALF_WIDTH_SIMD)
 #define GMX_NBNXN_SIMD_2XNN
 #endif
 
