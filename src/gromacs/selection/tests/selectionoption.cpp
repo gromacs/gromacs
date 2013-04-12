@@ -41,6 +41,9 @@
  */
 #include <gtest/gtest.h>
 
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/tpxio.h"
+
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/selection/selection.h"
@@ -66,24 +69,51 @@ class SelectionOptionTestBase : public ::testing::Test
 {
     public:
         SelectionOptionTestBase();
+        ~SelectionOptionTestBase();
 
         void setManager();
+        void loadTopology(const char *filename);
 
         gmx::SelectionCollection    sc_;
         gmx::SelectionOptionManager manager_;
         gmx::Options                options_;
+        t_topology                 *top_;
 };
 
 SelectionOptionTestBase::SelectionOptionTestBase()
-    : manager_(&sc_), options_(NULL, NULL)
+    : manager_(&sc_), options_(NULL, NULL), top_(NULL)
 {
     sc_.setReferencePosType("atom");
     sc_.setOutputPosType("atom");
 }
 
+SelectionOptionTestBase::~SelectionOptionTestBase()
+{
+    if (top_ != NULL)
+    {
+        free_t_atoms(&top_->atoms, TRUE);
+        done_top(top_);
+        sfree(top_);
+    }
+}
+
 void SelectionOptionTestBase::setManager()
 {
     setManagerForSelectionOptions(&options_, &manager_);
+}
+
+
+void SelectionOptionTestBase::loadTopology(const char *filename)
+{
+    char    title[STRLEN];
+    int     ePBC;
+    matrix  box;
+
+    snew(top_, 1);
+    read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
+                  title, top_, &ePBC, NULL, NULL, box, FALSE);
+
+    ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
 }
 
 
@@ -126,6 +156,27 @@ TEST_F(SelectionOptionTest, HandlesDynamicSelectionWhenStaticRequired)
     EXPECT_NO_THROW_GMX(assigner.finishOption());
     EXPECT_NO_THROW_GMX(assigner.finish());
     EXPECT_NO_THROW_GMX(options_.finish());
+}
+
+
+TEST_F(SelectionOptionTest, HandlesNonAtomicSelectionWhenAtomsRequired)
+{
+    gmx::Selection sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(&sel).onlyAtoms()));
+    setManager();
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("res_cog of resname RA RB"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InvalidInputError);
 }
 
 

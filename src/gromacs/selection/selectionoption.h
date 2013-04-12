@@ -96,8 +96,6 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
         /*! \brief
          * Only accept selections that evaluate to atom positions.
-         *
-         * TODO: This option is not yet implemented.
          */
         MyClass &onlyAtoms()
         { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
@@ -114,13 +112,6 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          */
         MyClass &dynamicMask()
         { selectionFlags_.set(efSelection_DynamicMask); return me(); }
-        /*! \brief
-         * Disallow using atom coordinates as the reference positions.
-         *
-         * TODO: This option is not yet implemented.
-         */
-        MyClass &dynamicOnlyWhole()
-        { selectionFlags_.set(efSelection_DynamicOnlyWhole); return me(); }
 
     private:
         // Disable possibility to allow multiple occurrences, since it isn't
@@ -249,8 +240,6 @@ class SelectionOptionInfo : public OptionInfo
          * \param[in] bEnabled  If true, the option accepts only positions that
          *      evaluate to atom positions.
          *
-         * TODO: This is not yet implemented.
-         *
          * \see SelectionOption::onlyAtoms()
          */
         void setOnlyAtoms(bool bEnabled);
@@ -278,17 +267,6 @@ class SelectionOptionInfo : public OptionInfo
          * \see SelectionOption::dynamicMask()
          */
         void setDynamicMask(bool bEnabled);
-        /*! \brief
-         * Sets whether atom coordinates are allowed as reference positions.
-         *
-         * \param[in] bEnabled  If true, the option does not accept atom
-         *      coordinates as reference positions.
-         *
-         * TODO: This is not yet implemented.
-         *
-         * \see SelectionOption::dynamicOnlyWhole()
-         */
-        void setDynamicOnlyWhole(bool bEnabled);
 
     private:
         SelectionOptionStorage &option();
