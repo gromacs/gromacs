@@ -350,6 +350,11 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
 
     /* Get a Van der Waals radius for each atom */
     ndefault = 0;
+    printf("NOTE: From version 5.0 %s uses the Van der Waals radii\n",
+           ShortProgram());
+    printf("from the source below. This means the results may be different\n");
+    printf("compared to previous GROMACS versions.\n");
+    please_cite(stdout,"Bondi1964a");
     for (i = 0; (i < natoms); i++)
     {
         if (!gmx_atomprop_query(aps, epropVDW,
