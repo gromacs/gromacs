@@ -78,7 +78,10 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         typedef SelectionOptionInfo InfoType;
 
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name) : MyBase(name) { }
+        explicit SelectionOption(const char *name)
+            : MyBase(name), selectionFlags_(efSelection_DisallowEmpty)
+        {
+        }
 
         /*! \brief
          * Request velocity evaluation for output positions.
@@ -112,6 +115,16 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
          */
         MyClass &dynamicMask()
         { selectionFlags_.set(efSelection_DynamicMask); return me(); }
+        /*! \brief
+         * Allow specifying an unconditionally empty selection for this option.
+         *
+         * If this option is not set, selections that are unconditionally empty
+         * (i.e., can never match any atoms) result in errors.
+         * Note that even without this option, it is still possible that a
+         * dynamic selection evaluates to zero atoms for some frames.
+         */
+        MyClass &allowEmpty()
+        { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
 
     private:
         // Disable possibility to allow multiple occurrences, since it isn't

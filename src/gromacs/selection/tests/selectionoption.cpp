@@ -180,6 +180,26 @@ TEST_F(SelectionOptionTest, HandlesNonAtomicSelectionWhenAtomsRequired)
 }
 
 
+TEST_F(SelectionOptionTest, ChecksEmptySelections)
+{
+    gmx::Selection sel;
+    using gmx::SelectionOption;
+    ASSERT_NO_THROW_GMX(options_.addOption(
+                                SelectionOption("sel").store(&sel)));
+    setManager();
+
+    gmx::OptionsAssigner assigner(&options_);
+    EXPECT_NO_THROW_GMX(assigner.start());
+    ASSERT_NO_THROW_GMX(assigner.startOption("sel"));
+    EXPECT_NO_THROW_GMX(assigner.appendValue("none"));
+    EXPECT_NO_THROW_GMX(assigner.finishOption());
+    EXPECT_NO_THROW_GMX(assigner.finish());
+    EXPECT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_THROW_GMX(sc_.compile(), gmx::InvalidInputError);
+}
+
+
 TEST_F(SelectionOptionTest, HandlesTooManySelections)
 {
     gmx::Selection sel;
