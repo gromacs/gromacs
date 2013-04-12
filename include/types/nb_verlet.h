@@ -46,6 +46,15 @@
 extern "C" {
 #endif
 
+/* For testing plain-C 2-way SIMD, uncomment the next lines,
+ * as well as the GMX_SIMD_PLAIN_C define in gmx_simd_macros.h
+ */
+/*
+#define GMX_NBNXN_SIMD
+#define GMX_NBNXN_SIMD_BITWIDTH  (2*sizeof(real))
+#define GMX_NBNXN_SIMD_4XN
+*/
+
 #ifdef GMX_X86_SSE2
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD

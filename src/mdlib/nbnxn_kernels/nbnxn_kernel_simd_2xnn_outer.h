@@ -36,10 +36,6 @@
  */
 
 
-/* Include the full width SIMD macros */
-#include "gmx_simd_macros.h"
-
-
 /* Define a few macros for half-width SIMD */
 #if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
 
@@ -226,10 +222,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 
     gmx_mm_pr  diag_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_mm_pr  diag_S0, diag_S2;
+    gmx_mm_pb  diag_S0, diag_S2;
 #else
-    gmx_mm_pr  diag0_S0, diag0_S2;
-    gmx_mm_pr  diag1_S0, diag1_S2;
+    gmx_mm_pb  diag0_S0, diag0_S2;
+    gmx_mm_pb  diag1_S0, diag1_S2;
 #endif
 
     gmx_mm_pr  mask_S0, mask_S2;
