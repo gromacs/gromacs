@@ -99,6 +99,9 @@ class SelectionData
         const char *selectionText() const { return selectionText_.c_str(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
         bool isDynamic() const { return bDynamic_; }
+        //! Returns the type of positions in the selection.
+        e_index_t type() const { return rawPositions_.m.type; }
+
         //! Number of positions in the selection.
         int posCount() const { return rawPositions_.nr; }
         //! Returns the root of the evaluation tree for this selection.
@@ -289,7 +292,7 @@ class Selection
         //! Returns true if the size of the selection (posCount()) is dynamic.
         bool isDynamic() const { return data().isDynamic(); }
         //! Returns the type of positions in the selection.
-        e_index_t type() const { return data().rawPositions_.m.type; }
+        e_index_t type() const { return data().type(); }
 
         //! Total number of atoms in the selection.
         int atomCount() const
@@ -548,7 +551,7 @@ class SelectionPosition
          *
          * Currently always returns the same as Selection::type().
          */
-        e_index_t type() const { return sel_->rawPositions_.m.type; }
+        e_index_t type() const { return sel_->type(); }
         //! Returns coordinates for this position.
         const rvec &x() const
         {
