@@ -66,9 +66,16 @@ typedef void nbnxn_alloc_t (void **ptr, size_t nbytes);
  */
 typedef void nbnxn_free_t (void *ptr);
 
+/* This is the actual cluster-pair list j-entry.
+ * cj is the j-cluster.
+ * The interaction bits in excl are indexed i-major, j-minor.
+ * The cj entries are sorted such that ones with exclusions come first.
+ * This means that once a full mask (=NBNXN_INTERACTION_MASK_ALL)
+ * is found, all subsequent j-entries in the i-entry also have full masks.
+ */
 typedef struct {
-    int      cj;    /* The j-cluster                    */
-    unsigned excl;  /* The exclusion (interaction) bits */
+    int      cj;    /* The j-cluster                             */
+    unsigned excl;  /* The topology exclusion (interaction) bits */
 } nbnxn_cj_t;
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -111,8 +118,9 @@ typedef struct {
 } nbnxn_cj4_t;
 
 typedef struct {
-    unsigned pair[32];     /* Exclusion bits for one warp,                *
-                            * each unsigned has bit for 4*8 i clusters    */
+    unsigned pair[32];     /* Topology exclusion interaction bits for one warp,
+                            * each unsigned has bitS for 4*8 i clusters
+                            */
 } nbnxn_excl_t;
 
 typedef struct {
@@ -238,9 +246,18 @@ typedef struct {
     int                      xstride;         /* stride for a coordinate in x (usually 3 or 4)      */
     int                      fstride;         /* stride for a coordinate in f (usually 3 or 4)      */
     real                    *x;               /* x and possibly q, size natoms*xstride              */
-    real                    *simd_4xn_diag;   /* indices to set the SIMD 4xN diagonal masks    */
-    real                    *simd_2xnn_diag;  /* indices to set the SIMD 2x(N+N)diagonal masks */
-    unsigned                *simd_excl_mask;  /* exclusion masks for SIMD topology exclusions  */
+
+    /* j-atom minus i-atom index for generating self and Newton exclusions
+     * cluster-cluster pairs of the diagonal, for 4xn and 2xnn kernels.
+     */
+    real                    *simd_4xn_diagonal_j_minus_i;
+    real                    *simd_2xnn_diagonal_j_minus_i;
+    /* Filters for topology exclusion masks for the SIMD kernels.
+     * filter2 is the same as filter1, but with each element duplicated.
+     */
+    unsigned                *simd_exclusion_filter1;
+    unsigned                *simd_exclusion_filter2;
+
     int                      nout;            /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;             /* Output data structures               */
     int                      nalloc;          /* Allocation size of all arrays (for x/f *x/fstride) */
