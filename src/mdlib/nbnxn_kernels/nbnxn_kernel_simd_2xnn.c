@@ -51,19 +51,18 @@
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 
+/* Include the full width SIMD macros */
+#include "gmx_simd_macros.h"
+#include "gmx_simd_vec.h"
+
 #include "nbnxn_kernel_simd_2xnn.h"
 
-/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
+#if !(GMX_SIMD_WIDTH_HERE == 8 || GMX_SIMD_WIDTH_HERE == 16)
+#error "unsupported SIMD width"
+#endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-#endif
+
+/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -151,8 +150,8 @@ static void reduce_group_energies(int ng, int ng_2log,
                                   const real *VSvdw, const real *VSc,
                                   real *Vvdw, real *Vc)
 {
-    const int simd_width   = GMX_SIMD_WIDTH_HERE;
-    const int unrollj_half = GMX_SIMD_WIDTH_HERE/4;
+    const int unrollj      = GMX_SIMD_WIDTH_HERE/2;
+    const int unrollj_half = unrollj/2;
     int       ng_p2, i, j, j0, j1, c, s;
 
     ng_p2 = (1<<ng_2log);
@@ -172,14 +171,14 @@ static void reduce_group_energies(int ng, int ng_2log,
         {
             for (j0 = 0; j0 < ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*simd_width/2;
+                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*unrollj;
                 for (s = 0; s < unrollj_half; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
                     Vc  [i*ng+j0] += VSc  [c+0];
                     Vc  [i*ng+j1] += VSc  [c+1];
-                    c             += simd_width/2 + 2;
+                    c             += unrollj + 2;
                 }
             }
         }
