@@ -240,7 +240,8 @@ typedef struct {
     real                    *x;               /* x and possibly q, size natoms*xstride              */
     real                    *simd_4xn_diag;   /* indices to set the SIMD 4xN diagonal masks    */
     real                    *simd_2xnn_diag;  /* indices to set the SIMD 2x(N+N)diagonal masks */
-    unsigned                *simd_excl_mask;  /* exclusion masks for SIMD topology exclusions  */
+    unsigned                *simd_excl_mask1; /* exclusion masks for SIMD topology exclusions  */
+    unsigned                *simd_excl_mask2; /* as simd_excl_mask1, but with all masks twice  */
     int                      nout;            /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;             /* Output data structures               */
     int                      nalloc;          /* Allocation size of all arrays (for x/f *x/fstride) */
