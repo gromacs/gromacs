@@ -55,7 +55,7 @@
  * this can be faster when we have defined gmx_blendv_pr, i.e. an instruction
  * that selects from two SIMD registers based on the contents of a third.
  */
-#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_HAVE_SIMD_BLENDV && !defined COUNT_PAIRS
+#if !(defined CHECK_EXCLS || defined CALC_ENERGIES) && defined GMX_SIMD_HAVE_BLENDV && !defined COUNT_PAIRS
 /* With RF and tabulated Coulomb we replace cmp+and with sub+blendv.
  * With gcc this is slower, except for RF on Sandy Bridge.
  * Tested with gcc 4.6.2, 4.6.3 and 4.7.1.
@@ -588,7 +588,7 @@
     ti_S1       = gmx_cvttpr_epi32(rs_S1);
     ti_S2       = gmx_cvttpr_epi32(rs_S2);
     ti_S3       = gmx_cvttpr_epi32(rs_S3);
-#ifdef GMX_HAVE_SIMD_FLOOR
+#ifdef GMX_SIMD_HAVE_FLOOR
     /* SSE4.1 floor is faster than gmx_cvtepi32_ps int->float cast */
     rf_S0       = gmx_floor_pr(rs_S0);
     rf_S1       = gmx_floor_pr(rs_S1);
