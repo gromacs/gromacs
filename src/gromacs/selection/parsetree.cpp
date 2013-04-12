@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -930,13 +930,13 @@ _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
     }
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_CONST));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-    /* FIXME: The constness should not be cast away */
-    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, grps, (char *)name))
+    std::string                 foundName;
+    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, &foundName, grps, name))
     {
         _gmx_selparser_error(scanner, "Cannot match 'group %s'", name);
         return SelectionTreeElementPointer();
     }
-    sel->setName(sel->u.cgrp.name);
+    sel->setName(foundName);
     return sel;
 }
 
@@ -966,12 +966,13 @@ _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
     }
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_CONST));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-    if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, grps, id))
+    std::string                 foundName;
+    if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, &foundName, grps, id))
     {
         _gmx_selparser_error(scanner, "Cannot match 'group %d'", id);
         return SelectionTreeElementPointer();
     }
-    sel->setName(sel->u.cgrp.name);
+    sel->setName(foundName);
     return sel;
 }
 
@@ -1033,7 +1034,6 @@ _gmx_sel_init_selection(const char                        *name,
     if (name)
     {
         root->setName(name);
-        root->u.cgrp.name = strdup(name);
     }
     /* Update the flags */
     _gmx_selelem_update_flags(root, scanner);
@@ -1059,17 +1059,13 @@ _gmx_sel_init_selection(const char                        *name,
             && child->child->child->type == SEL_CONST
             && child->child->child->v.type == GROUP_VALUE)
         {
-            const char *grpName = child->child->child->u.cgrp.name;
-            root->setName(grpName);
-            root->u.cgrp.name = strdup(grpName);
+            root->setName(child->child->child->name());
         }
     }
     /* If there still is no name, use the selection string */
     if (root->name().empty())
     {
-        const char *selStr = _gmx_sel_lexer_pselstr(scanner);
-        root->setName(selStr);
-        root->u.cgrp.name = strdup(selStr);
+        root->setName(_gmx_sel_lexer_pselstr(scanner));
     }
 
     /* Print out some information if the parser is interactive */
@@ -1125,7 +1121,6 @@ _gmx_sel_assign_variable(const char                        *name,
     /* Create the root element */
     root.reset(new SelectionTreeElement(SEL_ROOT));
     root->setName(name);
-    root->u.cgrp.name = strdup(name);
     /* Create the subexpression element */
     root->child.reset(new SelectionTreeElement(SEL_SUBEXPR));
     root->child->setName(name);
