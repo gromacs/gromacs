@@ -18,8 +18,8 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-#ifndef _gmx_x86_avx_256_h_
-#define _gmx_x86_avx_256_h_
+#ifndef GMX_SIMD_GENERAL_AVX_256_H
+#define GMX_SIMD_GENERAL_AVX_256_H
 
 
 #include <immintrin.h>
@@ -286,4 +286,4 @@ static int gmx_mm_check_and_reset_overflow(void)
 #endif
 
 
-#endif /* _gmx_x86_avx_256_h_ */
+#endif

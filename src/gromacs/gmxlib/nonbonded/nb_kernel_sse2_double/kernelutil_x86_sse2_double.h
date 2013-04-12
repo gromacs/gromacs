@@ -31,7 +31,7 @@
 
 #include <math.h>
 
-#include "gmx_x86_sse2.h"
+#include "gromacs/simd/general_x86_sse2.h"
 
 #include <stdio.h>
 

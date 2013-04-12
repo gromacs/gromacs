@@ -32,8 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _gmx_simd_math_single_h_
-#define _gmx_simd_math_single_h_
+#ifndef GMX_SIMD_MATH_SINGLE_H_
+#define GMX_SIMD_MATH_SINGLE_H_
 
 
 /* 1.0/sqrt(x) */
@@ -248,4 +248,4 @@ gmx_pmecorrV_pr(gmx_mm_pr z2)
 }
 
 
-#endif /* _gmx_simd_math_single_h_ */
+#endif

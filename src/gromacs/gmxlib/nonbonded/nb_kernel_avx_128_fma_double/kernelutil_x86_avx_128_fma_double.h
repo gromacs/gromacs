@@ -29,7 +29,7 @@
 #ifndef _kernelutil_x86_avx_128_fma_double_h_
 #define _kernelutil_x86_avx_128_fma_double_h_
 
-#include "gmx_x86_avx_128_fma.h"
+#include "gromacs/simd/general_x86_avx_128_fma.h"
 
 
 static int
