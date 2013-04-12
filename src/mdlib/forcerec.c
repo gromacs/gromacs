@@ -1549,42 +1549,49 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     const char *returnvalue = NULL;
     switch (kernel_type)
     {
-        case nbnxnkNotSet: returnvalue     = "not set"; break;
-        case nbnxnk4x4_PlainC: returnvalue = "plain C"; break;
-#ifndef GMX_NBNXN_SIMD
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "not available"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "not available"; break;
-#else
+        case nbnxnkNotSet:
+            returnvalue = "not set";
+            break;
+        case nbnxnk4x4_PlainC:
+            returnvalue = "plain C";
+            break;
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+#ifdef GMX_NBNXN_SIMD
 #ifdef GMX_X86_SSE2
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-            /* x86 SIMD intrinsics can be converted to either SSE or AVX depending
-             * on compiler flags. As we use nearly identical intrinsics, using an AVX
-             * compiler flag without an AVX macro effectively results in AVX kernels.
+            /* We have x86 SSE2 compatible SIMD */
+#ifdef GMX_X86_AVX_128_FMA
+            returnvalue = "AVX-128-FMA";
+#else
+#if defined GMX_X86_AVX_256 || defined __AVX__
+            /* x86 SIMD intrinsics can be converted to SSE or AVX depending
+             * on compiler flags. As we use nearly identical intrinsics,
+             * compiling for AVX without an AVX macros effectively results
+             * in AVX kernels.
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
-#ifndef GMX_X86_SSE4_1
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE2"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE2"; break;
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+            returnvalue = "AVX-128";
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE4.1"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE4.1"; break;
+            returnvalue = "AVX-256";
 #endif
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-128"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-128"; break;
+#ifdef GMX_X86_SSE4_1
+            returnvalue  = "SSE4.1";
+#else
+            returnvalue  = "SSE2";
 #endif
 #endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-256"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-256"; break;
 #endif
-#else   /* not GMX_X86_SSE2 */
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SIMD"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SIMD"; break;
-#endif
-#endif
+#else /* GMX_X86_SSE2 */
+            /* not GMX_X86_SSE2, but other SIMD */
+            returnvalue  = "SIMD";
+#endif /* GMX_X86_SSE2 */
+#else /* GMX_NBNXN_SIMD */
+            returnvalue = "not available";
+#endif /* GMX_NBNXN_SIMD */
+            break;
         case nbnxnk8x8x8_CUDA: returnvalue   = "CUDA"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
 

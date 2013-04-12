@@ -45,6 +45,45 @@
  *   energy group pair energy storage
  */
 
+
+#ifdef GMX_SIMD_PLAIN_C
+
+#define load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S) \
+    {                                                        \
+        ctab0_S.x = tab_coul_F[ti_S.x];                      \
+        ctab1_S.x = tab_coul_F[ti_S.x+1] - ctab0_S.x;        \
+        ctab0_S.y = tab_coul_F[ti_S.y];                      \
+        ctab1_S.y = tab_coul_F[ti_S.y+1] - ctab0_S.y;        \
+    }
+
+#define load_table_f_v(tab_coul_F, tab_coul_V, ti_S, ti, ctab0_S, ctab1_S, ctabv_S) \
+    {                                                         \
+        load_table_f(tab_coul_F, ti_S, ti, ctab0_S, ctab1_S); \
+        ctabv_S.x = tab_coul_V[ti_S.x];                       \
+        ctabv_S.y = tab_coul_V[ti_S.y];                       \
+    }
+
+/* Sum the elements within each input register and store the sums in out */
+#define GMX_MM_TRANSPOSE_SUM2_PR(in0, in1, out) \
+    {                                           \
+        real tmp;                               \
+        tmp   = in0.y;                          \
+        in0.y = in1.x;                          \
+        in1.x = tmp;                            \
+        out = gmx_add_pr(in0, in1);             \
+    }
+
+#define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE) \
+    {                                                        \
+        c6_SSE.x  = nbfp[type[aj+0]*NBFP_STRIDE];            \
+        c12_SSE.x = nbfp[type[aj+0]*NBFP_STRIDE+1];          \
+        c6_SSE.y  = nbfp[type[aj+1]*NBFP_STRIDE];            \
+        c12_SSE.y = nbfp[type[aj+1]*NBFP_STRIDE+1];          \
+    }
+
+#endif /* GMX_SIMD_PLAIN_C */
+
+
 #ifdef GMX_X86_SSE2
 
 /* Transpose 2 double precision registers */
@@ -54,7 +93,7 @@
         out1 = _mm_unpackhi_pd(in0, in1);                                    \
     }
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128 || !defined GMX_DOUBLE
+#if !defined GMX_DOUBLE
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 #define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0, in1, in2, in3, out0, out1)    \
     {                                                                       \
@@ -63,16 +102,6 @@
         _c23 = _mm_movelh_ps(in2, in3);                                      \
         out0 = _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(2, 0, 2, 0));              \
         out1 = _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(3, 1, 3, 1));              \
-    }
-#else
-/* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
-#define GMX_MM_SHUFFLE_4_PS_FIL01_TO_2_PS(in0, in1, in2, in3, out0, out1)    \
-    {                                                                       \
-        __m256d _c01, _c23;                                                  \
-        _c01 = _mm256_shuffle_pd(in0, in1, _MM_SHUFFLE(1, 0, 1, 0));             \
-        _c23 = _mm256_shuffle_pd(in2, in3, _MM_SHUFFLE(1, 0, 1, 0));             \
-        out0 = _mm256_shuffle_pd(_c01, _c23, _MM_SHUFFLE(2, 0, 2, 0));           \
-        out1 = _mm256_shuffle_pd(_c01, _c23, _MM_SHUFFLE(3, 1, 3, 1));           \
     }
 #endif
 
@@ -85,8 +114,22 @@
         out  = _mm_shuffle_ps(_c01, _c23, _MM_SHUFFLE(2, 0, 2, 0));              \
     }
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#ifndef GMX_DOUBLE
+/* Set a macro to easily switch between 128 and 256-bit x86 SIMD */
+#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+#ifdef GMX_DOUBLE
+#define X86_SIMD_256BIT_DOUBLE
+#else
+#define X86_SIMD_256BIT_SINGLE
+#endif
+#else
+#ifdef GMX_DOUBLE
+#define X86_SIMD_128BIT_DOUBLE
+#else
+#define X86_SIMD_128BIT_SINGLE
+#endif
+#endif
+
+#ifdef X86_SIMD_128BIT_SINGLE
 /* Sum the elements within each input register and store the sums in out */
 #define GMX_MM_TRANSPOSE_SUM4_PR(in0, in1, in2, in3, out)                   \
     {                                                                       \
@@ -95,16 +138,18 @@
         in2  = _mm_add_ps(in2, in3);                                          \
         out  = _mm_add_ps(in0, in2);                                         \
     }
-#else
+#endif
+
+#ifdef X86_SIMD_128BIT_DOUBLE
 /* Sum the elements within each input register and store the sums in out */
-#define GMX_MM_TRANSPOSE_SUM2_PD(in0, in1, out)                           \
+#define GMX_MM_TRANSPOSE_SUM2_PR(in0, in1, out)                           \
     {                                                                       \
         GMX_MM_TRANSPOSE2_PD(in0, in1);                                      \
         out  = _mm_add_pd(in0, in1);                                         \
     }
 #endif
-#else
-#ifndef GMX_DOUBLE
+
+#ifdef X86_SIMD_256BIT_SINGLE
 /* Sum the elements within each input register and store the sums in out */
 #define GMX_MM_TRANSPOSE_SUM4_PR(in0, in1, in2, in3, out)                   \
     {                                                                       \
@@ -122,7 +167,9 @@
         in2 = _mm256_permute_ps(in0, _MM_SHUFFLE(2, 3, 0, 1));                  \
         out = _mm_add_ps(_mm256_castps256_ps128(in0), _mm256_extractf128_ps(in2, 1)); \
     }
-#else
+#endif
+
+#ifdef X86_SIMD_256BIT_DOUBLE
 /* Sum the elements within each input register and store the sums in out */
 #define GMX_MM_TRANSPOSE_SUM4_PR(in0, in1, in2, in3, out)                   \
     {                                                                       \
@@ -131,9 +178,8 @@
         out = _mm256_add_pd(_mm256_permute2f128_pd(in0, in2, 0x20), _mm256_permute2f128_pd(in0, in2, 0x31)); \
     }
 #endif
-#endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
+#if defined X86_SIMD_128BIT_SINGLE || defined X86_SIMD_128BIT_DOUBLE
 
 static inline __m128
 gmx_mm128_invsqrt_ps_single(__m128 x)
@@ -170,7 +216,7 @@ gmx_mm128_invsqrt_ps_single(__m128 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
+#if defined X86_SIMD_256BIT_SINGLE || defined X86_SIMD_256BIT_DOUBLE
 
 static inline __m256
 gmx_mm256_invsqrt_ps_single(__m256 x)
@@ -208,7 +254,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 /* Force and energy table load and interpolation routines */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128 && !defined GMX_DOUBLE
+#ifdef X86_SIMD_128BIT_SINGLE
 
 #define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
     {                                                                       \
@@ -225,7 +271,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 256 && !defined GMX_DOUBLE
+#ifdef X86_SIMD_256BIT_SINGLE
 
 /* Put two 128-bit 4-float registers into one 256-bit 8-float register */
 #define GMX_2_MM_TO_M256(in0, in1, out)                                   \
@@ -274,7 +320,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128 && defined GMX_DOUBLE
+#ifdef X86_SIMD_128BIT_DOUBLE
 
 #define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
     {                                                                       \
@@ -290,7 +336,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 256 && defined GMX_DOUBLE
+#ifdef X86_SIMD_256BIT_DOUBLE
 
 #define load_lj_pair_params(nbfp, type, aj, c6_SSE, c12_SSE)                \
     {                                                                       \
@@ -324,7 +370,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
  * but it is only used with AVX.
  */
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128 && !defined GMX_DOUBLE
+#ifdef X86_SIMD_128BIT_SINGLE
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
     {                                                                       \
@@ -372,7 +418,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 256 && !defined GMX_DOUBLE
+#ifdef X86_SIMD_256BIT_SINGLE
 
 #define load_table_f(tab_coul_FDV0, ti_SSE, ti, ctab0_SSE, ctab1_SSE)   \
     {                                                                       \
@@ -417,7 +463,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128 && defined GMX_DOUBLE
+#ifdef X86_SIMD_128BIT_DOUBLE
 
 #define load_table_f(tab_coul_F, ti_SSE, ti, ctab0_SSE, ctab1_SSE)      \
     {                                                                       \
@@ -461,7 +507,7 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 256 && defined GMX_DOUBLE
+#ifdef X86_SIMD_256BIT_DOUBLE
 
 /* Put two 128-bit 2-double registers into one 256-bit 4-ouble register */
 #define GMX_2_M128D_TO_M256D(in0, in1, out)                               \
@@ -516,11 +562,11 @@ gmx_mm256_invsqrt_ps_single(__m256 x)
 
 #endif
 
+#endif /* GMX_X86_SSE2 */
 
-/* Add energy register to possibly multiple terms in the energy array.
- * This function is the same for SSE/AVX single/double.
- */
-static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
+
+/* Add energy register to possibly multiple terms in the energy array */
+static inline void add_ener_grp(gmx_mm_pr e_S, real *v, const int *offset_jj)
 {
     int jj;
 
@@ -530,14 +576,14 @@ static inline void add_ener_grp(gmx_mm_pr e_SSE, real *v, const int *offset_jj)
      */
     for (jj = 0; jj < (UNROLLJ/2); jj++)
     {
-        gmx_mm_pr v_SSE;
+        gmx_mm_pr v_S;
 
-        v_SSE = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
-        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_SSE, e_SSE));
+        v_S = gmx_load_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE);
+        gmx_store_pr(v+offset_jj[jj]+jj*GMX_SIMD_WIDTH_HERE, gmx_add_pr(v_S, e_S));
     }
 }
 
-#if defined GMX_X86_AVX_256 && GMX_SIMD_WIDTH_HERE == 8 && defined gmx_mm_hpr
+#if defined X86_SIMD_256BIT_SINGLE && defined gmx_mm_hpr
 /* As add_ener_grp above, but for two groups of UNROLLJ/2 stored in
  * a single SIMD register.
  */
@@ -567,6 +613,9 @@ static inline void add_ener_grp_halves(gmx_mm_pr e_SSE,
 }
 #endif
 
-#endif /* GMX_X86_SSE2 */
+#undef X86_SIMD_128BIT_SINGLE
+#undef X86_SIMD_128BIT_DOUBLE
+#undef X86_SIMD_256BIT_SINGLE
+#undef X86_SIMD_256BIT_DOUBLE
 
 #endif /* _nbnxn_kernel_sse_utils_h_ */
