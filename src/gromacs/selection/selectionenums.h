@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -71,7 +71,6 @@ enum SelectionFlag
     efSelection_OnlyAtoms               = 1<<1,
     //! Whether ::POS_MASKONLY should be used for output position evaluation.
     efSelection_DynamicMask             = 1<<2,
-    efSelection_DynamicOnlyWhole        = 1<<3,
     //! Whether velocities of output positions should be evaluated.
     efSelection_EvaluateVelocities      = 1<<5,
     //! Whether forces on output positions should be evaluated.
