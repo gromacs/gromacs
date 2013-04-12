@@ -52,8 +52,8 @@
 #ifdef GMX_NBNXN_SIMD_2XNN
 
 /* Include the full width SIMD macros */
-#include "gmx_simd_macros.h"
-#include "gmx_simd_vec.h"
+#include "gromacs/simd/macros.h"
+#include "gromacs/simd/vector_operations.h"
 
 #include "nbnxn_kernel_simd_2xnn.h"
 

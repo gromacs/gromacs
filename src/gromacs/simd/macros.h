@@ -42,7 +42,7 @@
  */
 
 #ifdef _gmx_simd_macros_h_
-#error "gmx_simd_macros.h included twice"
+#error "gromacs/simd/macros.h included twice"
 #else
 #define _gmx_simd_macros_h_
 
@@ -62,7 +62,7 @@
 #define GMX_SIMD_REF_WIDTH  4
 
 /* Include plain-C reference implementation, also serves as documentation */
-#include "gmx_simd_ref.h"
+#include "gromacs/simd/reference.h"
 
 #define GMX_SIMD_WIDTH_HERE  GMX_SIMD_REF_WIDTH
 
@@ -577,9 +577,9 @@ gmx_simd_align_int(const int *x)
  * generally these are the ones that don't need masking operations.
  */
 #ifdef GMX_DOUBLE
-#include "gmx_simd_math_double.h"
+#include "math_double.h"
 #else
-#include "gmx_simd_math_single.h"
+#include "math_single.h"
 #endif
 
 #endif /* GMX_HAVE_SIMD_MACROS */

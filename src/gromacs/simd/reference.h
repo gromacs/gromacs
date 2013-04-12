@@ -45,7 +45,7 @@
 
 
 #ifndef GMX_SIMD_REF_WIDTH
-#error "GMX_SIMD_REF_WIDTH should be defined before including gmx_simd_ref.h"
+#error "GMX_SIMD_REF_WIDTH should be defined before including gromacs/simd/reference.h"
 #endif
 
 #include <math.h>

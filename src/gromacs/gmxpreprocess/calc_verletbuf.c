@@ -58,7 +58,7 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #endif
 
 /* Struct for unique atom type for calculating the energy drift.

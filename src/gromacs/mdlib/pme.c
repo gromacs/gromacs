@@ -87,14 +87,14 @@
 
 
 /* Include the SIMD macro file and then check for support */
-#include "gmx_simd_macros.h"
+#include "gromacs/simd/macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
 /* Turn on SIMD intrinsics for PME solve */
 #define PME_SIMD
 #endif
 
 /* SIMD spread+gather only in single precision with SSE2 or higher available.
- * We might want to switch to use gmx_simd_macros.h, but this is somewhat
+ * We might want to switch to use gromacs/simd/macros.h, but this is somewhat
  * complicated, as we use unaligned and/or 4-wide only loads.
  */
 #if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
