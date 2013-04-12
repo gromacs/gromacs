@@ -51,19 +51,18 @@
 
 #ifdef GMX_NBNXN_SIMD_2XNN
 
+/* Include the full width SIMD macros */
+#include "gmx_simd_macros.h"
+#include "gmx_simd_vec.h"
+
 #include "nbnxn_kernel_simd_2xnn.h"
 
-/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
+#if !(GMX_SIMD_WIDTH_HERE == 8 || GMX_SIMD_WIDTH_HERE == 16)
+#error "unsupported SIMD width"
+#endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
-#endif
-#endif
+
+/* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF

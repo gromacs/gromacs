@@ -62,6 +62,7 @@
 #define SIMD_BONDEDS
 
 #include "gmx_simd_macros.h"
+#include "gmx_simd_vec.h"
 #endif
 
 /* Find a better place for this? */
@@ -116,54 +117,6 @@ static int pbc_rvec_sub(const t_pbc *pbc, const rvec xi, const rvec xj, rvec dx)
 }
 
 #ifdef SIMD_BONDEDS
-
-/* Below are 3 SIMD vector operations.
- * Currently these are only used here, but they should be moved to
- * a general SIMD include file when used elsewhere.
- */
-
-/* SIMD inner-product of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_iprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz)
-{
-    gmx_mm_pr ret;
-
-    ret = gmx_mul_pr(ax, bx);
-    ret = gmx_madd_pr(ay, by, ret);
-    ret = gmx_madd_pr(az, bz, ret);
-
-    return ret;
-}
-
-/* SIMD norm squared of multiple vectors */
-static gmx_inline gmx_mm_pr
-gmx_norm2_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az)
-{
-    gmx_mm_pr ret;
-
-    ret = gmx_mul_pr(ax, ax);
-    ret = gmx_madd_pr(ay, ay, ret);
-    ret = gmx_madd_pr(az, az, ret);
-
-    return ret;
-}
-
-/* SIMD cross-product of multiple vectors */
-static gmx_inline void
-gmx_cprod_pr(gmx_mm_pr ax, gmx_mm_pr ay, gmx_mm_pr az,
-             gmx_mm_pr bx, gmx_mm_pr by, gmx_mm_pr bz,
-             gmx_mm_pr *cx, gmx_mm_pr *cy, gmx_mm_pr *cz)
-{
-    *cx = gmx_mul_pr(ay, bz);
-    *cx = gmx_nmsub_pr(az, by, *cx);
-
-    *cy = gmx_mul_pr(az, bx);
-    *cy = gmx_nmsub_pr(ax, bz, *cy);
-
-    *cz = gmx_mul_pr(ax, by);
-    *cz = gmx_nmsub_pr(ay, bx, *cz);
-}
 
 /* SIMD PBC data structure, containing 1/boxdiag and the box vectors */
 typedef struct {

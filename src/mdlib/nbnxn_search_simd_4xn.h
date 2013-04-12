@@ -40,11 +40,6 @@
 #error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
 #endif
 
-#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
-#define GMX_USE_HALF_WIDTH_SIMD_HERE
-#endif
-#include "gmx_simd_macros.h"
-
 #if GMX_SIMD_WIDTH_HERE >= NBNXN_CPU_CLUSTER_I_SIZE
 #define STRIDE_S  (GMX_SIMD_WIDTH_HERE)
 #else
