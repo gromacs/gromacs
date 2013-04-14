@@ -933,9 +933,10 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
     endif()
 
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using external FFT library - FFTW3")
+    endif()
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    MESSAGE(STATUS "Using external FFT library - Intel MKL")
-
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
     # stuff...
@@ -987,15 +988,22 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     set(GMX_FFT_MKL 1)
     set(HAVE_LIBMKL 1)
 
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using external FFT library - Intel MKL")
+    endif()
+
 #elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
 #    MESSAGE(STATUS "Using external FFT library - AMD core math library")
 #    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
-    MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using internal FFT library - fftpack")
+    endif()
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+set(GMX_FFT_LIBRARY_PREVIOUS_VALUE ${GMX_FFT_LIBRARY} CACHE INTERNAL "Previous value for GMX_FFT_LIBRARY, so that we can detect when it changes.")
 
 # enable threaded fftw3 if we've found it 
 if(FFTW3_THREADS OR FFTW3F_THREADS)
