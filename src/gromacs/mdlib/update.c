@@ -690,18 +690,25 @@ static void do_update_sd1(gmx_stochd_t *sd,
                           unsigned short cTC[],
                           rvec x[], rvec xprime[], rvec v[], rvec f[],
                           rvec sd_X[],
-                          int ngtc, real tau_t[], real ref_t[])
+                          int ngtc, real tau_t[], real ref_t[],
+                          gmx_bool bDoConstr,
+                          gmx_bool bFirstHalfConstr)
 {
     gmx_sd_const_t *sdc;
     gmx_sd_sigma_t *sig;
     real            kT;
     int             gf = 0, ga = 0, gt = 0;
-    real            ism, sd_V;
+    real            ism, sd_V, im;
     int             n, d;
+    real            vn;
 
     sdc = sd->sdc;
     sig = sd->sdsig;
+ 
 
+   
+   if(!bDoConstr){ // I put all the booleans outside of "for"-cycles  for efficiency reasons
+                  // Maybe we should make 3 separated functions for clarity 
     for (n = 0; n < ngtc; n++)
     {
         kT = BOLTZ*ref_t[n];
@@ -729,13 +736,15 @@ static void do_update_sd1(gmx_stochd_t *sd,
         {
             if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
             {
+                               
                 sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
 
-                v[n][d] = v[n][d]*sdc[gt].em
-                    + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
-                    + sd_V;
+                vn = v[n][d] + (invmass[n]*f[n][d] + accel[ga][d])*dt;
+                
+                v[n][d] = vn*sdc[gt].em + sd_V;
 
-                xprime[n][d] = x[n][d] + v[n][d]*dt;
+                xprime[n][d] = x[n][d] + 0.5*(vn + v[n][d])*dt;
+                
             }
             else
             {
@@ -744,6 +753,87 @@ static void do_update_sd1(gmx_stochd_t *sd,
             }
         }
     }
+   } //bDoConstr
+   else // we do have constraints
+   {
+    if(bFirstHalfConstr) // just update the velocities and positions without any thermostating
+    {
+     
+     for (n = start; n < nrend; n++)
+    {
+        im = invmass[n];
+
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+        if (cTC)
+        {
+            gt  = cTC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                v[n][d] = v[n][d] + (im*f[n][d] + accel[ga][d])*dt;
+                xprime[n][d] = x[n][d] +  v[n][d]*dt;
+                
+            }
+            else
+            {
+                v[n][d]      = 0.0;
+                xprime[n][d] = x[n][d];
+            }
+        }
+    }
+    }
+    else // apply the thermostating for the constraints case
+    {
+
+     for (n = 0; n < ngtc; n++)
+    {
+        kT = BOLTZ*ref_t[n];
+        /* The mass is encounted for later, since this differs per atom */
+        sig[n].V  = sqrt(kT*(1 - sdc[n].em*sdc[n].em));
+    }
+
+    for (n = start; n < nrend; n++)
+    {
+        ism = sqrt(invmass[n]);
+        if (cFREEZE)
+        {
+            gf  = cFREEZE[n];
+        }
+        if (cACC)
+        {
+            ga  = cACC[n];
+        }
+        if (cTC)
+        {
+            gt  = cTC[n];
+        }
+
+        for (d = 0; d < DIM; d++)
+        {
+            if ((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d])
+            {
+                sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+ 
+                vn = v[n][d];
+                
+                v[n][d] = vn*sdc[gt].em + sd_V;
+
+                xprime[n][d] = xprime[n][d] + 0.5*(v[n][d]-vn)*dt;               
+            }
+        }
+    }
+    } // second part of constraints
+   } // we do have constraints
 }
 
 static void check_sd2_work_data_allocation(gmx_stochd_t *sd, int nrend)
@@ -1530,6 +1620,7 @@ void update_constraints(FILE             *fplog,
     /* for now, SD update is here -- though it really seems like it
        should be reformulated as a velocity verlet method, since it has two parts */
 
+
     start  = md->start;
     homenr = md->homenr;
     nrend  = start+homenr;
@@ -1654,6 +1745,56 @@ void update_constraints(FILE             *fplog,
             wallcycle_stop(wcycle, ewcCONSTR);
         }
     }
+
+//Nicu: start
+     if ((inputrec->eI == eiSD1) && !(bFirstHalf))
+    {
+        xprime = get_xprime(state, upd);
+
+        nth = gmx_omp_nthreads_get(emntUpdate);
+
+#pragma omp parallel for num_threads(nth) schedule(static)
+
+        for (th = 0; th < nth; th++)
+        {
+            int start_th, end_th;
+
+            start_th = start + ((nrend-start)* th   )/nth;
+            end_th   = start + ((nrend-start)*(th+1))/nth;
+
+            /* The second part of the SD integration */
+             do_update_sd1(upd->sd, upd->sd->gaussrand[th],
+                              start_th, end_th, dt,
+                              inputrec->opts.acc, inputrec->opts.nFreeze,
+                              md->invmass, md->ptype,
+                              md->cFREEZE, md->cACC, md->cTC,
+                              state->x, xprime, state->v, force, state->sd_X,
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t, bDoConstr, FALSE);
+        }
+        inc_nrnb(nrnb, eNR_UPDATE, homenr);
+
+        if (bDoConstr)
+        {
+          /* Constrain the coordinates xprime */
+         wallcycle_start(wcycle, ewcCONSTR);
+
+         inputrec->delta_t = 0.5* inputrec->delta_t; 
+
+         constrain(NULL, bLog, bEner, constr, idef,
+                      inputrec, NULL, cr, step, 1, md,
+                      state->x, xprime, NULL,
+                      bMolPBC, state->box,
+                      state->lambda[efptBONDED], dvdlambda,
+                      state->v, NULL, nrnb, econqCoord, FALSE, 0, 0);
+
+
+         inputrec->delta_t = 2 * inputrec->delta_t;
+        }
+
+        wallcycle_stop(wcycle, ewcCONSTR);
+    }
+
+// Nicu: end
 
     /* We must always unshift after updating coordinates; if we did not shake
        x was shifted in do_force */
@@ -1817,7 +1958,7 @@ void update_coords(FILE             *fplog,
                    gmx_constr_t      constr,
                    t_idef           *idef)
 {
-    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE;
+    gmx_bool          bNH, bPR, bLastStep, bLog = FALSE, bEner = FALSE, bDoConstr = FALSE;
     double            dt, alpha;
     real             *imass, *imassin;
     rvec             *force;
@@ -1828,6 +1969,13 @@ void update_coords(FILE             *fplog,
     tensor            vir_con;
     rvec             *vcom, *xcom, *vall, *xall, *xin, *vin, *forcein, *fall, *xpall, *xprimein, *xprime;
     int               nth, th;
+
+    if (constr)
+    {
+        bDoConstr = TRUE;
+    }
+
+   
 
     /* Running the velocity half does nothing except for velocity verlet */
     if ((UpdatePart == etrtVELOCITY1 || UpdatePart == etrtVELOCITY2) &&
@@ -1933,13 +2081,14 @@ void update_coords(FILE             *fplog,
                 }
                 break;
             case (eiSD1):
+
                 do_update_sd1(upd->sd, upd->sd->gaussrand[th],
                               start_th, end_th, dt,
                               inputrec->opts.acc, inputrec->opts.nFreeze,
                               md->invmass, md->ptype,
                               md->cFREEZE, md->cACC, md->cTC,
                               state->x, xprime, state->v, force, state->sd_X,
-                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t);
+                              inputrec->opts.ngtc, inputrec->opts.tau_t, inputrec->opts.ref_t, bDoConstr, TRUE);
                 break;
             case (eiSD2):
                 /* The SD update is done in 2 parts, because an extra constraint step
