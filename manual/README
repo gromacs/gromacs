@@ -1,0 +1,96 @@
+So, you want to build the manual?
+
+It used to be a bit inconvenient. It still is, but CMake can take care
+of more of the LaTeX and file-copying monkey work, using the
+UseLaTeX.cmake package. Documentation and source updates for it
+can be found here http://www.itk.org/Wiki/CMakeUserUseLATEX
+
+The UseLaTeX.cmake package requires an "out of source" build, so make
+a new directory somewhere, and from it run "ccmake ${this_directory}".
+This directory can be inside the manual directory, or outside. You
+will need to provide values for two CMake cached variables, which
+are the location of installed GROMACS binaries, and the location of
+a GROMACS source distribution. Obviously, these should correspond to
+what you want to build the manual from. This will take care of building
+all of the parts of the manual that are made directly from the source,
+and the parts that are made from the executables themselves.
+
+Having told cmake about those locations, it will check that you're
+not obviously wrong. With ccmake, keep using 'c' for configure
+until ccmake will let you use 'g' for generate. Now "make pdf" will
+make the PDF manual.
+
+Alternatively, you can run commands like
+
+mkdir build_manual
+cd build_manual
+cmake .. -DGMXSRC=/home/me/GROMACS/git/release-4-5-patches -DGMXBIN=/home/me/programs/gmx-git/bin
+
+to do it from the command line.
+
+Various files from old-style manual builds can break the CMake
+dependency generation. If you run "make clean" from the manual directory,
+it will get rid of g_options.tex, proglist.tex, progman.tex and mdp_opt.tex,
+as well as the progman directory and old LaTeX output files.
+
+The binaries directory should contain only one version of the GROMACS
+binaries - not multiple versions with _mpi, _d suffixes, etc.
+
+Old README contents follow - this are partly out of date.
+--------------
+
+It's not terribly difficult, but before you just run 'make' and let
+LaTeX do the job, we need to create a couple of files from the Gromacs 
+source. 
+
+Over the years we have learnt that the only way we will keep documentation
+up to date is if most of it is generated automatically from the same source.
+
+Before you start you need both the Gromacs source and a set of working
+executables.
+
+These are the items that need to be generated:
+
+1. A LaTeX version of all the options in the mdp file.
+   This is generated from the HTML version in the Gromacs source.
+   Run the script mkmdp in this directory, with the HTML directory as
+   the first argument, e.g.:
+
+   ./mkmdp /home/lindahl/gromacs-3.2.1/share/html
+
+   NOTE: We do a pretty complicated parsing of the mdp_opt.html file, so even
+   if the file displays correctly in a browser it is quite possible that minor
+   errors will screw up the TeX parsing completely. If you get inexplicable
+   warnings/errors, this file is the first place to look...
+
+
+2. The help information and command line options for all Gromacs executables.
+   This is generated from the compiled executables. Run the script mkman with
+   the binary directory as the first argument, e.g.:
+
+   ./mkman /usr/local/gromacs/powerpc-apple-darwin7.2.0/bin/
+
+
+3. Generate the list of programs, proglist.tex.
+   This is done in two steps. First, copy the list of programs from the
+   admin directory in the gromacs source, .e.g:
+
+   cp /home/lindahl/gromacs-3.2.1/admin/programs.txt .
+
+   And then generate proglist.tex:
+
+   ./mk_proglist
+
+
+4. Generate the list of standard options. 
+   This is done by compiling the program 'options' in the src/contrib directory
+   of Gromacs. Go there and type 'make options', and copy the executable to this
+   directory. Then create options.tex in this directory with
+
+   make options.tex
+
+
+That should be it. Now try 'make pdf' if you have pdflatex installed, or
+just 'make' to create a postscript file with classical latex and dvips.
+
+
