@@ -1,0 +1,8 @@
+#!/bin/csh -f
+
+mv files.tex "#files.tex#"
+head -6 "#files.tex#" >! files.tex
+grep "& \\tt" "#files.tex#" | sort -k5 >> files.tex
+tail -5 "#files.tex#" >> files.tex
+
+#last line

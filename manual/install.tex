@@ -1,0 +1,308 @@
+%
+% 
+%       This source code is part of
+% 
+%        G   R   O   M   A   C   S
+% 
+% GROningen MAchine for Chemical Simulations
+% 
+%               VERSION 2.0
+% 
+% Copyright (c) 1991-1999
+% BIOSON Research Institute, Dept. of Biophysical Chemistry
+% University of Groningen, The Netherlands
+% 
+% Please refer to:
+% GROMACS: A message-passing parallel molecular dynamics implementation
+% H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+% Comp. Phys. Comm. 91, 43-56 (1995)
+% 
+% Also check out our WWW page:
+% http://md.chem.rug.nl/~gmx
+% or e-mail to:
+% gromacs@chem.rug.nl
+% 
+% And Hey:
+% Gnomes, ROck Monsters And Chili Sauce
+%
+
+\chapter{Technical Details}
+\label{ch:install}
+\section{Installation}
+The entire {\gromacs} package is Free Software, licensed under the GNU
+General Public License. The main distribution site is our WWW server at
+{\wwwpage}. 
+
+The package is mainly distributed as source code, but others provide
+packages for Linux and Mac. Check your Linux distribution tools
+(search for gromacs). On Mac OS X the {\bf port} tool will allow you
+to install a recent version.
+On the home page you will find all the information you need to 
+\normindex{install} the package, mailing lists with archives,
+and several additional on-line resources like contributed topologies, etc.
+%% The default installation action is simply to unpack the source code and
+%% then issue:
+%% \begin{verbatim}
+%% ./configure
+%% make
+%% make install
+%% \end{verbatim}
+%% The configuration script should automatically determine the best options
+%% for your platform, and it will tell you if anything is missing on
+%% your system. You will also find detailed step-by-step installation
+%% instructions on the website. There is a \normindex{cmake} based
+%% installation route as well:
+%% \begin{verbatim}
+%% cmake
+%% make
+%% make install
+%% \end{verbatim}
+%% which is being tested in the wild since {\gromacs} version 4.5.
+
+\section{Single or Double precision}
+{\gromacs} can be compiled in either single\index{single
+precision|see{precision, single}}\index{precision, single} or
+\pawsindex{double}{precision}. The default choice is single precision,
+but it is easy to turn on double precision by selecting the {\tt
+--disable-float} option to the configuration script.  Double precision
+will be 0 to 50\% slower than single precision depending on the
+architecture you are running on. Double precision will use somewhat
+more memory and run input, energy and full-precision trajectory files
+will be almost twice as large.  Assembly loops are available in single
+and double precision on Pentium 4, Opteron and Itanium processors.  On
+PowerPC processors containing the Altivec unit only single precision
+is possible. On older Athlon and Pentium 3 processors only the single
+precision code is available, due to hardware limitations. All other
+processors use either C or Fortran code for the compute intensive
+inner loops.
+
+The energies in single precision are accurate up to the last decimal,
+the last one or two decimals of the forces are non-significant.
+The virial is less accurate than the forces, since the virial is only one
+order of magnitude larger than the size of each element in the sum over
+all atoms (\secref{virial}).
+In most cases this is not really a problem, since the fluctuations in the
+virial can be two orders of magnitude larger than the average.
+In periodic charged systems, these errors are often negligible.
+Using cut-offs for the Coulomb interactions cause large errors
+in the energies, forces, and virial.
+Even when using a reaction-field or lattice sum method, the errors
+are larger than, or comparable to, the errors due to the single precision.
+Since MD is chaotic, trajectories with very similar starting conditions will
+diverge rapidly, the divergence is faster in single precision than in double
+precision.
+
+For most simulations single precision is accurate enough.
+In some cases double precision is required to get reasonable results:
+\begin{itemize}
+\item normal mode analysis,
+for the conjugate gradient or l-bfgs minimization and the calculation and
+diagonalization of the Hessian
+\item calculation of the constraint force between two large groups of atoms
+\item energy conservation (this can only be done without temperature coupling
+and without cut-offs)
+\end{itemize}
+
+\section{Porting {\gromacs}}
+The {\gromacs} system is designed with portability as a major design
+goal. However there are a number of things we assume to be present on
+the system {\gromacs} is being ported on. We assume the following
+features:
+
+\begin{enumerate}
+\item   A UNIX-like operating system (BSD 4.x or SYSTEM V rev.3 or higher) 
+        or UNIX-like libraries running under {\eg} Cygwin
+\item   an ANSI C compiler 
+\item   optionally a Fortran-77 compiler or Fortran-90 compiler
+        for faster (on some computers) inner loop routines
+\item   optionally the Nasm assembler to use the assembly inner loops
+        on x86 processors.
+\end{enumerate}
+
+There are some additional features in the package that require extra
+stuff to be present, but it is checked for in the configuration script
+and you will be warned if anything important is missing.
+
+That's the requirements for a single processor system. If you want
+to compile {\gromacs} for a multiple processor environment you also
+need a MPI library (Message-Passing Interface) to perform the 
+parallel communication. This is always shipped with supercomputers, and
+for workstations you can find links to free MPI implementations through
+the {\gromacs} homepage at {\wwwpage}.
+
+\subsection{Multi-processor Optimization}
+
+If you want to, you could write your own optimized communication
+(perhaps using specific libraries for your hardware) instead
+of MPI. This should never be necessary for normal use
+(we haven't heard of a modern computer where it isn't possible
+to run MPI), but if you absolutely want to do it, here are some clues.
+
+The interface between the communication routines and the
+rest of the {\gromacs} system is described in the file {\tt
+\$GMXHOME/src/include/network.h} We will give a short description of the
+different routines below.
+
+\begin{description}
+\item[{\bf extern void gmx_tx(int pid,void *buf,int bufsize);}]\mbox{}\\ 
+This routine, when called with the destination processor number, a
+pointer to a (byte oriented) transfer buffer, and the size of the
+buffer will send the buffer to the indicated processor (in our case
+always the neighboring processor). The routine does {\bf not} wait
+until the transfer is finished.
+
+\item[{\bf extern void gmx_tx_wait(int pid);}]\mbox{}\\
+This routine waits until the previous, or the ongoing transmission is
+finished.
+
+\item[{\bf extern void gmx_txs(int pid,void *buf,int bufsize);}]\mbox{}\\
+This routine implements a synchronous send by calling the
+a-synchronous routine and then the wait. It might come in handy to
+code this differently.
+
+\item[{\bf extern void gmx_rx(int pid,void *buf,int bufsize);}]
+\item[{\bf extern void gmx_rx_wait(int pid);}]\vspace{-\itemsep}
+\item[{\bf extern void gmx_rxs(int pid,void *buf,int bufsize);}]\vspace{-\itemsep}\mbox{}\\
+The very same routines for receiving a buffer and waiting until the
+reception is finished.
+
+\item[{\bf extern void gmx_init(int pid,int nprocs);}]\mbox{}\\
+This routine initializes the different devices needed to do the
+communication. In general it sets up the communication hardware (if it
+is accessible) or does an initialize call to the lower level
+communication subsystem.
+
+\item[{\bf extern void gmx_stat(FILE *fp,char *msg);}]\mbox{}\\
+With this routine we can diagnose the ongoing communication. In the
+current implementation it prints the various contents of the hardware
+communication registers of the (\intel) multiprocessor boards to a
+file.
+\end{description}
+
+\section{Environment Variables}
+{\gromacs} programs may be influenced by the use of 
+\normindex{environment variables}. 
+First of all, the variables set in the {\tt \normindex{GMXRC}} file
+are essential for running and compiling {\gromacs}. Some other useful 
+environment variables are listed in the following sections.
+
+{\bf Output Control}
+
+\begin{enumerate}
+
+\item   {\tt GMX_NO_QUOTES}: if this is explicitly set, no cool quotes
+        will be printed at the end of a program.
+\item   {\tt LOG_BUFS}: the size of the buffer for file I/O. When set
+        to 0, all file I/O will be unbuffered and therefore very slow.
+        This can be handy for debugging purposes, because it ensures
+        that all files are always totally up-to-date.
+\item   {\tt GMX_VIEW_XPM}: {\tt GMX_VIEW_XVG}, {\tt
+        GMX_VIEW_EPS} and {\tt GMX_VIEW_PDB}, commands used to
+        automatically view \@ {\tt .xvg}, {\tt .xpm}, {\tt .eps}
+        and {\tt .pdb} file types, respectively; they default to {\tt xv}, {\tt xmgrace},
+        {\tt ghostview} and {\tt rasmol}. Set to empty to disable
+        automatic viewing of a particular file type. The command will
+        be forked off and run in the background at the same priority
+        as the {\gromacs} tool (which might not be what you want).
+        Be careful not to use a command which blocks the terminal
+        ({\eg} {\tt vi}), since multiple instances might be run.
+\item   {\tt GMX_MAXBACKUP}: max number of backups to be made, default
+        128.
+\item   {\tt GMX_SUPPRESS_DUMP}: prevent dumping of step files.
+\item   {\tt GMX_NOSEHOOVER_CHAINS}: enables printing of Nos{\'e}-Hoover chain data
+        to the {\tt .edr} file.
+
+\end{enumerate}
+
+
+{\bf Debugging}
+
+\begin{enumerate}
+
+\item   {\tt DUMPNL}: dump neighbor list. 
+        If set to a positive number the {\em entire}
+        neighbor list is printed in the log file (may be many megabytes).
+        Mainly for debugging purposes, but may also be handy for
+        porting to other platforms.
+\item   {\tt WHERE}: when set, print debugging info on line numbers.
+\item   There are a number of extra environment variables like these
+        that are used in debugging - check the code!
+
+\end{enumerate}
+
+{\bf Run control}
+
+\begin{enumerate}
+
+\item   {\tt GMXNPRI}: for SGI systems only. When set, gives the
+        default non-degrading priority (npri) for {\tt
+        mdrun}, {\tt g_covar} and {\tt g_nmeig},
+        {\eg} setting {\tt setenv GMXNPRI 250} causes all
+        runs to be performed at near-lowest priority by default.
+\item   {\tt GMX_NOOPTIMIZEDKERNELS}: will prevent using assembly
+        kernels.
+\item   {\tt GMX_NO_SOLV_OPT}: turns off solvent optimizations.
+\item   {\tt GMX_NB_GENERIC}: use generic C kernels.  Should be set if using
+        {\tt GMX_NO_SOLV_OPT}.
+
+\end{enumerate}
+
+{\bf Analysis and Core Functions}
+
+\begin{enumerate}
+
+\item   {\tt GMXTIMEUNIT}: the time unit used in output files, can be
+        anything in fs, ps, ns, us, ms, s, m or h.
+\item   {\tt VMD_PLUGIN_PATH}: where to find VMD plug-ins. Needed to be
+        able to read VMD compatible files.
+\item   {\tt TOTAL}: sepcifically used by the {\tt \normindex{do_shift}} program.
+\item   {\tt DSSP}: used by {\tt \normindex{do_dssp}} to locate the {\tt dssp}
+        executable.
+\item   {\tt GMX_NOCHARGEGROUPS}: disables multi-atom charge groups, {\ie} each atom 
+        in all non-solvent molecules is assigned its own charge group.
+\item   {\tt OPENMM_PLUGIN_DIR}: the location of OpenMM plugins, needed for
+        {\tt \normindex{mdrun-gpu}}.
+\end{enumerate}
+
+\section{Running {\gromacs} in parallel}
+If you have installed the MPI (Message Passing Interface) on your computer(s)
+you can compile {\gromacs} with this library to run simulations in parallel. 
+All supercomputers are shipped with MPI libraries optimized for 
+that particular platform, and if you are using a cluster of workstations
+there are several good free MPI implementations. OpenMPI is preferred over MPICH variants. You can find updated links
+to these on the {\gromacs} homepage {\wwwpage}. Once you have an MPI library
+installed it's trivial to compile {\gromacs} with MPI support: Just set
+the option {\tt --enable-mpi} to the {\tt configure} script and recompile. Please see the GROMACS webpage for more detailed instructions.
+(But don't forget to {\tt make distclean} before running {\tt configure} if you have
+previously compiled with a different configuration.) If you are using a 
+supercomputer you might also want to turn of the default nice-ing of the
+{\tt mdrun} process with the {\tt --disable-nice} option.
+
+For communications over multiple nodes connected by a network,
+there is usually a program called {\tt mpirun} with which you can start 
+the parallel processes. A typical command line looks like:
+{\tt mpirun -p goofus,doofus,fred 10 mdrun_mpi -s topol -v}
+
+This command runs 10 processes each on the machines goofus, doofus, and fred.
+\footnote{Example taken from Silicon Graphics manual}
+
+With the implementation of threading available by default in {\gromacs} version 4.5, 
+if you have a single machine with multiple processors you don't have to
+use the {\tt mpirun} command, or compile with MPI. Instead, you can allow GROMACS to determine the number of threads automatically, or use the {\tt mdrun} option {\tt -nt}:
+{\tt mdrun -nt 8 -s topol.tpr}
+
+Check your local manuals (or online manual) for exact details
+of your MPI implementation.
+
+If you are interested in programming MPI yourself, you can find
+manuals and reference literature on the internet.
+
+
+
+% LocalWords:  Opteron Itanium PowerPC Altivec Athlon Fortran virial bfgs Nasm
+% LocalWords:  diagonalization Cygwin MPI Multi GMXHOME extern gmx tx pid buf
+% LocalWords:  bufsize txs rx rxs init nprocs fp msg GMXRC DUMPNL BUFS GMXNPRI
+% LocalWords:  unbuffered SGI npri mdrun covar nmeig setenv XPM XVG EPS
+% LocalWords:  PDB xvg xpm eps pdb xmgrace ghostview rasmol GMXTIMEUNIT fs dssp
+% LocalWords:  mpi distclean ing mpirun goofus doofus fred topol np
+% LocalWords:  internet

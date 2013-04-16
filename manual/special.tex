@@ -1,0 +1,1230 @@
+%
+% 
+%       This source code is part of
+% 
+%        G   R   O   M   A   C   S
+% 
+% GROningen MAchine for Chemical Simulations
+% 
+%               VERSION 2.0
+% 
+% Copyright (c) 1991-1999
+% BIOSON Research Institute, Dept. of Biophysical Chemistry
+% University of Groningen, The Netherlands
+% 
+% Please refer to:
+% GROMACS: A message-passing parallel molecular dynamics implementation
+% H.J.C. Berendsen, D. van der Spoel and R. van Drunen
+% Comp. Phys. Comm. 91, 43-56 (1995)
+% 
+% Also check out our WWW page:
+% http://md.chem.rug.nl/~gmx
+% or e-mail to:
+% gromacs@chem.rug.nl
+% 
+% And Hey:
+% Giving Russians Opium May Alter Current Situation
+%
+
+\chapter{Special Topics}
+\label{ch:special}
+
+\section{Potential of mean force}
+
+A potential of mean force (PMF) is a potential that is obtained
+by integrating the mean force from an ensemble of configurations.
+In {\gromacs}, there are several different methods to calculate the mean force.
+Each method has its limitations, which are listed below.
+\begin{itemize}
+\item{\bf pull code:} between the centers of mass of molecules or groups of molecules.
+\item{\bf free-energy code with harmonic bonds or constraints:} between single atoms. 
+\item{\bf free-energy code with position restraints:} changing the conformation of a relatively immobile group of atoms.
+\item{\bf pull code in limited cases:} between groups of atoms that are
+part of a larger molecule for which the bonds are constrained with
+SHAKE or LINCS. If the pull group if relatively large,
+the pull code can be used.
+\end{itemize}
+The pull and free-energy code a described in more detail
+in the following two sections.
+
+\subsubsection{Entropic effects}
+When a distance between two atoms or the centers of mass of two groups
+is constrained or restrained, there will be a purely entropic contribution
+to the PMF due to the rotation of the two groups~\cite{RMNeumann1980a}.
+For a system of two non-interacting masses the potential of mean force is:
+\beq
+V_{pmf}(r) = -(n_c - 1) k_B T \log(r)
+\eeq
+where $n_c$ is the number of dimensions in which the constraint works
+(i.e. $n_c=3$ for a normal constraint and $n_c=1$ when only
+the $z$-direction is constrained).
+Whether one needs to correct for this contribution depends on what
+the PMF should represent. When one wants to pull a substrate
+into a protein, this entropic term indeed contributes to the work to
+get the substrate into the protein. But when calculating a PMF
+between two solutes in a solvent, for the purpose of simulating
+without solvent, the entropic contribution should be removed.
+{\bf Note} that this term can be significant; when at 300K the distance is halved,
+the contribution is 3.5 kJ~mol$^{-1}$.
+
+\section{Non-equilibrium pulling}
+When the distance between two groups is changed continuously,
+work is applied to the system, which means that the system is no longer
+in equilibrium. Although in the limit of very slow pulling
+the system is again in equilibrium, for many systems this limit
+is not reachable within reasonable computational time.
+However, one can use the Jarzynski relation~\cite{Jarzynski1997a}
+to obtain the equilibrium free-energy difference $\Delta G$
+between two distances from many non-equilibrium simulations:
+\begin{equation}
+   \Delta G_{AB} = -k_BT \log \left\langle e^{-\beta W_{AB}} \right\rangle_A
+   \label{eq:Jarz}
+\end{equation}
+where $W_{AB}$ is the work performed to force the system along one path
+from state A to B, the angular bracket denotes averaging over
+a canonical ensemble of the initial state A and $\beta=1/k_B T$.
+
+
+\section{The pull code}
+\index{center-of-mass pulling}
+\label{sec:pull}
+The pull code applies forces or constraints between the centers
+of mass of one or more pairs of groups of atoms.
+There is one reference group and one or more other pull groups.
+Instead of a reference group, one can also use absolute reference
+point in space.
+The most common situation consists of a reference group
+and one pull group. In this case, the two groups are treated
+equivalently.
+The distance between a pair of groups can be determined
+in 1, 2 or 3 dimensions, or can be along a user-defined vector.
+The reference distance can be constant or can change linearly with time.
+Normally all atoms are weighted by their mass, but an additional
+weighting factor can also be used.
+\begin{figure}
+\centerline{\includegraphics[width=6cm,angle=270]{plots/pull}}
+\caption{Schematic picture of pulling a lipid out of a lipid bilayer
+with umbrella pulling. $V_{rup}$ is the velocity at which the spring is
+retracted, $Z_{link}$ is the atom to which the spring is attached and
+$Z_{spring}$ is the location of the spring.}
+\label{fi:pull} 
+\end{figure}
+
+Three different types of calculation are supported,
+and in all cases the reference distance can be constant
+or linearly changing with time.
+\begin{enumerate}
+\item{\textbf{Umbrella pulling}\swapindexquiet{umbrella}{pulling}}
+A harmonic potential is applied between
+the centers of mass of two groups.
+Thus, the force is proportional to the displacement.
+\item{\textbf{Constraint pulling\swapindexquiet{constraint}{pulling}}}
+The distance between the centers of mass of two groups is constrained.
+The constraint force can be written to a file.
+This method uses the SHAKE algorithm but only needs 1 iteration to be
+exact if only two groups are constrained. 
+\item{\textbf{Constant force pulling}}
+A constant force is applied between the centers of mass of two groups.
+Thus, the potential is linear.
+In this case there is no reference distance of pull rate.
+\end{enumerate}
+
+\subsubsection{Definition of the center of mass}
+
+In {\gromacs}, there are three ways to define the center of mass of a group.
+The standard way is a ``plain'' center of mass, possibly with additional
+weighting factors. With periodic boundary conditions it is no longer
+possible to uniquely define the center of mass of a group of atoms.
+Therefore, a reference atom is used. For determining the center of mass,
+for all other atoms in the group, the closest periodic image to the reference
+atom is used. This uniquely defines the center of mass.
+By default, the middle (determined by the order in the topology) atom
+is used as a reference atom, but the user can also select any other atom
+if it would be closer to center of the group.
+
+For a layered system, for instance a lipid bilayer, it may be of interest
+to calculate the PMF of a lipid as function of its distance
+from the whole bilayer. The whole bilayer can be taken as reference
+group in that case, but it might also be of interest to define the
+reaction coordinate for the PMF more locally. The {\tt .mdp} option
+{\tt pull_geometry = cylinder} does not
+use all the atoms of the reference group, but instead dynamically only those
+within a cylinder with radius {\tt r_1} around the pull vector going
+through the pull group. This only
+works for distances defined in one dimension, and the cylinder is
+oriented with its long axis along this one dimension. A second cylinder
+can be defined with {\tt r_0}, with a linear switch function that weighs
+the contribution of atoms between {\tt r_0} and {\tt r_1} with
+distance. This smooths the effects of atoms moving in and out of the
+cylinder (which causes jumps in the pull forces).
+
+\begin{figure}
+\centerline{\includegraphics[width=6cm]{plots/pullref}}
+\caption{Comparison of a plain center of mass reference group versus a cylinder
+reference group applied to interface systems. C is the reference group.
+The circles represent the center of mass of two groups plus the reference group,
+$d_c$ is the reference distance.}
+\label{fi:pullref} 
+\end{figure}   
+
+For a group of molecules in a periodic system, a plain reference group
+might not be well-defined. An example is a water slab that is connected
+periodically in $x$ and $y$, but has two liquid-vapor interfaces along $z$.
+In such a setup, water molecules can evaporate from the liquid and they
+will move through the vapor, through the periodic boundary, to the other
+interface. Such a system is inherently periodic and there is no proper way
+of defining a ``plain'' center of mass along $z$. A proper solution is to using
+a cosine shaped weighting profile for all atoms in the reference group.
+The profile is a cosine with a single period in the unit cell. Its phase
+is optimized to give the maximum sum of weights, including mass weighting.
+This provides a unique and continuous reference position that is nearly
+identical to the plain center of mass position in case all atoms are all
+within a half of the unit-cell length. See ref \cite{Engin2010a} for details.
+
+When relative weights $w_i$ are used during the calculations, either
+by supplying weights in the input or due to cylinder geometry
+or due to cosine weighting,
+the weights need to be scaled to conserve momentum:
+\beq
+w'_i = w_i
+\left. \sum_{j=1}^N w_j \, m_j \right/ \sum_{j=1}^N w_j^2 \, m_j
+\eeq
+where $m_j$ is the mass of atom $j$ of the group.
+The mass of the group, required for calculating the constraint force, is:
+\beq
+M = \sum_{i=1}^N w'_i \, m_i
+\eeq
+The definition of the weighted center of mass is:
+\beq
+\ve{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{r}_i \right/ M
+\eeq
+From the centers of mass the AFM, constraint, or umbrella force $\ve{F}_{\!com}$
+on each group can be calculated.
+The force on the center of mass of a group is redistributed to the atoms
+as follows:
+\beq
+\ve{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \ve{F}_{\!com}
+\eeq
+
+\subsubsection{Limitations}
+There is one important limitation:
+strictly speaking, constraint forces can only be calculated between
+groups that are not connected by constraints to the rest of the system.
+If a group contains part of a molecule of which the bond lengths
+are constrained, the pull constraint and LINCS or SHAKE bond constraint
+algorithms should be iterated simultaneously. This is not done in {\gromacs}.
+This means that for simulations with {\tt constraints = all-bonds}
+in the {\tt .mdp} file pulling is, strictly speaking,
+limited to whole molecules or groups of molecules.
+In some cases this limitation can be avoided by using the free energy code,
+see \secref{fepmf}.
+In practice, the errors caused by not iterating the two constraint
+algorithms can be negligible when the pull group consists of a large
+amount of atoms and/or the pull force is small.
+In such cases, the constraint correction displacement of the pull group
+is small compared to the bond lengths.
+
+
+\section{Calculating a PMF using the free-energy code}
+\label{sec:fepmf}
+\index{potentials of mean force}
+\index{free energy calculations}
+The free-energy coupling-parameter approach (see~\secref{fecalc})
+provides several ways to calculate potentials of mean force.
+A potential of mean force between two atoms can be calculated
+by connecting them with a harmonic potential or a constraint.
+For this purpose there are special potentials that avoid the generation of
+extra exclusions, see~\secref{excl}.
+When the position of the minimum or the constraint length is 1 nm more
+in state B than in state A, the restraint or constraint force is given
+by $\partial H/\partial \lambda$.
+The distance between the atoms can be changed as a function of $\lambda$
+and time by setting {\tt delta-lambda} in the {\tt .mdp} file.
+The results should be identical (although not numerically
+due to the different implementations) to the results of the pull code
+with umbrella sampling and constraint pulling.
+Unlike the pull code, the free energy code can also handle atoms that
+are connected by constraints.
+
+Potentials of mean force can also be calculated using position restraints.
+With position restraints, atoms can be linked to a position in space
+with a harmonic potential (see \ssecref{positionrestraint}).
+These positions can be made a function of the coupling parameter $\lambda$.
+The positions for the A and the B states are supplied to {\tt grompp} with
+the {\tt -r} and {\tt -rb} options, respectively.
+One could use this approach to do \normindex{targeted MD};
+note that we do not encourage the use of targeted MD for proteins.
+A protein can be forced from one conformation to another by using
+these conformations as position restraint coordinates for state A and B.
+One can then slowly change $\lambda$ from 0 to 1.
+The main drawback of this approach is that the conformational freedom
+of the protein is severely limited by the position restraints,
+independent of the change from state A to B.
+Also, the protein is forced from state A to B in an almost straight line,
+whereas the real pathway might be very different.
+An example of a more fruitful application is a solid system or a liquid
+confined between walls where one wants to measure the force required
+to change the separation between the boundaries or walls.
+Because the boundaries (or walls) already need to be fixed,
+the position restraints do not limit the system in its sampling.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\amine}{\sf -NH$_2$}
+\newcommand{\amines}{\sf -NH-}
+\newcommand{\aminep}{\sf -NH$_3^+$}
+\section{Removing fastest \swapindex{degrees of}{freedom}}
+\label{sec:rmfast}
+The maximum time step in MD simulations is limited by the smallest
+oscillation period that can be found in the simulated
+system. Bond-stretching vibrations are in their quantum-mechanical
+ground state and are therefore better represented by a constraint 
+instead of a harmonic potential.
+
+For the remaining degrees of freedom, the shortest oscillation period
+(as measured from a simulation) is 13~fs for bond-angle vibrations
+involving hydrogen atoms. Taking as a guideline that with a Verlet
+(leap-frog) integration scheme a minimum of 5 numerical integration
+steps should be performed per period of a harmonic oscillation in
+order to integrate it with reasonable accuracy, the maximum time step
+will be about 3~fs. Disregarding these very fast oscillations of
+period 13~fs, the next shortest periods are around 20~fs, which will
+allow a maximum time step of about 4~fs.
+
+Removing the bond-angle degrees of freedom from hydrogen atoms can
+best be done by defining them as \normindex{virtual interaction sites}
+instead of normal atoms. Whereas a normal atom is connected to the molecule
+with bonds, angles and dihedrals, a virtual site's position is calculated
+from the position of three nearby heavy atoms in a predefined manner
+(see also \secref{virtual_sites}). For the hydrogens in water and in
+hydroxyl, sulfhydryl, or amine groups, no degrees of freedom can be
+removed, because rotational freedom should be preserved. The only
+other option available to slow down these motions is to increase the
+mass of the hydrogen atoms at the expense of the mass of the connected
+heavy atom. This will increase the moment of inertia of the water
+molecules and the hydroxyl, sulfhydryl, or amine groups, without
+affecting the equilibrium properties of the system and without
+affecting the dynamical properties too much. These constructions will
+shortly be described in \secref{vsitehydro} and have previously
+been described in full detail~\cite{feenstra99}.
+
+Using both virtual sites and \swapindex{modified}{mass}es, the next
+bottleneck is likely to be formed by the improper dihedrals (which are
+used to preserve planarity or chirality of molecular groups) and the
+peptide dihedrals. The peptide dihedral cannot be changed without
+affecting the physical behavior of the protein. The improper dihedrals
+that preserve planarity mostly deal with aromatic residues. Bonds,
+angles, and dihedrals in these residues can also be replaced with
+somewhat elaborate virtual site constructions.
+
+All modifications described in this section can be performed using the
+{\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
+options exist to increase hydrogen masses, virtualize all hydrogen atoms,
+or also virtualize all aromatic residues. {\bf Note} that when all hydrogen
+atoms are virtualized, those inside the aromatic residues will be
+virtualized as well, {\ie} hydrogens in the aromatic residues are treated
+differently depending on the treatment of the aromatic residues.
+
+Parameters for the virtual site constructions for the hydrogen atoms are
+inferred from the force field parameters ({\em vis}. bond lengths and
+angles) directly by {\tt \normindex{grompp}} while processing the
+topology file.  The constructions for the aromatic residues are based
+on the bond lengths and angles for the geometry as described in the
+force fields, but these parameters are hard-coded into {\tt
+\normindex{pdb2gmx}} due to the complex nature of the construction
+needed for a whole aromatic group.
+
+\subsection{Hydrogen bond-angle vibrations}
+\label{sec:vsitehydro}
+\subsubsection{Construction of virtual sites} %%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{figure}
+\centerline{\includegraphics[width=11cm]{plots/dumtypes}}
+\caption[Virtual site constructions for hydrogen atoms.]{The different
+types of virtual site constructions used for hydrogen atoms. The atoms
+used in the construction of the virtual site(s) are depicted as black
+circles, virtual sites as gray ones. Hydrogens are smaller than heavy
+atoms. {\sf A}: fixed bond angle, note that here the hydrogen is not a
+virtual site; {\sf B}: in the plane of three atoms, with fixed distance;
+{\sf C}: in the plane of three atoms, with fixed angle and distance;
+{\sf D}: construction for amine groups ({\amine} or {\aminep}), see
+text for details.}
+\label{fig:vsitehydro}
+\end{figure}
+
+The goal of defining hydrogen atoms as virtual sites is to remove all
+high-frequency degrees of freedom from them. In some cases, not all
+degrees of freedom of a hydrogen atom should be removed, {\eg} in the
+case of hydroxyl or amine groups the rotational freedom of the
+hydrogen atom(s) should be preserved. Care should be taken that no
+unwanted correlations are introduced by the construction of virtual
+sites, {\eg} bond-angle vibration between the constructing atoms could
+translate into hydrogen bond-length vibration. Additionally, since
+virtual sites are by definition massless, in order to preserve total
+system mass, the mass of each hydrogen atom that is treated as virtual
+site should be added to the bonded heavy atom.
+
+Taking into account these considerations, the hydrogen atoms in a
+protein naturally fall into several categories, each requiring a
+different approach (see also \figref{vsitehydro}).
+
+\begin{itemize}
+
+\item{\em hydroxyl ({\sf -OH}) or sulfhydryl ({\sf -SH})
+hydrogen:\/} The only internal degree of freedom in a hydroxyl group
+that can be constrained is the bending of the {\sf C-O-H} angle. This
+angle is fixed by defining an additional bond of appropriate length,
+see \figref{vsitehydro}A. Doing so removes the high-frequency angle bending,
+but leaves the dihedral rotational freedom. The same goes for a
+sulfhydryl group. {\bf Note} that in these cases the hydrogen is not treated
+as a virtual site.
+
+\item{\em single amine or amide ({\amines}) and aromatic hydrogens
+({\sf -CH-}):\/} The position of these hydrogens cannot be constructed
+from a linear combination of bond vectors, because of the flexibility
+of the angle between the heavy atoms. Instead, the hydrogen atom is
+positioned at a fixed distance from the bonded heavy atom on a line
+going through the bonded heavy atom and a point on the line through
+both second bonded atoms, see \figref{vsitehydro}B.
+
+\item{\em planar amine ({\amine}) hydrogens:\/} The method used for
+the single amide hydrogen is not well suited for planar amine groups,
+because no suitable two heavy atoms can be found to define the
+direction of the hydrogen atoms. Instead, the hydrogen is constructed
+at a fixed distance from the nitrogen atom, with a fixed angle to the
+carbon atom, in the plane defined by one of the other heavy atoms, see
+\figref{vsitehydro}C.
+
+\item{\em amine group (umbrella {\amine} or {\aminep}) hydrogens:\/}
+Amine hydrogens with rotational freedom cannot be constructed as virtual
+sites from the heavy atoms they are connected to, since this would
+result in loss of the rotational freedom of the amine group. To
+preserve the rotational freedom while removing the hydrogen bond-angle
+degrees of freedom, two ``dummy masses'' are constructed with the same
+total mass, moment of inertia (for rotation around the {\sf C-N} bond)
+and center of mass as the amine group. These dummy masses have no
+interaction with any other atom, except for the fact that they are
+connected to the carbon and to each other, resulting in a rigid
+triangle. From these three particles, the positions of the nitrogen and
+hydrogen atoms are constructed as linear combinations of the two
+carbon-mass vectors and their outer product, resulting in an amine
+group with rotational freedom intact, but without other internal
+degrees of freedom. See \figref{vsitehydro}D.
+
+\end{itemize}
+
+\begin{figure}
+\centerline{\includegraphics[width=15cm]{plots/dumaro}}
+\caption[Virtual site constructions for aromatic residues.]{The
+different types of virtual site constructions used for aromatic
+residues. The atoms used in the construction of the virtual site(s) are
+depicted as black circles, virtual sites as gray ones. Hydrogens are
+smaller than heavy atoms. {\sf A}: phenylalanine; {\sf B}: tyrosine
+(note that the hydroxyl hydrogen is {\em not} a virtual site); {\sf C}:
+tryptophan; {\sf D}: histidine.}
+\label{fig:vistearo}
+\end{figure}
+
+\subsection{Out-of-plane vibrations in aromatic groups}
+\label{sec:vsitearo}
+The planar arrangements in the side chains of the aromatic residues
+lends itself perfectly to a virtual-site construction, giving a
+perfectly planar group without the inherently unstable constraints
+that are necessary to keep normal atoms in a plane. The basic approach
+is to define three atoms or dummy masses with constraints between them
+to fix the geometry and create the rest of the atoms as simple virtual
+sites type (see \secref{virtual_sites}) from these three. Each of
+the aromatic residues require a different approach:
+
+\begin{itemize}
+
+\item{\em Phenylalanine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$,
+and {\sf C}$_{{\epsilon}2}$ are kept as normal atoms, but with each a
+mass of one third the total mass of the phenyl group. See
+\figref{vsitehydro}A.
+
+\item{\em Tyrosine:\/} The ring is treated identically to the
+phenylalanine ring. Additionally, constraints are defined between {\sf
+C}$_{{\epsilon}1}$, {\sf C}$_{{\epsilon}2}$, and {\sf O}$_{\eta}$.
+The original improper dihedral angles will keep both triangles (one
+for the ring and one with {\sf O}$_{\eta}$) in a plane, but due to the
+larger moments of inertia this construction will be much more
+stable. The bond-angle in the hydroxyl group will be constrained by a
+constraint between {\sf C}$_\gamma$ and {\sf H}$_{\eta}$. {\bf Note} that
+the hydrogen is not treated as a virtual site. See
+\figref{vsitehydro}B.
+
+\item{\em Tryptophan:\/} {\sf C}$_\beta$ is kept as a normal atom
+and two dummy masses are created at the center of mass of each of the
+rings, each with a mass equal to the total mass of the respective ring
+({\sf C}$_{{\delta}2}$ and {\sf C}$_{{\epsilon}2}$ are each
+counted half for each ring). This keeps the overall center of mass and
+the moment of inertia almost (but not quite) equal to what it was. See
+\figref{vsitehydro}C.
+
+\item{\em Histidine:\/} {\sf C}$_\gamma$, {\sf C}$_{{\epsilon}1}$
+and {\sf N}$_{{\epsilon}2}$ are kept as normal atoms, but with masses
+redistributed such that the center of mass of the ring is
+preserved. See \figref{vsitehydro}D.
+
+\end{itemize}
+
+\section{Viscosity calculation\index{viscosity}}
+
+The shear viscosity is a property of liquids that can be determined easily  
+by experiment. It is useful for parameterizing a force field
+because it is a kinetic property, while most other properties
+which are used for parameterization are thermodynamic.
+The viscosity is also an important property, since it influences
+the rates of conformational changes of molecules solvated in the liquid.
+
+The viscosity can be calculated from an equilibrium simulation using
+an Einstein relation:
+\beq
+\eta = \frac{1}{2}\frac{V}{k_B T} \lim_{t \rightarrow \infty}
+\frac{\mbox{d}}{\mbox{d} t} \left\langle 
+\left( \int_{t_0}^{{t_0}+t} P_{xz}(t') \mbox{d} t' \right)^2
+\right\rangle_{t_0}
+\eeq
+This can be done with {\tt g_energy}.
+This method converges very slowly~\cite{Hess2002a}, and as such
+a nanosecond simulation might not
+be long enough for an accurate determination of the viscosity.
+The result is very dependent on the treatment of the electrostatics.
+Using a (short) cut-off results in large noise on the off-diagonal
+pressure elements, which can increase the calculated viscosity by an order
+of magnitude.
+
+{\gromacs} also has a non-equilibrium method for determining
+the viscosity~\cite{Hess2002a}.
+This makes use of the fact that energy, which is fed into system by
+external forces, is dissipated through viscous friction. The generated heat
+is removed by coupling to a heat bath. For a Newtonian liquid adding a 
+small force will result in a velocity gradient according to the following
+equation:
+\beq
+a_x(z) + \frac{\eta}{\rho} \frac{\partial^2 v_x(z)}{\partial z^2} = 0
+\eeq
+Here we have applied an acceleration $a_x(z)$ in the $x$-direction, which
+is a function of the $z$-coordinate.
+In {\gromacs} the acceleration profile is:
+\beq
+a_x(z) = A \cos\left(\frac{2\pi z}{l_z}\right)
+\eeq
+where $l_z$ is the height of the box. The generated velocity profile is:
+\beq
+v_x(z) = V \cos\left(\frac{2\pi z}{l_z}\right)
+\eeq
+\beq
+V = A \frac{\rho}{\eta}\left(\frac{l_z}{2\pi}\right)^2
+\eeq
+The viscosity can be calculated from $A$ and $V$:
+\beq
+\label{visc}
+\eta = \frac{A}{V}\rho \left(\frac{l_z}{2\pi}\right)^2
+\eeq
+
+In the simulation $V$ is defined as:
+\beq
+V = \frac{\displaystyle \sum_{i=1}^N m_i v_{i,x} 2 \cos\left(\frac{2\pi z}{l_z}\right)}
+         {\displaystyle \sum_{i=1}^N m_i}
+\eeq
+The generated velocity profile is not coupled to the heat bath. Moreover,
+the velocity profile is excluded from the kinetic energy.
+One would like $V$ to be as large as possible to get good statistics.
+However, the shear rate should not be so high that the system gets too far
+from equilibrium. The maximum shear rate occurs where the cosine is zero,
+the rate being:
+\beq
+\mbox{sh}_{\max} =  \max_z \left| \frac{\partial v_x(z)}{\partial z} \right|
+= A \frac{\rho}{\eta} \frac{l_z}{2\pi}
+\eeq
+For a simulation with: $\eta=10^{-3}$ [kg\,m$^{-1}$\,s$^{-1}$],
+$\rho=10^3$\,[kg\,m$^{-3}$] and $l_z=2\pi$\,[nm],
+$\mbox{sh}_{\max}=1$\,[ps\,nm$^{-1}$] $A$.
+This shear rate should be smaller than one over the longest
+correlation time in the system. For most liquids, this will be the rotation
+correlation time, which is around 10 ps. In this case, $A$ should
+be smaller than 0.1\,[nm\,ps$^{-2}$].
+When the shear rate is too high, the observed viscosity will be too low.
+Because $V$ is proportional to the square of the box height,
+the optimal box is elongated in the $z$-direction.
+In general, a simulation length of 100 ps is enough to obtain an
+accurate value for the viscosity.
+
+The heat generated by the viscous friction is removed by coupling to a heat
+bath. Because this coupling is not instantaneous the real temperature of the
+liquid will be slightly lower than the observed temperature.
+Berendsen derived this temperature shift~\cite{Berendsen91}, which can
+be written in terms of the shear rate as:
+\beq
+T_s = \frac{\eta\,\tau}{2 \rho\,C_v} \mbox{sh}_{\max}^2
+\eeq
+where $\tau$ is the coupling time for the Berendsen thermostat and
+$C_v$ is the heat capacity. Using the values of the example above,
+$\tau=10^{-13}$ [s] and $C_v=2 \cdot 10^3$\,[J kg$^{-1}$\,K$^{-1}$], we
+get: $T_s=25$\,[K\,ps$^{-2}$]\,sh$_{\max}^2$. When we want the shear
+rate to be smaller than $1/10$\,[ps$^{-1}$], $T_s$ is smaller than
+0.25\,[K], which is negligible.
+
+{\bf Note} that the system has to build up the velocity profile when starting
+from an equilibrium state. This build-up time is of the order of the
+correlation time of the liquid.
+
+Two quantities are written to the energy file, along with their averages
+and fluctuations: $V$ and $1/\eta$, as obtained from (\ref{visc}).
+
+\section{Tabulated interaction functions\index{tabulated interaction functions}}
+\subsection{Cubic splines for potentials}
+\label{subsec:cubicspline}
+In some of the inner loops of {\gromacs}, look-up tables are used 
+for computation of potential and forces. 
+The tables are interpolated using a cubic
+spline algorithm. 
+There are separate tables for electrostatic, dispersion, and repulsion
+interactions,
+but for the sake of caching performance these have been combined
+into a single array. 
+The cubic spline interpolation for $x_i \leq x < x_{i+1}$ looks like this:
+\beq
+V_s(x) = A_0 + A_1 \,\epsilon + A_2 \,\epsilon^2 + A_3 \,\epsilon^3
+\label{eqn:spline}
+\eeq
+where the table spacing $h$ and fraction $\epsilon$ are given by:
+\bea
+h	&=&	x_{i+1} - x_i	\\
+\epsilon&=&	(x - x_i)/h
+\eea
+so that $0 \le \epsilon < 1$.
+From this, we can calculate the derivative in order to determine the forces:
+\beq
+-V_s'(x) ~=~ 
+-\frac{{\rm d}V_s(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x} ~=~
+-(A_1 + 2 A_2 \,\epsilon + 3 A_3 \,\epsilon^2)/h
+\eeq
+The four coefficients are determined from the four conditions
+that $V_s$ and $-V_s'$ at both ends of each interval should match
+the exact potential $V$ and force $-V'$.
+This results in the following errors for each interval:
+\bea
+|V_s  - V  |_{max} &=& V'''' \frac{h^4}{384} + O(h^5) \\
+|V_s' - V' |_{max} &=& V'''' \frac{h^3}{72\sqrt{3}} + O(h^4) \\
+|V_s''- V''|_{max} &=& V'''' \frac{h^2}{12}  + O(h^3)
+\eea
+V and V' are continuous, while V'' is the first discontinuous
+derivative.
+The number of points per nanometer is 500 and 2000
+for single- and double-precision versions of {\gromacs}, respectively.
+This means that the errors in the potential and force will usually
+be smaller than the single precision accuracy.
+
+{\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
+The force routines get a table with these four parameters and
+a scaling factor $s$ that is equal to the number of points per nm.
+({\bf Note} that $h$ is $s^{-1}$).
+The algorithm goes a little something like this:
+\begin{enumerate}
+\item	Calculate distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
+\item	Multiply r$_{ij}$ by $s$ and truncate to an integer value $n_0$
+	to get a table index
+\item	Calculate fractional component ($\epsilon$ = $s$r$_{ij} - n_0$) 
+	and $\epsilon^2$ 
+\item	Do the interpolation to calculate the potential $V$ and the scalar force $f$
+\item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
+\end{enumerate}
+
+{\bf Note} that table look-up is significantly {\em
+slower} than computation of the most simple Lennard-Jones and Coulomb
+interaction. However, it is much faster than the shifted Coulomb
+function used in conjunction with the PPPM method. Finally, it is much
+easier to modify a table for the potential (and get a graphical
+representation of it) than to modify the inner loops of the MD
+program.
+
+\subsection{User-specified potential functions}
+You can also use your own \index{potential function}s 
+without editing the {\gromacs} code. 
+The potential function should be according to the following equation
+\beq
+V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 \,g(r_{ij}) + C_{12} \,h(r_{ij})
+\eeq
+where $f$, $g$, and $h$ are user defined functions. {\bf Note} that if $g(r)$ represents a
+normal dispersion interaction, $g(r)$ should be $<$ 0. C$_6$, C$_{12}$
+and the charges are read from the topology. Also note that combination
+rules are only supported for Lennard-Jones and Buckingham, and that
+your tables should match the parameters in the binary topology.
+
+When you add the following lines in your {\tt .mdp} file:
+
+{\small
+\begin{verbatim}
+rlist           = 1.0
+coulombtype     = User
+rcoulomb        = 1.0
+vdwtype         = User
+rvdw            = 1.0
+\end{verbatim}}
+
+{\tt mdrun} will read a single non-bonded table file,
+or multiple when {\tt energygrp-table} is set (see below).
+The name of the file(s) can be set with the {\tt mdrun} option {\tt -table}.
+The table file should contain seven columns of table look-up data in the
+order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
+The $x$ should run from 0 to $r_c+1$ (the value of {\tt table_extension} can be
+changed in the {\tt .mdp} file).
+You can choose the spacing you like; for the standard tables {\gromacs}
+uses a spacing of 0.002 and 0.0005 nm when you run in single
+and double precision, respectively.  In this
+context, $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
+{\tt rcoulomb} (see above). These variables need not be the same (and
+need not be 1.0 either).  Some functions used for potentials contain a
+singularity at $x = 0$, but since atoms are normally not closer to each
+other than 0.1 nm, the function value at $x = 0$ is not important.
+Finally, it is also
+possible to combine a standard Coulomb with a modified LJ potential
+(or vice versa). One then specifies {\eg} {\tt coulombtype = Cut-off} or
+{\tt coulombtype = PME}, combined with {\tt vdwtype = User}.  The table file must
+always contain the 7 columns however, and meaningful data (i.e. not
+zeroes) must be entered in all columns.  A number of pre-built table
+files can be found in the {\tt GMXLIB} directory for 6-8, 6-9, 6-10, 6-11, and 6-12
+Lennard-Jones potentials combined with a normal Coulomb.
+
+If you want to have different functional forms between different
+groups of atoms, this can be set through energy groups.
+Different tables can be used for non-bonded interactions between
+different energy groups pairs through the {\tt .mdp} option {\tt energygrp-table}
+(see \secref{mdpopt}).
+Atoms that should interact with a different potential should
+be put into different energy groups.
+Between group pairs which are not listed in {\tt energygrp-table},
+the normal user tables will be used. This makes it easy to use
+a different functional form between a few types of atoms.
+
+\section{Mixed Quantum-Classical simulation techniques}
+
+In a molecular mechanics (MM) force field, the influence of electrons
+is expressed by empirical parameters that are assigned on the basis of
+experimental data, or on the basis of results from high-level quantum
+chemistry calculations. These are valid for the ground state of a
+given covalent structure, and the MM approximation is usually
+sufficiently accurate for ground-state processes in which the overall
+connectivity between the atoms in the system remains
+unchanged. However, for processes in which the connectivity does
+change, such as chemical reactions, or processes that involve multiple
+electronic states, such as photochemical conversions, electrons can no
+longer be ignored, and a quantum mechanical description is required
+for at least those parts of the system in which the reaction takes
+place.
+
+One approach to the simulation of chemical reactions in solution, or
+in enzymes, is to use a combination of quantum mechanics (QM) and
+molecular mechanics (MM). The reacting parts of the system are treated
+quantum mechanically, with the remainder being modeled using the
+force field. The current version of {\gromacs} provides interfaces to
+several popular Quantum Chemistry packages (MOPAC~\cite{mopac},
+GAMESS-UK~\cite{gamess-uk}, Gaussian~\cite{g03} and CPMD~\cite{Car85a}).
+
+{\gromacs} interactions between the two subsystems are
+either handled as described by Field {\em et al.}~\cite{Field90a} or
+within the ONIOM approach by Morokuma and coworkers~\cite{Maseras96a,
+Svensson96a}.
+
+\subsection{Overview}
+
+Two approaches for describing the interactions between the QM and MM
+subsystems are supported in this version:
+
+\begin{enumerate}
+\item{\textbf{Electronic Embedding}} The electrostatic interactions
+between the electrons of the QM region and the MM atoms and between
+the QM nuclei and the MM atoms are included in the Hamiltonian for
+the QM subsystem: \beq H^{QM/MM} =
+H^{QM}_e-\sum_i^n\sum_J^M\frac{e^2Q_J}{4\pi\epsilon_0r_{iJ}}+\sum_A^N\sum_J^M\frac{e^2Z_AQ_J}{e\pi\epsilon_0R_{AJ}},
+\eeq where $n$ and $N$ are the number of electrons and nuclei in the
+QM region, respectively, and $M$ is the number of charged MM
+atoms. The first term on the right hand side is the original
+electronic Hamiltonian of an isolated QM system. The first of the
+double sums is the total electrostatic interaction between the QM
+electrons and the MM atoms. The total electrostatic interaction of the
+QM nuclei with the MM atoms is given by the second double sum. Bonded
+interactions between QM and MM atoms are described at the MM level by
+the appropriate force field terms. Chemical bonds that connect the two
+subsystems are capped by a hydrogen atom to complete the valence of
+the QM region. The force on this atom, which is present in the QM
+region only, is distributed over the two atoms of the bond. The cap
+atom is usually referred to as a link atom.
+
+\item{\textbf{ONIOM}} In the ONIOM approach, the energy and gradients
+are first evaluated for the isolated QM subsystem at the desired level
+of {\it{ab initio}} theory. Subsequently, the energy and gradients of
+the total system, including the QM region, are computed using the
+molecular mechanics force field and added to the energy and gradients
+calculated for the isolated QM subsystem. Finally, in order to correct
+for counting the interactions inside the QM region twice, a molecular
+mechanics calculation is performed on the isolated QM subsystem and
+the energy and gradients are subtracted. This leads to the following
+expression for the total QM/MM energy (and gradients likewise): \beq
+E_{tot} = E_{I}^{QM}
++E_{I+II}^{MM}-E_{I}^{MM}, \eeq where the
+subscripts I and II refer to the QM and MM subsystems,
+respectively. The superscripts indicate at what level of theory the
+energies are computed. The ONIOM scheme has the
+advantage that it is not restricted to a two-layer QM/MM description,
+but can easily handle more than two layers, with each layer described
+at a different level of theory.
+\end{enumerate}
+
+\subsection{Usage}
+
+To make use of the QM/MM functionality in {\gromacs}, one needs to:
+
+\begin{enumerate}
+\item introduce link atoms at the QM/MM boundary, if needed;
+\item specify which atoms are to be treated at a QM level;
+\item specify the QM level, basis set, type of QM/MM interface and so on. 
+\end{enumerate}
+
+\subsubsection{Adding link atoms}
+
+At the bond that connects the QM and MM subsystems, a link atoms is
+introduced.  In {\gromacs} the link atom has special atomtype, called
+LA. This atomtype is treated as a hydrogen atom in the QM calculation,
+and as a virtual site in the force field calculation. The link atoms, if
+any, are part of the system, but have no interaction with any other
+atom, except that the QM force working on it is distributed over the
+two atoms of the bond. In the topology, the link atom (LA), therefore,
+is defined as a virtual site atom:
+
+{\small
+\begin{verbatim}
+[ virtual_sites2 ]
+LA QMatom MMatom 1 0.65
+\end{verbatim}}
+
+See~\secref{vsitetop} for more details on how virtual sites are
+treated. The link atom is replaced at every step of the simulation.
+
+In addition, the bond itself is replaced by a constraint:
+
+{\small
+\begin{verbatim}
+[ constraints ]
+QMatom MMatom 2 0.153
+\end{verbatim}}
+
+{\bf Note} that, because in our system the QM/MM bond is a carbon-carbon
+bond (0.153 nm), we use a constraint length of 0.153 nm, and dummy
+position of 0.65. The latter is the ratio between the ideal C-H
+bond length and the ideal C-C bond length. With this ratio, the link
+atom is always 0.1 nm away from the {\tt QMatom}, consistent with the
+carbon-hydrogen bond length. If the QM and MM subsystems are connected
+by a different kind of bond, a different constraint and a different
+dummy position, appropriate for that bond type, are required.
+
+\subsubsection{Specifying the QM atoms}
+
+Atoms that should be treated at a QM level of theory, including the
+link atoms, are added to the index file. In addition, the chemical
+bonds between the atoms in the QM region are to be defined as
+connect bonds (bond type 5) in the topology file:
+
+{\small
+\begin{verbatim}
+[ bonds ]
+QMatom1 QMatom2 5
+QMatom2 QMatom3 5
+\end{verbatim}}
+
+\subsubsection{Specifying the QM/MM simulation parameters}
+
+In the {\tt .mdp} file, the following parameters control a QM/MM simulation.
+
+\begin{description}
+
+\item[\tt QMMM = no]\mbox{}\\ If this is set to {\tt yes}, a QM/MM
+simulation is requested. Several groups of atoms can be described at
+different QM levels separately. These are specified in the QMMM-grps
+field separated by spaces. The level of {\it{ab initio}} theory at which the
+groups are described is specified by {\tt QMmethod} and {\tt QMbasis}
+Fields. Describing the groups at different levels of theory is only
+possible with the ONIOM QM/MM scheme, specified by {\tt QMMMscheme}.
+
+\item[\tt QMMM-grps =]\mbox{}\\groups to be described at the QM level
+
+\item[\tt QMMMscheme = normal]\mbox{}\\Options are {\tt normal} and
+{\tt ONIOM}. This selects the QM/MM interface. {\tt normal} implies
+that the QM subsystem is electronically embedded in the MM
+subsystem. There can only be one {\tt QMMM-grps} that is modeled at
+the {\tt QMmethod} and {\tt QMbasis} level of {\it{ ab initio}}
+theory. The rest of the system is described at the MM level. The QM
+and MM subsystems interact as follows: MM point charges are included
+in the QM one-electron Hamiltonian and all Lennard-Jones interactions
+are described at the MM level. If {\tt ONIOM} is selected, the
+interaction between the subsystem is described using the ONIOM method
+by Morokuma and co-workers. There can be more than one QMMM-grps each
+modeled at a different level of QM theory (QMmethod and QMbasis).
+
+\item[\tt QMmethod = ]\mbox{}\\Method used to compute the energy
+and gradients on the QM atoms. Available methods are AM1, PM3, RHF,
+UHF, DFT, B3LYP, MP2, CASSCF, MMVB and CPMD. For CASSCF, the number of
+electrons and orbitals included in the active space is specified by
+{\tt CASelectrons} and {\tt CASorbitals}. For CPMD, the plane-wave
+cut-off is specified by the {\tt planewavecutoff} keyword.
+
+\item[\tt QMbasis = ]\mbox{}\\Gaussian basis set used to expand the
+electronic wave-function. Only Gaussian basis sets are currently
+available, i.e. STO-3G, 3-21G, 3-21G*, 3-21+G*, 6-21G, 6-31G, 6-31G*,
+6-31+G*, and 6-311G. For CPMD, which uses plane wave expansion rather
+than atom-centered basis functions, the {\tt planewavecutoff} keyword
+controls the plane wave expansion.
+
+\item[\tt QMcharge = ]\mbox{}\\The total charge in {\it{e}} of the {\tt
+QMMM-grps}. In case there are more than one {\tt QMMM-grps}, the total
+charge of each ONIOM layer needs to be specified separately.
+
+\item[\tt QMmult = ]\mbox{}\\The multiplicity of the {\tt
+QMMM-grps}. In case there are more than one {\tt QMMM-grps}, the
+multiplicity of each ONIOM layer needs to be specified separately.
+
+\item[\tt CASorbitals = ]\mbox{}\\The number of orbitals to be
+included in the active space when doing a CASSCF computation.
+
+\item[\tt CASelectrons = ]\mbox{}\\The number of electrons to be
+included in the active space when doing a CASSCF computation.
+
+\item[\tt SH = no]\mbox{}\\If this is set to yes, a QM/MM MD
+simulation on the excited state-potential energy surface and enforce a
+diabatic hop to the ground-state when the system hits the conical
+intersection hyperline in the course the simulation. This option only
+works in combination with the CASSCF method.
+
+\end{description}
+
+\subsection{Output}
+
+The energies and gradients computed in the QM calculation are added to
+those computed by {\gromacs}. In the {\tt .edr} file there is a section
+for the total QM energy.
+
+\subsection{Future developments}
+
+Several features are currently under development to increase the
+accuracy of the QM/MM interface. One useful feature is the use of
+delocalized MM charges in the QM computations. The most important
+benefit of using such smeared-out charges is that the Coulombic
+potential has a finite value at interatomic distances. In the point
+charge representation, the partially-charged MM atoms close to the QM
+region tend to ``over-polarize'' the QM system, which leads to artifacts
+in the calculation.
+
+What is needed as well is a transition state optimizer.
+
+\section{{\gromacs} on GPUs}
+
+{\gromacs} 4.5 provides support for GPU acceleration through 
+the \href{https://simtk.org/home/openmm}{OpenMM library}. 
+Although limited in functionality compared to the CPU algorithms of standard {\gromacs},
+{\gromacs}-GPU gives a preview of GPU-accelerated MD which we expect to be an important direction in the future. 
+The following should be noted before using the accelerated {\tt mdrun-gpu}:
+\begin{itemize}
+\item The current release runs only on modern, CUDA compatible NVIDIA GPU hardware 
+(for details see section~\ref{subsec:compatibility}). Make sure that the necessary CUDA drivers and 
+libraries for your operating system are already installed. 
+\item Only single-GPU simulations are supported.
+\item Only a relatively small subset of the {\gromacs} features and options are supported 
+with the  current OpenMM-based implementation. See section~\ref{subsec:features} for 
+a detailed list.
+\item Consumer-level GPU cards are known to often have problems with faulty memory.
+It is strongly recommended that a full memory check of the cards is done at least once
+(using option {\tt memtest=full}). A partial memory check (using option {\tt memtest=15}) 
+before and after the simulation run would help spot problems resulting from overheating 
+of the graphics card.
+\item The maximum size of the simulated systems depends on the GPU used. With
+high-end cards, like GeForce GTX 480 or Tesla 2050, systems of size up to 200,000 atoms 
+have been successfully simulated.
+\item In order to take a full advantage of the GPU platform features, many algorithms
+have been implemented in a very different way than they are on the CPUs.
+Therefore, numerical correspondence between some properties of the system's state
+should not be expected. Moreover, the values will likely vary when simulations are
+done on different hardware. However, sufficiently long trajectories
+should produce comparable statistical averages.
+\item Only a small subset of the overall energy terms will be
+  available, because of intrinsic limitations in the hardware+software
+  stack.
+\item Frequent retrieval of system state information such as
+trajectory coordinates and energies can greatly influence the performance
+of the program due the overhead of CPU$\leftrightarrow$GPU communication.
+\item MD algorithms are complex and often do not translate very well onto streaming architectures.
+Realistic expectations about the achievable speed-up from tests with a GeForce 400 series card:
+for small protein systems in implicit solvent using all-vs-all kernels the speedup 
+can be up to 10-15x, but in most other setups involving cutoffs and PME, 
+performance is close to the one on a modern 4 core CPU (e.g. Intel Core i7-930).
+\end{itemize}
+
+\subsection{Supported features}\label{subsec:features}
+
+\begin{itemize}
+\item \textbf{Integrators:} {\tt md/md-vv/md-vv-avek}, {\tt sd/sd1} and {\tt bd}.\\
+OpenMM implements only the velocity-Verlet algorithm for MD simulations.
+The option {\tt md} is accepted, but keep in mind that the actual algorithm is \emph{not} leap-frog.
+Thus all three options {\tt md}, {\tt md-vv}, and {\tt md-vv-avek} are equivalent.
+Similarly, {\tt sd} and {\tt sd1} are equivalent.
+\item \textbf{Long-range interactions:} {\tt Reaction-Field}, {\tt Ewald}, {\tt PME}, {\tt No-cutoff}
+{\tt Cut-off}.
+\begin{itemize}
+\item for No-cutoff, set {\tt rcoulomb=0} and {\tt rvdw=0}.
+\item for Ewald summation only 3D geometry is supported, and dipole correction is not.
+\item the Cut-off method is supported only for implicit solvent simulations.
+\end{itemize}
+\item \textbf{Temperature control:} Supported only with the {\tt sd/sd1}, {\tt bd},
+{\tt md/md-vv/md-vv-avek} integrators.
+OpenMM implements only the Andersen thermostat. All values for {\tt tcoupl} are
+thus accepted and equivalent to {\tt andersen}. Multiple temperature coupling groups
+are not supported, only {\tt tc-grps=System} will work.
+\item \textbf{Force fields:} Supported FF are Amber, CHARMM. {\gromos} and OPLS-AA are not supported.
+\begin{itemize}
+\item CMAP dihedrals in CHARMM are not supported, so use the {\tt -nocmap} option with {\tt pdb2gmx}.
+\end{itemize}
+\item \textbf{Implicit solvent:} Supported only with {\tt Reaction-Field} electrostatics.
+The only supported algorithm for GB is OBC, and the default {\gromacs} values for the scale fators
+are hard coded in OpenMM, {\ie} {\tt obc_alpha=1}, {\tt obc_beta=0.8} and {\tt obc_gamma=4.85} and 
+therefore can not be changed.
+\item \textbf{Constraints:} Constraints in OpenMM are done by a combination of SHAKE,
+SETTLE and CCMA. Accuracy is based on the SHAKE tolerance as set by the {\tt shake_tol} option.
+\item \textbf{Periodic Boundary Conditions:} Only {\tt pbc=xyz} and {\tt pbc=no} in rectangular cells (boxes) are supported.
+\item \textbf{Pressure control:} OpenMM implements the Monte Carlo barostat. All values for {\tt pcoupl} are thus accepted.
+\item \textbf{Simulated annealing:} Not supported.
+\item \textbf{Pulling:} Not supported. 
+\item \textbf{Restraints:} Distance, orientation, angle and dihedral restraints are not supported
+in the current implementation.
+\item \textbf{Free energy calculations:} Not supported in the current implementation.
+\item \textbf{Walls:} Not supported.
+\item \textbf{Non-equilibrium MD:} Option {\tt acc_grps} is not supported.
+\item \textbf{Electric Fields:} Not supported.
+\item \textbf{QMMM:} Not supported.
+\end{itemize}
+
+\subsection{Installing and running {\gromacs}-GPU}
+
+{\gromacs}-GPU can be installed either from the officially distributed binary or source packages. 
+We provide pre-compiled binaries built for and tested on the most common Linux, Windows, 
+and Mac OS operating systems (for details see the {\gromacs}-GPU 
+\href{http://www.gromacs.org/gpu}{download page}). 
+Using the binary distribution is highly recommended and it should 
+work in most of the cases. Below we summarize how to get the GPU accelerated {\tt mdrun-gpu} work.
+
+\subsubsection{Prerequisites}
+
+The current {\gromacs}-GPU release uses \href{https://simtk.org/home/openmm}{OpenMM} 
+acceleration, the necessary libraries and plug-ins are included in the binary 
+packages. 
+
+Both the OpenMM library and {\gromacs}-GPU require version 3.1 of
+the CUDA libraries and compatible NVIDIA driver (i.e. version $>$ 256). 
+
+Last but not least, to run GPU accelerated simulations, a CUDA-enabled 
+graphics card is necessary. Molecular dynamics algorithms 
+are very demanding and unlike in other application areas, 
+only high-end graphics cards are capable of providing performance comparable 
+to or higher then modern CPUs. For this reason, {\tt mdrun-gpu} is compatible with 
+only a subset of more performant CUDA-enabled GPUs (for detailed list see section 
+\ref{subsec:compatibility}) and by default it does not run if it detects
+incompatible hardware. 
+
+For details about compatibility of NVIDIA drivers with harthe CUDA library and GPUs consult  
+the \href{http://developer.nvidia.com/object/gpucomputing.html}{NVIDIA developer page}.
+
+Summary of prerequisites: 
+\begin{itemize}
+    \item OpenMM v2.0
+    \item NVIDIA CUDA libraries v3.1
+    \item NVIDIA drivers $\geq$v256
+    \item NVIDIA CUDA-enabled GPU
+\end{itemize}
+
+
+\subsubsection{Installing}
+
+\begin{enumerate}
+
+    \item Download and unpack the binary package for the respective OS and architecture. 
+    Copy the content of the package to your normal {\gromacs} installation directory (or to a custom location).
+    
+    {\bf Note} that the distributed {\gromacs}-GPU packages do not contain the entire set of 
+    tools and utilities included in a full {\gromacs} installation. Therefore, it is recommended to  
+    have a $\geq$v4.5 standard {\gromacs} installation along the GPU accelerated one.
+
+    \item Add the {\tt openmm/lib} directory to your library path,  {\eg} in bash:\\
+    {\small{\tt export LD_LIBRARARY_PATH=path_to_gromacs/openmm/lib:\$LD_LIBRARY_PATH}}\\
+    If there are other OpenMM versions installed, make sure that the supplied libraries have preference  
+    when running {\tt mdrun-gpu}. Also, make sure that the CUDA libraries installed match the version 
+    of CUDA that was used for compilation of {\gromacs}-GPU.
+
+    \item Set the {\tt OPENMM_PLUGIN_DIR} environment variable to contain the path to the \\ 
+    {\tt openmm/lib/plugins} directory, {\eg} in bash:\\ 
+    {\small{\tt export OPENMM_PLUGIN_DIR=path_to_gromacs/openmm/lib/plugins}}
+
+    \item At this point, running the command
+    {\tt path_to_gromacs/bin/mdrun-gpu -h} should display the standard {\tt mdrun-gpu} help  
+    which means that the binary runs and all the necessary libraries are accessible. 
+
+\end{enumerate}
+
+\subsubsection{Compiling {\tt mdrun-gpu}}
+
+The GPU accelerated {\tt mdrun} can be compiled on Linux, Mac OS and Windows 
+operating systems, both for 32- and 64-bit. Besides the prerequisites 
+discussed above, in order to compile {\tt mdrun-gpu} the following additional 
+software is required: 
+\begin{itemize}
+    \item CMake version $\geq$2.6.4
+    \item CUDA-compatible compiler: 
+        \begin{itemize}
+            \item MSVC 8 or 9 on Windows 
+            \item gcc 4.4 on Linux and Mac OS
+        \end{itemize}
+    \item CUDA toolkit 3.1
+    \item OpenMM-2.0 header files
+\end{itemize}
+{\bf Note} that the current {\gromacs}-GPU release is compatible with OpenMM  
+version 2.0. While future versions might be compatible, using the officially-supported 
+and tested OpenMM version is strongly encouraged.
+OpenMM binaries as well as source code can be obtained from the 
+\href{https://simtk.org/project/xml/downloads.xml?group_id=161}{project's homepage}.
+
+Also note that it is essential that the same version of CUDA is used to compile both
+{\tt mdrun-gpu} and the OpenMM libraries. 
+
+To compile {\tt mdrun-gpu} change to the top level directory of the source 
+tree and execute the following commands: 
+
+{\small
+\begin{verbatim}
+    export OPENMM_ROOT_DIR=path_to_custom_openmm_installpath
+    cmake  -DGMX_OPENMM=ON [-DCMAKE_INSTALL_PREFIX=desired_install_path]
+    make mdrun
+    make install-mdrun
+\end{verbatim}}
+
+
+%\subsubsection{Testing and troubleshooting}
+
+\subsubsection{{\gromacs}-GPU specific {\tt mdrun} features}
+
+Besides the usual command line options, 
+{\tt mdrun-gpu} also supports a set of ``device options'', that are meant to 
+give control over acceleration related functionalities. 
+These options can be used in the following form:
+
+{\small {\tt mdrun-gpu -device "ACCELERATION:[DEV_OPTION=VALUE,]... [OPTION].."}}
+
+The option-list prefix {\tt ACCELERATION} specifies which 
+acceleration library should be used. At the moment, the only supported value 
+is {\tt OpenMM}. This is followed by a list of comma-separated
+{\tt DEV_OPTION=VALUE} option-value pairs which define 
+parameters for the selected acceleration platform. The entire device option 
+string is \emph{case insensitive}.
+
+Below we summarize the available options (of the OpenMM acceleration library)
+and their possible values.
+
+\paragraph{Platform} Selects the GPGPU platform to be used. Currently the only 
+supported value is CUDA.  In the future, OpenCL support will be added.
+
+\paragraph{DeviceID} The numeric identifier of the CUDA device on which the 
+simulation will be carried out. The default value is 0, {\ie} the first device. 
+
+\paragraph{Memtest} GPUs, especially consumer-level devices, 
+are prone to memory errors. There might be various reasons that 
+``soft errors'' happen, including (factory) overclocking, overheating, 
+faulty hardware etc, but the result is always the same: unreliable, possibly 
+incorrect results. Therefore, {\tt mdrun-gpu} has a built-in mechanism for 
+testing the GPU memory in order to catch the obviously faulty hardware. 
+A set of tests are performed before and after each simulation, and if
+errors are detected, the execution is aborted. 
+
+Accepted values for this option are any integer $\leq$15 with an optional ``s'' 
+suffix representing the amount of time in seconds that should be spent 
+on testing; the default value is {\tt memtest=15s} (the actual time spent 
+on testing might differ slightly).
+It is possible to completely turn off memory testing by setting 
+{\tt memtest=off}, however this is not advisable.
+
+\paragraph{Force-device} Enables running {\tt mdrun-gpu} on
+devices that are not supported but CUDA-capable. Using 
+this option might results in very low performance or even 
+crashes and therefore it is not encouraged.
+
+\subsection{Hardware and software compatibility list}\label{subsec:compatibility}
+
+Compatible OpenMM versions:
+\begin{itemize}
+\item v2.0
+\end{itemize}
+
+Compatible NVIDIA CUDA versions (also see OpenMM version compatibility above): 
+\begin{itemize}
+\item v3.1
+\end{itemize}
+
+Compatible hardware (for further details consult the 
+\href{http://www.nvidia.com/object/cuda\_gpus.html}{NVIDIA CUDA compatible GPUs page}):
+\begin{itemize}
+\item G92/G94:
+    \begin{itemize}
+    \item GeForce 9800 GX2/GTX/GTX+/GT
+    \item GeForce 9800M GT
+    \item GeForce GTS 150, 250
+    \item GeForce GTX 280M, 285M
+    \item Quadro FX 4700
+    \item Quadro Plex 2100 D4
+    \end{itemize}
+\item GT200:
+    \begin{itemize}
+    \item GeForce GTX 260, 270, 280, 285, 295 
+    \item Tesla C1060, S1070, M1060
+    \item Quadro FX 4800, 5800
+    \item Quadro CX
+    \item Quadro Plex 2200 D2, 2200 S4
+    \end{itemize}
+\item GF10x (Fermi):
+    \begin{itemize}
+    \item GeForce GTX 460, 465, 470, 480       
+    \item Tesla C2050, C2070, S2050, M2050, M2070
+    \item Quadro 5000(M), 6000
+    \end{itemize}
+\end{itemize}
+
+\section{Using VMD plug-ins for trajectory file I/O}
+\index{VMD plug-ins}\index{trajectory file}{\gromacs} tools are able
+to use the plug-ins found in an existing installation of
+\href{http://www.ks.uiuc.edu/Research/vmd}{VMD} in order to read and
+write trajectory files in formats that are not native to
+{\gromacs}. You will be able to supply an AMBER DCD-format trajectory
+filename directly to GROMACS tools, for example.
+
+This requires a VMD installation not older than version 1.8, that your
+system provides the dlopen function so that programs can determine at
+run time what plug-ins exist, and that you build shared libraries when
+building GROMACS. CMake will find the vmd executable in your path, and
+from it, or the environment variable {\tt VMDDIR} at configuration or
+run time, locate the plug-ins. Alternatively, the {\tt VMD_PLUGIN_PATH}
+can be used at run time to specify a path where these plug-ins can be
+found. Note that these plug-ins are in a binary format, and that format
+must match the architecture of the machine attempting to use them.
+
+% LocalWords:  PMF pmf kJ mol Jarzynski BT bilayer rup mdp AFM fepmf fecalc rb
+% LocalWords:  posre grompp fs Verlet dihedrals hydrogens hydroxyl sulfhydryl
+% LocalWords:  vsitehydro planarity chirality pdb gmx virtualize virtualized xz
+% LocalWords:  vis massless tryptophan histidine phenyl parameterizing ij PPPM
+% LocalWords:  parameterization Berendsen rlist coulombtype rcoulomb vdwtype LJ
+% LocalWords:  rvdw energygrp mdrun pre GMXLIB mdpopt MOPAC GAMESS CPMD ONIOM
+% LocalWords:  Morokuma iJ AQ AJ initio atomtype QMatom MMatom QMMM grps et al
+% LocalWords:  QMmethod QMbasis QMMMscheme RHF DFT LYP CASSCF MMVB CASelectrons
+% LocalWords:  CASorbitals planewavecutoff STO QMcharge QMmult diabatic edr GPU
+% LocalWords:  hyperline delocalized Coulombic GPUs OpenMM NVIDIA CUDA memtest
+% LocalWords:  GTX CPUs GHz md sd bd vv avek tcoupl andersen tc OPLSAA GROMOS
+% LocalWords:  OBC obc CCMA tol pbc xyz barostat pcoupl acc gpu PLUGIN Cmake GX
+% LocalWords:  MSVC gcc installpath cmake DGMX DCMAKE functionalities GPGPU GTS
+% LocalWords:  OpenCL DeviceID gromacs gpus html GeForce Quadro FX Plex CX GF
+% LocalWords:  VMD DCD
