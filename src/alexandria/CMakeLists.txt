@@ -15,6 +15,7 @@ set(ALEXANDRIA_SOURCES
 	molprop_xml.cpp
         molprop_sqlite3.cpp
         mymol2.cpp
+        moldip.cpp
         gauss_io.cpp
 	)
 	
@@ -27,14 +28,6 @@ list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
 add_executable(g_poldata_test g_poldata_test.c)
 target_link_libraries(g_poldata_test ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_poldata_test PROPERTIES OUTPUT_NAME "g_poldata_test${GMX_BINARY_SUFFIX}")
-
-add_executable(g_gauss_test g_gauss_test.c)
-target_link_libraries(g_gauss_test ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_gauss_test PROPERTIES OUTPUT_NAME "g_gauss_test${GMX_BINARY_SUFFIX}")
-
-add_executable(g_slater_test g_slater_test.c)
-target_link_libraries(g_slater_test ${GMX_EXTRA_LIBRARIES})
-set_target_properties(g_slater_test PROPERTIES OUTPUT_NAME "g_slater_test${GMX_BINARY_SUFFIX}")
 
 add_executable(gentop gentop.cpp)
 target_link_libraries(gentop ${GMX_EXTRA_LIBRARIES})

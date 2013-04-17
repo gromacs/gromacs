@@ -71,8 +71,7 @@
 #include <gpp_atomtype.h>
 #include <atomprop.h>
 #include "nmsimplex.h"
-#include "gaussian_integrals.h"
-#include "slater_integrals.h"
+#include "gromacs/coulombintegrals.h"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
 
@@ -678,6 +677,16 @@ void gmx_resp_copy_grid(gmx_resp_t dest,gmx_resp_t src)
     {
         copy_rvec(src->esp[m],dest->esp[m]);
     }
+}
+
+gmx_resp_t gmx_resp_copy(gmx_resp_t src)
+{
+    gmx_resp_t dest;
+    
+    snew(dest,1);
+    memcpy(dest,src,sizeof(*src));
+    
+    return dest;
 }
 
 void gmx_resp_make_grid(gmx_resp_t gr,real spacing,matrix box,rvec x[])

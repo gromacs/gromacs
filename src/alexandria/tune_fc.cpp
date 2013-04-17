@@ -78,15 +78,17 @@
 #include "gmx_wallcycle.h"
 #include "gmx_statistics.h"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/coulombintegrals.h"
 #include "convparm.h"
 #include "gpp_atomtype.h"
 #include "grompp.h"
 #include "gen_ad.h"
-#include "slater_integrals.h"
 #include "molselect.h"
 #include "mtop_util.h"
 #include "gmx_simple_comm.h"
 #include "nmsimplex.h"
+
+// alexandria stuff
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "gentop_qgen.hpp"
@@ -95,480 +97,25 @@
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
 #include "mymol2.hpp"
+#include "moldip.hpp"
 
 typedef struct {
     int nb[ebtsNR],*ngtb[ebtsNR];
     char **cgt[ebtsNR];
 } opt_mask_t;
 
-typedef struct {
-    int gt_index;
-    int natom;
-    double bondorder;
-    char **ai;
-    int nparam;
-    double *param;
-} opt_bad_t;
-
-typedef struct {
-    t_moldip *md;
-    gmx_bool bOpt[ebtsNR];
-    int nbad[ebtsNR];
-    opt_bad_t *bad[ebtsNR];
-    int *inv_gt[ebtsNR];
-    int nparam;
-    double *param,*orig,*best,*lower,*upper,*psigma;
-} opt_param_t;
-
-static void add_obt(opt_bad_t *obt,int natom,char **ai,
-                    int nparam,double *param,double bondorder,int gt)
-{
-    int i;
-    
-    obt->gt_index = gt-1;
-    obt->natom = natom;
-    snew(obt->ai,natom);
-    for(i=0; (i<natom); i++) 
-        obt->ai[i] = strdup(ai[i]);
-    obt->nparam = nparam;
-    snew(obt->param,nparam);
-    for(i=0; (i<nparam); i++)
-        obt->param[i] = param[i];
-    obt->bondorder = bondorder;
-}
-
-static void add_opt(opt_param_t *opt,int otype,int natom,char **ai,
-                    int nparam,double *param,double bondorder,int gt)
-{
-    assert(otype < ebtsNR);
-    assert(otype >= 0);
-    srenew(opt->bad[otype],++opt->nbad[otype]);
-    add_obt(&opt->bad[otype][opt->nbad[otype]-1],natom,ai,nparam,param,bondorder,gt);
-}
-
-static void opt2list(opt_param_t *opt)
-{
-    int i,j,p,n,nparam;
-    
-    for(i=n=0; (i<ebtsNR); i++) {
-        for(j=0; (j<opt->nbad[i]); j++) {
-            nparam = n+opt->bad[i][j].nparam;
-            if (nparam > opt->nparam) {
-                srenew(opt->param,nparam);
-                opt->nparam = nparam;
-            }
-            for(p=0; (p<opt->bad[i][j].nparam); p++) {
-                opt->param[n++] = opt->bad[i][j].param[p];
-            }
-        }
-    }
-}
-
-static void list2opt(opt_param_t *opt)
-{
-    gmx_poldata_t pd = opt->md->pd;
-    int i,j,p,n;
-    char buf[STRLEN],*ptr;
-    
-    for(i=n=0; (i<ebtsNR); i++) {
-        for(j=0; (j<opt->nbad[i]); j++) {
-            buf[0] = '\0';
-            for(p=0; (p<opt->bad[i][j].nparam); p++) {
-                opt->bad[i][j].param[p] = opt->param[n++];
-                strcat(buf," ");
-                ptr = gmx_ftoa(opt->bad[i][j].param[p]);
-                strcat(buf,ptr);
-                sfree(ptr);
-            }
-            switch (i) {
-            case ebtsBONDS:
-                gmx_poldata_set_bond_params(pd,opt->bad[i][j].ai[0],
-                                            opt->bad[i][j].ai[1],
-                                            0,0,0,
-                                            opt->bad[i][j].bondorder,buf);
-                break;
-            case ebtsANGLES:
-                gmx_poldata_set_angle_params(pd,opt->bad[i][j].ai[0],
-                                             opt->bad[i][j].ai[1],
-                                             opt->bad[i][j].ai[2],
-                                             0,0,0,buf);
-                break;
-            case ebtsPDIHS:
-                gmx_poldata_set_dihedral_params(pd,egdPDIHS,
-                                                opt->bad[i][j].ai[0],
-                                                opt->bad[i][j].ai[1],
-                                                opt->bad[i][j].ai[2],
-                                                opt->bad[i][j].ai[3],
-                                                0,0,0,buf);
-                break;
-            case ebtsIDIHS:
-                gmx_poldata_set_dihedral_params(pd,egdIDIHS,
-                                                opt->bad[i][j].ai[0],
-                                                opt->bad[i][j].ai[1],
-                                                opt->bad[i][j].ai[2],
-                                                opt->bad[i][j].ai[3],
-                                                0,0,0,buf);
-                break;
-            default:
-                gmx_fatal(FARGS,"Unsupported bts %d",i);
-            }
-        }
-    }
-}
-
-static void mk_inv_gt(opt_param_t *opt)
-{
-    int i,j,gt_max;
-
-    /* Make in index to look up gt */    
-    for(i=0; (i<ebtsNR); i++) {
-        gt_max = -1;
-        for(j=0; (j<opt->nbad[i]); j++) {
-            if (opt->bad[i][j].gt_index > gt_max)
-                gt_max = opt->bad[i][j].gt_index;
-        }
-        snew(opt->inv_gt[i],gt_max+1);
-        for(j=0; (j<=gt_max); j++)
-            opt->inv_gt[i][j] = NOTSET;
-        for(j=0; (j<opt->nbad[i]); j++) {
-            opt->inv_gt[i][opt->bad[i][j].gt_index] = j;
-        }
-    }
-}
-
-static void get_dissociation_energy(FILE *fplog,opt_param_t *opt)
-{
-    FILE     *csv;
-    int      nD,nMol,ftb,gt,gti,i,j,ai,aj,niter,row;
-    char     *aai,*aaj,**ctest;
-    char     buf[STRLEN];
-    t_mymol  *mymol;
-    double   **a,**at,**ata;
-    double   *x,*atx,*fpp;
-    double   a0,da0,ax,chi2;
-    int      *test;
-    gmx_bool bZero = FALSE;
-    
-    nD     = opt->nbad[ebtsBONDS];
-    nMol   = opt->md->nmol;
-    if ((0 == nD) || (0 == nMol))
-        gmx_fatal(FARGS,"Number of variables is %d and number of molecules is %d",
-                  nD,nMol);
-    a      = alloc_matrix(nMol,nD);
-    at     = alloc_matrix(nD,nMol);
-    ata    = alloc_matrix(nD,nD);
-    snew(x,nMol+1);
-    snew(atx,nD+1);
-    snew(fpp,nD+1);
-    snew(test,nD+1);
-    snew(ctest,nD+1);
-    
-    fprintf(fplog,"There are %d different bondtypes to optimize the heat of formation\n",
-            nD);
-    fprintf(fplog,"There are %d (experimental) reference heat of formation.\n",nMol);
-    
-    ftb = gmx_poldata_get_bond_ftype(opt->md->pd);
-    for(j=0; (j<nMol); j++) 
-    {
-        mymol = &(opt->md->mymol[j]);
-        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
-            ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
-            aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
-            if ((gt = gmx_poldata_search_bond(opt->md->pd,aai,aaj,
-                                              NULL,NULL,NULL,NULL,NULL)) != 0) {
-                gti = opt->inv_gt[ebtsBONDS][gt-1];
-                at[gti][j]++;
-                a[j][gti]++; 
-                test[gti]++;
-                if (NULL == ctest[gti]) {
-                    sprintf(buf,"%s-%s",aai,aaj);
-                    ctest[gti] = strdup(buf);
-                }
-            }
-            else {
-                gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field",aai,aaj);
-            }
-        }
-        x[j] = mymol->Emol;
-    }
-    csv = ffopen("out.csv","w");
-    for(i=0; (i<nMol); i++) 
-    {
-        mymol = &(opt->md->mymol[i]);
-        fprintf(csv,"\"%s\",",mymol->molname);
-        for(j=0; (j<nD); j++) {
-            fprintf(csv,"\"%g\",",a[i][j]);
-        }
-        fprintf(csv,"\"%.3f\"\n",x[i]);
-    }
-    fclose(csv);
-    
-    matrix_multiply(NULL,nMol,nD,a,at,ata);
-    if ((row = matrix_invert(NULL,nD,ata)) != 0) {
-        gmx_fatal(FARGS,"Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row);
-    }
-    a0 = 0;
-    do {
-        for(i=0; (i<nD); i++)  
-        {
-            atx[i] = 0;
-            for(j=0; (j<nMol); j++)
-                atx[i] += at[i][j]*(x[j]-a0);
-        }
-        for(i=0; (i<nD); i++) 
-        {
-            fpp[i] = 0;
-            for(j=0; (j<nD); j++)
-                fpp[i] += ata[i][j]*atx[j];
-        }
-        da0 = 0;
-        chi2 = 0;
-        if (bZero)
-        {
-            for(j=0; (j<nMol); j++)
-            {
-                ax = a0;
-                for(i=0; (i<nD); i++)  
-                    ax += fpp[i]*a[j][i];
-                da0 += (x[j]-ax);
-                chi2 += sqr(x[j]-ax);
-            }
-            da0 = da0 / nMol;
-            a0 += da0;
-            niter++;
-            printf("iter: %d, a0 = %g, chi2 = %g\n",
-                   niter,a0,chi2/nMol);
-        }
-    } while ((fabs(da0) > 1e-5) && (niter < 1000));
-    
-    for(i=0; (i<nD); i++) 
-    {
-        opt->bad[ebtsBONDS][i].param[0] = -fpp[i];
-        if (fplog)
-            fprintf(fplog,"Optimized dissociation energy for %8s with %4d copies to %g\n",
-                    ctest[i],test[i],fpp[i]);
-        sfree(ctest[i]);
-    }
-    sfree(ctest);
-    sfree(test);
-    sfree(fpp);
-    sfree(atx);
-    sfree(x);
-    free_matrix(a,nMol);
-    free_matrix(at,nD);
-    free_matrix(ata,nD);
-}
-
-static opt_param_t *init_opt(FILE *fplog,t_moldip *md,int *nparam,
-                             gmx_bool bOpt[ebtsNR],
-                             real D0,real beta0,real D0_min,real beta_min,
-                             opt_mask_t *omt,real factor)
-{
-    opt_param_t *opt;
-    char   *ai[4];
-    char   *params,**ptr;
-    int    gt,i,n,maxfc = 0;
-    double *fc=NULL;
-    double bondorder;
-    
-    snew(opt,1);
-    opt->md = md;
-    for(i=0; (i<ebtsNR); i++)
-        opt->bOpt[i] = bOpt[i];
-    *nparam = 0;
-    if (bOpt[ebtsBONDS]) {
-        while((gt = gmx_poldata_get_bond(md->pd,&(ai[0]),&(ai[1]),
-                                         NULL,NULL,NULL,&bondorder,&params)) > 0) {
-            if (omt->ngtb[ebtsBONDS][gt-1] > 0) {
-                ptr = split(' ',params);
-                for(n = 0; (NULL != ptr[n]); n++) {
-                    if (n>=maxfc) {
-                        srenew(fc,++maxfc);
-                    }
-                    fc[n] = atof(ptr[n]);
-                    sfree(ptr[n]);
-                }
-                if (D0 > 0)
-                    fc[0] = D0;
-                if (beta0 > 0)
-                    fc[1] = beta0;
-                add_opt(opt,ebtsBONDS,2,ai,n,fc,bondorder,gt);
-                *nparam += n;
-                sfree(ptr);
-            }
-            if (NULL != params)
-                sfree(params);
-            for(n=0; (n<2); n++) 
-                if (NULL != ai[n])
-                    sfree(ai[n]);
-        }
-    }
-    if (bOpt[ebtsANGLES]) {
-        while((gt = gmx_poldata_get_angle(md->pd,&(ai[0]),&(ai[1]),&(ai[2]),
-                                          NULL,NULL,NULL,&params)) > 0) {
-            if (omt->ngtb[ebtsANGLES][gt-1] > 0) {
-                ptr = split(' ',params);
-                for(n = 0; (NULL != ptr[n]); n++) {
-                    if (n>maxfc) {
-                        srenew(fc,++maxfc);
-                    }
-                    fc[n] = atof(ptr[n]);
-                }
-                add_opt(opt,ebtsANGLES,3,ai,n,fc,0,gt);
-                *nparam += n;
-            }
-            if (NULL != params)
-                sfree(params);
-            for(n=0; (n<3); n++) 
-                if (NULL != ai[n])
-                    sfree(ai[n]);
-        }
-    }
-    if (bOpt[ebtsPDIHS]) {
-        while((gt = gmx_poldata_get_dihedral(md->pd,egdPDIHS,
-                                             &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
-                                             NULL,NULL,NULL,&params)) > 0) {
-            if (omt->ngtb[ebtsPDIHS][gt-1] > 0) {
-                ptr = split(' ',params);
-                for(n = 0; (NULL != ptr[n]); n++) {
-                    if (n>maxfc) {
-                        srenew(fc,++maxfc);
-                    }
-                    fc[n] = atof(ptr[n]);
-                }
-                add_opt(opt,ebtsPDIHS,4,ai,n,fc,0,gt);
-                *nparam += n;
-            }
-            if (NULL != params)
-                sfree(params);
-            for(n=0; (n<4); n++) 
-                if (NULL != ai[n])
-                    sfree(ai[n]);
-        }
-    }
-    if (bOpt[ebtsIDIHS]) {
-        while((gt = gmx_poldata_get_dihedral(md->pd,egdIDIHS,
-                                             &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
-                                             NULL,NULL,NULL,&params)) > 0) {
-            if (omt->ngtb[ebtsIDIHS][gt-1] > 0) {
-                ptr = split(' ',params);
-                for(n = 0; (NULL != ptr[n]); n++) {
-                    if (n>maxfc) {
-                        srenew(fc,++maxfc);
-                    }
-                    fc[n] = atof(ptr[n]);
-                }
-                add_opt(opt,ebtsIDIHS,4,ai,n,fc,0,gt);
-                *nparam += n;
-            }
-            if (NULL != params)
-                sfree(params);
-            for(n=0; (n<4); n++) 
-                if (NULL != ai[n])
-                    sfree(ai[n]);
-        }
-    }
-    sfree(fc);
-    
-    mk_inv_gt(opt);
-    opt2list(opt);
-    get_dissociation_energy(fplog,opt);
-    opt2list(opt);
-    list2opt(opt);
-    snew(opt->best,opt->nparam);
-    snew(opt->orig,opt->nparam);
-    snew(opt->lower,opt->nparam);
-    snew(opt->upper,opt->nparam);
-    snew(opt->psigma,opt->nparam);
-    if (factor < 1)
-        factor = 1/factor;
-    for(i=0; (i<opt->nparam); i++) {
-        opt->best[i] = opt->orig[i] = opt->param[i];
-        opt->lower[i] = opt->orig[i]/factor;
-        opt->upper[i] = opt->orig[i]*factor;
-    }
-    return opt;
-}
-
-static void print_opt(FILE *fp,opt_param_t *opt)
-{
-    int k;
-    
-    fprintf(fp,"Param        Orig        Best\n");
-    for(k=0; (k<opt->nparam); k++)
-        fprintf(fp,"%-5d  %10g  %10g\n",k,opt->orig[k],opt->best[k]);
-}
-
-static void print_stats(FILE *fp,const char *prop,gmx_stats_t lsq,gmx_bool bHeader,
-                        char *xaxis,char *yaxis)
-{
-    real a,da,b,db,chi2,rmsd,Rfit;
-    int  n;
-    
-    if (bHeader)
-    {
-        fprintf(fp,"Fitting data to y = ax+b, where x = %s and y = %s\n",
-                xaxis,yaxis);
-        fprintf(fp,"%-12s %5s %13s %13s %8s %8s\n",
-                "Property","N","a","b","R","RMSD");
-        fprintf(fp,"---------------------------------------------------------------\n");
-    }
-    gmx_stats_get_ab(lsq,elsqWEIGHT_NONE,&a,&b,&da,&db,&chi2,&Rfit);
-    gmx_stats_get_rmsd(lsq,&rmsd);
-    gmx_stats_get_npoints(lsq,&n);
-    fprintf(fp,"%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
-            prop,n,a,da,b,db,Rfit*100,rmsd);
-}
-
-static void print_lsq_set(FILE *fp,gmx_stats_t lsq)
-{
-    real   x,y;
-    
-    fprintf(fp,"@type xy\n");
-    while (gmx_stats_get_point(lsq,&x,&y,NULL,NULL,0) == estatsOK)
-    {
-        fprintf(fp,"%10g  %10g\n",x,y);
-    }
-    fprintf(fp,"&\n");
-}
-
-static void xvgr_symbolize(FILE *xvgf,int nsym,const char *leg[],
-                           const output_env_t oenv)
-{
-    int i;
-
-    xvgr_legend(xvgf,nsym,leg,oenv);
-    for(i=0; (i<nsym); i++)
-    {
-        xvgr_line_props(xvgf,i,elNone,ecBlack+i,oenv);
-        fprintf(xvgf,"@ s%d symbol %d\n",i,i+1);
-    }        
-}
-
-static void done_opt_mask(opt_mask_t **omt)
-{
-    int i;
-    
-    for(i=0; (i<ebtsNR); i++)
-        sfree((*omt)->ngtb[i]);
-    sfree(*omt);
-    *omt = NULL;
-}
-
-static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
-                                gmx_bool bOpt[])
+static opt_mask_t *analyze_idef(FILE *fp,
+                                std::vector<alexandria::MyMol> mm,
+                                gmx_poldata_t pd,
+                                bool bOpt[])
 {
     int  gt,i,bt,n,ai,aj,ak,al,ft;
     int  ntot[ebtsNR];
     char *aai,*aaj,*aak,*aal,*params;
-    t_mymol *mymol;
     opt_mask_t *omt;
     const char *btsnames[ebtsNR] =  { "bond", "angle", "proper", "improper", NULL, NULL };
     
-    fprintf(fp,"In the total data set of %d molecules we have:\n",nmol);
+    fprintf(fp,"In the total data set of %d molecules we have:\n",(int)mm.size());
     snew(omt,1);
     for(bt=0; (bt<ebtsNR); bt++)
         ntot[bt] = 0;
@@ -597,9 +144,9 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
             snew(omt->ngtb[bt],omt->nb[bt]);
             snew(omt->cgt[bt],omt->nb[bt]);
             
-            for(n=0; (n<nmol); n++) { 
-                mymol = &(mm[n]);
-            
+            for(std::vector<alexandria::MyMol>::iterator mymol = mm.begin();
+                (mymol < mm.end()); mymol++)
+            {
                 for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
                     ai = mymol->ltop->idef.il[ft].iatoms[i+1];
                     aai = *mymol->topology->atoms.atomtype[ai];
@@ -656,7 +203,503 @@ static opt_mask_t *analyze_idef(FILE *fp,int nmol,t_mymol mm[],gmx_poldata_t pd,
     return omt;
 }
 
-static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
+static void done_opt_mask(opt_mask_t **omt)
+{
+    int i;
+    
+    for(i=0; (i<ebtsNR); i++)
+        sfree((*omt)->ngtb[i]);
+    sfree(*omt);
+    *omt = NULL;
+}
+
+typedef struct {
+    int gt_index;
+    int natom;
+    double bondorder;
+    char **ai;
+    int nparam;
+    double *param;
+} opt_bad_t;
+
+static void add_obt(opt_bad_t *obt,int natom,char **ai,
+                    int nparam,double *param,double bondorder,int gt)
+{
+    int i;
+    
+    obt->gt_index = gt-1;
+    obt->natom = natom;
+    snew(obt->ai,natom);
+    for(i=0; (i<natom); i++) 
+        obt->ai[i] = strdup(ai[i]);
+    obt->nparam = nparam;
+    snew(obt->param,nparam);
+    for(i=0; (i<nparam); i++)
+        obt->param[i] = param[i];
+    obt->bondorder = bondorder;
+}
+
+namespace alexandria
+{
+
+class OptParam : public MolDip
+{
+public:
+    bool _bOpt[ebtsNR];
+    int _nbad[ebtsNR];
+    opt_bad_t *_bad[ebtsNR];
+    int *_inv_gt[ebtsNR];
+    int _nparam;
+    double *_param,*_orig,*_best,*_lower,*_upper,*_psigma;
+    
+    void InitOpt(FILE *fplog,int *nparam,
+                 bool bOpt[ebtsNR],
+                 real D0,real beta0,real D0_min,real beta_min,
+                 opt_mask_t *omt,real factor);
+
+    void MkInvGt();
+    void GetDissociationEnergy(FILE *fplog);
+    void Opt2List();
+    void List2Opt();
+    void Add(int otype,int natom,char **ai,
+             int nparam,double *param,double bondorder,int gt);
+    void Print(FILE *fp);
+    double CalcDeviation();
+    double EnergyFunction(double v[]);
+    void GuessAll(FILE *fplog,int iter,real stepsize,
+                  bool bRandom,gmx_rng_t rng);
+    void Optimize(FILE *fp,FILE *fplog,
+                  int maxiter,real tol,
+                  int nrun,int reinit,real stepsize,int seed,
+                  bool bRandom,real stol,output_env_t oenv,
+                  bool bOpt[ebtsNR],
+                  real D0,real beta0,real D0_min,real beta_min,
+                  opt_mask_t *omt,real factor,int nprint,
+                  const char *xvgconv,const char *xvgepot,
+                  real temperature);
+    void Bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
+               double start[],double sig[],
+               int n,
+               int nprint,
+               double step,
+               unsigned int seed,
+               real temperature,
+               int    maxiter,
+               double *chi2,
+               output_env_t oenv);
+    void PrintSpecs(FILE *fp,char *title,
+                    const char *xvg,output_env_t oenv);
+};
+
+void OptParam::Opt2List()
+{
+    int i,j,p,n,nparam;
+    
+    for(i=n=0; (i<ebtsNR); i++) {
+        for(j=0; (j<_nbad[i]); j++) {
+            nparam = n+_bad[i][j].nparam;
+            if (nparam > _nparam) {
+                srenew(_param,nparam);
+                _nparam = nparam;
+            }
+            for(p=0; (p<_bad[i][j].nparam); p++) {
+                _param[n++] = _bad[i][j].param[p];
+            }
+        }
+    }
+}
+
+void OptParam::List2Opt()
+{
+    int i,j,p,n;
+    char buf[STRLEN],*ptr;
+    
+    for(i=n=0; (i<ebtsNR); i++) {
+        for(j=0; (j<_nbad[i]); j++) {
+            buf[0] = '\0';
+            for(p=0; (p<_bad[i][j].nparam); p++) {
+                _bad[i][j].param[p] = _param[n++];
+                strcat(buf," ");
+                ptr = gmx_ftoa(_bad[i][j].param[p]);
+                strcat(buf,ptr);
+                sfree(ptr);
+            }
+            switch (i) {
+            case ebtsBONDS:
+                gmx_poldata_set_bond_params(_pd,_bad[i][j].ai[0],
+                                            _bad[i][j].ai[1],
+                                            0,0,0,
+                                            _bad[i][j].bondorder,buf);
+                break;
+            case ebtsANGLES:
+                gmx_poldata_set_angle_params(_pd,_bad[i][j].ai[0],
+                                             _bad[i][j].ai[1],
+                                             _bad[i][j].ai[2],
+                                             0,0,0,buf);
+                break;
+            case ebtsPDIHS:
+                gmx_poldata_set_dihedral_params(_pd,egdPDIHS,
+                                                _bad[i][j].ai[0],
+                                                _bad[i][j].ai[1],
+                                                _bad[i][j].ai[2],
+                                                _bad[i][j].ai[3],
+                                                0,0,0,buf);
+                break;
+            case ebtsIDIHS:
+                gmx_poldata_set_dihedral_params(_pd,egdIDIHS,
+                                                _bad[i][j].ai[0],
+                                                _bad[i][j].ai[1],
+                                                _bad[i][j].ai[2],
+                                                _bad[i][j].ai[3],
+                                                0,0,0,buf);
+                break;
+            default:
+                gmx_fatal(FARGS,"Unsupported bts %d",i);
+            }
+        }
+    }
+}
+
+void OptParam::Add(int otype,int natom,char **ai,
+                   int nparam,double *param,double bondorder,int gt)
+{
+    assert(otype < ebtsNR);
+    assert(otype >= 0);
+    srenew(_bad[otype],++_nbad[otype]);
+    add_obt(&_bad[otype][_nbad[otype]-1],natom,ai,nparam,param,bondorder,gt);
+}
+
+
+void OptParam::MkInvGt()
+{
+    int i,j,gt_max;
+
+    /* Make in index to look up gt */    
+    for(i=0; (i<ebtsNR); i++) {
+        gt_max = -1;
+        for(j=0; (j<_nbad[i]); j++) {
+            if (_bad[i][j].gt_index > gt_max)
+                gt_max = _bad[i][j].gt_index;
+        }
+        snew(_inv_gt[i],gt_max+1);
+        for(j=0; (j<=gt_max); j++)
+            _inv_gt[i][j] = NOTSET;
+        for(j=0; (j<_nbad[i]); j++) {
+            _inv_gt[i][_bad[i][j].gt_index] = j;
+        }
+    }
+}
+
+void OptParam::GetDissociationEnergy(FILE *fplog)
+{
+    FILE     *csv;
+    int      nD,nMol,ftb,gt,gti,i,j,ai,aj,niter,row;
+    char     *aai,*aaj,**ctest;
+    char     buf[STRLEN];
+    double   **a,**at,**ata;
+    double   *x,*atx,*fpp;
+    double   a0,da0,ax,chi2;
+    int      *test;
+    gmx_bool bZero = FALSE;
+    
+    nD     = _nbad[ebtsBONDS];
+    nMol   = _mymol.size();
+    if ((0 == nD) || (0 == nMol))
+        gmx_fatal(FARGS,"Number of variables is %d and number of molecules is %d",
+                  nD,nMol);
+    a      = alloc_matrix(nMol,nD);
+    at     = alloc_matrix(nD,nMol);
+    ata    = alloc_matrix(nD,nD);
+    snew(x,nMol+1);
+    snew(atx,nD+1);
+    snew(fpp,nD+1);
+    snew(test,nD+1);
+    snew(ctest,nD+1);
+    
+    fprintf(fplog,"There are %d different bondtypes to optimize the heat of formation\n",
+            nD);
+    fprintf(fplog,"There are %d (experimental) reference heat of formation.\n",nMol);
+    
+    ftb = gmx_poldata_get_bond_ftype(_pd);
+    j = 0;
+    for(std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+        (mymol < _mymol.end()); mymol++,j++)
+    {
+        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
+            ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
+            aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
+            aai = *mymol->topology->atoms.atomtype[ai];
+            aaj = *mymol->topology->atoms.atomtype[aj];
+            if ((gt = gmx_poldata_search_bond(_pd,aai,aaj,
+                                              NULL,NULL,NULL,NULL,NULL)) != 0) {
+                gti = _inv_gt[ebtsBONDS][gt-1];
+                at[gti][j]++;
+                a[j][gti]++; 
+                test[gti]++;
+                if (NULL == ctest[gti]) {
+                    sprintf(buf,"%s-%s",aai,aaj);
+                    ctest[gti] = strdup(buf);
+                }
+            }
+            else {
+                gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field",aai,aaj);
+            }
+        }
+        x[j] = mymol->Emol;
+    }
+    csv = ffopen("out.csv","w");
+    for(std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
+        (mymol < _mymol.end()); mymol++)
+    {
+        fprintf(csv,"\"%s\",",mymol->GetMolname().c_str());
+        for(j=0; (j<nD); j++) 
+        {
+            fprintf(csv,"\"%g\",",a[i][j]);
+        }
+        fprintf(csv,"\"%.3f\"\n",x[i]);
+    }
+    fclose(csv);
+    
+    matrix_multiply(NULL,nMol,nD,a,at,ata);
+    if ((row = matrix_invert(NULL,nD,ata)) != 0) {
+        gmx_fatal(FARGS,"Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
+                  row);
+    }
+    a0 = 0;
+    do {
+        for(i=0; (i<nD); i++)  
+        {
+            atx[i] = 0;
+            for(j=0; (j<nMol); j++)
+                atx[i] += at[i][j]*(x[j]-a0);
+        }
+        for(i=0; (i<nD); i++) 
+        {
+            fpp[i] = 0;
+            for(j=0; (j<nD); j++)
+                fpp[i] += ata[i][j]*atx[j];
+        }
+        da0 = 0;
+        chi2 = 0;
+        if (bZero)
+        {
+            for(j=0; (j<nMol); j++)
+            {
+                ax = a0;
+                for(i=0; (i<nD); i++)  
+                    ax += fpp[i]*a[j][i];
+                da0 += (x[j]-ax);
+                chi2 += sqr(x[j]-ax);
+            }
+            da0 = da0 / nMol;
+            a0 += da0;
+            niter++;
+            printf("iter: %d, a0 = %g, chi2 = %g\n",
+                   niter,a0,chi2/nMol);
+        }
+    } while ((fabs(da0) > 1e-5) && (niter < 1000));
+    
+    for(i=0; (i<nD); i++) 
+    {
+        _bad[ebtsBONDS][i].param[0] = -fpp[i];
+        if (fplog)
+            fprintf(fplog,"Optimized dissociation energy for %8s with %4d copies to %g\n",
+                    ctest[i],test[i],fpp[i]);
+        sfree(ctest[i]);
+    }
+    sfree(ctest);
+    sfree(test);
+    sfree(fpp);
+    sfree(atx);
+    sfree(x);
+    free_matrix(a,nMol);
+    free_matrix(at,nD);
+    free_matrix(ata,nD);
+}
+
+void OptParam::InitOpt(FILE *fplog,int *nparam,
+                       bool bOpt[ebtsNR],
+                       real D0,real beta0,real D0_min,real beta_min,
+                       opt_mask_t *omt,real factor)
+{
+    char   *ai[4];
+    char   *params,**ptr;
+    int    gt,i,n,maxfc = 0;
+    double *fc=NULL;
+    double bondorder;
+    
+    for(i=0; (i<ebtsNR); i++)
+        bOpt[i] = bOpt[i];
+    *nparam = 0;
+    if (bOpt[ebtsBONDS]) {
+        while((gt = gmx_poldata_get_bond(_pd,&(ai[0]),&(ai[1]),
+                                         NULL,NULL,NULL,&bondorder,&params)) > 0) {
+            if (omt->ngtb[ebtsBONDS][gt-1] > 0) {
+                ptr = split(' ',params);
+                for(n = 0; (NULL != ptr[n]); n++) {
+                    if (n>=maxfc) {
+                        srenew(fc,++maxfc);
+                    }
+                    fc[n] = atof(ptr[n]);
+                    sfree(ptr[n]);
+                }
+                if (D0 > 0)
+                    fc[0] = D0;
+                if (beta0 > 0)
+                    fc[1] = beta0;
+                Add(ebtsBONDS,2,ai,n,fc,bondorder,gt);
+                *nparam += n;
+                sfree(ptr);
+            }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<2); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
+        }
+    }
+    if (bOpt[ebtsANGLES]) {
+        while((gt = gmx_poldata_get_angle(_pd,&(ai[0]),&(ai[1]),&(ai[2]),
+                                          NULL,NULL,NULL,&params)) > 0) {
+            if (omt->ngtb[ebtsANGLES][gt-1] > 0) {
+                ptr = split(' ',params);
+                for(n = 0; (NULL != ptr[n]); n++) {
+                    if (n>maxfc) {
+                        srenew(fc,++maxfc);
+                    }
+                    fc[n] = atof(ptr[n]);
+                }
+                Add(ebtsANGLES,3,ai,n,fc,0,gt);
+                *nparam += n;
+            }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<3); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
+        }
+    }
+    if (bOpt[ebtsPDIHS]) {
+        while((gt = gmx_poldata_get_dihedral(_pd,egdPDIHS,
+                                             &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
+                                             NULL,NULL,NULL,&params)) > 0) {
+            if (omt->ngtb[ebtsPDIHS][gt-1] > 0) {
+                ptr = split(' ',params);
+                for(n = 0; (NULL != ptr[n]); n++) {
+                    if (n>maxfc) {
+                        srenew(fc,++maxfc);
+                    }
+                    fc[n] = atof(ptr[n]);
+                }
+                Add(ebtsPDIHS,4,ai,n,fc,0,gt);
+                *nparam += n;
+            }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<4); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
+        }
+    }
+    if (bOpt[ebtsIDIHS]) {
+        while((gt = gmx_poldata_get_dihedral(_pd,egdIDIHS,
+                                             &(ai[0]),&(ai[1]),&(ai[2]),&(ai[3]),
+                                             NULL,NULL,NULL,&params)) > 0) {
+            if (omt->ngtb[ebtsIDIHS][gt-1] > 0) {
+                ptr = split(' ',params);
+                for(n = 0; (NULL != ptr[n]); n++) {
+                    if (n>maxfc) {
+                        srenew(fc,++maxfc);
+                    }
+                    fc[n] = atof(ptr[n]);
+                }
+                Add(ebtsIDIHS,4,ai,n,fc,0,gt);
+                *nparam += n;
+            }
+            if (NULL != params)
+                sfree(params);
+            for(n=0; (n<4); n++) 
+                if (NULL != ai[n])
+                    sfree(ai[n]);
+        }
+    }
+    sfree(fc);
+    
+    MkInvGt();
+    Opt2List();
+    GetDissociationEnergy(fplog);
+    Opt2List();
+    List2Opt();
+    snew(_best,_nparam);
+    snew(_orig,_nparam);
+    snew(_lower,_nparam);
+    snew(_upper,_nparam);
+    snew(_psigma,_nparam);
+    if (factor < 1)
+        factor = 1/factor;
+    for(i=0; (i<_nparam); i++) {
+        _best[i]  = _orig[i] = _param[i];
+        _lower[i] = _orig[i]/factor;
+        _upper[i] = _orig[i]*factor;
+    }
+}
+
+void OptParam::Print(FILE *fp)
+{
+    int k;
+    
+    fprintf(fp,"Param        Orig        Best\n");
+    for(k=0; (k<_nparam); k++)
+        fprintf(fp,"%-5d  %10g  %10g\n",k,_orig[k],_best[k]);
+}
+
+static void print_stats(FILE *fp,const char *prop,gmx_stats_t lsq,gmx_bool bHeader,
+                        char *xaxis,char *yaxis)
+{
+    real a,da,b,db,chi2,rmsd,Rfit;
+    int  n;
+    
+    if (bHeader)
+    {
+        fprintf(fp,"Fitting data to y = ax+b, where x = %s and y = %s\n",
+                xaxis,yaxis);
+        fprintf(fp,"%-12s %5s %13s %13s %8s %8s\n",
+                "Property","N","a","b","R","RMSD");
+        fprintf(fp,"---------------------------------------------------------------\n");
+    }
+    gmx_stats_get_ab(lsq,elsqWEIGHT_NONE,&a,&b,&da,&db,&chi2,&Rfit);
+    gmx_stats_get_rmsd(lsq,&rmsd);
+    gmx_stats_get_npoints(lsq,&n);
+    fprintf(fp,"%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
+            prop,n,a,da,b,db,Rfit*100,rmsd);
+}
+
+static void print_lsq_set(FILE *fp,gmx_stats_t lsq)
+{
+    real   x,y;
+    
+    fprintf(fp,"@type xy\n");
+    while (gmx_stats_get_point(lsq,&x,&y,NULL,NULL,0) == estatsOK)
+    {
+        fprintf(fp,"%10g  %10g\n",x,y);
+    }
+    fprintf(fp,"&\n");
+}
+
+static void xvgr_symbolize(FILE *xvgf,int nsym,const char *leg[],
+                           const output_env_t oenv)
+{
+    int i;
+
+    xvgr_legend(xvgf,nsym,leg,oenv);
+    for(i=0; (i<nsym); i++)
+    {
+        xvgr_line_props(xvgf,i,elNone,ecBlack+i,oenv);
+        fprintf(xvgf,"@ s%d symbol %d\n",i,i+1);
+    }        
+}
+
+static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
 {
     int  gt,i,tp,ai,aj,ak,al;
     int  ftb,fta,ftd;
@@ -668,25 +711,25 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
     if (bOpt[ebtsBONDS]) 
     {
         ftb = gmx_poldata_get_bond_ftype(pd);
-        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
+        for(i=0; (i<mymol.ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
         {
-            tp = mymol->ltop->idef.il[ftb].iatoms[i];
-            ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
-            aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
+            tp = mymol.ltop->idef.il[ftb].iatoms[i];
+            ai = mymol.ltop->idef.il[ftb].iatoms[i+1];
+            aj = mymol.ltop->idef.il[ftb].iatoms[i+2];
+            aai = *mymol.topology->atoms.atomtype[ai];
+            aaj = *mymol.topology->atoms.atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
             if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) 
             {
-                mymol->mtop.ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
+                mymol.mtop.ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
+                    mymol.mtop.ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol->mtop.ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
+                    mymol.mtop.ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -700,21 +743,21 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
     }
     if (bOpt[ebtsANGLES]) {
         fta = gmx_poldata_get_angle_ftype(pd);
-        for(i=0; (i<mymol->ltop->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
-            tp = mymol->ltop->idef.il[fta].iatoms[i];
-            ai = mymol->ltop->idef.il[fta].iatoms[i+1];
-            aj = mymol->ltop->idef.il[fta].iatoms[i+2];
-            ak = mymol->ltop->idef.il[fta].iatoms[i+3];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
-            aak = *mymol->topology->atoms.atomtype[ak];
+        for(i=0; (i<mymol.ltop->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
+            tp = mymol.ltop->idef.il[fta].iatoms[i];
+            ai = mymol.ltop->idef.il[fta].iatoms[i+1];
+            aj = mymol.ltop->idef.il[fta].iatoms[i+2];
+            ak = mymol.ltop->idef.il[fta].iatoms[i+3];
+            aai = *mymol.topology->atoms.atomtype[ai];
+            aaj = *mymol.topology->atoms.atomtype[aj];
+            aak = *mymol.topology->atoms.atomtype[ak];
             if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) {
-                mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
-                    mymol->mtop.ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop.ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop.ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].harmonic.krA = 
-                        mymol->mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop.ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -729,28 +772,28 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
     if (bOpt[ebtsPDIHS]) {
         ftd = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
         
-        for(i=0; (i<mymol->ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
-            tp = mymol->ltop->idef.il[ftd].iatoms[i];
-            ai = mymol->ltop->idef.il[ftd].iatoms[i+1];
-            aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
-            ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
-            al = mymol->ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
-            aak = *mymol->topology->atoms.atomtype[ak];
-            aal = *mymol->topology->atoms.atomtype[al];
+        for(i=0; (i<mymol.ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = mymol.ltop->idef.il[ftd].iatoms[i];
+            ai = mymol.ltop->idef.il[ftd].iatoms[i+1];
+            aj = mymol.ltop->idef.il[ftd].iatoms[i+2];
+            ak = mymol.ltop->idef.il[ftd].iatoms[i+3];
+            al = mymol.ltop->idef.il[ftd].iatoms[i+4];
+            aai = *mymol.topology->atoms.atomtype[ai];
+            aaj = *mymol.topology->atoms.atomtype[aj];
+            aak = *mymol.topology->atoms.atomtype[ak];
+            aal = *mymol.topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol->mtop.ffparams.iparams[tp].pdihs.phiA = value;
+                mymol.mtop.ffparams.iparams[tp].pdihs.phiA = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].pdihs.cpA = 
-                        mymol->mtop.ffparams.iparams[tp].pdihs.cpB = 
+                    mymol.mtop.ffparams.iparams[tp].pdihs.cpA = 
+                        mymol.mtop.ffparams.iparams[tp].pdihs.cpB = 
                         atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol->mtop.ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
+                    mymol.mtop.ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -765,24 +808,24 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
     if (bOpt[ebtsIDIHS]) {
         ftd = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
         
-        for(i=0; (i<mymol->ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
-            tp = mymol->ltop->idef.il[ftd].iatoms[i];
-            ai = mymol->ltop->idef.il[ftd].iatoms[i+1];
-            aj = mymol->ltop->idef.il[ftd].iatoms[i+2];
-            ak = mymol->ltop->idef.il[ftd].iatoms[i+3];
-            al = mymol->ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
-            aak = *mymol->topology->atoms.atomtype[ak];
-            aal = *mymol->topology->atoms.atomtype[al];
+        for(i=0; (i<mymol.ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = mymol.ltop->idef.il[ftd].iatoms[i];
+            ai = mymol.ltop->idef.il[ftd].iatoms[i+1];
+            aj = mymol.ltop->idef.il[ftd].iatoms[i+2];
+            ak = mymol.ltop->idef.il[ftd].iatoms[i+3];
+            al = mymol.ltop->idef.il[ftd].iatoms[i+4];
+            aai = *mymol.topology->atoms.atomtype[ai];
+            aaj = *mymol.topology->atoms.atomtype[aj];
+            aak = *mymol.topology->atoms.atomtype[ak];
+            aal = *mymol.topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol->mtop.ffparams.iparams[tp].harmonic.rA = 
-                    mymol->mtop.ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop.ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop.ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol->mtop.ffparams.iparams[tp].harmonic.krA = 
-                        mymol->mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop.ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -791,13 +834,13 @@ static void update_idef(t_mymol *mymol,gmx_poldata_t pd,gmx_bool bOpt[])
             }
             else {
                 gmx_fatal(FARGS,"There are no parameters for improper %-%s-%s-%s in the force field for %s",
-                          aai,aaj,aak,aal,mymol->molname);
+                          aai,aaj,aak,aal,mymol.GetMolname().c_str());
             }
         }
     }
 }
 
-static double calc_opt_deviation(opt_param_t *opt)
+double OptParam::CalcDeviation()
 {
     int    i,j,count;
     int    flags;
@@ -808,41 +851,40 @@ static double calc_opt_deviation(opt_param_t *opt)
     t_nrnb   my_nrnb;
     gmx_wallcycle_t wcycle;
     gmx_bool        bConverged;
-    t_mymol *mymol;
     FILE   *dbcopy;
     
-    if (PAR(opt->md->cr)) 
+    if (PAR(_cr)) 
     {
-        gmx_bcast(sizeof(opt->md->bDone),&opt->md->bDone,opt->md->cr);
-        gmx_bcast(sizeof(opt->md->bFinal),&opt->md->bFinal,opt->md->cr);
+        gmx_bcast(sizeof(_bDone),&_bDone,_cr);
+        gmx_bcast(sizeof(_bFinal),&_bFinal,_cr);
     }
-    if (opt->md->bDone)
-        return opt->md->ener[ermsTOT];
-    if (PAR(opt->md->cr)) 
+    if (_bDone)
+        return _ener[ermsTOT];
+    if (PAR(_cr)) 
     {
-        gmx_poldata_comm_eemprops(opt->md->pd,opt->md->cr);
+        gmx_poldata_comm_eemprops(_pd,_cr);
     }
     init_nrnb(&my_nrnb);
   
-    wcycle  = wallcycle_init(stdout,0,opt->md->cr,1,0);
+    wcycle  = wallcycle_init(stdout,0,_cr,1,0);
     for(j=0; (j<ermsNR); j++)
     {
-        opt->md->ener[j] = 0;
+        _ener[j] = 0;
     }
     flags = GMX_FORCE_NS | GMX_FORCE_BONDED | GMX_FORCE_NONBONDED;
-    for(i=0; (i<opt->md->nmol); i++) {
-        mymol = &(opt->md->mymol[i]);
+    for(std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin(); (mymol < _mymol.end()); mymol++)
+    {
         if ((mymol->eSupp == eSupportLocal) ||
-            (opt->md->bFinal && (mymol->eSupp == eSupportRemote)))
+            (_bFinal && (mymol->eSupp == eSupportRemote)))
         {
             /* Update topology for this molecule */
-            update_idef(mymol,opt->md->pd,opt->bOpt);
+            update_idef(*mymol,_pd,_bOpt);
             
             /* Now compute energy */
             atoms2md(&mymol->mtop,&(mymol->ir),0,NULL,0,
                      mymol->mtop.natoms,mymol->md);
 
-            for(j=0; (j<mymol->natom); j++)
+            for(j=0; (j<mymol->NAtom()); j++)
                 clear_rvec(mymol->f[j]);
             
             /* Now optimize the shell positions */
@@ -850,7 +892,7 @@ static double calc_opt_deviation(opt_param_t *opt)
             debug = NULL;
             if (mymol->shell) { 
                 count = 
-                    relax_shell_flexcon(debug,opt->md->cr,FALSE,0,
+                    relax_shell_flexcon(debug,_cr,FALSE,0,
                                         &(mymol->ir),TRUE,flags,FALSE,
                                         mymol->ltop,NULL,NULL,&(mymol->enerd),
                                         NULL,&(mymol->state),
@@ -858,11 +900,11 @@ static double calc_opt_deviation(opt_param_t *opt)
                                         &my_nrnb,wcycle,NULL,
                                         &(mymol->mtop.groups),
                                         mymol->shell,mymol->fr,FALSE,t,mu_tot,
-                                        mymol->mtop.natoms,&bConverged,NULL,NULL);
+                                        mymol->NAtom(),&bConverged,NULL,NULL);
             }
             else {
                 lambda = 0;
-                do_force(debug,opt->md->cr,&(mymol->ir),0,
+                do_force(debug,_cr,&(mymol->ir),0,
                          &my_nrnb,wcycle,mymol->ltop,
                          &mymol->mtop,&(mymol->mtop.groups),
                          mymol->box,mymol->x,NULL,
@@ -875,57 +917,56 @@ static double calc_opt_deviation(opt_param_t *opt)
             }
             debug = dbcopy;
             mymol->Force2 = 0;
-            for(j=0; (j<mymol->natom); j++)
+            for(j=0; (j<mymol->NAtom()); j++)
                 mymol->Force2 += iprod(mymol->f[j],mymol->f[j]);
-            mymol->Force2 /= mymol->natom;
-            opt->md->ener[ermsForce2] += opt->md->fc[ermsForce2]*mymol->Force2;
+            mymol->Force2 /= mymol->NAtom();
+            _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc = mymol->enerd.term[F_EPOT];
             ener = sqr(mymol->Ecalc-mymol->Emol);
-            opt->md->ener[ermsEPOT] += opt->md->fc[ermsEPOT]*ener/opt->md->nmol_support;
+            _ener[ermsEPOT] += _fc[ermsEPOT]*ener/_nmol_support;
         }
     }
     /* Compute E-bounds */
-    for(j=0; (j<opt->nparam); j++) {
-        if (opt->param[j] < opt->lower[j])
-            opt->md->ener[ermsBOUNDS] += opt->md->fc[ermsBOUNDS]*sqr(opt->param[j]-opt->lower[j]);
-        else if (opt->param[j] > opt->upper[j])
-            opt->md->ener[ermsBOUNDS] += opt->md->fc[ermsBOUNDS]*sqr(opt->param[j]-opt->upper[j]);
+    for(j=0; (j<_nparam); j++) {
+        if (_param[j] < _lower[j])
+            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*sqr(_param[j]-_lower[j]);
+        else if (_param[j] > _upper[j])
+            _ener[ermsBOUNDS] += _fc[ermsBOUNDS]*sqr(_param[j]-_upper[j]);
     }
     
     for(j=0; (j<ermsTOT); j++) 
-        opt->md->ener[ermsTOT] += opt->md->ener[j];
+        _ener[ermsTOT] += _ener[j];
     
     if (debug)
     {
         fprintf(debug,"ENER:");
         for(j=0; (j<ermsNR); j++)
-            fprintf(debug,"  %8.3f",opt->md->ener[j]);
+            fprintf(debug,"  %8.3f",_ener[j]);
         fprintf(debug,"\n");
     }
     /* Global sum energies */
-    if (PAR(opt->md->cr)) 
+    if (PAR(_cr)) 
     {
 #ifdef GMX_DOUBLE
-        gmx_sumd(ermsNR,opt->md->ener,opt->md->cr);
+        gmx_sumd(ermsNR,_ener,_cr);
 #else
-        gmx_sumf(ermsNR,opt->md->ener,opt->md->cr);
+        gmx_sumf(ermsNR,_ener,_cr);
 #endif
     }
-    return opt->md->ener[ermsTOT];
+    return _ener[ermsTOT];
 }
 
-static double energy_function(void *params,double v[])
+double OptParam::EnergyFunction(double v[])
 {
-    opt_param_t *opt = (opt_param_t *)params;
     int      i;
     
     /* Copy parameters to topologies */
-    for(i=0; (i<opt->nparam); i++) {
-        opt->param[i] = v[i];
+    for(i=0; (i<_nparam); i++) {
+        _param[i] = v[i];
     }
-    list2opt(opt);
+    List2Opt();
     
-    return calc_opt_deviation(opt);
+    return CalcDeviation();
 }
 
 static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng,
@@ -946,44 +987,43 @@ static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng,
         return x;
 }
 
-static void guess_all_param(FILE *fplog,opt_param_t *opt,int iter,real stepsize,
-                            gmx_bool bRandom,gmx_rng_t rng)
+void OptParam::GuessAll(FILE *fplog,int iter,real stepsize,
+                        bool bRandom,gmx_rng_t rng)
 {
     double   ppp,xxx;
     gmx_bool bStart = (iter == 0);
     gmx_bool bRand  = bRandom && (iter == 0);
     int      n;
     
-    for(n=0; (n<opt->nparam); n++) 
+    for(n=0; (n<_nparam); n++) 
     {
         if (bStart)
         {
-            ppp = opt->param[n];
-            xxx = guess_new_param(ppp,stepsize,opt->lower[n],opt->upper[n],rng,bRand);
+            ppp = _param[n];
+            xxx = guess_new_param(ppp,stepsize,_lower[n],_upper[n],rng,bRand);
             if (bRand)
-                opt->orig[n] = xxx;
+                _orig[n] = xxx;
             else
-                opt->orig[n] = ppp;
+                _orig[n] = ppp;
             ppp = xxx;
         }
         else 
-            ppp = guess_new_param(opt->orig[n],stepsize,opt->lower[n],
-                                  opt->upper[n],rng,bRand);
-        opt->param[n] = ppp;
+            ppp = guess_new_param(_orig[n],stepsize,_lower[n],
+                                  _upper[n],rng,bRand);
+        _param[n] = ppp;
     }
 }
 
-void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
-           void *data,nm_target_func func,
-           double start[],double sig[],
-           int n,
-           int nprint,
-           double step,
-           unsigned int seed,
-           real temperature,
-           int    maxiter,
-           double *chi2,
-           output_env_t oenv)
+void OptParam::Bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
+                     double start[],double sig[],
+                     int n,
+                     int nprint,
+                     double step,
+                     unsigned int seed,
+                     real temperature,
+                     int    maxiter,
+                     double *chi2,
+                     output_env_t oenv)
 {
     int iter,j,k,nsum,cur=0;
     double ds,sorig,DE,E[2] = {0,0},beta;
@@ -1001,7 +1041,7 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
     }
     rng = gmx_rng_init(seed);
     
-    E[prev] = func(data,start);
+    E[prev] = EnergyFunction(start);
     *chi2 = E[prev];
     snew(ssum,n);
     snew(s2sum,n);
@@ -1019,7 +1059,7 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
         ds = (2*gmx_rng_uniform_real(rng)-1)*step*fabs(start[j]);
         sorig = start[j];
         start[j] += ds;
-        E[cur] = func(data,start);
+        E[cur] = EnergyFunction(start);
         DE = E[cur]-E[prev];
         if ((DE < 0) || (exp(-beta*DE) > gmx_rng_uniform_real(rng))) {
             cur = prev;
@@ -1064,25 +1104,22 @@ void bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
     sfree(s2sum);
 }
 
-static void optimize_moldip(FILE *fp,FILE *fplog,
-                            t_moldip *md,int maxiter,real tol,
-                            int nrun,int reinit,real stepsize,int seed,
-                            gmx_bool bRandom,real stol,output_env_t oenv,
-                            gmx_bool bOpt[ebtsNR],
-                            real D0,real beta0,real D0_min,real beta_min,
-                            opt_mask_t *omt,real factor,int nprint,
-                            const char *xvgconv,const char *xvgepot,
-                            real temperature)
+void OptParam::Optimize(FILE *fp,FILE *fplog,
+                        int maxiter,real tol,
+                        int nrun,int reinit,real stepsize,int seed,
+                        bool bRandom,real stol,output_env_t oenv,
+                        bool bOpt[ebtsNR],
+                        real D0,real beta0,real D0_min,real beta_min,
+                        opt_mask_t *omt,real factor,int nprint,
+                        const char *xvgconv,const char *xvgepot,
+                        real temperature)
 {
     double chi2,chi2_min;
-    int    k,n,nparam;
+    int    k,n;
     gmx_bool bMinimum=FALSE;
     gmx_rng_t rng;
-    opt_param_t *opt;
     
-    opt = init_opt(fplog,md,&nparam,bOpt,D0,beta0,D0_min,beta_min,omt,factor);
-    
-    if (MASTER(md->cr)) 
+    if (MASTER(_cr)) 
     {
         rng = gmx_rng_init(seed);
   
@@ -1092,56 +1129,55 @@ static void optimize_moldip(FILE *fp,FILE *fplog,
                 fprintf(fp,"\nStarting run %d out of %d\n",n+1,nrun);
             }
                     
-            guess_all_param(fplog,opt,n,stepsize,bRandom,rng);
+            GuessAll(fplog,n,stepsize,bRandom,rng);
             
-            bayes(fplog,xvgconv,xvgepot,
-                  (void *)opt,energy_function,opt->param,opt->psigma,nparam,nprint,
+            Bayes(fplog,xvgconv,xvgepot,_param,_psigma,_nparam,nprint,
                   stepsize,seed,temperature,maxiter,&chi2,oenv);
                 
             if (chi2 < chi2_min) {
                 bMinimum = TRUE;
                 /* Print convergence if needed */
-                for(k=0; (k<opt->nparam); k++)
+                for(k=0; (k<_nparam); k++)
                 {
-                    opt->best[k] = opt->param[k];
+                    _best[k] = _param[k];
                 }
                 chi2_min   = chi2;
             }
             
             if (NULL != fp) 
-                fprintf(fp,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,md->ener[ermsTOT],md->ener[ermsBOUNDS]);
+                fprintf(fp,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,_ener[ermsTOT],_ener[ermsBOUNDS]);
             if (NULL != fplog) {
-                fprintf(fplog,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,md->ener[ermsTOT],md->ener[ermsBOUNDS]);
+                fprintf(fplog,"%5d  %8.3f  %8.3f  %8.3f\n",n,chi2,_ener[ermsTOT],_ener[ermsBOUNDS]);
                 fflush(fplog);
             }
         }
         
         if (bMinimum) {
-            for(k=0; (k<nparam); k++)
-                opt->param[k] = opt->best[k];
+            for(k=0; (k<_nparam); k++)
+                _param[k] = _best[k];
             
-            energy_function(opt,opt->best);
+            EnergyFunction(_best);
             if (fplog)
             {
                 fprintf(fplog,"\nMinimum chi^2 value during optimization: %.3f.\n",
                         chi2_min);
                 fprintf(fplog,"\nMinimum RMSD value during optimization: %.3f.\n",
-                        opt->md->ener[ermsTOT]);
-                print_opt(fplog,opt);
+                        _ener[ermsTOT]);
+                //print_opt(fplog,opt);
             }
         }
-        calc_opt_deviation(opt);
-        md->bDone = TRUE;
+        CalcDeviation();
+        _bDone = TRUE;
         gmx_rng_destroy(rng);
     }
     else 
     {
         /* Slave calculators */
         do {
-            calc_opt_deviation(opt);
-        } while (!md->bDone);
+            CalcDeviation();
+        } while (!_bDone);
     }
-    calc_opt_deviation(opt);
+    CalcDeviation();
 }
 
 static real quality_of_fit(real chi2,int N)
@@ -1149,22 +1185,23 @@ static real quality_of_fit(real chi2,int N)
     return -1;
 }
 
-static void print_moldip_mols(FILE *fp,t_moldip *md,
+static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
                               gmx_bool bForce,gmx_bool bMtop)
 {
     int i,j,k;
     
-    for(i=0; (i<md->nmol); i++) {
-        fprintf(fp,"%-30s  %d\n",md->mymol[i].molname,md->mymol[i].natom);
-        for(j=0; (j<md->mymol[i].natom); j++) {
-            fprintf(fp,"  %-5s  %-5s  q = %10g",*(md->mymol[i].topology->atoms.atomname[j]),
-                    md->mymol[i].smnames[j],md->mymol[i].topology->atoms.atom[j].q);
+    for(std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
+    {
+        fprintf(fp,"%-30s  %d\n",mi->GetMolname().c_str(),mi->NAtom());
+        for(j=0; (j<mi->NAtom()); j++) {
+            fprintf(fp,"  %-5s  %-5s  q = %10g",*(mi->topology->atoms.atomname[j]),
+                    *(mi->topology->atoms.atomtype[j]),mi->topology->atoms.atom[j].q);
             if (bForce) 
             {
                 fprintf(fp,"  %8.3f  %8.3f  %8.3f",
-                        md->mymol[i].f[j][XX],
-                        md->mymol[i].f[j][YY],
-                        md->mymol[i].f[j][ZZ]);
+                        mi->f[j][XX],
+                        mi->f[j][YY],
+                        mi->f[j][ZZ]);
             }
             fprintf(fp,"\n");
         }
@@ -1172,20 +1209,20 @@ static void print_moldip_mols(FILE *fp,t_moldip *md,
         {
             for(k=0; (k<F_NRE); k++)
             {
-                if ((md->mymol[i].enerd.term[k] != 0) || 
-                    (md->mymol[i].mtop.moltype[0].ilist[k].nr > 0))
+                if ((mi->enerd.term[k] != 0) || 
+                    (mi->mtop.moltype[0].ilist[k].nr > 0))
                     fprintf(fp,"%s %d %g\n",interaction_function[k].name,
-                            md->mymol[i].mtop.moltype[0].ilist[k].nr,
-                            md->mymol[i].enerd.term[k]);
+                            mi->mtop.moltype[0].ilist[k].nr,
+                            mi->enerd.term[k]);
             }
         }
         if (bMtop)
-            pr_mtop(fp,0,md->mymol[i].molname,&md->mymol[i].mtop,TRUE);
+            pr_mtop(fp,0,mi->GetMolname().c_str(),&mi->mtop,TRUE);
     }
 }
 
-static void print_moldip_specs(FILE *fp,t_moldip *md,char *title,
-                               const char *xvg,output_env_t oenv)
+void OptParam::PrintSpecs(FILE *fp,char *title,
+                          const char *xvg,output_env_t oenv)
 {
     FILE *xfp;
     int i;
@@ -1193,28 +1230,31 @@ static void print_moldip_specs(FILE *fp,t_moldip *md,char *title,
     
     if (NULL != xvg) 
         xfp = xvgropen(xvg,"Entalpy of Formation","Experiment (kJ/mol)","Calculated (kJ/mol)",
-                      oenv);
+                       oenv);
     
     fprintf(fp,"%s\n",title);
     fprintf(fp,"Nr.   %-30s %10s %10s %10s %10s\n",
             "Molecule","DHf@298K","Emol@0K","Calc-Exp","rms F");
     msd = 0;
-    for(i=0; (i<md->nmol); i++) {
-        fprintf(fp,"%-5d %-30s %10g %10g %10g %10g\n",i,md->mymol[i].molname,
-                md->mymol[i].Hform,md->mymol[i].Emol,
-                md->mymol[i].Emol-md->mymol[i].Ecalc,
-                sqrt(md->mymol[i].Force2));
-        msd += sqr(md->mymol[i].Emol-md->mymol[i].Ecalc);
+    i = 0;
+    for(std::vector<alexandria::MyMol>::iterator mi=_mymol.begin(); (mi < _mymol.end()); mi++,i++) 
+    {
+        fprintf(fp,"%-5d %-30s %10g %10g %10g %10g\n",i,mi->GetMolname().c_str(),
+                mi->Hform,mi->Emol,
+                mi->Emol-mi->Ecalc,
+                sqrt(mi->Force2));
+        msd += sqr(mi->Emol-mi->Ecalc);
         if (NULL != xvg)
-            fprintf(xfp,"%10g  %10g\n",md->mymol[i].Hform,
-                    md->mymol[i].Ecalc+md->mymol[i].Hform-md->mymol[i].Emol);
+            fprintf(xfp,"%10g  %10g\n",mi->Hform,
+                    mi->Ecalc+mi->Hform-mi->Emol);
     }
     fprintf(fp,"\n");
-    fprintf(fp,"RMSD is %g kJ/mol for %d molecules.\n\n",sqrt(msd/md->nmol),md->nmol);
+    fprintf(fp,"RMSD is %g kJ/mol for %d molecules.\n\n",sqrt(msd/_mymol.size()),(int)_mymol.size());
     if (NULL != xvg) {
         xvgrclose(xfp);
         do_view(oenv,xvg,NULL);
     }
+}
 }
 
 int main(int argc, char *argv[])
@@ -1279,7 +1319,7 @@ int main(int argc, char *argv[])
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
-    static gmx_bool bOpt[ebtsNR] = { TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
+    static bool bOpt[ebtsNR] = { true, false, false, false, false, false };
     static real beta0=0,D0=0,beta_min=10,D0_min=50,temperature;
     static int nprint=10;
     static int  nthreads=0; /* set to determine # of threads automatically */
@@ -1347,7 +1387,6 @@ int main(int argc, char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
-    t_moldip  *md;
     FILE      *fp;
     int       iModel;
     t_commrec *cr;
@@ -1389,35 +1428,40 @@ int main(int argc, char *argv[])
         gms = gmx_molselect_init(opt2fn_null("-sel",NFILE,fnm));
     else
         gms = NULL;
-    md = init_moldip(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
-                     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-                     fc_bound,fc_mu,fc_quad,fc_charge,
-                     fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
-    read_moldip(md,fp ? fp : (debug ? debug : NULL),
-                opt2fn("-f",NFILE,fnm),
-                opt2fn_null("-d",NFILE,fnm),
-                minimum_data,bZero,bWeighted,
-                opt_elem,const_elem,
-                lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-                TRUE,TRUE,TRUE,watoms,FALSE);
-    if (0 == md->nmol)
-        gmx_fatal(FARGS,"No molecules!");
-    print_moldip_mols(fp,md,FALSE,FALSE);
-    print_moldip_specs(fp,md,(char *)"Before optimization",NULL,oenv);
-    omt = analyze_idef(fp,md->nmol,md->mymol,md->pd,bOpt);
+        
+    alexandria::OptParam opt;
+    int nparam;
+    
+    opt.Init(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
+             J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
+             fc_bound,fc_mu,fc_quad,fc_charge,
+             fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
+    opt.Read(fp ? fp : (debug ? debug : NULL),
+             opt2fn("-f",NFILE,fnm),
+             opt2fn_null("-d",NFILE,fnm),
+             minimum_data,bZero,bWeighted,
+             opt_elem,const_elem,
+             lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
+             TRUE,TRUE,TRUE,watoms,FALSE);
+    opt.InitOpt(fp,&nparam,bOpt,D0,beta0,
+                D0_min,beta_min,omt,factor);
+             
+    print_moldip_mols(fp,opt._mymol,FALSE,FALSE);
+    opt.PrintSpecs(fp,(char *)"Before optimization",NULL,oenv);
+    omt = analyze_idef(fp,opt._mymol,opt._pd,bOpt);
 
-    optimize_moldip(MASTER(cr) ? stderr : NULL,fp,
-                    md,maxiter,tol,nrun,reinit,step,seed,
-                    bRandom,stol,oenv,bOpt,D0,beta0,
-                    D0_min,beta_min,omt,factor,nprint,
-                    opt2fn("-conv",NFILE,fnm),
-                    opt2fn("-epot",NFILE,fnm),
-                    temperature);
+    opt.Optimize(MASTER(cr) ? stderr : NULL,fp,
+                 maxiter,tol,nrun,reinit,step,seed,
+                 bRandom,stol,oenv,bOpt,D0,beta0,
+                 D0_min,beta_min,omt,factor,nprint,
+                 opt2fn("-conv",NFILE,fnm),
+                 opt2fn("-epot",NFILE,fnm),
+                 temperature);
     done_opt_mask(&omt);
-    print_moldip_mols(fp,md,TRUE,TRUE);
-    print_moldip_specs(fp,md,(char *)"After optimization",
-                       opt2fn("-x",NFILE,fnm),oenv);
-    gmx_poldata_write(opt2fn("-o",NFILE,fnm),md->pd,md->atomprop,compress);
+    print_moldip_mols(fp,opt._mymol,TRUE,TRUE);
+    opt.PrintSpecs(fp,(char *)"After optimization",opt2fn("-x",NFILE,fnm),oenv);
+    
+    gmx_poldata_write(opt2fn("-o",NFILE,fnm),opt._pd,opt._atomprop,compress);
     
     if (MASTER(cr)) 
     {
@@ -1436,3 +1480,4 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+

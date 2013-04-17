@@ -6,7 +6,7 @@ using namespace std;
 #include <config.h>
 #endif
 
-#include "coulombintegrals.h"
+#include "gromacs/coulombintegrals.h"
 #include "slater_low.h"
 
 #ifdef HAVE_LIBCLN

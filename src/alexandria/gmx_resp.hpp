@@ -120,6 +120,8 @@ void gmx_resp_make_grid(gmx_resp_t gr,real spacing,matrix box,rvec x[]);
 
 void gmx_resp_copy_grid(gmx_resp_t dest,gmx_resp_t src);
 
+gmx_resp_t gmx_resp_copy(gmx_resp_t src);
+
 void gmx_resp_calc_rms(gmx_resp_t gr);
 
 double gmx_resp_get_rms(gmx_resp_t gr,real *wtot);

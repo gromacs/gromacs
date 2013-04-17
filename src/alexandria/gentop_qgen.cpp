@@ -60,9 +60,8 @@
 #include <grompp.h>
 #include "molprop.hpp"
 #include "gromacs/linearalgebra/matrix.h"
+#include "gromacs/coulombintegrals.h"
 #include "poldata.h"
-#include "gaussian_integrals.h"
-#include "slater_integrals.h"
 #include "gentop_nm2type.hpp"
 #include "gentop_qgen.hpp"
 #include "gmx_resp.hpp"

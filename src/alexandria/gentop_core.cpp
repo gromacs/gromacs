@@ -173,7 +173,7 @@ static void print_pl(FILE *fp,t_params plist[],int ftp,const char *name,
     }
 }
 
-void print_rtp(char *filenm,char *title,t_atoms *atoms,
+void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
                t_params plist[],int cgnr[],int nbts,int bts[])
 {
     FILE *fp;
@@ -755,9 +755,9 @@ static int *generate_cg_atom(int natom)
     return cgnr;
 }
 
-int *generate_charge_groups(int cgtp,t_atoms *atoms,
+int *generate_charge_groups(eChargeGroup cgtp,t_atoms *atoms,
                             t_params *bonds,t_params *pols,
-                            gmx_bool bUsePDBcharge,
+                            bool bUsePDBcharge,
                             real *qtot,real *mtot)
 {
     int i,*cgnr = NULL;

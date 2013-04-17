@@ -44,12 +44,10 @@
 #include "xvgr.h"
 #include "smalloc.h"
 #include "coulomb.h"
-#include "slater_integrals.h"
+#include "gromacs/coulombintegrals.h"
 #include "atomprop.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "gaussian_integrals.h"
-#include "slater_integrals.h"
 
 enum { mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mDEC, mDEC_pair, mDEC_qd_q, mDEC_qd_qd, mDEC_q_q, mNR };
 

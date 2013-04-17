@@ -51,9 +51,12 @@
 #include "main.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "mymol2.hpp"
+
+// Alexandria stuff
 #include "gmx_statistics.h"
 #include "poldata_xml.h"
+#include "mymol2.hpp"
+#include "moldip.hpp"
 
 typedef struct {
     char *a1,*a2;
