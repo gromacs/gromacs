@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,7 +44,6 @@
  */
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/pbc.h"
-#include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/nbsearch.h"
@@ -60,11 +59,13 @@
 typedef struct
 {
     /** Cutoff distance. */
-    real                cutoff;
+    real                             cutoff;
     /** Positions of the reference points. */
-    gmx_ana_pos_t       p;
+    gmx_ana_pos_t                    p;
     /** Neighborhood search data. */
-    gmx_ana_nbsearch_t *nb;
+    gmx::AnalysisNeighborhood        nb;
+    /** Neighborhood search for an invididual frame. */
+    gmx::AnalysisNeighborhoodSearch  nbsearch;
 } t_methoddata_distance;
 
 /** Allocates data for distance-based selection methods. */
@@ -188,9 +189,7 @@ gmx_ana_selmethod_t sm_within = {
 static void *
 init_data_common(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_distance *data;
-
-    snew(data, 1);
+    t_methoddata_distance *data = new t_methoddata_distance();
     data->cutoff     = -1;
     param[0].val.u.r = &data->cutoff;
     param[1].val.u.p = &data->p;
@@ -218,7 +217,7 @@ init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     {
         GMX_THROW(gmx::InvalidInputError("Distance cutoff should be > 0"));
     }
-    d->nb = gmx_ana_nbsearch_create(d->cutoff, d->p.nr);
+    d->nb.setParameters(d->cutoff, d->p.nr);
 }
 
 /*!
@@ -230,13 +229,7 @@ init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 static void
 free_data_common(void *data)
 {
-    t_methoddata_distance *d = (t_methoddata_distance *)data;
-
-    if (d->nb)
-    {
-        gmx_ana_nbsearch_free(d->nb);
-    }
-    sfree(d);
+    delete static_cast<t_methoddata_distance *>(data);
 }
 
 /*!
@@ -253,7 +246,8 @@ init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
-    gmx_ana_nbsearch_pos_init(d->nb, pbc, &d->p);
+    d->nbsearch.reset();
+    d->nbsearch = d->nb.initSearch(pbc, &d->p);
 }
 
 /*!
@@ -268,16 +262,14 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
-    int                    b, i;
-    real                   n;
 
     out->nr = pos->g->isize;
-    for (b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->nr; ++b)
     {
-        n = gmx_ana_nbsearch_pos_mindist(d->nb, pos, b);
-        for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
+        real dist = d->nbsearch.minimumDistance(pos, b);
+        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
         {
-            out->u.r[i] = n;
+            out->u.r[i] = dist;
         }
     }
 }
@@ -294,12 +286,11 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
-    int                    b;
 
     out->u.g->isize = 0;
-    for (b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->nr; ++b)
     {
-        if (gmx_ana_nbsearch_pos_is_within(d->nb, pos, b))
+        if (d->nbsearch.isWithin(pos, b))
         {
             gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
         }
