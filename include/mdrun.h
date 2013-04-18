@@ -215,7 +215,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt,
-             int nsteps_cmdline, int nstepout, int resetstep,
+             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags);

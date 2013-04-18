@@ -431,7 +431,7 @@ int cmain(int argc, char *argv[])
     int           repl_ex_nex   = 0;
     int           nstepout      = 100;
     int           resetstep     = -1;
-    int           nsteps        = -2; /* the value -2 means that the mdp option will be used */
+    gmx_large_int_t nsteps      = -2; /* the value -2 means that the mdp option will be used */
 
     rvec          realddxyz          = {0, 0, 0};
     const char   *ddno_opt[ddnoNR+1] =
@@ -521,7 +521,7 @@ int cmain(int argc, char *argv[])
           "Keep and number checkpoint files" },
         { "-append",  FALSE, etBOOL, {&bAppendFiles},
           "Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names" },
-        { "-nsteps",  FALSE, etINT, {&nsteps},
+        { "-nsteps",  FALSE, etGMX_LARGE_INT, {&nsteps},
           "Run this number of steps, overrides .mdp file option" },
         { "-maxh",   FALSE, etREAL, {&max_hours},
           "Terminate after 0.99 times this time (hours)" },

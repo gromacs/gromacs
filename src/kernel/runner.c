@@ -131,7 +131,7 @@ struct mdrunner_arglist
     const char     *ddcsy;
     const char     *ddcsz;
     const char     *nbpu_opt;
-    int             nsteps_cmdline;
+    gmx_large_int_t nsteps_cmdline;
     int             nstepout;
     int             resetstep;
     int             nmultisim;
@@ -193,7 +193,8 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
                                          const char *dddlb_opt, real dlb_scale,
                                          const char *ddcsx, const char *ddcsy, const char *ddcsz,
                                          const char *nbpu_opt,
-                                         int nsteps_cmdline, int nstepout, int resetstep,
+                                         gmx_large_int_t nsteps_cmdline,
+                                         int nstepout, int resetstep,
                                          int nmultisim, int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
                                          real pforce, real cpt_period, real max_hours,
                                          const char *deviceOptions, unsigned long Flags)
@@ -865,10 +866,12 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
 
 /* Override the value in inputrec with value passed on the command line (if any) */
 static void override_nsteps_cmdline(FILE            *fplog,
-                                    int              nsteps_cmdline,
+                                    gmx_large_int_t  nsteps_cmdline,
                                     t_inputrec      *ir,
                                     const t_commrec *cr)
 {
+    char sbuf[STEPSTRSIZE];
+
     assert(ir);
     assert(cr);
 
@@ -880,13 +883,14 @@ static void override_nsteps_cmdline(FILE            *fplog,
         ir->nsteps = nsteps_cmdline;
         if (EI_DYNAMICS(ir->eI))
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps, %.3f ps",
-                    nsteps_cmdline, nsteps_cmdline*ir->delta_t);
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps, %.3f ps",
+                    gmx_step_str(nsteps_cmdline, sbuf),
+                    nsteps_cmdline*ir->delta_t);
         }
         else
         {
-            sprintf(stmp, "Overriding nsteps with value passed on the command line: %d steps",
-                    nsteps_cmdline);
+            sprintf(stmp, "Overriding nsteps with value passed on the command line: %s steps",
+                    gmx_step_str(nsteps_cmdline, sbuf));
         }
 
         md_print_warn(cr, fplog, "%s\n", stmp);
@@ -909,7 +913,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt,
-             int nsteps_cmdline, int nstepout, int resetstep,
+             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
