@@ -34,12 +34,14 @@
  */
 /*! \libinternal \file
  * \brief
- * Improved exception assertions for unit tests.
+ * Extra assertions for unit tests.
  *
  * This file provides assert macros to replace (ASSERT|EXPECT)(_NO)?_THROW
  * from Google Test.  They behave otherwise the same as the Google Test ones,
  * but also print details of any unexpected exceptions.  This makes it much
  * easier to see at one glance what went wrong.
+ *
+ * This file also provides extra floating-point assertions.
  *
  * \if internal
  * \todo
@@ -56,7 +58,14 @@
 
 #include <gtest/gtest.h>
 
+#include "gromacs/legacyheaders/maths.h"
+
 #include "gromacs/utility/exceptions.h"
+
+namespace gmx
+{
+namespace test
+{
 
 /*! \cond internal */
 /*! \internal
@@ -168,5 +177,47 @@
  */
 #define ASSERT_NO_THROW_GMX(statement) \
     GMX_TEST_NO_THROW_(statement, GTEST_FATAL_FAILURE_)
+
+/*! \cond internal */
+/*! \internal \brief
+ * Assertion predicate formatter for comparing two floating-point values.
+ */
+static ::testing::AssertionResult assertWithinRelativeTolerance(
+        const char *expr1, const char *expr2, const char * /*exprTolerance*/,
+        real val1, real val2, real relativeTolerance)
+{
+    if (gmx_within_tol(val1, val2, relativeTolerance))
+    {
+        return ::testing::AssertionSuccess();
+    }
+    return ::testing::AssertionFailure()
+           << "Value of: " << expr2 << " not within tolerance of " << relativeTolerance << "\n"
+           << "  Actual: " << val2 << "\n"
+           << "Expected: " << expr1 << "\n"
+           << "Which is: " << val1;
+}
+//! \endcond
+
+/*! \brief
+ * Asserts that two floating-point values are within the given relative error.
+ *
+ * This assert works as EXPECT_NEAR from Google Test, except that it uses a
+ * relative instead of a absolute tolerance.
+ * See gmx_within_tol() for definition of the tolerance.
+ */
+#define EXPECT_NEAR_REL(val1, val2, rel_error) \
+    EXPECT_PRED_FORMAT3(::gmx::test::assertWithinRelativeTolerance, val1, val2, rel_error)
+/*! \brief
+ * Asserts that two floating-point values are within the given relative error.
+ *
+ * This assert works as ASSERT_NEAR from Google Test, except that it uses a
+ * relative instead of a absolute tolerance.
+ * See gmx_within_tol() for definition of the tolerance.
+ */
+#define ASSERT_NEAR_REL(val1, val2, rel_error) \
+    ASSERT_PRED_FORMAT3(::gmx::test::assertWithinRelativeTolerance, val1, val2, rel_error)
+
+} // namespace test
+} // namespace gmx
 
 #endif
