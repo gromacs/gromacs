@@ -80,7 +80,6 @@ FreeVolume::FreeVolume()
     // Tell the analysis framework that this component exists
     registerAnalysisDataset(&data_, "freevolume");
     rng_         = NULL;
-    nbsearch_    = NULL;
     nmol_        = 0;
     mtot_        = 0;
     cutoff_      = 0;
@@ -97,10 +96,6 @@ FreeVolume::~FreeVolume()
     if (NULL != rng_)
     {
         gmx_rng_destroy(rng_);
-    }
-    if (NULL != nbsearch_)
-    {
-        gmx_ana_nbsearch_free(nbsearch_);
     }
 }
 
@@ -267,7 +262,7 @@ FreeVolume::initAnalysis(const TrajectoryAnalysisSettings &settings,
     rng_ = gmx_rng_init(seed_);
 
     // Initiate the neighborsearching code
-    nbsearch_ = gmx_ana_nbsearch_create(cutoff_, atoms->nr);
+    nb_.setCutoff(cutoff_);
 }
 
 void
@@ -287,7 +282,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     int  Ninsert = static_cast<int>(ninsert_*V);
 
     // Use neighborsearching tools!
-    gmx_ana_nbsearch_pos_init(nbsearch_, pbc, sel.positions());
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, sel.positions());
 
     // Then loop over insertions
     int NinsTot = 0;
@@ -304,23 +299,19 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         mvmul(fr.box, rand, ins);
 
         // Find the first reference position within the cutoff.
-        bool bOverlap = false;
-        int  jp       = NOTSET;
-        if (gmx_ana_nbsearch_first_within(nbsearch_, ins, &jp))
+        bool                           bOverlap = false;
+        AnalysisNeighborhoodPair       pair;
+        AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(ins);
+        while (!bOverlap && pairSearch.findNextPair(&pair))
         {
-            do
-            {
-                // Compute distance vector to first atom in the neighborlist
-                pbc_dx(pbc, ins, sel.position(jp).x(), dx);
+            int jp = pair.refIndex();
+            // Compute distance vector to first atom in the neighborlist
+            pbc_dx(pbc, ins, sel.position(jp).x(), dx);
 
-                // See whether the distance is smaller than allowed
-                bOverlap = (norm(dx) <
-                            probeRadius_+vdw_radius_[sel.position(jp).refId()]);
+            // See whether the distance is smaller than allowed
+            bOverlap = (norm(dx) <
+                        probeRadius_+vdw_radius_[sel.position(jp).refId()]);
 
-                // Finds the next reference position within the cutoff.
-            }
-            while (!bOverlap &&
-                   (gmx_ana_nbsearch_next_within(nbsearch_, &jp)));
         }
 
         if (!bOverlap)
