@@ -111,7 +111,7 @@ class FreeVolume : public TrajectoryAnalysisModule
         double                            probeRadius_;
         gmx_rng_t                         rng_;
         int                               seed_, ninsert_;
-        gmx_ana_nbsearch_t               *nbsearch_;
+        AnalysisNeighborhood              nb_;
         //! The van der Waals radius per atom
         std::vector<double>               vdw_radius_;
 
