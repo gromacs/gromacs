@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -93,9 +93,9 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
                    const AnalysisDataParallelOptions &opt,
                    const SelectionCollection &selections,
                    double cutoff, int posCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections),
-              nb_(cutoff, posCount)
+            : TrajectoryAnalysisModuleData(module, opt, selections)
         {
+            nb_.setParameters(cutoff, posCount);
         }
 
         virtual void finish()
@@ -104,7 +104,7 @@ class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
         }
 
         //! Neighborhood search data for distance calculation.
-        NeighborhoodSearch      nb_;
+        AnalysisNeighborhood    nb_;
 };
 
 
@@ -192,11 +192,12 @@ void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh     = pdata->dataHandle(data_);
-    NeighborhoodSearch &nb     = static_cast<ModuleData *>(pdata)->nb_;
-    const Selection    &refsel = pdata->parallelSelection(refsel_);
+    AnalysisDataHandle         dh     = pdata->dataHandle(data_);
+    AnalysisNeighborhood      &nb     = static_cast<ModuleData *>(pdata)->nb_;
+    const Selection           &refsel = pdata->parallelSelection(refsel_);
 
-    nb.init(pbc, refsel.positions());
+    AnalysisNeighborhoodSearch nbsearch =
+        nb.initSearch(pbc, refsel.positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
@@ -206,7 +207,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel.position(i);
-            frave += nb.minimumDistance(p.x());
+            frave += nbsearch.minimumDistance(p.x());
         }
         frave /= nr;
         dh.setPoint(g, frave);
