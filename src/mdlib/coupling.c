@@ -91,7 +91,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
         ixi = &xi[i*nh];
         if (bBarostat) {
             iQinv = &(MassQ->QPinv[i*nh]); 
-            nd = 1; /* THIS WILL CHANGE IF NOT ISOTROPIC */
+            nd = 1.0; /* THIS WILL CHANGE IF NOT ISOTROPIC */
             reft = max(0.0,opts->ref_t[0]);
             Ekin = sqr(*veta)/MassQ->Winv;
         } else {
@@ -174,7 +174,7 @@ static void NHC_trotter(t_grpopts *opts,int nvar, gmx_ekindata_t *ekind,real dtf
 }
 
 static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box, 
-                         gmx_ekindata_t *ekind, tensor vir, real pcorr, real ecorr, t_extmass *MassQ)
+                         gmx_ekindata_t *ekind, tensor vir, real pcorr, t_extmass *MassQ)
 {
 
     real  pscal;
@@ -216,7 +216,6 @@ static void boxv_trotter(t_inputrec *ir, real *veta, real dt, tensor box,
        really should be using PME. Maybe print a warning? */
     
     pscal   = calc_pres(ir->ePBC,nwall,box,ekinmod,vir,localpres,0.0) + pcorr;
-    
     vol = det(box);
     GW = (vol*(MassQ->Winv/PRESFAC))*(DIM*pscal - trace(ir->ref_p));   /* W is in ps^2 * bar * nm^3 */
     
@@ -244,7 +243,7 @@ real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
          * Wrs. moet de druktensor gecorrigeerd worden voor de netto stroom in  
          * het systeem...       
          */
-        
+
         /* Long range correction for periodic systems, see
          * Neumann et al. JCP
          * divide by 6 because it is multiplied by fac later on.
@@ -680,13 +679,11 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
 
     trotter_seq = trotter_seqlist[trotter_seqno];
 
-    /* signal we are returning if nothing is going to be done in this routine */
-    if ((trotter_seq[0] == etrtSKIPALL)  || !(bCouple))
+    if ((trotter_seq[0] == etrtSKIPALL) || (!bCouple))
     {
         return;
     }
-
-    dtc = ir->nsttcouple*ir->delta_t;
+    dtc = ir->nsttcouple*ir->delta_t;  /* This is OK for NPT, because nsttcouple == nstpcouple is enforcesd */
     opts = &(ir->opts); /* just for ease of referencing */
     ngtc = opts->ngtc;
     snew(scalefac,opts->ngtc);
@@ -712,7 +709,7 @@ void trotter_update(t_inputrec *ir,gmx_large_int_t step, gmx_ekindata_t *ekind,
         case etrtBAROV:
         case etrtBAROV2:
             boxv_trotter(ir,&(state->veta),dt,state->box,ekind,vir,
-                         enerd->term[F_PDISPCORR],enerd->term[F_DISPCORR],MassQ);
+                         enerd->term[F_PDISPCORR],MassQ);
             break;
         case etrtBARONHC:
         case etrtBARONHC2:
@@ -913,18 +910,34 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
 
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir))
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there are only two calls, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[2][0] = etrtNHC;
-                trotter_seq[3][0] = etrtNHC;
-            }
+            /* This is the easy version - there are only two calls, both the same.
+               Otherwise, even easier -- no calls  */
+            trotter_seq[2][0] = etrtNHC;
+            trotter_seq[3][0] = etrtNHC;
+        }
+        else if (IR_NPH_TROTTER(ir))
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV;
+
+            /* trotter_seq[1] is etrtNHC for 1/2 step velocities - leave zero */
+
+            /* The first half trotter update */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+
+            /* The second half trotter update */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* trotter_seq[4] is etrtNHC for second 1/2 step velocities - leave zero */
         }
     } else if (ir->eI==eiVVAK) {
-        if (IR_NPT_TROTTER(ir)) 
+        if (IR_NPT_TROTTER(ir))
         {
             /* This is the complicated version - there are 4 possible calls, depending on ordering.
                We start with the initial one. */
@@ -945,15 +958,32 @@ int **init_npt_vars(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool b
             /* The second half trotter update -- blank for now */
             trotter_seq[4][0] = etrtNHC;
         } 
-        else 
+        else if (IR_NVT_TROTTER(ir))
         {
-            if (IR_NVT_TROTTER(ir)) 
-            {
-                /* This is the easy version - there is only one call, both the same. 
-                   Otherwise, even easier -- no calls  */
-                trotter_seq[1][0] = etrtNHC;
-                trotter_seq[4][0] = etrtNHC;
-            }
+            /* This is the easy version - there is only one call, both the same.
+               Otherwise, even easier -- no calls  */
+            trotter_seq[1][0] = etrtNHC;
+            trotter_seq[4][0] = etrtNHC;
+        }
+        else if (IR_NPH_TROTTER(ir))
+        {
+            /* This is the complicated version - there are 4 possible calls, depending on ordering.
+               We start with the initial one. */
+            /* first, a round that estimates veta. */
+            trotter_seq[0][0] = etrtBAROV;
+
+            /* The first half trotter update, part 1 -- leave zero */
+            trotter_seq[1][0] = etrtNHC;
+
+            /* The first half trotter update, part 2 */
+            trotter_seq[2][0] = etrtBAROV;
+            trotter_seq[2][1] = etrtBARONHC;
+
+            /* The second half trotter update, part 1 */
+            trotter_seq[3][0] = etrtBARONHC;
+            trotter_seq[3][1] = etrtBAROV;
+
+            /* The second half trotter update -- blank for now */
         }
     }
 
@@ -1040,7 +1070,7 @@ real NPT_energy(t_inputrec *ir, t_state *state, t_extmass *MassQ)
         }
     }
     
-    if (IR_NPT_TROTTER(ir)) 
+    if (IR_NPT_TROTTER(ir) || IR_NPH_TROTTER(ir))
     {
         /* add the energy from the barostat thermostat chain */
         for (i=0;i<state->nnhpres;i++) {

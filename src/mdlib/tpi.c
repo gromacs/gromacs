@@ -569,7 +569,7 @@ double do_tpi(FILE *fplog,t_commrec *cr,
                          state->box,state->x,&state->hist,
                          f,force_vir,mdatoms,enerd,fcd,
                          lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,FALSE,
-                         GMX_FORCE_NONBONDED |
+                         GMX_FORCE_NONBONDED | GMX_FORCE_ENERGY |
                          (bNS ? GMX_FORCE_DYNAMICBOX | GMX_FORCE_NS | GMX_FORCE_DOLR : 0) |
                          (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
                 cr->nnodes = nnodes;
