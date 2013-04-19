@@ -220,7 +220,8 @@ gmx_ana_selcollection_evaluate(gmx_ana_selcollection_t *sc,
     while (sel)
     {
         /* Clear the evaluation group of subexpressions */
-        if (sel->child && sel->child->type == SEL_SUBEXPR)
+        if (sel->child && sel->child->type == SEL_SUBEXPR
+            && sel->child->evaluate != NULL)
         {
             sel->child->u.cgrp.isize = 0;
             /* Not strictly necessary, because the value will be overwritten
@@ -664,7 +665,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t *data, t_selelem *sel, gmx_ana_i
     t_selelem *expr;
     int        i, j;
 
-    if (g)
+    if (g != NULL && sel->child->evaluate != NULL)
     {
         int rc;
 
