@@ -1,0 +1,195 @@
+.TH g_kinetics 1 "Fri 19 Apr 2013" "" "GROMACS suite, VERSION 4.5.7"
+.SH NAME
+g_kinetics - analyzes kinetic constants from properties based on the Eyring model
+
+.B VERSION 4.5.7
+.SH SYNOPSIS
+\f3g_kinetics\fP
+.BI "\-f" " temp.xvg "
+.BI "\-d" " data.xvg "
+.BI "\-d2" " data2.xvg "
+.BI "\-o" " ft_all.xvg "
+.BI "\-o2" " it_all.xvg "
+.BI "\-o3" " ft_repl.xvg "
+.BI "\-ee" " err_est.xvg "
+.BI "\-g" " remd.log "
+.BI "\-m" " melt.xvg "
+.BI "\-[no]h" ""
+.BI "\-[no]version" ""
+.BI "\-nice" " int "
+.BI "\-tu" " enum "
+.BI "\-[no]w" ""
+.BI "\-xvg" " enum "
+.BI "\-[no]time" ""
+.BI "\-b" " real "
+.BI "\-e" " real "
+.BI "\-bfit" " real "
+.BI "\-efit" " real "
+.BI "\-T" " real "
+.BI "\-n" " int "
+.BI "\-cut" " real "
+.BI "\-ucut" " real "
+.BI "\-euf" " real "
+.BI "\-efu" " real "
+.BI "\-ei" " real "
+.BI "\-maxiter" " int "
+.BI "\-[no]back" ""
+.BI "\-tol" " real "
+.BI "\-skip" " int "
+.BI "\-[no]split" ""
+.BI "\-[no]sum" ""
+.BI "\-[no]discrete" ""
+.BI "\-mult" " int "
+.SH DESCRIPTION
+\&\fB g_kinetics\fR reads two \fB .xvg\fR files, each one containing data for N replicas.
+\&The first file contains the temperature of each replica at each timestep,
+\&and the second contains real values that can be interpreted as
+\&an indicator for folding. If the value in the file is larger than
+\&the cutoff it is taken to be unfolded and the other way around.
+
+
+\&From these data an estimate of the forward and backward rate constants
+\&for folding is made at a reference temperature. In addition,
+\&a theoretical melting curve and free energy as a function of temperature
+\&are printed in an \fB .xvg\fR file.
+
+
+\&The user can give a max value to be regarded as intermediate
+\&(\fB \-ucut\fR), which, when given will trigger the use of an intermediate state
+\&in the algorithm to be defined as those structures that have
+\&cutoff  DATA  ucut. Structures with DATA values larger than ucut will
+\&not be regarded as potential folders. In this case 8 parameters are optimized.
+
+
+\&The average fraction foled is printed in an \fB .xvg\fR file together with the fit to it.
+\&If an intermediate is used a further file will show the build of the intermediate and the fit to that process.
+
+
+\&The program can also be used with continuous variables (by setting
+\&\fB \-nodiscrete\fR). In this case kinetics of other processes can be
+\&studied. This is very much a work in progress and hence the manual
+\&(this information) is lagging behind somewhat.
+
+
+\&In order to compile this program you need access to the GNU
+\&scientific library.
+.SH FILES
+.BI "\-f" " temp.xvg" 
+.B Input
+ xvgr/xmgr file 
+
+.BI "\-d" " data.xvg" 
+.B Input
+ xvgr/xmgr file 
+
+.BI "\-d2" " data2.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
+.BI "\-o" " ft_all.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "\-o2" " it_all.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "\-o3" " ft_repl.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "\-ee" " err_est.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "\-g" " remd.log" 
+.B Output
+ Log file 
+
+.BI "\-m" " melt.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "\-[no]h"  "no    "
+ Print help info and quit
+
+.BI "\-[no]version"  "no    "
+ Print version info and quit
+
+.BI "\-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "\-tu"  " enum" " ps" 
+ Time unit: \fB fs\fR, \fB ps\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
+
+.BI "\-[no]w"  "no    "
+ View output \fB .xvg\fR, \fB .xpm\fR, \fB .eps\fR and \fB .pdb\fR files
+
+.BI "\-xvg"  " enum" " xmgrace" 
+ xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
+
+.BI "\-[no]time"  "yes   "
+ Expect a time in the input
+
+.BI "\-b"  " real" " 0     " 
+ First time to read from set
+
+.BI "\-e"  " real" " 0     " 
+ Last time to read from set
+
+.BI "\-bfit"  " real" " \-1    " 
+ Time to start the fit from
+
+.BI "\-efit"  " real" " \-1    " 
+ Time to end the fit
+
+.BI "\-T"  " real" " 298.15" 
+ Reference temperature for computing rate constants
+
+.BI "\-n"  " int" " 1" 
+ Read data for this number of replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters.
+
+.BI "\-cut"  " real" " 0.2   " 
+ Cut\-off (max) value for regarding a structure as folded
+
+.BI "\-ucut"  " real" " 0     " 
+ Cut\-off (max) value for regarding a structure as intermediate (if not folded)
+
+.BI "\-euf"  " real" " 10    " 
+ Initial guess for energy of activation for folding (kJ/mol)
+
+.BI "\-efu"  " real" " 30    " 
+ Initial guess for energy of activation for unfolding (kJ/mol)
+
+.BI "\-ei"  " real" " 10    " 
+ Initial guess for energy of activation for intermediates (kJ/mol)
+
+.BI "\-maxiter"  " int" " 100" 
+ Max number of iterations
+
+.BI "\-[no]back"  "yes   "
+ Take the back reaction into account
+
+.BI "\-tol"  " real" " 0.001 " 
+ Absolute tolerance for convergence of the Nelder and Mead simplex algorithm
+
+.BI "\-skip"  " int" " 0" 
+ Skip points in the output \fB .xvg\fR file
+
+.BI "\-[no]split"  "yes   "
+ Estimate error by splitting the number of replicas in two and refitting
+
+.BI "\-[no]sum"  "yes   "
+ Average folding before computing chi2
+
+.BI "\-[no]discrete"  "yes   "
+ Use a discrete folding criterion (F \- U) or a continuous one
+
+.BI "\-mult"  " int" " 1" 
+ Factor to multiply the data with before discretization
+
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

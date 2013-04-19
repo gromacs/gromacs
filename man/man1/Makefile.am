@@ -24,6 +24,7 @@ man_MANS =   \
 	g_dipoles.1  \
 	g_disre.1  \
 	g_dist.1  \
+	g_dos.1  \
 	g_dyndom.1  \
 	g_enemat.1  \
 	g_energy.1  \
@@ -34,6 +35,7 @@ man_MANS =   \
 	g_helix.1  \
 	g_helixorient.1  \
 	g_hydorder.1  \
+	g_kinetics.1  \
 	g_lie.1  \
 	g_mdmat.1  \
 	g_membed.1  \

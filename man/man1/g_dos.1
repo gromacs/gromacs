@@ -1,15 +1,17 @@
-.TH g_gyrate 1 "Fri 19 Apr 2013" "" "GROMACS suite, VERSION 4.5.7"
+.TH g_dos 1 "Fri 19 Apr 2013" "" "GROMACS suite, VERSION 4.5.7"
 .SH NAME
-g_gyrate - calculates the radius of gyration
+g_dos - analyzes density of states and properties based on that
 
 .B VERSION 4.5.7
 .SH SYNOPSIS
-\f3g_gyrate\fP
-.BI "\-f" " traj.xtc "
+\f3g_dos\fP
+.BI "\-f" " traj.trr "
 .BI "\-s" " topol.tpr "
 .BI "\-n" " index.ndx "
-.BI "\-o" " gyrate.xvg "
-.BI "\-acf" " moi\-acf.xvg "
+.BI "\-vacf" " vacf.xvg "
+.BI "\-mvacf" " mvacf.xvg "
+.BI "\-dos" " dos.xvg "
+.BI "\-g" " dos.log "
 .BI "\-[no]h" ""
 .BI "\-[no]version" ""
 .BI "\-nice" " int "
@@ -18,11 +20,11 @@ g_gyrate - calculates the radius of gyration
 .BI "\-dt" " time "
 .BI "\-[no]w" ""
 .BI "\-xvg" " enum "
-.BI "\-nmol" " int "
-.BI "\-[no]q" ""
-.BI "\-[no]p" ""
-.BI "\-[no]moi" ""
-.BI "\-nz" " int "
+.BI "\-[no]v" ""
+.BI "\-[no]recip" ""
+.BI "\-[no]abs" ""
+.BI "\-[no]normdos" ""
+.BI "\-T" " real "
 .BI "\-acflen" " int "
 .BI "\-[no]normalize" ""
 .BI "\-P" " enum "
@@ -31,38 +33,40 @@ g_gyrate - calculates the radius of gyration
 .BI "\-beginfit" " real "
 .BI "\-endfit" " real "
 .SH DESCRIPTION
-\&\fB g_gyrate\fR computes the radius of gyration of a group of atoms
-\&and the radii of gyration about the \fI x\fR\-, \fI y\fR\- and \fI z\fR\-axes,
-\&as a function of time. The atoms are explicitly mass weighted.
-
-
-\&With the \fB \-nmol\fR option the radius of gyration will be calculated
-\&for multiple molecules by splitting the analysis group in equally
-\&sized parts.
-
-
-\&With the option \fB \-nz\fR 2D radii of gyration in the \fI x\-y\fR plane
-\&of slices along the \fI z\fR\-axis are calculated.
+\&\fB g_dos\fR computes the Density of States from a simulations.
+\&In order for this to be meaningful the velocities must be saved
+\&in the trajecotry with sufficiently high frequency such as to cover
+\&all vibrations. For flexible systems that would be around a few fs
+\&between saving. Properties based on the DoS are printed on the
+\&standard output.
 .SH FILES
-.BI "\-f" " traj.xtc" 
+.BI "\-f" " traj.trr" 
 .B Input
- Trajectory: xtc trr trj gro g96 pdb cpt 
+ Full precision trajectory: trr trj cpt 
 
 .BI "\-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb 
+ Run input file: tpr tpb tpa 
 
 .BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "\-o" " gyrate.xvg" 
+.BI "\-vacf" " vacf.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "\-acf" " moi\-acf.xvg" 
-.B Output, Opt.
+.BI "\-mvacf" " mvacf.xvg" 
+.B Output
  xvgr/xmgr file 
+
+.BI "\-dos" " dos.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "\-g" " dos.log" 
+.B Output
+ Log file 
 
 .SH OTHER OPTIONS
 .BI "\-[no]h"  "no    "
@@ -89,20 +93,20 @@ g_gyrate - calculates the radius of gyration
 .BI "\-xvg"  " enum" " xmgrace" 
  xvg plot formatting: \fB xmgrace\fR, \fB xmgr\fR or \fB none\fR
 
-.BI "\-nmol"  " int" " 1" 
- The number of molecules to analyze
+.BI "\-[no]v"  "yes   "
+ Be loud and noisy.
 
-.BI "\-[no]q"  "no    "
- Use absolute value of the charge of an atom as weighting factor instead of mass
+.BI "\-[no]recip"  "no    "
+ Use cm\-1 on X\-axis instead of 1/ps for DoS plots.
 
-.BI "\-[no]p"  "no    "
- Calculate the radii of gyration about the principal axes.
+.BI "\-[no]abs"  "no    "
+ Use the absolute value of the Fourier transform of the VACF as the Density of States. Default is to use the real component only
 
-.BI "\-[no]moi"  "no    "
- Calculate the moments of inertia (defined by the principal axes).
+.BI "\-[no]normdos"  "no    "
+ Normalize the DoS such that it adds up to 3N. This is a hack that should not be necessary.
 
-.BI "\-nz"  " int" " 0" 
- Calculate the 2D radii of gyration of this number of slices along the z\-axis
+.BI "\-T"  " real" " 298.15" 
+ Temperature in the simulation
 
 .BI "\-acflen"  " int" " \-1" 
  Length of the ACF, default is half the number of frames
@@ -124,6 +128,9 @@ g_gyrate - calculates the radius of gyration
 
 .BI "\-endfit"  " real" " \-1    " 
  Time where to end the exponential fit of the correlation function, \-1 is until the end
+
+.SH KNOWN PROBLEMS
+\- This program needs a lot of memory: total usage equals the number of atoms times 3 times number of frames times 4 (or 8 when run in double precision).
 
 .SH SEE ALSO
 .BR gromacs(7)
