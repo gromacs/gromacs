@@ -3730,9 +3730,6 @@ static real calc_one_bond(FILE *fplog, int thread,
             v = do_nonbonded_listed(ftype, nbn, iatoms+nb0, idef->iparams, (const rvec*)x, f, fshift,
                                     pbc, g, lambda, dvdl, md, fr, grpp, global_atom_index);
 
-            enerd->dvdl_nonlin[efptCOUL] += dvdl[efptCOUL];
-            enerd->dvdl_nonlin[efptVDW]  += dvdl[efptVDW];
-
             if (bPrintSepPot)
             {
                 fprintf(fplog, "  %-5s + %-15s #%4d                  dVdl %12.5e\n",
