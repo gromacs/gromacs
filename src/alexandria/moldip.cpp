@@ -444,6 +444,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 alexandria::MyMol mpnew;
                 
                 mpnew.Merge(*mpi);
+                //mpnew.GenerateTopology(ap,_pd,lot
                 
                 imm = mpnew.Init(fp,gap,
                                  _bQM,lot,bZero,

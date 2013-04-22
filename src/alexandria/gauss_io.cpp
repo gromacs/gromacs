@@ -63,7 +63,7 @@ static bool comp_esp(alexandria::ElectrostaticPotential ea,
     else
         return false;
 }
- 
+
 static void merge_electrostatic_potential(alexandria::MolProp &mpt,
                                           std::vector<alexandria::ElectrostaticPotential> &espv,
                                           int natom,int maxpot)
@@ -1068,8 +1068,6 @@ static void gmx_molprop_read_log(const char *fn,
         mpt.SetCharge(charge);
         mpt.SetMass(mass);
 
-        merge_electrostatic_potential(mpt,espv,natom,maxpot);      
-      
         /* Generate atomic composition, needed for energetics */
         (void) mpt.GenerateComposition(pd);
 
@@ -1120,6 +1118,9 @@ static void gmx_molprop_read_log(const char *fn,
             calc.AddEnergy(me);
         }
         mpt.AddCalculation(calc);
+        
+        // Now add the electrostatic potential points
+        merge_electrostatic_potential(mpt,espv,natom,maxpot);      
     }
     else {
         fprintf(stderr,"Error reading %s, program = '%s' basis = '%s' method = '%s'\n",

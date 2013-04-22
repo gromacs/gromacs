@@ -226,7 +226,8 @@ int main(int argc, char *argv[])
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator mpi;
     alexandria::MyMol mymol;
-
+    immStatus imm;
+    
     t_filenm fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
         { efTOP, "-o",    "out",  ffOPTWR },
@@ -496,32 +497,55 @@ int main(int argc, char *argv[])
     mymol.Merge(*mpi);
     
     mymol.gr = gmx_resp_init(pd,iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
-                       zmin,zmax,delta_z,
-                       bZatype,watoms,rDecrZeta,bRandZeta,penalty_fac,bFitZeta,
-                       bEntropy,dzatoms);
-
-    mymol.SetForceField(forcefield);
-    mymol.GenerateTopology(aps,pd,lot,"ESP",bAddShells,bQsym,symm_string,nexcl);
-    mymol.GenerateCharges(pd,aps,iModel,hfac,epsr,
-                          qtol,maxiter,maxcycle,lot);
-    mymol.GenerateCube(iModel,
-                       pd,
-                       spacing,
-                       opt2fn_null("-ref",NFILE,fnm),
-                       opt2fn_null("-pc",NFILE,fnm),
-                       opt2fn_null("-pdbdiff",NFILE,fnm),
-                       opt2fn_null("-pot",NFILE,fnm),
-                       opt2fn_null("-rho",NFILE,fnm),
-                       opt2fn_null("-his",NFILE,fnm),
-                       opt2fn_null("-diff",NFILE,fnm),
-                       opt2fn_null("-diffhist",NFILE,fnm),
-                       oenv);
-                       
-                       
-    mymol.GenerateVsitesShells(pd,bGenVSites,bAddShells,bPairs,edih);
-
-    mymol.GenerateChargeGroups(bVerbose,ecg,bUsePDBcharge,
-                               opt2fn("-n",NFILE,fnm),nmol);
+                             zmin,zmax,delta_z,
+                             bZatype,watoms,rDecrZeta,bRandZeta,penalty_fac,bFitZeta,
+                             bEntropy,dzatoms);
+    if (NULL != mymol.gr)
+    {
+        imm = immOK;
+    }
+    else
+    {
+        imm = immError;
+    }
+    
+    if (immOK == imm)
+    {
+        mymol.SetForceField(forcefield);
+    }
+    if (immOK == imm)
+    {
+        imm = mymol.GenerateTopology(aps,pd,lot,"ESP",bAddShells,bQsym,symm_string,nexcl);
+    }
+    if (immOK == imm)
+    {
+        imm = mymol.GenerateCharges(pd,aps,iModel,hfac,epsr,
+                                    qtol,maxiter,maxcycle,lot);
+    }
+    if (immOK == imm)
+    {
+         mymol.GenerateCube(iModel,
+                            pd,
+                            spacing,
+                            opt2fn_null("-ref",NFILE,fnm),
+                            opt2fn_null("-pc",NFILE,fnm),
+                            opt2fn_null("-pdbdiff",NFILE,fnm),
+                            opt2fn_null("-pot",NFILE,fnm),
+                            opt2fn_null("-rho",NFILE,fnm),
+                            opt2fn_null("-his",NFILE,fnm),
+                            opt2fn_null("-diff",NFILE,fnm),
+                            opt2fn_null("-diffhist",NFILE,fnm),
+                            oenv);
+    }
+    if (immOK == imm)
+    {
+         mymol.GenerateVsitesShells(pd,bGenVSites,bAddShells,bPairs,edih);
+    }
+    if (immOK == imm)
+    {
+         mymol.GenerateChargeGroups(bVerbose,ecg,bUsePDBcharge,
+                                    opt2fn("-n",NFILE,fnm),nmol);
+    }
 #ifdef KOKO
     printf("Total charge is %g, total mass is %g, dipole is %g D\n",
            mymol.GetCharge(),mtot,mu);
@@ -533,19 +557,25 @@ int main(int argc, char *argv[])
         topology->atoms.atomtype[i] = put_symtab(&symtab,
                                                  get_atomtype_name(topology->atoms.atom[i].type,atype));
 #endif
-    if (bTOP) 
-    {    
-        mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
-                            ftp2fn(efTOP,NFILE,fnm),
-                            pd,iModel,forcefield);
-    }
-    else if (bRTP) 
+    if (immOK == imm)
     {
-        /* Write force field component */
-        mymol.PrintRTPEntry((char *)ftp2fn(efRTP,NFILE,fnm));
+        if (bTOP) 
+        {    
+            mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
+                                ftp2fn(efTOP,NFILE,fnm),
+                                pd,iModel,forcefield);
+        }
+        else if (bRTP) 
+        {
+            /* Write force field component */
+            mymol.PrintRTPEntry((char *)ftp2fn(efRTP,NFILE,fnm));
+        }
+        mymol.PrintConformation(opt2fn("-c",NFILE,fnm));
     }
-    mymol.PrintConformation(opt2fn("-c",NFILE,fnm));
-  
+    else
+    {
+        printf("%s ended prematurely due to \"%s\"\n",ShortProgram(),alexandria::immsg(imm));
+    }
     thanx(stderr);
   
     return 0;

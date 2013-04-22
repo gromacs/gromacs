@@ -277,15 +277,25 @@ void Experiment::Merge(Experiment& src)
 
 void Calculation::Merge(Calculation& src)
 {
-    ElectrostaticPotentialIterator mep;
-    CalcAtomIterator cai;
-    
     Experiment::Merge(src);
-    for(cai=src.BeginAtom(); (cai<src.EndAtom()); cai++)
+    
+    for(CalcAtomIterator cai=src.BeginAtom(); (cai<src.EndAtom()); cai++)
     {
-        AddAtom(*cai);
+        double x,y,z;
+        CalcAtom caa(cai->GetName(),cai->GetObtype(),cai->GetAtomid());
+        
+        cai->GetCoords(&x,&y,&z);
+        caa.SetCoords(x,y,z);
+        
+        for(AtomicChargeIterator aci=cai->BeginQ(); (aci<cai->EndQ()); aci++)
+        {
+            AtomicCharge aq(aci->GetType(),aci->GetUnit(),aci->GetQ());
+            caa.AddCharge(aq);
+        }
+        AddAtom(caa);
     }
-    for(mep=src.BeginPotential(); (mep<src.EndPotential()); mep++)
+
+    for(ElectrostaticPotentialIterator mep=src.BeginPotential(); (mep<src.EndPotential()); mep++)
     {
         alexandria::ElectrostaticPotential ep(mep->GetXYZunit(),mep->GetVunit(),mep->GetEspid(),
                                               mep->GetX(),mep->GetY(),mep->GetZ(),mep->GetV());
@@ -341,7 +351,8 @@ void Calculation::AddAtom(CalcAtom ca)
     }
     else
     {
-        printf("Trying to add identical atom twice\n");
+        printf("Trying to add identical atom %s (%s) twice. N = %d\n",
+               ca.GetName().c_str(),ca.GetObtype().c_str(),(int)_catom.size());
     }
 }
 
@@ -366,7 +377,7 @@ void MolProp::Merge(MolProp& src)
     alexandria::CalculationIterator ci;
     alexandria::AtomicChargeIterator aci;
     alexandria::CalcAtomIterator cai;
-    alexandria::MolecularCompositionIterator mci,mcid;
+    alexandria::MolecularCompositionIterator mci;
     alexandria::AtomNumIterator ani;
   
     for(si=src.BeginCategory(); (si<src.EndCategory()); si++) 
@@ -432,19 +443,6 @@ void MolProp::Merge(MolProp& src)
                        ci->GetConformation(),ci->GetDatafile());
         ca.Merge(*ci);
       
-        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
-        {
-            CalcAtom caa(cai->GetName(),cai->GetObtype(),cai->GetAtomid());
-            cai->GetCoords(&x,&y,&z);
-            caa.SetCoords(x,y,z);
-        
-            for(aci=cai->BeginQ(); (aci<cai->EndQ()); aci++)
-            {
-                AtomicCharge aq(aci->GetType(),aci->GetUnit(),aci->GetQ());
-                caa.AddCharge(aq);
-            }
-            ca.AddAtom(caa);
-        }
         AddCalculation(ca);
     }
     
@@ -454,7 +452,7 @@ void MolProp::Merge(MolProp& src)
         for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++) 
         {
             AtomNum an(ani->GetAtom(),ani->GetNumber());
-            mcid->AddAtom(an);
+            mci->AddAtom(an);
         }
     }
 }
@@ -825,32 +823,36 @@ int MolProp::GetProp(MolPropObservable mpo,int iQM,char *lot,
 
 CalculationIterator MolProp::GetLot(const char *lot)
 {
-    int  k,done = 0;
     char **ll;
-    alexandria::CalculationIterator ci;
+    CalculationIterator ci;
     
     ll = split('/',lot);
     if ((NULL != ll[0]) && (NULL != ll[1])) 
     {
-        for(ci=BeginCalculation(); ((done == 0) && 
-                                    (ci < EndCalculation())); ci++)
+        int done = 0;
+        for(ci=BeginCalculation(); (done == 0) && (ci < EndCalculation()); ci++)
         {
             if ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
                 (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0))
             {
                 done = 1;
+                break;
             }
         }
-        k = 0;
+        int k = 0;
         while (ll[k] != NULL)
         {
             sfree(ll[k]);
             k++;
         }
         sfree(ll);
+        
         return ci;
     }
-    return EndCalculation();
+    else
+    {
+        return EndCalculation();
+    }
 }
 
 CommunicationStatus GenericProperty::Send(t_commrec *cr,int dest)
