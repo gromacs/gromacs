@@ -70,8 +70,8 @@ see the documentation at
 \end{enumerate}
 Or, as a sequence of commands to execute:
 \begin{verbatim}
-tar xfz gromacs-4.6.tar.gz
-cd gromacs-4.6
+tar xfz gromacs-4.6.1.tar.gz
+cd gromacs-4.6.1
 mkdir build
 cd build
 cmake .. -DGMX_BUILD_OWN_FFTW=ON
@@ -153,8 +153,8 @@ also requires \cuda{}, and remains the only hardware-based
 acceleration available for implicit solvent simulations in
 \gromacs{} at the moment. However, the long-term plan is to enable 
 this functionality in core Gromacs, and not have the OpenMM
-interface supported by the \gromacs team. RIght now there might be
-some build issues for OpenMM, but they should be fixed by release 4.6.1.
+interface supported by the \gromacs team. Right now there are
+some build issues for OpenMM.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have
@@ -308,8 +308,8 @@ line is the name of the directory containing the
 example, download the source tarball and use
 % TODO: keep up to date with new releases!
 \begin{verbatim}
-$ tar xfz gromacs-4.6.tgz
-$ cd gromacs-4.6
+$ tar xfz gromacs-4.6.1.tgz
+$ cd gromacs-4.6.1
 $ mkdir build-cmake
 $ cd build-cmake
 $ cmake ..
@@ -470,10 +470,19 @@ single and double precision, and with and without \mpi{}. By default,
 \gromacs{} will suffix binaries and libraries for such builds with
 '\verb+_d+' for double precision and/or '\verb+_mpi+' for \mpi{} (and
 nothing otherwise). This can be controlled manually with
-\verb+GMX_DEFAULT_SUFFIX+, \verb+GMX_BINARY_SUFFIX+ and
-\verb+GMX_LIBRARY_SUFFIX+. This can also be useful for resolving
-libary-naming conflicts with existing packges (\verb+GMX_PREFIX_LIBMD+
-also can be useful).
+\verb+GMX_DEFAULT_SUFFIX (ON/OFF)+, \verb+GMX_BINARY_SUFFIX+ (takes 
+a string) and \verb+GMX_LIBS_SUFFIX+ (also takes a string). 
+This can also be useful for resolving libary-naming conflicts with 
+existing packges (\verb+GMX_PREFIX_LIBMD+ also can be useful).
+For instance, to set a custom suffix for binaries and libraries, 
+one might specify:
+
+\begin{verbatim}
+cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_BINARY_SUFFIX=_mod -DGMX_LIBS_SUFFIX=_mod
+\end{verbatim}
+
+Thus the names of all binaries and libraries will be appended with
+"_mod."
 
 \subsection{Building \gromacs{}}
 
@@ -546,7 +555,7 @@ The simplest way to run the checks is to build \gromacs{} with
 \verb+-DREGRESSIONTEST_DOWNLOAD+, and run \verb+make check+.
 \gromacs{} will automatically download and run the tests for you.
 Alternatively, you can download and unpack the tarball yourself from
-\url{http://gerrit.gromacs.org/download/regressiontests-4.6.tar.gz},
+\url{http://gerrit.gromacs.org/download/regressiontests-4.6.1.tar.gz},
 and use the advanced \cmake{} option \verb+REGRESSIONTEST_PATH+ to
 specify the path to the unpacked tarball, which will then be used for
 testing. If this doesn't work, then please read on.
@@ -650,8 +659,7 @@ parallel job execution.
 \subsubsection{BlueGene/P}
 
 There is currently no native acceleration on this platform, but the
-default plain C kernels will work. Toolchain files will be improved in
-\gromacs{} 4.6.1.
+default plain C kernels will work.
 
 \subsubsection{BlueGene/Q}
 
@@ -701,7 +709,7 @@ installation performed for that using the login node's toolchain.
 
 This is the architecture of the K computer, which uses Fujitsu Sparc64viiifx 
 chips. Gromacs-4.6 will build with default C kernels on this architecture,
-and Gromacs-4.6.1 will add accelerated kernels and a custom toolchain.
+and Gromacs-4.6.2 will add accelerated kernels and a custom toolchain.
 
 \section{Tested platforms}
 

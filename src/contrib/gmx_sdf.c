@@ -39,7 +39,6 @@
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_fatal.h"
-#include "gmx_ana.h"
 
 
 #define G_REF1      0
@@ -766,5 +765,12 @@ int gmx_sdf(int argc,char *argv[])
 
   thanx(stderr);
   
+  return 0;
+}
+
+int
+main(int argc, char *argv[])
+{
+  gmx_sdf(argc,argv);
   return 0;
 }

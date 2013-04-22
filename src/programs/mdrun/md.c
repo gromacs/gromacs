@@ -90,12 +90,7 @@
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

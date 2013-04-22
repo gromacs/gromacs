@@ -53,18 +53,14 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 static gmx_bool bDebug         = FALSE;
 static char    *fatal_tmp_file = NULL;
 static FILE    *log_file       = NULL;
 
 #ifdef GMX_THREAD_MPI
+#include "thread_mpi/threads.h"
 static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t fatal_tmp_mutex = TMPI_THREAD_MUTEX_INITIALIZER;

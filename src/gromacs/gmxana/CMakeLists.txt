@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+# Copyright (c) 2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -32,33 +32,6 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB UTILITY_SOURCES *.cpp)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${UTILITY_SOURCES} PARENT_SCOPE)
+file(GLOB GMXANA_SOURCES *.c *.cpp)
 
-set(GENERATED_HEADER_CONFIG ${CMAKE_CURRENT_BINARY_DIR}/gmx_header_config_gen.h)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/gmx_header_config_gen.h.cmakein
-               ${GENERATED_HEADER_CONFIG})
-
-set(UTILITY_PUBLIC_HEADERS
-    arrayref.h
-    common.h
-    errorcodes.h
-    exceptions.h
-    file.h
-    flags.h
-    gmx_header_config.h
-    gmxassert.h
-    gmxmpi.h
-    programinfo.h
-    stringutil.h
-    uniqueptr.h)
-install(FILES ${UTILITY_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
-        COMPONENT development)
-install(FILES ${GENERATED_HEADER_CONFIG}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
-        COMPONENT development)
-
-if (BUILD_TESTING)
-    add_subdirectory(tests)
-endif (BUILD_TESTING)
+set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,57 +32,24 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Declares common types used in selections.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_selection
- */
-#ifndef GMX_SELECTION_SELECTIONENUMS_H
-#define GMX_SELECTION_SELECTIONENUMS_H
+#ifndef GMX_UTILITY_GMXMPI_H
+#define GMX_UTILITY_GMXMPI_H
 
-#include "../utility/flags.h"
-
-/*! \brief
- * Defines the type of covered fraction.
- *
- * \inpublicapi
- */
-typedef enum
-{
-    CFRAC_NONE,         /**< No covered fraction (everything covered). */
-    CFRAC_SOLIDANGLE    /**< Fraction of a solid (3D) angle covered. */
-} e_coverfrac_t;
-
-namespace gmx
-{
-
-/*! \cond internal */
-/*! \internal \brief
- * Flags for options.
- *
- * These flags are not part of the public interface, even though they are in an
- * installed header.  They are needed in the implementation of SelectionOption.
- */
-enum SelectionFlag
-{
-    efSelection_OnlyStatic              = 1<<0,
-    efSelection_OnlyAtoms               = 1<<1,
-    //! Whether ::POS_MASKONLY should be used for output position evaluation.
-    efSelection_DynamicMask             = 1<<2,
-    //! If set, unconditionally empty selections result in compilation errors.
-    efSelection_DisallowEmpty           = 1<<3,
-    //! Whether velocities of output positions should be evaluated.
-    efSelection_EvaluateVelocities      = 1<<5,
-    //! Whether forces on output positions should be evaluated.
-    efSelection_EvaluateForces          = 1<<6,
-};
-
-//! \internal Holds a collection of ::SelectionFlag values.
-typedef FlagsTemplate<SelectionFlag> SelectionFlags;
-//! \endcond
-
-}
+#ifdef GMX_LIB_MPI
+/* MPI C++ binding is deprecated and can cause name conflicts (e.g. stdio/mpi seek) */
+#define MPICH_SKIP_MPICXX 1
+#define OMPI_SKIP_MPICXX 1
+#include <mpi.h>
+#else
+#ifdef GMX_THREAD_MPI
+#include "thread_mpi/tmpi.h"
+#include "thread_mpi/mpi_bindings.h"
+#else
+typedef void* MPI_Comm;
+typedef void* MPI_Request;
+typedef void* MPI_Group;
+#define MPI_COMM_NULL NULL
+#endif
+#endif
 
 #endif

@@ -63,6 +63,7 @@
 #include "parser.h"
 #include "poscalc.h"
 #include "scanner.h"
+#include "selection.h"
 #include "selectioncollection-impl.h"
 #include "selelem.h"
 #include "selhelp.h"
@@ -370,26 +371,35 @@ void
 SelectionCollection::initOptions(Options *options)
 {
     const char * const debug_levels[]
-        = {"no", "basic", "compile", "eval", "full" };
-    /*
-       static const char * const desc[] = {
-        "This program supports selections in addition to traditional",
-        "index files. Use [TT]-select help[tt] for additional information,",
-        "or type 'help' in the selection prompt.",
-        NULL,
-       };
-       options.setDescription(desc);
-     */
+        = { "no", "basic", "compile", "eval", "full" };
+
+    bool bAllowNonAtomOutput = false;
+    SelectionDataList::const_iterator iter;
+    for (iter = impl_->sc_.sel.begin(); iter != impl_->sc_.sel.end(); ++iter)
+    {
+        const internal::SelectionData &sel = **iter;
+        if (!sel.hasFlag(efSelection_OnlyAtoms))
+        {
+            bAllowNonAtomOutput = true;
+        }
+    }
 
     const char *const *postypes = PositionCalculationCollection::typeEnumValues;
     options->addOption(StringOption("selrpos")
                            .enumValueFromNullTerminatedArray(postypes)
                            .store(&impl_->rpost_).defaultValue(postypes[0])
                            .description("Selection reference positions"));
-    options->addOption(StringOption("seltype")
-                           .enumValueFromNullTerminatedArray(postypes)
-                           .store(&impl_->spost_).defaultValue(postypes[0])
-                           .description("Default selection output positions"));
+    if (bAllowNonAtomOutput)
+    {
+        options->addOption(StringOption("seltype")
+                               .enumValueFromNullTerminatedArray(postypes)
+                               .store(&impl_->spost_).defaultValue(postypes[0])
+                               .description("Default selection output positions"));
+    }
+    else
+    {
+        impl_->spost_ = postypes[0];
+    }
     GMX_RELEASE_ASSERT(impl_->debugLevel_ >= 0 && impl_->debugLevel_ <= 4,
                        "Debug level out of range");
     options->addOption(StringOption("seldebug").hidden(impl_->debugLevel_ == 0)
@@ -595,6 +605,35 @@ SelectionCollection::compile()
     {
         impl_->sc_.pcc.printTree(stderr);
         std::fprintf(stderr, "\n");
+    }
+
+    // TODO: It would be nicer to associate the name of the selection option
+    // (if available) to the error message.
+    SelectionDataList::const_iterator iter;
+    for (iter = impl_->sc_.sel.begin(); iter != impl_->sc_.sel.end(); ++iter)
+    {
+        const internal::SelectionData &sel = **iter;
+        if (sel.hasFlag(efSelection_OnlyAtoms))
+        {
+            if (sel.type() != INDEX_ATOM)
+            {
+                std::string message = formatString(
+                            "Selection '%s' does not evaluate to individual atoms. "
+                            "This is not allowed in this context.",
+                            sel.selectionText());
+                GMX_THROW(InvalidInputError(message));
+            }
+        }
+        if (sel.hasFlag(efSelection_DisallowEmpty))
+        {
+            if (sel.posCount() == 0)
+            {
+                std::string message = formatString(
+                            "Selection '%s' never matches any atoms.",
+                            sel.selectionText());
+                GMX_THROW(InvalidInputError(message));
+            }
+        }
     }
 }
 

@@ -78,7 +78,10 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         typedef SelectionOptionInfo InfoType;
 
         //! Initializes an option with the given name.
-        explicit SelectionOption(const char *name) : MyBase(name) { }
+        explicit SelectionOption(const char *name)
+            : MyBase(name), selectionFlags_(efSelection_DisallowEmpty)
+        {
+        }
 
         /*! \brief
          * Request velocity evaluation for output positions.
@@ -96,8 +99,6 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         { selectionFlags_.set(efSelection_EvaluateForces); return me(); }
         /*! \brief
          * Only accept selections that evaluate to atom positions.
-         *
-         * TODO: This option is not yet implemented.
          */
         MyClass &onlyAtoms()
         { selectionFlags_.set(efSelection_OnlyAtoms); return me(); }
@@ -115,12 +116,15 @@ class SelectionOption : public OptionTemplate<Selection, SelectionOption>
         MyClass &dynamicMask()
         { selectionFlags_.set(efSelection_DynamicMask); return me(); }
         /*! \brief
-         * Disallow using atom coordinates as the reference positions.
+         * Allow specifying an unconditionally empty selection for this option.
          *
-         * TODO: This option is not yet implemented.
+         * If this option is not set, selections that are unconditionally empty
+         * (i.e., can never match any atoms) result in errors.
+         * Note that even without this option, it is still possible that a
+         * dynamic selection evaluates to zero atoms for some frames.
          */
-        MyClass &dynamicOnlyWhole()
-        { selectionFlags_.set(efSelection_DynamicOnlyWhole); return me(); }
+        MyClass &allowEmpty()
+        { selectionFlags_.clear(efSelection_DisallowEmpty); return me(); }
 
     private:
         // Disable possibility to allow multiple occurrences, since it isn't
@@ -249,8 +253,6 @@ class SelectionOptionInfo : public OptionInfo
          * \param[in] bEnabled  If true, the option accepts only positions that
          *      evaluate to atom positions.
          *
-         * TODO: This is not yet implemented.
-         *
          * \see SelectionOption::onlyAtoms()
          */
         void setOnlyAtoms(bool bEnabled);
@@ -278,17 +280,6 @@ class SelectionOptionInfo : public OptionInfo
          * \see SelectionOption::dynamicMask()
          */
         void setDynamicMask(bool bEnabled);
-        /*! \brief
-         * Sets whether atom coordinates are allowed as reference positions.
-         *
-         * \param[in] bEnabled  If true, the option does not accept atom
-         *      coordinates as reference positions.
-         *
-         * TODO: This is not yet implemented.
-         *
-         * \see SelectionOption::dynamicOnlyWhole()
-         */
-        void setDynamicOnlyWhole(bool bEnabled);
 
     private:
         SelectionOptionStorage &option();

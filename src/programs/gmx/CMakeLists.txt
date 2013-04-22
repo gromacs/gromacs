@@ -33,7 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 add_executable(gmx gmx.cpp legacymodules.cpp)
-target_link_libraries(gmx libgromacs gmxana ${GMX_EXE_LINKER_FLAGS})
+target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 
 configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
