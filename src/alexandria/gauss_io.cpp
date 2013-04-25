@@ -71,7 +71,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
     alexandria::ElectrostaticPotentialIterator esi;
     int i;
     
-    if ((maxpot > 0) && (maxpot < espv.size()))
+    if ((maxpot > 0) && (maxpot < (int)espv.size()))
     {
         std::sort(espv.begin()+natom,espv.end(),comp_esp);
     }
@@ -156,6 +156,51 @@ static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol
 
 void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
 {
+#define XHACK
+#ifdef XHACK
+    typedef struct {
+        const char *ob,*ax;
+    } t_xhack;
+    static const t_xhack xh[] = {
+        { "H", "HA" },	
+        { "HC", "HA" },	
+        { "H", "HA" },
+        { "HO", "HP" },
+        { "HS", "HP" },
+        { "HB", "HP" },
+        { "HN", "HP" },
+        { "C3", "CTA" },
+        { "C", "CA" },
+        { "C2", "CTR" },
+        { "Car", "CRA" },
+        { "C1", "CDI" },	
+        { "Nr", "NPI2" },
+        { "N3", "NTE" },
+        { "Nox", "NTN" },
+        { "N2", "NT" },
+        { "O3", "OTE" },
+        { "O2", "OPI2" },
+        { "F", "F" }
+    };
+    int i,j,nxh = sizeof(xh)/sizeof(xh[0]);
+    for(i=0; (i<atoms->nr); i++) 
+    {
+        for(j=0; (j<nxh); j++)
+        {
+            if (strcasecmp(xh[j].ob,*(atoms->atomtype[i])) == 0)
+            {
+                atoms->atomtype[i]  = put_symtab(tab,xh[j].ax);
+                atoms->atomtypeB[i] = atoms->atomtype[i];
+                break;
+            }
+        }
+        if (j == nxh)
+        {
+            gmx_fatal(FARGS,"No atom type translation found for %s",
+                      *(atoms->atomtype[i]));
+        }
+    }
+#else
     OpenBabel::OBTypeTable obt;
     std::string src,dst;
     int i;
@@ -172,6 +217,7 @@ void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
             atoms->atomtypeB[i] = atoms->atomtype[i];
         }
     }
+#endif
 }
 
 static void gmx_molprop_read_babel(const char *g98,
