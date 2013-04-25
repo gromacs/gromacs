@@ -286,6 +286,7 @@ void Calculation::Merge(Calculation& src)
         
         cai->GetCoords(&x,&y,&z);
         caa.SetCoords(x,y,z);
+        caa.SetUnit(cai->GetUnit());
         
         for(AtomicChargeIterator aci=cai->BeginQ(); (aci<cai->EndQ()); aci++)
         {
@@ -387,7 +388,9 @@ void MolProp::Merge(MolProp& src)
     SetFormula(src.GetFormula());
     SetMass(src.GetMass());
     if (GetMultiplicity() <= 1)
+    {
         SetMultiplicity(src.GetMultiplicity());
+    }
     else 
     {
         smult = src.GetMultiplicity();

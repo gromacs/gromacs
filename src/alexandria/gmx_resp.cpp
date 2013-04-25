@@ -72,6 +72,7 @@
 #include <atomprop.h>
 #include "nmsimplex.h"
 #include "gromacs/coulombintegrals.h"
+#include "poldata.h"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
 
@@ -80,9 +81,9 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  int iModel,char **dzatoms)
 {
     int  k,zz;
-    gmx_bool bRestr; 
+    bool bRestr; 
        
-    bRestr = FALSE;
+    bRestr = false;
     if (NULL != dzatoms)
     {
         k = 0;
@@ -96,6 +97,9 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
     ra->atype       = atype;
     ra->atomtype    = strdup(atomtype);
     ra->nZeta       = gmx_poldata_get_nzeta(pd,iModel,ra->atomtype);
+    if (ra->nZeta <= 0)
+        gmx_fatal(FARGS,"No support in force field %s for atom type %s",
+                  get_eemtype_name(iModel),atomtype);
     ra->bRestrained = bRestr;
         
     snew(ra->zeta,ra->nZeta);
@@ -137,11 +141,11 @@ real gmx_ra_get_q(gmx_ra *ra)
     return q;
 }
 
-gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int iModel,
-                         gmx_bool bAXpRESP,real qfac,real b_hyper,real qtot,
-                         real zmin,real zmax,real delta_z,gmx_bool bZatype,
-                         real watoms,real rDecrZeta,gmx_bool bRandZeta,
-                         real penalty_fac,gmx_bool bFitZeta,gmx_bool bEntropy,
+gmx_resp_t gmx_resp_init(int iModel,
+                         bool bAXpRESP,real qfac,real b_hyper,real qtot,
+                         real zmin,real zmax,real delta_z,bool bZatype,
+                         real watoms,real rDecrZeta,bool bRandZeta,
+                         real penalty_fac,bool bFitZeta,bool bEntropy,
                          const char *dzatoms)
 {
     gmx_resp_t gr;
@@ -169,6 +173,7 @@ gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int iModel,
     gr->bZatype   = bZatype;
     gr->rDecrZeta = rDecrZeta;
     gr->bRandZeta = bRandZeta;
+    gr->bRandQ    = true;
     gr->bFitZeta  = bFitZeta;
     gr->watoms    = watoms;
     gr->nparam    = 0;
@@ -182,7 +187,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
     int   i;
     const char  *rnm;
     
-    init_t_atoms(atoms,gr->natom,TRUE);
+    init_t_atoms(atoms,gr->natom,true);
     if (NULL == (*x)) 
     {
         snew((*x),atoms->nr);
@@ -291,9 +296,9 @@ void gmx_resp_summary(FILE *fp,gmx_resp_t gr,int *symmetric_atoms)
     }
 }
  
-enum { eparmQ, eparmZ, eparmNR };
+enum eParm { eparmQ, eparmZ, eparmNR };
 
-void gmx_resp_add_param(gmx_resp_t gr,int atom,int eparm,int zz)
+void gmx_resp_add_param(gmx_resp_t gr,int atom,eParm eparm,int zz)
 {
     range_check(atom,0,gr->natom);
     if ((zz >= 0) && (zz < gr->ra[atom].nZeta))
@@ -318,7 +323,7 @@ void gmx_resp_add_param(gmx_resp_t gr,int atom,int eparm,int zz)
     }
 }
 
-void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,int *symmetric_atoms)
+void gmx_resp_add_atom_symmetry(gmx_resp_t gr,int *symmetric_atoms)
 {
     int        i,k,zz;
     
@@ -555,10 +560,10 @@ void gmx_resp_write_rho(gmx_resp_t gr,const char *fn,char *title)
     gmx_resp_write_diff_cube(NULL,gr,fn,NULL,title,NULL,1);
 }
 
-void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly)
+void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,bool bESPonly)
 {
     char   **strings;
-    gmx_bool   bOK;
+    bool   bOK;
     double lx,ly,lz,pp,qq; 
     int    nlines,line=0,m,ix,iy,iz,n,anr,nxyz[DIM];
     double origin[DIM],space[DIM];
@@ -832,48 +837,6 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
     }
 }
 
-void gmx_resp_read(gmx_resp_t gr,const char *fn)
-{
-    FILE *fp;
-    double x,y,z,V;
-    int i,natom,nesp,charge;
-    
-    fp = ffopen(fn,"r");
-    (void) fscanf(fp,"%d%d%d",&natom,&nesp,&charge);
-
-    gr->nesp   = nesp;
-    if (charge != gr->qtot)
-    {
-        fprintf(stderr,"WARNING: Total charge in Gaussian file is %d, while on command line %g was given",
-                charge,gr->qtot);
-        fprintf(stderr,"         Using value from the input file %s.\n",fn);
-        gr->qtot = charge;
-        gr->qsum = charge;
-    }
-    snew(gr->x,gr->natom);
-    snew(gr->esp,gr->nesp);
-    snew(gr->pot,gr->nesp);
-    snew(gr->pot_calc,gr->nesp);
-    for(i=0; (i<gr->natom); i++) 
-    {
-        (void) fscanf(fp,"%lf%lf%lf",&x,&y,&z);
-        gr->x[i][XX] = convert2gmx(x,eg2cAngstrom);
-        gr->x[i][YY] = convert2gmx(y,eg2cAngstrom);
-        gr->x[i][ZZ] = convert2gmx(z,eg2cAngstrom);
-    }
-
-    for(i=0; (i<gr->nesp); i++) 
-    {
-        (void) fscanf(fp,"%lf%lf%lf%lf",&V,&x,&y,&z);
-        gr->pot[i] = convert2gmx(V,eg2cHartree_e);
-        gr->esp[i][XX] = convert2gmx(x,eg2cAngstrom);
-        gr->esp[i][YY] = convert2gmx(y,eg2cAngstrom);
-        gr->esp[i][ZZ] = convert2gmx(z,eg2cAngstrom);
-    }
-  
-    ffclose(fp);
-}
-
 static void gmx_resp_warning(const char *fn,int line)
 {
     fprintf(stderr,"WARNING: It seems like you have two sets of ESP data in your file\n         %s\n",fn);
@@ -885,189 +848,16 @@ const char *gmx_resp_get_stoichiometry(gmx_resp_t gr)
     return gr->stoichiometry;
 }
 
-void gmx_resp_read_log(gmx_resp_t gr,gmx_atomprop_t aps,gmx_poldata_t pd,
-                       const char *fn)
-{
-/* Read a gaussian log file */
-    char **strings=NULL;
-    char sbuf[STRLEN];
-    int  nstrings,atomicnumber=-1;
-    double x,y,z,V;
-    int i,k,kk,anumber,natom,nesp,nelprop,charge,nfitpoints=-1;
-    gmx_bool bWarnESP=FALSE;
-    gmx_bool bAtomicCenter=FALSE;
-    
-    nstrings = get_file(fn,&strings);
-    natom = 0;
-    nesp = 0;
-    nelprop = NOTSET;
-    charge = NOTSET;
-    for(i=0; (i<nstrings); i++) 
-    {
-        bAtomicCenter = (NULL != strstr(strings[i],"Atomic Center"));
-        
-        if (NULL != strstr(strings[i],"fitting atomic charges"))
-        {
-            if (1 == sscanf(strings[i],"%d",&kk))
-            {
-                if (nfitpoints == -1)
-                {
-                    nfitpoints = kk;
-                }
-                else
-                {
-                    if (!bWarnESP)
-                    {
-                        gmx_resp_warning(fn,i+1);
-                        bWarnESP = TRUE;
-                    }
-                    if (kk != nfitpoints)
-                        fprintf(stderr,"nfitpoints was %d, now is %d\n",
-                                nfitpoints,kk);
-                    nfitpoints = kk;
-                }
-            }
-        }
-        else if (NULL != strstr(strings[i],"Stoichiometry"))
-        {
-            if (1 == sscanf(strings[i],"%*s%s",sbuf))
-            {
-                if (NULL != gr->stoichiometry)
-                    sfree((char *)gr->stoichiometry);
-                gr->stoichiometry = strdup(sbuf);
-            }
-        }
-        else if (NULL != strstr(strings[i],"Coordinates (Angstroms)"))
-        {
-            atomicnumber = i;
-        }
-        else if ((atomicnumber >= 0) && (i >= atomicnumber+3))
-        {
-            if (6 == sscanf(strings[i],"%d%d%d%lf%lf%lf",
-                            &k,&anumber,&kk,&x,&y,&z))
-            {
-                if (natom+1 != k)
-                {
-                    if (!bWarnESP)
-                    {
-                        gmx_resp_warning(fn,i+1);
-                        bWarnESP = TRUE;
-                    }
-                }
-                else
-                {
-                    natom++;
-                    srenew(gr->x,natom);
-                    srenew(gr->ra,natom);
-                    gmx_ra_init(&gr->ra[natom-1],
-                                anumber,-1,gmx_atomprop_element(aps,anumber),pd,
-                                gr->iModel,gr->dzatoms);
-                }
-                gr->x[k-1][XX] = convert2gmx(x,eg2cAngstrom);
-                gr->x[k-1][YY] = convert2gmx(y,eg2cAngstrom);
-                gr->x[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
-                if (NULL != debug)
-                    fprintf(debug,"Coordinates for atom %d found on line %d %8.3f  %8.3f  %8.3f\n",k,i,x,y,z);
-            }
-            else
-                atomicnumber = -1;
-        }
-        else if (NULL != strstr(strings[i],"Charge ="))
-        {
-            if (1 != sscanf(strings[i],"%*s%*s%d",&charge))
-                fprintf(stderr,"Can not read the charge on line %d of file %s\n",i+1,fn);
-        }
-        else if (bAtomicCenter || (NULL != strstr(strings[i],"ESP Fit Center")))
-        {
-            if ((bAtomicCenter  && (4 != sscanf(strings[i],"%*s%*s%d%*s%*s%lf%lf%lf",&k,&x,&y,&z))) ||
-                (!bAtomicCenter && (4 != sscanf(strings[i],"%*s%*s%*s%d%*s%*s%lf%lf%lf",&k,&x,&y,&z))))
-                fprintf(stderr,"Warning something fishy on line %d of file %s\n",i+1,fn);
-            else
-            {
-                if (bAtomicCenter)
-                {
-                    if (k > natom)
-                    {
-                        natom++;
-                        srenew(gr->x,natom);
-                    }
-                    gr->x[k-1][XX] = convert2gmx(x,eg2cAngstrom);
-                    gr->x[k-1][YY] = convert2gmx(y,eg2cAngstrom);
-                    gr->x[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
-                    if (NULL != debug)
-                        fprintf(debug,"Coordinates for atom %d found on line %d %8.3f  %8.3f  %8.3f\n",k,i,x,y,z);
-                }
-                if (k > nesp)
-                {
-                    nesp++;
-                    srenew(gr->esp,nesp);
-                }
-                gr->esp[k-1][XX] = convert2gmx(x,eg2cAngstrom);
-                gr->esp[k-1][YY] = convert2gmx(y,eg2cAngstrom);
-                gr->esp[k-1][ZZ] = convert2gmx(z,eg2cAngstrom);
-                if (NULL != debug)
-                    fprintf(debug,"Coordinates for fit %d found on line %d\n",k,i);
-            }
-        }
-        else if (NULL != strstr(strings[i],"Electrostatic Properties (Atomic Units)"))
-        {
-            if ((NOTSET != nelprop) && (!bWarnESP))
-            {
-                gmx_resp_warning(fn,i+1);
-                bWarnESP = TRUE;
-            }
-            nelprop = i;
-            snew(gr->pot,nesp);
-        }
-        else if ((NOTSET != nelprop) && (i >= nelprop+6) && (i < nelprop+6+natom+nfitpoints))
-        {
-            if (2 != sscanf(strings[i],"%d%*s%lf",&k,&V))
-                fprintf(stderr,"Warning something fishy on line %d of file %s\n",i+1,fn);
-            if ((k-1) != (i-nelprop-6))
-                fprintf(stderr,"Warning something fishy with fit center number on line %d of file %s\n",i+1,fn);
-            if (k-1 >= nesp)
-                fprintf(stderr,"More potential points (%d) than fit centers (%d). Check line %d of file %s\n",
-                        k,nesp,i+1,fn);
-            gr->pot[k-1] = convert2gmx(V,eg2cHartree_e);
-            if (NULL != debug)
-                fprintf(debug,"Potential %d found on line %d\n",k,i);
-        }
-        else if (strstr(strings[i],"GINC")) 
-        {
-            trim(strings[i]);
-        }
-        sfree(strings[i]);
-    }
-    if (debug)
-        fprintf(debug,"Found %d atoms, %d esp points, and %d fitpoints\n",natom,nesp,nfitpoints);
-    sfree(strings);
-    gr->natom  = natom;
-    gr->nesp   = nesp;
-    
-    if ((charge == NOTSET) || (natom == 0)) 
-        gmx_fatal(FARGS,"Error reading Gaussian log file.");
-  
-    if  (charge != gr->qtot)
-    {
-        fprintf(stderr,"WARNING: Total charge in Gaussian file is %d, while on command line %g was given.\n",
-                charge,gr->qtot);
-        fprintf(stderr,"         Using value from the input file %s.\n",fn);
-        gr->qtot = charge;
-        gr->qsum = charge;
-    }
-    if (gr->nesp > 0) {
-        snew(gr->pot_calc,gr->nesp);
-    }
-}
-
-static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom,
+static void get_set_vector(gmx_resp_t gr,
+                           bool bSet,
+                           bool bRandQ,bool bRandZeta,
                            double *nmx)
 {
     int    i,n,zz,zzz,nrest;
     double qtot,dq,qi,zeta;
     gmx_rng_t rnd=NULL;
     
-    if (bSet && bRandom)
+    if (bSet && (bRandQ || bRandZeta))
         rnd = gmx_rng_init(gmx_rng_make_seed());
     gr->penalty = 0;
     n           = 0;
@@ -1086,7 +876,7 @@ static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom
                     if (gr->ra[i].q[zz] == 0)
                     {
                         nmx[n] = -qi;
-                        if (bRandom)
+                        if (bRandQ)
                             nmx[n] += 0.2*(gmx_rng_uniform_real(rnd)-0.5);
                     }
                     else
@@ -1116,7 +906,7 @@ static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom
                             if (zmax < zmin)
                                 zmax = (zmin+gr->ra[i].zeta[zz-1])/2;
                         }
-                        if (bRandom)
+                        if (bRandZeta)
                         {
                             nmx[n] = zmin + (zmax-zmin)*gmx_rng_uniform_real(rnd);
                         }
@@ -1220,7 +1010,7 @@ static void get_set_vector(FILE *fp,gmx_resp_t gr,gmx_bool bSet,gmx_bool bRandom
             }
         }
     }
-    if (bSet && bRandom)
+    if (NULL != rnd)
         gmx_rng_destroy(rnd);
     if (n != gr->nparam)
         gmx_fatal(FARGS,"Whoopsydaisies! n = %d, should be %d. bSet = %d",n,gr->nparam,bSet);
@@ -1367,7 +1157,7 @@ static double charge_function(void *params,double v[])
     double rms = 0;
     real wtot;
     
-    get_set_vector(debug,gr,FALSE,FALSE,v);
+    get_set_vector(gr,false,false,false,v);
     gmx_resp_calc_pot(gr);
     gmx_resp_calc_penalty(gr);
     rms = gmx_resp_get_rms(gr,&wtot);
@@ -1396,7 +1186,7 @@ int gmx_resp_optimize_charges(FILE *fp,gmx_resp_t gr,int maxiter,
     
     snew(param,gr->nparam);
     
-    get_set_vector(NULL,gr,TRUE,gr->bRandZeta,param);
+    get_set_vector(gr,true,gr->bRandQ,gr->bRandZeta,param);
 
     bConv = nmsimplex(fp,(void *)gr,charge_function,param,gr->nparam,
                       toler,1,maxiter,&ccc);
@@ -1413,7 +1203,7 @@ int gmx_resp_optimize_charges(FILE *fp,gmx_resp_t gr,int maxiter,
     else
         *rms = gr->rms;
     
-    get_set_vector(debug,gr,FALSE,FALSE,param);
+    get_set_vector(gr,false,false,false,param);
 
     sfree(param);
 

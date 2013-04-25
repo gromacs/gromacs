@@ -46,7 +46,7 @@
 extern "C" {
 #endif
 
-extern void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
+extern void gmx_poldata_write(const char *fn,gmx_poldata_t pd,
 			      gmx_bool bCompress);
 
 extern gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps);

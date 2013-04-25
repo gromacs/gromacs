@@ -53,7 +53,7 @@ gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,
 		 real epsr);
 
 extern void 
-gentop_qgen_done(t_atoms *atoms,gentop_qgen_t qgen);
+gentop_qgen_done(gentop_qgen_t qgen);
 
 extern int 
 generate_charges_sm(FILE *fp,gentop_qgen_t qgen,

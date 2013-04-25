@@ -214,7 +214,7 @@ int main(int argc, char *argv[])
     real       mu;
     gmx_bool   bPDB,bRTP,bTOP;
     t_symtab   symtab;
-    int        iModel,nbond;
+    int        nbond;
     double     *bondorder;
     real       mtot;
     const char *fn,*xmlf;
@@ -445,7 +445,7 @@ int main(int argc, char *argv[])
     /* Check command line options of type enum */
     eDih edih = (eDih) get_option(dihopt);
     eChargeGroup ecg = (eChargeGroup) get_option(cgopt);
-
+    int iModel;
     if ((iModel = name2eemtype(cqgen[0])) == -1)
         gmx_fatal(FARGS,"Invalid model %s. How could you!\n",cqgen[0]);
     
@@ -495,32 +495,26 @@ int main(int argc, char *argv[])
     bQsym = bQsym || (opt2parg_bSet("-symm",asize(pa),pa));
     
     mymol.Merge(*mpi);
+    mymol.SetForceField(forcefield);
     
-    mymol.gr = gmx_resp_init(pd,iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
-                             zmin,zmax,delta_z,
-                             bZatype,watoms,rDecrZeta,bRandZeta,penalty_fac,bFitZeta,
-                             bEntropy,dzatoms);
-    if (NULL != mymol.gr)
-    {
-        imm = immOK;
-    }
-    else
-    {
-        imm = immError;
-    }
+    imm = mymol.GenerateTopology(aps,pd,lot,"ESP",bAddShells,nexcl);
     
     if (immOK == imm)
     {
-        mymol.SetForceField(forcefield);
+        mymol.gr = gmx_resp_init(iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
+                                 zmin,zmax,delta_z,
+                                 bZatype,watoms,rDecrZeta,bRandZeta,penalty_fac,bFitZeta,
+                                 bEntropy,dzatoms);
+        if (NULL == mymol.gr)
+        {
+            imm = immRespInit;
+        }
     }
-    if (immOK == imm)
-    {
-        imm = mymol.GenerateTopology(aps,pd,lot,"ESP",bAddShells,bQsym,symm_string,nexcl);
-    }
+
     if (immOK == imm)
     {
         imm = mymol.GenerateCharges(pd,aps,iModel,hfac,epsr,
-                                    qtol,maxiter,maxcycle,lot);
+                                    qtol,maxiter,maxcycle,lot,bQsym,symm_string);
     }
     if (immOK == imm)
     {
@@ -539,12 +533,12 @@ int main(int argc, char *argv[])
     }
     if (immOK == imm)
     {
-         mymol.GenerateVsitesShells(pd,bGenVSites,bAddShells,bPairs,edih);
+        mymol.GenerateVsitesShells(pd,bGenVSites,bAddShells,bPairs,edih);
     }
     if (immOK == imm)
     {
-         mymol.GenerateChargeGroups(bVerbose,ecg,bUsePDBcharge,
-                                    opt2fn("-n",NFILE,fnm),nmol);
+        mymol.GenerateChargeGroups(ecg,bUsePDBcharge,
+                                   opt2fn("-n",NFILE,fnm),nmol);
     }
 #ifdef KOKO
     printf("Total charge is %g, total mass is %g, dipole is %g D\n",
@@ -563,7 +557,7 @@ int main(int argc, char *argv[])
         {    
             mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
                                 ftp2fn(efTOP,NFILE,fnm),
-                                pd,iModel,forcefield);
+                                pd,iModel,forcefield,bVerbose);
         }
         else if (bRTP) 
         {

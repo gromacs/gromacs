@@ -9,12 +9,15 @@
     <atype elem="C" description="Aromatic" gt_type="CRA" miller_equiv="CTR" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Condensed Aromatic" gt_type="CRB" miller_equiv="CBR" charge="0" polarizability="1.76736" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Alkane Aliphatic" gt_type="CTA" miller_equiv="CTE" charge="0" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="Alkane Aliphatic" gt_type="C3" miller_equiv="CTE" charge="0" polarizability="1.26585" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Alkane Polar" gt_type="CTP" miller_equiv="CTE" charge="0" polarizability="1.49715" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="C" description="Alkene" gt_type="CTR" miller_equiv="CTR" charge="0" polarizability="1.4966" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="Cl" description="" gt_type="Cl" miller_equiv="Cl" charge="0" polarizability="2.27668" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="F" description="" gt_type="F" miller_equiv="F" charge="0" polarizability="0.348558" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="H" description="Aliphatic" gt_type="HA" miller_equiv="H" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="H" description="Polar" gt_type="HP" miller_equiv="H" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
+    <atype elem="H" description="Polar" gt_type="HO" miller_equiv="H" charge="0" polarizability="0.355658" sigma_pol="0" vdwparams="1e-5 1e-10"/>
+    <atype elem="H" description="Aliphatic" gt_type="H" miller_equiv="H" charge="0" polarizability="0.293428" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="I" description="" gt_type="I" miller_equiv="I" charge="0" polarizability="5.49431" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="N" description="Nitrile" gt_type="NDI" miller_equiv="NDI" charge="0" polarizability="0.90044" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="N" description="Aromatic" gt_type="NPI2" miller_equiv="NPI2" charge="0" polarizability="0.925125" sigma_pol="0" vdwparams="1 1"/>
@@ -24,6 +27,7 @@
     <atype elem="O" description="Aromatic" gt_type="OPI2" miller_equiv="OPI2" charge="0" polarizability="0.505675" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Ester" gt_type="OTE" miller_equiv="OTE" charge="0" polarizability="0.250382" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Alcohol" gt_type="OTH" miller_equiv="OTE" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="Alcohol" gt_type="O3" miller_equiv="OTE" charge="0" polarizability="0.419881" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Doubly bonded" gt_type="OTR4" miller_equiv="OTR4" charge="0" polarizability="0.613507" sigma_pol="0" vdwparams="1 1"/>
     <atype elem="O" description="Water" gt_type="OW" miller_equiv="OTE" charge="0" polarizability="0.7" sigma_pol="0" vdwparams="1e-3 2e-6"/>
     <atype elem="P" description="" gt_type="PTE" miller_equiv="PTE" charge="0" polarizability="2.64097" sigma_pol="0" vdwparams="1 1"/>
@@ -1540,13 +1544,16 @@
   </symmetric_charges>
   <eemprops>
     <eemprop model="AXp" name="HA" jaa="24.4306" chi="2.2" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="H" jaa="24.4306" chi="2.2" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="HP" jaa="19.4656" chi="2.16598" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="HO" jaa="19.4656" chi="2.16598" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="BR" jaa="24.1408" chi="4.88474" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="CDI" jaa="12.7396" chi="2.5644" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="C2O" jaa="14.4632" chi="1.03633" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="CTR" jaa="17.4792" chi="3.52573" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="CRB" jaa="16.9897" chi="1.23067" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="CTA" jaa="23.5304" chi="2.43391" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="C3" jaa="23.5304" chi="2.43391" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="CTP" jaa="25.8324" chi="10.0956" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="NDI" jaa="20.3808" chi="8.83108" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="NPI2" jaa="12.4496" chi="1.07492" zeta="0" charge="0" row="1"/>
@@ -1556,6 +1563,7 @@
     <eemprop model="AXp" name="OTR4" jaa="23.4406" chi="9.26716" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="OTE" jaa="29.3594" chi="7.36583" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="OTH" jaa="29.9999" chi="10.9108" zeta="0" charge="0" row="1"/>
+    <eemprop model="AXp" name="O3" jaa="29.9999" chi="10.9108" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="F" jaa="28.2715" chi="5.24103" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="I" jaa="17.7799" chi="4.29432" zeta="0" charge="0" row="1"/>
     <eemprop model="AXp" name="PTE" jaa="13.9092" chi="3.84663" zeta="0" charge="0" row="1"/>

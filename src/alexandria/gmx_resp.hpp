@@ -47,7 +47,7 @@
 typedef struct 
 {
     int  *row,atomnumber,atype;
-    gmx_bool bRestrained;
+    bool bRestrained;
     char *atomtype;
     int  nZeta;
     real *q,*zeta,*zeta_ref;
@@ -60,9 +60,10 @@ typedef struct gmx_resp
     double qtot,qsum,watoms;
     double rms,rrms,penalty,pfac,entropy,wtot;
     dvec   origin,space;
-    gmx_bool   bZatype,bRandZeta,bFitZeta,bEntropy;
+    bool   bZatype,bFitZeta,bEntropy;
+    bool   bRandZeta,bRandQ;
+    bool   bAXpRESP;
     ivec   nxyz;
-    gmx_bool   bAXpRESP;
     real   qfac,b_hyper,zmin,zmax,delta_z,qmin,qmax,rDecrZeta;
     int    nparam; /* Total number of parameters */
     gmx_ra *ra;
@@ -83,12 +84,12 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms);
 
-gmx_resp_t gmx_resp_init(gmx_poldata_t pd,int eqg_model,
-                         gmx_bool bAXpRESP,real qfac,real b_hyper,real qtot,
-                         real zmin,real zmax,real delta_z,gmx_bool bZatyp,
+gmx_resp_t gmx_resp_init(int eqg_model,
+                         bool bAXpRESP,real qfac,real b_hyper,real qtot,
+                         real zmin,real zmax,real delta_z,bool bZatyp,
                          real watoms,real rDecrZeta,
-                         gmx_bool bRandZeta,real penalty_fac,gmx_bool bFitZeta,
-                         gmx_bool bEntropy,const char *dzatoms);
+                         bool bRandZeta,real penalty_fac,bool bFitZeta,
+                         bool bEntropy,const char *dzatoms);
 				
 void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[]);
   
@@ -110,7 +111,7 @@ void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,
 
 const char *gmx_resp_get_stoichiometry(gmx_resp_t gr);
 
-void gmx_resp_add_atom_symmetry(gmx_resp_t gr,gmx_poldata_t pd,
+void gmx_resp_add_atom_symmetry(gmx_resp_t gr,
                                 int *symmetric_atoms);
 
 void gmx_resp_add_point(gmx_resp_t gr,double x,double y,
@@ -132,7 +133,7 @@ void gmx_resp_calc_rho(gmx_resp_t gr);
 
 void gmx_resp_calc_pot(gmx_resp_t gr);
 
-void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,gmx_bool bESPonly);
+void gmx_resp_read_cube(gmx_resp_t gr,const char *fn,bool bESPonly);
 
 void gmx_resp_write_cube(gmx_resp_t gr,const char *fn,char *title);
 
@@ -144,9 +145,6 @@ void gmx_resp_write_diff_cube(gmx_resp_t grref,gmx_resp_t gr,
 
 void gmx_resp_write_histo(gmx_resp_t gr,const char *fn,
                           char *title,output_env_t oenv);
-
-void gmx_resp_read_log(gmx_resp_t grt,gmx_atomprop_t aps,
-                       gmx_poldata_t pd,const char *fn);
 
 int  gmx_resp_optimize_charges(FILE *fp,gmx_resp_t grt,int maxiter,
                                real toler,real *rms);

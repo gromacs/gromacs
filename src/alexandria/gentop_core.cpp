@@ -567,7 +567,7 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
     int is,anr_central,anr_attached,nrq;
     int hs[8];
     double qaver,qsum;
-    int *sc;
+    int *sc,hsmin;
     
     snew(sc,atoms->nr);
     for(i=0; (i<atoms->nr); i++) 
@@ -597,6 +597,7 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
             {  
                 anr_central  = gmx_atomprop_atomnumber(aps,central);
                 anr_attached = gmx_atomprop_atomnumber(aps,attached);
+                hsmin = -1;
                 for(i=0; (i<atoms->nr); i++) 
                 {
                     if (atoms->atom[i].atomnumber == anr_central) 
@@ -613,13 +614,14 @@ int *symmetrize_charges(gmx_bool bQsym,t_atoms *atoms,
                                 hs[nh++] = aj;
                             else if ((aj == i) && (anri == anr_attached))
                                 hs[nh++] = ai; 
+                            if ((hsmin == -1) || (hs[nh-1] < hsmin))
+                                hsmin = hs[nh-1];
                         }
-                        if (nh == nattached) 
+                        if ((nh == nattached) && (hsmin != -1))
                         {
                             for(j=0; (j<nattached); j++) 
                             {
-                                if (j > 0)
-                                    sc[hs[j]] = hs[0];
+                                sc[hs[j]] = hsmin;
                             }
                         }
                     }

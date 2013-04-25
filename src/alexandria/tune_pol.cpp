@@ -355,7 +355,7 @@ int main(int argc,char *argv[])
     {
         MolPropSort(mp,mpsa,ap,NULL);
     }
-    gmx_poldata_write(opt2fn("-do",NFILE,fnm),pd,ap,bCompress);
+    gmx_poldata_write(opt2fn("-do",NFILE,fnm),pd,bCompress);
     MolPropWrite(opt2fn("-o",NFILE,fnm),mp,bCompress);
     thanx(stdout);
   

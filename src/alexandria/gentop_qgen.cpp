@@ -598,7 +598,7 @@ gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,gmx_atomprop_t aps,
         return (gentop_qgen_t) qgen;
     else
     {
-        gentop_qgen_done(atoms,qgen);
+        gentop_qgen_done(qgen);
         sfree(qgen);
         
         return NULL;
@@ -646,7 +646,7 @@ static void qgen_print(FILE *fp,t_atoms *atoms,gentop_qgen *qgen)
 }
 
 void 
-gentop_qgen_done(t_atoms *atoms,gentop_qgen *qgen) 
+gentop_qgen_done(gentop_qgen *qgen) 
 {
     int  i;
   
@@ -902,9 +902,6 @@ int generate_charges(FILE *fp,
         gentop_qgen_get_params(qgen,gr);
         qgen_print(fp,atoms,qgen);
     }
-    if (chi2min < 0.01)
-        return qgen->eQGEN;
-    else
-        return eQGEN_NOTCONVERGED;
+    return qgen->eQGEN;
 }
 

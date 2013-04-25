@@ -191,8 +191,7 @@ static int clean_index_count(t_index_count *ic,int minimum_data,FILE *fp)
 static int check_data_sufficiency(FILE *fp,
                                   std::vector<alexandria::MyMol> mol,
                                   int minimum_data,gmx_poldata_t pd,
-                                  t_index_count *ic,gmx_atomprop_t aps,
-                                  int iModel,char *opt_elem,char *const_elem,
+                                  t_index_count *ic, int iModel,char *opt_elem,char *const_elem,
                                   t_commrec *cr,gmx_bool bPol,
                                   gmx_bool bFitZeta)
 {
@@ -376,7 +375,7 @@ void MolDip::Init(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
 
 void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                   int minimum_data,
-                  gmx_bool bZero,gmx_bool bWeighted,
+                  gmx_bool bZero,
                   char *opt_elem,char *const_elem,
                   char *lot,gmx_bool bCharged,
                   output_env_t oenv,gmx_molselect_t gms,
@@ -446,7 +445,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 mpnew.Merge(*mpi);
                 //mpnew.GenerateTopology(ap,_pd,lot
                 
-                imm = mpnew.Init(fp,gap,
+                imm = mpnew.Initxx(fp,gap,
                                  _bQM,lot,bZero,
                                  _pd,_atomprop,
                                  _iModel,_cr,&nwarn,bCharged,oenv,
@@ -500,7 +499,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
             alexandria::MyMol mpnew;
             
             mpnew.Receive(_cr,0);
-            imm = mpnew.Init(fp,gap,_bQM,lot,bZero,
+            imm = mpnew.Initxx(fp,gap,_bQM,lot,bZero,
                              _pd,_atomprop,
                              _iModel,_cr,&nwarn,bCharged,oenv,
                              th_toler,ph_toler,dip_toler,_hfac,
@@ -535,7 +534,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     {
         _nmol_support =
             check_data_sufficiency(MASTER(_cr) ? fp : NULL,_mymol,
-                                   minimum_data,_pd,_ic,_atomprop,
+                                   minimum_data,_pd,_ic,
                                    _iModel,opt_elem,const_elem,_cr,
                                    _bPol,_bFitZeta);
         if (_nmol_support == 0)

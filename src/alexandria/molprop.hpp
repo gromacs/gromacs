@@ -1064,7 +1064,7 @@ private:
     std::vector<Bond> _bond;
 public:
     //! Construct a number MolProp object
-    MolProp() {}
+    MolProp() { _mass = 0; _charge = 0; _multiplicity = 0; }
     
     //! Destructor
     ~MolProp() {}

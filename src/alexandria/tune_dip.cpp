@@ -945,7 +945,7 @@ int main(int argc, char *argv[])
     md.Read(fp ? fp : (debug ? debug : NULL),
             opt2fn("-f",NFILE,fnm),
             opt2fn_null("-d",NFILE,fnm),
-            minimum_data,bZero,bWeighted,
+            minimum_data,bZero,
             opt_elem,const_elem,
             lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
             TRUE,TRUE,TRUE,watoms,TRUE);
@@ -963,7 +963,7 @@ int main(int argc, char *argv[])
   
         ffclose(fp);
   
-        gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,md._atomprop,compress);
+        gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,compress);
   
         thanx(stdout);
     }

@@ -149,7 +149,7 @@ static void sp(int n, char buf[], int maxindent)
 }
 
 static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
-                         int indent,gmx_poldata_t pd,gmx_atomprop_t aps)
+                         int indent,gmx_poldata_t pd)
 {
     char *attrname,*attrval;
     char buf[100];
@@ -376,7 +376,7 @@ static void process_tree(FILE *fp,xmlNodePtr tree,int parent,int indent,
             if (-1 != elem) 
             {
                 if (elem != exmlGENTOP)
-                    process_attr(fp,tree->properties,elem,indent+2,pd,aps);
+                    process_attr(fp,tree->properties,elem,indent+2,pd);
                 
                 if (tree->children)
                     process_tree(fp,tree->children,elem,indent+2,pd,aps);
@@ -415,14 +415,13 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
     xmlFreeDoc(doc);
   
     if (NULL != debug)
-        gmx_poldata_write("pdout.dat",pd,aps,0);
+        gmx_poldata_write("pdout.dat",pd,0);
     sfree(fn2);
       
     return pd;
 }
 
-static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
-                            gmx_atomprop_t aps)
+static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
 {
     xmlNodePtr child,grandchild,comp;
     int    i,atomnumber,numbonds,nexcl,
@@ -630,7 +629,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd,
     }
 }
 
-void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
+void gmx_poldata_write(const char *fn,gmx_poldata_t pd,
                        gmx_bool bCompress)
 {
     xmlDocPtr  doc;
@@ -655,7 +654,7 @@ void gmx_poldata_write(const char *fn,gmx_poldata_t pd,gmx_atomprop_t aps,
     myroot->prev = (xmlNodePtr) dtd;
     
     /* Add molecule definitions */
-    add_xml_poldata(myroot,pd,aps);
+    add_xml_poldata(myroot,pd);
 
     xmlSetDocCompressMode(doc,(int)bCompress);
     xmlIndentTreeOutput = 1;

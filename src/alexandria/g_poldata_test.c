@@ -50,7 +50,7 @@ int main(int argc,char*argv[])
   }
   aps = gmx_atomprop_init();
   pd = gmx_poldata_read(argv[1],aps);
-  gmx_poldata_write(argv[2],pd,aps,0);
+  gmx_poldata_write(argv[2],pd,0);
   
   return 0;
 }

@@ -55,7 +55,7 @@ public:
               gmx_bool bPol,gmx_bool bFitZeta);
     void Read(FILE *fp,const char *fn,const char *pd_fn,
               int minimum_data,
-              gmx_bool bZero,gmx_bool bWeighted,
+              gmx_bool bZero,
               char *opt_elem,char *const_elem,
               char *lot,gmx_bool bCharged,
               output_env_t oenv,gmx_molselect_t gms,

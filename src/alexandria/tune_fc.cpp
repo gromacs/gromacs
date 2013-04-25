@@ -1439,7 +1439,7 @@ int main(int argc, char *argv[])
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f",NFILE,fnm),
              opt2fn_null("-d",NFILE,fnm),
-             minimum_data,bZero,bWeighted,
+             minimum_data,bZero,
              opt_elem,const_elem,
              lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
              TRUE,TRUE,TRUE,watoms,FALSE);
@@ -1461,7 +1461,7 @@ int main(int argc, char *argv[])
     print_moldip_mols(fp,opt._mymol,TRUE,TRUE);
     opt.PrintSpecs(fp,(char *)"After optimization",opt2fn("-x",NFILE,fnm),oenv);
     
-    gmx_poldata_write(opt2fn("-o",NFILE,fnm),opt._pd,opt._atomprop,compress);
+    gmx_poldata_write(opt2fn("-o",NFILE,fnm),opt._pd,compress);
     
     if (MASTER(cr)) 
     {

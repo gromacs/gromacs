@@ -60,7 +60,7 @@ public:
     //! Constructor initiating all the values stored
     GaussAtomPropVal(std::string element,std::string method, std::string desc,
                      real temp,real value) {
-        _element = element; _method == method; _desc = desc;
+        _element = element; _method = method; _desc = desc;
         _temp = temp; _value = value;
     }
 

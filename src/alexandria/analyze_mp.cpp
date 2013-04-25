@@ -558,7 +558,7 @@ int main(int argc,char *argv[])
                         opt2fn_null("-selout",NFILE,fnm));
 
     if (NULL != fn)
-        gmx_poldata_write(opt2fn("-pout",NFILE,fnm),pdref,ap,FALSE);
+        gmx_poldata_write(opt2fn("-pout",NFILE,fnm),pdref,FALSE);
     
     thanx(stdout);
   

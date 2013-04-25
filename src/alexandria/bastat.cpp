@@ -492,7 +492,7 @@ int main(int argc,char *argv[])
     md.Read(fp ? fp : (debug ? debug : NULL),
             opt2fn("-f",NFILE,fnm),
             opt2fn_null("-d",NFILE,fnm),
-            minimum_data,bZero,bWeighted,
+            minimum_data,bZero,
             opt_elem,const_elem,
             lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
             TRUE,TRUE,TRUE,watoms,FALSE);
@@ -563,7 +563,7 @@ int main(int argc,char *argv[])
         dump_histo(b,bspacing,aspacing,dspacing,oenv);
     update_pd(fp,b,md._pd,md._atomprop,Dm,beta,kt,kp);
     
-    gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,md._atomprop,compress);    
+    gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,compress);    
     
     printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
            b->nbond,b->nangle,b->ndih,b->nimp);
