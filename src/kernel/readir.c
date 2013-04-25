@@ -1080,6 +1080,13 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
     if (ir->coulombtype == eelPMESWITCH)
     {
+        sprintf(warn_buf, "%s is deprecated. For energy conservation, we advise using %s with cut-off scheme %s or cut-off scheme %s with coulomb-modifier %s.",
+                eel_names[ir->coulombtype],
+                eel_names[eelPME],
+                ecutscheme_names[ecutsVERLET],
+                ecutscheme_names[ecutsGROUP], INTMODIFIER(eintmodPOTSHIFT));
+        warning_note(wi, warn_buf);
+
         if (ir->rcoulomb_switch/ir->rcoulomb < 0.94)
         {
             sprintf(warn_buf, "The switching range for %s should be 5%% or less, energy conservation will be good anyhow, since ewald_rtol = %g",
@@ -1206,15 +1213,24 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
     {
         if (!EVDW_MIGHT_BE_ZERO_AT_CUTOFF(ir->vdwtype) && ir->rvdw > 0 && ir->vdw_modifier == eintmodNONE)
         {
-            sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use vdwtype = %s (possibly with DispCorr)",
-                    evdw_names[evdwSHIFT]);
+            sprintf(warn_buf, "You are using a cut-off for VdW interactions with NVE, for good energy conservation use an exact cut-off and with a potential shift by setting: vdw-modifier = %s",
+                    INTMODIFIER(eintmodPOTSHIFT));
             warning_note(wi, warn_buf);
         }
         if (!EEL_MIGHT_BE_ZERO_AT_CUTOFF(ir->coulombtype) && ir->rcoulomb > 0 && ir->coulomb_modifier == eintmodNONE)
         {
-            sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use coulombtype = %s or %s",
-                    eel_names[eelPMESWITCH], eel_names[eelRF_ZERO]);
-            warning_note(wi, warn_buf);
+            if (EEL_FULL(ir->coulombtype))
+            {
+                sprintf(warn_buf, "You are using a cut-off for electrostatics with NVE, for good energy conservation use an exact cut-off with a potential shift by setting: coulomb-modifier = %s",
+                        INTMODIFIER(eintmodPOTSHIFT));
+                warning_note(wi, warn_buf);
+            }
+            else
+            {
+                /* We use RF or plain cut-off, in either case advise RF-zero */
+                sprintf(warn_buf, "You are using a cut-off for reaction-field electrostatics with NVE, for good energy conservation use coulombtype = %s",
+                    eel_names[eelRF_ZERO]);
+            }
         }
     }
 
