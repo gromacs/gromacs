@@ -162,7 +162,7 @@ class TMPI_EXPORT mutex
     private:
         // forbid copy constructor & assignment
         mutex(const mutex &m);
-        mutex &operator=(const mutex &m);
+        mutex              &operator=(const mutex &m);
 
         tMPI_Thread_mutex_t handle_;
 };

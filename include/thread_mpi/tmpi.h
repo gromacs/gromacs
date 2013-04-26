@@ -174,33 +174,36 @@ extern const tMPI_Datatype TMPI_POINTER;            /**< pointer (thread_mpi
 /** Error codes */
 enum
 {
-    TMPI_SUCCESS = 0,               /*!< No error */
-    TMPI_ERR_MALLOC,                /*!< Out of memory */
-    TMPI_ERR_INIT,                  /*!< Initialization error */
-    TMPI_ERR_FINALIZE,              /*!< Finalize error */
-    TMPI_ERR_GROUP,                 /*!< Group error */
-    TMPI_ERR_COMM,                  /*!< Comm error */
-    TMPI_ERR_STATUS,                /*!< Status error */
-    TMPI_ERR_GROUP_RANK,            /*!< Group rank error */
-    TMPI_ERR_DIMS,
-    TMPI_ERR_COORDS,
-    TMPI_ERR_CART_CREATE_NPROCS,
-    TMPI_ERR_XFER_COUNTERPART,
-    TMPI_ERR_XFER_BUFSIZE,
-    TMPI_ERR_XFER_BUF_OVERLAP,
-    TMPI_ERR_SEND_DEST,
-    TMPI_ERR_RECV_SRC,
-    TMPI_ERR_BUF,
-    TMPI_ERR_MULTI_MISMATCH,
-    TMPI_ERR_OP_FN,
-    TMPI_ERR_ENVELOPES,
-    TMPI_ERR_REQUESTS,
-    TMPI_ERR_IN_STATUS,
-    TMPI_ERR_PROCNR,                /*!< Hardware processor number (such as for
-                                         thread affinity) error */
-    TMPI_FAILURE,
-    TMPI_ERR_UNKNOWN,
-    N_TMPI_ERR  /* this must be the last one */
+    TMPI_SUCCESS = 0,            /*!< No error */
+    TMPI_ERR_NO_MEM,             /*!< Out of memory */
+    TMPI_ERR_IO,                 /*!< I/O Error (used for system errors) */
+    TMPI_ERR_INIT,               /*!< Initialization error */
+    TMPI_ERR_FINALIZE,           /*!< Finalize error */
+    TMPI_ERR_GROUP,              /*!< Group error */
+    TMPI_ERR_COMM,               /*!< Comm error */
+    TMPI_ERR_STATUS,             /*!< Status error */
+    TMPI_ERR_GROUP_RANK,         /*!< Group rank error */
+    TMPI_ERR_DIMS,               /*!< Invalid topology dimensions */
+    TMPI_ERR_COORDS,             /*!< Invalid topology coordinates */
+    TMPI_ERR_CART_CREATE_NPROCS, /*!< Not enough processes for topology*/
+    TMPI_ERR_XFER_COUNTERPART,   /*!< Invalid counterpart for xfer */
+    TMPI_ERR_XFER_BUFSIZE,       /*!< buffer size too small*/
+    TMPI_ERR_XFER_BUF_OVERLAP,   /*!< buffer overlaps (thread error?)*/
+    TMPI_ERR_SEND_DEST,          /*!< Faulty send destination */
+    TMPI_ERR_RECV_SRC,           /*!< Faulty receive source */
+    TMPI_ERR_BUF,                /*!< Invalid buffer */
+    TMPI_ERR_MULTI_MISMATCH,     /*!< Comm not the same in collective call*/
+    TMPI_ERR_OP_FN,              /*!< Invalid reduce operator*/
+    TMPI_ERR_ENVELOPES,          /*!< out of envelopes (tMPI internal) */
+    TMPI_ERR_REQUESTS,           /*!< out of requests (tMPI internal) */
+    TMPI_ERR_COPY_NBUFFERS,      /*!< out of copy buffers (tMPI internal)*/
+    TMPI_ERR_COPY_BUFFER_SIZE,   /*!< copy buffer size err (tMPI internal)*/
+    TMPI_ERR_IN_STATUS,          /*!< error code in tMPI_Status */
+    TMPI_ERR_PROCNR,             /*!< Hardware processor number (such as for
+                                      thread affinity) error */
+    TMPI_FAILURE,                /*!< Transmission failure */
+    TMPI_ERR_UNKNOWN,            /*!< Unknown error */
+    N_TMPI_ERR                   /* this must be the last one */
 };
 
 /** Maximum length of error string for tMPI_Error_string() */
