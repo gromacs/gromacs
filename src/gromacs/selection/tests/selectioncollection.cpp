@@ -41,11 +41,6 @@
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
-#include "gromacs/legacyheaders/tpxio.h"
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -59,6 +54,8 @@
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
+
+#include "toputils.h"
 
 namespace
 {
@@ -75,7 +72,6 @@ class SelectionCollectionTest : public ::testing::Test
         static int               s_debugLevel;
 
         SelectionCollectionTest();
-        ~SelectionCollectionTest();
 
         void setAtomCount(int natoms)
         {
@@ -87,6 +83,9 @@ class SelectionCollectionTest : public ::testing::Test
         gmx::SelectionList       sel_;
         t_topology              *top_;
         t_trxframe              *frame_;
+
+    private:
+        gmx::test::TopologyManager  topManager_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -98,55 +97,21 @@ void SelectionCollectionTest::SetUpTestCase()
     gmx::test::parseTestOptions(&options);
 }
 
-
 SelectionCollectionTest::SelectionCollectionTest()
     : top_(NULL), frame_(NULL)
 {
+    topManager_.requestFrame();
     sc_.setDebugLevel(s_debugLevel);
     sc_.setReferencePosType("atom");
     sc_.setOutputPosType("atom");
 }
 
-
-SelectionCollectionTest::~SelectionCollectionTest()
-{
-    if (top_ != NULL)
-    {
-        free_t_atoms(&top_->atoms, TRUE);
-        done_top(top_);
-        sfree(top_);
-    }
-
-    if (frame_ != NULL)
-    {
-        sfree(frame_->x);
-        sfree(frame_);
-    }
-}
-
-
 void
 SelectionCollectionTest::loadTopology(const char *filename)
 {
-    char    title[STRLEN];
-    int     ePBC;
-    rvec   *xtop;
-    matrix  box;
-
-    snew(top_, 1);
-    read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-                  title, top_, &ePBC, &xtop, NULL, box, FALSE);
-
-    snew(frame_, 1);
-    frame_->flags  = TRX_NEED_X;
-    frame_->natoms = top_->atoms.nr;
-    frame_->bX     = TRUE;
-    snew(frame_->x, frame_->natoms);
-    memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
-    frame_->bBox   = TRUE;
-    copy_mat(box, frame_->box);
-
-    sfree(xtop);
+    topManager_.loadTopology(filename);
+    top_   = topManager_.topology();
+    frame_ = topManager_.frame();
 
     ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
 }
