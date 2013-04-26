@@ -55,8 +55,6 @@ typedef struct tMPI_Atomic_ptr
 tMPI_Atomic_ptr_t;
 
 
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
 
 #define tMPI_Atomic_get(a)   ((a)->value)
 #define tMPI_Atomic_set(a, i)  (((a)->value) = (i))
@@ -67,7 +65,7 @@ tMPI_Atomic_ptr_t;
 
 
 #ifndef __INTEL_COMPILER
-#define TMPI_HAVE_SWAP
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
 /* xchg operations: */
 /* ia64 xchg */
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
@@ -112,7 +110,6 @@ int _InterlockedCompareExchange(volatile int *dest, int xchg, int comp);
                                          void* comp);*/
 unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 memory barrier */
-/*#define tMPI_Atomic_memory_barrier() __memory_barrier()*/
 #define tMPI_Atomic_memory_barrier() __sync_synchronize()
 /* ia64 cmpxchg */
 #define tMPI_Atomic_cas(a, oldval, newval) \
@@ -127,9 +124,9 @@ unsigned __int64 __fetchadd4_rel(unsigned int *addend, const int increment);
 /* ia64 fetchadd, but it only works with increments +/- 1,4,8,16 */
 #define tMPI_ia64_fetchadd(a, inc)  __fetchadd4_rel(a, inc)
 
-#define TMPI_HAVE_SWAP
 #define tMPI_Atomic_swap(a, b) _InterlockedExchange( &((a)->value), (b))
 #define tMPI_Atomic_ptr_swap(a, b) _InterlockedExchangePointer( &((a)->value), (b))
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
 
 #elif defined __GNUC__
 
@@ -213,6 +210,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
     }
     return (int)newval;
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
 
 
@@ -244,73 +242,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
     }
     return (int)oldval;
 }
-
-typedef struct tMPI_Spinlock
-{
-    volatile unsigned int   lock; /*!< Volatile, to avoid compiler aliasing */
-}
-tMPI_Spinlock_t;
-
-
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
-{
-    x->lock = 0;
-}
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
-{
-    tMPI_Atomic_t *a = (tMPI_Atomic_t *) x;
-    int            succeeded;
-    succeeded = tMPI_Atomic_cas(a, 0, 1);
-    if (!succeeded)
-    {
-        do
-        {
-            while (a->value != 0)
-            {
-                tMPI_Atomic_memory_barrier();
-            }
-            succeeded = tMPI_Atomic_cas(a, 0, 1);
-        }
-        while (!succeeded);
-    }
-}
-
-
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return (tMPI_Atomic_cas( ((tMPI_Atomic_t *)x), 0, 1));
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
-{
-    do
-    {
-        tMPI_Atomic_memory_barrier();
-        x->lock = 0;
-    }
-    while (0);
-}
-
-
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
-{
-    return (x->lock != 0);
-}
-
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
-{
-
-    do
-    {
-        tMPI_Atomic_memory_barrier();
-    }
-    while (tMPI_Spinlock_islocked(x));
-}
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 
 #endif
 

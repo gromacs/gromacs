@@ -153,56 +153,56 @@
 
 
 /* These are the fundamental data types. They exist as global variables */
-tmpi_dt tmpi_char    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
-tmpi_dt tmpi_short   = {sizeof(short),             oplist_SHORT,    0, NULL, TRUE};
-tmpi_dt tmpi_int     = {sizeof(int),               oplist_INT,      0, NULL, TRUE};
-tmpi_dt tmpi_long    = {sizeof(long),              oplist_LONG,     0, NULL, TRUE};
+tmpi_dt tmpi_char = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
+tmpi_dt tmpi_short = {sizeof(short),             oplist_SHORT,    0, NULL, TRUE};
+tmpi_dt tmpi_int = {sizeof(int),               oplist_INT,      0, NULL, TRUE};
+tmpi_dt tmpi_long = {sizeof(long),              oplist_LONG,     0, NULL, TRUE};
 #ifdef SIZEOF_LONG_LONG_INT
-tmpi_dt tmpi_l_long  = {sizeof(long long),         oplist_L_LONG,   0, NULL, TRUE};
+tmpi_dt tmpi_l_long = {sizeof(long long),         oplist_L_LONG,   0, NULL, TRUE};
 tmpi_dt tmpi_l_l_int = {sizeof(long long int),     oplist_L_L_INT,  0, NULL, TRUE};
 #endif
-tmpi_dt tmpi_s_char  = {sizeof(signed char),       oplist_S_CHAR,   0, NULL, TRUE};
-tmpi_dt tmpi_u_char  = {sizeof(unsigned char),     oplist_U_CHAR,   0, NULL, TRUE};
+tmpi_dt tmpi_s_char = {sizeof(signed char),       oplist_S_CHAR,   0, NULL, TRUE};
+tmpi_dt tmpi_u_char = {sizeof(unsigned char),     oplist_U_CHAR,   0, NULL, TRUE};
 tmpi_dt tmpi_u_short = {sizeof(unsigned short),    oplist_U_SHORT,  0, NULL, TRUE};
 tmpi_dt tmpi_unsigned = {sizeof(unsigned),          oplist_UNSIGNED, 0, NULL, TRUE};
-tmpi_dt tmpi_u_long  = {sizeof(unsigned long),     oplist_U_LONG,   0, NULL, TRUE};
+tmpi_dt tmpi_u_long = {sizeof(unsigned long),     oplist_U_LONG,   0, NULL, TRUE};
 #ifdef SIZEOF_LONG_LONG_INT
 tmpi_dt tmpi_u_l_long = {sizeof(unsigned long long), oplist_U_L_LONG, 0, NULL, TRUE};
 #endif
-tmpi_dt tmpi_float   = {sizeof(float),             oplist_FLOAT,    0, NULL, TRUE};
-tmpi_dt tmpi_double  = {sizeof(double),            oplist_DOUBLE,   0, NULL, TRUE};
+tmpi_dt tmpi_float = {sizeof(float),             oplist_FLOAT,    0, NULL, TRUE};
+tmpi_dt tmpi_double = {sizeof(double),            oplist_DOUBLE,   0, NULL, TRUE};
 tmpi_dt tmpi_l_double = {sizeof(long double),       oplist_L_DOUBLE, 0, NULL, TRUE};
-tmpi_dt tmpi_byte    = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
+tmpi_dt tmpi_byte = {sizeof(char),              oplist_CHAR,     0, NULL, TRUE};
 tmpi_dt tmpi_pointer = {sizeof(void*),             NULL,            0, NULL, TRUE};
 
 
 
 /* the variable types as they are referred to from MPI */
-const tMPI_Datatype TMPI_CHAR               = &tmpi_char;
-const tMPI_Datatype TMPI_SHORT              = &tmpi_short;
-const tMPI_Datatype TMPI_INT                = &tmpi_int;
-const tMPI_Datatype TMPI_LONG               = &tmpi_long;
+const tMPI_Datatype TMPI_CHAR  = &tmpi_char;
+const tMPI_Datatype TMPI_SHORT = &tmpi_short;
+const tMPI_Datatype TMPI_INT   = &tmpi_int;
+const tMPI_Datatype TMPI_LONG  = &tmpi_long;
 #ifdef SIZEOF_LONG_LONG_INT
-const tMPI_Datatype TMPI_LONG_LONG          = &tmpi_l_long;
-const tMPI_Datatype TMPI_LONG_LONG_INT      = &tmpi_l_l_int;
+const tMPI_Datatype TMPI_LONG_LONG     = &tmpi_l_long;
+const tMPI_Datatype TMPI_LONG_LONG_INT = &tmpi_l_l_int;
 #endif
-const tMPI_Datatype TMPI_SIGNED_CHAR        = &tmpi_s_char;
-const tMPI_Datatype TMPI_UNSIGNED_CHAR      = &tmpi_u_char;
-const tMPI_Datatype TMPI_UNSIGNED_SHORT     = &tmpi_u_short;
-const tMPI_Datatype TMPI_UNSIGNED           = &tmpi_unsigned;
-const tMPI_Datatype TMPI_UNSIGNED_LONG      = &tmpi_u_long;
+const tMPI_Datatype TMPI_SIGNED_CHAR    = &tmpi_s_char;
+const tMPI_Datatype TMPI_UNSIGNED_CHAR  = &tmpi_u_char;
+const tMPI_Datatype TMPI_UNSIGNED_SHORT = &tmpi_u_short;
+const tMPI_Datatype TMPI_UNSIGNED       = &tmpi_unsigned;
+const tMPI_Datatype TMPI_UNSIGNED_LONG  = &tmpi_u_long;
 #ifdef SIZEOF_LONG_LONG_INT
 const tMPI_Datatype TMPI_UNSIGNED_LONG_LONG = &tmpi_u_l_long;
 #endif
 
-const tMPI_Datatype TMPI_FLOAT              = &tmpi_float;
-const tMPI_Datatype TMPI_DOUBLE             = &tmpi_double;
-const tMPI_Datatype TMPI_LONG_DOUBLE        = &tmpi_l_double;
+const tMPI_Datatype TMPI_FLOAT       = &tmpi_float;
+const tMPI_Datatype TMPI_DOUBLE      = &tmpi_double;
+const tMPI_Datatype TMPI_LONG_DOUBLE = &tmpi_l_double;
 
 /*extern tMPI_Datatype tMPI_UNSIGNED_WCHAR*/
-const tMPI_Datatype TMPI_BYTE               = &tmpi_byte;
+const tMPI_Datatype TMPI_BYTE = &tmpi_byte;
 
-const tMPI_Datatype TMPI_POINTER            = &tmpi_pointer;
+const tMPI_Datatype TMPI_POINTER = &tmpi_pointer;
 
 
 
@@ -225,7 +225,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     /* establish components */
     ntp->N_comp = 1;
     ntp->comps  = (struct tmpi_datatype_component*)tMPI_Malloc(
-                sizeof(struct tmpi_datatype_component)*1);
+            sizeof(struct tmpi_datatype_component)*1);
     ntp->comps[0].type  = oldtype;
     ntp->comps[0].count = 1;
     ntp->committed      = FALSE;

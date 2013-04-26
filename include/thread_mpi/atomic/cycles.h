@@ -12,8 +12,8 @@ typedef unsigned long long tmpi_cycles_t;
 static __inline__ tmpi_cycles_t tmpi_cycles_read(void)
 {
     /* x86 with GCC inline assembly - pentium TSC register */
-    tmpi_cycles_t   cycle;
-    unsigned        low, high;
+    tmpi_cycles_t cycle;
+    unsigned      low, high;
 
 #ifdef HAVE_RDTSCP
     __asm__ __volatile__("rdtscp" : "=a" (low), "=d" (high) :: "ecx" );
