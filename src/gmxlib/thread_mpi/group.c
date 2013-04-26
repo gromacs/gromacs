@@ -127,7 +127,7 @@ tMPI_Group tMPI_Group_alloc(void)
 
     ret        = (struct tmpi_group_*)tMPI_Malloc(sizeof(struct tmpi_group_));
     ret->peers = (struct tmpi_thread**)tMPI_Malloc(
-                sizeof(struct tmpi_thread*)*Nthreads);
+            sizeof(struct tmpi_thread*)*Nthreads);
     ret->N = 0;
 #if 0
     ret->Nrefs = 1;

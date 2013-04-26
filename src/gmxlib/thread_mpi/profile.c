@@ -120,7 +120,7 @@ const char *tmpi_waitfn_names[] =
    stage about empty object files */
 #ifdef TMPI_PROFILE
 
-void tMPI_Profile_init(struct tmpi_profile *prof)
+int tMPI_Profile_init(struct tmpi_profile *prof)
 {
     int i;
 
@@ -148,6 +148,8 @@ void tMPI_Profile_init(struct tmpi_profile *prof)
     prof->total_p2p_xfers     = 0;
     prof->total_coll_xfers    = 0;
     tMPI_Profile_started      = 1;
+
+    return TMPI_SUCCESS;
 }
 
 

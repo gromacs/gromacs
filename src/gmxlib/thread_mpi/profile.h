@@ -127,7 +127,7 @@ struct tmpi_profile
 extern int tMPI_Profile_started;
 
 /* initialize the profile counter */
-void tMPI_Profile_init(struct tmpi_profile *prof);
+int tMPI_Profile_init(struct tmpi_profile *prof);
 
 #if 0
 /* deallocations */
