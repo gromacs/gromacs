@@ -175,7 +175,8 @@ extern const tMPI_Datatype TMPI_POINTER;            /**< pointer (thread_mpi
 enum
 {
     TMPI_SUCCESS = 0,               /*!< No error */
-    TMPI_ERR_MALLOC,                /*!< Out of memory */
+    TMPI_ERR_NO_MEM,                /*!< Out of memory */
+    TMPI_ERR_IO,                    /*!< I/O Error (used for system errors) */
     TMPI_ERR_INIT,                  /*!< Initialization error */
     TMPI_ERR_FINALIZE,              /*!< Finalize error */
     TMPI_ERR_GROUP,                 /*!< Group error */
@@ -195,6 +196,8 @@ enum
     TMPI_ERR_OP_FN,
     TMPI_ERR_ENVELOPES,
     TMPI_ERR_REQUESTS,
+    TMPI_ERR_COPY_NBUFFERS,
+    TMPI_ERR_COPY_BUFFER_SIZE,
     TMPI_ERR_IN_STATUS,
     TMPI_ERR_PROCNR,                /*!< Hardware processor number (such as for
                                          thread affinity) error */

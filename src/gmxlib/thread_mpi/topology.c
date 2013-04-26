@@ -270,7 +270,7 @@ static void tMPI_Cart_init(tMPI_Comm *comm_cart, int ndims, int *dims,
     if (newrank == 0)
     {
         (*comm_cart)->cart = (struct cart_topol*)tMPI_Malloc(
-                    sizeof(struct cart_topol));
+                sizeof(struct cart_topol));
         (*comm_cart)->cart->dims    = (int*)tMPI_Malloc(ndims*sizeof(int));
         (*comm_cart)->cart->periods = (int*)tMPI_Malloc(ndims*sizeof(int));
         (*comm_cart)->cart->ndims   = ndims;

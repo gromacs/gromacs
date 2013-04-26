@@ -86,25 +86,21 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
+/* first check for gcc/icc platforms.
+   Some compatible compilers, like icc on linux+mac will take this path,
+   too */
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
+
 #ifdef __GNUC__
 #define TMPI_GCC_VERSION (__GNUC__ * 10000 \
                           + __GNUC_MINOR__ * 100 \
                           + __GNUC_PATCHLEVEL__)
 #endif
 
-
-/* first check for gcc/icc platforms.
-   Some compatible compilers, like icc on linux+mac will take this path,
-   too */
-#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
-
-
-
 /* now check specifically for several architectures: */
 #if ((defined(i386) || defined(__x86_64__)) && !defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
-/*#include "atomic/gcc.h"*/
 
 #elif (defined(__ia64__))
 /* then ia64: */
@@ -113,6 +109,11 @@ extern "C"
 /* for now we use gcc intrinsics on gcc: */
 /*#elif (defined(__powerpc__) || (defined(__ppc__)) )*/
 /*#include "atomic/gcc_ppc.h"*/
+
+#elif defined(__FUJITSU) && ( defined(__sparc_v9__) || defined (__sparcv9) )
+
+/* Fujitsu FX10 SPARC compiler */
+#include "atomic/fujitsu_sparc.h"
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */
@@ -142,7 +143,10 @@ extern "C"
 /* Solaris on SPARC (Sun C Compiler, Solaris Studio) */
 #include "atomic/suncc-sparc.h"
 
+#elif defined(__FUJITSU) && defined(__sparc__)
 
+/* Fujitsu FX10 SPARC compiler requires gcc compatibility with -Xg */
+#error Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
 
 
 #else
@@ -416,6 +420,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return t;
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
 
 
@@ -440,11 +445,12 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
     int old_value;
 
     tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    old_value  = a->value;
-    a->value   = old_value + i;
+    old_value = a->value;
+    a->value  = old_value + i;
     tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
     return old_value;
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 
 
 
@@ -530,6 +536,53 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
     return t;
 }
 
+/** Atomic swap operation.
+
+   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
+   Note: This has no good assembly counterparts on many architectures, so
+         it might not be faster than a repreated CAS.
+
+   \param a  Pointer to atomic type
+   \param b  Value to swap
+   \return the original value of a
+ */
+TMPI_EXPORT
+static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
+{
+    int ret;
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
+    ret      = a->value;
+    a->value = b;
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
+
+    return ret;
+}
+
+/** Atomic swap pointer operation.
+
+   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the
+   value of b.
+   Note: This has no good assembly counterparts on many architectures, so
+         it might not be faster than a repreated CAS.
+
+   \param a  Pointer to atomic type
+   \param b  Value to swap
+   \return the original value of a
+ */
+TMPI_EXPORT
+static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
+{
+    void *ret;
+
+    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
+    ret      = a->value;
+    a->value = b;
+    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
+
+    return ret;
+}
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
+
 
 /** Initialize spinlock
  *
@@ -546,6 +599,7 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
 void tMPI_Spinlock_init( tMPI_Spinlock_t &x);
 #else
 #define tMPI_Spinlock_init(x)       tMPI_Thread_mutex_init((x)->lock)
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 #endif
 
 /** Acquire spinlock
@@ -635,61 +689,9 @@ static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 
 #endif
 
-
-
-/* only do this if there was no better solution */
-#ifndef TMPI_HAVE_SWAP
-/** Atomic swap operation.
-
-   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
-   NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
-
-   \param a  Pointer to atomic type
-   \param b  Value to swap
-   \return the original value of a
- */
-TMPI_EXPORT
-static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
-{
-    int oldval;
-    do
-    {
-        oldval = (int)(a->value);
-    }
-    while (!tMPI_Atomic_cas(a, oldval, b));
-    return oldval;
-}
-/** Atomic swap pointer operation.
-
-   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the
-   value of b.
-   NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
-
-   \param a  Pointer to atomic type
-   \param b  Value to swap
-   \return the original value of a
- */
-TMPI_EXPORT
-static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
-{
-    void *oldval;
-    do
-    {
-        oldval = (void*)(a->value);
-    }
-    while (!tMPI_Atomic_ptr_cas(a, oldval, b));
-    return oldval;
-}
-#endif
-
-/* only define this if there were no separate acquire and release barriers */
-#ifndef TMPI_HAVE_ACQ_REL_BARRIERS
-
-/* if they're not defined explicitly, we just make full barriers out of both */
-#define tMPI_Atomic_memory_barrier_acq tMPI_Atomic_memory_barrier
-#define tMPI_Atomic_memory_barrier_rel tMPI_Atomic_memory_barrier
-
-#endif
+/* now define all the atomics that are not avaible natively. These
+   are done on the assumption that a native CAS does exist. */
+#include "atomic/derived.h"
 
 /* this allows us to use the inline keyword without breaking support for
    some compilers that don't support it: */

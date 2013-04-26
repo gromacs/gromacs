@@ -451,7 +451,7 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *  return code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return 0 or a non-zero return error code.
+ *  \return 0 if locked, non-zero if not locked or an error occurred.
  */
 TMPI_EXPORT
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);
