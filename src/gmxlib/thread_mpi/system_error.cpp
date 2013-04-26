@@ -41,10 +41,11 @@
 #include <cstring>
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 #include "thread_mpi/system_error.h"
 
 tMPI::system_error::system_error(error_code ec)
-    : runtime_error(std::strerror(ec)), ec_(ec)
+    : runtime_error(std::string(std::strerror(ec))), ec_(ec)
 {
 }
 

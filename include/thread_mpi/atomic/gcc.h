@@ -60,10 +60,6 @@ typedef struct tMPI_Atomic_ptr
 tMPI_Atomic_ptr_t;
 
 
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
 /* for now we simply assume that int and void* assignments are atomic */
 #define tMPI_Atomic_get(a)  ((int)( (a)->value) )
 #define tMPI_Atomic_set(a, i)  (((a)->value) = (i))

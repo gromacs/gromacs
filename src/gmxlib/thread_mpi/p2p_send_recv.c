@@ -87,6 +87,10 @@ int tMPI_Send(void* buf, int count, tMPI_Datatype datatype, int dest,
     }
 
     sev = tMPI_Post_send(cur, comm, send_dst, buf, count, datatype, tag, FALSE);
+    if (sev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(&req, sev);
     tMPI_Wait_single(cur, &req);
 
@@ -130,6 +134,10 @@ int tMPI_Recv(void* buf, int count, tMPI_Datatype datatype, int source,
 
     rev = tMPI_Post_match_recv(cur, comm, recv_src, buf, count, datatype, tag,
                                FALSE);
+    if (rev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(&req, rev);
     tMPI_Wait_single(cur, &req);
 
@@ -185,10 +193,18 @@ int tMPI_Sendrecv(void *sendbuf, int sendcount, tMPI_Datatype sendtype,
     /* we first prepare to send */
     sev = tMPI_Post_send(cur, comm, send_dst, sendbuf, sendcount,
                          sendtype, sendtag, FALSE);
+    if (sev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(&sreq, sev);
     /* the we prepare to receive */
     rev = tMPI_Post_match_recv(cur, comm, recv_src, recvbuf, recvcount,
                                recvtype, recvtag, FALSE);
+    if (rev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(&rreq, rev);
 
     /* fix the pointers */
@@ -256,6 +272,10 @@ int tMPI_Isend(void* buf, int count, tMPI_Datatype datatype, int dest,
         return tMPI_Error(comm, TMPI_ERR_SEND_DEST);
     }
     ev = tMPI_Post_send(cur, comm, send_dst, buf, count, datatype, tag, TRUE);
+    if (ev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(rq, ev);
     *request = rq;
 
@@ -299,6 +319,10 @@ int tMPI_Irecv(void* buf, int count, tMPI_Datatype datatype, int source,
     }
     ev = tMPI_Post_match_recv(cur, comm, recv_src, buf, count, datatype, tag,
                               TRUE);
+    if (ev == NULL)
+    {
+        return TMPI_ERR_ENVELOPES;
+    }
     tMPI_Req_init(rq, ev);
     *request = rq;
 #ifdef TMPI_PROFILE

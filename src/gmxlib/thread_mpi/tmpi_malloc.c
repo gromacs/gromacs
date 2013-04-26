@@ -66,7 +66,7 @@ void *tMPI_Malloc(size_t size)
 
     if (!ret)
     {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
+        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_NO_MEM);
     }
     return ret;
 }
@@ -76,7 +76,7 @@ void *tMPI_Realloc(void *p, size_t size)
     void *ret = (void*)realloc(p, size);
     if (!ret)
     {
-        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_MALLOC);
+        tMPI_Error(TMPI_COMM_WORLD, TMPI_ERR_NO_MEM);
     }
     return ret;
 }
