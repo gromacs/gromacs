@@ -225,7 +225,7 @@ int tMPI_Type_contiguous(int count, tMPI_Datatype oldtype,
     /* establish components */
     ntp->N_comp = 1;
     ntp->comps  = (struct tmpi_datatype_component*)tMPI_Malloc(
-                sizeof(struct tmpi_datatype_component)*1);
+            sizeof(struct tmpi_datatype_component)*1);
     ntp->comps[0].type  = oldtype;
     ntp->comps[0].count = 1;
     ntp->committed      = FALSE;

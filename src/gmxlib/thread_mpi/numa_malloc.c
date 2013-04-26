@@ -131,8 +131,8 @@ ULONG   g_ulNumaStatus; /* 0 = unknown, 1 = not NUMA, 2 = NUMA */
 
 VOID
 InitNumaHeapSupport(
-        VOID
-        )
+    VOID
+    )
 {
     HMODULE hModKernel32;   /* module handle to kernel32.dll -- we already
                                reference it, so it's already loaded */
@@ -185,10 +185,10 @@ InitNumaHeapSupport(
         }
 
         dwPriorValue = (DWORD)InterlockedCompareExchange(
-                    (LONG volatile *)&g_dwTlsHeap,
-                    (LONG) dwTlsHeap,
-                    0
-                    );
+                (LONG volatile *)&g_dwTlsHeap,
+                (LONG) dwTlsHeap,
+                0
+                );
 
         if (dwPriorValue != 0)
         {
@@ -207,10 +207,10 @@ InitNumaHeapSupport(
 
         /* allocate an array to contain a heap handle for each NUMA node */
         hHeapNew = (HANDLE*)HeapAlloc(
-                    GetProcessHeap(),
-                    HEAP_ZERO_MEMORY,
-                    sizeof(HANDLE) * (ulNumaHighestNodeNumber+1)
-                    );
+                GetProcessHeap(),
+                HEAP_ZERO_MEMORY,
+                sizeof(HANDLE) * (ulNumaHighestNodeNumber+1)
+                );
 
         if (hHeapNew == NULL)
         {
@@ -219,10 +219,10 @@ InitNumaHeapSupport(
         }
 
         hPriorValue = (HANDLE *)InterlockedCompareExchange(
-                    (LONG volatile *)&g_hHeap,
-                    (LONG) hHeapNew,
-                    0
-                    );
+                (LONG volatile *)&g_hHeap,
+                (LONG) hHeapNew,
+                0
+                );
 
         if (hPriorValue != NULL)
         {
@@ -238,8 +238,8 @@ InitNumaHeapSupport(
 
 HANDLE
 ReturnHeapHandle(
-        VOID
-        )
+    VOID
+    )
 {
     HANDLE           hHeap;                     /* preferred heap handle to
                                                    return to caller */
@@ -323,11 +323,11 @@ ReturnHeapHandle(
         /* make the new heap a low-fragmentation heap */
 
         HeapSetInformation(
-                hHeap,
-                0,          /* HeapCompatibilityInformation */
-                &ulOption,
-                sizeof(ulOption)
-                );
+            hHeap,
+            0,              /* HeapCompatibilityInformation */
+            &ulOption,
+            sizeof(ulOption)
+            );
 
         /* set the array slot entry for this NUMA node to contain the newly
            allocated heap */
@@ -478,11 +478,11 @@ void *tMPI_Realloc_local(void *ptr, size_t size)
         hHeap = phdr->hHeap;
 
         new_ptr = HeapReAlloc(
-                    hHeap,
-                    0,
-                    phdr,
-                    new_size
-                    );
+                hHeap,
+                0,
+                phdr,
+                new_size
+                );
     }
 
     if (new_ptr == NULL)
