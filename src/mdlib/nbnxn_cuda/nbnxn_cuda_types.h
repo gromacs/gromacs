@@ -47,13 +47,25 @@
 extern "C" {
 #endif
 
-/*! Types of electrostatics available in the CUDA nonbonded force kernels. */
+/*! Types of electrostatics implementations available in the CUDA non-bonded
+ *  force kernels. These represent both the electrostatics types implemented
+ *  by the kernels (cut-off, RF, and Ewald - a subset of what's defined in
+ *  enums.h) as well as encode implementation details analytical/tabulated
+ *  and single or twin cut-off (for Ewald kernels).
+ *  Note that the cut-off and RF kernels have only analytical flavor and unlike
+ *  in the CPU kernels, the tabulated kernels are ATM Ewald-only.
+ *
+ *  The order of pointers to different electrostatic kernels defined in
+ *  nbnxn_cuda.cu by the nb_default_kfunc_ptr and nb_legacy_kfunc_ptr arrays
+ *  should match the order of enumerated types below. */
 enum {
-    eelCuEWALD, eelCuEWALD_TWIN, eelCuRF, eelCuCUT, eelCuNR
+    eelCuCUT, eelCuRF, eelCuEWALD_TAB, eelCuEWALD_TAB_TWIN, eelCuEWALD_ANA, eelCuEWALD_ANA_TWIN, eelCuNR
 };
 
+/*! Kernel flavors with different set of optimizations: default for CUDA <=v4.1
+ *  compilers and legacy for earlier, 3.2 and 4.0 CUDA compilers. */
 enum {
-    eNbnxnCuKDefault, eNbnxnCuKLegacy, eNbnxnCuKOld, eNbnxnCuKNR
+    eNbnxnCuKDefault, eNbnxnCuKLegacy, eNbnxnCuKNR
 };
 
 #define NBNXN_KVER_OLD(k)      (k == eNbnxnCuKOld)
