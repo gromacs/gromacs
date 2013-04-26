@@ -103,7 +103,8 @@ typedef struct tMPI_Thread* tMPI_Thread_t;
  */
 typedef struct
 {
-    tMPI_Atomic_t      initialized; /*!< Whether \a mutex has been initialized. */
+    tMPI_Atomic_t      initialized; /*!< Whether \a mutex has been
+                                       initialized. */
     struct tMPI_Mutex* mutex;       /*!< Actual mutex data structure. */
 }  tMPI_Thread_mutex_t;
 /*! \brief Static initializer for tMPI_Thread_mutex_t
@@ -125,7 +126,8 @@ typedef struct
  */
 typedef struct
 {
-    tMPI_Atomic_t           initialized; /*!< Whether \a key has been initialized. */
+    tMPI_Atomic_t           initialized; /*!< Whether \a key has been
+                                            initialized. */
     struct tMPI_Thread_key *key;         /*!< Actual key data structure. */
 } tMPI_Thread_key_t;
 
@@ -178,8 +180,10 @@ typedef struct
  */
 typedef struct
 {
-    tMPI_Atomic_t            initialized; /*!< Whether \a condp has been initialized. */
-    struct tMPI_Thread_cond* condp;       /*!< Actual condition variable data structure. */
+    tMPI_Atomic_t            initialized; /*!< Whether \a condp has been
+                                             initialized. */
+    struct tMPI_Thread_cond* condp;       /*!< Actual condition variable data
+                                             structure. */
 } tMPI_Thread_cond_t;
 /*! \brief Static initializer for tMPI_Thread_cond_t
  *
@@ -451,7 +455,7 @@ int tMPI_Thread_mutex_lock(tMPI_Thread_mutex_t *mtx);
  *  return code (usually meaning the mutex was already locked).
  *
  *  \param mtx  Pointer to the mutex to try and lock
- *  \return 0 or a non-zero return error code.
+ *  \return 0 if locked, non-zero if not locked or an error occurred.
  */
 TMPI_EXPORT
 int tMPI_Thread_mutex_trylock(tMPI_Thread_mutex_t *mtx);

@@ -145,8 +145,12 @@ int tMPI_Gather(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         }
 
         /* first set up the data just to root. */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype,
-                        sendcount*sendtype->size, sendbuf, 1, synct, root);
+        ret = tMPI_Post_multi(cev, myrank, 0, TMPI_GATHER_TAG, sendtype,
+                              sendcount*sendtype->size, sendbuf, 1, synct, root);
+        if (ret != TMPI_SUCCESS)
+        {
+            return ret;
+        }
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }
@@ -247,8 +251,12 @@ int tMPI_Gatherv(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
         }
 
         /* first set up the data just to root. */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype,
-                        sendcount*sendtype->size, sendbuf, 1, synct, root);
+        ret = tMPI_Post_multi(cev, myrank, 0, TMPI_GATHERV_TAG, sendtype,
+                              sendcount*sendtype->size, sendbuf, 1, synct, root);
+        if (ret != TMPI_SUCCESS)
+        {
+            return ret;
+        }
         /* and wait until root is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }

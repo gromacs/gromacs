@@ -60,10 +60,10 @@ struct tMPI_Thread_cond
 
 struct tMPI_Thread_barrier
 {
-    tMPI_Atomic_t     initialized;
-    pthread_mutex_t   mutex;     /*!< Lock for the barrier contents          */
-    pthread_cond_t    cv;        /*!< Condition to signal barrier completion */
-    int               threshold; /*!< Total number of members in barrier     */
-    int               count;     /*!< Remaining count before completion      */
-    int               cycle;     /*!< Alternating 0/1 to indicate round      */
+    tMPI_Atomic_t   initialized;
+    pthread_mutex_t mutex;       /*!< Lock for the barrier contents          */
+    pthread_cond_t  cv;          /*!< Condition to signal barrier completion */
+    int             threshold;   /*!< Total number of members in barrier     */
+    int             count;       /*!< Remaining count before completion      */
+    int             cycle;       /*!< Alternating 0/1 to indicate round      */
 };

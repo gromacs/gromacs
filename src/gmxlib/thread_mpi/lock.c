@@ -83,7 +83,7 @@ int tMPI_Lock_trylock(tMPI_Lock_t *lock)
     return tMPI_Spinlock_trylock(&(lock->lock));
 }
 
-int tMPI_Lock_islocked(const tMPI_Lock_t *lock)
+int tMPI_Lock_islocked(tMPI_Lock_t *lock)
 {
     return tMPI_Spinlock_islocked(&(lock->lock));
 }

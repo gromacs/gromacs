@@ -79,6 +79,8 @@ typedef struct tMPI_Spinlock
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
 
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
+
 
 
 /* these are guaranteed to be  atomic on x86 and x86_64 */
@@ -110,22 +112,34 @@ typedef struct tMPI_Spinlock
 
 #define tMPI_Atomic_memory_barrier() __asm__ __volatile__("sfence;" : : : "memory")
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
-{
-    int __i;
-
-    __i = i;
-    __asm__ __volatile__("lock ; xaddl %0, %1;"
-                         : "=r" (i) : "m" (a->value), "0" (i) : "memory");
-    return i + __i;
-}
-
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
-    __asm__ __volatile__("lock ; xaddl %0, %1;"
-                         : "=r" (i) : "m" (a->value), "0" (i) : "memory");
-    return i;
+    volatile int res = i;
+    /* volatile because we read and write back to the same variable in the
+       asm section.  some compilers requires this to be volatile */
+    __asm__ __volatile__("lock ; xaddl %0, %1;"      /* swap-add */
+                         : "=r" (res)                /* with register as
+                                                        output*/
+                         : "m" (a->value), "0" (res) /* and memory as input */
+                         : "memory");
+    return res;
 }
+
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
+{
+    int          orig = i;
+    volatile int res  = i;
+
+    __asm__ __volatile__("lock ; xaddl %0, %1;"
+                         : "=r" (res)
+                         : "m" (a->value), "0" (res)
+                         :  "memory");
+    return res + orig; /* then add again from the right value */
+}
+
+
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
@@ -160,7 +174,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a,
 
 #endif /* end of check for gcc intrinsics */
 
-#define TMPI_HAVE_SWAP
+
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
 /* do the swap fns; we told the intrinsics that we have them. */
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
@@ -176,11 +191,6 @@ static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
 {
     void *volatile *ret = (void* volatile*)b;
 #ifndef __x86_64__
-/*    __asm__ __volatile__("\txchgl %0, %1;"
-                         :"=m"(a->value),"=q"(b)
-                         :"q"(b)
-                         :"memory");
- */
     __asm__ __volatile__("\txchgl %0, %1;"
                          : "+r" (ret), "+m" (a->value)
                          :
@@ -235,7 +245,7 @@ static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
 
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     /* this is apparently all that is needed for unlocking a lock */
     __asm__ __volatile__(
