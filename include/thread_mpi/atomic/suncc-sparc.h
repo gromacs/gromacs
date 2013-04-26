@@ -64,10 +64,6 @@ typedef struct tMPI_Atomic_ptr
 tMPI_Atomic_ptr_t;
 
 
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
 /* for now we simply assume that int and void* assignments are atomic */
 #define tMPI_Atomic_get(a)  ((int)( (a)->value) )
 #define tMPI_Atomic_set(a, i)  (((a)->value) = (i))
@@ -75,16 +71,6 @@ tMPI_Atomic_ptr_t;
 
 #define tMPI_Atomic_ptr_get(a)  ((void*)((a)->value) )
 #define tMPI_Atomic_ptr_set(a, i)  (((a)->value) = (void*)(i))
-
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, volatile int i)
-{
-    return (int) atomic_add_int_nv(&a->value, i);
-}
-
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
-{
-    return (int) atomic_add_int_nv(&a->value, i) - i;
-}
 
 
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
@@ -100,64 +86,14 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
     return atomic_cas_ptr(&(a->value), oldval, newval) == oldval;
 }
 
-
-
-typedef struct tMPI_Spinlock
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, volatile int i)
 {
-    volatile unsigned long  lock;
-} tMPI_Spinlock_t;
-
-#define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-static inline unsigned long tas(volatile unsigned long *ptr)
-{
-    unsigned long result;
-    __asm__ __volatile__("          \
-            ldstub [%1], %0         "
-                         : "=r" (result)
-                         : "r" (ptr)
-                         : "memory");
-    return result;
+    return (int) atomic_add_int_nv(&a->value, i);
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
-
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
 {
-    x->lock = 0;
+    return (int) atomic_add_int_nv(&a->value, i) - i;
 }
-
-
-static inline void tMPI_Spinlock_lock(tMPI_Spinlock_t *x)
-{
-    do
-    {
-    }
-    while (tas(&(x->lock)) == 1);
-}
-
-
-static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
-{
-    return tas(&(x->lock));
-}
-
-
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
-{
-    x->lock = 0;
-}
-
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *  x)
-{
-    tMPI_Atomic_memory_barrier();
-    return ( x->lock == 1 );
-}
-
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
-{
-    do
-    {
-    }
-    while (x->lock == 1);
-    tMPI_Atomic_memory_barrier();
-}
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD

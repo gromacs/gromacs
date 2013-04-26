@@ -10,7 +10,7 @@ set(THREAD_MPI_LIB_SOURCE
     errhandler.c    p2p_send_recv.c type.c
     event.c         p2p_wait.c      tmpi_malloc.c
     gather.c        profile.c
-    group.c         numa_malloc.c   )
+    group.c         numa_malloc.c   atomic.c)
 
 
 if (THREAD_PTHREADS)

@@ -181,7 +181,10 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
-/* Define when thread-MPI atomic operations are available */
+/* Define when there is a pthread.h */
+#cmakedefine HAVE_PTHREAD_H
+
+/* Define native atomic operations are found */
 #cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
@@ -190,17 +193,17 @@
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
 
+/* Define for tmpi warnings option */
+#cmakedefine TMPI_WARNINGS
+
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
 
-/* Define for Linux pthread_setaffinity */
+/* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
 /* Define for Windows NUMA-aware allocator functions*/
 #cmakedefine TMPI_WINDOWS_NUMA_API
-
-/* Define for sysconf() */
-#cmakedefine HAVE_SYSCONF
 
 /* Define for GetSystemInfo() */
 #cmakedefine HAVE_SYSTEM_INFO
@@ -327,9 +330,6 @@
 
 /* Define to 1 if yo have the <stdlib.h> header file. */
 #cmakedefine HAVE_STDLIB_H
-
-/* Define to 1 if yo have the <pthread.h> header file. */
-#cmakedefine HAVE_PTHREAD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H

@@ -141,7 +141,7 @@ void* tMPI_Once_wait(tMPI_Comm comm, void* (*function)(void*), void *param,
 
         tMPI_Atomic_memory_barrier_rel();
         /* signal that we're done */
-        tMPI_Atomic_add_return(&(cev->coll.current_sync), 1);
+        tMPI_Atomic_fetch_add(&(cev->coll.current_sync), 1);
         /* we need to keep being in sync */
         csync->syncs++;
     }

@@ -68,8 +68,8 @@ void tMPI_Barrier_init(tMPI_Barrier_t *barrier, int count)
 
 int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
 {
-    int    cycle;
-    int    status;
+    int cycle;
+    int status;
 
     /* We don't need to lock or use atomic ops here, since the cycle index
      * cannot change until after the last thread has performed the check
@@ -84,11 +84,11 @@ int tMPI_Barrier_wait(tMPI_Barrier_t *barrier)
     /* Decrement the count atomically and check if it is zero.
      * This will only be true for the last thread calling us.
      */
-    if (tMPI_Atomic_add_return( &(barrier->count), -1 ) <= 0)
+    if (tMPI_Atomic_fetch_add( &(barrier->count), -1 ) <= 1)
     {
         tMPI_Atomic_memory_barrier();
         tMPI_Atomic_set(&(barrier->count), barrier->threshold);
-        tMPI_Atomic_add_return(&(barrier->cycle), 1);
+        tMPI_Atomic_fetch_add(&(barrier->cycle), 1);
 
         status = -1;
     }

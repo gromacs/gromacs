@@ -2,7 +2,7 @@
    This source code file is part of thread_mpi.
    Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   Copyright (c) 2013, Sander Pronk, Erik Lindahl.
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
@@ -35,41 +35,54 @@
    files.
  */
 
+#define tMPI_Atomic_memory_barrier() { asm ("membar   #StoreStore | #LoadStore | #LoadLoad | #StoreLoad "); }
+#define tMPI_Atomic_memory_barrier_acq() { asm ("membar   #StoreStore | #StoreLoad ");  }
+#define tMPI_Atomic_memory_barrier_rel() { asm ("membar   #LoadStore | #StoreStore ");  }
+#define TMPI_HAVE_ACQ_REL_BARRIERS
 
-/* get a pointer the next coll_env once it's ready */
-struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
 
-/* post the availability of data in a cev.
-   cev         = the collective comm environment
-   myrank      = my rank
-   index       = the buffer index
-   tag         = the tag
-   datatype    = the datatype
-   busize      = the buffer size
-   buf         = the buffer to xfer
-   n_remaining = the number of remaining threads that need to transfer
-   synct       = the multicast sync number
-   dest        = -1 for all theads, or a specific rank number.
- */
-int tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
-                    int tag, tMPI_Datatype datatype,
-                    size_t bufsize, void *buf, int n_remaining,
-                    int synct, int dest);
+typedef struct tMPI_Atomic
+{
+    volatile int value __attribute__ ((aligned(64)));
+}
+tMPI_Atomic_t;
 
-/* transfer data from cev->met[rank] to recvbuf */
-void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
-                    int index, int expected_tag, tMPI_Datatype recvtype,
-                    size_t recvsize, void *recvbuf, int *ret);
 
-/* do a root transfer (from root send buffer to root recv buffer) */
-void tMPI_Coll_root_xfer(tMPI_Comm comm,
-                         tMPI_Datatype sendtype, tMPI_Datatype recvtype,
-                         size_t sendsize, size_t recvsize,
-                         void* sendbuf, void* recvbuf, int *ret);
+typedef struct tMPI_Atomic_ptr
+{
+    volatile char* volatile* value __attribute__ ((aligned(64)));  /*!< Volatile, to avoid compiler aliasing */
+}
+tMPI_Atomic_ptr_t;
 
-/* wait for other processes to copy data from my cev */
-void tMPI_Wait_for_others(struct coll_env *cev, int myrank);
-/* wait for data to become available from a specific rank */
-void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev,
-                        int myrank);
-/*int rank, int myrank, int synct);*/
+
+/* On sparc64, aligned 32-bit and 64-bit memory accesses are atomic */
+#define tMPI_Atomic_get(a)   (int)((a)->value)
+#define tMPI_Atomic_set(a, i)  (((a)->value) = (i))
+#define tMPI_Atomic_ptr_get(a)   ((a)->value)
+#define tMPI_Atomic_ptr_set(a, i)  (((a)->value) = (i))
+
+#define TMPI_SPINLOCK_INITIALIZER   { 0 }
+
+/* we just define the CAS operation. Fetch-and-add and spinlocks are
+   implemented through derived.h; this follows the recommendations of the
+   Sparc v9 programming specs. */
+
+static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
+{
+    asm ("cas [%2], %1, %0"
+         : "=&r" (newval)
+         : "r" (oldval), "r" (&(a->value)), "0" (newval)
+         : "memory");
+    return newval == oldval;
+}
+
+
+static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
+                                      void* newval)
+{
+    asm ("casx [%2], %1, %0         "
+         : "=&r" (newval)
+         : "r" (oldval), "r" (&(a->value)), "0" (newval)
+         : "memory");
+    return newval == oldval;
+}
