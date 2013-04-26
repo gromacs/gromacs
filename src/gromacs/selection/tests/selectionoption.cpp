@@ -41,9 +41,6 @@
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/tpxio.h"
-
 #include "gromacs/options/options.h"
 #include "gromacs/options/optionsassigner.h"
 #include "gromacs/selection/selection.h"
@@ -55,6 +52,8 @@
 
 #include "testutils/testasserts.h"
 #include "testutils/testfilemanager.h"
+
+#include "toputils.h"
 
 using gmx::test::TestFileManager;
 
@@ -69,7 +68,6 @@ class SelectionOptionTestBase : public ::testing::Test
 {
     public:
         SelectionOptionTestBase();
-        ~SelectionOptionTestBase();
 
         void setManager();
         void loadTopology(const char *filename);
@@ -77,24 +75,16 @@ class SelectionOptionTestBase : public ::testing::Test
         gmx::SelectionCollection    sc_;
         gmx::SelectionOptionManager manager_;
         gmx::Options                options_;
-        t_topology                 *top_;
+
+    private:
+        gmx::test::TopologyManager  topManager_;
 };
 
 SelectionOptionTestBase::SelectionOptionTestBase()
-    : manager_(&sc_), options_(NULL, NULL), top_(NULL)
+    : manager_(&sc_), options_(NULL, NULL)
 {
     sc_.setReferencePosType("atom");
     sc_.setOutputPosType("atom");
-}
-
-SelectionOptionTestBase::~SelectionOptionTestBase()
-{
-    if (top_ != NULL)
-    {
-        free_t_atoms(&top_->atoms, TRUE);
-        done_top(top_);
-        sfree(top_);
-    }
 }
 
 void SelectionOptionTestBase::setManager()
@@ -102,18 +92,11 @@ void SelectionOptionTestBase::setManager()
     setManagerForSelectionOptions(&options_, &manager_);
 }
 
-
 void SelectionOptionTestBase::loadTopology(const char *filename)
 {
-    char    title[STRLEN];
-    int     ePBC;
-    matrix  box;
+    topManager_.loadTopology(filename);
 
-    snew(top_, 1);
-    read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-                  title, top_, &ePBC, NULL, NULL, box, FALSE);
-
-    ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
+    ASSERT_NO_THROW_GMX(sc_.setTopology(topManager_.topology(), -1));
 }
 
 
