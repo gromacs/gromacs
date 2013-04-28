@@ -6,78 +6,78 @@
     <AnalysisData Name="index">
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">0</Int>
           <Int Name="LastColumn">0</Int>
           <DataValue>
             <Real Name="Value">8.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">1.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">2.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">5.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">6.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">9.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">10.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">13.000000</Real>
           </DataValue>
-        </Sequence>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <Int Name="FirstColumn">1</Int>
           <Int Name="LastColumn">1</Int>
           <DataValue>
             <Real Name="Value">14.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
     </AnalysisData>
   </OutputData>
