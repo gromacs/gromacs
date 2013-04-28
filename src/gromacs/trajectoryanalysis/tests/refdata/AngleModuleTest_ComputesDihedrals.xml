@@ -6,8 +6,8 @@
     <AnalysisData Name="angle">
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">3</Int>
+        <DataValues>
+          <Int Name="Count">3</Int>
           <DataValue>
             <Real Name="Value">-135.000000</Real>
           </DataValue>
@@ -17,56 +17,56 @@
           <DataValue>
             <Real Name="Value">180.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
     </AnalysisData>
     <AnalysisData Name="average">
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">1</Int>
+        <DataValues>
+          <Int Name="Count">1</Int>
           <DataValue>
             <Real Name="Value">30.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
     </AnalysisData>
     <AnalysisData Name="histogram">
       <DataFrame Name="Frame0">
         <Real Name="X">-120.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">2</Int>
+        <DataValues>
+          <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.002778</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
       <DataFrame Name="Frame1">
         <Real Name="X">0.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">2</Int>
+        <DataValues>
+          <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.002778</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
       <DataFrame Name="Frame2">
         <Real Name="X">120.000000</Real>
-        <Sequence Name="Y">
-          <Int Name="Length">2</Int>
+        <DataValues>
+          <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.002778</Real>
           </DataValue>
           <DataValue>
             <Real Name="Value">0.000000</Real>
           </DataValue>
-        </Sequence>
+        </DataValues>
       </DataFrame>
     </AnalysisData>
   </OutputData>

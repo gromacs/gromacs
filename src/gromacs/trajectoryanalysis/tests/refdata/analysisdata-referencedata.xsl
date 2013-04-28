@@ -14,7 +14,7 @@ and use the copy_xsl.sh script to copy it to relevant locations.
 
 <xsl:template match="AnalysisData">
     <xsl:variable name="has-columnspec"
-                  select="DataFrame/Sequence[@Name='Y']/Int[@Name='FirstColumn']"/>
+                  select="DataFrame/DataValues/Int[@Name='FirstColumn']"/>
     <table border="1">
         <tr>
             <th>Frame</th>
@@ -24,7 +24,7 @@ and use the copy_xsl.sh script to copy it to relevant locations.
             </xsl:if>
             <th>Values</th>
         </tr>
-        <xsl:for-each select="DataFrame/Sequence[@Name='Y']">
+        <xsl:for-each select="DataFrame/DataValues">
         <tr>
             <td><xsl:value-of select="../@Name"/></td>
             <td><xsl:value-of select="../Real[@Name='X']"/></td>

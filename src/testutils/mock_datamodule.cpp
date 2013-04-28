@@ -184,8 +184,8 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
     if (frameChecker_.get() != NULL)
     {
         TestReferenceChecker checker(
-                frameChecker_->checkSequenceCompound("Y",
-                                                     points.columnCount()));
+                frameChecker_->checkCompound("DataValues", NULL));
+        checker.checkInteger(points.columnCount(), "Count");
         bool bAllColumns = (points.firstColumn() == 0
                             && points.columnCount() == columnCount_);
         if (checker.checkPresent(!bAllColumns, "FirstColumn"))

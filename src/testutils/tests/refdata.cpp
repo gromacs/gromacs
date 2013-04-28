@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -250,6 +250,7 @@ TEST(ReferenceDataTest, HandlesSpecialCharactersInStrings)
     }
 }
 
+
 TEST(ReferenceDataTest, HandlesSequenceItemIndices)
 {
     using gmx::test::TestReferenceData;
@@ -271,6 +272,51 @@ TEST(ReferenceDataTest, HandlesSequenceItemIndices)
         seq[3] = 0;
         EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq"), "seq/[3]");
         EXPECT_NONFATAL_FAILURE(checker.checkSequenceArray(5, seq, "seq2"), "seq2/[3]");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesMultipleChecksAgainstSameData)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("Test", "string");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test2", "string"), "");
+        checker.checkStringBlock("TestString", "stringblock");
+        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("TestString2", "stringblock"), "");
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("Test", "string");
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test2", "string"), "");
+        checker.checkStringBlock("TestString", "stringblock");
+        EXPECT_NONFATAL_FAILURE(checker.checkStringBlock("TestString2", "stringblock"), "");
+    }
+}
+
+
+TEST(ReferenceDataTest, HandlesMultipleNullIds)
+{
+    using gmx::test::TestReferenceData;
+    using gmx::test::TestReferenceChecker;
+
+    {
+        TestReferenceData    data(gmx::test::erefdataUpdateAll);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("Test", NULL);
+        checker.checkString("Test2", NULL);
+    }
+    {
+        TestReferenceData    data(gmx::test::erefdataCompare);
+        TestReferenceChecker checker(data.rootChecker());
+        checker.checkString("Test", NULL);
+        checker.checkString("Test2", NULL);
+        EXPECT_NONFATAL_FAILURE(checker.checkString("Test", NULL), "");
     }
 }
 

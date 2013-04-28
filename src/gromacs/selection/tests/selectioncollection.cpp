@@ -364,10 +364,7 @@ void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
     ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
-    if (!checker_.isWriteMode())
-    {
-        checkCompiled();
-    }
+    checkCompiled();
 }
 
 
