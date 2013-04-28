@@ -5,6 +5,69 @@
 
 <xsl:import href="common-referencedata.xsl"/>
 
+<!-- Index handling reference data -->
+
+<xsl:template match="BlockAtoms">
+    <xsl:if test="Sequence[@Name='Input']">
+        <h2>Input Atoms</h2>
+        <xsl:call-template name="SequenceAsHorizontalTable">
+            <xsl:with-param name="root" select="Sequence[@Name='Input']"/>
+        </xsl:call-template>
+    </xsl:if>
+    <h2>Blocks</h2>
+    <table border="1">
+        <tr>
+            <th>Atom count</th>
+            <th>Atoms</th>
+        </tr>
+        <xsl:for-each select="Block">
+            <tr>
+                <td><xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/></td>
+                <td>
+                    <xsl:call-template name="SequenceAsCSV">
+                        <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
+                    </xsl:call-template>
+                </td>
+            </tr>
+        </xsl:for-each>
+    </table>
+</xsl:template>
+
+<xsl:template match="IndexMapping">
+    <h2><xsl:value-of select="@Name"/></h2>
+    <h3>Input Atoms</h3>
+    <xsl:call-template name="SequenceAsHorizontalTable">
+        <xsl:with-param name="root" select="Sequence[@Name='Input']"/>
+    </xsl:call-template>
+    <h3>Mapping</h3>
+    <table border="1">
+        <tr>
+            <th>RefId</th>
+            <xsl:if test="Block/Int[@Name='MapId']">
+                <th>MapId</th>
+            </xsl:if>
+            <th>Atom count</th>
+            <th>Atoms</th>
+        </tr>
+        <xsl:for-each select="Block">
+            <tr>
+                <td><xsl:value-of select="Int[@Name='RefId']"/></td>
+                <xsl:if test="Int[@Name='MapId']">
+                    <td><xsl:value-of select="Int[@Name='MapId']"/></td>
+                </xsl:if>
+                <td><xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/></td>
+                <td>
+                    <xsl:call-template name="SequenceAsCSV">
+                        <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
+                    </xsl:call-template>
+                </td>
+            </tr>
+        </xsl:for-each>
+    </table>
+</xsl:template>
+
+<!-- Selection reference data -->
+
 <xsl:key name="SelectionName" match="ParsedSelections/ParsedSelection" use="@Name"/>
 
 <xsl:template match="ParsedSelections">

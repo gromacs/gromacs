@@ -284,10 +284,9 @@ void done_blocka(t_blocka *block)
     block->nr    = 0;
     block->nra   = 0;
     sfree(block->index);
-    if (block->a)
-    {
-        sfree(block->a);
-    }
+    sfree(block->a);
+    block->index        = NULL;
+    block->a            = NULL;
     block->nalloc_index = 0;
     block->nalloc_a     = 0;
 }
@@ -839,27 +838,33 @@ void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames)
 {
     int i;
 
-    if (bFreeNames)
+    if (bFreeNames && atoms->atomname != NULL)
     {
         for (i = 0; i < atoms->nr; i++)
         {
-            sfree(*atoms->atomname[i]);
-            *atoms->atomname[i] = NULL;
+            if (atoms->atomname[i] != NULL)
+            {
+                sfree(*atoms->atomname[i]);
+                *atoms->atomname[i] = NULL;
+            }
         }
+    }
+    if (bFreeNames && atoms->resinfo != NULL)
+    {
         for (i = 0; i < atoms->nres; i++)
         {
-            sfree(*atoms->resinfo[i].name);
-            *atoms->resinfo[i].name = NULL;
+            if (atoms->resinfo[i].name != NULL)
+            {
+                sfree(*atoms->resinfo[i].name);
+                *atoms->resinfo[i].name = NULL;
+            }
         }
     }
     sfree(atoms->atomname);
     /* Do we need to free atomtype and atomtypeB as well ? */
     sfree(atoms->resinfo);
     sfree(atoms->atom);
-    if (atoms->pdbinfo)
-    {
-        sfree(atoms->pdbinfo);
-    }
+    sfree(atoms->pdbinfo);
     atoms->nr       = 0;
     atoms->nres     = 0;
     atoms->atomname = NULL;

@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <IndexMapping Name="Initialized">
+    <Sequence Name="Input">
+      <Int Name="Length">18</Int>
+      <Int>0</Int>
+      <Int>1</Int>
+      <Int>2</Int>
+      <Int>3</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>6</Int>
+      <Int>7</Int>
+      <Int>8</Int>
+      <Int>9</Int>
+      <Int>10</Int>
+      <Int>11</Int>
+      <Int>12</Int>
+      <Int>13</Int>
+      <Int>14</Int>
+      <Int>15</Int>
+      <Int>16</Int>
+      <Int>17</Int>
+    </Sequence>
+    <Int Name="Count">6</Int>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+      <Int Name="RefId">0</Int>
+      <Int Name="MapId">0</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+      </Sequence>
+      <Int Name="RefId">1</Int>
+      <Int Name="MapId">1</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Int Name="RefId">2</Int>
+      <Int Name="MapId">2</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+      </Sequence>
+      <Int Name="RefId">3</Int>
+      <Int Name="MapId">3</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>12</Int>
+        <Int>13</Int>
+        <Int>14</Int>
+      </Sequence>
+      <Int Name="RefId">4</Int>
+      <Int Name="MapId">4</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>15</Int>
+        <Int>16</Int>
+        <Int>17</Int>
+      </Sequence>
+      <Int Name="RefId">5</Int>
+      <Int Name="MapId">5</Int>
+    </Block>
+  </IndexMapping>
+  <IndexMapping Name="Updated">
+    <Sequence Name="Input">
+      <Int Name="Length">18</Int>
+      <Int>0</Int>
+      <Int>1</Int>
+      <Int>2</Int>
+      <Int>3</Int>
+      <Int>4</Int>
+      <Int>5</Int>
+      <Int>6</Int>
+      <Int>7</Int>
+      <Int>8</Int>
+      <Int>9</Int>
+      <Int>10</Int>
+      <Int>11</Int>
+      <Int>12</Int>
+      <Int>13</Int>
+      <Int>14</Int>
+      <Int>15</Int>
+      <Int>16</Int>
+      <Int>17</Int>
+    </Sequence>
+    <Int Name="Count">6</Int>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+      </Sequence>
+      <Int Name="RefId">-1</Int>
+      <Int Name="MapId">0</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+      </Sequence>
+      <Int Name="RefId">1</Int>
+      <Int Name="MapId">1</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Int Name="RefId">2</Int>
+      <Int Name="MapId">2</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+      </Sequence>
+      <Int Name="RefId">-1</Int>
+      <Int Name="MapId">3</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>12</Int>
+        <Int>13</Int>
+        <Int>14</Int>
+      </Sequence>
+      <Int Name="RefId">4</Int>
+      <Int Name="MapId">4</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>15</Int>
+        <Int>16</Int>
+        <Int>17</Int>
+      </Sequence>
+      <Int Name="RefId">-1</Int>
+      <Int Name="MapId">5</Int>
+    </Block>
+  </IndexMapping>
+</ReferenceData>
