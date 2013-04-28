@@ -293,7 +293,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     gmx_bool bEner, bPres, bTemp, bVV;
     gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
              bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
-    real     ekin, temp, prescorr, enercorr, dvdlcorr;
+    real     ekin, temp, prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -450,8 +450,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
            If FALSE, we go ahead and erase over it.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &(enerd->term[F_DKDL]),
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
                                        bEkinAveVel, bIterate, bScaleEkin);
+        enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }
