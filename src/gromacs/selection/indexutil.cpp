@@ -957,6 +957,8 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
  * \returns   true if \p g consists of one or more complete elements of type
  *   \p type, false otherwise.
  *
+ * \p g is assumed to be sorted, otherwise may return false negatives.
+ *
  * If \p type is \ref INDEX_ATOM, the return value is always true.
  * If \p type is \ref INDEX_UNKNOWN or \ref INDEX_ALL, the return value is
  * always false.
@@ -965,6 +967,7 @@ bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
                                  t_topology *top)
 {
+    // TODO: Consider whether unsorted groups need to be supported better.
     switch (type)
     {
         case INDEX_UNKNOWN:
