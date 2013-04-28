@@ -1069,6 +1069,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         }
 
         ekind->dekindl += ekind->ekin_work[thread][opts->ngtc][0][0];
+        ekind->ekin_work[thread][opts->ngtc][0][0] = 0;
     }
 
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);

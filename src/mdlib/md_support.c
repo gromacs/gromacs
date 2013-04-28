@@ -450,7 +450,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
            If FALSE, we go ahead and erase over it.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &(enerd->term[F_DKDL]),
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &(enerd->dvdl_lin[efptMASS]),
                                        bEkinAveVel, bIterate, bScaleEkin);
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
