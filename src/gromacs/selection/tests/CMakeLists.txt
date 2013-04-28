@@ -33,6 +33,7 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 gmx_add_unit_test(SelectionUnitTests selection-test
+                  indexutil.cpp
                   selectioncollection.cpp
                   selectionoption.cpp
                   toputils.cpp)

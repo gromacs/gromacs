@@ -46,6 +46,7 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/utility/gmxassert.h"
@@ -113,6 +114,54 @@ void TopologyManager::loadTopology(const char *filename)
     }
 
     sfree(xtop);
+}
+
+void TopologyManager::initAtoms(int count)
+{
+    GMX_RELEASE_ASSERT(top_ == NULL, "Topology initialized more than once");
+    snew(top_, 1);
+    init_t_atoms(&top_->atoms, count, FALSE);
+    for (int i = 0; i < count; ++i)
+    {
+        top_->atoms.atom[i].m = (i % 3 == 0 ? 2.0 : 1.0);
+    }
+    if (frame_ != NULL)
+    {
+        frame_->flags  = TRX_NEED_X;
+        frame_->natoms = count;
+        frame_->bX     = TRUE;
+        snew(frame_->x, count);
+    }
+}
+
+void TopologyManager::initUniformResidues(int residueSize)
+{
+    GMX_RELEASE_ASSERT(top_ != NULL, "Topology not initialized");
+    int residueIndex = -1;
+    for (int i = 0; i < top_->atoms.nr; ++i)
+    {
+        if (i % residueSize == 0)
+        {
+            ++residueIndex;
+        }
+        top_->atoms.atom[i].resind = residueIndex;
+    }
+}
+
+void TopologyManager::initUniformMolecules(int moleculeSize)
+{
+    GMX_RELEASE_ASSERT(top_ != NULL, "Topology not initialized");
+    int index = 0;
+    top_->mols.nalloc_index = (top_->atoms.nr + moleculeSize - 1) / moleculeSize + 1;
+    snew(top_->mols.index, top_->mols.nalloc_index);
+    top_->mols.nr = 0;
+    while (index < top_->atoms.nr)
+    {
+        top_->mols.index[top_->mols.nr] = index;
+        ++top_->mols.nr;
+        index += moleculeSize;
+    }
+    top_->mols.index[top_->mols.nr] = top_->atoms.nr;
 }
 
 } // namespace test

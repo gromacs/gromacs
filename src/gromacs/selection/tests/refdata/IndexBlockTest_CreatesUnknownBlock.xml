@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <BlockAtoms Name="Block">
+    <Sequence Name="Input">
+      <Int Name="Length">0</Int>
+    </Sequence>
+    <Int Name="Count">1</Int>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">0</Int>
+      </Sequence>
+    </Block>
+  </BlockAtoms>
+</ReferenceData>

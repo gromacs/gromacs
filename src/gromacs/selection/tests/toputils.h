@@ -58,6 +58,9 @@ class TopologyManager
         void requestFrame();
 
         void loadTopology(const char *filename);
+        void initAtoms(int count);
+        void initUniformResidues(int residueSize);
+        void initUniformMolecules(int moleculeSize);
 
         t_topology *topology() { return top_; }
         t_trxframe *frame() { return frame_; }
