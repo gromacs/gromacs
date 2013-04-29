@@ -66,6 +66,83 @@
     </table>
 </xsl:template>
 
+<!-- Position calculation reference data -->
+
+<xsl:template match="InitializedPositions">
+    <h2>Initialized Positions</h2>
+    <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="EvaluatedPositions">
+    <h2>Evaluated for <xsl:value-of select="@Name"/></h2>
+    <xsl:apply-templates />
+</xsl:template>
+
+<xsl:template match="Positions">
+    <xsl:if test="@Name">
+        <h3><xsl:value-of select="@Name"/></h3>
+    </xsl:if>
+    <table>
+        <tr>
+            <td>Count:</td>
+            <td>
+                <xsl:value-of select="Int[@Name='Count']"/>
+                (type: <xsl:value-of select="String[@Name='Type']"/>)
+            </td>
+        </tr>
+        <tr>
+            <td>Blocks:</td>
+            <td>
+                <xsl:call-template name="SequenceAsCSV">
+                    <xsl:with-param name="root" select="Sequence[@Name='Block']"/>
+                </xsl:call-template>
+            </td>
+        </tr>
+    </table>
+    <table border="1">
+        <tr>
+            <th>RefId</th>
+            <th>Atom count</th>
+            <th>Atoms</th>
+            <xsl:if test="Position/Vector[@Name='Coordinates']">
+                <th>Coordinates</th>
+            </xsl:if>
+            <xsl:if test="Position/Vector[@Name='Velocity']">
+                <th>Velocity</th>
+            </xsl:if>
+            <xsl:if test="Position/Vector[@Name='Force']">
+                <th>Force</th>
+            </xsl:if>
+        </tr>
+        <xsl:for-each select="Position">
+            <tr>
+                <td><xsl:value-of select="Int[@Name='RefId']"/></td>
+                <td><xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/></td>
+                <td>
+                    <xsl:call-template name="SequenceAsCSV">
+                        <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
+                    </xsl:call-template>
+                </td>
+                <xsl:if test="Vector[@Name='Coordinates']">
+                    <td>
+                        <xsl:apply-templates select="Vector[@Name='Coordinates']"/>
+                    </td>
+                </xsl:if>
+                <xsl:if test="Vector[@Name='Velocity']">
+                    <td>
+                        <xsl:apply-templates select="Vector[@Name='Velocity']"/>
+                    </td>
+                </xsl:if>
+                <xsl:if test="Vector[@Name='Force']">
+                    <td>
+                        <xsl:apply-templates select="Vector[@Name='Force']"/>
+                    </td>
+                </xsl:if>
+            </tr>
+        </xsl:for-each>
+    </table>
+</xsl:template>
+
 <!-- Selection reference data -->
 
 <xsl:key name="SelectionName" match="ParsedSelections/ParsedSelection" use="@Name"/>

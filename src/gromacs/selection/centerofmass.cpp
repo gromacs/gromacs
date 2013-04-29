@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -39,11 +39,11 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gromacs/selection/centerofmass.h"
+
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
-
-#include "gromacs/selection/centerofmass.h"
 
 /*!
  * \param[in]  top    Topology structure (unused, can be NULL).
@@ -113,9 +113,6 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
  * \param[in]  index  Indices of atoms.
  * \param[out] fout   Force on the COG position for the indexed atoms.
  * \returns    0 on success, EINVAL if \p top is NULL.
- *
- * No special function is provided for calculating the force on the center of
- * mass, because this can be achieved with gmx_calc_cog().
  */
 int
 gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
@@ -140,7 +137,27 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
         }
         mtot += mass;
     }
-    svmul(mtot, fout, fout);
+    svmul(mtot / nrefat, fout, fout);
+    return 0;
+}
+
+/*!
+ * \param[in]  top    Topology structure (unused, can be NULL).
+ * \param[in]  f      Forces on all atoms.
+ * \param[in]  nrefat Number of atoms in the index.
+ * \param[in]  index  Indices of atoms.
+ * \param[out] fout   Force on the COM position for the indexed atoms.
+ * \returns    0 on success.
+ */
+int
+gmx_calc_com_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
+{
+    clear_rvec(fout);
+    for (int m = 0; m < nrefat; ++m)
+    {
+        const int ai = index[m];
+        rvec_inc(fout, f[ai]);
+    }
     return 0;
 }
 
@@ -182,7 +199,7 @@ gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
  * \param[out] fout  Force on the COM/COG position for the indexed atoms.
  * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is false.
  *
- * Calls either gmx_calc_cog() or gmx_calc_cog_f() depending on the value of
+ * Calls either gmx_calc_cog_f() or gmx_calc_com_f() depending on the value of
  * \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
@@ -192,7 +209,7 @@ gmx_calc_comg_f(t_topology *top, rvec f[], int nrefat, atom_id index[],
 {
     if (bMass)
     {
-        return gmx_calc_cog(top, f, nrefat, index, fout);
+        return gmx_calc_com_f(top, f, nrefat, index, fout);
     }
     else
     {
@@ -465,7 +482,33 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
             }
             mtot += mass;
         }
-        svmul(mtot, fb, fout[b]);
+        svmul(mtot / (block->index[b+1] - block->index[b]), fb, fout[b]);
+    }
+    return 0;
+}
+
+/*!
+ * \param[in]  top   Topology structure (unused, can be NULL).
+ * \param[in]  f     Forces on all atoms.
+ * \param[in]  block t_block structure that divides \p index into blocks.
+ * \param[in]  index Indices of atoms.
+ * \param[out] fout  \p block->nr Forces on COM positions.
+ * \returns    0 on success.
+ */
+int
+gmx_calc_com_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+                     rvec fout[])
+{
+    for (int b = 0; b < block->nr; ++b)
+    {
+        rvec fb;
+        clear_rvec(fb);
+        for (int i = block->index[b]; i < block->index[b+1]; ++i)
+        {
+            const int ai = index[i];
+            rvec_inc(fb, f[ai]);
+        }
+        copy_rvec(fb, fout[b]);
     }
     return 0;
 }
@@ -508,8 +551,8 @@ gmx_calc_comg_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
  * \param[out] fout  \p block->nr forces on the COM/COG positions.
  * \returns    0 on success, EINVAL if \p top is NULL and \p bMass is true.
  *
- * Calls either gmx_calc_com_block() or gmx_calc_cog_block() depending on the
- * value of \p bMass.
+ * Calls either gmx_calc_com_f_block() or gmx_calc_cog_f_block() depending on
+ * the value of \p bMass.
  * Other parameters are passed unmodified to these functions.
  */
 int
@@ -518,7 +561,7 @@ gmx_calc_comg_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[]
 {
     if (bMass)
     {
-        return gmx_calc_cog_block(top, f, block, index, fout);
+        return gmx_calc_com_f_block(top, f, block, index, fout);
     }
     else
     {

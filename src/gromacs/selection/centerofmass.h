@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -85,6 +85,9 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout);
 /** Calculate force on a single center of geometry. */
 int
 gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout);
+/** Calculate force on a single center of mass. */
+int
+gmx_calc_com_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout);
 /** Calculate a single center of mass/geometry. */
 int
 gmx_calc_comg(t_topology *top, rvec x[], int nrefat, atom_id index[],
@@ -118,6 +121,10 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block,
 /** Calculate forces on centers of geometry for a blocked index. */
 int
 gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block,
+                     atom_id index[], rvec fout[]);
+/** Calculate forces on centers of mass for a blocked index. */
+int
+gmx_calc_com_f_block(t_topology *top, rvec f[], t_block *block,
                      atom_id index[], rvec fout[]);
 /** Calculate centers of mass/geometry for a blocked index. */
 int

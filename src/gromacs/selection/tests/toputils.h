@@ -56,6 +56,8 @@ class TopologyManager
         ~TopologyManager();
 
         void requestFrame();
+        void requestVelocities();
+        void requestForces();
 
         void loadTopology(const char *filename);
         void initAtoms(int count);
