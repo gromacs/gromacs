@@ -75,6 +75,8 @@ TopologyManager::~TopologyManager()
     if (frame_ != NULL)
     {
         sfree(frame_->x);
+        sfree(frame_->v);
+        sfree(frame_->f);
         sfree(frame_);
     }
 }
@@ -86,6 +88,28 @@ void TopologyManager::requestFrame()
     if (frame_ == NULL)
     {
         snew(frame_, 1);
+    }
+}
+
+void TopologyManager::requestVelocities()
+{
+    GMX_RELEASE_ASSERT(frame_ != NULL,
+                       "Velocities requested before requesting a frame");
+    frame_->bV = TRUE;
+    if (frame_->natoms > 0)
+    {
+        snew(frame_->v, frame_->natoms);
+    }
+}
+
+void TopologyManager::requestForces()
+{
+    GMX_RELEASE_ASSERT(frame_ != NULL,
+                       "Forces requested before requesting a frame");
+    frame_->bF = TRUE;
+    if (frame_->natoms > 0)
+    {
+        snew(frame_->f, frame_->natoms);
     }
 }
 
@@ -131,6 +155,14 @@ void TopologyManager::initAtoms(int count)
         frame_->natoms = count;
         frame_->bX     = TRUE;
         snew(frame_->x, count);
+        if (frame_->bV)
+        {
+            snew(frame_->v, count);
+        }
+        if (frame_->bF)
+        {
+            snew(frame_->f, count);
+        }
     }
 }
 

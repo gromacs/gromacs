@@ -1108,7 +1108,8 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
 bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
-    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL)
+    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL
+        || ((pc->flags & POS_FORCES) && pc->type != POS_ATOM))
     {
         return true;
     }
@@ -1148,11 +1149,11 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         g = &pc->gmax;
     }
-    gmx_ana_pos_set_evalgrp(p, g);
 
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)
     {
+        gmx_ana_pos_set_evalgrp(p, g);
         gmx_ana_indexmap_update(&p->m, g, false);
         p->nr = p->m.nr;
     }
@@ -1302,7 +1303,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_blocka(top, fr->f, &pc->b, bMass, p->f);
+                    gmx_calc_comg_f_blocka(top, fr->f, &pc->b, bMass, p->f);
                 }
                 break;
         }
