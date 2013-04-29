@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -324,11 +324,18 @@ enum
     /** Whether memory has been allocated for \p gmin and \p gmax. */
     SEL_CDATA_MINMAXALLOC = 16,
     /** Whether to update \p gmin and \p gmax in static analysis. */
-    SEL_CDATA_DOMINMAX      = 128,
+    SEL_CDATA_DOMINMAX      = 256,
     /** Whether the subexpression uses simple pass evaluation functions. */
     SEL_CDATA_SIMPLESUBEXPR = 32,
+    /*! \brief
+     * Whether a static subexpression needs to support multiple evaluations.
+     *
+     * This flag may only be set on \ref SEL_SUBEXPR elements that also have
+     * SEL_CDATA_SIMPLESUBEXPR.
+     */
+    SEL_CDATA_STATICMULTIEVALSUBEXPR = 64,
     /** Whether this expression is a part of a common subexpression. */
-    SEL_CDATA_COMMONSUBEXPR = 64
+    SEL_CDATA_COMMONSUBEXPR = 128
 };
 
 /*! \internal \brief
@@ -417,6 +424,10 @@ _gmx_selelem_print_compiler_info(FILE *fp, const SelectionTreeElement &sel,
     if (sel.cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
     {
         fprintf(fp, "Ss");
+    }
+    if (sel.cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR)
+    {
+        fprintf(fp, "Sm");
     }
     if (sel.cdata->flags & SEL_CDATA_COMMONSUBEXPR)
     {
@@ -1139,9 +1150,15 @@ init_item_evalfunc(const SelectionTreeElementPointer &sel)
             break;
 
         case SEL_SUBEXPR:
-            sel->evaluate = ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
-                             ? &_gmx_sel_evaluate_subexpr_simple
-                             : &_gmx_sel_evaluate_subexpr);
+            if ((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+                && !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+            {
+                sel->evaluate = &_gmx_sel_evaluate_subexpr_simple;
+            }
+            else
+            {
+                sel->evaluate = &_gmx_sel_evaluate_subexpr;
+            }
             break;
 
         case SEL_SUBEXPRREF:
@@ -1217,7 +1234,8 @@ init_item_evaloutput(const SelectionTreeElementPointer &sel)
     }
 
     if (sel->type == SEL_SUBEXPR
-        && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
+        && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+        && !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
     {
         sel->flags &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         if (sel->v.type == GROUP_VALUE || sel->v.type == POS_VALUE)
@@ -1399,6 +1417,15 @@ init_item_staticeval(const SelectionTreeElementPointer &sel)
                     init_item_staticeval(child);
                 }
             }
+            /* If an expression is evaluated for a dynamic group, then also
+             * atom-valued parameters need to be evaluated every time. */
+            if ((sel->flags & SEL_DYNAMIC)
+                && (sel->type == SEL_EXPRESSION || sel->type == SEL_MODIFIER)
+                && (child->flags & SEL_ATOMVAL))
+            {
+                child->flags        |= SEL_DYNAMIC;
+                child->cdata->flags &= ~SEL_CDATA_STATIC;
+            }
             child = child->next;
         }
     }
@@ -1486,7 +1513,17 @@ init_item_subexpr_flags(const SelectionTreeElementPointer &sel)
     else if (sel->type == SEL_SUBEXPRREF
              && (sel->child->cdata->flags & SEL_CDATA_SIMPLESUBEXPR))
     {
-        sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
+        /* See similar condition in init_item_staticeval(). */
+        if ((sel->flags & SEL_ATOMVAL)
+            && (sel->flags & SEL_DYNAMIC)
+            && !(sel->child->flags & SEL_DYNAMIC))
+        {
+            sel->child->cdata->flags |= SEL_CDATA_STATICMULTIEVALSUBEXPR;
+        }
+        else
+        {
+            sel->cdata->flags |= SEL_CDATA_SIMPLESUBEXPR;
+        }
     }
 
     /* Process children, but only follow subexpression references if the
@@ -1776,6 +1813,8 @@ store_param_val(const SelectionTreeElementPointer &sel)
     if (sel->v.type == INT_VALUE || sel->v.type == REAL_VALUE
         || sel->v.type == STR_VALUE)
     {
+        GMX_RELEASE_ASSERT(sel->v.u.ptr != NULL,
+                           "Selection method parameter not properly initialized");
         _gmx_selvalue_setstore(&sel->u.param->val, sel->v.u.ptr);
     }
 }
@@ -2196,7 +2235,9 @@ analyze_static(gmx_sel_evaluate_t                *data,
             break;
 
         case SEL_SUBEXPR:
-            if (sel->cdata->flags & (SEL_CDATA_SIMPLESUBEXPR | SEL_CDATA_FULLEVAL))
+            if (((sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR) &&
+                 !(sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+                || (sel->cdata->flags & SEL_CDATA_FULLEVAL))
             {
                 sel->cdata->evaluate(data, sel, g);
                 _gmx_selvalue_setstore(&sel->v, sel->child->v.u.ptr);
@@ -2495,6 +2536,17 @@ postprocess_item_subexpressions(const SelectionTreeElementPointer &sel)
         sel->v.nalloc        = sel->child->v.nalloc;
         sel->child->flags   &= ~(SEL_ALLOCVAL | SEL_ALLOCDATA);
         sel->child->v.nalloc = -1;
+    }
+
+    /* For static subexpressions with a dynamic evaluation group, there is
+     * no need to evaluate them again, as the SEL_SUBEXPRREF takes care of
+     * everything during evaluation. */
+    if (sel->type == SEL_SUBEXPR
+        && (sel->cdata->flags & SEL_CDATA_SIMPLESUBEXPR)
+        && (sel->cdata->flags & SEL_CDATA_STATICMULTIEVALSUBEXPR))
+    {
+        sel->evaluate        = NULL;
+        sel->cdata->evaluate = NULL;
     }
 }
 

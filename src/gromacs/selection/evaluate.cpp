@@ -405,14 +405,15 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
     while (sel)
     {
         /* Clear the evaluation group of subexpressions */
-        if (sel->child && sel->child->type == SEL_SUBEXPR)
+        if (sel->child && sel->child->type == SEL_SUBEXPR
+            && sel->child->evaluate != NULL)
         {
             sel->child->u.cgrp.isize = 0;
             /* Not strictly necessary, because the value will be overwritten
              * during first evaluation of the subexpression anyways, but we
              * clear the group for clarity. Note that this is _not_ done during
              * compilation because of some additional complexities involved
-             * (see compiler.c), so it should not be relied upon in
+             * (see compiler.cpp), so it should not be relied upon in
              * _gmx_sel_evaluate_subexpr(). */
             if (sel->child->v.type == GROUP_VALUE)
             {
@@ -778,7 +779,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
 {
     int        i, j;
 
-    if (g)
+    if (g != NULL && sel->child->evaluate != NULL)
     {
         sel->child->evaluate(data, sel->child, g);
     }
