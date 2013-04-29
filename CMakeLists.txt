@@ -244,6 +244,10 @@ endif()
 include(gmxCFlags)
 gmx_c_flags()
 
+# This variable should be used for additional compiler flags which are not
+# generated in gmxCFlags nor are acceleration or MPI related.
+set(EXTRA_CXX_FLAGS "")
+
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
 # Detect here whether applying a workaround is needed and will apply it later
 # on the affected files.
@@ -261,6 +265,15 @@ include(gmxDetectClang30)
 gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
 if(COMPILER_IS_CLANG_3_0)
     message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
+endif()
+
+# clang <=3.2 contains a bug that causes incorrect code to be generated for the
+# vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
+# (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
+# We can work around this by not using the integrated assembler (except on OS X
+# which has an outdated assembler that does not support AVX instructions).
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CXX_COMPILER_VERSION VERSION_LESS "3.3")
+    set(GMX_USE_CLANG_FMA_BUG_WORKAROUND TRUE)
 endif()
 
 if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
@@ -822,6 +835,20 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         if (NOT ACCELERATION_QUIETLY)
           message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
         endif()
+
+        # We don't have the full compiler version string yet (BUILD_C_COMPILER),
+        # so we can't distinguish vanilla and Apple clang, but catering for AMD
+        # hackintoshes is not worth the effort.
+        if (APPLE AND ${CMAKE_C_COMPILER_ID} STREQUAL "Clang")
+            message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA acceleration. As we can not work around this bug on OS X, you will have to select a different compiler or CPU acceleration.")
+        endif()
+
+        if (GMX_USE_CLANG_FMA_BUG_WORKAROUND)
+            # we assume that we have an external assembler that supports AVX
+            message(STATUS "Clang ${CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
+            set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
+        endif()
+
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
@@ -1100,7 +1127,7 @@ endif(GMX_FAHCORE)
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
     set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
@@ -1108,7 +1135,7 @@ else()
     message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
