@@ -35,6 +35,7 @@
 gmx_add_unit_test(SelectionUnitTests selection-test
                   indexutil.cpp
                   nbsearch.cpp
+                  poscalc.cpp
                   selectioncollection.cpp
                   selectionoption.cpp
                   toputils.cpp)
