@@ -280,6 +280,10 @@ endif()
 include(gmxCFlags)
 gmx_c_flags()
 
+# This variable should be used for additional compiler flags nwhich are not
+# generated in gmxCFlags nor are acceleration or MPI related.
+set(EXTRA_C_FLAGS "")
+
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
 # Detect here whether applying a workaround is needed and will apply it later
 # on the affected files.
@@ -297,6 +301,15 @@ include(gmxDetectClang30)
 gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
 if(COMPILER_IS_CLANG_3_0)
     message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
+endif()
+
+# clang <=3.2 contains a bug that causes incorrect code to be generated for the
+# vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
+# (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
+# We can work around this by not using the integrated assembler (except on OS X
+# which has an outdated assembler that does not support AVX instructions).
+if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND C_COMPILER_VERSION VERSION_LESS "3.3")
+    set(GMX_USE_CLANG_FMA_BUG_WORKAROUND TRUE)
 endif()
 
 if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
@@ -785,9 +798,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
     # Set the FMA4 flags (MSVC doesn't require any)
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
-        if (${CMAKE_COMPILER_ID} MATCHES "Clang")
-            message(FATAL_ERROR "Clang up to at least version 3.2 produces incorrect code for AVX_128_FMA. Sorry, but you will have to select a different compiler or acceleration.")
-        endif()
         GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" ACCELERATION_C_FLAGS)
         if (NOT GNU_FMA_CFLAG)
             message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
@@ -835,6 +845,17 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         if (NOT ACCELERATION_QUIETLY)
           message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
         endif()
+
+        if (GMX_USE_CLANG_FMA_BUG_WORKAROUND)
+            if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+                message(FATAL_ERROR "Due to a known compiler bug Clang up to version 3.2 produces incorrect code for AVX_128_FMA. As we can not work around this bug on OS X, you will have to select a different compiler or CPU acceleration.")
+            else()
+                # we assume that we have an external assembler that supports AVX
+                message(STATUS "Clang ${C_COMPILER_VERSION} detected, enabling FMA bug workaround")
+                set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -no-integrated-as")
+            endif()
+        endif()
+
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
@@ -1103,13 +1124,13 @@ endif(GMX_FAHCORE)
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
     set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
     if(CMAKE_CXX_COMPILER_LOADED)
