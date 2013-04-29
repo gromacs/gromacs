@@ -2715,6 +2715,10 @@ SelectionCompiler::compile(SelectionCollection *coll)
     /* Initialize the evaluation callbacks and process the tree structure
      * to conform to the expectations of the callback functions. */
     /* Also, initialize and allocate the compiler data structure */
+    // TODO: Processing the tree in reverse root order would be better,
+    // as it would make dependency handling easier (all subexpression
+    // references would be processed before the actual subexpression) and
+    // could remove the need for most of these extra loops.
     item = sc->root;
     while (item)
     {
@@ -2724,6 +2728,13 @@ SelectionCompiler::compile(SelectionCollection *coll)
         optimize_arithmetic_expressions(item);
         /* Initialize the compiler data */
         init_item_compilerdata(item);
+        item = item->next;
+    }
+    // Initialize the static evaluation compiler flags.
+    // Requires the FULLEVAL compiler flag for the whole tree.
+    item = sc->root;
+    while (item)
+    {
         init_item_staticeval(item);
         init_item_subexpr_refcount(item);
         item = item->next;
