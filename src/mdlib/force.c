@@ -868,12 +868,13 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
                                                  so we don't need to add anything to the
                                                  enerd->enerpart_lambda[0] */
 
-        /* we don't need to worry about dvdl contributions to the current lambda, because
-           it's automatically zeroed */
+        /* we don't need to worry about dvdl_lin contributions to dE at
+           current lambda, because the contributions to the current
+           lambda are automatically zeroed */
 
         for (j = 0; j < efptNR; j++)
         {
-            /* note loop is not over separated dhdl components here. All are included */
+            /* Note that this loop is over all dhdl components, not just the separated ones */
             dlam = (fepvals->all_lambda[j][i]-lambda[j]);
             enerd->enerpart_lambda[i+1] += dlam*enerd->dvdl_lin[j];
             if (debug)
