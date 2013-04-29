@@ -87,7 +87,7 @@ enum {
 #define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
 typedef struct {
-    int minO, minC, H, N, C, O, Cn[MAXCHI+3];
+    int minCalpha, minC, H, N, C, O, Cn[MAXCHI+3];
 } t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
 
 typedef struct {
