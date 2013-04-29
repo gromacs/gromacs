@@ -211,11 +211,14 @@ static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
     tng_function_status stat;
     int64_t n_particles;
     static int64_t frame_nr = 0;
-    
+
     bOK = TRUE;
-    
+
     tng_num_particles_get(tng, &n_particles);
-    
+
+    /* FIXME: Currently it is not possible to write at different intervals, i.e. using different stride lengths.
+     * The frame count does not work properly in that case. */
+
     if (sh->box_size != 0)
     {
         stat = tng_frame_data_write(tng, frame_nr, TNG_TRAJ_BOX_SHAPE, box, TNG_USE_HASH);
