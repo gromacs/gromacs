@@ -3386,10 +3386,10 @@ static inline void copy_correct_pbc_image(
 
 static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
                            rvec *x, gmx_mtop_t *mtop, gmx_bool bVerbose, FILE *out_slabs, matrix box,
-                           gmx_bool bOutputCenters)
+                           t_inputrec *ir, gmx_bool bOutputCenters)
 {
     int                   i, ii;
-    rvec                  coord, *xdum;
+    rvec                  coord, xref, *xdum;
     gmx_bool              bFlex, bColl;
     t_atom               *atom;
     gmx_enfrotgrp_t       erg; /* Pointer to enforced rotation group data */
@@ -3397,6 +3397,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
     gmx_mtop_atomlookup_t alook = NULL;
     real                  mass, totalmass;
     real                  start = 0.0;
+    double                t_start;
 
 
     /* Do we have a flexible axis? */
@@ -3412,24 +3413,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         snew(erg->xc, rotg->nat);
         snew(erg->xc_shifts, rotg->nat);
         snew(erg->xc_eshifts, rotg->nat);
-
-        /* Save the original (whole) set of positions such that later the
-         * molecule can always be made whole again */
         snew(erg->xc_old, rotg->nat);
-        if (MASTER(cr))
-        {
-            for (i = 0; i < rotg->nat; i++)
-            {
-                ii = rotg->ind[i];
-                copy_correct_pbc_image(x[ii], erg->xc_old[i], rotg->x_ref[i], box, 3);
-            }
-        }
-#ifdef GMX_MPI
-        if (PAR(cr))
-        {
-            gmx_bcast(rotg->nat*sizeof(erg->xc_old[0]), erg->xc_old, cr);
-        }
-#endif
 
         if (rotg->eFittype == erotgFitNORM)
         {
@@ -3542,6 +3526,41 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         if (PAR(cr))
         {
             gmx_bcast(sizeof(erg->xc_center), erg->xc_center, cr);
+        }
+#endif
+    }
+    
+    if (bColl)
+    {
+        /* Save the original (whole) set of positions in xc_old such that at later 
+         * steps the rotation group can always be made whole again. If the simulation is
+         * restarted, we compute the starting reference positions (given the time)
+         * and assume that the correct PBC image of each position is the one nearest
+         * to the current reference */
+        if (MASTER(cr))
+        {
+            /* Calculate the rotation matrix for this angle: */
+            t_start       = ir->init_t + ir->init_step*ir->delta_t;
+            erg->degangle = rotg->rate * t_start;
+            calc_rotmat(rotg->vec, erg->degangle, erg->rotmat);
+
+            for (i = 0; i < rotg->nat; i++)
+            {
+                ii = rotg->ind[i];
+
+                /* Subtract pivot, rotate, and add pivot again. This will yield the 
+                 * reference position for time t */
+                rvec_sub(rotg->x_ref[i], erg->xc_ref_center, coord);
+                mvmul(erg->rotmat, coord, xref);
+                rvec_inc(xref, erg->xc_ref_center);
+
+                copy_correct_pbc_image(x[ii], erg->xc_old[i], xref, box, 3);
+            }
+        }
+#ifdef GMX_MPI
+        if (PAR(cr))
+        {
+            gmx_bcast(rotg->nat*sizeof(erg->xc_old[0]), erg->xc_old, cr);
         }
 #endif
     }
@@ -3749,7 +3768,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
                 erg->nat_loc = rotg->nat;
                 erg->ind_loc = rotg->ind;
             }
-            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, bVerbose, er->out_slabs, box,
+            init_rot_group(fplog, cr, g, rotg, x_pbc, mtop, bVerbose, er->out_slabs, box, ir,
                            !(er->Flags & MD_APPENDFILES) ); /* Do not output the reference centers
                                                              * again if we are appending */
         }
@@ -3866,11 +3885,13 @@ static void choose_pbc_image(rvec x[], t_rotgrp *rotg, matrix box, int npbcdim)
         /* Index of a rotation group atom  */
         ii = erg->ind_loc[i];
 
-        /* Get the reference position. The pivot was already
+        /* Get the correctly rotated reference position. The pivot was already
          * subtracted in init_rot_group() from the reference positions. Also,
          * the reference positions have already been rotated in
-         * rotate_local_reference() */
+         * rotate_local_reference(). For the current reference position we thus
+         * only need to add the pivot again. */
         copy_rvec(erg->xr_loc[i], xref);
+        rvec_inc(xref, erg->xc_ref_center);
 
         copy_correct_pbc_image(x[ii], erg->x_loc_pbc[i], xref, box, npbcdim);
     }
