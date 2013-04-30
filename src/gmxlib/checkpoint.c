@@ -1045,9 +1045,9 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
                 case estMC_RNG:  ret      = do_cpte_ints(xd, cptpEST, i, sflags, state->nmcrng, (int **)&state->mc_rng, list); break;
                 case estMC_RNGI: ret      = do_cpte_ints(xd, cptpEST, i, sflags, 1, &state->mc_rngi, list); break;
                 case estDISRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.disre_initf, list); break;
-                case estDISRE_RM3TAV: ret = do_cpte_reals(xd, cptpEST, i, sflags, state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
+                case estDISRE_RM3TAV: ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.ndisrepairs, &state->hist.disre_rm3tav, list); break;
                 case estORIRE_INITF:  ret = do_cpte_real (xd, cptpEST, i, sflags, &state->hist.orire_initf, list); break;
-                case estORIRE_DTAV:   ret = do_cpte_reals(xd, cptpEST, i, sflags, state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
+                case estORIRE_DTAV:   ret = do_cpte_n_reals(xd, cptpEST, i, sflags, &state->hist.norire_Dtav, &state->hist.orire_Dtav, list); break;
                 default:
                     gmx_fatal(FARGS, "Unknown state entry %d\n"
                               "You are probably reading a new checkpoint file with old code", i);
@@ -2307,6 +2307,10 @@ read_checkpoint_state(const char *fn, int *simulation_part,
 
 void read_checkpoint_trxframe(t_fileio *fp, t_trxframe *fr)
 {
+    /* This next line is nasty because the sub-structures of t_state
+     * cannot be assumed to be zeroed (or even initialized in ways the
+     * rest of the code might assume). Using snew would be better, but
+     * this will all go away for 5.0. */
     t_state         state;
     int             simulation_part;
     gmx_large_int_t step;
@@ -2451,6 +2455,10 @@ gmx_bool read_checkpoint_simulation_part(const char *filename, int *simulation_p
     t_fileio            *fp;
     gmx_large_int_t      step = 0;
     double               t;
+    /* This next line is nasty because the sub-structures of t_state
+     * cannot be assumed to be zeroed (or even initialized in ways the
+     * rest of the code might assume). Using snew would be better, but
+     * this will all go away for 5.0. */
     t_state              state;
     int                  nfiles;
     gmx_file_position_t *outputfiles;
