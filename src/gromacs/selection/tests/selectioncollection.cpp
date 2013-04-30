@@ -78,14 +78,13 @@ class SelectionCollectionTest : public ::testing::Test
             ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, natoms));
         }
         void loadTopology(const char *filename);
+        void setTopology();
 
-        gmx::SelectionCollection sc_;
-        gmx::SelectionList       sel_;
-        t_topology              *top_;
-        t_trxframe              *frame_;
-
-    private:
         gmx::test::TopologyManager  topManager_;
+        gmx::SelectionCollection    sc_;
+        gmx::SelectionList          sel_;
+        t_topology                 *top_;
+        t_trxframe                 *frame_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -110,6 +109,12 @@ void
 SelectionCollectionTest::loadTopology(const char *filename)
 {
     topManager_.loadTopology(filename);
+    setTopology();
+}
+
+void
+SelectionCollectionTest::setTopology()
+{
     top_   = topManager_.topology();
     frame_ = topManager_.frame();
 
@@ -537,7 +542,17 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
     runTest("simple.pdb", selections);
 }
 
-// TODO: Add test for "molindex"
+TEST_F(SelectionCollectionDataTest, HandlesMolIndex)
+{
+    static const char * const selections[] = {
+        "molindex 1 4",
+        "molecule 2 3 5"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    topManager_.initUniformMolecules(3);
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 {
@@ -559,7 +574,18 @@ TEST_F(SelectionCollectionDataTest, HandlesPdbAtomname)
     runTest("simple.pdb", selections);
 }
 
-// TODO: Add test for atomtype
+
+TEST_F(SelectionCollectionDataTest, HandlesAtomtype)
+{
+    static const char * const selections[] = {
+        "atomtype CA"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    const char *const types[] = { "CA", "SA", "SB" };
+    topManager_.initAtomTypes(types);
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesChain)
 {
@@ -881,7 +907,7 @@ TEST_F(SelectionCollectionDataTest, HandlesDynamicAtomValuedParameters)
 {
     static const char * const selections[] = {
         "same residue as (atomnr 3 5 13 or y > 5)",
-        "(resnr 1 3 5 or x > 10) and same residue as (atomnr 3 5 13 or y > 5)"
+        "(resnr 1 3 5 or x > 10) and same residue as (atomnr 3 5 13 or z > 5)"
     };
     setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);

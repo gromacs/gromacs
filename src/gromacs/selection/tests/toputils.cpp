@@ -45,6 +45,7 @@
 
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/string2.h"
 #include "gromacs/legacyheaders/tpxio.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vec.h"
@@ -163,6 +164,25 @@ void TopologyManager::initAtoms(int count)
         {
             snew(frame_->f, count);
         }
+    }
+}
+
+void TopologyManager::initAtomTypes(int count, const char *const types[])
+{
+    GMX_RELEASE_ASSERT(top_ != NULL, "Topology not initialized");
+    atomtypes_.reserve(count);
+    for (int i = 0; i < count; ++i)
+    {
+        atomtypes_.push_back(strdup(types[i]));
+    }
+    snew(top_->atoms.atomtype, top_->atoms.nr);
+    for (int i = 0, j = 0; i < top_->atoms.nr; ++i, ++j)
+    {
+        if (j == count)
+        {
+            j = 0;
+        }
+        top_->atoms.atomtype[i] = &atomtypes_[j];
     }
 }
 
