@@ -42,6 +42,8 @@
 #ifndef GMX_SELECTION_TESTS_TOPUTILS_H
 #define GMX_SELECTION_TESTS_TOPUTILS_H
 
+#include <vector>
+
 #include "gromacs/legacyheaders/typedefs.h"
 
 namespace gmx
@@ -61,6 +63,12 @@ class TopologyManager
 
         void loadTopology(const char *filename);
         void initAtoms(int count);
+        void initAtomTypes(int count, const char *const types[]);
+        template <int count>
+        void initAtomTypes(const char *const (&types)[count])
+        {
+            initAtomTypes(count, types);
+        }
         void initUniformResidues(int residueSize);
         void initUniformMolecules(int moleculeSize);
 
@@ -68,8 +76,9 @@ class TopologyManager
         t_trxframe *frame() { return frame_; }
 
     private:
-        t_topology *top_;
-        t_trxframe *frame_;
+        t_topology             *top_;
+        t_trxframe             *frame_;
+        std::vector<char *>     atomtypes_;
 };
 
 } // namespace test

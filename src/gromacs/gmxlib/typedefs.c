@@ -860,17 +860,42 @@ void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames)
             }
         }
     }
+    if (bFreeNames && atoms->atomtype != NULL)
+    {
+        for (i = 0; i < atoms->nr; i++)
+        {
+            if (atoms->atomtype[i] != NULL)
+            {
+                sfree(*atoms->atomtype[i]);
+                *atoms->atomtype[i] = NULL;
+            }
+        }
+    }
+    if (bFreeNames && atoms->atomtypeB != NULL)
+    {
+        for (i = 0; i < atoms->nr; i++)
+        {
+            if (atoms->atomtypeB[i] != NULL)
+            {
+                sfree(*atoms->atomtypeB[i]);
+                *atoms->atomtypeB[i] = NULL;
+            }
+        }
+    }
     sfree(atoms->atomname);
-    /* Do we need to free atomtype and atomtypeB as well ? */
+    sfree(atoms->atomtype);
+    sfree(atoms->atomtypeB);
     sfree(atoms->resinfo);
     sfree(atoms->atom);
     sfree(atoms->pdbinfo);
-    atoms->nr       = 0;
-    atoms->nres     = 0;
-    atoms->atomname = NULL;
-    atoms->resinfo  = NULL;
-    atoms->atom     = NULL;
-    atoms->pdbinfo  = NULL;
+    atoms->nr        = 0;
+    atoms->nres      = 0;
+    atoms->atomname  = NULL;
+    atoms->atomtype  = NULL;
+    atoms->atomtypeB = NULL;
+    atoms->resinfo   = NULL;
+    atoms->atom      = NULL;
+    atoms->pdbinfo   = NULL;
 }
 
 real max_cutoff(real cutoff1, real cutoff2)
