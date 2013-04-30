@@ -469,6 +469,16 @@ void done_inputrec(t_inputrec *ir)
     }
 }
 
+static void zero_history(history_t *hist)
+{
+    hist->disre_initf = 0;
+    hist->ndisrepairs = 0;
+    hist->disre_rm3tav = NULL;
+    hist->orire_initf = 0;
+    hist->norire_Dtav = 0;
+    hist->orire_Dtav = NULL;
+}
+
 static void zero_ekinstate(ekinstate_t *eks)
 {
     eks->ekin_n         = 0;
@@ -611,13 +621,10 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
     }
     state->sd_X = NULL;
     state->cg_p = NULL;
-
+    zero_history(&state->hist);
     zero_ekinstate(&state->ekinstate);
-
     init_energyhistory(&state->enerhist);
-
     init_df_history(&state->dfhist, nlambda, 0);
-
     state->ddp_count       = 0;
     state->ddp_count_cg_gl = 0;
     state->cg_gl           = NULL;
