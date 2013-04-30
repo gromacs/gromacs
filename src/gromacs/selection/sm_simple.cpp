@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -867,6 +867,9 @@ evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
     }
     else
     {
+        // TODO: This loop is never reached in the current code.
+        // It would be useful to change the code such that it is, mostly for
+        // memory efficiency reasons.
         for (i = 0; i < g->isize; ++i)
         {
             out[i] = fr->x[g->index[i]][d];
