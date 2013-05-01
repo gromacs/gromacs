@@ -216,7 +216,7 @@ static void mp_process_tree(FILE *fp,xmlNodePtr tree,int parent,
     {
         if (fp) 
         {
-            if ((tree->type > 0) && (tree->type < NXMLTYPES))
+            if ((tree->type > 0) && ((unsigned)tree->type < NXMLTYPES))
                 fprintf(fp,"Node type %s encountered with name %s\n",
                         xmltypes[tree->type],(char *)tree->name);
             else

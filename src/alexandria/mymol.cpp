@@ -1594,7 +1594,7 @@ immStatus MyMol::Initxx(FILE *fp,
         
         gr = gmx_resp_init(iModel,FALSE,0,0,GetCharge(),
                            0,0,-1,TRUE,watoms,rDecrZeta,FALSE,1,
-                           bFitZeta,FALSE,NULL);
+                           bFitZeta,TRUE,FALSE,NULL);
         if (NULL != gr)
         {
             alexandria::CalculationIterator ci;
