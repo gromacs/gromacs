@@ -1576,6 +1576,7 @@
     <eemprop model="AXg" name="F" jaa="23.6575" chi="6" zeta="0 110.1 28.2" charge="9 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="hc" jaa="19.5586" chi="2.2" zeta="0 11.9" charge="1 0" row="0 1"/>
     <eemprop model="AXg" name="ho" jaa="20.9395" chi="2.2" zeta="100 10" charge="1 0" row="0 1"/>
+    <eemprop model="AXg" name="h1" jaa="24.4306" chi="2.2" zeta="0" charge="0" row="1"/>
     <eemprop model="AXg" name="NDI" jaa="24.9083" chi="7.49112" zeta="0 40 10" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NPI2" jaa="24.9083" chi="7.49112" zeta="0 40.1 14.2" charge="7 -2 0" row="0 1 2"/>
     <eemprop model="AXg" name="NTE" jaa="24.9083" chi="7.49112" zeta="0 30.8 49.9" charge="7 -2 0" row="0 1 2"/>

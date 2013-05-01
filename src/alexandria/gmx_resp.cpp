@@ -145,7 +145,7 @@ gmx_resp_t gmx_resp_init(int iModel,
                          bool bAXpRESP,real qfac,real b_hyper,real qtot,
                          real zmin,real zmax,real delta_z,bool bZatype,
                          real watoms,real rDecrZeta,bool bRandZeta,
-                         real penalty_fac,bool bFitZeta,bool bEntropy,
+                         bool bRandQ,real penalty_fac,bool bFitZeta,bool bEntropy,
                          const char *dzatoms)
 {
     gmx_resp_t gr;
@@ -173,7 +173,7 @@ gmx_resp_t gmx_resp_init(int iModel,
     gr->bZatype   = bZatype;
     gr->rDecrZeta = rDecrZeta;
     gr->bRandZeta = bRandZeta;
-    gr->bRandQ    = true;
+    gr->bRandQ    = bRandQ;
     gr->bFitZeta  = bFitZeta;
     gr->watoms    = watoms;
     gr->nparam    = 0;

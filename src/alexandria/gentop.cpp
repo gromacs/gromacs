@@ -250,13 +250,13 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
     static real kb = 4e5,kt = 400,kp = 5;
-    static real btol=0.2,qtol=1e-6,zmin=5,zmax=100,delta_z=-1;
+    static real btol=0.2,qtol=1e-10,zmin=5,zmax=100,delta_z=-1;
     static real hfac=0,qweight=1e-3,bhyper=0.1;
     static real th_toler=170,ph_toler=5,watoms=0,spacing=0.1;
     static real dbox=0.370424,penalty_fac=1,epsr=1;
     static int  nexcl = 2;
     static int  maxiter=25000,maxcycle=1;
-    static int  idihtp=1,pdihtp=3,nmol=1;
+    static int  nmol=1;
     static real rDecrZeta = -1;
     static gmx_bool bBabel=
 #ifdef HAVE_LIBOPENBABEL2
@@ -268,7 +268,7 @@ int main(int argc, char *argv[])
     static gmx_bool bParam=FALSE,bH14=TRUE,bRound=TRUE,bITP,bAddShells=FALSE;
     static gmx_bool bPairs = TRUE, bPBC = TRUE;
     static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
-    static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bFitZeta=TRUE,bEntropy=FALSE;
+    static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bRandQ=TRUE,bFitZeta=TRUE,bEntropy=FALSE;
     static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
     static char *molnm = (char *)"",*iupac = (char *)"",*dbname = (char *)"", *symm_string = (char *)"",*conf=(char *)"minimum",*basis=(char *)"";
     static int maxpot = 0;
@@ -354,6 +354,8 @@ int main(int argc, char *argv[])
           "HIDDENGenerate decreasing zeta with increasing row numbers for atoms that have multiple distributed charges. In this manner the 1S electrons are closer to the nucleus than 2S electrons and so on. If this number is < 0, nothing is done, otherwise a penalty is imposed in fitting if the Z2-Z1 < this number." },
         { "-randzeta", FALSE, etBOOL, {&bRandZeta},
           "HIDDENUse random zeta values within the zmin zmax interval when optimizing against Gaussian ESP data. If FALSE the initial values from the gentop.dat file will be used." },
+        { "-randq", FALSE, etBOOL, {&bRandQ},
+          "HIDDENUse random charges to start with when optimizing against Gaussian ESP data. Makes the optimization non-deterministic." },
         { "-fitzeta", FALSE, etBOOL, {&bFitZeta},
           "HIDDENControls whether or not the Gaussian/Slater widths are optimized when fitting to a QM computed ESP" },
         { "-pfac",   FALSE, etREAL, {&penalty_fac},
@@ -393,11 +395,7 @@ int main(int argc, char *argv[])
         { "-kt",    FALSE, etREAL, {&kt},
           "HIDDENAngle force constant (kJ/mol/rad^2)" },
         { "-kp",    FALSE, etREAL, {&kp},
-          "HIDDENDihedral angle force constant (kJ/mol/rad^2)" },
-        { "-pdihtp", FALSE, etINT, {&pdihtp},
-          "Type to use for proper dihedrals (see GROMACS manual)" },
-        { "-idihtp", FALSE, etINT, {&idihtp},
-          "Type to use for improper dihedrals (see GROMACS manual)" }
+          "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
   
     CopyRight(stdout,argv[0]);
@@ -503,7 +501,8 @@ int main(int argc, char *argv[])
     {
         mymol.gr = gmx_resp_init(iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
                                  zmin,zmax,delta_z,
-                                 bZatype,watoms,rDecrZeta,bRandZeta,penalty_fac,bFitZeta,
+                                 bZatype,watoms,rDecrZeta,bRandZeta,bRandQ,
+                                 penalty_fac,bFitZeta,
                                  bEntropy,dzatoms);
         if (NULL == mymol.gr)
         {
