@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">"GroupSelection" group "GrpA"</String>
+      <String Name="Name">GroupSelection</String>
+      <String Name="Text">"GroupSelection" group "GrpA"</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">"DynamicSelection" x &lt; 5</String>
+      <String Name="Name">DynamicSelection</String>
+      <String Name="Text">"DynamicSelection" x &lt; 5</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">y &lt; 3</String>
+      <String Name="Name">y &lt; 3</String>
+      <String Name="Text">y &lt; 3</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <String Name="Name">GroupSelection</String>
+      <Sequence Name="Atoms">
+        <Int Name="Length">5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <String Name="Name">DynamicSelection</String>
+      <Sequence Name="Atoms">
+        <Int Name="Length">10</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <String Name="Name">y &lt; 3</String>
+      <Sequence Name="Atoms">
+        <Int Name="Length">10</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>

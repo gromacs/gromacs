@@ -318,9 +318,9 @@ void SelectionCollection::Impl::resolveExternalGroups(
             char *name = root->u.gref.name;
             bOk = gmx_ana_indexgrps_find(&root->u.cgrp, &foundName, grps_, name);
             sfree(name);
-            root->u.gref.name = NULL;
             if (!bOk)
             {
+                root->u.gref.name = NULL;
                 // TODO: Improve error messages
                 errors->append("Unknown group referenced in a selection");
             }
@@ -476,6 +476,10 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     if (!errors.isEmpty())
     {
         GMX_THROW(InvalidInputError(errors.toString()));
+    }
+    for (int i = 0; i < impl_->sc_.sel.size(); ++i)
+    {
+        impl_->sc_.sel[i]->refreshName();
     }
 }
 

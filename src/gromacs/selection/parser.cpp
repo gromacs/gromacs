@@ -1997,7 +1997,7 @@ yyreduce:
                  SelectionTreeElementPointer p
                         = _gmx_sel_init_position(s, NULL, scanner);
                  if (!p) YYERROR;
-                 set((yyval.sel), _gmx_sel_init_selection(s->name().c_str(), p, scanner));
+                 set((yyval.sel), _gmx_sel_init_selection(NULL, p, scanner));
                  END_ACTION;
              }
     break;
@@ -2014,7 +2014,7 @@ yyreduce:
                  SelectionTreeElementPointer p
                         = _gmx_sel_init_position(s, NULL, scanner);
                  if (!p) YYERROR;
-                 set((yyval.sel), _gmx_sel_init_selection(s->name().c_str(), p, scanner));
+                 set((yyval.sel), _gmx_sel_init_selection(NULL, p, scanner));
                  END_ACTION;
              }
     break;

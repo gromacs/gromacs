@@ -166,6 +166,13 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
 }       // namespace
 
 void
+SelectionData::refreshName()
+{
+    rootElement_.fillNameIfMissing(selectionText_.c_str());
+    name_ = rootElement_.name();
+}
+
+void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
 {
     GMX_ASSERT(posMass_.empty() && posCharge_.empty(),

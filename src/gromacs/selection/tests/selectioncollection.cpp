@@ -43,6 +43,7 @@
 
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
@@ -72,6 +73,7 @@ class SelectionCollectionTest : public ::testing::Test
         static int               s_debugLevel;
 
         SelectionCollectionTest();
+        ~SelectionCollectionTest();
 
         void setAtomCount(int natoms)
         {
@@ -79,12 +81,14 @@ class SelectionCollectionTest : public ::testing::Test
         }
         void loadTopology(const char *filename);
         void setTopology();
+        void loadIndexGroups(const char *filename);
 
         gmx::test::TopologyManager  topManager_;
         gmx::SelectionCollection    sc_;
         gmx::SelectionList          sel_;
         t_topology                 *top_;
         t_trxframe                 *frame_;
+        gmx_ana_indexgrps_t        *grps_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
@@ -97,12 +101,20 @@ void SelectionCollectionTest::SetUpTestCase()
 }
 
 SelectionCollectionTest::SelectionCollectionTest()
-    : top_(NULL), frame_(NULL)
+    : top_(NULL), frame_(NULL), grps_(NULL)
 {
     topManager_.requestFrame();
     sc_.setDebugLevel(s_debugLevel);
     sc_.setReferencePosType("atom");
     sc_.setOutputPosType("atom");
+}
+
+SelectionCollectionTest::~SelectionCollectionTest()
+{
+    if (grps_ != NULL)
+    {
+        gmx_ana_indexgrps_free(grps_);
+    }
 }
 
 void
@@ -121,6 +133,17 @@ SelectionCollectionTest::setTopology()
     ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
 }
 
+void
+SelectionCollectionTest::loadIndexGroups(const char *filename)
+{
+    GMX_RELEASE_ASSERT(grps_ == NULL,
+                       "External groups can only be loaded once");
+    std::string fullpath =
+        gmx::test::TestFileManager::getInputFilePath(filename);
+    gmx_ana_indexgrps_init(&grps_, NULL, fullpath.c_str());
+    sc_.setIndexGroups(grps_);
+}
+
 
 /********************************************************************
  * Test fixture for selection testing with reference data
@@ -137,6 +160,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             efTestPositionMapping       = 1<<3,
             efTestPositionMasses        = 1<<4,
             efTestPositionCharges       = 1<<5,
+            efTestSelectionNames        = 1<<6,
             efDontTestCompiledAtoms     = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
@@ -300,6 +324,10 @@ SelectionCollectionDataTest::checkCompiled()
         std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
+        if (flags_.test(efTestSelectionNames))
+        {
+            selcompound.checkString(sel_[i].name(), "Name");
+        }
         if (!flags_.test(efDontTestCompiledAtoms))
         {
             checkSelection(&selcompound, sel_[i], flags_ & mask);
@@ -447,11 +475,33 @@ TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
 
 // TODO: Tests for more parser errors
 
-TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)
+{
+    ASSERT_NO_THROW_GMX(sc_.setIndexGroups(NULL));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser2)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InvalidInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed1)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
     EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 4; group \"foo\""));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InvalidInputError);
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
@@ -836,6 +886,46 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndChargesWithoutTopology)
 /********************************************************************
  * Tests for selection syntactic constructs
  */
+
+TEST_F(SelectionCollectionDataTest, HandlesSelectionNames)
+{
+    static const char * const selections[] = {
+        "\"GroupSelection\" group \"GrpA\"",
+        "\"DynamicSelection\" x < 5",
+        "y < 3"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest(10, selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
+{
+    static const char * const selections[] = {
+        "group \"GrpA\"",
+        "GrpB",
+        "1",
+        "group \"GrpB\" and resname RB"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
+{
+    static const char * const selections[] = {
+        "group \"GrpA\"",
+        "GrpB",
+        "1",
+        "group \"GrpB\" and resname RB"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {

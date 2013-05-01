@@ -138,22 +138,22 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     }
     catch (...)
     {
-        done_blocka(block);
-        sfree(block);
         for (int i = 0; i < block->nr; ++i)
         {
             sfree(names[i]);
         }
         sfree(names);
+        done_blocka(block);
+        sfree(block);
         throw;
     }
-    done_blocka(block);
-    sfree(block);
     for (int i = 0; i < block->nr; ++i)
     {
         sfree(names[i]);
     }
     sfree(names);
+    done_blocka(block);
+    sfree(block);
 }
 
 /*!
