@@ -85,7 +85,7 @@
  %mem=7GB
  %chk=1-butanol3
  ----------------------------------------------------------------------
- #P B3LYP/gen Int(Grid=Ultrafine) maxdisk=40GB Density=Checkpoint Geom=
+ #P B3LYP/aug-cc-pVTZ Int(Grid=Ultrafine) maxdisk=40GB Density=Checkpoint Geom=
  AllCheck Pop=(MK,ReadRadii) iop(6/33=2) iop(6/42=6)
  ----------------------------------------------------------------------
  Warning!  Basis set taken from checkpoint file.
