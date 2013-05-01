@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -306,6 +306,18 @@ class SelectionTreeElement
         void setName(const char *name) { name_ = (name != NULL ? name : ""); }
         //! \copydoc setName(const char *)
         void setName(const std::string &name) { name_ = name; }
+        /*! \brief
+         * Sets the name of a root element if it is missing.
+         *
+         * \param[in] selectionText  Full selection text to use as a fallback.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * If index groups have not yet been set and the selection is a result
+         * of a group reference, the name may still be empty after this call.
+         *
+         * Strong exception safety guarantee.
+         */
+        void fillNameIfMissing(const char *selectionText);
 
         //! Type of the element.
         e_selelem_t                         type;

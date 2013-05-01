@@ -181,18 +181,31 @@
 
 <xsl:template match="Selection">
     <h3><xsl:value-of select="@Name"/></h3>
-    <p>
-        Selection text:<br/>
-        <xsl:value-of select="key('SelectionName', @Name)/String[@Name='Text']"/>
-    </p>
-    <xsl:apply-templates />
-</xsl:template>
-
-<xsl:template match="Selection/Sequence[@Name='Atoms']">
-    <p>
-        Atoms:
-        <xsl:call-template name="SequenceAsHorizontalTable"/>
-    </p>
+    <table>
+        <xsl:if test="String[@Name='Name']">
+            <tr>
+                <td>Name:</td>
+                <td><xsl:value-of select="String[@Name='Name']"/></td>
+            </tr>
+        </xsl:if>
+        <tr>
+            <td>Selection text:</td>
+            <td>
+                <xsl:value-of select="key('SelectionName', @Name)/String[@Name='Text']"/>
+            </td>
+        </tr>
+        <xsl:if test="Sequence[@Name='Atoms']">
+            <tr>
+                <td>Atoms (<xsl:value-of select="Sequence[@Name='Atoms']/Int[@Name='Length']"/>):</td>
+                <td>
+                    <xsl:call-template name="SequenceAsCSV">
+                        <xsl:with-param name="root" select="Sequence[@Name='Atoms']"/>
+                    </xsl:call-template>
+                </td>
+            </tr>
+        </xsl:if>
+    </table>
+    <xsl:apply-templates select="Sequence[@Name='Positions']"/>
 </xsl:template>
 
 <xsl:template match="Selection/Sequence[@Name='Positions']">
