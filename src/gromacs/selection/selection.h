@@ -95,6 +95,8 @@ class SelectionData
         SelectionData(SelectionTreeElement *elem, const char *selstr);
         ~SelectionData();
 
+        //! Returns the name for this selection.
+        const char *name() const { return name_.c_str(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return selectionText_.c_str(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
@@ -118,6 +120,18 @@ class SelectionData
         //! \copydoc Selection::initCoveredFraction()
         bool initCoveredFraction(e_coverfrac_t type);
 
+        /*! \brief
+         * Updates the name of the selection if missing.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * If selections get their value from a group reference that cannot be
+         * resolved during parsing, the name is final only after group
+         * references have been resolved.
+         *
+         * This function is called by SelectionCollection::setIndexGroups().
+         */
+        void refreshName();
         /*! \brief
          * Computes total masses and charges for all selection positions.
          *
@@ -286,7 +300,7 @@ class Selection
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
 
         //! Returns the name of the selection.
-        const char *name() const  { return data().name_.c_str(); }
+        const char *name() const  { return data().name(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return data().selectionText(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.

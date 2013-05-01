@@ -1038,35 +1038,7 @@ _gmx_sel_init_selection(const char                        *name,
     /* Update the flags */
     _gmx_selelem_update_flags(root, scanner);
 
-    /* If there is no name provided by the user, check whether the actual
-     * selection given was from an external group, and if so, use the name
-     * of the external group. */
-    if (root->name().empty())
-    {
-        SelectionTreeElementPointer child = root->child;
-        while (child->type == SEL_MODIFIER)
-        {
-            if (!child->child || child->child->type != SEL_SUBEXPRREF
-                || !child->child->child)
-            {
-                break;
-            }
-            child = child->child->child;
-        }
-        if (child->type == SEL_EXPRESSION
-            && child->child && child->child->type == SEL_SUBEXPRREF
-            && child->child->child
-            && child->child->child->type == SEL_CONST
-            && child->child->child->v.type == GROUP_VALUE)
-        {
-            root->setName(child->child->child->name());
-        }
-    }
-    /* If there still is no name, use the selection string */
-    if (root->name().empty())
-    {
-        root->setName(_gmx_sel_lexer_pselstr(scanner));
-    }
+    root->fillNameIfMissing(_gmx_sel_lexer_pselstr(scanner));
 
     /* Print out some information if the parser is interactive */
     if (_gmx_sel_is_lexer_interactive(scanner))
