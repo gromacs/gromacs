@@ -111,7 +111,7 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
 {
     int  k,zz;
     gmx_bool bRestr; 
-       
+
     bRestr = FALSE;
     if (NULL != dzatoms)
     {
