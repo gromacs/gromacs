@@ -64,7 +64,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          shX, shY, shZ;
     real          Fscal, FscalC[NSTATES], FscalV[NSTATES], tx, ty, tz;
     real          Vcoul[NSTATES], Vvdw[NSTATES];
-    real          rinv6, r, rt, rtC, rtV;
+    real          rinv6, r, rt, rtC, rtV, rtGB;
     real          iqA, iqB;
     real          qq[NSTATES], vctot, krsq;
     int           ntiA, ntiB, tj[NSTATES];
@@ -78,9 +78,9 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
-    int           do_coultab, do_vdwtab, do_tab, tab_elemsize;
-    int           n0, n1C, n1V, nnn;
-    real          Y, F, G, H, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
+    int           do_coultab, do_vdwtab, do_gbtab, do_tab, tab_elemsize;
+    int           n0, n1C, n1V, n1GB, nnn;
+    real          Y, F, G, H, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, epsGB, eps2GB, VV, FF;
     int           icoul, ivdw;
     int           nri;
     int *         iinr;
@@ -107,10 +107,19 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real *        dvdl;
     real *        Vv;
     real *        Vc;
+    real *        Vgbsum;
     gmx_bool      bDoForces;
     real          rcoulomb, rvdw, sh_invrc6;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff;
     real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
+    int           do_gb;
+    real          isai,isaj,isaprod,dvdaj,dvdatmp,dvdasum;
+    real          gbscale,gbtabscale,gbtabelemsize,gbqqfactor;
+    real          gbinvepsdiff;
+    real          vgb,vgbsum,fgb;
+    real *        invsqrta;
+    real *        dvda;
+    real *        gbtab;
 
     x                   = xx[0];
     f                   = ff[0];
@@ -118,6 +127,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     fshift              = fr->fshift[0];
     Vc                  = kernel_data->energygrp_elec;
     Vv                  = kernel_data->energygrp_vdw;
+    Vgbsum              = kernel_data->energygrp_polarization;
     tabscale            = kernel_data->table_elec_vdw->scale;
     VFtab               = kernel_data->table_elec_vdw->data;
 
@@ -230,6 +240,15 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     /* we always use the combined table here */
     tab_elemsize = 12;
 
+    do_gb            = (icoul == GMX_NBKERNEL_ELEC_GENERALIZEDBORN);
+    do_gbtab         = do_gb;
+    invsqrta         = fr->invsqrta;
+    dvda             = fr->dvda;
+    gbtabscale       = fr->gbtab.scale;
+    gbtab            = fr->gbtab.data;
+    gbinvepsdiff     = (1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent);
+    gbtabelemsize    = 4;
+
     for (n = 0; (n < nri); n++)
     {
         is3              = 3*shift[n];
@@ -245,6 +264,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
         iz               = shZ + x[ii3+2];
         iqA              = facel*chargeA[ii];
         iqB              = facel*chargeB[ii];
+        isai             = invsqrta[ii];
         ntiA             = 2*ntype*typeA[ii];
         ntiB             = 2*ntype*typeB[ii];
         vctot            = 0;
@@ -252,6 +272,8 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
         fix              = 0;
         fiy              = 0;
         fiz              = 0;
+        vgbsum           = 0;
+        dvdasum          = 0;
 
         for (k = nj0; (k < nj1); k++)
         {
@@ -375,6 +397,17 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                         eps2V      = epsV*epsV;
                         n1V        = tab_elemsize*n0;
                     }
+                    if (do_gbtab)
+                    {
+                        isaj       = invsqrta[jnr];
+                        dvdaj      = dvda[jnr];
+
+                        rtGB       = rC*gbscale; /* is rC appropriate? */
+                        n0         = rtGB;
+                        epsGB      = rtGB-n0;
+                        eps2GB     = epsGB*epsGB;
+                        n1GB       = gbtabelemsize*n0;
+                    }
 
                     /* With Ewald and soft-core we should put the cut-off on r,
                      * not on the soft-cored rC, as the real-space and
@@ -415,7 +448,27 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 break;
 
                             case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
-                                gmx_fatal(FARGS, "Free energy and GB not implemented.\n");
+                                /* GB */
+                                isaprod    = isai*isaj;
+                                gbqqfactor = isaprod*(-qq[i])*gbinvepsdiff;
+                                gbscale    = isaprod*gbtabscale;
+
+                                nnn        = n1GB;
+                                Y          = gbtab[nnn];
+                                F          = gbtab[nnn+1];
+                                Geps       = epsGB*gbtab[nnn+2];
+                                Heps2      = eps2GB*gbtab[nnn+3];
+                                Fp         = F+Geps+Heps2;
+                                VV         = Y+epsGB*Fp;
+                                FF         = Fp+Geps+2.0*Heps2;
+                                vgb        = gbqqfactor*VV;
+                                fgb        = gbqqfactor*FF*gbscale;
+                                dvdatmp    = -0.5*(vgb+fgb*rC);
+                                dvdasum    = dvdasum + dvdatmp;
+                                dvda[jnr]  = dvdaj + dvdatmp*isaj*isaj;
+                                Vcoul[i]   = qq[i]*rinvC;
+                                FscalC[i]  = (Vcoul[i]*rinvC-fgb)*rinvC;
+                                vgbsum    += vgb;
                                 break;
 
                             case GMX_NBKERNEL_ELEC_NONE:
@@ -559,7 +612,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                 {
                     vctot      -= LFC[i]*qq[i]*VV;
                     Fscal      -= LFC[i]*qq[i]*FF;
-                    dvdl_coul  -= (DLF[i]*qq[i])*VV;
+                    dvdl_coul  -= (DLF[i]*qq[i])*VV; /* is this OK for GB? */
                 }
             }
 
@@ -574,6 +627,7 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
                 dvdl_coul     += Vcoul[i]*DLF[i] + LFC[i]*alpha_coul_eff*dlfac_coul[i]*FscalC[i]*sigma_pow[i];
                 dvdl_vdw      += Vvdw[i]*DLF[i] + LFV[i]*alpha_vdw_eff*dlfac_vdw[i]*FscalV[i]*sigma_pow[i];
+                /* Is all this OK for GB? */
             }
 
             if (bDoForces)
@@ -602,6 +656,11 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
         ggid               = gid[n];
         Vc[ggid]           = Vc[ggid] + vctot;
         Vv[ggid]           = Vv[ggid] + vvtot;
+        if (do_gb)
+        {
+            Vgbsum[ggid]  += vgbsum;
+            dvda[ii]      += dvdasum*isai*isai;
+        }
     }
 
     dvdl[efptCOUL]     += dvdl_coul;
