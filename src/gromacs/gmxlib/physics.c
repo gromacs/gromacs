@@ -37,6 +37,8 @@
 #include "string2.h"
 #include "physics.h"
 
+#define ANGSTROM     (1e-10)
+
 double convert2gmx(double x, int unit)
 {
     switch (unit)

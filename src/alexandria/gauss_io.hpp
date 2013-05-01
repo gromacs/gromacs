@@ -139,6 +139,7 @@ public:
  * \param[in] basisset   Basis set used for the calculation [ maybe NULL ]
  * \param[in] maxpot     Maximum number of electrostatic potential data points to store
  * \param[in] bVerbose   Whether or not to write to the terminal during processing
+ * \param[in] forcefield One of the force fields supported by OpenBabel used for atomtypes
  * \ingroup module_alexandria
  */
 void ReadGauss(const char *g98,
@@ -148,7 +149,8 @@ void ReadGauss(const char *g98,
                gmx_atomprop_t aps,gmx_poldata_t pd,
                char *molnm,char *iupac,char *conformation,
                char *basisset,
-               int maxpot,gmx_bool bVerbose);
+               int maxpot,gmx_bool bVerbose,
+               const char *forcefield);
 
 /*! \brief
  * Convert the OpenBabel atomtypes to atomtypes corresponding to a force field

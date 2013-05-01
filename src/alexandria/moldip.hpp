@@ -6,7 +6,7 @@
 #endif
 
 #include "typedefs.h"
-#include "mymol2.hpp"
+#include "mymol.hpp"
 
 typedef struct {
     int  n,nopt,nconst,nopt_c;

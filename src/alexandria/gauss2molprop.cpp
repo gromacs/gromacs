@@ -85,6 +85,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = FALSE;
   static char *molnm=NULL,*iupac=NULL,*conf=(char *)"minimum",*basis=NULL;
+  static char *forcefield="GAFF";
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
   static gmx_bool bBabel=TRUE;
@@ -105,6 +106,8 @@ int main(int argc, char *argv[])
       "Conformation of the molecule" },
     { "-basis",  FALSE, etSTR, {&basis},
       "Basis-set used in this calculation for those case where it is difficult to extract from a Gaussian file" },
+    { "-ff", FALSE, etSTR, {&forcefield},
+      "Force field for basic atom typing available in OpenBabel" },
     { "-maxpot", FALSE, etINT, {&maxpot},
       "Max number of potential points to add to the molprop file. If 0 all points are registered, else a selection of points evenly spread over the range of values is taken" }
   };
@@ -134,7 +137,7 @@ int main(int argc, char *argv[])
       alexandria::MolProp mmm;
       
       ReadGauss(fns[i],mmm,gap,bBabel,aps,pd,molnm,iupac,conf,basis,
-                maxpot,bVerbose);
+                maxpot,bVerbose,gmx_poldata_get_force_field(pd));
       mp.push_back(mmm);
   }
   

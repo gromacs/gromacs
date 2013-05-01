@@ -792,9 +792,8 @@ void gmx_resp_calc_rho(gmx_resp_t gr)
 
 void gmx_resp_calc_pot(gmx_resp_t gr)
 {
-    int  i,j,k;
-    real r,V,vv;
-    rvec dx;
+    int  i,j,k,m;
+    double r,r2,dx,V,vv;
 
     for(i=0; (i<gr->nesp); i++) 
     {
@@ -802,8 +801,13 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
         for(j=0; (j<gr->natom); j++) 
         {
             vv = 0;
-            rvec_sub(gr->esp[i],gr->x[j],dx);
-            r = norm(dx);
+            r2 = 0;
+            for(m=0; (m<DIM); m++)
+            {
+                dx = gr->esp[i][m]-gr->x[j][m];
+                r2 += dx*dx;
+            }
+            r = sqrt(r2);
             switch (gr->iModel) 
             {
             case eqgBultinck:
@@ -1095,7 +1099,7 @@ void gmx_resp_calc_rms(gmx_resp_t gr)
     for(i=0; (i<gr->nesp); i++) 
     {
         w = my_weight(gr,i);
-        if (NULL != debug)
+        if ((NULL != debug) && (i < 2*gr->natom))
         {
             fprintf(debug,"ESP %d QM: %g EEM: %g DIFF: %g%s\n",
                     i,gr->pot[i],gr->pot_calc[i],
@@ -1162,7 +1166,7 @@ static double charge_function(void *params,double v[])
     gmx_resp_calc_penalty(gr);
     rms = gmx_resp_get_rms(gr,&wtot);
     
-    return rms + gr->penalty;
+    return rms;// + gr->penalty;
 }
 
 void gmx_resp_statistics(gmx_resp_t gr,int len,char buf[])
@@ -1243,14 +1247,23 @@ void gmx_resp_potcomp(gmx_resp_t gr,const char *potcomp,
     
     if (NULL != potcomp) 
     {
+        const char *pcleg[2] = { "Atoms", "ESP points" };
         fp = xvgropen(potcomp,"Electrostatic potential",unit2string(unit),unit2string(unit),oenv);
+        xvgr_legend(fp,2,pcleg,oenv);
+        fprintf(fp,"@type xy\n");
         for(i=0; (i<gr->nesp); i++)
         {
             /* Conversion may or may not be in vain depending on unit */
             exp = gmx2convert(gr->pot[i],unit);
             eem = gmx2convert(gr->pot_calc[i],unit);
+            if (i == gr->natom)
+            {
+                fprintf(fp,"&\n");
+                fprintf(fp,"@type xy\n");
+            }
             fprintf(fp,"%10.5e  %10.5e\n",exp,eem);
         }
+        fprintf(fp,"&\n");
         fclose(fp);
     }
     if (NULL != pdbdiff)

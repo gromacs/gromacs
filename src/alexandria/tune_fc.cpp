@@ -96,7 +96,7 @@
 #include "molprop.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
-#include "mymol2.hpp"
+#include "mymol.hpp"
 #include "moldip.hpp"
 
 typedef struct {

@@ -57,7 +57,7 @@ extern "C" {
 #endif
 #endif
 
-#define ANGSTROM     (1e-10)                               /* Old...	*/
+    //#define ANGSTROM     (1e-10)                               /* Old...	*/
 #define KILO         (1e3)                                 /* Thousand	*/
 #define NANO         (1e-9)                                /* A Number	*/
 #define PICO         (1e-12)                               /* A Number	*/

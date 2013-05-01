@@ -55,7 +55,7 @@
 // Alexandria stuff
 #include "gmx_statistics.h"
 #include "poldata_xml.h"
-#include "mymol2.hpp"
+#include "mymol.hpp"
 #include "moldip.hpp"
 
 typedef struct {

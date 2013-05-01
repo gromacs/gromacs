@@ -69,7 +69,7 @@ typedef struct gmx_resp
     gmx_ra *ra;
     char   **dzatoms;
     const char   *stoichiometry;
-    real   *pot,*pot_calc,*rho;
+    double *pot,*pot_calc,*rho;
     rvec   *x,*esp;
 } gmx_resp;
 

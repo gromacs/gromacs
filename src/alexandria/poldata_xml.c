@@ -81,7 +81,7 @@ static const char *xmltypes[] = {
 	
 enum { 
     exmlGENTOP,
-    exmlGT_ATOMS, exmlGT_FORCEFIELD, exmlPOLAR_UNIT, exmlCOMB_RULE, exmlNEXCL,
+    exmlGT_ATOMTYPES, exmlGT_FORCEFIELD, exmlPOLAR_UNIT, exmlCOMB_RULE, exmlNEXCL,
     exmlFUDGEQQ, exmlFUDGELJ,
     exmlBONDING_RULES, exmlBONDING_RULE,
     exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
@@ -186,7 +186,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
      *  to interpret them.
      */
     switch (elem) {
-    case exmlGT_ATOMS:
+    case exmlGT_ATOMTYPES:
         if (NN(xbuf[exmlPOLAR_UNIT]))
             gmx_poldata_set_polar_unit(pd,xbuf[exmlPOLAR_UNIT]);
         if (NN(xbuf[exmlGT_FORCEFIELD]))
@@ -433,26 +433,22 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
         bondorder,sigma,fudgeQQ,fudgeLJ,valence;
   
-    child = add_xml_child(parent,exml_names[exmlGT_ATOMS]);
+    child = add_xml_child(parent,exml_names[exmlGT_ATOMTYPES]);
     tmp = gmx_poldata_get_polar_unit(pd);
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
-        sfree(tmp);
     }
     tmp = gmx_poldata_get_force_field(pd);
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlGT_FORCEFIELD],tmp);
-        sfree(tmp);
     }
     tmp = gmx_poldata_get_vdw_function(pd);
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlFUNCTION],tmp);
-        sfree(tmp);
     }
     tmp = gmx_poldata_get_combination_rule(pd);
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlCOMB_RULE],tmp);
-        sfree(tmp);
     }
     nexcl = gmx_poldata_get_nexcl(pd);
     add_xml_int(child,exml_names[exmlNEXCL],nexcl);

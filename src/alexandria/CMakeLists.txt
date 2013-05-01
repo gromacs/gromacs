@@ -14,7 +14,7 @@ set(ALEXANDRIA_SOURCES
 	molprop_util.cpp
 	molprop_xml.cpp
         molprop_sqlite3.cpp
-        mymol2.cpp
+        mymol.cpp
         moldip.cpp
         gauss_io.cpp
 	)

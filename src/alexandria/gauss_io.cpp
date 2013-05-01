@@ -98,6 +98,7 @@ static void merge_electrostatic_potential(alexandria::MolProp &mpt,
 #include <openbabel/residue.h>
 #include <openbabel/obiter.h>
 #include <openbabel/obconversion.h>
+#include <openbabel/forcefield.h>
 #include <openbabel/math/vector3.h>
 
 static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol)
@@ -156,7 +157,7 @@ static OpenBabel::OBConversion *read_babel(const char *g98,OpenBabel::OBMol *mol
 
 void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
 {
-#define XHACK
+    //#define XHACK
 #ifdef XHACK
     typedef struct {
         const char *ob,*ax;
@@ -177,7 +178,8 @@ void translate_atomtypes(t_atoms *atoms,t_symtab *tab,const char *forcefield)
         { "Nr", "NPI2" },
         { "N3", "NTE" },
         { "Nox", "NTN" },
-        { "N2", "NT" },
+        { "N2", "NTR" },
+        { "Npl", "NTE" },
         { "O3", "OTE" },
         { "O2", "OPI2" },
         { "F", "F" }
@@ -224,7 +226,8 @@ static void gmx_molprop_read_babel(const char *g98,
                                    alexandria::MolProp& mpt,
                                    gmx_atomprop_t aps,gmx_poldata_t pd,
                                    char *molnm,char *iupac,char *conformation,
-                                   char *basisset,int maxpot,gmx_bool bVerbose)
+                                   char *basisset,int maxpot,gmx_bool bVerbose,
+                                   const char *forcefield)
 {
     /* Read a gaussian log file */
     OpenBabel::OBMol mol,mol2;
@@ -381,18 +384,33 @@ static void gmx_molprop_read_babel(const char *g98,
   
     OBet = new OpenBabel::OBElementTable();
   
-    OBai = mol.BeginAtoms();
-    atomid = 1;
-    for (OBa = mol.BeginAtom(OBai); (NULL != OBa); OBa = mol.NextAtom(OBai)) {
-        alexandria::CalcAtom ca(OBet->GetSymbol(OBa->GetAtomicNum()),
-                                OBa->GetType(),atomid);
-        alexandria::AtomicCharge aq(charge_model,"e",OBa->GetPartialCharge());
-        
-        ca.SetUnit(unit2string(eg2cPm));
-        ca.SetCoords(100*OBa->x(),100*OBa->y(),100*OBa->z());
-        ca.AddCharge(aq);
-        mpt.LastCalculation()->AddAtom(ca);
-        atomid++;
+    OpenBabel::OBForceField *ff = OpenBabel::OBForceField::FindForceField(forcefield);
+    if ((NULL != ff) && (ff->Setup(mol)))
+    {
+        ff->GetAtomTypes(mol);
+        FOR_ATOMS_OF_MOL (atom, mol) {
+            OpenBabel::OBPairData *type = (OpenBabel::OBPairData*) atom->GetData("FFAtomType");
+            if (NULL == type)
+            {
+                gmx_fatal(FARGS,"Could not find %s atom type for atom %s",
+                          forcefield,atom->GetIdx());
+            }
+            //cout << "atom " << atom->GetIdx() << " : " << type->GetValue() << endl;
+            alexandria::CalcAtom ca(OBet->GetSymbol(atom->GetAtomicNum()),
+                                    type->GetValue(),atom->GetIdx());
+            alexandria::AtomicCharge aq(charge_model,"e",atom->GetPartialCharge());
+            
+            ca.SetUnit(unit2string(eg2cPm));
+            ca.SetCoords(100*atom->x(),100*atom->y(),100*atom->z());
+            ca.AddCharge(aq);
+            mpt.LastCalculation()->AddAtom(ca);
+        }
+        // Not necessary to delete?
+        //delete ff;
+    }
+    else
+    {
+        gmx_fatal(FARGS,"Can not read %s force field",forcefield);
     }
     delete OBet;
   
@@ -1185,12 +1203,13 @@ void ReadGauss(const char *g98,
                gmx_atomprop_t aps,gmx_poldata_t pd,
                char *molnm,char *iupac,char *conf,
                char *basis,
-               int maxpot,gmx_bool bVerbose)
+               int maxpot,gmx_bool bVerbose,
+               const char *forcefield)
 {
 #ifdef HAVE_LIBOPENBABEL2
     if (bBabel)
         gmx_molprop_read_babel(g98,mp,aps,pd,molnm,iupac,conf,basis,
-                               maxpot,bVerbose);
+                               maxpot,bVerbose,forcefield);
     else
         gmx_molprop_read_log(g98,mp,gap,aps,pd,molnm,iupac,conf,basis,
                              maxpot,bVerbose);
