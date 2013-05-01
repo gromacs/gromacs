@@ -1788,7 +1788,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->orires.kfac);
             break;
         case F_DIHRES:
-            if (file_version < 72)
+            if (file_version < 74)
             {
                 gmx_fio_do_int(fio, idum);
                 gmx_fio_do_int(fio, idum);
@@ -1796,7 +1796,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->dihres.phiA);
             gmx_fio_do_real(fio, iparams->dihres.dphiA);
             gmx_fio_do_real(fio, iparams->dihres.kfacA);
-            if (file_version >= 72)
+            if (file_version >= 74)
             {
                 gmx_fio_do_real(fio, iparams->dihres.phiB);
                 gmx_fio_do_real(fio, iparams->dihres.dphiB);
