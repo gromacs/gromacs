@@ -83,7 +83,7 @@
         catch (std::exception const &ex) { \
             gmx_ar << "Expected: " #statement " throws an exception of type " \
             << #expected_exception ".\n  Actual: it throws a different type.\n" \
-            << "Exception details:\n" << ::gmx::formatException(ex); \
+            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
             goto GTEST_CONCAT_TOKEN_(gmx_label_testthrow_, __LINE__); \
         } \
         catch (...) { \
@@ -119,7 +119,7 @@
         catch (std::exception const &ex) { \
             gmx_ar << "Expected: " #statement " doesn't throw an exception.\n" \
             << "  Actual: it throws.\n" \
-            << "Exception details:\n" << ::gmx::formatException(ex); \
+            << "Exception details:\n" << ::gmx::formatExceptionMessageToString(ex); \
             goto GTEST_CONCAT_TOKEN_(gmx_label_testnothrow_, __LINE__); \
         } \
         catch (...) { \

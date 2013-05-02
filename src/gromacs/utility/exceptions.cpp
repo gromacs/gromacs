@@ -223,53 +223,171 @@ namespace
 {
 
 /*! \brief
+ * Abstracts actual output from the other logic in exception formatting.
+ *
+ * Object that implements this interface is passed to
+ * formatExceptionMessageInternal(), and is responsible for composing the
+ * output.  This allows using the same implementation of interpreting the
+ * exceptions while still supporting output to different formats (e.g., to a
+ * string or to stderr).
+ */
+class MessageWriterInterface
+{
+    public:
+        virtual ~MessageWriterInterface() {}
+
+        /*! \brief
+         * Writes a single line of text into the output.
+         *
+         * \param[in] text    Text to write on the line.
+         * \param[in] indent  Suggested number of spaces to indent the line.
+         */
+        virtual void writeLine(const char *text, int indent) = 0;
+        /*! \brief
+         * Writes information about a system error (errno-based).
+         *
+         * \param[in] errorNumber  errno value
+         * \param[in] funcName     Name of the system call (can be NULL).
+         * \param[in] indent       Suggested number of spaces to indent the output.
+         */
+        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                    int indent) = 0;
+};
+
+/*! \brief
+ * Exception information writer for cases where exceptions should be avoided.
+ *
+ * Formats the messages into the provided FILE handle without checking for
+ * errors in fprintf() calls.
+ */
+class MessageWriterFileNoThrow : public MessageWriterInterface
+{
+    public:
+        //! Initializes a writer that writes to the given file handle.
+        explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
+
+        virtual void writeLine(const char *text, int indent)
+        {
+            internal::printFatalErrorMessageLine(fp_, text, indent);
+        }
+        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                    int indent)
+        {
+            std::fprintf(fp_, "%*sReason: %s\n", indent, "",
+                         std::strerror(errorNumber));
+            if (funcName != NULL)
+            {
+                std::fprintf(fp_, "%*s(call to %s() returned error code %d)\n",
+                             indent, "", funcName, errorNumber);
+            }
+        }
+
+    private:
+        FILE                   *fp_;
+};
+
+/*! \brief
+ * Exception information writer to format into an std::string.
+ */
+class MessageWriterString : public MessageWriterInterface
+{
+    public:
+        //! Post-processes the output string to not end in a line feed.
+        void removeTerminatingLineFeed()
+        {
+            if (result_.size() > 0U)
+            {
+                result_.erase(result_.size() - 1);
+            }
+        }
+        //! Returns the constructed string.
+        const std::string &result() const { return result_; }
+
+        virtual void writeLine(const char *text, int indent)
+        {
+            result_.append(indent, ' ');
+            result_.append(text);
+            result_.append("\n");
+        }
+        virtual void writeErrNoInfo(int errorNumber, const char *funcName,
+                                    int indent)
+        {
+            writeLine(formatString("Reason: %s", std::strerror(errorNumber)).c_str(),
+                      indent);
+            if (funcName != NULL)
+            {
+                writeLine(formatString("(call to %s() returned error code %d)",
+                                       funcName, errorNumber).c_str(),
+                          indent);
+            }
+        }
+
+    private:
+        std::string             result_;
+};
+
+/*! \brief
  * Prints error information for an exception object.
  *
- * \param[in] fp      File to write the information out to (typically stderr).
+ * \param[in] writer  Writer to write out the information.
  * \param[in] ex      Exception object to print.
  * \param[in] indent  Indentation for the information.
  *
  * If the exception contains nested exceptions, information from them is
  * recursively printed.
+ *
+ * Does not throw unless the writer throws.
  */
-void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
+void formatExceptionMessageInternal(MessageWriterInterface *writer,
+                                    const std::exception &ex, int indent)
 {
     const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
     if (boostEx != NULL)
     {
+        // TODO: Add an option to print this information for the tests
+        // const char *const *funcPtr =
+        //     boost::get_error_info<boost::throw_function>(*boostEx);
+        // const char *const *filePtr =
+        //     boost::get_error_info<boost::throw_file>(*boostEx);
+        // const int         *linePtr =
+        //     boost::get_error_info<boost::throw_line>(*boostEx);
+
+        // std::string        result;
+        // if (filePtr != NULL && linePtr != NULL)
+        // {
+        //     result = formatString("%s:%d: %s\n", *filePtr, *linePtr,
+        //                           funcPtr != NULL ? *funcPtr : "");
+        // }
+
         // TODO: Remove duplicate context if present in multiple nested exceptions.
         const ErrorMessage *msg = boost::get_error_info<errinfo_message>(*boostEx);
         if (msg != NULL)
         {
             while (msg != NULL && msg->isContext())
             {
-                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent*2);
                 ++indent;
                 msg = &msg->child();
             }
             if (msg != NULL && !msg->text().empty())
             {
-                internal::printFatalErrorMessageLine(fp, msg->text().c_str(), indent*2);
+                writer->writeLine(msg->text().c_str(), indent*2);
             }
         }
         else
         {
-            internal::printFatalErrorMessageLine(fp, ex.what(), indent);
+            writer->writeLine(ex.what(), indent*2);
         }
 
         const int *errorNumber
             = boost::get_error_info<boost::errinfo_errno>(*boostEx);
         if (errorNumber != NULL)
         {
-            std::fprintf(fp, "%*sReason: %s\n", (indent+1)*2, "",
-                         std::strerror(*errorNumber));
             const char * const *funcName
                 = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
-            if (funcName != NULL)
-            {
-                std::fprintf(fp, "%*s(call to %s() returned error code %d)\n",
-                             (indent+1)*2, "", *funcName, *errorNumber);
-            }
+            writer->writeErrNoInfo(*errorNumber,
+                                   funcName != NULL ? *funcName : NULL,
+                                   (indent+1)*2);
         }
 
         // TODO: Treat also boost::nested_exception (not currently used, though)
@@ -287,14 +405,14 @@ void printExceptionMessage(FILE *fp, const std::exception &ex, int indent)
                 }
                 catch (const std::exception &nestedEx)
                 {
-                    printExceptionMessage(fp, nestedEx, indent + 1);
+                    formatExceptionMessageInternal(writer, nestedEx, indent + 1);
                 }
             }
         }
     }
     else
     {
-        internal::printFatalErrorMessageLine(fp, ex.what(), indent);
+        writer->writeLine(ex.what(), indent*2);
     }
 }
 
@@ -353,100 +471,23 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex)
     {
         std::fprintf(fp, "(exception type: %s)\n", typeid(ex).name());
     }
-    printExceptionMessage(fp, ex, 0);
+    MessageWriterFileNoThrow writer(fp);
+    formatExceptionMessageInternal(&writer, ex, 0);
     internal::printFatalErrorFooter(fp);
 }
 
-std::string formatException(const std::exception &ex)
+std::string formatExceptionMessageToString(const std::exception &ex)
 {
-    // TODO: It would be nicer to not duplicate the logic from
-    // printExceptionMessage().
-    const boost::exception *boostEx = dynamic_cast<const boost::exception *>(&ex);
-    if (boostEx != NULL)
-    {
-        const char *const *funcPtr =
-            boost::get_error_info<boost::throw_function>(*boostEx);
-        const char *const *filePtr =
-            boost::get_error_info<boost::throw_file>(*boostEx);
-        const int         *linePtr =
-            boost::get_error_info<boost::throw_line>(*boostEx);
+    MessageWriterString writer;
+    formatExceptionMessageInternal(&writer, ex, 0);
+    writer.removeTerminatingLineFeed();
+    return writer.result();
+}
 
-        std::string        result;
-        if (filePtr != NULL && linePtr != NULL)
-        {
-            result = formatString("%s:%d: %s\n", *filePtr, *linePtr,
-                                  funcPtr != NULL ? *funcPtr : "");
-        }
-
-        // TODO: Remove duplicate context if present in multiple nested exceptions.
-        const ErrorMessage *msg =
-            boost::get_error_info<errinfo_message>(*boostEx);
-        if (msg != NULL)
-        {
-            while (msg != NULL && msg->isContext())
-            {
-                result.append(msg->text());
-                result.append("\n");
-                msg = &msg->child();
-            }
-            if (msg != NULL && !msg->text().empty())
-            {
-                result.append(msg->text());
-                result.append("\n");
-            }
-        }
-        else
-        {
-            result.append(ex.what());
-            result.append("\n");
-        }
-
-        const int *errorNumber
-            = boost::get_error_info<boost::errinfo_errno>(*boostEx);
-        if (errorNumber != NULL)
-        {
-            result.append(formatString("Reason: %s\n",
-                                       std::strerror(*errorNumber)));
-            const char * const *funcName
-                = boost::get_error_info<boost::errinfo_api_function>(*boostEx);
-            if (funcName != NULL)
-            {
-                result.append(formatString("(call to %s() returned error code %d)\n",
-                                           *funcName, *errorNumber));
-            }
-        }
-
-        // TODO: Treat also boost::nested_exception (not currently used, though)
-
-        const internal::NestedExceptionList *nested
-            = boost::get_error_info<errinfo_nested_exceptions>(*boostEx);
-        if (nested != NULL)
-        {
-            internal::NestedExceptionList::const_iterator ni;
-            for (ni = nested->begin(); ni != nested->end(); ++ni)
-            {
-                try
-                {
-                    rethrow_exception(*ni);
-                }
-                catch (const std::exception &nestedEx)
-                {
-                    result.append(formatException(nestedEx));
-                    result.append("\n");
-                }
-            }
-        }
-        // Remove terminating line feed.
-        if (result.size() > 0U)
-        {
-            result.erase(result.size() - 1);
-        }
-        return result;
-    }
-    else
-    {
-        return ex.what();
-    }
+void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
+{
+    MessageWriterFileNoThrow writer(fp);
+    formatExceptionMessageInternal(&writer, ex, 0);
 }
 
 } // namespace gmx
