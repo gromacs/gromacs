@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -223,14 +223,14 @@ class SelectionCollection
          *
          * \param[in]  grps  Index groups to use for the selections.
          * \throws  std::bad_alloc if out of memory.
-         * \throws  InvalidInputError if a group reference cannot be resolved.
+         * \throws  InconsistentInputError if a group reference cannot be resolved.
          *
          * Only the first call to this method can have a non-NULL \p grps.
          * At this point, any selections that have already been provided are
          * searched for references to external groups, and the references are
          * replaced by the contents of the groups.  If any referenced group
          * cannot be found in \p grps (or if \p grps is NULL and there are any
-         * references), InvalidInputError is thrown.
+         * references), InconsistentInputError is thrown.
          *
          * The selection collection keeps a reference to \p grps until this
          * method is called with a NULL \p grps.

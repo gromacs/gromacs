@@ -478,22 +478,22 @@ TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)
 {
     ASSERT_NO_THROW_GMX(sc_.setIndexGroups(NULL));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InvalidInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser2)
 {
     ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
-    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InvalidInputError);
-    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
 }
 
 TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed1)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InconsistentInputError);
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
@@ -501,7 +501,22 @@ TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("group 4; group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpUnsorted\""),
+                     gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("2"), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 2; group \"GrpUnsorted\""));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
