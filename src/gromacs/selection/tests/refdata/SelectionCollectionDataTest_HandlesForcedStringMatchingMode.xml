@@ -4,13 +4,11 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">name = S1 "C?"</String>
-      <String Name="Name">name = S1 "C?"</String>
       <String Name="Text">name = S1 "C?"</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">name ? S1 "C?"</String>
-      <String Name="Name">name ? S1 "C?"</String>
       <String Name="Text">name ? S1 "C?"</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

@@ -222,19 +222,48 @@ int NotImplementedError::errorCode() const
 namespace
 {
 
+/*! \brief
+ * Abstracts actual output from the other logic in exception formatting.
+ *
+ * Object that implements this interface is passed to
+ * formatExceptionMessageInternal(), and is responsible for composing the
+ * output.  This allows using the same implementation of interpreting the
+ * exceptions while still supporting output to different formats (e.g., to a
+ * string or to stderr).
+ */
 class MessageWriterInterface
 {
     public:
         virtual ~MessageWriterInterface() {}
 
+        /*! \brief
+         * Writes a single line of text into the output.
+         *
+         * \param[in] text    Text to write on the line.
+         * \param[in] indent  Suggested number of spaces to indent the line.
+         */
         virtual void writeLine(const char *text, int indent) = 0;
+        /*! \brief
+         * Writes information about a system error (errno-based).
+         *
+         * \param[in] errorNumber  errno value
+         * \param[in] funcName     Name of the system call (can be NULL).
+         * \param[in] indent       Suggested number of spaces to indent the output.
+         */
         virtual void writeErrNoInfo(int errorNumber, const char *funcName,
                                     int indent) = 0;
 };
 
+/*! \brief
+ * Exception information writer for cases where exceptions should be avoided.
+ *
+ * Formats the messages into the provided FILE handle without checking for
+ * errors in fprintf() calls.
+ */
 class MessageWriterFileNoThrow : public MessageWriterInterface
 {
     public:
+        //! Initializes a writer that writes to the given file handle.
         explicit MessageWriterFileNoThrow(FILE *fp) : fp_(fp) {}
 
         virtual void writeLine(const char *text, int indent)
@@ -257,9 +286,13 @@ class MessageWriterFileNoThrow : public MessageWriterInterface
         FILE                   *fp_;
 };
 
+/*! \brief
+ * Exception information writer to format into an std::string.
+ */
 class MessageWriterString : public MessageWriterInterface
 {
     public:
+        //! Post-processes the output string to not end in a line feed.
         void removeTerminatingLineFeed()
         {
             if (result_.size() > 0U)
@@ -267,6 +300,7 @@ class MessageWriterString : public MessageWriterInterface
                 result_.erase(result_.size() - 1);
             }
         }
+        //! Returns the constructed string.
         const std::string &result() const { return result_; }
 
         virtual void writeLine(const char *text, int indent)
@@ -301,6 +335,8 @@ class MessageWriterString : public MessageWriterInterface
  *
  * If the exception contains nested exceptions, information from them is
  * recursively printed.
+ *
+ * Does not throw unless the writer throws.
  */
 void formatExceptionMessageInternal(MessageWriterInterface *writer,
                                     const std::exception &ex, int indent)
