@@ -13,13 +13,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">resnr &lt; constint</String>
-      <String Name="Name">resnr &lt; constint</String>
       <String Name="Text">resnr &lt; constint</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">x + constreal1 &lt; constreal2</String>
-      <String Name="Name">x + constreal1 &lt; constreal2</String>
       <String Name="Text">x + constreal1 &lt; constreal2</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

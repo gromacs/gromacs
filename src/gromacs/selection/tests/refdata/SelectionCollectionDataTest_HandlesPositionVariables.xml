@@ -7,13 +7,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">foo</String>
-      <String Name="Name">foo</String>
       <String Name="Text">foo</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">within 1 of foo</String>
-      <String Name="Name">within 1 of foo</String>
       <String Name="Text">within 1 of foo</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
@@ -22,13 +20,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection3">
       <String Name="Input">bar</String>
-      <String Name="Name">bar</String>
       <String Name="Text">bar</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection4">
       <String Name="Input">within 1 of bar</String>
-      <String Name="Name">within 1 of bar</String>
       <String Name="Text">within 1 of bar</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

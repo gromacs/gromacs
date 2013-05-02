@@ -4,7 +4,6 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">distance from cog of resnr 1 &lt; 2</String>
-      <String Name="Name">distance from cog of resnr 1 &lt; 2</String>
       <String Name="Text">distance from cog of resnr 1 &lt; 2</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

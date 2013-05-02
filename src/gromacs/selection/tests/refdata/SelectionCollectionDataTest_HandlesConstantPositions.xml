@@ -4,7 +4,6 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">[1, -2, 3.5]</String>
-      <String Name="Name">[1, -2, 3.5]</String>
       <String Name="Text">[1, -2, 3.5]</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

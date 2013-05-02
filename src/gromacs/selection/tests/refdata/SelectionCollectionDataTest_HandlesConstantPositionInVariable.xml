@@ -7,13 +7,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">constpos</String>
-      <String Name="Name">constpos</String>
       <String Name="Text">constpos</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">within 2 of constpos</String>
-      <String Name="Name">within 2 of constpos</String>
       <String Name="Text">within 2 of constpos</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

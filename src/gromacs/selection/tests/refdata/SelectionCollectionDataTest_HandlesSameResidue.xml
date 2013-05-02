@@ -4,7 +4,6 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">same residue as atomnr 1 4 12</String>
-      <String Name="Name">same residue as atomnr 1 4 12</String>
       <String Name="Text">same residue as atomnr 1 4 12</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
