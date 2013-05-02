@@ -33,9 +33,9 @@
  * your own risk.
  *
  * @section authors_sec Authors
- * 
+ *
  * The TNG trajectory format is developed by:
- * 
+ *
  * Magnus Lundborg magnus.lundborg@scilifelab.se
  *
  * Daniel Spångberg daniels@mkem.uu.se
@@ -50,7 +50,7 @@
  *
  * Copyright (c) 2012, The GROMACS development team.
  * check out http://www.gromacs.org for more information.
- * 
+ *
  * The TNG API is released under LGPL 2.1 and is free to redistribute according
  * to that license (or a later version of the LGPL license).
  *
@@ -59,11 +59,11 @@
  * @section install_sec Installation
  *
  * mkdir build
- * 
+ *
  * cd build
- * 
+ *
  * cmake ..
- * 
+ *
  * make
  *
  * Test by running:
@@ -85,7 +85,7 @@
  *      - Update frame set pointers properly.
  *      - Fixed bug in chain_name_of_particle_get(...)
  *      - Fixed bug when updating MD5 hashes of data blocks.
- * 
+ *
  * v. 1.0 - First stable release of the API.
  *
  *
@@ -216,7 +216,7 @@
  *
  * To compile the fortran example -DBUILD_FORTRAN=ON needs to be specified when
  * running cmake.
- * 
+ *
  */
 
 #ifndef _TNGIO_H
@@ -230,7 +230,7 @@
 #ifdef USE_STD_INTTYPES_H
 #include <inttypes.h>
 #else
-
+//
 /* Visual Studio does not contain inttypes.h and stdint.h. Some defines and
  * typedefs are used from the GNU C Library */
 
@@ -243,7 +243,9 @@ typedef int                     int32_t;
 # if __WORDSIZE == 64
 typedef long int                int64_t;
 # else
+#ifdef __GNUC__
 __extension__
+#endif
 typedef long long int           int64_t;
 # endif
 #endif
@@ -257,7 +259,9 @@ typedef unsigned int            uint32_t;
 #if __WORDSIZE == 64
 typedef unsigned long int       uint64_t;
 #else
+#ifdef __GNUC__
 __extension__
+#endif
 typedef unsigned long long int  uint64_t;
 #endif
 
@@ -307,7 +311,7 @@ typedef unsigned long long int  uint64_t;
     ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
        _a < _b ? _a : _b; })
-     
+
 /** Inline function for finding the highest of two values */
 #define tng_max(a,b) \
     ({ __typeof__ (a) _a = (a); \
@@ -353,13 +357,16 @@ typedef enum {TNG_TRAJ_BOX_SHAPE = 10000,
               TNG_TRAJ_POSITIONS,
               TNG_TRAJ_VELOCITIES,
               TNG_TRAJ_FORCES,
-              TNG_TRAJ_PARTIAL_CHARGES} tng_trajectory_block_ids;
-              
+              TNG_TRAJ_PARTIAL_CHARGES,
+              TNG_TRAJ_FORMAL_CHARGES,
+              TNG_TRAJ_B_FACTORS,
+              TNG_TRAJ_OCCUPANCY} tng_trajectory_block_ids;
+
 /** Flag to specify if a data block contains data related to particles or not.*/
 typedef enum {TNG_NON_PARTICLE_BLOCK_DATA,
               TNG_PARTICLE_BLOCK_DATA} tng_particle_block_data;
 
-              
+
 typedef enum {TNG_FALSE, TNG_TRUE} tng_bool;
 
 /** Flag to specify if the number of atoms change throughout the trajectory or
@@ -793,6 +800,16 @@ tng_function_status tng_input_file_len_get(const tng_trajectory_t tng_data,
                                            int64_t *len);
 
 /**
+ * @brief Get the number of frames in the trajectory
+ * @param tng_data the trajectory of which to get the number of frames.
+ * @param n is pointing to a value set to the number of frames.
+ * @return TNG_SUCCESS (0) if successful, TNG_FAILURE (1) if a minor error
+ * has occurred (could not find last frame set).
+ */
+tng_function_status tng_num_frames_get(const tng_trajectory_t tng_data,
+                                     int64_t *n);
+
+/**
  * @brief Get the current number of particles.
  * @param tng_data is the trajectory from which to get the number of particles.
  * @param n is pointing to a value set to the number of particles.
@@ -824,6 +841,20 @@ tng_function_status tng_num_molecules_get(const tng_trajectory_t tng_data,
 tng_function_status tng_num_frames_per_frame_set_get
                 (const tng_trajectory_t tng_data,
                  int64_t *n);
+
+/**
+ * @brief Set the number of frames per frame set.
+ * @param tng_data is the trajectory of which to set the number of frames
+ * per frame set.
+ * @param n is the number of frames per frame set.
+ * @details This does not affect already existing frame sets. For
+ * consistency the number of frames per frame set should be set
+ * betfore creating any frame sets.
+ * @return TNG_SUCCESS (0) if successful.
+ */
+tng_function_status tng_num_frames_per_frame_set_set
+                (const tng_trajectory_t tng_data,
+                 const int64_t n);
 
 /**
  * @brief Get the number of frame sets.
@@ -1595,6 +1626,7 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
  */
 tng_function_status tng_time_get_str(const tng_trajectory_t tng_data,
                                      char *time);
+
 
 
 #ifdef __cplusplus
