@@ -319,6 +319,16 @@ class SelectionTreeElement
          */
         void fillNameIfMissing(const char *selectionText);
 
+        /*! \brief
+         * Resolved an unresolved reference to an index group.
+         *
+         * \param[in] grps  Index groups to use to resolve the reference.
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    InconsistentInputError if the reference cannot be
+         *     resolved.
+         */
+        void resolveIndexGroupReference(gmx_ana_indexgrps_t *grps);
+
         //! Type of the element.
         e_selelem_t                         type;
         /*! \brief

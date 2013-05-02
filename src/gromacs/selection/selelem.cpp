@@ -49,6 +49,7 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "mempool.h"
@@ -328,6 +329,59 @@ void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
         // If there still is no name, use the selection string.
         setName(selectionText);
     }
+}
+
+void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
+{
+    GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
+                       "Should only be called for index group reference elements");
+    if (grps == NULL)
+    {
+        std::string message = formatString(
+                    "Cannot match '%s', because index groups are not available.",
+                    name().c_str());
+        GMX_THROW(InconsistentInputError(message));
+    }
+
+    gmx_ana_index_t foundGroup;
+    std::string     foundName;
+    if (u.gref.name != NULL)
+    {
+        if (!gmx_ana_indexgrps_find(&foundGroup, &foundName, grps, u.gref.name))
+        {
+            std::string message = formatString(
+                        "Cannot match '%s', because no such index group can be found.",
+                        name().c_str());
+            GMX_THROW(InconsistentInputError(message));
+        }
+    }
+    else
+    {
+        if (!gmx_ana_indexgrps_extract(&foundGroup, &foundName, grps, u.gref.id))
+        {
+            std::string message = formatString(
+                        "Cannot match '%s', because no such index group can be found.",
+                        name().c_str());
+            GMX_THROW(InconsistentInputError(message));
+        }
+    }
+
+    if (!gmx_ana_index_check_sorted(&foundGroup))
+    {
+        gmx_ana_index_deinit(&foundGroup);
+        std::string message = formatString(
+                    "Group '%s' ('%s') cannot be used in selections, "
+                    "because atom indices in it are not sorted and/or "
+                    "it contains duplicate atoms.",
+                    foundName.c_str(), name().c_str());
+        GMX_THROW(InconsistentInputError(message));
+    }
+
+    sfree(u.gref.name);
+    type = SEL_CONST;
+    gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
+                      foundGroup.nalloc_index);
+    setName(foundName);
 }
 
 } // namespace gmx

@@ -300,45 +300,18 @@ early_termination:
 
 void SelectionCollection::Impl::resolveExternalGroups(
         const SelectionTreeElementPointer &root,
-        MessageStringCollector            *errors)
+        ExceptionInitializer              *errors)
 {
 
     if (root->type == SEL_GROUPREF)
     {
-        bool        bOk = true;
-        std::string foundName;
-        if (grps_ == NULL)
+        try
         {
-            // TODO: Improve error messages
-            errors->append("Unknown group referenced in a selection");
-            bOk = false;
+            root->resolveIndexGroupReference(grps_);
         }
-        else if (root->u.gref.name != NULL)
+        catch (const UserInputError &)
         {
-            char *name = root->u.gref.name;
-            bOk = gmx_ana_indexgrps_find(&root->u.cgrp, &foundName, grps_, name);
-            sfree(name);
-            if (!bOk)
-            {
-                root->u.gref.name = NULL;
-                // TODO: Improve error messages
-                errors->append("Unknown group referenced in a selection");
-            }
-        }
-        else
-        {
-            if (!gmx_ana_indexgrps_extract(&root->u.cgrp, &foundName, grps_,
-                                           root->u.gref.id))
-            {
-                // TODO: Improve error messages
-                errors->append("Unknown group referenced in a selection");
-                bOk = false;
-            }
-        }
-        if (bOk)
-        {
-            root->type = SEL_CONST;
-            root->setName(foundName);
+            errors->addCurrentExceptionAsNested();
         }
     }
 
@@ -466,16 +439,16 @@ SelectionCollection::setIndexGroups(gmx_ana_indexgrps_t *grps)
     impl_->grps_               = grps;
     impl_->bExternalGroupsSet_ = true;
 
-    MessageStringCollector      errors;
+    ExceptionInitializer        errors("Unknown index group references encountered");
     SelectionTreeElementPointer root = impl_->sc_.root;
     while (root)
     {
         impl_->resolveExternalGroups(root, &errors);
         root = root->next;
     }
-    if (!errors.isEmpty())
+    if (errors.hasNestedExceptions())
     {
-        GMX_THROW(InvalidInputError(errors.toString()));
+        GMX_THROW(InconsistentInputError(errors));
     }
     for (size_t i = 0; i < impl_->sc_.sel.size(); ++i)
     {
