@@ -4,25 +4,21 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">x+1 &gt; 3</String>
-      <String Name="Name">x+1 &gt; 3</String>
       <String Name="Text">x+1 &gt; 3</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">(y-1)^2 &lt;= 1</String>
-      <String Name="Name">(y-1)^2 &lt;= 1</String>
       <String Name="Text">(y-1)^2 &lt;= 1</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection3">
       <String Name="Input">x+--1 &gt; 3</String>
-      <String Name="Name">x+--1 &gt; 3</String>
       <String Name="Text">x+--1 &gt; 3</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection4">
       <String Name="Input">-x+-1 &lt; -3</String>
-      <String Name="Name">-x+-1 &lt; -3</String>
       <String Name="Text">-x+-1 &lt; -3</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

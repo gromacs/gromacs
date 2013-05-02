@@ -7,13 +7,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomnr 1 to 5 and y &lt; 10 and foo</String>
-      <String Name="Name">atomnr 1 to 5 and y &lt; 10 and foo</String>
       <String Name="Text">atomnr 1 to 5 and y &lt; 10 and foo</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">foo</String>
-      <String Name="Name">foo</String>
       <String Name="Text">foo</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

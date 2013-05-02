@@ -153,7 +153,9 @@
         <tr>
             <th/>
             <th>Input</th>
-            <th>Name</th>
+            <xsl:if test="*/String[@Name='Name']">
+                <th>Name</th>
+            </xsl:if>
             <th>Text</th>
             <th>Dynamic</th>
         </tr>
@@ -161,7 +163,9 @@
         <tr>
             <td><xsl:value-of select="@Name"/></td>
             <td><xsl:value-of select="String[@Name='Input']"/></td>
-            <td><xsl:value-of select="String[@Name='Name']"/></td>
+            <xsl:if test="String[@Name='Name']">
+                <td><xsl:value-of select="String[@Name='Name']"/></td>
+            </xsl:if>
             <td><xsl:value-of select="String[@Name='Text']"/></td>
             <td><xsl:value-of select="Bool[@Name='Dynamic']"/></td>
         </tr>

@@ -10,7 +10,6 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomnr 1 to 6 and foo</String>
-      <String Name="Name">atomnr 1 to 6 and foo</String>
       <String Name="Text">atomnr 1 to 6 and foo</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

@@ -4,7 +4,6 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomtype CA</String>
-      <String Name="Name">atomtype CA</String>
       <String Name="Text">atomtype CA</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

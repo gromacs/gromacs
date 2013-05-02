@@ -4,13 +4,11 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">same residue as (atomnr 3 5 13 or y &gt; 5)</String>
-      <String Name="Name">same residue as (atomnr 3 5 13 or y &gt; 5)</String>
       <String Name="Text">same residue as (atomnr 3 5 13 or y &gt; 5)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">(resnr 1 3 5 or x &gt; 10) and same residue as (atomnr 3 5 13 or z &gt; 5)</String>
-      <String Name="Name">(resnr 1 3 5 or x &gt; 10) and same residue as (atomnr 3 5 13 or z &gt; 5)</String>
       <String Name="Text">(resnr 1 3 5 or x &gt; 10) and same residue as (atomnr 3 5 13 or z &gt; 5)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
