@@ -271,8 +271,20 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 }
 
 bool
-_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception & /*ex*/)
+_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception &ex)
 {
+    if (dynamic_cast<const gmx::UserInputError *>(&ex) != NULL)
+    {
+        // TODO: Consider whether also the non-interactive parser should
+        // postpone the exception such that the whole selection can be added as
+        // context.
+        if (_gmx_sel_is_lexer_interactive(scanner))
+        {
+            // TODO: Handle exceptions that printing the message may produce.
+            gmx::formatExceptionMessageToFile(stderr, ex);
+            return true;
+        }
+    }
     _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
     return false;
 }
