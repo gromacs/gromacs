@@ -4,7 +4,6 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">within 1 of [2, 1, 0]</String>
-      <String Name="Name">within 1 of [2, 1, 0]</String>
       <String Name="Text">within 1 of [2, 1, 0]</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

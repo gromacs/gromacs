@@ -4,31 +4,26 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomnr 1 to 5 and atomnr 2 to 7 and x &lt; 2</String>
-      <String Name="Name">atomnr 1 to 5 and atomnr 2 to 7 and x &lt; 2</String>
       <String Name="Text">atomnr 1 to 5 and atomnr 2 to 7 and x &lt; 2</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">atomnr 1 to 5 and (atomnr 4 to 7 or x &lt; 2)</String>
-      <String Name="Name">atomnr 1 to 5 and (atomnr 4 to 7 or x &lt; 2)</String>
       <String Name="Text">atomnr 1 to 5 and (atomnr 4 to 7 or x &lt; 2)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection3">
       <String Name="Input">atomnr 1 to 5 and y &lt; 3 and (atomnr 4 to 7 or x &lt; 2)</String>
-      <String Name="Name">atomnr 1 to 5 and y &lt; 3 and (atomnr 4 to 7 or x &lt; 2)</String>
       <String Name="Text">atomnr 1 to 5 and y &lt; 3 and (atomnr 4 to 7 or x &lt; 2)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection4">
       <String Name="Input">atomnr 1 to 5 and not (atomnr 4 to 7 or x &lt; 2)</String>
-      <String Name="Name">atomnr 1 to 5 and not (atomnr 4 to 7 or x &lt; 2)</String>
       <String Name="Text">atomnr 1 to 5 and not (atomnr 4 to 7 or x &lt; 2)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection5">
       <String Name="Input">atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x &lt; 2))</String>
-      <String Name="Name">atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x &lt; 2))</String>
       <String Name="Text">atomnr 1 to 5 or (atomnr 4 to 6 and (atomnr 5 to 7 or x &lt; 2))</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

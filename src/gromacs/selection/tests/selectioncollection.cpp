@@ -292,7 +292,10 @@ SelectionCollectionDataTest::runParser(const char *const *selections,
             TestReferenceChecker selcompound(
                     compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
-            selcompound.checkString(sel_[count_].name(), "Name");
+            if (flags_.test(efTestSelectionNames))
+            {
+                selcompound.checkString(sel_[count_].name(), "Name");
+            }
             selcompound.checkString(sel_[count_].selectionText(), "Text");
             selcompound.checkBoolean(sel_[count_].isDynamic(), "Dynamic");
             ++count_;
