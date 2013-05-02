@@ -8371,6 +8371,8 @@ tng_function_status tng_num_frames_get(const tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n", file_pos,
+                __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_FAILURE);
     }
@@ -8469,6 +8471,8 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n", file_pos,
+                __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
@@ -8500,6 +8504,8 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8529,6 +8535,8 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8557,6 +8565,8 @@ tng_function_status tng_num_frame_sets_get(const tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8634,6 +8644,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n", file_pos,
+                __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
@@ -8666,6 +8678,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos,  __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8699,6 +8713,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8732,6 +8748,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8765,6 +8783,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8798,6 +8818,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8830,6 +8852,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8863,6 +8887,8 @@ tng_function_status tng_frame_set_nr_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8944,6 +8970,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -8981,6 +9009,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9016,6 +9046,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9049,6 +9081,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9084,6 +9118,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9119,6 +9155,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9152,6 +9190,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9186,6 +9226,8 @@ tng_function_status tng_frame_set_of_frame_find(tng_trajectory_t tng_data,
             stat = tng_block_header_read(tng_data, block);
             if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 tng_block_destroy(&block);
                 return(TNG_CRITICAL);
             }
@@ -9483,6 +9525,8 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL || block->id != TNG_TRAJECTORY_FRAME_SET)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+               file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         return(TNG_CRITICAL);
     }
@@ -9513,6 +9557,8 @@ tng_function_status tng_frame_set_read_next(tng_trajectory_t tng_data,
         }
         if(stat == TNG_CRITICAL)
         {
+            printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                   file_pos, __FILE__, __LINE__);
             tng_block_destroy(&block);
             return(stat);
         }
@@ -10372,6 +10418,8 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+               file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         tng_data->input_file = temp;
 
@@ -10400,6 +10448,8 @@ tng_function_status tng_frame_data_write(tng_trajectory_t tng_data,
     }
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+               file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         tng_data->input_file = temp;
         tng_data->first_trajectory_frame_set_input_file_pos = temp_first;
@@ -10785,6 +10835,8 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     stat = tng_block_header_read(tng_data, block);
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+               file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         tng_data->input_file = temp;
 
@@ -10843,6 +10895,8 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
         }
         if(stat == TNG_CRITICAL)
         {
+            printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                   file_pos, __FILE__, __LINE__);
             tng_block_destroy(&block);
             tng_data->input_file = temp;
 
@@ -10882,6 +10936,8 @@ tng_function_status tng_frame_particle_data_write(tng_trajectory_t tng_data,
     }
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                file_pos, __FILE__, __LINE__);
         tng_block_destroy(&block);
         tng_data->input_file = temp;
 
@@ -11334,6 +11390,8 @@ tng_function_status tng_data_get(tng_trajectory_t tng_data,
             tng_block_destroy(&block);
             if(stat == TNG_CRITICAL)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 return(stat);
             }
 
@@ -11466,6 +11524,8 @@ tng_function_status tng_data_interval_get(tng_trajectory_t tng_data,
     tng_block_destroy(&block);
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+               file_pos, __FILE__, __LINE__);
         return(stat);
     }
 
@@ -11679,6 +11739,8 @@ tng_function_status tng_particle_data_get(tng_trajectory_t tng_data,
             tng_block_destroy(&block);
             if(stat == TNG_CRITICAL)
             {
+                printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                       file_pos, __FILE__, __LINE__);
                 return(stat);
             }
 
@@ -11851,6 +11913,8 @@ tng_function_status tng_particle_data_interval_get(tng_trajectory_t tng_data,
     tng_block_destroy(&block);
     if(stat == TNG_CRITICAL)
     {
+        printf("Cannot read block header at pos %"PRId64". %s: %d\n",
+                file_pos, __FILE__, __LINE__);
         return(stat);
     }
 
