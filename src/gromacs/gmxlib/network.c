@@ -78,13 +78,16 @@ int gmx_setup(int gmx_unused *argc, char gmx_unused ***argv, int *nnodes)
     char   mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
     /* Call the MPI routines */
+    if (!gmx_mpi_initialized())
+    {
 #ifdef GMX_LIB_MPI
 #ifdef GMX_FAHCORE
-    (void) fah_MPI_Init(argc, argv);
+        (void) fah_MPI_Init(argc, argv);
 #else
-    (void) MPI_Init(argc, argv);
+        (void) MPI_Init(argc, argv);
 #endif
 #endif
+    }
     (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
     (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
     (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
@@ -775,11 +778,10 @@ void gmx_finalize_par(void)
     /* Compiled without MPI, no MPI finalizing needed */
     return;
 #else
-    int initialized, finalized;
+    int finalized;
     int ret;
 
-    MPI_Initialized(&initialized);
-    if (!initialized)
+    if (!gmx_mpi_initialized())
     {
         return;
     }

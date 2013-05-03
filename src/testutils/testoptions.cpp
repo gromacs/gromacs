@@ -126,7 +126,7 @@ void TestOptionsRegistry::initOptions(Options *options)
     // TODO: Have some deterministic order for the options; now it depends on
     // the order in which the global initializers are run.
     tMPI::lock_guard<tMPI::mutex> lock(listMutex_);
-    ProviderList::const_iterator i;
+    ProviderList::const_iterator  i;
     for (i = providerList_.begin(); i != providerList_.end(); ++i)
     {
         (*i)->initOptions(options);
@@ -151,7 +151,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestUtils(const char *dataPath, int *argc, char ***argv)
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
     try
     {
@@ -161,7 +161,11 @@ void initTestUtils(const char *dataPath, int *argc, char ***argv)
         {
             TestFileManager::setInputDataDirectory(dataPath);
         }
-        bool bHelp = false;
+        if (tempPath != NULL)
+        {
+            TestFileManager::setOutputTempDirectory(tempPath);
+        }
+        bool    bHelp = false;
         Options options(NULL, NULL);
         // TODO: A single option that accepts multiple names would be nicer.
         // Also, we recognize -help, but GTest doesn't, which leads to a bit

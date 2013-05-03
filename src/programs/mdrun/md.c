@@ -52,7 +52,7 @@
 #include "ns.h"
 #include "trnio.h"
 #include "xtcio.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "md_support.h"
 #include "md_logging.h"
 #include "confio.h"

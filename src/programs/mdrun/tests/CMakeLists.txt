@@ -32,26 +32,37 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(DOXYGEN_EXECUTABLE   @DOXYGEN_EXECUTABLE@)
-set(DOXYGEN_MSCGEN_FOUND @DOXYGEN_MSCGEN_FOUND@)
+set(testname "MdrunTests")
+set(exename "mdrun-tests")
 
-message("Running Doxygen...")
-# The standard output shows a lot of progress information, but obscures errors
-# that may appear.  CMake-introduced buffering also makes it appear sluggish,
-# so disable it.
-execute_process(COMMAND ${DOXYGEN_EXECUTABLE} Doxyfile-${DOCTYPE}
-                OUTPUT_QUIET)
-file(READ doxygen-${DOCTYPE}.log DOXYGEN_WARNINGS)
-string(STRIP "${DOXYGEN_WARNINGS}" DOXYGEN_WARNINGS)
-if (DOXYGEN_WARNINGS)
-    message("The following warnings were produced by Doxygen:")
-    message(${DOXYGEN_WARNINGS})
-endif ()
-if (NOT DOXYGEN_MSCGEN_FOUND)
-    message("NOTE: mscgen was not available. "
-            "Please install it to produce graphs in the documentation.")
-endif ()
+set(mdrun_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
+file(GLOB MDRUN_SOURCES ${mdrun_dir}/*.c ${mdrun_dir}/*.cpp)
+file(GLOB MDRUN_SOURCES ../*.c ../*.cpp)
+set(gmx_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../gmx")
+file(GLOB GMX_EXECUTABLE_SOURCES ${gmx_dir}/*.c ${gmx_dir}/*.cpp)
+list(REMOVE_ITEM GMX_EXECUTABLE_SOURCES ${gmx_dir}/gmx.cpp)
+#unset(actual_sources)
+list(APPEND actual_sources ${MDRUN_SOURCES})
+list(APPEND actual_sources ${GMX_EXECUTABLE_SOURCES})
 
-if (BUILD_TESTING)
-    add_subdirectory(legacytests)
-endif (BUILD_TESTING)
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
+
+# TODO By design, multiple tools might be run when using MPI, so
+# finalization with gmx::finalize() should be avoided until the end of
+# all tests in an executable. The only way to ensure it is called is
+# to use a different main() function from the unit tests. We could do
+# that, but can probably cope without finalization, too.
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    rerun.cpp
+    # files with code for test fixtures
+    moduletest.cpp
+    # files for code for grompp and mdrun
+    ${actual_sources}
+    )
+gmx_register_integration_test(
+    ${testname}
+    ${exename}
+    )
