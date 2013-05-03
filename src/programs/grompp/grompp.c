@@ -55,7 +55,7 @@
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
-#include "grompp.h"
+#include "gromacs/legacyheaders/grompp.h"
 #include "random.h"
 #include "vec.h"
 #include "futil.h"
@@ -81,6 +81,7 @@
 #include "mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
+#include "grompp.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -1316,7 +1317,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 }
 
-int cmain (int argc, char *argv[])
+int grompp_cmain (int argc, char *argv[])
 {
     static const char *desc[] = {
         "The gromacs preprocessor",

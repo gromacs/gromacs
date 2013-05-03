@@ -88,9 +88,9 @@ namespace test
 class TestFileManager
 {
     public:
-        TestFileManager();
-        /*! \brief
-         * Frees internal storage and deletes any accessed file paths.
+        TestFileManager(bool bRemoveFilesAfterTest = true);
+        /*! \brief Frees internal storage and deletes any accessed
+         * file paths (if that option is set).
          *
          * Any errors (e.g., missing files) encountered while deleting the
          * files are ignored.
@@ -143,6 +143,13 @@ class TestFileManager
         static const char *getInputDataDirectory();
 
         /*! \brief
+         * Returns the path to the test output temporary directory.
+         *
+         * \returns Path to output temporary directory for the test executable.
+         */
+        static const char *getOutputTempDirectory();
+
+        /*! \brief
          * Sets the test input directory.
          *
          * \param[in] path  Path from which test input data is looked up from.
@@ -153,6 +160,18 @@ class TestFileManager
          * initTestUtils().
          */
         static void setInputDataDirectory(const char *path);
+
+        /*! \brief
+         * Sets the test output temporary directory.
+         *
+         * \param[in] path  Path at which test should write temporary files
+         *
+         * \p path must name an existing directory.
+         *
+         * This function is automatically called by unittest_main.cpp through
+         * initTestUtils().
+         */
+        static void setOutputTempDirectory(const char *path);
 
     private:
         class Impl;

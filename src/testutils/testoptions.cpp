@@ -74,7 +74,7 @@ namespace gmx
 namespace test
 {
 
-void initTestUtils(const char *dataPath, int *argc, char *argv[])
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *argv[])
 {
     try
     {
@@ -83,6 +83,10 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         if (dataPath != NULL)
         {
             TestFileManager::setInputDataDirectory(dataPath);
+        }
+        if (tempPath != NULL)
+        {
+            TestFileManager::setOutputTempDirectory(tempPath);
         }
         initReferenceData(argc, argv);
         boost::scoped_ptr<std::vector<std::string> > commandLine(

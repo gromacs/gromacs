@@ -48,12 +48,17 @@
 #define TEST_DATA_PATH 0
 #endif
 
+#ifndef TEST_TEMP_PATH
+//! Path to test output temporary directory (needs to be set by the build system).
+#define TEST_TEMP_PATH 0
+#endif
+
 /*! \brief
  * Initializes unit testing for \ref module_testutils.
  */
 int main(int argc, char *argv[])
 {
     // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, &argc, argv);
+    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, argv);
     return RUN_ALL_TESTS();
 }

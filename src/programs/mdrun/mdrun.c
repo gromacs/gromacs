@@ -46,7 +46,7 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "edsam.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "xmdrun.h"
 #include "checkpoint.h"
 #ifdef GMX_THREAD_MPI
@@ -56,7 +56,7 @@
 /* afm stuf */
 #include "pull.h"
 
-int cmain(int argc, char *argv[])
+int mdrun_cmain(int argc, char *argv[])
 {
     const char   *desc[] = {
         "The [TT]mdrun[tt] program is the main computational chemistry engine",

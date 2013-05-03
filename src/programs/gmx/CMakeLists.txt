@@ -32,7 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_executable(gmx gmx.cpp legacymodules.cpp)
+add_executable(gmx gmx.cpp legacymodules.cpp gmx_main.cpp)
 target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 
@@ -63,3 +63,7 @@ install(TARGETS gmx
 if (GMX_SYMLINK_OLD_BINARY_NAMES)
     install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
 endif ()
+
+if (BUILD_TESTING)
+    add_subdirectory(legacytests)
+endif (BUILD_TESTING)

@@ -64,7 +64,7 @@ namespace test
  * This function is automatically called by test_main_gtest.cpp and
  * test_main_gmock.cpp.
  */
-void initTestUtils(const char *dataPath, int *argc, char *argv[]);
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char *argv[]);
 /*! \libinternal \brief
  * Parses given options from the command line.
  *

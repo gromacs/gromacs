@@ -1,4 +1,6 @@
-file(GLOB GMXDUMP_SOURCES gmxdump.c ../main.cpp)
+set(exename gmxdump)
+configure_file(../main.cpp main.cpp)
+file(GLOB GMXDUMP_SOURCES gmxdump.c ${CMAKE_CURRENT_BINARY_DIR}/main.cpp)
 
 add_executable(gmxdump ${GMXDUMP_SOURCES})
 gmx_add_man_page(gmxdump)
