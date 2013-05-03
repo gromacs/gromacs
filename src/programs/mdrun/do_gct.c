@@ -44,7 +44,7 @@
 #include "physics.h"
 #include "network.h"
 #include "smalloc.h"
-#include "mdrun.h"
+#include "gromacs/legacyheaders/mdrun.h"
 #include "string2.h"
 #include "readinp.h"
 #include "filenm.h"

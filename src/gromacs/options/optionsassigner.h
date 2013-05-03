@@ -62,10 +62,10 @@ class Options;
  * to assign values to options in subsections within the Options object.
  * Typical use (without error handling):
  * \code
-   gmx::options::Options options("name", "Title");
+   gmx::Options options("name", "Title");
    // Set up options
 
-   gmx::options::OptionsAssigner assigner(&options);
+   gmx::OptionsAssigner assigner(&options);
    assigner.start();
    assigner.startOption("opt1");
    assigner.appendValue("3");

@@ -151,7 +151,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestUtils(const char *dataPath, int *argc, char ***argv)
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char **argv[])
 {
     try
     {
@@ -160,6 +160,10 @@ void initTestUtils(const char *dataPath, int *argc, char ***argv)
         if (dataPath != NULL)
         {
             TestFileManager::setInputDataDirectory(dataPath);
+        }
+        if (tempPath != NULL)
+        {
+            TestFileManager::setOutputTempDirectory(tempPath);
         }
         bool bHelp = false;
         Options options(NULL, NULL);
