@@ -194,6 +194,8 @@ class Options
 
         //! Returns true if option \p name is set.
         bool isSet(const char *name) const;
+        //! Returns true if option \p name is defined.
+        bool isDefined(const char *name) const;
         /*! \brief
          * Notifies the collection that all option values are assigned.
          *
