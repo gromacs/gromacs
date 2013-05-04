@@ -134,32 +134,6 @@ static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
     printf("Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/atoms->nr));
 }
 
-void put_in_box(int natom,matrix box,rvec x[],real dbox)
-{
-    int  i,m;
-    rvec xmin,xmax,xcom;
-  
-    clear_rvec(xcom);
-    copy_rvec(x[0],xmin);
-    copy_rvec(x[0],xmax);
-    for(i=0; (i<natom); i++)
-    {
-        rvec_inc(xcom,x[i]);
-        for(m=0; (m<DIM); m++)
-        {
-            if (xmin[m] > x[i][m])
-                xmin[m] = x[i][m];
-            else if (xmax[m] < x[i][m])
-                xmax[m] = x[i][m];
-        }
-    }
-    for(m=0; (m<DIM); m++)
-    {
-        xcom[m] /= natom;
-        box[m][m] = (dbox+xmax[m]-xmin[m]);
-    }
-}
-
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {

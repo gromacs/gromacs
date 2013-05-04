@@ -1035,10 +1035,37 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     return imm;
 }
 
+static void put_in_box(int natom,matrix box,rvec x[],real dbox)
+{
+    int  i,m;
+    rvec xmin,xmax,xcom;
+  
+    clear_rvec(xcom);
+    copy_rvec(x[0],xmin);
+    copy_rvec(x[0],xmax);
+    for(i=0; (i<natom); i++)
+    {
+        rvec_inc(xcom,x[i]);
+        for(m=0; (m<DIM); m++)
+        {
+            if (xmin[m] > x[i][m])
+                xmin[m] = x[i][m];
+            else if (xmax[m] < x[i][m])
+                xmax[m] = x[i][m];
+        }
+    }
+    for(m=0; (m<DIM); m++)
+    {
+        xcom[m] /= natom;
+        box[m][m] = (dbox+xmax[m]-xmin[m]);
+    }
+}
+
 void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
     
+    put_in_box(topology->atoms.nr,box,x,0.3);
     sprintf(title,"%s processed by %s",GetMolname().c_str(),ShortProgram());
     write_sto_conf(fn,title,&topology->atoms,x,NULL,epbcNONE,box);
 }
@@ -1184,7 +1211,7 @@ void MyMol::PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
             gmx_fatal(FARGS,"Could not find ftype for bts[%d]",i);
     
     
-    if (bHaveShells_)
+    if (bHaveShells_ || 1)
     {
         /* write_zeta_q(fp,qqgen,&topology->atoms,pd,iModel);*/
         write_zeta_q2(qgen,atype,&topology->atoms,pd,iModel);
