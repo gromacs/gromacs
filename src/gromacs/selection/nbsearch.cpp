@@ -77,6 +77,7 @@
 #include <math.h>
 
 #include <algorithm>
+#include <vector>
 
 #include <boost/shared_ptr.hpp>
 
@@ -84,6 +85,7 @@
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
+#include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/selection/nbsearch.h"
 #include "gromacs/selection/position.h"
@@ -816,8 +818,8 @@ namespace internal
 class AnalysisNeighborhoodPairSearchImpl
 {
     public:
-        AnalysisNeighborhoodPairSearchImpl()
-            : nb_(NULL), secondIndex_(0)
+        AnalysisNeighborhoodPairSearchImpl(gmx_ana_nbsearch_t *nb)
+            : nb_(nb), secondIndex_(0)
         {
         }
 
@@ -835,22 +837,44 @@ class AnalysisNeighborhoodSearchImpl
         typedef AnalysisNeighborhoodPairSearch::ImplPointer
             PairSearchImplPointer;
 
-        AnalysisNeighborhoodSearchImpl()
-            : nb_(NULL), pairSearch_(new AnalysisNeighborhoodPairSearchImpl)
+        // TODO: This is not strictly exception-safe.
+        AnalysisNeighborhoodSearchImpl(real cutoff)
+            : nb_(gmx_ana_nbsearch_create(cutoff, 0)),
+              pairSearch_(new AnalysisNeighborhoodPairSearchImpl(nb_))
         {
+            bTryGrid_ = nb_->bTryGrid;
         }
         ~AnalysisNeighborhoodSearchImpl()
         {
-            if (nb_ != NULL)
-            {
-                gmx_ana_nbsearch_free(nb_);
-            }
+            gmx_ana_nbsearch_free(nb_);
         }
 
+        void setMode(AnalysisNeighborhood::SearchMode mode);
+
         gmx_ana_nbsearch_t     *nb_;
+        bool                    bTryGrid_;
         PairSearchImplPointer   pairSearch_;
 };
 
+void AnalysisNeighborhoodSearchImpl::setMode(AnalysisNeighborhood::SearchMode mode)
+{
+    // TODO: Actually implement bForceGrid.
+    switch (mode)
+    {
+        case AnalysisNeighborhood::eSearchMode_Automatic:
+            nb_->bTryGrid   = bTryGrid_;
+            nb_->bForceGrid = false;
+            break;
+        case AnalysisNeighborhood::eSearchMode_Simple:
+            nb_->bTryGrid   = false;
+            nb_->bForceGrid = false;
+            break;
+        case AnalysisNeighborhood::eSearchMode_Grid:
+            nb_->bTryGrid   = bTryGrid_;
+            nb_->bForceGrid = true;
+            break;
+    }
+}
 
 }   // namespace internal
 
@@ -862,15 +886,38 @@ class AnalysisNeighborhood::Impl
 {
     public:
         typedef AnalysisNeighborhoodSearch::ImplPointer SearchImplPointer;
+        typedef std::vector<SearchImplPointer> SearchList;
 
-        Impl()
-            : search_(new internal::AnalysisNeighborhoodSearchImpl), bTryGrid_(false)
+        Impl() : cutoff_(0), mode_(eSearchMode_Automatic)
         {
         }
 
-        SearchImplPointer       search_;
-        bool                    bTryGrid_;
+        SearchImplPointer getSearch();
+
+        tMPI::mutex             createSearchMutex_;
+        SearchList              searchList_;
+        real                    cutoff_;
+        SearchMode              mode_;
 };
+
+AnalysisNeighborhood::Impl::SearchImplPointer
+AnalysisNeighborhood::Impl::getSearch()
+{
+    tMPI::lock_guard<tMPI::mutex> lock(createSearchMutex_);
+    // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
+    // separate pool of unused search objects.
+    SearchList::const_iterator i;
+    for (i = searchList_.begin(); i != searchList_.end(); ++i)
+    {
+        if (i->unique())
+        {
+            return *i;
+        }
+    }
+    SearchImplPointer search(new internal::AnalysisNeighborhoodSearchImpl(cutoff_));
+    searchList_.push_back(search);
+    return search;
+}
 
 /********************************************************************
  * AnalysisNeighborhood
@@ -887,70 +934,37 @@ AnalysisNeighborhood::~AnalysisNeighborhood()
 
 void AnalysisNeighborhood::setCutoff(real cutoff)
 {
-    GMX_RELEASE_ASSERT(impl_->search_->nb_ == NULL,
-                       "Multiple calls to setCutoff() not currently supported");
-    impl_->search_->nb_              = gmx_ana_nbsearch_create(cutoff, 0);
-    impl_->search_->pairSearch_->nb_ = impl_->search_->nb_;
-    impl_->bTryGrid_                 = impl_->search_->nb_->bTryGrid;
+    GMX_RELEASE_ASSERT(impl_->searchList_.empty(),
+                       "Changing the cutoff after initSearch() not currently supported");
+    impl_->cutoff_ = cutoff;
 }
 
 void AnalysisNeighborhood::setMode(SearchMode mode)
 {
-    GMX_RELEASE_ASSERT(impl_->search_->nb_ != NULL,
-                       "setParameters() not called");
-    // TODO: Actually implement bForceGrid.
-    switch (mode)
-    {
-        case eSearchMode_Automatic:
-            impl_->search_->nb_->bTryGrid   = impl_->bTryGrid_;
-            impl_->search_->nb_->bForceGrid = false;
-            break;
-        case eSearchMode_Simple:
-            impl_->search_->nb_->bTryGrid   = false;
-            impl_->search_->nb_->bForceGrid = false;
-            break;
-        case eSearchMode_Grid:
-            impl_->search_->nb_->bTryGrid   = impl_->bTryGrid_;
-            impl_->search_->nb_->bForceGrid = true;
-            break;
-    }
+    impl_->mode_ = mode;
 }
 
 AnalysisNeighborhood::SearchMode AnalysisNeighborhood::mode() const
 {
-    GMX_RELEASE_ASSERT(impl_->search_->nb_ != NULL,
-                       "setParameters() not called");
-    if (!impl_->search_->nb_->bTryGrid)
-    {
-        return eSearchMode_Simple;
-    }
-    else if (impl_->search_->nb_->bForceGrid)
-    {
-        return eSearchMode_Grid;
-    }
-    return eSearchMode_Automatic;
+    return impl_->mode_;
 }
 
 AnalysisNeighborhoodSearch
 AnalysisNeighborhood::initSearch(const t_pbc *pbc, int n, const rvec x[])
 {
-    GMX_RELEASE_ASSERT(impl_->search_->nb_ != NULL,
-                       "setParameters() not called");
-    GMX_RELEASE_ASSERT(impl_->search_.unique(),
-                       "Multiple concurrent searches not currently supported");
-    gmx_ana_nbsearch_init(impl_->search_->nb_, const_cast<t_pbc *>(pbc), n, x);
-    return AnalysisNeighborhoodSearch(impl_->search_);
+    Impl::SearchImplPointer search(impl_->getSearch());
+    search->setMode(mode());
+    gmx_ana_nbsearch_init(search->nb_, const_cast<t_pbc *>(pbc), n, x);
+    return AnalysisNeighborhoodSearch(search);
 }
 
 AnalysisNeighborhoodSearch
 AnalysisNeighborhood::initSearch(const t_pbc *pbc, const gmx_ana_pos_t *p)
 {
-    GMX_RELEASE_ASSERT(impl_->search_->nb_ != NULL,
-                       "setParameters() not called");
-    GMX_RELEASE_ASSERT(impl_->search_.unique(),
-                       "Multiple concurrent searches not currently supported");
-    gmx_ana_nbsearch_pos_init(impl_->search_->nb_, const_cast<t_pbc *>(pbc), p);
-    return AnalysisNeighborhoodSearch(impl_->search_);
+    Impl::SearchImplPointer search(impl_->getSearch());
+    search->setMode(mode());
+    gmx_ana_nbsearch_pos_init(search->nb_, const_cast<t_pbc *>(pbc), p);
+    return AnalysisNeighborhoodSearch(search);
 }
 
 /********************************************************************
