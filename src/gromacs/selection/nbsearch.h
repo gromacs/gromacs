@@ -131,6 +131,12 @@ class AnalysisNeighborhoodPairSearch;
  * use methods in the returned AnalysisNeighborhoodSearch to find the reference
  * positions that are within the given cutoff from a provided position.
  *
+ * initSearch() is thread-safe and can be called from multiple threads.  Each
+ * call returns a different instance of the search object that can be used
+ * independently of the others.  However, the returned search objects can only
+ * be used within a single thread.  It is also possible to create multiple
+ * concurrent searches within a single thread.
+ *
  * \todo
  * Support for exclusions.
  * The 4.5/4.6 C API had very low-level support for exclusions, which was not
@@ -166,8 +172,10 @@ class AnalysisNeighborhood
          * \param[in]  cutoff Cutoff distance for the search
          *   (<=0 stands for no cutoff).
          *
-         * Currently, needs to be called exactly once, before calling any other
-         * method.
+         * Currently, cannot be called after initSearch() has been called.
+         * If this method is not called, no cutoff is used in the searches.
+         *
+         * Does not throw.
          */
         void setCutoff(real cutoff);
         /*! \brief
@@ -194,6 +202,7 @@ class AnalysisNeighborhood
          * \param[in] x   \p n reference positions for the frame.
          * \returns   Search object that can be used to find positions from
          *      \p x within the given cutoff.
+         * \throws    std::bad_alloc if out of memory.
          */
         AnalysisNeighborhoodSearch
         initSearch(const t_pbc *pbc, int n, const rvec x[]);
@@ -204,6 +213,7 @@ class AnalysisNeighborhood
          * \param[in] p   Reference positions for the frame.
          * \returns   Search object that can be used to find positions from
          *      \p p within the given cutoff.
+         * \throws    std::bad_alloc if out of memory.
          */
         AnalysisNeighborhoodSearch
         initSearch(const t_pbc *pbc, const gmx_ana_pos_t *p);
@@ -335,9 +345,9 @@ class AnalysisNeighborhoodSearch
          * Clears this search.
          *
          * Equivalent to \c "*this = AnalysisNeighborhoodSearch();".
-         * Currently, this is required if the previous search variable is still
-         * in scope and you want to call AnalysisNeighborhood::initSearch()
-         * again.
+         * Currently, this is necessary to avoid unnecessary memory allocation
+         * if the previous search variable is still in scope when you want to
+         * call AnalysisNeighborhood::initSearch() again.
          */
         void reset();
 
