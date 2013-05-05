@@ -330,6 +330,7 @@ static void low_set_pbc(t_pbc *pbc, int ePBC, ivec *dd_nc, matrix box)
     gmx_bool    bXY, bUse;
     const char *ptr;
 
+    pbc->ePBC      = ePBC;
     pbc->ndim_ePBC = ePBC2npbcdim(ePBC);
 
     copy_mat(box, pbc->box);
