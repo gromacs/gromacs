@@ -465,7 +465,9 @@ gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[])
 {
     d->pbc  = pbc;
     d->nref = n;
-    if (!pbc)
+    // TODO: Consider whether it would be possible to support grid searching in
+    // more cases.
+    if (pbc == NULL || pbc->ePBC != epbcXYZ)
     {
         d->bGrid = false;
     }
@@ -615,7 +617,6 @@ grid_search(gmx_ana_nbsearch_t *d,
             ivec cell;
 
             ivec_add(d->testcell, d->gnboffs[nbi], cell);
-            /* TODO: Support for 2D and screw PBC */
             cell[XX] = (cell[XX] + d->ncelldim[XX]) % d->ncelldim[XX];
             cell[YY] = (cell[YY] + d->ncelldim[YY]) % d->ncelldim[YY];
             cell[ZZ] = (cell[ZZ] + d->ncelldim[ZZ]) % d->ncelldim[ZZ];
