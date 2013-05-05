@@ -296,6 +296,30 @@ void NeighborhoodSearchTest::testPairSearch(
  * Test data generation
  */
 
+class TrivialTestData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static TrivialTestData singleton;
+            return singleton.data_;
+        }
+
+        TrivialTestData() : data_(12345, 1.0)
+        {
+            data_.box_[XX][XX] = 5.0;
+            data_.box_[YY][YY] = 5.0;
+            data_.box_[ZZ][ZZ] = 5.0;
+            data_.generateRandomRefPositions(10);
+            data_.generateRandomTestPositions(5);
+            set_pbc(&data_.pbc_, epbcXYZ, data_.box_);
+            data_.computeReferences(&data_.pbc_);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
 class RandomBoxFullPBCData
 {
     public:
@@ -438,6 +462,20 @@ TEST_F(NeighborhoodSearchTest, GridSearch2DPBC)
     testMinimumDistance(&search, data);
     testNearestPoint(&search, data);
     testPairSearch(&search, data);
+}
+
+TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
+{
+    const NeighborhoodSearchTestData &data = TrivialTestData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    gmx::AnalysisNeighborhoodSearch search1 =
+        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+    gmx::AnalysisNeighborhoodSearch search2 =
+        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+
+    testPairSearch(&search1, data);
+    testPairSearch(&search2, data);
 }
 
 } // namespace
