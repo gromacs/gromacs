@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -78,26 +78,21 @@
  * arise in more complex cases.
  * See documentation of gmx::TrajectoryAnalysisModule for a full description of
  * the available virtual methods and convenience functions.
- * The member variable \c options_ will be used to specify command-line options
- * that the tool accepts, and such a variable needs to be present to properly
- * implement gmx::TrajectoryAnalysisModule::initOptions().
- * The next block of member variables are used to contain values provided to
+ * The first block of member variables are used to contain values provided to
  * the different options.  They will vary depending on the needs of the
  * analysis tool.
+ * The AnalysisNeighborhood object provides neighborhood searching that is used
+ * in the analysis.
  * The final block of variables are used to process output data.
  * See initAnalysis() for details on how they are used.
  *
- * We also declare a helper class, AnalysisTemplate::ModuleData, that derives
- * from gmx::TrajectoryAnalysisModuleData and will contain any data that needs
- * to be frame-local in parallel analysis:
- * \until };
- * See documentation of gmx::TrajectoryAnalysisModuleData for more details of
- * how this data can be used.  Note that not all types of analysis will require
- * a custom type for this purpose.
- * Also, if you don't care about parallelization, you can just include these
- * variables in the module class itself, initialize them in
- * gmx::TrajectoryAnalysisModule::initAnalysis(), and do any postprocessing in
- * gmx::TrajectoryAnalysisModule::finishAnalysis()).
+ * For the template, we do not need any custom frame-local data.  If you think
+ * you need some for more complex analysis needs, see documentation of
+ * gmx::TrajectoryAnalysisModuleData for more details.
+ * If you don't care about parallelization, you don't need to conside this
+ * part.  You can simply declare all variables in the module class itself,
+ * initialize them in gmx::TrajectoryAnalysisModule::initAnalysis(), and do any
+ * postprocessing in gmx::TrajectoryAnalysisModule::finishAnalysis()).
  *
  *
  * \section template_ctor Construction
@@ -163,7 +158,9 @@
  * parallelism, they still provide convenient building blocks, e.g., for
  * histogramming and file output.
  *
- * For the template, we first create and register one gmx::AnalysisData object
+ * For the template, we first set the cutoff for the neighborhood search.
+ *
+ * Then, we create and register one gmx::AnalysisData object
  * that will contain, for each frame, one column for each input selection.
  * This will contain the main output from the tool: minimum distance between
  * the reference selection and that particular selection.
@@ -187,13 +184,11 @@
  * \section template_analysis Actual trajectory analysis
  *
  * There is one more initialization method that needs to be overridden to
- * support automatic parallelization.  If you do not need custom data (or
- * parallelization at all), you can skip this method and ignore the last
- * parameter to gmx::TrajectoryAnalysisModule::analyzeFrame() to make things
- * simpler.  In the template, we do include it to initialize our custom
- * ModuleData object:
- * \skip  TrajectoryAnalysisModuleDataPointer
- * \until }
+ * support automatic parallelization: gmx::TrajectoryAnalysisModule::startFrames().
+ * If you do not need custom frame-local data (or parallelization at all), you
+ * can skip this method and ignore the last parameter to
+ * gmx::TrajectoryAnalysisModule::analyzeFrame() to make things simpler.
+ * In the template, this method is not necessary.
  *
  * The main part of the analysis is (in most analysis codes) done in the
  * gmx::TrajectoryAnalysisModule::analyzeFrame() method, which is called once
@@ -213,8 +208,8 @@
  * selection engine.
  *
  * For the template, we first get data from our custom data structure for
- * shorthand access (note the cast on the second line to access our custom
- * data):
+ * shorthand access (if you use a custom data object, you need a \c static_cast
+ * here):
  * \skip  AnalysisDataHandle
  * \until parallelSelection
  *
