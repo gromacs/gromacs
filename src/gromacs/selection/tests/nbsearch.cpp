@@ -351,6 +351,32 @@ class RandomTriclinicFullPBCData
         NeighborhoodSearchTestData data_;
 };
 
+class RandomBox2DPBCData
+{
+    public:
+        static const NeighborhoodSearchTestData &get()
+        {
+            static RandomBox2DPBCData singleton;
+            return singleton.data_;
+        }
+
+        RandomBox2DPBCData() : data_(12345, 1.0)
+        {
+            data_.box_[XX][XX] = 10.0;
+            data_.box_[YY][YY] = 7.0;
+            data_.box_[ZZ][ZZ] = 5.0;
+            // TODO: Consider whether manually picking some positions would give better
+            // test coverage.
+            data_.generateRandomRefPositions(1000);
+            data_.generateRandomTestPositions(100);
+            set_pbc(&data_.pbc_, epbcXY, data_.box_);
+            data_.computeReferences(&data_.pbc_);
+        }
+
+    private:
+        NeighborhoodSearchTestData data_;
+};
+
 /********************************************************************
  * Actual tests
  */
@@ -397,6 +423,23 @@ TEST_F(NeighborhoodSearchTest, GridSearchTriclinic)
         nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
+    testPairSearch(&search, data);
+}
+
+TEST_F(NeighborhoodSearchTest, GridSearch2DPBC)
+{
+    const NeighborhoodSearchTestData &data = RandomBox2DPBCData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
+    gmx::AnalysisNeighborhoodSearch search =
+        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+    // Currently, grid searching not supported with 2D PBC.
+    //ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
+
+    testIsWithin(&search, data);
+    testMinimumDistance(&search, data);
+    testNearestPoint(&search, data);
     testPairSearch(&search, data);
 }
 
