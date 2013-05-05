@@ -52,9 +52,6 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -69,41 +66,10 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         Selection                        refsel_;
         SelectionList                    sel_;
 
+        AnalysisNeighborhood             nb_;
+
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_;
-};
-
-/*! \brief
- * Frame-local data needed in analysis.
- */
-class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
-{
-    public:
-        /*! \brief
-         * Initializes frame-local data.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         * \param[in] cutoff     Cutoff distance for the search
-         *   (<=0 stands for no cutoff).
-         */
-        ModuleData(TrajectoryAnalysisModule          *module,
-                   const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection         &selections,
-                   double                             cutoff)
-            : TrajectoryAnalysisModuleData(module, opt, selections)
-        {
-            nb_.setCutoff(cutoff);
-        }
-
-        virtual void finish()
-        {
-            finishDataHandles();
-        }
-
-        //! Neighborhood search data for distance calculation.
-        AnalysisNeighborhood    nb_;
 };
 
 
@@ -160,6 +126,8 @@ void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation         & /*top*/)
 {
+    nb_.setCutoff(cutoff_);
+
     data_.setColumnCount(sel_.size());
 
     avem_.reset(new AnalysisDataAverageModule());
@@ -178,25 +146,15 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleDataPointer
-AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
-                              const SelectionCollection         &selections)
-{
-    return TrajectoryAnalysisModuleDataPointer(
-            new ModuleData(this, opt, selections, cutoff_));
-}
-
-
 void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle         dh     = pdata->dataHandle(data_);
-    AnalysisNeighborhood      &nb     = static_cast<ModuleData *>(pdata)->nb_;
     const Selection           &refsel = pdata->parallelSelection(refsel_);
 
     AnalysisNeighborhoodSearch nbsearch =
-        nb.initSearch(pbc, refsel.positions());
+        nb_.initSearch(pbc, refsel.positions());
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
