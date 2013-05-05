@@ -49,6 +49,7 @@ extern "C" {
 #define MAX_NTRICVEC 12
 
 typedef struct {
+    int        ePBC;
     int        ndim_ePBC;
     int        ePBCDX;
     int        dim;
