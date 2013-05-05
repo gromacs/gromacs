@@ -111,29 +111,6 @@ static void clean_pdb_names(t_atoms *atoms,t_symtab *tab)
     }
 }
 
-static void print_qpol(t_atoms *atoms,char **smnames,gmx_poldata_t pd)
-{
-    int    i,np;
-    double poltot,pol,sigpol,sptot;
-    char   *gt_type;
-    
-    poltot = 0;
-    sptot  = 0;
-    np     = 0;
-    for(i=0; (i<atoms->nr); i++) 
-    {
-        gt_type = gmx_poldata_get_type(pd,smnames[i]);  
-        if ((NULL != gt_type) && 
-            gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol))
-        {
-            np++;
-            poltot += pol;
-            sptot  += sqr(sigpol);
-        }
-    }
-    printf("Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/atoms->nr));
-}
-
 int main(int argc, char *argv[])
 {
     static const char *desc[] = {
@@ -177,13 +154,10 @@ int main(int argc, char *argv[])
     gmx_atomprop_t aps;
     gmx_poldata_t  pd;
     char       title[STRLEN];
-    rvec       *x=NULL;        /* coordinates? */
-    int        *nbonds;
-    char       **smnames;
-    int        bts[ebtsNR],bts2[ebtsNR];
+    //rvec       *x=NULL;        /* coordinates? */
     int        nalloc,nelec,ePBC;
     t_pbc      pbc;
-    int        natoms;       /* number of atoms in one molecule  */
+    //int        natoms;       /* number of atoms in one molecule  */
     int        i,j,eQGEN,*symmetric_charges=NULL;
     real       mu;
     gmx_bool   bPDB,bRTP,bTOP;
@@ -513,17 +487,8 @@ int main(int argc, char *argv[])
         mymol.GenerateChargeGroups(ecg,bUsePDBcharge,
                                    opt2fn("-n",NFILE,fnm),nmol);
     }
-#ifdef KOKO
-    printf("Total charge is %g, total mass is %g, dipole is %g D\n",
-           mymol.GetCharge(),mtot,mu);
-    reset_q(&topology->atoms);
-    print_qpol(&topology->atoms,smnames,pd);
+
     
-    snew(topology->atoms.atomtype,topology->atoms.nr);
-    for(i=0; (i<topology->atoms.nr); i++)
-        topology->atoms.atomtype[i] = put_symtab(&symtab,
-                                                 get_atomtype_name(topology->atoms.atom[i].type,atype));
-#endif
     if (immOK == imm)
     {
         if (bTOP) 
@@ -543,6 +508,9 @@ int main(int argc, char *argv[])
     {
         printf("%s ended prematurely due to \"%s\"\n",ShortProgram(),alexandria::immsg(imm));
     }
+    //! Print final information for the user.
+    mymol.PrintQPol(stdout,pd);
+    
     thanx(stderr);
   
     return 0;

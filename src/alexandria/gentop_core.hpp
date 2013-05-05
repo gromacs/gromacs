@@ -60,18 +60,9 @@ void reset_q(t_atoms *atoms);
 void print_rtp(const char *filenm,const char *title,t_atoms *atoms,
                t_params plist[],int cgnr[],int nbts,int bts[]);
 
-gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
-                             t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                             int nbonds[],gmx_bool bRing[],double bondorder[],
-                             char **smnames,
-                             gmx_poldata_t pd,gmx_atomprop_t aps,
-                             rvec x[],t_pbc *pbc,real th_toler,
-                             real ph_toler,gentop_vsite_t gvt);
-		     
 void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
                 gpp_atomtype_t atype,t_params plist[],
-                rvec *x,t_symtab *symtab,t_excls **excls,
-                char **smnames);
+                rvec *x,t_symtab *symtab,t_excls **excls);
 		       
 int *symmetrize_charges(gmx_bool bQsym,
                         t_atoms *atoms,t_params *bonds,gmx_poldata_t pd,
@@ -86,7 +77,7 @@ int *generate_charge_groups(eChargeGroup cgtp,t_atoms *atoms,
 
 void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
                            rvec x[],t_excls excls[],
-                           char *smnames[],const char *ndxout,
+                           const char *ndxout,
                            int nmol);
 #ifdef __cplusplus
 }

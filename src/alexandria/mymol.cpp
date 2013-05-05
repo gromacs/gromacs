@@ -58,6 +58,7 @@
 #include "gpp_nextnb.h"
 #include "statutil.h"
 #include "string2.h"
+#include "vec.h"
 #include "gen_ad.h"
 #include "gpp_atomtype.h"
 #include "topdirs.h"
@@ -1007,7 +1008,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             printf("Using charges from gentop.dat\n");
             for(i=0; (i<topology->atoms.nr); i++)
             {
-                char *qq = gmx_poldata_get_charge(pd,smnames[i]);
+                char *qq = gmx_poldata_get_charge(pd,*topology->atoms.atomtype[i]);
                 double q;
                 if (NULL != qq)
                     sscanf(qq,"%lf",&q);
@@ -1073,15 +1074,19 @@ void MyMol::PrintConformation(const char *fn)
 static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
                          t_atoms *atoms,gmx_poldata_t pd,int iModel)
 {
-    int    i,j,k,nz,row;
-    double zeta,q,qtot;
-    gmx_bool   bAtom;
+    int    i,ii,j,k,nz,row;
+    double zeta,q;
+    bool   bAtom,bTypeSet;
     
     if (NULL == qgen)
         return;
         
-    fprintf(fp,"[ zeta_q ]\n");
-    fprintf(fp,"; i     type    nq  row       zeta          q\n");
+    fprintf(fp,"[ charge_spreading ]\n");
+    fprintf(fp,"; This section describes additional atom type properties.\n");
+    fprintf(fp,"; Spreading type (stype) can be either Gaussian (AXg) or Slater (AXs).\n");
+    fprintf(fp,"; The zeta are the same for atoms of the same type, and all but the last\n");
+    fprintf(fp,"; charge as well. The final charge is different between atoms however.\n");
+    fprintf(fp,"; atype stype  nq  row  zeta  q\n");
     k = -1;
     for(i=0; (i<atoms->nr); i++)
     {
@@ -1093,21 +1098,38 @@ static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
         nz = gentop_qgen_get_nzeta(qgen,k);
         if (nz != NOTSET)
         {
-            fprintf(fp,"%5d %6s %5d",i+1,get_eemtype_name(iModel),(bAtom) ? nz-1 : 1);
-            qtot = 0;
-            for(j=(bAtom ? 0 : nz-1); (j<(bAtom ? nz-1 : nz)); j++)
+            bTypeSet = false;
+            for(ii=0; !bTypeSet && (ii<i); ii++) 
+            {
+                bTypeSet = (atoms->atom[ii].type == atoms->atom[i].type);
+            }
+            if (!bTypeSet)
+            {       
+                fprintf(fp,"%5s %6s %5d",
+                        *atoms->atomtype[i],
+                        get_eemtype_name(iModel),(bAtom) ? nz : 1);
+            }
+            for(j=(bAtom ? 0 : nz); (j<(bAtom ? nz : nz)); j++)
             {
                 row   = gentop_qgen_get_row(qgen,k,j);
                 q     = gentop_qgen_get_q(qgen,k,j);
                 zeta  = gentop_qgen_get_zeta(qgen,k,j);
                 if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET)) 
                 {
-                    qtot += q;
-                    fprintf(fp,"%5d %10g %10g",row,zeta,q);
+                    if (j == nz-1)
+                        atoms->atom[i].q = q;
+                    if (!bTypeSet)
+                    {       
+                        fprintf(fp,"%5d %10g",row,zeta);
+                        if (j<nz-1)
+                            fprintf(fp," %10g",q);
+                    }
                 }
             }
-            atoms->atom[i].q = qtot;
-            fprintf(fp,"\n");
+            if (!bTypeSet)
+            {       
+                fprintf(fp,"\n");
+            }
         }
     }
     fprintf(fp,"\n");
@@ -1211,10 +1233,10 @@ void MyMol::PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
             gmx_fatal(FARGS,"Could not find ftype for bts[%d]",i);
     
     
-    if (bHaveShells_ || 1)
+    if (bHaveShells_ || (iModel == eqgAXg) || (iModel == eqgAXs))
     {
-        /* write_zeta_q(fp,qqgen,&topology->atoms,pd,iModel);*/
-        write_zeta_q2(qgen,atype,&topology->atoms,pd,iModel);
+        write_zeta_q(fp,qgen,&topology->atoms,pd,iModel);
+        //write_zeta_q2(qgen,atype,&topology->atoms,pd,iModel);
     }
     write_top(fp,NULL,printmol.name,&topology->atoms,FALSE,bts2,plist,excls,atype,cgnr_,nexcl_);
     if (!bITP)
@@ -1246,18 +1268,11 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
 {
     if (bGenVSites)
     {
-        int i,anr = topology->atoms.nr;
+        int anr = topology->atoms.nr;
+        
         gentop_vsite_generate_special(gvt,bGenVSites,&topology->atoms,&x,plist,
                                       &symtab,atype,&excls,pd);
-        if (topology->atoms.nr > anr) 
-        {
-            srenew(smnames,topology->atoms.nr);
-            for(i=anr; (i<topology->atoms.nr); i++) 
-            {
-                smnames[i] = strdup("ML");
-            }
-            bHaveVSites_ = true;
-        }
+        bHaveVSites_ = (topology->atoms.nr > anr);
     }
     if (!bPairs)
         plist[F_LJ14].nr = 0;
@@ -1268,9 +1283,9 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
     {
         int nalloc = topology->atoms.nr*2+2;
         srenew(x,nalloc);
-        srenew(smnames,nalloc);
+        //srenew(smnames,nalloc);
         srenew(excls,nalloc);
-        add_shells(pd,nalloc,&topology->atoms,atype,plist,x,&symtab,&excls,smnames);
+        add_shells(pd,nalloc,&topology->atoms,atype,plist,x,&symtab,&excls);
         bHaveShells_ = true;
     }
     real mu = calc_dip(&topology->atoms,x);
@@ -1288,8 +1303,7 @@ void MyMol::GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
         gmx_fatal(FARGS,"Error generating charge groups");
         
     if (ecg != ecgAtom)
-        sort_on_charge_groups(cgnr_,&topology->atoms,plist,x,excls,smnames,
-                              ndxfn,nmol);
+        sort_on_charge_groups(cgnr_,&topology->atoms,plist,x,excls,ndxfn,nmol);
 }
 
 void MyMol::GenerateCube(int iModel,
@@ -1487,7 +1501,6 @@ immStatus MyMol::Initxx(FILE *fp,
         {
             double *bondorder;
             snew(nbonds,nalloc);
-            snew(smnames,nalloc);
             MakeBonds(pd,(gmx_conect)NULL,plist,nbonds,
                       bH14,bAllDihedrals,bRemoveDoubleDihedrals,
                       TRUE,box,aps,btol,TRUE);
@@ -1497,16 +1510,16 @@ immStatus MyMol::Initxx(FILE *fp,
             set_pbc(&pbc,epbcNONE,box);
             snew(bondorder,nbond);
             
-            if ((atype = set_atom_type(NULL,GetMolname().c_str(),&(symtab),&(topology->atoms),
+            /*if ((atype = set_atom_type(NULL,GetMolname().c_str(),&(symtab),&(topology->atoms),
                                        &(plist[ftb]),nbonds,bRing,bondorder,
-                                       smnames,pd,aps,
+                                       pd,aps,
                                        x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
             {
                 imm = immAtomTypes;
-            }
+                }*/
             sfree(nbonds);
             sfree(bondorder);
-            sfree(smnames);
+            //sfree(smnames);
         }
     }
     if (immOK == imm) 
@@ -1668,7 +1681,7 @@ immStatus MyMol::Initxx(FILE *fp,
             srenew(x,nalloc);
             add_shells(pd,nalloc,&(mtop.moltype[0].atoms),
                        atype,plist,x,&symtab,
-                       &newexcls,smnames);
+                       &newexcls);
             mtop.natoms = mtop.moltype[0].atoms.nr;
             mtop.molblock[0].natoms_mol = mtop.natoms;
             excls_to_blocka(nalloc,newexcls,
@@ -1706,6 +1719,38 @@ immStatus MyMol::Initxx(FILE *fp,
         fprintf(debug,"Succesfully added %s\n",GetMolname().c_str());
     }
     return imm;
+}
+
+void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
+{
+    int    i,m,np;
+    double poltot,pol,sigpol,sptot;
+    char   *gt_type;
+    rvec   mu;
+    
+    poltot = 0;
+    sptot  = 0;
+    np     = 0;
+    clear_rvec(mu);
+    for(i=0; (i<topology->atoms.nr); i++) 
+    {
+        gt_type = gmx_poldata_get_type(pd,*topology->atoms.atomtype[i]);  
+        if ((NULL != gt_type) && 
+            gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol))
+        {
+            np++;
+            poltot += pol;
+            sptot  += sqr(sigpol);
+        }
+        for(m=0; (m<DIM); m++)
+            mu[m] += x[i][m]*topology->atoms.atom[i].q;
+    }
+    int qq = GetCharge();
+    double mm = GetMass();
+    double mutot = norm(mu);
+    fprintf(fp,"Total charge is %d, total mass is %g, dipole is %f D\n",
+            qq,mm,mutot);
+    fprintf(fp,"Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/topology->atoms.nr));
 }
 
 }

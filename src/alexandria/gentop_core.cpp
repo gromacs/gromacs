@@ -69,39 +69,6 @@
 #include "gentop_core.hpp"
 #include "gentop_vsite.hpp"
 
-gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
-                             t_symtab *tab,t_atoms *atoms,t_params *bonds,
-                             int nbonds[],gmx_bool bRing[],double bondorder[],
-                             char **smnames,gmx_poldata_t pd,
-                             gmx_atomprop_t aps,rvec x[],t_pbc *pbc,real th_toler,
-                             real ph_toler,gentop_vsite_t gvt)
-{
-    gpp_atomtype_t atype;
-    int nresolved;
-    int i;
-    
-    atype = init_atomtype();
-    snew(atoms->atomtype,atoms->nr);
-    nresolved = nm2type(fp,molname,pd,aps,tab,atoms,bRing,bondorder,atype,nbonds,
-                        bonds,smnames,x,pbc,th_toler,ph_toler,gvt);
-    if (nresolved != atoms->nr) 
-        return NULL;
-    else if (debug)
-        fprintf(debug,"There are %d different atom types in your sample\n",
-                get_atomtype_ntypes(atype));
-    if (NULL == atoms->atomtype)
-        snew(atoms->atomtype,atoms->nr);
-    if (NULL == atoms->atomtypeB)
-        snew(atoms->atomtypeB,atoms->nr);
-    for(i=0; (i<atoms->nr); i++)
-    {
-        atoms->atomtype[i]  = put_symtab(tab,get_atomtype_name(atoms->atom[i].type,atype));
-        atoms->atomtypeB[i] = put_symtab(tab,get_atomtype_name(atoms->atom[i].typeB,atype));
-    }
-    
-    return atype;
-}
-
 void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],gmx_bool bPBC,
                       matrix box)
 {
@@ -407,8 +374,7 @@ void copy_atoms(t_atoms *src,t_atoms *dest)
 
 void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
                 gpp_atomtype_t atype,t_params plist[],
-                rvec *x,t_symtab *symtab,t_excls **excls,
-                char **smnames)
+                rvec *x,t_symtab *symtab,t_excls **excls)
 {
     int     i,j,k,ai,aj,iat,shell,ns=0;
     int     *renum;
@@ -431,7 +397,7 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
     for(i=0; (i<atoms->nr); i++) 
     {
         renum[i] = i+ns;
-        gt_type = gmx_poldata_get_type(pd,smnames[i]);
+        gt_type = gmx_poldata_get_type(pd,*atoms->atomtype[i]);
         if ((NULL != gt_type) &&
             (1 == gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol)))
         { 
@@ -471,7 +437,7 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
             newa->atomtype[renum[i]] = put_symtab(symtab,*atoms->atomtype[i]);
             newa->atomtypeB[renum[i]] = put_symtab(symtab,*atoms->atomtypeB[i]);
             copy_rvec(x[i],newx[renum[i]]);
-            newname[renum[i]] = smnames[i];
+            newname[renum[i]] = *atoms->atomtype[i];
             t_atoms_set_resinfo(newa,renum[i],symtab,
                                 *atoms->resinfo[atoms->atom[i].resind].name,
                                 atoms->atom[i].resind,' ',1,' ');
@@ -539,7 +505,7 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
         for(i=0; (i<newa->nr); i++)
         {
             copy_rvec(newx[i],x[i]);
-            smnames[i] = newname[i];
+            atoms->atomtype[i] = put_symtab(symtab,newname[i]);
         }
         sfree(newx);
         sfree(newname);
@@ -812,15 +778,14 @@ static int cg_comp(const void *a,const void *b)
 
 void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
                            rvec x[],t_excls excls[],
-                           char *smnames[],const char *ndxout,
-                           int nmol)
+                           const char *ndxout,int nmol)
 {
     FILE    *fp;
     int     i,j,j0,k,newi,ri,*cg_renum,*ccgg,*inv_renum;
     rvec    *rx;
     t_atom  *ra;
     t_excls *newexcls;
-    char    ***an,**smn;
+    char    ***an,***smn;
   
     snew(cg_renum,atoms->nr);
     snew(atomnumber,atoms->nr);
@@ -857,13 +822,12 @@ void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
         atoms->atomname[i] = an[i];
         cgnr[i] = ccgg[i];
         inv_renum[cg_renum[i]] = i;
-        smn[i] = strdup(smnames[i]);
+        smn[i] = atoms->atomtype[i];
     }
     for(i=0;(i<atoms->nr); i++) 
     {
         newi = cg_renum[i];
-        sfree(smnames[i]);
-        smnames[i] = smn[newi];
+        atoms->atomtype[i] = smn[newi];
     }
     for(i=0; (i<F_NRE); i++) 
     {

@@ -684,3 +684,37 @@ int nm2type(FILE *fp,const char *molname,gmx_poldata_t pd,gmx_atomprop_t aps,
             
     return nresolved;
 }
+
+gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
+                             t_symtab *tab,t_atoms *atoms,t_params *bonds,
+                             int nbonds[],gmx_bool bRing[],double bondorder[],
+                             char **smnames,gmx_poldata_t pd,
+                             gmx_atomprop_t aps,rvec x[],t_pbc *pbc,real th_toler,
+                             real ph_toler,gentop_vsite_t gvt)
+{
+    gpp_atomtype_t atype;
+    int nresolved;
+    int i;
+    
+    atype = init_atomtype();
+    snew(atoms->atomtype,atoms->nr);
+    nresolved = nm2type(fp,molname,pd,aps,tab,atoms,bRing,bondorder,atype,nbonds,
+                        bonds,smnames,x,pbc,th_toler,ph_toler,gvt);
+    if (nresolved != atoms->nr) 
+        return NULL;
+    else if (debug)
+        fprintf(debug,"There are %d different atom types in your sample\n",
+                get_atomtype_ntypes(atype));
+    if (NULL == atoms->atomtype)
+        snew(atoms->atomtype,atoms->nr);
+    if (NULL == atoms->atomtypeB)
+        snew(atoms->atomtypeB,atoms->nr);
+    for(i=0; (i<atoms->nr); i++)
+    {
+        atoms->atomtype[i]  = put_symtab(tab,get_atomtype_name(atoms->atom[i].type,atype));
+        atoms->atomtypeB[i] = put_symtab(tab,get_atomtype_name(atoms->atom[i].typeB,atype));
+    }
+    
+    return atype;
+}
+

@@ -43,7 +43,7 @@ class MyMol : public MolProp
 private:
     int            nshell;
     gmx_bool       *bRing;
-    char           **smnames;
+    //char           **smnames;
     //! Gromacs structures
     int            nexcl_;
     t_excls        *excls;
@@ -122,6 +122,9 @@ public:
     void PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
                        const char *forcefield,bool bVerbose);
     
+    //! Print some info about the molecule to a file
+    void PrintQPol(FILE *fp,gmx_poldata_t pd);
+
     //! Print a rtp entry
     void PrintRTPEntry(const char *fn);
 

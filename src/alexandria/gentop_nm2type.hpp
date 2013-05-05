@@ -55,5 +55,13 @@ extern int nm2type(FILE *fp,const char *molname,
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list and the coordinates!
  */
+
+gpp_atomtype_t set_atom_type(FILE *fp,const char *molname,
+                             t_symtab *tab,t_atoms *atoms,t_params *bonds,
+                             int nbonds[],gmx_bool bRing[],double bondorder[],
+                             gmx_poldata_t pd,gmx_atomprop_t aps,
+                             rvec x[],t_pbc *pbc,real th_toler,
+                             real ph_toler,gentop_vsite_t gvt);
+		     
  
 #endif
