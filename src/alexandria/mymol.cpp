@@ -1085,8 +1085,11 @@ static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
     fprintf(fp,"; This section describes additional atom type properties.\n");
     fprintf(fp,"; Spreading type (stype) can be either Gaussian (AXg) or Slater (AXs).\n");
     fprintf(fp,"; The zeta are the same for atoms of the same type, and all but the last\n");
-    fprintf(fp,"; charge as well. The final charge is different between atoms however.\n");
-    fprintf(fp,"; atype stype  nq  row  zeta  q\n");
+    fprintf(fp,"; charge as well. The final charge is different between atoms however,\n");
+    fprintf(fp,"; and it is listed below in the [ atoms ] section.\n");
+    fprintf(fp,"; atype stype  nq%s      zeta          q  ...\n",
+            (iModel == eqgAXs) ? "  row" : "");
+
     k = -1;
     for(i=0; (i<atoms->nr); i++)
     {
@@ -1105,7 +1108,7 @@ static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
             }
             if (!bTypeSet)
             {       
-                fprintf(fp,"%5s %6s %5d",
+                fprintf(fp,"%5s %6s %3d",
                         *atoms->atomtype[i],
                         get_eemtype_name(iModel),(bAtom) ? nz : 1);
             }
@@ -1117,12 +1120,17 @@ static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
                 if ((row != NOTSET) && (q != NOTSET) && (zeta != NOTSET)) 
                 {
                     if (j == nz-1)
-                        atoms->atom[i].q = q;
+                    {
+                        atoms->atom[i].q = 
+                            atoms->atom[i].qB = q;
+                    }
                     if (!bTypeSet)
                     {       
-                        fprintf(fp,"%5d %10g",row,zeta);
+                        if (iModel == eqgAXs)
+                            fprintf(fp,"  %4d",row);
+                        fprintf(fp," %10f",zeta);
                         if (j<nz-1)
-                            fprintf(fp," %10g",q);
+                            fprintf(fp," %10f",q);
                     }
                 }
             }
