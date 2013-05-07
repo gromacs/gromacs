@@ -17,13 +17,14 @@ out http://www.gromacs.org/Developer_Zone.
 
                                * * * * *
 
-GROMACS is free software, distributed under the GNU General Public License. 
-However, scientific software is a little special compared to most other 
-programs. Both you, we, and all other GROMACS users depend on the quality
-of the code, and when we find bugs (every piece of software has them) it
-is crucial that we can correct it and say that it was fixed in version X of 
-the file or package release. For the same reason, it is important that you
-can reproduce other people's result from a certain GROMACS version. 
+GROMACS is free software, distributed under the GNU Lesser General
+Public License, version 2.1 However, scientific software is a little
+special compared to most other programs. Both you, we, and all other
+GROMACS users depend on the quality of the code, and when we find bugs
+(every piece of software has them) it is crucial that we can correct
+it and say that it was fixed in version X of the file or package
+release. For the same reason, it is important that you can reproduce
+other people's result from a certain GROMACS version.
 
 The easiest way to avoid this kind of problems is to get your modifications
 included in the main distribution. We'll be happy to consider any decent 

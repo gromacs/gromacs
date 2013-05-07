@@ -258,7 +258,7 @@ void CopyRight(FILE *out, const char *szProgram)
 #define NCR (int)asize(CopyrightText)
 /* TODO: Is this exception still needed? */
 #ifdef GMX_FAHCORE
-#define NLICENSE 0 /*FAH has an exception permission from GPL to allow digital signatures in Gromacs*/
+#define NLICENSE 0 /*FAH has an exception permission from LGPL to allow digital signatures in Gromacs*/
 #else
 #define NLICENSE (int)asize(LicenseText)
 #endif

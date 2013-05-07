@@ -58,7 +58,7 @@
  * platforms like Microsoft Windows we have created a private version
  * of the necessary routines and distribute them with the Gromacs source.
  *
- * Although the rest of Gromacs is GPL, you can copy and use the XDR
+ * Although the rest of Gromacs is LGPL, you can copy and use the XDR
  * routines in any way you want as long as you obey Sun's license:
  *
  * Sun RPC is a product of Sun Microsystems, Inc. and is provided for
