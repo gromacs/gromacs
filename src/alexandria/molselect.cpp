@@ -37,13 +37,14 @@
 #include <string2.h>
 #include <smalloc.h>
 #include <strdb.h>
-#include "molselect.h"
+#include "molselect.hpp"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
 
 typedef struct {
     char *iupac;
-    int  status,index;
+    iMolSelect status;
+    int  index;
 } t_ims;
 
 typedef struct gmx_molselect {
@@ -76,11 +77,11 @@ gmx_molselect_t gmx_molselect_init(const char *fn)
             gms->ims[i].iupac = strdup(tmp[0]);
             gms->ims[i].index   = i+1;
             if (NULL != tmp[1]) {
-                for(j=0; (j<imsNR); j++) 
+                for(j=0; (j<(int)imsNR); j++) 
                     if (strcasecmp(ims_names[j],tmp[1]) == 0)
                         break;
                 if (j < imsNR)
-                    gms->ims[i].status = j;
+                    gms->ims[i].status = (iMolSelect)j;
                 else
                 {
                     gms->ims[i].status = imsUnknown;
@@ -122,7 +123,7 @@ void gmx_molselect_done(gmx_molselect_t gms)
     sfree(g);
 }
 
-int gmx_molselect_status(gmx_molselect_t gms,const char *iupac)
+iMolSelect gmx_molselect_status(gmx_molselect_t gms,const char *iupac)
 {
     gmx_molselect *g = (gmx_molselect *)gms;
     t_ims key;
@@ -148,7 +149,7 @@ int gmx_molselect_index(gmx_molselect_t gms,const char *iupac)
     if (NULL == iupac)
         return g->nmol;
     key.iupac = strdup(iupac);
-    key.status = 1;
+    key.status = imsTest;
     key.index = 0;
     ims = (t_ims *)bsearch(&key,g->ims,g->nmol,sizeof(g->ims[0]),ims_comp);
     sfree(key.iupac);

@@ -55,7 +55,7 @@
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_tables.hpp"
@@ -65,7 +65,7 @@ static const char *SPOEL = "spoel";
 typedef struct 
 {
     char *cat;
-    gmx_bool bPrint;
+    bool bPrint;
     int count;
     real rms;
 } t_catli;
@@ -109,14 +109,14 @@ static void decrease_table_number(FILE *fp)
     fprintf(fp,"\\addtocounter{table}{-1}\n");
 }
 
-static void stats_footer(FILE *fp,gmx_bool bSideways)
+static void stats_footer(FILE *fp,bool bSideways)
 {
     fprintf(fp,"\\hline\n\\end{tabular}\n\\end{%stable}\n",
             (bSideways) ? "sideways" : "");
 }
 
 static void stats_header(FILE *fp,MolPropObservable mpo,
-                         int caption,gmx_bool bSideways,
+                         int caption,bool bSideways,
                          t_qmcount *qmc,int ims)
 {
     char unit[32];
@@ -179,8 +179,8 @@ static void stats_header(FILE *fp,MolPropObservable mpo,
 void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                              std::vector<alexandria::MolProp> mp,
                              int ntot,
-                             t_qmcount *qmc,int iQM,char *lot,
-                             double outlier,gmx_molselect_t gms,int ims)
+                             t_qmcount *qmc,int iQM,char *lot,char *exp_type,
+                             double outlier,gmx_molselect_t gms,iMolSelect ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     std::vector<std::string>::iterator si;
@@ -190,7 +190,7 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
     char   lbuf[256],tmp[32],catbuf[STRLEN];
     t_cats *cats;
     gmx_stats_t lsq,*lsqtot;
-    gmx_bool   bSideways = (qmc->n > 3);
+    bool   bSideways = (qmc->n > 3);
 
     nprint = 0;
     snew(cats,1);
@@ -235,11 +235,11 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                         /*for(m=0; (m<qmc->nconf); m++) 
                           {*/
                             if (mpi->GetProp(mpo,iqmExp,NULL,
-                                            NULL/*qmc->conf[m]*/,NULL,&exp_val) > 0)
+                                             NULL/*qmc->conf[m]*/,exp_type,&exp_val) > 0)
                             {
                                 nexpres = 1;
                                 if (mpi->GetProp(mpo,iqmQM,lbuf,NULL/*qmc->conf[m]*/,
-                                                qmc->type[k],&qm_val) > 0)
+                                                 qmc->type[k],&qm_val) > 0)
                                 {
                                     if (debug)
                                         fprintf(debug,"%s %s k = %d - TAB4\n",
@@ -293,7 +293,7 @@ void gmx_molprop_stats_table(FILE *fp,MolPropObservable mpo,
                 (mpi->HasComposition(SPOEL)))
             {
                 for(m=0; (m<qmc->nconf); m++) {
-                    if ((mpi->GetProp(mpo,iqmExp,NULL,qmc->conf[m],NULL,&exp_val) > 0) &&
+                    if ((mpi->GetProp(mpo,iqmExp,NULL,qmc->conf[m],exp_type,&exp_val) > 0) &&
                         (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[m],qmc->type[k],&qm_val) > 0)) 
                     {
                         gmx_stats_add_point(lsqtot[k],exp_val,qm_val,0,0);
@@ -594,7 +594,8 @@ typedef struct {
 static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[],
                                              gmx_poldata_t pd_aver,
                                              std::vector<alexandria::MolProp> mp,
-                                             int iQM,char *lot,output_env_t oenv,const char *histo)
+                                             int iQM,char *lot,char *exp_type,
+                                             output_env_t oenv,const char *histo)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     FILE   *xvg;
@@ -651,7 +652,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     if (mci != mpi->EndMolecularComposition())
                     {
                         int ngt = mci->CountAtoms(gt_type[cur]);
-                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,NULL,&exp_val) > 0)
+                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val) > 0)
                             nfitexp += ngt;
                         else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
                             nfitqm += ngt;
@@ -812,7 +813,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
             fprintf(fp,"%s\n",gt_type[cur]);
             for(k=0; (k<NEQG); k++)
             {
-                if (gmx_poldata_have_eem_support(pd,eqgcol[k],gt_type[cur],FALSE))
+                if (gmx_poldata_have_eem_support(pd,eqgcol[k],gt_type[cur],false))
                 {
                     fprintf(fp," & %.3f",gmx_poldata_get_j00(pd,eqgcol[k],gt_type[cur]));
                     fprintf(fp," & %.3f",gmx_poldata_get_chi0(pd,eqgcol[k],gt_type[cur]));
@@ -834,22 +835,24 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
     fprintf(fp,"\\hline\n\\end{tabular}\\end{sidewaystable}\n\n");
 }
 
-void gmx_molprop_atomtype_table(FILE *fp,gmx_bool bPolar,
+void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                 int npd,gmx_poldata_t pd[],
                                 gmx_poldata_t pd_aver,
                                 std::vector<alexandria::MolProp> mp,
-                                int iQM,char *lot,output_env_t oenv,const char *histo)
+                                int iQM,char *lot,char *exp_type,
+                                output_env_t oenv,const char *histo)
 {
     if (bPolar)
-        gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,iQM,lot,oenv,histo);
+        gmx_molprop_atomtype_polar_table(fp,npd,pd,pd_aver,mp,iQM,
+                                         lot,exp_type,oenv,histo);
     else
         gmx_molprop_atomtype_dip_table(fp,pd[0]);
 }
                                
 
 static void prop_header(FILE *fp,int caption,const char *property,real rel_toler,real abs_toler,
-                        t_qmcount *qmc,gmx_bool bSideways,int ims,gmx_bool bPrintConf,
-                        gmx_bool bPrintBasis,gmx_bool bPrintMultQ)
+                        t_qmcount *qmc,bool bSideways,int ims,bool bPrintConf,
+                        bool bPrintBasis,bool bPrintMultQ)
 {
     int  i;
     
@@ -900,7 +903,7 @@ static void prop_header(FILE *fp,int caption,const char *property,real rel_toler
     fprintf(fp,"\\\\\n\\hline\n");
 }
 
-static void prop_end(FILE *fp,gmx_bool bSideways)
+static void prop_end(FILE *fp,bool bSideways)
 {
     fprintf(fp,"\\hline\n\\end{tabularx}\n\\end{%stable}\n",
             bSideways ? "sideways" : "");
@@ -933,8 +936,8 @@ static int outside(real vexp,real vcalc,real rel_toler,real abs_toler)
 
 void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real abs_toler,
                             std::vector<alexandria::MolProp> mp,
-                            t_qmcount *qmc,gmx_bool bPrintAll,
-                            gmx_bool bPrintBasis,gmx_bool bPrintMultQ,
+                            t_qmcount *qmc,bool bPrintAll,
+                            bool bPrintBasis,bool bPrintMultQ,
                             gmx_molselect_t gms,int ims)
 {
     std::vector<alexandria::MolProp>::iterator mpi;
@@ -955,8 +958,8 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
     int    nprint;
     double dvec[DIM];
     tensor quadrupole;
-    real   ds_fac;
-    gmx_bool bSideways,bPrintConf,bOutlier;
+    real   ds_fac=1;
+    bool bSideways,bPrintConf,bOutlier;
   
     bSideways = (qmc->n > 1);
     
@@ -1092,7 +1095,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                         sprintf(mylbuf,"& - ");
                         strncat(myline,mylbuf,BLEN-strlen(myline));
                     }
-                    bOutlier = FALSE;
+                    bOutlier = false;
                     for(j=0; (j<qmc->n); j++) 
                     { 
                         if (found_calc[j] > 0) 
@@ -1112,11 +1115,11 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                                 switch(oo) {
                                 case 2:
                                     sprintf(mylbuf,"& \\textcolor{Red}{\\bf %s} ",vbuf);
-                                    bOutlier = TRUE;
+                                    bOutlier = true;
                                     break;
                                 case 1:
                                     sprintf(mylbuf,"& {\\bf %s} ",vbuf);
-                                    bOutlier = TRUE;
+                                    bOutlier = true;
                                     break;
                                 default:
                                     sprintf(mylbuf,"& %s ",vbuf);

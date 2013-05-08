@@ -86,7 +86,7 @@ static void check_sqlite3(sqlite3 *db,const char *extra,int rc)
 #endif
 
 void ReadSqlite3(const char *sqlite_file,
-                 std::vector<alexandria::MolProp> mp)
+                 std::vector<alexandria::MolProp>& mp)
 {
 #ifdef HAVE_LIBSQLITE3
     alexandria::MolPropIterator mpi;
@@ -212,13 +212,17 @@ void ReadSqlite3(const char *sqlite_file,
                         error  = sqlite3_column_double(stmt,cidx++);
                         ref    = (char *)sqlite3_column_text(stmt,cidx++);
                         nexp_prop++;
-                        mpi->AddExperiment(alexandria::Experiment(ref,"minimum"));
+                        
+                        alexandria::Experiment myexp(ref,"minimum");
                         if (strcasecmp(prop,"Polarizability") == 0)
-                            mpi->LastExperiment()->AddPolar(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
+                            myexp.AddPolar(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
                         else if (strcasecmp(prop,"dipole") == 0)
-                            mpi->LastExperiment()->AddDipole(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
+                            myexp.AddDipole(alexandria::MolecularDipPolar(prop,unit,0,0,0,value,error));
                         else if (strcasecmp(prop,"DHf(298.15K)") == 0)
-                            mpi->LastExperiment()->AddEnergy(alexandria::MolecularEnergy(prop,unit,value,error));
+                            myexp.AddEnergy(alexandria::MolecularEnergy(prop,unit,value,error));
+                        mpi->AddExperiment(myexp);
+                        //mpi->Stats();
+                        
                         if (0 && (strlen(classification) > 0))
                         {
                             class_ptr = split(';',classification);

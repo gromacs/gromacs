@@ -82,7 +82,7 @@
 #include "gromacs/coulombintegrals.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "mtop_util.h"
 #include "gmx_simple_comm.h"
 #include "nmsimplex.h"

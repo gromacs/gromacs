@@ -145,7 +145,7 @@ const char *immsg(immStatus imm)
         "OK", "Zero Dipole", "No Quadrupole", "Charged", 
         "Atom type problem", "Atom number problem", "Converting from molprop",
         "Determining bond order", "RESP Initialization",
-        "Charge generation",
+        "Charge generation", "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)", 
         "Not in training set", "No experimental data"
     };
@@ -821,7 +821,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
     }
     else
     {
-        imm = immAtomTypes;
+        imm = immLOT;
     }
     if (NULL != debug)
         fprintf(debug,"Tried to convert %s to gromacs. LOT is %s. Natoms is %d\n",
@@ -845,11 +845,15 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
     t_restp *rtp;
    
     /* Set bts for topology output */
-    bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd);
-    bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd);
-    bts[ebtsIDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
-    bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
- 
+    if (NOTSET == (bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd)))
+        gmx_fatal(FARGS,"No bonded type defined in force field file");
+    if (NOTSET == (bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd)))
+        gmx_fatal(FARGS,"No angle type defined in force field file");
+    if (NOTSET == (bts[ebtsIDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS)))
+        gmx_fatal(FARGS,"No improper dihedral type defined in force field file");
+    if (NOTSET == (bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS)))
+         gmx_fatal(FARGS,"No dihedral type defined in force field file");
+
     ftb = bts[ebtsBONDS];
     nexcl_ = nexcl;
     GenerateComposition(pd);
@@ -1755,7 +1759,7 @@ void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
     }
     int qq = GetCharge();
     double mm = GetMass();
-    double mutot = norm(mu);
+    double mutot = ENM2DEBYE*norm(mu);
     fprintf(fp,"Total charge is %d, total mass is %g, dipole is %f D\n",
             qq,mm,mutot);
     fprintf(fp,"Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/topology->atoms.nr));

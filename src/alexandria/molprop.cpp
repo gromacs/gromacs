@@ -100,7 +100,7 @@ void MolecularComposition::AddAtom(AtomNum an)
 void MolProp::AddBond(Bond b)
 {
     BondIterator bi;
-    gmx_bool bFound = FALSE;
+    bool bFound = false;
     
     for(bi=BeginBond(); !bFound && (bi<EndBond()); bi++)
     {
@@ -113,9 +113,9 @@ void MolProp::AddBond(Bond b)
     {
         _bond.push_back(b); 
     }
-    else if (bi->GetBondOrder() != b.GetBondOrder())
+    else if ((NULL != debug) && (bi->GetBondOrder() != b.GetBondOrder()))
     {
-        fprintf(stderr,"Different bond orders in molecule\n");
+        fprintf(debug,"Different bond orders in molecule %s\n",GetMolname().c_str());
     }
 }
 
@@ -505,16 +505,15 @@ void MolProp::Dump(FILE *fp)
     }
 }
 
-gmx_bool MolProp::GenerateComposition(gmx_poldata_t pd)
+bool MolProp::GenerateComposition(gmx_poldata_t pd)
 {
-    gmx_bool bDone = FALSE;
     char *miller;
     CalculationIterator ci;
     CalcAtomIterator cai;
     MolecularComposition mci_bosque("bosque"),mci_spoel("spoel"),mci_miller("miller");
     AtomNumIterator ani;
     
-    for(ci=BeginCalculation(); !bDone && (ci<EndCalculation()); ci++) 
+    for(ci=BeginCalculation(); (mci_spoel.CountAtoms() <= 0) && (ci<EndCalculation()); ci++) 
     {
         /* This assumes we have either all atoms or none. 
          * A consistency check could be
@@ -532,13 +531,19 @@ gmx_bool MolProp::GenerateComposition(gmx_poldata_t pd)
                 mci_miller.AddAtom(anm);
             }
         }
-        bDone = (mci_spoel.CountAtoms() > 0);
     }
-    if (bDone)
+    
+    if (mci_bosque.CountAtoms() > 0)
     {
         AddComposition(mci_bosque);
-        AddComposition(mci_spoel);
+    }
+    if (mci_miller.CountAtoms() > 0)
+    {
         AddComposition(mci_miller);
+    }
+    if (mci_spoel.CountAtoms() > 0)
+    {
+        AddComposition(mci_spoel);
         if (NULL != debug) 
         {
             fprintf(debug,"LO_COMP: ");
@@ -548,11 +553,12 @@ gmx_bool MolProp::GenerateComposition(gmx_poldata_t pd)
             }
             fprintf(debug,"\n");
         }
+        return true;
     }
-    return bDone;
+    return false;
 }
 
-gmx_bool MolProp::GenerateFormula(gmx_atomprop_t ap)
+bool MolProp::GenerateFormula(gmx_atomprop_t ap)
 {
     int  j,cnumber,an;
     char formula[1280],number[32];
@@ -632,9 +638,9 @@ gmx_bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     return (strlen(formula) > 0);
 }
   
-gmx_bool MolProp::HasComposition(std::string composition)
+bool MolProp::HasComposition(std::string composition)
 {
-    gmx_bool bComp  = FALSE;
+    bool bComp  = false;
     MolecularCompositionIterator mci;
     
     if (composition.size() > 0)
@@ -642,7 +648,7 @@ gmx_bool MolProp::HasComposition(std::string composition)
         for(mci=BeginMolecularComposition(); !bComp && (mci<EndMolecularComposition()); mci++)
         {
             if (mci->GetCompName() == composition)
-                bComp = TRUE;
+                bComp = true;
         }
     }
     if (debug && !bComp)
@@ -664,6 +670,8 @@ int Experiment::GetVal(const char *type,MolPropObservable mpo,
     MolecularQuadrupoleIterator mqi;
     std::string mtype;
     
+    if (NULL == type)
+        gmx_fatal(FARGS,"Called GetVal with NULL type. Prop = %d",(int)mpo);
     switch (mpo) 
     {
     case MPO_ENERGY:

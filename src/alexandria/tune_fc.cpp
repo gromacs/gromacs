@@ -83,12 +83,12 @@
 #include "gpp_atomtype.h"
 #include "grompp.h"
 #include "gen_ad.h"
-#include "molselect.h"
 #include "mtop_util.h"
 #include "gmx_simple_comm.h"
 #include "nmsimplex.h"
 
 // alexandria stuff
+#include "molselect.hpp"
 #include "poldata.h"
 #include "poldata_xml.h"
 #include "gentop_qgen.hpp"

@@ -1,0 +1,36 @@
+  <bsatoms polarizability_unit="A3">
+    <bsatom elem="H" polarizability="0.17"/>
+    <bsatom elem="C" polarizability="1.51"/>
+    <bsatom elem="N" polarizability="1.05"/>
+    <bsatom elem="O" polarizability="0.57"/>
+    <bsatom elem="F" polarizability="0.22"/>
+    <bsatom elem="P" polarizability="2.48"/>
+    <bsatom elem="S" polarizability="2.99"/>
+    <bsatom elem="Cl" polarizability="2.16"/>
+    <bsatom elem="Br" polarizability="3.29"/>
+    <bsatom elem="I" polarizability="5.45"/>
+    <bsatom elem="0" polarizability="0.32"/>
+  </bsatoms>
+  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3">
+    <milatom milname="H" atomnumber="1" tau_ahc="0.313" alpha_ahp="0.387"/>
+    <milatom milname="F" atomnumber="9" tau_ahc="1.089" alpha_ahp="0.296"/>
+    <milatom milname="Cl" atomnumber="17" tau_ahc="3.165" alpha_ahp="2.315"/>
+    <milatom milname="Br" atomnumber="35" tau_ahc="5.566" alpha_ahp="3.013"/>
+    <milatom milname="I" atomnumber="53" tau_ahc="8.593" alpha_ahp="5.415"/>
+    <milatom milname="CTE" atomnumber="6" tau_ahc="1.294" alpha_ahp="1.061"/>
+    <milatom milname="CTR" atomnumber="6" tau_ahc="1.433" alpha_ahp="1.352"/>
+    <milatom milname="CRB" atomnumber="6" tau_ahc="1.707" alpha_ahp="1.896" alexandria_equiv="C2"/>
+    <milatom milname="CDI" atomnumber="6" tau_ahc="1.393" alpha_ahp="1.283"/>
+    <milatom milname="NTE" atomnumber="7" tau_ahc="1.373" alpha_ahp="0.964"/>
+    <milatom milname="NTR3" atomnumber="7" tau_ahc="1.262" alpha_ahp="1.03"/>
+    <milatom milname="NPI2" atomnumber="7" tau_ahc="1.22" alpha_ahp="1.09" alexandria_equiv="N2"/>
+    <milatom milname="NDI" atomnumber="7" tau_ahc="1.304" alpha_ahp="0.956"/>
+    <milatom milname="OTE" atomnumber="8" tau_ahc="1.249" alpha_ahp="0.637"/>
+    <milatom milname="OTR4" atomnumber="8" tau_ahc="1.216" alpha_ahp="0.569"/>
+    <milatom milname="OPI2" atomnumber="8" tau_ahc="1.083" alpha_ahp="0.274" alexandria_equiv="O2"/>
+    <milatom milname="STE" atomnumber="16" tau_ahc="3.496" alpha_ahp="3"/>
+    <milatom milname="STR4" atomnumber="16" tau_ahc="3.827" alpha_ahp="3.729"/>
+    <milatom milname="SPI2" atomnumber="16" tau_ahc="2.982" alpha_ahp="2.7" alexandria_equiv="S2"/>
+    <milatom milname="PTE" atomnumber="15" tau_ahc="2.485" alpha_ahp="1.538"/>
+    <milatom milname="Si" atomnumber="14" tau_ahc="2.7" alpha_ahp="1.97"/>
+  </milatoms>

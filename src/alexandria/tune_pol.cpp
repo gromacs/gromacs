@@ -53,7 +53,7 @@
 #include "names.h"
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "poldata_xml.h"
 #include "molprop.hpp"
 #include "molprop_xml.hpp"

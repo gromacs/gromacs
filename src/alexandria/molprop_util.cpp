@@ -54,7 +54,7 @@
 #include "gmx_simple_comm.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
@@ -116,7 +116,7 @@ static int lo_gen_composition(alexandria::MolPropIterator mpi,
     return elgcOK;
 }
 
-void generate_composition(std::vector<alexandria::MolProp> mp,gmx_poldata_t pd)
+void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
 {
     int nOK = 0;
     alexandria::MolPropIterator mpi;
@@ -138,7 +138,7 @@ void generate_composition(std::vector<alexandria::MolProp> mp,gmx_poldata_t pd)
         printf("Generated composition for %d out of %d molecules.\n",nOK,(int)mp.size());
 }
 
-void generate_formula(std::vector<alexandria::MolProp> mp,gmx_atomprop_t ap)
+void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap)
 {
     int  j,cnumber,an;
     char formula[1280],number[32];
@@ -469,8 +469,9 @@ void merge_xml(int nfile,char **filens,
         }
     }
     tmp = mpout.size();
-    printf("mpout.size() = %u mpout.max_size() = %u\n",
-           (unsigned int)mpout.size(),(unsigned int)mpout.max_size());
+    if (debug)
+        fprintf(debug,"mpout.size() = %u mpout.max_size() = %u\n",
+                (unsigned int)mpout.size(),(unsigned int)mpout.max_size());
     for(mpi=mpout.begin(); (mpi<mpout.end()); mpi++)
     {
         mpi->Dump(debug);

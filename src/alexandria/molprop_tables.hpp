@@ -42,7 +42,7 @@
 #include "poldata.h"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
-#include "molselect.h"
+#include "molselect.hpp"
 
 //! Utility function converting float to char *
 extern char *ftoa(double f);
@@ -60,18 +60,18 @@ extern char *itoa(int f);
  * \param[in] qmc
  * \param[in] iQM
  * \param[in] lot   Level of theory in 'A/B' form
+ * \param[in] exp_type The type of experimental property
  * \param[in] outlier  Outlier indicates a level (in units of sigma, one standard deviation). Calculations that deviate more than this level from the experiment are not taken into account when computing statistics. Moreover, the outliers are printed to the standard error. If outlier is 0, no action is taken.
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set
- * \todo Transform ims to enum
  * \todo Transform iQM to enum
  * \ingroup module_alexandria
  */
 extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
                                     std::vector<alexandria::MolProp> mp,
                                     int ntot,
-                                    t_qmcount *qmc,int iQM,char *lot,
-                                    double outlier,gmx_molselect_t gms,int ims);
+                                    t_qmcount *qmc,int iQM,char *lot,char *exp_type,
+                                    double outlier,gmx_molselect_t gms,iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the composition in atoms of each molecule
@@ -117,15 +117,14 @@ extern void gmx_molprop_category_table(FILE *fp,
  * \param[in] ims   The actual selection of the right set
  * \todo Transform ims to enum
  * \todo Introduce enum to switch between absolute and relative tolerance
- * \todo Replace gmx_bool by C++ bool
  * \ingroup module_alexandria
  */
 extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
                                    real rel_toler,real abs_toler,
                                    std::vector<alexandria::MolProp> mp,
                                    t_qmcount *qmc,
-                                   gmx_bool bPrintAll,gmx_bool bPrintBasis,
-                                   gmx_bool bPrintMultQ,gmx_molselect_t gms,int ims);
+                                   bool bPrintAll,bool bPrintBasis,
+                                   bool bPrintMultQ,gmx_molselect_t gms,int ims);
 				   
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria
@@ -138,6 +137,8 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  * \param[in] mp    Array of molecules
  * \param[in] iQM   Selecting the reference between QM and Experimental
  * \param[in] lot   Level of theory in 'A/B' format
+ * \param[in] exp_type The type of experimental property
+ * \param[in] exp_type The type of experimental property
  * \param[in] oenv  Information for generating xvg files
  * \param[in] histo File name for histogram data
  * \param[in] gms   Structure containing selections of which molecules to output
@@ -147,11 +148,12 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  * \todo More explanation text
  * \ingroup module_alexandria
  */
-extern void gmx_molprop_atomtype_table(FILE *fp,gmx_bool bPolar,
+extern void gmx_molprop_atomtype_table(FILE *fp,bool bPolar,
                                        int npd,gmx_poldata_t pd[],
                                        gmx_poldata_t pd_aver, /* Output! */
                                        std::vector<alexandria::MolProp> mp,
-                                       int iQM,char *lot,output_env_t oenv,
+                                       int iQM,char *lot,char *exp_type,
+                                       output_env_t oenv,
                                        const char *histo);
 
 #endif

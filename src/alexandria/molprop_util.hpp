@@ -41,25 +41,9 @@
 #include "atomprop.h"
 #include "molprop.hpp"
 #include "poldata.h"
-#include "molselect.h"
+#include "molselect.hpp"
 
-//extern int mp_get_prop(alexandria::MolProp mp,MolPropObservable mpi,
-//                       int iQM,char *lot,char *conf,char *type,double *value);
-
-/* mylot returns the used level of theory. mylot and ref may be NULL */
-//extern int mp_get_prop_ref(alexandria::MolProp mp,MolPropObservable mpo,
-//                           int iQM,char *lot,
-//                           const char *conf,const char *type,
-//                           double *value,double *err,
-//                           char **ref,char **mylot,
-//                           double vec[3],tensor quadrupole);
-
-//extern int gmx_molprop_get_calc_lot(alexandria::MolProp mp,char *lot);
-
-extern void generate_formula(std::vector<alexandria::MolProp> mp,gmx_atomprop_t ap);
-
-/* Returns TRUE if the present molecule has the indicated composition */
-extern gmx_bool gmx_molprop_support_composition(alexandria::MolProp mp,char *composition);
+extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);
 
 alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
                                     gmx_atomprop_t ap,gmx_poldata_t pd);

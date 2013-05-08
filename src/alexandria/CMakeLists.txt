@@ -4,7 +4,7 @@ set(ALEXANDRIA_SOURCES
 	poldata.c
 	poldata_xml.c
 	gmx_simple_comm.c
-	molselect.c
+	molselect.cpp
 	gmx_resp.cpp
 	gentop_qgen.cpp
 	gentop_core.cpp

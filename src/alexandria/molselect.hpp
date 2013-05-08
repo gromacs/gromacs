@@ -39,7 +39,7 @@
 
 typedef struct gmx_molselect *gmx_molselect_t;
 
-enum { imsTrain, imsTest, imsIgnore, imsUnknown, imsNR };
+enum iMolSelect { imsTrain, imsTest, imsIgnore, imsUnknown, imsNR };
 
 #ifdef __cplusplus
 extern "C"
@@ -59,7 +59,7 @@ void gmx_molselect_done(gmx_molselect_t gms);
 #ifdef __cplusplus
 extern "C"
 #endif
-int gmx_molselect_status(gmx_molselect_t gms,const char *iupac);
+iMolSelect gmx_molselect_status(gmx_molselect_t gms,const char *iupac);
 
 #ifdef __cplusplus
 extern "C"

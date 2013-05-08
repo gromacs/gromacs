@@ -821,18 +821,17 @@ typedef std::vector<CalcAtom>::iterator CalcAtomIterator;
 class Experiment
 {
 private:
-    gmx_bool _bExperiment;
     std::string _reference,_conformation;
     std::vector<MolecularDipPolar> _polar,_dipole;
     std::vector<MolecularEnergy> _energy;
     std::vector<MolecularQuadrupole> _quadrupole;
 public:
     //! Empty constructor
-    Experiment() {}
+    Experiment() { }
     
     //! Constructor initiating an Experiment with reference and conformation
     Experiment(std::string reference,std::string conformation) { 
-        _reference = reference; _conformation = conformation; _bExperiment = TRUE;
+        _reference = reference; _conformation = conformation; 
     };
     
     //! Constructor initiating an Experiment with reference and conformation
@@ -846,12 +845,6 @@ public:
     //! Dump the contents of this object to a file
     void Dump(FILE *fp);
     
-    //! Return whether this object contains experimental data
-    gmx_bool GetExperiment() { return _bExperiment; }
-    
-    //! Set the flag determining  whether this object contains experimental data
-    void SetExperiment(gmx_bool bExperiment) { _bExperiment = bExperiment; }
-
     //! Add a MolecularDipPolar element containing polarizability data
     void AddPolar(MolecularDipPolar mdp) { _polar.push_back(mdp); }
     
@@ -955,7 +948,7 @@ private:
     std::vector<ElectrostaticPotential> _potential;
 public:
     //! Empty constructor
-    Calculation() {}
+    Calculation() { }
 
     //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
     Calculation(std::string program,std::string method,
@@ -963,7 +956,6 @@ public:
                 std::string conformation,std::string datafile) : Experiment(reference,conformation) { 
         _program = program; _method = method; 
         _basisset = basisset; _datafile = datafile; 
-        SetExperiment(FALSE);
     };
     
     //! Constructor for calculations with program, method, basisset, reference, conformation and datafile
@@ -972,7 +964,6 @@ public:
                 const char *conformation,const char *datafile) : Experiment(reference,conformation) { 
         _program.assign(program); _method.assign(method); 
         _basisset.assign(basisset); _datafile.assign(datafile); 
-        SetExperiment(FALSE);
     };
     
     //! Destructor
@@ -1122,7 +1113,7 @@ public:
      * \todo Check and double check. If there is no calculation data no 
      * formula anbe generated
      */
-    gmx_bool GenerateFormula(gmx_atomprop_t ap);
+    bool GenerateFormula(gmx_atomprop_t ap);
     
     //! Set the molname
     void SetMolname(const char *molname) { _molname.assign(molname); }
@@ -1238,13 +1229,13 @@ public:
     int NAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
     
     //! Routine to generate composition based on calculation data
-    gmx_bool GenerateComposition(gmx_poldata_t pd);
+    bool GenerateComposition(gmx_poldata_t pd);
     
     //! Returns boolean stating whether a particular composition is present
-    gmx_bool HasComposition(char *composition) { std::string _str(composition); return HasComposition(_str); }
+    bool HasComposition(char *composition) { std::string _str(composition); return HasComposition(_str); }
 
     //! Returns boolean stating whether a particular composition is present
-    gmx_bool HasComposition(std::string composition);
+    bool HasComposition(std::string composition);
 
     //! Add a Bond element
     void AddBond(Bond b);
@@ -1259,8 +1250,13 @@ public:
     BondIterator EndBond() { return _bond.end(); }
 
     //! Add an experiment    
-    void AddExperiment(Experiment myexp) { _exper.push_back(myexp); };
+    void AddExperiment(Experiment myexp) { _exper.push_back(myexp); }
     
+    void Stats() {
+        printf("%s - %s - %d experiments - %d calculations\n",
+               _molname.c_str(),_formula.c_str(),
+               (int)_exper.size(),(int)_calc.size());
+    }
     //! Return the number of experiments
     int NExperiment() { return _exper.size(); }
 

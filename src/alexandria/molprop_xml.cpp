@@ -774,6 +774,7 @@ void MolPropWrite(const char *fn,std::vector<alexandria::MolProp> mpt,gmx_bool b
         if (NULL != debug)
             fprintf(debug,"Adding %d/%d %s\n",(int)(mp_it - mpt.begin()),
                     (int)mpt.size(),mp_it->GetMolname().c_str());
+        //mp_it->Stats();
         add_xml_molprop(myroot,mp_it);
     }
     xmlSetDocCompressMode(doc,(int)bCompress);

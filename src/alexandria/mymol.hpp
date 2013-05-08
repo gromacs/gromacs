@@ -11,7 +11,7 @@
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 #include "molprop.hpp"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "poldata.h"
 #include "gauss_io.hpp"
 
@@ -19,7 +19,7 @@ enum immStatus {
     immUnknown,
     immOK, immZeroDip, immNoQuad, immCharged, 
     immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
-    immChargeGeneration,
+    immChargeGeneration, immLOT,
     immQMInconsistency, immTest, immNoData, immNR 
 };
 

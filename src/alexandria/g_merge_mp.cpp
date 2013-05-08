@@ -72,7 +72,7 @@ static int tp_comp(const void *a,const void *b)
     return strcasecmp(ta->iupac,tb->iupac);
 }
 
-static void add_properties(const char *fn,std::vector<alexandria::MolProp> mp)
+static void add_properties(const char *fn,std::vector<alexandria::MolProp>& mp)
 {
     alexandria::MolPropIterator mpi;
     FILE   *fp;

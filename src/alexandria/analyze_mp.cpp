@@ -55,7 +55,7 @@
 #include "gromacs/linearalgebra/matrix.h"
 #include "poldata.h"
 #include "poldata_xml.h"
-#include "molselect.h"
+#include "molselect.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molprop_xml.hpp"
@@ -184,7 +184,8 @@ static void write_corr_xvg(const char *fn,
                            std::vector<alexandria::MolProp> mp,
                            MolPropObservable mpo,t_qmcount *qmc,
                            int iQM,char *lot,real rtoler,real atoler,
-                           output_env_t oenv,gmx_molselect_t gms)
+                           output_env_t oenv,gmx_molselect_t gms,
+                           char *exp_type)
 {
     alexandria::MolPropIterator mpi;
     FILE   *fp;
@@ -217,7 +218,7 @@ static void write_corr_xvg(const char *fn,
             {
                 for(k=0; (k<qmc->nconf); k++)
                 {
-                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,NULL,&exp_val) > 0)  &&
+                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,exp_type,&exp_val) > 0)  &&
                         (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
@@ -271,9 +272,10 @@ static void add_refc(t_refcount *rc,const char *ref)
     }
 }
 
-static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
+static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
                                 int npd,gmx_poldata_t *pd,gmx_poldata_t pdref,
-                                gmx_bool bCalcPol,MolPropObservable prop,
+                                gmx_bool bCalcPol,
+                                MolPropObservable prop,char *exp_type,
                                 gmx_atomprop_t ap,int iQM,char *lot,
                                 real rtoler,real atoler,real outlier,
                                 char *fc_str,gmx_bool bPrintAll,
@@ -303,19 +305,20 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
 #define prev (1-cur)
     const char   *iupac;
     char *ref;
-  
+    
     if (NULL != atype)
     {
         fp = fopen(atype,"w");
         gmx_molprop_atomtype_table(fp,(prop == MPO_POLARIZABILITY),
-                                   npd,pd,pdref,mp,iQM,lot,oenv,histo);
+                                   npd,pd,pdref,mp,iQM,lot,exp_type,
+                                   oenv,histo);
         fclose(fp);
         do_view(oenv,histo,NULL);
     }
     
     if (bCalcPol)
         calc_frag_miller(FALSE,pdref ? pdref : pd[0],mp,gms);
-        
+    
     qmc = find_calculations(mp,prop,fc_str);
     
     snew(rc,1);
@@ -324,7 +327,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
         molname[cur] = mpi->GetMolname().c_str();
         for(ei=mpi->BeginExperiment(); (ei<mpi->EndExperiment()); ei++)
         {
-            if (1 == ei->GetVal(NULL,prop,&value,&error,vec,quadrupole))
+            if (1 == ei->GetVal(exp_type,prop,&value,&error,vec,quadrupole))
             {
                 add_refc(rc,ei->GetReference().c_str());
             }
@@ -352,8 +355,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
     fp = ffopen(texfn,"w");
     if (bStatsTable) 
     {
-        gmx_molprop_stats_table(fp,prop,mp,ntot,qmc,iQM,lot,outlier,gms,imsTrain);
-        gmx_molprop_stats_table(fp,prop,mp,ntot,qmc,iQM,lot,outlier,gms,imsTest);
+        gmx_molprop_stats_table(fp,prop,mp,ntot,qmc,iQM,lot,exp_type,outlier,gms,imsTrain);
+        gmx_molprop_stats_table(fp,prop,mp,ntot,qmc,iQM,lot,exp_type,outlier,gms,imsTest);
     }
     if (bPropTable)
     {
@@ -393,7 +396,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp> mp,
         fclose(fp);
     }
     if (NULL != xvgfn)
-        write_corr_xvg(xvgfn,mp,prop,qmc,FALSE,lot,rtoler,atoler,oenv,gms);
+        write_corr_xvg(xvgfn,mp,prop,qmc,FALSE,lot,rtoler,atoler,oenv,gms,exp_type);
 }
 
 
@@ -436,6 +439,7 @@ int main(int argc,char *argv[])
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", (char *)"selection", NULL };
     static char *prop[] = { NULL, (char *)"potential", (char *)"dipole", (char *)"quadrupole", (char *)"polarizability", (char *)"energy", (char *)"DHf(298.15K)", NULL };
     static char *fc_str = (char *)"";
+    static char *exp_type = (char *)"";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static real rtoler = 0.15,atoler=0,outlier=1;
     static real th_toler=170,ph_toler=5;
@@ -475,7 +479,9 @@ int main(int argc,char *argv[])
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "If dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
         { "-fc_str", FALSE, etSTR, {&fc_str},
-          "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." }
+          "Selection of the stuff you want in the tables, given as a single string with spaces like: method1/basis1/type1:method2/basis2/type2 (you may have to put quotes around the whole thing in order to prevent the shell from interpreting it)." },
+        { "-exp_type", FALSE, etSTR, {&exp_type},
+          "The experimental property type that all the stuff above has to be compared to." }
     };
     int        npa;
     int        i;
@@ -548,7 +554,7 @@ int main(int argc,char *argv[])
         MolPropSort(mp,mpsa,ap,gms);
     }
     gmx_molprop_analyze(mp,npdfile,pd,pdref,bCalcPol,
-                        mpo,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
+                        mpo,exp_type,ap,0,lot,rtoler,atoler,outlier,fc_str,bAll,
                         bStatsTable,
                         opt2fn_null("-cat",NFILE,fnm),
                         bPropTable,bCompositionTable,

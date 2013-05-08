@@ -85,7 +85,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static gmx_bool bVerbose = FALSE;
   static char *molnm=NULL,*iupac=NULL,*conf=(char *)"minimum",*basis=NULL;
-  static char *forcefield="GAFF";
+  static const char *forcefield="GAFF";
   static int  maxpot=0;
   static gmx_bool compress=FALSE;
   static gmx_bool bBabel=TRUE;
