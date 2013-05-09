@@ -405,14 +405,15 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
     while (sel)
     {
         /* Clear the evaluation group of subexpressions */
-        if (sel->child && sel->child->type == SEL_SUBEXPR)
+        if (sel->child && sel->child->type == SEL_SUBEXPR
+            && sel->child->evaluate != NULL)
         {
             sel->child->u.cgrp.isize = 0;
             /* Not strictly necessary, because the value will be overwritten
              * during first evaluation of the subexpression anyways, but we
              * clear the group for clarity. Note that this is _not_ done during
              * compilation because of some additional complexities involved
-             * (see compiler.c), so it should not be relied upon in
+             * (see compiler.cpp), so it should not be relied upon in
              * _gmx_sel_evaluate_subexpr(). */
             if (sel->child->v.type == GROUP_VALUE)
             {
@@ -589,7 +590,7 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
         }
         else
         {
-            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, sel->u.cgrp.name, 0);
+            gmx_ana_index_set(&sel->u.cgrp, g->isize, g->index, 0);
         }
     }
 }
@@ -628,18 +629,13 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
             SelelemTemporaryValueAssigner assigner(sel->child, *sel);
             sel->child->evaluate(data, sel->child, g);
         }
-        /* We need to keep the name for the cgrp across the copy to avoid
-         * problems if g has a name set. */
-        char *name = sel->u.cgrp.name;
         gmx_ana_index_copy(&sel->u.cgrp, g, false);
-        sel->u.cgrp.name = name;
         gmiss.isize      = 0;
     }
     else
     {
         gmissreserver.reserve(&gmiss, g->isize);
         gmx_ana_index_difference(&gmiss, g, &sel->u.cgrp);
-        gmiss.name = NULL;
     }
     if (gmiss.isize > 0)
     {
@@ -778,7 +774,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
 {
     int        i, j;
 
-    if (g)
+    if (g != NULL && sel->child->evaluate != NULL)
     {
         sel->child->evaluate(data, sel->child, g);
     }
@@ -1129,7 +1125,6 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
     child = child->next;
     while (child && tmp.isize > 0)
     {
-        tmp.name = NULL;
         {
             MempoolSelelemReserver reserver(child, tmp.isize);
             child->evaluate(data, child, &tmp);

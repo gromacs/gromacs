@@ -462,16 +462,20 @@ IF( WIN32 AND NOT CYGWIN)
   ENDIF()
 ENDIF()
 
-option(GMX_XML "Use libxml2 to parse xml files" ON)
-if (GMX_XML)
-  find_package(LibXml2)
-  set(PKG_XML "")
-  if(LIBXML2_FOUND)
-    include_directories(${LIBXML2_INCLUDE_DIR})
-    set(PKG_XML libxml-2.0)
-    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
-  endif(LIBXML2_FOUND)
-endif(GMX_XML)
+# Unconditionally find the package, as it is also required for unit tests
+find_package(LibXml2)
+option(GMX_XML "Use libxml2 to parse xml files (currently has no effect)" ${LIBXML2_FOUND})
+set(PKG_XML "")
+mark_as_advanced(GMX_XML)
+# Don't actually do anything, since libxml2 is currently not used by libgromacs
+#if(GMX_XML AND NOT LIBXML2_FOUND)
+#    message(FATAL_ERROR "libxml2 not found. Set GMX_XML=OFF to compile without XML support")
+#endif()
+#if(GMX_XML)
+#    include_directories(${LIBXML2_INCLUDE_DIR})
+#    set(PKG_XML libxml-2.0)
+#    set(XML_LIBRARIES ${LIBXML2_LIBRARIES})
+#endif(GMX_XML)
 
 option(GMX_GSL "Add support for gsl" OFF)
 if (GMX_GSL)
@@ -587,37 +591,36 @@ if(GMX_GIT_VERSION_INFO)
     endif()
 endif()
 
-option(GMX_INTERNAL_BOOST "Use minimal internal version of boost" OFF)
-if ( NOT GMX_INTERNAL_BOOST )
-  find_package( Boost 1.44.0 )
-else ( NOT GMX_INTERNAL_BOOST )
-  set (Boost_FOUND FALSE)
-endif( NOT GMX_INTERNAL_BOOST )
-
-if(Boost_FOUND AND NOT Boost_VERSION VERSION_LESS "104400" )
-  include_directories(${Boost_INCLUDE_DIRS})
-else()
-  if(NOT BOOST_QUIETLY)
-    message("Boost >= 1.44 not found. Using minimal internal version. Not recommended if GROMACS is used as library!")
-  endif()
-  include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
-  add_definitions( -DBOOST_NO_TYPEID )  #TYPEID not supported for minimal internal version (would add significant more code)
-  # TODO: Propagate the above settings to the installed CMakeFiles.txt template
-  # (from share/template/)
-  # TODO: Reorder stuff such that INCL_INSTALL_DIR could be used here
-  set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${GMX_INSTALL_PREFIX}include/gromacs/external/boost")
-  install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
-          DESTINATION ${GMX_INSTALL_PREFIX}include/gromacs/external/boost
-          COMPONENT development)
+# Detect boost unless GMX_EXTERNAL_BOOST is explicitly OFF
+# Used for default if GMX_EXTERNAL_BOOST is not defined (first CMake pass)
+if(NOT DEFINED GMX_EXTERNAL_BOOST OR GMX_EXTERNAL_BOOST)
+    find_package(Boost 1.44.0)
+    if(Boost_FOUND AND Boost_VERSION VERSION_LESS "104400")
+        set(Boost_FOUND FALSE)
+    endif()
+    # Print the notification only on first run, when determining the default
+    if(NOT DEFINED GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
+        message("Boost >= 1.44 not found. Using minimal internal version. "
+                "This may cause trouble if you plan on compiling/linking other "
+                "software that uses Boost against Gromacs.")
+    endif()
 endif()
-set(BOOST_QUIETLY TRUE CACHE INTERNAL "")
+option(GMX_EXTERNAL_BOOST "Use external Boost instead of minimal built-in version"
+       ${Boost_FOUND})
+if(GMX_EXTERNAL_BOOST AND NOT Boost_FOUND)
+    message(FATAL_ERROR
+        "Boost >= 1.44 not found. "
+        "You can set GMX_EXTERNAL_BOOST=OFF to compile against minimal "
+        "version of Boost included with Gromacs.")
+endif()
 
-if (LIBXML2_FOUND)
-    option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ON)
-else (LIBXML2_FOUND)
-    set(GMX_BUILD_UNITTESTS OFF)
-endif (LIBXML2_FOUND)
+option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${LIBXML2_FOUND})
 mark_as_advanced(GMX_BUILD_UNITTESTS)
+if (GMX_BUILD_UNITTESTS AND NOT LIBXML2_FOUND)
+    message(FATAL_ERROR
+        "Cannot build unit tests without libxml2. "
+        "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find libxml2.")
+endif()
 set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
 ########################################################################
@@ -1107,7 +1110,7 @@ if (CMAKE_CXX_COMPILER_LOADED)
 endif ()
 
 ########################################################################
-# Specify install locations and which subdirectories to process        #
+# Specify install locations
 ########################################################################
 if ( NOT DEFINED GMXLIB )
     set(GMXLIB lib)
@@ -1140,6 +1143,21 @@ endif()
 #COPYING file: Only necessary for binary distributions.
 #Simpler to always install.
 install(FILES COPYING DESTINATION ${DATA_INSTALL_DIR} COMPONENT data)
+
+if(GMX_EXTERNAL_BOOST)
+    include_directories(${Boost_INCLUDE_DIRS})
+else()
+    include_directories(${CMAKE_SOURCE_DIR}/src/external/boost)
+    # typeid not supported for minimal internal version
+    # (would add significant amount of code)
+    add_definitions(-DBOOST_NO_TYPEID)
+    # TODO: Propagate the above settings to the installed CMakeFiles.txt template
+    # (from share/template/)
+    set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${INCL_INSTALL_DIR}/gromacs/external/boost")
+    install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
+            DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
+            COMPONENT development)
+endif()
 
 add_subdirectory(doxygen)
 add_subdirectory(share)

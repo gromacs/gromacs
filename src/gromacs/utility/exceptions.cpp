@@ -78,7 +78,7 @@ class ErrorMessage
         explicit ErrorMessage(const std::string &text);
 
         //! Whether this object is a context string.
-        bool isContext() const { return child_; }
+        bool isContext() const { return static_cast<bool>(child_); }
         //! Returns the text for this object.
         const std::string &text() const { return text_; }
         /*! \brief

@@ -34,8 +34,6 @@
  * Groningen Machine for Chemical Simulation
  */
 #include <string.h>
-#include <libxml/parser.h>
-#include <libxml/tree.h>
 #include "gmx_fatal.h"
 #include "xml_util.h"
 	

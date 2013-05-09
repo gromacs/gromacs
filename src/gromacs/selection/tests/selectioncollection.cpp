@@ -915,6 +915,17 @@ TEST_F(SelectionCollectionDataTest, HandlesBasicBoolean)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesDynamicAtomValuedParameters)
+{
+    static const char * const selections[] = {
+        "same residue as (atomnr 3 5 13 or y > 5)",
+        "(resnr 1 3 5 or x > 10) and same residue as (atomnr 3 5 13 or y > 5)"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
     static const char * const selections[] = {
@@ -1094,6 +1105,18 @@ TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups)
         "foo"
     };
     runTest(10, selections);
+}
+
+
+TEST_F(SelectionCollectionDataTest, HandlesVariablesWithMixedEvaluationGroups2)
+{
+    static const char * const selections[] = {
+        "foo = atomnr 1 to 8 and x < 10",
+        "atomnr 1 to 5 and y < 10 and foo",
+        "foo"
+    };
+    setFlags(TestFlags() | efTestEvaluation);
+    runTest("simple.gro", selections);
 }
 
 
