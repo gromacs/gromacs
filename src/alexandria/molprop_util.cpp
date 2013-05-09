@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <vector>
 #include <algorithm>
 #include "smalloc.h"
 #include "maths.h"
@@ -65,7 +66,7 @@ enum { elgcOK, elgcNOATOMS, elgcNOTOP, elgcNR };
 
 static int lo_gen_composition(alexandria::MolPropIterator mpi,
                               gmx_poldata_t pd,gmx_atomprop_t aps,
-                              gmx_bool *bSpoel,gmx_bool *bMiller,gmx_bool *bBosque,
+                              bool *bSpoel,bool *bMiller,bool *bBosque,
                               double th_toler,double phi_toler)
 {
     std::string miller;
@@ -126,7 +127,7 @@ void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
         mpi->DeleteComposition("spoel");
         mpi->DeleteComposition("miller");
         mpi->DeleteComposition("bosque");
-        if (TRUE == mpi->GenerateComposition(pd))
+        if (true == mpi->GenerateComposition(pd))
             nOK++;
         else if (debug)
         {
@@ -238,7 +239,7 @@ alexandria::MolProp atoms_2_molprop(char *molname,int natoms,char **smnames,
     return mp;  
 }
 
-static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
+static bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
                                 t_symtab *tab,const char *lot,
                                 t_atoms *atoms,const char *q_algorithm,
                                 rvec **x)
@@ -251,7 +252,7 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
     int myunit;
     double q,xx,yy,zz;
     int    natom;
-    gmx_bool bDone = FALSE;
+    bool bDone = false;
     
     (*x)  = NULL;
     molnm = mp.GetMolname();
@@ -260,7 +261,7 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
     if (ci < mp.EndCalculation()) 
     {
         natom = 0;
-        init_t_atoms(atoms,mp.NAtom(),FALSE);
+        init_t_atoms(atoms,mp.NAtom(),false);
         snew(*x,mp.NAtom());
         
         for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
@@ -300,12 +301,12 @@ static gmx_bool molprop_2_atoms(alexandria::MolProp mp,gmx_atomprop_t ap,
     return bDone;
 }
 
-gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
-                            gmx_poldata_t pd,
-                            t_symtab *tab,const char *lot,
-                            t_topology **mytop,const char *q_algorithm,
-                            rvec **x,t_params plist[F_NRE],
-                            int nexcl,t_excls **excls)
+bool molprop_2_topology2(alexandria::MolProp mp,gmx_atomprop_t ap,
+                        gmx_poldata_t pd,
+                        t_symtab *tab,const char *lot,
+                        t_topology **mytop,const char *q_algorithm,
+                        rvec **x,t_params plist[F_NRE],
+                        int nexcl,t_excls **excls)
 {
     alexandria::BondIterator bi;
     
@@ -321,8 +322,8 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     init_top(top);
         
     /* Get atoms */
-    if (FALSE == molprop_2_atoms(mp,ap,tab,lot,&(top->atoms),q_algorithm,x))
-        return FALSE;
+    if (false == molprop_2_atoms(mp,ap,tab,lot,&(top->atoms),q_algorithm,x))
+        return false;
     
     /* Store bonds in harmonic potential list first, update type later */
     ftb = F_BONDS;
@@ -342,16 +343,16 @@ gmx_bool molprop_2_topology(alexandria::MolProp mp,gmx_atomprop_t ap,
     //detect_rings(&plist[F_BONDS],atoms->nr,bRing);
     //nbonds = plist[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
-    rtp->bKeepAllGeneratedDihedrals = TRUE;
-    rtp->bRemoveDihedralIfWithImproper = TRUE;
-    rtp->bGenerateHH14Interactions = TRUE;
+    rtp->bKeepAllGeneratedDihedrals = true;
+    rtp->bRemoveDihedralIfWithImproper = true;
+    rtp->bGenerateHH14Interactions = true;
     rtp->nrexcl = nexcl;
     generate_excls(&nnb,nexcl,*excls);
-    gen_pad(&nnb,&(top->atoms),rtp,plist,*excls,NULL,FALSE);
+    gen_pad(&nnb,&(top->atoms),rtp,plist,*excls,NULL,false);
     done_nnb(&nnb);
     sfree(rtp);
     
-    return TRUE;
+    return true;
 }
 
 int my_strcmp(const char *a,const char *b)
@@ -363,7 +364,7 @@ int my_strcmp(const char *a,const char *b)
 }
 
 void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,
-                   gmx_bool bForceMerge)
+                   bool bForceMerge)
 {
     alexandria::MolPropIterator mpi,mmm[2];
     std::string molname[2];
@@ -371,7 +372,7 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,
     
     FILE *fp;
     int  i,ndouble=0;
-    gmx_bool bForm,bName,bDouble;
+    bool bForm,bName,bDouble;
     int  cur = 0;
 #define prev (1-cur)
   
@@ -382,7 +383,7 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,
     i = 0;
     for(mpi=mp.begin(); (mpi<mp.end()); )
     {
-        bDouble = FALSE;
+        bDouble = false;
         mpi->Dump(debug);
         mmm[cur] = mpi;
         molname[cur] = mpi->GetMolname();
@@ -401,7 +402,7 @@ void merge_doubles(std::vector<alexandria::MolProp> &mp,char *doubles,
                     mmm[prev]->Merge(*(mmm[cur]));
                     mpi = mp.erase(mmm[cur]);
                     
-                    bDouble = TRUE;
+                    bDouble = true;
                     ndouble++;
                     if (mpi != mp.end())
                     {
@@ -448,7 +449,7 @@ void merge_xml(int nfile,char **filens,
                std::vector<alexandria::MolProp> &mpout, 
                char *outf,char *sorted,char *doubles,
                gmx_atomprop_t ap,gmx_poldata_t pd,
-               gmx_bool bForceMerge,gmx_bool bForceGenComp,
+               bool bForceMerge,bool bForceGenComp,
                double th_toler,double ph_toler)
 {
     std::vector<alexandria::MolProp> mp;
@@ -484,12 +485,12 @@ void merge_xml(int nfile,char **filens,
     if (outf) 
     {
         printf("There are %d entries to store in output file %s\n",npout,outf);
-        MolPropWrite(outf,mpout,FALSE);
+        MolPropWrite(outf,mpout,false);
     }
     if (sorted) 
     {
         MolPropSort(mpout,MPSA_FORMULA,NULL,NULL);
-        MolPropWrite(sorted,mpout,FALSE);
+        MolPropWrite(sorted,mpout,false);
         dump_mp(mpout);
     }
 }
@@ -500,9 +501,7 @@ static bool comp_mp_molname(alexandria::MolProp ma,
     std::string mma = ma.GetMolname();
     std::string mmb = mb.GetMolname();
   
-    //return 0;
     return (mma.compare(mmb) < 0); 
-        //(strcmp(mma.c_str(),mmb.c_str()) <= 0);
 }
 
 static bool comp_mp_formula(alexandria::MolProp ma,
@@ -549,7 +548,8 @@ static bool comp_mp_elem(alexandria::MolProp ma,
 
 gmx_molselect_t my_gms;
 
-static bool comp_mp_selection(alexandria::MolProp ma,alexandria::MolProp mb)
+static bool comp_mp_selection(alexandria::MolProp ma,
+                              alexandria::MolProp mb)
 {
     int ia,ib;
 
@@ -566,6 +566,7 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
                  MolPropSortAlgorithm mpsa,gmx_atomprop_t apt,
                  gmx_molselect_t gms)
 {
+    printf("There are %d molprops. Will now sort them.\n",(int)mp.size());
     switch(mpsa) {
     case MPSA_MOLNAME:
         std::sort(mp.begin(),mp.end(),comp_mp_molname);
