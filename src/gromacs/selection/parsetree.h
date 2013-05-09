@@ -213,7 +213,7 @@ class SelectionParserValue
         }
 
         //! Returns true if the value comes from expression evaluation.
-        bool hasExpressionValue() const { return expr; }
+        bool hasExpressionValue() const { return static_cast<bool>(expr); }
 
         //! Returns the string value (\a type must be ::STR_VALUE).
         const std::string &stringValue() const
