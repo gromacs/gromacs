@@ -103,19 +103,6 @@ static em_state_t *init_em_state()
     return ems;
 }
 
-static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
-                           gmx_wallcycle_t wcycle,
-                           const char *name)
-{
-    char buf[STRLEN];
-
-    runtime_start(runtime);
-
-    sprintf(buf, "Started %s", name);
-    print_date_and_time(fplog, cr->nodeid, buf, NULL);
-
-    wallcycle_start(wcycle, ewcRUN);
-}
 static void em_time_end(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
                         gmx_wallcycle_t wcycle)
 {
@@ -1009,7 +996,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, CG);
+    print_start(fplog, cr, runtime, CG);
 
     /* Max number of steps */
     number_steps = inputrec->nsteps;
@@ -1678,7 +1665,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     end   = mdatoms->homenr + start;
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, LBFGS);
+    print_start(fplog, cr, runtime, LBFGS);
 
     do_log = do_ene = do_x = do_f = TRUE;
 
@@ -2397,7 +2384,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file  */
-    print_em_start(fplog, cr, runtime, wcycle, SD);
+    print_start(fplog, cr, runtime, SD);
 
     /* Set variables for stepsize (in nm). This is the largest
      * step that we are going to make in any direction.
@@ -2696,7 +2683,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     where();
 
     /* Write start time and temperature */
-    print_em_start(fplog, cr, runtime, wcycle, NM);
+    print_start(fplog, cr, runtime, NM);
 
     /* fudge nr of steps to nr of atoms */
     inputrec->nsteps = natoms*2;

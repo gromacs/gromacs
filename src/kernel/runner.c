@@ -1394,6 +1394,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     nthreads_pme = gmx_omp_nthreads_get(emntPME);
 
     wcycle = wallcycle_init(fplog, resetstep, cr, nthreads_pp, nthreads_pme);
+    runtime_start(&runtime);
+    wallcycle_start(wcycle, ewcRUN);
 
     if (PAR(cr))
     {
