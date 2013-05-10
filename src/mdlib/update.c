@@ -1010,12 +1010,13 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
         end_t   = md->start + ((thread+1)*md->homenr)/nthread;
 
         ekin_sum    = ekind->ekin_work[thread];
-        dekindl_sum = &ekind->ekin_work[thread][opts->ngtc][0][0];
+        dekindl_sum = ekind->dekindl_work[thread];
 
         for (gt = 0; gt < opts->ngtc; gt++)
         {
             clear_mat(ekin_sum[gt]);
         }
+        *dekindl_sum = 0.0;
 
         ga = 0;
         gt = 0;
@@ -1045,7 +1046,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             }
             if (md->nMassPerturbed && md->bPerturbed[n])
             {
-                *dekindl_sum -=
+                *dekindl_sum +=
                     0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
             }
         }
@@ -1068,7 +1069,7 @@ static void calc_ke_part_normal(rvec v[], t_grpopts *opts, t_mdatoms *md,
             }
         }
 
-        ekind->dekindl += ekind->ekin_work[thread][opts->ngtc][0][0];
+        ekind->dekindl += *ekind->dekindl_work[thread];
     }
 
     inc_nrnb(nrnb, eNR_EKIN, md->homenr);
@@ -1133,7 +1134,7 @@ static void calc_ke_part_visc(matrix box, rvec x[], rvec v[],
         }
         if (md->nPerturbed && md->bPerturbed[n])
         {
-            dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
+            dekindl += 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt, v_corrt);
         }
     }
     ekind->dekindl = dekindl;
