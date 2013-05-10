@@ -258,9 +258,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     /* Print to log file  */
     runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid,
-                        "Started Test Particle Insertion", runtime);
     wallcycle_start(wcycle, ewcRUN);
+    print_start(fplog, cr, runtime, "Test Particle Insertion");
 
     /* The last charge group is the group to be inserted */
     cg_tp = top->cgs.nr - 1;

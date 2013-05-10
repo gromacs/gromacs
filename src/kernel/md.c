@@ -242,6 +242,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int chkpt_ret;
 #endif
 
+    print_start(fplog, cr, runtime, "mdrun");
+
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
     bIonize  = (Flags & MD_IONIZE);
@@ -713,15 +715,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         gmx_step_str(ir->nsteps, sbuf), tbuf);
             }
         }
-        fprintf(fplog, "\n");
-    }
-
-    /* Set and write start time */
-    runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
-    wallcycle_start(wcycle, ewcRUN);
-    if (fplog)
-    {
         fprintf(fplog, "\n");
     }
 
