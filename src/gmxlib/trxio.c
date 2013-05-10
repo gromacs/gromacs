@@ -167,6 +167,7 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
     fr->bStep   = FALSE;
     fr->bTime   = FALSE;
     fr->bLambda = FALSE;
+    fr->bFepState = FALSE;
     fr->bAtoms  = FALSE;
     fr->bPrec   = FALSE;
     fr->bX      = FALSE;
@@ -185,6 +186,7 @@ void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
         fr->step    = 0;
         fr->time    = 0;
         fr->lambda  = 0;
+        fr->fep_state = 0;
         fr->atoms   = NULL;
         fr->prec    = 0;
         fr->x       = NULL;
