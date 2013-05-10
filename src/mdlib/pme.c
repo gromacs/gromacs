@@ -4274,11 +4274,6 @@ int gmx_pmeonly(gmx_pme_t pme,
 
         step_rel = step - ir->init_step;
 
-        if (count == 0)
-        {
-            wallcycle_start(wcycle, ewcRUN);
-        }
-
         wallcycle_start(wcycle, ewcPMEMESH);
 
         dvdlambda = 0;
