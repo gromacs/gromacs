@@ -811,8 +811,8 @@ static gmx_inline void mvmul_ur0(matrix a, const rvec src, rvec dest)
 static gmx_inline void tmvmul_ur0(matrix a, const rvec src, rvec dest)
 {
     dest[XX] = a[XX][XX]*src[XX]+a[YY][XX]*src[YY]+a[ZZ][XX]*src[ZZ];
-    dest[YY] =                  a[YY][YY]*src[YY]+a[ZZ][YY]*src[ZZ];
-    dest[ZZ] =                                    a[ZZ][ZZ]*src[ZZ];
+    dest[YY] =                   a[YY][YY]*src[YY]+a[ZZ][YY]*src[ZZ];
+    dest[ZZ] =                                     a[ZZ][ZZ]*src[ZZ];
 }
 
 static gmx_inline void unitv(const rvec src, rvec dest)
@@ -896,7 +896,14 @@ static void matrix_convert(matrix box, rvec vec, rvec angle)
 
 #ifdef __cplusplus
 }
-#endif
 
+static gmx_inline void tmvmul_ur0(const matrix a, const rvec src, rvec dest)
+{
+    dest[XX] = a[XX][XX]*src[XX]+a[YY][XX]*src[YY]+a[ZZ][XX]*src[ZZ];
+    dest[YY] =                   a[YY][YY]*src[YY]+a[ZZ][YY]*src[ZZ];
+    dest[ZZ] =                                     a[ZZ][ZZ]*src[ZZ];
+}
+
+#endif
 
 #endif  /* _vec_h */
