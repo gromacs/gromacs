@@ -350,7 +350,6 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
-check_library_exists(m cbrt "" HAVE_CBRT)
 
 
 include(CheckTypeSize)
