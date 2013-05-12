@@ -88,9 +88,10 @@ class AnalysisNeighborhoodPairSearch;
  *
  * initSearch() is thread-safe and can be called from multiple threads.  Each
  * call returns a different instance of the search object that can be used
- * independently of the others.  However, the returned search objects can only
- * be used within a single thread.  It is also possible to create multiple
- * concurrent searches within a single thread.
+ * independently of the others.  The returned AnalysisNeighborhoodSearch
+ * objects are also thread-safe, and can be used concurrently from multiple
+ * threads.  It is also possible to create multiple concurrent searches within
+ * a single thread.
  *
  * \todo
  * Support for exclusions.
@@ -240,16 +241,16 @@ class AnalysisNeighborhoodPair
  * An instance of this class is obtained through
  * AnalysisNeighborhood::initSearch(), and can be used to do multiple searches
  * against the provided set of reference positions.
- * Currently, it is not possible to call startPairSearch() while a previous
- * AnalysisNeighborhoodPairSearch object obtained from startPairSearch() of the
- * same instance still exists.
+ * It is possible to create concurrent pair searches (including from different
+ * threads), as well as call other methods in this class while a pair search is
+ * in progress.
  *
  * This class works like a pointer: copies of it point to the same search.
  * In general, avoid creating copies, and only use the copy/assignment support
  * for moving the variable around.  With C++11, this class would best be
  * movable.
  *
- * Methods in this class do not throw.
+ * Methods in this class do not throw unless otherwise indicated.
  *
  * \todo
  * Make it such that reset() is not necessary to call in code that repeatedly
@@ -377,6 +378,7 @@ class AnalysisNeighborhoodSearch
          * \param[in] x  Test position to search the neighbors for.
          * \returns   Initialized search object to loop through all reference
          *     positions within the configured cutoff.
+         * \throws    std::bad_alloc if out of memory.
          *
          * In the AnalysisNeighborhoodPair objects returned by the search, the
          * test index is always zero.
@@ -389,6 +391,7 @@ class AnalysisNeighborhoodSearch
          * \param[in] i  Use the i'th position in \p p for testing.
          * \returns   Initialized search object to loop through all reference
          *     positions within the configured cutoff.
+         * \throws    std::bad_alloc if out of memory.
          *
          * In the AnalysisNeighborhoodPair objects returned by the search, the
          * test index is always \p i.
@@ -396,6 +399,8 @@ class AnalysisNeighborhoodSearch
         AnalysisNeighborhoodPairSearch startPairSearch(const gmx_ana_pos_t *p, int i);
 
     private:
+        typedef internal::AnalysisNeighborhoodSearchImpl Impl;
+
         ImplPointer             impl_;
 };
 
