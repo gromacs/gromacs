@@ -50,6 +50,7 @@
 
 #include <limits>
 #include <set>
+#include <vector>
 
 #include "gromacs/legacyheaders/gmx_random.h"
 #include "gromacs/legacyheaders/pbc.h"
@@ -469,8 +470,21 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     gmx::AnalysisNeighborhoodSearch search2 =
         nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
 
-    testPairSearch(&search1, data);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch1 =
+        search1.startPairSearch(data.testPositions_[0].x);
+    gmx::AnalysisNeighborhoodPairSearch pairSearch2 =
+        search1.startPairSearch(data.testPositions_[1].x);
+
     testPairSearch(&search2, data);
+
+    gmx::AnalysisNeighborhoodPair pair;
+    pairSearch1.findNextPair(&pair);
+    EXPECT_EQ(0, pair.testIndex());
+    EXPECT_TRUE(data.testPositions_[0].refPairs.count(pair.refIndex()) == 1);
+
+    pairSearch2.findNextPair(&pair);
+    EXPECT_EQ(0, pair.testIndex());
+    EXPECT_TRUE(data.testPositions_[1].refPairs.count(pair.refIndex()) == 1);
 }
 
 } // namespace

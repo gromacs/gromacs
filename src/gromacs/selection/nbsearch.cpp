@@ -88,13 +88,20 @@ class AnalysisNeighborhoodSearchImpl
     public:
         typedef AnalysisNeighborhoodPairSearch::ImplPointer
             PairSearchImplPointer;
+        typedef std::vector<PairSearchImplPointer> PairSearchList;
+        typedef std::vector<std::vector<int> > CellList;
 
         explicit AnalysisNeighborhoodSearchImpl(real cutoff);
         ~AnalysisNeighborhoodSearchImpl();
 
         void init(AnalysisNeighborhood::SearchMode mode,
-                  const t_pbc *pbc, int n, const rvec x[]);
+                  const t_pbc *pbc, int n, const rvec x[], const int *refid);
+        PairSearchImplPointer getPairSearch();
 
+        real cutoffSquared() const { return cutoff2_; }
+        bool usesGridSearch() const { return bGrid_; }
+
+    private:
         //! Calculates offsets to neighboring grid cells that should be considered.
         void initGridCellNeighborList();
         /*! \brief
@@ -111,8 +118,6 @@ class AnalysisNeighborhoodSearchImpl
          * \returns  false if grid search is not suitable.
          */
         bool initGrid(const t_pbc *pbc);
-        //! Clears all grid cells.
-        void clearGridCells();
         /*! \brief
          * Maps a point into a grid cell.
          *
@@ -137,59 +142,54 @@ class AnalysisNeighborhoodSearchImpl
          */
         void addToGridCell(const ivec cell, int i);
 
-        /** Whether to try grid searching. */
+        //! Whether to try grid searching.
         bool                    bTryGrid_;
-        /** The cutoff. */
+        //! The cutoff.
         real                    cutoff_;
-        /** The cutoff squared. */
+        //! The cutoff squared.
         real                    cutoff2_;
 
-        /** Number of reference points for the current frame. */
+        //! Number of reference points for the current frame.
         int                     nref_;
-        /** Reference point positions. */
+        //! Reference point positions.
         const rvec             *xref_;
-        /** Reference position ids (NULL if not available). */
-        int                    *refid_;
-        /** PBC data. */
+        //! Reference position ids (NULL if not available).
+        const int              *refid_;
+        //! PBC data.
         t_pbc                  *pbc_;
 
-        /** Number of excluded reference positions for current test particle. */
+        //! Number of excluded reference positions for current test particle.
         int                     nexcl_;
-        /** Exclusions for current test particle. */
+        //! Exclusions for current test particle.
         int                    *excl_;
 
-        /** Whether grid searching is actually used for the current positions. */
+        //! Whether grid searching is actually used for the current positions.
         bool                    bGrid_;
-        /** Array allocated for storing in-unit-cell reference positions. */
+        //! Array allocated for storing in-unit-cell reference positions.
         rvec                   *xref_alloc_;
-        /** Allocation count for xref_alloc. */
+        //! Allocation count for xref_alloc.
         int                     xref_nalloc_;
-        /** false if the box is rectangular. */
+        //! false if the box is rectangular.
         bool                    bTric_;
-        /** Box vectors of a single grid cell. */
+        //! Box vectors of a single grid cell.
         matrix                  cellbox_;
-        /** The reciprocal cell vectors as columns; the inverse of \p cellbox. */
+        //! The reciprocal cell vectors as columns; the inverse of \p cellbox.
         matrix                  recipcell_;
-        /** Number of cells along each dimension. */
+        //! Number of cells along each dimension.
         ivec                    ncelldim_;
-        /** Total number of cells. */
-        int                     ncells_;
-        /** Number of reference positions in each cell. */
-        int                    *ncatoms_;
-        /** List of reference positions in each cell. */
-        atom_id               **catom_;
-        /** Allocation counts for each \p catom[i]. */
-        int                    *catom_nalloc_;
-        /** Allocation count for the per-cell arrays. */
-        int                     cells_nalloc_;
-        /** Number of neighboring cells to consider. */
+        //! Data structure to hold the grid cell contents.
+        CellList                cells_;
+        //! Number of neighboring cells to consider.
         int                     ngridnb_;
-        /** Offsets of the neighboring cells to consider. */
+        //! Offsets of the neighboring cells to consider.
         ivec                   *gnboffs_;
-        /** Allocation count for \p gnboffs. */
+        //! Allocation count for \p gnboffs.
         int                     gnboffs_nalloc_;
 
-        PairSearchImplPointer   pairSearch_;
+        tMPI::mutex             createPairSearchMutex_;
+        PairSearchList          pairSearchList_;
+
+        friend class AnalysisNeighborhoodPairSearchImpl;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodSearchImpl);
 };
@@ -209,25 +209,29 @@ class AnalysisNeighborhoodPairSearchImpl
         void reset();
         //! Initializes a search to find reference positions neighboring \p x.
         void startSearch(const rvec x, int testIndex);
-        //! Checks whether a reference positiong should be excluded.
-        bool isExcluded(int j);
         //! Searches for the next neighbor.
         template <class Action>
         bool searchNext(Action action);
+        //! Initializes a pair representing the pair found by searchNext().
+        void initFoundPair(AnalysisNeighborhoodPair *pair) const;
+
+    private:
+        //! Checks whether a reference positiong should be excluded.
+        bool isExcluded(int j);
 
         const AnalysisNeighborhoodSearchImpl   &search_;
         int                                     testIndex_;
-        /** Stores test position during a pair loop. */
+        //! Stores test position during a pair loop.
         rvec                                    xtest_;
-        /** Stores the previous returned position during a pair loop. */
+        //! Stores the previous returned position during a pair loop.
         int                                     previ_;
-        /** Stores the current exclusion index during loops. */
+        //! Stores the current exclusion index during loops.
         int                                     exclind_;
-        /** Stores the test particle cell index during loops. */
+        //! Stores the test particle cell index during loops.
         ivec                                    testcell_;
-        /** Stores the current cell neighbor index during pair loops. */
+        //! Stores the current cell neighbor index during pair loops.
         int                                     prevnbi_;
-        /** Stores the index within the current cell during pair loops. */
+        //! Stores the index within the current cell during pair loops.
         int                                     prevcai_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisNeighborhoodPairSearchImpl);
@@ -238,7 +242,6 @@ class AnalysisNeighborhoodPairSearchImpl
  */
 
 AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
-    : pairSearch_(new AnalysisNeighborhoodPairSearchImpl(*this))
 {
     bTryGrid_       = true;
     cutoff_         = cutoff;
@@ -265,11 +268,6 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
     clear_mat(cellbox_);
     clear_mat(recipcell_);
     clear_ivec(ncelldim_);
-    ncells_         = 0;
-    ncatoms_        = NULL;
-    catom_          = NULL;
-    catom_nalloc_   = 0;
-    cells_nalloc_   = 0;
 
     ngridnb_        = 0;
     gnboffs_        = NULL;
@@ -279,17 +277,26 @@ AnalysisNeighborhoodSearchImpl::AnalysisNeighborhoodSearchImpl(real cutoff)
 AnalysisNeighborhoodSearchImpl::~AnalysisNeighborhoodSearchImpl()
 {
     sfree(xref_alloc_);
-    sfree(ncatoms_);
-    if (catom_ != NULL)
-    {
-        for (int ci = 0; ci < ncells_; ++ci)
-        {
-            sfree(catom_[ci]);
-        }
-        sfree(catom_);
-    }
-    sfree(catom_nalloc_);
     sfree(gnboffs_);
+}
+
+AnalysisNeighborhoodSearchImpl::PairSearchImplPointer
+AnalysisNeighborhoodSearchImpl::getPairSearch()
+{
+    tMPI::lock_guard<tMPI::mutex> lock(createPairSearchMutex_);
+    // TODO: Consider whether this needs to/can be faster, e.g., by keeping a
+    // separate pool of unused search objects.
+    PairSearchList::const_iterator i;
+    for (i = pairSearchList_.begin(); i != pairSearchList_.end(); ++i)
+    {
+        if (i->unique())
+        {
+            return *i;
+        }
+    }
+    PairSearchImplPointer pairSearch(new AnalysisNeighborhoodPairSearchImpl(*this));
+    pairSearchList_.push_back(pairSearch);
+    return pairSearch;
 }
 
 void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
@@ -298,12 +305,12 @@ void AnalysisNeighborhoodSearchImpl::initGridCellNeighborList()
     real  rvnorm;
 
     /* Find the extent of the sphere in triclinic coordinates */
-    maxz   = (int)(cutoff_ * recipcell_[ZZ][ZZ]) + 1;
+    maxz   = static_cast<int>(cutoff_ * recipcell_[ZZ][ZZ]) + 1;
     rvnorm = sqrt(sqr(recipcell_[YY][YY]) + sqr(recipcell_[ZZ][YY]));
-    maxy   = (int)(cutoff_ * rvnorm) + 1;
+    maxy   = static_cast<int>(cutoff_ * rvnorm) + 1;
     rvnorm = sqrt(sqr(recipcell_[XX][XX]) + sqr(recipcell_[YY][XX])
                   + sqr(recipcell_[ZZ][XX]));
-    maxx   = (int)(cutoff_ * rvnorm) + 1;
+    maxx   = static_cast<int>(cutoff_ * rvnorm) + 1;
 
     /* Calculate the number of cells and reallocate if necessary */
     ngridnb_ = (2 * maxx + 1) * (2 * maxy + 1) * (2 * maxz + 1);
@@ -337,28 +344,26 @@ bool AnalysisNeighborhoodSearchImpl::initGridCells(const t_pbc *pbc)
         pow(pbc->box[XX][XX] * pbc->box[YY][YY] * pbc->box[ZZ][ZZ]
             * 10 / nref_, static_cast<real>(1./3.));
 
-    ncells_ = 1;
+    int cellCount = 1;
     for (int dd = 0; dd < DIM; ++dd)
     {
         ncelldim_[dd] = static_cast<int>(pbc->box[dd][dd] / targetsize);
-        ncells_      *= ncelldim_[dd];
+        cellCount    *= ncelldim_[dd];
         if (ncelldim_[dd] < 3)
         {
             return false;
         }
     }
-    /* Reallocate if necessary */
-    if (cells_nalloc_ < ncells_)
+    // Never decrease the size of the cell vector to avoid reallocating
+    // memory for the nested vectors.  The actual size of the vector is not
+    // used outside this function.
+    if (cells_.size() < static_cast<size_t>(cellCount))
     {
-        srenew(ncatoms_, ncells_);
-        srenew(catom_, ncells_);
-        srenew(catom_nalloc_, ncells_);
-        for (int i = cells_nalloc_; i < ncells_; ++i)
-        {
-            catom_[i]        = NULL;
-            catom_nalloc_[i] = 0;
-        }
-        cells_nalloc_ = ncells_;
+        cells_.resize(cellCount);
+    }
+    for (int ci = 0; ci < cellCount; ++ci)
+    {
+        cells_[ci].clear();
     }
     return true;
 }
@@ -421,33 +426,25 @@ void AnalysisNeighborhoodSearchImpl::mapPointToGridCell(const rvec x,
 
 int AnalysisNeighborhoodSearchImpl::getGridCellIndex(const ivec cell) const
 {
+    GMX_ASSERT(cell[XX] >= 0 && cell[XX] < ncelldim_[XX],
+               "Grid cell X index out of range");
+    GMX_ASSERT(cell[YY] >= 0 && cell[YY] < ncelldim_[YY],
+               "Grid cell Y index out of range");
+    GMX_ASSERT(cell[ZZ] >= 0 && cell[ZZ] < ncelldim_[ZZ],
+               "Grid cell Z index out of range");
     return cell[XX] + cell[YY] * ncelldim_[XX]
            + cell[ZZ] * ncelldim_[XX] * ncelldim_[YY];
-}
-
-void AnalysisNeighborhoodSearchImpl::clearGridCells()
-{
-    for (int ci = 0; ci < ncells_; ++ci)
-    {
-        ncatoms_[ci] = 0;
-    }
 }
 
 void AnalysisNeighborhoodSearchImpl::addToGridCell(const ivec cell, int i)
 {
     const int ci = getGridCellIndex(cell);
-
-    if (ncatoms_[ci] == catom_nalloc_[ci])
-    {
-        catom_nalloc_[ci] += 10;
-        srenew(catom_[ci], catom_nalloc_[ci]);
-    }
-    catom_[ci][ncatoms_[ci]++] = i;
+    cells_[ci].push_back(i);
 }
 
 void AnalysisNeighborhoodSearchImpl::init(
         AnalysisNeighborhood::SearchMode mode,
-        const t_pbc *pbc, int n, const rvec x[])
+        const t_pbc *pbc, int n, const rvec x[], const int *refid)
 {
     pbc_  = const_cast<t_pbc *>(pbc);
     nref_ = n;
@@ -471,7 +468,6 @@ void AnalysisNeighborhoodSearchImpl::init(
             xref_nalloc_ = n;
         }
         xref_ = xref_alloc_;
-        clearGridCells();
 
         for (int i = 0; i < n; ++i)
         {
@@ -490,7 +486,7 @@ void AnalysisNeighborhoodSearchImpl::init(
     {
         xref_ = x;
     }
-    refid_ = NULL;
+    refid_ = refid;
 }
 
 #if 0
@@ -590,11 +586,12 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
             cell[YY] = (cell[YY] + search_.ncelldim_[YY]) % search_.ncelldim_[YY];
             cell[ZZ] = (cell[ZZ] + search_.ncelldim_[ZZ]) % search_.ncelldim_[ZZ];
 
-            const int ci = search_.getGridCellIndex(cell);
+            const int ci       = search_.getGridCellIndex(cell);
+            const int cellSize = static_cast<int>(search_.cells_[ci].size());
             /* TODO: Calculate the required PBC shift outside the inner loop */
-            for (; cai < search_.ncatoms_[ci]; ++cai)
+            for (; cai < cellSize; ++cai)
             {
-                const int i = search_.catom_[ci][cai];
+                const int i = search_.cells_[ci][cai];
                 if (isExcluded(i))
                 {
                     continue;
@@ -645,7 +642,21 @@ bool AnalysisNeighborhoodPairSearchImpl::searchNext(Action action)
             }
         }
     }
+    reset();
     return false;
+}
+
+void AnalysisNeighborhoodPairSearchImpl::initFoundPair(
+        AnalysisNeighborhoodPair *pair) const
+{
+    if (previ_ < 0)
+    {
+        *pair = AnalysisNeighborhoodPair();
+    }
+    else
+    {
+        *pair = AnalysisNeighborhoodPair(previ_, testIndex_);
+    }
 }
 
 }   // namespace internal
@@ -790,7 +801,7 @@ AnalysisNeighborhoodSearch
 AnalysisNeighborhood::initSearch(const t_pbc *pbc, int n, const rvec x[])
 {
     Impl::SearchImplPointer search(impl_->getSearch());
-    search->init(mode(), pbc, n, x);
+    search->init(mode(), pbc, n, x, NULL);
     return AnalysisNeighborhoodSearch(search);
 }
 
@@ -798,8 +809,7 @@ AnalysisNeighborhoodSearch
 AnalysisNeighborhood::initSearch(const t_pbc *pbc, const gmx_ana_pos_t *p)
 {
     Impl::SearchImplPointer search(impl_->getSearch());
-    search->init(mode(), pbc, p->nr, p->x);
-    search->refid_ = p->m.refid;
+    search->init(mode(), pbc, p->nr, p->x, p->m.refid);
     return AnalysisNeighborhoodSearch(search);
 }
 
@@ -837,7 +847,7 @@ void AnalysisNeighborhoodSearch::reset()
 AnalysisNeighborhood::SearchMode AnalysisNeighborhoodSearch::mode() const
 {
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
-    return (impl_->bGrid_
+    return (impl_->usesGridSearch()
             ? AnalysisNeighborhood::eSearchMode_Grid
             : AnalysisNeighborhood::eSearchMode_Simple);
 }
@@ -860,7 +870,7 @@ real AnalysisNeighborhoodSearch::minimumDistance(const rvec x) const
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
     internal::AnalysisNeighborhoodPairSearchImpl pairSearch(*impl_);
     pairSearch.startSearch(x, 0);
-    real          minDist2     = impl_->cutoff2_;
+    real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
     MindistAction action(&closestPoint, &minDist2);
     (void)pairSearch.searchNext(action);
@@ -878,7 +888,7 @@ AnalysisNeighborhoodSearch::nearestPoint(const rvec x) const
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
     internal::AnalysisNeighborhoodPairSearchImpl pairSearch(*impl_);
     pairSearch.startSearch(x, 0);
-    real          minDist2     = impl_->cutoff2_;
+    real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
     MindistAction action(&closestPoint, &minDist2);
     (void)pairSearch.searchNext(action);
@@ -891,7 +901,7 @@ AnalysisNeighborhoodSearch::nearestPoint(const gmx_ana_pos_t *p, int i) const
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
     internal::AnalysisNeighborhoodPairSearchImpl pairSearch(*impl_);
     pairSearch.startSearch(p->x[i], 0);
-    real          minDist2     = impl_->cutoff2_;
+    real          minDist2     = impl_->cutoffSquared();
     int           closestPoint = -1;
     MindistAction action(&closestPoint, &minDist2);
     (void)pairSearch.searchNext(action);
@@ -902,20 +912,18 @@ AnalysisNeighborhoodPairSearch
 AnalysisNeighborhoodSearch::startPairSearch(const rvec x)
 {
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
-    GMX_RELEASE_ASSERT(impl_->pairSearch_.unique(),
-                       "Multiple concurrent searches not currently supported");
-    impl_->pairSearch_->startSearch(x, 0);
-    return AnalysisNeighborhoodPairSearch(impl_->pairSearch_);
+    Impl::PairSearchImplPointer pairSearch(impl_->getPairSearch());
+    pairSearch->startSearch(x, 0);
+    return AnalysisNeighborhoodPairSearch(pairSearch);
 }
 
 AnalysisNeighborhoodPairSearch
 AnalysisNeighborhoodSearch::startPairSearch(const gmx_ana_pos_t *p, int i)
 {
     GMX_RELEASE_ASSERT(impl_, "Accessing an invalid search object");
-    GMX_RELEASE_ASSERT(impl_->pairSearch_.unique(),
-                       "Multiple concurrent searches not currently supported");
-    impl_->pairSearch_->startSearch(p->x[i], i);
-    return AnalysisNeighborhoodPairSearch(impl_->pairSearch_);
+    Impl::PairSearchImplPointer pairSearch(impl_->getPairSearch());
+    pairSearch->startSearch(p->x[i], i);
+    return AnalysisNeighborhoodPairSearch(pairSearch);
 }
 
 /********************************************************************
@@ -947,13 +955,9 @@ AnalysisNeighborhoodPairSearch::operator=(const AnalysisNeighborhoodPairSearch &
 
 bool AnalysisNeighborhoodPairSearch::findNextPair(AnalysisNeighborhoodPair *pair)
 {
-    if (impl_->searchNext(&withinAction))
-    {
-        *pair = AnalysisNeighborhoodPair(impl_->previ_, impl_->testIndex_);
-        return true;
-    }
-    *pair = AnalysisNeighborhoodPair();
-    return false;
+    bool bFound = impl_->searchNext(&withinAction);
+    impl_->initFoundPair(pair);
+    return bFound;
 }
 
 } // namespace gmx
