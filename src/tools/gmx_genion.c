@@ -498,34 +498,44 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    if ((conc > 0) || bNeutral)
+    /* Compute number of ions to be added */
+    if (bNeutral && (conc == 0))
     {
-        /* Compute number of ions to be added */
-        vol = det(box);
-        if (conc > 0)
+        /* Add just enough ions to neutralize */
+        if (iqtot > 0)
         {
-            nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
-            p_num = abs(nsalt*n_q);
-            n_num = abs(nsalt*p_q);
-            if (bNeutral)
+            n_num = iqtot;
+        }
+        else
+        {
+            p_num = abs(iqtot);
+        }
+    }
+    else if (conc > 0)
+    {
+        /* Using this given concentration */
+        vol = det(box);
+        nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
+        p_num = abs(nsalt*n_q);
+        n_num = abs(nsalt*p_q);
+        if (bNeutral)
+        {
+            int qdelta = 0;
+            do
             {
-                int qdelta = 0;
-                do
+                qdelta = (p_num*p_q + n_num*n_q + iqtot);
+                if (qdelta < 0)
                 {
-                    qdelta = (p_num*p_q + n_num*n_q + iqtot);
-                    if (qdelta < 0)
-                    {
-                        p_num  += abs(qdelta/p_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                    if (qdelta > 0)
-                    {
-                        n_num  += abs(qdelta/n_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
+                    p_num  += abs(qdelta/p_q);
+                    qdelta  = (p_num*p_q + n_num*n_q + iqtot);
                 }
-                while (qdelta != 0);
+                if (qdelta > 0)
+                {
+                    n_num  += abs(qdelta/n_q);
+                    qdelta  = (p_num*p_q + n_num*n_q + iqtot);
+                }
             }
+            while (qdelta != 0);
         }
     }
 
