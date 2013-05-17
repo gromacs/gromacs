@@ -136,7 +136,7 @@ enum {
     F_VTEMP_NOLONGERUSED,
     F_PDISPCORR,
     F_PRES,
-    F_DHDL_CON,
+    F_DVDL_CONSTR,
     F_DVDL,
     F_DKDL,
     F_DVDL_COUL,
