@@ -41,6 +41,7 @@
  */
 #include "selection.h"
 
+#include "nbsearch.h"
 #include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
@@ -50,6 +51,10 @@ namespace gmx
 
 namespace internal
 {
+
+/********************************************************************
+ * SelectionData
+ */
 
 SelectionData::SelectionData(SelectionTreeElement *elem,
                              const char           *selstr)
@@ -231,6 +236,16 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
 
 }   // namespace internal
 
+/********************************************************************
+ * Selection
+ */
+
+Selection::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(data().rawPositions_.x,
+                                         data().rawPositions_.nr);
+}
+
 
 void
 Selection::printInfo(FILE *fp) const
@@ -316,6 +331,18 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
         }
     }
     fprintf(fp, "\n");
+}
+
+
+/********************************************************************
+ * SelectionPosition
+ */
+
+SelectionPosition::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
+                                         sel_->rawPositions_.nr)
+               .selectSingleFromArray(i_);
 }
 
 } // namespace gmx

@@ -72,6 +72,80 @@ class AnalysisNeighborhoodSearch;
 class AnalysisNeighborhoodPairSearch;
 
 /*! \brief
+ * Input positions for neighborhood searching.
+ *
+ * This class supports uniformly specifying sets of positions for various
+ * methods in the analysis neighborhood searching classes
+ * (AnalysisNeighborhood and AnalysisNeighborhoodSearch).
+ *
+ * Note that copies are not made: only a reference to the positions passed to
+ * the constructors are kept.  The caller is responsible to ensure that those
+ * positions remain in scope as long as the neighborhood search object requires
+ * access to them.
+ *
+ * Also note that in addition to constructors here, Selection and
+ * SelectionPosition provide conversions operators to this type.  It is done
+ * this way to not introduce a cyclic dependency between the selection code and
+ * the neighborhood search code, which in turn allows splitting this search
+ * code into a separate lower-level module if desired at some point.
+ *
+ * Methods in this class do not throw.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class AnalysisNeighborhoodPositions
+{
+    public:
+        /*! \brief
+         * Initializes positions from a single position vector.
+         *
+         * For positions initialized this way, AnalysisNeighborhoodPair always
+         * returns zero in the corresponding index.
+         *
+         * This constructor is not explicit to allow directly passing an rvec
+         * to methods that accept positions.
+         */
+        AnalysisNeighborhoodPositions(const rvec &x)
+            : count_(1), index_(-1), x_(&x)
+        {
+        }
+        /*! \brief
+         * Initializes positions from an array of position vectors.
+         */
+        AnalysisNeighborhoodPositions(const rvec x[], int count)
+            : count_(count), index_(-1), x_(x)
+        {
+        }
+
+        /*! \brief
+         * Selects a single position to use from an array.
+         *
+         * If called, a single position from the array of positions passed to
+         * the constructor is used instead of the whole array.
+         * In contrast to the AnalysisNeighborhoodPositions(const rvec &)
+         * constructor, AnalysisNeighborhoodPair objects return \p index
+         * instead of zero.
+         */
+        AnalysisNeighborhoodPositions &selectSingleFromArray(int index)
+        {
+            GMX_ASSERT(index >= 0 && index < count_, "Invalid position index");
+            index_ = index;
+            return *this;
+        }
+
+    private:
+        int                     count_;
+        int                     index_;
+        const rvec             *x_;
+
+        //! To access the positions for initialization.
+        friend class internal::AnalysisNeighborhoodSearchImpl;
+        //! To access the positions for initialization.
+        friend class internal::AnalysisNeighborhoodPairSearchImpl;
+};
+
+/*! \brief
  * Neighborhood searching for analysis tools.
  *
  * This class implements neighborhood searching routines for analysis tools.
@@ -153,26 +227,18 @@ class AnalysisNeighborhood
         /*! \brief
          * Initializes neighborhood search for a set of positions.
          *
-         * \param[in] pbc PBC information for the frame.
-         * \param[in] n   Number of reference positions for the frame.
-         * \param[in] x   \p n reference positions for the frame.
+         * \param[in] pbc        PBC information for the frame.
+         * \param[in] positions  Set of reference positions to use.
          * \returns   Search object that can be used to find positions from
          *      \p x within the given cutoff.
          * \throws    std::bad_alloc if out of memory.
-         */
-        AnalysisNeighborhoodSearch
-        initSearch(const t_pbc *pbc, int n, const rvec x[]);
-        /*! \brief
-         * Initializes neighborhood search for a set of positions.
          *
-         * \param[in] pbc PBC information for the frame.
-         * \param[in] p   Reference positions for the frame.
-         * \returns   Search object that can be used to find positions from
-         *      \p p within the given cutoff.
-         * \throws    std::bad_alloc if out of memory.
+         * Currently, the input positions cannot use
+         * AnalysisNeighborhoodPositions::selectSingleFromArray().
          */
         AnalysisNeighborhoodSearch
-        initSearch(const t_pbc *pbc, const gmx_ana_pos_t *p);
+        initSearch(const t_pbc                         *pbc,
+                   const AnalysisNeighborhoodPositions &positions);
 
     private:
         class Impl;
@@ -317,86 +383,43 @@ class AnalysisNeighborhoodSearch
         /*! \brief
          * Check whether a point is within a neighborhood.
          *
-         * \param[in] x  Test position.
-         * \returns   true if the test position is within the cutoff of any
-         *     reference position.
+         * \param[in] positions  Set of test positions to use.
+         * \returns   true if any of the test positions is within the cutoff of
+         *     any reference position.
          */
-        bool isWithin(const rvec x) const;
-        /*! \brief
-         * Check whether a point is within a neighborhood.
-         *
-         * \param[in] p  Test positions.
-         * \param[in] i  Use the i'th position in \p p for testing.
-         * \returns   true if the test position is within the cutoff of any
-         *     reference position.
-         */
-        bool isWithin(const gmx_ana_pos_t *p, int i) const;
+        bool isWithin(const AnalysisNeighborhoodPositions &positions) const;
         /*! \brief
          * Calculates the minimum distance from the reference points.
          *
-         * \param[in] x  Test position.
+         * \param[in] positions  Set of test positions to use.
          * \returns   The distance to the nearest reference position, or the
          *     cutoff value if there are no reference positions within the
          *     cutoff.
          */
-        real minimumDistance(const rvec x) const;
-        /*! \brief
-         * Calculates the minimum distance from the reference points.
-         *
-         * \param[in] p  Test positions.
-         * \param[in] i  Use the i'th position in \p p for testing.
-         * \returns   The distance to the nearest reference position, or the
-         *     cutoff value if there are no reference positions within the
-         *     cutoff.
-         */
-        real minimumDistance(const gmx_ana_pos_t *p, int i) const;
+        real minimumDistance(const AnalysisNeighborhoodPositions &positions) const;
         /*! \brief
          * Finds the closest reference point.
          *
-         * \param[in] x  Test position.
+         * \param[in] positions  Set of test positions to use.
          * \returns   The reference index identifies the reference position
-         *     that is closest to the test position.
-         *     The test index is always zero.  The returned pair is invalid if
+         *     that is closest to the test positions.
+         *     The test index identifies the test position that is closest to
+         *     the provided test position.  The returned pair is invalid if
          *     no reference position is within the cutoff.
          */
-        AnalysisNeighborhoodPair nearestPoint(const rvec x) const;
-        /*! \brief
-         * Finds the closest reference point.
-         *
-         * \param[in] p  Test positions.
-         * \param[in] i  Use the i'th position in \p p for testing.
-         * \returns   The reference index identifies the reference position
-         *     that is closest to the test position.
-         *     The test index is always \p i.  The returned pair is invalid if
-         *     no reference position is within the cutoff.
-         */
-        AnalysisNeighborhoodPair nearestPoint(const gmx_ana_pos_t *p, int i) const;
+        AnalysisNeighborhoodPair
+        nearestPoint(const AnalysisNeighborhoodPositions &positions) const;
 
         /*! \brief
          * Start a search to find reference positions within a cutoff.
          *
-         * \param[in] x  Test position to search the neighbors for.
+         * \param[in] positions  Set of test positions to use.
          * \returns   Initialized search object to loop through all reference
          *     positions within the configured cutoff.
          * \throws    std::bad_alloc if out of memory.
-         *
-         * In the AnalysisNeighborhoodPair objects returned by the search, the
-         * test index is always zero.
          */
-        AnalysisNeighborhoodPairSearch startPairSearch(const rvec x);
-        /*! \brief
-         * Start a search to find reference positions within a cutoff.
-         *
-         * \param[in] p  Test positions.
-         * \param[in] i  Use the i'th position in \p p for testing.
-         * \returns   Initialized search object to loop through all reference
-         *     positions within the configured cutoff.
-         * \throws    std::bad_alloc if out of memory.
-         *
-         * In the AnalysisNeighborhoodPair objects returned by the search, the
-         * test index is always \p i.
-         */
-        AnalysisNeighborhoodPairSearch startPairSearch(const gmx_ana_pos_t *p, int i);
+        AnalysisNeighborhoodPairSearch
+        startPairSearch(const AnalysisNeighborhoodPositions &positions) const;
 
     private:
         typedef internal::AnalysisNeighborhoodSearchImpl Impl;
@@ -412,8 +435,9 @@ class AnalysisNeighborhoodSearch
  * \code
    gmx::AnalysisNeighborhood       nb;
    nb.setCutoff(cutoff);
-   gmx::AnalysisNeighborhoodSearch search = nb.initSearch(pbc, nref, xref);
-   gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(x);
+   gmx::AnalysisNeighborhoodPositions refPos(xref, nref);
+   gmx::AnalysisNeighborhoodSearch search = nb.initSearch(pbc, refPos);
+   gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(selection);
    gmx::AnalysisNeighborhoodPair pair;
    while (pairSearch.findNextPair(&pair))
    {
@@ -467,6 +491,19 @@ class AnalysisNeighborhoodPairSearch
          * \see AnalysisNeighborhoodSearch::startPairSearch()
          */
         bool findNextPair(AnalysisNeighborhoodPair *pair);
+        /*! \brief
+         * Skip remaining pairs for a test position in the search.
+         *
+         * When called after findNextPair(), makes subsequent calls to
+         * findNextPair() skip any pairs that have the same test position as
+         * that previously returned.
+         * This is useful if the caller wants to search whether any reference
+         * position within the cutoff satisfies some condition.  This method
+         * can be used to skip remaining pairs after the first such position
+         * has been found if the remaining pairs would not have an effect on
+         * the outcome.
+         */
+        void skipRemainingPairsForTestPosition();
 
     private:
         ImplPointer             impl_;

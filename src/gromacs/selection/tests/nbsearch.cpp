@@ -93,8 +93,32 @@ class NeighborhoodSearchTestData
         NeighborhoodSearchTestData(int seed, real cutoff);
         ~NeighborhoodSearchTestData();
 
+        gmx::AnalysisNeighborhoodPositions refPositions() const
+        {
+            return gmx::AnalysisNeighborhoodPositions(refPos_, refPosCount_);
+        }
+        gmx::AnalysisNeighborhoodPositions testPositions() const
+        {
+            if (testPos_ == NULL)
+            {
+                snew(testPos_, testPositions_.size());
+                for (size_t i = 0; i < testPositions_.size(); ++i)
+                {
+                    copy_rvec(testPositions_[i].x, testPos_[i]);
+                }
+            }
+            return gmx::AnalysisNeighborhoodPositions(testPos_,
+                                                      testPositions_.size());
+        }
+        gmx::AnalysisNeighborhoodPositions testPosition(int index) const
+        {
+            return testPositions().selectSingleFromArray(index);
+        }
+
         void addTestPosition(const rvec x)
         {
+            GMX_RELEASE_ASSERT(testPos_ == NULL,
+                               "Cannot add positions after testPositions() call");
             testPositions_.push_back(TestPosition(x));
         }
         void generateRandomPosition(rvec x);
@@ -109,10 +133,13 @@ class NeighborhoodSearchTestData
         int                              refPosCount_;
         rvec                            *refPos_;
         TestPositionList                 testPositions_;
+
+    private:
+        mutable rvec                    *testPos_;
 };
 
 NeighborhoodSearchTestData::NeighborhoodSearchTestData(int seed, real cutoff)
-    : rng_(NULL), cutoff_(cutoff), refPosCount_(0), refPos_(NULL)
+    : rng_(NULL), cutoff_(cutoff), refPosCount_(0), refPos_(NULL), testPos_(NULL)
 {
     // TODO: Handle errors.
     rng_ = gmx_rng_init(seed);
@@ -127,6 +154,7 @@ NeighborhoodSearchTestData::~NeighborhoodSearchTestData()
         gmx_rng_destroy(rng_);
     }
     sfree(refPos_);
+    sfree(testPos_);
 }
 
 void NeighborhoodSearchTestData::generateRandomPosition(rvec x)
@@ -405,7 +433,7 @@ TEST_F(NeighborhoodSearchTest, SimpleSearch)
     nb_.setCutoff(data.cutoff_);
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Simple);
     gmx::AnalysisNeighborhoodSearch search =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Simple, search.mode());
 
     testIsWithin(&search, data);
@@ -421,7 +449,7 @@ TEST_F(NeighborhoodSearchTest, GridSearchBox)
     nb_.setCutoff(data.cutoff_);
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
     gmx::AnalysisNeighborhoodSearch search =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
     testIsWithin(&search, data);
@@ -437,7 +465,7 @@ TEST_F(NeighborhoodSearchTest, GridSearchTriclinic)
     nb_.setCutoff(data.cutoff_);
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
     gmx::AnalysisNeighborhoodSearch search =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
     ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
     testPairSearch(&search, data);
@@ -450,7 +478,7 @@ TEST_F(NeighborhoodSearchTest, GridSearch2DPBC)
     nb_.setCutoff(data.cutoff_);
     nb_.setMode(gmx::AnalysisNeighborhood::eSearchMode_Grid);
     gmx::AnalysisNeighborhoodSearch search =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
     // Currently, grid searching not supported with 2D PBC.
     //ASSERT_EQ(gmx::AnalysisNeighborhood::eSearchMode_Grid, search.mode());
 
@@ -466,14 +494,14 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
 
     nb_.setCutoff(data.cutoff_);
     gmx::AnalysisNeighborhoodSearch search1 =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
     gmx::AnalysisNeighborhoodSearch search2 =
-        nb_.initSearch(&data.pbc_, data.refPosCount_, data.refPos_);
+        nb_.initSearch(&data.pbc_, data.refPositions());
 
     gmx::AnalysisNeighborhoodPairSearch pairSearch1 =
-        search1.startPairSearch(data.testPositions_[0].x);
+        search1.startPairSearch(data.testPosition(0));
     gmx::AnalysisNeighborhoodPairSearch pairSearch2 =
-        search1.startPairSearch(data.testPositions_[1].x);
+        search1.startPairSearch(data.testPosition(1));
 
     testPairSearch(&search2, data);
 
@@ -483,8 +511,36 @@ TEST_F(NeighborhoodSearchTest, HandlesConcurrentSearches)
     EXPECT_TRUE(data.testPositions_[0].refPairs.count(pair.refIndex()) == 1);
 
     pairSearch2.findNextPair(&pair);
-    EXPECT_EQ(0, pair.testIndex());
+    EXPECT_EQ(1, pair.testIndex());
     EXPECT_TRUE(data.testPositions_[1].refPairs.count(pair.refIndex()) == 1);
+}
+
+TEST_F(NeighborhoodSearchTest, HandlesSkippingPairs)
+{
+    const NeighborhoodSearchTestData &data = TrivialTestData::get();
+
+    nb_.setCutoff(data.cutoff_);
+    gmx::AnalysisNeighborhoodSearch     search =
+        nb_.initSearch(&data.pbc_, data.refPositions());
+    gmx::AnalysisNeighborhoodPairSearch pairSearch =
+        search.startPairSearch(data.testPositions());
+    gmx::AnalysisNeighborhoodPair       pair;
+    // TODO: This test needs to be adjusted if the grid search gets optimized
+    // to loop over the test positions in cell order (first, the ordering
+    // assumption here breaks, and second, it then needs to be tested
+    // separately for simple and grid searches).
+    int currentIndex = 0;
+    while (pairSearch.findNextPair(&pair))
+    {
+        while (currentIndex < pair.testIndex())
+        {
+            ++currentIndex;
+        }
+        EXPECT_EQ(currentIndex, pair.testIndex());
+        EXPECT_TRUE(data.testPositions_[currentIndex].refPairs.count(pair.refIndex()) == 1);
+        pairSearch.skipRemainingPairsForTestPosition();
+        ++currentIndex;
+    }
 }
 
 } // namespace
