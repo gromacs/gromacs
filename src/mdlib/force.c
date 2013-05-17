@@ -861,6 +861,8 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
      * which is a very good approximation (except for exotic settings).
      * (investigate how to overcome this post 4.6 - MRS)
      */
+    enerd->term[F_DVDL_BONDED] += enerd->term[F_DVDL_CONSTR];
+    enerd->term[F_DVDL_CONSTR] = 0;
 
     for (i = 0; i < fepvals->n_lambda; i++)
     {                                         /* note we are iterating over fepvals here!
