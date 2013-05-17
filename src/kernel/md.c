@@ -206,7 +206,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
     gmx_bool          bUpdateDoLR;
-    real              mu_aver = 0, dvdl;
+    real              mu_aver = 0, dvdl_constr;
     int               a0, a1, gnx = 0, ii;
     atom_id          *grpindex = NULL;
     char             *grpname;
@@ -1273,9 +1273,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 bOK = TRUE;
                 if (!bRerunMD || rerun_fr.bV || bForceUpdate)     /* Why is rerun_fr.bV here?  Unclear. */
                 {
-                    dvdl = 0;
-
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, shake_vir, NULL,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1370,7 +1368,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             if (bTrotter && !bInitStep)
             {
-                enerd->term[F_DVDL_BONDED] += dvdl;        /* only add after iterations */
                 copy_mat(shake_vir, state->svir_prev);
                 copy_mat(force_vir, state->fvir_prev);
                 if (IR_NVT_TROTTER(ir) && ir->eI == eiVV)
@@ -1385,12 +1382,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 copy_rvecn(cbuf, state->v, 0, state->natoms);
             }
-
-            if (fr->bSepDVDL && fplog && do_log)
-            {
-                fprintf(fplog, sepdvdlformat, "Constraint", 0.0, dvdl);
-            }
-            enerd->term[F_DVDL_BONDED] += dvdl;
 
             GMX_MPE_LOG(ev_timestep1);
         }
@@ -1660,7 +1651,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 /* if we have constraints, we have to remove the kinetic energy parallel to the bonds */
                 if (constr && bIfRandomize)
                 {
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir, NULL,
                                        cr, nrnb, wcycle, upd, constr,
@@ -1698,10 +1689,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_mat(state->box, lastbox);
 
             bOK = TRUE;
+            dvdl_constr = 0;
+
             if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
             {
                 wallcycle_start(wcycle, ewcUPDATE);
-                dvdl = 0;
                 /* UPDATE PRESSURE VARIABLES IN TROTTER FORMULATION WITH CONSTRAINTS */
                 if (bTrotter)
                 {
@@ -1761,7 +1753,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                               ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
-                update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms, state,
+                update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
                                    &top->idef, shake_vir, force_vir,
                                    cr, nrnb, wcycle, upd, constr,
@@ -1794,7 +1786,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * to numerical errors, or are they important
                      * physically? I'm thinking they are just errors, but not completely sure.
                      * For now, will call without actually constraining, constr=NULL*/
-                    update_constraints(fplog, step, &dvdl, ir, ekind, mdatoms,
+                    update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
                                        &top->idef, tmp_vir, force_vir,
                                        cr, nrnb, wcycle, upd, NULL,
@@ -1808,9 +1800,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (fr->bSepDVDL && fplog && do_log)
                 {
-                    fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl);
+                    fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl_constr);
                 }
-                enerd->term[F_DVDL_BONDED] += dvdl;
+                enerd->term[F_DVDL_CONSTR] += dvdl_constr;
             }
             else if (graph)
             {
@@ -1891,7 +1883,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         /* only add constraint dvdl after constraints */
-        enerd->term[F_DVDL_BONDED] += dvdl;
+        enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         if (!bVV || bRerunMD)
         {
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
