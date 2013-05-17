@@ -498,7 +498,19 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    if ((conc > 0) || bNeutral)
+    if (bNeutral && (conc == 0))
+    {
+        /* Add just enough ions to neutralize */
+        if (iqtot > 0)
+        {
+            n_num = iqtot;
+        }
+        else
+        {
+            p_num = abs(iqtot);
+        }
+    }
+    else if ((conc > 0) || bNeutral)
     {
         /* Compute number of ions to be added */
         vol = det(box);
