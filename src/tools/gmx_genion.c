@@ -434,7 +434,8 @@ int gmx_genion(int argc, char *argv[])
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
         { "-neutral", FALSE, etBOOL, {&bNeutral},
-          "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
+          "This option will add enough ions to neutralize the system, ignoring [TT]-np[tt] and [TT]-nn[tt]. "
+             "Or in combination with the concentration option a neutral system at a given salt concentration will be generated." }
     };
     gmx_mtop_t        *mtop;
     gmx_localtop_t    *top;
@@ -498,34 +499,43 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    if ((conc > 0) || bNeutral)
+    if (bNeutral && (conc == 0))
+    {
+        /* Add just enough ions to neutralize */
+        if (iqtot > 0)
+        {
+            n_num = iqtot;
+        }
+        else
+        {
+            p_num = abs(iqtot);
+        }
+    }
+    else if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol = det(box);
-        if (conc > 0)
+        nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
+        p_num = abs(nsalt*n_q);
+        n_num = abs(nsalt*p_q);
+        if (bNeutral)
         {
-            nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
-            p_num = abs(nsalt*n_q);
-            n_num = abs(nsalt*p_q);
-            if (bNeutral)
+            int qdelta = 0;
+            do
             {
-                int qdelta = 0;
-                do
+                qdelta = (p_num*p_q + n_num*n_q + iqtot);
+                if (qdelta < 0)
                 {
-                    qdelta = (p_num*p_q + n_num*n_q + iqtot);
-                    if (qdelta < 0)
-                    {
-                        p_num  += abs(qdelta/p_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                    if (qdelta > 0)
-                    {
-                        n_num  += abs(qdelta/n_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
+                    p_num  += abs(qdelta/p_q);
+                    qdelta  = (p_num*p_q + n_num*n_q + iqtot);
                 }
-                while (qdelta != 0);
+                if (qdelta > 0)
+                {
+                    n_num  += abs(qdelta/n_q);
+                    qdelta  = (p_num*p_q + n_num*n_q + iqtot);
+                }
             }
+            while (qdelta != 0);
         }
     }
 
