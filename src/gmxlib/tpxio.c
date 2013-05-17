@@ -174,14 +174,13 @@ static const t_ftupd ftupd[] = {
     { 46, F_ECONSERVED        },
     { 69, F_VTEMP_NOLONGERUSED},
     { 66, F_PDISPCORR         },
-    { 54, F_DHDL_CON          },
+    { 54, F_DVDL_CONSTR       },
     { 76, F_ANHARM_POL        },
     { 79, F_DVDL_COUL         },
     { 79, F_DVDL_VDW,         },
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
-    { 54, F_DHDL_CON          }
 };
 #define NFTUPD asize(ftupd)
 
