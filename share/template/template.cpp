@@ -153,8 +153,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     AnalysisDataHandle         dh     = pdata->dataHandle(data_);
     const Selection           &refsel = pdata->parallelSelection(refsel_);
 
-    AnalysisNeighborhoodSearch nbsearch =
-        nb_.initSearch(pbc, refsel.positions());
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refsel);
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {

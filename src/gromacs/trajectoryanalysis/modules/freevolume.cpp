@@ -282,7 +282,7 @@ FreeVolume::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     int  Ninsert = static_cast<int>(ninsert_*V);
 
     // Use neighborsearching tools!
-    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, sel.positions());
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, sel);
 
     // Then loop over insertions
     int NinsTot = 0;
