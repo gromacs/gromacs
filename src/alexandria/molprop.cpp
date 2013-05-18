@@ -221,6 +221,8 @@ void Experiment::Dump(FILE *fp)
 {
     if (NULL != fp)
     {
+        fprintf(fp,"Experiment %d polar %d dipole\n",
+                NPolar(),NDipole());
         fprintf(fp,"reference    = %s\n",_reference.c_str());
         fprintf(fp,"conformation = %s\n",_conformation.c_str());
     }
@@ -231,6 +233,8 @@ void Calculation::Dump(FILE *fp)
     Experiment::Dump(fp);
     if (NULL != fp)
     {
+        fprintf(fp,"Calculation %d polar %d dipole\n",
+                NPolar(),NDipole());
         fprintf(fp,"program    = %s\n",_program.c_str());
         fprintf(fp,"method     = %s\n",_method.c_str());
         fprintf(fp,"basisset   = %s\n",_basisset.c_str());
@@ -658,67 +662,57 @@ bool MolProp::HasComposition(std::string composition)
     return bComp;   
 }
 
-int Experiment::GetVal(const char *type,MolPropObservable mpo,
-                       double *value,double *error,double vec[3],
-                       tensor quadrupole) 
+bool Experiment::GetVal(const char *type,MolPropObservable mpo,
+                        double *value,double *error,double vec[3],
+                        tensor quadrupole) 
 {
-    int    done = 0;
-    double x,y,z,xx,yy,zz,xy,xz,yz;
-    
-    MolecularEnergyIterator mei;
-    MolecularDipPolarIterator mdp;
-    MolecularQuadrupoleIterator mqi;
-    std::string mtype;
-    
-    if (NULL == type)
-        gmx_fatal(FARGS,"Called GetVal with NULL type. Prop = %d",(int)mpo);
+    bool   done = false;
+    double x,y,z;
+                
     switch (mpo) 
     {
     case MPO_ENERGY:
-        for(mei=BeginEnergy(); !done && (mei<EndEnergy()); mei++) 
+        for(MolecularEnergyIterator mei=BeginEnergy(); !done && (mei<EndEnergy()); mei++) 
         {
-            mtype = mei->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
+            if ((NULL == type) || (strcasecmp(mei->GetType().c_str(),type) == 0))
             {
                 mei->Get(value,error);
-                done = 1;
+                done = true;
             }
         }
         break;
     case MPO_DIPOLE:
-        for(mdp=BeginDipole(); !done && (mdp<EndDipole()); mdp++)
+        for(MolecularDipPolarIterator mdp=BeginDipole(); !done && (mdp<EndDipole()); mdp++)
         {
-            mtype = mdp->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
+            if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(),type) == 0))
             {
                 mdp->Get(&x,&y,&z,value,error);
                 vec[XX] = x;
                 vec[YY] = y;
                 vec[ZZ] = z;
-                done = 1;
+                done = true;
             }
         }
         break;
     case MPO_POLARIZABILITY:
-        for(mdp=BeginPolar(); !done && (mdp<EndPolar()); mdp++)
+        for(MolecularDipPolarIterator mdp=BeginPolar(); !done && (mdp<EndPolar()); mdp++)
         {
-            mtype = mdp->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
+            if ((NULL == type) || (strcasecmp(mdp->GetType().c_str(),type) == 0))
             {
                 mdp->Get(&x,&y,&z,value,error);
                 vec[XX] = x;
                 vec[YY] = y;
                 vec[ZZ] = z;
-                done = 1;
+                done = true;
             }
         }
         break;
     case MPO_QUADRUPOLE:
-        for(mqi=BeginQuadrupole(); !done && (mqi<EndQuadrupole()); mqi++)
+        for(MolecularQuadrupoleIterator mqi=BeginQuadrupole(); !done && (mqi<EndQuadrupole()); mqi++)
         {
-            mtype = mqi->GetType();
-            if (strcmp(mtype.c_str(),type) == 0) 
+            if ((NULL == type) || (strcasecmp(mqi->GetType().c_str(),type) == 0))
             {
+                double xx,yy,zz,xy,xz,yz;
                 mqi->Get(&xx,&yy,&zz,&xy,&xz,&yz);
                 quadrupole[XX][XX] = xx;
                 quadrupole[XX][YY] = xy;
@@ -729,7 +723,7 @@ int Experiment::GetVal(const char *type,MolPropObservable mpo,
                 quadrupole[ZZ][XX] = 0;
                 quadrupole[ZZ][YY] = 0;
                 quadrupole[ZZ][ZZ] = zz;
-                done = 1;
+                done = true;
             }
         }
         break;
@@ -739,17 +733,18 @@ int Experiment::GetVal(const char *type,MolPropObservable mpo,
     return done;
 }
   
-int MolProp::GetPropRef(MolPropObservable mpo,int iQM,char *lot,
-                        const char *conf,const char *type,double *value,double *error,
-                        char **ref,char **mylot,
-                        double vec[3],tensor quadrupole)
+bool MolProp::GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
+                         const char *conf,const char *type,double *value,double *error,
+                         char **ref,char **mylot,
+                         double vec[3],tensor quadrupole)
 {
     alexandria::ExperimentIterator ei;
     alexandria::CalculationIterator ci;
     std::string reference,method,name,basisset,program,conformation,expconf;
     
-    int n,k,done=0;
-    char **qm,**ll;
+    int  k;
+    bool done=false;
+    char **ll;
     
     if ((iQM == iqmExp) || (iQM == iqmBoth)) 
     {
@@ -760,8 +755,10 @@ int MolProp::GetPropRef(MolPropObservable mpo,int iQM,char *lot,
             
             if ((NULL == conf) || (strcasecmp(conf,expconf.c_str()) == 0))
                 done = ei->GetVal(type,mpo,value,error,vec,quadrupole);
+            if (done)
+                break;
         }
-        if (done != 0) {
+        if (!done) {
             if (NULL != ref)
                 *ref = strdup(reference.c_str());
             if (NULL != mylot)
@@ -769,61 +766,38 @@ int MolProp::GetPropRef(MolPropObservable mpo,int iQM,char *lot,
         }
     }
     
-    if ((done == 0) && ((iQM == iqmBoth) || (iQM == iqmQM)))
+    if ((!done) && ((iQM == iqmBoth) || (iQM == iqmQM)))
     {
         if (NULL != lot) 
         {
-            qm = split(':',lot);
-            n = 0;
-            while ((done == 0) && (NULL != qm[n]))
+            ci = GetLot(lot);
+            if (ci != EndCalculation())
             {
-                ll = split('/',qm[n]);
-                if ((NULL != ll[0]) && (NULL != ll[1])) 
-                {
-                    for(ci=BeginCalculation(); (ci<EndCalculation()); ci++)
-                    {
-                        basisset     = ci->GetBasisset();
-                        method       = ci->GetMethod();
-                        reference    = ci->GetReference();
-                        conformation = ci->GetConformation();
+                basisset     = ci->GetBasisset();
+                method       = ci->GetMethod();
+                reference    = ci->GetReference();
+                conformation = ci->GetConformation();
                       
-                        if (((strcasecmp(method.c_str(),ll[0]) == 0) &&
-                             (strcasecmp(basisset.c_str(),ll[1]) == 0)) &&
-                            ((NULL == conf) || (strcasecmp(conf,conformation.c_str()) == 0)))
-                        {
-                            done = ci->GetVal(type,mpo,value,error,vec,quadrupole);
-                        }
-                        if ((done != 0) && (NULL != ref))
-                            *ref = strdup(reference.c_str());
-                    }
-                }
-                k = 0;
-                while (ll[k] != NULL)
+                if ((NULL == conf) || (strcasecmp(conf,conformation.c_str()) == 0))
                 {
-                    sfree(ll[k]);
-                    k++;
+                    done = ci->GetVal(type,mpo,value,error,vec,quadrupole);
                 }
-                sfree(ll);
-                if (done != 0) 
+                if (done && (NULL != ref))
                 {
-                    if (NULL != mylot)
-                        *mylot = strdup(qm[n]);
+                    *ref = strdup(reference.c_str());
                 }
-                n++;
-            }
-            k = 0;
-            while (qm[k] != NULL)
-            {
-                sfree(qm[k]);
-                k++;
+                if (done && (NULL != mylot))
+                {
+                    *mylot = strdup(lot);
+                }
             }
         }
     }
     return done;
 }
 
-int MolProp::GetProp(MolPropObservable mpo,int iQM,char *lot,
-                     char *conf,char *type,double *value)
+bool MolProp::GetProp(MolPropObservable mpo,iqmType iQM,char *lot,
+                      char *conf,char *type,double *value)
 {
     double error,vec[3];
     tensor quad;

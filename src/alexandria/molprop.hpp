@@ -38,7 +38,7 @@ enum MolPropObservable {
     MPO_NR };
 
 //! Enum to select either QM or Experimental data or either    
-enum { iqmExp, iqmBoth, iqmQM, iqmNR };
+enum iqmType { iqmExp, iqmBoth, iqmQM, iqmNR };
 
 //! Strings describing the MolPropObservable enum elements
 extern const char *mpo_name[MPO_NR];
@@ -854,6 +854,12 @@ public:
     //! Return End Iterator over polarizability elements
     MolecularDipPolarIterator EndPolar()   { return _polar.end(); }
                   
+    //! Number of polarizability values
+    int NPolar() { return _polar.size(); }
+    
+    //! Number of dipole values
+    int NDipole() { return _dipole.size(); }
+    
     //! Add a MolecularDipPolar element containing dipole data
     void AddDipole(MolecularDipPolar mdp) { _dipole.push_back(mdp); }
     
@@ -896,11 +902,11 @@ public:
      * \param[out] error  The error in the value of e.g. the energy
      * \param[out] vec    Vector data to be output, dipole or diagonal element of polarizability
      * \param[out] quadrupole The quadrupole tensor
-     * \return 1 on success or 0 otherwise
+     * \return true on success
      */
-    int GetVal(const char *type,MolPropObservable mpo,
-               double *value,double *error,double vec[3],
-               tensor quadrupole);
+    bool GetVal(const char *type,MolPropObservable mpo,
+                double *value,double *error,double vec[3],
+                tensor quadrupole);
     
     
 
@@ -1161,14 +1167,14 @@ public:
     std::string GetInchi() { return _inchi; }
 
     //! Convenience function
-    int GetPropRef(MolPropObservable mpo,int iQM,char *lot,
-                   const char *conf,const char *type,double *value,double *error,
-                   char **ref,char **mylot,
-                   double vec[3],tensor quadrupole);
+    bool GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
+                    const char *conf,const char *type,double *value,double *error,
+                    char **ref,char **mylot,
+                    double vec[3],tensor quadrupole);
                    
     //! And another one
-    int GetProp(MolPropObservable mpo,int iQM,char *lot,
-                char *conf,char *type,double *value);
+    bool GetProp(MolPropObservable mpo,iqmType iQM,char *lot,
+                 char *conf,char *type,double *value);
         
     //! Add a classification category for this molecule
     void AddCategory(const char *category) { 

@@ -89,7 +89,7 @@ printf(GT "<gentop>\n");
 printf(GT "  <atomtypes forcefield=\"GAFF\" polarizability_unit=\"A3\" function=\"LJ_SR\" combination_rule=\"Arithmetic\" nexclusions=\"3\" fudgeQQ=\"0\" fudgeLJ=\"0\">\n");
 
 foreach $tp ( keys %atp ) {
-  printf(GT "    <atype elem=\"%s\" description=\"$tp\" gt_type=\"$tp\" charge=\"0\" polarizability=\"0\" sigma_pol=\"0\" vdwparams=\"1 1\"/>\n",$atp{$tp}->{"elem"});
+  printf(GT "    <atype elem=\"%s\" description=\"$tp\" gt_type=\"$tp\" miller_equiv=\"0\" charge=\"0\" polarizability=\"0\" sigma_pol=\"0\" vdwparams=\"1 1\"/>\n",$atp{$tp}->{"elem"});
 }
 printf(GT "  </atomtypes>\n");
 printf(GT "  <bonding_rules>\n");

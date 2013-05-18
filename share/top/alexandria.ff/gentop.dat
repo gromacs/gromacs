@@ -2,69 +2,69 @@
 <!DOCTYPE gentop.dtd PUBLIC "gentop.dtd" "gentop.dtd">
 <gentop>
   <atomtypes forcefield="GAFF" polarizability_unit="A3" function="LJ_SR" combination_rule="Arithmetic" nexclusions="3" fudgeQQ="0" fudgeLJ="0">
-    <atype elem="N" description="ne" gt_type="ne" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="n2" gt_type="n2" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="s6" gt_type="s6" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="no" gt_type="no" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hn" gt_type="hn" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="c2" gt_type="c2" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="nh" gt_type="nh" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="h5" gt_type="h5" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="os" gt_type="os" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="ho" gt_type="ho" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="on" gt_type="on" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="sy" gt_type="sy" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="nb" gt_type="nb" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="n4" gt_type="n4" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cx" gt_type="cx" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="ss" gt_type="ss" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cc" gt_type="cc" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="sh" gt_type="sh" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="nc" gt_type="nc" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="h1" gt_type="h1" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hs" gt_type="hs" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="s4" gt_type="s4" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Br" description="br" gt_type="br" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cy" gt_type="cy" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="p4" gt_type="p4" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="s" gt_type="s" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="h4" gt_type="h4" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cz" gt_type="cz" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hc" gt_type="hc" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="c" gt_type="c" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="py" gt_type="py" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="px" gt_type="px" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="c3" gt_type="c3" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cv" gt_type="cv" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cg" gt_type="cg" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="p5" gt_type="p5" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="Cl" description="cl" gt_type="cl" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hw" gt_type="hw" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="ha" gt_type="ha" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="pc" gt_type="pc" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="n1" gt_type="n1" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="ce" gt_type="ce" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="s2" gt_type="s2" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="oh" gt_type="oh" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cu" gt_type="cu" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="S" description="sx" gt_type="sx" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="F" description="f" gt_type="f" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hx" gt_type="hx" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="I" description="i" gt_type="i" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="n" gt_type="n" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="hp" gt_type="hp" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="cp" gt_type="cp" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="ca" gt_type="ca" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="pb" gt_type="pb" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="h2" gt_type="h2" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="p2" gt_type="p2" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="p3" gt_type="p3" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="n3" gt_type="n3" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="H" description="h3" gt_type="h3" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="P" description="pe" gt_type="pe" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="C" description="c1" gt_type="c1" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="O" description="o" gt_type="o" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
-    <atype elem="N" description="na" gt_type="na" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="ne" gt_type="ne" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="n2" gt_type="n2" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="s6" gt_type="s6" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="no" gt_type="no" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hn" gt_type="hn" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="c2" gt_type="c2" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="nh" gt_type="nh" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="h5" gt_type="h5" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="os" gt_type="os" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="ho" gt_type="ho" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="on" gt_type="on" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="sy" gt_type="sy" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="nb" gt_type="nb" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="n4" gt_type="n4" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cx" gt_type="cx" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="ss" gt_type="ss" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cc" gt_type="cc" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="sh" gt_type="sh" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="nc" gt_type="nc" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="h1" gt_type="h1" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hs" gt_type="hs" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="s4" gt_type="s4" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Br" description="br" gt_type="br" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cy" gt_type="cy" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="p4" gt_type="p4" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="s" gt_type="s" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="h4" gt_type="h4" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cz" gt_type="cz" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hc" gt_type="hc" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="c" gt_type="c" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="py" gt_type="py" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="px" gt_type="px" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="c3" gt_type="c3" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cv" gt_type="cv" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cg" gt_type="cg" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="p5" gt_type="p5" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="Cl" description="cl" gt_type="cl" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hw" gt_type="hw" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="ha" gt_type="ha" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="pc" gt_type="pc" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="n1" gt_type="n1" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="ce" gt_type="ce" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="s2" gt_type="s2" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="oh" gt_type="oh" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cu" gt_type="cu" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="S" description="sx" gt_type="sx" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="F" description="f" gt_type="f" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hx" gt_type="hx" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="I" description="i" gt_type="i" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="n" gt_type="n" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="hp" gt_type="hp" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="cp" gt_type="cp" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="ca" gt_type="ca" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="pb" gt_type="pb" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="h2" gt_type="h2" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="p2" gt_type="p2" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="p3" gt_type="p3" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="n3" gt_type="n3" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="H" description="h3" gt_type="h3" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="P" description="pe" gt_type="pe" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="C" description="c1" gt_type="c1" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="O" description="o" gt_type="o" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
+    <atype elem="N" description="na" gt_type="na" miller_equiv="0" charge="0" polarizability="0" sigma_pol="0" vdwparams="1 1"/>
   </atomtypes>
   <bonding_rules>
   </bonding_rules>

@@ -298,7 +298,6 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
     int  i,ntot,cur=0;
     t_qmcount *qmc;
     t_refcount *rc;
-    char *mylot; 
     const char *molname[2];
     double value,error,vec[3];
     tensor quadrupole;
@@ -373,7 +372,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
                 if ((NULL != iupac) && (strlen(iupac) > 0))
                 {
                     if (mpi->GetPropRef(prop,iqmBoth,lot,NULL,NULL,
-                                        &value,&error,&ref,&mylot,
+                                        &value,&error,&ref,NULL,
                                         vec,quadrupole) == 1)
                     {
                         fprintf(gp,"%s|Train\n",iupac);

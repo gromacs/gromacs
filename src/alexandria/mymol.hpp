@@ -170,7 +170,7 @@ public:
                    gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
                    int nexcl,gmx_bool bESP,
                    real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);
-             
+    
 };
 
 const char *immsg(immStatus imm);

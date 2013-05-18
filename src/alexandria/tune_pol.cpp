@@ -63,131 +63,174 @@
 static int decompose_frag(FILE *fp,int bTrain,
                           gmx_poldata_t pd,
                           std::vector<alexandria::MolProp> mp,
-                          int iQM,char *lot,int mindata,gmx_molselect_t gms,
-                          real sigma,gmx_bool bZero,gmx_bool bForceFit)
+                          gmx_bool bQM,char *lot,int mindata,gmx_molselect_t gms,
+                          real sigma,gmx_bool bZero,gmx_bool bForceFit,
+                          char *pol_type)
 {
-    alexandria::MolPropIterator mpi;
-    alexandria::MolecularCompositionIterator mci;
-    alexandria::AtomNumIterator ani;
-
     FILE   *csv;
     double *x,*atx;
     double **a,**at,**ata,*fpp;
     double pol,poltot,a0,da0,ax,sig_pol,chi2;
     char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type;
-    const char *iupac,*molname,*atomname;
+    const char *atomname;
     char   *desc,*charge;
-    int    i,j,niter=0,nusemol=0,nn,nnn,ntp,natom,natom_tot;
-    int    *test=NULL,ntest=0,row,ims;
-    gmx_bool   bPol,*bUseMol;
+    int    j,niter=0,nusemol,nn,natom,natom_tot;
+    int    *test=NULL,ntest[2],ntmax,row,cur=0;
+    bool   *bUseMol,*bUseAtype;
+#define prev (1-cur)
 
     snew(bUseMol,mp.size()+1);
     snew(x,mp.size()+1);
-    poltot = 0;
-    j=0;
-    for(mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
-    {
-        iupac    = mpi->GetIupac().c_str();
-        molname  = mpi->GetMolname().c_str();
-        pol  = 0;
-        ims  = gmx_molselect_status(gms,iupac);
-        bPol = (mpi->GetProp(MPO_POLARIZABILITY,iQM,lot,NULL,NULL,&pol) > 0);
-        bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0));
-        mci=mpi->SearchMolecularComposition((char *)"spoel");
-
-        /* Now check for the right composition */        
-        if ((bUseMol[j]) && (mci != mpi->EndMolecularComposition()))
-        {
-            natom_tot = 0;
-            for(ani=mci->BeginAtomNum(); bUseMol[j] && (ani<mci->EndAtomNum()); ani++)
-            {
-                atomname = ani->GetAtom().c_str();
-                natom = ani->GetNumber();
-                bUseMol[j] = gmx_poldata_have_pol_support(pd,atomname);
-                if (bUseMol[j])
-                    natom_tot += natom;
-            }
-            if (natom_tot == 0)
-                bUseMol[j] = FALSE;
-        }
-        if (NULL != debug)
-        {
-            fprintf(debug,"Mol: %s, IUPAC: %s, ims: %s, bPol: %s, pol: %g - %s\n",
-                    molname,iupac,ims_names[ims],bool_names[bPol],pol,
-                    bUseMol[j] ? "Used" : "Not used");
-        }
-        
-        if (bUseMol[j]) 
-        {        
-            x[nusemol] = pol;
-            poltot += pol;
-            nusemol++;
-        }
-    }        
+    ntmax = gmx_poldata_get_natypes(pd);
+    snew(bUseAtype,ntmax);
+    snew(test,ntmax);
+    snew(atype,ntmax);
+    ntest[prev] = ntest[cur] = ntmax;
+    j = 0;
     while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
                                       &charge,&pol,&sig_pol,&spref)) 
     {
-        if ((pol == 0) || bForceFit) {
-            ntp = 0;
-            j=0;
-            for(mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
-            {
-                mci = mpi->SearchMolecularComposition((char *)"spoel");
-                if ((bUseMol[j]) && (mci != mpi->EndMolecularComposition()) &&
-                    ((nnn = mci->CountAtoms(gt_type)) > 0))
-                {
-                    ntp += nnn;
-                }
-            }
-            if (ntp >= mindata) 
-            {
-                for(i=0; (i<ntest); i++) 
-                {
-                    if (strcmp(atype[i],gt_type) == 0) 
-                        break;
-                }
-                if (i == ntest) 
-                {
-                    srenew(test,ntest+1);
-                    srenew(atype,ntest+1);
-                    test[ntest] = ntp;
-                    atype[ntest] = strdup(gt_type);
-                    ntest++;
-                }
-            }
-            else
-                fprintf(stderr,"Not enough polarizability data points (%d out of %d required) to optimize %s\n",ntp,mindata,gt_type);
-        }
-        else 
-        {
-            fprintf(stderr,"Polarizability for %s is %g. Not optimizing this one.\n",
-                    gt_type,pol);
-        }
+        atype[j] = strdup(gt_type);
+        bUseAtype[j] = true;
+        j++;
     }
-    if (ntest == 0) 
+    int iter = 1;
+    do {
+        printf("iter %d ntest %d\n",iter++,ntest[cur]);
+        cur = prev;
+        nusemol = 0;
+        poltot  = 0;
+        j       = 0;
+        for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
+        {
+            iMolSelect ims  = gmx_molselect_status(gms,mpi->GetIupac().c_str());
+            
+            bool bPol = mpi->GetProp(MPO_POLARIZABILITY,
+                                     bQM ? iqmBoth : iqmExp,
+                                     lot,NULL,NULL,&pol);
+            alexandria::MolecularCompositionIterator mci = 
+                mpi->SearchMolecularComposition((char *)"spoel");
+        
+            bUseMol[j] = ((imsTrain == ims) && bPol && (pol > 0) &&
+                          (mci != mpi->EndMolecularComposition()));
+            
+            /* Now check for the right composition */        
+            if (bUseMol[j])
+            {
+                for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); 
+                    (bUseMol[j] && (ani<mci->EndAtomNum())); ani++)
+                {
+                    atomname = ani->GetAtom().c_str();
+                    bUseMol[j] = gmx_poldata_have_pol_support(pd,atomname);
+                    for(int k=0; bUseMol[j] && (k<ntmax); k++)
+                    {
+                        if (strcasecmp(atomname,atype[k]) == 0)
+                            bUseMol[j] = bUseAtype[k];
+                    }
+                }
+            }
+            if (NULL != debug)
+            {
+                fprintf(debug,"Mol: %s, IUPAC: %s, ims: %s, bPol: %s, pol: %g - %s\n",
+                        mpi->GetMolname().c_str(),
+                        mpi->GetIupac().c_str(),
+                        ims_names[ims],bool_names[bPol],pol,
+                        bUseMol[j] ? "Used" : "Not used");
+            }
+            
+            if (bUseMol[j]) 
+            {        
+                x[nusemol] = pol;
+                poltot += pol;
+                nusemol++;
+            }
+        }
+        ntest[cur] = 0;
+        int ntp = 0;
+        while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
+                                          &charge,&pol,&sig_pol,&spref)) 
+        {
+            if ((pol == 0) || bForceFit) {
+                int j = 0;
+                for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
+                {
+                    if (bUseMol[j])
+                    {
+                        int nnn;
+                        alexandria::MolecularCompositionIterator mci = 
+                            mpi->SearchMolecularComposition((char *)"spoel");
+                        if ((nnn = mci->CountAtoms(gt_type)) > 0)
+                        {
+                            test[ntp] += nnn;
+                        }
+                    }
+                }
+                bUseAtype[ntp] = (test[ntp] >= mindata) ;
+                if (bUseAtype[ntp])
+                {
+                    ntest[cur]++;
+                }
+                else
+                {
+                    fprintf(stderr,"Not enough polarizability data points (%d out of %d required) to optimize %s\n",test[ntp],mindata,gt_type);
+                }
+            }
+            else 
+            {
+                fprintf(stderr,"Polarizability for %s is %g. Not optimizing this one.\n",
+                        gt_type,pol);
+            }
+            ntp++;
+        }
+    } while (ntest[cur] < ntest[prev]);
+    if (ntest[cur] == 0) 
         gmx_fatal(FARGS,"Nothing to optimize. Check your input");
 
-    a      = alloc_matrix(nusemol,ntest);
-    at     = alloc_matrix(ntest,nusemol);
-    ata    = alloc_matrix(ntest,ntest);
+    //! Now condense array of atom types
+    for(int i = 0; (i<ntest[cur]); i++)
+    {
+        for(int j=i+1; !bUseAtype[i] && (j<ntmax); j++)
+        {
+            if (bUseAtype[j])
+            {
+                bUseAtype[i] = true;
+                sfree(atype[i]);
+                atype[i] = atype[j];
+                atype[j] = NULL;
+                bUseAtype[j] = false;
+            }
+        }
+    }
+
+    a      = alloc_matrix(nusemol,ntest[cur]);
+    at     = alloc_matrix(ntest[cur],nusemol);
+    ata    = alloc_matrix(ntest[cur],ntest[cur]);
     
     printf("There are %d different atomtypes to optimize the polarizabilities\n",
-           ntest);
+           ntest[cur]);
     printf("There are %d (experimental) reference polarizabilities.\n",nusemol);
     csv = ffopen("out.csv","w");
-    nn=0;
-    for(mpi=mp.begin(); (mpi<mp.end()); mpi++,nn++)
+    fprintf(csv,"\"molecule\",");
+    for(int i=0; (i<ntest[cur]); i++)
     {
-        if (bUseMol[i])
+        fprintf(csv,"\"%s\",",atype[i]);
+    }
+    fprintf(csv,"\"polarizability\"\n");
+    nn = 0;
+    j = 0;
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
+    {
+        if (bUseMol[j])
         {
-            mci = mpi->SearchMolecularComposition((char *)"spoel");
+            alexandria::MolecularCompositionIterator mci = 
+                mpi->SearchMolecularComposition((char *)"spoel");
             fprintf(csv,"\"%s\",",mpi->GetMolname().c_str());
-            for(j=0; (j<ntest); j++) {
-                a[nn][j] = at[j][nn] = 
-                    mci->CountAtoms(atype[j]);
-                fprintf(csv,"\"%g\",",a[nn][j]);
+            for(int i=0; (i<ntest[cur]); i++) {
+                a[nn][i] = at[i][nn] = 
+                    mci->CountAtoms(atype[i]);
+                fprintf(csv,"%g,",a[nn][i]);
             }
-            fprintf(csv,"\"%.3f\"\n",x[nn]);
+            fprintf(csv,"%.3f\n",x[nn]);
             nn++;
         }
     }
@@ -195,29 +238,29 @@ static int decompose_frag(FILE *fp,int bTrain,
     if (nusemol != nn) 
         gmx_fatal(FARGS,"Consistency error: nusemol = %d, nn = %d",nusemol,nn);
     if (fp)
-        for(i=0; (i<ntest); i++)
+        for(int i=0; (i<ntest[cur]); i++)
             fprintf(fp,"Optimizing polarizability for %s with %d copies\n",
                     atype[i],test[i]);
 
-    matrix_multiply(fp,nusemol,ntest,a,at,ata);
-    if ((row = matrix_invert(fp,ntest,ata)) != 0) {
+    matrix_multiply(fp,nusemol,ntest[cur],a,at,ata);
+    if ((row = matrix_invert(fp,ntest[cur],ata)) != 0) {
         gmx_fatal(FARGS,"Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
                   row);
     }
-    snew(atx,ntest);
-    snew(fpp,ntest);
+    snew(atx,ntest[cur]);
+    snew(fpp,ntest[cur]);
     a0 = 0;
     do {
-        for(i=0; (i<ntest); i++)  
+        for(int i=0; (i<ntest[cur]); i++)  
         {
             atx[i] = 0;
             for(j=0; (j<nusemol); j++)
                 atx[i] += at[i][j]*(x[j]-a0);
         }
-        for(i=0; (i<ntest); i++) 
+        for(int i=0; (i<ntest[cur]); i++) 
         {
             fpp[i] = 0;
-            for(j=0; (j<ntest); j++)
+            for(j=0; (j<ntest[cur]); j++)
                 fpp[i] += ata[i][j]*atx[j];
         }
         da0 = 0;
@@ -227,7 +270,7 @@ static int decompose_frag(FILE *fp,int bTrain,
             for(j=0; (j<nusemol); j++)
             {
                 ax = a0;
-                for(i=0; (i<ntest); i++)  
+                for(int i=0; (i<ntest[cur]); i++)  
                     ax += fpp[i]*a[j][i];
                 da0 += (x[j]-ax);
                 chi2 += sqr(x[j]-ax);
@@ -240,7 +283,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         }
     } while (bZero && (fabs(da0) > 1e-5) && (niter < 1000));
     
-    for(i=0; (i<ntest); i++) 
+    for(int i=0; (i<ntest[cur]); i++) 
     {
         gmx_poldata_set_atype_polarizability(pd,atype[i],fpp[i],sigma*sqrt(ata[i][i]));
     }
@@ -248,10 +291,26 @@ static int decompose_frag(FILE *fp,int bTrain,
         gmx_poldata_add_atype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
                               (char *)"",a0,0,(char *)"");
 
+    //! Now checking the result
+    j = nn = 0;
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)
+    {
+        if (bUseMol[j])
+        {
+            double pol = 0;
+            for(int i=0; (i<ntest[cur]); i++)
+            {
+                pol += a[nn][i]*fpp[i];
+            }
+            printf("%-40s computed %10g actual %10g\n",
+                   mpi->GetMolname().c_str(),pol,x[nn]);
+            nn++;
+        }
+    }
     sfree(bUseMol);
     sfree(fpp);
-    
-    return ntest;
+
+    return ntest[cur];
 }
 
 int main(int argc,char *argv[])
@@ -283,8 +342,10 @@ int main(int argc,char *argv[])
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static char *sort[] = { NULL, (char *)"molname", (char *)"formula", (char *)"composition", NULL };
-    static int iQM = FALSE,mindata=1;
+    static gmx_bool bQM = FALSE;
+    static int mindata=1;
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
+    static char *pol_type = (char *)"electronic";
     static real th_toler=170,ph_toler=5;
     static real sigma=0;
     static gmx_bool bZero=FALSE,bForceFit=FALSE,bCompress=TRUE;
@@ -292,10 +353,12 @@ int main(int argc,char *argv[])
     {
         { "-sort",   FALSE, etENUM, {sort},
           "Key to sort the final data file on." },
-        { "-qm",     FALSE, etBOOL, {&iQM},
+        { "-qm",     FALSE, etBOOL, {&bQM},
           "Use QM data for optimizing the empirical polarizabilities as well." },
         { "-lot",    FALSE, etSTR,  {&lot},
           "Use this method and level of theory" },
+        { "-pol_type",    FALSE, etSTR,  {&pol_type},
+          "Use this polarization type for reference" },
         { "-mindata", FALSE, etINT, {&mindata},
           "Minimum number of data points to optimize a polarizability value" },
         { "-sigma",  FALSE, etREAL, {&sigma},
@@ -339,7 +402,7 @@ int main(int argc,char *argv[])
         mpi->CheckConsistency();
     }
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    nalexandria_atypes = decompose_frag(debug,0,pd,mp,iQM,lot,mindata,gms,sigma,bZero,bForceFit);
+    nalexandria_atypes = decompose_frag(debug,0,pd,mp,bQM,lot,mindata,gms,sigma,bZero,bForceFit,pol_type);
 
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort",npa,pa))
