@@ -46,6 +46,19 @@
 
 #include "gromacs/gmxana/gmx_ana.h"
 
+extern "C"
+{
+
+int gmx_gmxcheck(int argc, char *argv[]);
+int gmx_gmxdump(int argc, char *argv[]);
+int gmx_grompp(int argc, char *argv[]);
+int gmx_pdb2gmx(int argc, char *argv[]);
+int gmx_protonate(int argc, char *argv[]);
+int gmx_tpbconv(int argc, char *argv[]);
+int gmx_x2top(int argc, char *argv[]);
+
+}
+
 namespace
 {
 
@@ -131,6 +144,24 @@ void LegacyCmdLineWrapper::writeHelp(const gmx::HelpWriterContext &context) cons
 
 void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
+    // Modules from this directory (were in src/kernel/).
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_gmxcheck, "gmxcheck",
+                                         "Check and compare files");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_gmxdump, "gmxdump",
+                                         "Make binary files human readable");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_grompp, "grompp",
+                                         "Make a run input file");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_pdb2gmx, "pdb2gmx",
+                                         "Convert coordinate files to topology and FF-compliant coordinate files");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_tpbconv, "tpbconv",
+                                         "Make a run input file for restarting a crashed run");
+
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_protonate, "protonate",
+                                         "Protonate structures");
+    LegacyCmdLineWrapper::registerModule(manager, &gmx_x2top, "x2top",
+                                         "Generate a primitive topology from coordinates");
+
+    // Modules from gmx_ana.h.
     LegacyCmdLineWrapper::registerModule(manager, &gmx_do_dssp, "do_dssp",
                                          "Assign secondary structure and calculate solvent accessible surface area");
     LegacyCmdLineWrapper::registerModule(manager, &gmx_editconf, "editconf",
@@ -307,16 +338,9 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                                          "Plot helical wheels");
 
     // TODO: Also include binaries from other directories than src/tools/:
-    //        "g_protonate|Protonate structures");
-    //        "g_x2top|Generate a primitive topology from coordinates ");
     //        "g_xrama|Show animated Ramachandran plots");
-    //        "gmxcheck|Check and compare files");
-    //        "gmxdump|Make binary files human readable");
-    //        "grompp|Make a run input file");
     //        "mdrun|finds a potential energy minimum and calculates the Hessian");
     //        "mdrun|performs a simulation, do a normal mode analysis or an energy minimization");
     //        "mdrun|with -rerun (re)calculates energies for trajectory frames");
     //        "ngmx|Display a trajectory");
-    //        "pdb2gmx|Convert coordinate files to topology and FF-compliant coordinate files");
-    //        "tpbconv|Make a run input file for restarting a crashed run");
 }

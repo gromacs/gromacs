@@ -520,7 +520,7 @@ static void list_mtx(const char *fn)
     sfree(full);
 }
 
-int cmain(int argc, char *argv[])
+int gmx_gmxdump(int argc, char *argv[])
 {
     const char *desc[] = {
         "[TT]gmxdump[tt] reads a run input file ([TT].tpa[tt]/[TT].tpr[tt]/[TT].tpb[tt]),",
@@ -558,7 +558,6 @@ int cmain(int argc, char *argv[])
         { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
     };
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);
 

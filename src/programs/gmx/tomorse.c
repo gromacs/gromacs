@@ -48,8 +48,9 @@
 #include "toputil.h"
 #include "gmx_fatal.h"
 #include "gpp_atomtype.h"
-#include "gpp_tomorse.h"
 #include "macros.h"
+
+#include "tomorse.h"
 
 typedef struct {
     char *ai, *aj;

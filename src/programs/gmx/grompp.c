@@ -77,10 +77,11 @@
 #include "perf_est.h"
 #include "compute_io.h"
 #include "gpp_atomtype.h"
-#include "gpp_tomorse.h"
 #include "mtop_util.h"
 #include "genborn.h"
 #include "calc_verletbuf.h"
+
+#include "tomorse.h"
 
 static int rm_interactions(int ifunc, int nrmols, t_molinfo mols[])
 {
@@ -1316,7 +1317,7 @@ static void set_verlet_buffer(const gmx_mtop_t *mtop,
     }
 }
 
-int cmain (int argc, char *argv[])
+int gmx_grompp(int argc, char *argv[])
 {
     static const char *desc[] = {
         "The gromacs preprocessor",
@@ -1478,8 +1479,6 @@ int cmain (int argc, char *argv[])
         { "-renum",   FALSE, etBOOL, {&bRenum},
           "Renumber atomtypes and minimize number of atomtypes" }
     };
-
-    CopyRight(stderr, argv[0]);
 
     /* Initiate some variables */
     snew(ir, 1);

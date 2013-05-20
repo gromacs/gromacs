@@ -57,8 +57,9 @@
 #include "pdb2top.h"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
-#include "g_x2top.h"
 #include "fflibutil.h"
+
+#include "nm2type.h"
 
 static void rd_nm2type_file(const char *fn, int *nnm, t_nm2type **nmp)
 {

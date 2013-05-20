@@ -51,7 +51,6 @@
 #include "gmxfio.h"
 #include "trnio.h"
 #include "xtcio.h"
-#include "tpbcmp.h"
 #include "atomprop.h"
 #include "vec.h"
 #include "pbc.h"
@@ -63,6 +62,8 @@
 #include "tpxio.h"
 #include "names.h"
 #include "mtop_util.h"
+
+#include "tpbcmp.h"
 
 typedef struct {
     int bStep;
@@ -709,7 +710,7 @@ void chk_enx(const char *fn)
     sfree(fr);
 }
 
-int cmain(int argc, char *argv[])
+int gmx_gmxcheck(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
@@ -781,7 +782,6 @@ int cmain(int argc, char *argv[])
           "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
     };
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                       asize(desc), desc, 0, NULL, &oenv);
 

@@ -32,10 +32,8 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
-
-#ifndef _x2top_h
-#define _x2top_h
-
+#ifndef GMX_GMX_NM2TYPE_H
+#define GMX_GMX_NM2TYPE_H
 
 #include <stdio.h>
 

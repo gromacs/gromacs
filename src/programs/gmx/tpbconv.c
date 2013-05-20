@@ -321,7 +321,7 @@ static void zeroq(int n, atom_id index[], gmx_mtop_t *mtop)
     }
 }
 
-int cmain (int argc, char *argv[])
+int gmx_tpbconv(int argc, char *argv[])
 {
     const char       *desc[] = {
         "tpbconv can edit run input files in four ways.[PAR]",
@@ -405,8 +405,6 @@ int cmain (int argc, char *argv[])
           "fep state to initialize from" },
     };
     int             nerror = 0;
-
-    CopyRight(stderr, argv[0]);
 
     /* Parse the command line */
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
