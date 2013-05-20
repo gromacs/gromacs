@@ -452,7 +452,7 @@ int gmx_genion(int argc, char *argv[])
     atom_id           *index;
     char              *grpname;
     gmx_bool          *bSet, bPDB;
-    int                i, nw, nwa, nsa, nsalt, iqtot;
+    int                i, j, k, nw, nwa, nsa, nsalt, iqtot;
     FILE              *fplog;
     output_env_t       oenv;
     t_filenm           fnm[] = {
@@ -509,15 +509,31 @@ int gmx_genion(int argc, char *argv[])
     if (bNeutral)
     {
         int qdelta = p_num*p_q + n_num*n_q + iqtot;
+
+        /* Check if the system is neutralizable
+         * is (qdelta = p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
+        i = n_q, j = p_q;
+        while (j != 0)
+        {
+            k = j;
+            j = i % j;
+            i = k;
+        }
+        if (qdelta % i != 0)
+        {
+            gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
+                    " -pq %d.\n", n_q, p_q);
+        }
+        
         while (qdelta != 0)
         {
             if (qdelta < 0)
             {
-                p_num  += abs(qdelta/p_q);
+                p_num  += ceil(fabs(((float)qdelta)/p_q));
             }
             else if (qdelta > 0)
             {
-                n_num  += abs(qdelta/n_q);
+                n_num  += ceil(fabs(((float)qdelta)/n_q));
             }
             qdelta  = p_num*p_q + n_num*n_q + iqtot;
         }
