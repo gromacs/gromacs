@@ -63,6 +63,18 @@
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
+static int greatest_common_divisor(int p, int q)
+{
+    int tmp;
+    while (q != 0)
+    {
+        tmp = q;
+        q = p % q;
+        p = tmp;
+    }
+    return p;
+}
+
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],
                        real pot[], rvec x[], t_pbc *pbc,
@@ -509,15 +521,25 @@ int gmx_genion(int argc, char *argv[])
     if (bNeutral)
     {
         int qdelta = p_num*p_q + n_num*n_q + iqtot;
+
+        /* Check if the system is neutralizable
+         * is (qdelta == p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
+        long gcd = greatest_common_divisor(n_q, p_q);
+        if ((qdelta % gcd) != 0)
+        {
+            gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
+                    " -pq %d.\n", n_q, p_q);
+        }
+        
         while (qdelta != 0)
         {
             if (qdelta < 0)
             {
-                p_num  += abs(qdelta/p_q);
+                p_num  += ceil(fabs(((float)qdelta)/p_q));
             }
             else if (qdelta > 0)
             {
-                n_num  += abs(qdelta/n_q);
+                n_num  += ceil(fabs(((float)qdelta)/n_q));
             }
             qdelta  = p_num*p_q + n_num*n_q + iqtot;
         }
