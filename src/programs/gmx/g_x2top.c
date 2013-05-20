@@ -59,9 +59,10 @@
 #include "gen_ad.h"
 #include "gpp_nextnb.h"
 #include "vec.h"
-#include "g_x2top.h"
 #include "atomprop.h"
 #include "hackblock.h"
+
+#include "nm2type.h"
 
 char atp[7] = "HCNOSX";
 #define NATP (asize(atp)-1)
@@ -406,7 +407,7 @@ static void print_rtp(const char *filenm, const char *title, t_atoms *atoms,
     gmx_fio_fclose(fp);
 }
 
-int cmain(int argc, char *argv[])
+int gmx_x2top(int argc, char *argv[])
 {
     const char        *desc[] = {
         "[TT]g_x2top[tt] generates a primitive topology from a coordinate file.",
@@ -509,8 +510,6 @@ int cmain(int argc, char *argv[])
         { "-kp",    FALSE, etREAL, {&kp},
           "Dihedral angle force constant (kJ/mol/rad^2)" }
     };
-
-    CopyRight(stderr, argv[0]);
 
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
                       asize(desc), desc, asize(bugs), bugs, &oenv);

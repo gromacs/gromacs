@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "hackblock.h"
 
-int cmain (int argc, char *argv[])
+int gmx_protonate(int argc, char *argv[])
 {
     const char     *desc[] = {
         "[TT]g_protonate[tt] reads (a) conformation(s) and adds all missing",
@@ -97,7 +97,6 @@ int cmain (int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, PCA_CAN_TIME,
                       NFILE, fnm, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
 

@@ -2,7 +2,7 @@
 # used to create build rules automatically.
 #
 set(GMX_TOOLS_PROGRAMS
-    g_tune_pme g_pme_error
+    g_pme_error
     )
 
 foreach(TOOL ${GMX_TOOLS_PROGRAMS})

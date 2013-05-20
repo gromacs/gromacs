@@ -65,13 +65,13 @@
 #include "genhydro.h"
 #include "readinp.h"
 #include "atomprop.h"
-#include "xlate.h"
-#include "specbond.h"
 #include "index.h"
-#include "hizzie.h"
 #include "fflibutil.h"
 #include "macros.h"
 
+#include "hizzie.h"
+#include "specbond.h"
+#include "xlate.h"
 
 typedef struct {
     char gmx[6];
@@ -1089,7 +1089,7 @@ typedef struct {
     rvec         *x;
 } t_chain;
 
-int cmain(int argc, char *argv[])
+int gmx_pdb2gmx(int argc, char *argv[])
 {
     const char *desc[] = {
         "This program reads a [TT].pdb[tt] (or [TT].gro[tt]) file, reads",
@@ -1368,7 +1368,6 @@ int cmain(int argc, char *argv[])
     };
 #define NPARGS asize(pa)
 
-    CopyRight(stderr, argv[0]);
     parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
                       0, NULL, &oenv);
 
