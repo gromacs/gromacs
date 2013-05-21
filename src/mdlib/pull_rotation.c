@@ -2473,6 +2473,9 @@ static void get_firstlast_slab_check(
     erg->slab_first = get_first_slab(rotg, erg->max_beta, firstatom);
     erg->slab_last  = get_last_slab(rotg, erg->max_beta, lastatom);
 
+    /* Calculate the slab buffer size, which changes when slab_first changes */
+    erg->slab_buffer = erg->slab_first - erg->slab_first_ref;
+
     /* Check whether we have reference data to compare against */
     if (erg->slab_first < erg->slab_first_ref)
     {
@@ -3314,14 +3317,13 @@ static void allocate_slabs(
 static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex, int ref_lastindex)
 {
     gmx_enfrotgrp_t erg;      /* Pointer to enforced rotation group data */
-    int             first, last, firststart;
+    int             first, last;
     rvec            dummy;
 
 
     erg        = rotg->enfrotgrp;
     first      = get_first_slab(rotg, erg->max_beta, rotg->x_ref[ref_firstindex]);
     last       = get_last_slab( rotg, erg->max_beta, rotg->x_ref[ref_lastindex ]);
-    firststart = first;
 
     while (get_slab_weight(first, rotg, rotg->x_ref, mc, &dummy) > WEIGHT_MIN)
     {
@@ -3333,8 +3335,6 @@ static void get_firstlast_slab_ref(t_rotgrp *rotg, real mc[], int ref_firstindex
         last++;
     }
     erg->slab_last_ref  = last-1;
-
-    erg->slab_buffer = firststart - erg->slab_first_ref;
 }
 
 
