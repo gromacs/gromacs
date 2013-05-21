@@ -39,6 +39,12 @@
  * code that is in double precision.
  */
 
+/* Analytical Ewald is not implemented for the legacy kernels (as it is anyway
+   slower than the tabulated kernel on Fermi). */
+#ifdef EL_EWALD_ANA
+#error Trying to generate Analytical Ewald legacy kernels which is not implemented in the legacy kernels!
+#endif
+
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
@@ -85,7 +91,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
 #endif
-#ifdef EL_EWALD
+#ifdef EL_EWALD_TAB
     float coulomb_tab_scale     = nbparam.coulomb_tab_scale;
 #endif
 #ifdef PRUNE_NBL
@@ -94,7 +100,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 
 #ifdef CALC_ENERGIES
     float lj_shift    = nbparam.sh_invrc6;
-#ifdef EL_EWALD
+#ifdef EL_EWALD_TAB
     float beta        = nbparam.ewald_beta;
     float ewald_shift = nbparam.sh_ewald;
 #else
@@ -119,14 +125,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
     float qi, qj_f,
           r2, inv_r, inv_r2, inv_r6,
           c6, c12,
+          int_bit,
 #ifdef CALC_ENERGIES
           E_lj, E_el, E_lj_p,
 #endif
           F_invr;
-    unsigned int wexcl, int_bit, imask, imask_j;
-#ifdef PRUNE_NBL
-    unsigned int imask_prune;
-#endif
+    unsigned int wexcl, imask, mask_ji;
     float4 xqbuf;
     float3 xi, xj, rv, f_ij, fcj_buf, fshift_buf;
     float3 fci_buf[NCL_PER_SUPERCL];    /* i force buffer */
@@ -159,7 +163,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
     E_lj = 0.0f;
     E_el = 0.0f;
 
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_TAB || defined EL_RF
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
     {
         /* we have the diagonal: add the charge self interaction energy term */
@@ -198,20 +202,16 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
         if (imask)
 #endif
         {
-#ifdef PRUNE_NBL
-            imask_prune = imask;
-#endif
-
             /* nvcc >v4.1 doesn't like this loop, it refuses to unroll it */
 #if CUDA_VERSION >= 4010
             #pragma unroll 4
 #endif
             for (jm = 0; jm < NBNXN_GPU_JGROUP_SIZE; jm++)
             {
-                imask_j = (imask >> (jm * CL_SIZE)) & supercl_interaction_mask;
-                if (imask_j)
+                mask_ji = (imask >> (jm * CL_SIZE)) & supercl_interaction_mask;
+                if (mask_ji)
                 {
-                    nsubi = __popc(imask_j);
+                    nsubi = __popc(mask_ji);
 
                     cj      = pl_cj4[j4].cj[jm];
                     aj      = cj * CL_SIZE + tidxj;
@@ -230,8 +230,8 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                        which is a pity because here unrolling could help.  */
                     for (cii = 0; cii < nsubi; cii++)
                     {
-                        i = __ffs(imask_j) - 1;
-                        imask_j &= ~(1U << i);
+                        i = __ffs(mask_ji) - 1;
+                        mask_ji &= ~(1U << i);
 
                         ci_offset   = i;    /* i force buffer offset */
 
@@ -252,14 +252,14 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                                cluster-pair in imask gets set to 0. */
                         if (!__any(r2 < rlist_sq))
                         {
-                            imask_prune &= ~(1U << (jm * NCL_PER_SUPERCL + i));
+                            imask &= ~(1U << (jm * NCL_PER_SUPERCL + i));
                         }
 #endif
 
-                        int_bit = ((wexcl >> (jm * NCL_PER_SUPERCL + i)) & 1);
+                        int_bit = ((wexcl >> (jm * NCL_PER_SUPERCL + i)) & 1) ? 1.0f : 0.0f;
 
                         /* cutoff & exclusion check */
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_TAB || defined EL_RF
                         if (r2 < rcoulomb_sq *
                             (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
 #else
@@ -280,7 +280,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                             inv_r   = rsqrt(r2);
                             inv_r2  = inv_r * inv_r;
                             inv_r6  = inv_r2 * inv_r2 * inv_r2;
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_TAB || defined EL_RF
                             /* We could mask inv_r2, but with Ewald
                              * masking both inv_r6 and F_invr is faster */
                             inv_r6  *= int_bit;
@@ -289,19 +289,19 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                             F_invr  = inv_r6 * (c12 * inv_r6 - c6) * inv_r2;
 
 #ifdef CALC_ENERGIES
-                                E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
+                            E_lj_p  = int_bit * (c12 * (inv_r6 * inv_r6 - lj_shift * lj_shift) * 0.08333333f - c6 * (inv_r6 - lj_shift) * 0.16666667f);
 #endif
 
 #ifdef VDW_CUTOFF_CHECK
-                                /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
-                                vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
-                                F_invr  *= vdw_in_range;
+                            /* this enables twin-range cut-offs (rvdw < rcoulomb <= rlist) */
+                            vdw_in_range = (r2 < rvdw_sq) ? 1.0f : 0.0f;
+                            F_invr  *= vdw_in_range;
 #ifdef CALC_ENERGIES
-                                E_lj_p  *= vdw_in_range;
+                            E_lj_p  *= vdw_in_range;
 #endif
 #endif
 #ifdef CALC_ENERGIES
-                                E_lj    += E_lj_p;
+                            E_lj    += E_lj_p;
 #endif
 
 
@@ -311,9 +311,9 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #ifdef EL_RF
                             F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
 #endif
-#ifdef EL_EWALD
+#ifdef EL_EWALD_TAB
                             F_invr  += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
-#endif
+#endif /* EL_EWALD_TAB */
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
@@ -322,7 +322,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #ifdef EL_RF
                             E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
-#ifdef EL_EWALD
+#ifdef EL_EWALD_TAB
                             /* 1.0f - erff is faster than erfcf */
                             E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
 #endif
@@ -349,7 +349,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
 #ifdef PRUNE_NBL
             /* Update the imask with the new one which does not contain the
                out of range clusters anymore. */
-            pl_cj4[j4].imei[widx].imask = imask_prune;
+            pl_cj4[j4].imei[widx].imask = imask;
 #endif
         }
     }

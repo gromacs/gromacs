@@ -148,13 +148,13 @@ capability 2.0 are required, e.g. Fermi or Kepler cards.
 The GPU support from \gromacs{} version 4.5 using \openmm{}
 \url{https://simtk.org/home/openmm} is still contained in the code,
 but in the ``user contributions'' section (\verb+src/contrib+). You
-will need to edit \verb+src/contrib/CMakeLists.txt+ to enable it. It
-also requires \cuda{}, and remains the only hardware-based
-acceleration available for implicit solvent simulations in
-\gromacs{} at the moment. However, the long-term plan is to enable 
-this functionality in core Gromacs, and not have the OpenMM
-interface supported by the \gromacs team. Right now there are
-some build issues for OpenMM.
+will need to set
+\verb+-DGMX_OPENMM=on -DGMX_GPU=off -DGMX_MPI=off
+-DGMX_THREAD_MPI=off\+ in order to build it. It also requires \cuda{},
+and remains the only hardware-based acceleration available for
+implicit solvent simulations in \gromacs{} at the moment. However, the
+long-term plan is to enable this functionality in core Gromacs, and
+not have the OpenMM interface supported by the \gromacs team.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have
@@ -255,18 +255,28 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} requires a set of linker flags that \gromacs{} is not
-able to detect for you, so setting up optimal linking is tricky at the
-moment. You will need to consult your compiler documentation and
-use \verb+CMAKE_C_FLAGS+ and \verb+-DCMAKE_EXE_LINKER_FLAGS+
-accordingly.
+Using \mkl{} with \icc{} 11 or higher is very simple. Set up your
+compiler environment correctly, perhaps with a command like
+\verb+source /path/to/compilervars.sh intel64+ (or consult your local
+documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
+\cmake{}. In this case, \gromacs{} will also use \mkl{} for \blas{}
+and \lapack{} (see \hyperref{linear-algebra}{here}).
+
+Otherwise, you can configure \mkl{} by setting
+\verb+-DGMX_FFT_LIBRARY=mkl
+-DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so"
+-DMKL_INCLUDE_DIR="/full/path/to/mkl/include"+,
+where the full list (and order!) of libraries you require are found in
+Intel's \mkl{} documentation for your system.
 
 \subsection{Optional build components}
 
 \begin{itemize}
-\item Hardware-optimized \blas{} and \lapack{} libraries are useful for
-  a few of the \gromacs{} utilities focused on normal modes and matrix manipulation, 
-  but they does not provide any benefits for normal simulations.
+\item Hardware-optimized \blas{} and \lapack{} libraries are useful
+  for a few of the \gromacs{} utilities focused on normal modes and
+  matrix manipulation, but they do not provide any benefits for normal
+  simulations. Configuring these are discussed
+  \hyperlink{linear-algebra}{here}.
 \item The built-in \gromacs{} trajectory viewer \verb+ngmx+ requires
   X11 and Motif/Lesstif libraries and header files. Generally, the
   \gromacs{} team rather recommends you use third-party software for
@@ -422,6 +432,24 @@ some of this with advanced options such as \verb+CMAKE_C_FLAGS+
 and its relatives.
 
 See also: \url{http://cmake.org/Wiki/CMake_Useful_Variables#Environment_Variables}
+
+\subsection{Linear algebra libraries}\hypertarget{linear-algebra}
+As mentioned above, sometimes vendor \blas{} and \lapack{} libraries
+can provide performance enhancements for \gromacs{} when doing
+normal-mode analysis or covariance analysis. For simplicity, the text
+below will refer only to \blas{}, but the same options are available
+for \lapack{}. By default, the \cmake{} optionv
+\verb+GMX_EXTERNAL_BLAS+ is on, which triggers \cmake{} to search for
+\blas{}. If one is found, then it is used. Otherwise, \cmake{} falls
+back on internal versions provided in the \gromacs{} source. These are
+fine for normal use. If you need to specify a non-standard path to
+search, use \verb+-DCMAKE_PREFIX_PATH=/path/to/search+.
+
+If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
+\lapack{} it provides are used automatically.
+
+On Apple platforms where the Accelerate Framework is available, these
+will be automatically used for \blas{} and \lapack{}.
 
 \subsection{Native GPU acceleration}
 If you have the \cuda{} Software Development Kit installed, you can
