@@ -80,12 +80,14 @@ static const char *xmltypes[] = {
 #define NXMLTYPES asize(xmltypes)
 	
 enum { 
-    exmlGENTOP,
-    exmlGT_ATOMTYPES, exmlGT_FORCEFIELD, exmlPOLAR_UNIT, exmlCOMB_RULE, exmlNEXCL,
+    exmlGENTOP, exmlREFERENCE,
+    exmlATOMTYPES, exmlATOMTYPE, 
+    exmlGT_FORCEFIELD, exmlPOLAR_UNIT, exmlCOMB_RULE, exmlNEXCL,
     exmlFUDGEQQ, exmlFUDGELJ,
-    exmlBONDING_RULES, exmlBONDING_RULE,
-    exmlGT_ATOM, exmlELEM, exmlNAME, exmlDESC,
-    exmlGT_TYPE, exmlMILLER_EQUIV, exmlCHARGE, exmlVALENCE,
+    exmlPOLTYPES, exmlPOLTYPE, exmlPTYPE,
+    exmlBONDING_RULES, exmlBONDING_RULE, exmlBTYPE,
+    exmlELEM, exmlNAME, exmlDESC,
+    exmlATYPE, exmlMILLER, exmlVALENCE, exmlBOSQUE,
     exmlNEIGHBORS, exmlAROMATIC,
     exmlGEOMETRY, exmlNUMBONDS, exmlPOLARIZABILITY, exmlSIGPOL, exmlVDWPARAMS,
     exmlFUNCTION,
@@ -104,17 +106,18 @@ enum {
     exmlSYMMETRIC_CHARGES, exmlSYM_CHARGE,
     exmlCENTRAL, exmlATTACHED, exmlNUMATTACH,
     exmlEEMPROPS, exmlEEMPROP, exmlMODEL, exmlJ0, exmlCHI0, exmlZETA, exmlROW,
-    exmlEEMPROP_REF, exmlEPREF,
+    exmlEEMPROP_REF, exmlEPREF, exmlCHARGES,
     exmlNR 
 };
   
 static const char *exml_names[exmlNR] = {
-    "gentop",
-    "atomtypes", "forcefield", "polarizability_unit", "combination_rule", "nexclusions",
+    "gentop", "reference",
+    "atomtypes", "atomtype", "forcefield", "polarizability_unit", "combination_rule", "nexclusions",
     "fudgeQQ", "fudgeLJ",
-    "bonding_rules", "bonding_rule",
-    "atype", "elem", "name", "description",
-    "gt_type", "miller_equiv", "charge", "valence",
+    "poltypes", "poltype", "ptype",
+    "bonding_rules", "bonding_rule", "btype",
+    "elem", "name", "description",
+    "atype", "miller", "valence", "bosque",
     "neighbors", "aromatic",
     "geometry", "numbonds", "polarizability", "sigma_pol", "vdwparams",
     "function",
@@ -133,7 +136,7 @@ static const char *exml_names[exmlNR] = {
     "symmetric_charges", "sym_charge",
     "central", "attached", "numattach",
     "eemprops", "eemprop", "model", "jaa", "chi", "zeta", "row",
-    "eemprop_ref", "epref"
+    "eemprop_ref", "epref", "charge"
 };
 
 static void sp(int n, char buf[], int maxindent)
@@ -186,9 +189,14 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
      *  to interpret them.
      */
     switch (elem) {
-    case exmlGT_ATOMTYPES:
-        if (NN(xbuf[exmlPOLAR_UNIT]))
+    case exmlPOLTYPES:
+        if (NN(xbuf[exmlPOLAR_UNIT]) && NN(xbuf[exmlREFERENCE]))
+        {
             gmx_poldata_set_polar_unit(pd,xbuf[exmlPOLAR_UNIT]);
+            gmx_poldata_set_polar_ref(pd,xbuf[exmlREFERENCE]);
+        }
+        break;
+    case exmlATOMTYPES:
         if (NN(xbuf[exmlGT_FORCEFIELD]))
             gmx_poldata_set_force_field(pd,xbuf[exmlGT_FORCEFIELD]);
         if (NN(xbuf[exmlFUNCTION]))
@@ -230,27 +238,38 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlTAU_UNIT]) && NN(xbuf[exmlAHP_UNIT]))
             gmx_poldata_set_miller_units(pd,xbuf[exmlTAU_UNIT],xbuf[exmlAHP_UNIT]);
         break;
-    case exmlGT_ATOM:
-        if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlMILLER_EQUIV]) && 
-            NN(xbuf[exmlCHARGE]) && 
-            NN(xbuf[exmlVDWPARAMS]) && NN(xbuf[exmlGT_TYPE]))
+    case exmlPOLTYPE:
+        if (NN(xbuf[exmlPTYPE]) && NN(xbuf[exmlMILLER]) && NN(xbuf[exmlBOSQUE]) &&
+            NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlSIGPOL])) 
+            gmx_poldata_add_poltype(pd,
+                                    xbuf[exmlPTYPE],
+                                    xbuf[exmlMILLER],
+                                    xbuf[exmlBOSQUE],
+                                    atof(xbuf[exmlPOLARIZABILITY]),
+                                    atof(xbuf[exmlSIGPOL]));
+        break;
+    case exmlATOMTYPE:
+        if (NN(xbuf[exmlELEM]) && 
+            NN(xbuf[exmlATYPE]) &&
+            NN(xbuf[exmlPTYPE]) && 
+            NN(xbuf[exmlBTYPE]) && 
+            NN(xbuf[exmlVDWPARAMS]))
             gmx_poldata_add_atype(pd,xbuf[exmlELEM],
                                   xbuf[exmlDESC] ? xbuf[exmlDESC] : (char *) "",
-                                  xbuf[exmlGT_TYPE],
-                                  xbuf[exmlMILLER_EQUIV],
-                                  xbuf[exmlCHARGE],
-                                  NN(xbuf[exmlPOLARIZABILITY]) ? atof(xbuf[exmlPOLARIZABILITY]) : 0,
-                                  NN(xbuf[exmlSIGPOL]) ? atof(xbuf[exmlSIGPOL]) : 0,
+                                  xbuf[exmlATYPE],
+                                  xbuf[exmlPTYPE],
+                                  xbuf[exmlBTYPE],
                                   xbuf[exmlVDWPARAMS]);
         break;
     case exmlBONDING_RULE:
         if (NN(xbuf[exmlGEOMETRY]) && 
-            NN(xbuf[exmlNUMBONDS]) && NN(xbuf[exmlNEIGHBORS]) &&
-            NN(xbuf[exmlGT_TYPE]) && 
+            NN(xbuf[exmlNUMBONDS]) && 
+            NN(xbuf[exmlNEIGHBORS]) &&
+            NN(xbuf[exmlATYPE]) && 
             NN(xbuf[exmlAROMATIC]) && 
             NN(xbuf[exmlVALENCE]) &&
             NN(xbuf[exmlNAME]))
-            gmx_poldata_add_bonding_rule(pd,xbuf[exmlNAME],xbuf[exmlGT_TYPE],
+            gmx_poldata_add_bonding_rule(pd,xbuf[exmlNAME],xbuf[exmlATYPE],
                                          xbuf[exmlGEOMETRY],
                                          atoi(xbuf[exmlNUMBONDS]),
                                          atof(xbuf[exmlVALENCE]),
@@ -261,8 +280,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
         if (NN(xbuf[exmlMILNAME]) && NN(xbuf[exmlATOMNUMBER]) && 
             NN(xbuf[exmlTAU_AHC]) && NN(xbuf[exmlALPHA_AHP])) 
             gmx_poldata_add_miller(pd,xbuf[exmlMILNAME],atoi(xbuf[exmlATOMNUMBER]),
-                                   atof(xbuf[exmlTAU_AHC]),atof(xbuf[exmlALPHA_AHP]),
-                                   xbuf[exmlALEXANDRIA_EQUIV]);
+                                   atof(xbuf[exmlTAU_AHC]),atof(xbuf[exmlALPHA_AHP]));
         break;
     case exmlBSATOM:
         if (NN(xbuf[exmlELEM]) && NN(xbuf[exmlPOLARIZABILITY]))
@@ -322,11 +340,11 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlEEMPROP:
         if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlNAME]) && 
             NN(xbuf[exmlCHI0])  && NN(xbuf[exmlJ0]) && 
-            NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGE]) && 
+            NN(xbuf[exmlZETA])  && NN(xbuf[exmlCHARGES]) && 
             NN(xbuf[exmlROW])) 
             gmx_poldata_set_eemprops(pd,name2eemtype(xbuf[exmlMODEL]),xbuf[exmlNAME],
                                      atof(xbuf[exmlJ0]),atof(xbuf[exmlCHI0]),
-                                     xbuf[exmlZETA],xbuf[exmlCHARGE],xbuf[exmlROW]);
+                                     xbuf[exmlZETA],xbuf[exmlCHARGES],xbuf[exmlROW]);
         break;
     case exmlEEMPROP_REF:
         if (NN(xbuf[exmlMODEL]) && NN(xbuf[exmlEPREF]))
@@ -426,18 +444,14 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     xmlNodePtr child,grandchild,comp;
     int    i,atomnumber,numbonds,nexcl,
         numattach,element,model,bAromatic,ntrain;
-    char *elem,*miller_equiv,*geometry,*name,*gt_type,*alexandria_equiv,*vdwparams,*blu,*charge,
+    char *elem,*miller,*geometry,*name,*atype,*ptype,*alexandria_equiv,*vdwparams,*blu,*btype,
         *atom1,*atom2,*atom3,*atom4,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc,*params,*func;
-    char *neighbors,*zeta,*qstr,*rowstr;
+    char *neighbors,*zeta,*qstr,*rowstr,*bosque;
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
         bondorder,sigma,fudgeQQ,fudgeLJ,valence;
   
-    child = add_xml_child(parent,exml_names[exmlGT_ATOMTYPES]);
-    tmp = gmx_poldata_get_polar_unit(pd);
-    if (NULL != tmp) {
-        add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
-    }
+    child = add_xml_child(parent,exml_names[exmlATOMTYPES]);
     tmp = gmx_poldata_get_force_field(pd);
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlGT_FORCEFIELD],tmp);
@@ -456,38 +470,59 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     add_xml_double(child,exml_names[exmlFUDGEQQ],fudgeQQ);
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
     add_xml_double(child,exml_names[exmlFUDGELJ],fudgeLJ);
-    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                      &charge,&polarizability,&sig_pol,&vdwparams)) {
-        grandchild = add_xml_child(child,exml_names[exmlGT_ATOM]);
+    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&atype,&ptype,&btype,
+                                      &vdwparams)) {
+        grandchild = add_xml_child(child,exml_names[exmlATOMTYPE]);
         add_xml_char(grandchild,exml_names[exmlELEM],elem);
         add_xml_char(grandchild,exml_names[exmlDESC],desc);
-        add_xml_char(grandchild,exml_names[exmlGT_TYPE],gt_type);
-        add_xml_char(grandchild,exml_names[exmlMILLER_EQUIV],miller_equiv);
-        add_xml_char(grandchild,exml_names[exmlCHARGE],charge);
-        add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
-        add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
+        add_xml_char(grandchild,exml_names[exmlATYPE],atype);
+        add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
+        add_xml_char(grandchild,exml_names[exmlBTYPE],btype);
+        add_xml_char(grandchild,exml_names[exmlMILLER],miller);
         add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);
         sfree(elem);
         sfree(desc);
-        sfree(gt_type);
-        sfree(miller_equiv);
-        sfree(charge);
+        sfree(atype);
+        sfree(ptype);
+        sfree(btype);
+        sfree(miller);
         sfree(vdwparams);
     }
 
+    child = add_xml_child(parent,exml_names[exmlPOLTYPES]);
+    tmp = gmx_poldata_get_polar_unit(pd);
+    if (NULL != tmp) {
+        add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
+    }
+    tmp = gmx_poldata_get_polar_ref(pd);
+    if (NULL != tmp) {
+        add_xml_char(child,exml_names[exmlREFERENCE],tmp);
+    }
+    while (1 == gmx_poldata_get_poltype(pd,&ptype,&miller,&bosque,&polarizability,&sig_pol)) {
+        grandchild = add_xml_child(child,exml_names[exmlPOLTYPE]);
+        add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
+        add_xml_char(grandchild,exml_names[exmlMILLER],miller);
+        add_xml_char(grandchild,exml_names[exmlBOSQUE],bosque);
+        add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
+        add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
+        sfree(ptype);
+        sfree(miller);
+        sfree(bosque);
+    }
+
     child = add_xml_child(parent,exml_names[exmlBONDING_RULES]);
-    while (1 == gmx_poldata_get_bonding_rule(pd,&name,&gt_type,&geometry,
+    while (1 == gmx_poldata_get_bonding_rule(pd,&name,&atype,&geometry,
                                              &numbonds,&valence,&bAromatic,&neighbors)) {
         grandchild = add_xml_child(child,exml_names[exmlBONDING_RULE]);
         add_xml_char(grandchild,exml_names[exmlNAME],name);
-        add_xml_char(grandchild,exml_names[exmlGT_TYPE],gt_type);
+        add_xml_char(grandchild,exml_names[exmlATYPE],atype);
         add_xml_char(grandchild,exml_names[exmlGEOMETRY],geometry);
         add_xml_int(grandchild,exml_names[exmlNUMBONDS],numbonds);
         add_xml_double(grandchild,exml_names[exmlVALENCE],valence);
         add_xml_int(grandchild,exml_names[exmlAROMATIC],bAromatic);
         add_xml_char(grandchild,exml_names[exmlNEIGHBORS],neighbors);
         sfree(name);
-        sfree(gt_type);
+        sfree(atype);
         sfree(geometry);
         sfree(neighbors);
     }
@@ -564,7 +599,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     if ((tmp = gmx_poldata_get_bosque_unit(pd)) != NULL)
         add_xml_char(child,exml_names[exmlPOLAR_UNIT],tmp);
   
-    while ((name = gmx_poldata_get_bosque(pd,NULL,NULL,&polarizability)) != NULL) {
+    while (1 == gmx_poldata_get_bosque(pd,&name,&polarizability)) {
         grandchild = add_xml_child(child,exml_names[exmlBSATOM]);
         add_xml_char(grandchild,exml_names[exmlELEM],name);
         add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
@@ -580,16 +615,13 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
         sfree(ahp_unit);
     }
   
-    while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp,&alexandria_equiv)) != NULL) {
+    while (1 == gmx_poldata_get_miller(pd,&name,&atomnumber,&tau_ahc,&alpha_ahp)) {
         grandchild = add_xml_child(child,exml_names[exmlMILATOM]);
         add_xml_char(grandchild,exml_names[exmlMILNAME],name);
         add_xml_int(grandchild,exml_names[exmlATOMNUMBER],atomnumber);
         add_xml_double(grandchild,exml_names[exmlTAU_AHC],tau_ahc);
         add_xml_double(grandchild,exml_names[exmlALPHA_AHP],alpha_ahp);
-        if (alexandria_equiv) {
-            add_xml_char(grandchild,exml_names[exmlALEXANDRIA_EQUIV],alexandria_equiv);
-            sfree(alexandria_equiv);
-        }
+        sfree(name);
     }
 
     child = add_xml_child(parent,exml_names[exmlSYMMETRIC_CHARGES]);
@@ -611,7 +643,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
         add_xml_double(grandchild,exml_names[exmlJ0],J0);
         add_xml_double(grandchild,exml_names[exmlCHI0],chi0);
         add_xml_char(grandchild,exml_names[exmlZETA],zeta);
-        add_xml_char(grandchild,exml_names[exmlCHARGE],qstr);
+        add_xml_char(grandchild,exml_names[exmlCHARGES],qstr);
         add_xml_char(grandchild,exml_names[exmlROW],rowstr);
         sfree(zeta);
         sfree(qstr);

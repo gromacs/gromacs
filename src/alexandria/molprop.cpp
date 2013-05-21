@@ -511,7 +511,6 @@ void MolProp::Dump(FILE *fp)
 
 bool MolProp::GenerateComposition(gmx_poldata_t pd)
 {
-    char *miller;
     CalculationIterator ci;
     CalcAtomIterator cai;
     MolecularComposition mci_bosque("bosque"),mci_spoel("spoel"),mci_miller("miller");
@@ -528,11 +527,16 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
             mci_bosque.AddAtom(anb);
             mci_spoel.AddAtom(ans);
             
-            miller = gmx_poldata_get_miller_equiv(pd,cai->GetObtype().c_str());
-            if (NULL != miller)
+            const char *ptype = gmx_poldata_atype_to_ptype(pd,cai->GetObtype().c_str());
+            if (NULL != ptype)
             {
-                AtomNum anm(miller,1);
-                mci_miller.AddAtom(anm);
+                const char *miller = gmx_poldata_ptype_to_miller(pd,ptype);
+                                                 
+                if (NULL != miller)
+                {
+                    AtomNum anm(miller,1);
+                    mci_miller.AddAtom(anm);
+                }
             }
         }
     }

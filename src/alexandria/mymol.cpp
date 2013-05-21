@@ -532,7 +532,7 @@ static void mk_ff_mtop(gmx_mtop_t *mtop,gmx_poldata_t pd)
     /* Derive table of Van der Waals force field parameters */
     snew(c,ntype);
     i = 0;
-    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,NULL,NULL,&params)) {
+    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,&params)) {
         ptr = split(' ',params);
         snew(c[i],MAXFORCEPARAM);
         j=0;
@@ -1009,16 +1009,10 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
         strcpy(qgen_msg,"");
         if (iModel == eqgNone)
         {
-            printf("Using charges from gentop.dat\n");
+            printf("Using zero charges!\n");
             for(i=0; (i<topology->atoms.nr); i++)
             {
-                char *qq = gmx_poldata_get_charge(pd,*topology->atoms.atomtype[i]);
-                double q;
-                if (NULL != qq)
-                    sscanf(qq,"%lf",&q);
-                else
-                    q = 0;
-                topology->atoms.atom[i].q  = topology->atoms.atom[i].qB = q;
+                topology->atoms.atom[i].q  = topology->atoms.atom[i].qB = 0;
             }
             eQGEN = eQGEN_OK;
         }

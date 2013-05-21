@@ -86,11 +86,16 @@ static int lo_gen_composition(alexandria::MolPropIterator mpi,
             mci_bosque.AddAtom(anb);
             mci_spoel.AddAtom(ans);
             
-            miller = gmx_poldata_get_miller_equiv(pd,cai->GetObtype().c_str());
-            if (miller.size() > 0)
+            const char *ptype = gmx_poldata_atype_to_ptype(pd,cai->GetObtype().c_str());
+            if (NULL != ptype)
             {
-                alexandria::AtomNum anm(miller,1);
-                mci_miller.AddAtom(anm);
+                const char *miller = gmx_poldata_ptype_to_miller(pd,ptype);
+                
+                if (NULL != miller)
+                {
+                    alexandria::AtomNum anm(miller,1);
+                    mci_miller.AddAtom(anm);
+                }
             }
         }
     }
@@ -560,6 +565,13 @@ static bool comp_mp_selection(alexandria::MolProp ma,
         return true;
     else
         return false;
+}
+
+alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
+                                          MolPropSortAlgorithm mpsa,
+                                          const char *name)
+{
+    return mp.end();
 }
 
 void MolPropSort(std::vector<alexandria::MolProp> &mp,

@@ -80,8 +80,8 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     
     ang3    = unit2string(eg2cAngstrom3);
     program = ShortProgram();
-    if (gmx_poldata_get_bosque(pd,null,null,&bos0) == NULL)
-        gmx_fatal(FARGS,"Can not find Bosque polarizability for 0");
+    if (0 == gmx_poldata_get_bosque_pol(pd,null,&bos0))
+        gmx_fatal(FARGS,"Can not find Bosque polarizability for %s",null);
   
     for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
@@ -119,8 +119,8 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
                     }
                     else if (strcasecmp(comp,"miller") == 0) 
                     {
-                        if (gmx_poldata_get_miller(pd,(char *)atomname,&atomnumber,
-                                                   &tau_ahc,&alpha_ahp,NULL) != NULL) 
+                        if (1 == gmx_poldata_get_miller_pol(pd,(char *)atomname,&atomnumber,
+                                                            &tau_ahc,&alpha_ahp)) 
                         {
                             ahc   += tau_ahc*natom; 
                             ahp   += alpha_ahp*natom;
@@ -133,7 +133,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
                     }
                     else if (strcasecmp(comp,"bosque") == 0) 
                     {
-                        if (gmx_poldata_get_bosque(pd,NULL,(char *)atomname,&polar) != NULL) 
+                        if (1 == gmx_poldata_get_bosque_pol(pd,(char *)atomname,&polar)) 
                         {
                             bos += polar*natom;
                             if (bosque_support == -1)

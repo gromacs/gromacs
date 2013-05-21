@@ -587,7 +587,7 @@ static void atomtype_tab_end(FILE *fp)
 }
 
 typedef struct {
-    char *gt_type,*elem,*miller_equiv,*spref;
+    char *ptype,*miller_equiv,*bosque;
     gmx_stats_t lsq,nexp,nqm;
 } t_sm_lsq;
     
@@ -604,10 +604,9 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
-    char   *gt_type[2] = { NULL, NULL };
-    char   *elem,*miller_equiv,group[32],*spref;
+    char   *ptype[2] = { NULL, NULL };
+    char   *elem,*miller_equiv,*bosque,*ref,group[32];
     char   *desc;
-    char   *charge;
     int    nsmlsq=0,estats,N,nset;
     t_sm_lsq *smlsq=NULL;
     int    cur = 0;
@@ -619,26 +618,26 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
      */
     for(pp = 0; (pp<npd); pp++) 
     {
-        while(1 == gmx_poldata_get_atype(pd[pp],&elem,&desc,&(gt_type[cur]),
-                                         &miller_equiv,&charge,
-                                         &alexandria_pol,&sig_pol,&spref))
+        while(1 == gmx_poldata_get_poltype(pd[pp],
+                                           &(ptype[cur]),
+                                           NULL,
+                                           NULL,
+                                           &alexandria_pol,
+                                           &sig_pol))
         {
-            if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)) &&
+            if (((NULL == ptype[prev]) || (strcmp(ptype[cur],ptype[prev]) != 0)) &&
                 (alexandria_pol > 0))
             {
                 for(j=0; (j<nsmlsq); j++)
-                    if (strcasecmp(gt_type[cur],smlsq[j].gt_type) == 0)
+                    if (strcasecmp(ptype[cur],smlsq[j].ptype) == 0)
                         break;
                 if (j == nsmlsq) 
                 {
                     srenew(smlsq,++nsmlsq);
-                    smlsq[j].gt_type = strdup(gt_type[cur]);
+                    smlsq[j].ptype = strdup(ptype[cur]);
                     smlsq[j].lsq = gmx_stats_init();
                     smlsq[j].nexp = gmx_stats_init();
                     smlsq[j].nqm = gmx_stats_init();
-                    smlsq[j].elem = strdup(elem);
-                    smlsq[j].miller_equiv = strdup(miller_equiv);
-                    smlsq[j].spref = strdup(spref);
                 }
                 if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
@@ -651,11 +650,20 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     
                     if (mci != mpi->EndMolecularComposition())
                     {
-                        int ngt = mci->CountAtoms(gt_type[cur]);
-                        if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val) > 0)
-                            nfitexp += ngt;
-                        else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
-                            nfitqm += ngt;
+                        for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
+                        {
+                            const char *pt = gmx_poldata_atype_to_ptype(pd[pp],
+                                                                        ani->GetAtom().c_str());
+                            if (NULL != pt)
+                            {
+                                int ngt = ani->GetNumber();
+                                
+                                if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val) > 0)
+                                    nfitexp += ngt;
+                                else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val) > 0)
+                                    nfitqm += ngt;
+                            }
+                        }
                     }
                 }
                 if ((estats = gmx_stats_get_npoints(smlsq[j].nexp,&N)) != estatsOK)
@@ -677,7 +685,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         xvg = xvgropen(histo,"Distribution of polarizabilities","Polarizability","a.u.",oenv);
         for(j = 0; (j<nsmlsq); j++) {
             if ((gmx_stats_get_npoints(smlsq[j].lsq,&N) == estatsOK) && (N > 0))
-                fprintf(xvg,"@ s%d legend \"%s\"\n",nset++,smlsq[j].gt_type);
+                fprintf(xvg,"@ s%d legend \"%s\"\n",nset++,smlsq[j].ptype);
         }
     }
     else
@@ -687,47 +695,48 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
     atomtype_tab_header(fp,1);
     nset = 0;
     ntab = 0;
+    ref = gmx_poldata_get_polar_ref(pd[pp]);
     for(j = 0; (j<nsmlsq); j++) {
         /* Determine Miller and Bosque polarizabilities for this Spoel element */
         ahc = ahp = 0;
-        if (NULL != gmx_poldata_get_miller(pd[0],smlsq[j].miller_equiv,
-                                           &atomnumber,&ahc,&ahp,NULL)) 
+        if (1 == gmx_poldata_get_miller_pol(pd[0],smlsq[j].miller_equiv,
+                                            &atomnumber,&ahc,&ahp)) 
         {
             ahc = (4.0/atomnumber)*sqr(ahc);
         }
-        if (NULL == gmx_poldata_get_bosque(pd[0],smlsq[j].gt_type,smlsq[j].elem,&bos_pol))
+        if (0 == gmx_poldata_get_bosque_pol(pd[0],smlsq[j].bosque,&bos_pol))
             bos_pol = 0;
                 
         /* Compute how many molecules contributed to the optimization 
          * of this polarizability.
          */
         /* Construct group name from element composition */
-        strncpy(group,smlsq[j].elem,sizeof(group));
+        strncpy(group,smlsq[j].bosque,sizeof(group));
         if ((estats = gmx_stats_get_npoints(smlsq[j].lsq,&N)) != estatsOK)
             gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].lsq,&alexandria_aver)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].gt_type,N);
+                      gmx_stats_message(estats),smlsq[j].ptype,N);
         if (estatsOK != (estats = gmx_stats_get_sigma(smlsq[j].lsq,&alexandria_sigma)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].gt_type,N);
+                      gmx_stats_message(estats),smlsq[j].ptype,N);
         /* Store average values */
         if (NULL != pd_aver) 
         {
-            gmx_poldata_set_atype_polarizability(pd_aver,smlsq[j].gt_type,
-                                                 alexandria_aver,alexandria_sigma);
+            gmx_poldata_set_poltype_polarizability(pd_aver,smlsq[j].ptype,
+                                                   alexandria_aver,alexandria_sigma);
         }
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].gt_type,N);
+                      gmx_stats_message(estats),smlsq[j].ptype,N);
         nfitexp = gmx_nint(nnn);
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nqm,&nnn)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].gt_type,N);
+                      gmx_stats_message(estats),smlsq[j].ptype,N);
         nfitqm = gmx_nint(nnn);
 
         fprintf(fp,"%s & %s & %s & %s & %s & %s & %s (%s)",
-                smlsq[j].gt_type,
+                smlsq[j].ptype,
                 (nfitexp > 0)     ? gmx_itoa(nfitexp)     : "",
                 (nfitqm > 0)      ? gmx_itoa(nfitqm)      : "",
                 (ahc > 0)         ? gmx_ftoa(ahc)         : "",
@@ -735,10 +744,10 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                 (bos_pol > 0)     ? gmx_ftoa(bos_pol)     : "",
                 (alexandria_aver > 0)  ? gmx_ftoa(alexandria_aver)  : "",
                 (alexandria_sigma > 0) ? gmx_ftoa(alexandria_sigma) : "-");
-        if (strcasecmp(smlsq[j].spref,"Maaren2009a") == 0)
+        if (strcasecmp(ref,"Maaren2013a") == 0)
             fprintf(fp,"& (*)\\\\\n");
         else
-            fprintf(fp,"& \\cite{%s}\\\\\n",smlsq[j].spref);
+            fprintf(fp,"& \\cite{%s}\\\\\n",ref);
         ntab++;
     
         if (((ntab == nfirst) || (((ntab - nfirst) % nsecond) == 0)) &&
@@ -777,7 +786,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
     int    i,k,m,cur=0;
     double alexandria_pol,sig_pol;
     char   *elem,*gt_type[2] = { NULL, NULL };
-    char   *charge,*miller_equiv,*spref,*desc;
+    char   *miller_equiv,*spref,*desc,*ptype,*btype;
 #define prev (1-cur)
 #define NEQG 5
     int    eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
@@ -804,9 +813,13 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
         for(m=0; (m<npcol[i]); m++)
             fprintf(fp," & %s",clab[m]);
     fprintf(fp,"\\\\\n\\hline\n");
-    while(1 == gmx_poldata_get_atype(pd,&elem,&desc,&(gt_type[cur]),
-                                     &miller_equiv,&charge,
-                                     &alexandria_pol,&sig_pol,&spref))
+    while(1 == gmx_poldata_get_atype(pd,
+                                     &elem,
+                                     &desc,
+                                     &(gt_type[cur]),
+                                     &ptype,
+                                     &btype,
+                                     &spref))
     {
         if (((NULL == gt_type[prev]) || (strcmp(gt_type[cur],gt_type[prev]) != 0)))
         {

@@ -1,4 +1,4 @@
-  <bsatoms polarizability_unit="A3">
+  <bsatoms polarizability_unit="A3" reference="Bosque2002a">
     <bsatom elem="H" polarizability="0.17"/>
     <bsatom elem="C" polarizability="1.51"/>
     <bsatom elem="N" polarizability="1.05"/>
@@ -11,7 +11,7 @@
     <bsatom elem="I" polarizability="5.45"/>
     <bsatom elem="0" polarizability="0.32"/>
   </bsatoms>
-  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3">
+  <milatoms tau_ahc_unit="A3/2" alpha_ahp_unit="A3" reference="Miller1990a">
     <milatom milname="H" atomnumber="1" tau_ahc="0.313" alpha_ahp="0.387"/>
     <milatom milname="F" atomnumber="9" tau_ahc="1.089" alpha_ahp="0.296"/>
     <milatom milname="Cl" atomnumber="17" tau_ahc="3.165" alpha_ahp="2.315"/>

@@ -28,7 +28,7 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
 {
   char hbuf[1024],colinfo[1024];
   double polarizability,sig_pol;
-  char *smname,*elem,*desc,*gt_type,*gt_old,*charge;
+  char *smname,*elem,*desc,*gt_type,*ptype,*btype,*gt_old,*charge;
   char *neighbors,*vdwparams,*geometry;
   int  numbonds,atomnumber,nline,npage,nr;
   real mass;
@@ -40,7 +40,11 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
               
   fprintf(fp,"[ defaults ]\n");
   fprintf(fp,"; nbfunc        comb-rule       gen-pairs       fudgeLJ fudgeQQ\n");
-  fprintf(fp,"1               1               yes             1       1\n\n");
+  fprintf(fp,"%s              %s              yes             %lf     %lf\n\n",
+          gmx_poldata_get_vdw_function(pd),
+          gmx_poldata_get_combination_rule(pd),
+          gmx_poldata_get_fudgeLJ(pd),
+          gmx_poldata_get_fudgeQQ(pd));
 
   fprintf(fp,"[ atomtypes ]\n");
   fprintf(fp,"; name      at.num  mass     charge ptype  repulsion  dispersion\n");
@@ -49,32 +53,38 @@ static void do_atypes(FILE *fp,FILE *tp,gmx_poldata_t pd,gmx_atomprop_t aps)
   nline = 2;
   npage = 0;
   nr = 1;
-  while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,
-                                    NULL,&charge,&polarizability,&sig_pol,
+  while (1 == gmx_poldata_get_atype(pd,
+                                    &elem,
+                                    &desc,
+                                    &gt_type,
+                                    &ptype,
+                                    &btype,
                                     &vdwparams))
-    {
+  {
       if (gmx_atomprop_query(aps,epropMass,"",elem,&mass)) 
-	{
-	  atomnumber = gmx_atomprop_atomnumber(aps,elem);
-	  if ((NULL == gt_old) || (strcmp(gt_old,gt_type) != 0)) {
-	    fprintf(fp,"%5s   %3d  %12.6f  %10.4f  A  %-s\n",
-		    gt_type,atomnumber,mass,0.0,vdwparams);
-	    fprintf(fp,"%5ss  %3d  %12.6f  %10.4f  S  0  0\n",
-		    gt_type,0,0.0,0.0);
-            if (0 == (nline % maxline)) {
-              end_table(tp);
-              fprintf(tp,"\\addtocounter{table}{-1}\n");
-              npage++;
-              nline = 1;
-              begin_table(tp,"Atom types, continued",gmx_itoa(npage),colinfo,hbuf);
-            }
-            fprintf(tp,"%d & %s & %s & %s & %.2f(%.2f) & %s\\\\\n",
-                    nr++,gt_type,desc,elem,polarizability,sig_pol,vdwparams);
-            nline++;
-	  }
-	  gt_old = gt_type;
-	}
-    }
+      {
+          atomnumber = gmx_atomprop_atomnumber(aps,elem);
+          if ((NULL == gt_old) || (strcmp(gt_old,gt_type) != 0))
+          {
+              fprintf(fp,"%5s   %3d  %12.6f  %10.4f  A  %-s\n",
+                      gt_type,atomnumber,mass,0.0,vdwparams);
+              fprintf(fp,"%5ss  %3d  %12.6f  %10.4f  S  0  0\n",
+                      gt_type,0,0.0,0.0);
+              if (0 == (nline % maxline)) 
+              {
+                  end_table(tp);
+                  fprintf(tp,"\\addtocounter{table}{-1}\n");
+                  npage++;
+                  nline = 1;
+                  begin_table(tp,"Atom types, continued",gmx_itoa(npage),colinfo,hbuf);
+              }
+              fprintf(tp,"%d & %s & %s & %s & %s & %s & %s\\\\\n",
+                      nr++,gt_type,desc,elem,ptype,btype,vdwparams);
+              nline++;
+          }
+      }
+      gt_old = gt_type;
+  }
   end_table(tp);
 }
 

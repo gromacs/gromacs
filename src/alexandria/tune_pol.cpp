@@ -60,6 +60,61 @@
 #include "molprop_tables.hpp"
 #include "molprop_util.hpp"
 
+int check_matrix(double **a,double *x,int nrow,int ncol,char **atype)
+{
+    int nrownew = nrow;
+    for(int i=0; (i<ncol); i++)
+    {
+        for(int j=i+1; (j<ncol); j++)
+        {
+            bool bSame = true;
+            for(int k=0; bSame && (k<nrow); k++)
+            {
+                bSame = (a[k][i] == a[k][j]);
+            }
+            if (bSame)
+                gmx_fatal(FARGS,"Columns %d (%s) and %d (%s) are linearly dependent",
+                          i,atype[i],j,atype[j]);
+        }
+    }
+    //! Check diagonal
+    if (nrow == ncol)
+    {
+        for(int i=0; (i<ncol); i++)
+        {
+            if (a[i][i] == 0)
+                gmx_fatal(FARGS,"a[%d][%d] = 0. Atom type = %s",i,i,atype[i]);
+        }
+    }
+    return nrow;
+    for(int i=0; (i<nrownew); i++)
+    {
+        for(int j=i+1; (j<nrownew); j++)
+        {
+            bool bSame = true;
+            for(int k=0; bSame && (k<ncol); k++)
+            {
+                bSame = (a[i][k] == a[j][k]);
+            }
+            if (bSame)
+            {
+                fprintf(stderr,"Rows %d and %d are linearly dependent. Removing %d.\n",
+                        i,j,j);
+                if (j<nrownew-1)
+                {
+                    for(int k=0; (k<ncol); k++)
+                    {
+                        a[j][k] = a[nrownew-1][k];
+                    }
+                    x[j] = x[nrownew-1];
+                }
+                nrownew--;
+            }
+        }
+    }
+    return nrownew;
+}
+
 static int decompose_frag(FILE *fp,int bTrain,
                           gmx_poldata_t pd,
                           std::vector<alexandria::MolProp> mp,
@@ -71,7 +126,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     double *x,*atx;
     double **a,**at,**ata,*fpp;
     double pol,poltot,a0,da0,ax,sig_pol,chi2;
-    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type;
+    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type,*ptype,*btype,*vdwparm;
     const char *atomname;
     char   *desc,*charge;
     int    j,niter=0,nusemol,nn,natom,natom_tot;
@@ -87,8 +142,8 @@ static int decompose_frag(FILE *fp,int bTrain,
     snew(atype,ntmax);
     ntest[prev] = ntest[cur] = ntmax;
     j = 0;
-    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                      &charge,&pol,&sig_pol,&spref)) 
+    //! Copy all atom types into array. Set usage array.
+    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&ptype,&btype,&vdwparm))
     {
         atype[j] = strdup(gt_type);
         bUseAtype[j] = true;
@@ -120,12 +175,21 @@ static int decompose_frag(FILE *fp,int bTrain,
                 for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); 
                     (bUseMol[j] && (ani<mci->EndAtomNum())); ani++)
                 {
+                    double apol,spol;
                     atomname = ani->GetAtom().c_str();
-                    bUseMol[j] = gmx_poldata_have_pol_support(pd,atomname);
+                    if (gmx_poldata_type_polarizability(pd,(char *)atomname,
+                                                        &apol,&spol) == 0)
+                    {
+                        bUseMol[j] = false;
+                    }
                     for(int k=0; bUseMol[j] && (k<ntmax); k++)
                     {
                         if (strcasecmp(atomname,atype[k]) == 0)
                             bUseMol[j] = bUseAtype[k];
+                    }
+                    if (bUseMol[j])
+                    {
+                        pol -= apol;
                     }
                 }
             }
@@ -139,7 +203,7 @@ static int decompose_frag(FILE *fp,int bTrain,
             }
             
             if (bUseMol[j]) 
-            {        
+            { 
                 x[nusemol] = pol;
                 poltot += pol;
                 nusemol++;
@@ -147,8 +211,8 @@ static int decompose_frag(FILE *fp,int bTrain,
         }
         ntest[cur] = 0;
         int ntp = 0;
-        while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&miller_equiv,
-                                          &charge,&pol,&sig_pol,&spref)) 
+        while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&gt_type,&ptype,&btype,
+                                          &vdwparm)) 
         {
             if ((pol == 0) || bForceFit) {
                 int j = 0;
@@ -187,7 +251,24 @@ static int decompose_frag(FILE *fp,int bTrain,
         gmx_fatal(FARGS,"Nothing to optimize. Check your input");
 
     //! Now condense array of atom types
-    for(int i = 0; (i<ntest[cur]); i++)
+    for(int i = 0; (i<ntmax); i++)
+    {
+        double apol,spol;
+        if (bUseAtype[i] &&
+            (gmx_poldata_type_polarizability(pd,atype[i],&apol,&spol) == 1))
+        {
+            bUseAtype[i] = (apol == 0);
+        }
+    }
+    
+    int i,nt=0;
+    for(i = 0; (i<ntmax); i++)
+    {
+        if (bUseAtype[i])
+            nt++;
+    }
+    ntest[cur] = nt;
+    for(i = 0; (i<ntmax); i++)
     {
         for(int j=i+1; !bUseAtype[i] && (j<ntmax); j++)
         {
@@ -201,7 +282,7 @@ static int decompose_frag(FILE *fp,int bTrain,
             }
         }
     }
-
+    
     a      = alloc_matrix(nusemol,ntest[cur]);
     at     = alloc_matrix(ntest[cur],nusemol);
     ata    = alloc_matrix(ntest[cur],ntest[cur]);
@@ -210,10 +291,10 @@ static int decompose_frag(FILE *fp,int bTrain,
            ntest[cur]);
     printf("There are %d (experimental) reference polarizabilities.\n",nusemol);
     csv = ffopen("out.csv","w");
-    fprintf(csv,"\"molecule\",");
+    fprintf(csv,"\"molecule\",\"\",");
     for(int i=0; (i<ntest[cur]); i++)
     {
-        fprintf(csv,"\"%s\",",atype[i]);
+        fprintf(csv,"\"%d %s\",",i,atype[i]);
     }
     fprintf(csv,"\"polarizability\"\n");
     nn = 0;
@@ -224,7 +305,8 @@ static int decompose_frag(FILE *fp,int bTrain,
         {
             alexandria::MolecularCompositionIterator mci = 
                 mpi->SearchMolecularComposition((char *)"spoel");
-            fprintf(csv,"\"%s\",",mpi->GetMolname().c_str());
+            fprintf(csv,"\"%d %s\",\"%s\",",
+                    nn,mpi->GetMolname().c_str(),mpi->GetFormula().c_str());
             for(int i=0; (i<ntest[cur]); i++) {
                 a[nn][i] = at[i][nn] = 
                     mci->CountAtoms(atype[i]);
@@ -237,12 +319,18 @@ static int decompose_frag(FILE *fp,int bTrain,
     fclose(csv);
     if (nusemol != nn) 
         gmx_fatal(FARGS,"Consistency error: nusemol = %d, nn = %d",nusemol,nn);
+        
+    //! Check for linear dependencies
+    nusemol = check_matrix(a,x,nusemol,ntest[cur],atype);
+    
     if (fp)
         for(int i=0; (i<ntest[cur]); i++)
             fprintf(fp,"Optimizing polarizability for %s with %d copies\n",
                     atype[i],test[i]);
 
     matrix_multiply(fp,nusemol,ntest[cur],a,at,ata);
+    (void) check_matrix(ata,x,ntest[cur],ntest[cur],atype);
+    
     if ((row = matrix_invert(fp,ntest[cur],ata)) != 0) {
         gmx_fatal(FARGS,"Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
                   row);
@@ -285,12 +373,14 @@ static int decompose_frag(FILE *fp,int bTrain,
     
     for(int i=0; (i<ntest[cur]); i++) 
     {
-        gmx_poldata_set_atype_polarizability(pd,atype[i],fpp[i],sigma*sqrt(ata[i][i]));
+        gmx_poldata_set_poltype_polarizability(pd,atype[i],fpp[i],sigma*sqrt(ata[i][i]));
     }
     if (bZero)
-        gmx_poldata_add_atype(pd,(char *)"0",(char *)"NUL",(char *)"NUL",(char *)"NUL",
-                              (char *)"",a0,0,(char *)"");
-
+    {
+        const char *null = (const char *)"0";
+        gmx_poldata_add_poltype(pd,null,NULL,null,
+                                a0,0);
+    }
     //! Now checking the result
     j = nn = 0;
     for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++,j++)

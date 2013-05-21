@@ -126,6 +126,60 @@ static void add_properties(const char *fn,std::vector<alexandria::MolProp>& mp)
     }
 }
 
+static void add_charges(const char *fn,std::vector<alexandria::MolProp>& mp)
+{
+    alexandria::MolPropIterator mpi;
+    FILE   *fp;
+    int    nprop=0;
+    t_prop *tp=NULL,key,*tpp;
+    char   buf[STRLEN];
+    char   **ptr;
+    int    nadd=0;
+    
+    if (NULL != fn) {
+        fp = ffopen(fn,"r");
+        while (!feof(fp)) {
+            fgets2(buf,STRLEN-1,fp);
+            ptr = split('|',buf);
+            if ((NULL != ptr) &&
+                (NULL != ptr[0]) && (NULL != ptr[1]) &&
+                (NULL != ptr[2]) && (NULL != ptr[3])) {
+                srenew(tp,++nprop);
+                tp[nprop-1].iupac = strdup(ptr[0]);
+                tp[nprop-1].prop = strdup(ptr[1]);
+                tp[nprop-1].value = strdup(ptr[2]);
+                tp[nprop-1].ref = strdup(ptr[3]);
+                sfree(ptr[0]);
+                sfree(ptr[1]);
+                sfree(ptr[2]);
+                sfree(ptr[3]);
+                sfree(ptr);
+            }
+        }
+        printf("Read in %d charge sets from %s.\n",nprop,fn);
+        qsort(tp,nprop,sizeof(tp[0]),tp_comp);
+        fclose(fp);
+        for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
+        {
+            key.iupac = mpi->GetIupac().c_str();
+            if (NULL != key.iupac) {
+                tpp = (t_prop *) bsearch(&key,tp,nprop,sizeof(tp[0]),tp_comp);
+                if (NULL != tpp) {
+                    alexandria::Experiment ex(tpp->ref,(char *)"minimum");
+                    alexandria::MolecularEnergy me(tpp->prop,
+                                                   unit2string(eg2cKj_Mole),
+                                                   atof(tpp->value),0);
+                    ex.AddEnergy(me);
+                    mpi->AddExperiment(ex);
+                    nadd++;
+                }
+            }
+        }
+        printf("Added properties for %d out of %d molecules.\n",
+               nadd,(int)mp.size());
+    }
+}
+
 int main(int argc,char *argv[])
 {
     static const char *desc[] = 
@@ -140,7 +194,8 @@ int main(int argc,char *argv[])
         { efDAT, "-o",  "allmols",   ffWRITE },
         { efDAT, "-di", "gentop",    ffOPTRD },
         { efDAT, "-db", "sqlite",    ffOPTRD },
-        { efDAT, "-x",  "extra",     ffOPTRD }
+        { efDAT, "-x",  "extra",     ffOPTRD },
+        { efDAT, "-c",  "charges",   ffOPTRD }
     };
     int NFILE = (sizeof(fnm)/sizeof(fnm[0]));
     static const char *sort[] = { NULL, "molname", "formula", "composition", NULL };
@@ -181,6 +236,8 @@ int main(int argc,char *argv[])
     ReadSqlite3(opt2fn_null("-db",NFILE,fnm),mp);
         
     add_properties(opt2fn_null("-x",NFILE,fnm),mp);
+
+    add_charges(opt2fn_null("-c",NFILE,fnm),mp);
 
     MolPropWrite(opt2fn("-o",NFILE,fnm),mp,compress);
   
