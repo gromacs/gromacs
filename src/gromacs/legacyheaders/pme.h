@@ -115,6 +115,22 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V);
 /* Abstract type for PME <-> PP communication */
 typedef struct gmx_pme_pp *gmx_pme_pp_t;
 
+void gmx_pme_check_restrictions(int pme_order,
+                                int nkx, int nky, int nkz,
+                                int nnodes_major,
+                                int nnodes_minor,
+                                gmx_bool bUseThreads,
+                                gmx_bool bFatal,
+                                gmx_bool *bValidSettings);
+/* Check restrictions on pme_order and the PME grid nkx,nky,nkz.
+ * With bFatal=TRUE, a fatal error is generated on violation,
+ * bValidSettings=NULL can be passed.
+ * With bFatal=FALSE, *bValidSettings reports the validity of the settings.
+ * bUseThreads tells if any MPI rank doing PME uses more than 1 threads.
+ * If at calling you bUseThreads is unknown, pass TRUE for conservative
+ * checking.
+ */
+
 gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
 /* Initialize the PME-only side of the PME <-> PP communication */
 

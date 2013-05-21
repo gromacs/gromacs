@@ -72,8 +72,13 @@ texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
 /***** The kernels come here *****/
 #include "nbnxn_cuda_kernel_utils.cuh"
 
-/* Generate all combinations of kernels through multiple inclusion:
-   F, F + E, F + prune, F + E + prune. */
+/* Top-level kernel generation: will generate through multiple inclusion the
+ * following flavors for all kernels:
+ * - force-only output;
+ * - force and energy output;
+ * - force-only with pair list pruning;
+ * - force and energy output with pair list pruning.
+ */
 /** Force only **/
 #include "nbnxn_cuda_kernels.cuh"
 /** Force & energy **/
@@ -123,7 +128,7 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
     /* do we exceed the grid x dimension limit? */
     if (nwork_units > max_grid_x_size)
     {
-        gmx_fatal(FARGS, "Watch out system too large to simulate!\n"
+        gmx_fatal(FARGS, "Watch out, the input system is too large to simulate!\n"
                   "The number of nonbonded work units (=number of super-clusters) exceeds the"
                   "maximum grid size in x dimension (%d > %d)!", nwork_units, max_grid_x_size);
     }
@@ -138,32 +143,46 @@ static inline int calc_nb_kernel_nblock(int nwork_units, cuda_dev_info_t *dinfo)
 static const int nEnergyKernelTypes = 2; /* 0 - no energy, 1 - energy */
 static const int nPruneKernelTypes  = 2; /* 0 - no prune, 1 - prune */
 
-/* Default kernels */
+/*! Pointers to the default kernels organized in a 3 dim array by:
+ *  electrostatics type, energy calculation on/off, and pruning on/off.
+ *
+ *  Note that the order of electrostatics (1st dimension) has to match the
+ *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
+ */
 static const nbnxn_cu_kfunc_ptr_t
 nb_default_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
-    { { k_nbnxn_ewald,              k_nbnxn_ewald_prune },
-      { k_nbnxn_ewald_ener,         k_nbnxn_ewald_ener_prune } },
-    { { k_nbnxn_ewald_twin,         k_nbnxn_ewald_twin_prune },
-      { k_nbnxn_ewald_twin_ener,    k_nbnxn_ewald_twin_ener_prune } },
-    { { k_nbnxn_rf,                 k_nbnxn_rf_prune },
-      { k_nbnxn_rf_ener,            k_nbnxn_rf_ener_prune } },
-    { { k_nbnxn_cutoff,             k_nbnxn_cutoff_prune },
-      { k_nbnxn_cutoff_ener,        k_nbnxn_cutoff_ener_prune } },
+    { { k_nbnxn_cutoff,                     k_nbnxn_cutoff_prune },
+      { k_nbnxn_cutoff_ener,                k_nbnxn_cutoff_ener_prune } },
+    { { k_nbnxn_rf,                         k_nbnxn_rf_prune },
+      { k_nbnxn_rf_ener,                    k_nbnxn_rf_ener_prune } },
+    { { k_nbnxn_ewald_tab,                  k_nbnxn_ewald_tab_prune },
+      { k_nbnxn_ewald_tab_ener,             k_nbnxn_ewald_tab_ener_prune } },
+    { { k_nbnxn_ewald_tab_twin,             k_nbnxn_ewald_tab_twin_prune },
+      { k_nbnxn_ewald_tab_twin_ener,        k_nbnxn_ewald_twin_ener_prune } },
+    { { k_nbnxn_ewald,                      k_nbnxn_ewald_prune },
+      { k_nbnxn_ewald_ener,                 k_nbnxn_ewald_ener_prune } },
+    { { k_nbnxn_ewald_twin,                 k_nbnxn_ewald_twin_prune },
+      { k_nbnxn_ewald_twin_ener,            k_nbnxn_ewald_twin_ener_prune } },
 };
 
-/* Legacy kernels */
+/*! Pointers to the legacy kernels organized in a 3 dim array by:
+ *  electrostatics type, energy calculation on/off, and pruning on/off.
+ *
+ *  Note that the order of electrostatics (1st dimension) has to match the
+ *  order of corresponding enumerated types defined in nbnxn_cuda_types.h.
+ */
 static const nbnxn_cu_kfunc_ptr_t
 nb_legacy_kfunc_ptr[eelCuNR][nEnergyKernelTypes][nPruneKernelTypes] =
 {
-    { { k_nbnxn_ewald_legacy,           k_nbnxn_ewald_prune_legacy },
-      { k_nbnxn_ewald_ener_legacy,      k_nbnxn_ewald_ener_prune_legacy } },
-    { { k_nbnxn_ewald_twin_legacy,      k_nbnxn_ewald_twin_prune_legacy },
-      { k_nbnxn_ewald_twin_ener_legacy, k_nbnxn_ewald_twin_ener_prune_legacy } },
-    { { k_nbnxn_rf_legacy,              k_nbnxn_rf_prune_legacy },
-      { k_nbnxn_rf_ener_legacy,         k_nbnxn_rf_ener_prune_legacy } },
-    { { k_nbnxn_cutoff_legacy,          k_nbnxn_cutoff_prune_legacy },
-      { k_nbnxn_cutoff_ener_legacy,     k_nbnxn_cutoff_ener_prune_legacy } },
+    { { k_nbnxn_cutoff_legacy,              k_nbnxn_cutoff_prune_legacy },
+      { k_nbnxn_cutoff_ener_legacy,         k_nbnxn_cutoff_ener_prune_legacy } },
+    { { k_nbnxn_rf_legacy,                  k_nbnxn_rf_prune_legacy },
+      { k_nbnxn_rf_ener_legacy,             k_nbnxn_rf_ener_prune_legacy } },
+    { { k_nbnxn_ewald_tab_legacy,           k_nbnxn_ewald_tab_prune_legacy },
+      { k_nbnxn_ewald_tab_ener_legacy,      k_nbnxn_ewald_tab_ener_prune_legacy } },
+    { { k_nbnxn_ewald_tab_twin_legacy,      k_nbnxn_ewald_tab_twin_prune_legacy },
+      { k_nbnxn_ewald_tab_twin_ener_legacy, k_nbnxn_ewald_tab_twin_ener_prune_legacy } },
 };
 
 /*! Return a pointer to the kernel version to be executed at the current step. */
@@ -175,6 +194,9 @@ static inline nbnxn_cu_kfunc_ptr_t select_nbnxn_kernel(int kver, int eeltype,
 
     if (NBNXN_KVER_LEGACY(kver))
     {
+        /* no analytical Ewald with legacy kernels */
+        assert(eeltype <= eelCuEWALD_TAB_TWIN);
+
         return nb_legacy_kfunc_ptr[eeltype][bDoEne][bDoPrune];
     }
     else
@@ -653,12 +675,19 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
     cudaError_t stat;
 
     for (int i = 0; i < eelCuNR; i++)
+    {
         for (int j = 0; j < nEnergyKernelTypes; j++)
+        {
             for (int k = 0; k < nPruneKernelTypes; k++)
             {
-                /* Legacy kernel 16/48 kB Shared/L1 */
-                stat = cudaFuncSetCacheConfig(nb_legacy_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
-                CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+                /* Legacy kernel 16/48 kB Shared/L1
+                 * No analytical Ewald!
+                 */
+                if (i != eelCuEWALD_ANA && i != eelCuEWALD_ANA_TWIN)
+                {
+                    stat = cudaFuncSetCacheConfig(nb_legacy_kfunc_ptr[i][j][k], cudaFuncCachePreferL1);
+                    CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
+                }
 
                 if (devinfo->prop.major >= 3)
                 {
@@ -673,4 +702,6 @@ void nbnxn_cuda_set_cacheconfig(cuda_dev_info_t *devinfo)
                 }
                 CU_RET_ERR(stat, "cudaFuncSetCacheConfig failed");
             }
+        }
+    }
 }
