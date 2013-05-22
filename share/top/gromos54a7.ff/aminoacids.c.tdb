@@ -1,0 +1,49 @@
+[ None ]
+
+[ COO- ]
+[ replace ]
+C	C	C	12.011	0.27
+O	O1	OM	15.9994	-0.635
+OXT	O2	OM	15.9994	-0.635
+[ add ]
+2	8	O	C	CA	N
+	OM	15.9994	-0.635
+[ bonds ]
+C	O1	gb_6
+C	O2	gb_6
+[ angles ]
+O1	C	O2	ga_38
+CA	C	O1	ga_22
+CA	C	O2	ga_22
+[ dihedrals ]
+N	CA	C	O2	gd_45
+N       CA      C       O2      gd_42
+[ impropers ]
+C	CA	O2	O1	gi_1
+
+[ COOH ]
+[ replace ]
+C	C	C	12.011	0.33
+O	O	OA	15.9994	-0.288
+OXT	OT	O	15.9994	-0.45
+[ add ]
+1	2	OT	C	CA	N
+	O	15.9994	-0.45
+1	2	HO	O	C	CA
+	H	1.008	0.408
+[ bonds ]
+C	O	gb_13
+C	OT	gb_5
+O	HO	gb_1
+[ angles ]
+O	C	OT	ga_33
+C	O	HO	ga_12
+CA	C	O	ga_19
+CA	C	OT	ga_30
+[ dihedrals ]
+N	CA	C	O	gd_45
+N	CA	C	O	gd_42
+CA	C	O	HO	gd_12
+[ impropers ]
+C	CA	OT	O	gi_1
+
