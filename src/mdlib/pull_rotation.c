@@ -782,7 +782,7 @@ static FILE *open_output_file(const char *fn, int steps, const char what[])
 
 
 /* Open output file for slab center data. Call on master only */
-static FILE *open_slab_out(const char *fn, t_rot *rot, const output_env_t oenv)
+static FILE *open_slab_out(const char *fn, t_rot *rot)
 {
     FILE      *fp;
     int        g, i;
@@ -997,7 +997,7 @@ static FILE *open_rot_out(const char *fn, t_rot *rot, const output_env_t oenv)
 
 
 /* Call on master only */
-static FILE *open_angles_out(const char *fn, t_rot *rot, const output_env_t oenv)
+static FILE *open_angles_out(const char *fn, t_rot *rot)
 {
     int             g, i;
     FILE           *fp;
@@ -1083,7 +1083,7 @@ static FILE *open_angles_out(const char *fn, t_rot *rot, const output_env_t oenv
 
 /* Open torque output file and write some information about it's structure.
  * Call on master only */
-static FILE *open_torque_out(const char *fn, t_rot *rot, const output_env_t oenv)
+static FILE *open_torque_out(const char *fn, t_rot *rot)
 {
     FILE      *fp;
     int        g;
@@ -1692,7 +1692,7 @@ static int get_single_atom_gaussians(
     }
     count--;
 
-    /* Determine the max slab */
+    /* Determine the min slab */
     slab = homeslab;
     do
     {
@@ -2467,8 +2467,7 @@ static void get_firstlast_slab_check(
         t_rotgrp        *rotg,      /* The rotation group (inputrec data) */
         t_gmx_enfrotgrp *erg,       /* The rotation group (data only accessible in this file) */
         rvec             firstatom, /* First atom after sorting along the rotation vector v */
-        rvec             lastatom,  /* Last atom along v */
-        int              g)         /* The rotation group number */
+        rvec             lastatom)  /* Last atom along v */
 {
     erg->slab_first = get_first_slab(rotg, erg->max_beta, firstatom);
     erg->slab_last  = get_last_slab(rotg, erg->max_beta, lastatom);
@@ -2501,7 +2500,6 @@ static void do_flexible(
         rvec            x[],          /* The local positions                        */
         matrix          box,
         double          t,            /* Time in picoseconds                        */
-        gmx_large_int_t step,         /* The time step                              */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -2521,7 +2519,7 @@ static void do_flexible(
 
     /* Determine the first relevant slab for the first atom and the last
      * relevant slab for the last atom */
-    get_firstlast_slab_check(rotg, erg, erg->xc[0], erg->xc[rotg->nat-1], g);
+    get_firstlast_slab_check(rotg, erg, erg->xc[0], erg->xc[rotg->nat-1]);
 
     /* Determine for each slab depending on the min_gaussian cutoff criterium,
      * a first and a last atom index inbetween stuff needs to be calculated */
@@ -2633,10 +2631,6 @@ static gmx_inline void project_onto_plane(rvec dr, const rvec v)
 /* springs to the reference atoms.                                     */
 static void do_fixed(
         t_rotgrp       *rotg,         /* The rotation group                         */
-        rvec            x[],          /* The positions                              */
-        matrix          box,          /* The simulation box                         */
-        double          t,            /* Time in picoseconds                        */
-        gmx_large_int_t step,         /* The time step                              */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -2747,10 +2741,6 @@ static void do_fixed(
 /* Calculate the radial motion potential and forces */
 static void do_radial_motion(
         t_rotgrp       *rotg,         /* The rotation group                         */
-        rvec            x[],          /* The positions                              */
-        matrix          box,          /* The simulation box                         */
-        double          t,            /* Time in picoseconds                        */
-        gmx_large_int_t step,         /* The time step                              */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -2850,8 +2840,6 @@ static void do_radial_motion_pf(
         t_rotgrp       *rotg,         /* The rotation group                         */
         rvec            x[],          /* The positions                              */
         matrix          box,          /* The simulation box                         */
-        double          t,            /* Time in picoseconds                        */
-        gmx_large_int_t step,         /* The time step                              */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -3062,8 +3050,6 @@ static void do_radial_motion2(
         t_rotgrp       *rotg,         /* The rotation group                         */
         rvec            x[],          /* The positions                              */
         matrix          box,          /* The simulation box                         */
-        double          t,            /* Time in picoseconds                        */
-        gmx_large_int_t step,         /* The time step                              */
         gmx_bool        bOutstepRot,  /* Output to main rotation output file        */
         gmx_bool        bOutstepSlab) /* Output per-slab data                       */
 {
@@ -3310,7 +3296,7 @@ static void allocate_slabs(
 }
 
 
-/* From the extreme coordinates of the reference group, determine the first
+/* From the extreme positions of the reference group, determine the first
  * and last slab of the reference. We can never have more slabs in the real
  * simulation than calculated here for the reference.
  */
@@ -3583,7 +3569,7 @@ static void init_rot_group(FILE *fplog, t_commrec *cr, int g, t_rotgrp *rotg,
         /* Determine the smallest and largest coordinate with respect to the rotation vector */
         get_firstlast_atom_ref(rotg, &ref_firstindex, &ref_lastindex);
 
-        /* From the extreme coordinates of the reference group, determine the first
+        /* From the extreme positions of the reference group, determine the first
          * and last slab of the reference. */
         get_firstlast_slab_ref(rotg, erg->mc, ref_firstindex, ref_lastindex);
 
@@ -3724,7 +3710,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
     er->out_slabs = NULL;
     if (MASTER(cr) && HaveFlexibleGroups(rot) )
     {
-        er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), rot, oenv);
+        er->out_slabs = open_slab_out(opt2fn("-rs", nfile, fnm), rot);
     }
 
     if (MASTER(cr))
@@ -3806,11 +3792,11 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
         {
             if (HaveFlexibleGroups(rot) || HavePotFitGroups(rot) )
             {
-                er->out_angles  = open_angles_out(opt2fn("-ra", nfile, fnm), rot, oenv);
+                er->out_angles  = open_angles_out(opt2fn("-ra", nfile, fnm), rot);
             }
             if (HaveFlexibleGroups(rot) )
             {
-                er->out_torque  = open_torque_out(opt2fn("-rt", nfile, fnm), rot, oenv);
+                er->out_torque  = open_torque_out(opt2fn("-rt", nfile, fnm), rot);
             }
         }
 
@@ -3819,7 +3805,7 @@ extern void init_rot(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[
 }
 
 
-extern void finish_rot(FILE *fplog, t_rot *rot)
+extern void finish_rot(t_rot *rot)
 {
     gmx_enfrot_t er;        /* Pointer to the enforced rotation buffer variables */
 
@@ -4043,17 +4029,17 @@ extern void do_rotation(
             case erotgISOPF:
             case erotgPM:
             case erotgPMPF:
-                do_fixed(rotg, x, box, t, step, outstep_rot, outstep_slab);
+                do_fixed(rotg, outstep_rot, outstep_slab);
                 break;
             case erotgRM:
-                do_radial_motion(rotg, x, box, t, step, outstep_rot, outstep_slab);
+                do_radial_motion(rotg, outstep_rot, outstep_slab);
                 break;
             case erotgRMPF:
-                do_radial_motion_pf(rotg, x, box, t, step, outstep_rot, outstep_slab);
+                do_radial_motion_pf(rotg, x, box, outstep_rot, outstep_slab);
                 break;
             case erotgRM2:
             case erotgRM2PF:
-                do_radial_motion2(rotg, x, box, t, step, outstep_rot, outstep_slab);
+                do_radial_motion2(rotg, x, box, outstep_rot, outstep_slab);
                 break;
             case erotgFLEXT:
             case erotgFLEX2T:
@@ -4063,13 +4049,13 @@ extern void do_rotation(
                 get_center(erg->xc, erg->mc, rotg->nat, erg->xc_center);
                 svmul(-1.0, erg->xc_center, transvec);
                 translate_x(erg->xc, rotg->nat, transvec);
-                do_flexible(MASTER(cr), er, rotg, g, x, box, t, step, outstep_rot, outstep_slab);
+                do_flexible(MASTER(cr), er, rotg, g, x, box, t, outstep_rot, outstep_slab);
                 break;
             case erotgFLEX:
             case erotgFLEX2:
                 /* Do NOT subtract the center of mass in the low level routines! */
                 clear_rvec(erg->xc_center);
-                do_flexible(MASTER(cr), er, rotg, g, x, box, t, step, outstep_rot, outstep_slab);
+                do_flexible(MASTER(cr), er, rotg, g, x, box, t, outstep_rot, outstep_slab);
                 break;
             default:
                 gmx_fatal(FARGS, "No such rotation potential.");
