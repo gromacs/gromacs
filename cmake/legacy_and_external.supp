@@ -1,0 +1,184 @@
+# This suppression file is used to run the CTest Unit Tests
+# All problems in external libraries are excluded
+# Memory leaks in the legacy code are excluded
+# Other problems besides memory leaks should NOT be excluded for legacy code
+
+{
+   libz
+   Memcheck:Cond
+   fun:inflateReset2
+   fun:inflateInit2_
+}
+
+{
+   gmx_fio_fopen
+   Memcheck:Leak
+   ...
+   fun:gmx_fio_fopen
+}
+{
+   new_symbuf
+   Memcheck:Leak
+   ...
+   fun:new_symbuf
+}
+{
+   bTimeSet/tMPI_Thread_mutex_init_once
+   Memcheck:Leak
+   ...
+   fun:tMPI_Thread_mutex_init_once
+   fun:tMPI_Thread_mutex_lock
+   fun:bTimeSet
+}
+{
+   ffclose/tMPI_Thread_mutex_init_once
+   Memcheck:Leak
+   ...
+   fun:tMPI_Thread_mutex_init_once
+   fun:tMPI_Thread_mutex_lock
+   fun:ffclose
+}
+
+{
+   mdrun
+   Memcheck:Leak
+   ...
+   obj:*/mdrun*
+}
+
+
+#MacOS rules
+{
+   dyld_register_image_state_change_handler
+   Memcheck:Leak
+   fun:malloc
+   fun:malloc
+   ...
+   fun:dyld_register_image_state_change_handler
+}
+
+{
+   __emutls_get_address
+   Memcheck:Leak
+   ...
+   fun:__emutls_get_address
+}
+
+{
+   libSystem_initializer
+   Memcheck:Leak
+   ...
+   fun:libSystem_initializer
+}
+
+{
+   atexit
+   Memcheck:Leak
+   fun:malloc
+   fun:atexit_register
+}
+
+{
+   unw_set_reg
+   Memcheck:Leak
+   ...
+   fun:unw_set_reg
+   fun:__gxx_personality_v0
+}
+
+{
+   printf
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:__vfprintf
+}
+
+{
+   strtof
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:strtof_l
+}
+
+{
+   scanf
+   Memcheck:Leak
+   ...
+   fun:__svfscanf_l
+}
+
+{
+   __cxa_get_globals
+   Memcheck:Leak
+   fun:malloc
+   fun:__cxa_get_globals
+}
+{
+   __cxa_get_globals
+   Memcheck:Leak
+   fun:calloc
+   fun:__cxa_get_globals
+   fun:__cxa_throw
+}
+
+{
+   _Unwind_RaiseException
+   Memcheck:Leak
+   fun:malloc
+   ...
+   fun:_Unwind_RaiseException
+   fun:__cxa_throw
+}
+{
+   posix_memalign
+   Memcheck:Leak
+   ...
+   fun:posix_memalign
+}
+
+# Intel compiler on MacOS
+{
+   __cilkrts_os_mutex_create
+   Memcheck:Leak
+   fun:malloc
+   fun:__cilkrts_os_mutex_create
+}
+# Intel compiler with MKL
+{
+   dlerror
+   Memcheck:Leak
+   ...
+   fun:_dlerror_run
+}
+#Intel
+{
+   strlen
+   Memcheck:Addr8
+   fun:__intel_sse2_strlen
+}
+{
+   strlen2
+   Memcheck:Cond
+   fun:__intel_sse2_strlen
+}
+{
+   __kmpc_global_thread_num
+   Memcheck:Param
+   sched_setaffinity(mask)
+   ...
+   fun:__kmpc_global_thread_num
+}
+{
+   __kmpc_global_thread_num2
+   Memcheck:Cond
+   ...
+   fun:__kmpc_global_thread_num
+}
+{
+   __kmpc_global_thread_num3
+   Memcheck:Leak
+   ...
+   fun:__kmpc_global_thread_num
+}

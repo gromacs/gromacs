@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2011,2012, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -31,37 +31,15 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
-#
+
+add_executable(template template.cpp)
+target_link_libraries(template libgromacs ${GMX_EXE_LINKER_FLAGS})
 install(FILES CMakeLists.txt.template
         DESTINATION ${DATA_INSTALL_DIR}/template
         RENAME CMakeLists.txt
         COMPONENT development)
 
-file(GLOB_RECURSE GROMACS_HEADERS ${CMAKE_SOURCE_DIR}/include/*.h)
-add_custom_command(OUTPUT gromacs
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/include gromacs 
-    DEPENDS ${GROMACS_HEADERS})
-add_custom_target(gromacs_include_links DEPENDS gromacs)
-
-option(GMX_BUILD_TEMPLATE "Build gromacs template program" ON)
-mark_as_advanced(GMX_BUILD_TEMPLATE)
-# GMX_PREFER_STATIC_OPENMP=yes is a special case to build binaries
-# to distribute and as the template is not installed it can be
-# ignored.
-# The template is build in a user-like environment, hence we use
-# flags from PKG_CFLAGS. Again GMX_PREFER_STATIC_OPENMP=yes would
-# need special link flags (OpenMP_LINKER_FLAGS), which are not
-# very user-like.
-if (GMX_BUILD_TEMPLATE AND NOT GMX_PREFER_STATIC_OPENMP)
-    add_executable(template template.c)
-    remove_definitions( -DHAVE_CONFIG_H )
-    add_definitions("${PKG_CFLAGS}")
-    target_link_libraries(template gmx)
-    include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-    add_dependencies(template gromacs_include_links)
-endif()
-
-install(FILES README template.c Makefile.pkg
+install(FILES README template.cpp Makefile.pkg
         DESTINATION ${DATA_INSTALL_DIR}/template
         COMPONENT development)
 

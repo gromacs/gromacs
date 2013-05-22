@@ -1,0 +1,6 @@
+depgraphs
+Doxyfile*
+doxygen-*.log
+html-full
+html-lib
+html-user

@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2012, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -138,9 +138,9 @@ if(REGRESSIONTEST_PATH)
         set(PATH "$ENV{PATH}")
     endif()
 
-    foreach(FOLDER kernel tools gmxlib mdlib) #lib folders might be needed for
+    foreach(FOLDER bin lib) #lib folders might be needed for
         #e.g. DLLs. For GMX paths native ("\") is needed for GMXLIB detection
-        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/src/${FOLDER}" DIR)
+        file(TO_NATIVE_PATH "${CMAKE_BINARY_DIR}/${FOLDER}" DIR)
         set(PATH "${DIR}${PATH_SEPARATOR}${PATH}")
     endforeach()
 
@@ -157,6 +157,6 @@ if(REGRESSIONTEST_PATH)
             #windows requires the command to be perl and not the script
             COMMAND perl "${REGRESSIONTEST_PATH}/gmxtest.pl" ${subtest} ${ARGS})
         set_tests_properties(regressiontests/${subtest} PROPERTIES
-            ENVIRONMENT "PATH=${PATH};GMXLIB=${CMAKE_SOURCE_DIR}/share/top")
+            ENVIRONMENT "PATH=${PATH}")
     endforeach()
 endif()

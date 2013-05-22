@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">select -select 'y &lt; 2.5' 'resname RA and y &lt; 2.5' 'resname RA' -norm</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="size">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">3</Int>
+          <DataValue>
+            <Real Name="Value">0.533333</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

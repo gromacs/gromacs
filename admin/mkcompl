@@ -32,7 +32,7 @@ set PROGRAMS = [a-z]*
 cd $dir
 
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" )  && ( $program != "average" ) && ( $program != "GMXRC" ) && ( $program != "completion.zsh" ) && ( $program != "completion.csh" )  && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" )  && ( $program != "average" ) && ( $program != "GMXRC" ) && ( $program != "completion.zsh" ) && ( $program != "completion.csh" )  && ( $program != "completion.bash" ) ) then
     $GMXBINDIR/$program -man completion >& /dev/null
     cat $program.completion-csh >> $out.csh
     cat $program.completion-bash >> $out.bash

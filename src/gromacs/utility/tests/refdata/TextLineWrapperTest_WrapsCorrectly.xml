@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="WrappedAt10"><![CDATA[
+A quick
+brown fox
+jumps over
+the lazy
+dog]]></String>
+  <Sequence Name="WrappedToVector">
+    <Int Name="Length">5</Int>
+    <String>A quick</String>
+    <String>brown fox</String>
+    <String>jumps over</String>
+    <String>the lazy</String>
+    <String>dog</String>
+  </Sequence>
+  <String Name="WrappedAt13"><![CDATA[
+A quick brown
+fox jumps
+over the lazy
+dog]]></String>
+  <String Name="WrappedAt14"><![CDATA[
+A quick brown
+fox jumps over
+the lazy dog]]></String>
+  <String Name="WrappedWithLongWord"><![CDATA[
+A quick brown
+fox jumps
+awordthatoverflowsaline
+over the lazy
+dog]]></String>
+</ReferenceData>

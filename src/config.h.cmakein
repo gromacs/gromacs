@@ -1,38 +1,16 @@
-/*
- * This file is part of the GROMACS molecular simulation package.
+/*! \libinternal \file
+ * \brief
+ * Include file for configuration macros from the build system.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
- * David van der Spoel, Berk Hess, Erik Lindahl, and including many
- * others, as listed in the AUTHORS file in the top-level source
- * directory and at http://www.gromacs.org.
+ * This header is not installed, so headers must not reference macros defined
+ * here.
  *
- * GROMACS is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public License
- * as published by the Free Software Foundation; either version 2.1
- * of the License, or (at your option) any later version.
- *
- * GROMACS is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with GROMACS; if not, see
- * http://www.gnu.org/licenses, or write to the Free Software Foundation,
- * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
- *
- * If you want to redistribute modifications to GROMACS, please
- * consider that scientific software is very special. Version
- * control is crucial - bugs must be traceable. We will be happy to
- * consider code for inclusion in the official distribution, but
- * derived work must not be called official GROMACS. Details are found
- * in the README & COPYING files - if they are missing, get the
- * official version at http://www.gromacs.org.
- *
- * To help us fund GROMACS development, we humbly ask that you cite
- * the research papers on the package. Check out http://www.gromacs.org.
+ * \inlibraryapi
  */
-/* Manually created from config.h.in to work with cmake */
+#include "gromacs/utility/gmx_header_config.h"
+
+/* TODO: For now, disable Doxygen warnings from here */
+/*! \cond */
 
 /* Disable warnings about double-to-float conversion accuracy loss on MSVC */
 #ifdef _MSC_VER
@@ -44,19 +22,26 @@
 #pragma warning (disable : 4090)
 #endif
 
-#include "gmx_header_config.h"
-
 /* Name of package (translate from cmake to autoconf macro name) */
 #define PACKAGE  "@PROJECT_NAME@"
 
 /* Version number of package (translate from cmake to autoconf macro name) */
 #define VERSION  "@PROJECT_VERSION@"
 
-/* Use the version string from generated version.h */
-#cmakedefine USE_VERSION_H
+/* Use extra version information generated with git */
+#cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
 #define GMXLIBDIR "@GMXLIBDIR@"
+
+/* Binary suffix for the created binaries */
+#define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
+
+/* Source directory for the build */
+#cmakedefine CMAKE_SOURCE_DIR "@CMAKE_SOURCE_DIR@"
+
+/* Binary directory for the build */
+#cmakedefine CMAKE_BINARY_DIR "@CMAKE_BINARY_DIR@"
 
 /* Turn off water-water neighborlist optimization only - not used right now */
 #cmakedefine DISABLE_WATERWATER_NLIST
@@ -217,41 +202,20 @@
 /* Use GPU native acceleration */
 #cmakedefine GMX_GPU
 
-/* Define to 1 if the system has the type gmx_bool. */
-#cmakedefine HAVE_BOOL
-
 /* Define to 1 if fseeko (and presumably ftello) exists and is declared. */
 #cmakedefine HAVE_FSEEKO
 
 /* Define to 1 if _fseeki64 (and presumably _fseeki64) exists and is declared. */
 #cmakedefine HAVE__FSEEKI64
 
-/* Define to 1 if you have the m library (-lm). */
-#cmakedefine HAVE_LIBM
-
-/* Define to 1 if you have the mkl library (-lmkl). */
-#cmakedefine HAVE_LIBMKL
-
 /* Define to 1 if you have the gsl library (-lgsl). */
 #cmakedefine HAVE_LIBGSL
-
-/* Define to 1 if you have the dl library (-ldl). */
-#cmakedefine HAVE_LIBDL
 
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
 
-/* Define to 1 if you have the strcasecmp() function. */
-#cmakedefine HAVE_STRCASECMP
-
 /* Define to 1 if you have the strdup() function. */
 #cmakedefine HAVE_STRDUP
-
-/* Define to 1 if you have the vfprintf() function. */
-#cmakedefine HAVE_VFPRINTF
-
-/* Define to 1 if you have the memcmp() function. */
-#cmakedefine HAVE_MEMCMP
 
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine HAVE_POSIX_MEMALIGN
@@ -267,12 +231,6 @@
 
 /* Define to 1 if you have the cbrt() function. */
 #cmakedefine HAVE_CBRT
-
-/* Define to 1 if you have the isnan() function. */
-#cmakedefine HAVE_ISNAN
-
-/* Define to 1 if you have the _isnan() function. */
-#cmakedefine HAVE__ISNAN
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE
@@ -307,56 +265,20 @@
 /* Define to 1 if you have the sqrtf() function. */
 #cmakedefine HAVE_SQRTF
 
-/* Define to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H
-
-/* Define to 1 if yo have the <math.h> header file. */
-#cmakedefine HAVE_MATH_H
-
-/* Define to 1 if yo have the <limits.h> header file. */
-#cmakedefine HAVE_LIMITS_H
-
-/* Define to 1 if yo have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
-
 /* Define to 1 if yo have the <unistd.h> header file. */
 #cmakedefine HAVE_UNISTD_H
-
-/* Define to 1 if yo have the <direct.h> header file. */
-#cmakedefine HAVE_DIRECT_H
 
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
 
-/* Define to 1 if yo have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
-
-/* Define to 1 if yo have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
+/* Define to 1 if yo have the <pthread.h> header file. */
+#cmakedefine HAVE_PTHREAD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H
 
-/* Define to 1 if yo have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
-
-/* Define to 1 if yo have the <regex.h> header file. */
-#cmakedefine HAVE_REGEX_H
-
-/* Define to 1 if you have the <sys/types.h> header file. */
-#cmakedefine HAVE_SYS_TYPES_H
-
-/* Define to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
-
 /* Define to 1 if you have the <sys/time.h> header file. */
 #cmakedefine HAVE_SYS_TIME_H
-
-/* Define to 1 if you have the <rpc/rpc.h> header file. */
-#cmakedefine HAVE_RPC_RPC_H
-
-/* Define to 1 if you have the <rpc/xdr.h> header file. */
-#cmakedefine HAVE_RPC_XDR_H
 
 /* Define to 1 if you have the <x86intrin.h> header file */
 #cmakedefine HAVE_X86INTRIN_H
@@ -367,8 +289,11 @@
 /* Define to 1 if you have the <sched.h> header */
 #cmakedefine HAVE_SCHED_H
 
-/* Define to 1 if you have the vprintf() function. */
-#cmakedefine HAVE_VPRINTF
+/* Define to 1 if you have the POSIX <regex.h> header file. */
+#cmakedefine HAVE_POSIX_REGEX
+
+/* Define to 1 if you have the C++11 <regex> header file. */
+#cmakedefine HAVE_CXX11_REGEX
 
 /* Define to 1 if you have the sysconf() function */
 #cmakedefine HAVE_SYSCONF
@@ -415,12 +340,6 @@
 /* Some systems requires this to be set to 64 for large file support */
 #cmakedefine _FILE_OFFSET_BITS @_FILE_OFFSET_BITS@
 
-/* Gromacs shortcut define for fseeko & ftello being present with 64-bit support */
-#cmakedefine GMX_LARGEFILES
-
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine gid_t int
-
 /* Define to __inline__ or __inline if that is what the C compiler
    calls it, or to nothing if inline is not supported under any name.
    Please do NOT remove the gmx_inline keyword from here. The classical
@@ -439,22 +358,6 @@
    to identify the language standard level. If it is not supported, it
    is still defined to an empty string here. */
 #define gmx_restrict ${RESTRICT_KEYWORD}
-
-#ifndef CPLUSPLUS
-#ifdef __cplusplus
-#define CPLUSPLUS
-#endif
-#endif  
-
-/* Define to long int if <sys/types.h> does not define. */                    
-#cmakedefine off_t int
-
-/* Define to unsigned int if <sys/types.h> does not define. */
-#cmakedefine size_t int
-
-/* Define to int if <sys/types.h> does not define. */
-#cmakedefine uid_t int
-
 /* Build special-purpose mdrun library */
 #cmakedefine GMX_FAHCORE   
 
@@ -473,7 +376,6 @@
 /* Define if we have pipes */
 #cmakedefine HAVE_PIPES
 
-
 /* Catch stupid CMake problems on OS X */
 #ifdef __APPLE__
 #  if ((defined(__LP64__) && __LP64__ && defined(SIZEOF_VOIDP) && SIZEOF_VOIDP<8) || ( (!defined(__LP64__) || __LP64__==0) && (defined(SIZEOF_VOIDP) && SIZEOF_VOIDP>4)))
@@ -485,3 +387,5 @@
 #    error "or create a new such entry with your choice in the GUI _before_ hitting 'configure'."
 #  endif
 #endif
+
+/*! \endcond */

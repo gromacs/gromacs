@@ -1,0 +1,103 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">angle -g1 vector -group1 'resname RV1 RV2 RV3 RV4 and name A1 A2' -g2 t0 -binw 60</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="angle">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">4</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">4</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">45.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">180.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">90.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="average">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">1</Int>
+          <DataValue>
+            <Real Name="Value">78.750000</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="histogram">
+      <DataFrame Name="Frame0">
+        <Real Name="X">30.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.012500</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.004167</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">90.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.002083</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.002083</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">150.000000</Real>
+        <Sequence Name="Y">
+          <Int Name="Length">2</Int>
+          <DataValue>
+            <Real Name="Value">0.002083</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.002083</Real>
+          </DataValue>
+        </Sequence>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>

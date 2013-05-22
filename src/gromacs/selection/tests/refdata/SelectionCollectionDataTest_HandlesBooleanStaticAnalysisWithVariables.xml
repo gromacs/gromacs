@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedVariable Name="Variable1">
+      <String Name="Input">foo = atomnr 4 to 7 or x &lt; 2</String>
+    </ParsedVariable>
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">atomnr 1 to 4 and foo</String>
+      <String Name="Name">atomnr 1 to 4 and foo</String>
+      <String Name="Text">atomnr 1 to 4 and foo</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">atomnr 2 to 6 and y &lt; 3 and foo</String>
+      <String Name="Name">atomnr 2 to 6 and y &lt; 3 and foo</String>
+      <String Name="Text">atomnr 2 to 6 and y &lt; 3 and foo</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">atomnr 6 to 10 and not foo</String>
+      <String Name="Name">atomnr 6 to 10 and not foo</String>
+      <String Name="Text">atomnr 6 to 10 and not foo</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">4</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">5</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">3</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>

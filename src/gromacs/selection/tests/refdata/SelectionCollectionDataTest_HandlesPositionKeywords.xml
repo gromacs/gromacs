@@ -1,0 +1,437 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">cog of resnr 1 3</String>
+      <String Name="Name">cog of resnr 1 3</String>
+      <String Name="Text">cog of resnr 1 3</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">res_cog of name CB and resnr 1 3</String>
+      <String Name="Name">res_cog of name CB and resnr 1 3</String>
+      <String Name="Text">res_cog of name CB and resnr 1 3</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">whole_res_cog of name CB and resnr 1 3</String>
+      <String Name="Name">whole_res_cog of name CB and resnr 1 3</String>
+      <String Name="Text">whole_res_cog of name CB and resnr 1 3</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection4">
+      <String Name="Input">part_res_cog of x &lt; 3</String>
+      <String Name="Name">part_res_cog of x &lt; 3</String>
+      <String Name="Text">part_res_cog of x &lt; 3</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection5">
+      <String Name="Input">dyn_res_cog of x &lt; 3</String>
+      <String Name="Name">dyn_res_cog of x &lt; 3</String>
+      <String Name="Text">dyn_res_cog of x &lt; 3</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">1</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">6</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+            <Int>8</Int>
+          </Sequence>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>0</Int>
+        <Int>6</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>0</Int>
+        <Int>6</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection4">
+      <Sequence Name="Atoms">
+        <Int Name="Length">15</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+        <Int>12</Int>
+        <Int>13</Int>
+        <Int>14</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">5</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>3</Int>
+            <Int>4</Int>
+            <Int>5</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+            <Int>8</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>9</Int>
+            <Int>10</Int>
+            <Int>11</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>12</Int>
+            <Int>13</Int>
+            <Int>14</Int>
+          </Sequence>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection5">
+      <Sequence Name="Atoms">
+        <Int Name="Length">15</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+        <Int>10</Int>
+        <Int>11</Int>
+        <Int>12</Int>
+        <Int>13</Int>
+        <Int>14</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">5</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>3</Int>
+            <Int>4</Int>
+            <Int>5</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+            <Int>8</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>9</Int>
+            <Int>10</Int>
+            <Int>11</Int>
+          </Sequence>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>12</Int>
+            <Int>13</Int>
+            <Int>14</Int>
+          </Sequence>
+        </Position>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+  <EvaluatedSelections Name="Frame1">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">6</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">1</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">6</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+            <Int>8</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.666667</Real>
+            <Real Name="Y">2.333333</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>0</Int>
+        <Int>6</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.000000</Real>
+            <Real Name="Y">1.000000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">2.000000</Real>
+            <Real Name="Y">3.000000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>0</Int>
+        <Int>6</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">2</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.000000</Real>
+            <Real Name="Y">2.000000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">2.333333</Real>
+            <Real Name="Y">2.666667</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection4">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">3</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.000000</Real>
+            <Real Name="Y">2.000000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>3</Int>
+            <Int>4</Int>
+            <Int>5</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.666667</Real>
+            <Real Name="Y">2.333333</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">2</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">2.333333</Real>
+            <Real Name="Y">2.666667</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection5">
+      <Sequence Name="Atoms">
+        <Int Name="Length">8</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">3</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.000000</Real>
+            <Real Name="Y">2.000000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">3</Int>
+            <Int>3</Int>
+            <Int>4</Int>
+            <Int>5</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">1.666667</Real>
+            <Real Name="Y">2.333333</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">2</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+          </Sequence>
+          <Vector Name="Coordinates">
+            <Real Name="X">2.000000</Real>
+            <Real Name="Y">3.500000</Real>
+            <Real Name="Z">0.000000</Real>
+          </Vector>
+        </Position>
+      </Sequence>
+    </Selection>
+  </EvaluatedSelections>
+</ReferenceData>

@@ -4,7 +4,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -88,12 +88,7 @@
 
 #include "thread_mpi/threads.h"
 
-#ifdef GMX_LIB_MPI
-#include <mpi.h>
-#endif
-#ifdef GMX_THREAD_MPI
-#include "tmpi.h"
-#endif
+#include "gromacs/utility/gmxmpi.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"

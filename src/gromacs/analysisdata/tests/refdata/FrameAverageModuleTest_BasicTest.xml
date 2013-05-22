@@ -1,0 +1,89 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <AnalysisData Name="InputData">
+    <DataFrame Name="Frame0">
+      <Real Name="X">1.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">3</Int>
+        <DataValue>
+          <Real Name="Value">0.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">2.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">3</Int>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">3.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">3</Int>
+        <DataValue>
+          <Real Name="Value">2.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">0.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+        <DataValue>
+          <Real Name="Value">0.000000</Real>
+          <Real Name="Error">0.000000</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+  </AnalysisData>
+  <AnalysisData Name="FrameAverage">
+    <DataFrame Name="Frame0">
+      <Real Name="X">1.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">1</Int>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame1">
+      <Real Name="X">2.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">1</Int>
+        <DataValue>
+          <Real Name="Value">1.000000</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+    <DataFrame Name="Frame2">
+      <Real Name="X">3.000000</Real>
+      <Sequence Name="Y">
+        <Int Name="Length">1</Int>
+        <DataValue>
+          <Real Name="Value">0.666667</Real>
+        </DataValue>
+      </Sequence>
+    </DataFrame>
+  </AnalysisData>
+</ReferenceData>

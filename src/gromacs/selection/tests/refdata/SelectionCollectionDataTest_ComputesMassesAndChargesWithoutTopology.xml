@@ -1,0 +1,212 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">atomnr 1 to 3 8 to 9</String>
+      <String Name="Name">atomnr 1 to 3 8 to 9</String>
+      <String Name="Text">atomnr 1 to 3 8 to 9</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">y &gt; 2</String>
+      <String Name="Name">y &gt; 2</String>
+      <String Name="Text">y &gt; 2</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection3">
+      <String Name="Input">cog of (y &gt; 2)</String>
+      <String Name="Name">cog of (y &gt; 2)</String>
+      <String Name="Text">cog of (y &gt; 2)</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">5</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">5</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>1</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>7</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>8</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">10</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">10</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>0</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>1</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>2</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>3</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>4</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>5</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>6</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>7</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>8</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">1</Int>
+            <Int>9</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection3">
+      <Sequence Name="Atoms">
+        <Int Name="Length">10</Int>
+        <Int>0</Int>
+        <Int>1</Int>
+        <Int>2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+        <Int>5</Int>
+        <Int>6</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+        <Int>9</Int>
+      </Sequence>
+      <Sequence Name="Positions">
+        <Int Name="Length">1</Int>
+        <Position>
+          <Sequence Name="Atoms">
+            <Int Name="Length">10</Int>
+            <Int>0</Int>
+            <Int>1</Int>
+            <Int>2</Int>
+            <Int>3</Int>
+            <Int>4</Int>
+            <Int>5</Int>
+            <Int>6</Int>
+            <Int>7</Int>
+            <Int>8</Int>
+            <Int>9</Int>
+          </Sequence>
+          <Real Name="Mass">1.000000</Real>
+          <Real Name="Charge">0.000000</Real>
+        </Position>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>

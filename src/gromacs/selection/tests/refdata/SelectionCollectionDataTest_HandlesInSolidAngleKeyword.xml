@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">resname TP and not insolidangle center cog of resname C span resname R cutoff 20</String>
+      <String Name="Name">resname TP and not insolidangle center cog of resname C span resname R cutoff 20</String>
+      <String Name="Text">resname TP and not insolidangle center cog of resname C span resname R cutoff 20</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+    <ParsedSelection Name="Selection2">
+      <String Name="Input">resname TN and insolidangle center cog of resname C span resname R cutoff 20</String>
+      <String Name="Name">resname TN and insolidangle center cog of resname C span resname R cutoff 20</String>
+      <String Name="Text">resname TN and insolidangle center cog of resname C span resname R cutoff 20</String>
+      <Bool Name="Dynamic">true</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1"/>
+    <Selection Name="Selection2"/>
+  </CompiledSelections>
+  <EvaluatedSelections Name="Frame1">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">0</Int>
+      </Sequence>
+    </Selection>
+    <Selection Name="Selection2">
+      <Sequence Name="Atoms">
+        <Int Name="Length">0</Int>
+      </Sequence>
+    </Selection>
+  </EvaluatedSelections>
+</ReferenceData>
