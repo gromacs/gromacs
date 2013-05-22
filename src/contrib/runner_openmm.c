@@ -1909,7 +1909,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         
         if (inputrec->bRot)
         {
-            finish_rot(fplog,inputrec->rot);
+            finish_rot(inputrec->rot);
         }
 
     } 
