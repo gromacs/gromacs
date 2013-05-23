@@ -57,6 +57,7 @@ extern gmx_poldata_t gmx_poldata_init();
 extern void gmx_poldata_set_filename(gmx_poldata_t pd,char *fn2);
 
 extern int gmx_poldata_get_natypes(gmx_poldata_t pd);
+extern int gmx_poldata_get_nptypes(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_bond(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_angle(gmx_poldata_t pd);
 extern int gmx_poldata_get_ngt_dihedral(gmx_poldata_t pd,int egd);
@@ -73,7 +74,7 @@ extern int gmx_poldata_get_bonding_rule(gmx_poldata_t pd,
                                         double *valence,int *iAromatic,
                                         char **neighbors);
 
-extern void gmx_poldata_add_poltype(gmx_poldata_t pd,
+extern void gmx_poldata_add_ptype(gmx_poldata_t pd,
                                     const char *ptype,
                                     const char *miller,
                                     const char *bosque,
@@ -87,7 +88,7 @@ extern void gmx_poldata_add_atype(gmx_poldata_t pd,const char *elem,
                                   const char *btype,
                                   const char *vdwparams);
     
-extern void gmx_poldata_set_poltype_polarizability(gmx_poldata_t pd,char *ptype,
+extern void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd,const char *ptype,
                                                    double polarizability,double sig_pol);
 		
 extern void gmx_poldata_set_force_field(gmx_poldata_t pd,const char *forcefield);
@@ -156,12 +157,12 @@ extern int gmx_poldata_get_atype(gmx_poldata_t pd,
                                  char **btype,
                                  char **vdwparams);
 
-extern int gmx_poldata_get_poltype(gmx_poldata_t pd,
-                                   char **ptype,
-                                   char **miller,
-                                   char **bosque,
-                                   double *polarizability,
-                                   double *sig_pol);
+extern int gmx_poldata_get_ptype(gmx_poldata_t pd,
+                                 char **ptype,
+                                 char **miller,
+                                 char **bosque,
+                                 double *polarizability,
+                                 double *sig_pol);
 
 extern const char *gmx_poldata_atype_to_ptype(gmx_poldata_t pd,const char *atype);
 
@@ -176,8 +177,10 @@ extern int gmx_poldata_search_atype(gmx_poldata_t pd,
                                     char **vdwparams);
 
 /* Return 1 if OK, 0 if not found */
-extern int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *atype,
-                                           double *polarizability,double *sig_pol);
+extern int gmx_poldata_get_ptype_pol(gmx_poldata_t pd,const char *ptype,
+                                     double *polarizability,double *sig_pol);
+extern int gmx_poldata_get_atype_pol(gmx_poldata_t pd,const char *atype,
+                                     double *polarizability,double *sig_pol);
 /* Return 1 if OK, 0 if not found */
 extern int gmx_poldata_bonding_rule_valence(gmx_poldata_t pd,char *gt_brule,double *valence);
  

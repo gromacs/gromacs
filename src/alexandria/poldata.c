@@ -49,7 +49,7 @@
 typedef struct {
     char   *type,*miller,*bosque;
     double polarizability,sig_pol;
-} t_poltype;
+} t_ptype;
 
 typedef struct {
     char   *desc,*type,*ptype,*btype,*elem,*vdwparams;
@@ -113,8 +113,8 @@ typedef struct {
 
 typedef struct gmx_poldata {
     char *filename;
-    int npoltype,npoltype_c;
-    t_poltype *poltype;
+    int nptype,nptype_c;
+    t_ptype *ptype;
     int nalexandria,nalexandria_c;
     t_ffatype *alexandria;
     int nbrule,nbrule_c;
@@ -283,25 +283,25 @@ int gmx_poldata_get_comb_rule(gmx_poldata_t pd)
     return pd->gt_comb_rule;
 }
 
-void gmx_poldata_add_poltype(gmx_poldata_t pd,
+void gmx_poldata_add_ptype(gmx_poldata_t pd,
                              const char *ptype,
                              const char *miller,
                              const char *bosque,
                              double polarizability,
                              double sig_pol)
 {
-    t_poltype *sp;
+    t_ptype *sp;
     char      buf[EEMBUFSIZE],**ptr;
     int       i,j;
   
-    for(i=0; (i<pd->npoltype); i++) 
-        if (strcasecmp(pd->poltype[i].type,ptype) == 0)
+    for(i=0; (i<pd->nptype); i++) 
+        if (strcasecmp(pd->ptype[i].type,ptype) == 0)
             break;
-    if (i == pd->npoltype) {
-        pd->npoltype++;
-        srenew(pd->poltype,pd->npoltype);
+    if (i == pd->nptype) {
+        pd->nptype++;
+        srenew(pd->ptype,pd->nptype);
   
-        sp = &(pd->poltype[i]);
+        sp = &(pd->ptype[i]);
         sp->type           = strdup(ptype);
         sp->bosque         = strdup(bosque);
         sp->miller         = strdup(miller);
@@ -414,6 +414,11 @@ int gmx_poldata_get_natypes(gmx_poldata_t pd)
     return pd->nalexandria;
 }
 
+int gmx_poldata_get_nptypes(gmx_poldata_t pd)
+{
+    return pd->nptype;
+}
+
 int gmx_poldata_get_ngt_bond(gmx_poldata_t pd)
 {
     return pd->ngt_bond;
@@ -504,20 +509,21 @@ char *gmx_poldata_get_dihedral_function(gmx_poldata_t pd,int egd)
     return pd->gt_dihedral_function[egd];
 }
 
-void gmx_poldata_set_poltype_polarizability(gmx_poldata_t pd,char *ptype,
-                                            double polarizability,double sig_pol)
+void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd,const char *ptype,
+                                          double polarizability,double sig_pol)
 {
-    t_poltype *sp;
+    t_ptype *sp;
     int i;
   
-    for(i=0; (i<pd->npoltype); i++) {
-        if (strcasecmp(ptype,pd->poltype[i].type) == 0) {
-            sp = &(pd->poltype[i]);
+    for(i=0; (i<pd->nptype); i++) {
+        if (strcasecmp(ptype,pd->ptype[i].type) == 0) {
+            sp = &(pd->ptype[i]);
             sp->polarizability = polarizability;
             sp->sig_pol = sig_pol;
+            break;
         }
     }
-    if (i == pd->npoltype)
+    if (i == pd->nptype)
         fprintf(stderr,"No such ptype %s when trying to set the polarizability.\n",ptype);
 }		
 
@@ -701,25 +707,35 @@ int gmx_poldata_bonding_rule_valence(gmx_poldata_t pd,char *gt_brule,double *val
     return 0;
 }
 
-int gmx_poldata_type_polarizability(gmx_poldata_t pd,char *atype,
-                                    double *polar,double *sig_pol)
+int gmx_poldata_get_ptype_pol(gmx_poldata_t pd,const char *ptype,
+                              double *polar,double *sig_pol)
 {
-    int i,j;
+    int j;
+
+    for(j=0; (j<pd->nptype); j++)
+    {
+        if (strcasecmp(ptype,pd->ptype[j].type) == 0)
+        {
+            *polar   = pd->ptype[j].polarizability;
+            *sig_pol = pd->ptype[j].sig_pol;
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int gmx_poldata_get_atype_pol(gmx_poldata_t pd,const char *atype,
+                              double *polar,double *sig_pol)
+{
+    int i;
 
     for(i=0; (i<pd->nalexandria); i++) 
+    {
         if (strcasecmp(atype,pd->alexandria[i].type) == 0)
         {
-            for(j=0; (j<pd->npoltype); j++)
-            {
-                if (strcasecmp(pd->alexandria[i].ptype,
-                               pd->poltype[j].type) == 0)
-                {
-                    *polar   = pd->poltype[j].polarizability;
-                    *sig_pol = pd->poltype[j].sig_pol;
-                    return 1;
-                }
-            }
+            return gmx_poldata_get_ptype_pol(pd,pd->alexandria[i].ptype,polar,sig_pol);
         }
+    }
     return 0;
 }
 
@@ -727,9 +743,9 @@ char *gmx_poldata_ptype_to_miller(gmx_poldata_t pd,const char *ptype)
 {
     int i;
 
-    for(i=0; (i<pd->npoltype); i++) 
-        if (strcasecmp(ptype,pd->poltype[i].type) == 0) 
-            return pd->poltype[i].miller;
+    for(i=0; (i<pd->nptype); i++) 
+        if (strcasecmp(ptype,pd->ptype[i].type) == 0) 
+            return pd->ptype[i].miller;
     return NULL;
 }
 
@@ -737,34 +753,34 @@ char *gmx_poldata_ptype_to_bosque(gmx_poldata_t pd,const char *ptype)
 {
     int i;
 
-    for(i=0; (i<pd->npoltype); i++) 
-        if (strcasecmp(ptype,pd->poltype[i].type) == 0) 
-            return pd->poltype[i].bosque;
+    for(i=0; (i<pd->nptype); i++) 
+        if (strcasecmp(ptype,pd->ptype[i].type) == 0) 
+            return pd->ptype[i].bosque;
     return NULL;
 }
 
-int gmx_poldata_get_poltype(gmx_poldata_t pd,
+int gmx_poldata_get_ptype(gmx_poldata_t pd,
                             char **ptype,
                             char **miller,
                             char **bosque,
                             double *polarizability,
                             double *sig_pol)
 {
-    t_poltype *sp;
+    t_ptype *sp;
     int i;
     
-    if (pd->npoltype_c < pd->npoltype) {
-        sp = &(pd->poltype[pd->npoltype_c]);
+    if (pd->nptype_c < pd->nptype) {
+        sp = &(pd->ptype[pd->nptype_c]);
         assign_scal(polarizability,sp->polarizability);
         assign_scal(sig_pol,sp->sig_pol);
         assign_str(ptype,sp->type);
         assign_str(miller,sp->miller);
         assign_str(bosque,sp->bosque);
-        pd->npoltype_c++;
+        pd->nptype_c++;
         return 1;
     }
     else
-        pd->npoltype_c = 0;
+        pd->nptype_c = 0;
     
     return 0;
 }

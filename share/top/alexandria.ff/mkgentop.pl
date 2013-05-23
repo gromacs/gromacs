@@ -1,10 +1,17 @@
 #!/usr/bin/perl -w
 
-@oldatp = ( "br","c","c1", "c2","c3","ca","cc","ce","cg",
-            "cl","cp","cu","cv","cx","cy","cz","f","h1","h2","h3","h4","h5","ha","hc","hn",
-            "ho","hp","hs","hw","hx","i","n","n1","n2","n3","n4","na","nb","nc","ne","nh",
-            "no","o","oh","on","os","p2","p3","p4","p5","pb","pc","pe","px","py","s","s2",
-            "s4","s6","sh","ss","sx","sy");
+@oldatp = ( "br",
+            "c","c1", "c2","c3","ca","cc","ce","cg",
+            "cp","cu","cv","cx","cy","cz",
+            "f",
+            "cl",
+            "h1","h2","h3","h4","h5","ha","hc","hn",
+            "ho","hp","hs","hw","hx",
+            "i",
+            "n","n1","n2","n3","n4","na","nb","nc","ne","nh", "no",
+            "o","oh","on","os",
+            "p2","p3","p4","p5","pb","pc","pe","px","py",
+            "s","s2", "s4","s6","sh","ss","sx","sy");
             
 $atp{"br"} = { elem => "Br", qq => "2", bondtype => "br", poltype => "br" };
 $atp{"c"}  = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };

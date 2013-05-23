@@ -1742,7 +1742,7 @@ void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
     {
         gt_type = gmx_poldata_get_type(pd,*topology->atoms.atomtype[i]);  
         if ((NULL != gt_type) && 
-            gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol))
+            gmx_poldata_get_atype_pol(pd,gt_type,&pol,&sigpol))
         {
             np++;
             poltot += pol;

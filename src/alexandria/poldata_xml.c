@@ -241,12 +241,12 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlPOLTYPE:
         if (NN(xbuf[exmlPTYPE]) && NN(xbuf[exmlMILLER]) && NN(xbuf[exmlBOSQUE]) &&
             NN(xbuf[exmlPOLARIZABILITY]) && NN(xbuf[exmlSIGPOL])) 
-            gmx_poldata_add_poltype(pd,
-                                    xbuf[exmlPTYPE],
-                                    xbuf[exmlMILLER],
-                                    xbuf[exmlBOSQUE],
-                                    atof(xbuf[exmlPOLARIZABILITY]),
-                                    atof(xbuf[exmlSIGPOL]));
+            gmx_poldata_add_ptype(pd,
+                                  xbuf[exmlPTYPE],
+                                  xbuf[exmlMILLER],
+                                  xbuf[exmlBOSQUE],
+                                  atof(xbuf[exmlPOLARIZABILITY]),
+                                  atof(xbuf[exmlSIGPOL]));
         break;
     case exmlATOMTYPE:
         if (NN(xbuf[exmlELEM]) && 
@@ -498,7 +498,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlREFERENCE],tmp);
     }
-    while (1 == gmx_poldata_get_poltype(pd,&ptype,&miller,&bosque,&polarizability,&sig_pol)) {
+    while (1 == gmx_poldata_get_ptype(pd,&ptype,&miller,&bosque,&polarizability,&sig_pol)) {
         grandchild = add_xml_child(child,exml_names[exmlPOLTYPE]);
         add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
         add_xml_char(grandchild,exml_names[exmlMILLER],miller);

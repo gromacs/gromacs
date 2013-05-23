@@ -618,12 +618,12 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
      */
     for(pp = 0; (pp<npd); pp++) 
     {
-        while(1 == gmx_poldata_get_poltype(pd[pp],
-                                           &(ptype[cur]),
-                                           NULL,
-                                           NULL,
-                                           &alexandria_pol,
-                                           &sig_pol))
+        while(1 == gmx_poldata_get_ptype(pd[pp],
+                                         &(ptype[cur]),
+                                         NULL,
+                                         NULL,
+                                         &alexandria_pol,
+                                         &sig_pol))
         {
             if (((NULL == ptype[prev]) || (strcmp(ptype[cur],ptype[prev]) != 0)) &&
                 (alexandria_pol > 0))
@@ -723,7 +723,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
         /* Store average values */
         if (NULL != pd_aver) 
         {
-            gmx_poldata_set_poltype_polarizability(pd_aver,smlsq[j].ptype,
+            gmx_poldata_set_ptype_polarizability(pd_aver,smlsq[j].ptype,
                                                    alexandria_aver,alexandria_sigma);
         }
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))

@@ -399,7 +399,7 @@ void add_shells(gmx_poldata_t pd,int maxatom,t_atoms *atoms,
         renum[i] = i+ns;
         gt_type = gmx_poldata_get_type(pd,*atoms->atomtype[i]);
         if ((NULL != gt_type) &&
-            (1 == gmx_poldata_type_polarizability(pd,gt_type,&pol,&sigpol)))
+            (1 == gmx_poldata_get_atype_pol(pd,gt_type,&pol,&sigpol)))
         { 
             ns++;
             p.a[0] = renum[i];
