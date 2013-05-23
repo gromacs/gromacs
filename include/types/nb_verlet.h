@@ -131,6 +131,7 @@ typedef struct {
 
     gmx_bool                 bUseGPU;         /* TRUE when GPU acceleration is used */
     nbnxn_cuda_ptr_t         cu_nbv;          /* pointer to CUDA nb verlet data     */
+    gmx_bool                 bGPUEwaldAna;    /* TRUE when GPU uses analytical Ewald */
     int                      min_ci_balanced; /* pair list balancing parameter
                                                  used for the 8x8x8 CUDA kernels    */
 } nonbonded_verlet_t;
