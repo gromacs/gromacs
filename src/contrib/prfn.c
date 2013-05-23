@@ -38,7 +38,7 @@
 
 #include "filenm.h"
 #include "futil.h"
-#include "wman.h"
+#include "gromacs/onlinehelp/wman.h"
 
 void pr_texdefs(FILE *fp)
 {
