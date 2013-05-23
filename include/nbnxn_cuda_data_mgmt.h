@@ -128,6 +128,17 @@ int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
 }
 #endif
 
+/*! Returns if analytical Ewald CUDA kernels are used. */
+FUNC_QUALIFIER
+gmx_bool nbnxn_cuda_is_kernel_ewald_analytical(const nbnxn_cuda_ptr_t cu_nb)
+#ifdef GMX_GPU
+;
+#else
+{
+    return FALSE;
+}
+#endif
+
 #ifdef __cplusplus
 }
 #endif

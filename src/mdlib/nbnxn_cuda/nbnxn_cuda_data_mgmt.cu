@@ -962,3 +962,9 @@ int nbnxn_cuda_min_ci_balanced(nbnxn_cuda_ptr_t cu_nb)
         gpu_min_ci_balanced_factor*cu_nb->dev_info->prop.multiProcessorCount : 0;
 
 }
+
+gmx_bool nbnxn_cuda_is_kernel_ewald_analytical(const nbnxn_cuda_ptr_t cu_nb)
+{
+    return ((cu_nb->nbparam->eeltype == eelCuEWALD_ANA) ||
+            (cu_nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
+}
