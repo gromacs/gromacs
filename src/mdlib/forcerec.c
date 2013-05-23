@@ -1863,7 +1863,8 @@ void init_interaction_const(FILE                 *fp,
 
     if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
-        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
+        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv,
+                              &fr->nbv->bGPUEwaldAna);
     }
 
     bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);

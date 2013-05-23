@@ -618,6 +618,7 @@ static void do_nb_verlet(t_forcerec *fr,
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
     nonbonded_verlet_group_t  *nbvg;
+    gmx_bool                  bCUDA;
 
     if (!(flags & GMX_FORCE_NONBONDED))
     {
@@ -633,7 +634,9 @@ static void do_nb_verlet(t_forcerec *fr,
         gmx_incons("Invalid cut-off scheme passed!");
     }
 
-    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
+    bCUDA = (nbvg->kernel_type == nbnxnk8x8x8_CUDA);
+
+    if (!bCUDA)
     {
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
     }
@@ -701,7 +704,7 @@ static void do_nb_verlet(t_forcerec *fr,
             gmx_incons("Invalid nonbonded kernel type passed!");
 
     }
-    if (nbvg->kernel_type != nbnxnk8x8x8_CUDA)
+    if (!bCUDA)
     {
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
     }
@@ -710,13 +713,14 @@ static void do_nb_verlet(t_forcerec *fr,
     {
         enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_RF;
     }
-    else if (nbvg->ewald_excl == ewaldexclTable)
+    else if ((bCUDA && fr->nbv->bGPUEwaldAna) ||
+             (!bCUDA && nbvg->ewald_excl == ewaldexclAnalytical))
     {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
     }
     else
     {
-        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_EWALD;
+        enr_nbnxn_kernel_ljc = eNR_NBNXN_LJ_TAB;
     }
     enr_nbnxn_kernel_lj = eNR_NBNXN_LJ;
     if (flags & GMX_FORCE_ENERGY)

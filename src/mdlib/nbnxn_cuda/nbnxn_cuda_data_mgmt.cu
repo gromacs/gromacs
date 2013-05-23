@@ -644,10 +644,13 @@ void nbnxn_cuda_init(FILE *fplog,
 
 void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
                            const interaction_const_t *ic,
-                           const nonbonded_verlet_t *nbv)
+                           const nonbonded_verlet_t *nbv,
+                           gmx_bool *bEwaldAna)
 {
     init_atomdata_first(cu_nb->atdat, nbv->grp[0].nbat->ntype);
     init_nbparam(cu_nb->nbparam, ic, nbv, cu_nb->dev_info);
+    *bEwaldAna = ((cu_nb->nbparam->eeltype == eelCuEWALD_ANA) ||
+                  (cu_nb->nbparam->eeltype == eelCuEWALD_ANA_TWIN));
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(cu_nb);
