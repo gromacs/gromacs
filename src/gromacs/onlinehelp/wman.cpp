@@ -40,6 +40,7 @@
 
 #include <string>
 
+#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -49,7 +50,6 @@
 #include "sysstuff.h"
 #include "filenm.h"
 #include "macros.h"
-#include "wman.h"
 #include "statutil.h"
 #include "copyrite.h"
 #include "strdb.h"
@@ -824,7 +824,7 @@ char *check_tty(const char *s)
     return repall(s, NSRTTY, sandrTty);
 }
 
-void
+static void
 print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
                     t_linkdata *links, const char *program, gmx_bool bWiki)
 {

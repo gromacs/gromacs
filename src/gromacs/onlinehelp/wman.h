@@ -32,22 +32,14 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
-#ifndef _wman_h
-#define _wman_h
-
+#ifndef GMX_ONLINEHELP_WMAN_H
+#define GMX_ONLINEHELP_WMAN_H
 
 #include "readinp.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-void write_java(FILE *out, const char *program,
-                int nldesc, const char **desc,
-                int nfile, t_filenm *fnm,
-                int npargs, t_pargs *pa,
-                int nbug, const char **bugs);
 
 void write_man(FILE *out, const char *mantp, const char *program,
                int nldesc, const char **desc,
@@ -68,15 +60,8 @@ char *check_tex(const char *s);
 
 char *check_tty(const char *s);
 
-/* FIXME: It should not be necessary to expose the struct */
-struct t_linkdata;
-
-void
-print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
-                    struct t_linkdata *links, const char *program, gmx_bool bWiki);
-
 #ifdef __cplusplus
 }
 #endif
 
-#endif  /* _wman_h */
+#endif

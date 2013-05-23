@@ -44,9 +44,10 @@
 #include "gmx_fatal.h"
 #include "filenm.h"
 #include "futil.h"
-#include "wman.h"
 #include "xdrf.h"
 #include "macros.h"
+
+#include "gromacs/onlinehelp/wman.h"
 
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"

@@ -46,9 +46,9 @@
 #include <algorithm>
 
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/wman.h"
 
 #include "gromacs/onlinehelp/helpformat.h"
+#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"

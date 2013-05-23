@@ -47,12 +47,12 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "wman.h"
 #include "tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
 #include "gmxfio.h"
 
+#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
