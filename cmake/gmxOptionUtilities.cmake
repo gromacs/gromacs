@@ -155,3 +155,23 @@ endmacro()
 macro(GMX_DEPENDENT_OPTION NAME DESCRIPTION DEFAULT CONDITIONS)
     gmx_dependent_cache_variable(${NAME} "${DESCRIPTION}" BOOL "${DEFAULT}" "${CONDITIONS}")
 endmacro()
+
+# Checks if one or more cache variables have changed
+#
+# Usage:
+#   gmx_check_if_changed(RESULT VAR1 VAR2 ... VARN)
+#
+# Sets RESULT to true if any of the given cache variables VAR1 ... VARN has
+# changes since the last call to this function for that variable.
+# Changes are tracked also across CMake runs.
+function(GMX_CHECK_IF_CHANGED RESULT)
+    set(_result FALSE)
+    foreach (_var ${ARGN})
+        if (NOT "${_var}" STREQUAL "${_var}_PREVIOUS_VALUE")
+            set(_result TRUE)
+        endif()
+        set(${_var}_PREVIOUS_VALUE "${${_var}}" CACHE INTERNAL
+            "Previous value of ${_var} for change tracking")
+    endforeach()
+    set(${RESULT} ${_result} PARENT_SCOPE)
+endfunction()
