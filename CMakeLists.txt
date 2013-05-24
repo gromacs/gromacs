@@ -204,6 +204,9 @@ mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
 
+# Binary and library suffix options
+include(gmxManageSuffixes)
+
 ######################################################################
 # Compiler tests
 # These need to be done early (before further tests).
@@ -306,48 +309,6 @@ endif()
 if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_LESS "12.0.0")
     message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
 endif()
-
-########################################################################
-# Set up binary and library suffixing 
-########################################################################
-option(
-    GMX_DEFAULT_SUFFIX
-    "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)"
-    ON)
-gmx_dependent_cache_variable(
-    GMX_BINARY_SUFFIX
-    "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
-    STRING ""
-    "NOT GMX_DEFAULT_SUFFIX")
-gmx_dependent_cache_variable(
-    GMX_LIBS_SUFFIX
-    "Suffix for GROMACS libraries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
-    STRING ""
-    "NOT GMX_DEFAULT_SUFFIX")
-if (GMX_DEFAULT_SUFFIX)
-  gmx_check_if_changed(SUFFIXES_CHANGED GMX_DEFAULT_SUFFIX)
-  set(GMX_BINARY_SUFFIX "")
-  set(GMX_LIBS_SUFFIX "")
-  if (GMX_MPI)
-    set(GMX_BINARY_SUFFIX "_mpi")
-    set(GMX_LIBS_SUFFIX "_mpi")
-  endif(GMX_MPI)
-  if (GMX_DOUBLE)
-    set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
-    set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
-  endif(GMX_DOUBLE)
-  if (SUFFIXES_CHANGED)
-    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif()
-else(GMX_DEFAULT_SUFFIX)
-  gmx_check_if_changed(SUFFIXES_CHANGED
-                       GMX_DEFAULT_SUFFIX GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  if (SUFFIXES_CHANGED)
-    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif()
-endif(GMX_DEFAULT_SUFFIX)
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
