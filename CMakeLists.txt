@@ -313,6 +313,7 @@ gmx_dependent_cache_variable(
     STRING ""
     "NOT GMX_DEFAULT_SUFFIX")
 if (GMX_DEFAULT_SUFFIX)
+  gmx_check_if_changed(SUFFIXES_CHANGED GMX_DEFAULT_SUFFIX)
   set(GMX_BINARY_SUFFIX "")
   set(GMX_LIBS_SUFFIX "")
   if (GMX_MPI)
@@ -323,17 +324,18 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
-  if (NOT SUFFIX_QUIETLY)
+  if (SUFFIXES_CHANGED)
     message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
+  endif()
 else(GMX_DEFAULT_SUFFIX)
-  if (NOT SUFFIX_QUIETLY)
+  gmx_check_if_changed(SUFFIXES_CHANGED
+                       GMX_DEFAULT_SUFFIX GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
+  if (SUFFIXES_CHANGED)
     message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
+  endif()
 endif(GMX_DEFAULT_SUFFIX)
-set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
@@ -694,6 +696,7 @@ include(gmxTestAVXMaskload)
 # GMX_<arch>_<feature-set> that are exported to the C code to specify
 # CPU features that should be used. This means that the logic for
 # requiring such backward compatibility is all located here.
+gmx_check_if_changed(ACCELERATION_CHANGED GMX_CPU_ACCELERATION)
 if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
@@ -720,7 +723,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
     set(GMX_CPU_ACCELERATION_X86_SSE2 1)
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
-    if (NOT ACCELERATION_QUIETLY)
+    if (ACCELERATION_CHANGED)
       message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
@@ -765,7 +768,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
-    if (NOT ACCELERATION_QUIETLY)
+    if (ACCELERATION_CHANGED)
       message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
@@ -841,14 +844,14 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
         set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
         set(GMX_X86_AVX_128_FMA 1)
-        if (NOT ACCELERATION_QUIETLY)
+        if (ACCELERATION_CHANGED)
           message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
         endif()
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
         set(GMX_X86_AVX_256 1)
-        if (NOT ACCELERATION_QUIETLY)
+        if (ACCELERATION_CHANGED)
           message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
         endif()
     endif()
@@ -889,7 +892,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
 else()
     gmx_invalid_option_value(GMX_CPU_ACCELERATION)
 endif()
-set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
