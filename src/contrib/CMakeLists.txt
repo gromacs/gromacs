@@ -25,7 +25,6 @@ if(GMX_OPENMM)
 # Check for options incompatible with OpenMM build                    #
 #######################################################################
     # we'll use the built-in fft to avoid unnecessary dependencies
-    string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
     if(NOT ${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
         message(STATUS "No external FFT libraries needed for the OpenMM build, switching to fftpack!")
         set(GMX_FFT_LIBRARY "fftpack" CACHE STRING 
@@ -48,7 +47,6 @@ if(GMX_OPENMM)
         set(GMX_SOFTWARE_INVSQRT OFF CACHE STRING 
                 "The OpenMM build does not need GROMACS software 1/sqrt!" FORCE)
     endif(GMX_SOFTWARE_INVSQRT)
-    string(TOUPPER ${GMX_CPU_ACCELERATION} GMX_CPU_ACCELERATION)
     if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
         message(STATUS "Switching off CPU-based acceleration, the OpenMM build does not support/need any!")
         set(GMX_CPU_ACCELERATION "None" CACHE STRING
