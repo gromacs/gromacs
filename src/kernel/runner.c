@@ -1178,7 +1178,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (can_use_allvsall(inputrec, mtop, TRUE, cr, fplog) && PAR(cr))
     {
-        /* All-vs-all loops do not work with domain decomposition */
+        /* Simple neighbour searching and (also?) all-vs-all loops
+         * do not work with domain decomposition. */
         Flags |= MD_PARTDEC;
     }
 
