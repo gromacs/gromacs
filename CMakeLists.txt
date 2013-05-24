@@ -87,6 +87,8 @@ set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 #must come after all cpack settings!
 include(CPack)
 
+include(CTest)
+
 set(SOURCE_IS_GIT_REPOSITORY OFF)
 if(EXISTS "${CMAKE_SOURCE_DIR}/.git")
     set(SOURCE_IS_GIT_REPOSITORY ON)
@@ -114,18 +116,25 @@ endif()
 ########################################################################
 include(gmxOptionUtilities)
 
-option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
-mark_as_advanced(GMX_COOL_QUOTES)
-
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
 
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
+gmx_dependent_option(
+    GMX_MPI_IN_PLACE
+    "Enable MPI_IN_PLACE for MPIs that have it defined"
+    ON
+    GMX_MPI)
+mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_SOFTWARE_INVSQRT "Use GROMACS software 1/sqrt" ON)
 mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
+
+option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
+mark_as_advanced(GMX_COOL_QUOTES)
+gmx_add_cache_dependency(GMX_COOL_QUOTES BOOL "NOT GMX_FAHCORE" OFF)
 
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
@@ -155,11 +164,17 @@ gmx_option_multichoice(
     "FFT library"
     "fftw3"
     fftw3 mkl "fftpack[built-in]")
-
-option(GMX_BUILD_OWN_FFTW "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack." OFF)
+gmx_dependent_option(
+    GMX_BUILD_OWN_FFTW
+    "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack."
+    OFF
+    "GMX_FFT_LIBRARY STREQUAL FFTW3")
+gmx_dependent_option(
+    GMX_DISABLE_FFTW_MEASURE
+    "Do not optimize FFTW setups (not needed with SSE)"
+    OFF
+    "GMX_FFT_LIBRARY STREQUAL FFTW3")
 mark_as_advanced(GMX_BUILD_OWN_FFTW)
-option(GMX_DISABLE_FFTW_MEASURE 
-       "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
 
 gmx_option_multichoice(
@@ -170,8 +185,6 @@ gmx_option_multichoice(
 
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
-option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
-mark_as_advanced(GMX_MPI_IN_PLACE)
 option(GMX_LOAD_PLUGINS "Compile with plugin support, needed to read VMD supported file formats" ON)
 mark_as_advanced(GMX_LOAD_PLUGINS)
 
@@ -181,7 +194,6 @@ option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
 mark_as_advanced(GMX_GIT_VERSION_INFO)
 
-option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)" ON)
 if(UNIX)
     option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
 endif()
@@ -570,6 +582,7 @@ endif()
 
 option(GMX_BUILD_UNITTESTS "Build unit tests with BUILD_TESTING (uses Google C++ Testing and Mocking Frameworks, requires libxml2)" ${LIBXML2_FOUND})
 mark_as_advanced(GMX_BUILD_UNITTESTS)
+gmx_add_cache_dependency(GMX_BUILD_UNITTESTS BOOL BUILD_TESTING OFF)
 if (GMX_BUILD_UNITTESTS AND NOT LIBXML2_FOUND)
     message(FATAL_ERROR
         "Cannot build unit tests without libxml2. "
@@ -888,11 +901,29 @@ endif()
 # Process FFT library settings
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
+# Intel 11 and up makes life somewhat easy if you just want to use
+# all their stuff. It's not easy if you only want some of their
+# stuff...
+set(MKL_MANUALLY FALSE)
+if (GMX_FFT_LIBRARY STREQUAL "MKL" AND
+    NOT (CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_GREATER "11"))
+    # The user will have to provide the set of magic libraries in
+    # MKL_LIBRARIES (see below), which we cache (non-advanced), so that they
+    # don't have to keep specifying it, and can easily see that
+    # CMake is still using that information.
+    set(MKL_MANUALLY TRUE)
+endif()
 set(MKL_LIBRARIES_FORMAT_DESCRIPTION "Use full paths to library files, in the right order, and separated by semicolons.")
-set(MKL_LIBRARIES "" CACHE STRING "List of libraries for linking to MKL. Only used with GMX_FFT_LIBRARY=mkl. ${MKL_LIBRARIES_FORMAT_DESCRIPTION}")
-set(MKL_INCLUDE_DIR "" CACHE PATH "Path to mkl.h (non-inclusive). Only used with GMX_FFT_LIBRARY=mkl.")
-mark_as_advanced(FORCE MKL_LIBRARIES)
-mark_as_advanced(FORCE MKL_INCLUDE_DIR)
+gmx_dependent_cache_variable(
+    MKL_LIBRARIES
+    "List of libraries for linking to MKL. ${MKL_LIBRARIES_FORMAT_DESCRIPTION}"
+    STRING ""
+    MKL_MANUALLY)
+gmx_dependent_cache_variable(
+    MKL_INCLUDE_DIR
+    "Path to mkl.h (non-inclusive)."
+    PATH ""
+    MKL_MANUALLY)
 if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     if(GMX_DOUBLE)
         set(FFTW fftw)
@@ -931,7 +962,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
     # stuff...
-    if (CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_GREATER "11")
+    if (NOT MKL_MANUALLY)
         # The next line takes care of everything for MKL
         if (WIN32)
             set(FFT_LINKER_FLAGS "/Qmkl=sequential")
@@ -944,14 +975,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
 
         set(MKL_ERROR_MESSAGE "Make sure you have configured your compiler so that ${FFT_LINKER_FLAGS} will work.")
     else()
-        # The user will have to provide the set of magic libraries in
-        # MKL_LIBRARIES, which we cache (non-advanced), so that they
-        # don't have to keep specifying it, and can easily see that
-        # CMake is still using that information.
-        set(MKL_LIBRARIES "${MKL_LIBRARIES}" CACHE STRING "User-specified libraries for linking to MKL")
-        mark_as_advanced(CLEAR MKL_LIBRARIES)
         include_directories(${MKL_INCLUDE_DIR})
-        mark_as_advanced(CLEAR MKL_INCLUDE_DIR)
         set(FFT_LIBRARIES "${MKL_LIBRARIES}")
         set(MKL_ERROR_MESSAGE "The include path to mkl.h in MKL_INCLUDE_DIR, and the link libraries in MKL_LIBRARIES=${MKL_LIBRARIES} need to match what the MKL documentation says you need for your system. ${MKL_LIBRARIES_FORMAT_DESCRIPTION}")
         # Convert the semi-colon separated list to a list of
@@ -1058,7 +1082,6 @@ if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
-  set_property(CACHE GMX_COOL_QUOTES PROPERTY VALUE OFF)
 endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
@@ -1117,9 +1140,20 @@ set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
 ########################################################################
 # Set up binary and library suffixing
 ########################################################################
-set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
-set(GMX_LIBS_SUFFIX ""
-  CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
+option(
+    GMX_DEFAULT_SUFFIX
+    "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)"
+    ON)
+gmx_dependent_cache_variable(
+    GMX_BINARY_SUFFIX
+    "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
+    STRING ""
+    "NOT GMX_DEFAULT_SUFFIX")
+gmx_dependent_cache_variable(
+    GMX_LIBS_SUFFIX
+    "Suffix for GROMACS libraries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
+    STRING ""
+    "NOT GMX_DEFAULT_SUFFIX")
 if (GMX_DEFAULT_SUFFIX)
   set(GMX_BINARY_SUFFIX "")
   set(GMX_LIBS_SUFFIX "")
@@ -1131,13 +1165,11 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
-  mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
   if (NOT SUFFIX_QUIETLY)
     message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
   endif (NOT SUFFIX_QUIETLY)
 else(GMX_DEFAULT_SUFFIX)
-  mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
   if (NOT SUFFIX_QUIETLY)
     message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
@@ -1219,8 +1251,6 @@ ADD_CUSTOM_TARGET(uninstall
 # Tests                                                                #
 ########################################################################
 
-include(CTest)
-mark_as_advanced(BUILD_TESTING)
 #gmxtests target builds all binaries required for running gmxtest
 add_custom_target(gmxtests DEPENDS mdrun gmx links)
 IF(BUILD_TESTING)
