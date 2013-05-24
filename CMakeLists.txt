@@ -110,12 +110,15 @@ if(CMAKE_HOST_UNIX)
 endif()
 
 ########################################################################
+# User input options                                                   #
+########################################################################
+include(gmxOptionUtilities)
+
 option(GMX_COOL_QUOTES "Enable Gromacs cool quotes" ON)
 mark_as_advanced(GMX_COOL_QUOTES)
 
 set(CMAKE_PREFIX_PATH "" CACHE STRING "Extra locations to search for external libraries and tools (give directory without lib, bin, or include)")
-# User input options                                                   #
-########################################################################
+
 option(GMX_DOUBLE "Use double precision (much slower, use only if you really need it)" OFF)
 option(GMX_MPI    "Build a parallel (message-passing) version of GROMACS" OFF)
 option(GMX_THREAD_MPI  "Build a thread-MPI-based multithreaded version of GROMACS (not compatible with MPI)" ON)
@@ -128,6 +131,7 @@ mark_as_advanced(GMX_FAHCORE)
 include(gmxManageGPU)
 
 include(gmxDetectAcceleration)
+set(GMX_SUGGESTED_CPU_ACCELERATION "None")
 if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
         if("${CMAKE_SYSTEM_NAME}" MATCHES "BlueGeneQ")
@@ -140,18 +144,30 @@ if(NOT DEFINED GMX_CPU_ACCELERATION)
     endif(CMAKE_CROSSCOMPILING)
 endif(NOT DEFINED GMX_CPU_ACCELERATION)
 
-set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
-    CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX, Sparc64_HPC_ACE")
+gmx_option_multichoice(
+    GMX_CPU_ACCELERATION
+    "Acceleration for CPU kernels and compiler optimization"
+    "${GMX_SUGGESTED_CPU_ACCELERATION}"
+    None SSE2 SSE4.1 AVX_128_FMA AVX_256 IBM_QPX Sparc64_HPC_ACE)
 
-set(GMX_FFT_LIBRARY "fftw3" 
-    CACHE STRING "FFT library choices: fftw3,mkl,fftpack[built-in]")
+gmx_option_multichoice(
+    GMX_FFT_LIBRARY
+    "FFT library"
+    "fftw3"
+    fftw3 mkl "fftpack[built-in]")
+
 option(GMX_BUILD_OWN_FFTW "Download and build FFTW 3 during the GROMACS build process, rather than fall back on the really slow fftpack." OFF)
 mark_as_advanced(GMX_BUILD_OWN_FFTW)
 option(GMX_DISABLE_FFTW_MEASURE 
        "Do not optimize FFTW setups (not needed with SSE)" OFF)
 mark_as_advanced(GMX_DISABLE_FFTW_MEASURE)
-set(GMX_QMMM_PROGRAM "none" 
-    CACHE STRING "QM package choices: none,gaussian,mopac,gamess,orca")
+
+gmx_option_multichoice(
+    GMX_QMMM_PROGRAM
+    "QM package for QM/MM"
+    None
+    none gaussian mopac gamess orca)
+
 option(GMX_BROKEN_CALLOC "Work around broken calloc()" OFF)
 mark_as_advanced(GMX_BROKEN_CALLOC)
 option(GMX_MPI_IN_PLACE "Enable MPI_IN_PLACE for MPIs that have it defined" ON)
@@ -643,7 +659,6 @@ include(gmxTestAVXMaskload)
 # GMX_<arch>_<feature-set> that are exported to the C code to specify
 # CPU features that should be used. This means that the logic for
 # requiring such backward compatibility is all located here.
-string(TOUPPER ${GMX_CPU_ACCELERATION} GMX_CPU_ACCELERATION)
 if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
@@ -851,13 +866,12 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
     set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
-else(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
-    MESSAGE(FATAL_ERROR "Unrecognized option for accelerated kernels: ${GMX_CPU_ACCELERATION}. Pick one of None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX, Sparc64_HPC_ACE")
-endif(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
+else()
+    gmx_invalid_option_value(GMX_CPU_ACCELERATION)
+endif()
 set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
 
 # Process QM/MM Settings
-string(TOUPPER ${GMX_QMMM_PROGRAM} GMX_QMMM_PROGRAM)
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
     set(GMX_QMMM_GAUSSIAN 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "MOPAC")
@@ -868,12 +882,11 @@ elseif(${GMX_QMMM_PROGRAM} STREQUAL "ORCA")
     set(GMX_QMMM_ORCA 1)
 elseif(${GMX_QMMM_PROGRAM} STREQUAL "NONE")
     # nothing to do
-else(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
-    MESSAGE(FATAL_ERROR "Invalid QM/MM program option: ${GMX_QMMM_PROGRAM}. Choose one of: Gaussian, Mopac, Gamess, Orca, None")
-endif(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
+else()
+    gmx_invalid_option_value(GMX_QMMM_PROGRAM)
+endif()
 
 # Process FFT library settings
-string(TOUPPER ${GMX_FFT_LIBRARY} GMX_FFT_LIBRARY)
 set(PKG_FFT "")
 set(PKG_FFT_LIBS "")
 set(MKL_LIBRARIES_FORMAT_DESCRIPTION "Use full paths to library files, in the right order, and separated by semicolons.")
@@ -980,7 +993,7 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
         MESSAGE(STATUS "Using internal FFT library - fftpack")
     endif()
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-    MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
+    gmx_invalid_option_value(GMX_FFT_LIBRARY)
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 set(GMX_FFT_LIBRARY_PREVIOUS_VALUE ${GMX_FFT_LIBRARY} CACHE INTERNAL "Previous value for GMX_FFT_LIBRARY, so that we can detect when it changes.")
 
