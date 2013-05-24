@@ -93,6 +93,7 @@ typedef struct tMPI_Spinlock
     volatile int lock __attribute__ ((aligned(64)));
 }
 tMPI_Spinlock_t;
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 
 
 
@@ -189,6 +190,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
     return t;
 #endif
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
 
 
@@ -226,6 +228,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
     return (t - i);
 #endif
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)

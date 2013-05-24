@@ -41,54 +41,14 @@
 #define tMPI_Atomic_memory_barrier()  __sync_synchronize()
 
 
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, volatile int i)
-{
-    return __sync_add_and_fetch( &(a->value), i);
-}
 
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
-{
-    return __sync_fetch_and_add( &(a->value), i);
-}
-
-
+TMPI_EXPORT
 static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int oldval, int newval)
 {
     return __sync_bool_compare_and_swap( &(a->value), oldval, newval);
 }
 
-
-#if 0
-/* these definitions are only used if there's no assembly versions for them:
-   they're inefficient because they use compare-and-swap instead of just
-   swap. */
-static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
-{
-    int oldval;
-    do
-    {
-        oldval = a->value;
-    }
-    while (__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
-
-    return oldval;
-}
-
-static inline void* tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
-{
-    void *oldval;
-    do
-    {
-        oldval = a->value;
-    }
-    while (__sync_val_compare_and_swap( &(a->value), oldval, b) != oldval);
-
-    return oldval;
-}
-#endif
-
-
-
+TMPI_EXPORT
 static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
                                       void *newval)
 {
@@ -103,3 +63,18 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t* a, void *oldval,
                                           (size_t)newval) );
 #endif
 }
+
+TMPI_EXPORT
+static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, volatile int i)
+{
+    return __sync_add_and_fetch( &(a->value), i);
+}
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
+
+
+TMPI_EXPORT
+static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, volatile int i)
+{
+    return __sync_fetch_and_add( &(a->value), i);
+}
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD

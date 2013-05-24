@@ -51,7 +51,11 @@
 
 /* whether to warn if there are mallocs at performance-critical sections
    (due to preallocations being too small) */
+#ifdef TMPI_WARNINGS
+#define TMPI_WARN_MALLOC
+#else
 /*#define TMPI_WARN_MALLOC*/
+#endif
 
 
 /* the number of envelopes to allocate per thread-to-thread path */

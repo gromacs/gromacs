@@ -87,8 +87,13 @@ int tMPI_Bcast(void* buffer, int count, tMPI_Datatype datatype, int root,
     if (myrank == root)
     {
         /* first set up the data */
-        tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype,
-                        count*datatype->size, buffer, comm->grp.N-1, synct, -1);
+        ret = tMPI_Post_multi(cev, myrank, 0, TMPI_BCAST_TAG, datatype,
+                              count*datatype->size, buffer, comm->grp.N-1,
+                              synct, -1);
+        if (ret != TMPI_SUCCESS)
+        {
+            return ret;
+        }
         /* and wait until everybody is done copying */
         tMPI_Wait_for_others(cev, myrank);
     }

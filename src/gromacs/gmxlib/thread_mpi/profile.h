@@ -107,17 +107,17 @@ struct tmpi_profile
 
 #ifdef TMPI_CYCLE_COUNT
     /* cycle counters */
-    tmpi_cycles_t mpifn_cycles[TMPIFN_Nfunctions]; /* array of cycle counters */
-    tmpi_cycles_t wait_cycles[TMPIWAIT_N];         /* the wait cycles */
+    tMPI_Cycles_t mpifn_cycles[TMPIFN_Nfunctions]; /* array of cycle counters */
+    tMPI_Cycles_t wait_cycles[TMPIWAIT_N];         /* the wait cycles */
 
-    tmpi_cycles_t global_start, global_stop;       /* timing start and stop times */
-    tmpi_cycles_t mpifn_start;                     /* individual timing start times for profiling
+    tMPI_Cycles_t global_start, global_stop;       /* timing start and stop times */
+    tMPI_Cycles_t mpifn_start;                     /* individual timing start times for profiling
                                                       function call times.  This can be here
                                                       because tmpi_profile is thread-specific. */
     enum tmpi_functions fn;                        /* the function being cycle-counted */
 
 
-    tmpi_cycles_t wait_start; /* individual timing start times for profiling
+    tMPI_Cycles_t wait_start; /* individual timing start times for profiling
                                  wait times. */
 
     double totals;            /* totals counter for reporting end results */
@@ -127,7 +127,7 @@ struct tmpi_profile
 extern int tMPI_Profile_started;
 
 /* initialize the profile counter */
-void tMPI_Profile_init(struct tmpi_profile *prof);
+int tMPI_Profile_init(struct tmpi_profile *prof);
 
 #if 0
 /* deallocations */
@@ -143,7 +143,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 /* start */
 #ifdef TMPI_CYCLE_COUNT
 /*void tMPI_Profile_count_start(struct tmpi_thread *th);*/
-#define tMPI_Profile_count_start(th) { th->profile.mpifn_start = tmpi_cycles_read(); }
+#define tMPI_Profile_count_start(th) { th->profile.mpifn_start = tMPI_Cycles_read(); }
 #else
 #define tMPI_Profile_count_start(th) {}
 #endif
@@ -153,7 +153,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 #ifdef TMPI_CYCLE_COUNT
 #define tMPI_Profile_count_stop(th, fn) \
     { \
-        tmpi_cycles_t stop = tmpi_cycles_read(); \
+        tMPI_Cycles_t stop = tMPI_Cycles_read(); \
         th->profile.mpifn_cycles[fn] += (stop - th->profile.mpifn_start); \
         (th->profile.mpifn_calls[fn])++; \
     }
@@ -176,7 +176,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
 /*void tMPI_Profile_wait_start(struct tmpi_thread *th);*/
 #define tMPI_Profile_wait_start(th) \
     { \
-        th->profile.wait_start = tmpi_cycles_read(); \
+        th->profile.wait_start = tMPI_Cycles_read(); \
     }
 
 /* stop waiting cycle count */
@@ -184,7 +184,7 @@ void tMPI_Profile_stop(struct tmpi_profile *prof);
                             enum tmpi_wait_functions fn);*/
 #define tMPI_Profile_wait_stop(th, fn) \
     { \
-        tmpi_cycles_t wait_stop = tmpi_cycles_read(); \
+        tMPI_Cycles_t wait_stop = tMPI_Cycles_read(); \
         th->profile.wait_cycles[fn] += (wait_stop - th->profile.wait_start); \
     }
 #else
