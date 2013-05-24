@@ -899,50 +899,8 @@ set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
 set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
-########################################################################
-# Set up binary and library suffixing
-########################################################################
-option(
-    GMX_DEFAULT_SUFFIX
-    "Use default suffixes for GROMACS binaries and libs (_d for double, _mpi for MPI; rerun cmake after changing to see relevant options)"
-    ON)
-gmx_dependent_cache_variable(
-    GMX_BINARY_SUFFIX
-    "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
-    STRING ""
-    "NOT GMX_DEFAULT_SUFFIX")
-gmx_dependent_cache_variable(
-    GMX_LIBS_SUFFIX
-    "Suffix for GROMACS libraries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double)."
-    STRING ""
-    "NOT GMX_DEFAULT_SUFFIX")
-if (GMX_DEFAULT_SUFFIX)
-  gmx_check_if_changed(SUFFIXES_CHANGED GMX_DEFAULT_SUFFIX)
-  set(GMX_BINARY_SUFFIX "")
-  set(GMX_LIBS_SUFFIX "")
-  if (GMX_LIB_MPI)
-    set(GMX_BINARY_SUFFIX "_mpi")
-    set(GMX_LIBS_SUFFIX "_mpi")
-  endif()
-  if (GMX_DOUBLE)
-    set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
-    set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
-  endif(GMX_DOUBLE)
-  if (SUFFIXES_CHANGED)
-    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif ()
-else(GMX_DEFAULT_SUFFIX)
-  gmx_check_if_changed(SUFFIXES_CHANGED
-                       GMX_DEFAULT_SUFFIX GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  if (SUFFIXES_CHANGED)
-    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif ()
-endif(GMX_DEFAULT_SUFFIX)
-if (GMX_BUILD_MDRUN_ONLY)
-    set(GMX_LIBS_SUFFIX "_mdrun${GMX_LIBS_SUFFIX}")
-endif ()
+# Binary and library suffix options
+include(gmxManageSuffixes)
 
 ##################################################################
 # Shared library settings
