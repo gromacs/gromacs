@@ -675,6 +675,8 @@ include(gmxTestAVXMaskload)
 # requiring such backward compatibility is all located here.
 if(${GMX_CPU_ACCELERATION} STREQUAL "NONE")
     # nothing to do
+    set(ACCELERATION_STATUS_MESSAGE "CPU acceleration disabled")
+
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
 
     GMX_TEST_CFLAG(GNU_SSE2_CFLAG "-msse2" ACCELERATION_C_FLAGS)
@@ -699,9 +701,8 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
     set(GMX_CPU_ACCELERATION_X86_SSE2 1)
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
-    if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
-    endif()
+    set(ACCELERATION_STATUS_MESSAGE
+        "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
 
@@ -740,17 +741,17 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
         message(FATAL_ERROR "Cannot find smmintrin.h, which is required for SSE4.1 intrinsics support.")
     endif(NOT HAVE_SMMINTRIN_H)
 
+    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
+        message(FATAL_ERROR "You are using Intel compiler version 11.1, and that compiler is known to produce incorrect results with SSE4.1 acceleration. You need to use another compiler (e.g. icc 12 or newer) or different acceleration (probably slower simulations).")
+    endif()
+
     set(GMX_CPU_ACCELERATION_X86_SSE4_1 1)
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
-    if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
-    endif()
+    set(ACCELERATION_STATUS_MESSAGE
+        "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
 
-    if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
-        message(FATAL_ERROR "You are using Intel compiler version 11.1, and that compiler is known to produce incorrect results with SSE4.1 acceleration. You need to use another compiler (e.g. icc 12 or newer) or different acceleration (probably slower simulations).")
-    endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION} STREQUAL "AVX_256")
 
     # Set the AVX compiler flag for both these choices!
@@ -813,12 +814,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
     # But just enable one of the choices internally...
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA")
-        set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
-        set(GMX_X86_AVX_128_FMA 1)
-        if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
-        endif()
-
         # We don't have the full compiler version string yet (BUILD_C_COMPILER),
         # so we can't distinguish vanilla and Apple clang, but catering for AMD
         # hackintoshes is not worth the effort.
@@ -838,13 +833,17 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
             set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
         endif()
 
+        set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
+        set(GMX_X86_AVX_128_FMA 1)
+        set(ACCELERATION_STATUS_MESSAGE
+            "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
         set(GMX_X86_AVX_256 1)
-        if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
-        endif()
+        set(ACCELERATION_STATUS_MESSAGE
+            "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
     endif()
 
     # Unfortunately gcc-4.5.2 and gcc-4.6.0 has a bug where they use the wrong datatype for the formal
@@ -883,7 +882,10 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
 else()
     gmx_invalid_option_value(GMX_CPU_ACCELERATION)
 endif()
-set(ACCELERATION_QUIETLY TRUE CACHE INTERNAL "")
+gmx_check_if_changed(ACCELERATION_CHANGED GMX_CPU_ACCELERATION)
+if (ACCELERATION_CHANGED AND DEFINED ACCELERATION_STATUS_MESSAGE)
+    message(STATUS "${ACCELERATION_STATUS_MESSAGE}")
+endif()
 
 # Process QM/MM Settings
 if(${GMX_QMMM_PROGRAM} STREQUAL "GAUSSIAN")
@@ -958,9 +960,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
     endif()
 
-    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
-        MESSAGE(STATUS "Using external FFT library - FFTW3")
-    endif()
+    set(FFT_STATUS_MESSAGE "Using external FFT library - FFTW3")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
@@ -1010,18 +1010,17 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     set(GMX_FFT_MKL 1)
     set(HAVE_LIBMKL 1)
 
-    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
-        MESSAGE(STATUS "Using external FFT library - Intel MKL")
-    endif()
+    set(FFT_STATUS_MESSAGE "Using external FFT library - Intel MKL")
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     set(GMX_FFT_FFTPACK 1)
-    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
-        MESSAGE(STATUS "Using internal FFT library - fftpack")
-    endif()
+    set(FFT_STATUS_MESSAGE "Using internal FFT library - fftpack")
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     gmx_invalid_option_value(GMX_FFT_LIBRARY)
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
-set(GMX_FFT_LIBRARY_PREVIOUS_VALUE ${GMX_FFT_LIBRARY} CACHE INTERNAL "Previous value for GMX_FFT_LIBRARY, so that we can detect when it changes.")
+gmx_check_if_changed(FFT_CHANGED GMX_FFT_LIBRARY)
+if (FFT_CHANGED)
+    message(STATUS "${FFT_STATUS_MESSAGE}")
+endif()
 
 # enable threaded fftw3 if we've found it
 if(FFTW3_THREADS OR FFTW3F_THREADS)
@@ -1158,6 +1157,7 @@ gmx_dependent_cache_variable(
     STRING ""
     "NOT GMX_DEFAULT_SUFFIX")
 if (GMX_DEFAULT_SUFFIX)
+  gmx_check_if_changed(SUFFIXES_CHANGED GMX_DEFAULT_SUFFIX)
   set(GMX_BINARY_SUFFIX "")
   set(GMX_LIBS_SUFFIX "")
   if (GMX_LIB_MPI)
@@ -1168,20 +1168,21 @@ if (GMX_DEFAULT_SUFFIX)
     set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
     set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
   endif(GMX_DOUBLE)
-  if (NOT SUFFIX_QUIETLY)
+  if (SUFFIXES_CHANGED)
     message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
+  endif ()
 else(GMX_DEFAULT_SUFFIX)
-  if (NOT SUFFIX_QUIETLY)
+  gmx_check_if_changed(SUFFIXES_CHANGED
+                       GMX_DEFAULT_SUFFIX GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
+  if (SUFFIXES_CHANGED)
     message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
     message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
+  endif ()
 endif(GMX_DEFAULT_SUFFIX)
 if (GMX_BUILD_MDRUN_ONLY)
     set(GMX_LIBS_SUFFIX "_mdrun${GMX_LIBS_SUFFIX}")
 endif ()
-set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 ##################################################################
 # Shared library settings

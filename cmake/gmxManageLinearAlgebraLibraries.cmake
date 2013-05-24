@@ -10,15 +10,6 @@
 #     function_in_library  the name of a function to use in a linking test of that library
 macro(manage_linear_algebra_library name function_in_library)
     set(_library_was_found 0)
-    set(_find_quietly FALSE)
-    set(_user_var_changed FALSE)
-    if(NOT DEFINED GMX_EXTERNAL_${name} OR
-       (GMX_EXTERNAL_${name} AND NOT "${GMX_${name}_USER}" STREQUAL "${GMX_${name}_USER_PREV}"))
-        set(_user_var_changed TRUE)
-    endif()
-    if(DEFINED GMX_EXTERNAL_${name} AND NOT _user_var_changed)
-        set(_find_quietly TRUE)
-    endif()
 
     # We could consider printing status messages at the beginning and
     # end, which would require caching whether the previous provider
@@ -27,8 +18,14 @@ macro(manage_linear_algebra_library name function_in_library)
     # low, so let's solve that one in master branch when we have
     # better CMake gear to support it.
     if(GMX_EXTERNAL_${name} OR NOT DEFINED GMX_EXTERNAL_${name})
-        set(GMX_${name}_USER_PREV ${GMX_${name}_USER} CACHE INTERNAL
-            "Previous value of GMX_${name}_USER (to detect changes)" FORCE)
+        set(_find_quietly FALSE)
+        gmx_check_if_changed(_user_var_changed GMX_${name}_USER)
+        if (NOT DEFINED GMX_EXTERNAL_${name})
+            set(_user_var_changed TRUE)
+        endif()
+        if(DEFINED GMX_EXTERNAL_${name} AND NOT _user_var_changed)
+            set(_find_quietly TRUE)
+        endif()
         set(_message_text)
         # Check for user-specified libraries if external libraries have
         # been specified (which is the default).
@@ -76,7 +73,7 @@ macro(manage_linear_algebra_library name function_in_library)
         # detection succeeded, try to detect ${name} in the CMake
         # detection paths, etc.
         if (NOT _library_was_found)
-            set(${name}_FIND_QUIETLY _find_quietly)
+            set(${name}_FIND_QUIETLY ${_find_quietly})
             # Note that this finds all kinds of system libraries,
             # including Apple's Accelerate Framework (and perhaps MKL for
             # icc < 11).
@@ -99,7 +96,10 @@ macro(manage_linear_algebra_library name function_in_library)
     # Default behaviour is to use a library found on the system or in
     # GROMACS. The user must actively set GMX_${name}_USER if they
     # want to specify a library.
-    set(GMX_${name}_USER "" CACHE BOOL "Use a ${name} library found on the system (OFF), or a ${name} library supplied by the user (any other value, which is a full path to that ${name} library)")
+    gmx_dependent_cache_variable(
+        GMX_${name}_USER
+        "Use a ${name} library found on the system (OFF), or a ${name} library supplied by the user (any other value, which is a full path to that ${name} library)"
+        FILEPATH "" GMX_EXTERNAL_${name})
     mark_as_advanced(GMX_${name}_USER)
 
     if(GMX_EXTERNAL_${name})
