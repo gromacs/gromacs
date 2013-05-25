@@ -62,18 +62,12 @@
 #include "molprop_tables.hpp"
 
 static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
-                             std::vector<alexandria::MolProp> mp,
+                             std::vector<alexandria::MolProp>& mp,
                              gmx_molselect_t gms)
 {
-    alexandria::MolPropIterator mpi;
-    alexandria::MolecularCompositionIterator mci;
-    alexandria::AtomNumIterator ani;
+    double bos0,polar,sig_pol;
     
-    int    Nelec,natom,natom_tot,atomnumber;
-    double ahc,ahp,bos,spoel,sig_alexandria,bos0,polar,sig_pol;
-    double tau_ahc,alpha_ahp;
-    const char *atomname,*comp,*iupac;
-    int    alexandria_support,miller_support,bosque_support,ims;
+    iMolSelect ims;
     char *null = (char *)"0",*empirical = (char *)"empirical",*minimum = (char *)"minimum",*minus = (char *)"-", *nofile = (char *)"none";
     const char *program;
     const char *ang3;
@@ -83,98 +77,88 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     if (0 == gmx_poldata_get_bosque_pol(pd,null,&bos0))
         gmx_fatal(FARGS,"Can not find Bosque polarizability for %s",null);
   
-    for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
     {
-        iupac = mpi->GetIupac().c_str();
+        const char *iupac = mpi->GetIupac().c_str();
         ims = gmx_molselect_status(gms,iupac);
         if ((ims == imsTrain) || (ims == imsTest)) 
         {
-            ahc = ahp = spoel = sig_alexandria = 0;
-            bos = bos0;
-            Nelec = 0;
-            natom_tot = 0;
-            alexandria_support  = -1;
-            miller_support = -1;
-            bosque_support = -1;
-      
-            for(mci=mpi->BeginMolecularComposition(); (mci<mpi->EndMolecularComposition()); mci++)
+            enum iComp { iCspoel, iCbosque, iCmiller, iCnr };
+            const char *comps[3] = { "spoel", "bosque", "miller" };
+            const char *crefs[3] = { "Maaren2013a", "Bosque2002a", "Miller1990a" };
+            const char *ctype[3] = { "AX", "BS", "MK" };
+            
+            for(int ic=iCspoel; (ic<iCnr); ic++)
             {
-                comp = mci->GetCompName().c_str();
-                for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
+                alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(comps[ic]);
+                if (mci != mpi->EndMolecularComposition())
                 {
-                    atomname = ani->GetAtom().c_str();
-                    natom = ani->GetNumber();
-                    if (strcasecmp(comp,"spoel") == 0) 
+                    double p=0,sp=0;
+                    double ahc=0,ahp=0;
+                    bool bSupport = true;
+                    int  natom_tot=0,Nelec=0;
+                    for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); bSupport && (ani<mci->EndAtomNum()); ani++)
                     {
-                        if (gmx_poldata_get_atype_pol(pd,(char *)atomname,&polar,&sig_pol) == 1) 
-                        {
-                            spoel     += polar*natom;
-                            sig_alexandria += sqr(sig_pol)*natom;
-                            natom_tot += natom;
-                            if (alexandria_support == -1)
-                                alexandria_support = 1;
-                        }
-                        else 
-                            alexandria_support = 0;
-                    }
-                    else if (strcasecmp(comp,"miller") == 0) 
-                    {
-                        if (1 == gmx_poldata_get_miller_pol(pd,(char *)atomname,&atomnumber,
-                                                            &tau_ahc,&alpha_ahp)) 
-                        {
+                        const char *atomname = ani->GetAtom().c_str();
+                        int natom = ani->GetNumber();
+                        switch (ic) {
+                        case iCspoel:
+                            bSupport = (gmx_poldata_get_atype_pol(pd,(char *)atomname,&polar,&sig_pol) == 1);
+                            break;
+                        case iCbosque:
+                            bSupport = (gmx_poldata_get_bosque_pol(pd,(char *)atomname,&polar) == 1);
+                            sig_pol = 0;
+                            break;
+                        case iCmiller:
+                            double tau_ahc,alpha_ahp;
+                            int atomnumber;
+                            bSupport = (gmx_poldata_get_miller_pol(pd,(char *)atomname,&atomnumber,&tau_ahc,&alpha_ahp) == 1);
+                            
                             ahc   += tau_ahc*natom; 
                             ahp   += alpha_ahp*natom;
                             Nelec += atomnumber*natom;
-                            if (miller_support == -1)
-                                miller_support = 1;
+                            break;
+                        default:
+                            gmx_incons("Out of range");
                         }
-                        else
-                            miller_support = 0;
-                    }
-                    else if (strcasecmp(comp,"bosque") == 0) 
-                    {
-                        if (1 == gmx_poldata_get_bosque_pol(pd,(char *)atomname,&polar)) 
+                        
+                        if (bSupport && (ic != iCmiller))
                         {
-                            bos += polar*natom;
-                            if (bosque_support == -1)
-                                bosque_support = 1;
+                            p  += polar*natom;
+                            sp += sqr(sig_pol)*natom;
+                            natom_tot += natom;
+                        }
+                    }
+                    sp = sqrt(sp/natom_tot);
+                    if (bSupport)
+                    {
+                        if (ic == iCmiller)
+                        {
+                            alexandria::Calculation calc1(program,ctype[ic],(char *)"ahc",
+                                                          crefs[ic],minimum,nofile);
+                            ahc = 4*sqr(ahc)/Nelec;
+                            alexandria::MolecularDipPolar md1(empirical,ang3,0,0,0,ahc,0);
+                            calc1.AddPolar(md1);
+                            mpi->AddCalculation(calc1);
+                            
+                            alexandria::Calculation calc2(program,ctype[ic],(char *)"ahp",
+                                                          crefs[ic],minimum,nofile);
+                            alexandria::MolecularDipPolar md2(empirical,ang3,0,0,0,ahp,0);
+                            calc2.AddPolar(md2);
+                            mpi->AddCalculation(calc2);
                         }
                         else
-                            bosque_support = 0;
+                        {
+                            alexandria::Calculation calc(program,ctype[ic],minus,
+                                                         crefs[ic],minimum,nofile);
+                            alexandria::MolecularDipPolar md(empirical,ang3,0,0,0,p,sp);
+                            calc.AddPolar(md);
+                            mpi->AddCalculation(calc);
+                            if (NULL != debug)
+                                fprintf(debug,"Added polarizability %g for %s\n",p,iupac);
+                        }
                     }
-                    else
-                        gmx_fatal(FARGS,"Unknown composition %s\n",comp);
                 }
-            }
-            
-            if (alexandria_support == 1) 
-            {
-                alexandria::Calculation calc(program,(char *)"AX",minus,
-                                             (char *)"Maaren2013a",minimum,nofile);
-                sig_alexandria = sqrt(sig_alexandria/natom_tot);
-                alexandria::MolecularDipPolar md(empirical,ang3,
-                                                 0,0,0,spoel,sig_alexandria);
-                calc.AddPolar(md);
-                mpi->AddCalculation(calc);
-            }
-            if (bosque_support == 1) 
-            {
-                alexandria::Calculation calc(program,(char *)"BS",minus,
-                                             (char *)"Bosque2002a",minimum,nofile);
-                alexandria::MolecularDipPolar md(empirical,ang3,0,0,0,bos,0);      
-                calc.AddPolar(md);
-                mpi->AddCalculation(calc);
-            }
-            if (miller_support == 1) 
-            {
-                alexandria::Calculation calc(program,(char *)"MK",(char *)"ahc",
-                                             (char *)"Miller1990a,Khan",minimum,nofile);
-                ahc = 4*sqr(ahc)/Nelec;
-                alexandria::MolecularDipPolar md1(empirical,ang3,0,0,0,ahc,0);
-                alexandria::MolecularDipPolar md2(empirical,ang3,0,0,0,ahp,0);
-                calc.AddPolar(md1);
-                calc.AddPolar(md2);
-                mpi->AddCalculation(calc);
             }
         }
     }
@@ -218,8 +202,8 @@ static void write_corr_xvg(const char *fn,
             {
                 for(k=0; (k<qmc->nconf); k++)
                 {
-                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,exp_type,&exp_val) > 0)  &&
-                        (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val) > 0)) 
+                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,exp_type,&exp_val))  &&
+                        (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val))) 
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
                         diff = fabs(qm_val-exp_val);
@@ -326,7 +310,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
         molname[cur] = mpi->GetMolname().c_str();
         for(ei=mpi->BeginExperiment(); (ei<mpi->EndExperiment()); ei++)
         {
-            if (1 == ei->GetVal(exp_type,prop,&value,&error,vec,quadrupole))
+            if (ei->GetVal(exp_type,prop,&value,&error,vec,quadrupole))
             {
                 add_refc(rc,ei->GetReference().c_str());
             }
@@ -346,6 +330,8 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
         ntot += rc->rcount[i];
     }
     printf("There are %d entries with experimental data\n",ntot);
+    if (0 == ntot)
+        printf("   did you forget to pass the -exp_type flag?\n");
     for(i=0; (i<qmc->n); i++) 
         printf("There are %d calculation results using %s/%s type %s\n",
                qmc->count[i],qmc->method[i],qmc->basis[i],qmc->type[i]);
@@ -373,7 +359,7 @@ static void gmx_molprop_analyze(std::vector<alexandria::MolProp>& mp,
                 {
                     if (mpi->GetPropRef(prop,iqmBoth,lot,NULL,NULL,
                                         &value,&error,&ref,NULL,
-                                        vec,quadrupole) == 1)
+                                        vec,quadrupole))
                     {
                         fprintf(gp,"%s|Train\n",iupac);
                     }

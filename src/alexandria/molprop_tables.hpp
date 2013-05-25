@@ -85,7 +85,7 @@ extern void gmx_molprop_stats_table(FILE *fp,MolPropObservable eprop,
  */
 extern void gmx_molprop_composition_table(FILE *fp,
                                           std::vector<alexandria::MolProp> mp,
-                                          gmx_molselect_t gms,int ims);
+                                          gmx_molselect_t gms,iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing the molecules in each molecule category
@@ -99,7 +99,7 @@ extern void gmx_molprop_composition_table(FILE *fp,
  */
 extern void gmx_molprop_category_table(FILE *fp,
                                        std::vector<alexandria::MolProp> mp,
-                                       gmx_molselect_t gms,int ims);
+                                       gmx_molselect_t gms,iMolSelect ims);
 
 /*! \brief
  * Generates a LaTeX table containing properties for molecules from different sources
@@ -124,7 +124,7 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
                                    std::vector<alexandria::MolProp> mp,
                                    t_qmcount *qmc,
                                    bool bPrintAll,bool bPrintBasis,
-                                   bool bPrintMultQ,gmx_molselect_t gms,int ims);
+                                   bool bPrintMultQ,gmx_molselect_t gms,iMolSelect ims);
 				   
 /*! \brief
  * Generates a LaTeX table containing the atomtypes in Alexandria
@@ -143,7 +143,6 @@ extern void gmx_molprop_prop_table(FILE *fp,MolPropObservable eprop,
  * \param[in] histo File name for histogram data
  * \param[in] gms   Structure containing selections of which molecules to output
  * \param[in] ims   The actual selection of the right set
- * \todo Transform ims to enum
  * \todo Transform iQM to enum
  * \todo More explanation text
  * \ingroup module_alexandria

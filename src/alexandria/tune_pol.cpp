@@ -408,8 +408,7 @@ static int decompose_frag(FILE *fp,int bTrain,
     if (bZero)
     {
         const char *null = (const char *)"0";
-        gmx_poldata_add_ptype(pd,null,NULL,null,
-                                a0,0);
+        gmx_poldata_add_ptype(pd,null,NULL,null,a0,0);
     }
     //! Now checking the result
     j = nn = 0;

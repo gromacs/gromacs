@@ -1537,10 +1537,10 @@ immStatus MyMol::Initxx(FILE *fp,
         close_symtab(&(symtab));
 
         eSupp = eSupportLocal;
-        if (GetPropRef(MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
+        if (!GetPropRef(MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
                        lot,NULL,(char *)"elec",
                        &value,&error,&myref,&mylot,
-                       vec,quadrupole) == 0)
+                       vec,quadrupole))
         {
             if (!bZero)
                 imm = immZeroDip;
@@ -1569,16 +1569,16 @@ immStatus MyMol::Initxx(FILE *fp,
             }
             dip_weight = sqr(1.0/error);
         }
-        if (GetPropRef(MPO_DIPOLE,iqmQM,
-                       lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole) != 0)
+        if (!GetPropRef(MPO_DIPOLE,iqmQM,
+                       lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole))
         {
             for(m=0; (m<DIM); m++)
             {
                 mu_esp[m] = vec[m];
             }
         }
-        if (GetProp(MPO_ENERGY,(bQM ? iqmQM : iqmBoth),
-                    lot,NULL,(char *)"DHf(298.15K)",&value) != 0)
+        if (!GetProp(MPO_ENERGY,(bQM ? iqmQM : iqmBoth),
+                     lot,NULL,(char *)"DHf(298.15K)",&value))
         {
             Hform = value;
             Emol = value;
@@ -1618,15 +1618,15 @@ immStatus MyMol::Initxx(FILE *fp,
     {
         if (bQM)
         {
-            if (GetPropRef(MPO_QUADRUPOLE,iqmQM,
-                           lot,NULL,(char *)"elec",&value,&error,
-                           NULL,NULL,vec,quadrupole) == 0)
+            if (!GetPropRef(MPO_QUADRUPOLE,iqmQM,
+                            lot,NULL,(char *)"elec",&value,&error,
+                            NULL,NULL,vec,quadrupole))
                 imm = immNoQuad;
             else
                 copy_mat(quadrupole,Q_exp);
-            if (GetPropRef(MPO_QUADRUPOLE,iqmQM,
-                           lot,NULL,(char *)"ESP",&value,&error,
-                           NULL,NULL,vec,quadrupole) != 0)
+            if (!GetPropRef(MPO_QUADRUPOLE,iqmQM,
+                            lot,NULL,(char *)"ESP",&value,&error,
+                            NULL,NULL,vec,quadrupole))
                 copy_mat(quadrupole,Q_esp);
         }
     }

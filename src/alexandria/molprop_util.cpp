@@ -731,7 +731,7 @@ t_qmcount *find_calculations(std::vector<alexandria::MolProp> mp,
             {
                 if ((NULL == fc_str) || (get_qmc_count(qmc,method,basis,ti->c_str()) > 0))
                 {
-                    if (ci->GetVal(ti->c_str(),mpo,&value,&error,vec,quadrupole) == 1) 
+                    if (ci->GetVal(ti->c_str(),mpo,&value,&error,vec,quadrupole)) 
                     {
                         add_qmc_calc(qmc,method,basis,ti->c_str());
                     }

@@ -14,6 +14,7 @@
             "s","s2", "s4","s6","sh","ss","sx","sy");
             
 $atp{"br"} = { elem => "Br", qq => "2", bondtype => "br", poltype => "br" };
+
 $atp{"c"}  = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"c1"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"c2"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
@@ -22,14 +23,17 @@ $atp{"ca"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cc"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"ce"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cg"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
-$atp{"cl"} = { elem => "Cl", qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cp"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cu"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cv"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cx"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cy"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
 $atp{"cz"} = { elem => "C",  qq => "2", bondtype => "c", poltype => "c" };
+
+$atp{"cl"} = { elem => "Cl", qq => "2", bondtype => "cl", poltype => "cl" };
+
 $atp{"f"}  = { elem => "F",  qq => "2", bondtype => "f", poltype => "f" };
+
 $atp{"h1"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"h2"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"h3"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
@@ -37,13 +41,15 @@ $atp{"h4"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"h5"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"ha"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"hc"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
-$atp{"hn"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
-$atp{"ho"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
-$atp{"hp"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
-$atp{"hs"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
-$atp{"hw"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
-$atp{"hx"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
+$atp{"hn"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"ho"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"hp"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"hs"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"hw"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"hx"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+
 $atp{"i"}  = { elem => "I",  qq => "2", bondtype => "i", poltype => "i" };
+
 $atp{"n"}  = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
 $atp{"n1"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
 $atp{"n2"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
@@ -55,10 +61,12 @@ $atp{"nc"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
 $atp{"ne"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
 $atp{"nh"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
 $atp{"no"} = { elem => "N",  qq => "2", bondtype => "n", poltype => "n" };
+
 $atp{"o"}  = { elem => "O",  qq => "2", bondtype => "o", poltype => "o" };
 $atp{"oh"} = { elem => "O",  qq => "2", bondtype => "o", poltype => "o" };
 $atp{"on"} = { elem => "O",  qq => "2", bondtype => "o", poltype => "o" };
 $atp{"os"} = { elem => "O",  qq => "2", bondtype => "o", poltype => "o" };
+
 $atp{"p2"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
 $atp{"p3"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
 $atp{"p4"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
@@ -68,6 +76,7 @@ $atp{"pc"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
 $atp{"pe"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
 $atp{"px"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
 $atp{"py"} = { elem => "P",  qq => "2", bondtype => "p", poltype => "p" };
+
 $atp{"s"}  = { elem => "S",  qq => "2", bondtype => "p", poltype => "s" };
 $atp{"s2"} = { elem => "S",  qq => "2", bondtype => "s", poltype => "s" };
 $atp{"s4"} = { elem => "S",  qq => "2", bondtype => "s", poltype => "s" };
