@@ -317,12 +317,11 @@ endif(GMX_SOFTWARE_INVSQRT)
 ########################################################################
 include(CheckIncludeFiles)
 include(CheckIncludeFileCXX)
-check_include_files(unistd.h	 HAVE_UNISTD_H)
+check_include_files(unistd.h     HAVE_UNISTD_H)
 check_include_files(pwd.h        HAVE_PWD_H)
-check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
-check_include_files(io.h  		 HAVE_IO_H)
+check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
@@ -331,7 +330,6 @@ check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # as selections won't be fully functional.
 
 include(CheckFunctionExists)
-check_function_exists(strdup            HAVE_STRDUP)
 check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
 check_function_exists(memalign          HAVE_MEMALIGN)
 check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
@@ -355,17 +353,11 @@ check_library_exists(m cbrt "" HAVE_CBRT)
 
 include(CheckTypeSize)
 
-check_type_size("int"           SIZEOF_INT) 
-check_type_size("long int"      SIZEOF_LONG_INT) 
-check_type_size("long long int" SIZEOF_LONG_LONG_INT) 
+check_type_size("int"           SIZEOF_INT)
+check_type_size("long int"      SIZEOF_LONG_INT)
+check_type_size("long long int" SIZEOF_LONG_LONG_INT)
 check_type_size("off_t"         SIZEOF_OFF_T)
 check_type_size("void *"        SIZEOF_VOIDP)
-
-if (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
-    set(GMX_64_BIT TRUE)
-else (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
-    set(GMX_64_BIT FALSE)
-endif (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -978,9 +970,6 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     set(GMX_FFT_MKL 1)
     set(HAVE_LIBMKL 1)
 
-#elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
-#    MESSAGE(STATUS "Using external FFT library - AMD core math library")
-#    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
@@ -1029,7 +1018,8 @@ endif()
 mark_as_advanced(GMX_EXTERNAL_LAPACK)
 mark_as_advanced(GMX_EXTERNAL_BLAS)
 
-set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+# Whether GROMACS will really try to compile support for VMD plugins
+set(GMX_USE_PLUGINS OFF)
 
 if(GMX_LOAD_PLUGINS)
   if(CYGWIN OR NOT WIN32)
@@ -1183,8 +1173,6 @@ add_subdirectory(scripts)
 # Don't bother the user after the first configure pass.
 if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
-    unset(CUDA_NOTFOUND_AUTO)
-    unset(CUDA_NOTFOUND_MESSAGE)
 endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
