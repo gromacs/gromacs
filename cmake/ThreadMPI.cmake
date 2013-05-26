@@ -33,10 +33,7 @@ else ()
     message(FATAL_ERROR "Thread support required")
 endif (CMAKE_USE_PTHREADS_INIT)
 
-# Turns on thread_mpi.
-# options are:
-# CXX: enable C++ library build.
-MACRO(TMPI_ENABLE)
+MACRO(TMPI_ENABLE_MPI)
     # first check whether threads and atomics are available.
     if(NOT TMPI_ATOMICS)
         # check again, to allow the user to fix this.
@@ -48,17 +45,6 @@ MACRO(TMPI_ENABLE)
     endif(NOT TMPI_ATOMICS)
 
     set(TMPI_ENABLED 1)
-    foreach (_option IN ITEMS ${ARGN})
-        if (_option STREQUAL "CXX")
-            set(TMPI_CXX_LIB 1)
-        elseif (_option STREQUAL "NOMPI")
-            set(TMPI_NO_MPI_LIB 1)
-        else ()
-            message(FATAL_ERROR "Unknown thread_mpi option '${_option}'")
-        endif ()
-    endforeach ()
-
-    #tmpi_test_atomics(TMPI_ATOMICS)
 
 # the spin-waiting option
     option(THREAD_MPI_WAIT_FOR_NO_ONE "Use busy waits without yielding to the OS scheduler. Turning this on might improve performance (very) slightly at the cost of very poor performance if the threads are competing for CPU time." OFF)
@@ -131,6 +117,27 @@ MACRO(TMPI_ENABLE)
     check_function_exists(sysconf       HAVE_SYSCONF)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
+ENDMACRO(TMPI_ENABLE_MPI)
+
+# Turns on thread_mpi.
+# options are (if no options provided, MPI is assumed):
+# CXX: enable C++ library build.
+# MPI: enable building MPI parts of the library.
+MACRO(TMPI_ENABLE)
+    set(_options ${ARGN})
+    if (ARGC EQUAL 0)
+        set(_options MPI)
+    endif()
+
+    foreach (_option ${_options})
+        if (_option STREQUAL "CXX")
+            set(TMPI_CXX_LIB 1)
+        elseif (_option STREQUAL "MPI")
+            tmpi_enable_mpi()
+        else ()
+            message(FATAL_ERROR "Unknown thread_mpi option '${_option}'")
+        endif ()
+    endforeach ()
 ENDMACRO(TMPI_ENABLE)
 
 MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
