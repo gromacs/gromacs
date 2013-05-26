@@ -570,7 +570,12 @@ endif(GMX_X11)
 
 include(ThreadMPI)
 set(THREAD_MPI_LIB thread_mpi)
+# Enable core threading facilities
+tmpi_enable_core("${CMAKE_SOURCE_DIR}/include")
+# Enable tMPI C++ support
+tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
+    # enable MPI functions
     tmpi_enable()
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
