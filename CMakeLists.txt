@@ -201,11 +201,6 @@ if(UNIX)
 endif()
 option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
-if(UNIX)
-    option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (not available on non-*nix platforms and it will only work if static versions of external dependencies are available and found)!" OFF)
-    mark_as_advanced(GMX_PREFER_STATIC_LIBS)
-endif()
-
 option(GMX_CYCLE_SUBCOUNTERS "Enable cycle subcounters to get a more detailed cycle timings" OFF)
 mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
@@ -379,20 +374,6 @@ check_type_size("void *"        SIZEOF_VOIDP)
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
 
-
-if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
-    # Maybe Solaris should be here? Patch this if you know!
-    SET(SHARED_LIBS_DEFAULT ON)
-elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
-    # Support for shared libs on native Windows is a bit new. Its
-    # default might change later if/when we sort things out. Also,
-    # Cray should go here. What variable value can detect it?
-    SET(SHARED_LIBS_DEFAULT OFF)
-else()
-    message(STATUS "Defaulting to building static libraries")
-    SET(SHARED_LIBS_DEFAULT OFF)
-endif()
-
 # Management of GROMACS options for specific toolchains should go
 # here. Because the initial settings for some of the main options have
 # already happened, but things like library detection and MPI compiler
@@ -404,56 +385,78 @@ if(${CMAKE_SYSTEM_NAME} MATCHES BlueGene)
     include(gmxManageBlueGene)
 endif()
 
-if(UNIX AND GMX_PREFER_STATIC_LIBS AND SHARED_LIBS_DEFAULT)
-    if(BUILD_SHARED_LIBS)
-        # Warn the user about the combination. But don't overwrite the request.
-        message(WARNING "Searching for static libraries requested, and building shared Gromacs libraries requested. This might cause problems linking later.")
-    elseif(NOT DEFINED BUILD_SHARED_LIBS)
-        # Change default to OFF. Don't warn if it's already off.
-        message(WARNING "Searching for static libraries requested, so the GROMACS libraries will also be built statically (BUILD_SHARED_LIBS=OFF)")
-        set(SHARED_LIBS_DEFAULT OFF)
-    endif()
-endif()
-
-# By now, all tool chains should have spoken up if they care about
-# the setting of SHARED_LIBS_DEFAULT.
-option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
-
 ########################################################################
 #Process MPI settings
 ########################################################################
 include(gmxManageMPI)
 
 ########################################################################
-# Find external packages                                               #
+# Shared/static library settings
 ########################################################################
-if(UNIX AND GMX_PREFER_STATIC_LIBS)
+# Determine the defaults (this block has no effect if the variables have
+# already been set)
+if(APPLE OR CYGWIN OR ${CMAKE_SYSTEM_NAME} MATCHES "Linux|.*BSD")
+    # Maybe Solaris should be here? Patch this if you know!
+    SET(SHARED_LIBS_DEFAULT ON)
+elseif(WIN32 OR ${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+    # Support for shared libs on native Windows is a bit new. Its
+    # default might change later if/when we sort things out. Also,
+    # Cray should go here. What variable value can detect it?
+    SET(SHARED_LIBS_DEFAULT OFF)
+else()
+    if (NOT DEFINED BUILD_SHARED_LIBS)
+        message(STATUS "Defaulting to building static libraries")
+    endif()
+    SET(SHARED_LIBS_DEFAULT OFF)
+endif()
+if (GMX_PREFER_STATIC_LIBS)
+    if (NOT DEFINED BUILD_SHARED_LIBS AND SHARED_LIBS_DEFAULT)
+        message("Searching for static libraries requested, so the GROMACS libraries will also be built statically (BUILD_SHARED_LIBS=OFF)")
+    endif()
+    set(SHARED_LIBS_DEFAULT OFF)
+endif()
+set(GMX_PREFER_STATIC_LIBS_DEFAULT OFF)
+if (WIN32 AND NOT CYGWIN AND NOT BUILD_SHARED_LIBS)
+    set(GMX_PREFER_STATIC_LIBS_DEFAULT ON)
+endif()
+
+# Declare the user-visible options
+option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with MPI, or on some HPC systems)" ${SHARED_LIBS_DEFAULT})
+if (UNIX)
+    set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
+        "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
+elseif (WIN32 and NOT CYGWIN)
+    set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
+        "When finding libraries prefer static system libraries (MT instead of MD)")
+endif()
+option(GMX_PREFER_STATIC_LIBS "${GMX_PREFER_STATIC_LIBS_DESCRIPTION}"
+       ${GMX_PREFER_STATIC_LIBS_DEFAULT})
+mark_as_advanced(GMX_PREFER_STATIC_LIBS)
+
+# Act on the set values
+if (UNIX AND GMX_PREFER_STATIC_LIBS)
+    if(BUILD_SHARED_LIBS)
+        # Warn the user about the combination. But don't overwrite the request.
+        message(WARNING "Searching for static libraries requested, and building shared Gromacs libraries requested. This might cause problems linking later.")
+    endif()
     # On Linux .a is the static library suffix, on Mac OS X .lib can also
     # be used, so we'll add both to the preference list.
     SET(CMAKE_FIND_LIBRARY_SUFFIXES ".lib;.a" ${CMAKE_FIND_LIBRARY_SUFFIXES})
 endif()
-
 IF( WIN32 AND NOT CYGWIN)
-  # This makes windows.h not declare min/max as macros that would break
-  # C++ code using std::min/std::max.
-  add_definitions(-DNOMINMAX)
-
   if (NOT BUILD_SHARED_LIBS)
-      option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" ON)
       if(NOT GMX_PREFER_STATIC_LIBS)
           message(WARNING "Shared system libraries requested, and static Gromacs libraries requested.")
       endif()
   else()
-      message(FATAL_ERROR "BUILD_SHARED_LIBS not yet working for Windows in the master branch")
-      option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static system libraries (MT instead of MD)!" OFF)
+      message(FATAL_ERROR "BUILD_SHARED_LIBS=ON not yet working for Windows in the master branch")
       if(GMX_PREFER_STATIC_LIBS)
-          #this combination segfaults (illigal passing of file handles)
+          #this combination segfaults (illegal passing of file handles)
           message(FATAL_ERROR "Static system libraries requested, and shared Gromacs libraries requested.")
       endif()
       add_definitions(-DUSE_VISIBILITY -DTMPI_USE_VISIBILITY)
       set(PKG_CFLAGS "$PKG_CFLAGS -DUSE_VISIBILITY -DTMPI_USE_VISIBILITY")
   endif()
-  mark_as_advanced(GMX_PREFER_STATIC_LIBS)
 
   IF (GMX_PREFER_STATIC_LIBS)
       #Only setting Debug and Release flags. Others configurations are current not used.
@@ -468,6 +471,10 @@ IF( WIN32 AND NOT CYGWIN)
     endif()
   ENDIF()
 ENDIF()
+
+########################################################################
+# Find external packages                                               #
+########################################################################
 
 # Unconditionally find the package, as it is also required for unit tests
 find_package(LibXml2)
@@ -532,6 +539,9 @@ endif(CYGWIN)
 
 if(WIN32 AND NOT CYGWIN)
     set(GMX_NATIVE_WINDOWS 1)
+    # This makes windows.h not declare min/max as macros that would break
+    # C++ code using std::min/std::max.
+    add_definitions(-DNOMINMAX)
 endif()
 
 # only bother with finding git and using version.h if the source is a git repo
