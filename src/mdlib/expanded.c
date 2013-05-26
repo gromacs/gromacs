@@ -1430,6 +1430,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
             }
         }
     }
+    sfree(pfep_lamee);
     sfree(scaled_lamee);
     sfree(weighted_lamee);
     sfree(p_k);
