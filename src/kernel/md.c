@@ -1802,7 +1802,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl_constr);
                 }
-                enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+                if (bVV)
+                {
+                    enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
+                }
+                else
+                {
+                    enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+                }
             }
             else if (graph)
             {
@@ -1882,8 +1889,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bFirstIterate = FALSE;
         }
 
-        /* only add constraint dvdl after constraints */
-        enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         if (!bVV || bRerunMD)
         {
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
