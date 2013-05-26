@@ -499,15 +499,17 @@ endif(GMX_X11)
 
 include(ThreadMPI)
 set(THREAD_MPI_LIB thread_mpi)
+# Enable core threading facilities
+tmpi_enable_core("${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders")
+# Enable tMPI C++ support
+tmpi_enable_cxx()
 if(GMX_THREAD_MPI)
-    tmpi_enable(CXX)
+    # enable MPI functions
+    tmpi_enable()
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
-    tmpi_get_source_list(THREAD_MPI_SRC)
-else(GMX_THREAD_MPI)
-    tmpi_enable(CXX NOMPI)
-    tmpi_get_source_list(THREAD_MPI_SRC)
 endif(GMX_THREAD_MPI)
+tmpi_get_source_list(THREAD_MPI_SRC)
 
 if(GMX_GPU)
     # now that we have detected the dependencies, do the second configure pass
