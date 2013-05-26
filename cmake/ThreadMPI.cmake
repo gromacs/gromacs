@@ -38,21 +38,23 @@ include(CheckFunctionExists)
 include(CheckCSourceCompiles)
 
 # sets TMPI_ATOMICS to 1 if atomic operations are found, 0 otherwise
-MACRO(TMPI_TEST_ATOMICS)
+# Options:
+# include directory for thread_mpi/atomic.h
+MACRO(TMPI_TEST_ATOMICS INCDIR)
     if (NOT DEFINED TMPI_ATOMICS)
         try_compile(TEST_ATOMICS "${CMAKE_BINARY_DIR}"
                 "${CMAKE_SOURCE_DIR}/cmake/TestAtomics.c"
-                COMPILE_DEFINITIONS "-I${CMAKE_SOURCE_DIR}/include" )
+                COMPILE_DEFINITIONS "-I${INCDIR}")
         if (TEST_ATOMICS)
             message(STATUS "Atomic operations found")
         else (TEST_ATOMICS)
             message(STATUS "Atomic operations not found")
         endif(TEST_ATOMICS)
         set(TMPI_ATOMICS ${TEST_ATOMICS} CACHE INTERNAL "Whether atomic operations are found")
+        set(TMPI_ATOMICS_INCDIR ${INCDIR} CACHE INTERNAL "Atomic operations check include dir")
     endif(NOT DEFINED TMPI_ATOMICS)
 ENDMACRO(TMPI_TEST_ATOMICS VARIABLE)
 
-TMPI_TEST_ATOMICS()
 
 include(FindThreads)
 if (CMAKE_USE_PTHREADS_INIT)
@@ -66,32 +68,29 @@ else ()
     message(FATAL_ERROR "Thread support required")
 endif (CMAKE_USE_PTHREADS_INIT)
 
-# Turns on thread_mpi.
-# options are:
-# CXX: enable C++ library build.
+# Turns on thread_mpi core threading functions.
+MACRO(TMPI_ENABLE_CORE INCDIR)
+    TMPI_TEST_ATOMICS(${INCDIR})
+ENDMACRO(TMPI_ENABLE_CORE)
+
+# enable C++ library build.
+MACRO(TMPI_ENABLE_CXX)
+    set(TMPI_CXX_LIB 1)
+ENDMACRO(TMPI_ENABLE_CXX)
+
+# Turns on thread_mpi MPI functions.
 MACRO(TMPI_ENABLE)
     # first check whether threads and atomics are available.
     if(NOT TMPI_ATOMICS)
         # check again, to allow the user to fix this.
         unset(TMPI_ATOMICS CACHE)
-        TMPI_TEST_ATOMICS()
+        TMPI_TEST_ATOMICS(${TMPI_ATOMICS_INCDIR})
     endif(NOT TMPI_ATOMICS)
     if(NOT TMPI_ATOMICS)
         message(WARNING "Atomic operations not found for this CPU+compiler combination. Thread support will be unbearably slow: disable threads. Atomic operations should work on all but the most obscure CPU+compiler combinations; if your system is not obscure -- like, for example, x86 with gcc --  please contact the developers.")
     endif(NOT TMPI_ATOMICS)
 
     set(TMPI_ENABLED 1)
-    foreach (_option IN ITEMS ${ARGN})
-        if (_option STREQUAL "CXX")
-            set(TMPI_CXX_LIB 1)
-        #elseif (_option STREQUAL "NOMPI")
-        #            set(TMPI_NO_MPI_LIB 1)
-        else ()
-            message(FATAL_ERROR "Unknown thread_mpi option '${_option}'")
-        endif ()
-    endforeach ()
-
-    #tmpi_test_atomics(TMPI_ATOMICS)
 
 # the spin-waiting option
     option(THREAD_MPI_WAIT_FOR_NO_ONE "Use busy waits without yielding to the OS scheduler. Turning this on might improve performance (very) slightly at the cost of very poor performance if the threads are competing for CPU time." OFF)
@@ -165,6 +164,7 @@ MACRO(TMPI_ENABLE)
 # this runs on windows
 #check_include_files(windows.h		HAVE_WINDOWS_H)
 ENDMACRO(TMPI_ENABLE)
+
 
 MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
     set(${SRC_VARIABLE}
