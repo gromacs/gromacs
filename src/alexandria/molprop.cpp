@@ -736,7 +736,7 @@ bool Experiment::GetVal(const char *type,MolPropObservable mpo,
     }
     return done;
 }
-  
+
 bool MolProp::GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
                          const char *conf,const char *type,double *value,double *error,
                          char **ref,char **mylot,
@@ -774,7 +774,7 @@ bool MolProp::GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
     {
         if (NULL != lot) 
         {
-            ci = GetLot(lot);
+            ci = GetLotPropType(lot,mpo,type);
             if (ci != EndCalculation())
             {
                 basisset     = ci->GetBasisset();
@@ -810,6 +810,77 @@ bool MolProp::GetProp(MolPropObservable mpo,iqmType iQM,char *lot,
 }                
 
 
+CalculationIterator MolProp::GetLotPropType(const char *lot,
+                                            MolPropObservable mpo,
+                                            const char *type)
+{
+    char **ll;
+    CalculationIterator ci;
+    
+    ll = split('/',lot);
+    if ((NULL != ll[0]) && (NULL != ll[1])) 
+    {
+        for(ci=BeginCalculation(); (ci < EndCalculation()); ci++)
+        {
+            if ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
+                (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0))
+            {
+                bool done = false;
+                switch (mpo) {
+                case MPO_POTENTIAL:
+                    done = ci->NPotential() > 0;
+                    break;
+                case MPO_DIPOLE:
+                    for (MolecularDipPolarIterator mdp = ci->BeginDipole(); !done && (mdp < ci->EndDipole()); mdp++)
+                    { 
+                        done =  ((NULL == type) ||
+                                 (strcasecmp(type,mdp->GetType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_QUADRUPOLE:
+                    for (MolecularQuadrupoleIterator mdp = ci->BeginQuadrupole(); !done && (mdp < ci->EndQuadrupole()); mdp++)
+                    { 
+                        done =  ((NULL == type) ||
+                                 (strcasecmp(type,mdp->GetType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_POLARIZABILITY:
+                    for (MolecularDipPolarIterator mdp = ci->BeginPolar(); !done && (mdp < ci->EndPolar()); mdp++)
+                    { 
+                        done =  ((NULL == type) ||
+                                 (strcasecmp(type,mdp->GetType().c_str()) == 0));
+                    }
+                    break;
+                case MPO_ENERGY:
+                    for (MolecularEnergyIterator mdp = ci->BeginEnergy(); !done && (mdp < ci->EndEnergy()); mdp++)
+                    { 
+                        done =  ((NULL == type) ||
+                                 (strcasecmp(type,mdp->GetType().c_str()) == 0));
+                    }
+                    break;
+                default:
+                    break;
+                }
+                if (done)
+                    break;
+            }
+        }
+        int k = 0;
+        while (ll[k] != NULL)
+        {
+            sfree(ll[k]);
+            k++;
+        }
+        sfree(ll);
+        
+        return ci;
+    }
+    else
+    {
+        return EndCalculation();
+    }
+}
+
 CalculationIterator MolProp::GetLot(const char *lot)
 {
     char **ll;
@@ -818,15 +889,13 @@ CalculationIterator MolProp::GetLot(const char *lot)
     ll = split('/',lot);
     if ((NULL != ll[0]) && (NULL != ll[1])) 
     {
-        int done = 0;
-        for(ci=BeginCalculation(); (done == 0) && (ci < EndCalculation()); ci++)
+        bool done = false;
+        for(ci=BeginCalculation(); (!done) && (ci < EndCalculation()); ci++)
         {
-            if ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
-                (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0))
-            {
-                done = 1;
+            done = ((strcasecmp(ci->GetMethod().c_str(),ll[0]) == 0) &&
+                    (strcasecmp(ci->GetBasisset().c_str(),ll[1]) == 0));
+            if (done)
                 break;
-            }
         }
         int k = 0;
         while (ll[k] != NULL)

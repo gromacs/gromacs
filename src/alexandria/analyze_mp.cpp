@@ -173,7 +173,8 @@ static void write_corr_xvg(const char *fn,
 {
     alexandria::MolPropIterator mpi;
     FILE   *fp;
-    int    i,k,nout,ims;
+    int    i,k,nout;
+    iMolSelect ims;
     char   lbuf[256];
     double exp_val,qm_val,diff; 
     
@@ -197,13 +198,15 @@ static void write_corr_xvg(const char *fn,
         nout = 0;
         for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
         {
-            ims =gmx_molselect_status(gms,mpi->GetIupac().c_str());
+            ims = gmx_molselect_status(gms,mpi->GetIupac().c_str());
             if ((ims == imsTrain) || (ims == imsTest))
             {
                 for(k=0; (k<qmc->nconf); k++)
                 {
-                    if ((mpi->GetProp(mpo,iqmExp,NULL,NULL,exp_type,&exp_val))  &&
-                        (mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],qmc->type[i],&qm_val))) 
+                    bool bExp = mpi->GetProp(mpo,iqmExp,NULL,NULL,exp_type,&exp_val);
+                    bool bQM  = mpi->GetProp(mpo,iqmQM,lbuf,qmc->conf[k],
+                                             qmc->type[i],&qm_val);
+                    if (bExp && bQM)
                     {
                         fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val-exp_val);
                         diff = fabs(qm_val-exp_val);
@@ -215,6 +218,11 @@ static void write_corr_xvg(const char *fn,
                                     mpi->GetIupac().c_str(),exp_val,qm_val);
                             nout++;
                         }
+                    }
+                    else
+                    {
+                        printf("%s bQM = %d bExp = %d\n",mpi->GetMolname().c_str(),
+                               bQM ? 1 : 0, bExp ? 1 : 0);
                     }
                 }
             }

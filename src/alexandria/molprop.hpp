@@ -869,6 +869,9 @@ public:
     //! Return End Iterator over dipole elements
     MolecularDipPolarIterator EndDipole()   { return _dipole.end(); }
                   
+    //! Number of quadrupole values
+    int NQuadrupole() { return _quadrupole.size(); }
+    
     //! Add a MolecularQuadrupole element
     void AddQuadrupole(MolecularQuadrupole mq) { _quadrupole.push_back(mq); }
     
@@ -1297,7 +1300,12 @@ public:
     //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
     CalculationIterator GetLot(const char *lot);
     
-    /*! \brief
+    //! Return a calculation iterator corresponding to the level of theory (lot) parameter, or EndCalculation in case it is not found
+    //! The operator should hold the requested observable of the type (can be NULL)
+    CalculationIterator GetLotPropType(const char *lot,
+                                       MolPropObservable mpo,
+                                       const char *type);
+/*! \brief
      * Sends this object over an MPI connection
      *
      * \param[in] commrec   GROMACS data structure for MPI communication
