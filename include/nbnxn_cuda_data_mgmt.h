@@ -66,9 +66,9 @@ void nbnxn_cuda_init(FILE *fplog,
 
 /*! Initializes simulation constant data. */
 FUNC_QUALIFIER
-void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t           p_cu_nb,
-                           const interaction_const_t *ic,
-                           const nonbonded_verlet_t  *nbv) FUNC_TERM
+void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t                cu_nb,
+                           const interaction_const_t      *ic,
+                           const nonbonded_verlet_group_t *nbv_group) FUNC_TERM
 
 /*! Initializes pair-list data for GPU, called at every pair search step. */
 FUNC_QUALIFIER
