@@ -265,10 +265,30 @@ gmx_set_thread_affinity(FILE                *fplog,
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
-    rc = get_thread_affinity_layout(fplog, cr, hwinfo,
-                                    nthread_node,
-                                    offset, &hw_opt->core_pinning_stride,
-                                    &locality_order);
+#ifdef GMX_THREAD_MPI
+    /* hw_opt is shared among tMPI threads, so for thread safety we need to do
+     * the layout detection only on master as core_pinning_stride is an in-out
+     * parameter and gets auto-set depending on its initial value.
+     * This is not thread-safe with multi-simulations, but that's anyway not
+     * supported by tMPI. */
+    if (SIMMASTER(cr))
+#endif
+    {
+        rc = get_thread_affinity_layout(fplog, cr, hwinfo,
+                                        nthread_node,
+                                        offset, &hw_opt->core_pinning_stride,
+                                        &locality_order);
+    }
+#ifdef GMX_THREAD_MPI
+    /* Non-master threads have to wait for the layout detection to be done. */
+    if (PAR(cr))
+    {
+        MPI_Barrier(cr->mpi_comm_mysim);
+        /* Make sure that all tMPI ranks have the same return code and take
+         * the same codepath below. */
+        gmx_bcast(sizeof(&rc), &rc, cr);
+    }
+#endif
 
     if (rc != 0)
     {
