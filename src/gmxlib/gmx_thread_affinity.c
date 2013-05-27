@@ -40,6 +40,8 @@
 #include <sched.h>
 #include <sys/syscall.h>
 #endif
+#include <string.h>
+#include <errno.h>
 #include <assert.h>
 #include <stdio.h>
 #include "typedefs.h"
@@ -188,8 +190,15 @@ gmx_set_thread_affinity(FILE                *fplog,
     int        nth_affinity_set, thread_id_node, thread_id,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;
     int        offset;
-    const int *locality_order;
-    int        rc;
+    /* these are inherently global properties that are shared among all threads
+     */
+    static const int          *locality_order;
+    static int                 rc;
+    static gmx_bool            have_locality_order = FALSE;
+    static tMPI_Thread_mutex_t locality_order_mtx  =
+        TMPI_THREAD_MUTEX_INITIALIZER;
+    static tMPI_Thread_cond_t  locality_order_cond =
+        TMPI_THREAD_COND_INITIALIZER;
 
     if (hw_opt->thread_affinity == threadaffOFF)
     {
@@ -265,10 +274,65 @@ gmx_set_thread_affinity(FILE                *fplog,
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
-    rc = get_thread_affinity_layout(fplog, cr, hwinfo,
-                                    nthread_node,
-                                    offset, &hw_opt->core_pinning_stride,
-                                    &locality_order);
+    /* hw_opt is shared among tMPI threads, so for thread safety we need to do
+     * the layout detection only on master as core_pinning_stride is an in-out
+     * parameter and gets auto-set depending on its initial value.
+     * This
+     * This is not thread-safe with multi-simulations, but that's anyway not
+     * supported by tMPI. */
+    if (SIMMASTER(cr))
+    {
+        int ret;
+        int i;
+
+        ret = tMPI_Thread_mutex_lock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+        rc = get_thread_affinity_layout(fplog, cr, hwinfo,
+                                        nthread_node,
+                                        offset, &hw_opt->core_pinning_stride,
+                                        &locality_order);
+        have_locality_order = TRUE;
+        ret                 = tMPI_Thread_cond_broadcast(&locality_order_cond);
+        if (ret != 0)
+        {
+            tMPI_Thread_mutex_unlock(&locality_order_mtx);
+            goto locality_order_err;
+        }
+        ret = tMPI_Thread_mutex_unlock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+    }
+    else
+    {
+        int ret;
+        /* all other threads wait for the locality order data. */
+        ret = tMPI_Thread_mutex_lock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+
+        while (!have_locality_order)
+        {
+            ret = tMPI_Thread_cond_wait(&locality_order_cond,
+                                        &locality_order_mtx);
+            if (ret != 0)
+            {
+                tMPI_Thread_mutex_unlock(&locality_order_mtx);
+                goto locality_order_err;
+            }
+        }
+        ret = tMPI_Thread_mutex_unlock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+    }
 
     if (rc != 0)
     {
@@ -336,10 +400,10 @@ gmx_set_thread_affinity(FILE                *fplog,
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
                 sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
-#else       /* GMX_LIB_MPI */
+#else           /* GMX_LIB_MPI */
                 sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-#endif      /* GMX_MPI */
+#endif          /* GMX_MPI */
             }
 
             if (nthread_local > 1)
@@ -356,6 +420,16 @@ gmx_set_thread_affinity(FILE                *fplog,
                           sbuf1, sbuf2);
         }
     }
+    return;
+
+locality_order_err:
+    /* any error in affinity setting shouldn't be fatal, but should generate
+       a warning */
+    md_print_warn(NULL, fplog,
+                  "WARNING: Obtaining affinity information failed due to a basic system error: %s.\n"
+                  "         This can cause performance degradation! ",
+                  strerror(errno));
+    return;
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,
