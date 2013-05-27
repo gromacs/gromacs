@@ -237,13 +237,13 @@ static int pick_ewald_kernel_type(bool                   bTwinCut,
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t *nbp,
                          const interaction_const_t *ic,
-                         const nonbonded_verlet_t *nbv,
+                         const nbnxn_atomdata_t *nbat,
                          const cuda_dev_info_t *dev_info)
 {
     cudaError_t stat;
     int         ntypes, nnbfp;
 
-    ntypes  = nbv->grp[0].nbat->ntype;
+    ntypes  = nbat->ntype;
 
     nbp->ewald_beta = ic->ewaldcoeff;
     nbp->sh_ewald   = ic->sh_ewald;
@@ -284,7 +284,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     nnbfp = 2*ntypes*ntypes;
     stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
-    cu_copy_H2D(nbp->nbfp, nbv->grp[0].nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
+    cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
     cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
     stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
@@ -642,12 +642,12 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 }
 
-void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
-                           const interaction_const_t *ic,
-                           const nonbonded_verlet_t *nbv)
+void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t                cu_nb,
+                           const interaction_const_t      *ic,
+                           const nonbonded_verlet_group_t *nbv_group)
 {
-    init_atomdata_first(cu_nb->atdat, nbv->grp[0].nbat->ntype);
-    init_nbparam(cu_nb->nbparam, ic, nbv, cu_nb->dev_info);
+    init_atomdata_first(cu_nb->atdat, nbv_group[0].nbat->ntype);
+    init_nbparam(cu_nb->nbparam, ic, nbv_group[0].nbat, cu_nb->dev_info);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(cu_nb);

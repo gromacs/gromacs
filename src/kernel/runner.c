@@ -630,7 +630,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 static void prepare_verlet_scheme(FILE             *fplog,
                                   gmx_hw_info_t    *hwinfo,
                                   t_commrec        *cr,
-                                  gmx_hw_opt_t     *hw_opt,
                                   const char       *nbpu_opt,
                                   t_inputrec       *ir,
                                   const gmx_mtop_t *mtop,
@@ -987,7 +986,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            prepare_verlet_scheme(fplog, hwinfo, cr, hw_opt, nbpu_opt,
+            prepare_verlet_scheme(fplog, hwinfo, cr, nbpu_opt,
                                   inputrec, mtop, state->box,
                                   &minf.bUseGPU);
         }
