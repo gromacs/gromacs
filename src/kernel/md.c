@@ -716,14 +716,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         fprintf(fplog, "\n");
     }
 
-    /* Set and write start time */
+    print_start(fplog, cr, runtime, "mdrun");
     runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
     wallcycle_start(wcycle, ewcRUN);
-    if (fplog)
-    {
-        fprintf(fplog, "\n");
-    }
 
     /* safest point to do file checkpointing is here.  More general point would be immediately before integrator call */
 #ifdef GMX_FAHCORE
