@@ -444,10 +444,10 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     xmlNodePtr child,grandchild,comp;
     int    i,atomnumber,numbonds,nexcl,
         numattach,element,model,bAromatic,ntrain;
-    char *elem,*miller,*geometry,*name,*atype,*ptype,*alexandria_equiv,*vdwparams,*blu,*btype,
+    char *elem,*geometry,*name,*atype,*alexandria_equiv,*vdwparams,*blu,*btype,
         *atom1,*atom2,*atom3,*atom4,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc,*params,*func;
-    char *neighbors,*zeta,*qstr,*rowstr,*bosque;
+    char *neighbors,*zeta,*qstr,*rowstr;
     double polarizability,sig_pol,length,tau_ahc,alpha_ahp,angle,J0,chi0,
         bondorder,sigma,fudgeQQ,fudgeLJ,valence;
   
@@ -470,25 +470,25 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     add_xml_double(child,exml_names[exmlFUDGEQQ],fudgeQQ);
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
     add_xml_double(child,exml_names[exmlFUDGELJ],fudgeLJ);
-    while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&atype,&ptype,&btype,
-                                      &vdwparams)) {
-        grandchild = add_xml_child(child,exml_names[exmlATOMTYPE]);
-        add_xml_char(grandchild,exml_names[exmlELEM],elem);
-        add_xml_char(grandchild,exml_names[exmlDESC],desc);
-        add_xml_char(grandchild,exml_names[exmlATYPE],atype);
-        add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
-        add_xml_char(grandchild,exml_names[exmlBTYPE],btype);
-        add_xml_char(grandchild,exml_names[exmlMILLER],miller);
-        add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);
-        sfree(elem);
-        sfree(desc);
-        sfree(atype);
-        sfree(ptype);
-        sfree(btype);
-        sfree(miller);
-        sfree(vdwparams);
+    { 
+        char *ptype;
+        while (1 == gmx_poldata_get_atype(pd,&elem,&desc,&atype,&ptype,&btype,
+                                          &vdwparams)) {
+            grandchild = add_xml_child(child,exml_names[exmlATOMTYPE]);
+            add_xml_char(grandchild,exml_names[exmlELEM],elem);
+            add_xml_char(grandchild,exml_names[exmlDESC],desc);
+            add_xml_char(grandchild,exml_names[exmlATYPE],atype);
+            add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
+            add_xml_char(grandchild,exml_names[exmlBTYPE],btype);
+            add_xml_char(grandchild,exml_names[exmlVDWPARAMS],vdwparams);
+            sfree(elem);
+            sfree(desc);
+            sfree(atype);
+            sfree(ptype);
+            sfree(btype);
+            sfree(vdwparams);
+        }
     }
-
     child = add_xml_child(parent,exml_names[exmlPOLTYPES]);
     tmp = gmx_poldata_get_polar_unit(pd);
     if (NULL != tmp) {
@@ -498,16 +498,19 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     if (NULL != tmp) {
         add_xml_char(child,exml_names[exmlREFERENCE],tmp);
     }
-    while (1 == gmx_poldata_get_ptype(pd,&ptype,&miller,&bosque,&polarizability,&sig_pol)) {
-        grandchild = add_xml_child(child,exml_names[exmlPOLTYPE]);
-        add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
-        add_xml_char(grandchild,exml_names[exmlMILLER],miller);
-        add_xml_char(grandchild,exml_names[exmlBOSQUE],bosque);
-        add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
-        add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
-        sfree(ptype);
-        sfree(miller);
-        sfree(bosque);
+    { 
+        char *miller,*bosque,*ptype;
+        while (1 == gmx_poldata_get_ptype(pd,&ptype,&miller,&bosque,&polarizability,&sig_pol)) {
+            grandchild = add_xml_child(child,exml_names[exmlPOLTYPE]);
+            add_xml_char(grandchild,exml_names[exmlPTYPE],ptype);
+            add_xml_char(grandchild,exml_names[exmlMILLER],miller);
+            add_xml_char(grandchild,exml_names[exmlBOSQUE],bosque);
+            add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
+            add_xml_double(grandchild,exml_names[exmlSIGPOL],sig_pol);
+            sfree(ptype);
+            sfree(miller);
+            sfree(bosque);
+        }
     }
 
     child = add_xml_child(parent,exml_names[exmlBONDING_RULES]);
