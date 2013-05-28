@@ -117,7 +117,7 @@ int check_matrix(double **a,double *x,int nrow,int ncol,char **atype)
 
 static int decompose_frag(FILE *fp,int bTrain,
                           gmx_poldata_t pd,
-                          std::vector<alexandria::MolProp> mp,
+                          std::vector<alexandria::MolProp>& mp,
                           gmx_bool bQM,char *lot,int mindata,gmx_molselect_t gms,
                           real sigma,gmx_bool bZero,gmx_bool bForceFit,
                           char *pol_type)
@@ -150,6 +150,7 @@ static int decompose_frag(FILE *fp,int bTrain,
         j++;
     }
     int iter = 1;
+    int nmol_orig = mp.size();
     do {
         printf("iter %d ntest %d\n",iter++,ntest[cur]);
         cur = prev;
@@ -207,6 +208,10 @@ static int decompose_frag(FILE *fp,int bTrain,
                 poltot += pol;
                 nusemol++;
             }
+            else
+            {
+                mpi = mp.erase(mpi);
+            }
         }
         ntest[cur] = 0;
         int ntp = 0;
@@ -252,7 +257,11 @@ static int decompose_frag(FILE *fp,int bTrain,
     } while (ntest[cur] < ntest[prev]);
     if (ntest[cur] == 0) 
         gmx_fatal(FARGS,"Nothing to optimize. Check your input");
-
+    if ((int)mp.size() < nmol_orig)
+    {
+        printf("Reduced number of molecules from %d to %d\n",nmol_orig,(int)mp.size());
+    }
+        
     //! Now condense array of atom types
     for(int i = 0; (i<ntmax); i++)
     {
@@ -532,7 +541,8 @@ int main(int argc,char *argv[])
         mpi->CheckConsistency();
     }
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    nalexandria_atypes = decompose_frag(debug,0,pd,mp,bQM,lot,mindata,gms,sigma,bZero,bForceFit,pol_type);
+    nalexandria_atypes = decompose_frag(debug,0,pd,mp,bQM,lot,mindata,
+                                        gms,sigma,bZero,bForceFit,pol_type);
 
     mpsa = MPSA_NR;
     if (opt2parg_bSet("-sort",npa,pa))

@@ -42,10 +42,10 @@ $atp{"h5"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"ha"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"hc"} = { elem => "H",  qq => "2", bondtype => "ha", poltype => "ha" };
 $atp{"hn"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
-$atp{"ho"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
-$atp{"hp"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
-$atp{"hs"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
-$atp{"hw"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
+$atp{"ho"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
+$atp{"hp"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
+$atp{"hs"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
+$atp{"hw"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "hp" };
 $atp{"hx"} = { elem => "H",  qq => "2", bondtype => "hp", poltype => "ha" };
 
 $atp{"i"}  = { elem => "I",  qq => "2", bondtype => "i", poltype => "i" };

@@ -599,7 +599,7 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     FILE   *xvg;
-    int    i,j,pp,ntab,nfitexp,nfitqm,atomnumber;
+    int    i,j,pp,ntab,atomnumber;
     int    nfirst = 20,nsecond = 24;
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
     double exp_val,qm_val;
@@ -643,7 +643,6 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
                 if ((estats = gmx_stats_add_point(smlsq[j].lsq,N,alexandria_pol,0,0)) != estatsOK)
                     gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-                nfitexp = nfitqm = 0;
                 for(mpi=mp.begin(); (mpi<mp.end()); mpi++) 
                 {
                     alexandria::MolecularCompositionIterator mci = mpi->SearchMolecularComposition(SPOEL);
@@ -654,27 +653,29 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
                         {
                             const char *pt = gmx_poldata_atype_to_ptype(pd[pp],
                                                                         ani->GetAtom().c_str());
-                            if (NULL != pt)
+                            if ((NULL != pt) && (strcasecmp(pt,ptype[cur]) == 0)) 
                             {
                                 int ngt = ani->GetNumber();
-                                
                                 if (mpi->GetProp(mpo,iqmExp,lot,NULL,exp_type,&exp_val))
-                                    nfitexp += ngt;
+                                {
+                                    int N;
+                                    if ((estats = gmx_stats_get_npoints(smlsq[j].nexp,&N)) != estatsOK)
+                                        gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    if ((estats = gmx_stats_add_point(smlsq[j].nexp,N,ngt,0,0)) != estatsOK)
+                                        gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                }
                                 else if (mpi->GetProp(mpo,iqmQM,lot,NULL,NULL,&qm_val))
-                                    nfitqm += ngt;
+                                {
+                                    int N;
+                                    if ((estats = gmx_stats_get_npoints(smlsq[j].nqm,&N)) != estatsOK)
+                                        gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                    if ((estats = gmx_stats_add_point(smlsq[j].nqm,N,ngt,0,0)) != estatsOK)
+                                        gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
+                                }
                             }
                         }
                     }
                 }
-                if ((estats = gmx_stats_get_npoints(smlsq[j].nexp,&N)) != estatsOK)
-                    gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-                if ((estats = gmx_stats_add_point(smlsq[j].nexp,N,nfitexp,0,0)) != estatsOK)
-                    gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-                if ((estats = gmx_stats_get_npoints(smlsq[j].nqm,&N)) != estatsOK)
-                    gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-                if ((estats = gmx_stats_add_point(smlsq[j].nqm,N,nfitqm,0,0)) != estatsOK)
-                    gmx_fatal(FARGS,"Statistics problems: %s",gmx_stats_message(estats));
-                
                 cur = prev;
             }
         }
@@ -727,14 +728,23 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
             gmx_poldata_set_ptype_polarizability(pd_aver,smlsq[j].ptype,
                                                  alexandria_aver,alexandria_sigma);
         }
+        int nfitexp=0;
+        if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].nexp,&nfitexp)))
+            gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
+                      gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
+        nfitexp /= npd;
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nexp,&nnn)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].ptype,N);
-        nfitexp = gmx_nint(nnn);
+                      gmx_stats_message(estats),smlsq[j].ptype,nfitexp);
+        
+        int nfitqm=0;
+        if (estatsOK != (estats = gmx_stats_get_npoints(smlsq[j].nqm,&nfitqm)))
+            gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
+                      gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
+        nfitqm /= npd;
         if (estatsOK != (estats = gmx_stats_get_average(smlsq[j].nqm,&nnn)))
             gmx_fatal(FARGS,"Statistics problem: %s. gt_type = %s. N = %d.",
-                      gmx_stats_message(estats),smlsq[j].ptype,N);
-        nfitqm = gmx_nint(nnn);
+                      gmx_stats_message(estats),smlsq[j].ptype,nfitqm);
 
         fprintf(fp,"%s & %s & %s & %s & %s & %s & %s (%s)",
                 smlsq[j].ptype,

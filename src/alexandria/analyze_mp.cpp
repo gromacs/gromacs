@@ -219,10 +219,10 @@ static void write_corr_xvg(const char *fn,
                             nout++;
                         }
                     }
-                    else
+                    else if (NULL != debug)
                     {
-                        printf("%s bQM = %d bExp = %d\n",mpi->GetMolname().c_str(),
-                               bQM ? 1 : 0, bExp ? 1 : 0);
+                        fprintf(debug,"%s bQM = %d bExp = %d\n",mpi->GetMolname().c_str(),
+                                bQM ? 1 : 0, bExp ? 1 : 0);
                     }
                 }
             }
