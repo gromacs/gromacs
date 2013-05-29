@@ -1062,7 +1062,6 @@ gmx_mm_sincos_pd(__m128d  x,
 #endif
 
     const __m128d signmask       = gmx_mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF) );
-    const __m128i signbit_epi32  = _mm_set1_epi32(0x80000000);
 
     const __m128d tabscale      = _mm_set1_pd(32.0/M_PI);
     const __m128d invtabscale0  = _mm_set1_pd(9.81747508049011230469e-02);
@@ -1090,7 +1089,6 @@ gmx_mm_sincos_pd(__m128d  x,
     __m128d       sinpoint, cospoint;
     __m128d       xsign, ssign, csign;
     __m128i       imask, sswapsign, cswapsign;
-    __m128d       minusone;
 
     xsign    = _mm_andnot_pd(signmask, x);
     xabs     = _mm_and_pd(x, signmask);
@@ -1208,7 +1206,6 @@ gmx_mm_asin_pd(__m128d x)
     const __m128d limit1    = _mm_set1_pd(0.625);
     const __m128d limit2    = _mm_set1_pd(1e-8);
     const __m128d one       = _mm_set1_pd(1.0);
-    const __m128d halfpi    = _mm_set1_pd(M_PI/2.0);
     const __m128d quarterpi = _mm_set1_pd(M_PI/4.0);
     const __m128d morebits  = _mm_set1_pd(6.123233995736765886130e-17);
 
@@ -1239,7 +1236,7 @@ gmx_mm_asin_pd(__m128d x)
     __m128d       sign;
     __m128d       mask;
     __m128d       xabs;
-    __m128d       zz, ww, z, q, w, y, zz2, ww2;
+    __m128d       zz, ww, z, q, w, zz2, ww2;
     __m128d       PA, PB;
     __m128d       QA, QB;
     __m128d       RA, RB;
@@ -1331,10 +1328,8 @@ gmx_mm_asin_pd(__m128d x)
 static __m128d
 gmx_mm_acos_pd(__m128d x)
 {
-    const __m128d signmask   = gmx_mm_castsi128_pd( _mm_set_epi32(0x7FFFFFFF, 0xFFFFFFFF, 0x7FFFFFFF, 0xFFFFFFFF) );
     const __m128d one        = _mm_set1_pd(1.0);
     const __m128d half       = _mm_set1_pd(0.5);
-    const __m128d pi         = _mm_set1_pd(M_PI);
     const __m128d quarterpi0 = _mm_set1_pd(7.85398163397448309616e-1);
     const __m128d quarterpi1 = _mm_set1_pd(6.123233995736765886130e-17);
 
