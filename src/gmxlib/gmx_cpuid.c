@@ -471,8 +471,9 @@ cpuid_renumber_elements(int *data, int n)
  * reserved for that part.
  * This routine does internal renumbering so we get continuous indices, and also
  * decodes the actual number of packages,cores-per-package and hwthreads-per-core.
+ * Returns: 0 on success, non-zero on failure.
  */
-static void
+static int
 cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwthread_bits)
 {
     int i, idx;
@@ -497,14 +498,25 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
     cpuid->ncores_per_package   = cpuid_renumber_elements(cpuid->core_id, cpuid->nproc);
     cpuid->nhwthreads_per_core  = cpuid_renumber_elements(cpuid->hwthread_id, cpuid->nproc);
 
+    /* now check for consistency */
+    if ( (cpuid->npackages * cpuid->ncores_per_package *
+          cpuid->nhwthreads_per_core) != cpuid->nproc )
+    {
+        /* the packages/cores-per-package/hwthreads-per-core counts are
+           inconsistent. */
+        return -1;
+    }
+
     /* Create a locality order array, i.e. first all resources in package0, which in turn
      * are sorted so we first have all resources in core0, where threads are sorted in order, etc.
      */
+
     for (i = 0; i < cpuid->nproc; i++)
     {
         idx = (cpuid->package_id[i]*cpuid->ncores_per_package + cpuid->core_id[i])*cpuid->nhwthreads_per_core + cpuid->hwthread_id[i];
         cpuid->locality_order[idx] = i;
     }
+    return 0;
 }
 
 
@@ -512,7 +524,7 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
 static int
 cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 {
-    int                       max_stdfn, max_extfn;
+    int                       max_stdfn, max_extfn, ret;
     unsigned int              eax, ebx, ecx, edx;
     int                       hwthread_bits, core_bits;
     int *                     apic_id;
@@ -593,8 +605,9 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
                 ;
             }
         }
-        cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, hwthread_bits);
-        cpuid->have_cpu_topology = 1;
+        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
+                                       hwthread_bits);
+        cpuid->have_cpu_topology = (ret == 0);
 #endif
     }
     return 0;
@@ -604,7 +617,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 static int
 cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 {
-    unsigned int              max_stdfn, max_extfn;
+    unsigned int              max_stdfn, max_extfn, ret;
     unsigned int              eax, ebx, ecx, edx;
     unsigned int              max_logical_cores, max_physical_cores;
     int                       hwthread_bits, core_bits;
@@ -696,8 +709,9 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         hwthread_bits    = eax & 0x1F;
         execute_x86cpuid(0xB, 1, &eax, &ebx, &ecx, &edx);
         core_bits        = (eax & 0x1F) - hwthread_bits;
-        cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, hwthread_bits);
-        cpuid->have_cpu_topology = 1;
+        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
+                                       hwthread_bits);
+        cpuid->have_cpu_topology = (ret == 0);
 #endif
     }
     return 0;
