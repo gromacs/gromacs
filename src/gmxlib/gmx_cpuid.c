@@ -500,10 +500,24 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
     /* Create a locality order array, i.e. first all resources in package0, which in turn
      * are sorted so we first have all resources in core0, where threads are sorted in order, etc.
      */
-    for (i = 0; i < cpuid->nproc; i++)
+    if ( (cpuid->npackages * cpuid->ncores_per_package *
+          cpuid->nhwthreads_per_core) == cpuid->nproc )
     {
-        idx = (cpuid->package_id[i]*cpuid->ncores_per_package + cpuid->core_id[i])*cpuid->nhwthreads_per_core + cpuid->hwthread_id[i];
-        cpuid->locality_order[idx] = i;
+        for (i = 0; i < cpuid->nproc; i++)
+        {
+            idx = (cpuid->package_id[i]*cpuid->ncores_per_package + cpuid->core_id[i])*cpuid->nhwthreads_per_core + cpuid->hwthread_id[i];
+            cpuid->locality_order[idx] = i;
+            printf("cpuid->locality_order[%d]=%d\n", idx, i);
+        }
+    }
+    else
+    {
+        /* the packages/cores-per-package/hwthreads-per-core counts are
+           inconsistent. The best we can do is give a linear mapping. */
+        for(i = 0; i < cpuid->nproc; i++)
+        {
+            cpuid->locality_order[i] = i;
+        }
     }
 }
 
