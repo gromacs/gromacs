@@ -48,6 +48,7 @@ extern "C" {
 #define MAXATOMLIST 6
 #define MAXFORCEPARAM   12
 #define NR_RBDIHS   6
+#define NR_CBTDIHS	6 // Monica and Nicu
 #define NR_FOURDIHS     4
 
 typedef atom_id t_iatom;
@@ -67,6 +68,7 @@ enum {
     F_RESTRBONDS,
     F_ANGLES,
     F_G96ANGLES,
+    F_RESTRANGLES, //Monica, Nicu
     F_LINEAR_ANGLES,
     F_CROSS_BOND_BONDS,
     F_CROSS_BOND_ANGLES,
@@ -75,6 +77,8 @@ enum {
     F_TABANGLES,
     F_PDIHS,
     F_RBDIHS,
+    F_RESTRDIHS, // Monica, Nicu
+    F_CBTDIHS, // Monica, Nicu 
     F_FOURDIHS,
     F_IDIHS,
     F_PIDIHS,
@@ -223,6 +227,11 @@ typedef union
     struct {
         real phiA, cpA; int mult; real phiB, cpB;
     } pdihs;
+
+    struct {
+	real phiA,cpA;int mult;real phiB,cpB;		   
+    } restrdihs; // Monica, Nicu
+
     struct {
         real dA, dB;
     } constr;
@@ -244,6 +253,9 @@ typedef union
     struct {
         real rbcA[NR_RBDIHS], rbcB[NR_RBDIHS];
     } rbdihs;
+    struct {
+	real rbcA[NR_CBTDIHS], rbcB[NR_CBTDIHS];          
+    } cbtdihs; // Monica, Nicu
     struct {
         real a, b, c, d, e, f;
     } vsite;

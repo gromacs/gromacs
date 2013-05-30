@@ -211,6 +211,7 @@ assign_param(t_functype ftype, t_iparams *newparam,
         case F_ANGLES:
         case F_HARMONIC:
         case F_IDIHS:
+	case F_RESTRANGLES: // Monica, Nicu
             newparam->harmonic.rA  = old[0];
             newparam->harmonic.krA = old[1];
             newparam->harmonic.rB  = old[2];
@@ -306,6 +307,14 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->pdihs.mult = round_check(old[2], -99, ftype, "multiplicity");
 
             break;
+
+	case F_RESTRDIHS:  // Monica, Nicu
+    		newparam->restrdihs.phiA = old[0];
+    		newparam->restrdihs.cpA  = old[1];		  
+    		newparam->restrdihs.phiB = old[3];
+    		newparam->restrdihs.cpB  = old[4];    
+    	break;
+
         case F_POSRES:
             newparam->posres.fcA[XX]   = old[0];
             newparam->posres.fcA[YY]   = old[1];
@@ -365,6 +374,13 @@ assign_param(t_functype ftype, t_iparams *newparam,
                 newparam->rbdihs.rbcB[i] = old[NR_RBDIHS+i];
             }
             break;
+	case F_CBTDIHS:  // Monica, Nicu
+    		for (i=0; (i<NR_CBTDIHS); i++) {
+      			newparam->cbtdihs.rbcA[i]=old[i]; 
+      			newparam->cbtdihs.rbcB[i]=old[NR_CBTDIHS+i]; 
+    		}
+    	break;
+
         case F_FOURDIHS:
             /* Read the dihedral parameters to temporary arrays,
              * and convert them to the computationally faster

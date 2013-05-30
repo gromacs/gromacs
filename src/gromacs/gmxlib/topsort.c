@@ -61,6 +61,7 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
         case F_ANGLES:
         case F_G96ANGLES:
         case F_IDIHS:
+        case F_RESTRANGLES: // Monica, Nicu
             bPert = (ip->harmonic.rA  != ip->harmonic.rB ||
                      ip->harmonic.krA != ip->harmonic.krB);
             break;
@@ -82,6 +83,10 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
             bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
                      ip->pdihs.cpA  != ip->pdihs.cpB);
             break;
+        case F_RESTRDIHS: // Monica, Nicu
+        bPert = (ip->restrdihs.phiA != ip->restrdihs.phiB ||
+                 ip->restrdihs.cpA  != ip->restrdihs.cpB);
+        break;
         case F_RBDIHS:
             bPert = FALSE;
             for (i = 0; i < NR_RBDIHS; i++)
@@ -92,6 +97,16 @@ static gmx_bool ip_pert(int ftype, const t_iparams *ip)
                 }
             }
             break;
+        case F_CBTDIHS: // Monica, Nicu
+        bPert = FALSE;
+        for(i=0; i<NR_CBTDIHS; i++)
+        {
+            if (ip->cbtdihs.rbcA[i] != ip->cbtdihs.rbcB[i])
+            {
+              bPert = TRUE;
+            }
+        }
+        break;
         case F_TABBONDS:
         case F_TABBONDSNC:
         case F_TABANGLES:
