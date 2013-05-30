@@ -1,0 +1,56 @@
+\documentclass[a4paper,12pt]{article}
+\setlength{\parskip}{2ex}
+\setlength{\parindent}{0em}
+\newcommand{\be}{\begin{equation}}
+\newcommand{\ee}{\end{equation}}
+\newcommand{\bea}{\begin{eqnarray}}
+\newcommand{\eea}{\end{eqnarray}}
+\newcommand{\grad}{\mbox{\bf \,grad\,}}
+\newcommand{\ve}[1]{\mbox{\boldmath ${#1}$}}
+   % defines bold italic vectors. To be used in text or math mode.
+   % Example: \ve{F}
+
+\begin{document}
+\pagestyle{plain}
+{\Large \textbf{text for Gromacs manual}}
+\vspace{3cm}
+
+(to be inserted at the end of Section 3.8 of manual Gromacs 5.6.1)
+
+An alternative method to include friction and noise is not based on integration of the stochastic equations over a time step, but imposes an impulsive change to the velocities \cite{peters04}. This impulsive change consists of two parts: (a) velocity reduction representing the effect of friction, (b)  addition of a random term compensating for the loss of kinetic energy by friction. Thus the phase space evolution during a time step consists of two events: (a) evolution in full phase space according to the (frictionless) equations of motion, (b) evolution in momentum space   due to friction and noise. If one takes care that the additional evolution in momentum space preserves the canonical distribution, the procedure yields a valid solution to the stochastic equations of motion.
+
+The method has been worked out for Langevin dynamics (application to particles) and for DPD dynamics (application to particle pairs) by Goga \textit{et. al.} \cite{goga12}. Here we describe the Langevin case. In short, if a single degree of freedom is considered with velocity $v$ and mass $m$ (this could also be a velocity difference for a particle pair, with reduced mass $\mu$), the velocity change is given by:\\
+\be
+   v' =  (1-f) v + g \xi,
+\ee
+where $f$ is a chosen velocity reduction factor proportional to the strength of the friction; $\xi$ is a random number sampled from a standard normal distribution (mean zero, variance 1) and $g$ is given by
+\be
+g^2 = \frac{k_\mathrm{B}T_\mathrm{ref}}{m} f(2-f).
+\ee
+This choice ensures that -- for a system in equilibrium at the reference temperature -- the average kinetic energy is preserved during the impulsive velocity change. This application of friction and noise in fact preserves the canonical momentum distribution.
+
+The method acts as a thermostat: if the temperature deviates from the reference temperature, the temperature deviation will decay to zero with a first order process with rate constant  \cite{goga12}
+\be
+   k_{\mbox{\tiny th}}= \frac{3k_\mathrm{B}}{2c_\mathrm{v}} 2 \gamma_{\mbox{\tiny eff}}
+\ee
+where
+\be
+    \gamma_{\mbox{\tiny eff}} = - 
+\frac{1}{\Delta t} \mbox{ln} (1-f) \approx \frac {f}{\Delta t}
+\ee
+
+is the friction constant and $c_{\mbox{\tiny v}}$ is the specific heat per particle.
+
+\begin{thebibliography}{99}
+
+\bibitem{peters04}
+E.A.F.J. Peters, \textit{Elimination of time step effects in DPD}, Europhys. Lett. \textbf{66} (2004), 311--317.
+
+\bibitem{goga12}
+N. Goga, A.J. Rzepiela, A.H. de Vries, S.J. Marrink and H.J.C. Berendsen, \textit{Efficient algorithms for Langevin and DPD dynamics}, J. Chem. Theory Comput. \textbf{8} (2012), 3637--3649 (DOI 10.1021/CT3000876).
+
+\end{thebibliography}
+
+
+\end{document}
+ Gromacs 4.6.1
