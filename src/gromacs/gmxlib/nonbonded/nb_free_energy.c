@@ -135,14 +135,10 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
     ewc                 = fr->ewaldcoeff;
-    Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
     ntype               = fr->ntype;
     nbfp                = fr->nbfp;
-    Vv                  = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
     dvdl                = kernel_data->dvdl;

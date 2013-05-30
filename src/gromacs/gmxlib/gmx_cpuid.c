@@ -803,8 +803,6 @@ cpuid_check_vendor(void)
         }
     }
     fclose(fp);
-#else
-    vendor = GMX_CPUID_VENDOR_UNKNOWN;
 #endif
 
     return vendor;
