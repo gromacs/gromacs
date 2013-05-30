@@ -66,11 +66,10 @@ typedef struct tMPI_Spinlock
     volatile unsigned int lock;   /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Spinlock_t;
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 
 
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-#define TMPI_HAVE_SWAP
 
 #define tMPI_Atomic_get(a)        ((a)->value)
 #define tMPI_Atomic_set(a, i)     (((a)->value) = (i))
@@ -90,7 +89,7 @@ tMPI_Spinlock_t;
 
 
 
-#define TMPI_HAVE_ASM_SWAP
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
 static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
 {
     int ret;
@@ -183,6 +182,7 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void *oldval,
     return prev == oldval;
 }
 
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 {
     int t;
@@ -200,6 +200,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
 
 
 
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
 {
     int t;

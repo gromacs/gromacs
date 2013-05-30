@@ -60,6 +60,18 @@
 #include "mtop_util.h"
 #include "gmx_ana.h"
 
+static int greatest_common_divisor(int p, int q)
+{
+    int tmp;
+    while (q != 0)
+    {
+        tmp = q;
+        q = p % q;
+        p = tmp;
+    }
+    return p;
+}
+
 static void insert_ion(int nsa, int *nwater,
                        gmx_bool bSet[], int repl[], atom_id index[],
                        real pot[], rvec x[], t_pbc *pbc,
@@ -430,8 +442,7 @@ int gmx_genion(int argc, char *argv[])
         { "-scale", FALSE, etREAL, {&scale}, "Scaling factor for the potential for [TT]-pot[tt]" },
         { "-conc",  FALSE, etREAL, {&conc},
           "Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input [TT].tpr[tt] file. Overrides the [TT]-np[tt] and [TT]-nn[tt] options." },
-        { "-neutral", FALSE, etBOOL, {&bNeutral},
-          "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
+        { "-neutral", FALSE, etBOOL, {&bNeutral}, "This option will add enough ions to neutralize the system. These ions are added on top of those specified with [TT]-np[tt]/[TT]-nn[tt] or [TT]-conc[tt]. "}
     };
     gmx_mtop_t        *mtop;
     gmx_localtop_t    *top;
@@ -494,33 +505,39 @@ int gmx_genion(int argc, char *argv[])
     }
     iqtot = gmx_nint(qtot);
 
-    if ((conc > 0) || bNeutral)
+    
+    if (conc > 0)
     {
         /* Compute number of ions to be added */
         vol = det(box);
-        if (conc > 0)
+        nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
+        p_num = abs(nsalt*n_q);
+        n_num = abs(nsalt*p_q);
+    }
+    if (bNeutral)
+    {
+        int qdelta = p_num*p_q + n_num*n_q + iqtot;
+
+        /* Check if the system is neutralizable
+         * is (qdelta == p_q*p_num + n_q*n_num) solvable for p_num and n_num? */
+        int gcd = greatest_common_divisor(n_q, p_q);
+        if ((qdelta % gcd) != 0)
         {
-            nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
-            p_num = abs(nsalt*n_q);
-            n_num = abs(nsalt*p_q);
-            if (bNeutral)
+            gmx_fatal(FARGS, "Can't neutralize this system using -nq %d and"
+                    " -pq %d.\n", n_q, p_q);
+        }
+        
+        while (qdelta != 0)
+        {
+            while (qdelta < 0)
             {
-                int qdelta = 0;
-                do
-                {
-                    qdelta = (p_num*p_q + n_num*n_q + iqtot);
-                    if (qdelta < 0)
-                    {
-                        p_num  += abs(qdelta/p_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                    if (qdelta > 0)
-                    {
-                        n_num  += abs(qdelta/n_q);
-                        qdelta  = (p_num*p_q + n_num*n_q + iqtot);
-                    }
-                }
-                while (qdelta != 0);
+                p_num++;
+                qdelta += p_q;
+            }
+            while (qdelta > 0)
+            {
+                n_num++;
+                qdelta += n_q;
             }
         }
     }

@@ -149,8 +149,7 @@ int tMPI_Scatter(void* sendbuf, int sendcount, tMPI_Datatype sendtype,
                         &(tMPI_Get_thread(comm, myrank)->cbl_multi));
             if (cev->met[myrank].cb->size < total_send_size)
             {
-                fprintf(stderr, "ERROR: cb size too small\n");
-                exit(1);
+                return tMPI_Error(comm, TMPI_ERR_COPY_BUFFER_SIZE);
             }
             /* copy to the new buf */
             memcpy(cev->met[myrank].cb->buf, sendbuf, total_send_size);
@@ -286,8 +285,7 @@ int tMPI_Scatterv(void* sendbuf, int *sendcounts, int *displs,
                         &(tMPI_Get_thread(comm, myrank)->cbl_multi));
             if (cev->met[myrank].cb->size < total_send_size)
             {
-                fprintf(stderr, "ERROR: cb size too small\n");
-                exit(1);
+                return tMPI_Error(comm, TMPI_ERR_COPY_BUFFER_SIZE);
             }
             /* copy to the new buf */
             memcpy(cev->met[myrank].cb->buf, sendbuf, total_send_size);
