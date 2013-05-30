@@ -712,8 +712,6 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
-#else
-    vendor = GMX_CPUID_VENDOR_UNKNOWN;
 #endif
 
     return vendor;

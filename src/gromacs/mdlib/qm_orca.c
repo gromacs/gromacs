@@ -487,7 +487,7 @@ real call_orca(t_commrec *cr,  t_forcerec *fr,
     int
         i, j;
     real
-        QMener = 0.0;
+        QMener;
     rvec
        *QMgrad, *MMgrad;
     char

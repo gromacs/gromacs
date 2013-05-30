@@ -98,7 +98,7 @@ static t_charge *mk_charge(t_atoms *atoms, t_block *cgs, int *nncg)
                cg[i].label, cg[i].q);
         for (j = cgs->index[cg[i].cg]; (j < cgs->index[cg[i].cg+1]); j++)
         {
-            printf(" %4u", j);
+            printf(" %4d", j);
         }
         printf("\n");
     }

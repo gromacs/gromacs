@@ -239,7 +239,6 @@ static void _do_section(t_fileio *fio, int key, gmx_bool bRead, const char *src,
 static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
                        int file_version)
 {
-    gmx_bool bDum = TRUE;
     int      i;
 
     gmx_fio_do_int(fio, pgrp->nat);
@@ -247,13 +246,13 @@ static void do_pullgrp(t_fileio *fio, t_pullgrp *pgrp, gmx_bool bRead,
     {
         snew(pgrp->ind, pgrp->nat);
     }
-    bDum = gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
+    gmx_fio_ndo_int(fio, pgrp->ind, pgrp->nat);
     gmx_fio_do_int(fio, pgrp->nweight);
     if (bRead)
     {
         snew(pgrp->weight, pgrp->nweight);
     }
-    bDum = gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
+    gmx_fio_ndo_real(fio, pgrp->weight, pgrp->nweight);
     gmx_fio_do_int(fio, pgrp->pbcatom);
     gmx_fio_do_rvec(fio, pgrp->vec);
     gmx_fio_do_rvec(fio, pgrp->init);
@@ -274,7 +273,6 @@ static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals
     /* i is used in the ndo_double macro*/
     int      i;
     real     fv;
-    gmx_bool bDum = TRUE;
     real     rdum;
     int      n_lambda = fepvals->n_lambda;
 
@@ -289,7 +287,7 @@ static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals
             {
                 snew(expand->init_lambda_weights, n_lambda);
             }
-            bDum = gmx_fio_ndo_real(fio, expand->init_lambda_weights, n_lambda);
+            gmx_fio_ndo_real(fio, expand->init_lambda_weights, n_lambda);
             gmx_fio_do_gmx_bool(fio, expand->bInit_weights);
         }
 
@@ -321,8 +319,6 @@ static void do_expandedvals(t_fileio *fio, t_expanded *expand, t_lambda *fepvals
 static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_bool bRead,
                            int file_version)
 {
-    gmx_bool bDum = TRUE;
-
     if (file_version >= 79)
     {
         gmx_fio_do_int(fio, simtemp->eSimTempScale);
@@ -334,7 +330,7 @@ static void do_simtempvals(t_fileio *fio, t_simtemp *simtemp, int n_lambda, gmx_
             {
                 snew(simtemp->temperatures, n_lambda);
             }
-            bDum = gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
+            gmx_fio_ndo_real(fio, simtemp->temperatures, n_lambda);
         }
     }
 }
@@ -344,7 +340,6 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
     /* i is defined in the ndo_double macro; use g to iterate. */
     int      i, g;
     real     fv;
-    gmx_bool bDum = TRUE;
     real     rdum;
 
     /* free energy values */
@@ -382,8 +377,8 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
                 {
                     snew(fepvals->all_lambda[g], fepvals->n_lambda);
                 }
-                bDum = gmx_fio_ndo_double(fio, fepvals->all_lambda[g], fepvals->n_lambda);
-                bDum = gmx_fio_ndo_int(fio, fepvals->separate_dvdl, efptNR);
+                gmx_fio_ndo_double(fio, fepvals->all_lambda[g], fepvals->n_lambda);
+                gmx_fio_ndo_int(fio, fepvals->separate_dvdl, efptNR);
             }
             else if (fepvals->init_lambda >= 0)
             {
@@ -408,8 +403,8 @@ static void do_fepvals(t_fileio *fio, t_lambda *fepvals, gmx_bool bRead, int fil
                 }
             }
         }
-        bDum = gmx_fio_ndo_double(fio, fepvals->all_lambda[efptFEP],
-                                  fepvals->n_lambda);
+        gmx_fio_ndo_double(fio, fepvals->all_lambda[efptFEP],
+                           fepvals->n_lambda);
         if (fepvals->init_lambda >= 0)
         {
             int g, h;
@@ -590,7 +585,6 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
 
 static void do_rotgrp(t_fileio *fio, t_rotgrp *rotg, gmx_bool bRead, int file_version)
 {
-    gmx_bool bDum = TRUE;
     int      i;
 
     gmx_fio_do_int(fio, rotg->eType);
@@ -640,7 +634,6 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                         int file_version, real *fudgeQQ)
 {
     int      i, j, k, *tmp, idum = 0;
-    gmx_bool bDum = TRUE;
     real     rdum, bd_temp;
     rvec     vdum;
     gmx_bool bSimAnn;
@@ -1320,7 +1313,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             }
             if (ir->adress->n_tf_grps > 0)
             {
-                bDum = gmx_fio_ndo_int(fio, ir->adress->tf_table_index, ir->adress->n_tf_grps);
+                gmx_fio_ndo_int(fio, ir->adress->tf_table_index, ir->adress->n_tf_grps);
             }
             if (bRead)
             {
@@ -1328,7 +1321,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             }
             if (ir->adress->n_energy_grps > 0)
             {
-                bDum = gmx_fio_ndo_int(fio, ir->adress->group_explicit, ir->adress->n_energy_grps);
+                gmx_fio_ndo_int(fio, ir->adress->group_explicit, ir->adress->n_energy_grps);
             }
         }
     }
@@ -1405,7 +1398,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         if (bRead && file_version < 13)
         {
             snew(tmp, ir->opts.ngtc);
-            bDum = gmx_fio_ndo_int(fio, tmp, ir->opts.ngtc);
+            gmx_fio_ndo_int(fio, tmp, ir->opts.ngtc);
             for (i = 0; i < ir->opts.ngtc; i++)
             {
                 ir->opts.nrdf[i] = tmp[i];
@@ -1414,10 +1407,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         }
         else
         {
-            bDum = gmx_fio_ndo_real(fio, ir->opts.nrdf, ir->opts.ngtc);
+            gmx_fio_ndo_real(fio, ir->opts.nrdf, ir->opts.ngtc);
         }
-        bDum = gmx_fio_ndo_real(fio, ir->opts.ref_t, ir->opts.ngtc);
-        bDum = gmx_fio_ndo_real(fio, ir->opts.tau_t, ir->opts.ngtc);
+        gmx_fio_ndo_real(fio, ir->opts.ref_t, ir->opts.ngtc);
+        gmx_fio_ndo_real(fio, ir->opts.tau_t, ir->opts.ngtc);
         if (file_version < 33 && ir->eI == eiBD)
         {
             for (i = 0; i < ir->opts.ngtc; i++)
@@ -1428,7 +1421,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (ir->opts.ngfrz > 0)
     {
-        bDum = gmx_fio_ndo_ivec(fio, ir->opts.nFreeze, ir->opts.ngfrz);
+        gmx_fio_ndo_ivec(fio, ir->opts.nFreeze, ir->opts.ngfrz);
     }
     if (ir->opts.ngacc > 0)
     {
@@ -1436,8 +1429,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     }
     if (file_version >= 12)
     {
-        bDum = gmx_fio_ndo_int(fio, ir->opts.egp_flags,
-                               ir->opts.ngener*ir->opts.ngener);
+        gmx_fio_ndo_int(fio, ir->opts.egp_flags,
+                        ir->opts.ngener*ir->opts.ngener);
     }
 
     if (bRead && file_version < 26)
@@ -1470,8 +1463,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     {
         /* file version 26 or later */
         /* First read the lists with annealing and npoints for each group */
-        bDum = gmx_fio_ndo_int(fio, ir->opts.annealing, ir->opts.ngtc);
-        bDum = gmx_fio_ndo_int(fio, ir->opts.anneal_npoints, ir->opts.ngtc);
+        gmx_fio_ndo_int(fio, ir->opts.annealing, ir->opts.ngtc);
+        gmx_fio_ndo_int(fio, ir->opts.anneal_npoints, ir->opts.ngtc);
         for (j = 0; j < (ir->opts.ngtc); j++)
         {
             k = ir->opts.anneal_npoints[j];
@@ -1480,8 +1473,8 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                 snew(ir->opts.anneal_time[j], k);
                 snew(ir->opts.anneal_temp[j], k);
             }
-            bDum = gmx_fio_ndo_real(fio, ir->opts.anneal_time[j], k);
-            bDum = gmx_fio_ndo_real(fio, ir->opts.anneal_temp[j], k);
+            gmx_fio_ndo_real(fio, ir->opts.anneal_time[j], k);
+            gmx_fio_ndo_real(fio, ir->opts.anneal_temp[j], k);
         }
     }
     /* Walls */
@@ -1525,10 +1518,10 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
             snew(ir->et[j].a,  ir->et[j].n);
             snew(ir->et[j].phi, ir->et[j].n);
         }
-        bDum = gmx_fio_ndo_real(fio, ir->ex[j].a,  ir->ex[j].n);
-        bDum = gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
-        bDum = gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
-        bDum = gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
+        gmx_fio_ndo_real(fio, ir->ex[j].a,  ir->ex[j].n);
+        gmx_fio_ndo_real(fio, ir->ex[j].phi, ir->ex[j].n);
+        gmx_fio_ndo_real(fio, ir->et[j].a,  ir->et[j].n);
+        gmx_fio_ndo_real(fio, ir->et[j].phi, ir->et[j].n);
     }
 
     /* QMMM stuff */
@@ -1555,18 +1548,18 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         }
         if (ir->opts.ngQM > 0)
         {
-            bDum = gmx_fio_ndo_int(fio, ir->opts.QMmethod, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.QMbasis, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.QMcharge, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.QMmult, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_gmx_bool(fio, ir->opts.bSH, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.CASorbitals, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.CASelectrons, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_real(fio, ir->opts.SAon, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_real(fio, ir->opts.SAoff, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_int(fio, ir->opts.SAsteps, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_gmx_bool(fio, ir->opts.bOPT, ir->opts.ngQM);
-            bDum = gmx_fio_ndo_gmx_bool(fio, ir->opts.bTS, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.QMmethod, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.QMbasis, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.QMcharge, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.QMmult, ir->opts.ngQM);
+            gmx_fio_ndo_gmx_bool(fio, ir->opts.bSH, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.CASorbitals, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.CASelectrons, ir->opts.ngQM);
+            gmx_fio_ndo_real(fio, ir->opts.SAon, ir->opts.ngQM);
+            gmx_fio_ndo_real(fio, ir->opts.SAoff, ir->opts.ngQM);
+            gmx_fio_ndo_int(fio, ir->opts.SAsteps, ir->opts.ngQM);
+            gmx_fio_ndo_gmx_bool(fio, ir->opts.bOPT, ir->opts.ngQM);
+            gmx_fio_ndo_gmx_bool(fio, ir->opts.bTS, ir->opts.ngQM);
         }
         /* end of QMMM stuff */
     }
@@ -1585,7 +1578,6 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
                 gmx_bool bRead, int file_version)
 {
     int      idum;
-    gmx_bool bDum;
     real     rdum;
 
     if (!bRead)
@@ -1669,7 +1661,7 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             break;
         case F_QUARTIC_ANGLES:
             gmx_fio_do_real(fio, iparams->qangle.theta);
-            bDum = gmx_fio_ndo_real(fio, iparams->qangle.c, 5);
+            gmx_fio_ndo_real(fio, iparams->qangle.c, 5);
             break;
         case F_BHAM:
             gmx_fio_do_real(fio, iparams->bham.a);
@@ -1829,18 +1821,18 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->fbposres.k);
             break;
         case F_RBDIHS:
-            bDum = gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
+            gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
             if (file_version >= 25)
             {
-                bDum = gmx_fio_ndo_real(fio, iparams->rbdihs.rbcB, NR_RBDIHS);
+                gmx_fio_ndo_real(fio, iparams->rbdihs.rbcB, NR_RBDIHS);
             }
             break;
         case F_FOURDIHS:
             /* Fourier dihedrals are internally represented
              * as Ryckaert-Bellemans since those are faster to compute.
              */
-            bDum = gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
-            bDum = gmx_fio_ndo_real(fio, iparams->rbdihs.rbcB, NR_RBDIHS);
+            gmx_fio_ndo_real(fio, iparams->rbdihs.rbcA, NR_RBDIHS);
+            gmx_fio_ndo_real(fio, iparams->rbdihs.rbcB, NR_RBDIHS);
             break;
         case F_CONSTR:
         case F_CONSTRNC:
@@ -1906,7 +1898,6 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_ver
                      int ftype)
 {
     int      i, k, idum;
-    gmx_bool bDum = TRUE;
 
     if (!bRead)
     {
@@ -1924,7 +1915,7 @@ static void do_ilist(t_fileio *fio, t_ilist *ilist, gmx_bool bRead, int file_ver
     {
         snew(ilist->iatoms, ilist->nr);
     }
-    bDum = gmx_fio_ndo_int(fio, ilist->iatoms, ilist->nr);
+    gmx_fio_ndo_int(fio, ilist->iatoms, ilist->nr);
     if (!bRead)
     {
         gmx_fio_unset_comment(fio);
@@ -1935,7 +1926,6 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
                         gmx_bool bRead, int file_version)
 {
     int          idum, i, j;
-    gmx_bool     bDum = TRUE;
     unsigned int k;
 
     gmx_fio_do_int(fio, ffparams->atnr);
@@ -1955,7 +1945,7 @@ static void do_ffparams(t_fileio *fio, gmx_ffparams_t *ffparams,
         snew(ffparams->iparams, ffparams->ntypes);
     }
     /* Read/write all the function types */
-    bDum = gmx_fio_ndo_int(fio, ffparams->functype, ffparams->ntypes);
+    gmx_fio_ndo_int(fio, ffparams->functype, ffparams->ntypes);
     if (bRead && debug)
     {
         pr_ivec(debug, 0, "functype", ffparams->functype, ffparams->ntypes, TRUE);
@@ -2031,7 +2021,7 @@ static void do_ilists(t_fileio *fio, t_ilist *ilist, gmx_bool bRead,
                       int file_version)
 {
     int          i, j, renum[F_NRE];
-    gmx_bool     bDum = TRUE, bClear;
+    gmx_bool     bClear;
     unsigned int k;
 
     for (j = 0; (j < F_NRE); j++)
@@ -2084,7 +2074,6 @@ static void do_idef(t_fileio *fio, gmx_ffparams_t *ffparams, gmx_moltype_t *molt
 static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_version)
 {
     int      i, idum, dum_nra, *dum_a;
-    gmx_bool bDum = TRUE;
 
     if (file_version < 44)
     {
@@ -2103,12 +2092,12 @@ static void do_block(t_fileio *fio, t_block *block, gmx_bool bRead, int file_ver
         block->nalloc_index = block->nr+1;
         snew(block->index, block->nalloc_index);
     }
-    bDum = gmx_fio_ndo_int(fio, block->index, block->nr+1);
+    gmx_fio_ndo_int(fio, block->index, block->nr+1);
 
     if (file_version < 51 && dum_nra > 0)
     {
         snew(dum_a, dum_nra);
-        bDum = gmx_fio_ndo_int(fio, dum_a, dum_nra);
+        gmx_fio_ndo_int(fio, dum_a, dum_nra);
         sfree(dum_a);
     }
 }
@@ -2117,7 +2106,6 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
                       int file_version)
 {
     int      i, idum;
-    gmx_bool bDum = TRUE;
 
     if (file_version < 44)
     {
@@ -2135,8 +2123,8 @@ static void do_blocka(t_fileio *fio, t_blocka *block, gmx_bool bRead,
         block->nalloc_a = block->nra;
         snew(block->a, block->nalloc_a);
     }
-    bDum = gmx_fio_ndo_int(fio, block->index, block->nr+1);
-    bDum = gmx_fio_ndo_int(fio, block->a, block->nra);
+    gmx_fio_ndo_int(fio, block->index, block->nr+1);
+    gmx_fio_ndo_int(fio, block->a, block->nra);
 }
 
 static void do_atom(t_fileio *fio, t_atom *atom, int ngrp, gmx_bool bRead,
@@ -2193,7 +2181,6 @@ static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead,
                     int file_version)
 {
     int      i, j, myngrp;
-    gmx_bool bDum = TRUE;
 
     if (file_version < 23)
     {
@@ -2217,7 +2204,7 @@ static void do_grps(t_fileio *fio, int ngrp, t_grps grps[], gmx_bool bRead,
             {
                 snew(grps[j].nm_ind, grps[j].nr);
             }
-            bDum = gmx_fio_ndo_int(fio, grps[j].nm_ind, grps[j].nr);
+            gmx_fio_ndo_int(fio, grps[j].nm_ind, grps[j].nr);
         }
         else
         {
@@ -2338,7 +2325,6 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
                       int file_version)
 {
     int      g, n, i;
-    gmx_bool bDum = TRUE;
 
     do_grps(fio, egcNR, groups->grps, bRead, file_version);
     gmx_fio_do_int(fio, groups->ngrpname);
@@ -2363,7 +2349,7 @@ static void do_groups(t_fileio *fio, gmx_groups_t *groups,
             {
                 snew(groups->grpnr[g], groups->ngrpnr[g]);
             }
-            bDum = gmx_fio_ndo_uchar(fio, groups->grpnr[g], groups->ngrpnr[g]);
+            gmx_fio_ndo_uchar(fio, groups->grpnr[g], groups->ngrpnr[g]);
         }
     }
 }
@@ -2372,7 +2358,6 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
                          t_symtab *symtab, int file_version)
 {
     int      i, j;
-    gmx_bool bDum = TRUE;
 
     if (file_version > 25)
     {
@@ -2387,17 +2372,17 @@ static void do_atomtypes(t_fileio *fio, t_atomtypes *atomtypes, gmx_bool bRead,
             snew(atomtypes->gb_radius, j);
             snew(atomtypes->S_hct, j);
         }
-        bDum = gmx_fio_ndo_real(fio, atomtypes->radius, j);
-        bDum = gmx_fio_ndo_real(fio, atomtypes->vol, j);
-        bDum = gmx_fio_ndo_real(fio, atomtypes->surftens, j);
+        gmx_fio_ndo_real(fio, atomtypes->radius, j);
+        gmx_fio_ndo_real(fio, atomtypes->vol, j);
+        gmx_fio_ndo_real(fio, atomtypes->surftens, j);
         if (file_version >= 40)
         {
-            bDum = gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
+            gmx_fio_ndo_int(fio, atomtypes->atomnumber, j);
         }
         if (file_version >= 60)
         {
-            bDum = gmx_fio_ndo_real(fio, atomtypes->gb_radius, j);
-            bDum = gmx_fio_ndo_real(fio, atomtypes->S_hct, j);
+            gmx_fio_ndo_real(fio, atomtypes->gb_radius, j);
+            gmx_fio_ndo_real(fio, atomtypes->S_hct, j);
         }
     }
     else
@@ -3059,7 +3044,7 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     t_tpxheader     tpx;
     t_inputrec      dum_ir;
     gmx_mtop_t      dum_top;
-    gmx_bool        TopOnlyOK, bDum = TRUE;
+    gmx_bool        TopOnlyOK;
     int             file_version, file_generation;
     int             i;
     rvec           *xptr, *vptr;
@@ -3141,10 +3126,10 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
         snew(dumv, state->ngtc);
         if (file_version < 69)
         {
-            bDum = gmx_fio_ndo_real(fio, dumv, state->ngtc);
+            gmx_fio_ndo_real(fio, dumv, state->ngtc);
         }
         /* These used to be the Berendsen tcoupl_lambda's */
-        bDum = gmx_fio_ndo_real(fio, dumv, state->ngtc);
+        gmx_fio_ndo_real(fio, dumv, state->ngtc);
         sfree(dumv);
     }
 

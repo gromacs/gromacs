@@ -1397,8 +1397,6 @@ t_forcetable make_gb_table(FILE *out, const output_env_t oenv,
 
     for (i = nx0; i < nx; i++)
     {
-        Vtab    = 0.0;
-        Ftab    = 0.0;
         r       = td->x[i];
         r2      = r*r;
         expterm = exp(-0.25*r2);

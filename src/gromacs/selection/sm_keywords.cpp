@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -530,7 +530,7 @@ void
 _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
                                   gmx::SelectionStringMatchType           matchType)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)sel->u.expr.mdata;
+    t_methoddata_kwstr *d = static_cast<t_methoddata_kwstr *>(sel->u.expr.mdata);
 
     if (sel->type != SEL_EXPRESSION || !sel->u.expr.method
         || sel->u.expr.method->name != sm_keyword_str.name)
@@ -549,7 +549,7 @@ _gmx_selelem_set_kwstr_match_type(const gmx::SelectionTreeElementPointer &sel,
 static void
 init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
+    t_methoddata_kwstr *d = static_cast<t_methoddata_kwstr *>(data);
 
     d->v   = param[0].val.u.s;
     /* Return if this is not the first time */
@@ -572,7 +572,7 @@ init_kwstr(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 static void
 free_data_kwstr(void *data)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
+    t_methoddata_kwstr *d = static_cast<t_methoddata_kwstr *>(data);
     delete d;
 }
 
@@ -589,7 +589,7 @@ static void
 evaluate_keyword_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_kwstr *d = (t_methoddata_kwstr *)data;
+    t_methoddata_kwstr *d = static_cast<t_methoddata_kwstr *>(data);
 
     out->u.g->isize = 0;
     for (int i = 0; i < g->isize; ++i)
