@@ -45,11 +45,6 @@
 #include "nrnb.h"
 #include "main.h"
 #include "smalloc.h"
-#include "copyrite.h"
-
-
-
-
 
 typedef struct {
     const char *name;
@@ -189,6 +184,72 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Mixed Generalized Born stuff",   10 }
 };
 
+static void pr_two(FILE *out, int c, int i)
+{
+    if (i < 10)
+    {
+        fprintf(out, "%c0%1d", c, i);
+    }
+    else
+    {
+        fprintf(out, "%c%2d", c, i);
+    }
+}
+
+static void pr_difftime(FILE *out, double dt)
+{
+    int        ndays, nhours, nmins, nsecs;
+    gmx_bool   bPrint, bPrinted;
+
+    ndays    = dt/(24*3600);
+    dt       = dt-24*3600*ndays;
+    nhours   = dt/3600;
+    dt       = dt-3600*nhours;
+    nmins    = dt/60;
+    dt       = dt-nmins*60;
+    nsecs    = dt;
+    bPrint   = (ndays > 0);
+    bPrinted = bPrint;
+    if (bPrint)
+    {
+        fprintf(out, "%d", ndays);
+    }
+    bPrint = bPrint || (nhours > 0);
+    if (bPrint)
+    {
+        if (bPrinted)
+        {
+            pr_two(out, 'd', nhours);
+        }
+        else
+        {
+            fprintf(out, "%d", nhours);
+        }
+    }
+    bPrinted = bPrinted || bPrint;
+    bPrint   = bPrint || (nmins > 0);
+    if (bPrint)
+    {
+        if (bPrinted)
+        {
+            pr_two(out, 'h', nmins);
+        }
+        else
+        {
+            fprintf(out, "%d", nmins);
+        }
+    }
+    bPrinted = bPrinted || bPrint;
+    if (bPrinted)
+    {
+        pr_two(out, ':', nsecs);
+    }
+    else
+    {
+        fprintf(out, "%ds", nsecs);
+    }
+    fprintf(out, "\n");
+}
 
 void init_nrnb(t_nrnb *nrnb)
 {

@@ -476,3 +476,8 @@ gmx_fft_destroy(gmx_fft_t      fft)
 void gmx_fft_cleanup()
 {
 }
+
+const char *gmx_fft_get_version_info()
+{
+    return "fftpack (built-in)";
+}
