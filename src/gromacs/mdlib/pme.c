@@ -60,6 +60,7 @@
 #include <config.h>
 #endif
 
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include <stdio.h>
@@ -80,7 +81,6 @@
 #include "nrnb.h"
 #include "copyrite.h"
 #include "gmx_wallcycle.h"
-#include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"

@@ -58,7 +58,7 @@
 #include "xvgr.h"
 #include "correl.h"
 #include "gmx_ana.h"
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR

@@ -19,26 +19,31 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_FFTPACK
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
+
 #include "external/fftpack/fftpack.h"
 
-/** Contents of the FFTPACK fft datatype.
+/*! \internal \brief
+ * Contents of the FFTPACK fft datatype.
+ *
+ * Note that this is one of several possible implementations of gmx_fft_t.
  *
  *  FFTPACK only does 1d transforms, so we use a pointers to another fft for
  *  the transform in the next dimension.
  * Thus, a 3d-structure contains a pointer to a 2d one, which in turns contains
  * a pointer to a 1d. The 1d structure has next==NULL.
  */
+#ifdef DOXYGEN
+struct gmx_fft_fftpack
+#else
 struct gmx_fft
+#endif
 {
     int             ndim;     /**< Dimensions, including our subdimensions.  */
     int             n;        /**< Number of points in this dimension.       */
@@ -471,4 +476,3 @@ gmx_fft_destroy(gmx_fft_t      fft)
 void gmx_fft_cleanup()
 {
 }
-#endif /* GMX_FFT_FFTPACK */

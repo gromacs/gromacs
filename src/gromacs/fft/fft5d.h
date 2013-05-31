@@ -49,9 +49,9 @@ extern "C" {
 FILE* debug;
 #endif
 
-#include <types/commrec.h>
-#include "gmxcomplex.h"
-#include "gmx_fft.h"
+#include "gromacs/legacyheaders/gmxcomplex.h"
+#include "gromacs/utility/gmxmpi.h"
+#include "gromacs/fft/fft.h"
 
 #ifndef GMX_MPI
 double MPI_Wtime();
