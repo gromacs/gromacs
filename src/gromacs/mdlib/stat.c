@@ -464,7 +464,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->bExpanded       = ir->bExpanded;
     of->elamstats       = ir->expandedvals->elamstats;
     of->simulation_part = ir->simulation_part;
-    
+
     of->tng = NULL;
 
     if (MASTER(cr))
@@ -477,13 +477,13 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
             tng_trajectory_destroy(&of->tng);
             gmx_fatal(FARGS, "Could not init TNG.\n");
         }
-        
+
         tng_output_file_set(of->tng, ftp2fn(efTNG, nfile, fnm));
         sprintf(program_name, "%s, %s", ShortProgram(), GromacsVersion());
-        
+
         /* FIXME: Check if we should be appending instead. */
         tng_first_program_name_set(of->tng, program_name);
-        
+
         bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
         of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
@@ -721,7 +721,7 @@ void write_traj(FILE *fplog, t_commrec *cr,
 //                 gmx_file("Cannot write trajectory; maybe you are out of disk space?");
 //             }
 //             gmx_fio_check_file_position(of->fp_trn);
-            
+
             if(of->tng)
             {
                 fwrite_tng(of->tng, step, t, state_local->lambda[efptFEP],

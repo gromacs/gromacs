@@ -2757,11 +2757,11 @@ void init_md(FILE *fplog,
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
                               mtop, ir, (*outf)->fp_dhdl);
     }
-    
+
     if ((*outf)->tng)
     {
         init_tng_top((*outf)->tng, mtop);
-        
+
         tng_file_headers_write((*outf)->tng, TNG_USE_HASH);
 
         if (sizeof(real) == sizeof(double))
@@ -2773,13 +2773,24 @@ void init_md(FILE *fplog,
             datatype = TNG_FLOAT_DATA;
         }
 
+        /* Set the number of frames per frame set to contain at least 100
+         * of the lowest common denominator of the writing frequency of
+         * positions and velocities.
+         * FIXME: Forces should also be taken into account.
+         */
         lowcd = lcd(ir->nstxout, ir->nstvout);
         if (lowcd <= 0)
         {
             lowcd = 1;
         }
+        n_frames_per_frame_set = lowcd * 100;
+        if (n_frames_per_frame_set > ir->nsteps)
+        {
+            n_frames_per_frame_set = ir->nsteps;
+        }
 
-        tng_num_frames_per_frame_set_get((*outf)->tng, &n_frames_per_frame_set);
+
+        tng_num_frames_per_frame_set_set((*outf)->tng, n_frames_per_frame_set);
         tng_num_particles_get((*outf)->tng, &n_particles);
 
         if(tng_frame_set_new((*outf)->tng, 0, n_frames_per_frame_set)
@@ -2788,26 +2799,26 @@ void init_md(FILE *fplog,
             tng_trajectory_destroy(&(*outf)->tng);
             gmx_fatal(FARGS, "Could not create TNG frame set.\n");
         }
-        
+
         /* Always add at least box shape, positions and velocities data blocks */
         if(tng_data_block_add((*outf)->tng, TNG_TRAJ_BOX_SHAPE, "BOX SHAPE",
-            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 9, 1,
+            datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set, 9, lowcd,
             TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
         {
             tng_trajectory_destroy(&(*outf)->tng);
             gmx_fatal(FARGS, "Could not create TNG data block.\n");
         }
-        if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_POSITIONS, 
+        if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_POSITIONS,
             "POSITIONS", datatype, TNG_TRAJECTORY_BLOCK, n_frames_per_frame_set,
-            3, ir->nstxout/lowcd, 0, n_particles, TNG_UNCOMPRESSED, 0) 
+            3, ir->nstxout, 0, n_particles, TNG_UNCOMPRESSED, 0)
             == TNG_CRITICAL)
         {
             tng_trajectory_destroy(&(*outf)->tng);
             gmx_fatal(FARGS, "Could not create TNG data block.\n");
         }
         if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_VELOCITIES,
-            "VELOCITIES", datatype, TNG_TRAJECTORY_BLOCK, 
-            n_frames_per_frame_set, 3, ir->nstvout/lowcd, 0, n_particles,
+            "VELOCITIES", datatype, TNG_TRAJECTORY_BLOCK,
+            n_frames_per_frame_set, 3, ir->nstvout, 0, n_particles,
             TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
         {
             tng_trajectory_destroy(&(*outf)->tng);
@@ -2816,8 +2827,8 @@ void init_md(FILE *fplog,
         if(ir->nstfout > 0)
         {
             if(tng_particle_data_block_add((*outf)->tng, TNG_TRAJ_FORCES,
-                "FORCES", datatype, TNG_TRAJECTORY_BLOCK, 
-                n_frames_per_frame_set, 3, ir->nstfout/lowcd, 0, n_particles,
+                "FORCES", datatype, TNG_TRAJECTORY_BLOCK,
+                n_frames_per_frame_set, 3, ir->nstfout, 0, n_particles,
                 TNG_UNCOMPRESSED, 0) == TNG_CRITICAL)
             {
                 tng_trajectory_destroy(&(*outf)->tng);
@@ -2857,17 +2868,17 @@ void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
     tng_chain_t tng_chain;
     tng_residue_t tng_res;
     tng_atom_t tng_atom;
-    
+
     for (mol_it = 0; mol_it < mtop->nmoltype; mol_it++)
     {
         mol_type = &mtop->moltype[mol_it];
-        
+
         /* Add a molecule to the TNG trajectory with the same name as the
          * current molecule. */
         tng_molecule_add(tng, *mol_type->name, &tng_mol);
-        
+
         atoms = &mol_type->atoms;
-        
+
         /* FIXME: The TNG atoms should contain mass and atomB info (for free
          * energy calculations */
         for (at_it = 0; at_it < atoms->nr; at_it++)
@@ -2884,7 +2895,7 @@ void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
                                              (int64_t)-1, &tng_chain) !=
                    TNG_SUCCESS)
                 {
-                    tng_molecule_chain_add (tng, tng_mol, chain_name, 
+                    tng_molecule_chain_add (tng, tng_mol, chain_name,
                                             &tng_chain);
                 }
 
