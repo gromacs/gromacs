@@ -255,6 +255,7 @@ void CopyRight(FILE *out, const char *szProgram)
     /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the
      * name of a file. Otherwise, we won't be able to find the library dir.
      */
+
 #define NCR (int)asize(CopyrightText)
 /* TODO: Is this exception still needed? */
 #ifdef GMX_FAHCORE
@@ -274,6 +275,11 @@ void CopyRight(FILE *out, const char *szProgram)
 
     ster_print(out, "G  R  O  M  A  C  S");
     fprintf(out, "\n");
+
+    if (getenv("GMX_NO_CREDITS"))
+    {
+        return;
+    }
 
     bromacs(tmpstr, 1023);
     sp_print(out, tmpstr);
