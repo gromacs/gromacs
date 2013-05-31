@@ -62,7 +62,7 @@ add_library(gmxana
             gmx_trjconv.c   gmx_trjcat.c    gmx_trjorder.c  gmx_xpm2ps.c    
             gmx_editconf.c  gmx_genbox.c    gmx_genion.c    gmx_genconf.c   
             gmx_genpr.c     gmx_eneconv.c   gmx_vanhove.c   gmx_wheel.c     
-            addconf.c       calcpot.c       edittop.c       gmx_bar.c
+            addconf.c                       edittop.c       gmx_bar.c
             gmx_membed.c    gmx_pme_error.c gmx_options.c   gmx_dos.c
             gmx_hydorder.c  gmx_densorder.c powerspect.c    dens_filter.c
             binsearch.c     gmx_dyecoupl.c  gmx_make_edi.c  gmx_sigeps.c
