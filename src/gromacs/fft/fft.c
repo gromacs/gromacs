@@ -19,7 +19,6 @@
 #include <config.h>
 #endif
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -27,14 +26,13 @@
 
 #include "types/simple.h"
 #include "gmxcomplex.h"
-#include "gmx_fft.h"
-
 #include "gmx_fatal.h"
+#include "gromacs/fft/fft.h"
 
 
 /* This file contains common fft utility functions, but not
  * the actual transform implementations. Check the
- * files like gmx_fft_fftw3.c or gmx_fft_intel_mkl.c for that.
+ * files like fft_fftw3.c or fft_mkl.c for that.
  */
 
 #ifndef GMX_FFT_FFTW3

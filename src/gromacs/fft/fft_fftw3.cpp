@@ -18,14 +18,12 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_FFTW3
-
 #include <errno.h>
 #include <stdlib.h>
 
 #include <fftw3.h>
 
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
 
 #ifdef GMX_DOUBLE
@@ -557,4 +555,3 @@ void gmx_fft_cleanup()
 {
     FFTWPREFIX(cleanup)();
 }
-#endif /* GMX_FFT_FFTW3 */

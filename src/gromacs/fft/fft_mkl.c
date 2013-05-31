@@ -19,16 +19,13 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_MKL
-
 #include <errno.h>
 #include <stdlib.h>
 
 #include <mkl_dfti.h>
 #include <mkl_service.h>
 
-
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
 
 
@@ -617,8 +614,3 @@ void gmx_fft_cleanup()
 {
     mkl_free_buffers();
 }
-
-#else
-int
-    gmx_fft_mkl_empty;
-#endif /* GMX_FFT_MKL */

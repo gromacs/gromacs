@@ -37,10 +37,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#include <smalloc.h>
-#include <gmx_fft.h>
-#include <gmx_fatal.h>
-#include <futil.h>
+
+#include "smalloc.h"
+#include "gromacs/fft/fft.h"
+#include "gmx_fatal.h"
+#include "futil.h"
 #include "interf.h"
 #include "powerspect.h"
 

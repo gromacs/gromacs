@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_FFTPACK
-
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 
-
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
+
 #include "external/fftpack/fftpack.h"
 
 /** Contents of the FFTPACK fft datatype.
@@ -471,4 +469,3 @@ gmx_fft_destroy(gmx_fft_t      fft)
 void gmx_fft_cleanup()
 {
 }
-#endif /* GMX_FFT_FFTPACK */

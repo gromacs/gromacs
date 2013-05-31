@@ -16,14 +16,14 @@
  * Gnomes, ROck Monsters And Chili Sauce
  */
 
-#ifndef _gmx_parallel_3dfft_h_
-#define _gmx_parallel_3dfft_h_
+#ifndef GMX_FFT_PARALLEL_3DFFT_H
+#define GMX_FFT_PARALLEL_3DFFT_H
 
-
-#include "types/simple.h"
-#include "types/commrec.h"
-#include "gmxcomplex.h"
-#include "gmx_fft.h"
+#include "../legacyheaders/types/nrnb.h"
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/gmxcomplex.h"
+#include "../utility/gmxmpi.h"
+#include "fft.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,5 +125,4 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup);
 }
 #endif
 
-
-#endif /* _gmx_parallel_3dfft_h_ */
+#endif
