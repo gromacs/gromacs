@@ -394,10 +394,15 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
 /*! \brief Cleanup global data of FFT
  *
  *  Any plans are invalid after this function. Should be called
- *  after all plans have been destroyed.s
- * */
+ *  after all plans have been destroyed.
+ */
 void gmx_fft_cleanup();
 
+/*! \brief Return string describing the underlying FFT implementation.
+ *
+ * Used to print out information about the used FFT library where needed.
+ */
+const char *gmx_fft_get_version_info();
 
 #ifdef __cplusplus
 }

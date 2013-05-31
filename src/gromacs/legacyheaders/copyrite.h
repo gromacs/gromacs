@@ -32,13 +32,10 @@
  * And Hey:
  * Gromacs Runs On Most of All Computer Systems
  */
-
 #ifndef _copyrite_h
 #define _copyrite_h
 
-
 #include <stdio.h>
-#include "types/simple.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -49,9 +46,6 @@ const char *GromacsVersion(void);
 
 void
 gmx_print_version_info(FILE *fp);
-
-void
-pr_difftime(FILE *out, double dt);
 
 void
 CopyRight(FILE *out, const char *szProgram);
@@ -71,17 +65,8 @@ bromacs(char *retstring, int retsize);
 void
 cool_quote(char *retstring, int retsize, int *cqnum);
 
-gmx_bool
-be_cool(void);
-/* Return TRUE when the user is COOL, FALSE otherwise */
-
 void
 thanx(FILE *fp);
-
-enum {
-    eCITEGMX, eCITEBATH, eCITESHAKE, eCITESETTLE, eCITESOR,
-    eCITEDISRE, eCITERF, eCITELINCS, eCITENR
-};
 
 void
 please_cite(FILE *fp, const char *key);
