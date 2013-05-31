@@ -43,9 +43,6 @@
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-#ifdef GMX_FFT_FFTW3
-#include <fftw3.h>
-#endif
 
 /* This file is completely threadsafe - keep it that way! */
 
@@ -65,75 +62,9 @@
 #include "buildinfo.h"
 #include "gmx_cpuid.h"
 
-static void pr_two(FILE *out, int c, int i)
-{
-    if (i < 10)
-    {
-        fprintf(out, "%c0%1d", c, i);
-    }
-    else
-    {
-        fprintf(out, "%c%2d", c, i);
-    }
-}
+#include "gromacs/fft/fft.h"
 
-void pr_difftime(FILE *out, double dt)
-{
-    int        ndays, nhours, nmins, nsecs;
-    gmx_bool   bPrint, bPrinted;
-
-    ndays    = dt/(24*3600);
-    dt       = dt-24*3600*ndays;
-    nhours   = dt/3600;
-    dt       = dt-3600*nhours;
-    nmins    = dt/60;
-    dt       = dt-nmins*60;
-    nsecs    = dt;
-    bPrint   = (ndays > 0);
-    bPrinted = bPrint;
-    if (bPrint)
-    {
-        fprintf(out, "%d", ndays);
-    }
-    bPrint = bPrint || (nhours > 0);
-    if (bPrint)
-    {
-        if (bPrinted)
-        {
-            pr_two(out, 'd', nhours);
-        }
-        else
-        {
-            fprintf(out, "%d", nhours);
-        }
-    }
-    bPrinted = bPrinted || bPrint;
-    bPrint   = bPrint || (nmins > 0);
-    if (bPrint)
-    {
-        if (bPrinted)
-        {
-            pr_two(out, 'h', nmins);
-        }
-        else
-        {
-            fprintf(out, "%d", nmins);
-        }
-    }
-    bPrinted = bPrinted || bPrint;
-    if (bPrinted)
-    {
-        pr_two(out, ':', nsecs);
-    }
-    else
-    {
-        fprintf(out, "%ds", nsecs);
-    }
-    fprintf(out, "\n");
-}
-
-
-gmx_bool be_cool(void)
+static gmx_bool be_cool(void)
 {
     /* Yes, it is bad to check the environment variable every call,
      * but we dont call this routine often, and it avoids using
@@ -147,7 +78,7 @@ gmx_bool be_cool(void)
 #endif
 }
 
-void space(FILE *out, int n)
+static void space(FILE *out, int n)
 {
     fprintf(out, "%*s", n, "");
 }
@@ -734,21 +665,7 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
     fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
 
-    /* TODO: Would be nicer to wrap this in a gmx_fft_version() call, but
-     * since that is currently in mdlib, can wait for master. */
-#ifdef GMX_FFT_FFTPACK
-    fprintf(fp, "FFT library:        fftpack (built-in)\n");
-#elif defined(GMX_FFT_FFTW3) && defined(GMX_NATIVE_WINDOWS)
-    fprintf(fp, "FFT library:        %s\n", "fftw3");
-#elif defined(GMX_FFT_FFTW3) && defined(GMX_DOUBLE)
-    fprintf(fp, "FFT library:        %s\n", fftw_version);
-#elif defined(GMX_FFT_FFTW3)
-    fprintf(fp, "FFT library:        %s\n", fftwf_version);
-#elif defined(GMX_FFT_MKL)
-    fprintf(fp, "FFT library:        MKL\n");
-#else
-    fprintf(fp, "FFT library:        unknown\n");
-#endif
+    fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef GMX_LARGEFILES
     fprintf(fp, "Large file support: enabled\n");
 #else
@@ -773,11 +690,8 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
     fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
     fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
-    if (BUILD_CXX_COMPILER[0] != '\0')
-    {
-        fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
-        fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
-    }
+    fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
+    fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
