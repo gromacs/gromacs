@@ -614,3 +614,8 @@ void gmx_fft_cleanup()
 {
     mkl_free_buffers();
 }
+
+const char *gmx_fft_get_version_info()
+{
+    return "Intel MKL";
+}

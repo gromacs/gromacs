@@ -555,3 +555,12 @@ void gmx_fft_cleanup()
 {
     FFTWPREFIX(cleanup)();
 }
+
+const char *gmx_fft_get_version_info()
+{
+#ifdef GMX_NATIVE_WINDOWS
+    return "fftw3";
+#else
+    return FFTWPREFIX(version);
+#endif
+}
