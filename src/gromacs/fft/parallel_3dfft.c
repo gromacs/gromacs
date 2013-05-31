@@ -23,11 +23,11 @@
 #include <string.h>
 #include <errno.h>
 
+#include "gromacs/fft/parallel_3dfft.h"
+#include "gromacs/fft/fft.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include "smalloc.h"
-#include "gmx_parallel_3dfft.h"
-#include "gmx_fft.h"
 #include "gmxcomplex.h"
 #include "gmx_fatal.h"
 

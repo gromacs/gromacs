@@ -57,7 +57,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
