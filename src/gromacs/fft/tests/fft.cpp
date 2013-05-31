@@ -33,17 +33,16 @@
  * Tests utilities for fft calculations.
  *
  * \author Roland Schulz <roland@utk.edu>
- * \ingroup module_mdlibs
+ * \ingroup module_fft
  */
-
-#include "config.h"
 #include <vector>
-#include <complex>
+
 #include <gtest/gtest.h>
-#include "testutils/refdata.h"
+
+#include "gromacs/fft/fft.h"
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/stringutil.h"
-#include "gmx_fft.h"
-#include "gmx_parallel_3dfft.h"
+#include "testutils/refdata.h"
 
 namespace
 {

@@ -35,19 +35,20 @@
 #include <math.h>
 #include <stdio.h>
 #include <time.h>
+
 #include "typedefs.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "xvgr.h"
-#include "complex.h"
+#include "gmxcomplex.h"
 #include "copyrite.h"
-#include "gmx_fft.h"
 #include "mdrun.h"
 #include "main.h"
 #include "statutil.h"
+#include "gromacs/fft/fft.h"
 
 #ifdef GMX_MPI
-#include "gmx_parallel_3dfft.h"
+#include "gromacs/fft/parallel_3dfft.h"
 #endif
 
 #include "fftgrid.h"
