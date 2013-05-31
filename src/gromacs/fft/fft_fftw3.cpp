@@ -18,14 +18,12 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_FFTW3
-
 #include <errno.h>
 #include <stdlib.h>
 
 #include <fftw3.h>
 
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
 
 #ifdef GMX_DOUBLE
@@ -49,18 +47,30 @@ static tMPI::mutex big_fftw_mutex;
      This is OK as long as the memory directly comes from malloc and is not some subarray within alloated memory.
    - This has to be fixed if any future architecute requires memory to be aligned to multiples of 32 bytes.
  */
-
+/*! \internal \brief
+ * Contents of the FFTW3 fft datatype.
+ *
+ * Note that this is one of several possible implementations of gmx_fft_t.
+ */
+#ifdef DOXYGEN
+struct gmx_fft_fftw3
+#else
 struct gmx_fft
+#endif
 {
-    /* Three alternatives (unaligned/aligned, out-of-place/in-place, forward/backward)
+    /*! \brief
+     * FFTW plans.
+     *
+     * Three alternatives (unaligned/aligned, out-of-place/in-place, forward/backward)
      * results in 8 different FFTW plans. Keep track of them with 3 array indices:
      * first index:   0=unaligned, 1=aligned
      * second index:  0=out-of-place, 1=in-place
      * third index:   0=backward, 1=forward
      */
     FFTWPREFIX(plan)         plan[2][2][2];
-    /* Catch user mistakes */
+    /** Used to catch user mistakes */
     int                      real_transform;
+    /** Number of dimensions in the FFT */
     int                      ndim;
 };
 
@@ -557,4 +567,3 @@ void gmx_fft_cleanup()
 {
     FFTWPREFIX(cleanup)();
 }
-#endif /* GMX_FFT_FFTW3 */

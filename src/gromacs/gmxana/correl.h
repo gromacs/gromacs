@@ -38,8 +38,7 @@
 #define _correl_h
 
 #include "typedefs.h"
-#include "gmx_fft.h"
-
+#include "gromacs/fft/fft.h"
 
 typedef struct {
     int        n;
