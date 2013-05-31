@@ -234,13 +234,13 @@ static int pick_ewald_kernel_type(bool                   bTwinCut,
 /*! Initializes the nonbonded parameter data structure. */
 static void init_nbparam(cu_nbparam_t *nbp,
                          const interaction_const_t *ic,
-                         const nonbonded_verlet_t *nbv,
+                         const nbnxn_atomdata_t *nbat,
                          const cuda_dev_info_t *dev_info)
 {
     cudaError_t stat;
     int         ntypes, nnbfp;
 
-    ntypes  = nbv->grp[0].nbat->ntype;
+    ntypes  = nbat->ntype;
 
     nbp->ewald_beta = ic->ewaldcoeff;
     nbp->sh_ewald   = ic->sh_ewald;
@@ -281,7 +281,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     nnbfp = 2*ntypes*ntypes;
     stat = cudaMalloc((void **)&nbp->nbfp, nnbfp*sizeof(*nbp->nbfp));
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
-    cu_copy_H2D(nbp->nbfp, nbv->grp[0].nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
+    cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
     cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
     stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
@@ -546,16 +546,25 @@ void nbnxn_cuda_init(FILE *fplog,
 
     stat = cudaDriverGetVersion(&cuda_drv_ver);
     CU_RET_ERR(stat, "cudaDriverGetVersion failed");
+
     bOldDriver = (cuda_drv_ver < 5000);
 
-    if (nb->dev_info->prop.ECCEnabled == 1)
+    if ((nb->dev_info->prop.ECCEnabled == 1) && bOldDriver)
     {
+        /* Polling wait should be used instead of cudaStreamSynchronize only if:
+         *   - ECC is ON & driver is old (checked above),
+         *   - we're on x86/x86_64,
+         *   - atomics are available, and
+         *   - GPUs are not being shared.
+         */
+        bool bShouldUsePollSync = (bX86 && bTMPIAtomics && !gpu_info->bDevShare);
+
         if (bStreamSync)
         {
             nb->bUseStreamSync = true;
 
             /* only warn if polling should be used */
-            if (bOldDriver && !gpu_info->bDevShare)
+            if (bShouldUsePollSync)
             {
                 md_print_warn(fplog,
                               "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, but\n"
@@ -564,34 +573,27 @@ void nbnxn_cuda_init(FILE *fplog,
         }
         else
         {
-            /* Can/should turn of cudaStreamSynchronize wait only if
-             *   - we're on x86/x86_64
-             *   - atomics are available
-             *   - GPUs are not being shared
-             *   - and driver is old. */
-            nb->bUseStreamSync =
-                (bX86 && bTMPIAtomics && !gpu_info->bDevShare && bOldDriver) ?
-                true : false;
+            nb->bUseStreamSync = !bShouldUsePollSync;
 
-            if (nb->bUseStreamSync)
+            if (bShouldUsePollSync)
             {
                 md_print_warn(fplog,
                               "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0, known to\n"
-                              "      cause performance loss. Switching to the alternative polling GPU waiting.\n"
+                              "      cause performance loss. Switching to the alternative polling GPU wait.\n"
                               "      If you encounter issues, switch back to standard GPU waiting by setting\n"
                               "      the GMX_CUDA_STREAMSYNC environment variable.\n");
             }
-            else if (bOldDriver)
+            else
             {
                 /* Tell the user that the ECC+old driver combination can be bad */
                 sprintf(sbuf,
-                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0. A bug in this\n"
-                        "      driver can cause performance loss.\n"
-                        "      However, the polling waiting workaround can not be used because\n%s\n"
+                        "NOTE: Using a GPU with ECC enabled and CUDA driver API version <5.0.\n"
+                        "      A known bug in this driver version can cause performance loss.\n"
+                        "      However, the polling wait workaround can not be used because\n%s\n"
                         "      Consider updating the driver or turning ECC off.",
-                        (!bX86 || !bTMPIAtomics) ?
-                           "         atomic operations are not supported by the platform/CPU+compiler." :
-                           "         GPU(s) are being oversubscribed.");
+                        (bX86 && bTMPIAtomics) ?
+                            "      GPU(s) are being oversubscribed." :
+                            "      atomic operations are not supported by the platform/CPU+compiler.");
                 md_print_warn(fplog, sbuf);
             }
         }
@@ -639,12 +641,12 @@ void nbnxn_cuda_init(FILE *fplog,
     }
 }
 
-void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t cu_nb,
-                           const interaction_const_t *ic,
-                           const nonbonded_verlet_t *nbv)
+void nbnxn_cuda_init_const(nbnxn_cuda_ptr_t                cu_nb,
+                           const interaction_const_t      *ic,
+                           const nonbonded_verlet_group_t *nbv_group)
 {
-    init_atomdata_first(cu_nb->atdat, nbv->grp[0].nbat->ntype);
-    init_nbparam(cu_nb->nbparam, ic, nbv, cu_nb->dev_info);
+    init_atomdata_first(cu_nb->atdat, nbv_group[0].nbat->ntype);
+    init_nbparam(cu_nb->nbparam, ic, nbv_group[0].nbat, cu_nb->dev_info);
 
     /* clear energy and shift force outputs */
     nbnxn_cuda_clear_e_fshift(cu_nb);
