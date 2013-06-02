@@ -627,7 +627,6 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
 static void prepare_verlet_scheme(FILE             *fplog,
                                   gmx_hw_info_t    *hwinfo,
                                   t_commrec        *cr,
-                                  gmx_hw_opt_t     *hw_opt,
                                   const char       *nbpu_opt,
                                   t_inputrec       *ir,
                                   const gmx_mtop_t *mtop,
@@ -984,7 +983,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            prepare_verlet_scheme(fplog, hwinfo, cr, hw_opt, nbpu_opt,
+            prepare_verlet_scheme(fplog, hwinfo, cr, nbpu_opt,
                                   inputrec, mtop, state->box,
                                   &minf.bUseGPU);
         }
@@ -1175,7 +1174,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (can_use_allvsall(inputrec, mtop, TRUE, cr, fplog) && PAR(cr))
     {
-        /* All-vs-all loops do not work with domain decomposition */
+        /* Simple neighbour searching and (also?) all-vs-all loops
+         * do not work with domain decomposition. */
         Flags |= MD_PARTDEC;
     }
 
@@ -1600,7 +1600,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->bRot)
         {
-            finish_rot(fplog, inputrec->rot);
+            finish_rot(inputrec->rot);
         }
 
     }
