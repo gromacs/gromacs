@@ -131,6 +131,26 @@ static void tMPI_Destroy_thread_id(void* thread_id)
     }
 }
 
+
+/* Set the thread id var for this thread
+    Returns a pointer to the thread object if succesful, NULL if ENOMEM */
+static struct tMPI_Thread* tMPI_Set_thread_id_key(int started_by_tmpi)
+{
+    struct tMPI_Thread *th;
+
+    th = (struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
+    if (th == NULL)
+    {
+        return NULL;
+    }
+    th->th              = pthread_self();
+    th->started_by_tmpi = started_by_tmpi;
+    /* we ignore errors because any thread that needs this value will
+       re-generate it in the next iteration. */
+    pthread_setspecific(thread_id_key, th);
+    return th;
+}
+
 /* initialize the thread id vars if not already initialized */
 static int tMPI_Init_thread_ids(void)
 {
@@ -144,7 +164,7 @@ static int tMPI_Init_thread_ids(void)
     if (!thread_id_key_initialized)
     {
         /* initialize and set the thread id thread-specific variable */
-        struct tMPI_Thread *main_thread;
+        struct tMPI_Thread *th;
 
         thread_id_key_initialized = 1;
         ret = pthread_key_create(&thread_id_key, tMPI_Destroy_thread_id);
@@ -152,17 +172,10 @@ static int tMPI_Init_thread_ids(void)
         {
             goto err;
         }
-        main_thread = (struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
-        if (main_thread == NULL)
+        th = tMPI_Set_thread_id_key(0);
+        if (th == NULL)
         {
             ret = ENOMEM;
-            goto err;
-        }
-        main_thread->th              = pthread_self();
-        main_thread->started_by_tmpi = 0;
-        ret = pthread_setspecific(thread_id_key, main_thread);
-        if (ret != 0)
-        {
             goto err;
         }
     }
@@ -180,6 +193,8 @@ struct tMPI_Thread_starter
     struct tMPI_Thread *thread;
     void               *(*start_routine)(void*);
     void               *arg;
+    pthread_mutex_t     cond_lock; /* lock for initialization of thread
+                                      structure */
 };
 
 /* the thread_starter function that sets the thread id */
@@ -190,6 +205,20 @@ static void *tMPI_Thread_starter(void *arg)
     void *parg;
     int   ret;
 
+    /* first wait for the parent thread to signal that the starter->thread
+       structure is ready. That's done by unlocking the starter->cond_lock */
+    ret = pthread_mutex_lock(&(starter->cond_lock));
+    if (ret != 0)
+    {
+        return NULL;
+    }
+    ret = pthread_mutex_unlock(&(starter->cond_lock));
+    if (ret != 0)
+    {
+        return NULL;
+    }
+
+    /* now remember the tMPI_thread_t structure for this thread */
     ret = pthread_setspecific(thread_id_key, starter->thread);
     if (ret != 0)
     {
@@ -198,6 +227,8 @@ static void *tMPI_Thread_starter(void *arg)
     start_routine = starter->start_routine;
     parg          = starter->arg;
 
+    /* deallocate the starter structure. Errors here are non-fatal. */
+    pthread_mutex_destroy(&(starter->cond_lock));
     free(starter);
     return (*start_routine)(parg);
 }
@@ -231,8 +262,28 @@ int tMPI_Thread_create(tMPI_Thread_t *thread, void *(*start_routine)(void *),
     starter->start_routine = start_routine;
     starter->arg           = arg;
 
+    ret = pthread_mutex_init(&(starter->cond_lock), NULL);
+    if (ret != 0)
+    {
+        return ret;
+    }
+    /* now lock the mutex so we can unlock it once we know the data in
+       thread->th is safe. */
+    ret = pthread_mutex_lock(&(starter->cond_lock));
+    if (ret != 0)
+    {
+        return ret;
+    }
+
     ret = pthread_create(&((*thread)->th), NULL, tMPI_Thread_starter,
                          (void*)starter);
+    if (ret != 0)
+    {
+        return ret;
+    }
+
+    /* Here we know thread->th is safe. */
+    ret = pthread_mutex_unlock(&(starter->cond_lock));
 
     return ret;
 }
@@ -271,17 +322,7 @@ tMPI_Thread_t tMPI_Thread_self(void)
     /* check if it is already in our list */
     if (th == NULL)
     {
-        /* if not, create an ID, set it and return it */
-        th = (struct tMPI_Thread*)malloc(sizeof(struct tMPI_Thread)*1);
-        if (th == NULL)
-        {
-            return NULL;
-        }
-        th->th              = pthread_self();
-        th->started_by_tmpi = 0;
-        /* we ignore errors here because they're not important -
-           the next iteration will do the same thing. */
-        pthread_setspecific(thread_id_key, th);
+        th = tMPI_Set_thread_id_key(0);
     }
     return th;
 }
