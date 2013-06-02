@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -62,13 +62,18 @@ class AnalysisDataParallelOptions;
 
 class AnalysisDataStorage;
 
+namespace internal
+{
+class AnalysisDataStorageFrameData;
+}   // namespace internal
+
 /*! \libinternal \brief
- * Stores a single data frame for AnalysisDataStorage.
+ * Allows assigning values for a data frame in AnalysisDataStorage.
  *
- * It also provides access to the frame outside AnalysisDataStorage.
- *
- * It is implemented such that the frame header is always valid, i.e.,
- * header().isValid() returns always true.
+ * This class implements the necessary methods to add new data into the
+ * storage.  AnalysisDataStorage::startFrame() returns an object of this type,
+ * which can be used to add one or more point sets to that data frame.
+ * When all data has been added, finishFrame() needs to be called.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -82,23 +87,9 @@ class AnalysisDataStorageFrame
          */
         ~AnalysisDataStorageFrame();
 
-        //! Returns header for the frame.
-        const AnalysisDataFrameHeader &header() const { return header_; }
-        //! Returns zero-based index of the frame.
-        int frameIndex() const { return header().index(); }
-        //! Returns x coordinate for the frame.
-        real x() const { return header().x(); }
-        //! Returns error in x coordinate for the frame if applicable.
-        real dx() const { return header().dx(); }
         //! Returns number of columns for the frame.
         int columnCount() const { return values_.size(); }
 
-        /*! \brief
-         * Returns point set reference to currently set values.
-         *
-         * Does not throw.
-         */
-        AnalysisDataPointSetRef currentPoints() const;
         /*! \brief
          * Sets value for a column.
          *
@@ -183,33 +174,39 @@ class AnalysisDataStorageFrame
          * exception this method throws.
          */
         void finishPointSet();
+        /*! \brief
+         * Finish storing a frame.
+         *
+         * Must be called exactly once for each frame returned by startFrame(),
+         * after the corresponding call.
+         * The frame object must not be accessed after the call.
+         *
+         * Calls notification methods in AbstractAnalysisData, and throws any
+         * exceptions these methods throw.
+         */
+        void finishFrame();
 
     private:
+
         /*! \brief
          * Create a new storage frame.
          *
-         * \param     storage      Storage object this frame belongs to.
          * \param[in] columnCount  Number of columns for the frame.
-         * \param[in] index        Zero-based index for the frame.
          */
-        AnalysisDataStorageFrame(AnalysisDataStorage *storage, int columnCount,
-                                 int index);
+        explicit AnalysisDataStorageFrame(int columnCount);
 
         //! Clear all column values from the frame.
         void clearValues();
 
-        //! Storage object that contains this frame.
-        AnalysisDataStorage           &storage_;
-        //! Header for the frame.
-        AnalysisDataFrameHeader        header_;
-        //! Values for the frame.
-        std::vector<AnalysisDataValue> values_;
+        //! Implementation data.
+        internal::AnalysisDataStorageFrameData *data_;
+        //! Values for the currently in-progress point set.
+        std::vector<AnalysisDataValue>          values_;
 
-        /*! \brief
-         * Needed for full write access to the data and for access to
-         * constructor/destructor.
-         */
+        //! Needed for access to the constructor.
         friend class AnalysisDataStorage;
+        //! Needed for managing the frame the object points to.
+        friend class internal::AnalysisDataStorageFrameData;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrame);
 };
@@ -368,39 +365,23 @@ class AnalysisDataStorage
          */
         AnalysisDataStorageFrame &currentFrame(int index);
         /*! \brief
-         * Finish storing a frame.
+         * Convenience method for finishing a data frame.
          *
          * \param[in] index  Frame index.
          *
-         * Must be called exactly once for each startFrame(), after the
-         * corresponding call.
+         * Identical to \c currentFrame(index).finishFrame().
          *
-         * Calls notification methods in AbstractAnalysisData, and throws any
-         * exceptions these methods throw.
+         * \see AnalysisDataStorageFrame::finishFrame()
          */
         void finishFrame(int index);
-        /*! \brief
-         * Convenience method for finishing a data frame.
-         *
-         * \param[in] frame  Frame object to finish.
-         *
-         * \p frame should have been previously obtained from startFrame() or
-         * currentFrame().  The \p frame reference is no longer valid after the
-         * call.
-         *
-         * Identical to \c finishframe(frame.frameIndex());
-         */
-        void finishFrame(const AnalysisDataStorageFrame &frame);
 
     private:
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed because the frame object needs to trigger notifications.
-         */
-        friend void AnalysisDataStorageFrame::finishPointSet();
+        //! Needed because the frame needs to access the implementation class.
+        friend class internal::AnalysisDataStorageFrameData;
 };
 
 } // namespace gmx
