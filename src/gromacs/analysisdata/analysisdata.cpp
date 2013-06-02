@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -282,9 +282,9 @@ AnalysisDataHandle::finishFrame()
     GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "finishFrame() called without calling startFrame()");
-    int index = impl_->currentFrame_->frameIndex();
+    AnalysisDataStorageFrame *frame = impl_->currentFrame_;
     impl_->currentFrame_ = NULL;
-    impl_->data_.impl_->storage_.finishFrame(index);
+    frame->finishFrame();
 }
 
 
