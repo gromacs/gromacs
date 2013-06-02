@@ -160,7 +160,7 @@ static const t_ftupd ftupd[] = {
     { 46, F_DPD               },
     { 30, F_POLARIZATION      },
     { 36, F_THOLE_POL         },
-    { 80, F_FBPOSRES          },
+    { 90, F_FBPOSRES          },
     { 22, F_DISRESVIOL        },
     { 22, F_ORIRES            },
     { 22, F_ORIRESDEV         },
@@ -3011,7 +3011,8 @@ static void do_tpxheader(t_fileio *fio, gmx_bool bRead, t_tpxheader *tpx,
 
     if ((fver <= tpx_incompatible_version) ||
         ((fver > tpx_version) && !TopOnlyOK) ||
-        (fgen > tpx_generation))
+        (fgen > tpx_generation) || 
+        tpx_version == 80) /*80 was used by both 5.0-dev and 4.6-dev*/
     {
         gmx_fatal(FARGS, "reading tpx file (%s) version %d with version %d program",
                   gmx_fio_getname(fio), fver, tpx_version);
@@ -3189,19 +3190,13 @@ static int do_tpx(t_fileio *fio, gmx_bool bRead,
     do_section(fio, eitemTOP, bRead);
     if (tpx.bTop)
     {
-        int mtop_file_version = file_version;
-        /*allow reading of Gromacs 4.6 files*/
-        if (mtop_file_version > 80 && mtop_file_version < 90)
-        {
-            mtop_file_version = 79;
-        }
         if (mtop)
         {
-            do_mtop(fio, mtop, bRead, mtop_file_version);
+            do_mtop(fio, mtop, bRead, file_version);
         }
         else
         {
-            do_mtop(fio, &dum_top, bRead, mtop_file_version);
+            do_mtop(fio, &dum_top, bRead, file_version);
             done_mtop(&dum_top, TRUE);
         }
     }
