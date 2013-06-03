@@ -206,19 +206,19 @@ gmx_set_thread_affinity(FILE                *fplog,
         return;
     }
 
-#ifndef __APPLE__
     /* If the tMPI thread affinity setting is not supported encourage the user
      * to report it as it's either a bug or an exotic platform which we might
      * want to support. */
     if (tMPI_Thread_setaffinity_support() != TMPI_SETAFFINITY_SUPPORT_YES)
     {
+#ifndef __APPLE__
         md_print_warn(NULL, fplog,
                       "Can not set thread affinities on the current platform. On NUMA systems this\n"
                       "can cause performance degradation. If you think your platform should support\n"
                       "setting affinities, contact the GROMACS developers.");
+#endif /* __APPLE__ */
         return;
     }
-#endif /* __APPLE__ */
 
     /* threads on this MPI process or TMPI thread */
     if (cr->duty & DUTY_PP)
