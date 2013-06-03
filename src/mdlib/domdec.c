@@ -2459,6 +2459,8 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
     {
         zones->cg_range[i] = dd->ncg_home;
     }
+    /* zone_ncg1[0] should always be equal to ncg_home */
+    dd->comm->zone_ncg1[0] = dd->ncg_home;
 }
 
 static void rebuild_cgindex(gmx_domdec_t *dd,
@@ -9377,6 +9379,13 @@ void dd_partition_system(FILE                *fplog,
                   TRUE, &top_local->cgs, state_local->x, &ddbox);
 
         bRedist = comm->bDynLoadBal;
+        if (!bRedist)
+        {
+            /* When we don't redistribute, we have now set the final indices
+             * up to ncg_home, so we later only need to add the non-local ones.
+             */
+            cg0 = dd->ncg_home;
+        }
     }
     else
     {
