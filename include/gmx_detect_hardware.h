@@ -45,19 +45,38 @@ extern "C" {
 } /* fixes auto-indentation problems */
 #endif
 
+/* the init and consistency functions depend on commrec that may not be 
+   consistent in cuda because MPI types don't exist there.  */
+#ifndef __CUDACC__
+#include "types/commrec.h"
+/* return a pointer to a global hwinfo structure. */
 GMX_LIBGMX_EXPORT
-void gmx_detect_hardware(FILE *fplog, gmx_hw_info_t *hwinfo,
-                         const t_commrec *cr,
-                         gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
-                         const char *gpu_id);
+gmx_hw_info_t *gmx_detect_hardware(FILE *fplog, const t_commrec *cr,
+                                   gmx_bool bForceUseGPU, gmx_bool bTryUseGPU,
+                                   const char *gpu_id);
 
 GMX_LIBGMX_EXPORT
 void gmx_hardware_info_free(gmx_hw_info_t *hwinfo);
 
+/* Check the thread count + GPU assignment. This function must
+   either be run by all threads that persist (i.e. all tmpi threads),
+   or be run before they are created.  */
 GMX_LIBGMX_EXPORT
 void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
                                       const t_commrec *cr, int ntmpi_requsted,
                                       gmx_bool bUseGPU);
+#endif
+
+
+/* Check whether a GPU is shared among ranks, and return the number of shared
+   gpus
+
+   hwinfo        = the hwinfo struct
+
+   returns: The number of GPUs shared among ranks, or 0 */
+GMX_LIBGMX_EXPORT
+int gmx_count_gpu_dev_shared(const gmx_gpu_info_t *gpu_info);
+
 
 #ifdef __cplusplus
 }

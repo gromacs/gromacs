@@ -67,9 +67,7 @@ static const char * const gpu_detect_res_str[] =
  * The gmx_hardware_detect module initializes it. */
 typedef struct
 {
-    gmx_bool            bUserSet;       /* true if the GPUs in cuda_dev_use are manually provided by the user */
-    gmx_bool            bDevShare;      /* true if any of the devices is shared by
-                                           (t)MPI ranks, with auto-detection always FALSE */
+    gmx_bool             bUserSet;      /* true if the GPUs in cuda_dev_use are manually provided by the user */
 
     int                  ncuda_dev_use; /* number of devices selected to be used */
     int                 *cuda_dev_use;  /* index of the devices selected to be used */
@@ -78,18 +76,23 @@ typedef struct
 } gmx_gpu_info_t;
 
 /* Hardware information structure with CPU and GPU information.
- * It is initialized by gmx_detect_hardware(). */
+ * It is initialized by gmx_detect_hardware().
+ * NOTE: this structure may only contain structures that are globally valid
+ *       (i.e. must be able to be shared among all threads) */
 typedef struct
 {
-    gmx_bool        bCanUseGPU;        /* True if compatible GPUs are detected during hardware detection */
-    gmx_gpu_info_t  gpu_info;          /* Information about GPUs detected in the system */
+    gmx_bool        bCanUseGPU;          /* True if compatible GPUs are detected during hardware detection */
+    gmx_gpu_info_t  gpu_info;            /* Information about GPUs detected in the system */
 
-    gmx_cpuid_t     cpuid_info;        /* CPUID information about CPU detected;
-                                          NOTE: this will only detect the CPU thread 0 of the
-                                          current process runs on. */
-    int             nthreads_hw_avail; /* Number of hardware threads available; this number
-                                          is based on the number of CPUs reported as available
-                                          by the OS at the time of detection. */
+    gmx_cpuid_t     cpuid_info;          /* CPUID information about CPU detected;
+                                            NOTE: this will only detect the CPU thread 0 of the
+                                            current process runs on. */
+    int             nthreads_hw_avail;   /* Number of hardware threads available; this number
+                                            is based on the number of CPUs reported as available
+                                            by the OS at the time of detection. */
+    gmx_bool        bConsistencyChecked; /* whether
+                                            gmx_check_hw_runconf_consistency()
+                                            has been run with this hw_info */
 } gmx_hw_info_t;
 
 #ifdef __cplusplus
