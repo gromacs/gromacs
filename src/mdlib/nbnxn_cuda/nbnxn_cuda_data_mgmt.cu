@@ -53,6 +53,7 @@
 #include "types/interaction_const.h"
 #include "types/force_flags.h"
 #include "../nbnxn_consts.h"
+#include "gmx_detect_hardware.h"
 
 #include "nbnxn_cuda_types.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
@@ -459,7 +460,7 @@ static int pick_nbnxn_kernel_version(FILE            *fplog,
 
 void nbnxn_cuda_init(FILE *fplog,
                      nbnxn_cuda_ptr_t *p_cu_nb,
-                     gmx_gpu_info_t *gpu_info, int my_gpu_index,
+                     const gmx_gpu_info_t *gpu_info, int my_gpu_index,
                      gmx_bool bLocalAndNonlocal)
 {
     cudaError_t stat;
@@ -560,7 +561,8 @@ void nbnxn_cuda_init(FILE *fplog,
          *   - atomics are available, and
          *   - GPUs are not being shared.
          */
-        bool bShouldUsePollSync = (bX86 && bTMPIAtomics && !gpu_info->bDevShare);
+        bool bShouldUsePollSync = (bX86 && bTMPIAtomics &&
+                                   (gmx_count_gpu_dev_shared(gpu_info) < 1));
 
         if (bStreamSync)
         {
