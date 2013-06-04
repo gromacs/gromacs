@@ -166,6 +166,8 @@ extern int gmx_poldata_get_ptype(gmx_poldata_t pd,
 
 extern const char *gmx_poldata_atype_to_ptype(gmx_poldata_t pd,const char *atype);
 
+extern const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd,const char *atype);
+
 /* Return 1 if OK, 0 if not found */				 
 extern int gmx_poldata_search_atype(gmx_poldata_t pd,
                                     char *key,

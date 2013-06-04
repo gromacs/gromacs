@@ -372,20 +372,10 @@ void MolProp::AddComposition(MolecularComposition mc)
   
 void MolProp::Merge(MolProp& src)
 {
-    int smult;
-    double x,y,z,q,sq;
-  
-    std::vector<std::string>::iterator si;    
+    double q,sq;
     std::string stmp,dtmp;
-    alexandria::BondIterator bi;
-    alexandria::ExperimentIterator ei;
-    alexandria::CalculationIterator ci;
-    alexandria::AtomicChargeIterator aci;
-    alexandria::CalcAtomIterator cai;
-    alexandria::MolecularCompositionIterator mci;
-    alexandria::AtomNumIterator ani;
-  
-    for(si=src.BeginCategory(); (si<src.EndCategory()); si++) 
+    
+    for(std::vector<std::string>::iterator si=src.BeginCategory(); (si<src.EndCategory()); si++) 
     {
         AddCategory(*si);
     }
@@ -397,7 +387,7 @@ void MolProp::Merge(MolProp& src)
     }
     else 
     {
-        smult = src.GetMultiplicity();
+        int smult = src.GetMultiplicity();
         if ((NULL != debug) && (smult != GetMultiplicity()))
             fprintf(debug,"Not overriding multiplicity to %d when merging since it is %d (%s)\n",
                     smult,GetMultiplicity(),src.GetMolname().c_str());
@@ -413,6 +403,10 @@ void MolProp::Merge(MolProp& src)
                     sq,q,GetMolname().c_str());
     }
   
+    stmp = src.GetMolname();
+    if ((GetMolname().size() == 0) && (stmp.size() != 0))
+        SetMolname(stmp);
+
     stmp = src.GetIupac();
     if ((GetIupac().size() == 0) && (stmp.size() != 0))
         SetIupac(stmp);
@@ -429,13 +423,13 @@ void MolProp::Merge(MolProp& src)
     if ((GetInchi().size() == 0) && (stmp.size() != 0))
         SetInchi(stmp);
   
-    for(bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
+    for(alexandria::BondIterator bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
     {
         alexandria::Bond bb(bi->GetAi(),bi->GetAj(),bi->GetBondOrder());
         AddBond(bb);
     }
 
-    for(ei=src.BeginExperiment(); (ei<src.EndExperiment()); ei++)
+    for(alexandria::ExperimentIterator ei=src.BeginExperiment(); (ei<src.EndExperiment()); ei++)
     {
         Experiment ex(ei->GetReference(),ei->GetConformation());
         
@@ -443,7 +437,7 @@ void MolProp::Merge(MolProp& src)
         AddExperiment(ex);
     }
 
-    for(ci=src.BeginCalculation(); (ci<src.EndCalculation()); ci++)
+    for(alexandria::CalculationIterator ci=src.BeginCalculation(); (ci<src.EndCalculation()); ci++)
     {    
         Calculation ca(ci->GetProgram(),ci->GetMethod(),
                        ci->GetBasisset(),ci->GetReference(),
@@ -453,14 +447,15 @@ void MolProp::Merge(MolProp& src)
         AddCalculation(ca);
     }
     
-    for(mci=src.BeginMolecularComposition(); (mci<src.EndMolecularComposition()); mci++) 
+    for(alexandria::MolecularCompositionIterator mci=src.BeginMolecularComposition(); 
+        (mci<src.EndMolecularComposition()); mci++) 
     {
-        AddComposition(*mci);
-        for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++) 
+        for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++) 
         {
             AtomNum an(ani->GetAtom(),ani->GetNumber());
             mci->AddAtom(an);
         }
+        AddComposition(*mci);
     }
 }
 

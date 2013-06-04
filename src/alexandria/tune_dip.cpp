@@ -285,7 +285,7 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
 
             d2 += sqr(mi->dip_exp-mi->dip_calc);
             fprintf(fp,"Atom   Type      q_EEM     q_ESP       x       y       z\n");
-            aloop = gmx_mtop_atomloop_all_init(&mi->mtop);
+            aloop = gmx_mtop_atomloop_all_init(mi->mtop);
             j = 0;
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
                 gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);

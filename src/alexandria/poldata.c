@@ -117,6 +117,8 @@ typedef struct gmx_poldata {
     t_ptype *ptype;
     int nalexandria,nalexandria_c;
     t_ffatype *alexandria;
+    int nbtype;
+    char **btype;
     int nbrule,nbrule_c;
     t_brule *brule;
     char *alexandria_polar_unit;
@@ -312,6 +314,25 @@ void gmx_poldata_add_ptype(gmx_poldata_t pd,
         fprintf(stderr,"Polarizability type %s was already added to poldata record\n",ptype);
 }
 
+static void gmx_poldata_add_btype(gmx_poldata_t pd,
+                                  const char *btype)
+{
+    int i;
+    
+    for(i=0; (i<pd->nbtype); i++)
+    {
+        if (strcasecmp(btype,pd->btype[i]) == 0)
+        {
+            break;
+        }
+    }
+    if (i == pd->nbtype)
+    {
+        srenew(pd->btype,++pd->nbtype);
+        pd->btype[i] = strdup(btype);
+    }
+}
+
 void gmx_poldata_add_atype(gmx_poldata_t pd,
                            const char *elem,
                            const char *desc,
@@ -336,9 +357,10 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
         sp->elem           = strdup(elem);
         sp->desc           = strdup(desc);
         sp->type           = strdup(atype);
-        sp->ptype       = strdup(ptype);
-        sp->btype      = strdup(btype);
+        sp->ptype          = strdup(ptype);
+        sp->btype          = strdup(btype);
         sp->vdwparams      = strdup(vdwparams);
+        gmx_poldata_add_btype(pd,btype);
     }
     else 
         fprintf(stderr,"Atom type %s was already added to poldata record\n",atype);
@@ -827,6 +849,20 @@ const char *gmx_poldata_atype_to_ptype(gmx_poldata_t pd,const char *atype)
     return NULL;
 }
 
+const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd,const char *atype)
+{
+    int i;
+    
+    for(i=0; (i<pd->nalexandria); i++) 
+    {
+        if (strcmp(pd->alexandria[i].type,atype) == 0)
+        {
+            return pd->alexandria[i].btype;
+        }
+    }
+    return NULL;
+}
+
 int gmx_poldata_search_atype(gmx_poldata_t pd,
                              char *key,
                              char **elem,
@@ -1203,12 +1239,12 @@ char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd)
     return pd->bosque_polar_unit;
 }
 
-static int search_atomtype(gmx_poldata_t pd,char *atom)
+static int search_bondtype(gmx_poldata_t pd,char *atom)
 {
     int j;
     
-    for(j=0; (j<pd->nalexandria); j++) 
-        if (strcasecmp(pd->alexandria[j].type,atom) == 0) 
+    for(j=0; (j<pd->nbtype); j++) 
+        if (strcasecmp(pd->btype[j],atom) == 0) 
             return j;
     return -1;
 }
@@ -1254,9 +1290,9 @@ int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
     t_gt_bond *gt_b;
     int j,a1,a2;
 
-    if (-1 == (a1 = search_atomtype(pd,atom1)))
+    if (-1 == (a1 = search_bondtype(pd,atom1)))
         return 0;
-    if (-1 == (a2 = search_atomtype(pd,atom2)))
+    if (-1 == (a2 = search_bondtype(pd,atom2)))
         return 0;
     if (gmx_poldata_set_bond_params(pd,atom1,atom2,length,sigma,ntrain,
                                     bondorder,params) == 0) {
@@ -1321,7 +1357,7 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
             assign_scal(bondorder,gt_b->bondorder);
             assign_str(params,gt_b->params);
         
-            return (gt_b - pd->gt_bond);
+            return 1+(gt_b - pd->gt_bond);
         }
     }
     return 0;
@@ -1370,9 +1406,9 @@ int gmx_poldata_add_angle(gmx_poldata_t pd,char *atom1,char *atom2,
     t_gt_angle *gt_b;
     int i;
   
-    if ((-1 == search_atomtype(pd,atom1)) ||
-        (-1 == search_atomtype(pd,atom2)) ||
-        (-1 == search_atomtype(pd,atom3)))
+    if ((-1 == search_bondtype(pd,atom1)) ||
+        (-1 == search_bondtype(pd,atom2)) ||
+        (-1 == search_bondtype(pd,atom3)))
         return 0;
 
     if (0 == gmx_poldata_set_angle_params(pd,atom1,atom2,atom3,angle,sigma,ntrain,params)) {
@@ -1424,13 +1460,15 @@ int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
     t_gt_angle *gt_b;
     int i;
   
-    for(i=0; (i<pd->ngt_angle); i++) {
+    for(i=0; (i<pd->ngt_angle); i++) 
+    {
         gt_b = &(pd->gt_angle[i]);
         if ((strcasecmp(gt_b->atom2,atom2) == 0) &&
             (((strcasecmp(gt_b->atom1,atom1) == 0) && 
               (strcasecmp(gt_b->atom3,atom3) == 0)) ||
              ((strcasecmp(gt_b->atom1,atom3) == 0) && 
-              (strcasecmp(gt_b->atom3,atom1) == 0)))) {
+              (strcasecmp(gt_b->atom3,atom1) == 0)))) 
+        {
             assign_scal(angle,gt_b->angle);
             assign_scal(sigma,gt_b->sigma);
             assign_scal(ntrain,gt_b->ntrain);
@@ -1506,7 +1544,8 @@ int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,int egd,
     t_gt_dihedral *gt_b;
     
     gt_b = search_dihedral(pd,egd,atom1,atom2,atom3,atom4);
-    if (NULL != gt_b) {
+    if (NULL != gt_b) 
+    {
         if (dihedral > 0)
             gt_b->dihedral = dihedral;
         if (sigma > 0)
@@ -1529,10 +1568,10 @@ int gmx_poldata_add_dihedral(gmx_poldata_t pd,int egd,
     t_gt_dihedral *gt_b;
     int i;
 
-    if ((-1 == search_atomtype(pd,atom1)) ||
-        (-1 == search_atomtype(pd,atom2)) ||
-        (-1 == search_atomtype(pd,atom3)) ||
-        (-1 == search_atomtype(pd,atom4)))
+    if ((-1 == search_bondtype(pd,atom1)) ||
+        (-1 == search_bondtype(pd,atom2)) ||
+        (-1 == search_bondtype(pd,atom3)) ||
+        (-1 == search_bondtype(pd,atom4)))
         return 0;
 
     if (0 == gmx_poldata_set_dihedral_params(pd,egd,atom1,atom2,

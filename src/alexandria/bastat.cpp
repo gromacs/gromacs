@@ -56,7 +56,7 @@
 #include "gmx_statistics.h"
 #include "poldata_xml.h"
 #include "mymol.hpp"
-#include "moldip.hpp"
+#include "molprop_util.hpp"
 
 typedef struct {
     char *a1,*a2;
@@ -135,7 +135,7 @@ void sort_bonds(t_bonds *b)
     qsort(b->imp,b->nimp,sizeof(b->imp[0]),dihcmp);
 }
 
-void add_bond(FILE *fplog,const char *molname,t_bonds *b,char *a1,char *a2,
+void add_bond(FILE *fplog,const char *molname,t_bonds *b,const char *a1,const char *a2,
               double blen,double spacing)
 {
     int i,j,index;
@@ -178,7 +178,7 @@ void add_bond(FILE *fplog,const char *molname,t_bonds *b,char *a1,char *a2,
 }
 
 void add_angle(FILE *fplog,const char *molname,t_bonds *b,
-               char *a1,char *a2,char *a3,double angle,double spacing)
+               const char *a1,const char *a2,const char *a3,double angle,double spacing)
 {
     int i,index;
   
@@ -216,7 +216,7 @@ void add_angle(FILE *fplog,const char *molname,t_bonds *b,
 }
 
 void add_dih(FILE *fplog,const char *molname,t_bonds *b,
-             char *a1,char *a2,char *a3,char *a4,
+             const char *a1,const char *a2,const char *a3,const char *a4,
              double angle,double spacing,int egd)
 {
     int i,*nd,index;
@@ -402,7 +402,7 @@ int main(int argc,char *argv[])
     };
   
     t_filenm fnm[] = {
-        { efDAT, "-f", "allmols",    ffREAD  },
+        { efDAT, "-f", "allmols",    ffRDMULT  },
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "bastat",    ffWRITE },
         { efDAT, "-sel", "molselect",ffREAD },
@@ -437,7 +437,7 @@ int main(int argc,char *argv[])
         { "-compress", FALSE, etBOOL, {&compress},
           "Compress output XML file" }
     };
-    alexandria::MolDip    md;
+    //alexandria::MolDip    md;
     FILE      *fp;
     int       iModel;
     t_commrec *cr;
@@ -445,8 +445,7 @@ int main(int argc,char *argv[])
     time_t    my_t;
     char      pukestr[STRLEN];
     t_bonds   *b;
-    int  j,ai,aj,ak,al;
-    char *cai,*caj,*cak,*cal;
+    int  j;
     rvec dx,dx2,r_ij,r_kj,r_kl,mm,nn;
     t_pbc pbc;
     int t1,t2,t3;
@@ -458,8 +457,11 @@ int main(int argc,char *argv[])
     double aspacing = 0.5; /* degree */
     double dspacing = 1; /* degree */
     output_env_t oenv = NULL;
-    std::vector<alexandria::MyMol>::iterator mmi;
-        
+    gmx_poldata_t pd;
+    gmx_atomprop_t aps;
+    int nfiles;
+    char   **fns;
+  
     cr = init_par(&argc,&argv);
 
     CopyRight(stdout,argv[0]);
@@ -485,85 +487,119 @@ int main(int argc,char *argv[])
     fprintf(fp,"# %s\n#\n",pukestr);
         
     gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    md.Init(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
-            J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-            fc_bound,fc_mu,fc_quad,fc_charge,
-            fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
-    md.Read(fp ? fp : (debug ? debug : NULL),
-            opt2fn("-f",NFILE,fnm),
-            opt2fn_null("-d",NFILE,fnm),
-            minimum_data,bZero,
-            opt_elem,const_elem,
-            lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-            TRUE,TRUE,TRUE,watoms,FALSE);
     
-#define ATP(ii) get_atomtype_name(mmi->topology->atoms.atom[ii].type,mmi->atype)
-    ftb = gmx_poldata_get_bond_ftype(md._pd);
-    fta = gmx_poldata_get_angle_ftype(md._pd);
-    ftd = gmx_poldata_get_dihedral_ftype(md._pd,egdPDIHS);
-    fti = gmx_poldata_get_dihedral_ftype(md._pd,egdIDIHS);
+    /* Read standard atom properties */
+    aps = gmx_atomprop_init();
+  
+    /* Read polarization stuff */
+    if ((pd = gmx_poldata_read(opt2fn_null("-d",NFILE,fnm),aps)) == NULL)
+        gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
+    
+    /* read Molprops */    
+    nfiles = opt2fns(&fns,"-f",NFILE,fnm);
+    std::vector<alexandria::MolProp> mp;
+    merge_xml(nfiles,fns,mp,NULL,NULL,NULL,aps,pd,
+              TRUE,TRUE,th_toler,ph_toler);
+    ftb = gmx_poldata_get_bond_ftype(pd);
+    fta = gmx_poldata_get_angle_ftype(pd);
+    ftd = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
+    fti = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
     snew(b,1);
-    for(mmi=md._mymol.begin(); (mmi<md._mymol.end()); mmi++) {
-        for(j=0; (j<mmi->ltop->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1) {
-            ai = mmi->ltop->idef.il[ftb].iatoms[j+1];
-            aj = mmi->ltop->idef.il[ftb].iatoms[j+2];
-            cai = ATP(ai);
-            caj = ATP(aj);
-            add_bond(fp,mmi->GetMolname().c_str(),b,cai,caj,1000*norm(dx),bspacing);
+    
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
+    {
+        alexandria::MyMol mmi;
+        int i;
+        
+        mmi.Merge(*mpi);
+        if (mmi.GetMolname().size() == 0)
+        {
+            printf("Empty molname for molecule with formula %s\n",mmi.GetFormula().c_str());
+            continue;
         }
-        for(j=0; (j<mmi->ltop->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) {
-            ai = mmi->ltop->idef.il[fta].iatoms[j+1];
-            aj = mmi->ltop->idef.il[fta].iatoms[j+2];
-            ak = mmi->ltop->idef.il[fta].iatoms[j+3];
-            rvec_sub(mmi->x[ai],mmi->x[aj],dx);
-            rvec_sub(mmi->x[ak],mmi->x[aj],dx2);
-            ang = RAD2DEG*gmx_angle(dx,dx2);
-            cai = ATP(ai);
-            caj = ATP(aj);
-            cak = ATP(ak);
-            add_angle(fp,mmi->GetMolname().c_str(),b,cai,caj,cak,ang,aspacing);
+        mmi.GenerateTopology(aps,pd,lot,"ESP",FALSE,2);
+        
+#define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology->atoms.atomtype[ii])
+        for(i=0; (i<mmi.topology->atoms.nr); i++)
+        {
+            if (NULL == ATP(i))
+            {
+                printf("No bond-type support for atom %s in %s\n",
+                       *mmi.topology->atoms.atomtype[i],mmi.GetMolname().c_str());
+                break;
+            }
+        }    
+        if ((mmi.topology->atoms.nr <= 0) || (i < mmi.topology->atoms.nr))
+            continue;
+
+        
+        for(int j=0; (j<mmi.ltop->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1)
+        {
+            int ai = mmi.ltop->idef.il[ftb].iatoms[j+1];
+            int aj = mmi.ltop->idef.il[ftb].iatoms[j+2];
+            rvec_sub(mmi.x[ai],mmi.x[aj],dx);
+            const char *cai = ATP(ai);
+            const char *caj = ATP(aj);
+            add_bond(fp,mmi.GetMolname().c_str(),b,cai,caj,1000*norm(dx),bspacing);
+        }
+        for(int j=0; (j<mmi.ltop->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) 
+        {
+            int ai = mmi.ltop->idef.il[fta].iatoms[j+1];
+            int aj = mmi.ltop->idef.il[fta].iatoms[j+2];
+            int ak = mmi.ltop->idef.il[fta].iatoms[j+3];
+            rvec_sub(mmi.x[ai],mmi.x[aj],dx);
+            rvec_sub(mmi.x[ak],mmi.x[aj],dx2);
+            double ang = RAD2DEG*gmx_angle(dx,dx2);
+            const char *cai = ATP(ai);
+            const char *caj = ATP(aj);
+            const char *cak = ATP(ak);
+            add_angle(fp,mmi.GetMolname().c_str(),b,cai,caj,cak,ang,aspacing);
         }
         clear_mat(box);
         set_pbc(&pbc,epbcNONE,box);
         
-        for(j=0; (j<mmi->ltop->idef.il[ftd].nr); j+=interaction_function[ftd].nratoms+1) {
-            ai = mmi->ltop->idef.il[ftd].iatoms[j+1];
-            aj = mmi->ltop->idef.il[ftd].iatoms[j+2];
-            ak = mmi->ltop->idef.il[ftd].iatoms[j+3];
-            al = mmi->ltop->idef.il[ftd].iatoms[j+4];
-            ang = RAD2DEG*dih_angle(mmi->x[ai],mmi->x[aj],
-                                    mmi->x[ak],mmi->x[al],
-                                    &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
-                                    &sign,&t1,&t2,&t3);
-            cai = ATP(ai);
-            caj = ATP(aj);
-            cak = ATP(ak);
-            cal = ATP(al);
-            add_dih(fp,mmi->GetMolname().c_str(),b,cai,caj,cak,cal,ang,dspacing,egdPDIHS);
+        for(int j=0; (j<mmi.ltop->idef.il[ftd].nr); j+=interaction_function[ftd].nratoms+1) 
+        {
+            int ai = mmi.ltop->idef.il[ftd].iatoms[j+1];
+            int aj = mmi.ltop->idef.il[ftd].iatoms[j+2];
+            int ak = mmi.ltop->idef.il[ftd].iatoms[j+3];
+            int al = mmi.ltop->idef.il[ftd].iatoms[j+4];
+            double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
+                                           mmi.x[ak],mmi.x[al],
+                                           &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
+                                           &sign,&t1,&t2,&t3);
+            const char *cai = ATP(ai);
+            const char *caj = ATP(aj);
+            const char *cak = ATP(ak);
+            const char *cal = ATP(al);
+            add_dih(fp,mmi.GetMolname().c_str(),b,cai,caj,cak,cal,ang,dspacing,egdPDIHS);
         }
-
-        for(j=0; (j<mmi->ltop->idef.il[fti].nr); j+=interaction_function[fti].nratoms+1) {
-            ai = mmi->ltop->idef.il[fti].iatoms[j+1];
-            aj = mmi->ltop->idef.il[fti].iatoms[j+2];
-            ak = mmi->ltop->idef.il[fti].iatoms[j+3];
-            al = mmi->ltop->idef.il[fti].iatoms[j+4];
-            ang = RAD2DEG*dih_angle(mmi->x[ai],mmi->x[aj],
-                                    mmi->x[ak],mmi->x[al],
-                                    &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
-                                    &sign,&t1,&t2,&t3);
-            cai = ATP(ai);
-            caj = ATP(aj);
-            cak = ATP(ak);
-            cal = ATP(al);
-            add_dih(fp,mmi->GetMolname().c_str(),b,cai,caj,cak,cal,ang,dspacing,egdIDIHS);
+        
+        for(int j=0; (j<mmi.ltop->idef.il[fti].nr); j+=interaction_function[fti].nratoms+1) 
+        {
+            int ai = mmi.ltop->idef.il[fti].iatoms[j+1];
+            int aj = mmi.ltop->idef.il[fti].iatoms[j+2];
+            int ak = mmi.ltop->idef.il[fti].iatoms[j+3];
+            int al = mmi.ltop->idef.il[fti].iatoms[j+4];
+            double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
+                                           mmi.x[ak],mmi.x[al],
+                                           &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
+                                           &sign,&t1,&t2,&t3);
+            const char *cai = ATP(ai);
+            const char *caj = ATP(aj);
+            const char *cak = ATP(ak);
+            const char *cal = ATP(al);
+            add_dih(fp,mmi.GetMolname().c_str(),b,cai,caj,cak,cal,ang,dspacing,egdIDIHS);
         }
     }
     sort_bonds(b);
     if (bHisto)
+    {
         dump_histo(b,bspacing,aspacing,dspacing,oenv);
-    update_pd(fp,b,md._pd,md._atomprop,Dm,beta,kt,kp);
+    }
+    update_pd(fp,b,pd,aps,Dm,beta,kt,kp);
     
-    gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,compress);    
+    gmx_poldata_write(opt2fn("-o",NFILE,fnm),pd,compress);    
     
     printf("Extracted %d bondtypes, %d angletypes, %d dihedraltypes and %d impropertypes.\n",
            b->nbond,b->nangle,b->ndih,b->nimp);

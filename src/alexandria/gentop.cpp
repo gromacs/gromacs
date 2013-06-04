@@ -146,9 +146,6 @@ int main(int argc, char *argv[])
         "No force constants for impropers are generated"
     };
     FILE       *fp;
-    //t_params   *plist;
-    //t_excls    *excls;
-    //t_topology *topology;       /* list with all atoms */
     gpp_atomtype_t atype;
     output_env_t oenv;
     gmx_atomprop_t aps;
@@ -503,13 +500,14 @@ int main(int argc, char *argv[])
             mymol.PrintRTPEntry((char *)ftp2fn(efRTP,NFILE,fnm));
         }
         mymol.PrintConformation(opt2fn("-c",NFILE,fnm));
+
+        //! Print final information for the user.
+        mymol.PrintQPol(stdout,pd);
     }
     else
     {
-        printf("%s ended prematurely due to \"%s\"\n",ShortProgram(),alexandria::immsg(imm));
+        printf("\nWARNING: %s ended prematurely due to \"%s\"\n",ShortProgram(),alexandria::immsg(imm));
     }
-    //! Print final information for the user.
-    mymol.PrintQPol(stdout,pd);
     
     thanx(stderr);
   

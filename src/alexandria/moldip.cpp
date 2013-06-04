@@ -231,7 +231,7 @@ static int check_data_sufficiency(FILE *fp,
     for(mmi=mol.begin(); (mmi<mol.end()); mmi++) {
         if (mmi->eSupp != eSupportNo) 
         {
-            aloop = gmx_mtop_atomloop_all_init(&mmi->mtop);
+            aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
             k = 0;
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom) &&
                    (mmi->eSupp != eSupportNo)) 
@@ -251,7 +251,7 @@ static int check_data_sufficiency(FILE *fp,
             }
             if (mmi->eSupp != eSupportNo) {
                 gmx_assert(k,mmi->topology->atoms.nr);
-                aloop = gmx_mtop_atomloop_all_init(&(mmi->mtop));
+                aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
                 k = 0;
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
                 {
@@ -271,7 +271,7 @@ static int check_data_sufficiency(FILE *fp,
         {
             if (mmi->eSupp != eSupportNo) {
                 j = 0;
-                aloop = gmx_mtop_atomloop_all_init(&mmi->mtop);
+                aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
                     if (c_index_count(ic,*(mmi->topology->atoms.atomtype[j])) < minimum_data) {
                         if (debug)
@@ -282,8 +282,8 @@ static int check_data_sufficiency(FILE *fp,
                     }
                     j++;
                 }
-                if (j < mmi->mtop.natoms) {
-                    aloop = gmx_mtop_atomloop_all_init(&mmi->mtop);
+                if (j < mmi->mtop->natoms) {
+                    aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
                     k = 0;
                     while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
                         dec_index_count(ic,*(mmi->topology->atoms.atomtype[k++]));
@@ -443,7 +443,6 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 alexandria::MyMol mpnew;
                 
                 mpnew.Merge(*mpi);
-                //mpnew.GenerateTopology(ap,_pd,lot
                 
                 imm = mpnew.Initxx(fp,gap,
                                  _bQM,lot,bZero,
@@ -657,7 +656,7 @@ void MolDip::CalcDeviation()
                 fprintf(stderr,"%s\n",buf);
             }
             else {
-                aloop = gmx_mtop_atomloop_all_init(&mymol->mtop);
+                aloop = gmx_mtop_atomloop_all_init(mymol->mtop);
                 j = 0;
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
                     atom->q = mymol->topology->atoms.atom[j].q;
@@ -668,20 +667,20 @@ void MolDip::CalcDeviation()
             
             /* Now optimize the shell positions */
             if (mymol->shell) {
-                split_shell_charges(&mymol->mtop,&mymol->ltop->idef);
-                atoms2md(&mymol->mtop,&(mymol->ir),0,NULL,0,
-                         mymol->mtop.natoms,mymol->md);
+                split_shell_charges(mymol->mtop,&mymol->ltop->idef);
+                atoms2md(mymol->mtop,mymol->inputrec,0,NULL,0,
+                         mymol->mtop->natoms,mymol->md);
                 count = 
                     relax_shell_flexcon(debug,_cr,FALSE,0,
-                                        &(mymol->ir),TRUE,
+                                        mymol->inputrec,TRUE,
                                         GMX_FORCE_ALLFORCES,FALSE,
                                         mymol->ltop,NULL,NULL,NULL,
                                         NULL,&(mymol->state),
                                         mymol->f,force_vir,mymol->md,
                                         &my_nrnb,wcycle,NULL,
-                                        &(mymol->mtop.groups),
+                                        &(mymol->mtop->groups),
                                         mymol->shell,mymol->fr,FALSE,t,mu_tot,
-                                        mymol->mtop.natoms,&bConverged,NULL,NULL);
+                                        mymol->mtop->natoms,&bConverged,NULL,NULL);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();

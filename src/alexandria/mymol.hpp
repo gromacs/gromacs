@@ -67,7 +67,7 @@ private:
                             
     //! Generate bonds between atoms
     int MakeBonds(gmx_poldata_t pd,
-                  gmx_conect gc,t_params plist[],int nbond[],
+                  gmx_conect gc,int nbond[],
                   gmx_bool bH14,gmx_bool bAllDihedrals,
                   gmx_bool bRemoveDoubleDihedrals,
                   gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
@@ -83,12 +83,12 @@ public:
     eSupport       eSupp;
     t_state        state;
     t_forcerec     *fr;
-    gmx_mtop_t     mtop;
+    gmx_mtop_t     *mtop;
     gmx_localtop_t *ltop;
     gpp_atomtype_t atype;
     gentop_qgen_t  qgen;
     t_symtab       symtab;
-    t_inputrec     ir;
+    t_inputrec     *inputrec;
     gmx_shellfc_t  shell;
     gmx_enerdata_t enerd;
     gmx_resp_t     gr;

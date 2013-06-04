@@ -44,22 +44,26 @@ typedef struct tagDirStack {
 } DirStack;
 
 #ifdef __cplusplus
-extern "C"
+extern "C" {
 #endif
 int ifunc_index(directive d,int type);
 
-extern const char *dir2str (directive d);
+const char *dir2str (directive d);
 
-extern directive str2dir (char *dstr);
+directive str2dir (char *dstr);
 
-extern void DS_Init (DirStack **DS);
+void DS_Init (DirStack **DS);
 
-extern void DS_Done (DirStack **DS);
+void DS_Done (DirStack **DS);
 
-extern void DS_Push (DirStack **DS, directive d);
+void DS_Push (DirStack **DS, directive d);
 
-extern int  DS_Search (DirStack *DS, directive d);
+int  DS_Search (DirStack *DS, directive d);
 
-extern int  DS_Check_Order (DirStack *DS, directive d);
+int  DS_Check_Order (DirStack *DS, directive d);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _topdirs_h */

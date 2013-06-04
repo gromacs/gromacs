@@ -37,6 +37,7 @@
 #include <string2.h>
 #include <smalloc.h>
 #include <strdb.h>
+#include <gmx_fatal.h>
 #include "molselect.hpp"
 
 const char *ims_names[imsNR] = { "Train", "Test", "Ignore", "Unknown" };
@@ -147,15 +148,23 @@ int gmx_molselect_index(gmx_molselect_t gms,const char *iupac)
     t_ims *ims;
 
     if (NULL == iupac)
+    {
+        gmx_fatal(FARGS,"iupac == NULL in gmx_molselect_index");
         return g->nmol;
+    }
     key.iupac = strdup(iupac);
     key.status = imsTest;
     key.index = 0;
     ims = (t_ims *)bsearch(&key,g->ims,g->nmol,sizeof(g->ims[0]),ims_comp);
     sfree(key.iupac);
     if (NULL != ims)
+    {
         return ims->index;
+    }
     else
+    {
+        gmx_fatal(FARGS,"Could not find %s in gmx_molselect_index",iupac);
         return g->nmol;
+    }
 }
 

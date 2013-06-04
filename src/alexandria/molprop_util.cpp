@@ -587,18 +587,28 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
         std::sort(mp.begin(),mp.end(),comp_mp_formula);
         break;
     case MPSA_COMPOSITION:
-        my_aps = apt;
-        std::sort(mp.begin(),mp.end(),comp_mp_elem);
-        my_aps = NULL;
+        if (NULL != apt)
+        {
+            my_aps = apt;
+            std::sort(mp.begin(),mp.end(),comp_mp_elem);
+            my_aps = NULL;
+        }
+        else
+        {
+            gmx_fatal(FARGS,"Requesting a composition sort but atomprop is NULL");
+        }
         break;
     case MPSA_SELECTION:
         if (NULL != gms) 
         {
             my_gms = gms;
             std::sort(mp.begin(),mp.end(),comp_mp_selection);
+            my_gms = NULL;
         }
         else
+        {
             gmx_fatal(FARGS,"Need molecule selection to sort on");
+        }
         break;
     default:
         gmx_incons("Invalid algorithm for MolPropSort");

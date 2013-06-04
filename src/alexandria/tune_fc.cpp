@@ -721,15 +721,15 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
             /* Here unfortunately we need a case statement for the types */
             if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) 
             {
-                mymol.mtop.ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
+                mymol.mtop->ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop.ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
+                    mymol.mtop->ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol.mtop.ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
+                    mymol.mtop->ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -752,12 +752,12 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
             aaj = *mymol.topology->atoms.atomtype[aj];
             aak = *mymol.topology->atoms.atomtype[ak];
             if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) {
-                mymol.mtop.ffparams.iparams[tp].harmonic.rA = 
-                    mymol.mtop.ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop->ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop->ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop.ffparams.iparams[tp].harmonic.krA = 
-                        mymol.mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop->ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -784,16 +784,16 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
             aal = *mymol.topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol.mtop.ffparams.iparams[tp].pdihs.phiA = value;
+                mymol.mtop->ffparams.iparams[tp].pdihs.phiA = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop.ffparams.iparams[tp].pdihs.cpA = 
-                        mymol.mtop.ffparams.iparams[tp].pdihs.cpB = 
+                    mymol.mtop->ffparams.iparams[tp].pdihs.cpA = 
+                        mymol.mtop->ffparams.iparams[tp].pdihs.cpB = 
                         atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol.mtop.ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
+                    mymol.mtop->ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -820,12 +820,12 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
             aal = *mymol.topology->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol.mtop.ffparams.iparams[tp].harmonic.rA = 
-                    mymol.mtop.ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop->ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop->ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop.ffparams.iparams[tp].harmonic.krA = 
-                        mymol.mtop.ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop->ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -881,8 +881,8 @@ double OptParam::CalcDeviation()
             update_idef(*mymol,_pd,_bOpt);
             
             /* Now compute energy */
-            atoms2md(&mymol->mtop,&(mymol->ir),0,NULL,0,
-                     mymol->mtop.natoms,mymol->md);
+            atoms2md(mymol->mtop,mymol->inputrec,0,NULL,0,
+                     mymol->mtop->natoms,mymol->md);
 
             for(j=0; (j<mymol->NAtom()); j++)
                 clear_rvec(mymol->f[j]);
@@ -893,20 +893,20 @@ double OptParam::CalcDeviation()
             if (mymol->shell) { 
                 count = 
                     relax_shell_flexcon(debug,_cr,FALSE,0,
-                                        &(mymol->ir),TRUE,flags,FALSE,
+                                        mymol->inputrec,TRUE,flags,FALSE,
                                         mymol->ltop,NULL,NULL,&(mymol->enerd),
                                         NULL,&(mymol->state),
                                         mymol->f,force_vir,mymol->md,
                                         &my_nrnb,wcycle,NULL,
-                                        &(mymol->mtop.groups),
+                                        &(mymol->mtop->groups),
                                         mymol->shell,mymol->fr,FALSE,t,mu_tot,
                                         mymol->NAtom(),&bConverged,NULL,NULL);
             }
             else {
                 lambda = 0;
-                do_force(debug,_cr,&(mymol->ir),0,
+                do_force(debug,_cr,mymol->inputrec,0,
                          &my_nrnb,wcycle,mymol->ltop,
-                         &mymol->mtop,&(mymol->mtop.groups),
+                         mymol->mtop,&(mymol->mtop->groups),
                          mymol->box,mymol->x,NULL,
                          mymol->f,force_vir,mymol->md,
                          &mymol->enerd,NULL,
@@ -1210,14 +1210,14 @@ static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
             for(k=0; (k<F_NRE); k++)
             {
                 if ((mi->enerd.term[k] != 0) || 
-                    (mi->mtop.moltype[0].ilist[k].nr > 0))
+                    (mi->mtop->moltype[0].ilist[k].nr > 0))
                     fprintf(fp,"%s %d %g\n",interaction_function[k].name,
-                            mi->mtop.moltype[0].ilist[k].nr,
+                            mi->mtop->moltype[0].ilist[k].nr,
                             mi->enerd.term[k]);
             }
         }
         if (bMtop)
-            pr_mtop(fp,0,mi->GetMolname().c_str(),&mi->mtop,TRUE);
+            pr_mtop(fp,0,mi->GetMolname().c_str(),mi->mtop,TRUE);
     }
 }
 
