@@ -193,14 +193,14 @@ typedef struct {
     gmx_bool bDomDec;
 
     /* PBC stuff */
-    int            ePBC;
-    gmx_bool       bMolPBC;
-    int            rc_scaling;
-    rvec           posres_com;
-    rvec           posres_comB;
+    int                  ePBC;
+    gmx_bool             bMolPBC;
+    int                  rc_scaling;
+    rvec                 posres_com;
+    rvec                 posres_comB;
 
-    gmx_hw_info_t *hwinfo;
-    gmx_bool       use_cpu_acceleration;
+    const gmx_hw_info_t *hwinfo;
+    gmx_bool             use_cpu_acceleration;
 
     /* Interaction for calculated in kernels. In many cases this is similar to
      * the electrostatics settings in the inputrecord, but the difference is that
