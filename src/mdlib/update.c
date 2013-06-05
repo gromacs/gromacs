@@ -1884,17 +1884,7 @@ void update_coords(FILE             *fplog,
     dump_it_all(fplog, "Before update",
                 state->natoms, state->x, xprime, state->v, force);
 
-    if (EI_RANDOM(inputrec->eI))
-    {
-        /* We still need to take care of generating random seeds properly
-         * when multi-threading.
-         */
-        nth = 1;
-    }
-    else
-    {
-        nth = gmx_omp_nthreads_get(emntUpdate);
-    }
+    nth = gmx_omp_nthreads_get(emntUpdate);
 
     if (inputrec->eI == eiSD2)
     {
