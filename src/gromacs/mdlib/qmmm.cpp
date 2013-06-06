@@ -57,6 +57,7 @@
 #include "txtdump.h"
 #include "copyrite.h"
 #include "qmmm.h"
+#include "qmmmxx.h"
 #include <stdio.h>
 #include <string.h>
 #include "gmx_fatal.h"
@@ -64,6 +65,7 @@
 #include <stdlib.h>
 #include "mtop_util.h"
 
+using namespace gmx;
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
  * the QM interfaces can be used for Surface Hopping simulations 
@@ -565,8 +567,7 @@ void init_QMMMrec(t_commrec *cr,
       init_QMrec(j,qr->qm[j],qm_nr,qm_arr,mtop,ir);
 
       /* LPW */
-      using namespace gmx;
-      qmsys = new QMSystem(j,qr->qm[j],qm_nr,qm_arr,mtop,ir);
+      new QMSystem(j,qm_nr,qm_arr,mtop,ir);
       
       /* we now store the LJ C6 and C12 parameters in QM rec in case
        * we need to do an optimization 

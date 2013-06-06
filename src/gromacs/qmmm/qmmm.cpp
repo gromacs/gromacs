@@ -56,7 +56,7 @@
 #include "mshift.h"
 #include "txtdump.h"
 #include "copyrite.h"
-#include "qmmm.h"
+#include "qmmmxx.h"
 #include <stdio.h>
 #include <string.h>
 #include "gmx_fatal.h"
@@ -103,8 +103,10 @@ gmx::QMSystem::QMSystem(int grpnr, int nr, int *atomarray, gmx_mtop_t *mtop, t_i
   bOPT_     = ir->opts.bOPT[grpnr];
 }
 
+/*
 // HybridQuantumClassical will eventually take the place of QMMMrec.
 gmx::HybridQuantumClassical::HybridQuantumClassical(const t_commrec *cr, const gmx_mtop_t *mtop, const t_inputrec *ir, const t_forcerec *fr)
 {
 }
 
+*/
