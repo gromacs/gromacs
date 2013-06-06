@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_anaeig</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -49,9 +49,9 @@ eigenvector <tt>-first</tt> will be written unless <tt>-first</tt> and
 <tt>-last</tt> have been set explicitly, in which case all eigenvectors
 will be written to separate files. Chain identifiers will be added
 when writing a <tt>.<a href="pdb.html">pdb</a></tt> file with two or three structures (you
-can use <tt>rasmol -nmrpdb</tt> to view such a <a href="pdb.html">pdb</a> file).<p>
+can use <tt>rasmol -nmrpdb</tt> to view such a <tt>.<a href="pdb.html">pdb</a></tt> file).<p>
   Overlap calculations between covariance analysis:<br>
-  NOTE: the analysis should use the same fitting structure<p>
+  <b>Note:</b> the analysis should use the same fitting structure<p>
 <tt>-over</tt>: calculate the subspace overlap of the eigenvectors in
 file <tt>-v2</tt> with eigenvectors <tt>-first</tt> to <tt>-last</tt>
 in file <tt>-v</tt>.<p>
@@ -98,22 +98,22 @@ Schlitter's formula.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-first</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> First eigenvector for analysis (-1 is select) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-last</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>8</tt> </TD><TD> Last eigenvector for analysis (-1 is till the last) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-last</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Last eigenvector for analysis (-1 is till the last) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only analyse every nr-th frame </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum for projection of the eigenvector on the average structure, max=0 gives the extremes </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nframes</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>2</tt> </TD><TD> Number of frames for the extremes output </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Split eigenvector projections where time is zero </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]entropy</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute entropy according to the Quasiharmonic formula or Schlitter's method. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]split</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Split eigenvector projections where time is zero </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]entropy</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute entropy according to the Quasiharmonic formula or Schlitter's method. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature for entropy calculations </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nevskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>6</tt> </TD><TD> Number of eigenvalues to skip when computing the entropy due to the quasi harmonic approximation. When you do a rotational and/or translational fit prior to the covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which should not be taken into account when computing the entropy. </TD></TD>
 </TABLE>

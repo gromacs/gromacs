@@ -9,12 +9,12 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_nmeig</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_nmeig calculates the eigenvectors/values of a (Hessian) matrix,
+<tt>g_nmeig</tt> calculates the eigenvectors/values of a (Hessian) matrix,
 which can be calculated with <tt><a href="mdrun.html">mdrun</a></tt>.
 The eigenvectors are written to a trajectory file (<tt>-v</tt>).
 The structure is written first with t=0. The eigenvectors
@@ -22,30 +22,51 @@ are written as frames with the eigenvector number as timestamp.
 The eigenvectors can be analyzed with <tt><a href="g_anaeig.html">g_anaeig</a></tt>.
 An ensemble of structures can be generated from the eigenvectors with
 <tt><a href="g_nmens.html">g_nmens</a></tt>. When mass weighting is used, the generated eigenvectors
-will be scaled back to plain cartesian coordinates before generating the
-output - in this case they will no longer be exactly orthogonal in the
-standard cartesian norm (But in the mass weighted norm they would be).
+will be scaled back to plain Cartesian coordinates before generating the
+output. In this case, they will no longer be exactly orthogonal in the
+standard Cartesian norm, but in the mass-weighted norm they would be.<p>
+This program can be optionally used to compute quantum corrections to heat capacity
+and enthalpy by providing an extra file argument <tt>-qcorr</tt>. See the GROMACS
+manual, Chapter 1, for details. The result includes subtracting a harmonic
+degree of freedom at the given temperature.
+The total correction is printed on the terminal screen.
+The recommended way of getting the corrections out is:<p>
+<tt>g_nmeig -s topol.<a href="tpr.html">tpr</a> -f nm.<a href="mtx.html">mtx</a> -first 7 -last 10000 -T 300 -qc [-constr]</tt><p>
+The <tt>-constr</tt> option should be used when bond constraints were used during the
+simulation <b>for all the covalent bonds</b>. If this is not the case, 
+you need to analyze the <tt>quant_corr.<a href="xvg.html">xvg</a></tt> file yourself.<p>
+To make things more flexible, the program can also take virtual sites into account
+when computing quantum corrections. When selecting <tt>-constr</tt> and
+<tt>-qc</tt>, the <tt>-begin</tt> and <tt>-end</tt> options will be set automatically as well.
+Again, if you think you know it better, please check the <tt>eigenfreq.<a href="xvg.html">xvg</a></tt>
+output.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html"> hessian.mtx</a></tt> </TD><TD> Input </TD><TD> Hessian matrix </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-of</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenfreq.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ol</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">eigenval.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-os</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">spectrum.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-qc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">quant_corr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-v</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">eigenvec.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]m</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analysis </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]m</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analysis </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-first</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> First eigenvector to write away </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-last</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>50</tt> </TD><TD> Last eigenvector to write away </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxspec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>4000</tt> </TD><TD> Highest frequency (1/cm) to consider in the spectrum </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-T</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature for computing quantum heat capacity and enthalpy when using normal mode calculations to correct classical simulations </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]constr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> If constraints were used in the simulation but not in the normal mode analysis (this is the recommended way of doing it) you will need to set this for computing the quantum corrections. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-width</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Width (sigma) of the gaussian peaks (1/cm) when generating a spectrum </TD></TD>
 </TABLE>
 <P>
 <hr>

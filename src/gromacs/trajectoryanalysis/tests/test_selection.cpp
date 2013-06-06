@@ -1,37 +1,41 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief Testing/debugging tool for the selection engine.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
@@ -53,10 +57,10 @@ class SelectionTester : public TrajectoryAnalysisModule
         SelectionTester();
         virtual ~SelectionTester();
 
-        virtual void initOptions(Options *options,
+        virtual void initOptions(Options                    *options,
                                  TrajectoryAnalysisSettings *settings);
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
-                                  const TopologyInformation &top);
+                                  const TopologyInformation        &top);
 
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
@@ -93,7 +97,7 @@ SelectionTester::printSelections()
 }
 
 void
-SelectionTester::initOptions(Options *options,
+SelectionTester::initOptions(Options                   *options,
                              TrajectoryAnalysisSettings * /*settings*/)
 {
     static const char *const desc[] = {
@@ -110,21 +114,21 @@ SelectionTester::initOptions(Options *options,
 }
 
 void
-SelectionTester::initAnalysis(const TrajectoryAnalysisSettings &/*settings*/,
-                              const TopologyInformation &/*top*/)
+SelectionTester::initAnalysis(const TrajectoryAnalysisSettings & /*settings*/,
+                              const TopologyInformation        & /*top*/)
 {
     printSelections();
 }
 
 void
-SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe &/*fr*/, t_pbc * /*pbc*/,
+SelectionTester::analyzeFrame(int /*frnr*/, const t_trxframe & /*fr*/, t_pbc * /*pbc*/,
                               TrajectoryAnalysisModuleData * /*pdata*/)
 {
     fprintf(stderr, "\n");
     for (size_t g = 0; g < selections_.size(); ++g)
     {
         const Selection &sel = selections_[g];
-        int n;
+        int              n;
 
         fprintf(stderr, "  Atoms (%d pcs):", sel.atomCount());
         n = sel.atomCount();
@@ -186,7 +190,7 @@ main(int argc, char *argv[])
     gmx::ProgramInfo::init(argc, argv);
     try
     {
-        gmx::SelectionTester module;
+        gmx::SelectionTester                     module;
         gmx::TrajectoryAnalysisCommandLineRunner runner(&module);
         runner.setSelectionDebugLevel(1);
         return runner.run(argc, argv);

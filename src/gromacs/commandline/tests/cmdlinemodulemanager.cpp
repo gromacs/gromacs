@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Tests gmx::CommandLineModuleManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_commandline
  */
 // For GMX_BINARY_SUFFIX
@@ -50,6 +54,7 @@
 
 #include "testutils/cmdlinetest.h"
 #include "testutils/mock_helptopic.h"
+#include "testutils/testasserts.h"
 
 namespace
 {
@@ -96,7 +101,7 @@ class CommandLineModuleManagerTest : public ::testing::Test
 {
     public:
         void initManager(const CommandLine &args);
-        MockModule &addModule(const char *name, const char *description);
+        MockModule    &addModule(const char *name, const char *description);
         MockHelpTopic &addHelpTopic(const char *name, const char *title);
 
         gmx::CommandLineModuleManager &manager() { return *manager_; }
@@ -138,9 +143,9 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     const char *const cmdline[] = {
         "g_test", "module", "-flag", "yes"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
-    MockModule &mod1 = addModule("module", "First module");
+    MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
@@ -148,7 +153,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -157,14 +162,14 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
     const char *const cmdline[] = {
         "g_test", "help", "module"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
-    MockModule &mod1 = addModule("module", "First module");
+    MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -173,14 +178,14 @@ TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
     const char *const cmdline[] = {
         "g_test", "help", "topic"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
     addModule("module", "First module");
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
     using ::testing::_;
     EXPECT_CALL(topic, writeHelp(_));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -189,9 +194,9 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     const char *const cmdline[] = {
         "g_module", "-flag", "yes"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
-    MockModule &mod1 = addModule("module", "First module");
+    MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
@@ -199,7 +204,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -208,9 +213,9 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     const char *const cmdline[] = {
         "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
-    MockModule &mod1 = addModule("module", "First module");
+    MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
@@ -218,7 +223,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv(), args.argc())));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 
@@ -227,9 +232,9 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     const char *const cmdline[] = {
         "g_test", "test", "-flag", "yes"
     };
-    CommandLine args(CommandLine::create(cmdline));
+    CommandLine       args(CommandLine::create(cmdline));
     initManager(args);
-    MockModule &mod1 = addModule("test", "Test module");
+    MockModule       &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
     using ::testing::Args;
@@ -237,7 +242,7 @@ TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
     EXPECT_CALL(mod1, run(_, _))
         .With(Args<1, 0>(ElementsAreArray(args.argv() + 1, args.argc() - 1)));
     int rc = 0;
-    ASSERT_NO_THROW(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
 }
 

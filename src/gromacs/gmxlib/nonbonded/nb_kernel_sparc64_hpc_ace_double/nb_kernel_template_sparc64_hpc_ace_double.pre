@@ -1,0 +1,1086 @@
+/* ## */
+/* ## This file is part of the GROMACS molecular simulation package. */
+/* ## */
+/* ## Copyright (c) 2012, by the GROMACS development team, led by */
+/* ## David van der Spoel, Berk Hess, Erik Lindahl, and including many */
+/* ## others, as listed in the AUTHORS file in the top-level source */
+/* ## directory and at http://www.gromacs.org. */
+/* ## */
+/* ## GROMACS is free software; you can redistribute it and/or */
+/* ## modify it under the terms of the GNU Lesser General Public License */
+/* ## as published by the Free Software Foundation; either version 2.1 */
+/* ## of the License, or (at your option) any later version. */
+/* ## */
+/* ## GROMACS is distributed in the hope that it will be useful, */
+/* ## but WITHOUT ANY WARRANTY; without even the implied warranty of */
+/* ## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU */
+/* ## Lesser General Public License for more details. */
+/* ## */
+/* ## You should have received a copy of the GNU Lesser General Public */
+/* ## License along with GROMACS; if not, see */
+/* ## http://www.gnu.org/licenses, or write to the Free Software Foundation, */
+/* ## Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA. */
+/* ## */
+/* ## If you want to redistribute modifications to GROMACS, please */
+/* ## consider that scientific software is very special. Version */
+/* ## control is crucial - bugs must be traceable. We will be happy to */
+/* ## consider code for inclusion in the official distribution, but */
+/* ## derived work must not be called official GROMACS. Details are found */
+/* ## in the README & COPYING files - if they are missing, get the */
+/* ## official version at http://www.gromacs.org. */
+/* ## */
+/* ## To help us fund GROMACS development, we humbly ask that you cite */
+/* ## the research papers on the package. Check out http://www.gromacs.org. */
+/* ## */
+/* #if 0 */
+#error This file must be processed with the Gromacs pre-preprocessor
+/* #endif */
+/* #if INCLUDE_HEADER */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <math.h>
+
+#include "../nb_kernel.h"
+#include "types/simple.h"
+#include "vec.h"
+#include "nrnb.h"
+
+#include "kernelutil_sparc64_hpc_ace_double.h"
+/* #endif */
+
+/* ## List of variables set by the generating script:                                    */
+/* ##                                                                                    */
+/* ## Setttings that apply to the entire kernel:                                         */
+/* ## KERNEL_ELEC:           String, choice for electrostatic interactions               */
+/* ## KERNEL_VDW:            String, choice for van der Waals interactions               */
+/* ## KERNEL_NAME:           String, name of this kernel                                 */
+/* ## KERNEL_VF:             String telling if we calculate potential, force, or both    */
+/* ## GEOMETRY_I/GEOMETRY_J: String, name of each geometry, e.g. 'Water3' or '1Particle' */
+/* ##                                                                                    */
+/* ## Setttings that apply to particles in the outer (I) or inner (J) loops:             */
+/* ## PARTICLES_I[]/         Arrays with lists of i/j particles to use in kernel. It is  */
+/* ## PARTICLES_J[]:         just [0] for particle geometry, but can be longer for water */
+/* ## PARTICLES_ELEC_I[]/    Arrays with lists of i/j particle that have electrostatics  */
+/* ## PARTICLES_ELEC_J[]:    interactions that should be calculated in this kernel.      */
+/* ## PARTICLES_VDW_I[]/     Arrays with the list of i/j particle that have VdW          */
+/* ## PARTICLES_VDW_J[]:     interactions that should be calculated in this kernel.      */
+/* ##                                                                                    */
+/* ## Setttings for pairs of interactions (e.g. 2nd i particle against 1st j particle)   */
+/* ## PAIRS_IJ[]:            Array with (i,j) tuples of pairs for which interactions     */
+/* ##                        should be calculated in this kernel. Zero-charge particles  */
+/* ##                        do not have interactions with particles without vdw, and    */
+/* ##                        Vdw-only interactions are not evaluated in a no-vdw-kernel. */
+/* ## INTERACTION_FLAGS[][]: 2D matrix, dimension e.g. 3*3 for water-water interactions. */
+/* ##                        For each i-j pair, the element [I][J] is a list of strings  */
+/* ##                        defining properties/flags of this interaction. Examples     */
+/* ##                        include 'electrostatics'/'vdw' if that type of interaction  */
+/* ##                        should be evaluated, 'rsq'/'rinv'/'rinvsq' if those values  */
+/* ##                        are needed, and 'exactcutoff' or 'shift','switch' to        */
+/* ##                        decide if the force/potential should be modified. This way  */
+/* ##                        we only calculate values absolutely needed for each case.   */
+
+/* ## Calculate the size and offset for (merged/interleaved) table data */
+
+/*
+ * Gromacs nonbonded kernel:   {KERNEL_NAME}
+ * Electrostatics interaction: {KERNEL_ELEC}
+ * VdW interaction:            {KERNEL_VDW}
+ * Geometry:                   {GEOMETRY_I}-{GEOMETRY_J}
+ * Calculate force/pot:        {KERNEL_VF}
+ */
+void
+{KERNEL_NAME}
+                    (t_nblist * gmx_restrict                nlist,
+                     rvec * gmx_restrict                    xx,
+                     rvec * gmx_restrict                    ff,
+                     t_forcerec * gmx_restrict              fr,
+                     t_mdatoms * gmx_restrict               mdatoms,
+                     nb_kernel_data_t * gmx_restrict        kernel_data,
+                     t_nrnb * gmx_restrict                  nrnb)
+{
+    /* ## Not all variables are used for all kernels, but any optimizing compiler fixes that, */
+    /* ## so there is no point in going to extremes to exclude variables that are not needed. */
+    /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
+     * just 0 for non-waters.
+     * Suffixes A,B refer to j loop unrolling done with double precision SIMD, e.g. for the two different
+     * jnr indices corresponding to data put in the four positions in the SIMD register.
+     */
+    int              i_shift_offset,i_coord_offset,outeriter,inneriter;
+    int              j_index_start,j_index_end,jidx,nri,inr,ggid,iidx;
+    int              jnrA,jnrB;
+    int              j_coord_offsetA,j_coord_offsetB;
+    int              *iinr,*jindex,*jjnr,*shiftidx,*gid;
+    real             rcutoff_scalar;
+    real             *shiftvec,*fshift,*x,*f;
+    _fjsp_v2r8       tx,ty,tz,fscal,rcutoff,rcutoff2,jidxall;
+    /* #for I in PARTICLES_I */
+    int              vdwioffset{I};
+    _fjsp_v2r8       ix{I},iy{I},iz{I},fix{I},fiy{I},fiz{I},iq{I},isai{I};
+    /* #endfor */
+    /* #for J in PARTICLES_J */
+    int              vdwjidx{J}A,vdwjidx{J}B;
+    _fjsp_v2r8       jx{J},jy{J},jz{J},fjx{J},fjy{J},fjz{J},jq{J},isaj{J};
+    /* #endfor */
+    /* #for I,J in PAIRS_IJ */
+    _fjsp_v2r8       dx{I}{J},dy{I}{J},dz{I}{J},rsq{I}{J},rinv{I}{J},rinvsq{I}{J},r{I}{J},qq{I}{J},c6_{I}{J},c12_{I}{J};
+    /* #endfor */
+    /* #if KERNEL_ELEC != 'None' */
+    _fjsp_v2r8       velec,felec,velecsum,facel,crf,krf,krf2;
+    real             *charge;
+    /* #endif */
+    /* #if 'GeneralizedBorn' in KERNEL_ELEC */
+    _fjsp_v2r8       vgb,fgb,vgbsum,dvdasum,gbscale,gbtabscale,isaprod,gbqqfactor,gbinvepsdiff,dvdaj,gbeps,twogbeps,dvdatmp;
+    _fjsp_v2r8       minushalf = gmx_fjsp_set1_v2r8(-0.5);
+    real             *invsqrta,*dvda,*gbtab;
+    /* #endif */
+    /* #if KERNEL_VDW != 'None' */
+    int              nvdwtype;
+    _fjsp_v2r8       rinvsix,rvdw,vvdw,vvdw6,vvdw12,fvdw,fvdw6,fvdw12,vvdwsum,sh_vdw_invrcut6;
+    int              *vdwtype;
+    real             *vdwparam;
+    _fjsp_v2r8       one_sixth   = gmx_fjsp_set1_v2r8(1.0/6.0);
+    _fjsp_v2r8       one_twelfth = gmx_fjsp_set1_v2r8(1.0/12.0);
+    /* #endif */
+    /* #if 'Table' in KERNEL_ELEC or 'GeneralizedBorn' in KERNEL_ELEC or 'Table' in KERNEL_VDW */
+    _fjsp_v2r8       rt,vfeps,vftabscale,Y,F,G,H,Heps,Fp,VV,FF,twovfeps;
+    real             *vftab;
+    /* #endif */
+    /* #if 'Ewald' in KERNEL_ELEC */
+    _fjsp_v2r8       ewtabscale,eweps,sh_ewald,ewrt,ewtabhalfspace,ewtabF,ewtabFn,ewtabD,ewtabV;
+    real             *ewtab;
+    /* #endif */
+    /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
+    _fjsp_v2r8       rswitch,swV3,swV4,swV5,swF2,swF3,swF4,d,d2,sw,dsw;
+    real             rswitch_scalar,d_scalar;
+    /* #endif */
+    _fjsp_v2r8       itab_tmp;
+    _fjsp_v2r8       dummy_mask,cutoff_mask;
+    _fjsp_v2r8       one     = gmx_fjsp_set1_v2r8(1.0);
+    _fjsp_v2r8       two     = gmx_fjsp_set1_v2r8(2.0);
+    union { _fjsp_v2r8 simd; long long int i[2]; } vfconv,gbconv,ewconv;
+
+    x                = xx[0];
+    f                = ff[0];
+
+    nri              = nlist->nri;
+    iinr             = nlist->iinr;
+    jindex           = nlist->jindex;
+    jjnr             = nlist->jjnr;
+    shiftidx         = nlist->shift;
+    gid              = nlist->gid;
+    shiftvec         = fr->shift_vec[0];
+    fshift           = fr->fshift[0];
+    /* #if KERNEL_ELEC != 'None' */
+    facel            = gmx_fjsp_set1_v2r8(fr->epsfac);
+    charge           = mdatoms->chargeA;
+    /*     #if 'ReactionField' in KERNEL_ELEC */
+    krf              = gmx_fjsp_set1_v2r8(fr->ic->k_rf);
+    krf2             = gmx_fjsp_set1_v2r8(fr->ic->k_rf*2.0);
+    crf              = gmx_fjsp_set1_v2r8(fr->ic->c_rf);
+    /*     #endif */
+    /* #endif */
+    /* #if KERNEL_VDW != 'None' */
+    nvdwtype         = fr->ntype;
+    vdwparam         = fr->nbfp;
+    vdwtype          = mdatoms->typeA;
+    /* #endif */
+
+    /* #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW */
+    vftab            = kernel_data->table_elec_vdw->data;
+    vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_elec_vdw->scale);
+    /* #elif 'Table' in KERNEL_ELEC */
+    vftab            = kernel_data->table_elec->data;
+    vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_elec->scale);
+    /* #elif 'Table' in KERNEL_VDW */
+    vftab            = kernel_data->table_vdw->data;
+    vftabscale       = gmx_fjsp_set1_v2r8(kernel_data->table_vdw->scale);
+    /* #endif */
+
+    /* #if 'Ewald' in KERNEL_ELEC */
+    sh_ewald         = gmx_fjsp_set1_v2r8(fr->ic->sh_ewald);
+    /*     #if KERNEL_VF=='Force' and KERNEL_MOD_ELEC!='PotentialSwitch' */
+    ewtab            = fr->ic->tabq_coul_F;
+    ewtabscale       = gmx_fjsp_set1_v2r8(fr->ic->tabq_scale);
+    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
+    /*     #else */
+    ewtab            = fr->ic->tabq_coul_FDV0;
+    ewtabscale       = gmx_fjsp_set1_v2r8(fr->ic->tabq_scale);
+    ewtabhalfspace   = gmx_fjsp_set1_v2r8(0.5/fr->ic->tabq_scale);
+     /*     #endif */
+    /* #endif */
+
+    /* #if KERNEL_ELEC=='GeneralizedBorn' */
+    invsqrta         = fr->invsqrta;
+    dvda             = fr->dvda;
+    gbtabscale       = gmx_fjsp_set1_v2r8(fr->gbtab.scale);
+    gbtab            = fr->gbtab.data;
+    gbinvepsdiff     = gmx_fjsp_set1_v2r8((1.0/fr->epsilon_r) - (1.0/fr->gb_epsilon_solvent));
+    /* #endif */
+
+    /* #if 'Water' in GEOMETRY_I */
+    /* Setup water-specific parameters */
+    inr              = nlist->iinr[0];
+    /*     #for I in PARTICLES_ELEC_I */
+    iq{I}              = _fjsp_mul_v2r8(facel,gmx_fjsp_set1_v2r8(charge[inr+{I}]));
+    /*     #endfor */
+    /*     #for I in PARTICLES_VDW_I */
+    vdwioffset{I}      = 2*nvdwtype*vdwtype[inr+{I}];
+    /*     #endfor */
+    /* #endif */
+
+    /* #if 'Water' in GEOMETRY_J */
+    /*     #for J in PARTICLES_ELEC_J */
+    jq{J}              = gmx_fjsp_set1_v2r8(charge[inr+{J}]);
+    /*     #endfor */
+    /*     #for J in PARTICLES_VDW_J */
+    vdwjidx{J}A        = 2*vdwtype[inr+{J}];
+    /*     #endfor */
+    /*     #for I,J in PAIRS_IJ */
+    /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+    qq{I}{J}             = _fjsp_mul_v2r8(iq{I},jq{J});
+    /*         #endif */
+    /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+    c6_{I}{J}            = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A]);
+    c12_{I}{J}           = gmx_fjsp_set1_v2r8(vdwparam[vdwioffset{I}+vdwjidx{J}A+1]);
+    /*         #endif */
+    /*     #endfor */
+    /* #endif */
+
+    /* #if KERNEL_MOD_ELEC!='None' or KERNEL_MOD_VDW!='None' */
+    /*     #if KERNEL_ELEC!='None' */
+    /* When we use explicit cutoffs the value must be identical for elec and VdW, so use elec as an arbitrary choice */
+    rcutoff_scalar   = fr->rcoulomb;
+    /*     #else */
+    rcutoff_scalar   = fr->rvdw;
+    /*     #endif */
+    rcutoff          = gmx_fjsp_set1_v2r8(rcutoff_scalar);
+    rcutoff2         = _fjsp_mul_v2r8(rcutoff,rcutoff);
+    /* #endif */
+
+    /* #if KERNEL_MOD_VDW=='PotentialShift' */
+    sh_vdw_invrcut6  = gmx_fjsp_set1_v2r8(fr->ic->sh_invrc6);
+    rvdw             = gmx_fjsp_set1_v2r8(fr->rvdw);
+    /* #endif */
+
+    /* #if 'PotentialSwitch' in [KERNEL_MOD_ELEC,KERNEL_MOD_VDW] */
+    /*     #if KERNEL_MOD_ELEC=='PotentialSwitch'  */
+    rswitch_scalar   = fr->rcoulomb_switch;
+    rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
+    /*     #else */
+    rswitch_scalar   = fr->rvdw_switch;
+    rswitch          = gmx_fjsp_set1_v2r8(rswitch_scalar);
+    /*     #endif */
+    /* Setup switch parameters */
+    d_scalar         = rcutoff_scalar-rswitch_scalar;
+    d                = gmx_fjsp_set1_v2r8(d_scalar);
+    swV3             = gmx_fjsp_set1_v2r8(-10.0/(d_scalar*d_scalar*d_scalar));
+    swV4             = gmx_fjsp_set1_v2r8( 15.0/(d_scalar*d_scalar*d_scalar*d_scalar));
+    swV5             = gmx_fjsp_set1_v2r8( -6.0/(d_scalar*d_scalar*d_scalar*d_scalar*d_scalar));
+    /*     #if 'Force' in KERNEL_VF */
+    swF2             = gmx_fjsp_set1_v2r8(-30.0/(d_scalar*d_scalar*d_scalar));
+    swF3             = gmx_fjsp_set1_v2r8( 60.0/(d_scalar*d_scalar*d_scalar*d_scalar));
+    swF4             = gmx_fjsp_set1_v2r8(-30.0/(d_scalar*d_scalar*d_scalar*d_scalar*d_scalar));
+    /*     #endif */
+    /* #endif */
+
+    /* Avoid stupid compiler warnings */
+    jnrA = jnrB = 0;
+    j_coord_offsetA = 0;
+    j_coord_offsetB = 0;
+
+    /* ## Keep track of the floating point operations we issue for reporting! */
+    /* #define OUTERFLOPS 0 */
+    outeriter        = 0;
+    inneriter        = 0;
+
+    /* Start outer loop over neighborlists */
+    for(iidx=0; iidx<nri; iidx++)
+    {
+        /* Load shift vector for this list */
+        i_shift_offset   = DIM*shiftidx[iidx];
+
+        /* Load limits for loop over neighbors */
+        j_index_start    = jindex[iidx];
+        j_index_end      = jindex[iidx+1];
+
+        /* Get outer coordinate index */
+        inr              = iinr[iidx];
+        i_coord_offset   = DIM*inr;
+
+        /* Load i particle coords and add shift vector */
+        /* #if GEOMETRY_I == 'Particle' */
+        gmx_fjsp_load_shift_and_1rvec_broadcast_v2r8(shiftvec+i_shift_offset,x+i_coord_offset,&ix0,&iy0,&iz0);
+        /* #elif GEOMETRY_I == 'Water3' */
+        gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2);
+        /* #elif GEOMETRY_I == 'Water4' */
+        /*     #if 0 in PARTICLES_I                 */
+        gmx_fjsp_load_shift_and_4rvec_broadcast_v2r8(shiftvec+i_shift_offset,x+i_coord_offset,
+                                                 &ix0,&iy0,&iz0,&ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #else                                */
+        gmx_fjsp_load_shift_and_3rvec_broadcast_v2r8(shiftvec+i_shift_offset,x+i_coord_offset+DIM,
+                                                 &ix1,&iy1,&iz1,&ix2,&iy2,&iz2,&ix3,&iy3,&iz3);
+        /*     #endif                               */
+        /* #endif                                   */
+
+        /* #if 'Force' in KERNEL_VF */
+        /*     #for I in PARTICLES_I */
+        fix{I}             = _fjsp_setzero_v2r8();
+        fiy{I}             = _fjsp_setzero_v2r8();
+        fiz{I}             = _fjsp_setzero_v2r8();
+        /*     #endfor */
+        /* #endif */
+
+        /* ## For water we already preloaded parameters at the start of the kernel */
+        /* #if not 'Water' in GEOMETRY_I */
+        /* Load parameters for i particles */
+        /*     #for I in PARTICLES_ELEC_I */
+        iq{I}              = _fjsp_mul_v2r8(facel,gmx_fjsp_load1_v2r8(charge+inr+{I}));
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*         #if KERNEL_ELEC=='GeneralizedBorn' */
+        isai{I}            = gmx_fjsp_load1_v2r8(invsqrta+inr+{I});
+        /*         #endif */
+        /*     #endfor */
+        /*     #for I in PARTICLES_VDW_I */
+        vdwioffset{I}      = 2*nvdwtype*vdwtype[inr+{I}];
+        /*     #endfor */
+        /* #endif */
+
+        /* #if 'Potential' in KERNEL_VF */
+        /* Reset potential sums */
+        /*     #if KERNEL_ELEC != 'None' */
+        velecsum         = _fjsp_setzero_v2r8();
+        /*     #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
+        vgbsum           = _fjsp_setzero_v2r8();
+        /*     #endif */
+        /*     #if KERNEL_VDW != 'None' */
+        vvdwsum          = _fjsp_setzero_v2r8();
+        /*     #endif */
+        /* #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
+        dvdasum          = _fjsp_setzero_v2r8();
+        /*     #endif */
+
+        /* #for ROUND in ['Loop','Epilogue'] */
+
+        /* #if ROUND =='Loop' */
+        /* Start inner kernel loop */
+        for(jidx=j_index_start; jidx<j_index_end-1; jidx+=2)
+        {
+        /* ## First round is normal loop (next statement resets indentation) */
+        /*     #if 0 */
+        }
+        /*     #endif */
+        /* #else */
+        if(jidx<j_index_end)
+        {
+        /* ## Second round is epilogue */
+        /* #endif */
+        /* #define INNERFLOPS 0 */
+
+            /* #if ROUND =='Loop' */
+            /* Get j neighbor index, and coordinate index */
+            jnrA             = jjnr[jidx];
+            jnrB             = jjnr[jidx+1];
+            j_coord_offsetA  = DIM*jnrA;
+            j_coord_offsetB  = DIM*jnrB;
+
+            /* load j atom coordinates */
+            /*     #if GEOMETRY_J == 'Particle'             */
+            gmx_fjsp_load_1rvec_2ptr_swizzle_v2r8(x+j_coord_offsetA,x+j_coord_offsetB,
+                                              &jx0,&jy0,&jz0);
+            /*     #elif GEOMETRY_J == 'Water3'             */
+            gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(x+j_coord_offsetA,x+j_coord_offsetB,
+                                              &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,&jy2,&jz2);
+            /*     #elif GEOMETRY_J == 'Water4'             */
+            /*         #if 0 in PARTICLES_J                 */
+            gmx_fjsp_load_4rvec_2ptr_swizzle_v2r8(x+j_coord_offsetA,x+j_coord_offsetB,
+                                              &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,
+                                              &jy2,&jz2,&jx3,&jy3,&jz3);
+            /*         #else                                */
+            gmx_fjsp_load_3rvec_2ptr_swizzle_v2r8(x+j_coord_offsetA+DIM,x+j_coord_offsetB+DIM,
+                                              &jx1,&jy1,&jz1,&jx2,&jy2,&jz2,&jx3,&jy3,&jz3);
+            /*         #endif                               */
+            /*     #endif                                   */
+            /* #else */
+            jnrA             = jjnr[jidx];
+            j_coord_offsetA  = DIM*jnrA;
+
+            /* load j atom coordinates */
+            /*     #if GEOMETRY_J == 'Particle'             */
+            gmx_fjsp_load_1rvec_1ptr_swizzle_v2r8(x+j_coord_offsetA,
+                                              &jx0,&jy0,&jz0);
+            /*     #elif GEOMETRY_J == 'Water3'             */
+            gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(x+j_coord_offsetA,
+                                              &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,&jy2,&jz2);
+            /*     #elif GEOMETRY_J == 'Water4'             */
+            /*         #if 0 in PARTICLES_J                 */
+            gmx_fjsp_load_4rvec_1ptr_swizzle_v2r8(x+j_coord_offsetA,
+                                              &jx0,&jy0,&jz0,&jx1,&jy1,&jz1,&jx2,
+                                              &jy2,&jz2,&jx3,&jy3,&jz3);
+            /*         #else                                */
+            gmx_fjsp_load_3rvec_1ptr_swizzle_v2r8(x+j_coord_offsetA+DIM,
+                                              &jx1,&jy1,&jz1,&jx2,&jy2,&jz2,&jx3,&jy3,&jz3);
+            /*         #endif                               */
+            /*     #endif                                   */
+            /* #endif */
+
+            /* Calculate displacement vector */
+            /* #for I,J in PAIRS_IJ */
+            dx{I}{J}             = _fjsp_sub_v2r8(ix{I},jx{J});
+            dy{I}{J}             = _fjsp_sub_v2r8(iy{I},jy{J});
+            dz{I}{J}             = _fjsp_sub_v2r8(iz{I},jz{J});
+            /*     #define INNERFLOPS INNERFLOPS+3 */
+            /* #endfor */
+
+            /* Calculate squared distance and things based on it */
+            /* #for I,J in PAIRS_IJ */
+            rsq{I}{J}            = gmx_fjsp_calc_rsq_v2r8(dx{I}{J},dy{I}{J},dz{I}{J});
+            /*     #define INNERFLOPS INNERFLOPS+5 */
+            /* #endfor */
+
+            /* #for I,J in PAIRS_IJ */
+            /*     #if 'rinv' in INTERACTION_FLAGS[I][J] */
+            rinv{I}{J}           = gmx_fjsp_invsqrt_v2r8(rsq{I}{J});
+            /*         #define INNERFLOPS INNERFLOPS+5 */
+            /*     #endif */
+            /* #endfor */
+
+            /* #for I,J in PAIRS_IJ */
+            /*     #if 'rinvsq' in INTERACTION_FLAGS[I][J] */
+            /*         # if 'rinv' not in INTERACTION_FLAGS[I][J] */
+            rinvsq{I}{J}         = gmx_fjsp_inv_v2r8(rsq{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*         #else */
+            rinvsq{I}{J}         = _fjsp_mul_v2r8(rinv{I}{J},rinv{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*     #endif */
+            /* #endfor */
+
+            /* #if not 'Water' in GEOMETRY_J */
+            /* Load parameters for j particles */
+            /*     #for J in PARTICLES_ELEC_J */
+            /*         #if ROUND =='Loop' */
+            jq{J}              = gmx_fjsp_load_2real_swizzle_v2r8(charge+jnrA+{J},charge+jnrB+{J});
+            /*         #else */
+            jq{J}              = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(),charge+jnrA+{J});
+            /*         #endif */
+            /*         #if KERNEL_ELEC=='GeneralizedBorn' */
+            /*             #if ROUND =='Loop' */
+            isaj{J}            = gmx_fjsp_load_2real_swizzle_v2r8(invsqrta+jnrA+{J},invsqrta+jnrB+{J});
+            /*             #else */
+            isaj{J}            = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(),invsqrta+jnrA+{J});
+            /*             #endif */
+            /*         #endif */
+            /*     #endfor */
+            /*     #for J in PARTICLES_VDW_J */
+            vdwjidx{J}A        = 2*vdwtype[jnrA+{J}];
+            /*         #if ROUND =='Loop' */
+            vdwjidx{J}B        = 2*vdwtype[jnrB+{J}];
+            /*         #endif */
+            /*     #endfor */
+            /* #endif */
+
+            /* #if 'Force' in KERNEL_VF and not 'Particle' in GEOMETRY_I */
+            /*     #for J in PARTICLES_J */
+            fjx{J}             = _fjsp_setzero_v2r8();
+            fjy{J}             = _fjsp_setzero_v2r8();
+            fjz{J}             = _fjsp_setzero_v2r8();
+            /*     #endfor */
+            /* #endif */
+
+            /* #for I,J in PAIRS_IJ */
+
+            /**************************
+             * CALCULATE INTERACTIONS *
+             **************************/
+
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*         ## We always calculate rinv/rinvsq above to enable pipelineing in compilers (performance tested on x86) */
+            if (gmx_fjsp_any_lt_v2r8(rsq{I}{J},rcutoff2))
+            {
+                /*     #if 0    ## this and the next two lines is a hack to maintain auto-indentation in template file */
+            }
+            /*         #endif */
+            /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     #if 'r' in INTERACTION_FLAGS[I][J] */
+            r{I}{J}              = _fjsp_mul_v2r8(rsq{I}{J},rinv{I}{J});
+             /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     ## For water geometries we already loaded parameters at the start of the kernel */
+            /*     #if not 'Water' in GEOMETRY_J */
+            /* Compute parameters for interactions between i and j atoms */
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            qq{I}{J}             = _fjsp_mul_v2r8(iq{I},jq{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+            /*             #if ROUND == 'Loop' */
+            gmx_fjsp_load_2pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,
+                                         vdwparam+vdwioffset{I}+vdwjidx{J}B,&c6_{I}{J},&c12_{I}{J});
+            /*             #else */
+            gmx_fjsp_load_1pair_swizzle_v2r8(vdwparam+vdwioffset{I}+vdwjidx{J}A,&c6_{I}{J},&c12_{I}{J});
+            /*             #endif */
+            /*         #endif */
+            /*     #endif */
+
+            /*     #if 'table' in INTERACTION_FLAGS[I][J] */
+            /* Calculate table index by multiplying r with table scale and truncate to integer */
+            rt               = _fjsp_mul_v2r8(r{I}{J},vftabscale);
+            itab_tmp         = _fjsp_dtox_v2r8(rt);
+            vfeps            = _fjsp_sub_v2r8(rt, _fjsp_xtod_v2r8(itab_tmp));
+            twovfeps         = _fjsp_add_v2r8(vfeps,vfeps);
+            _fjsp_store_v2r8(&vfconv.simd,itab_tmp);
+
+            /*         #define INNERFLOPS INNERFLOPS+4                          */
+            /*         #if 'Table' in KERNEL_ELEC and 'Table' in KERNEL_VDW     */
+            /*             ## 3 tables, 4 data per point: multiply index by 12 */
+            vfconv.i[0]     *= 12;
+            vfconv.i[1]     *= 12;
+            /*         #elif 'Table' in KERNEL_ELEC                             */
+            /*             ## 1 table, 4 data per point: multiply index by 4   */
+            vfconv.i[0]     *= 4;
+            vfconv.i[1]     *= 4;
+            /*         #elif 'Table' in KERNEL_VDW                              */
+            /*             ## 2 tables, 4 data per point: multiply index by 8  */
+            vfconv.i[0]     *= 8;
+            vfconv.i[1]     *= 8;
+            /*         #endif                                                   */
+            /*     #endif */
+
+            /*     ## ELECTROSTATIC INTERACTIONS */
+            /*     #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+
+            /*         #if KERNEL_ELEC=='Coulomb' */
+
+            /* COULOMB ELECTROSTATICS */
+            velec            = _fjsp_mul_v2r8(qq{I}{J},rinv{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _fjsp_mul_v2r8(velec,rinvsq{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+2 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='ReactionField' */
+
+            /* REACTION-FIELD ELECTROSTATICS */
+            /*             #if 'Potential' in KERNEL_VF */
+            velec            = _fjsp_mul_v2r8(qq{I}{J},_fjsp_sub_v2r8(_fjsp_madd_v2r8(krf,rsq{I}{J},rinv{I}{J}),crf));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _fjsp_mul_v2r8(qq{I}{J},_fjsp_msub_v2r8(rinv{I}{J},rinvsq{I}{J},krf2));
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='GeneralizedBorn' */
+
+            /* GENERALIZED BORN AND COULOMB ELECTROSTATICS */
+            isaprod          = _fjsp_mul_v2r8(isai{I},isaj{J});
+            gbqqfactor       = _fjsp_neg_v2r8(_fjsp_mul_v2r8(qq{I}{J},_fjsp_mul_v2r8(isaprod,gbinvepsdiff)));
+            gbscale          = _fjsp_mul_v2r8(isaprod,gbtabscale);
+            /*             #define INNERFLOPS INNERFLOPS+5 */
+
+            /* Calculate generalized born table index - this is a separate table from the normal one,
+             * but we use the same procedure by multiplying r with scale and truncating to integer.
+             */
+            rt               = _fjsp_mul_v2r8(r{I}{J},gbscale);
+            itab_tmp         = _fjsp_dtox_v2r8(rt);
+            gbeps            = _fjsp_sub_v2r8(rt,_fjsp_xtod_v2r8(itab_tmp));
+            _fjsp_store_v2r8(&gbconv.simd,itab_tmp);
+
+            Y                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[0] );
+            /*             #if ROUND == 'Loop' */
+            F                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[1] );
+            /*             #else */
+            F                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(Y,F);
+            G                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[0] +2);
+            /*             #if ROUND == 'Loop' */
+            H                = _fjsp_load_v2r8( gbtab + 4*gbconv.i[1] +2);
+            /*             #else */
+            H                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(G,H);
+            Fp               = _fjsp_madd_v2r8(gbeps,_fjsp_madd_v2r8(gbeps,H,G),F);
+            VV               = _fjsp_madd_v2r8(gbeps,Fp,Y);
+            vgb              = _fjsp_mul_v2r8(gbqqfactor,VV);
+            /*             #define INNERFLOPS INNERFLOPS+10 */
+
+            /*             #if 'Force' in KERNEL_VF */
+            twogbeps         = _fjsp_add_v2r8(gbeps,gbeps);
+            FF               = _fjsp_madd_v2r8(_fjsp_madd_v2r8(twogbeps,H,G),gbeps,Fp);
+            fgb              = _fjsp_mul_v2r8(gbqqfactor,_fjsp_mul_v2r8(FF,gbscale));
+            dvdatmp          = _fjsp_mul_v2r8(minushalf,_fjsp_madd_v2r8(fgb,r{I}{J},vgb));
+            dvdasum          = _fjsp_add_v2r8(dvdasum,dvdatmp);
+            /*             #if ROUND == 'Loop' */
+            gmx_fjsp_increment_2real_swizzle_v2r8(dvda+jnrA,dvda+jnrB,_fjsp_mul_v2r8(dvdatmp,_fjsp_mul_v2r8(isaj{J},isaj{J})));
+            /*             #else */
+            gmx_fjsp_increment_1real_v2r8(dvda+jnrA,_fjsp_mul_v2r8(dvdatmp,_fjsp_mul_v2r8(isaj{J},isaj{J})));
+            /*             #endif */
+            /*                 #define INNERFLOPS INNERFLOPS+13 */
+            /*             #endif */
+            velec            = _fjsp_mul_v2r8(qq{I}{J},rinv{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if 'Force' in KERNEL_VF */
+            felec            = _fjsp_mul_v2r8(_fjsp_msub_v2r8(velec,rinv{I}{J},fgb),rinv{I}{J});
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='Ewald' */
+            /* EWALD ELECTROSTATICS */
+
+            /* Calculate Ewald table index by multiplying r with scale and truncate to integer */
+            ewrt             = _fjsp_mul_v2r8(r{I}{J},ewtabscale);
+            itab_tmp         = _fjsp_dtox_v2r8(ewrt);
+            eweps            = _fjsp_sub_v2r8(ewrt,_fjsp_xtod_v2r8(itab_tmp));
+	    _fjsp_store_v2r8(&ewconv.simd,itab_tmp);
+
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_ELEC=='PotentialSwitch' */
+            ewtabF           = _fjsp_load_v2r8( ewtab + 4*ewconv.i[0] );
+            /*                 #if ROUND == 'Loop' */
+            ewtabD           = _fjsp_load_v2r8( ewtab + 4*ewconv.i[1] );
+            /*                 #else */
+            ewtabD           = _fjsp_setzero_v2r8();
+            /*                 #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(ewtabF,ewtabD);
+            ewtabV           = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ewtab + 4*ewconv.i[0] +2);
+            /*                 #if ROUND == 'Loop' */
+            ewtabFn          = _fjsp_loadl_v2r8(_fjsp_setzero_v2r8(), ewtab + 4*ewconv.i[1] +2);
+            /*                 #else */
+            ewtabFn          = _fjsp_setzero_v2r8();
+            /*                 #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(ewtabV,ewtabFn);
+            felec            = _fjsp_madd_v2r8(eweps,ewtabD,ewtabF);
+            /*                 #define INNERFLOPS INNERFLOPS+2 */
+            /*                 #if KERNEL_MOD_ELEC=='PotentialShift' */            
+            velec            = _fjsp_nmsub_v2r8(_fjsp_mul_v2r8(ewtabhalfspace,eweps) ,_fjsp_add_v2r8(ewtabF,felec), ewtabV);
+            velec            = _fjsp_mul_v2r8(qq{I}{J},_fjsp_sub_v2r8(_fjsp_sub_v2r8(rinv{I}{J},sh_ewald),velec));
+            /*                     #define INNERFLOPS INNERFLOPS+7 */
+            /*                 #else */
+            velec            = _fjsp_nmsub_v2r8(_fjsp_mul_v2r8(ewtabhalfspace,eweps) ,_fjsp_add_v2r8(ewtabF,felec), ewtabV);
+            velec            = _fjsp_mul_v2r8(qq{I}{J},_fjsp_sub_v2r8(rinv{I}{J},velec));
+            /*                     #define INNERFLOPS INNERFLOPS+6 */
+            /*                 #endif */
+            /*                 #if 'Force' in KERNEL_VF */
+            felec            = _fjsp_mul_v2r8(_fjsp_mul_v2r8(qq{I}{J},rinv{I}{J}),_fjsp_sub_v2r8(rinvsq{I}{J},felec));
+            /*                      #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #endif */
+            /*             #elif KERNEL_VF=='Force' */
+            /*                 #if ROUND == 'Loop' */
+            gmx_fjsp_load_2pair_swizzle_v2r8(ewtab+ewconv.i[0],ewtab+ewconv.i[1],
+                                         &ewtabF,&ewtabFn);
+            /*                 #else */
+            gmx_fjsp_load_1pair_swizzle_v2r8(ewtab+ewconv.i[0],&ewtabF,&ewtabFn);
+            /*                 #endif */
+            felec            = _fjsp_madd_v2r8(eweps,ewtabFn,_fjsp_nmsub_v2r8(eweps,ewtabF,ewtabF));
+            felec            = _fjsp_mul_v2r8(_fjsp_mul_v2r8(qq{I}{J},rinv{I}{J}),_fjsp_sub_v2r8(rinvsq{I}{J},felec));
+            /*                 #define INNERFLOPS INNERFLOPS+7 */
+            /*             #endif */
+
+            /*         #elif KERNEL_ELEC=='CubicSplineTable' */
+
+            /* CUBIC SPLINE TABLE ELECTROSTATICS */
+            Y                = _fjsp_load_v2r8( vftab + vfconv.i[0] );
+            /*             #if ROUND == 'Loop' */
+            F                = _fjsp_load_v2r8( vftab + vfconv.i[1] );
+            /*             #else */
+            F                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(Y,F);
+            G                = _fjsp_load_v2r8( vftab + vfconv.i[0] +2);
+            /*             #if ROUND == 'Loop' */
+            H                = _fjsp_load_v2r8( vftab + vfconv.i[1] +2);
+            /*             #else */
+            H                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(G,H);
+            Fp               = _fjsp_madd_v2r8(vfeps,_fjsp_madd_v2r8(vfeps,H,G),F);
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _fjsp_madd_v2r8(vfeps,Fp,Y);
+            velec            = _fjsp_mul_v2r8(qq{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _fjsp_madd_v2r8(_fjsp_madd_v2r8(twovfeps,H,G),vfeps,Fp);
+            felec            = _fjsp_neg_v2r8(_fjsp_mul_v2r8(_fjsp_mul_v2r8(qq{I}{J},FF),_fjsp_mul_v2r8(vftabscale,rinv{I}{J})));
+            /*                 #define INNERFLOPS INNERFLOPS+7 */
+            /*             #endif */
+            /*         #endif */
+            /*         ## End of check for electrostatics interaction forms */
+            /*     #endif */
+            /*     ## END OF ELECTROSTATIC INTERACTION CHECK FOR PAIR I-J */
+
+            /*     #if 'vdw' in INTERACTION_FLAGS[I][J] */
+
+            /*         #if KERNEL_VDW=='LennardJones' */
+
+            /* LENNARD-JONES DISPERSION/REPULSION */
+
+            rinvsix          = _fjsp_mul_v2r8(_fjsp_mul_v2r8(rinvsq{I}{J},rinvsq{I}{J}),rinvsq{I}{J});
+            /*             #define INNERFLOPS INNERFLOPS+2 */
+            /*             #if 'Potential' in KERNEL_VF or KERNEL_MOD_VDW=='PotentialSwitch' */
+            vvdw6            = _fjsp_mul_v2r8(c6_{I}{J},rinvsix);
+            vvdw12           = _fjsp_mul_v2r8(c12_{I}{J},_fjsp_mul_v2r8(rinvsix,rinvsix));
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #if KERNEL_MOD_VDW=='PotentialShift' */
+            vvdw             = _fjsp_msub_v2r8(_fjsp_nmsub_v2r8(c12_{I}{J},_fjsp_mul_v2r8(sh_vdw_invrcut6,sh_vdw_invrcut6),vvdw12),one_twelfth,
+                                           _fjsp_mul_v2r8(_fjsp_nmsub_v2r8( c6_{I}{J},sh_vdw_invrcut6,vvdw6),one_sixth));
+            /*                     #define INNERFLOPS INNERFLOPS+8 */
+            /*                 #else */
+            vvdw             = _fjsp_msub_v2r8( vvdw12,one_twelfth, _fjsp_mul_v2r8(vvdw6,one_sixth) );
+            /*                     #define INNERFLOPS INNERFLOPS+3 */
+            /*                 #endif */
+            /*                 ## Check for force inside potential check, i.e. this means we already did the potential part */
+            /*                 #if 'Force' in KERNEL_VF */
+            fvdw             = _fjsp_mul_v2r8(_fjsp_sub_v2r8(vvdw12,vvdw6),rinvsq{I}{J});
+            /*                     #define INNERFLOPS INNERFLOPS+2 */
+            /*                 #endif */
+            /*             #elif KERNEL_VF=='Force' */
+            /*                 ## Force-only LennardJones makes it possible to save 1 flop (they do add up...) */
+            fvdw             = _fjsp_mul_v2r8(_fjsp_msub_v2r8(c12_{I}{J},rinvsix,c6_{I}{J}),_fjsp_mul_v2r8(rinvsix,rinvsq{I}{J}));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+
+            /*         #elif KERNEL_VDW=='CubicSplineTable' */
+
+            /* CUBIC SPLINE TABLE DISPERSION */
+            /*             #if 'Table' in KERNEL_ELEC */
+            vfconv.i[0]       += 4;
+            vfconv.i[1]       += 4;
+            /*             #endif                     */
+            Y                = _fjsp_load_v2r8( vftab + vfconv.i[0] );
+            /*             #if ROUND == 'Loop' */
+            F                = _fjsp_load_v2r8( vftab + vfconv.i[1] );
+            /*             #else */
+            F                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(Y,F);
+            G                = _fjsp_load_v2r8( vftab + vfconv.i[0] + 2 );
+            /*             #if ROUND == 'Loop' */
+            H                = _fjsp_load_v2r8( vftab + vfconv.i[1] + 2 );
+            /*             #else */
+            H                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(G,H);
+            Fp               = _fjsp_madd_v2r8(vfeps,_fjsp_madd_v2r8(H,vfeps,G),F);
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _fjsp_madd_v2r8(vfeps,Fp,Y);
+            vvdw6            = _fjsp_mul_v2r8(c6_{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _fjsp_madd_v2r8(vfeps,_fjsp_madd_v2r8(twovfeps,H,G),Fp);
+            fvdw6            = _fjsp_mul_v2r8(c6_{I}{J},FF);
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+
+            /* CUBIC SPLINE TABLE REPULSION */
+            Y                = _fjsp_load_v2r8( vftab + vfconv.i[0] + 4 );
+            /*             #if ROUND == 'Loop' */
+            F                = _fjsp_load_v2r8( vftab + vfconv.i[1] + 4 );
+            /*             #else */
+            F                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(Y,F);
+            G                = _fjsp_load_v2r8( vftab + vfconv.i[0] + 6 );
+            /*             #if ROUND == 'Loop' */
+            H                = _fjsp_load_v2r8( vftab + vfconv.i[1] + 6 );
+            /*             #else */
+            H                = _fjsp_setzero_v2r8();
+            /*             #endif */
+            GMX_FJSP_TRANSPOSE2_V2R8(G,H);
+            Fp               = _fjsp_madd_v2r8(vfeps,_fjsp_madd_v2r8(H,vfeps,G),F);
+            /*             #define INNERFLOPS INNERFLOPS+4 */
+            /*             #if 'Potential' in KERNEL_VF */
+            VV               = _fjsp_madd_v2r8(vfeps,Fp,Y);
+            vvdw12           = _fjsp_mul_v2r8(c12_{I}{J},VV);
+            /*                 #define INNERFLOPS INNERFLOPS+3 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            FF               = _fjsp_madd_v2r8(vfeps,_fjsp_madd_v2r8(twovfeps,H,G),Fp);
+            fvdw12           = _fjsp_mul_v2r8(c12_{I}{J},FF);
+            /*                 #define INNERFLOPS INNERFLOPS+5 */
+            /*             #endif */
+            /*             #if 'Potential' in KERNEL_VF */
+            vvdw             = _fjsp_add_v2r8(vvdw12,vvdw6);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*             #if 'Force' in KERNEL_VF */
+            fvdw             = _fjsp_neg_v2r8(_fjsp_mul_v2r8(_fjsp_add_v2r8(fvdw6,fvdw12),_fjsp_mul_v2r8(vftabscale,rinv{I}{J})));
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*         #endif */
+            /*         ## End of check for vdw interaction forms */
+            /*     #endif */
+            /*     ## END OF VDW INTERACTION CHECK FOR PAIR I-J */
+
+            /*     #if 'switch' in INTERACTION_FLAGS[I][J] */
+            d                = _fjsp_sub_v2r8(r{I}{J},rswitch);
+            d                = _fjsp_max_v2r8(d,_fjsp_setzero_v2r8());
+            d2               = _fjsp_mul_v2r8(d,d);
+            sw               = _fjsp_add_v2r8(one,_fjsp_mul_v2r8(d2,_fjsp_mul_v2r8(d,_fjsp_madd_v2r8(d,_fjsp_madd_v2r8(d,swV5,swV4),swV3))));
+            /*         #define INNERFLOPS INNERFLOPS+10 */
+
+            /*         #if 'Force' in KERNEL_VF */
+            dsw              = _fjsp_mul_v2r8(d2,_fjsp_madd_v2r8(d,_fjsp_madd_v2r8(d,swF4,swF3),swF2));
+            /*             #define INNERFLOPS INNERFLOPS+5 */
+            /*         #endif */
+
+            /* Evaluate switch function */
+            /*         #if 'Force' in KERNEL_VF */
+            /* fscal'=f'/r=-(v*sw)'/r=-(v'*sw+v*dsw)/r=-v'*sw/r-v*dsw/r=fscal*sw-v*dsw/r */
+            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
+            felec            = _fjsp_msub_v2r8( felec,sw , _fjsp_mul_v2r8(rinv{I}{J},_fjsp_mul_v2r8(velec,dsw)) );
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
+            fvdw             = _fjsp_msub_v2r8( fvdw,sw , _fjsp_mul_v2r8(rinv{I}{J},_fjsp_mul_v2r8(vvdw,dsw)) );
+            /*                 #define INNERFLOPS INNERFLOPS+4 */
+            /*             #endif */
+            /*         #endif */
+            /*         #if 'Potential' in KERNEL_VF */
+            /*             #if 'electrostatics' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_ELEC=='PotentialSwitch' */
+            velec            = _fjsp_mul_v2r8(velec,sw);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*             #if 'vdw' in INTERACTION_FLAGS[I][J] and KERNEL_MOD_VDW=='PotentialSwitch' */
+            vvdw             = _fjsp_mul_v2r8(vvdw,sw);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*         #endif */
+            /*     #endif */
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            cutoff_mask      = _fjsp_cmplt_v2r8(rsq{I}{J},rcutoff2);
+            /*         #define INNERFLOPS INNERFLOPS+1 */
+            /*     #endif */
+
+            /*     #if 'Potential' in KERNEL_VF */
+            /* Update potential sum for this i atom from the interaction with this j atom. */
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            velec            = _fjsp_and_v2r8(velec,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            velec            = _fjsp_unpacklo_v2r8(velec,_fjsp_setzero_v2r8());
+            /*             #endif */
+            velecsum         = _fjsp_add_v2r8(velecsum,velec);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*             #if KERNEL_ELEC=='GeneralizedBorn' */
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            vgb              = _fjsp_and_v2r8(vgb,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            vgb              = _fjsp_unpacklo_v2r8(vgb,_fjsp_setzero_v2r8());
+            /*             #endif */
+            vgbsum           = _fjsp_add_v2r8(vgbsum,vgb);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif */
+            /*         #endif */
+            /*         #if 'vdw' in INTERACTION_FLAGS[I][J] */
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            vvdw             = _fjsp_and_v2r8(vvdw,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+            /*             #if ROUND == 'Epilogue' */
+            vvdw             = _fjsp_unpacklo_v2r8(vvdw,_fjsp_setzero_v2r8());
+            /*             #endif */
+            vvdwsum          = _fjsp_add_v2r8(vvdwsum,vvdw);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #endif */
+            /*     #endif */
+
+            /*     #if 'Force' in KERNEL_VF */
+
+            /*         #if 'electrostatics' in INTERACTION_FLAGS[I][J] and 'vdw' in INTERACTION_FLAGS[I][J] */
+            fscal            = _fjsp_add_v2r8(felec,fvdw);
+            /*             #define INNERFLOPS INNERFLOPS+1 */
+            /*         #elif 'electrostatics' in INTERACTION_FLAGS[I][J] */
+            fscal            = felec;
+            /*         #elif 'vdw' in INTERACTION_FLAGS[I][J] */
+            fscal            = fvdw;
+            /*        #endif */
+
+            /*             #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            fscal            = _fjsp_and_v2r8(fscal,cutoff_mask);
+            /*                 #define INNERFLOPS INNERFLOPS+1 */
+            /*             #endif                                       */
+
+            /*             #if ROUND == 'Epilogue' */
+            fscal            = _fjsp_unpacklo_v2r8(fscal,_fjsp_setzero_v2r8());
+            /*             #endif */
+
+            /* ## Construction of vectorial force built into FMA instructions now */
+            /* #define INNERFLOPS INNERFLOPS+3      */
+            
+            /* Update vectorial force */
+            fix{I}             = _fjsp_madd_v2r8(dx{I}{J},fscal,fix{I});
+            fiy{I}             = _fjsp_madd_v2r8(dy{I}{J},fscal,fiy{I});
+            fiz{I}             = _fjsp_madd_v2r8(dz{I}{J},fscal,fiz{I});
+            /*             #define INNERFLOPS INNERFLOPS+6 */
+            
+            /* #if GEOMETRY_I == 'Particle'             */
+            /*     #if ROUND == 'Loop' */
+            gmx_fjsp_decrement_fma_1rvec_2ptr_swizzle_v2r8(f+j_coord_offsetA,f+j_coord_offsetB,fscal,dx{I}{J},dy{I}{J},dz{I}{J});
+            /*     #else */
+            gmx_fjsp_decrement_fma_1rvec_1ptr_swizzle_v2r8(f+j_coord_offsetA,fscal,dx{I}{J},dy{I}{J},dz{I}{J});
+            /*     #endif */
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #else                                    */
+            fjx{J}             = _fjsp_madd_v2r8(dx{I}{J},fscal,fjx{J});
+            fjy{J}             = _fjsp_madd_v2r8(dy{I}{J},fscal,fjy{J});
+            fjz{J}             = _fjsp_madd_v2r8(dz{I}{J},fscal,fjz{J});
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #endif                                   */
+
+            /*     #endif */
+
+            /*     #if 'exactcutoff' in INTERACTION_FLAGS[I][J] */
+            /*         #if 0    ## This and next two lines is a hack to maintain indentation in template file */
+            {
+                /*     #endif */
+            }
+            /*     #endif */
+            /*    ## End of check for the interaction being outside the cutoff */
+
+            /* #endfor */
+            /* ## End of loop over i-j interaction pairs */
+
+            /* #if 'Water' in GEOMETRY_I and GEOMETRY_J == 'Particle' */
+            /*     #if ROUND == 'Loop' */
+            gmx_fjsp_decrement_1rvec_2ptr_swizzle_v2r8(f+j_coord_offsetA,f+j_coord_offsetB,fjx0,fjy0,fjz0);
+            /*     #else */
+            gmx_fjsp_decrement_1rvec_1ptr_swizzle_v2r8(f+j_coord_offsetA,fjx0,fjy0,fjz0);
+            /*     #endif */
+            /*     #define INNERFLOPS INNERFLOPS+3      */
+            /* #elif GEOMETRY_J == 'Water3'             */
+            /*     #if ROUND == 'Loop' */
+            gmx_fjsp_decrement_3rvec_2ptr_swizzle_v2r8(f+j_coord_offsetA,f+j_coord_offsetB,fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2);
+            /*     #else */
+            gmx_fjsp_decrement_3rvec_1ptr_swizzle_v2r8(f+j_coord_offsetA,fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2);
+            /*     #endif */
+            /*     #define INNERFLOPS INNERFLOPS+9      */
+            /* #elif GEOMETRY_J == 'Water4'             */
+            /*     #if 0 in PARTICLES_J                 */
+            /*         #if ROUND == 'Loop' */
+            gmx_fjsp_decrement_4rvec_2ptr_swizzle_v2r8(f+j_coord_offsetA,f+j_coord_offsetB,fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*         #else */
+            gmx_fjsp_decrement_4rvec_1ptr_swizzle_v2r8(f+j_coord_offsetA,fjx0,fjy0,fjz0,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*         #endif */
+            /*         #define INNERFLOPS INNERFLOPS+12 */
+            /*     #else                                */
+            /*         #if ROUND == 'Loop' */
+            gmx_fjsp_decrement_3rvec_2ptr_swizzle_v2r8(f+j_coord_offsetA+DIM,f+j_coord_offsetB+DIM,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*         #else */
+            gmx_fjsp_decrement_3rvec_1ptr_swizzle_v2r8(f+j_coord_offsetA+DIM,fjx1,fjy1,fjz1,fjx2,fjy2,fjz2,fjx3,fjy3,fjz3);
+            /*         #endif */
+            /*         #define INNERFLOPS INNERFLOPS+9  */
+            /*     #endif                               */
+            /* #endif                                   */
+
+            /* Inner loop uses {INNERFLOPS} flops */
+        }
+
+        /* #endfor */
+
+        /* End of innermost loop */
+
+        /* #if 'Force' in KERNEL_VF */
+        /*     #if GEOMETRY_I == 'Particle'            */
+        gmx_fjsp_update_iforce_1atom_swizzle_v2r8(fix0,fiy0,fiz0,
+                                              f+i_coord_offset,fshift+i_shift_offset);
+        /*         #define OUTERFLOPS OUTERFLOPS+6     */
+        /*     #elif GEOMETRY_I == 'Water3'            */
+        gmx_fjsp_update_iforce_3atom_swizzle_v2r8(fix0,fiy0,fiz0,fix1,fiy1,fiz1,fix2,fiy2,fiz2,
+                                              f+i_coord_offset,fshift+i_shift_offset);
+        /*         #define OUTERFLOPS OUTERFLOPS+18    */
+        /*     #elif GEOMETRY_I == 'Water4'            */
+        /*         #if 0 in PARTICLES_I                */
+        gmx_fjsp_update_iforce_4atom_swizzle_v2r8(fix0,fiy0,fiz0,fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,
+                                              f+i_coord_offset,fshift+i_shift_offset);
+        /*             #define OUTERFLOPS OUTERFLOPS+24    */
+        /*         #else                               */
+        gmx_fjsp_update_iforce_3atom_swizzle_v2r8(fix1,fiy1,fiz1,fix2,fiy2,fiz2,fix3,fiy3,fiz3,
+                                              f+i_coord_offset+DIM,fshift+i_shift_offset);
+        /*             #define OUTERFLOPS OUTERFLOPS+18    */
+        /*         #endif                              */
+        /*     #endif                                  */
+        /* #endif                                      */
+
+        /* #if 'Potential' in KERNEL_VF */
+        ggid                        = gid[iidx];
+        /* Update potential energies */
+        /*     #if KERNEL_ELEC != 'None' */
+        gmx_fjsp_update_1pot_v2r8(velecsum,kernel_data->energygrp_elec+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC */
+        gmx_fjsp_update_1pot_v2r8(vgbsum,kernel_data->energygrp_polarization+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /*     #if KERNEL_VDW != 'None' */
+        gmx_fjsp_update_1pot_v2r8(vvdwsum,kernel_data->energygrp_vdw+ggid);
+        /*         #define OUTERFLOPS OUTERFLOPS+1 */
+        /*     #endif */
+        /* #endif */
+        /*     #if 'GeneralizedBorn' in KERNEL_ELEC and 'Force' in KERNEL_VF */
+        dvdasum = _fjsp_mul_v2r8(dvdasum, _fjsp_mul_v2r8(isai{I},isai{I}));
+        gmx_fjsp_update_1pot_v2r8(dvdasum,dvda+inr);
+        /*     #endif */
+
+        /* Increment number of inner iterations */
+        inneriter                  += j_index_end - j_index_start;
+
+        /* Outer loop uses {OUTERFLOPS} flops */
+    }
+
+    /* Increment number of outer iterations */
+    outeriter        += nri;
+
+    /* Update outer/inner flops */
+    /* ## NB: This is not important, it just affects the flopcount. However, since our preprocessor is */
+    /* ## primitive and replaces aggressively even in strings inside these directives, we need to      */
+    /* ## assemble the main part of the name (containing KERNEL/ELEC/VDW) directly in the source.      */
+    /* #if GEOMETRY_I == 'Water3'            */
+    /*     #define ISUFFIX '_W3'             */
+    /* #elif GEOMETRY_I == 'Water4'          */
+    /*     #define ISUFFIX '_W4'             */
+    /* #else                                 */
+    /*     #define ISUFFIX ''                */
+    /* #endif                                */
+    /* #if GEOMETRY_J == 'Water3'            */
+    /*     #define JSUFFIX 'W3'              */
+    /* #elif GEOMETRY_J == 'Water4'          */
+    /*     #define JSUFFIX 'W4'              */
+    /* #else                                 */
+    /*     #define JSUFFIX ''                */
+    /* #endif                                */
+    /* #if 'PotentialAndForce' in KERNEL_VF  */
+    /*     #define VFSUFFIX  '_VF'           */
+    /* #elif 'Potential' in KERNEL_VF        */
+    /*     #define VFSUFFIX '_V'             */
+    /* #else                                 */
+    /*     #define VFSUFFIX '_F'             */
+    /* #endif                                */
+
+    /* #if KERNEL_ELEC != 'None' and KERNEL_VDW != 'None' */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC_VDW{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #elif KERNEL_ELEC != 'None' */
+    inc_nrnb(nrnb,eNR_NBKERNEL_ELEC{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #else */
+    inc_nrnb(nrnb,eNR_NBKERNEL_VDW{ISUFFIX}{JSUFFIX}{VFSUFFIX},outeriter*{OUTERFLOPS} + inneriter*{INNERFLOPS});
+    /* #endif  */
+}

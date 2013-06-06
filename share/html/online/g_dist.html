@@ -9,20 +9,25 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dist</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_dist can calculate the distance between the centers of mass of two
+<tt>g_dist</tt> can calculate the distance between the centers of mass of two
 groups of atoms as a function of time. The total distance and its
-x, y and z components are plotted.<p>
+<it>x</it>-, <it>y</it>-, and <it>z</it>-components are plotted.<p>
 Or when <tt>-dist</tt> is set, print all the atoms in group 2 that are
 closer than a certain distance to the center of mass of group 1.<p>
 With options <tt>-lt</tt> and <tt>-dist</tt> the number of contacts
 of all atoms in group 2 that are closer than a certain distance
 to the center of mass of group 1 are plotted as a function of the time
-that the contact was continously present.<p>
+that the contact was continuously present. The <tt>-intra</tt> switch enables
+calculations of intramolecular distances avoiding distance calculation to its
+periodic images. For a proper function, the molecule in the input trajectory
+should be whole (e.g. by preprocessing with <tt><a href="trjconv.html">trjconv</a> -pbc</tt>) or a matching
+topology should be provided. The <tt>-intra</tt> switch will only give
+meaningful results for intramolecular and not intermolecular distances.<p>
 Other programs that calculate distances are <tt><a href="g_mindist.html">g_mindist</a></tt>
 and <tt><a href="g_bond.html">g_bond</a></tt>.
 <P>
@@ -39,13 +44,14 @@ and <tt><a href="g_bond.html">g_bond</a></tt>.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]intra</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate distances without considering periodic boundaries, e.g. intramolecular. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Print all atoms in group 2 closer than dist to the center of mass of group 1 </TD></TD>
 </TABLE>
 <P>

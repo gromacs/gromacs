@@ -9,23 +9,23 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-The mdrun program is the main computational chemistry engine
+The <tt>mdrun</tt> program is the main computational chemistry engine
 within GROMACS. Obviously, it performs Molecular Dynamics simulations,
 but it can also perform Stochastic Dynamics, Energy Minimization,
 test particle insertion or (re)calculation of energies.
-Normal mode analysis is another option. In this case mdrun
+Normal mode analysis is another option. In this case <tt>mdrun</tt>
 builds a Hessian matrix from single conformation.
 For usual Normal Modes-like calculations, make sure that
 the structure provided is properly energy-minimized.
-The generated matrix can be diagonalized by <a href="g_nmeig.html">g_nmeig</a>.<p>
-The mdrun program reads the run input file (<tt>-s</tt>)
+The generated matrix can be diagonalized by <tt><a href="g_nmeig.html">g_nmeig</a></tt>.<p>
+The <tt>mdrun</tt> program reads the run input file (<tt>-s</tt>)
 and distributes the topology over nodes if needed.
-mdrun produces at least four output files.
+<tt>mdrun</tt> produces at least four output files.
 A single <a href="log.html">log</a> file (<tt>-g</tt>) is written, unless the option
 <tt>-seppot</tt> is used, in which case each node writes a <a href="log.html">log</a> file.
 The trajectory file (<tt>-o</tt>), contains coordinates, velocities and
@@ -38,11 +38,93 @@ Optionally coordinates can be written to a compressed trajectory file
 (<tt>-x</tt>).<p>
 The option <tt>-dhdl</tt> is only used when free energy calculation is
 turned on.<p>
-When mdrun is started using MPI with more than 1 node, parallelization
-is used. By default domain decomposition is used, unless the <tt>-pd</tt>
-option is set, which selects particle decomposition.<p>
+A simulation can be run in parallel using two different parallelization
+schemes: MPI parallelization and/or OpenMP thread parallelization.
+The MPI parallelization uses multiple processes when <tt>mdrun</tt> is
+compiled with a normal MPI library or threads when <tt>mdrun</tt> is
+compiled with the GROMACS built-in thread-MPI library. OpenMP threads
+are supported when mdrun is compiled with OpenMP. Full OpenMP support
+is only available with the Verlet cut-off scheme, with the (older)
+group scheme only PME-only processes can use OpenMP parallelization.
+In all cases <tt>mdrun</tt> will by default try to use all the available
+hardware resources. With a normal MPI library only the options
+<tt>-ntomp</tt> (with the Verlet cut-off scheme) and <tt>-ntomp_pme</tt>,
+for PME-only processes, can be used to control the number of threads.
+With thread-MPI there are additional options <tt>-nt</tt>, which sets
+the total number of threads, and <tt>-ntmpi</tt>, which sets the number
+of thread-MPI threads.
+Note that using combined MPI+OpenMP parallelization is almost always
+slower than single parallelization, except at the scaling limit, where
+especially OpenMP parallelization of PME reduces the communication cost.
+OpenMP-only parallelization is much faster than MPI-only parallelization
+on a single CPU(-die). Since we currently don't have proper hardware
+topology detection, <tt>mdrun</tt> compiled with thread-MPI will only
+automatically use OpenMP-only parallelization when you use up to 4
+threads, up to 12 threads with Intel Nehalem/Westmere, or up to 16
+threads with Intel Sandy Bridge or newer CPUs. Otherwise MPI-only
+parallelization is used (except with GPUs, see below).
+<p>
+To quickly test the performance of the new Verlet cut-off scheme
+with old <tt>.<a href="tpr.html">tpr</a></tt> files, either on CPUs or CPUs+GPUs, you can use
+the <tt>-testverlet</tt> option. This should not be used for production,
+since it can slightly modify potentials and it will remove charge groups
+making analysis difficult, as the <tt>.<a href="tpr.html">tpr</a></tt> file will still contain
+charge groups. For production simulations it is highly recommended
+to specify <tt>cutoff-scheme = Verlet</tt> in the <tt>.<a href="mdp.html">mdp</a></tt> file.
+<p>
+With GPUs (only supported with the Verlet cut-off scheme), the number
+of GPUs should match the number of MPI processes or MPI threads,
+excluding PME-only processes/threads. With thread-MPI the number
+of MPI threads will automatically be set to the number of GPUs detected.
+When you want to use a subset of the available GPUs, you can use
+the <tt>-gpu_id</tt> option, where GPU id's are passed as a string,
+e.g. 02 for using GPUs 0 and 2. When you want different GPU id's
+on different nodes of a compute cluster, use the GMX_GPU_ID environment
+variable instead. The format for GMX_GPU_ID is identical to 
+<tt>-gpu_id</tt>, but an environment variable can have different values
+on different nodes of a cluster.
+<p>
+When using PME with separate PME nodes or with a GPU, the two major
+compute tasks, the non-bonded force calculation and the PME calculation
+run on different compute resources. If this load is not balanced,
+some of the resources will be idle part of time. With the Verlet
+cut-off scheme this load is automatically balanced when the PME load
+is too high (but not when it is too low). This is done by scaling
+the Coulomb cut-off and PME grid spacing by the same amount. In the first
+few hundred steps different settings are tried and the fastest is chosen
+for the rest of the simulation. This does not affect the accuracy of
+the results, but it does affect the decomposition of the Coulomb energy
+into particle and mesh contributions. The auto-tuning can be turned off
+with the option <tt>-notunepme</tt>.
+<p>
+<tt>mdrun</tt> pins (sets affinity of) threads to specific cores,
+when all (logical) cores on a compute node are used by <tt>mdrun</tt>,
+even when no multi-threading is used,
+as this usually results in significantly better performance.
+If the queuing systems or the OpenMP library pinned threads, we honor
+this and don't pin again, even though the layout may be sub-optimal.
+If you want to have <tt>mdrun</tt> override an already set thread affinity
+or pin threads when using less cores, use <tt>-pin on</tt>.
+With SMT (simultaneous multithreading), e.g. Intel Hyper-Threading,
+there are multiple logical cores per physical core.
+The option <tt>-pinstride</tt> sets the stride in logical cores for
+pinning consecutive threads. Without SMT, 1 is usually the best choice.
+With Intel Hyper-Threading 2 is best when using half or less of the
+logical cores, 1 otherwise. The default value of 0 do exactly that:
+it minimizes the threads per logical core, to optimize performance.
+If you want to run multiple mdrun jobs on the same physical node,you should set <tt>-pinstride</tt> to 1 when using all logical cores.
+When running multiple mdrun (or other) simulations on the same physical
+node, some simulations need to start pinning from a non-zero core
+to avoid overloading cores; with <tt>-pinoffset</tt> you can specify
+the offset in logical cores for pinning.
+<p>
+When <tt>mdrun</tt> is started using MPI with more than 1 process
+or with thread-MPI with more than 1 thread, MPI parallelization is used.
+By default domain decomposition is used, unless the <tt>-pd</tt>
+option is set, which selects particle decomposition.
+<p>
 With domain decomposition, the spatial decomposition can be set
-with option <tt>-dd</tt>. By default mdrun selects a good decomposition.
+with option <tt>-dd</tt>. By default <tt>mdrun</tt> selects a good decomposition.
 The user only needs to change this when the system is very inhomogeneous.
 Dynamic load balancing is set with the option <tt>-dlb</tt>,
 which can give a significant performance improvement,
@@ -61,7 +143,7 @@ be assigned to do only the PME mesh calculation;
 this is computationally more efficient starting at about 12 nodes.
 The number of PME nodes is set with option <tt>-npme</tt>,
 this can not be more than half of the nodes.
-By default mdrun makes a guess for the number of PME
+By default <tt>mdrun</tt> makes a guess for the number of PME
 nodes when the number of nodes is larger than 11 or performance wise
 not compatible with the PME grid x dimension.
 But the user should optimize npme. Performance statistics on this issue
@@ -71,7 +153,7 @@ dimensions should be divisible by the number of PME nodes
 (the simulation will run correctly also when this is not the case).
 <p>
 This section lists all options that affect the domain decomposition.
-<br>
+<p>
 Option <tt>-rdd</tt> can be used to set the required maximum distance
 for inter charge-group bonded interactions.
 Communication for two-body bonded interactions below the non-bonded
@@ -81,28 +163,28 @@ missing bonded interactions; this means that the extra cost is minor
 and nearly indepedent of the value of <tt>-rdd</tt>.
 With dynamic load balancing option <tt>-rdd</tt> also sets
 the lower limit for the domain decomposition cell sizes.
-By default <tt>-rdd</tt> is determined by mdrun based on
+By default <tt>-rdd</tt> is determined by <tt>mdrun</tt> based on
 the initial coordinates. The chosen value will be a balance
 between interaction range and communication cost.
-<br>
+<p>
 When inter charge-group bonded interactions are beyond
-the bonded cut-off distance, mdrun terminates with an error message.
+the bonded cut-off distance, <tt>mdrun</tt> terminates with an error message.
 For pair interactions and tabulated bonds
 that do not generate exclusions, this check can be turned off
 with the option <tt>-noddcheck</tt>.
-<br>
+<p>
 When constraints are present, option <tt>-rcon</tt> influences
 the cell size limit as well.
 Atoms connected by NC constraints, where NC is the LINCS order plus 1,
 should not be beyond the smallest cell size. A error message is
 generated when this happens and the user should change the decomposition
 or decrease the LINCS order and increase the number of LINCS iterations.
-By default mdrun estimates the minimum cell size required for P-LINCS
+By default <tt>mdrun</tt> estimates the minimum cell size required for P-LINCS
 in a conservative fashion. For high parallelization it can be useful
 to set the distance required for P-LINCS with the option <tt>-rcon</tt>.
-<br>
+<p>
 The <tt>-dds</tt> option sets the minimum allowed x, y and/or z scaling
-of the cells with dynamic load balancing. mdrun will ensure that
+of the cells with dynamic load balancing. <tt>mdrun</tt> will ensure that
 the cells can scale down by at least this factor. This option is used
 for the automated spatial decomposition (when not using <tt>-dd</tt>)
 as well as for determining the number of grid pulses, which in turn
@@ -115,57 +197,67 @@ every n steps.
 This can improve performance for highly parallel simulations
 where this global communication step becomes the bottleneck.
 For a global thermostat and/or barostat the temperature
-and/or pressure will also only be updated every -gcom steps.
+and/or pressure will also only be updated every <tt>-gcom</tt> steps.
 By default it is set to the minimum of nstcalcenergy and nstlist.<p>
 With <tt>-rerun</tt> an input trajectory can be given for which 
 forces and energies will be (re)calculated. Neighbor searching will be
 performed for every frame, unless <tt>nstlist</tt> is zero
 (see the <tt>.<a href="mdp.html">mdp</a></tt> file).<p>
-ED (essential dynamics) sampling is switched on by using the <tt>-ei</tt>
-flag followed by an <tt>.<a href="edi.html">edi</a></tt> file.
-The <tt>.<a href="edi.html">edi</a></tt> file can be produced using options in the essdyn
-menu of the WHAT IF program. mdrun produces a <tt>.<a href="edo.html">edo</a></tt> file that
+ED (essential dynamics) sampling and/or additional flooding potentials
+are switched on by using the <tt>-ei</tt> flag followed by an <tt>.<a href="edi.html">edi</a></tt>
+file. The <tt>.<a href="edi.html">edi</a></tt> file can be produced with the <tt>make_<a href="edi.html">edi</a></tt> tool
+or by using options in the essdyn menu of the WHAT IF program.
+<tt>mdrun</tt> produces a <tt>.<a href="xvg.html">xvg</a></tt> output file that
 contains projections of positions, velocities and forces onto selected
 eigenvectors.<p>
 When user-defined potential functions have been selected in the
-<tt>.<a href="mdp.html">mdp</a></tt> file the <tt>-table</tt> option is used to pass mdrun
+<tt>.<a href="mdp.html">mdp</a></tt> file the <tt>-table</tt> option is used to pass <tt>mdrun</tt>
 a formatted table with potential functions. The file is read from
-either the current directory or from the GMXLIB directory.
-A number of pre-formatted tables are presented in the GMXLIB dir,
-for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard Jones potentials with
+either the current directory or from the <tt>GMXLIB</tt> directory.
+A number of pre-formatted tables are presented in the <tt>GMXLIB</tt> dir,
+for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard-Jones potentials with
 normal Coulomb.
-When pair interactions are present a separate table for pair interaction
+When pair interactions are present, a separate table for pair interaction
 functions is read using the <tt>-tablep</tt> option.<p>
 When tabulated bonded functions are present in the topology,
 interaction functions are read using the <tt>-tableb</tt> option.
 For each different tabulated interaction type the table file name is
 modified in a different way: before the file extension an underscore is
-appended, then a b for bonds, an a for angles or a d for dihedrals
+appended, then a 'b' for bonds, an 'a' for angles or a 'd' for dihedrals
 and finally the table number of the interaction type.<p>
 The options <tt>-px</tt> and <tt>-pf</tt> are used for writing pull COM
 coordinates and forces when pulling is selected
 in the <tt>.<a href="mdp.html">mdp</a></tt> file.<p>
-With <tt>-multi</tt> multiple systems are simulated in parallel.
-As many input files are required as the number of systems.
-The system number is appended to the run input and each output filename,
-for instance topol.<a href="tpr.html">tpr</a> becomes topol0.<a href="tpr.html">tpr</a>, topol1.<a href="tpr.html">tpr</a> etc.
+With <tt>-multi</tt> or <tt>-multidir</tt>, multiple systems can be 
+simulated in parallel.
+As many input files/directories are required as the number of systems. 
+The <tt>-multidir</tt> option takes a list of directories (one for each 
+system) and runs in each of them, using the input/output file names, 
+such as specified by e.g. the <tt>-s</tt> option, relative to these 
+directories.
+With <tt>-multi</tt>, the system number is appended to the run input 
+and each output filename, for instance <tt>topol.<a href="tpr.html">tpr</a></tt> becomes
+<tt>topol0.<a href="tpr.html">tpr</a></tt>, <tt>topol1.<a href="tpr.html">tpr</a></tt> etc.
 The number of nodes per system is the total number of nodes
 divided by the number of systems.
 One use of this option is for NMR refinement: when distance
 or orientation restraints are present these can be ensemble averaged
 over all the systems.<p>
 With <tt>-replex</tt> replica exchange is attempted every given number
-of steps. The number of replicas is set with the <tt>-multi</tt> option,
-see above. The <tt>-nex</tt> option turns on Gibbs sampling replica exchange. N^3, where
-N is the number of replicas indicated by <tt>-multi</tt> appears to work relatively well.
-
+of steps. The number of replicas is set with the <tt>-multi</tt> or 
+<tt>-multidir</tt> option, described above.
 All run input files should use a different coupling temperature,
 the order of the files is not important. The random seed is set with
 <tt>-reseed</tt>. The velocities are scaled and neighbor searching
 is performed after every exchange.<p>
 Finally some experimental algorithms can be tested when the
 appropriate options have been given. Currently under
-investigation are: polarizability, and X-Ray bombardments.
+investigation are: polarizability and X-ray bombardments.
+<p>
+The option <tt>-membed</tt> does what used to be g_membed, i.e. embed
+a protein into a membrane. The data file should contain the options
+that where passed to g_membed before. The <tt>-mn</tt> and <tt>-mp</tt>
+both apply to this as well.
 <p>
 The option <tt>-pforce</tt> is useful when you suspect a simulation
 crashes due to too large forces. With this option coordinates and
@@ -183,15 +275,15 @@ with the step number.
 A simulation can be continued by reading the full state from file
 with option <tt>-cpi</tt>. This option is intelligent in the way that
 if no checkpoint file is found, Gromacs just assumes a normal run and
-starts from the first step of the <a href="tpr.html">tpr</a> file. By default the output
+starts from the first step of the <tt>.<a href="tpr.html">tpr</a></tt> file. By default the output
 will be appending to the existing output files. The checkpoint file
 contains checksums of all output files, such that you will never
 loose data when some output files are modified, corrupt or removed.
-There are three scenarios with <tt>-cpi</tt>:<br>
-* no files with matching names are present: new output files are written<br>
-* all files are present with names and checksums matching those stored
-in the checkpoint file: files are appended<br>
-* otherwise no files are modified and a fatal error is generated<br>
+There are three scenarios with <tt>-cpi</tt>:<p>
+<tt>*</tt> no files with matching names are present: new output files are written<p>
+<tt>*</tt> all files are present with names and checksums matching those stored
+in the checkpoint file: files are appended<p>
+<tt>*</tt> otherwise no files are modified and a fatal error is generated<p>
 With <tt>-noappend</tt> new output files are opened and the simulation
 part number is added to all output file names.
 Note that in all cases the checkpoint file itself is not renamed
@@ -215,16 +307,16 @@ With option <tt>-maxh</tt> a simulation is terminated and a checkpoint
 file is written at the first neighbor search step where the run time
 exceeds <tt>-maxh</tt>*0.99 hours.
 <p>
-When mdrun receives a TERM signal, it will set nsteps to the current
-step plus one. When mdrun receives an INT signal (e.g. when ctrl+C is
+When <tt>mdrun</tt> receives a TERM signal, it will set nsteps to the current
+step plus one. When <tt>mdrun</tt> receives an INT signal (e.g. when ctrl+C is
 pressed), it will stop after the next neighbor search step 
 (with nstlist=0 at the next step).
 In both cases all the usual output will be written to file.
-When running with MPI, a signal to one of the mdrun processes
+When running with MPI, a signal to one of the <tt>mdrun</tt> processes
 is sufficient, this signal should not be sent to mpirun or
-the mdrun process that is the parent of the others.
+the <tt>mdrun</tt> process that is the parent of the others.
 <p>
-When mdrun is started with MPI, it does not run niced by default.
+When <tt>mdrun</tt> is started with MPI, it does not run niced by default.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -240,13 +332,14 @@ When mdrun is started with MPI, it does not run niced by default.
 <TR><TD ALIGN=RIGHT> <b><tt>-dhdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tabletf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> tabletf.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tableb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     tpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tpid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> tpidist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   edsam.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Output, Opt. </TD><TD> General coupling stuff </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
@@ -254,43 +347,62 @@ When mdrun is started with MPI, it does not run niced by default.
 <TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-px</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullx.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-pf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ro</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">rotation.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ra</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">rotangles.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rs</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">rotslabs.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">rottorque.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  dipole.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-multidir</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="line_buf.html">      rundir</a></tt> </TD><TD> Input, Opt., Mult. </TD><TD> Run directory </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-membed</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">  membed.dat</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic data file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">  membed.top</a></tt> </TD><TD> Input, Opt. </TD><TD> Topology file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  membed.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pd</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use particle decompostion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pd</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use particle decompostion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dd</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Domain decomposition grid, 0 is optimize </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of threads to start (0 is guess) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-npme</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Number of separate nodes to be used for PME, -1 is guess </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ddorder</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>interleave</tt> </TD><TD> DD node order: <tt>interleave</tt>, <tt>pp_pme</tt> or <tt>cartesian</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ddcheck</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Check for all bonded interactions with DD </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-npme</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Number of separate nodes to be used for PME, -1 is guess </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Total number of threads to start (0 is guess) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ntmpi</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of thread-MPI threads to start (0 is guess) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ntomp</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of OpenMP threads per MPI process/thread to start (0 is guess) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ntomp_pme</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of OpenMP threads per MPI process/thread to start (0 is -ntomp) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pin</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Fix threads (or processes) to specific cores: <tt>auto</tt>, <tt>on</tt> or <tt>off</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pinoffset</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> The starting logical core number for pinning to cores; used to avoid pinning threads from different mdrun instances to the same core </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pinstride</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Pinning distance in logical cores for threads, use 0 to minimize the number of threads per physical core </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-gpu_id</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> List of GPU id's to use </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ddcheck</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Check for all bonded interactions with DD </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rdd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rcon</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum distance for P-LINCS (nm), 0 is estimate </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dlb</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Dynamic load balancing (with DD): <tt>auto</tt>, <tt>no</tt> or <tt>yes</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dds</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.8   </tt> </TD><TD> Minimum allowed dlb scaling of the DD cell size </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-gcom</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Global communication frequency </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Write a compact <a href="log.html">log</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]seppot</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the <a href="log.html">log</a> file(s) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nb</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Calculate non-bonded interactions on: <tt>auto</tt>, <tt>cpu</tt>, <tt>gpu</tt> or <tt>gpu_cpu</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]tunepme</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Optimize PME load between PP/PME nodes or GPU/CPU </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]testverlet</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Test the Verlet non-bonded scheme </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Write a compact <a href="log.html">log</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]seppot</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the <a href="log.html">log</a> file(s) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-pforce</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Print all forces larger than this (kJ/mol nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]reprod</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Try to avoid optimizations that affect binary reproducibility </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]reprod</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Try to avoid optimizations that affect binary reproducibility </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-cpt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>15    </tt> </TD><TD> Checkpoint interval (minutes) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cpnum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Keep and number checkpoint files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]append</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cpnum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Keep and number checkpoint files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]append</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Append to previous output files when continuing from checkpoint instead of adding the simulation part number to all file names </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-2</tt> </TD><TD> Run this number of steps, overrides .<a href="mdp.html">mdp</a> file option </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-maxh</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Terminate after 0.99 times this time (hours) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-multi</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Do multiple simulations in parallel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange every # steps </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt $N$ Gibbs sampling replica exchanges at every exchange interval. $N^3$ is a suggested frequency. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange periodically with this period (steps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of random exchanges to carry out each exchange interval (N^3 is one suggestion).  -nex zero or not specified gives neighbor replica exchange. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-reseed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Seed for replica exchange, -1 is generate a seed </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
 </TABLE>
 <P>
 <hr>

@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in basicoptions.h and basicoptionstorage.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_options
  */
 #include "basicoptions.h"
@@ -73,7 +77,7 @@ void expandVector(size_t length, std::vector<ValueType> *values)
         if (values->size() != 1)
         {
             GMX_THROW(gmx::InvalidInputError(gmx::formatString(
-                      "Expected 1 or %d values, got %d", length, values->size())));
+                                                     "Expected 1 or %d values, got %d", length, values->size())));
         }
         const ValueType &value = (*values)[0];
         values->resize(length, value);
@@ -141,9 +145,9 @@ std::string IntegerOptionStorage::formatSingleValue(const int &value) const
 void IntegerOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    long int ival = std::strtol(ptr, &endptr, 10);
+    long int    ival = std::strtol(ptr, &endptr, 10);
     if (errno == ERANGE
         || ival < std::numeric_limits<int>::min()
         || ival > std::numeric_limits<int>::max())
@@ -208,9 +212,9 @@ std::string DoubleOptionStorage::formatSingleValue(const double &value) const
 void DoubleOptionStorage::convertValue(const std::string &value)
 {
     const char *ptr = value.c_str();
-    char *endptr;
+    char       *endptr;
     errno = 0;
-    double dval = std::strtod(ptr, &endptr);
+    double      dval = std::strtod(ptr, &endptr);
     if (errno == ERANGE)
     {
         GMX_THROW(InvalidInputError("Invalid value: '" + value
@@ -241,7 +245,7 @@ void DoubleOptionStorage::setScaleFactor(double factor)
     GMX_RELEASE_ASSERT(factor > 0.0, "Invalid scaling factor");
     if (!hasFlag(efOption_HasDefaultValue))
     {
-        double scale = factor / factor_;
+        double              scale = factor / factor_;
         ValueList::iterator i;
         for (i = values().begin(); i != values().end(); ++i)
         {
@@ -314,9 +318,22 @@ StringOptionStorage::StringOptionStorage(const StringOption &settings)
     {
         enumIndexStore_ = settings.enumIndexStore_;
         const std::string *defaultValue = settings.defaultValue();
-        int match = -1;
-        for (int i = 0; settings.enumValues_[i] != NULL; ++i)
+        int                match        = -1;
+        int                count        = settings.enumValuesCount_;
+        if (count < 0)
         {
+            count = 0;
+            while (settings.enumValues_[count] != NULL)
+            {
+                ++count;
+            }
+        }
+        for (int i = 0; i < count; ++i)
+        {
+            if (settings.enumValues_[i] == NULL)
+            {
+                GMX_THROW(APIError("Enumeration value cannot be NULL"));
+            }
             if (defaultValue != NULL && settings.enumValues_[i] == *defaultValue)
             {
                 match = i;
@@ -414,6 +431,26 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
 {
 }
 
+StringOptionStorage &StringOptionInfo::option()
+{
+    return static_cast<StringOptionStorage &>(OptionInfo::option());
+}
+
+const StringOptionStorage &StringOptionInfo::option() const
+{
+    return static_cast<const StringOptionStorage &>(OptionInfo::option());
+}
+
+bool StringOptionInfo::isEnumerated() const
+{
+    return !allowedValues().empty();
+}
+
+const std::vector<std::string> &StringOptionInfo::allowedValues() const
+{
+    return option().allowedValues();
+}
+
 /********************************************************************
  * StringOption
  */
@@ -421,25 +458,6 @@ StringOptionInfo::StringOptionInfo(StringOptionStorage *option)
 AbstractOptionStoragePointer StringOption::createStorage() const
 {
     return AbstractOptionStoragePointer(new StringOptionStorage(*this));
-}
-
-std::string StringOption::createDescription() const
-{
-    std::string value(MyBase::createDescription());
-
-    if (enumValues_ != NULL)
-    {
-        value.append(": ");
-        for (int i = 0; enumValues_[i] != NULL; ++i)
-        {
-            value.append(enumValues_[i]);
-            if (enumValues_[i + 1] != NULL)
-            {
-                value.append(enumValues_[i + 2] != NULL ? ", " : ", or ");
-            }
-        }
-    }
-    return value;
 }
 
 } // namespace gmx

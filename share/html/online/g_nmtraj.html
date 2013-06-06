@@ -9,13 +9,13 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_nmtraj</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 <tt>g_nmtraj</tt> generates an virtual trajectory from an eigenvector, 
-corresponding to a harmonic cartesian oscillation around the average 
+corresponding to a harmonic Cartesian oscillation around the average 
 structure. The eigenvectors should normally be mass-weighted, but you can 
 use non-weighted eigenvectors to generate orthogonal motions. 
 The output frames are written as a trajectory file covering an entire period, and 
@@ -23,10 +23,10 @@ the first frame is the average structure. If you write the trajectory in (or con
 PDB format you can view it directly in PyMol and also render a photorealistic movie. 
 Motion amplitudes are calculated from the eigenvalues and a preset temperature, 
 assuming equipartition of the energy over all modes. To make the motion clearly visible 
-in PyMol you might want to amplify it by setting an unrealistic high temperature. 
-However, be aware that both the linear cartesian displacements and mass weighting will 
+in PyMol you might want to amplify it by setting an unrealistically high temperature. 
+However, be aware that both the linear Cartesian displacements and mass weighting will 
 lead to serious structure deformation for high amplitudes - this is is simply a limitation 
-of the cartesian normal mode model. By default the selected eigenvector is set to 7, since 
+of the Cartesian normal mode model. By default the selected eigenvector is set to 7, since 
  the first six normal modes are the translational and rotational degrees of freedom.
 <P>
 <H3>Files</H3>
@@ -40,12 +40,12 @@ of the cartesian normal mode model. By default the selected eigenvector is set t
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-eignr</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>7</tt> </TD><TD> String of eigenvectors to use (first is 1) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-phases</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>0.0</tt> </TD><TD> String of phases (default is 0.0) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> Temperature in Kelvin </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> Temperature (K) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-amplitude</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.25  </tt> </TD><TD> Amplitude for modes with eigenvalue&lt;=0 </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nframes</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>30</tt> </TD><TD> Number of frames to generate </TD></TD>
 </TABLE>

@@ -9,24 +9,24 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sham</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.
-g_sham reads one or more <a href="xvg.html">xvg</a> files and analyzes data sets.
-g_sham basic purpose is plotting Gibbs free energy landscapes
+<tt>g_sham</tt> makes multi-dimensional free-energy, enthalpy and entropy plots.
+<tt>g_sham</tt> reads one or more <tt>.<a href="xvg.html">xvg</a></tt> files and analyzes data sets.
+The basic purpose of <tt>g_sham</tt> is to plot Gibbs free energy landscapes
 (option <tt>-ls</tt>)
-by Bolzmann inverting multi-dimensional histograms (option <tt>-lp</tt>)
+by Bolzmann inverting multi-dimensional histograms (option <tt>-lp</tt>),
 but it can also
 make enthalpy (option <tt>-lsh</tt>) and entropy (option <tt>-lss</tt>)
 plots. The histograms can be made for any quantities the user supplies.
 A line in the input file may start with a time
-(see option <tt>-time</tt>) and any number of y values may follow.
+(see option <tt>-time</tt>) and any number of <it>y</it>-values may follow.
 Multiple sets can also be
 read when they are separated by & (option <tt>-n</tt>),
-in this case only one y value is read from each line.
+in this case only one <it>y</it>-value is read from each line.
 All lines starting with # and @ are skipped.
 <p>
 Option <tt>-ge</tt> can be used to supply a file with free energies
@@ -36,21 +36,21 @@ by this free energy. One free energy value is required for each
 <p>
 Option <tt>-<a href="ene.html">ene</a></tt> can be used to supply a file with energies.
 These energies are used as a weighting function in the single
-histogram analysis method due to Kumar et. al. When also temperatures
-are supplied (as a second column in the file) an experimental
+histogram analysis method by Kumar et al. When temperatures
+are supplied (as a second column in the file), an experimental
 weighting scheme is applied. In addition the vales
 are used for making enthalpy and entropy plots.
 <p>
-With option <tt>-dim</tt> dimensions can be gives for distances.
+With option <tt>-dim</tt>, dimensions can be gives for distances.
 When a distance is 2- or 3-dimensional, the circumference or surface
 sampled by two particles increases with increasing distance.
 Depending on what one would like to show, one can choose to correct
 the histogram and free-energy for this volume effect.
-The probability is normalized by r and r^2 for a dimension of 2 and 3
+The probability is normalized by r and r^2 for dimensions of 2 and 3, 
 respectively.
 A value of -1 is used to indicate an angle in degrees between two
 vectors: a sin(angle) normalization will be applied.
-Note that for angles between vectors the inner-product or cosine
+<b>Note</b> that for angles between vectors the inner-product or cosine
 is the natural quantity to use, as it will produce bins of the same
 volume.
 <P>
@@ -69,26 +69,26 @@ volume.
 <TR><TD ALIGN=RIGHT> <b><tt>-lss</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html"> entropy.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-map</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">     map.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ls3</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">  gibbs3.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-mdata</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> mapdata.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mdata</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> mapdata.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html"> shamlog.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Expect a time in the input </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Expect a time in the input </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> First time to read from set </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Last time to read from set </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ttol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Tolerance on time in appropriate units (usually ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Read # sets separated by & </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the derivative </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Read this number of sets separated by lines containing only an ampersand </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the derivative </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.1   </tt> </TD><TD> Binwidth for the distribution </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sham</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Turn off energy weighting even if energies are given </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sham</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Turn off energy weighting even if energies are given </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tsham</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature for single histogram analysis </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-pmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Minimum probability. Anything lower than this will be set to zero </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dim</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Dimensions for distances, used for volume correction (max 3 values, dimensions &gt; 3 will get the same value as the last) </TD></TD>

@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements gmx::SelectionOptionManager.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "selectionoptionmanager.h"
@@ -175,11 +179,11 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
         requestUnsetRequiredOptions();
     }
 
-    RequestsClearer clearRequestsOnExit(&requests_);
+    RequestsClearer               clearRequestsOnExit(&requests_);
 
     SelectionList::const_iterator first = selections.begin();
-    SelectionList::const_iterator last = first;
-    RequestList::const_iterator i;
+    SelectionList::const_iterator last  = first;
+    RequestList::const_iterator   i;
     for (i = requests_.begin(); i != requests_.end(); ++i)
     {
         const SelectionRequest &request = *i;
@@ -190,11 +194,11 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             {
                 int assigned = first - selections.begin();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Too few selections provided for '%s': "
-                                "Expected %d selections, but only %d left "
-                                "after assigning the first %d to other selections.",
-                                request.name().c_str(), request.count(),
-                                remaining, assigned)));
+                                                    "Too few selections provided for '%s': "
+                                                    "Expected %d selections, but only %d left "
+                                                    "after assigning the first %d to other selections.",
+                                                    request.name().c_str(), request.count(),
+                                                    remaining, assigned)));
             }
             last = first + request.count();
         }
@@ -204,16 +208,16 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
             ++nextRequest;
             if (nextRequest != requests_.end())
             {
-                const char *name = request.name().c_str();
+                const char *name         = request.name().c_str();
                 const char *conflictName = nextRequest->name().c_str();
                 GMX_THROW(InvalidInputError(formatString(
-                                "Ambiguous selections for '%s' and '%s': "
-                                "Any number of selections is acceptable for "
-                                "'%s', but you have requested subsequent "
-                                "selections to be assigned to '%s'. "
-                                "Resolution for such cases is not implemented, "
-                                "and may be impossible.",
-                                name, conflictName, name, conflictName)));
+                                                    "Ambiguous selections for '%s' and '%s': "
+                                                    "Any number of selections is acceptable for "
+                                                    "'%s', but you have requested subsequent "
+                                                    "selections to be assigned to '%s'. "
+                                                    "Resolution for such cases is not implemented, "
+                                                    "and may be impossible.",
+                                                    name, conflictName, name, conflictName)));
             }
             last = selections.end();
         }
@@ -223,14 +227,14 @@ void SelectionOptionManager::Impl::placeSelectionsInRequests(
     }
     if (last != selections.end())
     {
-        int count = selections.end() - selections.begin();
+        int count     = selections.end() - selections.begin();
         int remaining = selections.end() - last;
-        int assigned = last - selections.begin();
+        int assigned  = last - selections.begin();
         GMX_THROW(InvalidInputError(formatString(
-                        "Too many selections provided: "
-                        "Expected %d selections, but %d provided. "
-                        "Last %d selections could not be assigned to any option.",
-                        assigned, count, remaining)));
+                                            "Too many selections provided: "
+                                            "Expected %d selections, but %d provided. "
+                                            "Last %d selections could not be assigned to any option.",
+                                            assigned, count, remaining)));
     }
 }
 
@@ -270,7 +274,7 @@ SelectionOptionManager::registerOption(SelectionOptionStorage *storage)
 
 void
 SelectionOptionManager::convertOptionValue(SelectionOptionStorage *storage,
-                                           const std::string &value)
+                                           const std::string      &value)
 {
     SelectionList selections = impl_->collection_.parseFromString(value);
     storage->addSelections(selections, false);
@@ -286,7 +290,7 @@ SelectionOptionManager::requestOptionDelayedParsing(
 void
 SelectionOptionManager::parseRequestedFromStdin(bool bInteractive)
 {
-    Impl::RequestsClearer clearRequestsOnExit(&impl_->requests_);
+    Impl::RequestsClearer             clearRequestsOnExit(&impl_->requests_);
 
     Impl::RequestList::const_iterator i;
     for (i = impl_->requests_.begin(); i != impl_->requests_.end(); ++i)
@@ -329,8 +333,8 @@ SelectionOptionManager::parseRequestedFromFile(const std::string &filename)
     catch (GromacsException &ex)
     {
         ex.prependContext(formatString(
-                    "Error in adding selections from file '%s'",
-                    filename.c_str()));
+                                  "Error in adding selections from file '%s'",
+                                  filename.c_str()));
         throw;
     }
 }
@@ -390,9 +394,9 @@ class SelectionOptionManagerSetter : public OptionsModifyingVisitor
         SelectionOptionManager *manager_;
 };
 
-} // namespace
+}   // namespace
 
-void setManagerForSelectionOptions(Options *options,
+void setManagerForSelectionOptions(Options                *options,
                                    SelectionOptionManager *manager)
 {
     SelectionOptionManagerSetter(manager).visitSubSection(options);

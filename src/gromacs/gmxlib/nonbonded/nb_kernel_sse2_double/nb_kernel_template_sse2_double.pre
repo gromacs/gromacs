@@ -583,6 +583,9 @@ void
             FF               = _mm_add_pd(Fp,_mm_mul_pd(gbeps,_mm_add_pd(G,_mm_add_pd(Heps,Heps))));
             fgb              = _mm_mul_pd(gbqqfactor,_mm_mul_pd(FF,gbscale));
             dvdatmp          = _mm_mul_pd(minushalf,_mm_add_pd(vgb,_mm_mul_pd(fgb,r{I}{J})));
+            /*                 #if ROUND == 'Epilogue' */
+            dvdatmp          = _mm_unpacklo_pd(dvdatmp,_mm_setzero_pd());
+            /*                 #endif */
             dvdasum          = _mm_add_pd(dvdasum,dvdatmp);
             /*             #if ROUND == 'Loop' */
             gmx_mm_increment_2real_swizzle_pd(dvda+jnrA,dvda+jnrB,_mm_mul_pd(dvdatmp,_mm_mul_pd(isaj{J},isaj{J})));

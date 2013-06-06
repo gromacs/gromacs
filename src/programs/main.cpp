@@ -20,11 +20,11 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-int cmain(int argc,char *argv[]);
+int cmain(int argc, char *argv[]);
 #ifdef __cplusplus
 }
 #endif
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
     return cmain(argc, argv);
 }

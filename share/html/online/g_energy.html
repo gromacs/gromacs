@@ -9,47 +9,44 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_energy</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_energy extracts energy components or distance restraint
+<tt>g_energy</tt> extracts energy components or distance restraint
 data from an energy file. The user is prompted to interactively
-select the energy terms she wants.<p>
-Average, RMSD and drift are calculated with full precision from the
+select the desired energy terms.<p>
+Average, RMSD, and drift are calculated with full precision from the
 simulation (see printed manual). Drift is calculated by performing
-a LSQ fit of the data to a straight line. The reported total drift
+a least-squares fit of the data to a straight line. The reported total drift
 is the difference of the fit at the first and last point.
 An error estimate of the average is given based on a block averages
-over 5 blocks using the full precision averages. The error estimate
+over 5 blocks using the full-precision averages. The error estimate
 can be performed over multiple block lengths with the options
 <tt>-nbmin</tt> and <tt>-nbmax</tt>.
-Note that in most cases the energy files contains averages over all
+<b>Note</b> that in most cases the energy files contains averages over all
 MD steps, or over many more points than the number of frames in
-energy file. This makes the g_energy statistics output more accurate
-than the <a href="xvg.html">xvg</a> output. When exact averages are not present in the energy
-file the statistics mentioned above is simply over the single, per-frame
+energy file. This makes the <tt>g_energy</tt> statistics output more accurate
+than the <tt>.<a href="xvg.html">xvg</a></tt> output. When exact averages are not present in the energy
+file, the statistics mentioned above are simply over the single, per-frame
 energy values.<p>
-The term fluctuation gives the RMSD around the LSQ fit.<p>
+The term fluctuation gives the RMSD around the least-squares fit.<p>
 Some fluctuation-dependent properties can be calculated provided
-the correct energy terms are selected. The following properties
+the correct energy terms are selected, and that the command line option
+<tt>-fluct_props</tt> is given. The following properties
 will be computed:<br>
 Property                        Energy terms needed<br>
 ---------------------------------------------------<br>
-Heat capacity Cp (NPT sims):    Enthalpy, Temp     <br>
-Heat capacity Cv (NVT sims):    Etot, Temp         <br>
+Heat capacity C_p (NPT sims):    Enthalpy, Temp     <br>
+Heat capacity C_v (NVT sims):    Etot, Temp         <br>
 Thermal expansion coeff. (NPT): Enthalpy, Vol, Temp<br>
 Isothermal compressibility:     Vol, Temp          <br>
 Adiabatic bulk modulus:         Vol, Temp          <br>
 ---------------------------------------------------<br>
-You always need to set the number of molecules <tt>-nmol</tt>, and,
-if you used constraints in your simulations you will need to give
-the number of constraints per molecule <tt>-nconstr</tt> in order to
-correct for this: (nconstr/2) kB is subtracted from the heat
-capacity in this case. For instance in the case of rigid water
-you need to give the value 3 to this option.<p>
-When the <tt>-viol</tt> option is set, the time averaged
+You always need to set the number of molecules <tt>-nmol</tt>.
+The C_p/C_v computations do <b>not</b> include any corrections
+for quantum effects. Use the <tt>g_dos</tt> program if you need that (and you do).<p>When the <tt>-viol</tt> option is set, the time averaged
 violations are plotted and the running time-averaged and
 instantaneous sum of violations are recalculated. Additionally
 running time-averaged and instantaneous distances between
@@ -70,34 +67,29 @@ the time and ensemble averages.<p>
 Option <tt>-oten</tt> plots the eigenvalues of the molecular order
 tensor for each orientation restraint experiment. With option
 <tt>-ovec</tt> also the eigenvectors are plotted.<p>
+Option <tt>-odh</tt> extracts and plots the free energy data
+(Hamiltoian differences and/or the Hamiltonian derivative dhdl)
+from the <tt>ener.<a href="edr.html">edr</a></tt> file.<p>
 With <tt>-fee</tt> an estimate is calculated for the free-energy
 difference with an ideal gas state: <br>
-  Delta A = A(N,V,T) - A_idgas(N,V,T) = kT ln &lt; e^(Upot/kT) &gt;<br>
-  Delta G = G(N,p,T) - G_idgas(N,p,T) = kT ln &lt; e^(Upot/kT) &gt;<br>
+  &Delta; A = A(N,V,T) - A_idealgas(N,V,T) = kT ln(<exp(U_pot/kT)>)<br>
+  &Delta; G = G(N,p,T) - G_idealgas(N,p,T) = kT ln(<exp(U_pot/kT)>)<br>
 where k is Boltzmann's constant, T is set by <tt>-fetemp</tt> and
 the average is over the ensemble (or time in a trajectory).
 Note that this is in principle
 only correct when averaging over the whole (Boltzmann) ensemble
 and using the potential energy. This also allows for an entropy
 estimate using:<br>
-  Delta S(N,V,T) = S(N,V,T) - S_idgas(N,V,T) = (&lt;Upot&gt; - Delta A)/T<br>
-  Delta S(N,p,T) = S(N,p,T) - S_idgas(N,p,T) = (&lt;Upot&gt; + pV - Delta G)/T
+  &Delta; S(N,V,T) = S(N,V,T) - S_idealgas(N,V,T) = (<U_pot> - &Delta; A)/T<br>
+  &Delta; S(N,p,T) = S(N,p,T) - S_idealgas(N,p,T) = (<U_pot> + pV - &Delta; G)/T
 <p>
 When a second energy file is specified (<tt>-f2</tt>), a free energy
-difference is calculated dF = -kT ln &lt; e ^ -(EB-EA)/kT &gt;A ,
-where EA and EB are the energies from the first and second energy
-files, and the average is over the ensemble A. <b>NOTE</b> that
-the energies must both be calculated from the same trajectory.
-Generally, this estimate is not particularly accurate unless the
-state is very similar to the ideal gas state (i.e. the potential energies
-are very low), and more accurate free energy calculations can be performed
-using the free energy features.
+difference is calculated <br> dF = -kT ln(<exp(-(E_B-E_A)/kT)>_A) ,
+where E_A and E_B are the energies from the first and second energy
+files, and the average is over the ensemble A. The running average
+of the free energy difference is printed to a file specified by <tt>-ravg</tt>.
+<b>Note</b> that the energies must both be calculated from the same trajectory.
 <P>
-<p><tt>-odh</tt>Regenerates the dhdl.xvg from the .edr file if the separate-dhdl-file
-is chosen as no in the .mdp file the .edr was generated from. This can allow more
-flexiblity in scripting as the additional dhdl.xvg file does not need to be handled
-until the analysis phase.  It can also save some space by avoiding the presence of a large ASCII file.
-<p>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
@@ -113,42 +105,43 @@ until the analysis phase.  It can also save some space by avoiding the presence 
 <TR><TD ALIGN=RIGHT> <b><tt>-odr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> oridevr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-odt</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> oridevt.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-oten</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  oriten.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-odh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-corr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> enecorr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-vis</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   visco.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ravg</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">runavgdf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-odh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dhdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fee</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a free energy estimate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fee</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a free energy estimate </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fetemp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> Reference temperature for free energy calculation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-zero</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Subtract a zero-point energy </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Sum the energy terms selected rather than display them all </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]dp</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print energies in high precision </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Sum the energy terms selected rather than display them all </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]dp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print energies in high precision </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nbmin</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>5</tt> </TD><TD> Minimum number of blocks for error estimate </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nbmax</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>5</tt> </TD><TD> Maximum number of blocks for error estimate </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mutot</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute the total dipole moment from the components </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mutot</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute the total dipole moment from the components </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip number of frames between data points </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]aver</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]aver</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Also print the exact average and rmsd stored in the energy frames (only when 1 term is requested) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nmol</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of molecules in your sample: the energies are divided by this number </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nconstr</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of constraints per molecule. Necessary for calculating the heat capacity </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fluc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate autocorrelation of energy fluctuations rather than energy itself </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]orinst</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Analyse instantaneous orientation data </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ovec</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Also plot the eigenvectors with -oten </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fluct_props</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Compute properties based on energy fluctuations, like heat capacity </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]driftcorr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Useful only for calculations of fluctuation properties. The drift in the observables will be subtracted before computing the fluctuation properties. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fluc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Calculate autocorrelation of energy fluctuations rather than energy itself </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]orinst</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Analyse instantaneous orientation data </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ovec</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Also plot the eigenvectors with <tt>-oten</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt>, <tt>exp9</tt> or <tt>erffit</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip this many points in the output file of correlation functions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is until the end </TD></TD>
 </TABLE>

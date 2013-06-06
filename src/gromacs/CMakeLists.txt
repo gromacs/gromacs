@@ -1,9 +1,44 @@
+#
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+
 set(LIBGROMACS_SOURCES)
 
 add_subdirectory(legacyheaders)
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
+add_subdirectory(gmxana)
 add_subdirectory(analysisdata)
 add_subdirectory(commandline)
 add_subdirectory(linearalgebra)
@@ -56,10 +91,6 @@ if(GMX_USE_GCC44_BUG_WORKAROUND)
    gmx_apply_gcc44_bug_workaround("mdlib/constr.c")
 endif()
 
-if(GMX_GPU)
-    include_directories(${CUDA_TOOLKIT_INCLUDE})
-endif()
-
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
     add_dependencies(libgromacs gmx_version)
@@ -75,7 +106,8 @@ if(GMX_BUILD_OWN_FFTW)
 endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
-                      ${GMX_EXTRA_LIBRARIES} ${FFT_LIBRARIES} ${XML_LIBRARIES}
+                      ${GMX_EXTRA_LIBRARIES}
+                      ${FFT_LIBRARIES} ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
@@ -92,7 +124,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
         COMPONENT development)
 
 if (INSTALL_CUDART_LIB) #can be set manual by user
-    if (GMX_OPENMM OR GMX_GPU)
+    if (GMX_GPU)
         foreach(CUDA_LIB ${CUDA_LIBRARIES})
             string(REGEX MATCH "cudart" IS_CUDART ${CUDA_LIB})
             if(IS_CUDART) #libcuda should not be installed
@@ -103,6 +135,6 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
             endif()
         endforeach()
     else()
-        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_OPENMM or GMX_GPU")
+        message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
 endif ()

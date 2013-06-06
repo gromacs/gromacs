@@ -27,10 +27,10 @@
 
 /* List of kernels for this architecture with metadata about them */
 extern nb_kernel_info_t
-kernellist_avx_256_single[];
+    kernellist_avx_256_single[];
 
 /* Length of kernellist_c */
 extern int
-kernellist_avx_256_single_size;
+    kernellist_avx_256_single_size;
 
 #endif

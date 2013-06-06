@@ -9,16 +9,16 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_densmap</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_densmap computes 2D number-density maps.
+<tt>g_densmap</tt> computes 2D number-density maps.
 It can make planar and axial-radial density maps.
 The output <tt>.<a href="xpm.html">xpm</a></tt> file can be visualized with for instance xv
-and can be converted to postscript with <a href="xpm2ps.html">xpm2ps</a>.
-Optionally, output can be in text form to a .<a href="dat.html">dat</a> file.
+and can be converted to postscript with <tt><a href="xpm2ps.html">xpm2ps</a></tt>.
+Optionally, output can be in text form to a <tt>.<a href="dat.html">dat</a></tt> file with <tt>-od</tt>, instead of the usual <tt>.<a href="xpm.html">xpm</a></tt> file with <tt>-o</tt>.
 <p>
 The default analysis is a 2-D number-density <a href="map.html">map</a> for a selected
 group of atoms in the x-y plane.
@@ -60,13 +60,13 @@ with the option <tt>-dmax</tt>.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.02  </tt> </TD><TD> Grid size (nm) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-aver</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>z</tt> </TD><TD> The direction to average over: <tt>z</tt>, <tt>y</tt> or <tt>x</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Minimum coordinate for averaging </TD></TD>
@@ -75,8 +75,8 @@ with the option <tt>-dmax</tt>.
 <TR><TD ALIGN=RIGHT> <b><tt>-n2</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of grid cells in the second direction </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-amax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum axial distance from the center </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum radial distance </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mirror</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Add the mirror image below the axial axis </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sums</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print density sums (1D <a href="map.html">map</a>) to stdout </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mirror</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Add the mirror image below the axial axis </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sums</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print density sums (1D <a href="map.html">map</a>) to stdout </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-unit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>nm-3</tt> </TD><TD> Unit for the output: <tt>nm-3</tt>, <tt>nm-2</tt> or <tt>count</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Minimum density in output </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum density in output (0 means calculate it) </TD></TD>

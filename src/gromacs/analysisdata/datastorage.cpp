@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in datastorage.h and paralleloptions.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_analysisdata
  */
 #include "datastorage.h"
@@ -318,13 +322,13 @@ AnalysisDataStorage::Impl::endStorageLocation() const
 
 void
 AnalysisDataStorage::Impl::extendBuffer(AnalysisDataStorage *storage,
-                                        size_t newSize)
+                                        size_t               newSize)
 {
     frames_.reserve(newSize);
     while (frames_.size() < newSize)
     {
         frames_.push_back(StoredFrame(
-            new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
+                                  new AnalysisDataStorageFrame(storage, columnCount(), nextIndex_)));
         ++nextIndex_;
     }
     // The unused frame should not be included in the count.
@@ -348,7 +352,7 @@ AnalysisDataStorage::Impl::rotateBuffer()
     }
     firstFrameLocation_ = nextFirst;
     StoredFrame &prevFrame = frames_[prevFirst];
-    prevFrame.status = StoredFrame::eMissing;
+    prevFrame.status         = StoredFrame::eMissing;
     prevFrame.frame->header_ = AnalysisDataFrameHeader(nextIndex_ + 1, 0.0, 0.0);
     prevFrame.frame->clearValues();
     ++nextIndex_;
@@ -376,7 +380,7 @@ AnalysisDataStorage::Impl::notifyNextFrames(size_t firstLocation)
             return;
         }
     }
-    size_t i = firstLocation;
+    size_t i   = firstLocation;
     size_t end = endStorageLocation();
     while (i != end)
     {
@@ -425,7 +429,7 @@ AnalysisDataPointSetRef
 AnalysisDataStorageFrame::currentPoints() const
 {
     std::vector<AnalysisDataValue>::const_iterator begin = values_.begin();
-    std::vector<AnalysisDataValue>::const_iterator end = values_.end();
+    std::vector<AnalysisDataValue>::const_iterator end   = values_.end();
     while (begin != end && !begin->isSet())
     {
         ++begin;
@@ -436,7 +440,7 @@ AnalysisDataStorageFrame::currentPoints() const
     }
     int firstColumn = (begin != end) ? begin - values_.begin() : 0;
     return AnalysisDataPointSetRef(header_, firstColumn,
-                AnalysisDataValuesRef(begin, end));
+                                   AnalysisDataValuesRef(begin, end));
 }
 
 
@@ -578,7 +582,7 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
                        "startFrame() called twice for the same frame");
     GMX_RELEASE_ASSERT(storedFrame->frame->frameIndex() == header.index(),
                        "Inconsistent internal frame indexing");
-    storedFrame->status = Impl::StoredFrame::eStarted;
+    storedFrame->status         = Impl::StoredFrame::eStarted;
     storedFrame->frame->header_ = header;
     if (impl_->isMultipoint())
     {
@@ -598,7 +602,7 @@ AnalysisDataStorage::startFrame(int index, real x, real dx)
 AnalysisDataStorageFrame &
 AnalysisDataStorage::currentFrame(int index)
 {
-    int storageIndex = impl_->computeStorageLocation(index);
+    int                storageIndex = impl_->computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
     Impl::StoredFrame &storedFrame = impl_->frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),
@@ -614,7 +618,7 @@ AnalysisDataStorage::currentFrame(int index)
 void
 AnalysisDataStorage::finishFrame(int index)
 {
-    int storageIndex = impl_->computeStorageLocation(index);
+    int                storageIndex = impl_->computeStorageLocation(index);
     GMX_RELEASE_ASSERT(storageIndex >= 0, "Out of bounds frame index");
     Impl::StoredFrame &storedFrame = impl_->frames_[storageIndex];
     GMX_RELEASE_ASSERT(storedFrame.isStarted(),

@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in mock_datamodule.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include "mock_datamodule.h"
@@ -47,6 +51,7 @@
 
 #include "testutils/datatest.h"
 #include "testutils/refdata.h"
+#include "testutils/testasserts.h"
 
 namespace gmx
 {
@@ -111,11 +116,11 @@ class MockAnalysisDataModule::Impl
          */
         boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
         //! Flags that will be returned by the mock module.
-        int                     flags_;
+        int                                      flags_;
         //! Index of the current/next frame.
-        int                     frameIndex_;
+        int                                      frameIndex_;
         //! Number of columns in the source data (for reference checking only).
-        int                     columnCount_;
+        int                                      columnCount_;
 };
 
 namespace
@@ -126,7 +131,7 @@ namespace
  *
  * \ingroup module_testutils
  */
-void checkReferenceDataPoint(TestReferenceChecker *checker,
+void checkReferenceDataPoint(TestReferenceChecker    *checker,
                              const AnalysisDataValue &value)
 {
     TestReferenceChecker compound(checker->checkCompound("DataValue", NULL));
@@ -141,7 +146,7 @@ void checkReferenceDataPoint(TestReferenceChecker *checker,
     }
 }
 
-} // namespace
+}       // namespace
 
 MockAnalysisDataModule::Impl::Impl(int flags)
     : flags_(flags), frameIndex_(0), columnCount_(-1)
@@ -165,8 +170,8 @@ MockAnalysisDataModule::Impl::startReferenceFrame(
     EXPECT_TRUE(frameChecker_.get() == NULL);
     EXPECT_EQ(frameIndex_, header.index());
     frameChecker_.reset(new TestReferenceChecker(
-        rootChecker_->checkCompound("DataFrame",
-                                    formatString("Frame%d", frameIndex_).c_str())));
+                                rootChecker_->checkCompound("DataFrame",
+                                                            formatString("Frame%d", frameIndex_).c_str())));
     frameChecker_->checkReal(header.x(), "X");
 }
 
@@ -221,7 +226,7 @@ namespace
  * \param[in] header    Frame header to check.
  * \param[in] refFrame  Data to check against.
  */
-void checkHeader(const AnalysisDataFrameHeader &header,
+void checkHeader(const AnalysisDataFrameHeader    &header,
                  const AnalysisDataTestInputFrame &refFrame)
 {
     EXPECT_EQ(refFrame.index(), header.index());
@@ -236,16 +241,16 @@ void checkHeader(const AnalysisDataFrameHeader &header,
  * \param[in] refPoints    Data to check against.
  * \param[in] columnOffset Offset of first column of \p points in \p refPoints.
  */
-void checkPoints(const AnalysisDataPointSetRef &points,
+void checkPoints(const AnalysisDataPointSetRef       &points,
                  const AnalysisDataTestInputPointSet &refPoints,
-                 int columnOffset)
+                 int                                  columnOffset)
 {
     for (int i = 0; i < points.columnCount(); ++i)
     {
         EXPECT_FLOAT_EQ(refPoints.y(points.firstColumn() + columnOffset + i),
                         points.y(i))
-            << "  Column: " << i << " (+" << points.firstColumn() << ") / "
-            << points.columnCount();
+        << "  Column: " << i << " (+" << points.firstColumn() << ") / "
+        << points.columnCount();
     }
 }
 
@@ -255,7 +260,7 @@ void checkPoints(const AnalysisDataPointSetRef &points,
  * \param[in] frame     Frame to check.
  * \param[in] refFrame  Data to check against.
  */
-void checkFrame(const AnalysisDataFrameRef &frame,
+void checkFrame(const AnalysisDataFrameRef       &frame,
                 const AnalysisDataTestInputFrame &refFrame)
 {
     checkHeader(frame.header(), refFrame);
@@ -333,10 +338,10 @@ class StaticDataPointsChecker
         }
 
     private:
-        const AnalysisDataTestInputFrame *frame_;
+        const AnalysisDataTestInputFrame    *frame_;
         const AnalysisDataTestInputPointSet *points_;
-        int                     firstcol_;
-        int                     n_;
+        int                                  firstcol_;
+        int                                  n_;
 };
 
 /*! \internal \brief
@@ -416,22 +421,22 @@ class StaticDataPointsStorageChecker
             {
                 int   index = frameIndex_ - past;
                 SCOPED_TRACE(formatString("Checking storage of frame %d", index));
-                ASSERT_NO_THROW({
-                    AnalysisDataFrameRef frame = source_->getDataFrame(index);
-                    ASSERT_TRUE(frame.isValid());
-                    checkFrame(frame, data_->frame(index));
-                });
+                ASSERT_NO_THROW_GMX({
+                                        AnalysisDataFrameRef frame = source_->getDataFrame(index);
+                                        ASSERT_TRUE(frame.isValid());
+                                        checkFrame(frame, data_->frame(index));
+                                    });
             }
         }
 
     private:
-        AbstractAnalysisData   *source_;
+        AbstractAnalysisData        *source_;
         const AnalysisDataTestInput *data_;
-        int                     frameIndex_;
-        int                     storageCount_;
+        int                          frameIndex_;
+        int                          storageCount_;
 };
 
-} // anonymous namespace
+}       // anonymous namespace
 
 
 MockAnalysisDataModule::MockAnalysisDataModule(int flags)
@@ -453,7 +458,7 @@ int MockAnalysisDataModule::flags() const
 
 void
 MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
-                                         AbstractAnalysisData *source)
+                                         AbstractAnalysisData        *source)
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
@@ -551,7 +556,7 @@ MockAnalysisDataModule::setupStaticStorageCheck(
 
 void
 MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
-                                            AbstractAnalysisData *source)
+                                            AbstractAnalysisData       *source)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 
@@ -566,16 +571,16 @@ MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
     using ::testing::Invoke;
 
     Expectation dataStart = EXPECT_CALL(*this, dataStarted(source))
-        .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
+            .WillOnce(Invoke(impl_.get(), &Impl::startReferenceData));
     Expectation frameStart = EXPECT_CALL(*this, frameStarted(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::startReferenceFrame));
     Expectation pointsAdd = EXPECT_CALL(*this, pointsAdded(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::checkReferencePoints));
     Expectation frameFinish = EXPECT_CALL(*this, frameFinished(_))
-        .After(dataStart)
-        .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
+            .After(dataStart)
+            .WillRepeatedly(Invoke(impl_.get(), &Impl::finishReferenceFrame));
     EXPECT_CALL(*this, dataFinished())
         .After(frameStart, pointsAdd, frameFinish);
 }

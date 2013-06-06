@@ -1,39 +1,43 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in plot.h.
  *
  * \ingroup module_analysisdata
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 #include "gromacs/analysisdata/modules/plot.h"
 
@@ -64,7 +68,7 @@ namespace
 
 //! Enum values for plot formats.
 const char *const g_plotFormats[] = {
-    "none", "xmgrace", "xmgr", NULL
+    "none", "xmgrace", "xmgr"
 };
 
 } // namespace
@@ -110,20 +114,20 @@ class AbstractPlotModule::Impl
 
         void closeFile();
 
-        AnalysisDataPlotSettings settings_;
-        std::string             filename_;
-        FILE                   *fp_;
+        AnalysisDataPlotSettings  settings_;
+        std::string               filename_;
+        FILE                     *fp_;
 
-        bool                    bPlain_;
-        bool                    gOmitX_;
-        std::string             title_;
-        std::string             subtitle_;
-        std::string             xlabel_;
-        std::string             ylabel_;
+        bool                      bPlain_;
+        bool                      gOmitX_;
+        std::string               title_;
+        std::string               subtitle_;
+        std::string               xlabel_;
+        std::string               ylabel_;
         std::vector<std::string>  legend_;
-        char                    xformat_[15];
-        char                    yformat_[15];
-        real                    xscale_;
+        char                      xformat_[15];
+        char                      yformat_[15];
+        real                      xscale_;
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
@@ -303,13 +307,13 @@ AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
         }
         else
         {
-            time_unit_t time_unit
+            time_unit_t  time_unit
                 = static_cast<time_unit_t>(impl_->settings_.timeUnit() + 1);
             xvg_format_t xvg_format
                 = (impl_->settings_.plotFormat() > 0
-                    ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
-                    : exvgNONE);
-            output_env_t oenv;
+                   ? static_cast<xvg_format_t>(impl_->settings_.plotFormat())
+                   : exvgNONE);
+            output_env_t                  oenv;
             output_env_init(&oenv, 0, NULL, time_unit, FALSE, xvg_format, 0, 0);
             boost::shared_ptr<output_env> oenvGuard(oenv, &output_env_done);
             impl_->fp_ = xvgropen(impl_->filename_.c_str(), impl_->title_.c_str(),

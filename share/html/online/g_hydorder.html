@@ -1,0 +1,59 @@
+<HTML>
+<HEAD>
+<TITLE>g_hydorder</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_hydorder</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_hydorder computes the tetrahedrality order parameters around a 
+given atom. Both angle an distance order parameters are calculated. See
+P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.
+for more details.<br>This application calculates the orderparameter in a 3d-mesh in the box, and
+with 2 phases in the box gives the user the option to define a 2D interface in time
+separating the faces by specifying parameters -sgang1 and -sgang2 (It is important
+to select these judiciously)
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">    intf.xpm</a></tt> </TD><TD> Output, Mult. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-or</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="out.html">     raw.out</a></tt> </TD><TD> Output, Opt., Mult. </TD><TD> Generic output file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-Spect</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="out.html">intfspect.out</a></tt> </TD><TD> Output, Opt., Mult. </TD><TD> Generic output file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>z</tt> </TD><TD> Direction of the normal on the membrane: <tt>z</tt>, <tt>x</tt> or <tt>y</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Binwidth of box mesh </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sgang1</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> tetrahedral angle parameter in Phase 1 (bulk) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sgang2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> tetrahedral angle parameter in Phase 2 (bulk) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tblock</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of frames in one time-block average </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nlevel</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Number of Height levels in 2D - XPixMaps </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>

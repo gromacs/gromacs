@@ -19,6 +19,9 @@ INCLUDE_PATH           = @CMAKE_SOURCE_DIR@/src \
                          @CMAKE_SOURCE_DIR@/src/gromacs/legacyheaders
 HAVE_DOT               = @DOXYGEN_DOT_FOUND@
 DOT_PATH               = @DOXYGEN_DOT_PATH@
+MSCGEN_PATH            = @DOXYGEN_MSCGEN_PATH@
+
+ENABLED_SECTIONS       = @DOXYGEN_SECTIONS@
 
 # This is for thread_mpi to #ifdef some code out that should not be documented.
 PREDEFINED             = DOXYGEN

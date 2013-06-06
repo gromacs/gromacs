@@ -9,20 +9,20 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_current</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-This is a tool for calculating the current autocorrelation function, the correlation
+<tt>g_current</tt> is a tool for calculating the current autocorrelation function, the correlation
 of the rotational and translational dipole moment of the system, and the resulting static
-dielectric constant. To obtain a reasonable result the index group has to be neutral.
-Furthermore the routine is capable of extracting the static conductivity from the current 
-autocorrelation function, if velocities are given. Additionally an Einstein-Helfand fit also
-allows to get the static conductivity.<p>
+dielectric constant. To obtain a reasonable result, the index group has to be neutral.
+Furthermore, the routine is capable of extracting the static conductivity from the current 
+autocorrelation function, if velocities are given. Additionally, an Einstein-Helfand fit 
+can be used to obtain the static conductivity.<p>
 The flag <tt>-caf</tt> is for the output of the current autocorrelation function and <tt>-mc</tt> writes the
 correlation of the rotational and translational part of the dipole moment in the corresponding
-file. However this option is only available for trajectories containing velocities.
+file. However, this option is only available for trajectories containing velocities.
 Options <tt>-sh</tt> and <tt>-tr</tt> are responsible for the averaging and integration of the
 autocorrelation functions. Since averaging proceeds by shifting the starting point
 through the trajectory, the shift can be modified with <tt>-sh</tt> to enable the choice of uncorrelated
@@ -34,14 +34,14 @@ for calculating the static dielectric constant.
 Option <tt>-temp</tt> sets the temperature required for the computation of the static dielectric constant.
 <p>
 Option <tt>-<a href="eps.html">eps</a></tt> controls the dielectric constant of the surrounding medium for simulations using
-a Reaction Field or dipole corrections of the Ewald summation (<a href="eps.html">eps</a>=0 corresponds to
+a Reaction Field or dipole corrections of the Ewald summation (<tt>-<a href="eps.html">eps</a></tt>=0 corresponds to
 tin-foil boundary conditions).
 <p>
 <tt>-[no]nojump</tt> unfolds the coordinates to allow free diffusion. This is required to get a continuous
-translational dipole moment, required for the Einstein-Helfand fit. The resuls from the fit allow to
-determine the dielectric constant for system of charged molecules. However it is also possible to extract
+translational dipole moment, required for the Einstein-Helfand fit. The results from the fit allow
+the determination of the dielectric constant for system of charged molecules. However, it is also possible to extract
 the dielectric constant from the fluctuations of the total dipole moment in folded coordinates. But this
-options has to be used with care, since only very short time spans fulfill the approximation, that the density
+option has to be used with care, since only very short time spans fulfill the approximation that the density
 of the molecules is approximately constant and the averages are already converged. To be on the safe side,
 the dielectric constant should be calculated with the help of the Einstein-Helfand method for
 the translational part of the dielectric constant.
@@ -63,17 +63,17 @@ the translational part of the dielectric constant.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-sh</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1000</tt> </TD><TD> Shift of the frames for averaging the correlation functions and the mean-square displacement. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nojump</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Removes jumps of atoms across the box. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-eps</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Dielectric constant of the surrounding medium. <a href="eps.html">eps</a>=0.0 corresponds to <a href="eps.html">eps</a>=infinity (thinfoil boundary conditions). </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nojump</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Removes jumps of atoms across the box. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-eps</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Dielectric constant of the surrounding medium. The value zero corresponds to infinity (tin-foil boundary conditions). </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>100   </tt> </TD><TD> Begin of the fit of the straight line to the MSD of the translational fraction of the dipole moment. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-efit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400   </tt> </TD><TD> End of the fit of the straight line to the MSD of the translational fraction of the dipole moment. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bvit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> Begin of the fit of the current autocorrelation function to a*t^b. </TD></TD>

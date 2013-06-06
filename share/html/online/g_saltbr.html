@@ -9,19 +9,19 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_saltbr</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_saltbr plots the distance between all combination of charged groups
+<tt>g_saltbr</tt> plots the distance between all combination of charged groups
 as a function of time. The groups are combined in different ways.
-A minimum distance can be given, (eg. the cut-off), then groups
-that are never closer than that distance will not be plotted.<br>
-Output will be in a number of fixed filenames, min-min.<a href="xvg.html">xvg</a>, plus-min.<a href="xvg.html">xvg</a>
-and plus-plus.<a href="xvg.html">xvg</a>, or files for every individual ion-pair if the <tt>-sep</tt>
-option is selected. In this case files are named as <tt>sb-ResnameResnr-Atomnr</tt>.
-There may be many such files.
+A minimum distance can be given (i.e. a cut-off), such that groups
+that are never closer than that distance will not be plotted.<p>
+Output will be in a number of fixed filenames, <tt>min-min.<a href="xvg.html">xvg</a></tt>, <tt>plus-min.<a href="xvg.html">xvg</a></tt>
+and <tt>plus-plus.<a href="xvg.html">xvg</a></tt>, or files for every individual ion pair if the <tt>-sep</tt>
+option is selected. In this case, files are named as <tt>sb-(Resname)(Resnr)-(Atomnr)</tt>.
+There may be <b>many</b> such files.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -33,14 +33,14 @@ There may be many such files.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-t</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1000  </tt> </TD><TD> trunc distance </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use separate files for each interaction (may be MANY) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-t</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1000  </tt> </TD><TD> Groups that are never closer than this distance are not plotted </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use separate files for each interaction (may be MANY) </TD></TD>
 </TABLE>
 <P>
 <hr>

@@ -19,7 +19,7 @@ set(NGMX_PROGRAMS
 
 foreach(PROG ${NGMX_PROGRAMS})
         add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})
-        target_link_libraries(${PROG} libgromacs ${GMX_EXTRA_LIBRARIES} ${X11_LIBRARIES})        
+        target_link_libraries(${PROG} libgromacs ${GMX_EXTRA_LIBRARIES})
         gmx_add_man_page(${PROG})
         set_target_properties(${PROG} PROPERTIES OUTPUT_NAME "${PROG}${GMX_BINARY_SUFFIX}")
 endforeach(PROG) 

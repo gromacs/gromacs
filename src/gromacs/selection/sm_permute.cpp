@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements the \p permute selection modifier.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include "gromacs/legacyheaders/macros.h"
@@ -155,7 +159,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     snew(d->rperm, d->n);
     for (i = 0; i < d->n; ++i)
@@ -240,7 +244,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     if (d->p.nr % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
-                    gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
+                          gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
@@ -248,7 +252,7 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         for (j = 0; j < d->n; ++j)
         {
-            b = i + d->rperm[j];
+            b     = i + d->rperm[j];
             refid = d->p.m.refid[b];
             if (refid != -1)
             {

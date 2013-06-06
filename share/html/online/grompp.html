@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>grompp</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -25,37 +25,33 @@ Bonds and bond-angles can be converted into constraints, separately
 for hydrogens and heavy atoms.
 Then a coordinate file is read and velocities can be generated
 from a Maxwellian distribution if requested.
-grompp also reads parameters for the <a href="mdrun.html">mdrun</a> 
+<tt>grompp</tt> also reads parameters for the <tt><a href="mdrun.html">mdrun</a></tt> 
 (eg. number of MD steps, time step, cut-off), and others such as
 NEMD parameters, which are corrected so that the net acceleration
 is zero.
 Eventually a binary file is produced that can serve as the sole input
 file for the MD program.<p>
-grompp uses the atom names from the topology file. The atom names
+<tt>grompp</tt> uses the atom names from the topology file. The atom names
 in the coordinate file (option <tt>-c</tt>) are only read to generate
 warnings when they do not match the atom names in the topology.
 Note that the atom names are irrelevant for the simulation as
 only the atom types are used for generating interaction parameters.<p>
-grompp uses a built-in preprocessor to resolve includes, macros 
-etcetera. The preprocessor supports the following keywords:<br>
+<tt>grompp</tt> uses a built-in preprocessor to resolve includes, macros, 
+etc. The preprocessor supports the following keywords:<p>
 #ifdef VARIABLE<br>
 #ifndef VARIABLE<br>
 #else<br>
 #endif<br>
 #define VARIABLE<br>
 #undef VARIABLE<br>#include "filename"<br>
-#include &lt;filename&gt;<br>
+#include &lt;filename&gt;<p>
 The functioning of these statements in your topology may be modulated by
-using the following two flags in your <tt><a href="mdp.html">mdp</a></tt> file:<br>
-define = -DVARIABLE1 -DVARIABLE2<br>
-include = /home/john/doe<br>
+using the following two flags in your <tt>.<a href="mdp.html">mdp</a></tt> file:<p>
+<tt>define = -DVARIABLE1 -DVARIABLE2<br>
+include = -I/home/john/doe</tt><br>
 For further information a C-programming textbook may help you out.
 Specifying the <tt>-pp</tt> flag will get the pre-processed
 topology file written out so that you can verify its contents.<p>
-If your system does not have a c-preprocessor, you can still
-use grompp, but you do not have access to the features 
-from the cpp. Command line options to the c-preprocessor can be given
-in the <tt>.<a href="mdp.html">mdp</a></tt> file. See your local manual (man cpp).<p>
 When using position restraints a file with restraint coordinates
 can be supplied with <tt>-r</tt>, otherwise restraining will be done
 with respect to the conformation from the <tt>-c</tt> option.
@@ -64,40 +60,45 @@ can be supplied with <tt>-rb</tt>, otherwise they will be equal to
 those of the A topology.<p>
 Starting coordinates can be read from trajectory with <tt>-t</tt>.
 The last frame with coordinates and velocities will be read,
-unless the <tt>-time</tt> option is used.
+unless the <tt>-time</tt> option is used. Only if this information
+is absent will the coordinates in the <tt>-c</tt> file be used.
 Note that these velocities will not be used when <tt>gen_vel = yes</tt>
 in your <tt>.<a href="mdp.html">mdp</a></tt> file. An energy file can be supplied with
 <tt>-e</tt> to read Nose-Hoover and/or Parrinello-Rahman coupling
-variables. Note that for continuation it is better and easier to supply
-a checkpoint file directly to <a href="mdrun.html">mdrun</a>, since that always contains
-the complete state of the system and you don't need to generate
-a new run input file. Note that if you only want to change the number
-of run steps <a href="tpbconv.html">tpbconv</a> is more convenient than grompp.<p>
-Using the <tt>-morse</tt> option grompp can convert the harmonic bonds
-in your topology to morse potentials. This makes it possible to break
-bonds. For this option to work you need an extra file in your $GMXLIB
-with dissociation energy. Use the -debug option to get more information
-on the workings of this option (look for MORSE in the grompp.<a href="log.html">log</a> file
-using less or something like that).<p>
-By default all bonded interactions which have constant energy due to
+variables.<p>
+<tt>grompp</tt> can be used to restart simulations (preserving
+continuity) by supplying just a checkpoint file with <tt>-t</tt>.
+However, for simply changing the number of run steps to extend
+a run, using <tt><a href="tpbconv.html">tpbconv</a></tt> is more convenient than <tt>grompp</tt>.
+You then supply the old checkpoint file directly to <tt><a href="mdrun.html">mdrun</a></tt>
+with <tt>-cpi</tt>. If you wish to change the ensemble or things
+like output frequency, then supplying the checkpoint file to
+<tt>grompp</tt> with <tt>-t</tt> along with a new <tt>.<a href="mdp.html">mdp</a></tt> file
+with <tt>-f</tt> is the recommended procedure.<p>
+By default, all bonded interactions which have constant energy due to
 virtual site constructions will be removed. If this constant energy is
 not zero, this will result in a shift in the total energy. All bonded
 interactions can be kept by turning off <tt>-rmvsbds</tt>. Additionally,
 all constraints for distances which will be constant anyway because
 of virtual site constructions will be removed. If any constraints remain
-which involve virtual sites, a fatal error will result.<p>To verify your run input file, please make notice of all warnings
+which involve virtual sites, a fatal error will result.<p>To verify your run input file, please take note of all warnings
 on the screen, and correct where necessary. Do also look at the contents
-of the <tt>mdout.<a href="mdp.html">mdp</a></tt> file, this contains comment lines, as well as
-the input that <tt>grompp</tt> has read. If in doubt you can start grompp
+of the <tt>mdout.<a href="mdp.html">mdp</a></tt> file; this contains comment lines, as well as
+the input that <tt>grompp</tt> has read. If in doubt, you can start <tt>grompp</tt>
 with the <tt>-debug</tt> option which will give you more information
-in a file called grompp.<a href="log.html">log</a> (along with real debug info). Finally, you
+in a file called <tt>grompp.<a href="log.html">log</a></tt> (along with real debug info). You
 can see the contents of the run input file with the <tt><a href="gmxdump.html">gmxdump</a></tt>
-program.
+program. <tt><a href="gmxcheck.html">gmxcheck</a></tt> can be used to compare the contents of two
+run input files.<p>The <tt>-maxwarn</tt> option can be used to override warnings printed
+by <tt>grompp</tt> that otherwise halt output. In some cases, warnings are
+harmless, but usually they are not. The user is advised to carefully
+interpret the output messages before attempting to bypass them with
+this option.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Input, Opt. </TD><TD> grompp input file with MD parameters </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Input </TD><TD> grompp input file with MD parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">   mdout.mdp</a></tt> </TD><TD> Output </TD><TD> grompp input file with MD parameters </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> etc. </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> etc. </TD></TR>
@@ -108,20 +109,21 @@ program.
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Output </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-t</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Input, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edr.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Energy file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ref</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  rotref.trr</a></tt> </TD><TD> In/Out, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Take frame at or first after this time. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmvsbds</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Remove constant bonded interactions with virtual sites </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-maxwarn</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of allowed warnings during input processing </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]zero</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set parameters for bonded interactions without defaults to zero instead of generating an error </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]renum</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Renumber atomtypes and minimize number of atomtypes </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmvsbds</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Remove constant bonded interactions with virtual sites </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxwarn</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of allowed warnings during input processing. Not for normal use and may generate unstable systems </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]zero</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set parameters for bonded interactions without defaults to zero instead of generating an error </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]renum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Renumber atomtypes and minimize number of atomtypes </TD></TD>
 </TABLE>
 <P>
 <hr>

@@ -9,12 +9,12 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_traj</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_traj plots coordinates, velocities, forces and/or the box.
+<tt>g_traj</tt> plots coordinates, velocities, forces and/or the box.
 With <tt>-com</tt> the coordinates, velocities and forces are
 calculated for the center of mass of each group.
 When <tt>-mol</tt> is set, the numbers in the index file are
@@ -29,15 +29,16 @@ rotational kinetic energy of each group,
 provided velocities are present in the trajectory file.
 This implies <tt>-com</tt>.<p>
 Options <tt>-cv</tt> and <tt>-cf</tt> write the average velocities
-and average forces as temperature factors to a <a href="pdb.html">pdb</a> file with
-the average coordinates. The temperature factors are scaled such
-that the maximum is 10. The scaling can be changed with the option
-<tt>-scale</tt>. To get the velocities or forces of one
+and average forces as temperature factors to a <tt>.<a href="pdb.html">pdb</a></tt> file with
+the average coordinates or the coordinates at <tt>-ctime</tt>.
+The temperature factors are scaled such that the maximum is 10.
+The scaling can be changed with the option <tt>-scale</tt>.
+To get the velocities or forces of one
 frame set both <tt>-b</tt> and <tt>-e</tt> to the time of
 desired frame. When averaging over frames you might need to use
 the <tt>-nojump</tt> option to obtain the correct average coordinates.
 If you select either of these option the average force and velocity
-for each atom are written to an <a href="xvg.html">xvg</a> file as well
+for each atom are written to an <tt>.<a href="xvg.html">xvg</a></tt> file as well
 (specified with <tt>-av</tt> or <tt>-af</tt>).<p>
 Option <tt>-vd</tt> computes a velocity distribution, i.e. the
 norm of the vector is plotted. In addition in the same graph
@@ -67,27 +68,28 @@ the kinetic energy distribution is given.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot data for the com of each group </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Make molecules whole for COM </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mol</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Index contains molecule numbers iso atom numbers </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nojump</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove jumps of atoms across the box </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]x</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot X-component </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]y</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot Y-component </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]z</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot Z-component </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot data for the com of each group </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Make molecules whole for COM </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]mol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Index contains molecule numbers iso atom numbers </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nojump</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove jumps of atoms across the box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]x</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot X-component </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]y</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot Y-component </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]z</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Plot Z-component </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ng</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of groups to consider </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]len</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot vector length </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fp</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Full precision output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]len</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot vector length </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Full precision output </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Binwidth for velocity histogram (nm/ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Scale factor for <a href="pdb.html">pdb</a> output, 0 is autoscale </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ctime</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Use frame at this time for x in <tt>-cv</tt> and <tt>-cf</tt> instead of the average x </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Scale factor for <tt>.<a href="pdb.html">pdb</a></tt> output, 0 is autoscale </TD></TD>
 </TABLE>
 <P>
 <hr>

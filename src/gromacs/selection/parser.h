@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 2.5.  */
+/* A Bison parser, made by GNU Bison 2.6.2.  */
 
 /* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,18 +30,63 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+#ifndef _GMX_SEL_YY_PARSER_H
+# define _GMX_SEL_YY_PARSER_H
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 1
+#endif
+#if YYDEBUG
+extern int _gmx_sel_yydebug;
+#endif
 /* "%code requires" blocks.  */
+/* Line 2049 of yacc.c  */
+#line 1 "parser.y"
 
-/* Line 2068 of yacc.c  */
-#line 67 "parser.y"
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+/* Line 2049 of yacc.c  */
+#line 73 "parser.y"
 
 #include "parsetree.h"
 #include "selelem.h"
 
 
-
-/* Line 2068 of yacc.c  */
-#line 45 "parser.h"
+/* Line 2049 of yacc.c  */
+#line 90 "parser.h"
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -86,13 +131,11 @@
 #endif
 
 
-
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef union YYSTYPE
 {
-
-/* Line 2068 of yacc.c  */
-#line 72 "parser.y"
+/* Line 2049 of yacc.c  */
+#line 78 "parser.y"
 
     int                         i;
     real                        r;
@@ -108,9 +151,8 @@ typedef union YYSTYPE
     gmx::SelectionParserParameterListPointer    *plist;
 
 
-
-/* Line 2068 of yacc.c  */
-#line 114 "parser.h"
+/* Line 2049 of yacc.c  */
+#line 156 "parser.h"
 } YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
@@ -118,15 +160,15 @@ typedef union YYSTYPE
 #endif
 
 
-
-
-#ifndef YYPUSH_DECLS
-#  define YYPUSH_DECLS
-struct _gmx_sel_yypstate;
-typedef struct _gmx_sel_yypstate _gmx_sel_yypstate;
+#ifndef YYPUSH_MORE_DEFINED
+# define YYPUSH_MORE_DEFINED
 enum { YYPUSH_MORE = 4 };
+#endif
+
+typedef struct _gmx_sel_yypstate _gmx_sel_yypstate;
+
 #if defined __STDC__ || defined __cplusplus
-int _gmx_sel_yypush_parse (_gmx_sel_yypstate *yyps, int yypushed_char, YYSTYPE const *yypushed_val, void *scanner);
+int _gmx_sel_yypush_parse (_gmx_sel_yypstate *ps, int pushed_char, YYSTYPE const *pushed_val, void *scanner);
 #else
 int _gmx_sel_yypush_parse ();
 #endif
@@ -137,9 +179,9 @@ _gmx_sel_yypstate * _gmx_sel_yypstate_new (void);
 _gmx_sel_yypstate * _gmx_sel_yypstate_new ();
 #endif
 #if defined __STDC__ || defined __cplusplus
-void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *yyps);
+void _gmx_sel_yypstate_delete (_gmx_sel_yypstate *ps);
 #else
 void _gmx_sel_yypstate_delete ();
 #endif
-#endif
 
+#endif /* !_GMX_SEL_YY_PARSER_H  */

@@ -9,30 +9,30 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sorient</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_sorient analyzes solvent orientation around solutes.
+<tt>g_sorient</tt> analyzes solvent orientation around solutes.
 It calculates two angles between the vector from one or more
-reference positions to the first atom of each solvent molecule:<br>
-theta1: the angle with the vector from the first atom of the solvent
+reference positions to the first atom of each solvent molecule:<p>
+&theta;_1: the angle with the vector from the first atom of the solvent
 molecule to the midpoint between atoms 2 and 3.<br>
-theta2: the angle with the normal of the solvent plane, defined by the
-same three atoms, or when the option <tt>-v23</tt> is set
-the angle with the vector between atoms 2 and 3.<br>
+&theta;_2: the angle with the normal of the solvent plane, defined by the
+same three atoms, or, when the option <tt>-v23</tt> is set, 
+the angle with the vector between atoms 2 and 3.<p>
 The reference can be a set of atoms or
 the center of mass of a set of atoms. The group of solvent atoms should
 consist of 3 atoms per solvent molecule.
 Only solvent molecules between <tt>-rmin</tt> and <tt>-rmax</tt> are
 considered for <tt>-o</tt> and <tt>-no</tt> each frame.<p>
-<tt>-o</tt>: distribtion of cos(theta1) for rmin&lt;=r&lt;=rmax.<p>
-<tt>-no</tt>: distribution of cos(theta2) for rmin&lt;=r&lt;=rmax.<p>
-<tt>-ro</tt>: &lt;cos(theta1)&gt; and &lt;3cos^2(theta2)-1&gt; as a function of the
+<tt>-o</tt>: distribtion of cos(&theta;_1) for rmin&lt;=r&lt;=rmax.<p>
+<tt>-no</tt>: distribution of cos(&theta;_2) for rmin&lt;=r&lt;=rmax.<p>
+<tt>-ro</tt>: <cos(&theta;_1)> and <3cos(^2&theta;_2)-1> as a function of the
 distance.<p>
 <tt>-co</tt>: the sum over all solvent molecules within distance r
-of cos(theta1) and 3cos^2(theta2)-1 as a function of r.<p>
+of cos(&theta;_1) and 3cos(^2(&theta;_2)-1) as a function of r.<p>
 <tt>-rc</tt>: the distribution of the solvent molecules as a function of r
 <P>
 <H3>Files</H3>
@@ -51,21 +51,21 @@ of cos(theta1) and 3cos^2(theta2)-1 as a function of r.<p>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the center of mass as the reference postion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v23</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the vector between atoms 2 and 3 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]com</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the center of mass as the reference postion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v23</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the vector between atoms 2 and 3 </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Minimum distance (nm) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> Maximum distance (nm) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-cbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.02  </tt> </TD><TD> Binwidth for the cosine </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.02  </tt> </TD><TD> Binwidth for r (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules. </TD></TD>
 </TABLE>
 <P>
 <hr>

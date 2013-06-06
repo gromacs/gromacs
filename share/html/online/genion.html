@@ -9,15 +9,15 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>genion</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-genion replaces solvent molecules by monoatomic ions at
+<tt>genion</tt> replaces solvent molecules by monoatomic ions at
 the position of the first atoms with the most favorable electrostatic
 potential or at random. The potential is calculated on all atoms, using
-normal GROMACS particle based methods (in contrast to other methods
+normal GROMACS particle-based methods (in contrast to other methods
 based on solving the Poisson-Boltzmann equation).
 The potential is recalculated after every ion insertion.
 If specified in the run input file, a reaction field, shift function
@@ -28,14 +28,17 @@ should have the same number of atoms.
 The user should add the ion molecules to the topology file or use
 the <tt>-p</tt> option to automatically modify the topology.<p>
 The ion molecule type, residue and atom names in all force fields
-are the capitalized element names without sign. Ions which can have
-multiple charge states get the multiplicilty added, without sign,
-for the uncommon states only.<p>
+are the capitalized element names without sign. This molecule name
+should be given with <tt>-pname</tt> or <tt>-nname</tt>, and the
+<tt>[molecules]</tt> section of your topology updated accordingly,
+either by hand or with <tt>-p</tt>. Do not use an atom name instead!
+<p>Ions which can have multiple charge states get the multiplicity
+added, without sign, for the uncommon states only.<p>
 With the option <tt>-pot</tt> the potential can be written as B-factors
-in a <a href="pdb.html">pdb</a> file (for visualisation using e.g. rasmol).
+in a <tt>.<a href="pdb.html">pdb</a></tt> file (for visualisation using e.g. Rasmol).
 The unit of the potential is 1000 kJ/(mol e), the scaling be changed
 with the <tt>-scale</tt> option.<p>
-For larger ions, e.g. sulfate we recommended to use <a href="genbox.html">genbox</a>.
+For larger ions, e.g. sulfate we recommended using <tt><a href="genbox.html">genbox</a></tt>.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -52,8 +55,8 @@ For larger ions, e.g. sulfate we recommended to use <a href="genbox.html">genbox
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of positive ions </TD></TD>
@@ -63,11 +66,11 @@ For larger ions, e.g. sulfate we recommended to use <a href="genbox.html">genbox
 <TR><TD ALIGN=RIGHT> <b><tt>-nname</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>CL</tt> </TD><TD> Name of the negative ion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nq</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Charge of the negative ion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.6   </tt> </TD><TD> Minimum distance between ions </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]random</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use random placement of ions instead of based on potential. The rmin option should still work </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]random</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use random placement of ions instead of based on potential. The rmin option should still work </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1993</tt> </TD><TD> Seed for random number generator </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Scaling factor for the potential for -pot </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-conc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input <a href="tpr.html">tpr</a> file. Overrides the -np and  nn options. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]neutral</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Scaling factor for the potential for <tt>-pot</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-conc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input <tt>.<a href="tpr.html">tpr</a></tt> file. Overrides the <tt>-np</tt> and <tt>-nn</tt> options. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]neutral</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated. </TD></TD>
 </TABLE>
 <P>
 <H3>Known problems</H3>

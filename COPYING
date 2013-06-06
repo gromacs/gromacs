@@ -13,9 +13,8 @@ This file contains the licenses for:
  5. thread_mpi
  6. Blas
  7. Lapack
- 8. OpenMM (binary distributions only)
- 9. Subset of Boost C++ library
-10. Google Test and Google Mock
+ 8. Subset of Boost C++ library
+ 9. Google Test and Google Mock
 
 1. GROMACS
 ====================================
@@ -523,7 +522,7 @@ BLAS does not come with a formal named "license", but a general statement that
 via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software
 packages (and has been). We only ask that proper credit be given to the authors."
 
-While the rest of Gromacs is GPL, we think it's only fair to give you the same rights to
+While the rest of Gromacs is LGPL, we think it's only fair to give you the same rights to
 our modified BLAS files as the original netlib versions, so do what you want with them.
 However, be warned that we have only tested that they to the right thing in the cases used
 in Gromacs (primarily full & sparse matrix diagonalization), so in most cases it is a much
@@ -548,7 +547,7 @@ LAPACK does not come with a formal named "license", but a general statement sayi
 via anonymous ftp and the World Wide Web. Thus, it can be included in commercial software
 packages (and has been). We only ask that proper credit be given to the authors."
 
-While the rest of Gromacs is GPL, we think it's only fair to give you the same rights to
+While the rest of Gromacs is LGPL, we think it's only fair to give you the same rights to
 our modified LAPACK files as the original netlib versions, so do what you want with them.
 
 However, be warned that we have only tested that they to the right thing in the cases used
@@ -557,13 +556,8 @@ better idea to use the full reference implementation.
 
 Erik Lindahl, 2008-10-07.
 
-8. OpenMM (binary distributions only)
-=====================================
 
-There are several licenses which cover different parts of OpenMM as described
-in the file openmm/licenses/Licenses.txt accompanying the binary distribution.
-
-9. Subset of Boost C++ library
+8. Subset of Boost C++ library
 ==============================
 Files: src/external/boost/boost/*
 
@@ -591,7 +585,7 @@ FOR ANY DAMAGES OR OTHER LIABILITY, WHETHER IN CONTRACT, TORT OR OTHERWISE,
 ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
 
-10. Google Test and Google Mock
+ 9. Google Test and Google Mock
 ===============================
 Files: src/external/gmock-1.6.0/*
 

@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief API for handling index files and index groups.
@@ -50,12 +54,14 @@
  * Some of the checking functions can be useful outside the selection engine to
  * check the validity of input groups.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inlibraryapi
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_INDEXUTIL_H
 #define GMX_SELECTION_INDEXUTIL_H
+
+#include <string>
 
 #include "../legacyheaders/typedefs.h"
 
@@ -85,8 +91,6 @@ typedef struct gmx_ana_index_t
     int                 isize;
     /** List of atoms. */
     atom_id            *index;
-    /** Group name. */
-    char               *name;
     /** Number of items allocated for \p index. */
     int                 nalloc_index;
 } gmx_ana_index_t;
@@ -187,9 +191,6 @@ typedef struct gmx_ana_indexmap_t
 /*! \name Functions for handling gmx_ana_indexgrps_t
  */
 /*@{*/
-/** Allocate memory for index groups. */
-void
-gmx_ana_indexgrps_alloc(gmx_ana_indexgrps_t **g, int ngrps);
 /** Reads index groups from a file or constructs them from topology. */
 void
 gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
@@ -197,9 +198,6 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
 /** Frees memory allocated for index groups. */
 void
 gmx_ana_indexgrps_free(gmx_ana_indexgrps_t *g);
-/** Create a deep copy of \c gmx_ana_indexgrps_t. */
-void
-gmx_ana_indexgrps_clone(gmx_ana_indexgrps_t **dest, gmx_ana_indexgrps_t *src);
 /** Returns true if the index group structure is emtpy. */
 bool
 gmx_ana_indexgrps_is_empty(gmx_ana_indexgrps_t *g);
@@ -209,10 +207,12 @@ gmx_ana_index_t *
 gmx_ana_indexgrps_get_grp(gmx_ana_indexgrps_t *g, int n);
 /** Extracts a single index group. */
 bool
-gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, int n);
+gmx_ana_indexgrps_extract(gmx_ana_index_t *dest, std::string *destName,
+                          gmx_ana_indexgrps_t *src, int n);
 /** Finds and extracts a single index group by name. */
 bool
-gmx_ana_indexgrps_find(gmx_ana_index_t *dest, gmx_ana_indexgrps_t *src, char *name);
+gmx_ana_indexgrps_find(gmx_ana_index_t *dest, std::string *destName,
+                       gmx_ana_indexgrps_t *src, const char *name);
 
 /** Writes out a list of index groups. */
 void
@@ -233,11 +233,10 @@ void
 gmx_ana_index_clear(gmx_ana_index_t *g);
 /** Constructs a \c gmx_ana_index_t from given values. */
 void
-gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, char *name,
-                  int nalloc);
+gmx_ana_index_set(gmx_ana_index_t *g, int isize, atom_id *index, int nalloc);
 /** Creates a simple index group from the first to the \p natoms'th atom. */
 void
-gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms, char *name);
+gmx_ana_index_init_simple(gmx_ana_index_t *g, int natoms);
 /** Frees memory allocated for an index group. */
 void
 gmx_ana_index_deinit(gmx_ana_index_t *g);
@@ -247,11 +246,8 @@ gmx_ana_index_copy(gmx_ana_index_t *dest, gmx_ana_index_t *src, bool bAlloc);
 
 /** Writes out the contents of a index group. */
 void
-gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int i, int maxn);
+gmx_ana_index_dump(FILE *fp, gmx_ana_index_t *g, int maxn);
 
-/** Checks whether all indices are between 0 and \p natoms. */
-void
-gmx_ana_index_check(gmx_ana_index_t *g, int natoms);
 /** Checks whether an index group is sorted. */
 bool
 gmx_ana_index_check_sorted(gmx_ana_index_t *g);

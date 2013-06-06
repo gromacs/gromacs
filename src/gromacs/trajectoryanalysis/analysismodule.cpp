@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in analysismodule.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_trajectoryanalysis
  */
 #include "gromacs/trajectoryanalysis/analysismodule.h"
@@ -100,23 +104,23 @@ class TrajectoryAnalysisModuleData::Impl
     public:
         //! Container that associates a data handle to its AnalysisData object.
         typedef std::map<const AnalysisData *, AnalysisDataHandle>
-                HandleContainer;
+            HandleContainer;
 
         //! \copydoc TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData()
-        Impl(TrajectoryAnalysisModule *module,
+        Impl(TrajectoryAnalysisModule          *module,
              const AnalysisDataParallelOptions &opt,
-             const SelectionCollection &selections);
+             const SelectionCollection         &selections);
 
         //! Keeps a data handle for each AnalysisData object.
-        HandleContainer         handles_;
+        HandleContainer            handles_;
         //! Stores thread-local selections.
         const SelectionCollection &selections_;
 };
 
 TrajectoryAnalysisModuleData::Impl::Impl(
-        TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModule          *module,
         const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+        const SelectionCollection         &selections)
     : selections_(selections)
 {
     TrajectoryAnalysisModule::Impl::AnalysisDatasetContainer::const_iterator i;
@@ -133,9 +137,9 @@ TrajectoryAnalysisModuleData::Impl::Impl(
  */
 
 TrajectoryAnalysisModuleData::TrajectoryAnalysisModuleData(
-        TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModule          *module,
         const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+        const SelectionCollection         &selections)
     : impl_(new Impl(module, opt, selections))
 {
 }
@@ -179,10 +183,10 @@ SelectionList
 TrajectoryAnalysisModuleData::parallelSelections(const SelectionList &selections)
 {
     // TODO: Consider an implementation that does not allocate memory every time.
-    SelectionList newSelections;
+    SelectionList                 newSelections;
     newSelections.reserve(selections.size());
     SelectionList::const_iterator i = selections.begin();
-    for ( ; i != selections.end(); ++i)
+    for (; i != selections.end(); ++i)
     {
         newSelections.push_back(parallelSelection(*i));
     }
@@ -215,17 +219,17 @@ class TrajectoryAnalysisModuleDataBasic : public TrajectoryAnalysisModuleData
          * \param[in] opt        Data parallelization options.
          * \param[in] selections Thread-local selection collection.
          */
-        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModuleDataBasic(TrajectoryAnalysisModule          *module,
                                           const AnalysisDataParallelOptions &opt,
-                                          const SelectionCollection &selections);
+                                          const SelectionCollection         &selections);
 
         virtual void finish();
 };
 
 TrajectoryAnalysisModuleDataBasic::TrajectoryAnalysisModuleDataBasic(
-        TrajectoryAnalysisModule *module,
+        TrajectoryAnalysisModule          *module,
         const AnalysisDataParallelOptions &opt,
-        const SelectionCollection &selections)
+        const SelectionCollection         &selections)
     : TrajectoryAnalysisModuleData(module, opt, selections)
 {
 }
@@ -237,7 +241,7 @@ TrajectoryAnalysisModuleDataBasic::finish()
     finishDataHandles();
 }
 
-} // namespace
+}   // namespace
 
 
 /********************************************************************
@@ -257,20 +261,20 @@ TrajectoryAnalysisModule::~TrajectoryAnalysisModule()
 
 
 void TrajectoryAnalysisModule::optionsFinished(
-        Options * /*options*/,
+        Options                    * /*options*/,
         TrajectoryAnalysisSettings * /*settings*/)
 {
 }
 
 
-void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe &/*fr*/)
+void TrajectoryAnalysisModule::initAfterFirstFrame(const t_trxframe & /*fr*/)
 {
 }
 
 
 TrajectoryAnalysisModuleDataPointer
 TrajectoryAnalysisModule::startFrames(const AnalysisDataParallelOptions &opt,
-                                      const SelectionCollection &selections)
+                                      const SelectionCollection         &selections)
 {
     return TrajectoryAnalysisModuleDataPointer(
             new TrajectoryAnalysisModuleDataBasic(this, opt, selections));
@@ -332,7 +336,7 @@ AbstractAnalysisData &TrajectoryAnalysisModule::datasetFromName(const char *name
 
 
 void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
-                                                    const char *name)
+                                                    const char           *name)
 {
     // TODO: Strong exception safety should be possible to implement.
     GMX_RELEASE_ASSERT(impl_->datasets_.find(name) == impl_->datasets_.end(),
@@ -343,7 +347,7 @@ void TrajectoryAnalysisModule::registerBasicDataset(AbstractAnalysisData *data,
 
 
 void TrajectoryAnalysisModule::registerAnalysisDataset(AnalysisData *data,
-                                                       const char *name)
+                                                       const char   *name)
 {
     // TODO: Strong exception safety should be possible to implement.
     registerBasicDataset(data, name);

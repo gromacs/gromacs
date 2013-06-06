@@ -9,25 +9,25 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dipoles</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_dipoles computes the total dipole plus fluctuations of a simulation
+<tt>g_dipoles</tt> computes the total dipole plus fluctuations of a simulation
 system. From this you can compute e.g. the dielectric constant for
-low dielectric media.
+low-dielectric media.
 For molecules with a net charge, the net charge is subtracted at
 center of mass of the molecule.<p>
-The file Mtot.<a href="xvg.html">xvg</a> contains the total dipole moment of a frame, the
+The file <tt>Mtot.<a href="xvg.html">xvg</a></tt> contains the total dipole moment of a frame, the
 components as well as the norm of the vector.
-The file aver.<a href="xvg.html">xvg</a> contains &lt; |Mu|^2 &gt; and |&lt; Mu &gt;|^2 during the
+The file <tt>aver.<a href="xvg.html">xvg</a></tt> contains <|&mu;|^2> and |<&mu;>|^2 during the
 simulation.
-The file dipdist.<a href="xvg.html">xvg</a> contains the distribution of dipole moments during
+The file <tt>dipdist.<a href="xvg.html">xvg</a></tt> contains the distribution of dipole moments during
 the simulation
-The mu_max is used as the highest value in the distribution graph.<p>
-Furthermore the dipole autocorrelation function will be computed when
-option -corr is used. The output file name is given with the <tt>-c</tt>
+The value of <tt>-mumax</tt> is used as the highest value in the distribution graph.<p>
+Furthermore, the dipole autocorrelation function will be computed when
+option <tt>-corr</tt> is used. The output file name is given with the <tt>-c</tt>
 option.
 The correlation functions can be averaged over all molecules
 (<tt>mol</tt>), plotted per molecule separately (<tt>molsep</tt>)
@@ -36,17 +36,17 @@ or it can be computed over the total dipole moment of the simulation box
 Option <tt>-g</tt> produces a plot of the distance dependent Kirkwood
 G-factor, as well as the average cosine of the angle between the dipoles
 as a function of the distance. The plot also includes gOO and hOO
-according to Nymand & Linse, JCP 112 (2000) pp 6386-6395. In the same plot
+according to Nymand & Linse, J. Chem. Phys. 112 (2000) pp 6386-6395. In the same plot, 
 we also include the energy per scale computed by taking the inner product of
 the dipoles divided by the distance to the third power.<p>
 <p>
 EXAMPLES<p>
-g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft<p>
+<tt>g_dipoles -corr mol -P 1 -o dip_sqr -mu 2.273 -mumax 5.0</tt><p>
 This will calculate the autocorrelation function of the molecular
 dipoles using a first order Legendre polynomial of the angle of the
 dipole vector and itself a time t later. For this calculation 1001
-frames will be used. Further the dielectric constant will be calculated
-using an epsilonRF of infinity (default), temperature of 300 K (default) and
+frames will be used. Further, the dielectric constant will be calculated
+using an <tt>-epsilonRF</tt> of infinity (default), temperature of 300 K (default) and
 an average dipole moment of the molecule of 2.273 (SPC). For the
 distribution function a maximum of 5.0 will be used.
 <P>
@@ -74,35 +74,35 @@ distribution function a maximum of 5.0 will be used.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <tt>.<a href="xvg.html">xvg</a></tt>, <tt>.<a href="xpm.html">xpm</a></tt>, <tt>.<a href="eps.html">eps</a></tt> and <tt>.<a href="pdb.html">pdb</a></tt> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-mu</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> dipole of a single molecule (in Debye) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-mumax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>5     </tt> </TD><TD> max dipole in Debye (for histrogram) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-epsilonRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> epsilon of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-mumax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>5     </tt> </TD><TD> max dipole in Debye (for histogram) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-epsilonRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> &epsilon; of the reaction field used during the simulation, needed for dielectric constant calculation. WARNING: 0.0 means infinity (default) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip steps in the output (but not in the computations) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> Average temperature of the simulation (needed for dielectric constant calculation) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-corr</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Correlation function to calculate: <tt>none</tt>, <tt>mol</tt>, <tt>molsep</tt> or <tt>total</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Calculate |cos theta| between all pairs of molecules. May be slow </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ncos</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Must be 1 or 2. Determines whether the &lt;cos&gt; is computed between all mole cules in one group, or between molecules in two different groups. This turns on the -gkr flag. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Calculate |cos(&theta;)| between all pairs of molecules. May be slow </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncos</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Must be 1 or 2. Determines whether the <cos(&theta;)> is computed between all molecules in one group, or between molecules in two different groups. This turns on the <tt>-g</tt> flag. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-axis</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>Z</tt> </TD><TD> Take the normal on the computational box in direction X, Y or Z. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Divide the box in #nr slices. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Divide the box into this number of slices. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-gkratom</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-gkratom2</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Same as previous option in case ncos = 2, i.e. dipole interaction between two groups of molecules </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-rcmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterium based on the box length will be used. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]phi</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the <a href="xpm.html">xpm</a> file from the -cmap option. By default the cosine of the angle between the dipoles is plotted. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rcmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum distance to use in the dipole orientation distribution (with ncos == 2). If zero, a criterion based on the box length will be used. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]phi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the <tt>.<a href="xpm.html">xpm</a></tt> file from the <tt>-cmap</tt> option. By default the cosine of the angle between the dipoles is plotted. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>20</tt> </TD><TD> Number of colors in the cmap output </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ndegrees</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>90</tt> </TD><TD> Number of divisions on the y-axis in the camp output (for 180 degrees) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ndegrees</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>90</tt> </TD><TD> Number of divisions on the <it>y</it>-axis in the cmap output (for 180 degrees) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt>, <tt>exp9</tt> or <tt>erffit</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip this many points in the output file of correlation functions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is until the end </TD></TD>
 </TABLE>

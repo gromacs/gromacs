@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements functions and classes in stringutil.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
 #include "stringutil.h"
@@ -77,11 +81,11 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
 
 std::string formatString(const char *fmt, ...)
 {
-    va_list ap;
-    char staticBuf[1024];
-    int length = 1024;
+    va_list           ap;
+    char              staticBuf[1024];
+    int               length = 1024;
     std::vector<char> dynamicBuf;
-    char *buf = staticBuf;
+    char             *buf = staticBuf;
 
     // TODO: There may be a better way of doing this on Windows, Microsoft
     // provides their own way of doing things...
@@ -147,10 +151,10 @@ replaceInternal(const std::string &input, const char *from, const char *to,
 {
     GMX_RELEASE_ASSERT(from != NULL && to != NULL,
                        "Replacement strings must not be NULL");
-    size_t matchLength = std::strlen(from);
+    size_t      matchLength = std::strlen(from);
     std::string result;
-    size_t inputPos = 0;
-    size_t matchPos = input.find(from);
+    size_t      inputPos = 0;
+    size_t      matchPos = input.find(from);
     while (matchPos < input.length())
     {
         size_t matchEnd = matchPos + matchLength;
@@ -173,7 +177,7 @@ replaceInternal(const std::string &input, const char *from, const char *to,
     return result;
 }
 
-} // namespace
+}   // namespace
 
 std::string
 replaceAll(const std::string &input, const char *from, const char *to)
@@ -207,7 +211,7 @@ size_t
 TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
 {
     size_t inputLength = std::strlen(input);
-    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Ignore leading whitespace if necessary.
     if (!bFirstLine || settings_.bStripLeadingWhitespace_)
     {
@@ -218,7 +222,7 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
         }
     }
 
-    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    int    indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     size_t lastAllowedBreakPoint
         = (settings_.lineLength() > 0
            ? std::min(lineStart + settings_.lineLength() - indent, inputLength)
@@ -229,7 +233,7 @@ TextLineWrapper::findNextLine(const char *input, size_t lineStart) const
     do
     {
         const char *nextBreakPtr = std::strpbrk(input + lineEnd, " \n");
-        size_t nextBreak
+        size_t      nextBreak
             = (nextBreakPtr != NULL ? nextBreakPtr - input : inputLength);
         if (nextBreak > lastAllowedBreakPoint && lineEnd > lineStart)
         {
@@ -252,7 +256,7 @@ TextLineWrapper::formatLine(const std::string &input,
                             size_t lineStart, size_t lineEnd) const
 {
     size_t inputLength = input.length();
-    bool bFirstLine = (lineStart == 0 || input[lineStart - 1] == '\n');
+    bool   bFirstLine  = (lineStart == 0 || input[lineStart - 1] == '\n');
     // Strip leading whitespace if necessary.
     if (!bFirstLine || settings_.bStripLeadingWhitespace_)
     {
@@ -262,7 +266,7 @@ TextLineWrapper::formatLine(const std::string &input,
             return std::string();
         }
     }
-    int indent = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
+    int  indent        = (bFirstLine ? settings_.firstLineIndent() : settings_.indent());
     bool bContinuation = (lineEnd < inputLength && input[lineEnd - 1] != '\n');
     // Strip trailing whitespace.
     while (lineEnd > lineStart && std::isspace(input[lineEnd - 1]))
@@ -270,7 +274,7 @@ TextLineWrapper::formatLine(const std::string &input,
         --lineEnd;
     }
 
-    size_t lineLength = lineEnd - lineStart;
+    size_t      lineLength = lineEnd - lineStart;
     std::string result(indent, ' ');
     result.append(input, lineStart, lineLength);
     if (bContinuation && settings_.continuationChar_ != '\0')
@@ -285,8 +289,8 @@ std::string
 TextLineWrapper::wrapToString(const std::string &input) const
 {
     std::string result;
-    size_t lineStart = 0;
-    size_t length = input.length();
+    size_t      lineStart = 0;
+    size_t      length    = input.length();
     while (lineStart < length)
     {
         size_t nextLineStart = findNextLine(input, lineStart);
@@ -305,8 +309,8 @@ std::vector<std::string>
 TextLineWrapper::wrapToVector(const std::string &input) const
 {
     std::vector<std::string> result;
-    size_t lineStart = 0;
-    size_t length = input.length();
+    size_t                   lineStart = 0;
+    size_t                   length    = input.length();
     while (lineStart < length)
     {
         size_t nextLineStart = findNextLine(input, lineStart);

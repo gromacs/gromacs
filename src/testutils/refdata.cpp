@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes and functions from refdata.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_testutils
  */
 #include "refdata.h"
@@ -183,7 +187,7 @@ const xmlChar * const TestReferenceData::Impl::cRootNodeName =
 TestReferenceData::Impl::Impl(ReferenceDataMode mode)
     : refDoc_(NULL), bWrite_(false), bInUse_(false)
 {
-    std::string dirname = getReferenceDataPath();
+    std::string dirname  = getReferenceDataPath();
     std::string filename = TestFileManager::getTestSpecificFileName(".xml");
     fullFilename_ = Path::join(dirname, filename);
 
@@ -281,11 +285,11 @@ class TestReferenceChecker::Impl
         //! String constant for naming XML attribute for value identifiers.
         static const xmlChar * const cIdAttrName;
         //! String constant for naming compounds for vectors.
-        static const char * const cVectorType;
+        static const char * const    cVectorType;
         //! String constant for naming compounds for sequences.
-        static const char * const cSequenceType;
+        static const char * const    cSequenceType;
         //! String constant for value identifier for sequence length.
-        static const char * const cSequenceLengthName;
+        static const char * const    cSequenceLengthName;
 
         //! Creates a checker that does nothing.
         explicit Impl(bool bWrite);
@@ -418,11 +422,11 @@ const xmlChar * const TestReferenceChecker::Impl::cRealNodeName =
     (const xmlChar *)"Real";
 const xmlChar * const TestReferenceChecker::Impl::cIdAttrName =
     (const xmlChar *)"Name";
-const char * const TestReferenceChecker::Impl::cVectorType =
+const char * const    TestReferenceChecker::Impl::cVectorType =
     "Vector";
-const char * const TestReferenceChecker::Impl::cSequenceType =
+const char * const    TestReferenceChecker::Impl::cSequenceType =
     "Sequence";
-const char * const TestReferenceChecker::Impl::cSequenceLengthName =
+const char * const    TestReferenceChecker::Impl::cSequenceLengthName =
     "Length";
 
 
@@ -460,7 +464,7 @@ xmlNodePtr
 TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
 {
     const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
-    xmlNodePtr node = nextSearchNode_;
+    xmlNodePtr     node  = nextSearchNode_;
     if (node == NULL)
     {
         return NULL;
@@ -507,7 +511,7 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id
             if (node != NULL && id != NULL)
             {
                 const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
-                xmlAttrPtr prop = xmlNewProp(node, cIdAttrName, xmlId);
+                xmlAttrPtr     prop  = xmlNewProp(node, cIdAttrName, xmlId);
                 if (prop == NULL)
                 {
                     xmlFreeNode(node);
@@ -561,7 +565,7 @@ TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
     }
     else
     {
-        xmlChar *refXmlValue = xmlNodeGetContent(node);
+        xmlChar    *refXmlValue = xmlNodeGetContent(node);
         std::string refValue(reinterpret_cast<const char *>(refXmlValue));
         xmlFree(refXmlValue);
         return refValue;
@@ -616,7 +620,7 @@ TestReferenceChecker TestReferenceData::rootChecker()
     if (!isWriteMode() && !impl_->bInUse_ && impl_->refDoc_ == NULL)
     {
         ADD_FAILURE() << "Reference data file not found: "
-                      << impl_->fullFilename_;
+        << impl_->fullFilename_;
     }
     impl_->bInUse_ = true;
     if (impl_->refDoc_ == NULL)
@@ -646,7 +650,7 @@ TestReferenceChecker::TestReferenceChecker(const TestReferenceChecker &other)
 
 
 TestReferenceChecker &
-TestReferenceChecker::operator =(const TestReferenceChecker &other)
+TestReferenceChecker::operator=(const TestReferenceChecker &other)
 {
     impl_.reset(new Impl(*other.impl_));
     return *this;
@@ -670,14 +674,14 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
     {
         return bPresent;
     }
-    xmlNodePtr node = impl_->findNode(NULL, id);
-    bool bFound = (node != NULL);
+    xmlNodePtr node   = impl_->findNode(NULL, id);
+    bool       bFound = (node != NULL);
     if (bFound != bPresent)
     {
         ADD_FAILURE() << "Mismatch while checking reference data item'"
-                          << impl_->appendPath(id) << "'\n"
-                      << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
-                      << "  Actual: " << (bFound ? "it is present." : "it is absent.");
+        << impl_->appendPath(id) << "'\n"
+        << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
+        << "  Actual: " << (bFound ? "it is present." : "it is absent.");
     }
     if (bFound && bPresent)
     {
@@ -696,7 +700,7 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     const xmlChar *xmlNodeName = reinterpret_cast<const xmlChar *>(type);
-    xmlNodePtr newNode = impl_->findOrCreateNode(xmlNodeName, id);
+    xmlNodePtr     newNode     = impl_->findOrCreateNode(xmlNodeName, id);
     if (newNode == NULL)
     {
         return TestReferenceChecker(new Impl(isWriteMode()));
@@ -713,8 +717,8 @@ void TestReferenceChecker::checkBoolean(bool value, const char *id)
         return;
     }
     SCOPED_TRACE(impl_->traceString(id));
-    bool bFound = false;
-    const char *strValue = value ? "true" : "false";
+    bool        bFound      = false;
+    const char *strValue    = value ? "true" : "false";
     std::string refStrValue =
         impl_->processItem(Impl::cBooleanNodeName, id, strValue, &bFound);
     if (bFound)
@@ -731,7 +735,7 @@ void TestReferenceChecker::checkString(const char *value, const char *id)
         return;
     }
     SCOPED_TRACE(impl_->traceString(id));
-    bool bFound = false;
+    bool        bFound      = false;
     std::string refStrValue =
         impl_->processItem(Impl::cStringNodeName, id, value, &bFound);
     if (bFound)
@@ -748,7 +752,7 @@ void TestReferenceChecker::checkString(const std::string &value, const char *id)
 
 
 void TestReferenceChecker::checkStringBlock(const std::string &value,
-                                            const char *id)
+                                            const char        *id)
 {
     if (impl_->shouldIgnore())
     {
@@ -765,7 +769,7 @@ void TestReferenceChecker::checkStringBlock(const std::string &value,
     // of the starting CDATA tag).
     if (isWriteMode())
     {
-        std::string adjustedValue = "\n" + value;
+        std::string    adjustedValue = "\n" + value;
         const xmlChar *xmlValue
             = reinterpret_cast<const xmlChar *>(adjustedValue.c_str());
         // TODO: Figure out if \r and \r\n can be handled without them changing
@@ -808,8 +812,8 @@ void TestReferenceChecker::checkInteger(int value, const char *id)
         return;
     }
     SCOPED_TRACE(impl_->traceString(id));
-    bool bFound = false;
-    std::string strValue = formatString("%d", value);
+    bool        bFound      = false;
+    std::string strValue    = formatString("%d", value);
     std::string refStrValue =
         impl_->processItem(Impl::cIntegerNodeName, id, strValue, &bFound);
     if (bFound)
@@ -826,13 +830,13 @@ void TestReferenceChecker::checkDouble(double value, const char *id)
         return;
     }
     SCOPED_TRACE(impl_->traceString(id));
-    bool bFound = false;
-    std::string strValue = formatString("%f", value);
+    bool        bFound      = false;
+    std::string strValue    = formatString("%f", value);
     std::string refStrValue =
         impl_->processItem(Impl::cRealNodeName, id, strValue, &bFound);
     if (bFound)
     {
-        char *endptr;
+        char  *endptr;
         double refValue = std::strtod(refStrValue.c_str(), &endptr);
         EXPECT_EQ('\0', *endptr);
         EXPECT_NEAR(refValue, value, 0.0001);

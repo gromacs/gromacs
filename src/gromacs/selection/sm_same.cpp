@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements the \p same selection method.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <stdlib.h>
@@ -112,7 +116,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
 static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-                 gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+                  gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p same selection method. */
 static gmx_ana_selparam_t smparams_same_int[] = {
@@ -186,7 +190,7 @@ init_data_same(int npar, gmx_ana_selparam_t *param)
 
     snew(data, 1);
     data->as_s_sorted = NULL;
-    param[1].nvalptr = &data->nas;
+    param[1].nvalptr  = &data->nas;
     return data;
 }
 
@@ -200,9 +204,9 @@ init_data_same(int npar, gmx_ana_selparam_t *param)
  * immediately.
  */
 int
-_gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
+_gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **method,
                               const gmx::SelectionParserParameterListPointer &params,
-                              void *scanner)
+                              void                                           *scanner)
 {
 
     /* Do nothing if this is not a same method. */
@@ -228,7 +232,7 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t **method,
     gmx::SelectionParserParameterList::iterator asparam = ++params->begin();
     if (asparam != params->end() && asparam->name() == sm_same.param[1].name)
     {
-        gmx::SelectionParserParameterList kwparams;
+        gmx::SelectionParserParameterList    kwparams;
         gmx::SelectionParserValueListPointer values(
                 new gmx::SelectionParserValueList(asparam->values()));
         kwparams.push_back(
@@ -273,8 +277,8 @@ init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     if (!(param[0].flags & SPAR_ATOMVAL))
     {
         GMX_THROW(gmx::InvalidInputError(
-                    "The 'same' selection keyword combined with a "
-                    "non-keyword does not make sense"));
+                          "The 'same' selection keyword combined with a "
+                          "non-keyword does not make sense"));
     }
 }
 
@@ -368,17 +372,20 @@ static void
 evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = (t_methoddata_same *)data;
     int                    i, j;
 
     out->u.g->isize = 0;
-    i = j = 0;
+    i               = j = 0;
     while (j < g->isize)
     {
         if (d->bSorted)
         {
             /* If we are sorted, we can do a simple linear scan. */
-            while (i < d->nas && d->as.i[i] < d->val.i[j]) ++i;
+            while (i < d->nas && d->as.i[i] < d->val.i[j])
+            {
+                ++i;
+            }
         }
         else
         {
@@ -407,7 +414,10 @@ evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             int tmpval = d->val.i[j];
             ++j;
-            while (j < g->isize && d->val.i[j] == tmpval) ++j;
+            while (j < g->isize && d->val.i[j] == tmpval)
+            {
+                ++j;
+            }
         }
         else
         {
@@ -452,7 +462,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
     /* Collapse adjacent values.
      * For strings, it's unlikely that the values would be sorted originally,
      * so set bSorted always to false. */
-    d->bSorted = false;
+    d->bSorted        = false;
     d->as_s_sorted[0] = d->as.s[0];
     for (i = 1, j = 0; i < d->nas; ++i)
     {
@@ -490,11 +500,11 @@ static void
 evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
-    t_methoddata_same *d = (t_methoddata_same *)data;
+    t_methoddata_same     *d = (t_methoddata_same *)data;
     int                    j;
 
     out->u.g->isize = 0;
-    j = 0;
+    j               = 0;
     while (j < g->isize)
     {
         /* Do a binary search of the strings. */
@@ -507,7 +517,10 @@ evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             /* If not, skip all atoms with the same value. */
             const char *tmpval = d->val.s[j];
             ++j;
-            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0) ++j;
+            while (j < g->isize && strcmp(d->val.s[j], tmpval) == 0)
+            {
+                ++j;
+            }
         }
         else
         {

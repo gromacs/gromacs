@@ -1,8 +1,8 @@
 /* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
- * 
+ *
  * This file is part of GROMACS.
- * Copyright (c) 2012-  
+ * Copyright (c) 2012-
  *
  * Written by the Gromacs development team under coordination of
  * David van der Spoel, Berk Hess, and Erik Lindahl.
@@ -14,7 +14,7 @@
  *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
@@ -48,22 +48,22 @@
 static inline __m128d
 gmx_mm_calc_rsq_pd(__m128d dx, __m128d dy, __m128d dz)
 {
-    return _mm_add_pd( _mm_add_pd( _mm_mul_pd(dx,dx), _mm_mul_pd(dy,dy) ), _mm_mul_pd(dz,dz) );
+    return _mm_add_pd( _mm_add_pd( _mm_mul_pd(dx, dx), _mm_mul_pd(dy, dy) ), _mm_mul_pd(dz, dz) );
 }
 
 /* Normal sum of four __m128d registers */
-#define gmx_mm_sum4_pd(t0,t1,t2,t3)  _mm_add_pd(_mm_add_pd(t0,t1),_mm_add_pd(t2,t3))
+#define gmx_mm_sum4_pd(t0, t1, t2, t3)  _mm_add_pd(_mm_add_pd(t0, t1), _mm_add_pd(t2, t3))
 
 #ifdef GMX_X86_AVX_256
 
 static inline __m256d
 gmx_mm256_calc_rsq_pd(__m256d dx, __m256d dy, __m256d dz)
 {
-    return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx,dx), _mm256_mul_pd(dy,dy) ), _mm256_mul_pd(dz,dz) );
+    return _mm256_add_pd( _mm256_add_pd( _mm256_mul_pd(dx, dx), _mm256_mul_pd(dy, dy) ), _mm256_mul_pd(dz, dz) );
 }
 
 /* Normal sum of four xmm registers */
-#define gmx_mm256_sum4_pd(t0,t1,t2,t3)  _mm256_add_pd(_mm256_add_pd(t0,t1),_mm256_add_pd(t2,t3))
+#define gmx_mm256_sum4_pd(t0, t1, t2, t3)  _mm256_add_pd(_mm256_add_pd(t0, t1), _mm256_add_pd(t2, t3))
 
 #endif
 

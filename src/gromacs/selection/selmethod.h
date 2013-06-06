@@ -1,36 +1,40 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \page page_module_selection_custom Custom selection methods
  *
- * Custom selection methods are defined by creating a new instance of 
+ * Custom selection methods are defined by creating a new instance of
  * \c gmx_ana_selmethod_t and filling it with the necessary data for handling
  * the selection.
  * The structure contains callback pointers that define the actual behavior
@@ -44,19 +48,19 @@
  * An example \c gmx_ana_selmethod_t definition could look like this:
  *
  * \code
- * gmx_ana_selmethod_t sm_example = {
- *   "example", GROUP_VALUE, 0,
- *   asize(sm_params_example), sm_params_example,
- *   &init_data_example,
- *    NULL,
- *   &init_example,
- *    NULL,
- *   &free_data_example,
- *   &init_frame_example,
- *   &evaluate_example,
- *    NULL,
- *   {"example from POS_EXPR [cutoff REAL]", 0, NULL},
- * };
+   gmx_ana_selmethod_t sm_example = {
+       "example", GROUP_VALUE, 0,
+       asize(sm_params_example), sm_params_example,
+       &init_data_example,
+        NULL,
+       &init_example,
+        NULL,
+       &free_data_example,
+       &init_frame_example,
+       &evaluate_example,
+        NULL,
+       {"example from POS_EXPR [cutoff REAL]", 0, NULL},
+   };
  * \endcode
  *
  * The first value defines the name of the method.
@@ -137,16 +141,16 @@
  * \c gmx_ana_selparam_t structures.
  * The order of the parameters does not matter (except possibly for callback
  * implementation), with one important exception:
- * If the method evaluates to a \ref POS_VALUE, the first parameter should 
+ * If the method evaluates to a \ref POS_VALUE, the first parameter should
  * have \ref GROUP_VALUE and be the one that is used to calculate the
  * positions.
  *
  * An example parameter definition:
  * \code
- * static gmx_ana_selparam_t sm_params_example[] = {
- *   {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
- *   {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
- * };
+   static gmx_ana_selparam_t sm_params_example[] = {
+     {"cutoff", {REAL_VALUE, 1, {NULL}}, NULL, SPAR_OPTIONAL},
+     {"from",   {POS_VALUE, -1, {NULL}}, NULL, SPAR_DYNAMIC | SPAR_VARNUM},
+   };
  * \endcode
  *
  * The first value gives the name of the parameter.
@@ -282,7 +286,7 @@
  * Instructions for implementing custom selection methods can be found
  * on a separate page: \ref page_module_selection_custom
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_SELMETHOD_H

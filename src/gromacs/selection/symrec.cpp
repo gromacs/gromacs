@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements classes in symrec.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <map>
@@ -114,7 +118,7 @@ gmx_ana_selmethod_t *
 SelectionParserSymbol::methodValue() const
 {
     GMX_RELEASE_ASSERT(type() == MethodSymbol,
-            "Attempting to get method handle for a non-method symbol");
+                       "Attempting to get method handle for a non-method symbol");
     return impl_->meth_;
 }
 
@@ -122,7 +126,7 @@ const gmx::SelectionTreeElementPointer &
 SelectionParserSymbol::variableValue() const
 {
     GMX_RELEASE_ASSERT(type() == VariableSymbol,
-            "Attempting to get variable value for a non-variable symbol");
+                       "Attempting to get variable value for a non-variable symbol");
     return impl_->var_;
 }
 
@@ -142,7 +146,7 @@ class SelectionParserSymbolTable::Impl
     public:
         //! Smart pointer type for managing a SelectionParserSymbol.
         typedef gmx::gmx_unique_ptr<SelectionParserSymbol>::type
-                SymbolPointer;
+            SymbolPointer;
         //! Container type for the list of symbols.
         typedef std::map<std::string, SymbolPointer> SymbolMap;
 
@@ -187,8 +191,8 @@ SelectionParserSymbolTable::Impl::addReservedSymbols()
     for (size_t i = 0; i < asize(sym_reserved); ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
+                                  new SelectionParserSymbol::Impl(
+                                          SelectionParserSymbol::ReservedSymbol, sym_reserved[i])));
         addSymbol(move(sym));
     }
 }
@@ -201,8 +205,8 @@ SelectionParserSymbolTable::Impl::addPositionSymbols()
     for (int i = 0; postypes[i] != NULL; ++i)
     {
         SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::PositionSymbol, postypes[i])));
+                                  new SelectionParserSymbol::Impl(
+                                          SelectionParserSymbol::PositionSymbol, postypes[i])));
         addSymbol(move(sym));
     }
 }
@@ -221,7 +225,7 @@ class SelectionParserSymbolIterator::Impl
     public:
         //! Shorthand for the underlying iterator type.
         typedef SelectionParserSymbolTable::Impl::SymbolMap::const_iterator
-                IteratorType;
+            IteratorType;
 
         /*! \brief
          * Constructs an end iterator.
@@ -310,7 +314,7 @@ SelectionParserSymbolTable::~SelectionParserSymbolTable()
 
 const SelectionParserSymbol *
 SelectionParserSymbolTable::findSymbol(const std::string &name,
-                                       bool bExact) const
+                                       bool               bExact) const
 {
     Impl::SymbolMap::const_iterator sym = impl_->symbols_.lower_bound(name);
     if (sym == impl_->symbols_.end())
@@ -362,7 +366,7 @@ SelectionParserSymbolTable::endIterator() const
 }
 
 void
-SelectionParserSymbolTable::addVariable(const char *name,
+SelectionParserSymbolTable::addVariable(const char                             *name,
                                         const gmx::SelectionTreeElementPointer &sel)
 {
     // In the current parser implementation, a syntax error is produced before
@@ -373,36 +377,36 @@ SelectionParserSymbolTable::addVariable(const char *name,
         if (other->second->type() == SelectionParserSymbol::VariableSymbol)
         {
             GMX_THROW(InvalidInputError(
-                        formatString("Reassigning variable '%s' is not supported",
-                                     name)));
+                              formatString("Reassigning variable '%s' is not supported",
+                                           name)));
         }
         else
         {
             GMX_THROW(InvalidInputError(
-                        formatString("Variable name '%s' conflicts with a reserved keyword",
-                                     name)));
+                              formatString("Variable name '%s' conflicts with a reserved keyword",
+                                           name)));
         }
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::VariableSymbol, name)));
+                                    new SelectionParserSymbol::Impl(
+                                            SelectionParserSymbol::VariableSymbol, name)));
     sym->impl_->var_ = sel;
     impl_->addSymbol(move(sym));
 }
 
 void
-SelectionParserSymbolTable::addMethod(const char *name,
+SelectionParserSymbolTable::addMethod(const char          *name,
                                       gmx_ana_selmethod_t *method)
 {
     if (impl_->symbols_.find(name) != impl_->symbols_.end())
     {
         GMX_THROW(APIError(
-                    formatString("Method name '%s' conflicts with another symbol",
-                                 name)));
+                          formatString("Method name '%s' conflicts with another symbol",
+                                       name)));
     }
     Impl::SymbolPointer sym(new SelectionParserSymbol(
-                new SelectionParserSymbol::Impl(
-                    SelectionParserSymbol::MethodSymbol, name)));
+                                    new SelectionParserSymbol::Impl(
+                                            SelectionParserSymbol::MethodSymbol, name)));
     sym->impl_->meth_ = method;
     impl_->addSymbol(move(sym));
 }

@@ -327,7 +327,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_256_double
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_pd(mask,val) to clear dummy entries.
              */
-            tmpmask0 = gmx_mm_castsi128_pd(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
+            tmpmask0 = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
 
             tmpmask1 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(3,3,2,2));
             tmpmask0 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(1,1,0,0));
@@ -413,6 +413,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_VF_avx_256_double
             FF               = _mm256_add_pd(Fp,_mm256_mul_pd(gbeps,_mm256_add_pd(G,_mm256_add_pd(Heps,Heps))));
             fgb              = _mm256_mul_pd(gbqqfactor,_mm256_mul_pd(FF,gbscale));
             dvdatmp          = _mm256_mul_pd(minushalf,_mm256_add_pd(vgb,_mm256_mul_pd(fgb,r00)));
+            dvdatmp          = _mm256_andnot_pd(dummy_mask,dvdatmp);
             dvdasum          = _mm256_add_pd(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;
@@ -790,7 +791,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_256_double
              * This mask will be 0xFFFFFFFF for dummy entries and 0x0 for real ones,
              * so use it as val = _mm_andnot_pd(mask,val) to clear dummy entries.
              */
-            tmpmask0 = gmx_mm_castsi128_pd(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
+            tmpmask0 = gmx_mm_castsi128_ps(_mm_cmplt_epi32(_mm_loadu_si128((const __m128i *)(jjnr+jidx)),_mm_setzero_si128()));
 
             tmpmask1 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(3,3,2,2));
             tmpmask0 = _mm_permute_ps(tmpmask0,_GMX_MM_PERMUTE(1,1,0,0));
@@ -876,6 +877,7 @@ nb_kernel_ElecGB_VdwCSTab_GeomP1P1_F_avx_256_double
             FF               = _mm256_add_pd(Fp,_mm256_mul_pd(gbeps,_mm256_add_pd(G,_mm256_add_pd(Heps,Heps))));
             fgb              = _mm256_mul_pd(gbqqfactor,_mm256_mul_pd(FF,gbscale));
             dvdatmp          = _mm256_mul_pd(minushalf,_mm256_add_pd(vgb,_mm256_mul_pd(fgb,r00)));
+            dvdatmp          = _mm256_andnot_pd(dummy_mask,dvdatmp);
             dvdasum          = _mm256_add_pd(dvdasum,dvdatmp);
             /* The pointers to scratch make sure that this code with compilers that take gmx_restrict seriously (e.g. icc 13) really can't screw things up. */
             fjptrA             = (jnrlistA>=0) ? dvda+jnrA : scratch;

@@ -1,61 +1,61 @@
 /*
-This source code file is part of thread_mpi.  
-Written by Sander Pronk, Erik Lindahl, and possibly others. 
+   This source code file is part of thread_mpi.
+   Written by Sander Pronk, Erik Lindahl, and possibly others.
 
-Copyright (c) 2009, Sander Pronk, Erik Lindahl.
-All rights reserved.
+   Copyright (c) 2009, Sander Pronk, Erik Lindahl.
+   All rights reserved.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-1) Redistributions of source code must retain the above copyright
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
+   1) Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-2) Redistributions in binary form must reproduce the above copyright
+   2) Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-3) Neither the name of the copyright holders nor the
+   3) Neither the name of the copyright holders nor the
    names of its contributors may be used to endorse or promote products
    derived from this software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
-EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+   THIS SOFTWARE IS PROVIDED BY US ''AS IS'' AND ANY
+   EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL WE BE LIABLE FOR ANY
+   DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-If you want to redistribute modifications, please consider that
-scientific software is very special. Version control is crucial -
-bugs must be traceable. We will be happy to consider code for
-inclusion in the official distribution, but derived work should not
-be called official thread_mpi. Details are found in the README & COPYING
-files.
-*/
+   If you want to redistribute modifications, please consider that
+   scientific software is very special. Version control is crucial -
+   bugs must be traceable. We will be happy to consider code for
+   inclusion in the official distribution, but derived work should not
+   be called official thread_mpi. Details are found in the README & COPYING
+   files.
+ */
 
 #ifndef TMPI_MPI_BINDINGS_H_
 #define TMPI_MPI_BINDINGS_H_
 
 /** \file
-  \brief MPI bindings for thread_mpi/tmpi.h
+   \brief MPI bindings for thread_mpi/tmpi.h
 
-  This file contains only macros and redefinitions to expose the standard 
-  MPI API with thread_mpi calls. 
-  
-  This is different from the API exposed through thread_mpi/tmpi.h, which 
-  uses names like \a tMPI_Send() instead of \a MPI_Send()
+   This file contains only macros and redefinitions to expose the standard
+   MPI API with thread_mpi calls.
 
-  \sa thread_mpi/tmpi.h for documentation of the available data types and 
+   This is different from the API exposed through thread_mpi/tmpi.h, which
+   uses names like \a tMPI_Send() instead of \a MPI_Send()
+
+   \sa thread_mpi/tmpi.h for documentation of the available data types and
       functions
-  \sa http://www.mpi-forum.org/docs/docs.html for MPI documentation.
-*/
+   \sa http://www.mpi-forum.org/docs/docs.html for MPI documentation.
+ */
 
 #ifndef DOXYGEN
 #ifdef __cplusplus
-extern "C" 
-{  
+extern "C"
+{
 #endif
 
 
@@ -121,8 +121,8 @@ typedef tMPI_Op MPI_Op;
 #define MPI_ERR_UNKNOWN             TMPI_ERR_UNKNOWN
 #define N_MPI_ERR                   N_TMPI_ERR
 
-#define MPI_MAX_ERROR_STRING        TMPI_MAX_ERROR_STRING  
-#define MPI_UNDEFINED               TMPI_UNDEFINED 
+#define MPI_MAX_ERROR_STRING        TMPI_MAX_ERROR_STRING
+#define MPI_UNDEFINED               TMPI_UNDEFINED
 
 
 #define MPI_Errhandler_fn           tMPI_Errhandler_fn
@@ -149,7 +149,7 @@ typedef tMPI_Op MPI_Op;
 
 
 #define MPI_COMM_WORLD          TMPI_COMM_WORLD
-#define MPI_COMM_NULL           TMPI_COMM_NULL 
+#define MPI_COMM_NULL           TMPI_COMM_NULL
 
 
 #define MPI_GROUP_NULL          TMPI_GROUP_NULL
@@ -168,21 +168,21 @@ typedef tMPI_Op MPI_Op;
 
 #define mpi_status_             tmpi_status_
 
-#define MPI_REQUEST_NULL        TMPI_REQUEST_NULL 
+#define MPI_REQUEST_NULL        TMPI_REQUEST_NULL
 
 #define MPI_IN_PLACE            TMPI_IN_PLACE
 
 
 
-#define MPI_MAX          TMPI_MAX 
-#define MPI_MIN          TMPI_MIN 
-#define MPI_SUM          TMPI_SUM 
+#define MPI_MAX          TMPI_MAX
+#define MPI_MIN          TMPI_MIN
+#define MPI_SUM          TMPI_SUM
 #define MPI_PROD         TMPI_PROD
 #define MPI_LAND         TMPI_LAND
 #define MPI_BAND         TMPI_BAND
-#define MPI_LOR          TMPI_LOR 
-#define MPI_BOR          TMPI_BOR 
-#define MPI_LXOR         TMPI_LXOR 
+#define MPI_LOR          TMPI_LOR
+#define MPI_BOR          TMPI_BOR
+#define MPI_LXOR         TMPI_LXOR
 #define MPI_BXOR         TMPI_BXOR
 
 /* the functions: */
@@ -261,4 +261,3 @@ typedef tMPI_Op MPI_Op;
 #endif
 
 #endif /* TMPI_MPI_BINDINGS_H_ */
-

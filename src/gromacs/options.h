@@ -1,34 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \defgroup module_options Extensible Handling of Options
+/*! \defgroup module_options Extensible Handling of Options (options)
  * \ingroup group_utilitymodules
  * \brief
  * Provides functionality for handling options.
@@ -41,6 +45,70 @@
  * When creating an Options object and adding options, it is possible to add
  * descriptions for individual options as well as for the whole set of options.
  * These can then be used to write out help text.
+ *
+ * The sequence charts below provides an overview of how the options work from
+ * usage perspective.  They include two fictional modules, A and B, that provide
+ * options, and a main routine that manages these.  The first chart shows a
+ * typical initialization sequence, where the main routine creates an options
+ * object, and calls an initOptions() method in each module that can provide
+ * options (the modules may also request their submodules to add their own
+ * options).  Each module uses gmx::Options::addOption() to add the options
+ * they require, and specify output variables into which the options values are
+ * stored.
+ * \msc
+ *     main,
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main box B [ label="main owns all objects" ];
+ *     main => options [ label="create", URL="\ref gmx::Options::Options()" ];
+ *     main => A [ label="initOptions()" ];
+ *     A => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << A;
+ *     main => B [ label="initOptions()" ];
+ *     B => options [ label="addOption()", URL="\ref gmx::Options::addOption()" ];
+ *     ...;
+ *     main << B;
+ * \endmsc
+ *
+ * After all options have been specified, they can be parsed.  A parser splits
+ * the input into option-value pairs (one option may have multiple values), and
+ * passes these into the gmx::Options object, which is responsible for
+ * converting them into the appropriate types and storing the values into the
+ * variables provided in the calls to gmx::Options::addOption().
+ * \msc
+ *     main,
+ *     parser [ label="parser" ],
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main => parser [ label="parse()" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> A [ label="set variable" ];
+ *     parser => options [ label="assign(string)" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ * \endmsc
+ *
+ * After all options have been parsed (possibly using multiple different
+ * parsers), gmx::Options::finish() is called.  This performs final
+ * validation of the options and may further adjust the values stored in the
+ * output variables (see documentation on individual option types on when this
+ * may happen).
+ * \msc
+ *     main,
+ *     options [ label="Options", URL="\ref gmx::Options" ],
+ *     A [ label="module A" ],
+ *     B [ label="module B" ];
+ *
+ *     main => options [ label="finish()", URL="\ref gmx::Options::finish()" ];
+ *     options -> A [ label="set variable" ];
+ *     options -> B [ label="set variable" ];
+ *     ...;
+ * \endmsc
  *
  * Module \ref module_commandline implements classes that assign option values
  * from command line and produce help for programs that use the command line
@@ -65,13 +133,13 @@
  * OptionsIterator to apply this visitor to the Options object.
  * \endif
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file
  * \brief
  * Public API convenience header for handling of options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_options
  */

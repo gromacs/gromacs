@@ -1,38 +1,42 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
  * \brief
  * Implements functions in selparam.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #include <algorithm>
@@ -91,7 +95,7 @@ gmx_ana_selparam_find(const char *name, int nparam, gmx_ana_selparam_t *param)
     {
         return (i == 0) ? NULL : &param[i-1];
     }
-    for ( ; i < nparam; ++i)
+    for (; i < nparam; ++i)
     {
         if (!strcmp(param[i].name, name))
         {
@@ -204,7 +208,7 @@ convert_values(SelectionParserValueList *values, e_selvalue_t type, void *scanne
 static void
 place_child(const SelectionTreeElementPointer &root,
             const SelectionTreeElementPointer &child,
-            gmx_ana_selparam_t *param)
+            gmx_ana_selparam_t                *param)
 {
     gmx_ana_selparam_t *ps;
     int                 n;
@@ -231,7 +235,7 @@ place_child(const SelectionTreeElementPointer &root,
 
 /*! \brief
  * Comparison function for sorting integer ranges.
- * 
+ *
  * \param[in] a Pointer to the first range.
  * \param[in] b Pointer to the second range.
  * \returns   -1, 0, or 1 depending on the relative order of \p a and \p b.
@@ -287,7 +291,7 @@ cmp_real_range(const void *a, const void *b)
 
 /*! \brief
  * Parses the values for a parameter that takes integer or real ranges.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param[in] scanner Scanner data structure.
@@ -376,7 +380,7 @@ parse_values_range(const SelectionParserValueList &values,
             {
                 idata[j]   = idata[i];
                 idata[j+1] = idata[i+1];
-                j += 2;
+                j         += 2;
             }
         }
     }
@@ -396,7 +400,7 @@ parse_values_range(const SelectionParserValueList &values,
             {
                 rdata[j]   = rdata[i];
                 rdata[j+1] = rdata[i+1];
-                j += 2;
+                j         += 2;
             }
         }
     }
@@ -447,7 +451,7 @@ parse_values_range(const SelectionParserValueList &values,
 
 /*! \brief
  * Parses the values for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
@@ -458,10 +462,10 @@ parse_values_range(const SelectionParserValueList &values,
  * is stored, each as a separate value.
  */
 static bool
-parse_values_varnum(const SelectionParserValueList &values,
-                    gmx_ana_selparam_t *param,
+parse_values_varnum(const SelectionParserValueList    &values,
+                    gmx_ana_selparam_t                *param,
                     const SelectionTreeElementPointer &root,
-                    void *scanner)
+                    void                              *scanner)
 {
     int                 i, j;
 
@@ -560,7 +564,7 @@ parse_values_varnum(const SelectionParserValueList &values,
         child->setName(param->name);
         child->flags &= ~SEL_ALLOCVAL;
         child->flags |= SEL_FLAGSSET | SEL_VARNUMVAL | SEL_ALLOCDATA;
-        child->v.nr = param->val.nr;
+        child->v.nr   = param->val.nr;
         _gmx_selvalue_setstore(&child->v, param->val.u.s);
         /* Because the child is not group-valued, the u union is not used
          * for anything, so we can abuse it by storing the parameter value
@@ -605,7 +609,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
         child->child  = expr;
     }
     /* Setup the child element */
-    child->flags &= ~SEL_ALLOCVAL;
+    child->flags  &= ~SEL_ALLOCVAL;
     child->u.param = param;
     if (child->v.type != param->val.type)
     {
@@ -631,7 +635,7 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
 
 /*! \brief
  * Parses an expression value for a parameter that takes a variable number of values.
- * 
+ *
  * \param[in] values List of values.
  * \param     param  Parameter to parse.
  * \param     root   Selection element to which child expressions are added.
@@ -639,13 +643,13 @@ add_child(const SelectionTreeElementPointer &root, gmx_ana_selparam_t *param,
  * \returns   true if the values were parsed successfully, false otherwise.
  */
 static bool
-parse_values_varnum_expr(const SelectionParserValueList &values,
-                         gmx_ana_selparam_t *param,
+parse_values_varnum_expr(const SelectionParserValueList    &values,
+                         gmx_ana_selparam_t                *param,
                          const SelectionTreeElementPointer &root,
-                         void *scanner)
+                         void                              *scanner)
 {
     GMX_RELEASE_ASSERT(values.size() == 1 && values.front().hasExpressionValue(),
-            "Called with an invalid type of value");
+                       "Called with an invalid type of value");
 
     SelectionTreeElementPointer child
         = add_child(root, param, values.front().expr, scanner);
@@ -716,7 +720,7 @@ set_expr_value_store(const SelectionTreeElementPointer &sel,
         default: /* Error */
             GMX_THROW(gmx::InternalError("Invalid value type"));
     }
-    sel->v.nr = 1;
+    sel->v.nr     = 1;
     sel->v.nalloc = -1;
     return true;
 }
@@ -795,7 +799,7 @@ parse_values_std(const SelectionParserValueList &values,
         param->flags &= ~SPAR_DYNAMIC;
     }
 
-    i = 0;
+    i        = 0;
     bDynamic = false;
     SelectionParserValueList::const_iterator value;
     for (value = values.begin(); value != values.end() && i < param->val.nr; ++value)
@@ -912,7 +916,7 @@ parse_values_bool(const std::string &name,
                   gmx_ana_selparam_t *param, void *scanner)
 {
     GMX_ASSERT(param->val.type == NO_VALUE,
-            "Boolean parser called for non-boolean parameter");
+               "Boolean parser called for non-boolean parameter");
     if (values.size() > 1 || (!values.empty() && values.front().type != INT_VALUE))
     {
         _gmx_selparser_error(scanner, "parameter takes only a yes/no/on/off/0/1 value");
@@ -951,11 +955,11 @@ parse_values_bool(const std::string &name,
  */
 static bool
 parse_values_enum(const SelectionParserValueList &values,
-                  gmx_ana_selparam_t *param,
-                  void *scanner)
+                  gmx_ana_selparam_t             *param,
+                  void                           *scanner)
 {
     GMX_ASSERT(param->val.type == STR_VALUE,
-            "Enum parser called for non-string parameter");
+               "Enum parser called for non-string parameter");
     if (values.size() != 1)
     {
         _gmx_selparser_error(scanner, "a single value is required");
@@ -971,8 +975,8 @@ parse_values_enum(const SelectionParserValueList &values,
     }
 
     const std::string &svalue = value.stringValue();
-    int i = 1;
-    int match = 0;
+    int                i      = 1;
+    int                match  = 0;
     while (param->val.u.s[i] != NULL)
     {
         if (gmx::startsWith(param->val.u.s[i], svalue))
@@ -1027,7 +1031,7 @@ convert_const_values(SelectionParserValueList *values)
                     break;
                 default:
                     GMX_THROW(gmx::InternalError(
-                                "Unsupported constant expression value type"));
+                                      "Unsupported constant expression value type"));
             }
         }
     }
@@ -1054,16 +1058,16 @@ _gmx_sel_parse_params(const SelectionParserParameterList &pparams,
                       const SelectionTreeElementPointer &root, void *scanner)
 {
     gmx::MessageStringCollector *errors = _gmx_sel_lexer_error_reporter(scanner);
-    gmx_ana_selparam_t *oparam;
-    bool                bOk, rc;
-    int                 i;
+    gmx_ana_selparam_t          *oparam;
+    bool                         bOk, rc;
+    int                          i;
 
     /* Check that the value pointers of SPAR_VARNUM parameters are NULL and
      * that they are not NULL for other parameters */
     bOk = true;
     for (i = 0; i < nparam; ++i)
     {
-        std::string contextStr = gmx::formatString("In parameter '%s'", params[i].name);
+        std::string                contextStr = gmx::formatString("In parameter '%s'", params[i].name);
         gmx::MessageStringContext  context(errors, contextStr);
         if (params[i].val.type != POS_VALUE && (params[i].flags & (SPAR_VARNUM | SPAR_ATOMVAL)))
         {
@@ -1104,13 +1108,13 @@ _gmx_sel_parse_params(const SelectionParserParameterList &pparams,
         if (!pparam->name().empty())
         {
             contextStr = gmx::formatString("In parameter '%s'", pparam->name().c_str());
-            i = -1;
-            oparam = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
+            i          = -1;
+            oparam     = gmx_ana_selparam_find(pparam->name().c_str(), nparam, params);
         }
         else if (i >= 0)
         {
             contextStr = gmx::formatString("In value %d", i + 1);
-            oparam = &params[i];
+            oparam     = &params[i];
             if (oparam->name != NULL)
             {
                 oparam = NULL;

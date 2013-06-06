@@ -9,18 +9,18 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>eneconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 With <it>multiple files</it> specified for the <tt>-f</tt> option:<br>
 Concatenates several energy files in sorted order.
-In case of double time frames the one
+In the case of double time frames, the one
 in the later file is used. By specifying <tt>-settime</tt> you will be
 asked for the start time of each file. The input files are taken
 from the command line,
-such that the command <tt>eneconv -o fixed.<a href="edr.html">edr</a> *.<a href="edr.html">edr</a></tt> should do
+such that the command <tt>eneconv -f *.<a href="edr.html">edr</a> -o fixed.<a href="edr.html">edr</a></tt> should do
 the trick. <p>
 With <it>one file</it> specified for <tt>-f</tt>:<br>
 Reads one energy file and writes another, applying the <tt>-dt</tt>,
@@ -40,17 +40,18 @@ followed by <tt>-b</tt> and <tt>-e</tt> to select which frames to write.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> First time to use </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Last time to use </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only write out frame when t MOD dt = offset </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-offset</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time offset for -dt option </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change starting time interactively </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sort energy files (not frames) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-offset</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time offset for <tt>-dt</tt> option </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change starting time interactively </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sort energy files (not frames) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]rmdh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove free energy block data </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-scalefac</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Multiply energy component by this factor </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]error</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Stop on errors in the file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]error</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Stop on errors in the file </TD></TD>
 </TABLE>
 <P>
 <H3>Known problems</H3>

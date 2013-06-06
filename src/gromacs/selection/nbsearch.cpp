@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \page nbsearch Neighborhood search routines
  *
@@ -63,7 +67,7 @@
  * \brief
  * Implements functions in nbsearch.h.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
 #ifdef HAVE_CONFIG_H
@@ -166,26 +170,26 @@ gmx_ana_nbsearch_create(real cutoff, int maxn)
     d->bTryGrid = true;
     if (cutoff <= 0)
     {
-        cutoff = GMX_REAL_MAX;
+        cutoff      = GMX_REAL_MAX;
         d->bTryGrid = false;
     }
-    d->cutoff = cutoff;
+    d->cutoff  = cutoff;
     d->cutoff2 = sqr(cutoff);
     d->maxnref = maxn;
 
-    d->xref = NULL;
-    d->nexcl = 0;
+    d->xref    = NULL;
+    d->nexcl   = 0;
     d->exclind = 0;
 
-    d->xref_alloc = NULL;
-    d->ncells = 0;
-    d->ncatoms = NULL;
-    d->catom = NULL;
+    d->xref_alloc   = NULL;
+    d->ncells       = 0;
+    d->ncatoms      = NULL;
+    d->catom        = NULL;
     d->catom_nalloc = 0;
     d->cells_nalloc = 0;
 
-    d->ngridnb = 0;
-    d->gnboffs = NULL;
+    d->ngridnb        = 0;
+    d->gnboffs        = NULL;
     d->gnboffs_nalloc = 0;
 
     return d;
@@ -230,9 +234,9 @@ grid_init_cell_nblist(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     real  rvnorm;
 
     /* Find the extent of the sphere in triclinic coordinates */
-    maxz = (int)(d->cutoff * d->recipcell[ZZ][ZZ]) + 1;
+    maxz   = (int)(d->cutoff * d->recipcell[ZZ][ZZ]) + 1;
     rvnorm = sqrt(sqr(d->recipcell[YY][YY]) + sqr(d->recipcell[ZZ][YY]));
-    maxy = (int)(d->cutoff * rvnorm) + 1;
+    maxy   = (int)(d->cutoff * rvnorm) + 1;
     rvnorm = sqrt(sqr(d->recipcell[XX][XX]) + sqr(d->recipcell[YY][XX])
                   + sqr(d->recipcell[ZZ][XX]));
     maxx = (int)(d->cutoff * rvnorm) + 1;
@@ -288,7 +292,7 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     for (dd = 0; dd < DIM; ++dd)
     {
         d->ncelldim[dd] = (int)(pbc->box[dd][dd] / targetsize);
-        d->ncells *= d->ncelldim[dd];
+        d->ncells      *= d->ncelldim[dd];
         if (d->ncelldim[dd] < 3)
         {
             return false;
@@ -304,7 +308,7 @@ grid_setup_cells(gmx_ana_nbsearch_t *d, t_pbc *pbc)
         srenew(d->catom_nalloc, d->ncells);
         for (i = d->cells_nalloc; i < d->ncells; ++i)
         {
-            d->catom[i] = NULL;
+            d->catom[i]        = NULL;
             d->catom_nalloc[i] = 0;
         }
         d->cells_nalloc = d->ncells;
@@ -348,7 +352,7 @@ grid_set_box(gmx_ana_nbsearch_t *d, t_pbc *pbc)
     {
         for (dd = 0; dd < DIM; ++dd)
         {
-            d->cellbox[dd][dd] = pbc->box[dd][dd] / d->ncelldim[dd];
+            d->cellbox[dd][dd]   = pbc->box[dd][dd] / d->ncelldim[dd];
             d->recipcell[dd][dd] = 1 / d->cellbox[dd][dd];
         }
     }
@@ -400,7 +404,7 @@ static int
 grid_index(gmx_ana_nbsearch_t *d, const ivec cell)
 {
     return cell[XX] + cell[YY] * d->ncelldim[XX]
-        + cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
+           + cell[ZZ] * d->ncelldim[XX] * d->ncelldim[YY];
 }
 
 /*! \brief
@@ -521,7 +525,7 @@ gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[])
 {
 
     d->nexcl = nexcl;
-    d->excl = excl;
+    d->excl  = excl;
 }
 
 /*! \brief
@@ -534,7 +538,7 @@ is_excluded(gmx_ana_nbsearch_t *d, int j)
     {
         if (d->refid)
         {
-            while (d->exclind < d->nexcl && d->refid[j] > d->excl[d->exclind])
+            while (d->exclind < d->nexcl &&d->refid[j] > d->excl[d->exclind])
             {
                 ++d->exclind;
             }
@@ -599,7 +603,7 @@ grid_search(gmx_ana_nbsearch_t *d,
         nbi = d->prevnbi;
         cai = d->prevcai + 1;
 
-        for ( ; nbi < d->ngridnb; ++nbi)
+        for (; nbi < d->ngridnb; ++nbi)
         {
             ivec cell;
 
@@ -608,9 +612,9 @@ grid_search(gmx_ana_nbsearch_t *d,
             cell[XX] = (cell[XX] + d->ncelldim[XX]) % d->ncelldim[XX];
             cell[YY] = (cell[YY] + d->ncelldim[YY]) % d->ncelldim[YY];
             cell[ZZ] = (cell[ZZ] + d->ncelldim[ZZ]) % d->ncelldim[ZZ];
-            ci = grid_index(d, cell);
+            ci       = grid_index(d, cell);
             /* TODO: Calculate the required PBC shift outside the inner loop */
-            for ( ; cai < d->ncatoms[ci]; ++cai)
+            for (; cai < d->ncatoms[ci]; ++cai)
             {
                 i = d->catom[ci][cai];
                 if (is_excluded(d, i))
@@ -631,13 +635,13 @@ grid_search(gmx_ana_nbsearch_t *d,
                 }
             }
             d->exclind = 0;
-            cai = 0;
+            cai        = 0;
         }
     }
     else
     {
         i = d->previ + 1;
-        for ( ; i < d->nref; ++i)
+        for (; i < d->nref; ++i)
         {
             if (is_excluded(d, i))
             {
@@ -725,7 +729,7 @@ gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, const rvec x)
 
     grid_search_start(d, x);
     grid_search(d, &mindist_action);
-    mind = sqrt(d->cutoff2);
+    mind       = sqrt(d->cutoff2);
     d->cutoff2 = sqr(d->cutoff);
     return mind;
 }

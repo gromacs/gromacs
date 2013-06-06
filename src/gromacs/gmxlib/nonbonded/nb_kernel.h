@@ -60,13 +60,13 @@ nb_kernel_data_t;
 
 
 typedef void
-nb_kernel_t(t_nblist *                nlist,
-            rvec *                    x,
-            rvec *                    f,
-            t_forcerec *              fr,
-            t_mdatoms *               mdatoms,
-            nb_kernel_data_t *        kernel_data,
-            t_nrnb *                  nrnb);
+    nb_kernel_t (t_nblist *                nlist,
+                 rvec *                    x,
+                 rvec *                    f,
+                 t_forcerec *              fr,
+                 t_mdatoms *               mdatoms,
+                 nb_kernel_data_t *        kernel_data,
+                 t_nrnb *                  nrnb);
 
 
 /* Structure with a kernel pointer and settings. This cannot be abstract
@@ -90,11 +90,11 @@ nb_kernel_t(t_nblist *                nlist,
  * The interaction modifiers are described by the eintmod enum type, while
  * the kernel geometry is decided from the neighborlist geometry, which is
  * described by the enum gmx_nblist_kernel_geometry (again, see types/enums.h).
- * The 
+ * The
  *
- * Note that any particular implementation of kernels might not support all of 
+ * Note that any particular implementation of kernels might not support all of
  * these strings. In fact, some might not be supported by any architecture yet.
- * The whole point of using strings and hashes is that we do not have to define a 
+ * The whole point of using strings and hashes is that we do not have to define a
  * unique set of strings in a single place. Thus, as long as you implement a
  * corresponding kernel, you could in theory provide any string you want.
  */

@@ -9,14 +9,14 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>make_edi</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-<tt>make_<a href="edi.html">edi</a></tt> generates an essential dynamics (ED) sampling input file to be used with <a href="mdrun.html">mdrun</a>
+<tt>make_<a href="edi.html">edi</a></tt> generates an essential dynamics (ED) sampling input file to be used with <tt><a href="mdrun.html">mdrun</a></tt>
 based on eigenvectors of a covariance matrix (<tt><a href="g_covar.html">g_covar</a></tt>) or from a
-normal modes anaysis (<tt><a href="g_nmeig.html">g_nmeig</a></tt>).
+normal modes analysis (<tt><a href="g_nmeig.html">g_nmeig</a></tt>).
 ED sampling can be used to manipulate the position along collective coordinates
 (eigenvectors) of (biological) macromolecules during a simulation. Particularly,
 it may be used to enhance the sampling efficiency of MD simulations by stimulating
@@ -36,7 +36,7 @@ two forms of the peptide hormone guanylin,
 J. Biomol. Struct. Dyn. 13 : 741-751 (1996)<br>
 B.L. de Groot, A.Amadei, R.M. Scheek, N.A.J. van Nuland and H.J.C. Berendsen; 
 An extended sampling of the configurational space of HPr from E. coli
-PROTEINS: Struct. Funct. Gen. 26: 314-322 (1996)
+Proteins: Struct. Funct. Gen. 26: 314-322 (1996)
 <p>You will be prompted for one or more index groups that correspond to the eigenvectors,
 reference structure, target positions, etc.<p>
 <tt>-mon</tt>: monitor projections of the coordinates onto selected eigenvectors.<p>
@@ -46,13 +46,13 @@ reference structure, target positions, etc.<p>
 <tt>-radfix</tt>: perform fixed-step radius expansion along selected eigenvectors.<p>
 <tt>-radacc</tt>: perform acceptance radius expansion along selected eigenvectors.
 (steps in the desired direction will be accepted, others will be rejected).
-Note: by default the starting MD structure will be taken as origin of the first
+<b>Note:</b> by default the starting MD structure will be taken as origin of the first
 expansion cycle for radius expansion. If <tt>-ori</tt> is specified, you will be able
 to read in a structure file that defines an external origin.<p>
 <tt>-radcon</tt>: perform acceptance radius contraction along selected eigenvectors
 towards a target structure specified with <tt>-tar</tt>.<p>
 NOTE: each eigenvector can be selected only once. <p>
-<tt>-outfrq</tt>: frequency (in steps) of writing out projections etc. to .<a href="edo.html">edo</a> file<p>
+<tt>-outfrq</tt>: frequency (in steps) of writing out projections etc. to <tt>.<a href="xvg.html">xvg</a></tt> file<p>
 <tt>-slope</tt>: minimal slope in acceptance radius expansion. A new expansion
 cycle will be started if the spontaneous increase of the radius (in nm/step)
 is less than the value specified.<p>
@@ -60,41 +60,47 @@ is less than the value specified.<p>
 before a new cycle is started.<p>
 Note on the parallel implementation: since ED sampling is a 'global' thing
 (collective coordinates etc.), at least on the 'protein' side, ED sampling
-is not very parallel-friendly from an implentation point of view. Because
-parallel ED requires much extra communication, expect the performance to be
-lower as in a free MD simulation, especially on a large number of nodes. <p>
-All output of <a href="mdrun.html">mdrun</a> (specify with -eo) is written to a .<a href="edo.html">edo</a> file. In the output
-file, per OUTFRQ step the following information is present: <p>
-* the step number<br>
-* the number of the ED dataset. (Note that you can impose multiple ED constraints in
-a single simulation - on different molecules e.g. - if several .<a href="edi.html">edi</a> files were concatenated
-first. The constraints are applied in the order they appear in the .<a href="edi.html">edi</a> file.) <br>
-* RMSD (for atoms involved in fitting prior to calculating the ED constraints)<br>
-* projections of the positions onto selected eigenvectors<br>
+is not very parallel-friendly from an implementation point of view. Because
+parallel ED requires some extra communication, expect the performance to be
+lower as in a free MD simulation, especially on a large number of nodes and/or
+when the ED group contains a lot of atoms. <p>
+Please also note that if your ED group contains more than a single protein,
+then the <tt>.<a href="tpr.html">tpr</a></tt> file must contain the correct PBC representation of the ED group.
+Take a look on the initial RMSD from the reference structure, which is printed
+out at the start of the simulation; if this is much higher than expected, one
+of the ED molecules might be shifted by a box vector. <p>
+All ED-related output of <tt><a href="mdrun.html">mdrun</a></tt> (specify with <tt>-eo</tt>) is written to a <tt>.<a href="xvg.html">xvg</a></tt> file
+as a function of time in intervals of OUTFRQ steps.<p>
+<b>Note</b> that you can impose multiple ED constraints and flooding potentials in
+a single simulation (on different molecules) if several <tt>.<a href="edi.html">edi</a></tt> files were concatenated
+first. The constraints are applied in the order they appear in the <tt>.<a href="edi.html">edi</a></tt> file. 
+Depending on what was specified in the <tt>.<a href="edi.html">edi</a></tt> input file, the output file contains for each ED dataset<p>
+<tt>*</tt> the RMSD of the fitted molecule to the reference structure (for atoms involved in fitting prior to calculating the ED constraints)<br>
+<tt>*</tt> projections of the positions onto selected eigenvectors<br>
 <p><p>
 FLOODING:<p>
-with -flood you can specify which eigenvectors are used to compute a flooding potential,
+with <tt>-flood</tt>, you can specify which eigenvectors are used to compute a flooding potential,
 which will lead to extra forces expelling the structure out of the region described
 by the covariance matrix. If you switch -restrain the potential is inverted and the structure
 is kept in that region.
 <p>
-The origin is normally the average structure stored in the eigvec.<a href="trr.html">trr</a> file.
-It can be changed with -ori to an arbitrary position in configurational space.
-With -tau, -deltaF0 and -Eflnull you control the flooding behaviour.
+The origin is normally the average structure stored in the <tt>eigvec.<a href="trr.html">trr</a></tt> file.
+It can be changed with <tt>-ori</tt> to an arbitrary position in configuration space.
+With <tt>-tau</tt>, <tt>-deltaF0</tt>, and <tt>-Eflnull</tt> you control the flooding behaviour.
 Efl is the flooding strength, it is updated according to the rule of adaptive flooding.
-Tau is the time constant of adaptive flooding, high tau means slow adaption (i.e. growth). 
+Tau is the time constant of adaptive flooding, high &tau; means slow adaption (i.e. growth). 
 DeltaF0 is the flooding strength you want to reach after tau ps of simulation.
-To use constant Efl set -tau to zero.
+To use constant Efl set <tt>-tau</tt> to zero.
 <p>
--alpha is a fudge parameter to control the width of the flooding potential. A value of 2 has been found
+<tt>-alpha</tt> is a fudge parameter to control the width of the flooding potential. A value of 2 has been found
 to give good results for most standard cases in flooding of proteins.
-Alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
-increase, this is mimicked by alpha&gt;1.
-For restraining alpha&lt;1 can give you smaller width in the restraining potential.
+&alpha; basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
+increase, this is mimicked by &alpha; &gt; 1.
+For restraining, &alpha; &lt; 1 can give you smaller width in the restraining potential.
 <p>
 RESTART and FLOODING:
 If you want to restart a crashed flooding simulation please find the values deltaF and Efl in
-the output file and manually put them into the .<a href="edi.html">edi</a> file under DELTA_F0 and EFL_NULL.
+the output file and manually put them into the <tt>.<a href="edi.html">edi</a></tt> file under DELTA_F0 and EFL_NULL.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -111,33 +117,34 @@ the output file and manually put them into the .<a href="edi.html">edi</a> file 
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-mon</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91 </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-linfix</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for fixed increment linear sampling </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-linacc</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for acceptance linear sampling </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-flood</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for flooding </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-radfix</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for fixed increment radius expansion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-radacc</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for acceptance radius expansion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-radcon</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for acceptance radius contraction </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-outfrq</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Freqency (in steps) of writing output in .<a href="edo.html">edo</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-flood</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for flooding </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-outfrq</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> Freqency (in steps) of writing output in <tt>.<a href="xvg.html">xvg</a></tt> file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-slope</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Minimal slope in acceptance radius expansion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-maxedsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Max nr of steps per cycle </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-deltaF0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>150   </tt> </TD><TD> Target destabilization energy  - used for flooding </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-deltaF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Start deltaF with this parameter - default 0, i.e. nonzero values only needed for restart </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tau</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.1   </tt> </TD><TD> Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-eqsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of steps to run without any perturbations  </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-Eflnull</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0.  </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-T</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> T is temperature, the value is needed if you want to do flooding  </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-alpha</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Scale width of gaussian flooding potential with alpha^2  </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-linstep</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! "1.0 2.3 5.1 -3.1") </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-accdir</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Directions for acceptance linear sampling - only sign counts! (put in quotes! "-1 +1 -1.1") </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-radstep</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Stepsize (nm/step) for fixed increment radius expansion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]restrain</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the flooding potential with inverted sign -&gt; effects as quasiharmonic restraining potential </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]hessian</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvectors and eigenvalues are from a Hessian matrix </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]harmonic</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvalues are interpreted as spring constant </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxedsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Maximum number of steps per cycle </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-eqsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of steps to run without any perturbations  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-deltaF0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>150   </tt> </TD><TD> Target destabilization energy for flooding </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-deltaF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Start deltaF with this parameter - default 0, nonzero values only needed for restart </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tau</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.1   </tt> </TD><TD> Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-Eflnull</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> The starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. For a constant flooding strength use <tt>-tau</tt> 0.  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-T</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>300   </tt> </TD><TD> T is temperature, the value is needed if you want to do flooding  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-alpha</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Scale width of gaussian flooding potential with alpha^2  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]restrain</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the flooding potential with inverted sign -&gt; effects as quasiharmonic restraining potential </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]hessian</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvectors and eigenvalues are from a Hessian matrix </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]harmonic</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> The eigenvalues are interpreted as spring constant </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-constF</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Constant force flooding: manually set the forces for the eigenvectors selected with -flood (put in quotes! "1.0 2.3 5.1 -3.1"). No other flooding parameters are needed when specifying the forces directly. </TD></TD>
 </TABLE>
 <P>
 <hr>

@@ -22,8 +22,8 @@ if(GMX_MPI)
       endif()
       find_package(MPI)
       if(${${MPI_PREFIX}_FOUND})
-        set(GROMACS_C_FLAGS ${GROMACS_FLAGS} ${${MPI_PREFIX}_COMPILE_FLAGS})
-        set(GROMACS_LINKER_FLAGS ${GROMACS_LINKER_FLAGS} ${${MPI_PREFIX}_LINK_FLAGS})
+        set(MPI_COMPILE_FLAGS ${${MPI_PREFIX}_COMPILE_FLAGS})
+        set(MPI_LINKER_FLAGS ${${MPI_PREFIX}_LINK_FLAGS})
         include_directories(${${MPI_PREFIX}_INCLUDE_PATH})
         list(APPEND GMX_EXTRA_LIBRARIES ${${MPI_PREFIX}_LIBRARIES})
       endif()
@@ -108,6 +108,14 @@ if(GMX_MPI)
       endif()
     endif()
     unset(MPINAME_BIN CACHE)
+
+    # Using find_file() runs the CMake standard module
+    # GetPrerequisites.cmake, which adds the file_cmd
+    # variable to the top-level CMake namespace. This is
+    # fixed in CMake 2.8.10. Meanwhile, clean up for it.
+    if(CMAKE_VERSION VERSION_LESS "2.8.10")
+        mark_as_advanced(file_cmd)
+    endif()
 
   else(MPI_FOUND)
     if (CMAKE_VERSION VERSION_LESS "2.8.5")

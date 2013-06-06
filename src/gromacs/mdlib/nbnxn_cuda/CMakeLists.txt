@@ -5,4 +5,5 @@ if(GMX_GPU)
             OPTIONS
             RELWITHDEBINFO -g
             DEBUG -g -D_DEBUG_=1)
+    target_link_libraries(nbnxn_cuda cuda_tools)
 endif()

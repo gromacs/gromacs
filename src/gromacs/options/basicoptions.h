@@ -1,32 +1,36 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2009, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
  * \brief
@@ -35,7 +39,7 @@
  * Together with options.h, this header forms the part of the public API
  * that most classes will use to provide options.
  *
- * \author Teemu Murtola <teemu.murtola@cbr.su.se>
+ * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
  * \ingroup module_options
  */
@@ -69,9 +73,9 @@ class StringOptionStorage;
  *
  * Example:
  * \code
-bool  bPBC;
-using gmx::BooleanOption;
-options.addOption(BooleanOption("pbc").store(&bPBC));
+   bool  bPBC;
+   using gmx::BooleanOption;
+   options.addOption(BooleanOption("pbc").store(&bPBC));
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -97,13 +101,13 @@ class BooleanOption : public OptionTemplate<bool, BooleanOption>
  *
  * Examples:
  * \code
-using gmx::IntegerOption;
-// Simple option
-int  rcut = 0;
-options.addOption(IntegerOption("rcut").store(&rcut));
-// Vector-valued option
-int  box[3] = {1, 1, 1};  // Default value
-options.addOption(IntegerOption("box").store(box).vector());
+   using gmx::IntegerOption;
+   // Simple option
+   int  rcut = 0;
+   options.addOption(IntegerOption("rcut").store(&rcut));
+   // Vector-valued option
+   int  box[3] = {1, 1, 1};  // Default value
+   options.addOption(IntegerOption("box").store(box).vector());
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -192,16 +196,16 @@ class DoubleOption : public OptionTemplate<double, DoubleOption>
  *
  * Examples:
  * \code
-using gmx::StringOption;
-// Simple option
-std::string  str;
-options.addOption(StringOption("str").store(&str));
-// Option that only accepts predefined values
-const char * const  allowed[] = { "atom", "residue", "molecule", NULL };
-std::string  str;
-int          type;
-options.addOption(StringOption("type").enumValue(allowed).store(&str)
-                     .storeEnumIndex(&type));
+   using gmx::StringOption;
+   // Simple option
+   std::string  str;
+   options.addOption(StringOption("str").store(&str));
+   // Option that only accepts predefined values
+   const char * const  allowed[] = { "atom", "residue", "molecule" };
+   std::string  str;
+   int          type;
+   options.addOption(StringOption("type").enumValue(allowed).store(&str)
+                        .storeEnumIndex(&type));
  * \endcode
  *
  * Public methods in this class do not throw.
@@ -216,16 +220,15 @@ class StringOption : public OptionTemplate<std::string, StringOption>
 
         //! Initializes an option with the given name.
         explicit StringOption(const char *name)
-            : MyBase(name), enumValues_(NULL), defaultEnumIndex_(-1),
-              enumIndexStore_(NULL)
+            : MyBase(name), enumValues_(NULL), enumValuesCount_(0),
+              defaultEnumIndex_(-1), enumIndexStore_(NULL)
         {
         }
 
         /*! \brief
          * Sets the option to only accept one of a fixed set of strings.
          *
-         * \param[in] values  Array of strings to accept, a NULL pointer
-         *      following the last string.
+         * \param[in] values  Array of strings to accept.
          *
          * Also accepts prefixes of the strings; if a prefix matches more than
          * one of the possible strings, the shortest one is used (in a tie, the
@@ -237,8 +240,35 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          *
          * The strings are copied once the option is created.
          */
-        MyClass &enumValue(const char *const *values)
-        { enumValues_ = values; return me(); }
+        template <size_t count>
+        MyClass &enumValue(const char *const (&values)[count])
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = count;
+            return me();
+        }
+        /*! \brief
+         * Sets the option to only accept one of a fixed set of strings.
+         *
+         * \param[in] values  Array of strings to accept, with a NULL pointer
+         *      following the last string.
+         *
+         * Works otherwise as the array version, but accepts a pointer to
+         * an array of undetermined length.  The end of the array is indicated
+         * by a NULL pointer in the array.
+         *
+         * \see enumValue()
+         */
+        MyClass &enumValueFromNullTerminatedArray(const char *const *values)
+        {
+            GMX_ASSERT(enumValues_ == NULL,
+                       "Multiple sets of enumerated values specified");
+            enumValues_      = values;
+            enumValuesCount_ = -1;
+            return me();
+        }
         /*! \brief
          * Sets the default value using an index into the enumeration table.
          *
@@ -246,7 +276,7 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          */
         MyClass &defaultEnumIndex(int index)
         {
-            GMX_RELEASE_ASSERT(index >= 0, "Invalid enumeration index");
+            GMX_ASSERT(index >= 0, "Invalid enumeration index");
             defaultEnumIndex_ = index;
             return me();
         }
@@ -260,6 +290,10 @@ class StringOption : public OptionTemplate<std::string, StringOption>
          * and there is no default value, -1 is stored.
          *
          * Cannot be specified without enumValue().
+         *
+         * \todo
+         * Implement this such that it is also possible to store the value
+         * directly into a real enum type.
          */
         MyClass &storeEnumIndex(int *store)
         { enumIndexStore_ = store; return me(); }
@@ -267,9 +301,9 @@ class StringOption : public OptionTemplate<std::string, StringOption>
     private:
         //! Creates a StringOptionStorage object.
         virtual AbstractOptionStoragePointer createStorage() const;
-        virtual std::string createDescription() const;
 
         const char *const      *enumValues_;
+        int                     enumValuesCount_;
         int                     defaultEnumIndex_;
         int                    *enumIndexStore_;
 
@@ -343,6 +377,24 @@ class StringOptionInfo : public OptionInfo
     public:
         //! Creates an option info object for the given option.
         explicit StringOptionInfo(StringOptionStorage *option);
+
+        /*! \brief
+         * Whether this option accepts an enumerated set of values.
+         *
+         * Returns true if StringOption::enumValues() was used when creating
+         * this option.
+         */
+        bool isEnumerated() const;
+        /*! \brief
+         * Returns the set of allowed values for this option.
+         *
+         * Returns an empty vector if isEnumerated() returns false.
+         */
+        const std::vector<std::string> &allowedValues() const;
+
+    private:
+        StringOptionStorage &option();
+        const StringOptionStorage &option() const;
 };
 
 /*!\}*/

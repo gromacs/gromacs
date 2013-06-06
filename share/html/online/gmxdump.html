@@ -9,19 +9,19 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>gmxdump</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-gmxdump reads a run input file (<tt>.<a href="tpa.html">tpa</a></tt>/<tt>.<a href="tpr.html">tpr</a></tt>/<tt>.<a href="tpb.html">tpb</a></tt>),
+<tt>gmxdump</tt> reads a run input file (<tt>.<a href="tpa.html">tpa</a></tt>/<tt>.<a href="tpr.html">tpr</a></tt>/<tt>.<a href="tpb.html">tpb</a></tt>),
 a trajectory (<tt>.<a href="trj.html">trj</a></tt>/<tt>.<a href="trr.html">trr</a></tt>/<tt>.<a href="xtc.html">xtc</a></tt>), an energy
 file (<tt>.<a href="ene.html">ene</a></tt>/<tt>.<a href="edr.html">edr</a></tt>), or a checkpoint file (<tt>.cpt</tt>)
 and prints that to standard output in a readable format.
 This program is essential for checking your run input file in case of
 problems.<p>
 The program can also preprocess a topology to help finding problems.
-Note that currently setting GMXLIB is the only way to customize
+Note that currently setting <tt>GMXLIB</tt> is the only way to customize
 directories used for searching include files.
 <P>
 <H3>Files</H3>
@@ -39,12 +39,17 @@ directories used for searching include files.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nr</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sys</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> List the atoms and bonded interactions for the whole system instead of for each molecule type </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sys</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> List the atoms and bonded interactions for the whole system instead of for each molecule type </TD></TD>
 </TABLE>
+<P>
+<H3>Known problems</H3>
+<UL>
+<LI>Position restraint output from -sys -s is broken
+</UL>
 <P>
 <hr>
 <div ALIGN=RIGHT>

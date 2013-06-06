@@ -11,14 +11,6 @@
 #
 #  This file is part of Gromacs        Copyright (c) 2012
 
-#  This program is free software; you can redistribute it and/or
-#  modify it under the terms of the GNU General Public License
-#  as published by the Free Software Foundation; either version 2
-#  of the License, or (at your option) any later version.
-
-#  To help us fund GROMACS development, we humbly ask that you cite
-#  the research papers on the package. Check out http://www.gromacs.org
-
 list(LENGTH FFTW_FIND_COMPONENTS FFTW_NUM_COMPONENTS_WANTED)
 if(${FFTW_NUM_COMPONENTS_WANTED} LESS 1)
   message(FATAL_ERROR "No FFTW component to search given")
@@ -75,7 +67,7 @@ if (${FFTW}_FOUND)
   foreach(AVX_FUNCTION ${${FFTW}_FUNCTION_PREFIX}_have_simd_avx)
     check_library_exists("${${FFTW}_LIBRARIES}" "${AVX_FUNCTION}" "" ${FFTW}_HAVE_${AVX_FUNCTION})
     if(${FFTW}_HAVE_${AVX_FUNCTION})
-      set(${FFTW}_HAVE_AVX TRUE CACHE BOOL "If ${${FFTW}_PKG} was built with AVX support")
+      set(${FFTW}_HAVE_AVX TRUE)
       break()
     endif(${FFTW}_HAVE_${AVX_FUNCTION})
   endforeach()
@@ -84,7 +76,7 @@ if (${FFTW}_FOUND)
   foreach(SIMD_FCT ${${FFTW}_FUNCTION_PREFIX}_have_simd_sse2;${${FFTW}_FUNCTION_PREFIX}_have_simd_avx;${${FFTW}_FUNCTION_PREFIX}_have_simd_altivec;${${FFTW}_FUNCTION_PREFIX}_have_simd_neon;${${FFTW}_FUNCTION_PREFIX}_have_sse2;${${FFTW}_FUNCTION_PREFIX}_have_sse;${${FFTW}_FUNCTION_PREFIX}_have_altivec)
     check_library_exists("${${FFTW}_LIBRARIES}" "${SIMD_FCT}" "" ${FFTW}_HAVE_${SIMD_FCT})
     if(${FFTW}_HAVE_${SIMD_FCT})
-      set(${FFTW}_HAVE_SIMD TRUE CACHE  BOOL "If ${${FFTW}_PKG} was built with SIMD support")
+      set(${FFTW}_HAVE_SIMD TRUE)
       break()
     endif(${FFTW}_HAVE_${SIMD_FCT})
   endforeach()
@@ -98,6 +90,5 @@ if (${FFTW}_FOUND)
   endif ()
   set(CMAKE_REQUIRED_LIBRARIES)
 endif (${FFTW}_FOUND)
-set(${FFTW}_HAVE_SIMD FALSE CACHE BOOL "If ${${FFTW}_PKG} was built with SIMD support")
 
-mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY ${FFTW}_HAVE_SIMD)
+mark_as_advanced(${FFTW}_INCLUDE_DIR ${FFTW}_LIBRARY)

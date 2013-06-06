@@ -9,17 +9,17 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>trjcat</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.5<br>
-Thu 26 Aug 2010</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.6<br>
+Sat 19 Jan 2013</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-trjcat concatenates several input trajectory files in sorted order. 
+<tt>trjcat</tt> concatenates several input trajectory files in sorted order. 
 In case of double time frames the one in the later file is used. 
 By specifying <tt>-settime</tt> you will be asked for the start time 
 of each file. The input files are taken from the command line, 
-such that a command like <tt>trjcat -o fixed.<a href="trr.html">trr</a> *.<a href="trr.html">trr</a></tt> should do 
-the trick. Using <tt>-cat</tt> you can simply paste several files 
+such that a command like <tt>trjcat -f *.<a href="trr.html">trr</a> -o fixed.<a href="trr.html">trr</a></tt> should do 
+the trick. Using <tt>-cat</tt>, you can simply paste several files 
 together without removal of frames with identical time stamps.<p>
 One important option is inferred when the output file is amongst the
 input files. In that case that particular file will be appended to
@@ -27,15 +27,15 @@ which implies you do not need to store double the amount of data.
 Obviously the file to append to has to be the one with lowest starting
 time since one can only append at the end of a file.<p>
 If the <tt>-demux</tt> option is given, the N trajectories that are
-read, are written in another order as specified in the <a href="xvg.html">xvg</a> file.
-The <a href="xvg.html">xvg</a> file should contain something like:<p>
-0  0  1  2  3  4  5<br>
-2  1  0  2  3  5  4<br>
+read, are written in another order as specified in the <tt>.<a href="xvg.html">xvg</a></tt> file.
+The <tt>.<a href="xvg.html">xvg</a></tt> file should contain something like:<p>
+<tt>0  0  1  2  3  4  5<br>
+2  1  0  2  3  5  4</tt><br>
 Where the first number is the time, and subsequent numbers point to
 trajectory indices.
 The frames corresponding to the numbers present at the first line
 are collected into the output trajectory. If the number of frames in
-the trajectory does not match that in the <a href="xvg.html">xvg</a> file then the program
+the trajectory does not match that in the <tt>.<a href="xvg.html">xvg</a></tt> file then the program
 tries to be smart. Beware.
 <P>
 <H3>Files</H3>
@@ -50,21 +50,21 @@ tries to be smart. Beware.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]version</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print version info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>fs</tt>, <tt>ps</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xvg</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>xmgrace</tt> </TD><TD> <a href="xvg.html">xvg</a> plot formatting: <tt>xmgrace</tt>, <tt>xmgr</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> First time to use (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Last time to use (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-prec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Precision for .<a href="xtc.html">xtc</a> and .<a href="gro.html">gro</a> writing in number of decimal places </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Read and write velocities if possible </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change starting time interactively </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sort trajectory files (not frames) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]keeplast</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> keep overlapping frames at end of trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]overwrite</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> overwrite overlapping frames during appending </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cat</tt></b> </TD><TD ALIGN=RIGHT> gmx_bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> do not discard double time frames </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-prec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Precision for <tt>.<a href="xtc.html">xtc</a></tt> and <tt>.<a href="gro.html">gro</a></tt> writing in number of decimal places </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Read and write velocities if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change starting time interactively </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sort trajectory files (not frames) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]keeplast</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Keep overlapping frames at end of trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]overwrite</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Overwrite overlapping frames during appending </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cat</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not discard double time frames </TD></TD>
 </TABLE>
 <P>
 <hr>
