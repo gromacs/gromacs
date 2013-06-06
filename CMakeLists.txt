@@ -612,6 +612,8 @@ include_directories(${CMAKE_BINARY_DIR}/src)
 include_directories(${CMAKE_BINARY_DIR}/src/gromacs/utility)
 # Required for now to make old code compile
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/legacyheaders)
+# LPW: Required for now for new QMMM
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs)
 
 include(gmxTestInlineASM)
 gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)

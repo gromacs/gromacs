@@ -563,6 +563,10 @@ void init_QMMMrec(t_commrec *cr,
       /* store QM atoms in this layer in the QMrec and initialise layer 
        */
       init_QMrec(j,qr->qm[j],qm_nr,qm_arr,mtop,ir);
+
+      /* LPW */
+      using namespace gmx;
+      qmsys = new QMSystem(j,qr->qm[j],qm_nr,qm_arr,mtop,ir);
       
       /* we now store the LJ C6 and C12 parameters in QM rec in case
        * we need to do an optimization 

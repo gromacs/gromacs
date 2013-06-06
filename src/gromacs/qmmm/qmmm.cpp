@@ -101,6 +101,10 @@ gmx::QMSystem::QMSystem(int grpnr, int nr, int *atomarray, gmx_mtop_t *mtop, t_i
   
   bTS_      = ir->opts.bTS[grpnr];
   bOPT_     = ir->opts.bOPT[grpnr];
+}
 
+// HybridQuantumClassical will eventually take the place of QMMMrec.
+gmx::HybridQuantumClassical::HybridQuantumClassical(const t_commrec *cr, const gmx_mtop_t *mtop, const t_inputrec *ir, const t_forcerec *fr)
+{
 }
 
