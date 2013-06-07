@@ -178,7 +178,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 
     int ncol = _impl->nmax / _impl->ndim + 1;
     _impl->currValues_.reserve(ncol);
-    setColumnCount(ncol);
+    setColumnCount(0, ncol);
 }
 
 

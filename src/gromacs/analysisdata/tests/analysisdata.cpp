@@ -73,20 +73,33 @@ namespace
 TEST(AnalysisDataInitializationTest, BasicInitialization)
 {
     gmx::AnalysisData data;
+    EXPECT_EQ(1, data.dataSetCount());
+    EXPECT_EQ(0, data.columnCount(0));
     EXPECT_EQ(0, data.columnCount());
     EXPECT_FALSE(data.isMultipoint());
     EXPECT_EQ(0, data.frameCount());
 
-    data.setColumnCount(1);
+    data.setColumnCount(0, 1);
+    EXPECT_EQ(1, data.columnCount(0));
     EXPECT_EQ(1, data.columnCount());
     EXPECT_FALSE(data.isMultipoint());
 
-    data.setColumnCount(3);
+    data.setDataSetCount(2);
+    EXPECT_EQ(2, data.dataSetCount());
+    data.setColumnCount(0, 3);
+    EXPECT_EQ(3, data.columnCount(0));
+    EXPECT_EQ(0, data.columnCount(1));
+    data.setColumnCount(1, 2);
+    EXPECT_EQ(3, data.columnCount(0));
+    EXPECT_EQ(2, data.columnCount(1));
+
+    data.setDataSetCount(1);
+    EXPECT_EQ(1, data.dataSetCount());
     data.setMultipoint(true);
     EXPECT_EQ(3, data.columnCount());
     EXPECT_TRUE(data.isMultipoint());
 
-    data.setColumnCount(1);
+    data.setColumnCount(0, 1);
     EXPECT_EQ(1, data.columnCount());
     EXPECT_TRUE(data.isMultipoint());
 }
@@ -98,7 +111,7 @@ TEST(AnalysisDataInitializationTest, BasicInitialization)
 TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
 {
     gmx::AnalysisData data;
-    data.setColumnCount(2);
+    data.setColumnCount(0, 2);
 
     MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
     EXPECT_THROW_GMX(data.addModule(mod1), gmx::APIError);
@@ -112,10 +125,10 @@ TEST(AnalysisDataInitializationTest, ChecksMultiColumnModules)
  * Tests that checking for compatibility of modules with multipoint data
  * works.
  */
-TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
+TEST(AnalysisDataInitializationTest, ChecksMultipointModules)
 {
     gmx::AnalysisData data;
-    data.setColumnCount(1);
+    data.setColumnCount(0, 1);
     data.setMultipoint(true);
 
     MockAnalysisDataModulePointer mod1(new MockAnalysisDataModule(0));
@@ -141,11 +154,42 @@ class SimpleInputData
             return singleton.data_;
         }
 
-        SimpleInputData() : data_(3, false)
+        SimpleInputData() : data_(1, false)
         {
+            data_.setColumnCount(0, 3);
             data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
             data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
             data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
+};
+
+// Input data with multiple data sets for gmx::AnalysisData tests.
+class DataSetsInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static DataSetsInputData singleton;
+            return singleton.data_;
+        }
+
+        DataSetsInputData() : data_(2, false)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 3);
+            data_.setColumnCount(1, 2);
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(1, 0, 2.1, 1.1);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
+            frame2.addPointSetWithValues(1, 0, 0.1, 2.1);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(1, 0, 1.1, 1.1);
         }
 
     private:
@@ -162,21 +206,55 @@ class MultipointInputData
             return singleton.data_;
         }
 
-        MultipointInputData() : data_(3, true)
+        MultipointInputData() : data_(1, true)
         {
             using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 3);
             AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 1.1, 2.1, 1.1);
-            frame1.addPointSetWithValues(0, 2.2, 1.2, 0.2);
+            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 0, 1.1, 2.1, 1.1);
+            frame1.addPointSetWithValues(0, 0, 2.2, 1.2, 0.2);
             AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(1, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 2.1, 1.1, 0.1);
-            frame2.addPointSetWithValues(2, 1.2);
+            frame2.addPointSetWithValues(0, 1, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 0, 2.1, 1.1, 0.1);
+            frame2.addPointSetWithValues(0, 2, 1.2);
             AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 2.0, 0.0, 0.0);
-            frame3.addPointSetWithValues(0, 3.1, 2.1);
-            frame3.addPointSetWithValues(1, 2.2, 1.2);
+            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(0, 0, 3.1, 2.1);
+            frame3.addPointSetWithValues(0, 1, 2.2, 1.2);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
+};
+
+// Input data with multiple multipoint data sets for gmx::AnalysisData tests.
+class MultipointDataSetsInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static MultipointDataSetsInputData singleton;
+            return singleton.data_;
+        }
+
+        MultipointDataSetsInputData() : data_(2, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 3);
+            data_.setColumnCount(1, 2);
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 1, 2.1, 1.1);
+            frame1.addPointSetWithValues(1, 0, 2.01, 1.01);
+            frame1.addPointSetWithValues(1, 1, 0.11);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 0, 1.0, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 0, 0.1, 2.1);
+            frame2.addPointSetWithValues(1, 1, 1.01);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(0, 1, 1.1);
         }
 
     private:
@@ -239,7 +317,11 @@ typedef AnalysisDataCommonTest<SimpleInputData>     AnalysisDataSimpleTest;
 //! Test fixture for tests that are only applicable to multipoint data.
 typedef AnalysisDataCommonTest<MultipointInputData> AnalysisDataMultipointTest;
 //! List of input data types for tests applicable to all types of data.
-typedef ::testing::Types<SimpleInputData, MultipointInputData> AllInputDataTypes;
+typedef ::testing::Types<SimpleInputData,
+                         DataSetsInputData,
+                         MultipointInputData,
+                         MultipointDataSetsInputData>
+    AllInputDataTypes;
 TYPED_TEST_CASE(AnalysisDataCommonTest, AllInputDataTypes);
 
 /*

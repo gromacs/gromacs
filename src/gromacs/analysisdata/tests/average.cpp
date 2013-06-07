@@ -69,8 +69,9 @@ class SimpleInputData
             return singleton.data_;
         }
 
-        SimpleInputData() : data_(3, false)
+        SimpleInputData() : data_(1, false)
         {
+            data_.setColumnCount(0, 3);
             data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
             data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
             data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
@@ -90,18 +91,19 @@ class MultipointInputData
             return singleton.data_;
         }
 
-        MultipointInputData() : data_(3, true)
+        MultipointInputData() : data_(1, true)
         {
             using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 3);
             AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0.0, 1.0, 2.0);
-            frame1.addPointSetWithValues(0, 1.0, 0.0);
-            frame1.addPointSetWithValues(0, 2.0);
+            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
+            frame1.addPointSetWithValues(0, 0, 2.0);
             AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 1.0, 1.0);
-            frame2.addPointSetWithValues(0, 2.0);
+            frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 0, 2.0);
             AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
         }
 
     private:

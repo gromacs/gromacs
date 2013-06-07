@@ -128,7 +128,7 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     nb_.setCutoff(cutoff_);
 
-    data_.setColumnCount(sel_.size());
+    data_.setColumnCount(0, sel_.size());
 
     avem_.reset(new AnalysisDataAverageModule());
     data_.addModule(avem_);

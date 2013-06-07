@@ -601,7 +601,7 @@ void
 AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     addModule(impl_->averager_);
-    setColumnCount(settings().binCount());
+    setColumnCount(0, settings().binCount());
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }
@@ -712,7 +712,7 @@ void
 AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     addModule(impl_->averager_);
-    setColumnCount(settings().binCount());
+    setColumnCount(0, settings().binCount());
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }

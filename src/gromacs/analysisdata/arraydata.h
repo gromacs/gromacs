@@ -68,6 +68,9 @@ namespace gmx
  * \todo
  * Add methods to take full advantage of AnalysisDataValue features.
  *
+ * \todo
+ * Add support for multiple data sets.
+ *
  * \inlibraryapi
  * \ingroup module_analysisdata
  */
