@@ -76,7 +76,7 @@ FreeVolume::FreeVolume()
       adata_(new AnalysisDataAverageModule())
 {
     // We only compute two numbers per frame
-    data_.setColumnCount(2);
+    data_.setColumnCount(0, 2);
     // Tell the analysis framework that this component exists
     registerAnalysisDataset(&data_, "freevolume");
     rng_         = NULL;

@@ -164,18 +164,19 @@ class SimpleInputData
         SimpleInputData() : data_(1, true)
         {
             using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 1);
             AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0.7);
-            frame1.addPointSetWithValues(0, 1.1);
-            frame1.addPointSetWithValues(0, 2.3);
-            frame1.addPointSetWithValues(0, 2.9);
+            frame1.addPointSetWithValues(0, 0, 0.7);
+            frame1.addPointSetWithValues(0, 0, 1.1);
+            frame1.addPointSetWithValues(0, 0, 2.3);
+            frame1.addPointSetWithValues(0, 0, 2.9);
             AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 1.3);
-            frame2.addPointSetWithValues(0, 2.2);
+            frame2.addPointSetWithValues(0, 0, 1.3);
+            frame2.addPointSetWithValues(0, 0, 2.2);
             AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 3.3);
-            frame3.addPointSetWithValues(0, 1.2);
-            frame3.addPointSetWithValues(0, 1.3);
+            frame3.addPointSetWithValues(0, 0, 3.3);
+            frame3.addPointSetWithValues(0, 0, 1.2);
+            frame3.addPointSetWithValues(0, 0, 1.3);
         }
 
     private:
@@ -241,21 +242,22 @@ class WeightedInputData
             return singleton.data_;
         }
 
-        WeightedInputData() : data_(2, true)
+        WeightedInputData() : data_(1, true)
         {
             using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 2);
             AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
-            frame1.addPointSetWithValues(0, 0.7, 0.5);
-            frame1.addPointSetWithValues(0, 1.1, 1.0);
-            frame1.addPointSetWithValues(0, 2.3, 1.0);
-            frame1.addPointSetWithValues(0, 2.9, 2.0);
+            frame1.addPointSetWithValues(0, 0, 0.7, 0.5);
+            frame1.addPointSetWithValues(0, 0, 1.1, 1.0);
+            frame1.addPointSetWithValues(0, 0, 2.3, 1.0);
+            frame1.addPointSetWithValues(0, 0, 2.9, 2.0);
             AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
-            frame2.addPointSetWithValues(0, 1.3, 1.0);
-            frame2.addPointSetWithValues(0, 2.2, 3.0);
+            frame2.addPointSetWithValues(0, 0, 1.3, 1.0);
+            frame2.addPointSetWithValues(0, 0, 2.2, 3.0);
             AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
-            frame3.addPointSetWithValues(0, 3.3, 0.5);
-            frame3.addPointSetWithValues(0, 1.2, 2.0);
-            frame3.addPointSetWithValues(0, 1.3, 1.0);
+            frame3.addPointSetWithValues(0, 0, 3.3, 0.5);
+            frame3.addPointSetWithValues(0, 0, 1.2, 2.0);
+            frame3.addPointSetWithValues(0, 0, 1.3, 1.0);
         }
 
     private:
@@ -367,8 +369,9 @@ class AverageInputData
             return singleton.data_;
         }
 
-        AverageInputData() : data_(2, false)
+        AverageInputData() : data_(1, false)
         {
+            data_.setColumnCount(0, 2);
             data_.addFrameWithValues(1.0,  2.0, 1.0);
             data_.addFrameWithValues(1.5,  1.0, 1.0);
             data_.addFrameWithValues(2.0,  3.0, 2.0);

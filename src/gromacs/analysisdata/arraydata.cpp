@@ -51,7 +51,7 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : rowCount_(0), pointSetInfo_(0, 0, 0), xstart_(0.0), xstep_(1.0),
+    : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstart_(0.0), xstep_(1.0),
       bReady_(false)
 {
 }
@@ -89,8 +89,8 @@ AbstractAnalysisArrayData::setColumnCount(int ncols)
 {
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change column count after data has been allocated");
-    AbstractAnalysisData::setColumnCount(ncols);
-    pointSetInfo_ = AnalysisDataPointSetInfo(0, ncols, 0);
+    AbstractAnalysisData::setColumnCount(0, ncols);
+    pointSetInfo_ = AnalysisDataPointSetInfo(0, ncols, 0, 0);
 }
 
 

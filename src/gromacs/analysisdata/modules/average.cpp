@@ -144,7 +144,7 @@ class AnalysisDataFrameAverageModule::Impl
 AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
     : impl_(new Impl())
 {
-    setColumnCount(1);
+    setColumnCount(0, 1);
 }
 
 AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()

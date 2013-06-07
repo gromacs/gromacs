@@ -107,8 +107,6 @@ class AnalysisDataStorage::Impl
 
         Impl();
 
-        //! Returns the number of columns in the attached data.
-        int columnCount() const;
         //! Returns whether the storage is set to use multipoint data.
         bool isMultipoint() const;
         /*! \brief
@@ -349,7 +347,8 @@ class AnalysisDataStorageFrameData
         /*! \brief
          * Adds a new point set to this frame.
          */
-        void addPointSet(int firstColumn, ValueIterator begin, ValueIterator end);
+        void addPointSet(int dataSetIndex, int firstColumn,
+                         ValueIterator begin, ValueIterator end);
         /*! \brief
          * Finalizes the frame during AnalysisDataStorage::finishFrame().
          *
@@ -398,14 +397,6 @@ AnalysisDataStorage::Impl::Impl()
     : data_(NULL),
       storageLimit_(0), pendingLimit_(1), firstFrameLocation_(0), nextIndex_(0)
 {
-}
-
-
-int
-AnalysisDataStorage::Impl::columnCount() const
-{
-    GMX_ASSERT(data_ != NULL, "columnCount() called too early");
-    return data_->columnCount();
 }
 
 
@@ -489,7 +480,7 @@ AnalysisDataStorage::Impl::getFrameBuilder()
 {
     if (builders_.empty())
     {
-        return FrameBuilderPointer(new AnalysisDataStorageFrame(columnCount()));
+        return FrameBuilderPointer(new AnalysisDataStorageFrame(*data_));
     }
     FrameBuilderPointer builder(move(builders_.back()));
     builders_.pop_back();
@@ -596,8 +587,14 @@ AnalysisDataStorageFrameData::AnalysisDataStorageFrameData(
     // so initialize it only once here.
     if (!baseData().isMultipoint())
     {
-        int columnCount = baseData().columnCount();
-        pointSets_.push_back(AnalysisDataPointSetInfo(0, columnCount, 0));
+        int offset = 0;
+        for (int i = 0; i < baseData().dataSetCount(); ++i)
+        {
+            int columnCount = baseData().columnCount(i);
+            pointSets_.push_back(
+                    AnalysisDataPointSetInfo(offset, columnCount, i, 0));
+            offset += columnCount;
+        }
     }
 }
 
@@ -625,17 +622,19 @@ AnalysisDataStorageFrameData::startFrame(
     header_         = header;
     builder_        = move(builder);
     builder_->data_ = this;
+    builder_->selectDataSet(0);
 }
 
 
 void
-AnalysisDataStorageFrameData::addPointSet(int firstColumn,
+AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
                                           ValueIterator begin, ValueIterator end)
 {
     const int valueCount  = end - begin;
     if (storageImpl().shouldNotifyImmediately())
     {
-        AnalysisDataPointSetInfo pointSetInfo(0, valueCount, firstColumn);
+        AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
+                                              dataSetIndex, firstColumn);
         storageImpl().notifyPointSet(
                 AnalysisDataPointSetRef(header(), pointSetInfo,
                                         AnalysisDataValuesRef(begin, end)));
@@ -643,7 +642,8 @@ AnalysisDataStorageFrameData::addPointSet(int firstColumn,
     else
     {
         pointSets_.push_back(
-                AnalysisDataPointSetInfo(values_.size(), valueCount, firstColumn));
+                AnalysisDataPointSetInfo(values_.size(), valueCount,
+                                         dataSetIndex, firstColumn));
         std::copy(begin, end, std::back_inserter(values_));
     }
 }
@@ -655,7 +655,7 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
     status_ = eFinished;
     if (!bMultipoint)
     {
-        GMX_RELEASE_ASSERT(pointSets_.size() == 1U,
+        GMX_RELEASE_ASSERT(static_cast<int>(pointSets_.size()) == baseData().dataSetCount(),
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();
@@ -687,9 +687,17 @@ AnalysisDataStorageFrameData::pointSet(int index) const
  * AnalysisDataStorageFrame
  */
 
-AnalysisDataStorageFrame::AnalysisDataStorageFrame(int columnCount)
-    : data_(NULL), values_(columnCount), bPointSetInProgress_(false)
+AnalysisDataStorageFrame::AnalysisDataStorageFrame(
+        const AbstractAnalysisData &data)
+    : data_(NULL), currentDataSet_(0), currentOffset_(0),
+      columnCount_(data.columnCount(0)), bPointSetInProgress_(false)
 {
+    int totalColumnCount = 0;
+    for (int i = 0; i < data.dataSetCount(); ++i)
+    {
+        totalColumnCount += data.columnCount(i);
+    }
+    values_.resize(totalColumnCount);
 }
 
 
@@ -714,6 +722,26 @@ AnalysisDataStorageFrame::clearValues()
 
 
 void
+AnalysisDataStorageFrame::selectDataSet(int index)
+{
+    GMX_RELEASE_ASSERT(data_ != NULL, "Invalid frame accessed");
+    const AbstractAnalysisData &baseData = data_->baseData();
+    GMX_RELEASE_ASSERT(index >= 0 && index < baseData.dataSetCount(),
+                       "Out of range data set index");
+    GMX_RELEASE_ASSERT(!baseData.isMultipoint() || !bPointSetInProgress_,
+                       "Point sets in multipoint data cannot span data sets");
+    currentDataSet_ = index;
+    currentOffset_  = 0;
+    // TODO: Consider precalculating.
+    for (int i = 0; i < index; ++i)
+    {
+        currentOffset_ += baseData.columnCount(i);
+    }
+    columnCount_    = baseData.columnCount(index);
+}
+
+
+void
 AnalysisDataStorageFrame::finishPointSet()
 {
     GMX_RELEASE_ASSERT(data_ != NULL, "Invalid frame accessed");
@@ -721,18 +749,25 @@ AnalysisDataStorageFrame::finishPointSet()
                        "Should not be called for non-multipoint data");
     if (bPointSetInProgress_)
     {
-        std::vector<AnalysisDataValue>::const_iterator begin = values_.begin();
-        std::vector<AnalysisDataValue>::const_iterator end   = values_.end();
+        std::vector<AnalysisDataValue>::const_iterator begin
+            = values_.begin() + currentOffset_;
+        std::vector<AnalysisDataValue>::const_iterator end
+            = begin + columnCount_;
+        int firstColumn = 0;
         while (begin != end && !begin->isSet())
         {
             ++begin;
+            ++firstColumn;
         }
         while (end != begin && !(end-1)->isSet())
         {
             --end;
         }
-        int firstColumn = (begin != end) ? begin - values_.begin() : 0;
-        data_->addPointSet(firstColumn, begin, end);
+        if (begin == end)
+        {
+            firstColumn = 0;
+        }
+        data_->addPointSet(currentDataSet_, firstColumn, begin, end);
     }
     clearValues();
 }
