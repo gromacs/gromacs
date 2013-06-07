@@ -87,8 +87,23 @@ class AnalysisDataStorageFrame
          */
         ~AnalysisDataStorageFrame();
 
+        /*! \brief
+         * Select data set that all other methods operate on.
+         *
+         * \param[in] index  Zero-based data set index to select.
+         *
+         * With multipoint data, a single point set can only contain values in
+         * a single data set.
+         * With non-multipoint data, arbitrary sequences of selectDataSet() and
+         * setValue() are supported.  The full frame is notified to the modules
+         * once it is finished.
+         *
+         * Does not throw.
+         */
+        void selectDataSet(int index);
+
         //! Returns number of columns for the frame.
-        int columnCount() const { return values_.size(); }
+        int columnCount() const { return columnCount_; }
 
         /*! \brief
          * Sets value for a column.
@@ -106,7 +121,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[column].setValue(value, bPresent);
+            values_[currentOffset_ + column].setValue(value, bPresent);
             bPointSetInProgress_ = true;
         }
         /*! \brief
@@ -126,7 +141,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[column].setValue(value, error, bPresent);
+            values_[currentOffset_ + column].setValue(value, error, bPresent);
             bPointSetInProgress_ = true;
         }
         /*! \brief
@@ -144,7 +159,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[column].value();
+            return values_[currentOffset_ + column].value();
         }
         /*! \brief
          * Access value for a column.
@@ -160,7 +175,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[column].value();
+            return values_[currentOffset_ + column].value();
         }
         /*! \brief
          * Mark point set as finished for multipoint data.
@@ -193,9 +208,10 @@ class AnalysisDataStorageFrame
         /*! \brief
          * Create a new storage frame.
          *
-         * \param[in] columnCount  Number of columns for the frame.
+         * \param[in] data  Data object for which the frame is for
+         *      (used for data set and column counts).
          */
-        explicit AnalysisDataStorageFrame(int columnCount);
+        explicit AnalysisDataStorageFrame(const AbstractAnalysisData &data);
 
         //! Clear all column values from the frame.
         void clearValues();
@@ -204,6 +220,13 @@ class AnalysisDataStorageFrame
         internal::AnalysisDataStorageFrameData *data_;
         //! Values for the currently in-progress point set.
         std::vector<AnalysisDataValue>          values_;
+
+        //! Index of the currently active dataset.
+        int                                     currentDataSet_;
+        //! Offset of the first value in \a values_ for the current data set.
+        int                                     currentOffset_;
+        //! Number of columns in the current data set.
+        int                                     columnCount_;
 
         //! Whether any values have been set in the current point set.
         bool                                    bPointSetInProgress_;

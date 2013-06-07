@@ -79,6 +79,8 @@ class AnalysisDataTestInputPointSet
     public:
         //! Returns zero-based index of this point set in its frame.
         int index() const { return index_; }
+        //! Returns zero-based index of the data set of this point set.
+        int dataSetIndex() const { return dataSetIndex_; }
         //! Returns zero-based index of the first column in this point set.
         int firstColumn() const { return firstColumn_; }
         //! Returns zero-based index of the last column in this point set.
@@ -99,9 +101,11 @@ class AnalysisDataTestInputPointSet
 
     private:
         //! Creates an empty point set.
-        AnalysisDataTestInputPointSet(int index, int firstColumn);
+        AnalysisDataTestInputPointSet(int index, int dataSetIndex,
+                                      int firstColumn);
 
         int                     index_;
+        int                     dataSetIndex_;
         int                     firstColumn_;
         std::vector<real>       y_;
 
@@ -136,13 +140,15 @@ class AnalysisDataTestInputFrame
         }
 
         //! Appends an empty point set to this frame.
-        AnalysisDataTestInputPointSet &addPointSet(int firstColumn);
+        AnalysisDataTestInputPointSet &addPointSet(int dataSet, int firstColumn);
         //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int firstColumn, real y1);
+        void addPointSetWithValues(int dataSet, int firstColumn, real y1);
         //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int firstColumn, real y1, real y2);
+        void addPointSetWithValues(int dataSet, int firstColumn,
+                                   real y1, real y2);
         //! Adds a point set with given values to this frame.
-        void addPointSetWithValues(int firstColumn, real y1, real y2, real y3);
+        void addPointSetWithValues(int dataSet, int firstColumn,
+                                   real y1, real y2, real y3);
 
     private:
         //! Constructs a new frame object with the given values.
@@ -173,21 +179,28 @@ class AnalysisDataTestInput
         /*! \brief
          * Constructs empty input data.
          *
-         * \param[in] columnCount  Number of columns in the data.
+         * \param[in] dataSetCount Number of data sets in the data.
          * \param[in] bMultipoint  Whether the data will be multipoint.
+         *
+         * The column count for each data set must be set with
+         * setColumnCount().
          */
-        AnalysisDataTestInput(int columnCount, bool bMultipoint);
+        AnalysisDataTestInput(int dataSetCount, bool bMultipoint);
         ~AnalysisDataTestInput();
 
         //! Whether the input data is multipoint.
         bool isMultipoint() const { return bMultipoint_; }
-        //! Returns the number of columns in the input data.
-        int columnCount() const { return columnCount_; }
+        //! Returns the number of data sets in the input data.
+        int dataSetCount() const { return columnCounts_.size(); }
+        //! Returns the number of columns in a given data set.
+        int columnCount(int dataSet) const { return columnCounts_[dataSet]; }
         //! Returns the number of frames in the input data.
         int frameCount() const { return frames_.size(); }
         //! Returns a frame object for the given input frame.
         const AnalysisDataTestInputFrame &frame(int index) const;
 
+        //! Sets the number of columns in a data set.
+        void setColumnCount(int dataSet, int columnCount);
         //! Appends an empty frame to this data.
         AnalysisDataTestInputFrame &addFrame(real x);
         //! Adds a frame with a single point set and the given values.
@@ -198,7 +211,7 @@ class AnalysisDataTestInput
         void addFrameWithValues(real x, real y1, real y2, real y3);
 
     private:
-        int                                     columnCount_;
+        std::vector<int>                        columnCounts_;
         bool                                    bMultipoint_;
         std::vector<AnalysisDataTestInputFrame> frames_;
 };
@@ -393,11 +406,13 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
 {
     GMX_RELEASE_ASSERT(!input.isMultipoint(),
                        "Array data cannot be initialized from multipoint data");
-    GMX_RELEASE_ASSERT(data->columnCount() == 0 || data->columnCount() == input.columnCount(),
+    GMX_RELEASE_ASSERT(input.dataSetCount() == 1,
+                       "Array data cannot be initialized from multiple data sets");
+    GMX_RELEASE_ASSERT(data->columnCount() == 0 || data->columnCount() == input.columnCount(0),
                        "Mismatching input and target data");
     GMX_RELEASE_ASSERT(data->rowCount() == 0 || data->rowCount() == input.frameCount(),
                        "Mismatching input and target data");
-    data->setColumnCount(input.columnCount());
+    data->setColumnCount(input.columnCount(0));
     data->setRowCount(input.frameCount());
     data->allocateValues();
     for (int row = 0; row < input.frameCount(); ++row)

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,9 +51,8 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
                                      AbstractAnalysisData *data)
     : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan)
 {
-    GMX_RELEASE_ASSERT(data, "Source data must not be NULL");
+    GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
-    setColumnCount(columnSpan);
     setMultipoint(source_.isMultipoint());
 }
 
@@ -80,7 +79,8 @@ AnalysisDataProxy::requestStorageInternal(int nframes)
 int
 AnalysisDataProxy::flags() const
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing;
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
+           | efAllowMultipleDataSets;
 }
 
 
@@ -88,8 +88,11 @@ void
 AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 {
     GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
-    GMX_RELEASE_ASSERT(firstColumn_ + columnSpan_ <= source_.columnCount(),
-                       "Invalid column(s) specified");
+    setDataSetCount(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        setColumnCount(i, columnSpan_);
+    }
     notifyDataStart();
 }
 

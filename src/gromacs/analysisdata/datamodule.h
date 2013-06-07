@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -82,13 +82,15 @@ class AnalysisDataModuleInterface
          */
         enum {
             //! The module can process multipoint data.
-            efAllowMultipoint    = 0x01,
+            efAllowMultipoint           = 1<<0,
             //! The module does not make sense for non-multipoint data.
-            efOnlyMultipoint     = 0x02,
+            efOnlyMultipoint            = 1<<1,
             //! The module can process data with more than one column.
-            efAllowMulticolumn   = 0x04,
+            efAllowMulticolumn          = 1<<2,
             //! The module can process data with missing points.
-            efAllowMissing       = 0x08,
+            efAllowMissing              = 1<<3,
+            //! The module can process data with multiple data sets.
+            efAllowMultipleDataSets     = 1<<4
         };
 
         virtual ~AnalysisDataModuleInterface() {};
