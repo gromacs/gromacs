@@ -67,14 +67,14 @@ const real inputdata[] = {
 };
 //! Multipoint input data for gmx::AnalysisDataAverageModule tests.
 const real mpinputdata[] = {
-    // *INDENT-OFF*
+/* *INDENT-OFF* */
     1.0,  0.0, 1.0, 2.0, MPSTOP,
-    1.0, 0.0, MPSTOP,
-    2.0, END_OF_FRAME,
+          1.0, 0.0, MPSTOP,
+          2.0, END_OF_FRAME,
     2.0,  1.0, 1.0, MPSTOP,
-    2.0, END_OF_FRAME,
+          2.0, END_OF_FRAME,
     3.0,  2.0, 0.0, 0.0, END_OF_FRAME
-    // *INDENT-ON*
+/* *INDENT-ON* */
 };
 
 
@@ -89,7 +89,8 @@ TEST_F(AverageModuleTest, BasicTest)
 {
     gmx::test::AnalysisDataTestInput      input(inputdata);
     gmx::AnalysisData                     data;
-    data.setColumnCount(input.columnCount());
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
     gmx::AnalysisDataAverageModulePointer module(
             new gmx::AnalysisDataAverageModule);
     data.addModule(module);
@@ -104,8 +105,8 @@ TEST_F(AverageModuleTest, HandlesMultipointData)
 {
     gmx::test::AnalysisDataTestInput input(mpinputdata);
     gmx::AnalysisData                data;
-    data.setColumnCount(input.columnCount());
-    data.setMultipoint(true);
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
     gmx::AnalysisDataAverageModulePointer module(
             new gmx::AnalysisDataAverageModule);
     data.addModule(module);
@@ -120,7 +121,8 @@ TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
     gmx::test::AnalysisDataTestInput      input(inputdata);
     gmx::AnalysisData                     data;
-    data.setColumnCount(input.columnCount());
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
     gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
     data.addModule(module);
     module->setXAxis(0.5, 0.5);
@@ -142,7 +144,8 @@ TEST_F(FrameAverageModuleTest, BasicTest)
 {
     gmx::test::AnalysisDataTestInput           input(inputdata);
     gmx::AnalysisData                          data;
-    data.setColumnCount(input.columnCount());
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
     gmx::AnalysisDataFrameAverageModulePointer module(
             new gmx::AnalysisDataFrameAverageModule);
     data.addModule(module);
