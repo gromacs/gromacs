@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ Distance::Distance()
     : TrajectoryAnalysisModule(name, shortDescription),
       avem_(new AnalysisDataAverageModule())
 {
-    data_.setColumnCount(4);
+    data_.setColumnCount(0, 4);
     registerAnalysisDataset(&data_, "distance");
 }
 

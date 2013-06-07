@@ -342,6 +342,7 @@ class StaticDataPointsChecker
         {
             SCOPED_TRACE(formatString("Frame %d, point set %d",
                                       frame_->index(), points_->index()));
+            EXPECT_EQ(points_->dataSetIndex(), points.dataSetIndex());
             const int expectedFirstColumn
                 = std::max(0, points_->firstColumn() - firstcol_);
             const int expectedLastColumn
@@ -482,9 +483,7 @@ void
 MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
                                          AbstractAnalysisData        *source)
 {
-    GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
-                       "Mismatching data column count");
-    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -499,9 +498,9 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
             const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
-            EXPECT_CALL(*this, pointsAdded(_))
-                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
-                                                         data.columnCount())));
+            StaticDataPointsChecker              checker(&frame, &points, 0,
+                                                         data.columnCount(points.dataSetIndex()));
+            EXPECT_CALL(*this, pointsAdded(_)).WillOnce(Invoke(checker));
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
@@ -515,11 +514,7 @@ MockAnalysisDataModule::setupStaticColumnCheck(
         const AnalysisDataTestInput &data,
         int firstcol, int n, AbstractAnalysisData *source)
 {
-    GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
-                       "Mismatching data column count");
-    GMX_RELEASE_ASSERT(firstcol >= 0 && n > 0 && firstcol + n <= data.columnCount(),
-                       "Out-of-range columns");
-    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -553,11 +548,9 @@ MockAnalysisDataModule::setupStaticStorageCheck(
         const AnalysisDataTestInput &data,
         int storageCount, AbstractAnalysisData *source)
 {
-    GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
-                       "Mismatching data column count");
     GMX_RELEASE_ASSERT(data.isMultipoint() == source->isMultipoint(),
                        "Mismatching multipoint properties");
-    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
     ::testing::InSequence dummy;
     using ::testing::_;

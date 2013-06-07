@@ -71,7 +71,9 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         const AnalysisDataFrameHeader  &header,
         const AnalysisDataPointSetInfo &pointSetInfo,
         const AnalysisDataValuesRef    &values)
-    : header_(header), firstColumn_(pointSetInfo.firstColumn()),
+    : header_(header),
+      dataSetIndex_(pointSetInfo.dataSetIndex()),
+      firstColumn_(pointSetInfo.firstColumn()),
       values_(&*values.begin() + pointSetInfo.valueOffset(),
               pointSetInfo.valueCount())
 {
@@ -92,7 +94,8 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         const AnalysisDataPointSetRef &points, int firstColumn, int columnCount)
-    : header_(points.header()), firstColumn_(0)
+    : header_(points.header()), dataSetIndex_(points.dataSetIndex()),
+      firstColumn_(0)
 {
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
     GMX_ASSERT(columnCount >= 0, "Invalid column count");

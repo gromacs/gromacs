@@ -274,7 +274,7 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     checkSelections(sel1_, sel2_);
 
-    angles_.setColumnCount(sel1_[0].posCount() / natoms1_);
+    angles_.setColumnCount(0, sel1_[0].posCount() / natoms1_);
     double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
                                .binWidth(binWidth_).includeAll());

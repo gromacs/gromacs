@@ -125,12 +125,20 @@ AnalysisData::~AnalysisData()
 
 
 void
-AnalysisData::setColumnCount(int ncol)
+AnalysisData::setDataSetCount(int dataSetCount)
 {
-    GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
-    AbstractAnalysisData::setColumnCount(ncol);
+    AbstractAnalysisData::setDataSetCount(dataSetCount);
+}
+
+
+void
+AnalysisData::setColumnCount(int dataSet, int columnCount)
+{
+    GMX_RELEASE_ASSERT(impl_->handles_.empty(),
+                       "Cannot change data dimensionality after creating handles");
+    AbstractAnalysisData::setColumnCount(dataSet, columnCount);
 }
 
 
@@ -223,6 +231,16 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_ =
         &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+}
+
+
+void
+AnalysisDataHandle::selectDataSet(int index)
+{
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "selectDataSet() called without calling startFrame()");
+    impl_->currentFrame_->selectDataSet(index);
 }
 
 

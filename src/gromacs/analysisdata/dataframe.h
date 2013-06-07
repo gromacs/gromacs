@@ -292,25 +292,29 @@ class AnalysisDataPointSetInfo
     public:
         //! Construct point set data object with the given values.
         AnalysisDataPointSetInfo(int valueOffset, int valueCount,
-                                 int firstColumn)
+                                 int dataSetIndex, int firstColumn)
             : valueOffset_(valueOffset), valueCount_(valueCount),
-              firstColumn_(firstColumn)
+              dataSetIndex_(dataSetIndex), firstColumn_(firstColumn)
         {
-            GMX_ASSERT(valueOffset >= 0, "Negative value offsets are invalid");
-            GMX_ASSERT(valueCount  >= 0, "Negative value counts are invalid");
-            GMX_ASSERT(firstColumn >= 0, "Negative column indices are invalid");
+            GMX_ASSERT(valueOffset  >= 0, "Negative value offsets are invalid");
+            GMX_ASSERT(valueCount   >= 0, "Negative value counts are invalid");
+            GMX_ASSERT(dataSetIndex >= 0, "Negative data set indices are invalid");
+            GMX_ASSERT(firstColumn  >= 0, "Negative column indices are invalid");
         }
 
         //! Returns the offset of the first value in the value array.
         int valueOffset() const { return valueOffset_; }
         //! Returns the number of values in this point set.
         int valueCount() const { return valueCount_; }
+        //! Returns the data set index for this point set.
+        int dataSetIndex() const { return dataSetIndex_; }
         //! Returns the index of the first column in this point set.
         int firstColumn() const { return firstColumn_; }
 
     private:
         int                     valueOffset_;
         int                     valueCount_;
+        int                     dataSetIndex_;
         int                     firstColumn_;
 };
 
@@ -410,6 +414,11 @@ class AnalysisDataPointSetRef
         {
             return header_.dx();
         }
+        //! Returns zero-based index of the dataset that this set is part of.
+        int dataSetIndex() const
+        {
+            return dataSetIndex_;
+        }
         //! Returns zero-based index of the first column included in this set.
         int firstColumn() const
         {
@@ -482,6 +491,7 @@ class AnalysisDataPointSetRef
 
     private:
         AnalysisDataFrameHeader header_;
+        int                     dataSetIndex_;
         int                     firstColumn_;
         AnalysisDataValuesRef   values_;
 };
