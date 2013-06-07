@@ -531,7 +531,6 @@ int main(int argc,char *argv[])
         }    
         if ((mmi.topology->atoms.nr <= 0) || (i < mmi.topology->atoms.nr))
             continue;
-
         
         for(int j=0; (j<mmi.ltop->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1)
         {

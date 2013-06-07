@@ -369,7 +369,20 @@ void MolProp::AddComposition(MolecularComposition mc)
         _mol_comp.push_back(mc);
     }
 }
-  
+
+bool MolProp::BondExists(Bond b)
+{
+    for(alexandria::BondIterator bi=BeginBond(); (bi<EndBond()); bi++) 
+    {
+        if (((bi->GetAi() == b.GetAi()) && (bi->GetAj() == b.GetAj())) ||
+            ((bi->GetAi() == b.GetAj()) && (bi->GetAj() == b.GetAi())))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 void MolProp::Merge(MolProp& src)
 {
     double q,sq;
@@ -423,10 +436,25 @@ void MolProp::Merge(MolProp& src)
     if ((GetInchi().size() == 0) && (stmp.size() != 0))
         SetInchi(stmp);
   
-    for(alexandria::BondIterator bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
+    if (NBond() == 0)
     {
-        alexandria::Bond bb(bi->GetAi(),bi->GetAj(),bi->GetBondOrder());
-        AddBond(bb);
+        for(alexandria::BondIterator bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
+        {
+            alexandria::Bond bb(bi->GetAi(),bi->GetAj(),bi->GetBondOrder());
+            AddBond(bb);
+        }
+    }
+    else
+    {
+        for(alexandria::BondIterator bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
+        {
+            alexandria::Bond bb(bi->GetAi(),bi->GetAj(),bi->GetBondOrder());
+            if (!BondExists(bb))
+            {
+                fprintf(stderr,"WARNING bond %d-%d not present in %s\n",
+                        bi->GetAi(),bi->GetAj(),GetMolname().c_str());
+            }
+        }
     }
 
     for(alexandria::ExperimentIterator ei=src.BeginExperiment(); (ei<src.EndExperiment()); ei++)

@@ -1249,6 +1249,9 @@ public:
     //! Add a Bond element
     void AddBond(Bond b);
 
+    //! Check whether a Bond element is present already
+    bool BondExists(Bond b);
+
     //! Return the number of Bond elements
     int NBond() { return _bond.size(); }
     
