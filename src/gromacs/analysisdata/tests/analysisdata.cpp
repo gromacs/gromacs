@@ -56,6 +56,7 @@
 #include "testutils/mock_datamodule.h"
 #include "testutils/testasserts.h"
 
+using gmx::test::AnalysisDataTestInput;
 using gmx::test::MockAnalysisDataModule;
 using gmx::test::MockAnalysisDataModulePointer;
 
@@ -129,13 +130,56 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
 //! Test fixture for gmx::AnalysisData.
 typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
 
-using gmx::test::END_OF_FRAME;
-using gmx::test::MPSTOP;
-//! Input data for gmx::AnalysisData tests.
-const real inputdata[] = {
-    1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
-    2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME
+// Basic input data for gmx::AnalysisData tests.
+class SimpleInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static SimpleInputData singleton;
+            return singleton.data_;
+        }
+
+        SimpleInputData() : data_(3, false)
+        {
+            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
+            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
+            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
+};
+
+// Input data for multipoint gmx::AnalysisData tests.
+class MultipointInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static MultipointInputData singleton;
+            return singleton.data_;
+        }
+
+        MultipointInputData() : data_(3, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 1.1, 2.1, 1.1);
+            frame1.addPointSetWithValues(0, 2.2, 1.2, 0.2);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(1, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 2.1, 1.1, 0.1);
+            frame2.addPointSetWithValues(2, 1.2);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(0, 3.1, 2.1);
+            frame3.addPointSetWithValues(1, 2.2, 1.2);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 /*
@@ -144,8 +188,8 @@ const real inputdata[] = {
  */
 TEST_F(AnalysisDataTest, CallsModuleCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
@@ -160,8 +204,8 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectly)
  */
 TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
@@ -175,8 +219,8 @@ TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
  */
 TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
@@ -199,8 +243,8 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
  */
 TEST_F(AnalysisDataTest, FullStorageWorks)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, -1, &data));
@@ -213,8 +257,8 @@ TEST_F(AnalysisDataTest, FullStorageWorks)
  */
 TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
     ASSERT_TRUE(data.requestStorage(-1));
 
@@ -228,20 +272,13 @@ TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
  */
 TEST_F(AnalysisDataTest, LimitedStorageWorks)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, 1, &data));
     ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
-
-//! Input data for multipoint gmx::AnalysisData tests.
-const real multipointinputdata[] = {
-    1.0,  0.0, 1.0, 2.0, MPSTOP, 1.1, 2.1, 1.1, MPSTOP, 2.2, 1.2, 0.2, END_OF_FRAME,
-    2.0,  1.0, 1.0, 1.0, MPSTOP, 2.1, 1.1, 0.1, MPSTOP, 1.2, 0.2, 1.2, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, MPSTOP, 3.1, 2.1, 1.1, MPSTOP, 0.2, 2.2, 1.2, END_OF_FRAME
-};
 
 /*
  * Tests that multipoint data is forwarded correctly to modules using two
@@ -249,8 +286,8 @@ const real multipointinputdata[] = {
  */
 TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(multipointinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = MultipointInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
@@ -265,8 +302,8 @@ TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
  */
 TEST_F(AnalysisDataTest, MultipointCallsColumnModuleCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(multipointinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = MultipointInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
