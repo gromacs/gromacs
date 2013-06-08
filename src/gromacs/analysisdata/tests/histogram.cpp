@@ -54,6 +54,8 @@
 #include "testutils/datatest.h"
 #include "testutils/testasserts.h"
 
+using gmx::test::AnalysisDataTestInput;
+
 namespace
 {
 
@@ -149,19 +151,41 @@ TEST(AnalysisHistogramSettingsTest, InitializesFromRangeWithRoundedRange)
 //! Test fixture for gmx::AnalysisDataSimpleHistogramModule.
 typedef gmx::test::AnalysisDataTestFixture SimpleHistogramModuleTest;
 
-using gmx::test::END_OF_FRAME;
-using gmx::test::MPSTOP;
-//! Input data for gmx::AnalysisDataSimpleHistogramModule tests.
-const real simpleinputdata[] = {
-    1.0,  0.7, MPSTOP, 1.1, MPSTOP, 2.3, MPSTOP, 2.9, END_OF_FRAME,
-    2.0,  1.3, MPSTOP, 2.2, END_OF_FRAME,
-    3.0,  3.3, MPSTOP, 1.2, MPSTOP, 1.3, END_OF_FRAME
+// Input data for gmx::AnalysisDataSimpleHistogramModule tests.
+class SimpleInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static SimpleInputData singleton;
+            return singleton.data_;
+        }
+
+        SimpleInputData() : data_(1, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0.7);
+            frame1.addPointSetWithValues(0, 1.1);
+            frame1.addPointSetWithValues(0, 2.3);
+            frame1.addPointSetWithValues(0, 2.9);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 1.3);
+            frame2.addPointSetWithValues(0, 2.2);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 3.3);
+            frame3.addPointSetWithValues(0, 1.2);
+            frame3.addPointSetWithValues(0, 1.3);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(simpleinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataSimpleHistogramModulePointer module(
@@ -181,8 +205,8 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectly)
 
 TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
 {
-    gmx::test::AnalysisDataTestInput input(simpleinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataSimpleHistogramModulePointer module(
@@ -207,17 +231,41 @@ TEST_F(SimpleHistogramModuleTest, ComputesCorrectlyWithAll)
 //! Test fixture for gmx::AnalysisDataWeightedHistogramModule.
 typedef gmx::test::AnalysisDataTestFixture WeightedHistogramModuleTest;
 
-//! Input data for both weighted histogram and bin average module tests.
-const real weightedinputdata[] = {
-    1.0,  0.7, 0.5, MPSTOP, 1.1, 1.0, MPSTOP, 2.3, 1.0, MPSTOP, 2.9, 2.0, END_OF_FRAME,
-    2.0,  1.3, 1.0, MPSTOP, 2.2, 3.0, END_OF_FRAME,
-    3.0,  3.3, 0.5, MPSTOP, 1.2, 2.0, MPSTOP, 1.3, 1.0, END_OF_FRAME
+// Input data for both weighted histogram and bin average module tests.
+class WeightedInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static WeightedInputData singleton;
+            return singleton.data_;
+        }
+
+        WeightedInputData() : data_(2, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0.7, 0.5);
+            frame1.addPointSetWithValues(0, 1.1, 1.0);
+            frame1.addPointSetWithValues(0, 2.3, 1.0);
+            frame1.addPointSetWithValues(0, 2.9, 2.0);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 1.3, 1.0);
+            frame2.addPointSetWithValues(0, 2.2, 3.0);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 3.3, 0.5);
+            frame3.addPointSetWithValues(0, 1.2, 2.0);
+            frame3.addPointSetWithValues(0, 1.3, 1.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = WeightedInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataWeightedHistogramModulePointer module(
@@ -237,8 +285,8 @@ TEST_F(WeightedHistogramModuleTest, ComputesCorrectly)
 
 TEST_F(WeightedHistogramModuleTest, ComputesCorrectlyWithAll)
 {
-    gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = WeightedInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataWeightedHistogramModulePointer module(
@@ -265,8 +313,8 @@ typedef gmx::test::AnalysisDataTestFixture BinAverageModuleTest;
 
 TEST_F(BinAverageModuleTest, ComputesCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = WeightedInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataBinAverageModulePointer module(
@@ -283,8 +331,8 @@ TEST_F(BinAverageModuleTest, ComputesCorrectly)
 
 TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
 {
-    gmx::test::AnalysisDataTestInput input(weightedinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = WeightedInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataBinAverageModulePointer module(
@@ -309,15 +357,29 @@ TEST_F(BinAverageModuleTest, ComputesCorrectlyWithAll)
 //! Test fixture for gmx::AbstractAverageHistogram.
 typedef gmx::test::AnalysisDataTestFixture AbstractAverageHistogramTest;
 
-//! Input data for gmx::AbstractAverageHistogram tests.
-const real averageinputdata[] = {
-    1.0, 2.0, 1.0, END_OF_FRAME,
-    1.5, 1.0, 1.0, END_OF_FRAME,
-    2.0, 3.0, 2.0, END_OF_FRAME,
-    2.5, 4.0, 2.0, END_OF_FRAME,
-    3.0, 2.0, 1.0, END_OF_FRAME,
-    3.5, 0.0, 3.0, END_OF_FRAME,
-    4.0, 1.0, 3.0, END_OF_FRAME
+// Input data for gmx::AbstractAverageHistogram tests.
+class AverageInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static AverageInputData singleton;
+            return singleton.data_;
+        }
+
+        AverageInputData() : data_(2, false)
+        {
+            data_.addFrameWithValues(1.0,  2.0, 1.0);
+            data_.addFrameWithValues(1.5,  1.0, 1.0);
+            data_.addFrameWithValues(2.0,  3.0, 2.0);
+            data_.addFrameWithValues(2.5,  4.0, 2.0);
+            data_.addFrameWithValues(3.0,  2.0, 1.0);
+            data_.addFrameWithValues(3.5,  0.0, 3.0);
+            data_.addFrameWithValues(4.0,  1.0, 3.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 /*! \internal \brief
@@ -346,8 +408,8 @@ class MockAverageHistogram : public gmx::AbstractAverageHistogram
 
 TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram             data(
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 
@@ -364,8 +426,8 @@ TEST_F(AbstractAverageHistogramTest, ClonesCorrectly)
 
 TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 {
-    gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram             data(
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 
@@ -380,8 +442,8 @@ TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidth)
 
 TEST_F(AbstractAverageHistogramTest, ResamplesAtDoubleBinWidthWithIntegerBins)
 {
-    gmx::test::AnalysisDataTestInput input(averageinputdata);
-    MockAverageHistogram             data(
+    const AnalysisDataTestInput &input = AverageInputData::get();
+    MockAverageHistogram         data(
             gmx::histogramFromBins(1.0, input.frameCount(), 0.5).integerBins());
     setupArrayData(input, &data);
 
