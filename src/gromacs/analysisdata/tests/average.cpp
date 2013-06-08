@@ -54,27 +54,58 @@
 #include "testutils/datatest.h"
 #include "testutils/testasserts.h"
 
+using gmx::test::AnalysisDataTestInput;
+
 namespace
 {
 
-using gmx::test::END_OF_FRAME;
-using gmx::test::MPSTOP;
-//! Input data for gmx::AnalysisDataAverageModule tests.
-const real inputdata[] = {
-    1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
-    2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME
+// Simple input data for gmx::AnalysisDataAverageModule tests.
+class SimpleInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static SimpleInputData singleton;
+            return singleton.data_;
+        }
+
+        SimpleInputData() : data_(3, false)
+        {
+            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
+            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
+            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
-//! Multipoint input data for gmx::AnalysisDataAverageModule tests.
-const real mpinputdata[] = {
-/* *INDENT-OFF* */
-    1.0,  0.0, 1.0, 2.0, MPSTOP,
-          1.0, 0.0, MPSTOP,
-          2.0, END_OF_FRAME,
-    2.0,  1.0, 1.0, MPSTOP,
-          2.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME
-/* *INDENT-ON* */
+
+// Multipoint input data for gmx::AnalysisDataAverageModule tests.
+class MultipointInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static MultipointInputData singleton;
+            return singleton.data_;
+        }
+
+        MultipointInputData() : data_(3, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 1.0, 0.0);
+            frame1.addPointSetWithValues(0, 2.0);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 2.0);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 2.0, 0.0, 0.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 
@@ -87,8 +118,8 @@ typedef gmx::test::AnalysisDataTestFixture AverageModuleTest;
 
 TEST_F(AverageModuleTest, BasicTest)
 {
-    gmx::test::AnalysisDataTestInput      input(inputdata);
-    gmx::AnalysisData                     data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataAverageModulePointer module(
@@ -103,8 +134,8 @@ TEST_F(AverageModuleTest, BasicTest)
 
 TEST_F(AverageModuleTest, HandlesMultipointData)
 {
-    gmx::test::AnalysisDataTestInput input(mpinputdata);
-    gmx::AnalysisData                data;
+    const AnalysisDataTestInput &input = MultipointInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataAverageModulePointer module(
@@ -119,8 +150,8 @@ TEST_F(AverageModuleTest, HandlesMultipointData)
 
 TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
-    gmx::test::AnalysisDataTestInput      input(inputdata);
-    gmx::AnalysisData                     data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataAverageModulePointer module(new gmx::AnalysisDataAverageModule());
@@ -142,8 +173,8 @@ typedef gmx::test::AnalysisDataTestFixture FrameAverageModuleTest;
 
 TEST_F(FrameAverageModuleTest, BasicTest)
 {
-    gmx::test::AnalysisDataTestInput           input(inputdata);
-    gmx::AnalysisData                          data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 
     gmx::AnalysisDataFrameAverageModulePointer module(

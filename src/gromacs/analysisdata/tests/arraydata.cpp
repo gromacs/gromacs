@@ -51,6 +51,8 @@
 #include "testutils/datatest.h"
 #include "testutils/testasserts.h"
 
+using gmx::test::AnalysisDataTestInput;
+
 namespace
 {
 
@@ -61,19 +63,32 @@ namespace
 //! Test fixture for gmx::AnalysisArrayData.
 typedef gmx::test::AnalysisDataTestFixture AnalysisArrayDataTest;
 
-using gmx::test::END_OF_FRAME;
-//! Input data for gmx::AnalysisArrayData tests.
-const real inputdata[] = {
-    1.0,  0.0, 1.0, 2.0, END_OF_FRAME,
-    2.0,  1.0, 1.0, 1.0, END_OF_FRAME,
-    3.0,  2.0, 0.0, 0.0, END_OF_FRAME,
-    4.0,  3.0, 2.0, 1.0, END_OF_FRAME
+// Input data for gmx::AnalysisArrayData tests.
+class SimpleInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static SimpleInputData singleton;
+            return singleton.data_;
+        }
+
+        SimpleInputData() : data_(3, false)
+        {
+            data_.addFrameWithValues(1.0,  0.0, 1.0, 2.0);
+            data_.addFrameWithValues(2.0,  1.0, 1.0, 1.0);
+            data_.addFrameWithValues(3.0,  2.0, 0.0, 0.0);
+            data_.addFrameWithValues(4.0,  3.0, 2.0, 1.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
 };
 
 TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisArrayData           data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisArrayData       data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 
@@ -84,8 +99,8 @@ TEST_F(AnalysisArrayDataTest, CallsModuleCorrectly)
 
 TEST_F(AnalysisArrayDataTest, StorageWorks)
 {
-    gmx::test::AnalysisDataTestInput input(inputdata);
-    gmx::AnalysisArrayData           data;
+    const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisArrayData       data;
     data.setXAxis(1.0, 1.0);
     setupArrayData(input, &data);
 
