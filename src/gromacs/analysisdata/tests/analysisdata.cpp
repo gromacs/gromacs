@@ -64,7 +64,7 @@ namespace
 {
 
 /********************************************************************
- * Tests for gmx::AnalysisData.
+ * Tests for gmx::AnalysisData without any actual data.
  */
 
 /*
@@ -127,8 +127,9 @@ TEST(AnalysisDataInitializationTest, ChecksMultiPointModules)
 }
 
 
-//! Test fixture for gmx::AnalysisData.
-typedef gmx::test::AnalysisDataTestFixture AnalysisDataTest;
+/********************************************************************
+ * Input data for tests below.
+ */
 
 // Basic input data for gmx::AnalysisData tests.
 class SimpleInputData
@@ -182,19 +183,69 @@ class MultipointInputData
         AnalysisDataTestInput  data_;
 };
 
+/********************************************************************
+ * Tests for gmx::AnalysisData that require data.
+ */
+
+using gmx::test::AnalysisDataTestFixture;
+
+class AnalysisDataTest : public AnalysisDataTestFixture
+{
+    public:
+        explicit AnalysisDataTest(const AnalysisDataTestInput &input)
+            : input_(input)
+        {
+        }
+
+        void SetUp()
+        {
+            ASSERT_NO_THROW_GMX(setupDataObject(input_, &data_));
+        }
+
+        void addStaticCheckerModule()
+        {
+            AnalysisDataTestFixture::addStaticCheckerModule(input_, &data_);
+        }
+        void addStaticColumnCheckerModule(int firstColumn, int columnCount)
+        {
+            AnalysisDataTestFixture::addStaticColumnCheckerModule(
+                    input_, firstColumn, columnCount, &data_);
+        }
+        void presentAllData()
+        {
+            AnalysisDataTestFixture::presentAllData(input_, &data_);
+        }
+
+        const AnalysisDataTestInput &input_;
+        gmx::AnalysisData            data_;
+};
+
+template <class InputDataType>
+class AnalysisDataCommonTest : public AnalysisDataTest
+{
+    public:
+        AnalysisDataCommonTest() : AnalysisDataTest(InputDataType::get())
+        {
+        }
+};
+
+//! Test fixture for tests that are only applicable to simple data.
+typedef AnalysisDataCommonTest<SimpleInputData>     AnalysisDataSimpleTest;
+//! Test fixture for tests that are only applicable to multipoint data.
+typedef AnalysisDataCommonTest<MultipointInputData> AnalysisDataMultipointTest;
+//! List of input data types for tests applicable to all types of data.
+typedef ::testing::Types<SimpleInputData, MultipointInputData> AllInputDataTypes;
+TYPED_TEST_CASE(AnalysisDataCommonTest, AllInputDataTypes);
+
 /*
  * Tests that data is forwarded correctly to modules using two independent
  * modules.
  */
-TEST_F(AnalysisDataTest, CallsModuleCorrectly)
+TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectly)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
 
 /*
@@ -202,37 +253,29 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectly)
  * addColumnModule().
  * Uses two independent modules.
  */
-TEST_F(AnalysisDataTest, CallsColumnModuleCorrectly)
+TYPED_TEST(AnalysisDataCommonTest, CallsColumnModuleCorrectly)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 2, 1, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticColumnCheckerModule(0, 2));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticColumnCheckerModule(2, 1));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
 
 /*
  * Tests that data is forwarded correctly (in frame order) to modules when the
  * data is added through multiple handles in non-increasing order.
  */
-TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
+TEST_F(AnalysisDataSimpleTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 1, 2, &data));
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(1, 2));
     gmx::AnalysisDataHandle          handle1;
     gmx::AnalysisDataHandle          handle2;
     gmx::AnalysisDataParallelOptions options(2);
-    ASSERT_NO_THROW_GMX(handle1 = data.startData(options));
-    ASSERT_NO_THROW_GMX(handle2 = data.startData(options));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input, 1, handle1));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input, 0, handle2));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input, 2, handle1));
+    ASSERT_NO_THROW_GMX(handle1 = data_.startData(options));
+    ASSERT_NO_THROW_GMX(handle2 = data_.startData(options));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 1, handle1));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 0, handle2));
+    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 2, handle1));
     ASSERT_NO_THROW_GMX(handle1.finishData());
     ASSERT_NO_THROW_GMX(handle2.finishData());
 }
@@ -241,74 +284,32 @@ TEST_F(AnalysisDataTest, CallsModuleCorrectlyWithOutOfOrderFrames)
  * Tests that data can be accessed correctly from a module that requests
  * storage using AbstractAnalysisData::requestStorage() with parameter -1.
  */
-TEST_F(AnalysisDataTest, FullStorageWorks)
+TEST_F(AnalysisDataSimpleTest, FullStorageWorks)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, -1, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input_, -1, &data_));
+    ASSERT_NO_THROW_GMX(presentAllData());
 }
 
 /*
  * Tests that a data module can be added to an AnalysisData object after data
  * has been added if all data is still available in storage.
  */
-TEST_F(AnalysisDataTest, CanAddModuleAfterStoredData)
+TEST_F(AnalysisDataSimpleTest, CanAddModuleAfterStoredData)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-    ASSERT_TRUE(data.requestStorage(-1));
+    ASSERT_TRUE(data_.requestStorage(-1));
 
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(presentAllData());
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule());
 }
 
 /*
  * Tests that data can be accessed correctly from a module that requests
  * storage using AbstractAnalysisData::requestStorage() only for one frame.
  */
-TEST_F(AnalysisDataTest, LimitedStorageWorks)
+TEST_F(AnalysisDataSimpleTest, LimitedStorageWorks)
 {
-    const AnalysisDataTestInput &input = SimpleInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input, 1, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
-}
-
-/*
- * Tests that multipoint data is forwarded correctly to modules using two
- * independent modules.
- */
-TEST_F(AnalysisDataTest, MultipointCallsModuleCorrectly)
-{
-    const AnalysisDataTestInput &input = MultipointInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
-}
-
-/*
- * Tests that multipoint data is forwarded correctly to modules that are added
- * using addColumnModule().
- * Uses two independent modules.
- */
-TEST_F(AnalysisDataTest, MultipointCallsColumnModuleCorrectly)
-{
-    const AnalysisDataTestInput &input = MultipointInputData::get();
-    gmx::AnalysisData            data;
-    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
-
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 0, 2, &data));
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(input, 2, 1, &data));
-    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input_, 1, &data_));
+    ASSERT_NO_THROW_GMX(presentAllData());
 }
 
 } // namespace
