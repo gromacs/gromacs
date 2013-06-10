@@ -267,7 +267,14 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
                 const AnalysisDataTestInputFrame &refFrame)
 {
     checkHeader(frame.header(), refFrame);
-    checkPoints(frame.points(), refFrame.pointSet(0), 0);
+    ASSERT_EQ(refFrame.pointSetCount(), frame.pointSetCount());
+    for (int i = 0; i < frame.pointSetCount(); ++i)
+    {
+        const AnalysisDataPointSetRef       &points    = frame.pointSet(i);
+        const AnalysisDataTestInputPointSet &refPoints = refFrame.pointSet(i);
+        EXPECT_EQ(refPoints.firstColumn(), points.firstColumn());
+        checkPoints(points, refPoints, 0);
+    }
 }
 
 /*! \internal \brief
@@ -398,6 +405,8 @@ class StaticDataPointsStorageChecker
          * \param[in] data       Test input data to check against.
          * \param[in] frameIndex Frame index for which this functor expects
          *      to be called.
+         * \param[in] pointSetIndex Point set for which this functor expects
+         *      to be called.
          * \param[in] storageCount How many past frames should be checked for
          *      storage (-1 = check all frames).
          *
@@ -407,11 +416,13 @@ class StaticDataPointsStorageChecker
          *
          * \p source and \p data must exist for the lifetime of this object.
          */
-        StaticDataPointsStorageChecker(AbstractAnalysisData *source,
+        StaticDataPointsStorageChecker(AbstractAnalysisData        *source,
                                        const AnalysisDataTestInput *data,
-                                       int frameIndex, int storageCount)
+                                       int frameIndex, int pointSetIndex,
+                                       int storageCount)
             : source_(source), data_(data),
-              frameIndex_(frameIndex), storageCount_(storageCount)
+              frameIndex_(frameIndex), pointSetIndex_(pointSetIndex),
+              storageCount_(storageCount)
         {
         }
 
@@ -420,9 +431,9 @@ class StaticDataPointsStorageChecker
         {
             SCOPED_TRACE(formatString("Frame %d", frameIndex_));
             const AnalysisDataTestInputFrame    &refFrame  = data_->frame(frameIndex_);
-            const AnalysisDataTestInputPointSet &refPoints = refFrame.pointSet(0);
+            const AnalysisDataTestInputPointSet &refPoints = refFrame.pointSet(pointSetIndex_);
             EXPECT_EQ(refPoints.firstColumn(), points.firstColumn());
-            EXPECT_EQ(data_->columnCount(), points.columnCount());
+            EXPECT_EQ(refPoints.size(), points.columnCount());
             checkHeader(points.header(), refFrame);
             checkPoints(points, refPoints, 0);
             for (int past = 1;
@@ -443,6 +454,7 @@ class StaticDataPointsStorageChecker
         AbstractAnalysisData        *source_;
         const AnalysisDataTestInput *data_;
         int                          frameIndex_;
+        int                          pointSetIndex_;
         int                          storageCount_;
 };
 
@@ -543,9 +555,9 @@ MockAnalysisDataModule::setupStaticStorageCheck(
 {
     GMX_RELEASE_ASSERT(data.columnCount() == source->columnCount(),
                        "Mismatching data column count");
-    GMX_RELEASE_ASSERT(!data.isMultipoint() && !source->isMultipoint(),
-                       "Storage testing not implemented for multipoint data");
-    impl_->flags_ |= efAllowMulticolumn;
+    GMX_RELEASE_ASSERT(data.isMultipoint() == source->isMultipoint(),
+                       "Mismatching multipoint properties");
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
 
     ::testing::InSequence dummy;
     using ::testing::_;
@@ -558,9 +570,12 @@ MockAnalysisDataModule::setupStaticStorageCheck(
         const AnalysisDataTestInputFrame &frame = data.frame(row);
         EXPECT_CALL(*this, frameStarted(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
-        EXPECT_CALL(*this, pointsAdded(_))
-            .WillOnce(Invoke(StaticDataPointsStorageChecker(source, &data, row,
-                                                            storageCount)));
+        for (int pointSet = 0; pointSet < frame.pointSetCount(); ++pointSet)
+        {
+            StaticDataPointsStorageChecker checker(source, &data, row, pointSet,
+                                                   storageCount);
+            EXPECT_CALL(*this, pointsAdded(_)).WillOnce(Invoke(checker));
+        }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
     }

@@ -140,7 +140,6 @@ AnalysisData::setMultipoint(bool bMultipoint)
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data type after creating handles");
     AbstractAnalysisData::setMultipoint(bMultipoint);
-    impl_->storage_.setMultipoint(bMultipoint);
 }
 
 
@@ -154,10 +153,6 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
         notifyDataStart();
         impl_->storage_.setParallelOptions(opt);
         impl_->storage_.startDataStorage(this);
-    }
-    else if (isMultipoint())
-    {
-        GMX_THROW(NotImplementedError("Parallelism not supported for multipoint data"));
     }
 
     Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));
