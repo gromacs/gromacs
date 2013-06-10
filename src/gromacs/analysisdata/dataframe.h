@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -264,6 +264,62 @@ class AnalysisDataFrameHeader
 };
 
 
+/*! \cond libinternal */
+/*! \libinternal \brief
+ * Value type for internal indexing of point sets.
+ *
+ * This class contains the necessary data to split an array of
+ * AnalysisDataValue objects into point sets.  It is not necessary for code
+ * using the analysis data framework to know of its presence, but it is
+ * declared in a public header to allow using it in other types.
+ *
+ * Default copy constructor and assignment operator are used and work as
+ * intended.
+ * Typically new objects of this type are only constructed internally by the
+ * library and in classes that are derived from AbstractAnalysisData.
+ *
+ * Methods in this class do not throw, but may contain asserts for incorrect
+ * usage.
+ *
+ * Note that it is not possible to change the contents of an initialized
+ * object, except by assigning a new object to replace it completely.
+ *
+ * \inlibraryapi
+ * \ingroup module_analysisdata
+ */
+class AnalysisDataPointSetInfo
+{
+    public:
+        //! Construct point set data object with the given values.
+        AnalysisDataPointSetInfo(int valueOffset, int valueCount,
+                                 int firstColumn)
+            : valueOffset_(valueOffset), valueCount_(valueCount),
+              firstColumn_(firstColumn)
+        {
+            GMX_ASSERT(valueOffset >= 0, "Negative value offsets are invalid");
+            GMX_ASSERT(valueCount  >= 0, "Negative value counts are invalid");
+            GMX_ASSERT(firstColumn >= 0, "Negative column indices are invalid");
+        }
+
+        //! Returns the offset of the first value in the value array.
+        int valueOffset() const { return valueOffset_; }
+        //! Returns the number of values in this point set.
+        int valueCount() const { return valueCount_; }
+        //! Returns the index of the first column in this point set.
+        int firstColumn() const { return firstColumn_; }
+
+    private:
+        int                     valueOffset_;
+        int                     valueCount_;
+        int                     firstColumn_;
+};
+
+//! Shorthand for reference to an array of point set data objects.
+typedef ConstArrayRef<AnalysisDataPointSetInfo> AnalysisDataPointSetInfosRef;
+
+//! \endcond
+
+
 /*! \brief
  * Value type wrapper for non-mutable access to a set of data column values.
  *
@@ -290,16 +346,16 @@ class AnalysisDataPointSetRef
         /*! \brief
          * Constructs a point set reference from given values.
          *
-         * \param[in] header      Header for the frame.
-         * \param[in] firstColumn Zero-based index of the first column.
-         *     Must be >= 0.
-         * \param[in] values      Values for each column.
+         * \param[in] header       Header for the frame.
+         * \param[in] pointSetInfo Information about the point set.
+         * \param[in] values       Values for each column.
          *
-         * The first element in \p values should correspond to \p firstColumn.
+         * The first element of the point set should be found from \p values
+         * using the offset in \p pointSetInfo.
          */
-        AnalysisDataPointSetRef(const AnalysisDataFrameHeader &header,
-                                int                            firstColumn,
-                                const AnalysisDataValuesRef   &values);
+        AnalysisDataPointSetRef(const AnalysisDataFrameHeader  &header,
+                                const AnalysisDataPointSetInfo &pointSetInfo,
+                                const AnalysisDataValuesRef    &values);
         /*! \brief
          * Constructs a point set reference from given values.
          *
@@ -445,9 +501,6 @@ class AnalysisDataPointSetRef
  * Note that it is not possible to change the contents of an initialized
  * object, except by assigning a new object to replace it completely.
  *
- * \todo
- * Support for multipoint data.
- *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -466,17 +519,21 @@ class AnalysisDataFrameRef
          *
          * \param[in] header      Header for the frame.
          * \param[in] values      Values for each column.
+         * \param[in] pointSets   Point set data.
          */
-        AnalysisDataFrameRef(const AnalysisDataFrameHeader &header,
-                             const AnalysisDataValuesRef   &values);
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader      &header,
+                             const AnalysisDataValuesRef        &values,
+                             const AnalysisDataPointSetInfosRef &pointSets);
         /*! \brief
          * Constructs a frame reference from given values.
          *
          * \param[in] header      Header for the frame.
          * \param[in] values      Values for each column.
+         * \param[in] pointSets   Point set data.
          */
-        AnalysisDataFrameRef(const AnalysisDataFrameHeader        &header,
-                             const std::vector<AnalysisDataValue> &values);
+        AnalysisDataFrameRef(const AnalysisDataFrameHeader               &header,
+                             const std::vector<AnalysisDataValue>        &values,
+                             const std::vector<AnalysisDataPointSetInfo> &pointSets);
         /*! \brief
          * Constructs a frame reference to a subset of columns.
          *
@@ -523,63 +580,54 @@ class AnalysisDataFrameRef
             return header().dx();
         }
         /*! \brief
-         * Returns point set reference to the column values of this frame.
-         *
-         * Should not be called for invalid frames.
-         */
-        AnalysisDataPointSetRef points() const
-        {
-            GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            return AnalysisDataPointSetRef(header_, 0, values_);
-        }
-        /*! \brief
-         * Returns number of columns in this frame.
+         * Returns the number of point sets for this frame.
          *
          * Returns zero for an invalid frame.
          */
-        int columnCount() const
+        int pointSetCount() const
         {
-            return values_.size();
+            return pointSets_.size();
         }
         /*! \brief
-         * Returns reference container for all column values.
+         * Returns point set reference for a given point set.
+         *
+         * Should not be called for invalid frames.
          */
-        const AnalysisDataValuesRef &values() const
+        AnalysisDataPointSetRef pointSet(int index) const
         {
-            return values_;
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            GMX_ASSERT(index >= 0 && index < pointSetCount(),
+                       "Out of range data access");
+            return AnalysisDataPointSetRef(header_, pointSets_[index], values_);
         }
         /*! \brief
-         * Convenience method for accessing a column value.
+         * Convenience method for accessing a column value in simple data.
          *
          * \copydetails AnalysisDataPointSetRef::y()
          */
         real y(int i) const
         {
-            GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
-            return values_[i].value();
+            return singleColumnValue(i).value();
         }
         /*! \brief
-         * Convenience method for accessing error for a column value.
+         * Convenience method for accessing error for a column value in simple
+         * data.
          *
          * \copydetails AnalysisDataPointSetRef::dy()
          */
         real dy(int i) const
         {
-            GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
-            return values_[i].error();
+            return singleColumnValue(i).error();
         }
         /*! \brief
-         * Convenience method for accessing present status for a column.
+         * Convenience method for accessing present status for a column in
+         * simple data.
          *
          * \copydetails AnalysisDataPointSetRef::present()
          */
         bool present(int i) const
         {
-            GMX_ASSERT(isValid(), "Invalid data frame accessed");
-            GMX_ASSERT(i >= 0 && i < columnCount(), "Out of range data access");
-            return values_[i].isPresent();
+            return singleColumnValue(i).isPresent();
         }
         /*! \brief
          * Returns true if all points in this frame are present.
@@ -587,8 +635,20 @@ class AnalysisDataFrameRef
         bool allPresent() const;
 
     private:
-        AnalysisDataFrameHeader header_;
-        AnalysisDataValuesRef   values_;
+        //! Helper method for accessing single columns in simple data.
+        const AnalysisDataValue &singleColumnValue(int i) const
+        {
+            GMX_ASSERT(isValid(), "Invalid data frame accessed");
+            GMX_ASSERT(pointSets_.size() == 1U && pointSets_[0].firstColumn() == 0,
+                       "Convenience method not available for multiple point sets");
+            GMX_ASSERT(i >= 0 && i < static_cast<int>(values_.size()),
+                       "Out of range data access");
+            return values_[i];
+        }
+
+        AnalysisDataFrameHeader      header_;
+        AnalysisDataValuesRef        values_;
+        AnalysisDataPointSetInfosRef pointSets_;
 };
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -238,6 +238,11 @@ class AbstractAnalysisData
          * \param[in] span    Number of columns.
          * \param     module  Module to add.
          * \throws    APIError in same situations as addModule().
+         *
+         * \todo
+         * This method doesn't currently work in all cases with multipoint
+         * data.  In particular, if the added module requests storage and uses
+         * getDataFrame(), it will behave unpredictably (most likely asserts).
          *
          * \see addModule()
          */

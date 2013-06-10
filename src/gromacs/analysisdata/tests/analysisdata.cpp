@@ -211,6 +211,11 @@ class AnalysisDataTest : public AnalysisDataTestFixture
             AnalysisDataTestFixture::addStaticColumnCheckerModule(
                     input_, firstColumn, columnCount, &data_);
         }
+        void addStaticStorageCheckerModule(int storageCount)
+        {
+            AnalysisDataTestFixture::addStaticStorageCheckerModule(
+                    input_, storageCount, &data_);
+        }
         void presentAllData()
         {
             AnalysisDataTestFixture::presentAllData(input_, &data_);
@@ -264,18 +269,18 @@ TYPED_TEST(AnalysisDataCommonTest, CallsColumnModuleCorrectly)
  * Tests that data is forwarded correctly (in frame order) to modules when the
  * data is added through multiple handles in non-increasing order.
  */
-TEST_F(AnalysisDataSimpleTest, CallsModuleCorrectlyWithOutOfOrderFrames)
+TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 {
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule());
-    ASSERT_NO_THROW_GMX(addStaticColumnCheckerModule(1, 2));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticColumnCheckerModule(1, 2));
     gmx::AnalysisDataHandle          handle1;
     gmx::AnalysisDataHandle          handle2;
     gmx::AnalysisDataParallelOptions options(2);
-    ASSERT_NO_THROW_GMX(handle1 = data_.startData(options));
-    ASSERT_NO_THROW_GMX(handle2 = data_.startData(options));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 1, handle1));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 0, handle2));
-    ASSERT_NO_THROW_GMX(presentDataFrame(input_, 2, handle1));
+    ASSERT_NO_THROW_GMX(handle1 = this->data_.startData(options));
+    ASSERT_NO_THROW_GMX(handle2 = this->data_.startData(options));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 1, handle1));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 0, handle2));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentDataFrame(this->input_, 2, handle1));
     ASSERT_NO_THROW_GMX(handle1.finishData());
     ASSERT_NO_THROW_GMX(handle2.finishData());
 }
@@ -284,32 +289,32 @@ TEST_F(AnalysisDataSimpleTest, CallsModuleCorrectlyWithOutOfOrderFrames)
  * Tests that data can be accessed correctly from a module that requests
  * storage using AbstractAnalysisData::requestStorage() with parameter -1.
  */
-TEST_F(AnalysisDataSimpleTest, FullStorageWorks)
+TYPED_TEST(AnalysisDataCommonTest, FullStorageWorks)
 {
-    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input_, -1, &data_));
-    ASSERT_NO_THROW_GMX(presentAllData());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticStorageCheckerModule(-1));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
 
 /*
  * Tests that a data module can be added to an AnalysisData object after data
  * has been added if all data is still available in storage.
  */
-TEST_F(AnalysisDataSimpleTest, CanAddModuleAfterStoredData)
+TYPED_TEST(AnalysisDataCommonTest, CanAddModuleAfterStoredData)
 {
-    ASSERT_TRUE(data_.requestStorage(-1));
+    ASSERT_TRUE(this->data_.requestStorage(-1));
 
-    ASSERT_NO_THROW_GMX(presentAllData());
-    ASSERT_NO_THROW_GMX(addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
 }
 
 /*
  * Tests that data can be accessed correctly from a module that requests
  * storage using AbstractAnalysisData::requestStorage() only for one frame.
  */
-TEST_F(AnalysisDataSimpleTest, LimitedStorageWorks)
+TYPED_TEST(AnalysisDataCommonTest, LimitedStorageWorks)
 {
-    ASSERT_NO_THROW_GMX(addStaticStorageCheckerModule(input_, 1, &data_));
-    ASSERT_NO_THROW_GMX(presentAllData());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticStorageCheckerModule(1));
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
 }
 
 } // namespace
