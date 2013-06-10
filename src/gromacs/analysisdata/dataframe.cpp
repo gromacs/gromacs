@@ -68,13 +68,15 @@ AnalysisDataFrameHeader::AnalysisDataFrameHeader(int index, real x, real dx)
  */
 
 AnalysisDataPointSetRef::AnalysisDataPointSetRef(
-        const AnalysisDataFrameHeader &header, int firstColumn,
-        const AnalysisDataValuesRef &values)
-    : header_(header), firstColumn_(firstColumn), values_(values)
+        const AnalysisDataFrameHeader  &header,
+        const AnalysisDataPointSetInfo &pointSetInfo,
+        const AnalysisDataValuesRef    &values)
+    : header_(header), firstColumn_(pointSetInfo.firstColumn()),
+      values_(&*values.begin() + pointSetInfo.valueOffset(),
+              pointSetInfo.valueCount())
 {
     GMX_ASSERT(header_.isValid(),
                "Invalid point set reference should not be constructed");
-    GMX_ASSERT(firstColumn >= 0, "Invalid first column");
 }
 
 
@@ -147,28 +149,40 @@ AnalysisDataFrameRef::AnalysisDataFrameRef()
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader &header,
-        const AnalysisDataValuesRef   &values)
-    : header_(header), values_(values)
+        const AnalysisDataFrameHeader      &header,
+        const AnalysisDataValuesRef        &values,
+        const AnalysisDataPointSetInfosRef &pointSets)
+    : header_(header), values_(values), pointSets_(pointSets)
 {
+    GMX_ASSERT(!pointSets_.empty(), "There must always be a point set");
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
-        const AnalysisDataFrameHeader        &header,
-        const std::vector<AnalysisDataValue> &values)
-    : header_(header), values_(values.begin(), values.end())
+        const AnalysisDataFrameHeader               &header,
+        const std::vector<AnalysisDataValue>        &values,
+        const std::vector<AnalysisDataPointSetInfo> &pointSets)
+    : header_(header), values_(values.begin(), values.end()),
+      pointSets_(pointSets.begin(), pointSets.end())
 {
+    GMX_ASSERT(!pointSets_.empty(), "There must always be a point set");
 }
 
 
 AnalysisDataFrameRef::AnalysisDataFrameRef(
         const AnalysisDataFrameRef &frame, int firstColumn, int columnCount)
-    : header_(frame.header()), values_(&frame.values_[firstColumn], columnCount)
+    : header_(frame.header()),
+      values_(&frame.values_[firstColumn], columnCount),
+      pointSets_(frame.pointSets_)
 {
+    // FIXME: This doesn't produce a valid internal state, although it does
+    // work in some cases. The point sets cannot be correctly managed here, but
+    // need to be handles by the data proxy class.
     GMX_ASSERT(firstColumn >= 0, "Invalid first column");
     GMX_ASSERT(columnCount >= 0, "Invalid column count");
-    GMX_ASSERT(firstColumn + columnCount <= frame.columnCount(),
+    GMX_ASSERT(pointSets_.size() == 1U,
+               "Subsets of frames only supported with simple data");
+    GMX_ASSERT(firstColumn + columnCount <= static_cast<int>(values_.size()),
                "Invalid last column");
 }
 

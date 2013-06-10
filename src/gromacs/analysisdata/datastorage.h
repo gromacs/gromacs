@@ -107,6 +107,7 @@ class AnalysisDataStorageFrame
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
             values_[column].setValue(value, bPresent);
+            bPointSetInProgress_ = true;
         }
         /*! \brief
          * Sets value for a column.
@@ -126,6 +127,7 @@ class AnalysisDataStorageFrame
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
             values_[column].setValue(value, error, bPresent);
+            bPointSetInProgress_ = true;
         }
         /*! \brief
          * Access value for a column.
@@ -203,6 +205,9 @@ class AnalysisDataStorageFrame
         //! Values for the currently in-progress point set.
         std::vector<AnalysisDataValue>          values_;
 
+        //! Whether any values have been set in the current point set.
+        bool                                    bPointSetInProgress_;
+
         //! Needed for access to the constructor.
         friend class AnalysisDataStorage;
         //! Needed for managing the frame the object points to.
@@ -229,11 +234,6 @@ class AnalysisDataStorageFrame
  * AbstractAnalysisData::notifyFrameFinish() appropriately.
  *
  * \todo
- * Full support for multipoint data.
- * Currently, multipoint data is only supported in serial pass-through mode
- * without any storage.
- *
- * \todo
  * Proper multi-threaded implementation.
  *
  * \inlibraryapi
@@ -246,18 +246,6 @@ class AnalysisDataStorage
         AnalysisDataStorage();
         ~AnalysisDataStorage();
 
-        /*! \brief
-         * Sets whether the data will be multipoint.
-         *
-         * \exception APIError if storage has been requested.
-         *
-         * It is not mandatory to call this method (the multipoint property is
-         * automatically detected in startDataStorage()), but currently calling
-         * it will produce better diagnostic messages.
-         * When full support for multipoint data has been implemented, this
-         * method can be removed.
-         */
-        void setMultipoint(bool bMultipoint);
         /*! \brief
          * Set parallelization options for the storage.
          *
@@ -290,9 +278,6 @@ class AnalysisDataStorage
          * AbstractAnalysisData::requestStorageInternal() can be directly
          * forwarded to this method.  See that method for more documentation.
          *
-         * Currently, multipoint data cannot be stored, but all other storage
-         * request will be honored.
-         *
          * \see AbstractAnalysisData::requestStorageInternal()
          */
         bool requestStorage(int nframes);
@@ -302,8 +287,6 @@ class AnalysisDataStorage
          *
          * \param  data  AbstractAnalysisData object containing this storage.
          * \exception std::bad_alloc if storage allocation fails.
-         * \exception APIError if storage has been requested and \p data is
-         *      multipoint.
          *
          * Lifetime of \p data must exceed the lifetime of the storage object
          * (typically, the storage object will be a member in \p data).
