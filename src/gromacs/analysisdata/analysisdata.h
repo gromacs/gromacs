@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -66,9 +66,6 @@ class AnalysisDataParallelOptions;
  * The AnalysisData object takes care of internally sorting the frames and
  * passing them to the attached modules in the order in which the modules
  * expect them.
- *
- * \todo
- * Currently, multiple handles with multipoint data are not implemented.
  *
  * \todo
  * Parallel implementation is not complete.
