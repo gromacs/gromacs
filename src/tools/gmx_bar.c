@@ -1195,17 +1195,17 @@ static barres_t *barres_list_create(sim_data_t *sd, int *nres,
         }
         else if (!scprev && !sc)
         {
-            gmx_fatal(FARGS, "There is no path from lambda=%g -> %g that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n", bl->prev->lambda, bl->lambda);
+            gmx_fatal(FARGS, "There is no path from lambda=%f -> %f that is covered by foreign lambdas:\ncannot proceed with BAR.\nUse thermodynamic integration of dH/dl by calculating the averages of dH/dl\nwith g_analyze and integrating them.\nAlternatively, use the -extp option if (and only if) the Hamiltonian\ndepends linearly on lambda, which is NOT normally the case.\n", bl->prev->lambda, bl->lambda);
         }
 
         /* normal delta H */
         if (!scprev)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %g\nin the files for lambda = %g", bl->lambda, bl->prev->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->lambda, bl->prev->lambda);
         }
         if (!sc)
         {
-            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %g\nin the files for lambda = %g", bl->prev->lambda, bl->lambda);
+            gmx_fatal(FARGS, "Could not find a set for foreign lambda = %f\nin the files for lambda = %f", bl->prev->lambda, bl->lambda);
         }
         br->a = scprev;
         br->b = sc;
@@ -1738,9 +1738,6 @@ static double calc_bar_lowlevel(sample_coll_t *ca, sample_coll_t *cb,
     while (DG2 - DG0 > 2*tol)
     {
         DG1 = 0.5*(DG0 + DG2);
-
-        /*printf("Wfac1=%g, Wfac2=%g, beta=%g, DG1=%g\n",Wfac1,Wfac2,beta,
-           DG1);*/
 
         /* calculate the BAR averages */
         dDG1 = 0.;
@@ -2785,7 +2782,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
             {
                 if (ba->temp <= 0)
                 {
-                    gmx_fatal(FARGS, "Found temperature of %g in file '%s'",
+                    gmx_fatal(FARGS, "Found temperature of %f in file '%s'",
                               ba->temp, fn);
                 }
             }
@@ -2946,7 +2943,7 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
          (blk->sub[1].nr < 1) )
     {
         gmx_fatal(FARGS,
-                  "Unexpected/corrupted block data in file %s around time %g.",
+                  "Unexpected/corrupted block data in file %s around time %f.",
                   filename, start_time);
     }
 
@@ -2993,7 +2990,7 @@ static void read_edr_rawdh_block(samples_t **smp, int *ndu, t_enxblock *blk,
         lambda_vec_print(foreign_lambda, buf, FALSE);
         lambda_vec_print(s->foreign_lambda, buf2, FALSE);
         fprintf(stderr, "Got foreign lambda=%s, expected: %s\n", buf, buf2);
-        gmx_fatal(FARGS, "Corrupted data in file %s around t=%g.",
+        gmx_fatal(FARGS, "Corrupted data in file %s around t=%f.",
                   filename, start_time);
     }
 
@@ -3049,7 +3046,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
          (blk->sub[1].nr < 2) )
     {
         gmx_fatal(FARGS,
-                  "Unexpected/corrupted block data in file %s around time %g",
+                  "Unexpected/corrupted block data in file %s around time %f",
                   filename, start_time);
     }
 
@@ -3061,7 +3058,7 @@ static samples_t *read_edr_hist_block(int *nsamples, t_enxblock *blk,
     if (nhist > 2)
     {
         gmx_fatal(FARGS,
-                  "Unexpected/corrupted block data in file %s around time %g",
+                  "Unexpected/corrupted block data in file %s around time %f",
                   filename, start_time);
     }
 
@@ -3278,7 +3275,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
                     if (fr->block[i].nsub < 2)
                     {
                         gmx_fatal(FARGS,
-                                  "No lambda vector, but start_lambda=%g\n",
+                                  "No lambda vector, but start_lambda=%f\n",
                                   old_start_lambda);
                     }
                     n_lambda_vec = fr->block[i].sub[1].ival[1];
@@ -3326,7 +3323,7 @@ static void read_barsim_edr(char *fn, real *temp, sim_data_t *sd)
             /* check the native lambda */
             if (!lambda_vec_same(&start_lambda, native_lambda) )
             {
-                gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %g, and becomes %g at time %g",
+                gmx_fatal(FARGS, "Native lambda not constant in file %s: started at %f, and becomes %f at time %f",
                           fn, native_lambda, start_lambda, start_time);
             }
             /* check the number of samples against the previous number */
@@ -3550,7 +3547,7 @@ int gmx_bar(int argc, char *argv[])
         "[TT]*[tt]  lam_B: the [GRK]lambda[grk] values for point B.[BR]",
         "[TT]*[tt]     DG: the free energy estimate.[BR]",
         "[TT]*[tt]    s_A: an estimate of the relative entropy of B in A.[BR]",
-        "[TT]*[tt]    s_A: an estimate of the relative entropy of A in B.[BR]",
+        "[TT]*[tt]    s_B: an estimate of the relative entropy of A in B.[BR]",
         "[TT]*[tt]  stdev: an estimate expected per-sample standard deviation.[PAR]",
 
         "The relative entropy of both states in each other's ensemble can be ",
