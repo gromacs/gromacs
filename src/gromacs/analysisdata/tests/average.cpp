@@ -110,6 +110,39 @@ class MultipointInputData
         AnalysisDataTestInput  data_;
 };
 
+// Input data with multiple data sets for gmx::AnalysisDataAverageModule tests.
+class MultiDataSetInputData
+{
+    public:
+        static const AnalysisDataTestInput &get()
+        {
+            static MultiDataSetInputData singleton;
+            return singleton.data_;
+        }
+
+        MultiDataSetInputData() : data_(2, true)
+        {
+            using gmx::test::AnalysisDataTestInputFrame;
+            data_.setColumnCount(0, 3);
+            data_.setColumnCount(1, 2);
+            AnalysisDataTestInputFrame &frame1 = data_.addFrame(1.0);
+            frame1.addPointSetWithValues(0, 0, 0.0, 1.0, 2.0);
+            frame1.addPointSetWithValues(0, 0, 1.0, 0.0);
+            frame1.addPointSetWithValues(1, 0, 2.0, 1.0);
+            frame1.addPointSetWithValues(1, 1, 2.0);
+            AnalysisDataTestInputFrame &frame2 = data_.addFrame(2.0);
+            frame2.addPointSetWithValues(0, 0, 1.0, 1.0);
+            frame2.addPointSetWithValues(0, 2, 2.0);
+            frame2.addPointSetWithValues(1, 0, 1.0, 0.0);
+            AnalysisDataTestInputFrame &frame3 = data_.addFrame(3.0);
+            frame3.addPointSetWithValues(0, 0, 2.0, 0.0, 0.0);
+            frame3.addPointSetWithValues(1, 0, 0.0, 2.0);
+        }
+
+    private:
+        AnalysisDataTestInput  data_;
+};
+
 
 /********************************************************************
  * Tests for gmx::AnalysisDataAverageModule.
@@ -176,6 +209,22 @@ typedef gmx::test::AnalysisDataTestFixture FrameAverageModuleTest;
 TEST_F(FrameAverageModuleTest, BasicTest)
 {
     const AnalysisDataTestInput &input = SimpleInputData::get();
+    gmx::AnalysisData            data;
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
+    gmx::AnalysisDataFrameAverageModulePointer module(
+            new gmx::AnalysisDataFrameAverageModule);
+    data.addModule(module);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("FrameAverage", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+}
+
+TEST_F(FrameAverageModuleTest, HandlesMultipleDataSets)
+{
+    const AnalysisDataTestInput &input = MultiDataSetInputData::get();
     gmx::AnalysisData            data;
     ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
 

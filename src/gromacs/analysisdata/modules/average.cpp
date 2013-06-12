@@ -43,6 +43,8 @@
 
 #include <cmath>
 
+#include <vector>
+
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
 
@@ -109,8 +111,8 @@ AnalysisDataAverageModule::dataFinished()
     allocateValues();
     for (int i = 0; i < rowCount(); ++i)
     {
-        setValue(i, 0, impl_->averager_.average(i));
-        setValue(i, 1, sqrt(impl_->averager_.variance(i)));
+        value(i, 0).setValue(impl_->averager_.average(i));
+        value(i, 1).setValue(std::sqrt(impl_->averager_.variance(i)));
     }
     valuesReady();
 }
@@ -118,13 +120,13 @@ AnalysisDataAverageModule::dataFinished()
 real
 AnalysisDataAverageModule::average(int index) const
 {
-    return value(index, 0);
+    return value(index, 0).value();
 }
 
 real
 AnalysisDataAverageModule::stddev(int index) const
 {
-    return value(index, 1);
+    return value(index, 1).value();
 }
 
 
@@ -137,14 +139,13 @@ class AnalysisDataFrameAverageModule::Impl
     public:
         //! Storage implementation object.
         AnalysisDataStorage     storage_;
-        //! Number of samples in a frame.
-        int                     sampleCount_;
+        //! Number of samples in a frame for each data set.
+        std::vector<int>        sampleCount_;
 };
 
 AnalysisDataFrameAverageModule::AnalysisDataFrameAverageModule()
     : impl_(new Impl())
 {
-    setColumnCount(0, 1);
 }
 
 AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
@@ -154,12 +155,15 @@ AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
 int
 AnalysisDataFrameAverageModule::flags() const
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing;
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
+           | efAllowMultipleDataSets;
 }
 
 void
 AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
 {
+    setColumnCount(0, data->dataSetCount());
+    impl_->sampleCount_.resize(data->dataSetCount());
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }
@@ -167,23 +171,29 @@ AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
 void
 AnalysisDataFrameAverageModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
-    impl_->sampleCount_ = 0;
     AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
-    frame.setValue(0, 0.0);
+    for (int i = 0; i < columnCount(); ++i)
+    {
+        impl_->sampleCount_[i] = 0;
+        frame.setValue(i, 0.0);
+    }
 }
 
 void
 AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    AnalysisDataStorageFrame &frame =
+    const int                 dataSet = points.dataSetIndex();
+    AnalysisDataStorageFrame &frame   =
         impl_->storage_.currentFrame(points.frameIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         if (points.present(i))
         {
-            const real y = points.y(i);
-            frame.value(0)      += y;
-            impl_->sampleCount_ += 1;
+            // TODO: Consider using AnalysisDataFrameAverager
+            const real y     = points.y(i);
+            const real delta = y - frame.value(dataSet);
+            impl_->sampleCount_[dataSet] += 1;
+            frame.value(dataSet)         += delta / impl_->sampleCount_[dataSet];
         }
     }
 }
@@ -191,13 +201,6 @@ AnalysisDataFrameAverageModule::pointsAdded(const AnalysisDataPointSetRef &point
 void
 AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    AnalysisDataStorageFrame &frame =
-        impl_->storage_.currentFrame(header.index());
-    const int                 samples = impl_->sampleCount_;
-    if (samples > 0)
-    {
-        frame.value(0) /= samples;
-    }
     impl_->storage_.finishFrame(header.index());
 }
 

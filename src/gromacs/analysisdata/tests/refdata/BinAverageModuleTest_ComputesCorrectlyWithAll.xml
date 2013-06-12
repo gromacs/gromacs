@@ -8,44 +8,36 @@
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">0.700000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">0.500000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">1.100000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">2.300000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">2.900000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">2.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
@@ -55,22 +47,18 @@
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">1.300000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">2.200000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">3.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
@@ -80,33 +68,27 @@
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">3.300000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">0.500000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">1.200000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">2.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
       <DataValues>
         <Int Name="Count">2</Int>
         <DataValue>
           <Real Name="Value">1.300000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
@@ -115,60 +97,40 @@
     <DataFrame Name="Frame0">
       <Real Name="X">1.250000</Real>
       <DataValues>
-        <Int Name="Count">3</Int>
+        <Int Name="Count">1</Int>
         <DataValue>
           <Real Name="Value">1.100000</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">0.547723</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">5.000000</Real>
+          <Real Name="Error">0.547723</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
     <DataFrame Name="Frame1">
       <Real Name="X">1.750000</Real>
       <DataValues>
-        <Int Name="Count">3</Int>
+        <Int Name="Count">1</Int>
         <DataValue>
           <Real Name="Value">0.000000</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">0.000000</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">0.000000</Real>
+          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
     <DataFrame Name="Frame2">
       <Real Name="X">2.250000</Real>
       <DataValues>
-        <Int Name="Count">3</Int>
+        <Int Name="Count">1</Int>
         <DataValue>
           <Real Name="Value">2.000000</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">1.414214</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">2.000000</Real>
+          <Real Name="Error">1.414214</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
     <DataFrame Name="Frame3">
       <Real Name="X">2.750000</Real>
       <DataValues>
-        <Int Name="Count">3</Int>
+        <Int Name="Count">1</Int>
         <DataValue>
           <Real Name="Value">1.250000</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">1.060660</Real>
-        </DataValue>
-        <DataValue>
-          <Real Name="Value">2.000000</Real>
+          <Real Name="Error">1.060660</Real>
         </DataValue>
       </DataValues>
     </DataFrame>

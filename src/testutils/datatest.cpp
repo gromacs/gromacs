@@ -111,6 +111,13 @@ void AnalysisDataTestInputFrame::addPointSetWithValues(
     pointSet.addValue(y3);
 }
 
+void AnalysisDataTestInputFrame::addPointSetWithValueAndError(
+        int dataSet, int firstColumn, real y1, real e1)
+{
+    AnalysisDataTestInputPointSet &pointSet = addPointSet(dataSet, firstColumn);
+    pointSet.addValueWithError(y1, e1);
+}
+
 
 /********************************************************************
  * AnalysisDataTestInput
@@ -167,6 +174,12 @@ void AnalysisDataTestInput::addFrameWithValues(real x, real y1, real y2, real y3
     frame.addPointSetWithValues(0, 0, y1, y2, y3);
 }
 
+void AnalysisDataTestInput::addFrameWithValueAndError(real x, real y1, real e1)
+{
+    AnalysisDataTestInputFrame &frame = addFrame(x);
+    frame.addPointSetWithValueAndError(0, 0, y1, e1);
+}
+
 
 /********************************************************************
  * AnalysisDataTest
@@ -214,8 +227,16 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
         handle.selectDataSet(points.dataSetIndex());
         for (int j = 0; j < points.size(); ++j)
         {
-            handle.setPoint(j + points.firstColumn(),
-                            points.y(j), points.dy(j), points.present(j));
+            if (points.hasError(j))
+            {
+                handle.setPoint(j + points.firstColumn(),
+                                points.y(j), points.error(j), points.present(j));
+            }
+            else
+            {
+                handle.setPoint(j + points.firstColumn(),
+                                points.y(j), points.present(j));
+            }
         }
         if (input.isMultipoint())
         {

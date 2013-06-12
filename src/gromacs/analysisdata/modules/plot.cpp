@@ -54,8 +54,8 @@
 #include "gromacs/legacyheaders/vec.h"
 #include "gromacs/legacyheaders/xvgr.h"
 
-#include "gromacs/options/basicoptions.h"
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/options/timeunitmanager.h"
 #include "gromacs/selection/selectioncollection.h"
@@ -292,12 +292,12 @@ AbstractPlotModule::setYFormat(int width, int precision, char format)
 int
 AbstractPlotModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
 void
-AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
+AbstractPlotModule::dataStarted(AbstractAnalysisData * /*data*/)
 {
     if (!impl_->filename_.empty())
     {
@@ -488,7 +488,7 @@ AnalysisDataVectorPlotModule::setWriteMask(bool bWrite[DIM + 1])
 void
 AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    if (points.firstColumn() % DIM != 0)
+    if (points.firstColumn() % DIM != 0 || points.columnCount() % DIM != 0)
     {
         GMX_THROW(APIError("Partial data points"));
     }
