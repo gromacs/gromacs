@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -124,15 +124,18 @@ class AnalysisDataPlotSettings
  * straightforward plotting).
  *
  * By default, the data is written into an xvgr file, according to the
- * options read from the Options object given to the constructor.
+ * options read from the AnalysisDataPlotSettings object given to the
+ * constructor.
  * For non-xvgr data, it's possible to skip all headers by calling
  * setPlainOutput().
  *
- * Multipoint data is supported, in which case all the points are written to
- * the output, in the order in which they are added to the data.  A single
- * output line corresponds to a single frame.  In most cases with multipoint
- * data, setPlainOutput() should be called since the output does not make sense
- * as an xvgr file, but this is not enforced.
+ * A single output line corresponds to a single frame.  In most cases with
+ * multipoint data, setPlainOutput() should be called since the output does not
+ * make sense as an xvgr file, but this is not enforced.
+ *
+ * Multipoint data and multiple data sets are both supported, in which case all
+ * the points are written to the output, in the order in which they are added
+ * to the data.
  *
  * \ingroup module_analysisdata
  */

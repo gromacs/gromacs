@@ -77,7 +77,7 @@ class MockAnalysisDataModule::Impl
          * Callback used to initialize reference data checks
          *
          * Called in response to dataStarted().
-         * Records information about the source data for later use.
+         * Records the source data for later use (for access to data properties).
          */
         void startReferenceData(AbstractAnalysisData *data);
         /*! \brief
@@ -115,12 +115,12 @@ class MockAnalysisDataModule::Impl
          * calls.
          */
         boost::scoped_ptr<TestReferenceChecker>  frameChecker_;
+        //! Source data.
+        const AbstractAnalysisData              *source_;
         //! Flags that will be returned by the mock module.
         int                                      flags_;
         //! Index of the current/next frame.
         int                                      frameIndex_;
-        //! Number of columns in the source data (for reference checking only).
-        int                                      columnCount_;
 };
 
 namespace
@@ -149,7 +149,7 @@ void checkReferenceDataPoint(TestReferenceChecker    *checker,
 }       // namespace
 
 MockAnalysisDataModule::Impl::Impl(int flags)
-    : flags_(flags), frameIndex_(0), columnCount_(-1)
+    : source_(NULL), flags_(flags), frameIndex_(0)
 {
 }
 
@@ -157,7 +157,7 @@ MockAnalysisDataModule::Impl::Impl(int flags)
 void
 MockAnalysisDataModule::Impl::startReferenceData(AbstractAnalysisData *data)
 {
-    columnCount_ = data->columnCount();
+    source_ = data;
 }
 
 
@@ -186,13 +186,19 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
         TestReferenceChecker checker(
                 frameChecker_->checkCompound("DataValues", NULL));
         checker.checkInteger(points.columnCount(), "Count");
-        bool bAllColumns = (points.firstColumn() == 0
-                            && points.columnCount() == columnCount_);
+        if (checker.checkPresent(source_->dataSetCount() > 1, "DataSet"))
+        {
+            checker.checkInteger(points.dataSetIndex(), "DataSet");
+        }
+        const int  sourceColumnCount = source_->columnCount(points.dataSetIndex());
+        const bool bAllColumns       = (points.firstColumn() == 0
+                                        && points.columnCount() == sourceColumnCount);
         if (checker.checkPresent(!bAllColumns, "FirstColumn"))
         {
             checker.checkInteger(points.firstColumn(), "FirstColumn");
             checker.checkInteger(points.lastColumn(),  "LastColumn");
         }
+
         AnalysisDataValuesRef::const_iterator value;
         for (value = points.values().begin(); value != points.values().end(); ++value)
         {
@@ -580,7 +586,7 @@ void
 MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
                                             AbstractAnalysisData       *source)
 {
-    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint;
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
     impl_->rootChecker_.reset(new TestReferenceChecker(checker));
     // Google Mock does not support checking the order fully, because

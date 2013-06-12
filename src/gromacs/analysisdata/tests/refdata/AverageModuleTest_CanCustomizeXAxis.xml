@@ -8,15 +8,12 @@
         <Int Name="Count">3</Int>
         <DataValue>
           <Real Name="Value">0.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">2.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
@@ -26,15 +23,12 @@
         <Int Name="Count">3</Int>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">1.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>
@@ -44,15 +38,12 @@
         <Int Name="Count">3</Int>
         <DataValue>
           <Real Name="Value">2.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">0.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
         <DataValue>
           <Real Name="Value">0.000000</Real>
-          <Real Name="Error">0.000000</Real>
         </DataValue>
       </DataValues>
     </DataFrame>

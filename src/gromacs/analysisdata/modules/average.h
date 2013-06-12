@@ -60,6 +60,7 @@ namespace gmx
  * the input data.  Multipoint data and missing data points are both supported.
  * The average is always calculated over all frames and data points for a
  * column.
+ * Multiple input data sets are currently not supported.
  *
  * Output data contains a frame for each column in the input data.
  * The first column of each output frame is the average of the corresponding
@@ -109,13 +110,15 @@ typedef boost::shared_ptr<AnalysisDataAverageModule>
 /*! \brief
  * Data module for averaging of columns for each frame.
  *
- * Output data has the same number of frames as the input data, but only one
- * column.
- * Each frame in the output contains the average of the column values in the
- * corresponding frame of the input data.
+ * Output data has the same number of frames as the input data.
+ * The number of columns in the output data is the same as the number of data
+ * sets in the input data.
+ * Each frame in the output contains the average of the column values for each
+ * data set in the corresponding frame of the input data.
  *
- * Multipoint data and missing data points are both supported. The average
- * is always calculated over all data points present in a column.
+ * Multipoint data and missing data points are both supported.  The average
+ * is always calculated over all data points present in a column for a data
+ * set.
  *
  * \inpublicapi
  * \ingroup module_analysisdata

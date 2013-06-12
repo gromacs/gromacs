@@ -259,6 +259,9 @@ typedef gmx_unique_ptr<AbstractAverageHistogram>::type
  * the main use of the object is to postprocess the histogram once the
  * calculation is finished.
  *
+ * This class can represent multiple histograms in one object: each column in
+ * the data is an independent histogram.
+ *
  * \inpublicapi
  * \ingroup module_analysisdata
  */
@@ -292,10 +295,12 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
         AverageHistogramPointer clone() const;
         //! Normalizes the histogram such that the integral over it is one.
         void normalizeProbability();
-        //! Scales the value of each bin by an uniform scaling factor.
-        void scale(real norm);
+        //! Scales a single histogram by a uniform scaling factor.
+        void scaleSingle(int index, real factor);
+        //! Scales all histograms by a uniform scaling factor.
+        void scaleAll(real factor);
         //! Scales the value of each bin by a different scaling factor.
-        void scaleVector(real norm[]);
+        void scaleAllByVector(real factor[]);
         /*! \brief
          * Notifies attached modules of the histogram data.
          *
@@ -330,10 +335,13 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
 /*! \brief
  * Data module for per-frame histograms.
  *
- * Output data contains the same number of frames as the input data.
- * Each frame contains the histogram for the points in that frame.
- * All input columns are averaged into the same histogram.
- * The number of columns equals the number of bins in the histogram.
+ * Output data contains the same number of frames and data sets as the input
+ * data.  Each frame contains the histogram(s) for the points in that frame.
+ * Each input data set is processed independently into the corresponding output
+ * data set.
+ * All input columns for a data set are averaged into the same histogram.
+ * The number of columns for all data sets equals the number of bins in the
+ * histogram.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -392,13 +400,17 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
 /*! \brief
  * Data module for per-frame weighted histograms.
  *
- * Output data contains the same number of frames as the input data.
- * Each frame contains the histogram for the points in that frame, interpreted
- * such that the first column passed to pointsAdded() determines the bin and
- * the rest give weights to be added to that bin (input data should have at
- * least two colums, and at least two columns should be added at the same time).
- * All input columns are averaged into the same histogram.
- * The number of columns equals the number of bins in the histogram.
+ * Output data contains the same number of frames and data sets as the input
+ * data.  Each frame contains the histogram(s) for the points in that frame,
+ * interpreted such that the first column passed to pointsAdded() determines
+ * the bin and the rest give weights to be added to that bin (input data should
+ * have at least two colums, and at least two columns should be added at the
+ * same time).
+ * Each input data set is processed independently into the corresponding output
+ * data set.
+ * All input columns for a data set are averaged into the same histogram.
+ * The number of columns for all data sets equals the number of bins in the
+ * histogram.
  *
  * \inpublicapi
  * \ingroup module_analysisdata
@@ -444,14 +456,14 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
  * Data module for bin averages.
  *
  * Output data contains one row for each bin; see AbstractAverageHistogram.
- * Output data contains three columns: the first is the average over all frames
- * for that bin, the second is the standard deviation of the values, and the
- * third is the number of samples in that bin.
+ * Output data contains one column for each input data set.
+ * The value in a column is the average over all frames of that data set for
+ * that bin.
  * The input data is interpreted such that the first column passed to
  * pointsAdded() determines the bin and the rest give values to be added to
  * that bin (input data should have at least two colums, and at least two
  * columns should be added at the same time).
- * All input columns are averaged into the same histogram.
+ * All input columns for a data set are averaged into the same histogram.
  *
  * \inpublicapi
  * \ingroup module_analysisdata

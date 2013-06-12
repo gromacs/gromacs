@@ -1,18 +1,29 @@
 <?xml version="1.0"?>
 <?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
 <ReferenceData>
-  <String Name="CommandLine">angle -g1 vector -group1 'resname RV1 RV2 and name A1 A2' -g2 sphnorm -group2 'cog of resname RS' -binw 60</String>
+  <String Name="CommandLine">angle -g1 vector -group1 'resname RV1 RV2 and name A1 A2' 'resname RV3 RV4 and name A1 A2' -g2 plane -group2 'resname RP1 RP2 and name A1 A2 A3' 'resname RP1 RP2 and name A1 A2 A3' -binw 60</String>
   <OutputData Name="Data">
     <AnalysisData Name="angle">
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
         <DataValues>
           <Int Name="Count">2</Int>
+          <Int Name="DataSet">0</Int>
           <DataValue>
-            <Real Name="Value">33.690067</Real>
+            <Real Name="Value">90.000000</Real>
           </DataValue>
           <DataValue>
-            <Real Name="Value">79.975014</Real>
+            <Real Name="Value">45.000000</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">90.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">135.000000</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -21,9 +32,12 @@
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
         <DataValues>
-          <Int Name="Count">1</Int>
+          <Int Name="Count">2</Int>
           <DataValue>
-            <Real Name="Value">56.832542</Real>
+            <Real Name="Value">67.500000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">112.500000</Real>
           </DataValue>
         </DataValues>
       </DataFrame>
@@ -32,9 +46,13 @@
       <DataFrame Name="Frame0">
         <Real Name="X">30.000000</Real>
         <DataValues>
-          <Int Name="Count">1</Int>
+          <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.008333</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
             <Real Name="Error">0.000000</Real>
           </DataValue>
         </DataValues>
@@ -42,7 +60,11 @@
       <DataFrame Name="Frame1">
         <Real Name="X">90.000000</Real>
         <DataValues>
-          <Int Name="Count">1</Int>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.008333</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
           <DataValue>
             <Real Name="Value">0.008333</Real>
             <Real Name="Error">0.000000</Real>
@@ -52,9 +74,13 @@
       <DataFrame Name="Frame2">
         <Real Name="X">150.000000</Real>
         <DataValues>
-          <Int Name="Count">1</Int>
+          <Int Name="Count">2</Int>
           <DataValue>
             <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.008333</Real>
             <Real Name="Error">0.000000</Real>
           </DataValue>
         </DataValues>
