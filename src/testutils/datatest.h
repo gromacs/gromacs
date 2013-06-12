@@ -49,6 +49,7 @@
 
 #include "gromacs/legacyheaders/types/simple.h"
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/utility/gmxassert.h"
 
 #include "testutils/refdata.h"
@@ -86,28 +87,55 @@ class AnalysisDataTestInputPointSet
         //! Returns zero-based index of the last column in this point set.
         int lastColumn() const { return firstColumn_ + size() - 1; }
         //! Returns the number of columns in the point set.
-        int size() const { return y_.size(); }
+        int size() const { return values_.size(); }
         //! Returns the value in column \p i.
-        real y(int i) const { return y_[i]; }
+        real y(int i) const { return values_[i].y; }
+        //! Returns whether the error is present for column \p i.
+        bool hasError(int i) const { return values_[i].bError; }
         //! Returns the error in column \p i.
-        real dy(int i) const { return 0.0; }
+        real error(int i) const { return values_[i].error; }
         //! Returns whether the value in column \p i is present.
-        real present(int i) const { return true; }
-        //! Returns a vector of values for all columns.
-        const std::vector<real> &yvector() const { return y_; }
+        bool present(int i) const { return true; }
+        //! Returns an AnalysisDataValue for column \p i.
+        AnalysisDataValue value(int i) const
+        {
+            AnalysisDataValue result;
+            result.setValue(values_[i].y);
+            if (values_[i].bError)
+            {
+                result.setError(values_[i].error);
+            }
+            return result;
+        }
 
         //! Appends a value to this point set.
-        void addValue(real y) { y_.push_back(y); }
+        void addValue(real y) { values_.push_back(Value(y)); }
+        //! Appends a value with an error estimate to this point set.
+        void addValueWithError(real y, real error)
+        {
+            values_.push_back(Value(y, error));
+        }
 
     private:
         //! Creates an empty point set.
         AnalysisDataTestInputPointSet(int index, int dataSetIndex,
                                       int firstColumn);
 
+        struct Value
+        {
+            Value() : y(0.0), error(0.0), bError(false) {}
+            explicit Value(real y) : y(y), error(0.0), bError(false) {}
+            Value(real y, real error) : y(y), error(error), bError(true) {}
+
+            real                y;
+            real                error;
+            bool                bError;
+        };
+
         int                     index_;
         int                     dataSetIndex_;
         int                     firstColumn_;
-        std::vector<real>       y_;
+        std::vector<Value>      values_;
 
         //! For constructing new point sets.
         friend class AnalysisDataTestInputFrame;
@@ -149,6 +177,9 @@ class AnalysisDataTestInputFrame
         //! Adds a point set with given values to this frame.
         void addPointSetWithValues(int dataSet, int firstColumn,
                                    real y1, real y2, real y3);
+        //! Adds a point set with given values to this frame.
+        void addPointSetWithValueAndError(int dataSet, int firstColumn,
+                                          real y1, real e1);
 
     private:
         //! Constructs a new frame object with the given values.
@@ -209,6 +240,8 @@ class AnalysisDataTestInput
         void addFrameWithValues(real x, real y1, real y2);
         //! Adds a frame with a single point set and the given values.
         void addFrameWithValues(real x, real y1, real y2, real y3);
+        //! Adds a frame with a single point set and the given values.
+        void addFrameWithValueAndError(real x, real y1, real e1);
 
     private:
         std::vector<int>                        columnCounts_;
@@ -424,7 +457,7 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
         const AnalysisDataTestInputPointSet &points = frame.pointSet(0);
         for (int column = 0; column < points.size(); ++column)
         {
-            data->setValue(row, column + points.firstColumn(), points.y(column));
+            data->value(row, column + points.firstColumn()) = points.value(column);
         }
     }
 }

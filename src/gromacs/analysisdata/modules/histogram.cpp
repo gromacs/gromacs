@@ -44,6 +44,7 @@
 #include <cmath>
 
 #include <limits>
+#include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datastorage.h"
@@ -293,24 +294,22 @@ AbstractAverageHistogram::resampleDoubleBinWidth(bool bIntegerBins) const
         for (int c = 0; c < columnCount(); ++c)
         {
             real  v1, v2;
+            real  e1, e2;
             if (bFirstHalfBin)
             {
-                v1 = value(0, c);
+                v1 = value(0, c).value();
+                e1 = value(0, c).error();
                 v2 = 0;
+                e2 = 0;
             }
             else
             {
-                v1 = value(j, c);
-                v2 = value(j + 1, c);
+                v1 = value(j, c).value();
+                e1 = value(j, c).error();
+                v2 = value(j + 1, c).value();
+                e2 = value(j + 1, c).error();
             }
-            if (c == 1)
-            {
-                dest->setValue(i, c, sqrt(v1 * v1 + v2 * v2));
-            }
-            else
-            {
-                dest->setValue(i, c, v1 + v2);
-            }
+            dest->value(i, c).setValue(v1 + v2, std::sqrt(e1 * e1 + e2 * e2));
         }
         if (bFirstHalfBin)
         {
@@ -337,33 +336,49 @@ AbstractAverageHistogram::clone() const
 void
 AbstractAverageHistogram::normalizeProbability()
 {
-    real sum = 0;
-    for (int i = 0; i < rowCount(); ++i)
+    for (int c = 0; c < columnCount(); ++c)
     {
-        sum += value(i, 0);
-    }
-    scale(1.0 / (sum * xstep()));
-}
-
-
-void
-AbstractAverageHistogram::scale(real norm)
-{
-    for (int i = 0; i < rowCount(); ++i)
-    {
-        value(i, 0) *= norm;
-        value(i, 1) *= norm;
+        real sum = 0;
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            sum += value(i, c).value();
+        }
+        scaleSingle(c, 1.0 / (sum * xstep()));
     }
 }
 
 
 void
-AbstractAverageHistogram::scaleVector(real norm[])
+AbstractAverageHistogram::scaleSingle(int index, real factor)
 {
     for (int i = 0; i < rowCount(); ++i)
     {
-        value(i, 0) *= norm[i];
-        value(i, 1) *= norm[i];
+        value(i, index).value() *= factor;
+        value(i, index).error() *= factor;
+    }
+}
+
+
+void
+AbstractAverageHistogram::scaleAll(real factor)
+{
+    for (int i = 0; i < columnCount(); ++i)
+    {
+        scaleSingle(i, factor);
+    }
+}
+
+
+void
+AbstractAverageHistogram::scaleAllByVector(real factor[])
+{
+    for (int c = 0; c < columnCount(); ++c)
+    {
+        for (int i = 0; i < rowCount(); ++i)
+        {
+            value(i, c).value() *= factor[i];
+            value(i, c).error() *= factor[i];
+        }
     }
 }
 
@@ -405,15 +420,14 @@ class BasicAverageHistogramModule : public AbstractAverageHistogram,
         virtual void dataFinished();
 
     private:
-        //! Averaging helper object.
-        AnalysisDataFrameAverager averager_;
+        //! Averaging helper objects for each input data set.
+        std::vector<AnalysisDataFrameAverager> averagers_;
 
         // Copy and assign disallowed by base.
 };
 
 BasicAverageHistogramModule::BasicAverageHistogramModule()
 {
-    setColumnCount(2);
 }
 
 
@@ -421,23 +435,27 @@ BasicAverageHistogramModule::BasicAverageHistogramModule(
         const AnalysisHistogramSettings &settings)
     : AbstractAverageHistogram(settings)
 {
-    setColumnCount(2);
 }
 
 
 int
 BasicAverageHistogramModule::flags() const
 {
-    return efAllowMulticolumn;
+    return efAllowMulticolumn | efAllowMultipleDataSets;
 }
 
 
 void
 BasicAverageHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
-    GMX_RELEASE_ASSERT(rowCount() == data->columnCount(),
-                       "Inconsistent data sizes, something is wrong in the initialization");
-    averager_.setColumnCount(rowCount());
+    setColumnCount(data->dataSetCount());
+    averagers_.resize(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        GMX_RELEASE_ASSERT(rowCount() == data->columnCount(i),
+                           "Inconsistent data sizes, something is wrong in the initialization");
+        averagers_[i].setColumnCount(data->columnCount(i));
+    }
 }
 
 
@@ -450,7 +468,7 @@ BasicAverageHistogramModule::frameStarted(const AnalysisDataFrameHeader & /*head
 void
 BasicAverageHistogramModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    averager_.addPoints(points);
+    averagers_[points.dataSetIndex()].addPoints(points);
 }
 
 
@@ -463,12 +481,15 @@ BasicAverageHistogramModule::frameFinished(const AnalysisDataFrameHeader & /*hea
 void
 BasicAverageHistogramModule::dataFinished()
 {
-    averager_.finish();
     allocateValues();
-    for (int i = 0; i < rowCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
     {
-        setValue(i, 0, averager_.average(i));
-        setValue(i, 1, sqrt(averager_.variance(i)));
+        averagers_[i].finish();
+        for (int j = 0; j < rowCount(); ++j)
+        {
+            value(j, i).setValue(averagers_[i].average(j),
+                                 std::sqrt(averagers_[i].variance(j)));
+        }
     }
 }
 
@@ -502,7 +523,7 @@ class BasicHistogramImpl
         /*! \brief
          * Initializes data storage frame when a new frame starts.
          */
-        void initFrame(AnalysisDataStorageFrame *frame);
+        void initFrame(int dataSetCount, AnalysisDataStorageFrame *frame);
 
         //! Storage implementation object.
         AnalysisDataStorage                  storage_;
@@ -537,12 +558,17 @@ void BasicHistogramImpl::init(const AnalysisHistogramSettings &settings)
 
 
 void
-BasicHistogramImpl::initFrame(AnalysisDataStorageFrame *frame)
+BasicHistogramImpl::initFrame(int dataSetCount, AnalysisDataStorageFrame *frame)
 {
-    for (int i = 0; i < frame->columnCount(); ++i)
+    for (int s = 0; s < dataSetCount; ++s)
     {
-        frame->setValue(i, 0.0);
+        frame->selectDataSet(s);
+        for (int i = 0; i < frame->columnCount(); ++i)
+        {
+            frame->setValue(i, 0.0);
+        }
     }
+    frame->selectDataSet(0);
 }
 
 }   // namespace internal
@@ -593,7 +619,7 @@ AnalysisDataSimpleHistogramModule::settings() const
 int
 AnalysisDataSimpleHistogramModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
@@ -601,7 +627,11 @@ void
 AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     addModule(impl_->averager_);
-    setColumnCount(0, settings().binCount());
+    setDataSetCount(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        setColumnCount(i, settings().binCount());
+    }
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }
@@ -611,7 +641,7 @@ void
 AnalysisDataSimpleHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
-    impl_->initFrame(&frame);
+    impl_->initFrame(dataSetCount(), &frame);
 }
 
 
@@ -620,6 +650,7 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
 {
     AnalysisDataStorageFrame &frame =
         impl_->storage_.currentFrame(points.frameIndex());
+    frame.selectDataSet(points.dataSetIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
         int bin = settings().findBin(points.y(i));
@@ -704,7 +735,7 @@ AnalysisDataWeightedHistogramModule::settings() const
 int
 AnalysisDataWeightedHistogramModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
@@ -712,7 +743,11 @@ void
 AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
 {
     addModule(impl_->averager_);
-    setColumnCount(0, settings().binCount());
+    setDataSetCount(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        setColumnCount(i, settings().binCount());
+    }
     notifyDataStart();
     impl_->storage_.startDataStorage(this);
 }
@@ -722,7 +757,7 @@ void
 AnalysisDataWeightedHistogramModule::frameStarted(const AnalysisDataFrameHeader &header)
 {
     AnalysisDataStorageFrame &frame = impl_->storage_.startFrame(header);
-    impl_->initFrame(&frame);
+    impl_->initFrame(dataSetCount(), &frame);
 }
 
 
@@ -738,6 +773,7 @@ AnalysisDataWeightedHistogramModule::pointsAdded(const AnalysisDataPointSetRef &
     {
         AnalysisDataStorageFrame &frame =
             impl_->storage_.currentFrame(points.frameIndex());
+        frame.selectDataSet(points.dataSetIndex());
         for (int i = 1; i < points.columnCount(); ++i)
         {
             frame.value(bin) += points.y(i);
@@ -788,9 +824,9 @@ class AnalysisDataBinAverageModule::Impl
         }
 
         //! Histogram settings.
-        AnalysisHistogramSettings  settings_;
-        //! Averaging helper object.
-        AnalysisDataFrameAverager  averager_;
+        AnalysisHistogramSettings               settings_;
+        //! Averaging helper objects for each input data set.
+        std::vector<AnalysisDataFrameAverager>  averagers_;
 };
 
 AnalysisDataBinAverageModule::AnalysisDataBinAverageModule()
@@ -804,7 +840,6 @@ AnalysisDataBinAverageModule::AnalysisDataBinAverageModule(
         const AnalysisHistogramSettings &settings)
     : impl_(new Impl(settings))
 {
-    setColumnCount(3);
     setRowCount(settings.binCount());
     setXAxis(settings.firstEdge() + 0.5 * settings.binWidth(),
              settings.binWidth());
@@ -836,14 +871,19 @@ AnalysisDataBinAverageModule::settings() const
 int
 AnalysisDataBinAverageModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint;
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 }
 
 
 void
-AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData * /*data*/)
+AnalysisDataBinAverageModule::dataStarted(AbstractAnalysisData *data)
 {
-    impl_->averager_.setColumnCount(rowCount());
+    setColumnCount(data->dataSetCount());
+    impl_->averagers_.resize(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        impl_->averagers_[i].setColumnCount(rowCount());
+    }
 }
 
 
@@ -863,9 +903,10 @@ AnalysisDataBinAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
     int bin = settings().findBin(points.y(0));
     if (bin != -1)
     {
+        AnalysisDataFrameAverager &averager = impl_->averagers_[points.dataSetIndex()];
         for (int i = 1; i < points.columnCount(); ++i)
         {
-            impl_->averager_.addValue(bin, points.y(i));
+            averager.addValue(bin, points.y(i));
         }
     }
 }
@@ -880,13 +921,16 @@ AnalysisDataBinAverageModule::frameFinished(const AnalysisDataFrameHeader & /*he
 void
 AnalysisDataBinAverageModule::dataFinished()
 {
-    impl_->averager_.finish();
     allocateValues();
-    for (int i = 0; i < settings().binCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
     {
-        setValue(i, 0, impl_->averager_.average(i));
-        setValue(i, 1, std::sqrt(impl_->averager_.variance(i)));
-        setValue(i, 2, impl_->averager_.sampleCount(i));
+        AnalysisDataFrameAverager &averager = impl_->averagers_[i];
+        averager.finish();
+        for (int j = 0; j < rowCount(); ++j)
+        {
+            value(j, i).setValue(averager.average(j),
+                                 std::sqrt(averager.variance(j)));
+        }
     }
     valuesReady();
 }

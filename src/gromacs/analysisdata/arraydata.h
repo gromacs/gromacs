@@ -66,9 +66,6 @@ namespace gmx
  * accessed before it is available.
  *
  * \todo
- * Add methods to take full advantage of AnalysisDataValue features.
- *
- * \todo
  * Add support for multiple data sets.
  *
  * \inlibraryapi
@@ -99,12 +96,12 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             return xstart() + row * xstep();
         }
         //! Returns a given array element.
-        real value(int row, int col) const
+        const AnalysisDataValue &value(int row, int col) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col].value();
+            return value_[row * columnCount() + col];
         }
 
     protected:
@@ -157,25 +154,12 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          */
         void setXAxis(real start, real step);
         //! Returns a reference to a given array element.
-        real &value(int row, int col)
+        AnalysisDataValue &value(int row, int col)
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col].value();
-        }
-        /*! \brief
-         * Sets the value of an element in the array.
-         *
-         * \param[in] row  Zero-based row index for the value.
-         * \param[in] col  Zero-based column index for the value.
-         * \param[in] val  Value to set in the given location.
-         *
-         * Does not throw.
-         */
-        void setValue(int row, int col, real val)
-        {
-            value(row, col) = val;
+            return value_[row * columnCount() + col];
         }
         /*! \brief
          * Notifies modules of the data.
@@ -249,7 +233,6 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
         using AbstractAnalysisArrayData::allocateValues;
         using AbstractAnalysisArrayData::setXAxis;
         using AbstractAnalysisArrayData::value;
-        using AbstractAnalysisArrayData::setValue;
         using AbstractAnalysisArrayData::valuesReady;
 
         // Copy and assign disallowed by base.

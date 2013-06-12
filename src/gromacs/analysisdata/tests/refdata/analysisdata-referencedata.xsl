@@ -13,12 +13,17 @@ and use the copy_xsl.sh script to copy it to relevant locations.
 <xsl:import href="common-referencedata.xsl"/>
 
 <xsl:template match="AnalysisData">
+    <xsl:variable name="has-datasetspec"
+                  select="DataFrame/DataValues/Int[@Name='DataSet']"/>
     <xsl:variable name="has-columnspec"
                   select="DataFrame/DataValues/Int[@Name='FirstColumn']"/>
     <table border="1">
         <tr>
             <th>Frame</th>
             <th>X</th>
+            <xsl:if test="$has-datasetspec">
+                <th>Set</th>
+            </xsl:if>
             <xsl:if test="$has-columnspec">
                 <th>Columns</th>
             </xsl:if>
@@ -28,6 +33,9 @@ and use the copy_xsl.sh script to copy it to relevant locations.
         <tr>
             <td><xsl:value-of select="../@Name"/></td>
             <td><xsl:value-of select="../Real[@Name='X']"/></td>
+            <xsl:if test="$has-datasetspec">
+                <td><xsl:value-of select="Int[@Name='DataSet']"/></td>
+            </xsl:if>
             <xsl:if test="$has-columnspec">
                 <td>
                     <xsl:choose>
@@ -48,6 +56,9 @@ and use the copy_xsl.sh script to copy it to relevant locations.
 
 <xsl:template match="DataValue">
     <xsl:value-of select="Real[@Name='Value']"/>
+    <xsl:if test="Real[@Name='Error']">
+        &#177; <xsl:value-of select="Real[@Name='Error']"/>
+    </xsl:if>
 </xsl:template>
 
 </xsl:stylesheet>
