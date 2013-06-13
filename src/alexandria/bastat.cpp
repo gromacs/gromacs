@@ -410,15 +410,9 @@ int main(int argc,char *argv[])
     };
 #define NFILE asize(fnm)
     static int  compress=0;
-    static gmx_bool bHisto=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
-    int minimum_data = 3;
-    real watoms = 1;
+    static gmx_bool bHisto=FALSE;
     static real Dm = 400,kt = 400,kp = 5, beta = 20;
-    static real J0_0=5,Chi0_0=1,w_0=5,hfac=0,rDecrZeta=-1;
-    static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
-    static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
-    static real th_toler=170,ph_toler=5,dip_toler=0.5;
-    static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
+    static real th_toler=170,ph_toler=5;
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
     t_pargs pa[] = {
@@ -445,14 +439,12 @@ int main(int argc,char *argv[])
     time_t    my_t;
     char      pukestr[STRLEN];
     t_bonds   *b;
-    int  j;
     rvec dx,dx2,r_ij,r_kj,r_kl,mm,nn;
     t_pbc pbc;
     int t1,t2,t3;
     int ftb,fta,ftd,fti;
     matrix box;
     real sign;
-    double ang;
     double bspacing = 1; /* pm */
     double aspacing = 0.5; /* degree */
     double dspacing = 1; /* degree */

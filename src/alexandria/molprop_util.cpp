@@ -551,20 +551,10 @@ static bool comp_mp_elem(alexandria::MolProp ma,
     return comp_mp_molname(ma,mb);
 }
 
-gmx_molselect_t my_gms;
-
-static bool comp_mp_selection(alexandria::MolProp ma,
-                              alexandria::MolProp mb)
+static bool comp_mp_index(alexandria::MolProp ma,
+                          alexandria::MolProp mb)
 {
-    int ia,ib;
-
-    ia = gmx_molselect_index(my_gms,ma.GetIupac().c_str());
-    ib = gmx_molselect_index(my_gms,mb.GetIupac().c_str());
-    
-    if (ia < ib)
-        return true;
-    else
-        return false;
+    return (ma.GetIndex() < mb.GetIndex());
 }
 
 alexandria::MolPropIterator SearchMolProp(std::vector<alexandria::MolProp> &mp,
@@ -601,9 +591,12 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
     case MPSA_SELECTION:
         if (NULL != gms) 
         {
-            my_gms = gms;
-            std::sort(mp.begin(),mp.end(),comp_mp_selection);
-            my_gms = NULL;
+            for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
+            {
+                int index = gmx_molselect_index(gms,mpi->GetIupac().c_str());
+                mpi->SetIndex(index);
+            }
+            std::sort(mp.begin(),mp.end(),comp_mp_index);
         }
         else
         {

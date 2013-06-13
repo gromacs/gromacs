@@ -109,7 +109,7 @@ static opt_mask_t *analyze_idef(FILE *fp,
                                 gmx_poldata_t pd,
                                 bool bOpt[])
 {
-    int  gt,i,bt,n,ai,aj,ak,al,ft;
+    int  gt,i,bt,ai,aj,ak,al,ft;
     int  ntot[ebtsNR];
     char *aai,*aaj,*aak,*aal,*params;
     opt_mask_t *omt;
@@ -252,6 +252,9 @@ public:
     int _nparam;
     double *_param,*_orig,*_best,*_lower,*_upper,*_psigma;
     
+    OptParam();
+    ~OptParam() {};
+    
     void InitOpt(FILE *fplog,int *nparam,
                  bool bOpt[ebtsNR],
                  real D0,real beta0,real D0_min,real beta_min,
@@ -290,6 +293,26 @@ public:
     void PrintSpecs(FILE *fp,char *title,
                     const char *xvg,output_env_t oenv);
 };
+
+OptParam::OptParam()
+{
+    int i;
+    
+    for(i=0; (i<ebtsNR); i++)
+    {
+        _bOpt[i] = false;
+        _nbad[i] = 0;
+        _bad[i] = NULL;
+        _inv_gt[i] = NULL;
+    }
+    _nparam = 0;
+    _param = NULL;
+    _orig = NULL;
+    _best = NULL;
+    _lower = NULL;
+    _upper = NULL;
+    _psigma = NULL;
+}
 
 void OptParam::Opt2List()
 {
@@ -405,8 +428,10 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
     nD     = _nbad[ebtsBONDS];
     nMol   = _mymol.size();
     if ((0 == nD) || (0 == nMol))
+    {
         gmx_fatal(FARGS,"Number of variables is %d and number of molecules is %d",
                   nD,nMol);
+    }
     a      = alloc_matrix(nMol,nD);
     at     = alloc_matrix(nD,nMol);
     ata    = alloc_matrix(nD,nD);
@@ -466,6 +491,7 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
                   row);
     }
     a0 = 0;
+    niter = 0;
     do {
         for(i=0; (i<nD); i++)  
         {
@@ -529,7 +555,7 @@ void OptParam::InitOpt(FILE *fplog,int *nparam,
     double bondorder;
     
     for(i=0; (i<ebtsNR); i++)
-        bOpt[i] = bOpt[i];
+        _bOpt[i] = bOpt[i];
     *nparam = 0;
     if (bOpt[ebtsBONDS]) {
         while((gt = gmx_poldata_get_bond(_pd,&(ai[0]),&(ai[1]),
@@ -842,7 +868,7 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
 
 double OptParam::CalcDeviation()
 {
-    int    i,j,count;
+    int    j,count;
     int    flags;
     double ener;
     real   lambda,t = 0;
@@ -1188,7 +1214,7 @@ static real quality_of_fit(real chi2,int N)
 static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
                               gmx_bool bForce,gmx_bool bMtop)
 {
-    int i,j,k;
+    int j,k;
     
     for(std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
     {
@@ -1394,7 +1420,7 @@ int main(int argc, char *argv[])
     gmx_molselect_t gms;
     time_t    my_t;
     char      pukestr[STRLEN];
-    opt_mask_t *omt;
+    opt_mask_t *omt = NULL;
     cr = init_par(&argc,&argv);
 
     if (MASTER(cr))
@@ -1443,6 +1469,12 @@ int main(int argc, char *argv[])
              opt_elem,const_elem,
              lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
              TRUE,TRUE,TRUE,watoms,FALSE);
+             
+    omt = analyze_idef(fp,
+                       opt._mymol,
+                       opt._pd,
+                       bOpt);
+             
     opt.InitOpt(fp,&nparam,bOpt,D0,beta0,
                 D0_min,beta_min,omt,factor);
              

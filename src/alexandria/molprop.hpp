@@ -1054,6 +1054,7 @@ typedef std::vector<Calculation>::iterator CalculationIterator;
  */
 class MolProp {
 private:
+    int _index;
     double _mass;
     int _charge,_multiplicity;
     std::string _formula,_molname,_iupac,_cas,_cid,_inchi;
@@ -1064,7 +1065,7 @@ private:
     std::vector<Bond> _bond;
 public:
     //! Construct a number MolProp object
-    MolProp() { _mass = 0; _charge = 0; _multiplicity = 0; }
+    MolProp() { _index = NOTSET; _mass = 0; _charge = 0; _multiplicity = 0; }
     
     //! Destructor
     ~MolProp() {}
@@ -1075,6 +1076,12 @@ public:
      * \todo Implement this
      */
     void CheckConsistency();
+    
+    //! Set the index number for sorting
+    void SetIndex(int index) { _index = index; }
+    
+    //! Return the index number for sorting
+    int GetIndex() { return _index; }
     
     //! Set the molecular mass
     void SetMass(double mass) { _mass = mass; }

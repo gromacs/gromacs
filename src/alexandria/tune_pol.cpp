@@ -125,11 +125,9 @@ static int decompose_frag(FILE *fp,int bTrain,
     FILE   *csv;
     double *x,*atx;
     double **a,**at,**ata,*fpp;
-    double pol,poltot,a0,da0,ax,sig_pol,chi2;
-    char   *elem,*miller_equiv,**atype=NULL,*spref,*gt_type,*ptype,*btype,*vdwparm;
-    const char *atomname;
-    char   *desc,*charge;
-    int    j,niter=0,nusemol,nn,natom,natom_tot;
+    double pol,poltot,a0,da0,ax,chi2;
+    char   **atype=NULL,*ptype;
+    int    j,niter=0,nusemol,nn;
     int    *test=NULL,ntest[2],ntmax,row,cur=0;
     bool   *bUseMol,*bUseAtype;
 #define prev (1-cur)
@@ -223,7 +221,6 @@ static int decompose_frag(FILE *fp,int bTrain,
                 {
                     if (bUseMol[j])
                     {
-                        int nnn;
                         alexandria::MolecularCompositionIterator mci = 
                             mpi->SearchMolecularComposition((char *)"spoel");
                         for(alexandria::AtomNumIterator ani=mci->BeginAtomNum();

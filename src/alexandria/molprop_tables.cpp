@@ -599,14 +599,13 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
 {
     std::vector<alexandria::MolProp>::iterator mpi;
     FILE   *xvg;
-    int    i,j,pp,ntab,atomnumber;
+    int    i,j,pp,ntab;
     int    nfirst = 20,nsecond = 24;
     double ahc,ahp,bos_pol,alexandria_pol,sig_pol;
     double exp_val,qm_val;
     real   alexandria_aver,alexandria_sigma,nnn;
     char   *ptype[2] = { NULL, NULL };
-    char   *elem,*miller,*bosque,*ref,group[32];
-    char   *desc;
+    char   *ref;
     int    nsmlsq=0,estats,N,nset;
     t_sm_lsq *smlsq=NULL;
     int    cur = 0;
@@ -795,9 +794,8 @@ static void gmx_molprop_atomtype_polar_table(FILE *fp,int npd,gmx_poldata_t pd[]
 static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
 {
     int    i,k,m,cur=0;
-    double alexandria_pol,sig_pol;
     char   *elem,*gt_type[2] = { NULL, NULL };
-    char   *miller,*spref,*desc,*ptype,*btype;
+    char   *spref,*desc,*ptype,*btype;
 #define prev (1-cur)
 #define NEQG 5
     int    eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
@@ -1088,7 +1086,7 @@ void gmx_molprop_prop_table(FILE *fp,MolPropObservable mpo,real rel_toler,real a
                     if (0 == nexp)
                         iprint++;
                     myline[0] = '\0';
-                    if ((nexp == 0))
+                    if (nexp == 0)
                     {
                         if (bPrintMultQ)
                             sprintf(myline,"%d. %-15s & %s & %d & %d",

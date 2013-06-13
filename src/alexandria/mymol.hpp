@@ -41,7 +41,6 @@ namespace alexandria {
 class MyMol : public MolProp 
 {
 private:
-    int            nshell;
     gmx_bool       *bRing;
     //char           **smnames;
     //! Gromacs structures
@@ -112,7 +111,6 @@ public:
     //! Generate Charges
     immStatus GenerateCharges(gmx_poldata_t pd,gmx_atomprop_t ap,
                               int iModel,real hfac,real epsr,
-                              real qtol,int maxiter,int maxcycle,
                               const char *lot,
                               bool bSymmetricCharges,
                               const char *symm_string);
@@ -120,7 +118,7 @@ public:
     //! Print the topology that was generated previously in GROMACS format.
     //! fp is a File pointer opened previously.
     void PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
-                       const char *forcefield,bool bVerbose);
+                       bool bVerbose);
     
     //! Print some info about the molecule to a file
     void PrintQPol(FILE *fp,gmx_poldata_t pd);

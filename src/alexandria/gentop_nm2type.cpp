@@ -222,7 +222,7 @@ static int colour_inner(int natoms,t_atsel ats[],int fW,int naG,
 {
     double *bo;
     int bi,i,j,result;
-    int nbG,nbW,nbWi;
+    int nbG=0,nbW=0,nbWi=0;
     
     snew(bo,nbonds);
     for(i=0; (i<nbonds); i++)

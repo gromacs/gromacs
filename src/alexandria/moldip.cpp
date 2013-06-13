@@ -387,7 +387,6 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     int      nexcl,imm_count[immNR];
     immStatus imm;
     std::vector<alexandria::MolProp> mp;
-    alexandria::MolPropIterator mpi;
     alexandria::GaussAtomProp gap;
     
     for(i = 0; (i<immNR); i++)
@@ -416,7 +415,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     {
         /* Now read the molecules */
         MolPropRead(fn,mp);
-        for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
+        for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
         {
             if (FALSE == mpi->GenerateComposition(_pd))
             {
@@ -435,7 +434,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     if (MASTER(_cr)) 
     {
         i = -1;
-        for(mpi=mp.begin(); (mpi<mp.end()); mpi++)
+        for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
         {
             if (imsTrain == gmx_molselect_status(gms,mpi->GetIupac().c_str()))
             {
@@ -444,14 +443,36 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 
                 mpnew.Merge(*mpi);
                 
-                imm = mpnew.Initxx(fp,gap,
-                                 _bQM,lot,bZero,
-                                 _pd,_atomprop,
-                                 _iModel,_cr,&nwarn,bCharged,oenv,
-                                 th_toler,ph_toler,dip_toler,_hfac,bH14,
-                                 bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
-                                 (_fc[ermsESP] > 0),watoms,_decrzeta,
-                                 _bPol,_bFitZeta);
+                imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+    
+                if (immOK == imm)
+                {
+                    mpnew.gr = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
+                                             1,100,5,
+                                             TRUE,watoms,5,TRUE,TRUE,
+                                             1,TRUE,
+                                             TRUE,NULL);
+                    if (NULL == mpnew.gr)
+                    {
+                        imm = immRespInit;
+                    }
+                }
+
+                if (immOK == imm)
+                {
+                    imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
+                                                lot,TRUE,NULL);
+                }
+                
+                if (0)
+                    imm = mpnew.Initxx(fp,gap,
+                                       _bQM,lot,bZero,
+                                       _pd,_atomprop,
+                                       _iModel,_cr,&nwarn,bCharged,oenv,
+                                       th_toler,ph_toler,dip_toler,_hfac,bH14,
+                                       bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
+                                       (_fc[ermsESP] > 0),watoms,_decrzeta,
+                                       _bPol,_bFitZeta);
                 if (immOK == imm)
                 {
                     if (dest > 0)
@@ -498,13 +519,37 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
             alexandria::MyMol mpnew;
             
             mpnew.Receive(_cr,0);
-            imm = mpnew.Initxx(fp,gap,_bQM,lot,bZero,
-                             _pd,_atomprop,
-                             _iModel,_cr,&nwarn,bCharged,oenv,
-                             th_toler,ph_toler,dip_toler,_hfac,
-                             bH14,bAllDihedrals,bRemoveDoubleDihedrals,
-                             nexcl,(_fc[ermsESP] > 0),
-                             watoms,_decrzeta,_bPol,_bFitZeta);
+                
+            imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+    
+            if (immOK == imm)
+            {
+                mpnew.gr = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
+                                         1,100,5,
+                                         TRUE,watoms,5,TRUE,TRUE,
+                                         1,TRUE,
+                                         TRUE,NULL);
+                if (NULL == mpnew.gr)
+                {
+                    imm = immRespInit;
+                }
+            }
+            
+            if (immOK == imm)
+            {
+                imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
+                                            lot,TRUE,NULL);
+            }
+            
+            
+            if (0)
+                imm = mpnew.Initxx(fp,gap,_bQM,lot,bZero,
+                                   _pd,_atomprop,
+                                   _iModel,_cr,&nwarn,bCharged,oenv,
+                                   th_toler,ph_toler,dip_toler,_hfac,
+                                   bH14,bAllDihedrals,bRemoveDoubleDihedrals,
+                                   nexcl,(_fc[ermsESP] > 0),
+                                   watoms,_decrzeta,_bPol,_bFitZeta);
             mpnew.eSupp = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)
@@ -593,7 +638,7 @@ static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
 
 void MolDip::CalcDeviation()
 {
-    int    i,j,count,atomnr;
+    int    j,count,atomnr;
     double qq,qtot;
     real   etot[ermsNR];
     real   t = 0;

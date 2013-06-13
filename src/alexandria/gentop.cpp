@@ -145,29 +145,13 @@ int main(int argc, char *argv[])
     const char *bugs[] = {
         "No force constants for impropers are generated"
     };
-    FILE       *fp;
-    gpp_atomtype_t atype;
     output_env_t oenv;
     gmx_atomprop_t aps;
     gmx_poldata_t  pd;
-    char       title[STRLEN];
-    //rvec       *x=NULL;        /* coordinates? */
-    int        nalloc,nelec,ePBC;
-    t_pbc      pbc;
-    //int        natoms;       /* number of atoms in one molecule  */
-    int        i,j,eQGEN,*symmetric_charges=NULL;
-    real       mu;
-    gmx_bool   bPDB,bRTP,bTOP;
-    t_symtab   symtab;
-    int        nbond;
-    double     *bondorder;
-    real       mtot;
-    const char *fn,*xmlf;
+    int        ePBC;
+    gmx_bool   bRTP,bTOP;
     char       forcefield[STRLEN],ffdir[STRLEN];
     char       ffname[STRLEN],gentopdat[STRLEN];
-    gmx_conect gc = NULL;
-    const char *potfn,*rhofn,*hisfn,*difffn,*diffhistfn;
-    gmx_bool   *bRing;
     std::vector<alexandria::MolProp> mps;
     alexandria::MolPropIterator mpi;
     alexandria::MyMol mymol;
@@ -458,7 +442,7 @@ int main(int argc, char *argv[])
     if (immOK == imm)
     {
         imm = mymol.GenerateCharges(pd,aps,iModel,hfac,epsr,
-                                    qtol,maxiter,maxcycle,lot,bQsym,symm_string);
+                                    lot,TRUE,NULL);
     }
     if (immOK == imm)
     {
@@ -492,7 +476,7 @@ int main(int argc, char *argv[])
         {    
             mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
                                 ftp2fn(efTOP,NFILE,fnm),
-                                pd,iModel,forcefield,bVerbose);
+                                pd,iModel,bVerbose);
         }
         else if (bRTP) 
         {

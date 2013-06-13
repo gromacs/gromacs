@@ -118,19 +118,26 @@ static void gentop_qgen_save_params(gentop_qgen_t qgen,gmx_resp_t gr)
 static void gentop_qgen_get_params(gentop_qgen_t qgen,gmx_resp_t gr)
 {
     int i,j;
-    
-    for(i=0; (i<qgen->natom); i++) 
+
+    if (qgen->bAllocSave)
     {
-        for(j=0; (j<qgen->nZeta[i]); j++)
+        for(i=0; (i<qgen->natom); i++) 
         {
-            qgen->q[i][j] = qgen->qsave[i][j];
-            qgen->zeta[i][j] = qgen->zetasave[i][j];
-            if (NULL != gr)
+            for(j=0; (j<qgen->nZeta[i]); j++)
             {
-                gmx_resp_set_q(gr,i,j,qgen->q[i][j]);
-                gmx_resp_set_zeta(gr,i,j,qgen->zeta[i][j]);
+                qgen->q[i][j] = qgen->qsave[i][j];
+                qgen->zeta[i][j] = qgen->zetasave[i][j];
+                if (NULL != gr)
+                {
+                    gmx_resp_set_q(gr,i,j,qgen->q[i][j]);
+                    gmx_resp_set_zeta(gr,i,j,qgen->zeta[i][j]);
+                }
             }
         }
+    }
+    else
+    {
+        fprintf(stderr,"WARNING: no ESP charges generated.\n");
     }
 }
 

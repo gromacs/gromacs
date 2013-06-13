@@ -234,7 +234,7 @@ static void gmx_molprop_read_babel(const char *g98,
     OpenBabel::OBAtomIterator OBai;
     OpenBabel::OBBondIterator OBbi;
     OpenBabel::OBConversion *conv;
-    OpenBabel::OBAtom *OBa;
+    //OpenBabel::OBAtom *OBa;
     OpenBabel::OBBond *OBb;
     OpenBabel::OBPairData *OBpd,*OBdhf;
     OpenBabel::OBVectorData *dipole;
@@ -247,7 +247,7 @@ static void gmx_molprop_read_babel(const char *g98,
     
     const char *reference="Spoel2013a",*unknown="unknown";
     char *program,*method,*basis,*charge_model,*ptr,*g98ptr;
-    int atomid,bondid;
+    int bondid;
     double dval;
     int k;
     const char *etypes[] = { "DHf(0K)", "DHf(298.15K)" };

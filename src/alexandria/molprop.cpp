@@ -768,10 +768,7 @@ bool MolProp::GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
     alexandria::ExperimentIterator ei;
     alexandria::CalculationIterator ci;
     std::string reference,method,name,basisset,program,conformation,expconf;
-    
-    int  k;
     bool done=false;
-    char **ll;
     
     if ((iQM == iqmExp) || (iQM == iqmBoth)) 
     {
