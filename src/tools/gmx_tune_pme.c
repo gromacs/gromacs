@@ -2280,7 +2280,9 @@ int gmx_tune_pme(int argc, char *argv[])
     }
     else
     {
-        sprintf(bbuf, " -np %d ", nnodes);
+        /* This string will be used for MPI runs and will appear after the
+         * mpirun command */
+        sprintf(bbuf, " %s %d ", procstring[0], nnodes);
     }
 
     cmd_np = bbuf;
