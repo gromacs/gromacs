@@ -80,7 +80,8 @@ class AnalysisDataModuleInterface
         /*! \brief
          * Possible flags for flags().
          */
-        enum {
+        enum Flag
+        {
             //! The module can process multipoint data.
             efAllowMultipoint           = 1<<0,
             //! The module does not make sense for non-multipoint data.
