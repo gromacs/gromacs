@@ -53,10 +53,10 @@ namespace gmx
 {
 
 class AnalysisDataModuleInterface;
+class AnalysisDataModuleManager;
 class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
 class AnalysisDataPointSetRef;
-class AnalysisDataStorage;
 
 //! Smart pointer for managing a generic analysis data module.
 typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer;
@@ -78,14 +78,16 @@ typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer
  * \if libapi
  * This class also provides protected methods for use in derived classes.
  * The properties returned by isMultipoint(), dataSetCount(), and columnCount()
- * must be set using setMultipoint(), setDataSetCount(), and setColumnCount(),
- * and notify*() methods must be used to report when data becomes available for
+ * must be set using setMultipoint(), setDataSetCount(), and setColumnCount().
+ * notify*() methods in the AnalysisDataModuleManager returned by
+ * moduleManager() must be used to report when data becomes available for
  * modules to process it.
  * There are also two protected pure virtual methods that need to be
  * implemented to provide access to stored data: requestStorageInternal() and
  * tryGetDataFrameInternal().
  *
- * It is up to subclasses to ensure that the protected methods are called in a
+ * It is up to subclasses to ensure that the protected methods and the
+ * notifications in AnalysisDataModuleManager are called in a
  * correct sequence (the methods will assert in most incorrect use cases), and
  * that the data provided through the public interface matches that passed to
  * the modules with the notify methods.
@@ -247,12 +249,15 @@ class AbstractAnalysisData
          * Adds a module to process the data.
          *
          * \param     module  Module to add.
+         * \throws    std::bad_alloc if out of memory.
          * \throws    APIError if
          *      - \p module is not compatible with the data object
          *      - data has already been added to the data object and everything
          *        is not available through getDataFrame().
+         * \throws    unspecified Any exception thrown by \p module in its
+         *      notification methods (if data has been added).
          *
-         * If data has already been added to the module, the new module
+         * If data has already been added to the data, the new module
          * immediately processes all existing data.  APIError is thrown
          * if all data is not available through getDataFrame().
          *
@@ -269,7 +274,8 @@ class AbstractAnalysisData
          * \param[in] col     First column.
          * \param[in] span    Number of columns.
          * \param     module  Module to add.
-         * \throws    APIError in same situations as addModule().
+         *
+         * Throws in the same situations as addModule().
          *
          * Currently, all data sets are filtered using the same column mask.
          *
@@ -291,6 +297,8 @@ class AbstractAnalysisData
          *
          * \param     module  Module to apply.
          * \throws    APIError in same situations as addModule().
+         * \throws    unspecified Any exception thrown by \p module in its
+         *      notification methods.
          *
          * This function works as addModule(), except that it does not keep a
          * reference to \p module within the data object after it returns.
@@ -319,14 +327,16 @@ class AbstractAnalysisData
          * Sets the number of data sets.
          *
          * \param[in] dataSetCount  Number of data sets (must be > 0).
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new data set count.
          *
-         * It not called, the data object has a single data set.
-         * Can be called only before notifyDataStart().
+         * It not called, the data object has a single data set.  Can be called
+         * only before AnalysisDataModuleManager::notifyDataStart().
          * Multiple calls are allowed before that point; the last call takes
          * effect.
          *
-         * Does not throw, but this may change with the todo item in
-         * setColumnCount().
+         * Strong exception safety.
          *
          * \see dataSetCount()
          */
@@ -336,18 +346,16 @@ class AbstractAnalysisData
          *
          * \param[in] dataSet      Zero-based index of the data set.
          * \param[in] columnCount  Number of columns in \p dataSet (must be > 0).
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new column count.
          *
-         * Must be called at least once before notifyDataStart() for each data
-         * set.
-         * Can be called only before notifyDataStart().
+         * Must be called at least once for each data set before
+         * AnalysisDataModuleManager::notifyDataStart().  Can be called only
+         * before AnalysisDataModuleManager::notifyDataStart().
          * Multiple calls are allowed before that point; the last call takes
          * effect.
          *
-         * Does not throw, but this may change with the below todo item.
-         *
-         * \todo
-         * Consider whether the call should check the modules that have already
-         * been added (currently it is only done in notifyDataStart()).
+         * Strong exception safety.
          *
          * \see columnCount()
          */
@@ -355,20 +363,21 @@ class AbstractAnalysisData
         /*! \brief
          * Sets whether the data has multiple points per column in a frame.
          *
-         * \param[in] multipoint  Whether multiple points per column are
+         * \param[in] bMultipoint  Whether multiple points per column are
          *     possible.
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new setting.
          *
-         * If not called, only a single point per column is allowed.
-         * Can be called only before notifyDataStart().
+         * If not called, only a single point per column is allowed.  Can be
+         * called only before AnalysisDataModuleManager::notifyDataStart().
          * Multiple calls are allowed before that point; the last call takes
          * effect.
          *
-         * Does not throw, but this may change with the todo item in
-         * setColumnCount().
+         * Strong exception safety.
          *
          * \see isMultipoint()
          */
-        void setMultipoint(bool multipoint);
+        void setMultipoint(bool bMultipoint);
 
         /*! \brief
          * Implements access to data frames.
@@ -412,82 +421,16 @@ class AbstractAnalysisData
          */
         virtual bool requestStorageInternal(int nframes) = 0;
 
-        /*! \brief
-         * Notifies attached modules of the start of data.
-         *
-         * \throws    APIError if any attached data module is not compatible.
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataStarted().
-         *
-         * Should be called once, after data properties have been set with
-         * setColumnCount() and isMultipoint(), and before any of the
-         * notification functions.  The derived class should prepare for
-         * requestStorage() calls from the attached modules.
-         */
-        void notifyDataStart();
-        /*! \brief
-         * Notifies attached modules of the start of a frame.
-         *
-         * \param[in] header  Header information for the frame that is starting.
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameStarted().
-         *
-         * Should be called once for each frame, before notifyPointsAdd() calls
-         * for that frame.
-         */
-        void notifyFrameStart(const AnalysisDataFrameHeader &header) const;
-        /*! \brief
-         * Notifies attached modules of the addition of points to the
-         * current frame.
-         *
-         * \param[in] points  Set of points added (also provides access to
-         *      frame-level data).
-         * \throws    APIError if any attached data module is not compatible.
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::pointsAdded().
-         *
-         * Can be called zero or more times for each frame.
-         * The caller should ensure that any column occurs at most once in the
-         * calls, unless the data is multipoint.
-         * For efficiency reasons, calls to this method should be aggregated
-         * whenever possible, i.e., it's better to handle multiple columns or
-         * even the whole frame in a single call rather than calling the method
-         * for each column separately.
-         */
-        void notifyPointsAdd(const AnalysisDataPointSetRef &points) const;
-        /*! \brief
-         * Notifies attached modules of the end of a frame.
-         *
-         * \param[in] header  Header information for the frame that is ending.
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::frameFinished().
-         *
-         * Should be called once for each call of notifyFrameStart(), after any
-         * notifyPointsAdd() calls for the frame.
-         * \p header should be identical to that used in the corresponding
-         * notifyFrameStart() call.
-         */
-        void notifyFrameFinish(const AnalysisDataFrameHeader &header);
-        /*! \brief
-         * Notifies attached modules of the end of data.
-         *
-         * \throws    unspecified Any exception thrown by attached data modules
-         *      in AnalysisDataModuleInterface::dataFinished().
-         *
-         * Should be called once, after all the other notification calls.
-         */
-        void notifyDataFinish() const;
+        //! Returns the module manager to use for calling notification methods.
+        AnalysisDataModuleManager       &moduleManager();
+        //! Returns the module manager to use for calling notification methods.
+        const AnalysisDataModuleManager &moduleManager() const;
         //! \endcond
 
     private:
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-
-        /*! \brief
-         * Needed to provide access to notification methods.
-         */
-        friend class AnalysisDataStorage;
 };
 
 } // namespace gmx

@@ -99,13 +99,13 @@ class AnalysisData : public AbstractAnalysisData
          * Sets the number of data sets.
          *
          * \param[in] dataSetCount  Number of data sets (must be > 0).
+         * \throws    std::bad_alloc if out of memory.
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new data set count.
          *
          * Must not be called after startData() has been called.
          * If not called, a single data set is assumed.
          * If called multiple times, the last call takes effect.
-         *
-         * Does not currently throw, but this may change for the case that
-         * modules have already been added.
          */
         void setDataSetCount(int dataSetCount);
         /*! \brief
@@ -113,13 +113,12 @@ class AnalysisData : public AbstractAnalysisData
          *
          * \param[in] dataSet      Zero-based data set index.
          * \param[in] columnCount  Number of columns in the data (must be > 0).
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new column count.
          *
          * Must be called before startData() for each data set.
          * Must not be called after startData() has been called.
          * If called multiple times for a data set, the last call takes effect.
-         *
-         * Does not currently throw, but this may change for the case that
-         * modules have already been added.
          */
         void setColumnCount(int dataSet, int columnCount);
         /*! \brief
@@ -127,13 +126,12 @@ class AnalysisData : public AbstractAnalysisData
          *
          * \param[in] bMultipoint  Whether the data will allow multiple points
          *      per column within a single frame.
+         * \throws    APIError if modules have been added that are not
+         *      compatible with the new setting.
          *
          * If this method is not called, the data is not multipoint.
          *
          * Must not be called after startData() has been called.
-         *
-         * Does not currently throw, but this may change for the case that
-         * modules have already been added.
          *
          * \see isMultipoint()
          */

@@ -632,8 +632,7 @@ AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
 
@@ -672,7 +671,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
 void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 
@@ -748,8 +747,7 @@ AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
 
@@ -792,7 +790,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
 void
 AnalysisDataWeightedHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 

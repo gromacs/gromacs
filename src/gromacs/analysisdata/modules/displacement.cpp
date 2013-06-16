@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/maths.h"
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -264,10 +265,10 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
                                                  _impl->dt).integerBins());
         }
-        notifyDataStart();
+        moduleManager().notifyDataStart(this);
     }
     AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
-    notifyFrameStart(header);
+    moduleManager().notifyFrameStart(header);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
          step < _impl->nstored && i != _impl->ci;
@@ -292,10 +293,10 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             }
             _impl->currValues_.push_back(AnalysisDataValue(dist2));
         }
-        notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
+        moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }
 
-    notifyFrameFinish(header);
+    moduleManager().notifyFrameFinish(header);
 }
 
 
@@ -304,7 +305,7 @@ AnalysisDataDisplacementModule::dataFinished()
 {
     if (_impl->nstored >= 2)
     {
-        notifyDataFinish();
+        moduleManager().notifyDataFinish();
     }
 }
 
