@@ -139,8 +139,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
                                       void* newval)
 {
     int ret;
-    volatile char* volatile* oldv = oldval;
-    volatile char* volatile* newv = newval;
+    volatile void * oldv = oldval;
+    volatile void * newv = newval;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
     __eieio();
