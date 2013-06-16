@@ -58,12 +58,14 @@ namespace gmx
 class AbstractAnalysisData;
 class AnalysisDataFrameHeader;
 class AnalysisDataFrameRef;
+class AnalysisDataModuleManager;
 class AnalysisDataParallelOptions;
 
 class AnalysisDataStorage;
 
 namespace internal
 {
+class AnalysisDataStorageImpl;
 class AnalysisDataStorageFrameData;
 }   // namespace internal
 
@@ -187,8 +189,8 @@ class AnalysisDataStorageFrame
          *
          * After this method has been called, all values appear as not set.
          *
-         * Calls AbstractAnalysisData::notifyPointsAdd(), and throws any
-         * exception this method throws.
+         * May call AnalysisDataModuleManager::notifyPointsAdd(), and may throw
+         * any exception this method throws.
          */
         void finishPointSet();
         /*! \brief
@@ -198,8 +200,8 @@ class AnalysisDataStorageFrame
          * after the corresponding call.
          * The frame object must not be accessed after the call.
          *
-         * Calls notification methods in AbstractAnalysisData, and throws any
-         * exceptions these methods throw.
+         * Calls notification methods in AnalysisDataModuleManager, and may
+         * throw any exceptions these methods throw.
          */
         void finishFrame();
 
@@ -232,7 +234,7 @@ class AnalysisDataStorageFrame
         bool                                    bPointSetInProgress_;
 
         //! Needed for access to the constructor.
-        friend class AnalysisDataStorage;
+        friend class internal::AnalysisDataStorageImpl;
         //! Needed for managing the frame the object points to.
         friend class internal::AnalysisDataStorageFrameData;
 
@@ -245,16 +247,14 @@ class AnalysisDataStorageFrame
  * This class implements a standard way of storing data to avoid implementing
  * storage in each class derived from AbstractAnalysisData separately.
  * To use this class in a class derived from AbstractAnalysisData, a member
- * variable of this type should be declared and the data storage methods
- * forwarded to tryGetDataFrame() and requestStorage() in that object.
- * Storage properties should be set up, and then startDataStorage() called
- * after calling AbstractAnalysisData::notifyDataStart().
+ * variable of this type should be declared and the pure virtual methods
+ * forwarded to frameCount(), tryGetDataFrame() and requestStorage().
+ * Storage properties should be set up, and then startDataStorage() called.
  * New frames can then be added using startFrame(), currentFrame() and
- * finishFrame() methods.  These methods (and
- * AnalysisDataStorageFrame::finishPointSet()) take the responsibility of
- * calling AbstractAnalysisData::notifyFrameStart(),
- * AbstractAnalysisData::notifyPointsAdd() and
- * AbstractAnalysisData::notifyFrameFinish() appropriately.
+ * finishFrame() methods.  When all frames are ready, finishDataStorage() must
+ * be called.  These methods (and AnalysisDataStorageFrame::finishPointSet())
+ * take the responsibility of calling all the notification methods in
+ * AnalysisDataModuleManager,
  *
  * \todo
  * Proper multi-threaded implementation.
@@ -282,6 +282,19 @@ class AnalysisDataStorage
         void setParallelOptions(const AnalysisDataParallelOptions &opt);
 
         /*! \brief
+         * Returns the number of ready frames.
+         *
+         * This method is designed such that calls to
+         * AbstractAnalysisData::frameCount() can be directly forwarded to this
+         * method.  See that method for more documentation.
+         *
+         * If this method returns N, this means that the first N frames have
+         * all been finished.
+         *
+         * \see AbstractAnalysisData::frameCount()
+         */
+        int frameCount() const;
+        /*! \brief
          * Implements access to data frames.
          *
          * This method is designed such that calls to
@@ -308,21 +321,26 @@ class AnalysisDataStorage
         /*! \brief
          * Start storing data.
          *
-         * \param  data  AbstractAnalysisData object containing this storage.
+         * \param[in] data    AbstractAnalysisData object containing this
+         *      storage.
+         * \param     modules Module manager for \p data.
          * \exception std::bad_alloc if storage allocation fails.
          *
-         * Lifetime of \p data must exceed the lifetime of the storage object
-         * (typically, the storage object will be a member in \p data).
-         * The storage object will take responsibility of calling
-         * AbstractAnalysisData::notifyFrameStart(),
-         * AbstractAnalysisData::notifyPointsAdd() and
-         * AbstractAnalysisData::notifyFrameFinish() for \p data appropriately.
+         * Typically called as \c startDataStorage(this, &moduleManager())
+         * from a member of \p data when the data is ready to be started.
+         * The storage object will take responsibility of calling all
+         * module notification methods in AnalysisDataModuleManager using
+         * \p modules.
          *
-         * AbstractAnalysisData::notifyDataStart() must have been called for
-         * \p data, because that may trigger storage requests from attached
-         * modules.
+         * Lifetime of \p data and \p modules must exceed the lifetime of the
+         * storage object
+         * (typically, the storage object will be a member in \p data).
+         *
+         * Calls AnalysisDataModuleManager::notifyDataStart(), and throws any
+         * exceptions this method throws.
          */
-        void startDataStorage(AbstractAnalysisData *data);
+        void startDataStorage(AbstractAnalysisData      *data,
+                              AnalysisDataModuleManager *modules);
         /*! \brief
          * Starts storing a new frame.
          *
@@ -346,8 +364,8 @@ class AnalysisDataStorage
          * setParallelOptions().
          * Throws APIError if this constraint is violated.
          *
-         * Calls AbstractAnalysisData::notifyDataStarted() in certain cases,
-         * and throws any exceptions this method throws.
+         * Calls AnalysisDataModuleManager::notifyFrameStart() in certain
+         * cases, and throws any exceptions this method throws.
          */
         AnalysisDataStorageFrame &startFrame(const AnalysisDataFrameHeader &header);
         /*! \brief
@@ -380,14 +398,18 @@ class AnalysisDataStorage
          * \see AnalysisDataStorageFrame::finishFrame()
          */
         void finishFrame(int index);
+        /*! \brief
+         * Finishes storing data.
+         *
+         * Calls AnalysisDataModuleManager::notifyDataFinish(), and throws any
+         * exceptions this method throws.
+         */
+        void finishDataStorage();
 
     private:
-        class Impl;
+        typedef internal::AnalysisDataStorageImpl Impl;
 
         PrivateImplPointer<Impl> impl_;
-
-        //! Needed because the frame needs to access the implementation class.
-        friend class internal::AnalysisDataStorageFrameData;
 };
 
 } // namespace gmx

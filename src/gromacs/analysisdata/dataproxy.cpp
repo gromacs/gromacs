@@ -42,6 +42,7 @@
 #include "dataproxy.h"
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/gmxassert.h"
 
 namespace gmx
@@ -54,6 +55,13 @@ AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
     GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
     setMultipoint(source_.isMultipoint());
+}
+
+
+int
+AnalysisDataProxy::frameCount() const
+{
+    return source_.frameCount();
 }
 
 
@@ -93,14 +101,14 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, columnSpan_);
     }
-    notifyDataStart();
+    moduleManager().notifyDataStart(this);
 }
 
 
 void
 AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 {
-    notifyFrameStart(frame);
+    moduleManager().notifyFrameStart(frame);
 }
 
 
@@ -110,7 +118,7 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
     AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
     {
-        notifyPointsAdd(columns);
+        moduleManager().notifyPointsAdd(columns);
     }
 }
 
@@ -118,14 +126,14 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 void
 AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    notifyFrameFinish(header);
+    moduleManager().notifyFrameFinish(header);
 }
 
 
 void
 AnalysisDataProxy::dataFinished()
 {
-    notifyDataFinish();
+    moduleManager().notifyDataFinish();
 }
 
 } // namespace gmx

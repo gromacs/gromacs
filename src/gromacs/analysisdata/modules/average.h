@@ -167,6 +167,8 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
         AnalysisDataFrameAverageModule();
         virtual ~AnalysisDataFrameAverageModule();
 
+        virtual int frameCount() const;
+
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
