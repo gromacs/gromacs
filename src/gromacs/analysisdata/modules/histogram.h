@@ -379,6 +379,8 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
         //! Returns bin properties for the histogram.
         const AnalysisHistogramSettings &settings() const;
 
+        virtual int frameCount() const;
+
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
@@ -433,6 +435,8 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
 
         //! \copydoc AnalysisDataSimpleHistogramModule::settings()
         const AnalysisHistogramSettings &settings() const;
+
+        virtual int frameCount() const;
 
         virtual int flags() const;
 

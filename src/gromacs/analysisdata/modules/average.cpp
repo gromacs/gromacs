@@ -153,6 +153,12 @@ AnalysisDataFrameAverageModule::~AnalysisDataFrameAverageModule()
 }
 
 int
+AnalysisDataFrameAverageModule::frameCount() const
+{
+    return impl_->storage_.frameCount();
+}
+
+int
 AnalysisDataFrameAverageModule::flags() const
 {
     return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
@@ -164,8 +170,7 @@ AnalysisDataFrameAverageModule::dataStarted(AbstractAnalysisData *data)
 {
     setColumnCount(0, data->dataSetCount());
     impl_->sampleCount_.resize(data->dataSetCount());
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
 void
@@ -207,7 +212,7 @@ AnalysisDataFrameAverageModule::frameFinished(const AnalysisDataFrameHeader &hea
 void
 AnalysisDataFrameAverageModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 AnalysisDataFrameRef

@@ -617,6 +617,13 @@ AnalysisDataSimpleHistogramModule::settings() const
 
 
 int
+AnalysisDataSimpleHistogramModule::frameCount() const
+{
+    return impl_->storage_.frameCount();
+}
+
+
+int
 AnalysisDataSimpleHistogramModule::flags() const
 {
     return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
@@ -632,8 +639,7 @@ AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
 
@@ -672,7 +678,7 @@ AnalysisDataSimpleHistogramModule::frameFinished(const AnalysisDataFrameHeader &
 void
 AnalysisDataSimpleHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 
@@ -733,6 +739,13 @@ AnalysisDataWeightedHistogramModule::settings() const
 
 
 int
+AnalysisDataWeightedHistogramModule::frameCount() const
+{
+    return impl_->storage_.frameCount();
+}
+
+
+int
 AnalysisDataWeightedHistogramModule::flags() const
 {
     return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
@@ -748,8 +761,7 @@ AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    notifyDataStart();
-    impl_->storage_.startDataStorage(this);
+    impl_->storage_.startDataStorage(this, &moduleManager());
 }
 
 
@@ -792,7 +804,7 @@ AnalysisDataWeightedHistogramModule::frameFinished(const AnalysisDataFrameHeader
 void
 AnalysisDataWeightedHistogramModule::dataFinished()
 {
-    notifyDataFinish();
+    impl_->storage_.finishDataStorage();
 }
 
 
