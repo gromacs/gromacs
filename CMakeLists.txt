@@ -890,7 +890,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL" AND CMAKE_CXX_COMPILER_LOADED)
         GMX_TEST_CXXFLAG(XLC_BLUEGENEQ_CXXFLAG "-qarch=qp -qtune=qp" ACCELERATION_CXX_FLAGS)
         try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-            "cmake/TestQPX.c"
+            "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
             COMPILE_DEFINITIONS "${ACCELERATION_CXX_FLAGS}")
         if(NOT TEST_QPX)
             message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
