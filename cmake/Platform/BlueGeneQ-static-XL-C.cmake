@@ -20,7 +20,7 @@ __BlueGeneQ_set_static_flags(XL C)
 set(CMAKE_SYSTEM_NAME BlueGeneQ-static)
 # xl.ndebug is appropriate for production calculations. For debugging,
 # use xl to add back error checks and assertions
-set(CMAKE_C_COMPILER /bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpicc)
+set(CMAKE_C_COMPILER /bgsys/drivers/ppcfloor/comm/xl.ndebug/bin/mpixlc_r)
 set(CMAKE_C_FLAGS_RELEASE "-O4 -DNDEBUG" CACHE STRING "Compiler optimization flags")
 
 mark_as_advanced(CMAKE_XL_CreateExportList) # No idea what spams this
