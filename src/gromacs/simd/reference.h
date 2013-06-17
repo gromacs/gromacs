@@ -38,6 +38,9 @@
 #ifndef _gmx_simd_ref_h_
 #define _gmx_simd_ref_h_
 
+#include "reference_types.h"
+#include "typedefs.h"
+
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
  * The SIMD width is set by defining GMX_SIMD_REF_WIDTH before including.
@@ -49,23 +52,6 @@
 #endif
 
 #include <math.h>
-
-/* float/double SIMD register type */
-typedef struct {
-    real r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_pr;
-
-/* boolean SIMD register type */
-typedef struct {
-    char r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_pb;
-
-/* integer SIMD register type, only for table indexing and exclusion masks */
-typedef struct {
-    int r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_epi32;
-#define GMX_SIMD_REF_EPI32_WIDTH  GMX_SIMD_REF_WIDTH
-typedef gmx_simd_ref_epi32 gmx_simd_ref_exclfilter;
 
 /* Load GMX_SIMD_REF_WIDTH reals for memory starting at r */
 static gmx_inline gmx_simd_ref_pr
@@ -250,9 +236,23 @@ gmx_simd_ref_round_pr(gmx_simd_ref_pr a)
     for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
     {
 #ifdef GMX_DOUBLE
+#ifdef _MSVC
+        /* roundf() is not available in MSVC 2010 */
+        b.r[i] = (a.r[i] < 0.0)
+            ? ceil(a.r[i] - 0.5)
+            : floor(a.r[i] + 0.5);
+#else
         b.r[i] = round(a.r[i]);
+#endif
+#else
+#ifdef _MSVC
+        /* roundf() is not available in MSVC 2010 */
+        b.r[i] = (a.r[i] < 0.0)
+            ? ceil(a.r[i] - 0.5)
+            : floor(a.r[i] + 0.5);
 #else
         b.r[i] = roundf(a.r[i]);
+#endif
 #endif
     }
 
@@ -418,7 +418,7 @@ gmx_simd_ref_load1_exclfilter(int src)
 }
 
 static gmx_inline gmx_simd_ref_exclfilter
-gmx_simd_ref_load_exclusion_filter(const int *src)
+gmx_simd_ref_load_exclusion_filter(const unsigned *src)
 {
     gmx_simd_ref_exclfilter a;
     int                   i;
@@ -437,7 +437,7 @@ gmx_simd_ref_load_exclusion_filter(const int *src)
  * this. The reference implementation normally uses logical operations
  * for logic, but in this case the i- and j-atom exclusion masks
  * computed during searching expect to be combined with bit-wise
- * "and".
+ * "and," so we do that.
  *
  * If the same bit is set in both input masks, return TRUE, else
  * FALSE. This function is only called with a single bit set in b.

@@ -54,6 +54,7 @@
 #ifdef GMX_NBNXN_HALF_WIDTH_SIMD
 #define GMX_USE_HALF_WIDTH_SIMD_HERE
 #endif
+#include "gromacs/simd/types.h"
 #include "gromacs/simd/macros.h"
 #include "gromacs/simd/vector_operations.h"
 
@@ -63,26 +64,13 @@
 #error "unsupported SIMD width"
 #endif
 
-static inline void
-gmx_load_simd_4xn_interactions(int excl,
-                             gmx_exclfilter filter_S0,
-                             gmx_exclfilter filter_S1,
-                             gmx_exclfilter filter_S2,
-                             gmx_exclfilter filter_S3,
-                             gmx_mm_pb *interact_S0,
-                             gmx_mm_pb *interact_S1,
-                             gmx_mm_pb *interact_S2,
-                             gmx_mm_pb *interact_S3)
-{
-    /* Load integer interaction mask */
-    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
-    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
-    *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
-    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
-    *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
-}
+#include "load_interactions_4xn.h"
+#include "load_interactions_4xn_code.h"
 
 /* Include all flavors of the SSE or AVX 4xN kernel loops */
+
+#include "nbnxn_kernel_simd_4xn_outer_header.h"
+#include "nbnxn_kernel_simd_utils.h"
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -117,6 +105,15 @@ gmx_load_simd_4xn_interactions(int excl,
 
 #undef CALC_COUL_EWALD
 
+#undef CALC_SHIFTFORCES
+
+#undef UNROLLI
+#undef UNROLLJ
+#undef STRIDE
+#undef TAB_FDV0
+#undef NBFP_STRIDE
+
+#undef GMX_USE_HALF_WIDTH_SIMD_HERE
 
 typedef void (*p_nbk_func_ener)(const nbnxn_pairlist_t     *nbl,
                                 const nbnxn_atomdata_t     *nbat,

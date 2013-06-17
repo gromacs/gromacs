@@ -87,6 +87,7 @@
 
 
 /* Include the SIMD macro file and then check for support */
+#include "gromacs/simd/types.h"
 #include "gromacs/simd/macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
 /* Turn on SIMD intrinsics for PME solve */
