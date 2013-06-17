@@ -2741,6 +2741,41 @@ static unsigned int get_imask_simd_j8(gmx_bool rdiag, int ci, int cj)
 #endif
 #endif
 
+static void done_nbnxn_list_work(nbnxn_list_work_t *work)
+{
+    sfree(work->bb_ci);
+    sfree(work->pbb_ci);
+    sfree(work->x_ci);
+#ifdef GMX_NBNXN_SIMD
+    sfree(work->x_ci_simd_4xn);
+    sfree(work->x_ci_simd_2xnn);
+#endif
+    sfree(work->d2);
+    sfree(work->cj);
+    sfree(work->sort);
+    sfree(work->sci_sort);
+}
+
+static void done_nbnxn_pairlist(nbnxn_pairlist_t *nbl)
+{
+    sfree(nbl->ci);
+    sfree(nbl->cj);
+    done_nbnxn_list_work(nbl->work);
+    sfree(nbl->work);
+}
+
+void done_nbnxn_pairlist_set(nbnxn_pairlist_set_t *nbl_list)
+{
+    int i;
+
+    for (i = 0; i < nbl_list->nnbl; ++i)
+    {
+        done_nbnxn_pairlist(nbl_list->nbl[i]);
+        sfree(nbl_list->nbl[i]);
+    }
+    sfree(nbl_list->nbl);
+}
+
 /* Plain C code for making a pair list of cell ci vs cell cjf-cjl.
  * Checks bounding box distances and possibly atom pair distances.
  */

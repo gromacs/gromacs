@@ -448,6 +448,10 @@ class FloatingPoint {
     }
   }
 
+  // Change introduced by Mark Abraham so that a derived class
+  // used in testing SIMD intrinsic function implementations
+  // can call this function.
+ protected:
   // Given two numbers in the sign-and-magnitude representation,
   // returns the distance between them as an unsigned number.
   static Bits DistanceBetweenSignAndMagnitudeNumbers(const Bits &sam1,
@@ -457,6 +461,8 @@ class FloatingPoint {
     return (biased1 >= biased2) ? (biased1 - biased2) : (biased2 - biased1);
   }
 
+  // Change introduced by Mark Abraham to restore u_ to private access
+ private:
   FloatingPointUnion u_;
 };
 

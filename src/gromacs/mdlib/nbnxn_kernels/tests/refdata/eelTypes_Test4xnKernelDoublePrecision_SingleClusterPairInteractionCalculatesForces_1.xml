@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <Sequence Name="Forces">
+    <Int Name="Length">24</Int>
+    <Real>31.701034</Real>
+    <Real>-15.188470</Real>
+    <Real>-7.568925</Real>
+    <Real>2.227632</Real>
+    <Real>15.850517</Real>
+    <Real>-7.594235</Real>
+    <Real>-3.784463</Real>
+    <Real>1.113816</Real>
+    <Real>15.850517</Real>
+    <Real>-7.594235</Real>
+    <Real>-3.784463</Real>
+    <Real>1.113816</Real>
+    <Real>-31.701034</Real>
+    <Real>15.188470</Real>
+    <Real>7.568925</Real>
+    <Real>-2.227632</Real>
+    <Real>-15.850517</Real>
+    <Real>7.594235</Real>
+    <Real>3.784463</Real>
+    <Real>-1.113816</Real>
+    <Real>-15.850517</Real>
+    <Real>7.594235</Real>
+    <Real>3.784463</Real>
+    <Real>-1.113816</Real>
+  </Sequence>
+</ReferenceData>
