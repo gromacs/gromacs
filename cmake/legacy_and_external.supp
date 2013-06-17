@@ -225,3 +225,21 @@
    ...
    fun:__kmpc_global_thread_num
 }
+
+#Leak with OpenMP and gcc up to 4.5
+{
+   nbnxn_init_pairlist_set_from_KernelTests_build_nbl_list
+   Memcheck:Leak
+   ...
+   fun:nbnxn_init_pairlist_set
+   fun:*KernelTests*build_nbl_list*
+   ...
+}
+
+#Leak with MPI and gcc 4.4
+{
+   Memcheck:Leak
+   fun:_wordcopy_fwd_dest_aligned
+   fun:mca_base_component_find
+   ...
+}
