@@ -69,7 +69,6 @@ else ()
 endif (CMAKE_USE_PTHREADS_INIT)
 
 # Turns on thread_mpi core threading functions.
-# options are:
 MACRO(TMPI_ENABLE_CORE INCDIR)
     TMPI_TEST_ATOMICS(${INCDIR})
 ENDMACRO(TMPI_ENABLE_CORE)
