@@ -46,11 +46,8 @@
  * not necessarily equal to 4.
  */
 
-#ifdef GMX_SIMD_FOUR_WIDE_MACROS_H
-#error "four_wide_macros.h included twice"
-#else
+#ifndef GMX_SIMD_FOUR_WIDE_MACROS_H
 #define GMX_SIMD_FOUR_WIDE_MACROS_H
-
 
 /* The SIMD width here is always 4, since that is the whole point */
 #define GMX_SIMD4_WIDTH  4
@@ -125,7 +122,7 @@ typedef float   gmx_simd4_real;
 #define gmx_simd4_and_pb        gmx_simd4_ref_and_pb
 #define gmx_simd4_or_pb         gmx_simd4_ref_or_pb
 
-/* Returns a single int (0/1) which tells if any of the 4 booleans is True */
+/* Not required, gmx_anytrue_pb(x) returns if any of the boolean is x is True */
 #define gmx_simd4_anytrue_pb    gmx_simd4_ref_anytrue_pb
 
 #endif /* GMX_SIMD4_REFERENCE_PLAIN_C */
@@ -326,6 +323,7 @@ static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_pr(const real *a
 #ifdef NDEBUG
     return vec_ld(0, (real *) a);
 #else
+    assert(0 == (unsigned long) a % (GMX_SIMD_WIDTH_HERE * sizeof(real)));
     return vec_lda(0, (real *) a);
 #endif
 }
@@ -357,6 +355,7 @@ static gmx_inline void gmx_always_inline gmx_simd4_store_pr(real *a, gmx_simd4_p
 #ifdef NDEBUG
     vec_st(b, 0, a);
 #else
+    assert(0 == (unsigned long) a % (GMX_SIMD_WIDTH_HERE * sizeof(real)));
     vec_sta(b, 0, a);
 #endif
 }
@@ -421,18 +420,17 @@ static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_or_pb(gmx_simd4_pb a,
 static gmx_inline float gmx_always_inline gmx_simd4_dotproduct3(gmx_simd4_pr a, gmx_simd4_pr b)
 {
     /* The dot product is done solely on the QPX AXU (which is the
-       only available FPU). This is awkward, because pretty much no
-       "horizontal" SIMD-vector operations exist, unlike x86 where
-       SSE4.1 added various kinds of horizontal operations. So we have
-       to make do with shifting vector elements and operating on the
-       results. This makes for lots of data dependency, but the main
-       alternative of storing to memory and reloading is not going to
-       help, either. OpenMP over 2 or 4 hardware threads per core will
-       hide much of the latency from the data dependency. The
-       vec_extract() lets the compiler correctly use a floating-point
-       comparison on the zeroth vector element, which avoids needing
-       memory at all.
-     */
+       only available FPU). The vec_extract() lets the compiler
+       correctly use a floating-point comparison on the zeroth vector
+       element. (Pretty much no "horizontal" operations exist.)
+
+       Unfortunately, it does an explicit round to single precision,
+       also. This is needed because various distance variables
+       (e.g. rbb2, d2) are hard-coded to float to suit x86. Using
+       floats for bounding box vertices stored in memory is fine on
+       PowerPC (to save cache bandwidth), but the type for the
+       resulting distance should probably be conditional upon the
+       target platform. Not sure this is worth doing, though. */
 
     gmx_simd4_pr dp_shifted_left_0 = vec_mul(a, b);
     gmx_simd4_pr dp_shifted_left_1 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 1);
