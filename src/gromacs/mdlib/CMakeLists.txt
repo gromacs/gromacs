@@ -6,3 +6,7 @@ if(GMX_GPU)
     add_subdirectory(nbnxn_cuda)
     set(GMX_GPU_LIBRARIES ${GMX_GPU_LIBRARIES} nbnxn_cuda PARENT_SCOPE)
 endif()
+
+if (BUILD_TESTING)
+    add_subdirectory(nbnxn_kernels/tests)
+endif (BUILD_TESTING)
