@@ -128,6 +128,9 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
                          int                   nb_kernel_type,
                          t_nrnb               *nrnb);
 
+/* Clean up memory from a pairlist set */
+void done_nbnxn_pairlist_set(nbnxn_pairlist_set_t *nbl_list);
+
 #ifdef __cplusplus
 }
 #endif
