@@ -46,6 +46,7 @@ add_subdirectory(linearalgebra)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
 add_subdirectory(selection)
+add_subdirectory(simd)
 add_subdirectory(trajectoryanalysis)
 add_subdirectory(utility)
 
