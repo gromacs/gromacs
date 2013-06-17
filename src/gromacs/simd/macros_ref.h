@@ -40,12 +40,24 @@
 
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
- * The SIMD width is set by defining GMX_SIMD_REF_WIDTH before including.
  */
 
-
+#ifdef GMX_SIMD_WIDTH_HERE
+/* This must be test code that has already #included the real SIMD
+ * code that is being tested, so copy its SIMD width. */
+#define GMX_SIMD_REF_WIDTH GMX_SIMD_WIDTH_HERE
+#else
+/* This must be someone running the reference SIMD implementation
+ * manually. */
 #ifndef GMX_SIMD_REF_WIDTH
-#error "GMX_SIMD_REF_WIDTH should be defined before including gromacs/simd/macros_ref.h"
+#error "Must set GMX_SIMD_REF_WIDTH before #including gromacs/simd/macros_ref.h"
+/* They should have set this to match what they want to do. */
+#endif
+/* TODO change this behaviour, so that the reference SIMD
+ * implementation is available via a CMake build type and an advanced
+ * CMake cache variable controls the "SIMD" width in that case. Now
+ * this file can require that GMX_SIMD_WIDTH_HERE is already defined,
+ * and probably get rid of GMX_SIMD_REF_WIDTH. */
 #endif
 
 #include <math.h>
