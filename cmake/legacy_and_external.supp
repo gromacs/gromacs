@@ -225,3 +225,11 @@
    ...
    fun:__kmpc_global_thread_num
 }
+#Leak with OpenMP and gcc <= 4.5
+{
+   nbnxn_init_pairlist_set_from_KernelTests_build_nbl_list
+   Memcheck:Leak
+   match-leak-kinds:reachable
+   fun:nbnxn_init_pairlist_set
+   fun:_ZN11KernelTests*build_nbl_listEv
+}

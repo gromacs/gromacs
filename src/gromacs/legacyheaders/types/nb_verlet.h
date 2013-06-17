@@ -45,8 +45,8 @@ extern "C" {
 
 
 /* For testing the reference plain-C SIMD kernels, uncomment the next lines,
- * as well as the GMX_SIMD_REFERENCE_PLAIN_C define in gromacs/simd/macros.h
- * The actual SIMD width is set in gromacs/simd/macros.h
+ * as well as the GMX_SIMD_REFERENCE_PLAIN_C define in gromacs/simd/types.h
+ * The actual SIMD width is set in that file.
  * The 4xN reference kernels support 2-, 4- and 8-way SIMD.
  * The 2x(N+N) reference kernels support 8- and 16-way SIMD.
  */
