@@ -1175,6 +1175,10 @@ get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 if (CMAKE_CXX_COMPILER_LOADED)
     get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 endif ()
+if(GMX_GPU)
+    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
+endif(GMX_GPU)
+
 
 ########################################################################
 # Specify install locations and which subdirectories to process        #

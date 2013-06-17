@@ -81,3 +81,5 @@
 /** CUDA nvcc compiler version information */
 #define CUDA_NVCC_COMPILER_INFO "@CUDA_NVCC_COMPILER_INFO@"
 
+/** CUDA nvcc compiler flags */
+#define CUDA_NVCC_COMPILER_FLAGS "@CUDA_NVCC_COMPILER_FLAGS@"
