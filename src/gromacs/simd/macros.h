@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013 by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -35,16 +35,24 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* The macros in this file are intended to be used for writing
- * architecture-independent SIMD intrinsics code.
- * To support a new architecture, adding macros here should be (nearly)
- * all that is needed.
+/*! \file
+ * \brief
+ * The macros in this file are intended to be used for writing
+ * architecture-independent SIMD intrinsics code.  To support a new
+ * architecture, adding macros here should be (nearly) all that is
+ * needed.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_simd
  */
 
 #ifdef _gmx_simd_macros_h_
 #error "gromacs/simd/macros.h included twice"
 #else
 #define _gmx_simd_macros_h_
+
+#include "typedefs.h"
 
 /* NOTE: SSE2 acceleration does not include floor or blendv */
 
@@ -247,40 +255,122 @@
 #define gmx_epi32  __m128i
 #define GMX_SIMD_EPI32_WIDTH  4
 
-#define gmx_load_pr       _mm_load_ps
-#define gmx_load1_pr      _mm_load1_ps
-#define gmx_set1_pr       _mm_set1_ps
-#define gmx_setzero_pr    _mm_setzero_ps
-#define gmx_store_pr      _mm_store_ps
+static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
+{
+    return _mm_load_ps(a);
+}
+//#define gmx_load_pr       _mm_load_ps
+static gmx_inline gmx_mm_pr gmx_load1_pr(const real *a)
+{
+    return _mm_load1_ps(a);
+}
+//#define gmx_load1_pr      _mm_load1_ps
+static gmx_inline gmx_mm_pr gmx_set1_pr(real a)
+{
+    return _mm_set1_ps(a);
+}
+//#define gmx_set1_pr       _mm_set1_ps
+static gmx_inline gmx_mm_pr gmx_setzero_pr()
+{
+    return _mm_setzero_ps();
+}
+//#define gmx_setzero_pr    _mm_setzero_ps
+static gmx_inline void gmx_store_pr(real *a, gmx_mm_pr b)
+{
+    _mm_store_ps(a, b);
+}
+//#define gmx_store_pr      _mm_store_ps
 
-#define gmx_add_pr        _mm_add_ps
-#define gmx_sub_pr        _mm_sub_ps
-#define gmx_mul_pr        _mm_mul_ps
+static gmx_inline gmx_mm_pr gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_add_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_sub_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_mul_ps(a, b);
+}
+//#define gmx_add_pr        _mm_add_ps
+//#define gmx_sub_pr        _mm_sub_ps
+//#define gmx_mul_pr        _mm_mul_ps
 #ifdef GMX_X86_AVX_128_FMA
-#define gmx_madd_pr(a, b, c)   _mm_macc_ps(a, b, c)
-#define gmx_nmsub_pr(a, b, c)  _mm_nmacc_ps(a, b, c)
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_macc_ps(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_nmacc_ps(a, b, c);
+}
 #else
-#define gmx_madd_pr(a, b, c)   _mm_add_ps(c, _mm_mul_ps(a, b))
-#define gmx_nmsub_pr(a, b, c)  _mm_sub_ps(c, _mm_mul_ps(a, b))
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_ps(c, _mm_mul_ps(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_sub_ps(c, _mm_mul_ps(a, b));
+}
 #endif
-#define gmx_max_pr        _mm_max_ps
-#define gmx_blendzero_pr  _mm_and_ps
-
-#define gmx_cmplt_pr      _mm_cmplt_ps
-#define gmx_and_pb        _mm_and_ps
-#define gmx_or_pb         _mm_or_ps
+static gmx_inline gmx_mm_pr gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_max_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_blendzero_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_and_ps(a, b);
+}
+static gmx_inline gmx_mm_pb gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_cmplt_ps(a, b);
+}
+static gmx_inline gmx_mm_pb gmx_and_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm_and_ps(a, b);
+}
+//#define gmx_and_pb        _mm_and_ps
+static gmx_inline gmx_mm_pb gmx_or_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm_or_ps(a, b);
+}
+//#define gmx_or_pb         _mm_or_ps
 
 #ifdef GMX_X86_SSE4_1
-#define gmx_round_pr(x)   _mm_round_ps(x, 0x0)
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm_round_ps(a, 0x0);
+}
 #define GMX_SIMD_HAVE_FLOOR
-#define gmx_floor_pr      _mm_floor_ps
+static gmx_inline gmx_mm_pr gmx_floor_pr(gmx_mm_pr a)
+{
+    return _mm_floor_ps(a);
+}
 #else
-#define gmx_round_pr(x)   _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm_cvtepi32_ps(_mm_cvtps_epi32(a));
+}
 #endif
+/*
+   #ifdef GMX_X86_SSE4_1
+   #define gmx_round_pr(x)   _mm_round_ps(x, 0x0)
+   #define GMX_SIMD_HAVE_FLOOR
+   #define gmx_floor_pr      _mm_floor_ps
+   #else
+   #define gmx_round_pr(x)   _mm_cvtepi32_ps(_mm_cvtps_epi32(x))
+   #endif
+ */
 
 #ifdef GMX_X86_SSE4_1
 #define GMX_SIMD_HAVE_BLENDV
-#define gmx_blendv_pr     _mm_blendv_ps
+static gmx_inline gmx_mm_pr gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_blendv_ps(a, b, c);
+}
+//#define gmx_blendv_pr     _mm_blendv_ps
 #endif
 
 static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
@@ -290,10 +380,17 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm_or_ps(_mm_and_ps(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm_add_ps(b, _mm_andnot_ps(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_ps(b, _mm_andnot_ps(a, c));
+};
 
 #define GMX_SIMD_HAVE_ANYTRUE
-#define gmx_anytrue_pb    _mm_movemask_ps
+static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
+{
+    return _mm_movemask_ps(a);
+}
+//#define gmx_anytrue_pb    _mm_movemask_ps
 
 /* Code for handling loading and applying exclusion masks */
 #define gmx_exclmask                gmx_epi32
@@ -310,13 +407,36 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 #define gmx_cvttpr_epi32  _mm_cvttps_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_ps
 
-#define gmx_rsqrt_pr      _mm_rsqrt_ps
-#define gmx_rcp_pr        _mm_rcp_ps
+static gmx_inline gmx_mm_pr gmx_rsqrt_pr(gmx_mm_pr a)
+{
+    return _mm_rsqrt_ps(a);
+}
+//#define gmx_rsqrt_pr      _mm_rsqrt_ps
+static gmx_inline gmx_mm_pr gmx_rcp_pr(gmx_mm_pr a)
+{
+    return _mm_rcp_ps(a);
+}
+//#define gmx_rcp_pr        _mm_rcp_ps
 
-#define gmx_exp_pr        gmx_mm_exp_ps
-#define gmx_sqrt_pr       gmx_mm_sqrt_ps
-#define gmx_sincos_pr     gmx_mm_sincos_ps
-#define gmx_acos_pr       gmx_mm_acos_ps
+static gmx_inline gmx_mm_pr gmx_exp_pr(gmx_mm_pr a)
+{
+    return gmx_mm_exp_ps(a);
+}
+//#define gmx_exp_pr        gmx_mm_exp_ps
+static gmx_inline gmx_mm_pr gmx_sqrt_pr(gmx_mm_pr a)
+{
+    return _mm_sqrt_ps(a);
+}
+//#define gmx_sqrt_pr       gmx_mm_sqrt_ps
+static gmx_inline int gmx_sincos_pr(gmx_mm_pr a, gmx_mm_pr *b, gmx_mm_pr *c)
+{
+    return gmx_mm_sincos_ps(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
+{
+    return gmx_mm_acos_ps(a);
+}
+//#define gmx_acos_pr       gmx_mm_acos_ps
 #define gmx_atan2_pr      gmx_mm_atan2_ps
 
 #else /* ifndef GMX_DOUBLE */
@@ -330,37 +450,111 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 #define gmx_epi32  __m128i
 #define GMX_SIMD_EPI32_WIDTH  4
 
-#define gmx_load_pr       _mm_load_pd
-#define gmx_load1_pr      _mm_load1_pd
-#define gmx_set1_pr       _mm_set1_pd
-#define gmx_setzero_pr    _mm_setzero_pd
-#define gmx_store_pr      _mm_store_pd
+static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
+{
+    return _mm_load_pd(a);
+}
+//#define gmx_load_pr       _mm_load_pd
+static gmx_inline gmx_mm_pr gmx_load1_pr(const real *a)
+{
+    return _mm_load1_pd(a);
+}
+//#define gmx_load1_pr      _mm_load1_pd
+static gmx_inline gmx_mm_pr gmx_set1_pr(real a)
+{
+    return _mm_set1_pd(a);
+}
+//#define gmx_set1_pr       _mm_set1_pd
+static gmx_inline gmx_mm_pr gmx_setzero_pr()
+{
+    return _mm_setzero_pd();
+}
+//#define gmx_setzero_pr    _mm_setzero_pd
+static gmx_inline void gmx_store_pr(real *a, gmx_mm_pr b)
+{
+    _mm_store_pd(a, b);
+}
+//#define gmx_store_pr      _mm_store_pd
 
-#define gmx_add_pr        _mm_add_pd
-#define gmx_sub_pr        _mm_sub_pd
-#define gmx_mul_pr        _mm_mul_pd
+static gmx_inline gmx_mm_pr gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_add_pd(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_sub_pd(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_mul_pd(a, b);
+}
+//#define gmx_add_pr        _mm_add_pd
+//#define gmx_sub_pr        _mm_sub_pd
+//#define gmx_mul_pr        _mm_mul_pd
 #ifdef GMX_X86_AVX_128_FMA
-#define gmx_madd_pr(a, b, c)   _mm_macc_pd(a, b, c)
-#define gmx_nmsub_pr(a, b, c)  _mm_nmacc_pd(a, b, c)
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_macc_pd(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_nmacc_pd(a, b, c);
+}
 #else
-#define gmx_madd_pr(a, b, c)   _mm_add_pd(c, _mm_mul_pd(a, b))
-#define gmx_nmsub_pr(a, b, c)  _mm_sub_pd(c, _mm_mul_pd(a, b))
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_pd(c, _mm_mul_pd(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_sub_pd(c, _mm_mul_pd(a, b));
+}
 #endif
-#define gmx_max_pr        _mm_max_pd
-#define gmx_blendzero_pr  _mm_and_pd
+static gmx_inline gmx_mm_pr gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_max_pd(a, b);
+}
+//#define gmx_max_pr        _mm_max_pd
+static gmx_inline gmx_mm_pr gmx_blendzero_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_and_pd(a, b);
+}
+//#define gmx_blendzero_pr  _mm_and_pd
 
 #ifdef GMX_X86_SSE4_1
-#define gmx_round_pr(x)   _mm_round_pd(x, 0x0)
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm_round_pd(a, 0x0);
+}
 #define GMX_SIMD_HAVE_FLOOR
-#define gmx_floor_pr      _mm_floor_pd
+static gmx_inline gmx_mm_pr gmx_floor_pr(gmx_mm_pr a)
+{
+    return _mm_floor_pd(a);
+}
 #else
-#define gmx_round_pr(x)   _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
 /* gmx_floor_pr is not used in code for pre-SSE4_1 hardware */
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm_cvtepi32_pd(_mm_cvtpd_epi32(a));
+}
 #endif
+/*
+   #ifdef GMX_X86_SSE4_1
+   #define gmx_round_pr(x)   _mm_round_pd(x, 0x0)
+   #define GMX_SIMD_HAVE_FLOOR
+   #define gmx_floor_pr      _mm_floor_pd
+   #else
+   #define gmx_round_pr(x)   _mm_cvtepi32_pd(_mm_cvtpd_epi32(x))
+   #endif
+ */
 
 #ifdef GMX_X86_SSE4_1
 #define GMX_SIMD_HAVE_BLENDV
-#define gmx_blendv_pr     _mm_blendv_pd
+static gmx_inline gmx_mm_pr gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_blendv_pd(a, b, c);
+}
+//#define gmx_blendv_pr     _mm_blendv_pd
 #endif
 
 static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
@@ -369,15 +563,34 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm_or_pd(_mm_and_pd(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm_add_pd(b, _mm_andnot_pd(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_pd(b, _mm_andnot_pd(a, c));
+};
 
-#define gmx_cmplt_pr      _mm_cmplt_pd
+static gmx_inline gmx_mm_pb gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm_cmplt_pd(a, b);
+}
+//#define gmx_cmplt_pr      _mm_cmplt_pd
 
-#define gmx_and_pb        _mm_and_pd
-#define gmx_or_pb         _mm_or_pd
+static gmx_inline gmx_mm_pb gmx_and_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm_and_pd(a, b);
+}
+//#define gmx_and_pb        _mm_and_pd
+static gmx_inline gmx_mm_pb gmx_or_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm_or_pd(a, b);
+}
+//#define gmx_or_pb         _mm_or_pd
 
 #define GMX_SIMD_HAVE_ANYTRUE
-#define gmx_anytrue_pb    _mm_movemask_pd
+static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
+{
+    return _mm_movemask_pd(a);
+}
+//#define gmx_anytrue_pb    _mm_movemask_pd
 
 /* Code for handling loading and applying exclusion masks */
 #define gmx_exclmask                gmx_epi32
@@ -394,13 +607,36 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 #define gmx_cvttpr_epi32  _mm_cvttpd_epi32
 #define gmx_cvtepi32_pr   _mm_cvtepi32_pd
 
-#define gmx_rsqrt_pr(r)   _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(r)))
-#define gmx_rcp_pr(r)     _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(r)))
+static gmx_inline gmx_mm_pr gmx_rsqrt_pr(gmx_mm_pr a)
+{
+    return _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(a)));
+}
+//#define gmx_rsqrt_pr(r)   _mm_cvtps_pd(_mm_rsqrt_ps(_mm_cvtpd_ps(r)))
+static gmx_inline gmx_mm_pr gmx_rcp_pr(gmx_mm_pr a)
+{
+    return _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(a)));
+}
+//#define gmx_rcp_pr(r)     _mm_cvtps_pd(_mm_rcp_ps(_mm_cvtpd_ps(r)))
 
-#define gmx_exp_pr        gmx_mm_exp_pd
-#define gmx_sqrt_pr       gmx_mm_sqrt_pd
-#define gmx_sincos_pr     gmx_mm_sincos_pd
-#define gmx_acos_pr       gmx_mm_acos_pd
+static gmx_inline gmx_mm_pr gmx_exp_pr(gmx_mm_pr a)
+{
+    return gmx_mm_exp_pd(a);
+}
+//#define gmx_exp_pr        gmx_mm_exp_pd
+static gmx_inline gmx_mm_pr gmx_sqrt_pr(gmx_mm_pr a)
+{
+    return _mm_sqrt_pd(a);
+}
+//#define gmx_sqrt_pr       gmx_mm_sqrt_pd
+static gmx_inline int gmx_sincos_pr(gmx_mm_pr a, gmx_mm_pr *b, gmx_mm_pr *c)
+{
+    return gmx_mm_sincos_pd(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
+{
+    return gmx_mm_acos_pd(a);
+}
+//#define gmx_acos_pr       gmx_mm_acos_pd
 #define gmx_atan2_pr      gmx_mm_atan2_pd
 
 #endif /* ifndef GMX_DOUBLE */
@@ -421,26 +657,84 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 #define gmx_epi32  __m256i
 #define GMX_SIMD_EPI32_WIDTH  8
 
-#define gmx_load_pr       _mm256_load_ps
-#define gmx_load1_pr(x)   _mm256_set1_ps((x)[0])
-#define gmx_set1_pr       _mm256_set1_ps
-#define gmx_setzero_pr    _mm256_setzero_ps
-#define gmx_store_pr      _mm256_store_ps
+static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
+{
+    return _mm256_load_ps(a);
+}
+//#define gmx_load_pr       _mm256_load_ps
+static gmx_inline gmx_mm_pr gmx_load1_pr(const real *a)
+{
+    return _mm256_set1_ps(a[0]);
+}
+//#define gmx_load1_pr(x)   _mm256_set1_ps((x)[0])
+static gmx_inline gmx_mm_pr gmx_set1_pr(real a)
+{
+    return _mm256_set1_ps(a);
+}
+//#define gmx_set1_pr       _mm256_set1_ps
+static gmx_inline gmx_mm_pr gmx_setzero_pr()
+{
+    return _mm256_setzero_ps();
+}
+//#define gmx_setzero_pr    _mm256_setzero_ps
+static gmx_inline void gmx_store_pr(real *a, gmx_mm_pr b)
+{
+    _mm256_store_ps(a, b);
+}
+//#define gmx_store_pr      _mm256_store_ps
 
-#define gmx_add_pr        _mm256_add_ps
-#define gmx_sub_pr        _mm256_sub_ps
-#define gmx_mul_pr        _mm256_mul_ps
-#define gmx_madd_pr(a, b, c)   _mm256_add_ps(c, _mm256_mul_ps(a, b))
-#define gmx_nmsub_pr(a, b, c)  _mm256_sub_ps(c, _mm256_mul_ps(a, b))
-#define gmx_max_pr        _mm256_max_ps
-#define gmx_blendzero_pr  _mm256_and_ps
+static gmx_inline gmx_mm_pr gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_add_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_sub_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_mul_ps(a, b);
+}
+//#define gmx_add_pr        _mm256_add_ps
+//#define gmx_sub_pr        _mm256_sub_ps
+//#define gmx_mul_pr        _mm256_mul_ps
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_ps(c, _mm256_mul_ps(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_sub_ps(c, _mm256_mul_ps(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_max_ps(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_blendzero_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_and_ps(a, b);
+}
+//#define gmx_max_pr        _mm256_max_ps
+//#define gmx_blendzero_pr  _mm256_and_ps
 
-#define gmx_round_pr(x)   _mm256_round_ps(x, 0x0)
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm256_round_ps(a, 0x0);
+}
+//#define gmx_round_pr(x)   _mm256_round_ps(x, 0x0)
 #define GMX_SIMD_HAVE_FLOOR
-#define gmx_floor_pr      _mm256_floor_ps
+static gmx_inline gmx_mm_pr gmx_floor_pr(gmx_mm_pr a)
+{
+    return _mm256_floor_ps(a);
+}
+//#define gmx_floor_pr      _mm256_floor_ps
 
 #define GMX_SIMD_HAVE_BLENDV
-#define gmx_blendv_pr     _mm256_blendv_ps
+static gmx_inline gmx_mm_pr gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_blendv_ps(a, b, c);
+}
+//#define gmx_blendv_pr     _mm256_blendv_ps
 
 static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
 {
@@ -448,15 +742,34 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm256_or_ps(_mm256_and_ps(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm256_add_ps(b, _mm256_andnot_ps(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_ps(b, _mm256_andnot_ps(a, c));
+};
 
 /* Less-than (we use ordered, non-signaling, but that's not required) */
-#define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
-#define gmx_and_pb        _mm256_and_ps
-#define gmx_or_pb         _mm256_or_ps
+static gmx_inline gmx_mm_pb gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_cmp_ps(a, b, 0x11);
+}
+//#define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
+static gmx_inline gmx_mm_pb gmx_and_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm256_and_ps(a, b);
+}
+//#define gmx_and_pb        _mm256_and_ps
+static gmx_inline gmx_mm_pb gmx_or_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm256_or_ps(a, b);
+}
+//#define gmx_or_pb         _mm256_or_ps
 
 #define GMX_SIMD_HAVE_ANYTRUE
-#define gmx_anytrue_pb    _mm256_movemask_ps
+static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
+{
+    return _mm256_movemask_ps(a);
+}
+//#define gmx_anytrue_pb    _mm256_movemask_ps
 
 /* Code for handling loading and applying exclusion masks */
 #define gmx_exclmask                gmx_mm_pr
@@ -482,13 +795,36 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 
 #define gmx_cvttpr_epi32  _mm256_cvttps_epi32
 
-#define gmx_rsqrt_pr      _mm256_rsqrt_ps
-#define gmx_rcp_pr        _mm256_rcp_ps
+static gmx_inline gmx_mm_pr gmx_rsqrt_pr(gmx_mm_pr a)
+{
+    return _mm256_rsqrt_ps(a);
+}
+//#define gmx_rsqrt_pr      _mm256_rsqrt_ps
+static gmx_inline gmx_mm_pr gmx_rcp_pr(gmx_mm_pr a)
+{
+    return _mm256_rcp_ps(a);
+}
+//#define gmx_rcp_pr        _mm256_rcp_ps
 
-#define gmx_exp_pr        gmx_mm256_exp_ps
-#define gmx_sqrt_pr       gmx_mm256_sqrt_ps
-#define gmx_sincos_pr     gmx_mm256_sincos_ps
-#define gmx_acos_pr       gmx_mm256_acos_ps
+static gmx_inline gmx_mm_pr gmx_exp_pr(gmx_mm_pr a)
+{
+    return gmx_mm256_exp_ps(a);
+}
+//#define gmx_exp_pr        gmx_mm256_exp_ps
+static gmx_inline gmx_mm_pr gmx_sqrt_pr(gmx_mm_pr a)
+{
+    return _mm256_sqrt_ps(a);
+}
+//#define gmx_sqrt_pr       gmx_mm256_sqrt_ps
+static gmx_inline int gmx_sincos_pr(gmx_mm_pr a, gmx_mm_pr *b, gmx_mm_pr *c)
+{
+    return gmx_mm256_sincos_ps(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
+{
+    return gmx_mm256_acos_ps(a);
+}
+//#define gmx_acos_pr       gmx_mm256_acos_ps
 #define gmx_atan2_pr      gmx_mm256_atan2_ps
 
 #else
@@ -503,26 +839,84 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 #define gmx_epi32  __m128i
 #define GMX_SIMD_EPI32_WIDTH  4
 
-#define gmx_load_pr       _mm256_load_pd
-#define gmx_load1_pr(x)   _mm256_set1_pd((x)[0])
-#define gmx_set1_pr       _mm256_set1_pd
-#define gmx_setzero_pr    _mm256_setzero_pd
-#define gmx_store_pr      _mm256_store_pd
+static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
+{
+    return _mm256_load_pd(a);
+}
+//#define gmx_load_pr       _mm256_load_pd
+static gmx_inline gmx_mm_pr gmx_load1_pr(const real *a)
+{
+    return _mm256_set1_pd(a[0]);
+}
+//#define gmx_load1_pr(x)   _mm256_set1_pd((x)[0])
+static gmx_inline gmx_mm_pr gmx_set1_pr(real a)
+{
+    return _mm256_set1_pd(a);
+}
+//#define gmx_set1_pr       _mm256_set1_pd
+static gmx_inline gmx_mm_pr gmx_setzero_pr()
+{
+    return _mm256_setzero_pd();
+}
+//#define gmx_setzero_pr    _mm256_setzero_pd
+static gmx_inline void gmx_store_pr(real *a, gmx_mm_pr b)
+{
+    _mm256_store_pd(a, b);
+}
+//#define gmx_store_pr      _mm256_store_pd
 
-#define gmx_add_pr        _mm256_add_pd
-#define gmx_sub_pr        _mm256_sub_pd
-#define gmx_mul_pr        _mm256_mul_pd
-#define gmx_madd_pr(a, b, c)   _mm256_add_pd(c, _mm256_mul_pd(a, b))
-#define gmx_nmsub_pr(a, b, c)  _mm256_sub_pd(c, _mm256_mul_pd(a, b))
-#define gmx_max_pr        _mm256_max_pd
-#define gmx_blendzero_pr  _mm256_and_pd
+static gmx_inline gmx_mm_pr gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_add_pd(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_sub_pd(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_mul_pd(a, b);
+}
+//#define gmx_add_pr        _mm256_add_pd
+//#define gmx_sub_pr        _mm256_sub_pd
+//#define gmx_mul_pr        _mm256_mul_pd
+static gmx_inline gmx_mm_pr gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_pd(c, _mm256_mul_pd(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_sub_pd(c, _mm256_mul_pd(a, b));
+}
+static gmx_inline gmx_mm_pr gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_max_pd(a, b);
+}
+static gmx_inline gmx_mm_pr gmx_blendzero_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_and_pd(a, b);
+}
+//#define gmx_max_pr        _mm256_max_pd
+//#define gmx_blendzero_pr  _mm256_and_pd
 
-#define gmx_round_pr(x)   _mm256_round_pd(x, 0x0)
+static gmx_inline gmx_mm_pr gmx_round_pr(gmx_mm_pr a)
+{
+    return _mm256_round_pd(a, 0x0);
+}
+//#define gmx_round_pr(x)   _mm256_round_pd(x, 0x0)
 #define GMX_SIMD_HAVE_FLOOR
-#define gmx_floor_pr      _mm256_floor_pd
+static gmx_inline gmx_mm_pr gmx_floor_pr(gmx_mm_pr a)
+{
+    return _mm256_floor_pd(a);
+}
+//#define gmx_floor_pr      _mm256_floor_pd
 
 #define GMX_SIMD_HAVE_BLENDV
-#define gmx_blendv_pr     _mm256_blendv_pd
+static gmx_inline gmx_mm_pr gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_blendv_pd(a, b, c);
+}
+//#define gmx_blendv_pr     _mm256_blendv_pd
 
 static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
 {
@@ -530,16 +924,35 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm256_or_pd(_mm256_and_pd(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm256_add_pd(b, _mm256_andnot_pd(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_pd(b, _mm256_andnot_pd(a, c));
+};
 
 /* Less-than (we use ordered, non-signaling, but that's not required) */
-#define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
+static gmx_inline gmx_mm_pb gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return _mm256_cmp_pd(a, b, 0x11);
+}
+//#define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
 
-#define gmx_and_pb        _mm256_and_pd
-#define gmx_or_pb         _mm256_or_pd
+static gmx_inline gmx_mm_pb gmx_and_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm256_and_pd(a, b);
+}
+//#define gmx_and_pb        _mm256_and_pd
+static gmx_inline gmx_mm_pb gmx_or_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return _mm256_or_pd(a, b);
+}
+//#define gmx_or_pb         _mm256_or_pd
 
 #define GMX_SIMD_HAVE_ANYTRUE
-#define gmx_anytrue_pb    _mm256_movemask_pd
+static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
+{
+    return _mm256_movemask_pd(a);
+}
+//#define gmx_anytrue_pb    _mm256_movemask_pd
 
 /* Code for handling loading and applying exclusion masks */
 #define gmx_exclmask                gmx_mm_pr
@@ -566,13 +979,36 @@ static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1
 
 #define gmx_cvttpr_epi32  _mm256_cvttpd_epi32
 
-#define gmx_rsqrt_pr(r)   _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(r)))
-#define gmx_rcp_pr(r)     _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(r)))
+static gmx_inline gmx_mm_pr gmx_rsqrt_pr(gmx_mm_pr a)
+{
+    return _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(a)));
+}
+//#define gmx_rsqrt_pr(r)   _mm256_cvtps_pd(_mm_rsqrt_ps(_mm256_cvtpd_ps(r)))
+static gmx_inline gmx_mm_pr gmx_rcp_pr(gmx_mm_pr a)
+{
+    return _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(a)));
+}
+//#define gmx_rcp_pr(r)     _mm256_cvtps_pd(_mm_rcp_ps(_mm256_cvtpd_ps(r)))
 
-#define gmx_exp_pr        gmx_mm256_exp_pd
-#define gmx_sqrt_pr       gmx_mm256_sqrt_pd
-#define gmx_sincos_pr     gmx_mm256_sincos_pd
-#define gmx_acos_pr       gmx_mm256_acos_pd
+static gmx_inline gmx_mm_pr gmx_exp_pr(gmx_mm_pr a)
+{
+    return gmx_mm256_exp_pd(a);
+}
+//#define gmx_exp_pr        gmx_mm256_exp_pd
+static gmx_inline gmx_mm_pr gmx_sqrt_pr(gmx_mm_pr a)
+{
+    return _mm256_sqrt_pd(a);
+}
+//#define gmx_sqrt_pr       gmx_mm256_sqrt_pd
+static gmx_inline int gmx_sincos_pr(gmx_mm_pr a, gmx_mm_pr *b, gmx_mm_pr *c)
+{
+    return gmx_mm256_sincos_pd(a, b, c);
+}
+static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
+{
+    return gmx_mm256_acos_pd(a);
+}
+//#define gmx_acos_pr       gmx_mm256_acos_pd
 #define gmx_atan2_pr      gmx_mm256_atan2_pd
 
 #endif /* GMX_DOUBLE */

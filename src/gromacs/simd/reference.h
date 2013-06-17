@@ -38,6 +38,8 @@
 #ifndef _gmx_simd_ref_h_
 #define _gmx_simd_ref_h_
 
+#include "typedefs.h"
+
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
  * The SIMD width is set by defining GMX_SIMD_REF_WIDTH before including.
