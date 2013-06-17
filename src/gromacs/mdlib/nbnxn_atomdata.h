@@ -67,6 +67,13 @@ void copy_rvec_to_nbat_real(const int *a, int na, int na_round,
                             rvec *x, int nbatFormat, real *xnb, int a0,
                             int cx, int cy, int cz);
 
+/*! Initializes the parts of an nbnxn_atomdata_t struct that are used
+ *  in the kernels for doing exclusion masking. Separated from
+ *  nbnxn_atomdata_init to support testing. */
+void
+nbnxn_atomdata_init_simple_exclusion_masks(nbnxn_atomdata_t *nbat,
+                                           gmx_bool bSimple);
+
 /* Initialize the non-bonded atom data structure.
  * The enum for nbatXFormat is in the file defining nbnxn_atomdata_t.
  * Copy the ntypes*ntypes*2 sized nbfp non-bonded parameter list
@@ -111,6 +118,12 @@ void nbnxn_atomdata_add_nbat_f_to_f(const nbnxn_search_t    nbs,
 /* Add the fshift force stored in nbat to fshift */
 void nbnxn_atomdata_add_nbat_fshift_to_fshift(const nbnxn_atomdata_t *nbat,
                                               rvec                   *fshift);
+
+
+/* Copy lj params into x4 format (used in testing) */
+void copy_lj_to_nbat_lj_comb_x4(const real *ljparam_type,
+                                const int *type, int na,
+                                real *ljparam_at);
 
 #ifdef __cplusplus
 }

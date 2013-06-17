@@ -54,7 +54,9 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${CMAKE_SOURCE_DIR}/src/gromacs/linearalgebra/gmx_lapack/*.c
         ${CMAKE_SOURCE_DIR}/src/contrib/*.c
         ${CMAKE_SOURCE_DIR}/src/contrib/*.cpp
-        ${CMAKE_SOURCE_DIR}/src/contrib/*.cu)
+        ${CMAKE_SOURCE_DIR}/src/contrib/*.cu
+        ${CMAKE_SOURCE_DIR}/src/gromacs/simd/utils.cpp
+        )
     list(REMOVE_ITEM _inputfiles ${_files_to_ignore})
 
     # Set flags for cppcheck
