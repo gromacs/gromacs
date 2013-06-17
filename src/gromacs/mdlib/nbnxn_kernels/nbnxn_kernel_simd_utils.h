@@ -65,6 +65,10 @@ prepare_table_load_buffer(const int *array)
 
 #include "nbnxn_kernel_simd_utils_ref.h"
 
+#define gmx_load1_exclfilter(e)       gmx_simd_ref_load1_exclfilter(e)
+#define gmx_load_exclusion_filter(e)  gmx_simd_ref_load_exclusion_filter(e)
+#define gmx_checkbitmask_pb(m0, m1)   gmx_simd_ref_checkbitmask_pb(m0, m1)
+
 #else /* GMX_SIMD_REFERENCE_PLAIN_C */
 
 #ifdef GMX_X86_SSE2

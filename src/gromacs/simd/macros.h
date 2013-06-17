@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2012, The GROMACS Development Team
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013 by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -35,24 +35,27 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/* The macros in this file are intended to be used for writing
- * architecture-independent SIMD intrinsics code.
- * To support a new architecture, adding macros here should be (nearly)
- * all that is needed.
+/*! \file
+ * \brief
+ * The macros in this file are intended to be used for writing
+ * architecture-independent SIMD intrinsics code.  To support a new
+ * architecture, adding macros here should be (nearly) all that is
+ * needed.
+ *
+ * \author Berk Hess <hess@kth.se>
+ * \inlibraryapi
+ * \ingroup module_simd
  */
 
-#ifdef GMX_SIMD_MACROS_H
-#error "gromacs/simd/macros.h included twice"
-#else
+#ifndef GMX_SIMD_MACROS_H
 #define GMX_SIMD_MACROS_H
 
-/* NOTE: SSE2 acceleration does not include floor or blendv */
+#include "typedefs.h"
 
 
 /* Uncomment the next line, without other SIMD active, for testing plain-C */
 /* #define GMX_SIMD_REFERENCE_PLAIN_C */
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
-/* Plain C SIMD reference implementation, also serves as documentation */
 #define GMX_HAVE_SIMD_MACROS
 
 /* In general the reference SIMD supports any SIMD width, including 1.
@@ -60,8 +63,7 @@
  */
 #define GMX_SIMD_REF_WIDTH  4
 
-/* Include plain-C reference implementation, also serves as documentation */
-#include "gromacs/simd/macros_reference.h"
+#include "gromacs/simd/macros_ref.h"
 
 #define GMX_SIMD_WIDTH_HERE  GMX_SIMD_REF_WIDTH
 
