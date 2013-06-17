@@ -66,7 +66,7 @@ extern "C" {
  *                          of the rotation output files.
  * \param cr                Pointer to MPI communication data.
  * \param x                 The positions of all MD particles.
- * \param box               Simulation box, needed to make group whole.
+ * \param box               The simulation box.
  * \param mtop              Molecular topology.
  * \param oenv              Needed to open the rotation output xvgr file.
  * \param bVerbose          Whether to print extra status information.
