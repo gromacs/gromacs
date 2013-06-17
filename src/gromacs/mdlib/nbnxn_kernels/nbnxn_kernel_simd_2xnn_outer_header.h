@@ -1,0 +1,117 @@
+/*
+ * This file is part of the GROMACS molecular simulation package.
+ *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2009, The GROMACS Development Team
+ * Copyright (c) 2012, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
+ * of the License, or (at your option) any later version.
+ *
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org.
+ */
+
+
+/* Half-width SIMD operations are required here.
+ * As the 4xn kernels are the "standard" kernels and some special operations
+ * are required only here, we define those in nbnxn_kernel_simd_utils_...
+ *
+ * Half-width SIMD real type:
+ * gmx_mm_hpr
+ *
+ * Half-width SIMD operations
+ * Load reals at half-width aligned pointer b into half-width SIMD register a:
+ * gmx_load_hpr(a, b)
+ * Set all entries in half-width SIMD register *a to b:
+ * gmx_set1_hpr(a, b)
+ * Load one real at b and one real at b+1 into halves of a, respectively:
+ * gmx_load1p1_pr(a, b)
+ * Load reals at half-width aligned pointer b into two halves of a:
+ * gmx_loaddh_pr(a, b)
+ * Store half-width SIMD register b into half width aligned memory a:
+ * gmx_store_hpr(a, b)
+ * gmx_add_hpr(a, b)
+ * gmx_sub_hpr(a, b)
+ * Sum over 4 half SIMD registers:
+ * gmx_sum4_hpr(a, b)
+ * Sum the elements of halfs of each input register and store sums in out:
+ * gmx_mm_transpose_sum4h_pr(a, b)
+ * Extract two half-width registers *b, *c from a full width register a:
+ * gmx_pr_to_2hpr(a, b, c)
+ */
+
+
+#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/2)
+
+/* The stride of all the atom data arrays is equal to half the SIMD width */
+#define STRIDE     (GMX_SIMD_WIDTH_HERE/2)
+
+#if GMX_SIMD_WIDTH_HERE == 8
+#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
+#else
+#if GMX_SIMD_WIDTH_HERE == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7]+x[8]+x[9]+x[10]+x[11]+x[12]+x[13]+x[14]+x[15])
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif
+
+
+#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
+/* AVX-256 single precision 2x(4+4) kernel,
+ * we can do half SIMD-width aligned FDV0 table loads.
+ */
+#define TAB_FDV0
+#endif
+
+/* Currently stride 4 for the 2 LJ parameters is hard coded */
+#define NBFP_STRIDE  4
+
+
+#define SIMD_MASK_ALL   0xffffffff
+
+/* All functionality defines are set here, except for:
+ * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
+ * CHECK_EXCLS, which is set just before including the inner loop contents.
+ * The combination rule defines, LJ_COMB_GEOM or LJ_COMB_LB are currently
+ * set before calling the kernel function. We might want to move that
+ * to inside the n-loop and have a different combination rule for different
+ * ci's, as no combination rule gives a 50% performance hit for LJ.
+ */
+
+/* We always calculate shift forces, because it's cheap anyhow */
+#define CALC_SHIFTFORCES
+
+/* Assumes all LJ parameters are identical */
+/* #define FIX_LJ_C */
+
