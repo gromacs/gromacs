@@ -166,6 +166,9 @@
 /* Use (modified) Mopac 7 for QM-MM calculations */
 #cmakedefine GMX_QMMM_MOPAC
 
+/* Use ORCA for QM-MM calculations */
+#cmakedefine GMX_QMMM_ORCA
+
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
