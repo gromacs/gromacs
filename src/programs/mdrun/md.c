@@ -1782,7 +1782,28 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl_constr);
                 }
-                enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+                if (bVV)
+                {
+                    /* this factor or 2 correction is necessary
+                       because half of the constraint force is removed
+                       in the vv step, so we have to double it.  See
+                       the Redmine issue #1255.  It is not yet clear
+                       if the factor of 2 is exact, or just a very
+                       good approximation, and this will be
+                       investigated.  The next step is to see if this
+                       can be done adding a dhdl contribution from the
+                       rattle step, but this is somewhat more
+                       complicated with the current code. Will be
+                       investigated, hopefully for 4.6.3. However,
+                       this current solution is much better than
+                       having it completely wrong.
+                    */
+                    enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
+                }
+                else
+                {
+                    enerd->term[F_DVDL_CONSTR] += dvdl_constr;
+                }
             }
             else if (graph)
             {
@@ -1859,8 +1880,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             bFirstIterate = FALSE;
         }
 
-        /* only add constraint dvdl after constraints */
-        enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         if (!bVV || bRerunMD)
         {
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */

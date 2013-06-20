@@ -66,7 +66,7 @@ extern "C" {
  *                          of the rotation output files.
  * \param cr                Pointer to MPI communication data.
  * \param x                 The positions of all MD particles.
- * \param box               Simulation box, needed to make group whole.
+ * \param box               The simulation box.
  * \param mtop              Molecular topology.
  * \param oenv              Needed to open the rotation output xvgr file.
  * \param bVerbose          Whether to print extra status information.
@@ -131,10 +131,9 @@ extern real add_rot_forces(t_rot *rot, rvec f[], t_commrec *cr, gmx_large_int_t 
 
 /*! \brief Close the enforced rotation output files.
  *
- * \param fplog             General output file, normally md.log.
  * \param rot               Pointer to all the enforced rotation data.
  */
-extern void finish_rot(FILE *fplog, t_rot *rot);
+extern void finish_rot(t_rot *rot);
 
 
 #ifdef __cplusplus
