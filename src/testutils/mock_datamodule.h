@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/common.h"
 
 namespace gmx
@@ -68,6 +69,9 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
 
         virtual int flags() const;
 
+        MOCK_METHOD2(parallelDataStarted,
+                     bool(AbstractAnalysisData              *data,
+                          const AnalysisDataParallelOptions &options));
         MOCK_METHOD1(dataStarted, void(AbstractAnalysisData *data));
         MOCK_METHOD1(frameStarted, void(const AnalysisDataFrameHeader &header));
         MOCK_METHOD1(pointsAdded, void(const AnalysisDataPointSetRef &points));
@@ -75,7 +79,8 @@ class MockAnalysisDataModule : public AnalysisDataModuleInterface
         MOCK_METHOD0(dataFinished, void());
 
         void setupStaticCheck(const AnalysisDataTestInput &data,
-                              AbstractAnalysisData        *source);
+                              AbstractAnalysisData        *source,
+                              bool                         bParallel);
         void setupStaticColumnCheck(const AnalysisDataTestInput &data,
                                     int firstcol, int n,
                                     AbstractAnalysisData *source);

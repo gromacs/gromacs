@@ -177,6 +177,22 @@ class AnalysisDataStorageImpl
             return isMultipoint() && storageLimit_ == 0 && pendingLimit_ == 1;
         }
         /*! \brief
+         * Returns whether data needs to be stored at all.
+         *
+         * This is used to optimize multipoint handling for parallel cases
+         * (where shouldNotifyImmediately() returns false),
+         * where it is not necessary to store even a single frame.
+         *
+         * \todo
+         * This could be extended to non-multipoint data as well.
+         *
+         * Does not throw.
+         */
+        bool needStorage() const
+        {
+            return storageLimit_ > 0 || (pendingLimit_ > 1 && modules_->hasSerialModules());
+        }
+        /*! \brief
          * Calls notification methods for new frames.
          *
          * \param[in] firstLocation  First frame to consider.
@@ -207,6 +223,9 @@ class AnalysisDataStorageImpl
          * Number of future frames that may need to be started.
          *
          * Should always be at least one.
+         *
+         * \todo
+         * Get rid of this alltogether, as it is no longer used much.
          *
          * \see AnalysisDataStorage::startFrame()
          */
@@ -536,6 +555,7 @@ AnalysisDataStorageImpl::finishFrame(int index)
     GMX_RELEASE_ASSERT(storedFrame.frameIndex() == index,
                        "Inconsistent internal frame indexing");
     builders_.push_back(storedFrame.finishFrame(isMultipoint()));
+    modules_->notifyParallelFrameFinish(storedFrame.header());
     if (shouldNotifyImmediately())
     {
         ++firstUnnotifiedIndex_;
@@ -610,16 +630,17 @@ void
 AnalysisDataStorageFrameData::addPointSet(int dataSetIndex, int firstColumn,
                                           ValueIterator begin, ValueIterator end)
 {
-    const int valueCount  = end - begin;
+    const int                valueCount = end - begin;
+    AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
+                                          dataSetIndex, firstColumn);
+    AnalysisDataPointSetRef  pointSet(header(), pointSetInfo,
+                                      AnalysisDataValuesRef(begin, end));
+    storageImpl().modules_->notifyParallelPointsAdd(pointSet);
     if (storageImpl().shouldNotifyImmediately())
     {
-        AnalysisDataPointSetInfo pointSetInfo(0, valueCount,
-                                              dataSetIndex, firstColumn);
-        storageImpl().modules_->notifyPointsAdd(
-                AnalysisDataPointSetRef(header(), pointSetInfo,
-                                        AnalysisDataValuesRef(begin, end)));
+        storageImpl().modules_->notifyPointsAdd(pointSet);
     }
-    else
+    else if (storageImpl().needStorage())
     {
         pointSets_.push_back(
                 AnalysisDataPointSetInfo(values_.size(), valueCount,
@@ -639,6 +660,10 @@ AnalysisDataStorageFrameData::finishFrame(bool bMultipoint)
                            "Point sets created for non-multipoint data");
         values_ = builder_->values_;
         builder_->clearValues();
+        for (int i = 0; i < pointSetCount(); ++i)
+        {
+            storageImpl().modules_->notifyParallelPointsAdd(pointSet(i));
+        }
     }
     else
     {
@@ -776,13 +801,6 @@ AnalysisDataStorage::~AnalysisDataStorage()
 }
 
 
-void
-AnalysisDataStorage::setParallelOptions(const AnalysisDataParallelOptions &opt)
-{
-    impl_->pendingLimit_ = 2 * opt.parallelizationFactor() - 1;
-}
-
-
 int
 AnalysisDataStorage::frameCount() const
 {
@@ -837,7 +855,27 @@ AnalysisDataStorage::startDataStorage(AbstractAnalysisData      *data,
     impl_->modules_ = modules;
     if (!impl_->storeAll())
     {
-        impl_->extendBuffer(impl_->storageLimit_ + impl_->pendingLimit_ + 1);
+        // 2 = pending limit (1) + 1
+        impl_->extendBuffer(impl_->storageLimit_ + 2);
+    }
+}
+
+
+void
+AnalysisDataStorage::startParallelDataStorage(
+        AbstractAnalysisData              *data,
+        AnalysisDataModuleManager         *modules,
+        const AnalysisDataParallelOptions &options)
+{
+    const int pendingLimit = 2 * options.parallelizationFactor() - 1;
+    impl_->pendingLimit_   = pendingLimit;
+    modules->notifyParallelDataStart(data, options);
+    // Data needs to be set before calling extendBuffer()
+    impl_->data_    = data;
+    impl_->modules_ = modules;
+    if (!impl_->storeAll())
+    {
+        impl_->extendBuffer(impl_->storageLimit_ + pendingLimit + 1);
     }
 }
 
@@ -870,6 +908,7 @@ AnalysisDataStorage::startFrame(const AnalysisDataFrameHeader &header)
     GMX_RELEASE_ASSERT(storedFrame->frameIndex() == header.index(),
                        "Inconsistent internal frame indexing");
     storedFrame->startFrame(header, impl_->getFrameBuilder());
+    impl_->modules_->notifyParallelFrameStart(header);
     if (impl_->shouldNotifyImmediately())
     {
         impl_->modules_->notifyFrameStart(header);

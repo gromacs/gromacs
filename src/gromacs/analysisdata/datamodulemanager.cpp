@@ -46,6 +46,7 @@
 #include "gromacs/analysisdata/abstractdata.h"
 #include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/paralleloptions.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -64,8 +65,23 @@ namespace gmx
 class AnalysisDataModuleManager::Impl
 {
     public:
+        //! Stores information about an attached module.
+        struct ModuleInfo
+        {
+            //! Initializes the module information.
+            explicit ModuleInfo(AnalysisDataModulePointer module)
+                : module(module), bParallel(false)
+            {
+            }
+
+            //! Pointer to the actual module.
+            AnalysisDataModulePointer   module;
+            //! Whether the module supports parallel processing.
+            bool                        bParallel;
+        };
+
         //! Shorthand for list of modules added to the data.
-        typedef std::vector<AnalysisDataModulePointer> ModuleList;
+        typedef std::vector<ModuleInfo> ModuleList;
 
         //! Describes the current state of the notification methods.
         enum State
@@ -123,6 +139,10 @@ class AnalysisDataModuleManager::Impl
         bool                    bDataProperty_[eDataPropertyNR];
         //! true if all modules support missing data.
         bool                    bAllowMissing_;
+        //! true if there are modules that do not support parallel processing.
+        bool                    bSerialModules_;
+        //! true if there are modules that support parallel processing.
+        bool                    bParallelModules_;
 
         /*! \brief
          * Current state of the notification methods.
@@ -140,7 +160,8 @@ class AnalysisDataModuleManager::Impl
 };
 
 AnalysisDataModuleManager::Impl::Impl()
-    : bAllowMissing_(true), state_(eNotStarted), currIndex_(0)
+    : bAllowMissing_(true), bSerialModules_(false), bParallelModules_(false),
+      state_(eNotStarted), currIndex_(0)
 {
     // This must be in sync with how AbstractAnalysisData is actually
     // initialized.
@@ -256,7 +277,7 @@ AnalysisDataModuleManager::dataPropertyAboutToChange(DataProperty property, bool
         Impl::ModuleList::const_iterator i;
         for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
         {
-            impl_->checkModuleProperty(**i, property, bSet);
+            impl_->checkModuleProperty(*i->module, property, bSet);
         }
         impl_->bDataProperty_[property] = bSet;
     }
@@ -267,6 +288,9 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
                                      AnalysisDataModulePointer  module)
 {
     impl_->checkModuleProperties(*module);
+    // TODO: Ensure that the system does not end up in an inconsistent state by
+    // adding a module in mid-data during parallel processing (probably best to
+    // prevent alltogether).
     GMX_RELEASE_ASSERT(impl_->state_ != Impl::eInFrame,
                        "Cannot add a data module in mid-frame");
     impl_->presentData(data, module.get());
@@ -275,7 +299,7 @@ AnalysisDataModuleManager::addModule(AbstractAnalysisData      *data,
     {
         impl_->bAllowMissing_ = false;
     }
-    impl_->modules_.push_back(module);
+    impl_->modules_.push_back(Impl::ModuleInfo(module));
 }
 
 void
@@ -289,8 +313,17 @@ AnalysisDataModuleManager::applyModule(AbstractAnalysisData        *data,
 }
 
 
+bool
+AnalysisDataModuleManager::hasSerialModules() const
+{
+    GMX_ASSERT(impl_->state_ != Impl::eNotStarted,
+               "Module state not accessible before data is started");
+    return impl_->bSerialModules_;
+}
+
+
 void
-AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data) const
+AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data)
 {
     GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
                        "notifyDataStart() called more than once");
@@ -299,7 +332,9 @@ AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data) const
         GMX_RELEASE_ASSERT(data->columnCount(d) > 0,
                            "Data column count is not set");
     }
-    impl_->state_ = Impl::eInData;
+    impl_->state_            = Impl::eInData;
+    impl_->bSerialModules_   = !impl_->modules_.empty();
+    impl_->bParallelModules_ = false;
 
     Impl::ModuleList::const_iterator i;
     for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
@@ -307,8 +342,44 @@ AnalysisDataModuleManager::notifyDataStart(AbstractAnalysisData *data) const
         // This should not fail, since addModule() and
         // dataPropertyAboutToChange() already do the checks, but kept here to
         // catch potential bugs (perhaps it would be best to assert on failure).
-        impl_->checkModuleProperties(**i);
-        (*i)->dataStarted(data);
+        impl_->checkModuleProperties(*i->module);
+        i->module->dataStarted(data);
+    }
+}
+
+
+void
+AnalysisDataModuleManager::notifyParallelDataStart(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
+{
+    GMX_RELEASE_ASSERT(impl_->state_ == Impl::eNotStarted,
+                       "notifyDataStart() called more than once");
+    for (int d = 0; d < data->dataSetCount(); ++d)
+    {
+        GMX_RELEASE_ASSERT(data->columnCount(d) > 0,
+                           "Data column count is not set");
+    }
+    impl_->state_            = Impl::eInData;
+    impl_->bSerialModules_   = false;
+    impl_->bParallelModules_ = false;
+
+    Impl::ModuleList::iterator i;
+    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    {
+        // This should not fail, since addModule() and
+        // dataPropertyAboutToChange() already do the checks, but kept here to
+        // catch potential bugs (perhaps it would be best to assert on failure).
+        impl_->checkModuleProperties(*i->module);
+        i->bParallel = i->module->parallelDataStarted(data, options);
+        if (i->bParallel)
+        {
+            impl_->bParallelModules_ = true;
+        }
+        else
+        {
+            impl_->bSerialModules_ = true;
+        }
     }
 }
 
@@ -320,10 +391,33 @@ AnalysisDataModuleManager::notifyFrameStart(const AnalysisDataFrameHeader &heade
     GMX_ASSERT(header.index() == impl_->currIndex_, "Out of order frames");
     impl_->state_     = Impl::eInFrame;
 
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    if (impl_->bSerialModules_)
     {
-        (*i)->frameStarted(header);
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (!i->bParallel)
+            {
+                i->module->frameStarted(header);
+            }
+        }
+    }
+}
+
+void
+AnalysisDataModuleManager::notifyParallelFrameStart(
+        const AnalysisDataFrameHeader &header) const
+{
+    if (impl_->bParallelModules_)
+    {
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (i->bParallel)
+            {
+                i->module->frameStarted(header);
+            }
+        }
     }
 }
 
@@ -338,15 +432,48 @@ AnalysisDataModuleManager::notifyPointsAdd(const AnalysisDataPointSetRef &points
     //           "Invalid columns");
     GMX_ASSERT(points.frameIndex() == impl_->currIndex_,
                "Points do not correspond to current frame");
-    if (!impl_->bAllowMissing_ && !points.allPresent())
+    if (impl_->bSerialModules_)
     {
-        GMX_THROW(APIError("Missing data not supported by a module"));
-    }
+        if (!impl_->bAllowMissing_ && !points.allPresent())
+        {
+            GMX_THROW(APIError("Missing data not supported by a module"));
+        }
 
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (!i->bParallel)
+            {
+                i->module->pointsAdded(points);
+            }
+        }
+    }
+}
+
+
+void
+AnalysisDataModuleManager::notifyParallelPointsAdd(
+        const AnalysisDataPointSetRef &points) const
+{
+    // TODO: Add checks for column spans (requires passing the information
+    // about the column counts from somewhere).
+    //GMX_ASSERT(points.lastColumn() < columnCount(points.dataSetIndex()),
+    //           "Invalid columns");
+    if (impl_->bParallelModules_)
     {
-        (*i)->pointsAdded(points);
+        if (!impl_->bAllowMissing_ && !points.allPresent())
+        {
+            GMX_THROW(APIError("Missing data not supported by a module"));
+        }
+
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (i->bParallel)
+            {
+                i->module->pointsAdded(points);
+            }
+        }
     }
 }
 
@@ -362,10 +489,34 @@ AnalysisDataModuleManager::notifyFrameFinish(const AnalysisDataFrameHeader &head
     impl_->state_ = Impl::eInData;
     ++impl_->currIndex_;
 
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    if (impl_->bSerialModules_)
     {
-        (*i)->frameFinished(header);
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (!i->bParallel)
+            {
+                i->module->frameFinished(header);
+            }
+        }
+    }
+}
+
+
+void
+AnalysisDataModuleManager::notifyParallelFrameFinish(
+        const AnalysisDataFrameHeader &header) const
+{
+    if (impl_->bParallelModules_)
+    {
+        Impl::ModuleList::const_iterator i;
+        for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+        {
+            if (i->bParallel)
+            {
+                i->module->frameFinished(header);
+            }
+        }
     }
 }
 
@@ -379,7 +530,7 @@ AnalysisDataModuleManager::notifyDataFinish() const
     Impl::ModuleList::const_iterator i;
     for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
     {
-        (*i)->dataFinished();
+        i->module->dataFinished();
     }
 }
 
