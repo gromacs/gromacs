@@ -80,7 +80,7 @@ namespace gmx
  * \ingroup module_analysisdata
  */
 class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
-                                  public AnalysisDataModuleInterface
+                                  public AnalysisDataModuleSerial
 {
     public:
         AnalysisDataAverageModule();
@@ -161,7 +161,7 @@ typedef boost::shared_ptr<AnalysisDataAverageModule>
  * \ingroup module_analysisdata
  */
 class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
-                                       public AnalysisDataModuleInterface
+                                       public AnalysisDataModuleSerial
 {
     public:
         AnalysisDataFrameAverageModule();

@@ -189,8 +189,9 @@ class AnalysisDataStorageFrame
          *
          * After this method has been called, all values appear as not set.
          *
-         * May call AnalysisDataModuleManager::notifyPointsAdd(), and may throw
-         * any exception this method throws.
+         * May call AnalysisDataModuleManager::notifyPointsAdd() and
+         * AnalysisDataModuleManager::notifyParallelPointsAdd(), and may throw
+         * any exception these methods throw.
          */
         void finishPointSet();
         /*! \brief
@@ -249,7 +250,8 @@ class AnalysisDataStorageFrame
  * To use this class in a class derived from AbstractAnalysisData, a member
  * variable of this type should be declared and the pure virtual methods
  * forwarded to frameCount(), tryGetDataFrame() and requestStorage().
- * Storage properties should be set up, and then startDataStorage() called.
+ * Storage properties should be set up, and then startDataStorage() or
+ * startParallelDataStorage() called.
  * New frames can then be added using startFrame(), currentFrame() and
  * finishFrame() methods.  When all frames are ready, finishDataStorage() must
  * be called.  These methods (and AnalysisDataStorageFrame::finishPointSet())
@@ -268,18 +270,6 @@ class AnalysisDataStorage
         //! Constructs a storage object.
         AnalysisDataStorage();
         ~AnalysisDataStorage();
-
-        /*! \brief
-         * Set parallelization options for the storage.
-         *
-         * \param[in] opt  Parallization options to use.
-         *
-         * If this method is not called, the storage is set up for serial
-         * storage only.
-         *
-         * Does not throw.
-         */
-        void setParallelOptions(const AnalysisDataParallelOptions &opt);
 
         /*! \brief
          * Returns the number of ready frames.
@@ -342,6 +332,27 @@ class AnalysisDataStorage
         void startDataStorage(AbstractAnalysisData      *data,
                               AnalysisDataModuleManager *modules);
         /*! \brief
+         * Start storing data in parallel.
+         *
+         * \param[in] data    AbstractAnalysisData object containing this
+         *      storage.
+         * \param[in] options Parallelization options to use.
+         * \param     modules Module manager for \p data.
+         * \exception std::bad_alloc if storage allocation fails.
+         *
+         * Should be called instead of startDataStorage() if the data will be
+         * produced in parallel.  Works as startDataStorage(), but additionally
+         * initializes the storage and the attached modules to prepare for
+         * out-of-order data frames.
+         *
+         * Calls AnalysisDataModuleManager::notifyParallelDataStart(), and
+         * throws any exceptions this method throws.
+         */
+        void startParallelDataStorage(
+            AbstractAnalysisData              *data,
+            AnalysisDataModuleManager         *modules,
+            const AnalysisDataParallelOptions &options);
+        /*! \brief
          * Starts storing a new frame.
          *
          * \param[in] header  Header for the new frame.
@@ -364,8 +375,9 @@ class AnalysisDataStorage
          * setParallelOptions().
          * Throws APIError if this constraint is violated.
          *
-         * Calls AnalysisDataModuleManager::notifyFrameStart() in certain
-         * cases, and throws any exceptions this method throws.
+         * Calls AnalysisDataModuleManager::notifyFrameStart() (in certain
+         * cases) and AnalysisDataModuleManager::notifyParallelFrameStart(),
+         * and throws any exceptions these methods throw.
          */
         AnalysisDataStorageFrame &startFrame(const AnalysisDataFrameHeader &header);
         /*! \brief

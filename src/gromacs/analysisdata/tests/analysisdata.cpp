@@ -284,6 +284,10 @@ class AnalysisDataTest : public AnalysisDataTestFixture
         {
             AnalysisDataTestFixture::addStaticCheckerModule(input_, &data_);
         }
+        void addStaticParallelCheckerModule()
+        {
+            AnalysisDataTestFixture::addStaticParallelCheckerModule(input_, &data_);
+        }
         void addStaticColumnCheckerModule(int firstColumn, int columnCount)
         {
             AnalysisDataTestFixture::addStaticColumnCheckerModule(
@@ -336,6 +340,28 @@ TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectly)
 }
 
 /*
+ * Tests that data is forwarded correctly to modules when there are only
+ * parallel modules.
+ */
+TYPED_TEST(AnalysisDataCommonTest, CallsParallelModuleCorrectly)
+{
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticParallelCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticParallelCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
+}
+
+/*
+ * Tests that data is forwarded correctly to modules when there are both
+ * parallel and serial modules.
+ */
+TYPED_TEST(AnalysisDataCommonTest, CallsMixedModulesCorrectly)
+{
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticParallelCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::presentAllData());
+}
+
+/*
  * Tests that data is forwarded correctly to modules that are added using
  * addColumnModule().
  * Uses two independent modules.
@@ -354,6 +380,7 @@ TYPED_TEST(AnalysisDataCommonTest, CallsColumnModuleCorrectly)
 TYPED_TEST(AnalysisDataCommonTest, CallsModuleCorrectlyWithOutOfOrderFrames)
 {
     ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticCheckerModule());
+    ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticParallelCheckerModule());
     ASSERT_NO_THROW_GMX(AnalysisDataTest::addStaticColumnCheckerModule(1, 2));
     gmx::AnalysisDataHandle          handle1;
     gmx::AnalysisDataHandle          handle2;

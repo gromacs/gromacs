@@ -82,7 +82,7 @@ namespace
  *
  * \ingroup module_analysisdata
  */
-class IndexFileWriterModule : public AnalysisDataModuleInterface
+class IndexFileWriterModule : public AnalysisDataModuleSerial
 {
     public:
         IndexFileWriterModule();

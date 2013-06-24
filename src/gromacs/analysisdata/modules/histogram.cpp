@@ -343,7 +343,10 @@ AbstractAverageHistogram::normalizeProbability()
         {
             sum += value(i, c).value();
         }
-        scaleSingle(c, 1.0 / (sum * xstep()));
+        if (sum > 0.0)
+        {
+            scaleSingle(c, 1.0 / (sum * xstep()));
+        }
     }
 }
 
@@ -402,7 +405,7 @@ namespace internal
  * \ingroup module_analysisdata
  */
 class BasicAverageHistogramModule : public AbstractAverageHistogram,
-                                    public AnalysisDataModuleInterface
+                                    public AnalysisDataModuleSerial
 {
     public:
         BasicAverageHistogramModule();
@@ -631,8 +634,10 @@ AnalysisDataSimpleHistogramModule::flags() const
 }
 
 
-void
-AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
+bool
+AnalysisDataSimpleHistogramModule::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
     setDataSetCount(data->dataSetCount());
@@ -640,7 +645,8 @@ AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    impl_->storage_.startDataStorage(this, &moduleManager());
+    impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
+    return true;
 }
 
 
@@ -756,8 +762,10 @@ AnalysisDataWeightedHistogramModule::flags() const
 }
 
 
-void
-AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
+bool
+AnalysisDataWeightedHistogramModule::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
 {
     addModule(impl_->averager_);
     setDataSetCount(data->dataSetCount());
@@ -765,7 +773,8 @@ AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
     {
         setColumnCount(i, settings().binCount());
     }
-    impl_->storage_.startDataStorage(this, &moduleManager());
+    impl_->storage_.startParallelDataStorage(this, &moduleManager(), options);
+    return true;
 }
 
 
