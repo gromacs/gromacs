@@ -139,7 +139,7 @@ class AnalysisDataPlotSettings
  *
  * \ingroup module_analysisdata
  */
-class AbstractPlotModule : public AnalysisDataModuleInterface
+class AbstractPlotModule : public AnalysisDataModuleSerial
 {
     public:
         virtual ~AbstractPlotModule();

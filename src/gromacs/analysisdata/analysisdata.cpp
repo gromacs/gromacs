@@ -165,8 +165,7 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
                        "Too many calls to startData() compared to provided options");
     if (impl_->handles_.empty())
     {
-        impl_->storage_.setParallelOptions(opt);
-        impl_->storage_.startDataStorage(this, &moduleManager());
+        impl_->storage_.startParallelDataStorage(this, &moduleManager(), opt);
     }
 
     Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));

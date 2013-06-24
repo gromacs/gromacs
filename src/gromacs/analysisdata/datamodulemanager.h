@@ -50,6 +50,8 @@
 namespace gmx
 {
 
+class AnalysisDataParallelOptions;
+
 /*! \libinternal \brief
  * Encapsulates handling of data modules attached to AbstractAnalysisData.
  *
@@ -90,6 +92,17 @@ class AnalysisDataModuleManager
         void dataPropertyAboutToChange(DataProperty property, bool bSet);
 
         /*! \brief
+         * Whether there are modules that do not support parallel processing.
+         *
+         * Must not be called before notifyDataStart()/notifyParallelDataStart().
+         * If notifyDataStart() has been called, returns true if there are any
+         * modules (all modules are treated as serial).
+         *
+         * Does not throw.
+         */
+        bool hasSerialModules() const;
+
+        /*! \brief
          * Adds a module to process the data.
          *
          * \param     data    Data object to add the module to.
@@ -121,7 +134,7 @@ class AnalysisDataModuleManager
                          AnalysisDataModuleInterface *module);
 
         /*! \brief
-         * Notifies attached modules of the start of data.
+         * Notifies attached modules of the start of serial data.
          *
          * \param   data  Data object that is starting.
          * \throws  APIError if any attached data module is not compatible.
@@ -136,10 +149,34 @@ class AnalysisDataModuleManager
          *
          * \p data should typically be \c this when calling from a class
          * derived from AbstractAnalysisData.
+         *
+         * This method initializes all modules for serial processing by calling
+         * AnalysisDataModuleInterface::dataStarted().
          */
-        void notifyDataStart(AbstractAnalysisData *data) const;
+        void notifyDataStart(AbstractAnalysisData *data);
         /*! \brief
-         * Notifies attached modules of the start of a frame.
+         * Notifies attached modules of the start of parallel data.
+         *
+         * \param     data    Data object that is starting.
+         * \param[in] options Parallelization properties of the input data.
+         * \throws  APIError if any attached data module is not compatible.
+         * \throws  unspecified Any exception thrown by attached data modules
+         *      in AnalysisDataModuleInterface::parallelDataStarted().
+         *
+         * Can be called instead of notifyDataStart() if \p data supports
+         * non-sequential creation of frames.  Works as notifyDataStart(),
+         * but instead calls AnalysisDataModuleInterface::parallelDataStarted()
+         * and records whether the module supports the parallel mode.
+         * Subsequent notification calls then notify the modules according to
+         * the mode they accept.
+         *
+         * See notifyDataStart() for general constraints.
+         */
+        void notifyParallelDataStart(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
+        /*! \brief
+         * Notifies attached serial modules of the start of a frame.
          *
          * \param[in] header  Header information for the frame that is starting.
          * \throws    unspecified Any exception thrown by attached data modules
@@ -150,7 +187,21 @@ class AnalysisDataModuleManager
          */
         void notifyFrameStart(const AnalysisDataFrameHeader &header) const;
         /*! \brief
-         * Notifies attached modules of the addition of points to the
+         * Notifies attached parallel modules of the start of a frame.
+         *
+         * \param[in] header  Header information for the frame that is starting.
+         * \throws    unspecified Any exception thrown by attached data modules
+         *      in AnalysisDataModuleInterface::frameStarted().
+         *
+         * If notifyParallelDataStart() has been called, should be called once
+         * for each frame, before notifyParallelPointsAdd() calls for that
+         * frame.
+         * It is allowed to call this method in any order for the frames, but
+         * should be called exactly once for each frame.
+         */
+        void notifyParallelFrameStart(const AnalysisDataFrameHeader &header) const;
+        /*! \brief
+         * Notifies attached serial modules of the addition of points to the
          * current frame.
          *
          * \param[in] points  Set of points added (also provides access to
@@ -169,7 +220,20 @@ class AnalysisDataModuleManager
          */
         void notifyPointsAdd(const AnalysisDataPointSetRef &points) const;
         /*! \brief
-         * Notifies attached modules of the end of a frame.
+         * Notifies attached parallel modules of the addition of points to a frame.
+         *
+         * \param[in] points  Set of points added (also provides access to
+         *      frame-level data).
+         * \throws    APIError if any attached data module is not compatible.
+         * \throws    unspecified Any exception thrown by attached data modules
+         *      in AnalysisDataModuleInterface::pointsAdded().
+         *
+         * See notifyPointsAdd() for information on the structure of the point
+         * sets.
+         */
+        void notifyParallelPointsAdd(const AnalysisDataPointSetRef &points) const;
+        /*! \brief
+         * Notifies attached serial modules of the end of a frame.
          *
          * \param[in] header  Header information for the frame that is ending.
          * \throws    unspecified Any exception thrown by attached data modules
@@ -181,6 +245,19 @@ class AnalysisDataModuleManager
          * notifyFrameStart() call.
          */
         void notifyFrameFinish(const AnalysisDataFrameHeader &header) const;
+        /*! \brief
+         * Notifies attached parallel modules of the end of a frame.
+         *
+         * \param[in] header  Header information for the frame that is ending.
+         * \throws    unspecified Any exception thrown by attached data modules
+         *      in AnalysisDataModuleInterface::frameFinished().
+         *
+         * Should be called once for each call of notifyParallelFrameStart(),
+         * after any notifyParallelPointsAdd() calls for the frame.
+         * \p header should be identical to that used in the corresponding
+         * notifyParallelFrameStart() call.
+         */
+        void notifyParallelFrameFinish(const AnalysisDataFrameHeader &header) const;
         /*! \brief
          * Notifies attached modules of the end of data.
          *

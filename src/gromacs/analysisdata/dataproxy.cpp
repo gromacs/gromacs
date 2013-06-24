@@ -50,7 +50,8 @@ namespace gmx
 
 AnalysisDataProxy::AnalysisDataProxy(int firstColumn, int columnSpan,
                                      AbstractAnalysisData *data)
-    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan)
+    : source_(*data), firstColumn_(firstColumn), columnSpan_(columnSpan),
+      bParallel_(false)
 {
     GMX_RELEASE_ASSERT(data != NULL, "Source data must not be NULL");
     GMX_RELEASE_ASSERT(firstColumn >= 0 && columnSpan > 0, "Invalid proxy column");
@@ -105,10 +106,34 @@ AnalysisDataProxy::dataStarted(AbstractAnalysisData *data)
 }
 
 
+bool
+AnalysisDataProxy::parallelDataStarted(
+        AbstractAnalysisData              *data,
+        const AnalysisDataParallelOptions &options)
+{
+    GMX_RELEASE_ASSERT(data == &source_, "Source data mismatch");
+    setDataSetCount(data->dataSetCount());
+    for (int i = 0; i < data->dataSetCount(); ++i)
+    {
+        setColumnCount(i, columnSpan_);
+    }
+    moduleManager().notifyParallelDataStart(this, options);
+    bParallel_ = !moduleManager().hasSerialModules();
+    return bParallel_;
+}
+
+
 void
 AnalysisDataProxy::frameStarted(const AnalysisDataFrameHeader &frame)
 {
-    moduleManager().notifyFrameStart(frame);
+    if (bParallel_)
+    {
+        moduleManager().notifyParallelFrameStart(frame);
+    }
+    else
+    {
+        moduleManager().notifyFrameStart(frame);
+    }
 }
 
 
@@ -118,7 +143,14 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
     AnalysisDataPointSetRef columns(points, firstColumn_, columnSpan_);
     if (columns.columnCount() > 0)
     {
-        moduleManager().notifyPointsAdd(columns);
+        if (bParallel_)
+        {
+            moduleManager().notifyParallelPointsAdd(columns);
+        }
+        else
+        {
+            moduleManager().notifyPointsAdd(columns);
+        }
     }
 }
 
@@ -126,7 +158,14 @@ AnalysisDataProxy::pointsAdded(const AnalysisDataPointSetRef &points)
 void
 AnalysisDataProxy::frameFinished(const AnalysisDataFrameHeader &header)
 {
-    moduleManager().notifyFrameFinish(header);
+    if (bParallel_)
+    {
+        moduleManager().notifyParallelFrameFinish(header);
+    }
+    else
+    {
+        moduleManager().notifyFrameFinish(header);
+    }
 }
 
 

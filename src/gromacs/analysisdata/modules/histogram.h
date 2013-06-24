@@ -347,7 +347,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * \ingroup module_analysisdata
  */
 class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
-                                          public AnalysisDataModuleInterface
+                                          public AnalysisDataModuleParallel
 {
     public:
         /*! \brief
@@ -383,7 +383,9 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
 
         virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -418,7 +420,7 @@ class AnalysisDataSimpleHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
-                                            public AnalysisDataModuleInterface
+                                            public AnalysisDataModuleParallel
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
@@ -440,7 +442,9 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
 
         virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -473,7 +477,7 @@ class AnalysisDataWeightedHistogramModule : public AbstractAnalysisData,
  * \ingroup module_analysisdata
  */
 class AnalysisDataBinAverageModule : public AbstractAnalysisArrayData,
-                                     public AnalysisDataModuleInterface
+                                     public AnalysisDataModuleSerial
 {
     public:
         //! \copydoc AnalysisDataSimpleHistogramModule::AnalysisDataSimpleHistogramModule()
