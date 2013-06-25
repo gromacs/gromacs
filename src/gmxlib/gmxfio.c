@@ -800,6 +800,19 @@ static int gmx_fio_int_get_file_position(t_fileio *fio, gmx_off_t *offset)
         gmx_file(buf);
     }
 
+    /* On Lustre file systems up to 2.1.5 there is a known bug where
+       GROMACS file appending can fail because ftell did not return
+       SEEK_END after appending in a previous run, so the computed
+       md5sums are of a subset of the file. See
+       https://jira.hpdd.intel.com/browse/LU-3044.
+
+       To work around, we do an extra fseek to force the file pointer
+       to the end. This is wasteful on correctly-functioning file
+       systems, but since the cost is basically a no-op function call
+       and only occurs during file writing, it should be
+       negligible. */
+    gmx_fseek(fio->fp, 0, SEEK_END);
+
     /* We cannot count on XDR being able to write 64-bit integers,
        so separate into high/low 32-bit values.
        In case the filesystem has 128-bit offsets we only care
