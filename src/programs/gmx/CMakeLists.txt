@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -31,8 +31,11 @@
 #
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-add_executable(gmx gmx.cpp legacymodules.cpp)
+file(GLOB GMX_EXECUTABLE_SOURCES *.c *.cpp)
+
+add_executable(gmx ${GMX_EXECUTABLE_SOURCES})
 target_link_libraries(gmx libgromacs ${GMX_EXE_LINKER_FLAGS})
 set_target_properties(gmx PROPERTIES OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}")
 

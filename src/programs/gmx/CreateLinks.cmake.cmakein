@@ -36,6 +36,13 @@
 # but this has some complications.  As the same list is also needed for
 # man page generation, this can wait for now.
 set(SYMLINK_NAMES
+    gmxcheck
+    gmxdump
+    grompp
+    pdb2gmx
+    tpbconv
+    g_protonate
+    g_x2top
     do_dssp
     editconf
     eneconv
@@ -116,6 +123,7 @@ set(SYMLINK_NAMES
     g_spol
     g_tcaf
     g_traj
+    g_tune_pme
     g_vanhove
     g_velacc
     g_wham
