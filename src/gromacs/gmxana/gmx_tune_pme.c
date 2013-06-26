@@ -2227,10 +2227,7 @@ int gmx_tune_pme(int argc, char *argv[])
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (launch only)" }
     };
 
-
 #define NFILE asize(fnm)
-
-    CopyRight(stderr, argv[0]);
 
     seconds = gettime();
 

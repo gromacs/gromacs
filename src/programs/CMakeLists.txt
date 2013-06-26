@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -35,11 +35,4 @@
 add_subdirectory(mdrun)
 if (NOT GMX_FAHCORE)
     add_subdirectory(gmx)
-    add_subdirectory(g_protonate)
-    add_subdirectory(g_x2top)
-    add_subdirectory(gmxcheck)
-    add_subdirectory(gmxdump)
-    add_subdirectory(grompp)
-    add_subdirectory(pdb2gmx)
-    add_subdirectory(tpbconv)
 endif (NOT GMX_FAHCORE)
