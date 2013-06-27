@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,7 +43,6 @@
 #ifndef GMX_TESTUTILS_DATATEST_H
 #define GMX_TESTUTILS_DATATEST_H
 
-#include <limits>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -64,11 +63,6 @@ class AnalysisDataHandle;
 namespace test
 {
 
-//! Constant to use to signify end of one data frame for AnalysisDataTestInput.
-const real END_OF_FRAME = std::numeric_limits<real>::max();
-//! Constant to use to signify end of one multipoint set for AnalysisDataTestInput.
-const real MPSTOP = -std::numeric_limits<real>::max();
-
 /*! \libinternal \brief
  * Represents a single set of points in AnalysisDataTestInputFrame structure.
  *
@@ -83,6 +77,12 @@ const real MPSTOP = -std::numeric_limits<real>::max();
 class AnalysisDataTestInputPointSet
 {
     public:
+        //! Returns zero-based index of this point set in its frame.
+        int index() const { return index_; }
+        //! Returns zero-based index of the first column in this point set.
+        int firstColumn() const { return firstColumn_; }
+        //! Returns zero-based index of the last column in this point set.
+        int lastColumn() const { return firstColumn_ + size() - 1; }
         //! Returns the number of columns in the point set.
         int size() const { return y_.size(); }
         //! Returns the value in column \p i.
@@ -94,13 +94,19 @@ class AnalysisDataTestInputPointSet
         //! Returns a vector of values for all columns.
         const std::vector<real> &yvector() const { return y_; }
 
+        //! Appends a value to this point set.
+        void addValue(real y) { y_.push_back(y); }
+
     private:
         //! Creates an empty point set.
-        AnalysisDataTestInputPointSet();
+        AnalysisDataTestInputPointSet(int index, int firstColumn);
 
+        int                     index_;
+        int                     firstColumn_;
         std::vector<real>       y_;
 
-        friend class AnalysisDataTestInput;
+        //! For constructing new point sets.
+        friend class AnalysisDataTestInputFrame;
 };
 
 /*! \libinternal \brief
@@ -120,14 +126,23 @@ class AnalysisDataTestInputFrame
         real dx() const { return 0.0; }
 
         //! Number of individual point sets in the frame.
-        int pointSetCount() const { return points_.size(); }
+        int pointSetCount() const { return pointSets_.size(); }
         //! Returns a point set object for a given point set.
-        const AnalysisDataTestInputPointSet &points(int index = 0) const
+        const AnalysisDataTestInputPointSet &pointSet(int index) const
         {
-            GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < points_.size(),
+            GMX_ASSERT(index >= 0 && static_cast<size_t>(index) < pointSets_.size(),
                        "Point set index out of range");
-            return points_[index];
+            return pointSets_[index];
         }
+
+        //! Appends an empty point set to this frame.
+        AnalysisDataTestInputPointSet &addPointSet(int firstColumn);
+        //! Adds a point set with given values to this frame.
+        void addPointSetWithValues(int firstColumn, real y1);
+        //! Adds a point set with given values to this frame.
+        void addPointSetWithValues(int firstColumn, real y1, real y2);
+        //! Adds a point set with given values to this frame.
+        void addPointSetWithValues(int firstColumn, real y1, real y2, real y3);
 
     private:
         //! Constructs a new frame object with the given values.
@@ -135,16 +150,17 @@ class AnalysisDataTestInputFrame
 
         int                                         index_;
         real                                        x_;
-        std::vector<AnalysisDataTestInputPointSet>  points_;
+        std::vector<AnalysisDataTestInputPointSet>  pointSets_;
 
+        //! For constructing new frames.
         friend class AnalysisDataTestInput;
 };
 
 /*! \libinternal \brief
  * Represents static input data for AbstractAnalysisData tests.
  *
- * Used to construct structured test input data from a static array of reals,
- * and then typically used as input to methods in AnalysisDataTestFixture.
+ * Used to construct structured test input data for analysis data unit tests.
+ * Typically used as input to methods in AnalysisDataTestFixture.
  *
  * \see AnalysisDataTestFixture
  *
@@ -155,42 +171,33 @@ class AnalysisDataTestInput
 {
     public:
         /*! \brief
-         * Constructs data representation from a simple array.
+         * Constructs empty input data.
          *
-         * \tparam    count Number of elements in the array.
-         * \param[in] data  Array to construct data from.
-         *
-         * The input array should consist of a set of frames, separated by a
-         * END_OF_FRAME marker.  The first value for a frame is the X value,
-         * all following values are Y values.
-         * For multipoint data, one frame can contain several point sets,
-         * separated by MPSTOP markers.  There should be no MPSTOP marker after
-         * the last point set, only an END_OF_FRAME marker.  All point sets are
-         * assumed to start from column zero, but the sets may contain
-         * different number of columns.  For non-multipoint data, all frames
-         * must containt the same number of columns.
-         * The final element in the array should be an END_OF_FRAME.
+         * \param[in] columnCount  Number of columns in the data.
+         * \param[in] bMultipoint  Whether the data will be multipoint.
          */
-        template <size_t count>
-        explicit AnalysisDataTestInput(const real (&data)[count])
-            : columnCount_(0), bMultipoint_(false)
-        {
-            initFromArray(data, count);
-        }
+        AnalysisDataTestInput(int columnCount, bool bMultipoint);
         ~AnalysisDataTestInput();
 
-        //! Returns the number of frames in the input data.
-        int frameCount() const { return frames_.size(); }
-        //! Returns the number of columns in the input data.
-        int columnCount() const { return columnCount_; }
         //! Whether the input data is multipoint.
         bool isMultipoint() const { return bMultipoint_; }
+        //! Returns the number of columns in the input data.
+        int columnCount() const { return columnCount_; }
+        //! Returns the number of frames in the input data.
+        int frameCount() const { return frames_.size(); }
         //! Returns a frame object for the given input frame.
         const AnalysisDataTestInputFrame &frame(int index) const;
 
-    private:
-        void initFromArray(const real *data, size_t count);
+        //! Appends an empty frame to this data.
+        AnalysisDataTestInputFrame &addFrame(real x);
+        //! Adds a frame with a single point set and the given values.
+        void addFrameWithValues(real x, real y1);
+        //! Adds a frame with a single point set and the given values.
+        void addFrameWithValues(real x, real y1, real y2);
+        //! Adds a frame with a single point set and the given values.
+        void addFrameWithValues(real x, real y1, real y2, real y3);
 
+    private:
         int                                     columnCount_;
         bool                                    bMultipoint_;
         std::vector<AnalysisDataTestInputFrame> frames_;
@@ -221,13 +228,13 @@ class AnalysisDataTestInput
  *
  * presentAllData() and presentDataFrame() are provided to push data from an
  * AnalysisDataTestInput into an AnalysisData object.  In typical tests, most
- * checks are done during the these methods, by the added mock modules.
+ * checks are done during these methods, by the added mock modules.
  * setupArrayData() performs the same function for classes derived from
  * AbstractAnalysisArrayData.  In that case, the test should separately ensure
  * that AbstractAnalysisArrayData::valuesReady() gets called.
  *
  * \todo
- * Support for errors and for arbitrary multipoint data.
+ * Support for arbitrary AnalysisDataValues (errors and missing values).
  *
  * \see AnalysisDataTestInput
  *
@@ -238,6 +245,14 @@ class AnalysisDataTestFixture : public ::testing::Test
 {
     public:
         AnalysisDataTestFixture();
+
+        /*! \brief
+         * Initializes an AnalysisData object from input data.
+         *
+         * Sets the column count and other properties based on the input data.
+         */
+        static void setupDataObject(const AnalysisDataTestInput &input,
+                                    AnalysisData                *data);
 
         /*! \brief
          * Adds all data from AnalysisDataTestInput into an AnalysisData.
@@ -389,10 +404,12 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
     {
         const AnalysisDataTestInputFrame    &frame = input.frame(row);
         EXPECT_FLOAT_EQ(frame.x(), data->xvalue(row));
-        const AnalysisDataTestInputPointSet &points = frame.points();
-        for (int column = 0; column < input.columnCount(); ++column)
+        GMX_RELEASE_ASSERT(frame.pointSetCount() == 1,
+                           "Multiple point sets not supported by array data");
+        const AnalysisDataTestInputPointSet &points = frame.pointSet(0);
+        for (int column = 0; column < points.size(); ++column)
         {
-            data->setValue(row, column, points.y(column));
+            data->setValue(row, column + points.firstColumn(), points.y(column));
         }
     }
 }

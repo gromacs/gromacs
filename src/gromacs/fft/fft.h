@@ -15,11 +15,7 @@
  * And Hey:
  * Gnomes, ROck Monsters And Chili Sauce
  */
-
-#ifndef _GMX_FFT_H_
-#define _GMX_FFT_H_
-
-/*! \file gmx_fft.h
+/*! \file
  *  \brief Fast Fourier Transforms.
  *
  *  This file provides an abstract Gromacs interface to Fourier transforms,
@@ -32,13 +28,15 @@
  *  We also provide our own multi-dimensional transform setups even when
  *  the underlying library does not support it directly.
  *
+ * \ingroup module_fft
  */
+#ifndef GMX_FFT_FFT_H
+#define GMX_FFT_FFT_H
 
 #include <stdio.h>
 
-#include "types/simple.h"
-#include "gmxcomplex.h"
-
+#include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/gmxcomplex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -396,13 +394,18 @@ gmx_fft_transpose_2d   (t_complex *       in_data,
 /*! \brief Cleanup global data of FFT
  *
  *  Any plans are invalid after this function. Should be called
- *  after all plans have been destroyed.s
- * */
+ *  after all plans have been destroyed.
+ */
 void gmx_fft_cleanup();
 
+/*! \brief Return string describing the underlying FFT implementation.
+ *
+ * Used to print out information about the used FFT library where needed.
+ */
+const char *gmx_fft_get_version_info();
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _GMX_FFT_H_ */
+#endif

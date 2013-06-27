@@ -227,7 +227,7 @@ const char *const ExamplesHelpText::text[] = {
     "[PAR]",
 
     "All atoms farther than 1 nm of a fixed position:[BR]",
-    "  not within 1 of (1.2, 3.1, 2.4)",
+    "  not within 1 of [1.2, 3.1, 2.4]",
     "[PAR]",
 
     "All atoms of a residue LIG within 0.5 nm of a protein (with a custom name):[BR]",

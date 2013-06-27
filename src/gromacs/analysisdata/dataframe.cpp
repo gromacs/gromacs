@@ -101,21 +101,21 @@ AnalysisDataPointSetRef::AnalysisDataPointSetRef(
         return;
     }
     AnalysisDataValuesRef::const_iterator begin = points.values().begin();
-    int newFirstColumn = firstColumn - points.firstColumn();
-    if (newFirstColumn > 0)
+    int pointsOffset = firstColumn - points.firstColumn();
+    if (pointsOffset > 0)
     {
         // Offset pointer if the first column is not the first in points.
-        begin         += newFirstColumn;
-        newFirstColumn = 0;
+        begin += pointsOffset;
     }
     else
     {
         // Take into account if first column is before the first in points.
-        columnCount -= -newFirstColumn;
+        firstColumn_ = -pointsOffset;
+        columnCount -= -pointsOffset;
     }
     // Decrease column count if there are not enough columns in points.
     AnalysisDataValuesRef::const_iterator end = begin + columnCount;
-    if (newFirstColumn + columnCount > points.columnCount())
+    if (pointsOffset + columnCount > points.columnCount())
     {
         end = points.values().end();
     }

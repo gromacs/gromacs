@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -62,7 +62,9 @@ namespace test
  * AnalysisDataTestInputPointSet
  */
 
-AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet()
+AnalysisDataTestInputPointSet::AnalysisDataTestInputPointSet(
+        int index, int firstColumn)
+    : index_(index), firstColumn_(firstColumn)
 {
 }
 
@@ -76,54 +78,44 @@ AnalysisDataTestInputFrame::AnalysisDataTestInputFrame(int index, real x)
 {
 }
 
+AnalysisDataTestInputPointSet &
+AnalysisDataTestInputFrame::addPointSet(int firstColumn)
+{
+    pointSets_.push_back(AnalysisDataTestInputPointSet(pointSets_.size(), firstColumn));
+    return pointSets_.back();
+}
+
+void AnalysisDataTestInputFrame::addPointSetWithValues(int firstColumn, real y1)
+{
+    AnalysisDataTestInputPointSet &pointSet = addPointSet(firstColumn);
+    pointSet.addValue(y1);
+}
+
+void AnalysisDataTestInputFrame::addPointSetWithValues(int firstColumn, real y1,
+                                                       real y2)
+{
+    AnalysisDataTestInputPointSet &pointSet = addPointSet(firstColumn);
+    pointSet.addValue(y1);
+    pointSet.addValue(y2);
+}
+
+void AnalysisDataTestInputFrame::addPointSetWithValues(int firstColumn, real y1,
+                                                       real y2, real y3)
+{
+    AnalysisDataTestInputPointSet &pointSet = addPointSet(firstColumn);
+    pointSet.addValue(y1);
+    pointSet.addValue(y2);
+    pointSet.addValue(y3);
+}
+
 
 /********************************************************************
  * AnalysisDataTestInput
  */
 
-void AnalysisDataTestInput::initFromArray(const real *data, size_t count)
+AnalysisDataTestInput::AnalysisDataTestInput(int columnCount, bool bMultipoint)
+    : columnCount_(columnCount), bMultipoint_(bMultipoint)
 {
-    size_t columns = 0;
-
-    for (size_t i = 0; i < count; ++i)
-    {
-        if (data[i] == MPSTOP)
-        {
-            bMultipoint_ = true;
-            break;
-        }
-    }
-    for (size_t i = 0; i < count; )
-    {
-        frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), data[i]));
-        AnalysisDataTestInputFrame &frame = frames_.back();
-        GMX_RELEASE_ASSERT(data[i] != END_OF_FRAME && data[i] != MPSTOP,
-                           "Empty data frame");
-        while (data[i] != END_OF_FRAME)
-        {
-            ++i;
-            frame.points_.push_back(AnalysisDataTestInputPointSet());
-            AnalysisDataTestInputPointSet &points = frame.points_.back();
-            while (data[i] != MPSTOP && data[i] != END_OF_FRAME)
-            {
-                GMX_RELEASE_ASSERT(i < count,
-                                   "Premature end of data");
-                points.y_.push_back(data[i]);
-                ++i;
-            }
-            size_t frameColumns = points.y_.size();
-            GMX_RELEASE_ASSERT(frameColumns > 0U, "Empty data point set");
-            GMX_RELEASE_ASSERT(!(!bMultipoint_ && columns > 0U && columns != frameColumns),
-                               "Different frames have different number of columns");
-            if (columns < frameColumns)
-            {
-                columns = frameColumns;
-            }
-        }
-        ++i;
-    }
-    GMX_RELEASE_ASSERT(!frames_.empty(), "Empty data");
-    columnCount_ = columns;
 }
 
 
@@ -140,12 +132,45 @@ const AnalysisDataTestInputFrame &AnalysisDataTestInput::frame(int index) const
 }
 
 
+AnalysisDataTestInputFrame &AnalysisDataTestInput::addFrame(real x)
+{
+    frames_.push_back(AnalysisDataTestInputFrame(frames_.size(), x));
+    return frames_.back();
+}
+
+void AnalysisDataTestInput::addFrameWithValues(real x, real y1)
+{
+    AnalysisDataTestInputFrame &frame = addFrame(x);
+    frame.addPointSetWithValues(0, y1);
+}
+
+void AnalysisDataTestInput::addFrameWithValues(real x, real y1, real y2)
+{
+    AnalysisDataTestInputFrame &frame = addFrame(x);
+    frame.addPointSetWithValues(0, y1, y2);
+}
+
+void AnalysisDataTestInput::addFrameWithValues(real x, real y1, real y2, real y3)
+{
+    AnalysisDataTestInputFrame &frame = addFrame(x);
+    frame.addPointSetWithValues(0, y1, y2, y3);
+}
+
+
 /********************************************************************
  * AnalysisDataTest
  */
 
 AnalysisDataTestFixture::AnalysisDataTestFixture()
 {
+}
+
+
+void AnalysisDataTestFixture::setupDataObject(const AnalysisDataTestInput &input,
+                                              AnalysisData                *data)
+{
+    data->setColumnCount(input.columnCount());
+    data->setMultipoint(input.isMultipoint());
 }
 
 
@@ -170,10 +195,11 @@ void AnalysisDataTestFixture::presentDataFrame(const AnalysisDataTestInput &inpu
     handle.startFrame(row, frame.x(), frame.dx());
     for (int i = 0; i < frame.pointSetCount(); ++i)
     {
-        const AnalysisDataTestInputPointSet &points = frame.points(i);
+        const AnalysisDataTestInputPointSet &points = frame.pointSet(i);
         for (int j = 0; j < points.size(); ++j)
         {
-            handle.setPoint(j, points.y(j), points.dy(j), points.present(j));
+            handle.setPoint(j + points.firstColumn(),
+                            points.y(j), points.dy(j), points.present(j));
         }
         if (input.isMultipoint())
         {

@@ -19,16 +19,13 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_FFT_MKL
-
 #include <errno.h>
 #include <stdlib.h>
 
 #include <mkl_dfti.h>
 #include <mkl_service.h>
 
-
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 #include "gmx_fatal.h"
 
 
@@ -44,7 +41,8 @@
 #define GMX_DFTI_PREC  DFTI_SINGLE
 #endif
 
-/* Contents of the Intel MKL FFT fft datatype.
+/*! \internal \brief
+ * Contents of the Intel MKL FFT fft datatype.
  *
  * Note that this is one of several possible implementations of gmx_fft_t.
  *
@@ -76,9 +74,12 @@
  *  3D, ooplace real FFT: 0=FFTx, 1=FFTy, 2=r2c FFTz, 3=c2r FFTz
  *
  *  Intel people reading this: Learn from FFTW what a good interface looks like :-)
- *
  */
+#ifdef DOXYGEN
+struct gmx_fft_mkl
+#else
 struct gmx_fft
+#endif
 {
     int                ndim;          /**< Number of dimensions in FFT  */
     int                nx;            /**< Length of X transform        */
@@ -618,7 +619,7 @@ void gmx_fft_cleanup()
     mkl_free_buffers();
 }
 
-#else
-int
-    gmx_fft_mkl_empty;
-#endif /* GMX_FFT_MKL */
+const char *gmx_fft_get_version_info()
+{
+    return "Intel MKL";
+}

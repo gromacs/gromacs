@@ -184,8 +184,8 @@ MockAnalysisDataModule::Impl::checkReferencePoints(
     if (frameChecker_.get() != NULL)
     {
         TestReferenceChecker checker(
-                frameChecker_->checkSequenceCompound("Y",
-                                                     points.columnCount()));
+                frameChecker_->checkCompound("DataValues", NULL));
+        checker.checkInteger(points.columnCount(), "Count");
         bool bAllColumns = (points.firstColumn() == 0
                             && points.columnCount() == columnCount_);
         if (checker.checkPresent(!bAllColumns, "FirstColumn"))
@@ -247,10 +247,13 @@ void checkPoints(const AnalysisDataPointSetRef       &points,
 {
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        EXPECT_FLOAT_EQ(refPoints.y(points.firstColumn() + columnOffset + i),
+        const int column = points.firstColumn() - refPoints.firstColumn() + i + columnOffset;
+        EXPECT_FLOAT_EQ(refPoints.y(column),
                         points.y(i))
-        << "  Column: " << i << " (+" << points.firstColumn() << ") / "
-        << points.columnCount();
+        << "  Column: " << i+1 << " / " << points.columnCount()
+        << " (+" << points.firstColumn() << ")\n"
+        << "Ref. col: " << column+1 << " / " << refPoints.size()
+        << " (+" << refPoints.firstColumn() << ", offs " << columnOffset << ")";
     }
 }
 
@@ -264,7 +267,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
                 const AnalysisDataTestInputFrame &refFrame)
 {
     checkHeader(frame.header(), refFrame);
-    checkPoints(frame.points(), refFrame.points(), 0);
+    checkPoints(frame.points(), refFrame.pointSet(0), 0);
 }
 
 /*! \internal \brief
@@ -330,9 +333,14 @@ class StaticDataPointsChecker
         //! Function call operator for the functor.
         void operator()(const AnalysisDataPointSetRef &points) const
         {
-            SCOPED_TRACE(formatString("Frame %d", frame_->index()));
-            EXPECT_EQ(0, points.firstColumn());
-            EXPECT_EQ(n_, points.columnCount());
+            SCOPED_TRACE(formatString("Frame %d, point set %d",
+                                      frame_->index(), points_->index()));
+            const int expectedFirstColumn
+                = std::max(0, points_->firstColumn() - firstcol_);
+            const int expectedLastColumn
+                = std::min(n_ - 1, points_->lastColumn() - firstcol_);
+            EXPECT_EQ(expectedFirstColumn, points.firstColumn());
+            EXPECT_EQ(expectedLastColumn,  points.lastColumn());
             checkHeader(points.header(), *frame_);
             checkPoints(points, *points_, firstcol_);
         }
@@ -411,10 +419,12 @@ class StaticDataPointsStorageChecker
         void operator()(const AnalysisDataPointSetRef &points) const
         {
             SCOPED_TRACE(formatString("Frame %d", frameIndex_));
-            EXPECT_EQ(0, points.firstColumn());
+            const AnalysisDataTestInputFrame    &refFrame  = data_->frame(frameIndex_);
+            const AnalysisDataTestInputPointSet &refPoints = refFrame.pointSet(0);
+            EXPECT_EQ(refPoints.firstColumn(), points.firstColumn());
             EXPECT_EQ(data_->columnCount(), points.columnCount());
-            checkHeader(points.header(), data_->frame(frameIndex_));
-            checkPoints(points, data_->frame(frameIndex_).points(), 0);
+            checkHeader(points.header(), refFrame);
+            checkPoints(points, refPoints, 0);
             for (int past = 1;
                  (storageCount_ < 0 || past <= storageCount_) && past <= frameIndex_;
                  ++past)
@@ -476,10 +486,10 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
-            const AnalysisDataTestInputPointSet &points = frame.points(ps);
+            const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
             EXPECT_CALL(*this, pointsAdded(_))
                 .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, 0,
-                                                         points.size())));
+                                                         data.columnCount())));
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
@@ -511,9 +521,13 @@ MockAnalysisDataModule::setupStaticColumnCheck(
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));
         for (int ps = 0; ps < frame.pointSetCount(); ++ps)
         {
-            const AnalysisDataTestInputPointSet &points = frame.points(ps);
-            EXPECT_CALL(*this, pointsAdded(_))
-                .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
+            const AnalysisDataTestInputPointSet &points = frame.pointSet(ps);
+            if (points.lastColumn() >= firstcol
+                && points.firstColumn() <= firstcol + n - 1)
+            {
+                EXPECT_CALL(*this, pointsAdded(_))
+                    .WillOnce(Invoke(StaticDataPointsChecker(&frame, &points, firstcol, n)));
+            }
         }
         EXPECT_CALL(*this, frameFinished(_))
             .WillOnce(Invoke(StaticDataFrameHeaderChecker(&frame)));

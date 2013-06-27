@@ -32,108 +32,37 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include "copyrite.h"
+
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
-#ifdef GMX_THREAD_MPI
-#include <thread_mpi.h>
-#endif
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
 
 #ifdef HAVE_LIBMKL
 #include <mkl.h>
 #endif
-#ifdef GMX_FFT_FFTW3
-#include <fftw3.h>
-#endif
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include <string.h>
-#include <ctype.h>
-#include "sysstuff.h"
-#include "smalloc.h"
-#include "string2.h"
-#include "macros.h"
-#include <time.h>
-#include "random.h"
-#include "statutil.h"
-#include "copyrite.h"
-#include "strdb.h"
-#include "futil.h"
-#include "vec.h"
+#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/random.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/strdb.h"
+#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/legacyheaders/vec.h"
+
+#include "gromacs/fft/fft.h"
+
 #include "buildinfo.h"
-#include "gmx_cpuid.h"
 
-static void pr_two(FILE *out, int c, int i)
-{
-    if (i < 10)
-    {
-        fprintf(out, "%c0%1d", c, i);
-    }
-    else
-    {
-        fprintf(out, "%c%2d", c, i);
-    }
-}
-
-void pr_difftime(FILE *out, double dt)
-{
-    int        ndays, nhours, nmins, nsecs;
-    gmx_bool   bPrint, bPrinted;
-
-    ndays    = dt/(24*3600);
-    dt       = dt-24*3600*ndays;
-    nhours   = dt/3600;
-    dt       = dt-3600*nhours;
-    nmins    = dt/60;
-    dt       = dt-nmins*60;
-    nsecs    = dt;
-    bPrint   = (ndays > 0);
-    bPrinted = bPrint;
-    if (bPrint)
-    {
-        fprintf(out, "%d", ndays);
-    }
-    bPrint = bPrint || (nhours > 0);
-    if (bPrint)
-    {
-        if (bPrinted)
-        {
-            pr_two(out, 'd', nhours);
-        }
-        else
-        {
-            fprintf(out, "%d", nhours);
-        }
-    }
-    bPrinted = bPrinted || bPrint;
-    bPrint   = bPrint || (nmins > 0);
-    if (bPrint)
-    {
-        if (bPrinted)
-        {
-            pr_two(out, 'h', nmins);
-        }
-        else
-        {
-            fprintf(out, "%d", nmins);
-        }
-    }
-    bPrinted = bPrinted || bPrint;
-    if (bPrinted)
-    {
-        pr_two(out, ':', nsecs);
-    }
-    else
-    {
-        fprintf(out, "%ds", nsecs);
-    }
-    fprintf(out, "\n");
-}
-
-
-gmx_bool be_cool(void)
+static gmx_bool be_cool(void)
 {
     /* Yes, it is bad to check the environment variable every call,
      * but we dont call this routine often, and it avoids using
@@ -147,7 +76,7 @@ gmx_bool be_cool(void)
 #endif
 }
 
-void space(FILE *out, int n)
+static void space(FILE *out, int n)
 {
     fprintf(out, "%*s", n, "");
 }
@@ -489,7 +418,7 @@ void please_cite(FILE *fp, const char *key)
           "A. Bondi",
           "van der Waals Volumes and Radii",
           "J. Phys. Chem.",
-          68, 1964,"441-451" },
+          68, 1964, "441-451" },
         { "Eisenhaber95",
           "Frank Eisenhaber and Philip Lijnzaad and Patrick Argos and Chris Sander and Michael Scharf",
           "The Double Cube Lattice Method: Efficient Approaches to Numerical Integration of Surface Area and Volume and to Dot Surface Contouring of Molecular Assemblies",
@@ -734,21 +663,7 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "invsqrt routine:    %s\n", gmx_stringify(gmx_invsqrt(x)));
     fprintf(fp, "CPU acceleration:   %s\n", GMX_CPU_ACCELERATION_STRING);
 
-    /* TODO: Would be nicer to wrap this in a gmx_fft_version() call, but
-     * since that is currently in mdlib, can wait for master. */
-#ifdef GMX_FFT_FFTPACK
-    fprintf(fp, "FFT library:        fftpack (built-in)\n");
-#elif defined(GMX_FFT_FFTW3) && defined(GMX_NATIVE_WINDOWS)
-    fprintf(fp, "FFT library:        %s\n", "fftw3");
-#elif defined(GMX_FFT_FFTW3) && defined(GMX_DOUBLE)
-    fprintf(fp, "FFT library:        %s\n", fftw_version);
-#elif defined(GMX_FFT_FFTW3)
-    fprintf(fp, "FFT library:        %s\n", fftwf_version);
-#elif defined(GMX_FFT_MKL)
-    fprintf(fp, "FFT library:        MKL\n");
-#else
-    fprintf(fp, "FFT library:        unknown\n");
-#endif
+    fprintf(fp, "FFT library:        %s\n", gmx_fft_get_version_info());
 #ifdef GMX_LARGEFILES
     fprintf(fp, "Large file support: enabled\n");
 #else
@@ -773,11 +688,8 @@ void gmx_print_version_info(FILE *fp)
     fprintf(fp, "Build CPU features: %s\n", BUILD_CPU_FEATURES);
     fprintf(fp, "C compiler:         %s\n", BUILD_C_COMPILER);
     fprintf(fp, "C compiler flags:   %s\n", BUILD_CFLAGS);
-    if (BUILD_CXX_COMPILER[0] != '\0')
-    {
-        fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
-        fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
-    }
+    fprintf(fp, "C++ compiler:       %s\n", BUILD_CXX_COMPILER);
+    fprintf(fp, "C++ compiler flags: %s\n", BUILD_CXXFLAGS);
 #ifdef HAVE_LIBMKL
     /* MKL might be used for LAPACK/BLAS even if FFTs use FFTW, so keep it separate */
     fprintf(fp, "Linked with Intel MKL version %d.%d.%d.\n",
