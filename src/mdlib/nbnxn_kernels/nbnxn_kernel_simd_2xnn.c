@@ -54,6 +54,7 @@
 /* Include the full width SIMD macros */
 #include "gmx_simd_macros.h"
 #include "gmx_simd_vec.h"
+#include "nbnxn_kernel_exclusion_utils.h"
 
 #include "nbnxn_kernel_simd_2xnn.h"
 
@@ -61,6 +62,18 @@
 #error "unsupported SIMD width"
 #endif
 
+static inline void
+gmx_load_simd_2xnn_interactions(int excl,
+                              gmx_exclfilter filter_S0,
+                              gmx_exclfilter filter_S2,
+                              gmx_mm_pb *interact_S0,
+                              gmx_mm_pb *interact_S2)
+{
+    /* Load integer topology exclusion interaction mask */
+    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
+    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
+}
 
 /* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 

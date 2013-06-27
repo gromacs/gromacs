@@ -234,12 +234,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
     gmx_mm_pb  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
-    unsigned   *excl_filter;
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    gmx_epi32  filter_S0, filter_S1, filter_S2, filter_S3;
-#else
-    gmx_mm_pr  filter_S0, filter_S1, filter_S2, filter_S3;
-#endif
+    unsigned   *exclusion_filter;
+    gmx_exclfilter filter_S0, filter_S1, filter_S2, filter_S3;
 
     gmx_mm_pr  zero_S = gmx_set1_pr(0);
 
@@ -392,36 +388,19 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #endif
 
     /* Load masks for topology exclusion masking */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-#define FILTER_STRIDE  (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#else
-#ifdef GMX_DOUBLE
-#define FILTER_STRIDE  2
-#else
-#define FILTER_STRIDE  1
-#endif
-#endif
 #if FILTER_STRIDE == 1
-    excl_filter = nbat->simd_exclusion_filter1;
+    exclusion_filter = nbat->simd_exclusion_filter1;
 #else
-    excl_filter = nbat->simd_exclusion_filter2;
+    exclusion_filter = nbat->simd_exclusion_filter2;
 #endif
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both filter and mask data are treated the same way.
      */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    filter_S0 = gmx_load_si((int *)excl_filter + 0*UNROLLJ*FILTER_STRIDE);
-    filter_S1 = gmx_load_si((int *)excl_filter + 1*UNROLLJ*FILTER_STRIDE);
-    filter_S2 = gmx_load_si((int *)excl_filter + 2*UNROLLJ*FILTER_STRIDE);
-    filter_S3 = gmx_load_si((int *)excl_filter + 3*UNROLLJ*FILTER_STRIDE);
-#else
-    filter_S0 = gmx_load_pr((real *)excl_filter + 0*UNROLLJ);
-    filter_S1 = gmx_load_pr((real *)excl_filter + 1*UNROLLJ);
-    filter_S2 = gmx_load_pr((real *)excl_filter + 2*UNROLLJ);
-    filter_S3 = gmx_load_pr((real *)excl_filter + 3*UNROLLJ);
-#endif
-#undef FILTER_STRIDE
+    filter_S0    = gmx_load_exclusion_filter(exclusion_filter + 0*UNROLLJ*FILTER_STRIDE);
+    filter_S1    = gmx_load_exclusion_filter(exclusion_filter + 1*UNROLLJ*FILTER_STRIDE);
+    filter_S2    = gmx_load_exclusion_filter(exclusion_filter + 2*UNROLLJ*FILTER_STRIDE);
+    filter_S3    = gmx_load_exclusion_filter(exclusion_filter + 3*UNROLLJ*FILTER_STRIDE);
 
 #ifdef CALC_COUL_TAB
 #ifdef STORE_TABLE_INDICES
