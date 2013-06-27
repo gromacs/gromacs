@@ -56,6 +56,7 @@
 #endif
 #include "gmx_simd_macros.h"
 #include "gmx_simd_vec.h"
+#include "nbnxn_kernel_exclusion_utils.h"
 
 #include "nbnxn_kernel_simd_4xn.h"
 
@@ -63,6 +64,24 @@
 #error "unsupported SIMD width"
 #endif
 
+static inline void
+gmx_load_simd_4xn_interactions(int excl,
+                             gmx_exclfilter filter_S0,
+                             gmx_exclfilter filter_S1,
+                             gmx_exclfilter filter_S2,
+                             gmx_exclfilter filter_S3,
+                             gmx_mm_pb *interact_S0,
+                             gmx_mm_pb *interact_S1,
+                             gmx_mm_pb *interact_S2,
+                             gmx_mm_pb *interact_S3)
+{
+    /* Load integer interaction mask */
+    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
+    *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
+    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
+    *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
+}
 
 /* Include all flavors of the SSE or AVX 4xN kernel loops */
 
