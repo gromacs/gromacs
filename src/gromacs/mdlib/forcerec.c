@@ -1861,7 +1861,7 @@ void init_interaction_const(FILE                 *fp,
 
     if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
-        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
+        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv->grp);
     }
 
     bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
@@ -2211,6 +2211,25 @@ void init_forcerec(FILE              *fp,
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
+    /* All-vs-all kernels have not been implemented in 4.6, and
+     * the SIMD group kernels are also buggy in this case. Non-accelerated
+     * group kernels are OK. See Redmine #1249. */
+    if (fr->bAllvsAll)
+    {
+        fr->bAllvsAll = FALSE;
+        fr->use_cpu_acceleration = FALSE;
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "\nYour simulation settings would have triggered the efficient all-vs-all\n"
+                    "kernels in GROMACS 4.5, but these have not been implemented in GROMACS\n"
+                    "4.6. Also, we can't use the accelerated SIMD kernels here because\n"
+                    "of an unfixed bug. The reference C kernels are correct, though, so\n"
+                    "we are proceeding by disabling all CPU architecture-specific\n"
+                    "(e.g. SSE2/SSE4/AVX) routines. If performance is important, please\n"
+                    "use GROMACS 4.5.7 or try cutoff-scheme = Verlet.\n\n");
+        }
+    }
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;

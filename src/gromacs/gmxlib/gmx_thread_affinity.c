@@ -40,6 +40,8 @@
 #include <sched.h>
 #include <sys/syscall.h>
 #endif
+#include <string.h>
+#include <errno.h>
 #include <assert.h>
 #include <stdio.h>
 #include "typedefs.h"
@@ -68,6 +70,7 @@ get_thread_affinity_layout(FILE *fplog,
     const int * pkg_id;
     const int * core_id;
     const int * hwthread_id;
+    gmx_bool    bPickPinStride;
 
     if (pin_offset < 0)
     {
@@ -84,6 +87,7 @@ get_thread_affinity_layout(FILE *fplog,
 
     if (rc != 0)
     {
+        /* topology information not available or invalid, ignore it */
         nhwthreads      = hwinfo->nthreads_hw_avail;
         *locality_order = NULL;
 
@@ -91,23 +95,36 @@ get_thread_affinity_layout(FILE *fplog,
         {
             /* We don't know anything about the hardware, don't pin */
             md_print_warn(cr, fplog,
-                          "We don't know how many logical cores we have, will not pin threads");
+                          "NOTE: We don't know how many logical cores we have, will not pin threads");
 
             return -1;
         }
+    }
+
+    if (nthreads > nhwthreads)
+    {
+        /* We are oversubscribing, don't pin */
+        md_print_warn(NULL, fplog,
+                      "WARNING: Oversubscribing the CPU, will not pin threads");
+
+        return -1;
     }
 
     if (pin_offset + nthreads > nhwthreads)
     {
         /* We are oversubscribing, don't pin */
         md_print_warn(NULL, fplog,
-                      "More threads requested than available logical cores, will not pin threads");
+                      "WARNING: The requested pin offset is too large for the available logical cores,\n"
+                      "         will not pin threads");
 
         return -1;
     }
 
-    /* Check if we need to choose the pinning stride */
-    if (*pin_stride == 0)
+
+    /* do we need to choose the pinning stride? */
+    bPickPinStride = (*pin_stride == 0);
+
+    if (bPickPinStride)
     {
         if (rc == 0 && pin_offset + nthreads*nhwthreads_per_core <= nhwthreads)
         {
@@ -127,23 +144,27 @@ get_thread_affinity_layout(FILE *fplog,
              */
             *pin_stride = (nhwthreads - pin_offset)/nthreads;
         }
-
-        if (fplog != NULL)
-        {
-            fprintf(fplog, "Pinning threads with a logical core stride of %d\n",
-                    *pin_stride);
-        }
     }
     else
     {
-        if (pin_offset + nthreads*(*pin_stride) > nhwthreads)
+        /* Check the placement of the thread with the largest index to make sure
+         * that the offset & stride doesn't cause pinning beyond the last hardware thread. */
+        if (pin_offset + (nthreads-1)*(*pin_stride) >= nhwthreads)
         {
             /* We are oversubscribing, don't pin */
             md_print_warn(NULL, fplog,
-                          "The requested pinning stride is too large for the available logical cores, will not pin threads");
+                          "WARNING: The requested pinning stride is too large for the available logical cores,\n"
+                          "         will not pin threads");
 
             return -1;
         }
+    }
+
+    if (fplog != NULL)
+    {
+        fprintf(fplog, "Pinning threads with a%s logical core stride of %d\n",
+                bPickPinStride ? "n auto-selected" : " user-specified",
+                *pin_stride);
     }
 
     return 0;
@@ -169,8 +190,15 @@ gmx_set_thread_affinity(FILE                *fplog,
     int        nth_affinity_set, thread_id_node, thread_id,
                nthread_local, nthread_node, nthread_hw_max, nphyscore;
     int        offset;
-    const int *locality_order;
-    int        rc;
+    /* these are inherently global properties that are shared among all threads
+     */
+    static const int          *locality_order;
+    static int                 rc;
+    static gmx_bool            have_locality_order = FALSE;
+    static tMPI_Thread_mutex_t locality_order_mtx  =
+        TMPI_THREAD_MUTEX_INITIALIZER;
+    static tMPI_Thread_cond_t  locality_order_cond =
+        TMPI_THREAD_COND_INITIALIZER;
 
     if (hw_opt->thread_affinity == threadaffOFF)
     {
@@ -246,10 +274,66 @@ gmx_set_thread_affinity(FILE                *fplog,
         md_print_info(cr, fplog, "Applying core pinning offset %d\n", offset);
     }
 
-    rc = get_thread_affinity_layout(fplog, cr, hwinfo,
-                                    nthread_node,
-                                    offset, &hw_opt->core_pinning_stride,
-                                    &locality_order);
+    /* hw_opt is shared among tMPI threads, so for thread safety we need to do
+     * the layout detection only on master as core_pinning_stride is an in-out
+     * parameter and gets auto-set depending on its initial value.
+     * This
+     * This is not thread-safe with multi-simulations, but that's anyway not
+     * supported by tMPI. */
+    if (SIMMASTER(cr))
+    {
+        int ret;
+        int i;
+
+        ret = tMPI_Thread_mutex_lock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+        rc = get_thread_affinity_layout(fplog, cr, hwinfo,
+                                        nthread_node,
+                                        offset, &hw_opt->core_pinning_stride,
+                                        &locality_order);
+        have_locality_order = TRUE;
+        ret                 = tMPI_Thread_cond_broadcast(&locality_order_cond);
+        if (ret != 0)
+        {
+            tMPI_Thread_mutex_unlock(&locality_order_mtx);
+            goto locality_order_err;
+        }
+        ret = tMPI_Thread_mutex_unlock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+    }
+    else
+    {
+        int ret;
+        /* all other threads wait for the locality order data. */
+        ret = tMPI_Thread_mutex_lock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+
+        while (!have_locality_order)
+        {
+            ret = tMPI_Thread_cond_wait(&locality_order_cond,
+                                        &locality_order_mtx);
+            if (ret != 0)
+            {
+                tMPI_Thread_mutex_unlock(&locality_order_mtx);
+                goto locality_order_err;
+            }
+        }
+        ret = tMPI_Thread_mutex_unlock(&locality_order_mtx);
+        if (ret != 0)
+        {
+            goto locality_order_err;
+        }
+    }
+
     if (rc != 0)
     {
         /* Incompatible layout, don't pin, warning was already issued */
@@ -310,27 +394,42 @@ gmx_set_thread_affinity(FILE                *fplog,
 
             /* sbuf1 contains rank info, while sbuf2 OpenMP thread info */
             sbuf1[0] = sbuf2[0] = '\0';
+            /* Only add rank info if we have more than one rank. */
+            if (cr->nnodes > 1)
+            {
 #ifdef GMX_MPI
 #ifdef GMX_THREAD_MPI
-            sprintf(sbuf1, "In thread-MPI thread #%d: ", cr->nodeid);
-#else       /* GMX_LIB_MPI */
-            sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
+                sprintf(sbuf1, "In tMPI thread #%d: ", cr->nodeid);
+#else           /* GMX_LIB_MPI */
+                sprintf(sbuf1, "In MPI process #%d: ", cr->nodeid);
 #endif
-#endif      /* GMX_MPI */
+#endif          /* GMX_MPI */
+            }
 
             if (nthread_local > 1)
             {
-                sprintf(sbuf2, "of %d/%d thread%s ",
+                sprintf(sbuf2, "for %d/%d thread%s ",
                         nthread_local - nth_affinity_set, nthread_local,
-                        (nthread_local - nth_affinity_set) > 1 ? "s" : "");
+                        nthread_local > 1 ? "s" : "");
             }
 
             md_print_warn(NULL, fplog,
-                          "NOTE: %sAffinity setting %sfailed.\n"
-                          "      This can cause performance degradation!",
+                          "WARNING: %sAffinity setting %sfailed.\n"
+                          "         This can cause performance degradation! If you think your setting are\n"
+                          "         correct, contact the GROMACS developers.",
                           sbuf1, sbuf2);
         }
     }
+    return;
+
+locality_order_err:
+    /* any error in affinity setting shouldn't be fatal, but should generate
+       a warning */
+    md_print_warn(NULL, fplog,
+                  "WARNING: Obtaining affinity information failed due to a basic system error: %s.\n"
+                  "         This can cause performance degradation! ",
+                  strerror(errno));
+    return;
 }
 
 /* Check the process affinity mask and if it is found to be non-zero,
