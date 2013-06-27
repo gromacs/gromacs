@@ -283,31 +283,7 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    {
-        /* Load integer topology exclusion interaction mask */
-        gmx_epi32 mask_pr_S = gmx_set1_epi32(l_cj[cjind].excl);
-
-        interact_S0  = gmx_checkbitmask_epi32(mask_pr_S, filter_S0);
-        interact_S1  = gmx_checkbitmask_epi32(mask_pr_S, filter_S1);
-        interact_S2  = gmx_checkbitmask_epi32(mask_pr_S, filter_S2);
-        interact_S3  = gmx_checkbitmask_epi32(mask_pr_S, filter_S3);
-    }
-#else
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_PR
-    {
-        /* Integer mask set, cast to real and real mask operations */
-        gmx_mm_pr mask_pr_S = gmx_castsi_pr(gmx_set1_epi32(l_cj[cjind].excl));
-
-        interact_S0  = gmx_checkbitmask_pr(mask_pr_S, filter_S0);
-        interact_S1  = gmx_checkbitmask_pr(mask_pr_S, filter_S1);
-        interact_S2  = gmx_checkbitmask_pr(mask_pr_S, filter_S2);
-        interact_S3  = gmx_checkbitmask_pr(mask_pr_S, filter_S3);
-    }
-#else
-#error "No SIMD bitmask operation available"
-#endif
-#endif
+    gmx_load_simd_4xn_interactions(l_cj[cjind].excl, filter_S0, filter_S1, filter_S2, filter_S3, &interact_S0, &interact_S1, &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -387,7 +363,7 @@
 #endif
 #endif
 #else /* EXCL_FORCES */
-    /* No exclusion forces: remove all excluded atom pairs from the list */
+      /* No exclusion forces: remove all excluded atom pairs from the list */
     wco_S0      = gmx_and_pb(wco_S0, interact_S0);
     wco_S1      = gmx_and_pb(wco_S1, interact_S1);
     wco_S2      = gmx_and_pb(wco_S2, interact_S2);
