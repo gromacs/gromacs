@@ -37,14 +37,9 @@
 #ifndef _nbnxn_kernel_simd_utils_ref_h_
 #define _nbnxn_kernel_simd_utils_ref_h_
 
-/* This files contains all functions/macros for the SIMD kernels
- * which have explicit dependencies on the j-cluster size and/or SIMD-width.
- * The functionality which depends on the j-cluster size is:
- *   LJ-parameter lookup
- *   force table lookup
- *   energy group pair energy storage
- */
-
+typedef gmx_simd_ref_epi32            gmx_simd_ref_exclfilter;
+#define gmx_exclfilter                gmx_simd_ref_exclfilter
+static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
 
 #if GMX_SIMD_WIDTH_HERE > 4
 /* The 4xn kernel operates on 4-wide i-force registers */
@@ -395,7 +390,6 @@ gmx_mm_invsqrt2_pd(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
 }
 #endif
 
-#ifdef NBFP_STRIDE
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
                     gmx_simd_ref_pr *c6_S, gmx_simd_ref_pr *c12_S)
@@ -404,8 +398,8 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 
     for (i = 0; i < GMX_SIMD_WIDTH_HERE; i++)
     {
-        c6_S->r[i]  = nbfp[type[aj+i]*NBFP_STRIDE];
-        c12_S->r[i] = nbfp[type[aj+i]*NBFP_STRIDE+1];
+        c6_S->r[i]  = nbfp[type[aj+i]*nbfp_stride];
+        c12_S->r[i] = nbfp[type[aj+i]*nbfp_stride+1];
     }
 }
 
@@ -419,13 +413,73 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
 
     for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
     {
-        c6_S->r[i]                          = nbfp0[type[aj+i]*NBFP_STRIDE];
-        c6_S->r[GMX_SIMD_WIDTH_HERE/2 + i]  = nbfp1[type[aj+i]*NBFP_STRIDE];
-        c12_S->r[i]                         = nbfp0[type[aj+i]*NBFP_STRIDE+1];
-        c12_S->r[GMX_SIMD_WIDTH_HERE/2 + i] = nbfp1[type[aj+i]*NBFP_STRIDE+1];
+        c6_S->r[i]                          = nbfp0[type[aj+i]*nbfp_stride];
+        c6_S->r[GMX_SIMD_WIDTH_HERE/2 + i]  = nbfp1[type[aj+i]*nbfp_stride];
+        c12_S->r[i]                         = nbfp0[type[aj+i]*nbfp_stride+1];
+        c12_S->r[GMX_SIMD_WIDTH_HERE/2 + i] = nbfp1[type[aj+i]*nbfp_stride+1];
     }
 }
 #endif
-#endif
+
+/* Code for handling loading exclusions and converting them into
+   interactions. The x86 code might use either integer- or real-type
+   SIMD, but the reference code does not need to know. */
+
+#define gmx_load1_exclfilter(e)       gmx_simd_ref_load1_exclfilter(e)
+#define gmx_load_exclusion_filter(e)  gmx_simd_ref_load_exclusion_filter((int *) e)
+#define gmx_checkbitmask_pb(m0, m1)   gmx_simd_ref_checkbitmask_pb(m0, m1)
+
+static gmx_inline gmx_simd_ref_exclfilter
+gmx_simd_ref_load1_exclfilter(int src)
+{
+    gmx_simd_ref_exclfilter a;
+    int                     i;
+
+    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
+    {
+        a.r[i] = src;
+    }
+
+    return a;
+}
+
+static gmx_inline gmx_simd_ref_exclfilter
+gmx_simd_ref_load_exclusion_filter(const unsigned *src)
+{
+    gmx_simd_ref_exclfilter a;
+    int                     i;
+
+    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
+    {
+        a.r[i] = src[i];
+    }
+
+    return a;
+}
+
+/* For topology exclusion-pair checking we need: ((a & b) ? True :
+ * False). The x86 implementations use hardware-suitable integer-
+ * and/or real-valued SIMD operations and a bit-wise "and" to do
+ * this. The reference implementation normally uses logical operations
+ * for logic, but in this case the i- and j-atom exclusion masks
+ * computed during searching expect to be combined with bit-wise
+ * "and".
+ *
+ * If the same bit is set in both input masks, return TRUE, else
+ * FALSE. This function is only called with a single bit set in b.
+ */
+static gmx_inline gmx_simd_ref_pb
+gmx_simd_ref_checkbitmask_pb(gmx_simd_ref_exclfilter a, gmx_simd_ref_exclfilter b)
+{
+    gmx_simd_ref_pb c;
+    int             i;
+
+    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
+    {
+        c.r[i] = ((a.r[i] & b.r[i]) != 0);
+    }
+
+    return c;
+}
 
 #endif /* _nbnxn_kernel_simd_utils_ref_h_ */

@@ -63,6 +63,53 @@
 #error "unsupported SIMD width"
 #endif
 
+#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    GMX_SIMD_WIDTH_HERE
+
+/* The stride of all the atom data arrays is max(UNROLLI,UNROLLJ) */
+#if GMX_SIMD_WIDTH_HERE >= UNROLLI
+#define STRIDE     GMX_SIMD_WIDTH_HERE
+#else
+#define STRIDE     UNROLLI
+#endif
+
+#if GMX_SIMD_WIDTH_HERE == 2
+#define SUM_SIMD(x)  (x[0]+x[1])
+#else
+#if GMX_SIMD_WIDTH_HERE == 4
+#define SUM_SIMD(x)  SUM_SIMD4(x)
+#else
+#if GMX_SIMD_WIDTH_HERE == 8
+#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif
+#endif
+
+
+#include "nbnxn_kernel_simd_utils.h"
+
+static inline void
+gmx_load_simd_4xn_interactions(int            excl,
+                               gmx_exclfilter filter_S0,
+                               gmx_exclfilter filter_S1,
+                               gmx_exclfilter filter_S2,
+                               gmx_exclfilter filter_S3,
+                               gmx_mm_pb     *interact_S0,
+                               gmx_mm_pb     *interact_S1,
+                               gmx_mm_pb     *interact_S2,
+                               gmx_mm_pb     *interact_S3)
+{
+    /* Load integer interaction mask */
+    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
+    *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
+    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
+    *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
+}
 
 /* Include all flavors of the SSE or AVX 4xN kernel loops */
 
