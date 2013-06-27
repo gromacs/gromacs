@@ -297,7 +297,7 @@ void gmx_poldata_add_ptype(gmx_poldata_t pd,
     int       i,j;
   
     for(i=0; (i<pd->nptype); i++) 
-        if (strcasecmp(pd->ptype[i].type,ptype) == 0)
+        if (strcmp(pd->ptype[i].type,ptype) == 0)
             break;
     if (i == pd->nptype) {
         pd->nptype++;
@@ -321,7 +321,7 @@ static void gmx_poldata_add_btype(gmx_poldata_t pd,
     
     for(i=0; (i<pd->nbtype); i++)
     {
-        if (strcasecmp(btype,pd->btype[i]) == 0)
+        if (strcmp(btype,pd->btype[i]) == 0)
         {
             break;
         }
@@ -347,7 +347,7 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
     int     i,j;
   
     for(i=0; (i<pd->nalexandria); i++) 
-        if (strcasecmp(pd->alexandria[i].type,atype) == 0)
+        if (strcmp(pd->alexandria[i].type,atype) == 0)
             break;
     if (i == pd->nalexandria) {
         pd->nalexandria++;
@@ -377,11 +377,11 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
     int     i,j;
   
     for(j=0; (j<pd->nalexandria); j++) 
-        if (strcasecmp(pd->alexandria[j].type,atype) == 0)
+        if (strcmp(pd->alexandria[j].type,atype) == 0)
             break;
     if (j < pd->nalexandria) {
         for(i=0; (i<pd->nbrule); i++) 
-            if (strcasecmp(pd->brule[i].rule,gt_brule) == 0)
+            if (strcmp(pd->brule[i].rule,gt_brule) == 0)
                 break;
         if (i == pd->nbrule) {
             pd->nbrule++;
@@ -538,7 +538,7 @@ void gmx_poldata_set_ptype_polarizability(gmx_poldata_t pd,const char *ptype,
     int i;
   
     for(i=0; (i<pd->nptype); i++) {
-        if (strcasecmp(ptype,pd->ptype[i].type) == 0) {
+        if (strcmp(ptype,pd->ptype[i].type) == 0) {
             sp = &(pd->ptype[i]);
             sp->polarizability = polarizability;
             sp->sig_pol = sig_pol;
@@ -605,7 +605,7 @@ char *gmx_poldata_get_geometry(gmx_poldata_t pd,char *gt_brule)
   
     if (gt_brule)
         for(i=0; (i<pd->nbrule); i++) 
-            if (strcasecmp(pd->brule[i].rule,gt_brule) == 0) 
+            if (strcmp(pd->brule[i].rule,gt_brule) == 0) 
                 return pd->brule[i].geometry;
       
     return NULL;
@@ -617,7 +617,7 @@ char *gmx_poldata_get_desc(gmx_poldata_t pd,char *atype)
   
     if (atype)
         for(i=0; (i<pd->nalexandria); i++) 
-            if (strcasecmp(pd->alexandria[i].type,atype) == 0) 
+            if (strcmp(pd->alexandria[i].type,atype) == 0) 
                 return pd->alexandria[i].desc;
       
     return NULL;
@@ -629,7 +629,7 @@ char *gmx_poldata_get_type(gmx_poldata_t pd,char *gt_brule)
   
     if (gt_brule)
         for(i=0; (i<pd->nbrule); i++) 
-            if (strcasecmp(pd->brule[i].rule,gt_brule) == 0) 
+            if (strcmp(pd->brule[i].rule,gt_brule) == 0) 
                 return pd->brule[i].type;
   
     return NULL;
@@ -687,7 +687,7 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd,char *elem,
     for(i=0; (i<pd->nbrule); i++) 
     {
         nnb = count_neighbors(&(pd->brule[i]),nbond,neighbors,&score);
-        if ((strcasecmp(pd->brule[i].elem,elem) == 0) &&
+        if ((strcmp(pd->brule[i].elem,elem) == 0) &&
             (strcasecmp(pd->brule[i].geometry,geometry) == 0) &&
             (nbond == pd->brule[i].numbonds) &&
             ((iAromatic >= 0 && (iAromatic == pd->brule[i].iAromatic)) ||
@@ -736,7 +736,7 @@ int gmx_poldata_get_ptype_pol(gmx_poldata_t pd,const char *ptype,
 
     for(j=0; (j<pd->nptype); j++)
     {
-        if (strcasecmp(ptype,pd->ptype[j].type) == 0)
+        if (strcmp(ptype,pd->ptype[j].type) == 0)
         {
             *polar   = pd->ptype[j].polarizability;
             *sig_pol = pd->ptype[j].sig_pol;
@@ -753,7 +753,7 @@ int gmx_poldata_get_atype_pol(gmx_poldata_t pd,const char *atype,
 
     for(i=0; (i<pd->nalexandria); i++) 
     {
-        if (strcasecmp(atype,pd->alexandria[i].type) == 0)
+        if (strcmp(atype,pd->alexandria[i].type) == 0)
         {
             return gmx_poldata_get_ptype_pol(pd,pd->alexandria[i].ptype,polar,sig_pol);
         }
@@ -766,7 +766,7 @@ char *gmx_poldata_ptype_to_miller(gmx_poldata_t pd,const char *ptype)
     int i;
 
     for(i=0; (i<pd->nptype); i++) 
-        if (strcasecmp(ptype,pd->ptype[i].type) == 0) 
+        if (strcmp(ptype,pd->ptype[i].type) == 0) 
             return pd->ptype[i].miller;
     return NULL;
 }
@@ -776,7 +776,7 @@ char *gmx_poldata_ptype_to_bosque(gmx_poldata_t pd,const char *ptype)
     int i;
 
     for(i=0; (i<pd->nptype); i++) 
-        if (strcasecmp(ptype,pd->ptype[i].type) == 0) 
+        if (strcmp(ptype,pd->ptype[i].type) == 0) 
             return pd->ptype[i].bosque;
     return NULL;
 }
@@ -855,7 +855,7 @@ const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd,const char *atype)
     
     for(i=0; (i<pd->nalexandria); i++) 
     {
-        if (strcasecmp(pd->alexandria[i].type,atype) == 0)
+        if (strcmp(pd->alexandria[i].type,atype) == 0)
         {
             return pd->alexandria[i].btype;
         }
@@ -877,7 +877,7 @@ int gmx_poldata_search_atype(gmx_poldata_t pd,
     int i;
   
     for(i=0; (i<pd->nalexandria); i++) 
-        if (strcasecmp(key,pd->alexandria[i].type) == 0) 
+        if (strcmp(key,pd->alexandria[i].type) == 0) 
             break;
       
     if (i<pd->nalexandria) {
@@ -922,18 +922,18 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2
     for(i=0; (i<pd->ngt_bond); i++) {
         if (0 == strlen(pd->gt_bond[i].elem1)) {
             for(j=0; (j<pd->nalexandria); j++) 
-                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
                     strcpy(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
         }
         if (0 == strlen(pd->gt_bond[i].elem2)) {
             for(j=0; (j<pd->nalexandria); j++) 
-                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
                     strcpy(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
         }
         ba1 = pd->gt_bond[i].elem1;
         ba2 = pd->gt_bond[i].elem2;
-        if (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
-            ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0))) {
+        if (((strcmp(ba1,elem1) == 0) && (strcmp(ba2,elem2) == 0)) ||
+            ((strcmp(ba1,elem2) == 0) && (strcmp(ba2,elem1) == 0))) {
             dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
             if (dev < toler) {
                 for(k=0; (k<nbo); k++) {
@@ -965,18 +965,18 @@ int gmx_poldata_elem_is_bond(gmx_poldata_t pd,char *elem1,char *elem2,
     for(i=0; (i<pd->ngt_bond); i++) {
         if (0 == strlen(pd->gt_bond[i].elem1)) {
             for(j=0; (j<pd->nalexandria); j++) 
-                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
                     strcpy(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
         }
         if (0 == strlen(pd->gt_bond[i].elem2)) {
             for(j=0; (j<pd->nalexandria); j++) 
-                if (strcasecmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
                     strcpy(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
         }
         ba1 = pd->gt_bond[i].elem1;
         ba2 = pd->gt_bond[i].elem2;
-        if (((strcasecmp(ba1,elem1) == 0) && (strcasecmp(ba2,elem2) == 0)) ||
-            ((strcasecmp(ba1,elem2) == 0) && (strcasecmp(ba2,elem1) == 0))) {
+        if (((strcmp(ba1,elem1) == 0) && (strcmp(ba2,elem2) == 0)) ||
+            ((strcmp(ba1,elem2) == 0) && (strcmp(ba2,elem1) == 0))) {
             dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
             if (dev < dev_best) {
                 dev_best = dev;
@@ -1012,9 +1012,9 @@ static int lo_gtb_comp(t_gt_bond *ba,t_gt_bond *bb)
         b2 = bb->atom1;
         b1 = bb->atom2;
     }
-    i = strcasecmp(a1,b1);
+    i = strcmp(a1,b1);
     if (0 == i)
-        i = strcasecmp(a2,b2);
+        i = strcmp(a2,b2);
         
     return i;
 }
@@ -1245,7 +1245,7 @@ static int search_bondtype(gmx_poldata_t pd,char *atom)
     int j;
     
     for(j=0; (j<pd->nbtype); j++) 
-        if (strcasecmp(pd->btype[j],atom) == 0) 
+        if (strcmp(pd->btype[j],atom) == 0) 
             return j;
     return -1;
 }
@@ -1262,10 +1262,10 @@ int gmx_poldata_set_bond_params(gmx_poldata_t pd,char *atom1,char *atom2,
   
     for(i=0; (i<pd->ngt_bond); i++) {
         gt_b = &(pd->gt_bond[i]);
-        if (((((strcasecmp(gt_b->atom1,atom1) == 0) && 
-               (strcasecmp(gt_b->atom2,atom2) == 0)) ||
-              ((strcasecmp(gt_b->atom1,atom2) == 0) && 
-               (strcasecmp(gt_b->atom2,atom1) == 0)))) &&
+        if (((((strcmp(gt_b->atom1,atom1) == 0) && 
+               (strcmp(gt_b->atom2,atom2) == 0)) ||
+              ((strcmp(gt_b->atom1,atom2) == 0) && 
+               (strcmp(gt_b->atom2,atom1) == 0)))) &&
             ((bondorder == 0) || (gt_b->bondorder == bondorder)))
             break;
     }
@@ -1348,10 +1348,10 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
     gt_b = search_bond(pd,atom1,atom2,0);
     if (NULL != gt_b) 
     {
-        if (((strcasecmp(gt_b->atom1,atom1) == 0) && 
-             (strcasecmp(gt_b->atom2,atom2) == 0)) ||
-            ((strcasecmp(gt_b->atom1,atom2) == 0) && 
-             (strcasecmp(gt_b->atom2,atom1) == 0))) {
+        if (((strcmp(gt_b->atom1,atom1) == 0) && 
+             (strcmp(gt_b->atom2,atom2) == 0)) ||
+            ((strcmp(gt_b->atom1,atom2) == 0) && 
+             (strcmp(gt_b->atom2,atom1) == 0))) {
             assign_scal(length,gt_b->length);
             assign_scal(sigma,gt_b->sigma);
             assign_scal(ntrain,gt_b->ntrain);
@@ -1377,11 +1377,11 @@ int gmx_poldata_set_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
   
     for(i=0; (i<pd->ngt_angle); i++) {
         gt_b = &(pd->gt_angle[i]);
-        if ((strcasecmp(gt_b->atom2,atom2) == 0) && 
-            (((strcasecmp(gt_b->atom1,atom1) == 0) && 
-              (strcasecmp(gt_b->atom3,atom3) == 0)) ||
-             ((strcasecmp(gt_b->atom1,atom3) == 0) && 
-              (strcasecmp(gt_b->atom3,atom1) == 0))))
+        if ((strcmp(gt_b->atom2,atom2) == 0) && 
+            (((strcmp(gt_b->atom1,atom1) == 0) && 
+              (strcmp(gt_b->atom3,atom3) == 0)) ||
+             ((strcmp(gt_b->atom1,atom3) == 0) && 
+              (strcmp(gt_b->atom3,atom1) == 0))))
             break;
     }
     if (i < pd->ngt_angle) {
@@ -1464,11 +1464,11 @@ int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
     for(i=0; (i<pd->ngt_angle); i++) 
     {
         gt_b = &(pd->gt_angle[i]);
-        if ((strcasecmp(gt_b->atom2,atom2) == 0) &&
-            (((strcasecmp(gt_b->atom1,atom1) == 0) && 
-              (strcasecmp(gt_b->atom3,atom3) == 0)) ||
-             ((strcasecmp(gt_b->atom1,atom3) == 0) && 
-              (strcasecmp(gt_b->atom3,atom1) == 0)))) 
+        if ((strcmp(gt_b->atom2,atom2) == 0) &&
+            (((strcmp(gt_b->atom1,atom1) == 0) && 
+              (strcmp(gt_b->atom3,atom3) == 0)) ||
+             ((strcmp(gt_b->atom1,atom3) == 0) && 
+              (strcmp(gt_b->atom3,atom1) == 0)))) 
         {
             assign_scal(angle,gt_b->angle);
             assign_scal(sigma,gt_b->sigma);
@@ -1504,10 +1504,10 @@ static int gtd_comp(const void *a,const void *b)
     t_gt_dihedral *gt_b = (t_gt_dihedral *)b;
     int n;
     
-    if (0 == (n = strcasecmp(gt_a->atom1,gt_b->atom1)))
-        if (0 == (n = strcasecmp(gt_a->atom2,gt_b->atom2)))
-            if (0 == (n = strcasecmp(gt_a->atom3,gt_b->atom3)))
-                n = strcasecmp(gt_a->atom4,gt_b->atom4);
+    if (0 == (n = strcmp(gt_a->atom1,gt_b->atom1)))
+        if (0 == (n = strcmp(gt_a->atom2,gt_b->atom2)))
+            if (0 == (n = strcmp(gt_a->atom3,gt_b->atom3)))
+                n = strcmp(gt_a->atom4,gt_b->atom4);
                 
     return n;
 }   
@@ -1823,7 +1823,7 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd,const char *atype)
     int i;
     
     for(i=0; (i<pd->nalexandria); i++)
-        if (strcasecmp(atype,pd->alexandria[i].type) == 0)
+        if (strcmp(atype,pd->alexandria[i].type) == 0)
             return 1;
     return 0;
 }
