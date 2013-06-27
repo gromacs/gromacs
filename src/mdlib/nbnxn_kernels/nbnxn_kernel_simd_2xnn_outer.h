@@ -227,11 +227,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #endif
 
     unsigned   *excl_mask;
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    gmx_epi32  mask_S0, mask_S2;
-#else
-    gmx_mm_pr  mask_S0, mask_S2;
-#endif
+    gmx_exclmask mask_S0, mask_S2;
 
     gmx_mm_pr  zero_S = gmx_set1_pr(0);
 
@@ -354,32 +350,18 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #endif
 
     /* Load masks for topology exclusion masking */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-#define EXCL_MASK_STRIDE  (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#else
-#ifdef GMX_DOUBLE
-#define EXCL_MASK_STRIDE  2
-#else
-#define EXCL_MASK_STRIDE  1
-#endif
-#endif
 #if EXCL_MASK_STRIDE == 1
     excl_mask = nbat->simd_excl_mask1;
 #else
     excl_mask = nbat->simd_excl_mask2;
 #endif
-    /* Here we cast the exclusion masks from unsigned * to int * or real *.
-     * Since we only check bits, the actual value they represent does not
-     * matter, as long as both mask and exclusion info a treated the same way.
+    /* Here we cast the exclusion masks from unsigned * to int * or
+     * real *.  Since we only check bits, the actual value they
+     * represent does not matter, as long as both mask and exclusion
+     * info are treated the same way.
      */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    mask_S0    = gmx_load_si((int *)excl_mask + 0*2*UNROLLJ*EXCL_MASK_STRIDE);
-    mask_S2    = gmx_load_si((int *)excl_mask + 1*2*UNROLLJ*EXCL_MASK_STRIDE);
-#else
-    mask_S0    = gmx_load_pr((real *)excl_mask + 0*2*UNROLLJ);
-    mask_S2    = gmx_load_pr((real *)excl_mask + 1*2*UNROLLJ);
-#endif
-#undef EXCL_MASK_STRIDE
+    mask_S0    = gmx_load_exclmask(excl_mask + 0*2*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
+    mask_S2    = gmx_load_exclmask(excl_mask + 1*2*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
 
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */

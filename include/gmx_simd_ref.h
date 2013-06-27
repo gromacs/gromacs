@@ -63,6 +63,7 @@ typedef struct {
     int r[GMX_SIMD_REF_WIDTH];
 } gmx_simd_ref_epi32;
 #define GMX_SIMD_REF_EPI32_WIDTH  GMX_SIMD_REF_WIDTH
+typedef gmx_simd_ref_epi32 gmx_simd_ref_exclmask;
 
 /* Load GMX_SIMD_REF_WIDTH reals for memory starting at r */
 static gmx_inline gmx_simd_ref_pr
@@ -387,18 +388,11 @@ gmx_simd_ref_store_pb(real *dest, gmx_simd_ref_pb src)
 };
 
 
-/* For topology exclusion pair checking we need: ((a & b) ? True : False)
- * when we do a bit-wise and between a and b.
- * When integer SIMD operations are present, we use gmx_checkbitmask_epi32(a, b)
- * Otherwise we do all operations, except for the set1, in reals.
- */
-
-/* Integer set and cast are only used for nbnxn exclusion masks */
-static gmx_inline gmx_simd_ref_epi32
-gmx_simd_ref_set1_epi32(int src)
+static gmx_inline gmx_simd_ref_exclmask
+gmx_simd_ref_load1_exclmask(int src)
 {
-    gmx_simd_ref_epi32 a;
-    int                i;
+    gmx_simd_ref_exclmask a;
+    int                   i;
 
     for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
     {
@@ -408,11 +402,11 @@ gmx_simd_ref_set1_epi32(int src)
     return a;
 }
 
-static gmx_inline gmx_simd_ref_epi32
-gmx_simd_ref_load_si(const int *src)
+static gmx_inline gmx_simd_ref_exclmask
+gmx_simd_ref_load_exclmask(const int *src)
 {
-    gmx_simd_ref_epi32 a;
-    int                i;
+    gmx_simd_ref_exclmask a;
+    int                   i;
 
     for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
     {
@@ -422,9 +416,17 @@ gmx_simd_ref_load_si(const int *src)
     return a;
 }
 
-/* If the same bit is set in both input masks, return TRUE, else FALSE */
+/* For topology exclusion pair checking we need: ((a & b) ? True :
+ * False). The x86 implementations use hardware-suitable integer-
+ * and/or real-valued SIMD operations and a bit-wise "and" to do
+ * this. The reference implementation normally uses logical operations
+ * for logic, but in this case the i- and j-atom exclusion masks
+ * computed during searching expect to be combined with bit-wise
+ * "and".
+ */
+
 static gmx_inline gmx_simd_ref_pb
-gmx_simd_ref_checkbitmask_epi32(gmx_simd_ref_epi32 a, gmx_simd_ref_epi32 b)
+gmx_simd_ref_checkbitmask_pb(gmx_simd_ref_exclmask a, gmx_simd_ref_exclmask b)
 {
     gmx_simd_ref_pb c;
     int             i;
@@ -436,7 +438,6 @@ gmx_simd_ref_checkbitmask_epi32(gmx_simd_ref_epi32 a, gmx_simd_ref_epi32 b)
 
     return c;
 }
-
 
 /* Conversions only used for PME table lookup */
 static gmx_inline gmx_simd_ref_epi32
