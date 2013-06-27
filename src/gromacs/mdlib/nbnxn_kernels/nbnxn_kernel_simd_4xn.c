@@ -63,6 +63,24 @@
 #error "unsupported SIMD width"
 #endif
 
+static inline void
+gmx_load_simd_4xn_exclusions(int excl,
+                             gmx_exclmask mask_S0,
+                             gmx_exclmask mask_S1,
+                             gmx_exclmask mask_S2,
+                             gmx_exclmask mask_S3,
+                             gmx_mm_pb *interact_S0,
+                             gmx_mm_pb *interact_S1,
+                             gmx_mm_pb *interact_S2,
+                             gmx_mm_pb *interact_S3)
+{
+    /* Load integer interaction mask */
+    gmx_exclmask mask_S = gmx_load1_exclmask(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_S, mask_S0);
+    *interact_S1  = gmx_checkbitmask_pb(mask_S, mask_S1);
+    *interact_S2  = gmx_checkbitmask_pb(mask_S, mask_S2);
+    *interact_S3  = gmx_checkbitmask_pb(mask_S, mask_S3);
+}
 
 /* Include all flavors of the SSE or AVX 4xN kernel loops */
 
