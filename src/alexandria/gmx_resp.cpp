@@ -98,7 +98,7 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
     ra->atomtype    = strdup(atomtype);
     ra->nZeta       = gmx_poldata_get_nzeta(pd,iModel,ra->atomtype);
     if (ra->nZeta <= 0)
-        gmx_fatal(FARGS,"No support in force field %s for atom type %s",
+        gmx_fatal(FARGS,"No support in charge model %s for atom type %s",
                   get_eemtype_name(iModel),atomtype);
     ra->bRestrained = bRestr;
         

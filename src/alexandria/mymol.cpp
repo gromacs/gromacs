@@ -747,12 +747,13 @@ MyMol::MyMol(): MolProp()
     bHaveVSites_ = false;
     cgnr_ = NULL;
     symmetric_charges_ = NULL;
-    gr = NULL;
+    gr_ = NULL;
     immAtoms = immOK;
     immTopology = immOK;
     immCharges = immOK;
-    open_symtab(&symtab);
-    atype = init_atomtype();
+    snew(symtab,1);
+    open_symtab(symtab);
+    atype_ = init_atomtype();
     for(int i = 0; (i<ebtsNR); i++)
     {
         bts[i] = NOTSET;
@@ -772,11 +773,26 @@ MyMol::MyMol(): MolProp()
 MyMol::~MyMol()
 {
     if (NULL != cgnr_)
+    {
         sfree(cgnr_);
+        cgnr_ = NULL;
+    }
     if (NULL != symmetric_charges_)
+    {
         sfree(symmetric_charges_);
-    done_symtab(&symtab);
-    done_atomtype(atype);
+        symmetric_charges_ = NULL;
+    }
+    if (NULL != atype_)
+    {
+        done_atomtype(atype_);
+        atype_ = NULL;
+    }
+    if (NULL != symtab)
+    {
+        done_symtab(symtab);
+        sfree(symtab);
+        symtab = NULL;
+    }
 }
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
@@ -824,8 +840,8 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
                 }
             }
             
-            t_atoms_set_resinfo(&(topology->atoms),natom,&symtab,GetMolname().c_str(),1,' ',1,' ');
-            topology->atoms.atomname[natom] = put_symtab(&symtab,cai->GetName().c_str());
+            t_atoms_set_resinfo(&(topology->atoms),natom,symtab,GetMolname().c_str(),1,' ',1,' ');
+            topology->atoms.atomname[natom] = put_symtab(symtab,cai->GetName().c_str());
             topology->atoms.atom[natom].atomnumber = gmx_atomprop_atomnumber(ap,cai->GetName().c_str());
 
             real mass;            
@@ -841,7 +857,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
             topology->atoms.atom[natom].resind = 0;
             // First set the atomtype
             topology->atoms.atomtype[natom] = 
-                topology->atoms.atomtypeB[natom] = put_symtab(&symtab,cai->GetObtype().c_str());
+                topology->atoms.atomtypeB[natom] = put_symtab(symtab,cai->GetObtype().c_str());
             
             natom++;
         }
@@ -853,7 +869,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
         for(int i=0; (i<natom); i++) 
         {
             topology->atoms.atom[i].type = 
-                topology->atoms.atom[i].typeB = add_atomtype(atype,&symtab,
+                topology->atoms.atom[i].typeB = add_atomtype(atype_,symtab,
                                                              &(topology->atoms.atom[i]),
                                                              *topology->atoms.atomtype[i],
                                                              &nb,
@@ -962,7 +978,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
         get_force_constants(pd,plist,&topology->atoms);
     }
     
-    char **molnameptr = put_symtab(&(symtab),GetMolname().c_str());
+    char **molnameptr = put_symtab(symtab,GetMolname().c_str());
     snew(mtop,1);
     do_init_mtop(mtop,1,molnameptr,natom,pd);
     
@@ -1019,6 +1035,10 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     char qgen_msg[STRLEN];
     immStatus imm = immOK;
     
+    if (iModel == eqgNone)
+    {
+        return imm;
+    }
     if (immOK == imm)
     {
         if (bSymmetricCharges)
@@ -1032,12 +1052,12 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
 
     if (immOK == imm)
     {    
-        //gmx_resp_get_atom_info(gr,&topology->atoms,&symtab,&x);
-        gmx_resp_add_atom_info(gr,&topology->atoms,pd);
-        gmx_resp_add_atom_symmetry(gr,symmetric_charges_);
-        gmx_resp_update_atomtypes(gr,&(topology->atoms));
-        gmx_resp_summary(stdout,gr,symmetric_charges_);
-        gmx_resp_add_atom_coords(gr,x);
+        //gmx_resp_get_atom_info(gr,&topology->atoms,symtab,&x);
+        gmx_resp_add_atom_info(gr_,&topology->atoms,pd);
+        gmx_resp_add_atom_symmetry(gr_,symmetric_charges_);
+        gmx_resp_update_atomtypes(gr_,&(topology->atoms));
+        gmx_resp_summary(stdout,gr_,symmetric_charges_);
+        gmx_resp_add_atom_coords(gr_,x);
         
         CalculationIterator ci = GetLot(lot);
         if (ci != EndCalculation())
@@ -1052,7 +1072,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                     xu = eg2cAngstrom;
                 if (-1 == vu)
                     vu = eg2cHartree_e;
-                gmx_resp_add_point(gr,
+                gmx_resp_add_point(gr_,
                                    convert2gmx(epi->GetX(),xu),
                                    convert2gmx(epi->GetY(),xu),
                                    convert2gmx(epi->GetZ(),xu),
@@ -1078,9 +1098,9 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             if (NULL == qgen)
                 gmx_fatal(FARGS,"Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n",GetMolname().c_str());
             eQGEN = generate_charges(NULL,
-                                     qgen,gr,GetMolname().c_str(),pd,&topology->atoms,x,0.0001,
+                                     qgen,gr_,GetMolname().c_str(),pd,&topology->atoms,x,0.0001,
                                      10000,1,ap,hfac);
-            qgen_message(qgen,sizeof(qgen_msg),qgen_msg,gr);
+            qgen_message(qgen,sizeof(qgen_msg),qgen_msg,gr_);
             if (eQGEN_OK != eQGEN)
                 imm = immChargeGeneration;
         }
@@ -1277,7 +1297,6 @@ static void write_top2(FILE *out, char *pr, char *molname,
     }
 }
 
-
 void MyMol::PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
                           bool bVerbose)
 {
@@ -1338,7 +1357,7 @@ void MyMol::PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
         //write_zeta_q2(qgen,atype,&topology->atoms,pd,iModel);
     }
     // mv_plists(pd,plist,false);
-    write_top2(fp,NULL,printmol.name,&topology->atoms,FALSE,bts,plist,excls,atype,cgnr_,nexcl_);
+    write_top2(fp,NULL,printmol.name,&topology->atoms,FALSE,bts,plist,excls,atype_,cgnr_,nexcl_);
     // mv_plists(pd,plist,true);
     if (!bITP)
         print_top_mols(fp,printmol.name,GetForceField().c_str(),NULL,0,NULL,1,&printmol);
@@ -1372,7 +1391,7 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
         int anr = topology->atoms.nr;
         
         gentop_vsite_generate_special(gvt,bGenVSites,&topology->atoms,&x,plist,
-                                      &symtab,atype,&excls,pd);
+                                      symtab,atype_,&excls,pd);
         bHaveVSites_ = (topology->atoms.nr > anr);
     }
     if (!bPairs)
@@ -1386,7 +1405,7 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
         srenew(x,nalloc);
         //srenew(smnames,nalloc);
         srenew(excls,nalloc);
-        add_shells(pd,nalloc,&topology->atoms,atype,plist,x,&symtab,&excls);
+        add_shells(pd,nalloc,&topology->atoms,atype_,plist,x,symtab,&excls);
         bHaveShells_ = true;
     }
     //real mu = calc_dip(&topology->atoms,x);
@@ -1423,12 +1442,12 @@ void MyMol::GenerateCube(int iModel,
     char       *gentop_version = (char *)"v0.99b";
     gmx_resp_t grref;
                         
-    if (NULL != gr) 
+    if (NULL != gr_) 
     {
         /* This has to be done before the grid is f*cked up by 
            writing a cube file */
-        grref = gmx_resp_copy(gr);
-        gmx_resp_potcomp(gr,pcfn,pdbdifffn,oenv);
+        grref = gmx_resp_copy(gr_);
+        gmx_resp_potcomp(gr_,pcfn,pdbdifffn,oenv);
         if ((NULL != potfn) || (NULL != hisfn) || (NULL != rhofn) || 
             ((NULL != difffn) && (NULL != reffn)))
         {
@@ -1443,36 +1462,36 @@ void MyMol::GenerateCube(int iModel,
                 gmx_resp_add_atom_info(grref,&topology->atoms,pd);
                 gmx_resp_add_atom_symmetry(grref,symmetric_charges_);
                 gmx_resp_read_cube(grref,reffn,FALSE);
-                gmx_resp_copy_grid(gr,grref);
+                gmx_resp_copy_grid(gr_,grref);
             }
             else 
             {
-                gmx_resp_make_grid(gr,spacing,box,x);
+                gmx_resp_make_grid(gr_,spacing,box,x);
             }
             if (NULL != rhofn)
             {
                 sprintf(buf,"Electron density generated by %s based on %s charges",
                         gentop_version,get_eemtype_name(iModel));
-                gmx_resp_calc_rho(gr);
-                gmx_resp_write_rho(gr,rhofn,buf);
+                gmx_resp_calc_rho(gr_);
+                gmx_resp_write_rho(gr_,rhofn,buf);
             }
             sprintf(buf,"Potential generated by %s based on %s charges",
                     gentop_version,get_eemtype_name(iModel));
             if (NULL != potfn)
             {
-                gmx_resp_calc_pot(gr);
-                gmx_resp_write_cube(gr,potfn,buf);
+                gmx_resp_calc_pot(gr_);
+                gmx_resp_write_cube(gr_,potfn,buf);
             }
             if (NULL != hisfn)
             {
-                gmx_resp_write_histo(gr,hisfn,buf,oenv);
+                gmx_resp_write_histo(gr_,hisfn,buf,oenv);
             }
             if ((NULL != difffn) || (NULL != diffhistfn))
             {
                 sprintf(buf,"Potential difference generated by %s based on %s charges",
                         gentop_version,
                         get_eemtype_name(iModel));
-                gmx_resp_write_diff_cube(grref,gr,difffn,diffhistfn,buf,oenv,0);
+                gmx_resp_write_diff_cube(grref,gr_,difffn,diffhistfn,buf,oenv,0);
                 gmx_resp_destroy(grref);
             }
         }
@@ -1593,7 +1612,7 @@ immStatus MyMol::Initxx(FILE *fp,
             set_pbc(&pbc,epbcNONE,box);
             snew(bondorder,nbond);
             
-            /*if ((atype = set_atom_type(NULL,GetMolname().c_str(),&(symtab),&(topology->atoms),
+            /*if ((atype = set_atom_type(NULL,GetMolname().c_str(),symtab,&(topology->atoms),
                                        &(plist[ftb]),nbonds,bRing,bondorder,
                                        pd,aps,
                                        x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
@@ -1608,10 +1627,10 @@ immStatus MyMol::Initxx(FILE *fp,
     if (immOK == imm) 
     {
         gentop_vsite_generate_special(gvt,FALSE,&(topology->atoms),&x,plist,
-                                      &(symtab),atype,&excls,pd);
+                                      symtab,atype_,&excls,pd);
 
         gentop_vsite_done(&gvt);
-        close_symtab(&(symtab));
+        //close_symtab(symtab);
 
         eSupp = eSupportLocal;
         if (!GetPropRef(MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
@@ -1763,7 +1782,7 @@ immStatus MyMol::Initxx(FILE *fp,
             snew(newexcls,nalloc);
             srenew(x,nalloc);
             add_shells(pd,nalloc,&(mtop->moltype[0].atoms),
-                       atype,plist,x,&symtab,
+                       atype_,plist,x,symtab,
                        &newexcls);
             mtop->natoms = mtop->moltype[0].atoms.nr;
             mtop->molblock[0].natoms_mol = mtop->natoms;

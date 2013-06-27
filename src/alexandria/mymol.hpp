@@ -84,13 +84,13 @@ public:
     t_forcerec     *fr;
     gmx_mtop_t     *mtop;
     gmx_localtop_t *ltop;
-    gpp_atomtype_t atype;
+    gpp_atomtype_t atype_;
     gentop_qgen_t  qgen;
-    t_symtab       symtab;
+    t_symtab       *symtab;
     t_inputrec     *inputrec;
     gmx_shellfc_t  shell;
     gmx_enerdata_t enerd;
-    gmx_resp_t     gr;
+    gmx_resp_t     gr_;
     t_mdatoms      *md;
     t_topology     *topology;
     t_params       plist[F_NRE];

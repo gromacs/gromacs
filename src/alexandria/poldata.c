@@ -855,11 +855,12 @@ const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd,const char *atype)
     
     for(i=0; (i<pd->nalexandria); i++) 
     {
-        if (strcmp(pd->alexandria[i].type,atype) == 0)
+        if (strcasecmp(pd->alexandria[i].type,atype) == 0)
         {
             return pd->alexandria[i].btype;
         }
     }
+    gmx_fatal(FARGS,"No bondtype for %s",atype);
     return NULL;
 }
 

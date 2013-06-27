@@ -228,7 +228,8 @@ static int check_data_sufficiency(FILE *fp,
     }
     sum_index_count(ic,cr);
     dump_index_count(ic,debug,iModel,pd,bFitZeta);
-    for(mmi=mol.begin(); (mmi<mol.end()); mmi++) {
+    for(mmi=mol.begin(); (mmi<mol.end()); mmi++) 
+    {
         if (mmi->eSupp != eSupportNo) 
         {
             aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
@@ -439,20 +440,20 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
             if (imsTrain == gmx_molselect_status(gms,mpi->GetIupac().c_str()))
             {
                 int dest = (n % _cr->nnodes);
-                alexandria::MyMol mpnew;
+                alexandria::MyMol *mpnew = new alexandria::MyMol;
                 
-                mpnew.Merge(*mpi);
+                mpnew->Merge(*mpi);
                 
-                imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+                imm = mpnew->GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
     
                 if (immOK == imm)
                 {
-                    mpnew.gr = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
+                    mpnew->gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew->GetCharge(),
                                              1,100,5,
                                              TRUE,watoms,5,TRUE,TRUE,
                                              1,TRUE,
                                              TRUE,NULL);
-                    if (NULL == mpnew.gr)
+                    if (NULL == mpnew->gr_)
                     {
                         imm = immRespInit;
                     }
@@ -460,12 +461,16 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
 
                 if (immOK == imm)
                 {
-                    imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
+                    imm = mpnew->GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
                                                 lot,TRUE,NULL);
                 }
-                
+                if (immOK == imm)
+                {
+                    mpnew->GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
+                }
+     
                 if (0)
-                    imm = mpnew.Initxx(fp,gap,
+                    imm = mpnew->Initxx(fp,gap,
                                        _bQM,lot,bZero,
                                        _pd,_atomprop,
                                        _iModel,_cr,&nwarn,bCharged,oenv,
@@ -477,20 +482,20 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 {
                     if (dest > 0)
                     {
-                        mpnew.eSupp = eSupportRemote;
+                        mpnew->eSupp = eSupportRemote;
                         /* Send another molecule */
                         gmx_send_int(_cr,dest,1);
                         mpi->Send(_cr,dest);
                         imm = (immStatus) gmx_recv_int(_cr,dest);
                         if (imm != immOK) 
                             fprintf(stderr,"Molecule %s was not accepted on node %d - error %s\n",
-                                    mpnew.GetMolname().c_str(),dest,alexandria::immsg(imm));
+                                    mpnew->GetMolname().c_str(),dest,alexandria::immsg(imm));
                     }
                     else
-                        mpnew.eSupp = eSupportLocal;
+                        mpnew->eSupp = eSupportLocal;
                     if (immOK == imm)
                     {
-                        _mymol.push_back(mpnew);
+                        _mymol.push_back(*mpnew);
                         n++;
                     }
                 }
@@ -499,9 +504,12 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                     fprintf(debug,"IMM: Dest: %d %s - %s\n",
                             dest,mpi->GetMolname().c_str(),immsg(imm));
                 }
+                delete mpnew;
             }
             else
+            {
                 imm = immTest;
+            }
             imm_count[imm]++;
         }
         /* Send signal done with transferring molecules */
@@ -524,12 +532,12 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     
             if (immOK == imm)
             {
-                mpnew.gr = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
+                mpnew.gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
                                          1,100,5,
                                          TRUE,watoms,5,TRUE,TRUE,
                                          1,TRUE,
                                          TRUE,NULL);
-                if (NULL == mpnew.gr)
+                if (NULL == mpnew.gr_)
                 {
                     imm = immRespInit;
                 }
@@ -731,12 +739,12 @@ void MolDip::CalcDeviation()
             mymol->CalcMultipoles();
 
             /* Compute the ESP on the points */
-            if ((NULL != mymol->gr) && _bQM)
+            if ((NULL != mymol->gr_) && _bQM)
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
-                gmx_resp_fill_zeta(mymol->gr,_pd);
-                gmx_resp_fill_q(mymol->gr,&(mymol->topology->atoms));
-                gmx_resp_calc_pot(mymol->gr);
+                gmx_resp_fill_zeta(mymol->gr_,_pd);
+                gmx_resp_fill_q(mymol->gr_,&(mymol->topology->atoms));
+                gmx_resp_calc_pot(mymol->gr_);
             }
             qtot = 0;
             for(j=0; (j<mymol->topology->atoms.nr); j++) {
@@ -777,9 +785,9 @@ void MolDip::CalcDeviation()
                         _ener[ermsQUAD] += sqr(mymol->Q_exp[mm][mm] - mymol->Q_calc[mm][mm]);
                     }
                 }
-                if (NULL != mymol->gr)
+                if (NULL != mymol->gr_)
                 {
-                    _ener[ermsESP] += gmx_resp_get_rms(mymol->gr,&wtot);
+                    _ener[ermsESP] += gmx_resp_get_rms(mymol->gr_,&wtot);
                     if (NULL != debug)
                         fprintf(debug,"RMS %s = %g\n",
                                 mymol->GetMolname().c_str(),_ener[ermsESP]);

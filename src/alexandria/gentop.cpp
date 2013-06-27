@@ -428,12 +428,12 @@ int main(int argc, char *argv[])
     
     if (immOK == imm)
     {
-        mymol.gr = gmx_resp_init(iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
+        mymol.gr_ = gmx_resp_init(iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
                                  zmin,zmax,delta_z,
                                  bZatype,watoms,rDecrZeta,bRandZeta,bRandQ,
                                  penalty_fac,bFitZeta,
                                  bEntropy,dzatoms);
-        if (NULL == mymol.gr)
+        if (NULL == mymol.gr_)
         {
             imm = immRespInit;
         }

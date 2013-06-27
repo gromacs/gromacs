@@ -303,42 +303,57 @@ static void gmx_molprop_read_babel(const char *g98,
     
     OBpd = (OpenBabel::OBPairData *)mol.GetData("basis");
     if ((NULL != basisset) && (strlen(basisset) > 0))
+    {
         basis = basisset;
+    }
     else if (NULL != OBpd)
     {
         basis = strdup(OBpd->GetValue().c_str());
         if (NULL != (ptr = strstr(basis," (5D, 7F)")))
+        {
             *ptr = '\0';
+        }
     }
     else
+    {
         basis = strdup(unknown);
+    }
     
     OBpd = (OpenBabel::OBPairData *)mol.GetData("program");
     if (NULL != OBpd)
+    {
         program = strdup(OBpd->GetValue().c_str());
+    }
     else
+    {
         program = strdup(unknown);
+    }
     
     OBpd = (OpenBabel::OBPairData *)mol.GetData("method");
     if (NULL != OBpd)
+    {
         method = strdup(OBpd->GetValue().c_str());
+    }
     else 
+    {
         method = strdup(unknown);
-    
+    }
     g98ptr = (char *) strrchr(g98,'/');
     if (NULL == g98ptr) 
-        g98ptr = (char *)g98;
+    {
+       g98ptr = (char *)g98;
+    }
     else
     {
         g98ptr++;
         if (strlen(g98ptr) == 0)
+        {
             g98ptr = (char *)g98;
+        }
     }
-    {
-        alexandria::Calculation ca(program,method,basis,reference,
-                                   conformation,g98ptr);
-        mpt.AddCalculation(ca);
-    }
+    alexandria::Calculation ca(program,method,basis,reference,
+                               conformation,g98ptr);
+    mpt.AddCalculation(ca);
         
     mpt.SetCharge(mol.GetTotalCharge());
     mpt.SetMass(mol.GetMolWt());
