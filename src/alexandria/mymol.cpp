@@ -917,7 +917,9 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
         gmx_fatal(FARGS,"No improper dihedral type defined in force field file");
     if (NOTSET == (bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS)))
          gmx_fatal(FARGS,"No dihedral type defined in force field file");
-
+    bts[ebtsCMAP] = F_CMAP;
+    bts[ebtsEXCLS] = 0;
+    
     ftb = bts[ebtsBONDS];
     nexcl_ = nexcl;
     GenerateComposition(pd);
