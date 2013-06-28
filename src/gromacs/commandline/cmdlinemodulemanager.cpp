@@ -47,6 +47,8 @@
 #include <string>
 #include <utility>
 
+#include "gromacs/legacyheaders/copyrite.h"
+
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
@@ -462,7 +464,9 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         impl_->helpModule_->printUsage();
         return 2;
     }
-    return module->second->run(argc - argOffset, argv + argOffset);
+    int rc = module->second->run(argc - argOffset, argv + argOffset);
+    gmx_thanx(stderr);
+    return rc;
 }
 
 } // namespace gmx

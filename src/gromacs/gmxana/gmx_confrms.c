@@ -42,7 +42,6 @@
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
@@ -832,8 +831,6 @@ int gmx_confrms(int argc, char *argv[])
     }
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

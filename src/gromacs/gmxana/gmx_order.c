@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -1114,7 +1113,6 @@ int gmx_order(int argc, char *argv[])
         do_view(oenv, opt2fn("-od", NFILE, fnm), NULL); /* view xvgr file */
     }
 
-    thanx(stderr);
     if (distvals != NULL)
     {
         for (i = 0; i < nslices; ++i)

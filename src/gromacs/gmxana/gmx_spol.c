@@ -39,7 +39,6 @@
 #include "macros.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
@@ -378,8 +377,6 @@ int gmx_spol(int argc, char *argv[])
     ffclose(fp);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

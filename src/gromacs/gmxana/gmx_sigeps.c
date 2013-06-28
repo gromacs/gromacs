@@ -43,7 +43,6 @@
 #include <math.h>
 #include "typedefs.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "pdbio.h"
@@ -192,8 +191,6 @@ int gmx_sigeps(int argc, char *argv[])
     ffclose(fp);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

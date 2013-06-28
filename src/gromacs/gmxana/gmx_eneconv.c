@@ -44,7 +44,6 @@
 #include "statutil.h"
 #include "disre.h"
 #include "names.h"
-#include "copyrite.h"
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "enxio.h"
@@ -873,6 +872,5 @@ int gmx_eneconv(int argc, char *argv[])
         fprintf(stderr, "Wrote %d frames\n", noutfr);
     }
 
-    thanx(stderr);
     return 0;
 }

@@ -82,7 +82,7 @@ int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModulePointer     module(createModule());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
-    runner.setPrintCopyright(false);
+    runner.setStandalone(false);
     return runner.run(argc, argv);
 }
 

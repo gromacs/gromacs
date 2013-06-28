@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -807,6 +806,5 @@ int gmx_densorder(int argc, char *argv[])
         sfree(surf2);
     }
 
-    thanx(stderr);
     return 0;
 }

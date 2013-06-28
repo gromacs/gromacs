@@ -609,7 +609,5 @@ int gmx_nmeig(int argc, char *argv[])
     write_eigenvectors(opt2fn("-v", NFILE, fnm), natoms, eigenvectors, FALSE, begin, end,
                        eWXR_NO, NULL, FALSE, top_x, bM, eigenvalues);
 
-    thanx(stderr);
-
     return 0;
 }

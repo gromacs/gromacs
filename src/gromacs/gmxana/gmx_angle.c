@@ -466,7 +466,5 @@ int gmx_g_angle(int argc, char *argv[])
         do_view(oenv, opt2fn("-ov", NFILE, fnm), "-nxy");
     }
 
-    thanx(stderr);
-
     return 0;
 }

@@ -842,7 +842,7 @@ int main(int argc,char *argv[])
   if ((m != mGuillot2001a)) 
     ffclose(fp);
   
-  thanx(stdout);
+  gmx_thanx(stdout);
   
   return 0;
 }

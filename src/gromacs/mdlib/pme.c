@@ -79,7 +79,6 @@
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "copyrite.h"
 #include "gmx_wallcycle.h"
 #include "pdbio.h"
 #include "gmx_cyclecounter.h"

@@ -39,7 +39,6 @@
 #include <math.h>
 
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "fitahx.h"
 #include "futil.h"
@@ -371,8 +370,6 @@ int gmx_helix(int argc, char *argv[])
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

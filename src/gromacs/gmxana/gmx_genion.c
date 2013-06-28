@@ -37,7 +37,6 @@
 #endif
 
 #include <ctype.h>
-#include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -552,8 +551,6 @@ int gmx_genion(int argc, char *argv[])
     atoms.pdbinfo = NULL;
     write_sto_conf(ftp2fn(efSTO, NFILE, fnm), *top.name, &atoms, x, NULL, ePBC,
                    box);
-
-    thanx(stderr);
 
     return 0;
 }

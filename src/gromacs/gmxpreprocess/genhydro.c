@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "string2.h"
 #include "confio.h"
 #include "symtab.h"

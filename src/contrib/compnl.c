@@ -138,7 +138,7 @@ int main(int argc,char *argv[])
   fprintf(stderr,"There were %d mismatches\n",nmiss);
   fprintf(stderr,"Finished\n");
   
-  thanx(stdout);
+  gmx_thanx(stdout);
   
   return 0;
 }

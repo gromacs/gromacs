@@ -44,7 +44,6 @@
 #include "macros.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
@@ -587,8 +586,6 @@ int gmx_gmxdump(int argc, char *argv[])
     {
         list_mtx(ftp2fn(efMTX, NFILE, fnm));
     }
-
-    thanx(stderr);
 
     return 0;
 }

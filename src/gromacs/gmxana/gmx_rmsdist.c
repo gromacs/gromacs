@@ -43,7 +43,6 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "names.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
@@ -880,6 +879,5 @@ int gmx_rmsdist (int argc, char *argv[])
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
 
-    thanx(stderr);
     return 0;
 }

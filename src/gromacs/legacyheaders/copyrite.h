@@ -66,7 +66,7 @@ void
 cool_quote(char *retstring, int retsize, int *cqnum);
 
 void
-thanx(FILE *fp);
+gmx_thanx(FILE *fp);
 
 void
 please_cite(FILE *fp, const char *key);

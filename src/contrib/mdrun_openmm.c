@@ -496,7 +496,7 @@ int cmain(int argc,char *argv[])
   gmx_finalize_par();
 
   if (MULTIMASTER(cr)) {
-      thanx(stderr);
+      gmx_thanx(stderr);
   }
 
   /* Log file has to be closed in mdrunner if we are appending to it 

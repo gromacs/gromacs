@@ -47,7 +47,6 @@
 #include "macros.h"
 #include "index.h"
 #include "strdb.h"
-#include "copyrite.h"
 #include "tpxio.h"
 #include "typedefs.h"
 #include "statutil.h"

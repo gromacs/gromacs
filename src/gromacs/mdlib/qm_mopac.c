@@ -57,7 +57,6 @@
 #include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
-#include "copyrite.h"
 #include "qmmm.h"
 #include <stdio.h>
 #include <string.h>

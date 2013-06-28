@@ -45,7 +45,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -375,8 +374,6 @@ int gmx_trjorder(int argc, char *argv[])
         ffclose(fp);
     }
     gmx_rmpbc_done(gpbc);
-
-    thanx(stderr);
 
     return 0;
 }

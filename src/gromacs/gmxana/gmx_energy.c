@@ -2823,7 +2823,6 @@ int gmx_energy(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-oten", NFILE, fnm), nxy);
         do_view(oenv, opt2fn_null("-odh", NFILE, fnm), nxy);
     }
-    thanx(stderr);
 
     return 0;
 }

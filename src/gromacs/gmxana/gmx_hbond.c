@@ -4916,7 +4916,5 @@ int gmx_hbond(int argc, char *argv[])
         ffclose(fp);
     }
 
-    thanx(stdout);
-
     return 0;
 }

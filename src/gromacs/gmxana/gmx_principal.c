@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -154,8 +153,6 @@ int gmx_principal(int argc, char *argv[])
     ffclose(axis2);
     ffclose(axis3);
     ffclose(fmoi);
-
-    thanx(stderr);
 
     return 0;
 }

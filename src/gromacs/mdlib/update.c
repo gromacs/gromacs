@@ -60,7 +60,6 @@
 #include "names.h"
 #include "txtdump.h"
 #include "mdrun.h"
-#include "copyrite.h"
 #include "constr.h"
 #include "edsam.h"
 #include "pull.h"

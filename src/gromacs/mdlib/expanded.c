@@ -76,7 +76,6 @@
 #include "xvgr.h"
 #include "trnio.h"
 #include "xtcio.h"
-#include "copyrite.h"
 #include "gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"

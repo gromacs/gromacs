@@ -79,17 +79,18 @@ class TrajectoryAnalysisCommandLineRunner
         ~TrajectoryAnalysisCommandLineRunner();
 
         /*! \brief
-         * Sets whether the runner will print the copyright header.
+         * Sets whether the runner will print standalone messages.
          *
-         * \param[in] bPrint  Whether to print the copyright header.
+         * \param[in] bStandalone  Whether the runner is run directly from main().
          *
-         * By default, the copyright header is printed.
+         * By default, the runner takes responsibility of printing some
+         * standard Gromacs messages at startup and at the end.
          * This is used internally when executing the runner in a context where
-         * the copyright has already been printed at a higher level.
+         * these messages are handled on a higher level.
          *
          * Does not throw.
          */
-        void setPrintCopyright(bool bPrint);
+        void setStandalone(bool bStandalone);
         /*! \brief
          * Sets the default debugging level for selections.
          *
