@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
@@ -944,8 +943,6 @@ int gmx_rdf(int argc, char *argv[])
            opt2fn_null("-hq", NFILE, fnm),
            bCM, closet[0], rdft, bXY, bPBC, bNormalize, cutoff, binwidth, fade, ngroups,
            oenv);
-
-    thanx(stderr);
 
     return 0;
 }

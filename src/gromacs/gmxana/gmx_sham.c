@@ -44,7 +44,6 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "readinp.h"
 #include "statutil.h"
@@ -1168,8 +1167,6 @@ int gmx_sham(int argc, char *argv[])
             mname, bSham, idim, ibox,
             opt2parg_bSet("-xmin", NPA, pa), rmin,
             opt2parg_bSet("-xmax", NPA, pa), rmax);
-
-    thanx(stderr);
 
     return 0;
 }

@@ -45,7 +45,6 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -1472,8 +1471,6 @@ int gmx_anaeig(int argc, char *argv[])
 
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stdout);
 
     return 0;
 }

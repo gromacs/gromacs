@@ -46,7 +46,6 @@
 #include "xvgr.h"
 #include "physics.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -113,8 +112,6 @@ int gmx_rama(int argc, char *argv[])
     ffclose(out);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

@@ -41,7 +41,6 @@
 #include "macros.h"
 #include "typedefs.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
@@ -576,8 +575,6 @@ int gmx_rmsf(int argc, char *argv[])
     {
         do_view(oenv, opt2fn("-od", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

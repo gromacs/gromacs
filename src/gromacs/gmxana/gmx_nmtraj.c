@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"

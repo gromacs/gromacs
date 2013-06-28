@@ -39,7 +39,6 @@
 
 #include <math.h>
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
@@ -487,8 +486,6 @@ int gmx_tcaf(int argc, char *argv[])
                  opt2fn("-oa", NFILE, fnm), opt2fn("-o", NFILE, fnm),
                  opt2fn("-of", NFILE, fnm), opt2fn_null("-oc", NFILE, fnm),
                  opt2fn("-ov", NFILE, fnm), oenv);
-
-    thanx(stderr);
 
     return 0;
 }

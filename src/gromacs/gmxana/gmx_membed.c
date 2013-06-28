@@ -41,7 +41,6 @@
 #include "sysstuff.h"
 #include "statutil.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "main.h"
 #include "gmx_ana.h"
 #include "string2.h"

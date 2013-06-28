@@ -1215,7 +1215,5 @@ int gmx_rms(int argc, char *argv[])
     do_view(oenv, opt2fn_null("-bm", NFILE, fnm), NULL);
     do_view(oenv, opt2fn_null("-dist", NFILE, fnm), NULL);
 
-    thanx(stderr);
-
     return 0;
 }

@@ -48,7 +48,6 @@
 #include "statutil.h"
 #include "confio.h"
 #include "main.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "invblock.h"

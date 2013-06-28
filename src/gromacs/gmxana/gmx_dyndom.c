@@ -39,7 +39,6 @@
 #include "3dview.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "index.h"
 #include "confio.h"
 #include "gmx_fatal.h"
@@ -244,8 +243,6 @@ int gmx_dyndom(int argc, char *argv[])
         write_trx(status, atoms.nr, index_all, &atoms, i, angle, box, xout, vout, NULL);
     }
     close_trx(status);
-
-    thanx(stderr);
 
     return 0;
 }

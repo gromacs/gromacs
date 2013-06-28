@@ -3653,6 +3653,5 @@ int gmx_wham(int argc, char *argv[])
     printf("\nIn case you use results from g_wham for a publication, please cite:\n");
     please_cite(stdout, "Hub2010");
 
-    thanx(stderr);
     return 0;
 }

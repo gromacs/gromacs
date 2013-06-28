@@ -47,7 +47,6 @@
 #include "maths.h"
 #include "futil.h"
 #include "index.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
@@ -466,8 +465,6 @@ int gmx_vanhove(int argc, char *argv[])
     do_view(oenv, matfile, NULL);
     do_view(oenv, orfile, NULL);
     do_view(oenv, otfile, NULL);
-
-    thanx(stderr);
 
     return 0;
 }

@@ -44,7 +44,6 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "xvgr.h"
@@ -1004,8 +1003,6 @@ int gmx_current(int argc, char *argv[])
     {
         ffclose(mcor);
     }
-
-    thanx(stderr);
 
     return 0;
 }

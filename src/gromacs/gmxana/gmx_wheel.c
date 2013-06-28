@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "strdb.h"
 #include "statutil.h"
@@ -290,8 +289,6 @@ int gmx_wheel(int argc, char *argv[])
     {
         wheel2(ftp2fn(efEPS, NFILE, fnm), nres, resnm, r0, rot0, title);
     }
-
-    thanx(stderr);
 
     return 0;
 }

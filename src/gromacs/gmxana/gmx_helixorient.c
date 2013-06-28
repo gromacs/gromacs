@@ -41,7 +41,6 @@
 #include "macros.h"
 #include <math.h>
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
@@ -521,6 +520,5 @@ int gmx_helixorient(int argc, char *argv[])
 
     close_trj(status);
 
-    thanx(stderr);
     return 0;
 }

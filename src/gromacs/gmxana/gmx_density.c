@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -554,6 +553,5 @@ int gmx_density(int argc, char *argv[])
                  bSymmetrize, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");  /* view xvgr file */
-    thanx(stderr);
     return 0;
 }

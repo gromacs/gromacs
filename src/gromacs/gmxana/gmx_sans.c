@@ -371,7 +371,6 @@ int gmx_sans(int argc, char *argv[])
     sfree(sq);
 
     please_cite(stdout, "Garmay2012");
-    thanx(stderr);
 
     return 0;
 }

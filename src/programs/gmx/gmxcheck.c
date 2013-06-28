@@ -44,7 +44,6 @@
 #include <math.h>
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
 #include "gmx_fatal.h"
@@ -849,8 +848,6 @@ int gmx_gmxcheck(int argc, char *argv[])
     {
         chk_ndx(ftp2fn(efNDX, NFILE, fnm));
     }
-
-    thanx(stderr);
 
     return 0;
 }

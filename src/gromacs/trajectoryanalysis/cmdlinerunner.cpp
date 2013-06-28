@@ -87,13 +87,13 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
         TrajectoryAnalysisModule *module_;
         int                       debugLevel_;
-        bool                      bPrintCopyright_;
+        bool                      bStandalone_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : module_(module), debugLevel_(0), bPrintCopyright_(true)
+    : module_(module), debugLevel_(0), bStandalone_(true)
 {
 }
 
@@ -195,9 +195,9 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 
 
 void
-TrajectoryAnalysisCommandLineRunner::setPrintCopyright(bool bPrint)
+TrajectoryAnalysisCommandLineRunner::setStandalone(bool bStandalone)
 {
-    impl_->bPrintCopyright_ = bPrint;
+    impl_->bStandalone_ = bStandalone;
 }
 
 
@@ -213,7 +213,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = impl_->module_;
 
-    if (impl_->bPrintCopyright_)
+    if (impl_->bStandalone_)
     {
         CopyRight(stderr, argv[0]);
     }
@@ -283,6 +283,11 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     module->finishAnalysis(nframes);
     module->writeOutput();
+
+    if (impl_->bStandalone_)
+    {
+        gmx_thanx(stderr);
+    }
 
     return 0;
 }

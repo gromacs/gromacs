@@ -42,7 +42,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "futil.h"
-#include "copyrite.h"
 #include "mshift.h"
 #include "main.h"
 #include "pbc.h"

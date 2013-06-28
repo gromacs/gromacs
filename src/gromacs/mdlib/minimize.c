@@ -44,7 +44,6 @@
 #include "string2.h"
 #include "network.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"

@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "copyrite.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
@@ -1875,8 +1874,6 @@ int gmx_trjconv(int argc, char *argv[])
     }
 
     do_view(oenv, out_file, NULL);
-
-    thanx(stderr);
 
     return 0;
 }

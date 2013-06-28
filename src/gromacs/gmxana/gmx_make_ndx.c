@@ -47,7 +47,6 @@
 #include "string2.h"
 #include "statutil.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "index.h"
 #include "smalloc.h"
@@ -1623,8 +1622,6 @@ int gmx_make_ndx(int argc, char *argv[])
     edit_index(natoms, atoms, x, block, &gnames, bVerbose);
 
     write_index(ndxoutfile, block, gnames);
-
-    thanx(stderr);
 
     return 0;
 }

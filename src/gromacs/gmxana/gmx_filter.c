@@ -49,7 +49,6 @@
 #include "tpxio.h"
 #include "princ.h"
 #include "do_fit.h"
-#include "copyrite.h"
 #include "rmpbc.h"
 #include "gmx_ana.h"
 

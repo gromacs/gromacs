@@ -2230,8 +2230,5 @@ int gmx_pdb2gmx(int argc, char *argv[])
     }
     printf("\t\t--------- ETON ESAELP ------------\n");
 
-
-    thanx(stdout);
-
     return 0;
 }

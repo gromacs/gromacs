@@ -48,7 +48,6 @@
 #include "rmpbc.h"
 #include "statutil.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
@@ -528,8 +527,6 @@ int gmx_clustsize(int argc, char *argv[])
                opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
                bMol, bPBC, fnTPR,
                cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
-
-    thanx(stderr);
 
     return 0;
 }

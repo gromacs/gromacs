@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -606,6 +605,5 @@ int gmx_sgangle(int argc, char *argv[])
     do_view(oenv, fnd1, "-nxy"); /* view xvgr file */
     do_view(oenv, fnd2, "-nxy"); /* view xvgr file */
 
-    thanx(stderr);
     return 0;
 }

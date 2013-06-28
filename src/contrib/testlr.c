@@ -576,7 +576,7 @@ int main(int argc,char *argv[])
   
   gmx_fio_fclose(log);
   
-  thanx(stderr);
+  gmx_thanx(stderr);
   
   return 0;
 }

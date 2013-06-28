@@ -457,6 +457,6 @@ int main(int argc,char *argv[])
 	    free_t_atoms(&useatoms,TRUE);
 	}
     }
-    thanx(stderr);
+    gmx_thanx(stderr);
     return 0;
 }

@@ -51,7 +51,6 @@
 #include "toputil.h"
 #include "topio.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
@@ -1930,8 +1929,6 @@ int gmx_grompp(int argc, char *argv[])
     done_warning(wi, FARGS);
 
     write_tpx_state(ftp2fn(efTPX, NFILE, fnm), ir, &state, sys);
-
-    thanx(stderr);
 
     return 0;
 }

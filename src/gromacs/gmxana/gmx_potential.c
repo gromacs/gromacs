@@ -49,7 +49,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -495,6 +494,5 @@ int gmx_potential(int argc, char *argv[])
     do_view(oenv, opt2fn("-oc", NFILE, fnm), NULL); /* view xvgr file */
     do_view(oenv, opt2fn("-of", NFILE, fnm), NULL); /* view xvgr file */
 
-    thanx(stderr);
     return 0;
 }

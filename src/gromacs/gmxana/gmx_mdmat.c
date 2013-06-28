@@ -45,7 +45,6 @@
 #include "typedefs.h"
 #include "filenm.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -392,8 +391,6 @@ int gmx_mdmat(int argc, char *argv[])
         }
         ffclose(fp);
     }
-
-    thanx(stderr);
 
     return 0;
 }

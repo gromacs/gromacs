@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "vec.h"
 #include "index.h"
 #include "macros.h"
@@ -522,8 +521,6 @@ int gmx_polystat(int argc, char *argv[])
     {
         do_view(oenv, opt2fn("-p", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

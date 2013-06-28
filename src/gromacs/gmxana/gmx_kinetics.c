@@ -1069,7 +1069,6 @@ int gmx_kinetics(int argc, char *argv[])
 
     view_all(oenv, NFILE, fnm);
 
-    thanx(stderr);
 #else
     fprintf(stderr, "This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.\n");
 #endif /*HAVE_LIBGSL*/

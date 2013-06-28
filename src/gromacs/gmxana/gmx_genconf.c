@@ -38,7 +38,6 @@
 
 #include "maths.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -369,8 +368,6 @@ int gmx_genconf(int argc, char *argv[])
     }
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
-
-    thanx(stderr);
 
     return 0;
 }
