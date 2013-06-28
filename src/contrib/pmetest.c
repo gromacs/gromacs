@@ -469,7 +469,7 @@ int main(int argc,char *argv[])
 
   /* Thank the audience, as usual */
   if (MASTER(cr)) 
-    thanx(stderr);
+    gmx_thanx(stderr);
 
   return 0;
 }

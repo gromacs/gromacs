@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "statutil.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "main.h"
 #include "futil.h"
 #include "edsam.h"

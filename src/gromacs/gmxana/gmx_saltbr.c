@@ -44,7 +44,6 @@
 #include "typedefs.h"
 #include "filenm.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -331,7 +330,6 @@ int gmx_saltbr(int argc, char *argv[])
             }
         }
     }
-    thanx(stderr);
 
     return 0;
 }

@@ -210,7 +210,7 @@ int main(int argc, char *argv[])
   }
   ffclose(fp);
   
-  thanx(stderr);
+  gmx_thanx(stderr);
   
   return 0;
 }

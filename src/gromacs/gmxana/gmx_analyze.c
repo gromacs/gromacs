@@ -1416,7 +1416,5 @@ int gmx_analyze(int argc, char *argv[])
 
     view_all(oenv, NFILE, fnm);
 
-    thanx(stderr);
-
     return 0;
 }

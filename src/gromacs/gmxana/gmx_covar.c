@@ -51,7 +51,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -652,8 +651,6 @@ int gmx_covar(int argc, char *argv[])
     ffclose(out);
 
     fprintf(stderr, "Wrote the log to %s\n", logfile);
-
-    thanx(stderr);
 
     return 0;
 }

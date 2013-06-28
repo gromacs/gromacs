@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "string2.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "statutil.h"
@@ -1610,8 +1609,6 @@ int gmx_xpm2ps(int argc, char *argv[])
     }
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

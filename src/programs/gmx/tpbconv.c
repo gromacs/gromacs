@@ -51,7 +51,6 @@
 #include "enxio.h"
 #include "readir.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "vec.h"
 #include "mtop_util.h"
@@ -687,7 +686,6 @@ int gmx_tpbconv(int argc, char *argv[])
     {
         printf("You've simulated long enough. Not writing tpr file\n");
     }
-    thanx(stderr);
 
     return 0;
 }

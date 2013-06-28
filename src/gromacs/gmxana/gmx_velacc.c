@@ -39,7 +39,6 @@
 #include <math.h>
 
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
@@ -363,8 +362,6 @@ int gmx_velacc(int argc, char *argv[])
     {
         fprintf(stderr, "Not enough frames in trajectory - no output generated.\n");
     }
-
-    thanx(stderr);
 
     return 0;
 }

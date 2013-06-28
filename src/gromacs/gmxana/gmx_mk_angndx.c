@@ -42,7 +42,6 @@
 #include <math.h>
 #include "typedefs.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "macros.h"
 #include "string2.h"
@@ -304,8 +303,6 @@ int gmx_mk_angndx(int argc, char *argv[])
         }
     }
     ffclose(out);
-
-    thanx(stderr);
 
     return 0;
 }

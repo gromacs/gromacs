@@ -40,7 +40,6 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
@@ -196,8 +195,6 @@ int gmx_morph(int argc, char *argv[])
         ffclose(fp);
         do_view(oenv, opt2fn("-or", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

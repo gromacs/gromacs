@@ -42,7 +42,6 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include <math.h>
@@ -464,8 +463,6 @@ int gmx_spatial(int argc, char *argv[])
         printf("grid.cube contains counts per frame in all %ld cubes\n", numcu);
         printf("Raw data: average %le, min %le, max %le\n", 1.0/norm, (double)min/(double)numfr, (double)max/(double)numfr);
     }
-
-    thanx(stderr);
 
     return 0;
 }

@@ -40,7 +40,6 @@
 #include "string2.h"
 #include "typedefs.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "smalloc.h"
 #include "statutil.h"
 #include "confio.h"
@@ -207,8 +206,6 @@ int gmx_protonate(int argc, char *argv[])
 
     sfree(ix);
     sfree(iatoms);
-
-    thanx(stderr);
 
     return 0;
 }

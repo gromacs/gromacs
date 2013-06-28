@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "statutil.h"
@@ -364,8 +363,6 @@ int gmx_bond(int argc, char *argv[])
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-d", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

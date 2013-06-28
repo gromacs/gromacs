@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -523,8 +522,6 @@ int gmx_densmap(int argc, char *argv[])
                   n1, n2, tickx, tickz, grid, dmin, maxgrid, rlo, rhi, &nlev);
         ffclose(fp);
     }
-
-    thanx(stderr);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
 

@@ -47,7 +47,6 @@
 #include "maths.h"
 #include "futil.h"
 #include "index.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
@@ -1199,8 +1198,6 @@ int gmx_msd(int argc, char *argv[])
             oenv);
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

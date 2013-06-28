@@ -45,7 +45,6 @@
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "strdb.h"
@@ -1339,8 +1338,6 @@ int gmx_editconf(int argc, char *argv[])
     gmx_atomprop_destroy(aps);
 
     do_view(oenv, outfile, NULL);
-
-    thanx(stderr);
 
     return 0;
 }

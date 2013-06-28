@@ -47,6 +47,8 @@
 #include <string>
 #include <utility>
 
+#include "gromacs/legacyheaders/copyrite.h"
+
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
@@ -299,7 +301,6 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 2;
     }
     helpManager.writeCurrentTopic();
-    fprintf(stderr, "\n");
     return 0;
 }
 
@@ -451,6 +452,7 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         if (argc < 2)
         {
             impl_->helpModule_->printUsage();
+            gmx_thanx(stderr);
             return 2;
         }
         module    = impl_->findModuleByName(argv[1]);
@@ -460,9 +462,12 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     {
         fprintf(stderr, "Unknown command: '%s'\n\n", argv[1]);
         impl_->helpModule_->printUsage();
+        gmx_thanx(stderr);
         return 2;
     }
-    return module->second->run(argc - argOffset, argv + argOffset);
+    int rc = module->second->run(argc - argOffset, argv + argOffset);
+    gmx_thanx(stderr);
+    return rc;
 }
 
 } // namespace gmx

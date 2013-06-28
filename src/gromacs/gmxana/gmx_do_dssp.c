@@ -47,7 +47,6 @@
 #include "smalloc.h"
 #include "mshift.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "pdbio.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
@@ -743,8 +742,6 @@ int gmx_do_dssp(int argc, char *argv[])
     }
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

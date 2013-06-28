@@ -581,7 +581,5 @@ int gmx_dos(int argc, char *argv[])
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
 
-    thanx(stderr);
-
     return 0;
 }

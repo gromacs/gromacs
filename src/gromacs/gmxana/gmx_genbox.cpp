@@ -44,7 +44,6 @@
 #include "string2.h"
 #include "physics.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "txtdump.h"
 #include <math.h>
 #include "macros.h"
@@ -1067,8 +1066,6 @@ int gmx_genbox(int argc, char *argv[])
     update_top(&atoms, box, NFILE, fnm, aps);
 
     gmx_atomprop_destroy(aps);
-
-    thanx(stderr);
 
     return 0;
 }

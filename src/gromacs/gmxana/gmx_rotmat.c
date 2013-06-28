@@ -47,7 +47,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -311,8 +310,6 @@ int gmx_rotmat(int argc, char *argv[])
     ffclose(out);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "index.h"
 #include "macros.h"
 #include "gmx_fatal.h"
@@ -228,8 +227,6 @@ int gmx_rotacf(int argc, char *argv[])
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

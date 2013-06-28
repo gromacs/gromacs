@@ -48,7 +48,6 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "txtdump.h"
@@ -211,8 +210,6 @@ int gmx_lie(int argc, char *argv[])
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

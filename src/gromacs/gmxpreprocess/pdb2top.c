@@ -42,7 +42,6 @@
 #include <ctype.h>
 
 #include "vec.h"
-#include "copyrite.h"
 #include "smalloc.h"
 #include "macros.h"
 #include "symtab.h"

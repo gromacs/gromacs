@@ -41,7 +41,6 @@
 #include "macros.h"
 #include <math.h>
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
@@ -343,6 +342,5 @@ int gmx_dist(int argc, char *argv[])
         ffclose(fp);
     }
 
-    thanx(stderr);
     return 0;
 }

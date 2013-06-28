@@ -260,7 +260,7 @@ void CopyRight(FILE *out, const char *szProgram)
 }
 
 
-void thanx(FILE *fp)
+void gmx_thanx(FILE *fp)
 {
     char cq[1024];
     int  cqnum;

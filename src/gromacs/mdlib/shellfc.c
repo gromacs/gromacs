@@ -51,7 +51,6 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "physics.h"
-#include "copyrite.h"
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"

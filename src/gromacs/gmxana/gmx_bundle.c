@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -435,8 +434,6 @@ int gmx_bundle(int argc, char *argv[])
         ffclose(fkinkr);
         ffclose(fkinkl);
     }
-
-    thanx(stderr);
 
     return 0;
 }

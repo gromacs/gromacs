@@ -40,7 +40,6 @@
 
 #include "confio.h"
 #include "pdbio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
@@ -1575,8 +1574,6 @@ int gmx_chi(int argc, char *argv[])
     }
 
     gmx_residuetype_destroy(rt);
-
-    thanx(stderr);
 
     return 0;
 }

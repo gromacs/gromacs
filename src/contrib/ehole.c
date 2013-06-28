@@ -689,7 +689,7 @@ int main(int argc,char *argv[])
   else 
     do_sims(NFILE,fnm,&ehp);
   
-  thanx(stdout);
+  gmx_thanx(stdout);
   
   return 0;
 }

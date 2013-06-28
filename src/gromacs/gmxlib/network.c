@@ -366,7 +366,7 @@ void gmx_abort(int noderank, int nnodes, int errorno)
 #else
 #ifdef GMX_THREAD_MPI
     fprintf(stderr, "Halting program %s\n", ShortProgram());
-    thanx(stderr);
+    gmx_thanx(stderr);
     exit(1);
 #else
     if (nnodes > 1)
@@ -379,7 +379,7 @@ void gmx_abort(int noderank, int nnodes, int errorno)
         fprintf(stderr, "Halting program %s\n", ShortProgram());
     }
 
-    thanx(stderr);
+    gmx_thanx(stderr);
     MPI_Abort(MPI_COMM_WORLD, errorno);
     exit(1);
 #endif

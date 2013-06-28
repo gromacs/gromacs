@@ -45,7 +45,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "bondf.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "xvgr.h"
 #include "txtdump.h"
@@ -1690,8 +1689,6 @@ int gmx_dipoles(int argc, char *argv[])
     do_view(oenv, opt2fn("-a", NFILE, fnm), "-autoscale xy -nxy");
     do_view(oenv, opt2fn("-d", NFILE, fnm), "-autoscale xy");
     do_view(oenv, opt2fn("-c", NFILE, fnm), "-autoscale xy");
-
-    thanx(stderr);
 
     return 0;
 }

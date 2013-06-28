@@ -51,7 +51,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -718,10 +717,6 @@ int gmx_hydorder(int argc, char *argv[])
         }
         writeraw(intfpos, frames, xslices, yslices, raw);
     }
-
-
-
-    thanx(stderr);
 
     return 0;
 }

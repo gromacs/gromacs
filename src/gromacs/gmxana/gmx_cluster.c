@@ -41,7 +41,6 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
@@ -1894,9 +1893,6 @@ int gmx_cluster(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-ntr", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn_null("-clid", NFILE, fnm), "-nxy");
     }
-
-    /* Thank the user for her patience */
-    thanx(stderr);
 
     return 0;
 }

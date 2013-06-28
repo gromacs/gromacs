@@ -39,7 +39,6 @@
 #include "macros.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
@@ -458,8 +457,6 @@ int gmx_sorient(int argc, char *argv[])
     do_view(oenv, opt2fn("-no", NFILE, fnm), NULL);
     do_view(oenv, opt2fn("-ro", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn("-co", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

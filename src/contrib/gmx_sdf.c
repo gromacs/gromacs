@@ -763,7 +763,7 @@ int gmx_sdf(int argc,char *argv[])
          fnREF,bRef,cutoff,binwidth,mode,triangle,dtri,oenv);
 
 
-  thanx(stderr);
+  gmx_thanx(stderr);
   
   return 0;
 }

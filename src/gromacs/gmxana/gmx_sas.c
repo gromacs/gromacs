@@ -778,7 +778,5 @@ int gmx_sas(int argc, char *argv[])
     do_view(oenv, opt2fn_null("-or", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-oa", NFILE, fnm), "-nxy");
 
-    thanx(stderr);
-
     return 0;
 }

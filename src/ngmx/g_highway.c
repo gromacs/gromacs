@@ -582,7 +582,7 @@ int main(int argc, char *argv[])
     x11->MainLoop(x11);
     x11->CleanUp(x11);
 
-    thanx(stderr);
+    gmx_thanx(stderr);
 
     return 0;
 }

@@ -39,7 +39,6 @@
 
 #include "maths.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "bondf.h"
 #include "string2.h"
 #include "smalloc.h"

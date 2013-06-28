@@ -48,7 +48,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "macros.h"
 #include "enxio.h"
 #include "physics.h"
@@ -3943,8 +3942,6 @@ int gmx_bar(int argc, char *argv[])
 
     do_view(oenv, opt2fn_null("-o", NFILE, fnm), "-xydy");
     do_view(oenv, opt2fn_null("-oi", NFILE, fnm), "-xydy");
-
-    thanx(stderr);
 
     return 0;
 }

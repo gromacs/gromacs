@@ -40,7 +40,6 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "vec.h"
@@ -942,7 +941,6 @@ int gmx_disre(int argc, char *argv[])
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
     }
-    thanx(stderr);
 
     gmx_finalize_par();
 
