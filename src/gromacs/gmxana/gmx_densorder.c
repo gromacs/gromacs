@@ -102,7 +102,7 @@ static void center_coords(t_atoms *atoms, matrix box, rvec x0[], int axis)
 }
 
 
-static void density_in_time (const char *fn, atom_id **index, int gnx[], int grpn, real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
+static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw, real bwz, int nsttblock, real *****Densdevel, int *xslices, int *yslices, int *zslices, int *tblock, t_topology *top, int ePBC, int axis, gmx_bool bCenter, gmx_bool bps1d, const output_env_t oenv)
 
 {
 /*
@@ -746,7 +746,7 @@ int gmx_densorder(int argc, char *argv[])
 
     get_index(&top->atoms, ftp2fn_null(efNDX, NFILE, fnm), ngrps, ngx, index, grpname);
 
-    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, ngrps, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
+    density_in_time(ftp2fn(efTRX, NFILE, fnm), index, ngx, binw, binwz, nsttblock, &Densmap, &xslices, &yslices, &zslices, &tblock, top, ePBC, axis, bCenter, b1d, oenv);
 
     if (ftorder > 0)
     {
