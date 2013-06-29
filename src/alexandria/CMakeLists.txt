@@ -69,7 +69,7 @@ add_executable(gen_table gen_table.c)
 target_link_libraries(gen_table ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_table PROPERTIES OUTPUT_NAME "gen_table${GMX_BINARY_SUFFIX}")
 
-add_executable(g_mptest g_mptest.c)
+add_executable(g_mptest g_mptest.cpp)
 target_link_libraries(g_mptest ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_mptest PROPERTIES OUTPUT_NAME "g_mptest${GMX_BINARY_SUFFIX}")
 

@@ -36,6 +36,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <gmx_fatal.h>
+#include "molprop.hpp"
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
 #include "atomprop.h"
@@ -45,8 +46,7 @@ int main(int argc,char*argv[])
 {
     gmx_atomprop_t ap;
     gmx_poldata_t  pd;
-    std::vector<MolProp> mpt;
-    int nmolprop;
+    std::vector<alexandria::MolProp> mpt;
     
     if (argc < 3) 
     {
@@ -68,7 +68,7 @@ int main(int argc,char*argv[])
                   ap,pd,TRUE,TRUE,170,15);
     }
     printf("Read %d molecules from %s\n",mpt.size(),argv[1]);
-    MolPropWrite(argv[2],mpt,0);
+    MolPropWrite(argv[2],mpt,1);
     
     return 0;
 }
