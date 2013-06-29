@@ -45,19 +45,18 @@
  *   energy group pair energy storage
  */
 
-
 #if GMX_SIMD_WIDTH_HERE > 4
 /* The 4xn kernel operates on 4-wide i-force registers */
 
 /* float/double SIMD register type */
 typedef struct {
     real r[4];
-} gmx_mm_pr4;
+} gmx_simd_ref_pr4;
 
-static gmx_inline gmx_mm_pr4
+static gmx_inline gmx_simd_ref_pr4
 gmx_load_pr4(const real *r)
 {
-    gmx_mm_pr4 a;
+    gmx_simd_ref_pr4 a;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -69,9 +68,9 @@ gmx_load_pr4(const real *r)
 }
 
 static gmx_inline void
-gmx_store_pr4(real *dest, gmx_mm_pr4 src)
+gmx_store_pr4(real *dest, gmx_simd_ref_pr4 src)
 {
-    gmx_mm_pr4 a;
+    gmx_simd_ref_pr4 a;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -80,10 +79,10 @@ gmx_store_pr4(real *dest, gmx_mm_pr4 src)
     }
 }
 
-static gmx_inline gmx_mm_pr4
-gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
+static gmx_inline gmx_simd_ref_pr4
+gmx_add_pr4(gmx_simd_ref_pr4 a, gmx_simd_ref_pr4 b)
 {
-    gmx_mm_pr4 c;
+    gmx_simd_ref_pr4 c;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -105,13 +104,13 @@ gmx_add_pr4(gmx_mm_pr4 a, gmx_mm_pr4 b)
 /* float/double SIMD register type */
 typedef struct {
     real r[GMX_SIMD_WIDTH_HERE/2];
-} gmx_mm_hpr;
+} gmx_simd_ref_hpr;
 
 /* Half-width SIMD operations */
 
 /* Load reals at half-width aligned pointer b into half-width SIMD register a */
 static gmx_inline void
-gmx_load_hpr(gmx_mm_hpr *a, const real *b)
+gmx_load_hpr(gmx_simd_ref_hpr *a, const real *b)
 {
     int i;
 
@@ -123,7 +122,7 @@ gmx_load_hpr(gmx_mm_hpr *a, const real *b)
 
 /* Set all entries in half-width SIMD register *a to b */
 static gmx_inline void
-gmx_set1_hpr(gmx_mm_hpr *a, real b)
+gmx_set1_hpr(gmx_simd_ref_hpr *a, real b)
 {
     int i;
 
@@ -135,7 +134,7 @@ gmx_set1_hpr(gmx_mm_hpr *a, real b)
 
 /* Load one real at b and one real at b+1 into halves of a, respectively */
 static gmx_inline void
-gmx_load1p1_pr(gmx_mm_pr *a, const real *b)
+gmx_load1p1_pr(gmx_simd_ref_pr *a, const real *b)
 {
     int i;
 
@@ -148,7 +147,7 @@ gmx_load1p1_pr(gmx_mm_pr *a, const real *b)
 
 /* Load reals at half-width aligned pointer b into two halves of a */
 static gmx_inline void
-gmx_loaddh_pr(gmx_mm_pr *a, const real *b)
+gmx_loaddh_pr(gmx_simd_ref_pr *a, const real *b)
 {
     int i;
 
@@ -161,7 +160,7 @@ gmx_loaddh_pr(gmx_mm_pr *a, const real *b)
 
 /* Store half-width SIMD register b into half width aligned memory a */
 static gmx_inline void
-gmx_store_hpr(real *a, gmx_mm_hpr b)
+gmx_store_hpr(real *a, gmx_simd_ref_hpr b)
 {
     int i;
 
@@ -171,10 +170,10 @@ gmx_store_hpr(real *a, gmx_mm_hpr b)
     }
 }
 
-static gmx_inline gmx_mm_hpr
-gmx_add_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
+static gmx_inline gmx_simd_ref_hpr
+gmx_add_hpr(gmx_simd_ref_hpr a, gmx_simd_ref_hpr b)
 {
-    gmx_mm_hpr c;
+    gmx_simd_ref_hpr c;
     int        i;
 
     for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
@@ -185,10 +184,10 @@ gmx_add_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
     return c;
 }
 
-static gmx_inline gmx_mm_hpr
-gmx_sub_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
+static gmx_inline gmx_simd_ref_hpr
+gmx_sub_hpr(gmx_simd_ref_hpr a, gmx_simd_ref_hpr b)
 {
-    gmx_mm_hpr c;
+    gmx_simd_ref_hpr c;
     int        i;
 
     for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
@@ -200,10 +199,10 @@ gmx_sub_hpr(gmx_mm_hpr a, gmx_mm_hpr b)
 }
 
 /* Sum over 4 half SIMD registers */
-static gmx_inline gmx_mm_hpr
-gmx_sum4_hpr(gmx_mm_pr a, gmx_mm_pr b)
+static gmx_inline gmx_simd_ref_hpr
+gmx_sum4_hpr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
 {
-    gmx_mm_hpr c;
+    gmx_simd_ref_hpr c;
     int        i;
 
     for (i = 0; i < GMX_SIMD_WIDTH_HERE/2; i++)
@@ -219,10 +218,10 @@ gmx_sum4_hpr(gmx_mm_pr a, gmx_mm_pr b)
 }
 
 /* Sum the elements of halfs of each input register and store sums in out */
-static gmx_inline gmx_mm_pr4
-gmx_mm_transpose_sum4h_pr(gmx_mm_pr a, gmx_mm_pr b)
+static gmx_inline gmx_simd_ref_pr4
+gmx_simd_ref_transpose_sum4h_pr(gmx_simd_ref_pr a, gmx_simd_ref_pr b)
 {
-    gmx_mm_pr4 sum;
+    gmx_simd_ref_pr4 sum;
     int        i;
 
     sum.r[0] = 0;
@@ -242,7 +241,7 @@ gmx_mm_transpose_sum4h_pr(gmx_mm_pr a, gmx_mm_pr b)
 }
 
 static gmx_inline void
-gmx_pr_to_2hpr(gmx_mm_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
+gmx_pr_to_2hpr(gmx_simd_ref_pr a, gmx_simd_ref_hpr *b, gmx_simd_ref_hpr *c)
 {
     int i;
 
@@ -253,7 +252,7 @@ gmx_pr_to_2hpr(gmx_mm_pr a, gmx_mm_hpr *b, gmx_mm_hpr *c)
     }
 }
 static gmx_inline void
-gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_pr *c)
+gmx_2hpr_to_pr(gmx_simd_ref_hpr a, gmx_simd_ref_hpr b, gmx_simd_ref_pr *c)
 {
     int i;
 
@@ -269,8 +268,8 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_pr *c)
 
 #ifndef TAB_FDV0
 static gmx_inline void
-load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
-             gmx_mm_pr *ctab0_S, gmx_mm_pr *ctab1_S)
+load_table_f(const real *tab_coul_F, gmx_simd_ref_epi32 ti_S, int *ti,
+                 gmx_simd_ref_pr *ctab0_S, gmx_simd_ref_pr *ctab1_S)
 {
     int i;
 
@@ -280,13 +279,13 @@ load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
         ctab1_S->r[i] = tab_coul_F[ti_S.r[i]+1];
     }
 
-    *ctab1_S  = gmx_sub_pr(*ctab1_S, *ctab0_S);
+    *ctab1_S  = gmx_simd_ref_sub_pr(*ctab1_S, *ctab0_S);
 }
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
-               gmx_epi32 ti_S, int *ti,
-               gmx_mm_pr *ctab0_S, gmx_mm_pr *ctab1_S, gmx_mm_pr *ctabv_S)
+               gmx_simd_ref_epi32 ti_S, int *ti,
+               gmx_simd_ref_pr *ctab0_S, gmx_simd_ref_pr *ctab1_S, gmx_simd_ref_pr *ctabv_S)
 {
     int i;
 
@@ -301,8 +300,8 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
 
 #ifdef TAB_FDV0
 static gmx_inline void
-load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
-             gmx_mm_pr *ctab0_S, gmx_mm_pr *ctab1_S)
+load_table_f(const real *tab_coul_FDV0, gmx_simd_ref_epi32 ti_S, int *ti,
+             gmx_simd_ref_pr *ctab0_S, gmx_simd_ref_pr *ctab1_S)
 {
     int i;
 
@@ -315,8 +314,8 @@ load_table_f(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
 
 static gmx_inline void
 load_table_f_v(const real *tab_coul_FDV0,
-               gmx_epi32 ti_S, int *ti,
-               gmx_mm_pr *ctab0_S, gmx_mm_pr *ctab1_S, gmx_mm_pr *ctabv_S)
+               gmx_simd_ref_epi32 ti_S, int *ti,
+               gmx_simd_ref_pr *ctab0_S, gmx_simd_ref_pr *ctab1_S, gmx_simd_ref_pr *ctabv_S)
 {
     int i;
 
@@ -330,13 +329,13 @@ load_table_f_v(const real *tab_coul_FDV0,
 #endif
 
 /* Sum the elements within each input register and store the sums in out.
- * Note that 4/8-way SIMD requires gmx_mm_transpose_sum4_pr instead.
+ * Note that 4/8-way SIMD requires gmx_simd_ref_transpose_sum4_pr instead.
  */
 #if GMX_SIMD_WIDTH_HERE == 2
-static gmx_inline gmx_mm_pr
-gmx_mm_transpose_sum2_pr(gmx_mm_pr in0, gmx_mm_pr in1)
+static gmx_inline gmx_simd_ref_pr
+gmx_simd_ref_transpose_sum2_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1)
 {
-    gmx_mm_pr sum;
+    gmx_simd_ref_pr sum;
 
     sum.r[0] = in0.r[0] + in0.r[1];
     sum.r[1] = in1.r[0] + in1.r[1];
@@ -347,17 +346,17 @@ gmx_mm_transpose_sum2_pr(gmx_mm_pr in0, gmx_mm_pr in1)
 
 #if GMX_SIMD_WIDTH_HERE >= 4
 #if GMX_SIMD_WIDTH_HERE == 4
-static gmx_inline gmx_mm_pr
+static gmx_inline gmx_simd_ref_pr
 #else
-static gmx_inline gmx_mm_pr4
+static gmx_inline gmx_simd_ref_pr4
 #endif
-gmx_mm_transpose_sum4_pr(gmx_mm_pr in0, gmx_mm_pr in1,
-                         gmx_mm_pr in2, gmx_mm_pr in3)
+gmx_simd_ref_transpose_sum4_pr(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
+                         gmx_simd_ref_pr in2, gmx_simd_ref_pr in3)
 {
 #if GMX_SIMD_WIDTH_HERE == 4
-    gmx_mm_pr  sum;
+    gmx_simd_ref_pr  sum;
 #else
-    gmx_mm_pr4 sum;
+    gmx_simd_ref_pr4 sum;
 #endif
     int        i;
 
@@ -385,8 +384,8 @@ gmx_mm_transpose_sum4_pr(gmx_mm_pr in0, gmx_mm_pr in1,
  * For this reference code we just use a plain-C sqrt.
  */
 static gmx_inline void
-gmx_mm_invsqrt2_pd(gmx_mm_pr in0, gmx_mm_pr in1,
-                   gmx_mm_pr *out0, gmx_mm_pr *out1)
+gmx_simd_ref_invsqrt2_pd(gmx_simd_ref_pr in0, gmx_simd_ref_pr in1,
+                   gmx_simd_ref_pr *out0, gmx_simd_ref_pr *out1)
 {
     out0 = gmx_invsqrt_pr(in0);
     out1 = gmx_invsqrt_pr(in1);
@@ -396,7 +395,7 @@ gmx_mm_invsqrt2_pd(gmx_mm_pr in0, gmx_mm_pr in1,
 #ifdef NBFP_STRIDE
 static gmx_inline void
 load_lj_pair_params(const real *nbfp, const int *type, int aj,
-                    gmx_mm_pr *c6_S, gmx_mm_pr *c12_S)
+                    gmx_simd_ref_pr *c6_S, gmx_simd_ref_pr *c12_S)
 {
     int i;
 
@@ -411,7 +410,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 static gmx_inline void
 load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
                      const int *type, int aj,
-                     gmx_mm_pr *c6_S, gmx_mm_pr *c12_S)
+                     gmx_simd_ref_pr *c6_S, gmx_simd_ref_pr *c12_S)
 {
     int i;
 

@@ -52,6 +52,7 @@
 #ifdef GMX_NBNXN_SIMD_2XNN
 
 /* Include the full width SIMD macros */
+#include "gromacs/simd/types.h"
 #include "gromacs/simd/macros.h"
 #include "gromacs/simd/vector_operations.h"
 
@@ -61,18 +62,8 @@
 #error "unsupported SIMD width"
 #endif
 
-static inline void
-gmx_load_simd_2xnn_exclusions(int excl,
-                              gmx_exclmask mask_S0,
-                              gmx_exclmask mask_S2,
-                              gmx_mm_pb *interact_S0,
-                              gmx_mm_pb *interact_S2)
-{
-    /* Load integer interaction mask */
-    gmx_exclmask mask_S = gmx_load1_exclmask(excl);
-    *interact_S0  = gmx_checkbitmask_pb(mask_S, mask_S0);
-    *interact_S2  = gmx_checkbitmask_pb(mask_S, mask_S2);
-}
+#include "load_2xnn_exclusions.h"
+#include "load_2xnn_exclusions_code.h"
 
 /* Include all flavors of the SSE or AVX 2x(N+N) kernel loops */
 
