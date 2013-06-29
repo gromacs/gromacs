@@ -63,7 +63,7 @@ real pot(real x, real qq, real c6, real cn, int npow)
     return cn*pow(x, -npow)-c6*pow(x, -6)+qq*ONE_4PI_EPS0/x;
 }
 
-real bhpot(real x, real qq, real A, real B, real C)
+real bhpot(real x, real gmx_unused qq, real A, real B, real C)
 {
     return A*exp(-B*x) - C*pow(x, -6.0);
 }

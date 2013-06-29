@@ -41,6 +41,6 @@
 #include "hxprops.h"
 
 extern real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
-                    rvec x[], int nca, atom_id caindex[], matrix box, gmx_bool bFit);
+                    rvec x[], int nca, atom_id caindex[], gmx_bool bFit);
 
 #endif

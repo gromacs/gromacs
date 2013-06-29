@@ -96,8 +96,7 @@ typedef struct {
                                  point. */
 } t_corr;
 
-typedef real t_calc_func (t_corr *, int, atom_id[], int, rvec[], rvec, gmx_bool, matrix,
-                          const output_env_t oenv);
+typedef real t_calc_func (t_corr *, int, atom_id[], int, rvec[], rvec, gmx_bool, matrix);
 
 static real thistime(t_corr *curr)
 {
@@ -219,8 +218,7 @@ static void corr_print(t_corr *curr, gmx_bool bTen, const char *fn, const char *
 
 /* called from corr_loop, to do the main calculations */
 static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
-                      gmx_bool bRmCOMM, rvec com, t_calc_func *calc1, gmx_bool bTen,
-                      const output_env_t oenv)
+                      gmx_bool bRmCOMM, rvec com, t_calc_func *calc1, gmx_bool bTen)
 {
     int    nx0;
     real   g;
@@ -252,7 +250,7 @@ static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
         {
             clear_rvec(dcom);
         }
-        g = calc1(curr, nx, index, nx0, xc, dcom, bTen, mat, oenv);
+        g = calc1(curr, nx, index, nx0, xc, dcom, bTen, mat);
 #ifdef DEBUG2
         printf("g[%d]=%g\n", nx0, g);
 #endif
@@ -268,7 +266,7 @@ static void calc_corr(t_corr *curr, int nr, int nx, atom_id index[], rvec xc[],
 
 /* the non-mass-weighted mean-squared displacement calcuation */
 static real calc1_norm(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
-                       rvec dcom, gmx_bool bTen, matrix mat, const output_env_t oenv)
+                       rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i, ix, m, m2;
     real g, r, r2;
@@ -406,7 +404,7 @@ static real calc_one_mw(t_corr *curr, int ix, int nx0, rvec xc[], real *tm,
 
 /* the normal, mass-weighted mean-squared displacement calcuation */
 static real calc1_mw(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
-                     rvec dcom, gmx_bool bTen, matrix mat, const output_env_t oenv)
+                     rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
     real g, tm;
@@ -522,8 +520,8 @@ static void calc_com(gmx_bool bMol, int gnx, atom_id index[],
 }
 
 
-static real calc1_mol(t_corr *curr, int nx, atom_id index[], int nx0, rvec xc[],
-                      rvec dcom, gmx_bool bTen, matrix mat, const output_env_t oenv)
+static real calc1_mol(t_corr *curr, int nx, atom_id gmx_unused index[], int nx0, rvec xc[],
+                      rvec dcom, gmx_bool bTen, matrix mat)
 {
     int  i;
     real g, tm, gtot, tt;
@@ -816,7 +814,7 @@ int corr_loop(t_corr *curr, const char *fn, t_topology *top, int ePBC,
         {
             /* calculate something useful, like mean square displacements */
             calc_corr(curr, i, gnx[i], index[i], xa[cur], (gnx_com != NULL), com,
-                      calc1, bTen, oenv);
+                      calc1, bTen);
         }
         cur    = prev;
         t_prev = t;
