@@ -30,6 +30,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#include <algorithm>
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -69,21 +71,6 @@ enum {
     eParselogResetProblem,
     eParselogNr
 };
-
-
-typedef struct
-{
-    int    nPMEnodes;     /* number of PME only nodes used in this test */
-    int    nx, ny, nz;    /* DD grid */
-    int    guessPME;      /* if nPMEnodes == -1, this is the guessed number of PME nodes */
-    float *Gcycles;       /* This can contain more than one value if doing multiple tests */
-    float  Gcycles_Av;
-    float *ns_per_day;
-    float  ns_per_day_Av;
-    float *PME_f_load;     /* PME mesh/force load average*/
-    float  PME_f_load_Av;  /* Average average ;) ... */
-    char  *mdrun_cmd_line; /* Mdrun command line used for this test */
-} t_perf;
 
 
 typedef struct
@@ -135,7 +122,6 @@ static void calc_q2all(
     real            q2_all = 0;  /* Sum of squared charges */
     int             nrq_mol;     /* Number of charges in a single molecule */
     int             nrq_all;     /* Total number of charges in the MD system */
-    real            nrq_all_r;   /* No of charges in real format */
     real            qi, q2_mol;
     gmx_moltype_t  *molecule;
     gmx_molblock_t *molblock;
@@ -169,7 +155,6 @@ static void calc_q2all(
                 imol, molblock->natoms_mol, q2_mol, nrq_mol, molblock->nmol, q2_all, nrq_all);
 #endif
     }
-    nrq_all_r = nrq_all;
 
     *q2all   = q2_all;
     *q2allnr = nrq_all;
@@ -656,7 +641,7 @@ static real estimate_reciprocal(
     }
 
     startlocal = x_per_core *  cr->nodeid;
-    stoplocal  = min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
+    stoplocal  = std::min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
 
     if (bFraction)
     {
@@ -1031,7 +1016,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         edir = info->e_dir[0];
         erec = info->e_rec[0];
         derr = edir-erec;
-        while (fabs(derr/min(erec, edir)) > 1e-4)
+        while (fabs(derr/std::min(erec, edir)) > 1e-4)
         {
 
             beta                = info->ewald_beta[0];

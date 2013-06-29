@@ -41,6 +41,7 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "txtdump.h"
+#include "force.h"
 #include "mdrun.h"
 #include "partdec.h"
 #include "mdatoms.h"

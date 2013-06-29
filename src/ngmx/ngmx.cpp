@@ -63,7 +63,6 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 static void dump_xw(char *dispname, Window w, char *fn)
 {
     char comm[256];
-    int  rc;
 
     sprintf(comm, "xwd -id %d -display %s > %s", (int)w, dispname, fn);
 
@@ -71,7 +70,7 @@ static void dump_xw(char *dispname, Window w, char *fn)
     printf("Warning-- No calls to system(3) supported on this platform.");
     printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
 #else
-    rc = system(comm);
+    (void)system(comm);
 #endif
 }
 
@@ -364,7 +363,7 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     t_gmx                *gmx;
     XSizeHints            hints;
     int                   w0, h0;
-    int                   natom, nre, natom_trx;
+    int                   natom, natom_trx;
     t_topology            top;
     int                   ePBC;
     matrix                box;

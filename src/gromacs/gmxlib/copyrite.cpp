@@ -146,7 +146,7 @@ void bromacs(char *retstring, int retsize)
 void cool_quote(char *retstring, int retsize, int *cqnum)
 {
     char *tmpstr;
-    char *s, *ptr;
+    char *ptr;
     int   tmpcq, *p;
 
     if (cqnum != NULL)
@@ -573,7 +573,7 @@ void please_cite(FILE *fp, const char *key)
     };
 #define NSTR (int)asize(citedb)
 
-    int   j, index;
+    int   index;
     char *author;
     char *title;
 #define LINE_WIDTH 79
