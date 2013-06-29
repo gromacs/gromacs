@@ -775,7 +775,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
                      real dt, unsigned long mode, int nrestart,
                      gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
-                     int eFitFn, int nskip)
+                     int eFitFn)
 {
     FILE       *fp, *gp = NULL;
     int         i, k, nfour;
@@ -1051,7 +1051,7 @@ void do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     low_do_autocorr(fn, oenv, title, nframes, nitem, acf.nout, c1, dt, mode,
                     acf.nrestart, bAver, acf.bNormalize,
                     bDebugMode(), acf.tbeginfit, acf.tendfit,
-                    acf.fitfn, acf.nskip);
+                    acf.fitfn);
 }
 
 int get_acfnout(void)

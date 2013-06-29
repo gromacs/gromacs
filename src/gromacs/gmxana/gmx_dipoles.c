@@ -727,7 +727,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                    gmx_bool bPhi,     int  *nlevels,  int ndegrees,
                    int  ncos,
                    const char *cmap,    real rcmax,
-                   gmx_bool bQuad,    const char *quadfn,
+                   gmx_bool bQuad,
                    gmx_bool bMU,      const char *mufn,
                    int  *gnx,     int  *molindex[],
                    real mu_max,   real mu_aver,
@@ -1680,8 +1680,7 @@ int gmx_dipoles(int argc, char *argv[])
            bPhi,    &nlevels,  ndegrees,
            ncos,
            opt2fn("-cmap", NFILE, fnm), rcmax,
-           bQuad,   opt2fn("-q", NFILE, fnm),
-           bMU,     opt2fn("-en", NFILE, fnm),
+           bQuad, bMU,     opt2fn("-en", NFILE, fnm),
            gnx, grpindex, mu_max, mu_aver, epsilonRF, temp, nFF, skip,
            bSlab, nslices, axtitle, opt2fn("-slab", NFILE, fnm), oenv);
 

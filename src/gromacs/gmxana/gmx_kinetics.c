@@ -377,7 +377,7 @@ static double my_f(const gsl_vector *v, void *params)
     }
 }
 
-static void optimize_remd_parameters(FILE *fp, t_remd_data *d, int maxiter,
+static void optimize_remd_parameters(t_remd_data *d, int maxiter,
                                      real tol)
 {
     real   size, d2;
@@ -1002,7 +1002,7 @@ int gmx_kinetics(int argc, char *argv[])
     preprocess_remd(fp, &remd, cutoff, tref, ucut, bBack, Euf, Efu, Ei, t0, t1,
                     bSum, bDiscrete, nmult);
 
-    optimize_remd_parameters(fp, &remd, maxiter, tol);
+    optimize_remd_parameters(&remd, maxiter, tol);
 
     dump_remd_parameters(fp, &remd, opt2fn("-o", NFILE, fnm),
                          opt2fn_null("-o2", NFILE, fnm),
@@ -1024,7 +1024,7 @@ int gmx_kinetics(int argc, char *argv[])
             remd.nmask++;
         }
         sum_ft(&remd);
-        optimize_remd_parameters(fp, &remd, maxiter, tol);
+        optimize_remd_parameters(&remd, maxiter, tol);
         dump_remd_parameters(fp, &remd, "test1.xvg", NULL, NULL, NULL, NULL, skip, tref, oenv);
 
         for (i = 0; (i < remd.nreplica); i++)
@@ -1034,7 +1034,7 @@ int gmx_kinetics(int argc, char *argv[])
         remd.nmask = remd.nreplica - remd.nmask;
 
         sum_ft(&remd);
-        optimize_remd_parameters(fp, &remd, maxiter, tol);
+        optimize_remd_parameters(&remd, maxiter, tol);
         dump_remd_parameters(fp, &remd, "test2.xvg", NULL, NULL, NULL, NULL, skip, tref, oenv);
 
         for (i = 0; (i < remd.nreplica); i++)
@@ -1048,7 +1048,7 @@ int gmx_kinetics(int argc, char *argv[])
             remd.nmask++;
         }
         sum_ft(&remd);
-        optimize_remd_parameters(fp, &remd, maxiter, tol);
+        optimize_remd_parameters(&remd, maxiter, tol);
         dump_remd_parameters(fp, &remd, "test1.xvg", NULL, NULL, NULL, NULL, skip, tref, oenv);
 
         for (i = 0; (i < remd.nreplica); i++)
@@ -1062,7 +1062,7 @@ int gmx_kinetics(int argc, char *argv[])
             remd.nmask++;
         }
         sum_ft(&remd);
-        optimize_remd_parameters(fp, &remd, maxiter, tol);
+        optimize_remd_parameters(&remd, maxiter, tol);
         dump_remd_parameters(fp, &remd, "test1.xvg", NULL, NULL, NULL, NULL, skip, tref, oenv);
     }
     ffclose(fp);
