@@ -54,7 +54,7 @@ void maxwell_speed(real tempi, int seed,
                    gmx_mtop_t *mtop, rvec v[]);
 /* Generate velocites according to a maxwellian distribution */
 
-real calc_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[],
+real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
              rvec xcm, rvec vcm, rvec acm, matrix L);
 /* Calculate the c.o.m. position, velocity, acceleration and the
  * moment of Inertia. Returns the total mass.

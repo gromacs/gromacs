@@ -118,7 +118,7 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpin != NULL)
     {
-        inp = read_inpfile(mpin, &ninp, NULL, wi);
+        inp = read_inpfile(mpin, &ninp, wi);
     }
     else
     {

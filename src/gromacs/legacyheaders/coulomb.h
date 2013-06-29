@@ -47,7 +47,7 @@ extern "C" {
 /* Ewald related stuff */
 
 void
-init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
+init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir,
                FILE *fp);
 /* initialize the ewald table (as found in the t_forcerec) */
 
@@ -69,8 +69,7 @@ do_ewald(FILE *log,       gmx_bool bVerbose,
 /* Do an Ewald calculation for the long range electrostatics. */
 
 real
-ewald_LRcorrection(FILE *fp,
-                   int start, int end,
+ewald_LRcorrection(int start, int end,
                    t_commrec *cr, int thread, t_forcerec *fr,
                    real *chargeA, real *chargeB,
                    gmx_bool calc_excl_corr,
@@ -95,8 +94,7 @@ ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
  * of potentials and forces.
  */
 void
-set_shift_consts(FILE *log, real r1, real rc, rvec box,
-                 t_forcerec *fr);
+set_shift_consts(real r1, real rc, rvec box);
 
 #ifdef __cplusplus
 }

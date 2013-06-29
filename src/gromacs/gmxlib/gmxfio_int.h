@@ -118,7 +118,7 @@ extern const char    *eioNames[eioNR];
 /* make a debug string if that is requested in the fio */
 const char *gmx_fio_dbgstr(t_fileio *fio, const char *desc, char *buf);
 /* check the number of items against the allowed number of items */
-void gmx_fio_check_nitem(t_fileio *fio, int eio, int nitem, const char *file,
+void gmx_fio_check_nitem(int eio, int nitem, const char *file,
                          int line);
 /* check the output type against allowed values */
 void gmx_fio_fe(t_fileio *fio, int eio, const char *desc, const char *srcfile,

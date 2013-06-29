@@ -83,8 +83,7 @@ real calc_ewaldcoeff(real rc, real dtol)
 
 
 
-real ewald_LRcorrection(FILE *fplog,
-                        int start, int end,
+real ewald_LRcorrection(int start, int end,
                         t_commrec *cr, int thread, t_forcerec *fr,
                         real *chargeA, real *chargeB,
                         gmx_bool calc_excl_corr,

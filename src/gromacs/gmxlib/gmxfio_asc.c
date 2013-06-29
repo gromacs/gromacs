@@ -86,15 +86,15 @@ const t_iotype dummy_iotype = {do_dummyread, do_dummywrite};
 
 
 
-static gmx_bool do_dummyread(t_fileio *fio, void *item, int nitem, int eio,
-                             const char *desc, const char *srcfile, int line)
+static gmx_bool do_dummyread(t_fileio gmx_unused *fio, void gmx_unused *item, int gmx_unused nitem, int gmx_unused eio,
+                             const char gmx_unused *desc, const char gmx_unused *srcfile, int gmx_unused line)
 {
     gmx_fatal(FARGS, "File type not set!");
     return FALSE;
 }
 
-static gmx_bool do_dummywrite(t_fileio *fio, const void *item, int nitem, int eio,
-                              const char *desc, const char *srcfile, int line)
+static gmx_bool do_dummywrite(t_fileio gmx_unused *fio, const void gmx_unused *item, int gmx_unused nitem, int gmx_unused eio,
+                              const char gmx_unused *desc, const char gmx_unused *srcfile, int gmx_unused line)
 {
     gmx_fatal(FARGS, "File type not set!");
     return FALSE;
@@ -159,7 +159,7 @@ static gmx_bool do_ascwrite(t_fileio *fio, const void *item, int nitem, int eio,
     unsigned char *ucptr;
     FILE          *fp = fio->fp;
 
-    gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
         case eioREAL:
@@ -303,7 +303,7 @@ static gmx_bool do_ascread(t_fileio *fio, void *item, int nitem, int eio,
 #define NEXT_ITEM_BUF_LEN 128
     char            ni_buf[NEXT_ITEM_BUF_LEN];
 
-    gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
         case eioREAL:

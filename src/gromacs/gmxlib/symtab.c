@@ -206,7 +206,7 @@ void open_symtab(t_symtab *symtab)
     symtab->symbuf = NULL;
 }
 
-void close_symtab(t_symtab *symtab)
+void close_symtab(t_symtab gmx_unused *symtab)
 {
 }
 
