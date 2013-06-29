@@ -683,7 +683,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
-                            real xcom, real ycom, gmx_bool bDoZ)
+                            real xcom, gmx_bool bDoZ)
 {
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum {
@@ -828,7 +828,7 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     xcom /= mtot;
     ycom /= mtot;
 
-    return gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, TRUE);
+    return gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, TRUE);
 }
 
 static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real yj,
@@ -1202,7 +1202,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
 
     /* first do 6 ring as default,
        except CZ (we'll do that different) and HZ (we don't have that): */
-    nvsite = gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, FALSE);
+    nvsite = gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, FALSE);
 
     /* then construct CZ from the 2nd triangle */
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
