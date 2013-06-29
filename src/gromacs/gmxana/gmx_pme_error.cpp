@@ -52,6 +52,8 @@
 #include "main.h"
 #include "macros.h"
 
+#include "gromacs/utility/programinfo.h"
+
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d), (cr))
 #define nblock_bc(cr, nr, d) gmx_bcast((nr)*sizeof((d)[0]), (d), (cr))
@@ -1122,6 +1124,7 @@ int gmx_pme_error(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     cr = init_par(&argc, &argv);
+    const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(argc, argv);
 
 #ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
@@ -1129,7 +1132,7 @@ int gmx_pme_error(int argc, char *argv[])
 
     if (MASTER(cr))
     {
-        CopyRight(stderr, argv[0]);
+        gmx::printBinaryInformation(stderr, programInfo);
     }
 
     PCA_Flags  = PCA_NOEXIT_ON_ARGS;

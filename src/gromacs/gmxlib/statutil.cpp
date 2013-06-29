@@ -114,13 +114,6 @@ const char *command_line(void)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void set_program_name(const char *argvzero)
-{
-    // The negative argc is a hack to make the ProgramInfo overridable in
-    // parse_common_args(), where the full command-line is known.
-    gmx::ProgramInfo::init(-1, &argvzero);
-}
-
 /* utility functions */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
@@ -585,6 +578,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
 #define FF(arg) ((Flags & arg) == arg)
 
+    gmx::ProgramInfo::init(*argc, argv);
     /* Check for double arguments */
     for (i = 1; (i < *argc); i++)
     {
@@ -610,7 +604,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
     }
     debug_gmx();
-    gmx::ProgramInfo::init(*argc, argv);
 
     /* Handle the flags argument, which is a bit field
      * The FF macro returns whether or not the bit is set

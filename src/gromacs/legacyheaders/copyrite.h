@@ -48,7 +48,7 @@ void
 gmx_print_version_info(FILE *fp);
 
 void
-CopyRight(FILE *out, const char *szProgram);
+CopyRight(FILE *out);
 
 
 /* For both bromacs() and cool_quote() you have to provide a pointer to
@@ -74,6 +74,22 @@ please_cite(FILE *fp, const char *key);
 
 #ifdef __cplusplus
 }
+
+namespace gmx
+{
+
+class ProgramInfo;
+
+/*! \brief
+ * Print basic information about the executable.
+ *
+ * \param     fp           Where to print the information to.
+ * \param[in] programInfo  Program information object to use.
+ */
+void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo);
+
+} // namespace gmx;
+
 #endif
 
 #endif  /* _copyright_h */
