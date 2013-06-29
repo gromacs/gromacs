@@ -89,7 +89,6 @@ const char *command_line(void);
  * directory from its location!
  */
 const char *Program(void);
-void set_program_name(const char *argvzero);
 /* Id. without leading directory */
 const char *ShortProgram(void);
 

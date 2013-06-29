@@ -63,6 +63,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -215,7 +216,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
     if (impl_->bStandalone_)
     {
-        CopyRight(stderr, argv[0]);
+        printBinaryInformation(stderr, ProgramInfo::getInstance());
     }
 
     SelectionCollection  selections;

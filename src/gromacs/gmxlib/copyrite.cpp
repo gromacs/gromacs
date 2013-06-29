@@ -59,6 +59,7 @@
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/utility/programinfo.h"
 
 #include "buildinfo.h"
 
@@ -177,7 +178,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     sfree(tmpstr);
 }
 
-void CopyRight(FILE *out, const char *szProgram)
+void CopyRight(FILE *out)
 {
     static const char * CopyrightText[] = {
         "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
@@ -199,10 +200,6 @@ void CopyRight(FILE *out, const char *szProgram)
         "of the License, or (at your option) any later version."
     };
 
-    /* Dont change szProgram arbitrarily - it must be argv[0], i.e. the
-     * name of a file. Otherwise, we won't be able to find the library dir.
-     */
-
 #define NCR (int)asize(CopyrightText)
 /* TODO: Is this exception still needed? */
 #ifdef GMX_FAHCORE
@@ -211,14 +208,8 @@ void CopyRight(FILE *out, const char *szProgram)
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    char buf[256], tmpstr[1024];
+    char tmpstr[1024];
     int  i;
-
-#ifdef GMX_FAHCORE
-    set_program_name("Gromacs");
-#else
-    set_program_name(szProgram);
-#endif
 
     ster_print(out, "G  R  O  M  A  C  S");
     fprintf(out, "\n");
@@ -230,17 +221,6 @@ void CopyRight(FILE *out, const char *szProgram)
     ster_print(out, GromacsVersion());
     fprintf(out, "\n");
 
-    if (getenv("GMX_NO_CREDITS"))
-    {
-        return;
-    }
-
-    /* fprintf(out,"\n");*/
-
-    /* sp_print(out,"PLEASE NOTE: THIS IS A BETA VERSION\n");
-
-       fprintf(out,"\n"); */
-
     for (i = 0; (i < NCR); i++)
     {
         sp_print(out, CopyrightText[i]);
@@ -250,13 +230,6 @@ void CopyRight(FILE *out, const char *szProgram)
         sp_print(out, LicenseText[i]);
     }
 
-    fprintf(out, "\n");
-
-    snprintf(buf, 256, "%s", Program());
-#ifdef GMX_DOUBLE
-    strcat(buf, " (double precision)");
-#endif
-    ster_print(out, buf);
     fprintf(out, "\n");
 }
 
@@ -705,5 +678,23 @@ void gmx_print_version_info(FILE *fp)
 #ifdef GMX_GPU
     gmx_print_version_info_gpu(fp);
 #endif
-
 }
+
+namespace gmx
+{
+
+void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
+{
+    const char *precisionString = "";
+#ifdef GMX_DOUBLE
+    precisionString = " (double precision)";
+#endif
+    const std::string &name = programInfo.programName();
+    fprintf(fp, "GROMACS:    %s, %s%s\n", name.c_str(),
+            GromacsVersion(), precisionString);
+    fprintf(fp, "Executable: %s\n", programInfo.programNameWithPath().c_str());
+    fprintf(fp, "Command line:\n  %s\n", programInfo.commandLine().c_str());
+    fprintf(fp, "\n");
+}
+
+} // namespace gmx
