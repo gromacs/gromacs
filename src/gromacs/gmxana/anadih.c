@@ -69,7 +69,7 @@ void print_one(const output_env_t oenv, const char *base, const char *name,
     ffclose(fp);
 }
 
-static int calc_RBbin(real phi, int multiplicity, real core_frac)
+static int calc_RBbin(real phi, int gmx_unused multiplicity, real gmx_unused core_frac)
 {
     /* multiplicity and core_frac NOT used,
      * just given to enable use of pt-to-fn in caller low_ana_dih_trans*/
@@ -338,7 +338,7 @@ void low_ana_dih_trans(gmx_bool bTrans, const char *fn_trans,
 
 }
 
-void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih,
+void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                              int nlist, t_dlist dlist[], int nangles)
 {
     /* new by grs - for dihedral j (as in dih[j]) get multiplicity from dlist
@@ -402,7 +402,7 @@ void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih,
 
 }
 
-void mk_chi_lookup (int **lookup, int maxchi, real **dih,
+void mk_chi_lookup (int **lookup, int maxchi,
                     int nlist, t_dlist dlist[])
 {
 
@@ -440,7 +440,7 @@ void mk_chi_lookup (int **lookup, int maxchi, real **dih,
 }
 
 
-void get_chi_product_traj (real **dih, int nframes, int nangles, int nlist,
+void get_chi_product_traj (real **dih, int nframes, int nlist,
                            int maxchi, t_dlist dlist[], real time[],
                            int **lookup, int *multiplicity, gmx_bool bRb, gmx_bool bNormalize,
                            real core_frac, gmx_bool bAll, const char *fnall,
@@ -667,7 +667,7 @@ void calc_distribution_props(int nh, int histo[], real start,
     *S2 = tdc*tdc+tds*tds;
 }
 
-static void calc_angles(FILE *log, t_pbc *pbc,
+static void calc_angles(t_pbc *pbc,
                         int n3, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2;
@@ -721,7 +721,7 @@ static real calc_fraction(real angles[], int nangles)
     }
 }
 
-static void calc_dihs(FILE *log, t_pbc *pbc,
+static void calc_dihs(t_pbc *pbc,
                       int n4, atom_id index[], real ang[], rvec x_s[])
 {
     int  i, ix, t1, t2, t3;
@@ -870,11 +870,11 @@ void read_ang_dih(const char *trj_fn,
 
         if (bAngles)
         {
-            calc_angles(stdout, pbc, isize, index, angles[cur], x);
+            calc_angles(pbc, isize, index, angles[cur], x);
         }
         else
         {
-            calc_dihs(stdout, pbc, isize, index, angles[cur], x);
+            calc_dihs(pbc, isize, index, angles[cur], x);
 
             /* Trans fraction */
             fraction              = calc_fraction(angles[cur], nangles);
