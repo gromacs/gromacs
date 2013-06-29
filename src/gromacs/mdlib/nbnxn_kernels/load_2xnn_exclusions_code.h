@@ -1,6 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -32,48 +35,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Header file for utility class, union and function for testing of SIMD functionality.
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_simd
- */
+#ifndef _load_2xnn_exclusions_code_h
+#define _load_2xnn_exclusions_code_h
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
+#include "load_2xnn_exclusions.h"
+#include "gromacs/simd/types.h"
 
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
-namespace SIMDTests
+static inline void
+gmx_load_2xnn_exclusions(unsigned int excl,
+                         gmx_exclmask mask_S0,
+                         gmx_exclmask mask_S2,
+                         gmx_mm_pb *interact_S0,
+                         gmx_mm_pb *interact_S2)
 {
+    /* Load integer interaction mask */
+    gmx_exclmask mask_S = gmx_load1_exclmask(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_S, mask_S0);
+    *interact_S2  = gmx_checkbitmask_pb(mask_S, mask_S2);
+}
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
-
-/*! \brief Union type to facilitate low-level manipulations */
-typedef union
+#if 0
 {
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+#endif
+#ifdef __cplusplus
+}
+#endif
 
-/*! \brief Helper function that test whether two vectors of reals
- * compare as equal, given the tolerance described by scaleMaxUlps.
- *
- * An "ulp" is a "unit in last place." By default, GoogleTest will
- * tolerate a range of +/- 2 in the last digit of the significand when
- * comparing for equality. This is multiplied by scaleMaxUlps. See
- * gtest-internal.h for details.
- */
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scaleMaxUlps = 1.0f);
-
-} // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */
+#endif
