@@ -34,7 +34,7 @@
  */
 /*! \internal \file
  * \brief
- * Tests for SIMD functionality
+ * Utility class and function for testing of SIMD functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
@@ -46,6 +46,20 @@
 namespace SIMDTests
 {
 
+/*! \brief Class derived from GoogleTest to provide a way to tune
+ * whether two floats should compare as equal. This needs to vary to
+ * suit the requirements of the test.
+ *
+ * For example, "SIMD" functions that use table lookups,
+ * rational-function approximations, or Newton-Raphson iterations will
+ * not be binary exact with the reference versions, because generally
+ * we don't need the accuracy in GROMACS.
+ *
+ * Also caters to the x86 quirk that SIMD-true is a NaN, and the IEEE
+ * rules (which are otherwise followed by GoogleTest) specify that any
+ * comparison with any NaN must be false (even with another NaN that
+ * is bitwise identical).
+ */
 template <typename RawType>
 class FloatingPoint : public ::testing::internal::FloatingPoint<RawType>
 {
@@ -66,12 +80,16 @@ class FloatingPoint : public ::testing::internal::FloatingPoint<RawType>
         {
             typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
 
-            // The IEEE standard says that any comparison operation
-            // involving a NAN must return false. But x86 SIMD uses
-            // 0xffffffff as true, and that is a NAN. So we need the
-            // ability to test for that, first.
-            if (((UnsignedIntWithSizeOfReal) ~0 == this->bits()) &&
-                ((UnsignedIntWithSizeOfReal) ~0 == rhs.bits())) { return true; }
+            // TODO fix this later
+//#ifdef GMX_X86
+            /* The IEEE standard says that any comparison operation
+               involving a NaN must return false. But x86 SIMD uses
+               0xffffffff as true, and that is a NaN. So we need the
+               ability to test for that, first. */
+            UnsignedIntWithSizeOfReal simdTrue = ~0;
+            if ((simdTrue == this->bits()) &&
+                (simdTrue == rhs.bits())) { return true; }
+//#endif
             if (this->is_nan() || rhs.is_nan()) {return false; }
 
             return ::testing::internal::FloatingPoint<RawType>::DistanceBetweenSignAndMagnitudeNumbers(this->bits(), rhs.bits())
@@ -87,6 +105,7 @@ RealArraysAreEqual(const real         *expected,
 {
     bool              bAllWereEqual(true);
     std::stringstream errorString;
+    typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
 
     for (unsigned long i = 0; i < length; ++i)
     {
@@ -100,10 +119,20 @@ RealArraysAreEqual(const real         *expected,
                 errorString << ",\n";
             }
             bAllWereEqual = false;
-            errorString << "element [" << i << "] was not equal: expected "
-            << expected[i] << " but was " << actual[i];
+            BitManipulater manipulater_expected, manipulater_actual;
+            manipulater_expected.r = expected[i];
+            manipulater_actual.r   = actual[i];
+            real difference = expected[i] - actual[i];
+            errorString << std::scientific;
+            errorString.precision(17);
+            errorString << "element [" << std::dec << (i+1) << "] was not equal: expected "
+            << expected[i] << " (0x" << std::hex << manipulater_expected.i
+            << ") but was " << std::dec << actual[i] << " (0x"
+            << std::hex << manipulater_actual.i
+            << ") and the difference was " << std::dec << difference;
         }
     }
+
     if (bAllWereEqual)
     {
         return ::testing::AssertionSuccess();
@@ -113,6 +142,5 @@ RealArraysAreEqual(const real         *expected,
         return ::testing::AssertionFailure() << errorString.str();
     }
 }
-
 
 } // namespace
