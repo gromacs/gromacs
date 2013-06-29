@@ -154,7 +154,7 @@ extern void make_rotation_groups(t_rot *rot, char **rotgnames,
                                  t_blocka *grps, char **gnames);
 /* Process the rotation parameters after reading the index groups */
 
-extern void set_reference_positions(t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+extern void set_reference_positions(t_rot *rot, rvec *x, matrix box,
                                     const char *fn, gmx_bool bSet, warninp_t wi);
 
 #endif  /* _readir_h */
