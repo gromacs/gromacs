@@ -33,16 +33,43 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
-gmx_add_unit_test(SIMDUnitTests simd-test
-                  utils.cpp
-                  test_memory_operations.cpp
-                  test_masking_operations.cpp
-                  test_logical_operations.cpp
-# The next sets of files all have tests that are primarily
-# arithmetical in nature
-                  test_v_v.cpp
-                  test_v_vv.cpp
-                  test_v_vvv.cpp
-                  test_i_vpp.cpp
-                  )
+    set(files
+        utils.cpp
+        load_table_f_2xnn.cpp
+        load_table_f_v_2xnn.cpp
+        load_table_f_4xn.cpp
+        load_table_f_v_4xn.cpp
+        arithmetic_one_input.cpp
+        arithmetic_two_inputs.cpp
+        arithmetic_three_inputs.cpp
+        sincos.cpp
+        logic.cpp
+        anytrue.cpp
+        blendzero.cpp
+        masknotadd.cpp
+        load.cpp
+        set1.cpp
+        setzero.cpp
+        store.cpp
+        )
+    if (APPLE AND ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" AND
+        C_COMPILER_VERSION AND C_COMPILER_VERSION VERSION_LESS 4.2)
+            # A bug in Apple clang "4.1" prevents compiling two
+            # templated forms of AlignedSimdAllocator in the same
+            # compilation unit. I get the same error message as
+            # https://code.google.com/p/address-sanitizer/issues/detail?id=132
+            # but I do not understand why.
+
+            # TODO I suspect the table loads are also broken because the
+            # result SIMD vectors have to be allocated in aligned
+            # memory??
+        else()
+        list(APPEND files
+            load_exclusions_2xnn.cpp
+            load_exclusions_4xn.cpp
+            )
+    endif()
+    gmx_add_unit_test(SIMDTests simd-test
+        ${files}
+        )
 endif()

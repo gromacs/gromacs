@@ -1,6 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -32,58 +35,37 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Tests for SIMD functionality
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_simd
- */
+#ifndef _load_4xn_exclusions_h
+#define _load_4xn_exclusions_h
 
-#include "tests.h"
+#include "gromacs/simd/types.h"
 
-namespace SIMDTests
-{
-
-/********************************************************************
- * Tests for SIMD wrapper functions
- */
-
-template<> void
-SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP>::call(ReferenceFunction_I_VPP referenceFunction, RealArray theReals)
-{
-    gmx_simd_ref_pr a, b, c;
-
-    a = gmx_simd_ref_load_pr(theReals[0]);
-    referenceFunction(a, &b, &c);
-    gmx_simd_ref_store_pr(referenceResult[0], b);
-    gmx_simd_ref_store_pr(referenceResult[1], c);
-}
-
-template<> void
-SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP>::call(TestFunction_I_VPP testFunction, RealArray theReals)
-{
-    gmx_mm_pr a, b, c;
-    a = gmx_load_pr(theReals[0]);
-    testFunction(a, &b, &c);
-    gmx_store_pr(testResult[0], b);
-    gmx_store_pr(testResult[1], c);
-}
-
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP> SimdFunctionWithSignature_I_VPP;
-
-TEST_F(SimdFunctionWithSignature_I_VPP, gmx_sincos_pr_Works)
-{
-    Tester(gmx_simd_ref_sincos_pr,
-           gmx_sincos_pr,
-           reals,
-#ifdef GMX_DOUBLE
-           2.0, // empirically determined to be enough on x86
-#else
-           1.0,
+#ifdef __cplusplus
+extern "C" {
 #endif
-           2); // Make sure we test both outputs
+#if 0
 }
+#endif
 
-} // namespace
+/* Load NBNXN kernel exclusion masks into SIMD vectors for the kernels
+ * to use. Only the kernels and the test code should use this
+ * function, but the test code needs a seam upon which to work. */
+static void
+gmx_load_4xn_exclusions(unsigned int excl,
+                        gmx_exclmask mask_S0,
+                        gmx_exclmask mask_S1,
+                        gmx_exclmask mask_S2,
+                        gmx_exclmask mask_S3,
+                        gmx_mm_pb   *interact_S0,
+                        gmx_mm_pb   *interact_S1,
+                        gmx_mm_pb   *interact_S2,
+                        gmx_mm_pb   *interact_S3);
+
+#if 0
+{
+#endif
+#ifdef __cplusplus
+}
+#endif
+
+#endif
