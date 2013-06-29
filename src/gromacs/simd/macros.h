@@ -60,29 +60,6 @@
 /* Uncomment the next line, without other SIMD active, for testing plain-C */
 /* #define GMX_SIMD_REFERENCE_PLAIN_C */
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
-/* Plain C SIMD reference implementation, also serves as documentation */
-#define GMX_HAVE_SIMD_MACROS
-
-/* In general the reference SIMD supports any SIMD width, including 1.
- * For the nbnxn 4xn kernels all widths (2, 4 and 8) are supported.
- * The nbnxn 2xnn kernels are currently not supported.
- */
-#define GMX_SIMD_REF_WIDTH  4
-
-/* Include plain-C reference implementation, also serves as documentation */
-#include "gromacs/simd/reference.h"
-
-#define GMX_SIMD_WIDTH_HERE  GMX_SIMD_REF_WIDTH
-
-/* float/double SIMD register type */
-#define gmx_mm_pr  gmx_simd_ref_pr
-
-/* boolean SIMD register type */
-#define gmx_mm_pb  gmx_simd_ref_pb
-
-/* integer SIMD register type, only for table indexing and exclusion masks */
-#define gmx_epi32  gmx_simd_ref_epi32
-#define GMX_SIMD_EPI32_WIDTH  GMX_SIMD_REF_EPI32_WIDTH
 
 /* Load GMX_SIMD_WIDTH_HERE reals for memory starting at r */
 #define gmx_load_pr       gmx_simd_ref_load_pr
@@ -144,11 +121,8 @@
 /* Code for handling loading and applying exclusion masks. The x86
    code might use either integer- or real-type SIMD, but the reference
    code does not need to know. */
-#define gmx_exclmask               gmx_simd_ref_exclmask
-#define EXCL_MASK_STRIDE           (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#define EXCL_MASK_POINTER_STRIDE   EXCL_MASK_STRIDE
 #define gmx_load1_exclmask(e)      gmx_simd_ref_load1_exclmask(e)
-#define gmx_load_exclmask(e)       gmx_simd_ref_load_exclmask((int *) e)
+#define gmx_load_exclmask(e)       gmx_simd_ref_load_exclmask(e)
 #define gmx_checkbitmask_pb(m0,m1) gmx_simd_ref_checkbitmask_pb(m0, m1)
 
 /* Conversions only used for PME table lookup */
@@ -245,15 +219,6 @@
 #if !defined GMX_X86_AVX_256 || defined GMX_USE_HALF_WIDTH_SIMD_HERE
 
 #ifndef GMX_DOUBLE
-
-#define GMX_SIMD_WIDTH_HERE  4
-
-#define gmx_mm_pr  __m128
-
-#define gmx_mm_pb  __m128
-
-#define gmx_epi32  __m128i
-#define GMX_SIMD_EPI32_WIDTH  4
 
 static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
 {
@@ -393,11 +358,20 @@ static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
 //#define gmx_anytrue_pb    _mm_movemask_ps
 
 /* Code for handling loading and applying exclusion masks */
-#define gmx_exclmask                gmx_epi32
-#define EXCL_MASK_STRIDE            (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#define EXCL_MASK_POINTER_STRIDE    EXCL_MASK_STRIDE
-#define gmx_load1_exclmask(e)       _mm_set1_epi32(e)
-#define gmx_load_exclmask(i)        _mm_load_si128((__m128i *) (i))
+//#define gmx_load1_exclmask(e)       _mm_set1_epi32(e)
+//#define gmx_load_exclmask(i)        _mm_load_si128((__m128i *) (i))
+//#define gmx_checkbitmask_pb(m0, m1) gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()))
+
+static gmx_inline gmx_exclmask gmx_load1_exclmask(unsigned int a)
+{
+    return _mm_set1_epi32(a);
+}
+
+static gmx_inline gmx_exclmask gmx_load_exclmask(const unsigned int *a)
+{
+    return _mm_load_si128((__m128i *) a);
+}
+
 static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1)
 {
     return gmx_mm_castsi128_ps(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
@@ -440,15 +414,6 @@ static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
 #define gmx_atan2_pr      gmx_mm_atan2_ps
 
 #else /* ifndef GMX_DOUBLE */
-
-#define GMX_SIMD_WIDTH_HERE  2
-
-#define gmx_mm_pr  __m128d
-
-#define gmx_mm_pb  __m128d
-
-#define gmx_epi32  __m128i
-#define GMX_SIMD_EPI32_WIDTH  4
 
 static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
 {
@@ -593,11 +558,19 @@ static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
 //#define gmx_anytrue_pb    _mm_movemask_pd
 
 /* Code for handling loading and applying exclusion masks */
-#define gmx_exclmask                gmx_epi32
-#define EXCL_MASK_STRIDE            (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#define EXCL_MASK_POINTER_STRIDE    EXCL_MASK_STRIDE
-#define gmx_load1_exclmask(e)       _mm_set1_epi32(e)
-#define gmx_load_exclmask(i)        _mm_load_si128((__m128i *) (i))
+//#define gmx_load1_exclmask(e)       _mm_set1_epi32(e)
+//#define gmx_load_exclmask(i)        _mm_load_si128((__m128i *) (i))
+//#define gmx_checkbitmask_pb(m0, m1) gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()))
+static gmx_inline gmx_exclmask gmx_load1_exclmask(unsigned int a)
+{
+    return _mm_set1_epi32(a);
+}
+
+static gmx_inline gmx_exclmask gmx_load_exclmask(const unsigned int *a)
+{
+    return _mm_load_si128((__m128i *) a);
+}
+
 static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1)
 {
     return gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
@@ -647,15 +620,6 @@ static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
  */
 
 #ifndef GMX_DOUBLE
-
-#define GMX_SIMD_WIDTH_HERE  8
-
-#define gmx_mm_pr  __m256
-
-#define gmx_mm_pb  __m256
-
-#define gmx_epi32  __m256i
-#define GMX_SIMD_EPI32_WIDTH  8
 
 static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
 {
@@ -772,23 +736,26 @@ static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
 //#define gmx_anytrue_pb    _mm256_movemask_ps
 
 /* Code for handling loading and applying exclusion masks */
-#define gmx_exclmask                gmx_mm_pr
-#ifdef GMX_DOUBLE
-#define EXCL_MASK_STRIDE            2
-#else
-#define EXCL_MASK_STRIDE            1
-#endif
-/* When later casting a pointer to real in gmx_load_exclmask, being
-   double precision or not will take care of this automatically */
-#define EXCL_MASK_POINTER_STRIDE 1
-#define gmx_load1_exclmask(e)       _mm256_castsi256_ps(_mm256_set1_epi32(e))
-#define gmx_load_exclmask(r)        gmx_load_pr((real *) r)
+//#define gmx_load1_exclmask(e)       _mm256_castsi256_ps(_mm256_set1_epi32(e))
+//#define gmx_load_exclmask(r)        gmx_load_pr((real *) r)
 /* With <= 16 bits used the cast and conversion should not be required,
  * since only mantissa bits are set and that would give a non-zero float,
  * but with the Intel compiler this does not work correctly.
  */
+//#define gmx_checkbitmask_pb(m0, m1) _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c)
+static gmx_inline gmx_exclmask gmx_load1_exclmask(unsigned int a)
+{
+    return _mm256_castsi256_ps(_mm256_set1_epi32(a));
+}
+
+static gmx_inline gmx_exclmask gmx_load_exclmask(const unsigned int *a)
+{
+    return gmx_load_pr((real *) a);
+}
+
 static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1)
 {
+    /* 0x0c is _CMP_NEQ_OQ, i.e. not-equal */
     return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);
 }
 //#define gmx_checkbitmask_pb(m0, m1) _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c)
@@ -828,16 +795,6 @@ static gmx_inline gmx_mm_pr gmx_acos_pr(gmx_mm_pr a)
 #define gmx_atan2_pr      gmx_mm256_atan2_ps
 
 #else
-
-#define GMX_SIMD_WIDTH_HERE  4
-
-#define gmx_mm_pr  __m256d
-
-#define gmx_mm_pb  __m256d
-
-/* We use 128-bit integer registers because of missing 256-bit operations */
-#define gmx_epi32  __m128i
-#define GMX_SIMD_EPI32_WIDTH  4
 
 static gmx_inline gmx_mm_pr gmx_load_pr(const real *a)
 {
@@ -955,24 +912,27 @@ static gmx_inline int gmx_anytrue_pb(gmx_mm_pb a)
 //#define gmx_anytrue_pb    _mm256_movemask_pd
 
 /* Code for handling loading and applying exclusion masks */
-#define gmx_exclmask                gmx_mm_pr
-#ifdef GMX_DOUBLE
-#define EXCL_MASK_STRIDE            2
-#else
-#define EXCL_MASK_STRIDE            1
-#endif
-/* When later casting a pointer to real in gmx_load_exclmask, being
-   double precision or not will take care of this automatically */
-#define EXCL_MASK_POINTER_STRIDE 1
-#define gmx_load1_exclmask(e)       _mm256_castsi256_pd(_mm256_set1_epi32(e))
-#define gmx_load_exclmask(r)        gmx_load_pr((real *) r)
+//#define gmx_load1_exclmask(e)       _mm256_castsi256_pd(_mm256_set1_epi32(e))
+//#define gmx_load_exclmask(r)        gmx_load_pr((real *) r)
 /* With <= 16 bits used the cast and conversion should not be required,
  * since only mantissa bits are set and that would give a non-zero float,
  * but with the Intel compiler this does not work correctly.
  * Because AVX does not have int->double conversion, we convert via float.
  */
+//#define gmx_checkbitmask_pb(m0, m1) _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c)
+static gmx_inline gmx_exclmask gmx_load1_exclmask(unsigned int a)
+{
+    return _mm256_castsi256_ps(_mm256_set1_epi32(a));
+}
+
+static gmx_inline gmx_exclmask gmx_load_exclmask(const unsigned int *a)
+{
+    return gmx_load_pr((real *) a);
+}
+
 static gmx_inline gmx_mm_pb gmx_checkbitmask_pb(gmx_exclmask m0, gmx_exclmask m1)
 {
+    /* 0x0c is _CMP_NEQ_OQ, i.e. not-equal */
     return _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c);
 }
 //#define gmx_checkbitmask_pb(m0, m1) _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c)
