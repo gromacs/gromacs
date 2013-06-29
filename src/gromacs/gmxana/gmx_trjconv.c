@@ -72,8 +72,7 @@ enum {
 
 
 static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
-                             rvec x[], atom_id index[],
-                             rvec clust_com, matrix box, rvec clustercenter)
+                             rvec x[], atom_id index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -734,7 +733,6 @@ int gmx_trjconv(int argc, char *argv[])
     static char     *exec_command  = NULL;
     static real      dropunder     = 0, dropover = 0;
     static gmx_bool  bRound        = FALSE;
-    static rvec      clustercenter = {0, 0, 0};
 
     t_pargs
         pa[] =
@@ -766,9 +764,6 @@ int gmx_trjconv(int argc, char *argv[])
         { "-box", FALSE, etRVEC,
           { newbox },
           "Size for new cubic box (default: read from input)" },
-        { "-clustercenter", FALSE, etRVEC,
-          { clustercenter },
-          "Optional starting point for pbc cluster option" },
         { "-trans", FALSE, etRVEC,
           { trans },
           "All coordinates will be translated by trans. This "
@@ -1449,9 +1444,7 @@ int gmx_trjconv(int argc, char *argv[])
                 }
                 else if (bCluster)
                 {
-                    rvec com;
-
-                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, com, fr.box, clustercenter);
+                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)

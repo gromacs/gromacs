@@ -93,7 +93,7 @@ real ellipticity(int nres, t_bb bb[])
     return ell;
 }
 
-real ahx_len(int gnx, atom_id index[], rvec x[], matrix box)
+real ahx_len(int gnx, atom_id index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     rvec dx;
@@ -146,7 +146,7 @@ static real rot(rvec x1, rvec x2)
     return dphi;
 }
 
-real twist(FILE *fp, int nca, atom_id caindex[], rvec x[])
+real twist(int nca, atom_id caindex[], rvec x[])
 {
     real pt, dphi;
     int  i, a0, a1;
@@ -169,7 +169,7 @@ real twist(FILE *fp, int nca, atom_id caindex[], rvec x[])
     return (pt/(nca-1));
 }
 
-real ca_phi(int gnx, atom_id index[], rvec x[], matrix box)
+real ca_phi(int gnx, atom_id index[], rvec x[])
 /* Assume we have a list of Calpha atoms only! */
 {
     real phi, phitot;
@@ -473,7 +473,7 @@ real pprms(FILE *fp, int nbb, t_bb bb[])
     return rms;
 }
 
-void calc_hxprops(int nres, t_bb bb[], rvec x[], matrix box)
+void calc_hxprops(int nres, t_bb bb[], rvec x[])
 {
     int  i, ao, an, t1, t2, t3;
     rvec dx, r_ij, r_kj, r_kl, m, n;
@@ -519,7 +519,7 @@ void calc_hxprops(int nres, t_bb bb[], rvec x[], matrix box)
     }
 }
 
-static void check_ahx(int nres, t_bb bb[], rvec x[],
+static void check_ahx(int nres, t_bb bb[],
                       int *hstart, int *hend)
 {
     int  h0, h1, h0sav, h1sav;
@@ -552,7 +552,7 @@ static void check_ahx(int nres, t_bb bb[], rvec x[],
     *hend   = h1sav;
 }
 
-void do_start_end(int nres, t_bb bb[], rvec x[], int *nbb, atom_id bbindex[],
+void do_start_end(int nres, t_bb bb[], int *nbb, atom_id bbindex[],
                   int *nca, atom_id caindex[],
                   gmx_bool bRange, int rStart, int rEnd)
 {
@@ -579,7 +579,7 @@ void do_start_end(int nres, t_bb bb[], rvec x[], int *nbb, atom_id bbindex[],
     else
     {
         /* Find start and end of longest helix fragment */
-        check_ahx(nres, bb, x, &hstart, &hend);
+        check_ahx(nres, bb, &hstart, &hend);
     }
     fprintf(stderr, "helix from: %d through %d\n",
             bb[hstart].resno, bb[hend].resno);

@@ -156,7 +156,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
     ps_close(out);
 }
 
-void wheel2(const char *fn, int nres, char *resnm[], int r0, real rot0, char *title)
+void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 {
     const real fontsize  = 14;
     const real gray      = 0.9;
@@ -287,7 +287,7 @@ int gmx_wheel(int argc, char *argv[])
     }
     else
     {
-        wheel2(ftp2fn(efEPS, NFILE, fnm), nres, resnm, r0, rot0, title);
+        wheel2(ftp2fn(efEPS, NFILE, fnm), nres, resnm, rot0, title);
     }
 
     return 0;

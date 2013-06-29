@@ -352,7 +352,7 @@ static t_hbdata *mk_hbdata(gmx_bool bHBmap, gmx_bool bDAnr, gmx_bool oneHB, gmx_
     return hb;
 }
 
-static void mk_hbmap(t_hbdata *hb, gmx_bool bTwo)
+static void mk_hbmap(t_hbdata *hb)
 {
     int  i, j;
 
@@ -2718,7 +2718,7 @@ static void normalizeACF(real *ct, real *gt, int nhb, int len)
 static void do_hbac(const char *fn, t_hbdata *hb,
                     int nDump, gmx_bool bMerge, gmx_bool bContact, real fit_start,
                     real temp, gmx_bool R2, real smooth_tail_start, const output_env_t oenv,
-                    t_gemParams *params, const char *gemType, int nThreads,
+                    const char *gemType, int nThreads,
                     const int NN, const gmx_bool bBallistic, const gmx_bool bGemFit)
 {
     FILE          *fp;
@@ -3142,7 +3142,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
                                         if (rHbExGem[m][0] > 0  && n0+poff[m] < nn /*  && m==0 */)
                                         {
                                             low_do_autocorr(NULL, oenv, NULL, nframes, 1, -1, &(rHbExGem[m]), hb->time[1]-hb->time[0],
-                                                            eacNormal, 1, FALSE, bNorm, FALSE, 0, -1, 0, 1);
+                                                            eacNormal, 1, FALSE, bNorm, FALSE, 0, -1, 0);
                                             for (j = 0; (j < nn); j++)
                                             {
                                                 __ACDATA[j] += rHbExGem[m][j];
@@ -3337,7 +3337,7 @@ static void do_hbac(const char *fn, t_hbdata *hb,
 
                             /* The autocorrelation function is normalized after summation only */
                             low_do_autocorr(NULL, oenv, NULL, nframes, 1, -1, &rhbex, hb->time[1]-hb->time[0],
-                                            eacNormal, 1, FALSE, bNorm, FALSE, 0, -1, 0, 1);
+                                            eacNormal, 1, FALSE, bNorm, FALSE, 0, -1, 0);
 
                             /* Cross correlation analysis for thermodynamics */
                             for (j = nframes; (j < n2); j++)
@@ -3619,8 +3619,7 @@ static void dump_hbmap(t_hbdata *hb,
 
 /* sync_hbdata() updates the parallel t_hbdata p_hb using hb as template.
  * It mimics add_frames() and init_frame() to some extent. */
-static void sync_hbdata(t_hbdata *hb, t_hbdata *p_hb,
-                        int nframes, real t)
+static void sync_hbdata(t_hbdata *p_hb, int nframes)
 {
     int i;
     if (nframes >= p_hb->max_frames)
@@ -3729,7 +3728,7 @@ int gmx_hbond(int argc, char *argv[])
     static int         nDump    = 0, nFitPoints = 100;
     static int         nThreads = 0, nBalExp = 4;
 
-    static gmx_bool    bContact     = FALSE, bBallistic = FALSE, bBallisticDt = FALSE, bGemFit = FALSE;
+    static gmx_bool    bContact     = FALSE, bBallistic = FALSE, bGemFit = FALSE;
     static real        logAfterTime = 10, gemBallistic = 0.2; /* ps */
     static const char *NNtype[]     = {NULL, "none", "binary", "oneOverR3", "dipole", NULL};
 
@@ -4090,7 +4089,7 @@ int gmx_hbond(int argc, char *argv[])
     {
         printf("Making hbmap structure...");
         /* Generate hbond data structure */
-        mk_hbmap(hb, bTwo);
+        mk_hbmap(hb);
         printf("done.\n");
     }
 
@@ -4270,7 +4269,7 @@ int gmx_hbond(int argc, char *argv[])
 
             if (bOMP)
             {
-                sync_hbdata(hb, p_hb[threadNr], nframes, t);
+                sync_hbdata(p_hb[threadNr], nframes);
             }
 #pragma omp single
             {
@@ -4746,7 +4745,7 @@ int gmx_hbond(int argc, char *argv[])
             if (bGem || bNN)
             {
                 params = init_gemParams(rcut, D, hb->time, hb->nframes/2, nFitPoints, fit_start, fit_end,
-                                        gemBallistic, nBalExp, bBallisticDt);
+                                        gemBallistic, nBalExp);
                 if (params == NULL)
                 {
                     gmx_fatal(FARGS, "Could not initiate t_gemParams params.");
@@ -4755,7 +4754,7 @@ int gmx_hbond(int argc, char *argv[])
             gemstring = strdup(gemType[hb->per->gemtype]);
             do_hbac(opt2fn("-ac", NFILE, fnm), hb, nDump,
                     bMerge, bContact, fit_start, temp, r2cut > 0, smooth_tail_start, oenv,
-                    params, gemstring, nThreads, NN, bBallistic, bGemFit);
+                    gemstring, nThreads, NN, bBallistic, bGemFit);
         }
         if (opt2bSet("-life", NFILE, fnm))
         {

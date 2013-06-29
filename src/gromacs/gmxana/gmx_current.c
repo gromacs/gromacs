@@ -325,7 +325,7 @@ static real calc_cacf(FILE *fcacf, real prefactor, real cacf[], real time[], int
 
 }
 
-static void calc_mjdsp(FILE *fmjdsp, real vol, real temp, real prefactor, rvec mjdsp[], real dsp2[], real time[], int nfr, real refr[])
+static void calc_mjdsp(FILE *fmjdsp, real prefactor, real dsp2[], real time[], int nfr, real refr[])
 {
 
     int     i;
@@ -630,7 +630,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
 
     fprintf(stderr, "Prefactor fit E-H: 1 / 6.0*V*k_B*T: %g\n", prefactorav);
 
-    calc_mjdsp(fmjdsp, volume_av, temp, prefactorav, mjdsp, dsp2, time, nfr, xshfr);
+    calc_mjdsp(fmjdsp, prefactorav, dsp2, time, nfr, xshfr);
 
     /*
      * Now we can average and calculate the correlation functions

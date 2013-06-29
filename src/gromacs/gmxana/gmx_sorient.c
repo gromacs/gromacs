@@ -49,7 +49,7 @@
 
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         atom_id index[], rvec xref, gmx_bool bPBC, matrix box)
+                         atom_id index[], rvec xref, gmx_bool bPBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -288,7 +288,7 @@ int gmx_sorient(int argc, char *argv[])
         {
             if (bCom)
             {
-                calc_com_pbc(nrefat, &top, x, &pbc, index[0], xref, bPBC, box);
+                calc_com_pbc(nrefat, &top, x, &pbc, index[0], xref, bPBC);
             }
             else
             {

@@ -129,7 +129,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
     low_do_autocorr(fn_tca, oenv, "Transverse Current Autocorrelation Functions",
                     nframes, ntc, ncorr, tc, dt, eacNormal,
-                    1, FALSE, FALSE, FALSE, 0, 0, 0, 0);
+                    1, FALSE, FALSE, FALSE, 0, 0, 0);
     do_view(oenv, fn_tca, "-nxy");
 
     fp = xvgropen(fn_tc, "Transverse Current Autocorrelation Functions",

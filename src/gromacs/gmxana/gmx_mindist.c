@@ -598,7 +598,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
     return nres;
 }
 
-void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
+void dump_res(FILE *out, int nres, atom_id *resindex, atom_id index[])
 {
     int i, j;
 
@@ -768,7 +768,7 @@ int gmx_mindist(int argc, char *argv[])
                              gnx[0], index[0], &residues);
         if (debug)
         {
-            dump_res(debug, nres, residues, gnx[0], index[0]);
+            dump_res(debug, nres, residues, index[0]);
         }
     }
 

@@ -55,7 +55,7 @@
 
 typedef struct {
     unsigned long mode;
-    int           nrestart, nout, P, fitfn, nskip;
+    int           nrestart, nout, P, fitfn;
     gmx_bool      bFour, bNormalize;
     real          tbeginfit, tendfit;
 } t_acf;
@@ -775,7 +775,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv, const char *title,
                      real dt, unsigned long mode, int nrestart,
                      gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
-                     int eFitFn, int nskip)
+                     int eFitFn)
 {
     FILE       *fp, *gp = NULL;
     int         i, k, nfour;
@@ -983,8 +983,6 @@ t_pargs *add_acf_pargs(int *npargs, t_pargs *pa)
           "Order of Legendre polynomial for ACF (0 indicates none)" },
         { "-fitfn",    FALSE, etENUM, {s_ffn},
           "Fit function" },
-        { "-ncskip",   FALSE, etINT,  {&acf.nskip},
-          "Skip this many points in the output file of correlation functions" },
         { "-beginfit", FALSE, etREAL, {&acf.tbeginfit},
           "Time where to begin the exponential fit of the correlation function" },
         { "-endfit",   FALSE, etREAL, {&acf.tendfit},
@@ -1051,7 +1049,7 @@ void do_autocorr(const char *fn, const output_env_t oenv, const char *title,
     low_do_autocorr(fn, oenv, title, nframes, nitem, acf.nout, c1, dt, mode,
                     acf.nrestart, bAver, acf.bNormalize,
                     bDebugMode(), acf.tbeginfit, acf.tendfit,
-                    acf.fitfn, acf.nskip);
+                    acf.fitfn);
 }
 
 int get_acfnout(void)
