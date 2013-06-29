@@ -307,7 +307,7 @@ int gmx_gyrate(int argc, char *argv[])
     }
     if (nz == 0)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     do
     {
@@ -367,7 +367,7 @@ int gmx_gyrate(int argc, char *argv[])
         }
         j++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     if (nz == 0)
     {

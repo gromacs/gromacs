@@ -1013,7 +1013,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
 
         gkrbin = mk_gkrbin(rcut, rcmax, bPhi, ndegrees);
     }
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom);
 
     /* Start while loop over frames */
     t1     = t0 = t;
@@ -1314,7 +1314,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         }
         else
         {
-            bCont = read_next_x(oenv, status, &t, natom, x, box);
+            bCont = read_next_x(oenv, status, &t, x, box);
         }
         timecheck = check_times(t);
     }

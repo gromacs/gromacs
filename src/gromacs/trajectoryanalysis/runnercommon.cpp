@@ -417,7 +417,7 @@ TrajectoryAnalysisRunnerCommon::initFirstFrame()
     if (top.hasTopology() && impl_->settings_.hasRmPBC())
     {
         impl_->gpbc_ = gmx_rmpbc_init(&top.topology()->idef, top.ePBC(),
-                                      impl_->fr->natoms, impl_->fr->box);
+                                      impl_->fr->natoms);
     }
 }
 
