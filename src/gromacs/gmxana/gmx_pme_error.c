@@ -436,7 +436,7 @@ static real estimate_reciprocal(
         rvec         x[],   /* array of particles */
         real         q[],   /* array of charges */
         int          nr,    /* number of charges = size of the charge array */
-        FILE        *fp_out,
+        FILE  gmx_unused  *fp_out,
         gmx_bool     bVerbose,
         unsigned int seed,     /* The seed for the random number generator */
         int         *nsamples, /* Return the number of samples used if Monte Carlo

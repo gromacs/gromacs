@@ -322,7 +322,7 @@ gmx_bool has_dihedral(int Dih, t_dlist *dl)
     return b;
 }
 
-static void pr_one_ro(FILE *fp, t_dlist *dl, int nDih, real dt)
+static void pr_one_ro(FILE *fp, t_dlist *dl, int nDih, real gmx_unused dt)
 {
     int k;
     for (k = 0; k < NROT; k++)

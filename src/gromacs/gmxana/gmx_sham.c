@@ -419,7 +419,7 @@ static void do_sham(const char *fn, const char *ndx,
                     real Tref,
                     real pmax, real gmax,
                     real *emin, real *emax, int nlevels, real pmin,
-                    const char *mname, gmx_bool bSham, int *idim, int *ibox,
+                    const char *mname, int *idim, int *ibox,
                     gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
 {
     FILE        *fp;
@@ -1165,7 +1165,7 @@ int gmx_sham(int argc, char *argv[])
             opt2parg_bSet("-emin", NPA, pa) ? &emin : NULL,
             opt2parg_bSet("-emax", NPA, pa) ? &emax : NULL,
             nlevels, pmin,
-            mname, bSham, idim, ibox,
+            mname, idim, ibox,
             opt2parg_bSet("-xmin", NPA, pa), rmin,
             opt2parg_bSet("-xmax", NPA, pa), rmax);
 

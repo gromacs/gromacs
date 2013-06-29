@@ -996,8 +996,7 @@ static void do_rama(int nf, int nlist, t_dlist dlist[], real **dih,
 
 
 static void print_transitions(const char *fn, int maxchi, int nlist,
-                              t_dlist dlist[], t_atoms *atoms, rvec x[],
-                              matrix box, gmx_bool bPhi, gmx_bool bPsi, gmx_bool bChi, real dt,
+                              t_dlist dlist[], real dt,
                               const output_env_t oenv)
 {
     /* based on order_params below */
@@ -1483,7 +1482,7 @@ int gmx_chi(int argc, char *argv[])
      * added multiplicity */
 
     snew(multiplicity, ndih);
-    mk_multiplicity_lookup(multiplicity, maxchi, dih, nlist, dlist, ndih);
+    mk_multiplicity_lookup(multiplicity, maxchi, nlist, dlist, ndih);
 
     strcpy(grpname, "All residues, ");
     if (bPhi)
@@ -1534,8 +1533,7 @@ int gmx_chi(int argc, char *argv[])
     /* transitions to xvg */
     if (bDo_rt)
     {
-        print_transitions(opt2fn("-rt", NFILE, fnm), maxchi, nlist, dlist,
-                          &atoms, x, box, bPhi, bPsi, bChi, traj_t_ns, oenv);
+        print_transitions(opt2fn("-rt", NFILE, fnm), maxchi, nlist, dlist, traj_t_ns, oenv);
     }
 
     /* chi_product trajectories (ie one "rotamer number" for each residue) */
@@ -1546,9 +1544,9 @@ int gmx_chi(int argc, char *argv[])
         {
             snew(chi_lookup[i], maxchi);
         }
-        mk_chi_lookup(chi_lookup, maxchi, dih, nlist, dlist);
+        mk_chi_lookup(chi_lookup, maxchi, nlist, dlist);
 
-        get_chi_product_traj(dih, nf, nactdih, nlist,
+        get_chi_product_traj(dih, nf, nactdih,
                              maxchi, dlist, time, chi_lookup, multiplicity,
                              FALSE, bNormHisto, core_frac, bAll,
                              opt2fn("-cp", NFILE, fnm), oenv);
