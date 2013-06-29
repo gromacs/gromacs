@@ -232,35 +232,35 @@ static int check_data_sufficiency(FILE *fp,
     {
         if (mmi->eSupp != eSupportNo) 
         {
-            aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
+            aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
             k = 0;
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom) &&
                    (mmi->eSupp != eSupportNo)) 
             {
                 if ((atom->atomnumber > 0) || !bPol)
                 {
-                    if (n_index_count(ic,*(mmi->topology->atoms.atomtype[k])) == -1) 
+                    if (n_index_count(ic,*(mmi->topology_->atoms.atomtype[k])) == -1) 
                     {
                         if (debug)
                             fprintf(debug,"Removing %s because of lacking support for atom %s\n",
                                     mmi->GetMolname().c_str(),
-                                    *(mmi->topology->atoms.atomtype[k]));
+                                    *(mmi->topology_->atoms.atomtype[k]));
                         mmi->eSupp = eSupportNo;
                     }
                 }
                 k++;
             }
             if (mmi->eSupp != eSupportNo) {
-                gmx_assert(k,mmi->topology->atoms.nr);
-                aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
+                gmx_assert(k,mmi->topology_->atoms.nr);
+                aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
                 k = 0;
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
                 {
                     if ((atom->atomnumber > 0) || !bPol)
-                        inc_index_count(ic,*(mmi->topology->atoms.atomtype[k]));
+                        inc_index_count(ic,*(mmi->topology_->atoms.atomtype[k]));
                     k++;
                 }
-                gmx_assert(k,mmi->topology->atoms.nr);
+                gmx_assert(k,mmi->topology_->atoms.nr);
             }
         }
     }
@@ -272,22 +272,22 @@ static int check_data_sufficiency(FILE *fp,
         {
             if (mmi->eSupp != eSupportNo) {
                 j = 0;
-                aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
+                aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
-                    if (c_index_count(ic,*(mmi->topology->atoms.atomtype[j])) < minimum_data) {
+                    if (c_index_count(ic,*(mmi->topology_->atoms.atomtype[j])) < minimum_data) {
                         if (debug)
                             fprintf(debug,"Removing %s because of no support for name %s\n",
                                     mmi->GetMolname().c_str(),
-                                    *(mmi->topology->atoms.atomtype[j]));
+                                    *(mmi->topology_->atoms.atomtype[j]));
                         break;
                     }
                     j++;
                 }
-                if (j < mmi->mtop->natoms) {
-                    aloop = gmx_mtop_atomloop_all_init(mmi->mtop);
+                if (j < mmi->mtop_->natoms) {
+                    aloop = gmx_mtop_atomloop_all_init(mmi->mtop_);
                     k = 0;
                     while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
-                        dec_index_count(ic,*(mmi->topology->atoms.atomtype[k++]));
+                        dec_index_count(ic,*(mmi->topology_->atoms.atomtype[k++]));
                     mmi->eSupp = eSupportNo;
                     nremove++;
                 }
@@ -690,50 +690,50 @@ void MolDip::CalcDeviation()
             for(j=0; (j<ermsNR); j++)
                 _ener[j] = 0;
             
-            if (NULL == mymol->qgen)
-                mymol->qgen =
-                    gentop_qgen_init(_pd,&(mymol->topology->atoms),_atomprop,
+            if (NULL == mymol->qgen_)
+                mymol->qgen_ =
+                    gentop_qgen_init(_pd,&(mymol->topology_->atoms),_atomprop,
                                      mymol->x,_iModel,_hfac,
                                      mymol->GetCharge(),_epsr);
             /*if (strcmp(mymol->molname,"1-butene") == 0)
               fprintf(stderr,"Ready for %s\n",mymol->molname);*/
-            eQ = generate_charges_sm(debug,mymol->qgen,
-                                     _pd,&(mymol->topology->atoms),
+            eQ = generate_charges_sm(debug,mymol->qgen_,
+                                     _pd,&(mymol->topology_->atoms),
                                      mymol->x,1e-4,100,_atomprop,
                                      _hfac,
                                      &(mymol->chieq));
             if (eQ != eQGEN_OK)
             {
                 char buf[STRLEN];
-                qgen_message(mymol->qgen,STRLEN,buf,NULL);
+                qgen_message(mymol->qgen_,STRLEN,buf,NULL);
                 fprintf(stderr,"%s\n",buf);
             }
             else {
-                aloop = gmx_mtop_atomloop_all_init(mymol->mtop);
+                aloop = gmx_mtop_atomloop_all_init(mymol->mtop_);
                 j = 0;
                 while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
-                    atom->q = mymol->topology->atoms.atom[j].q;
+                    atom->q = mymol->topology_->atoms.atom[j].q;
                     j++;
                 }
-                gmx_assert(j,mymol->topology->atoms.nr);
+                gmx_assert(j,mymol->topology_->atoms.nr);
             }
             
             /* Now optimize the shell positions */
-            if (mymol->shell) {
-                split_shell_charges(mymol->mtop,&mymol->ltop->idef);
-                atoms2md(mymol->mtop,mymol->inputrec,0,NULL,0,
-                         mymol->mtop->natoms,mymol->md);
+            if (mymol->shell_) {
+                split_shell_charges(mymol->mtop_,&mymol->ltop_->idef);
+                atoms2md(mymol->mtop_,mymol->inputrec_,0,NULL,0,
+                         mymol->mtop_->natoms,mymol->md_);
                 count = 
                     relax_shell_flexcon(debug,_cr,FALSE,0,
-                                        mymol->inputrec,TRUE,
+                                        mymol->inputrec_,TRUE,
                                         GMX_FORCE_ALLFORCES,FALSE,
-                                        mymol->ltop,NULL,NULL,NULL,
-                                        NULL,&(mymol->state),
-                                        mymol->f,force_vir,mymol->md,
+                                        mymol->ltop_,NULL,NULL,NULL,
+                                        NULL,&(mymol->state_),
+                                        mymol->f,force_vir,mymol->md_,
                                         &my_nrnb,wcycle,NULL,
-                                        &(mymol->mtop->groups),
-                                        mymol->shell,mymol->fr,FALSE,t,mu_tot,
-                                        mymol->mtop->natoms,&bConverged,NULL,NULL);
+                                        &(mymol->mtop_->groups),
+                                        mymol->shell_,mymol->fr_,FALSE,t,mu_tot,
+                                        mymol->mtop_->natoms,&bConverged,NULL,NULL);
             }
             /* Compute the molecular dipole */
             mymol->CalcMultipoles();
@@ -743,13 +743,13 @@ void MolDip::CalcDeviation()
             {
                 /*gmx_resp_add_atom_info(mymol->gr,&(mymol->atoms),_pd);*/
                 gmx_resp_fill_zeta(mymol->gr_,_pd);
-                gmx_resp_fill_q(mymol->gr_,&(mymol->topology->atoms));
+                gmx_resp_fill_q(mymol->gr_,&(mymol->topology_->atoms));
                 gmx_resp_calc_pot(mymol->gr_);
             }
             qtot = 0;
-            for(j=0; (j<mymol->topology->atoms.nr); j++) {
-                atomnr = mymol->topology->atoms.atom[j].atomnumber;
-                qq     = mymol->topology->atoms.atom[j].q;
+            for(j=0; (j<mymol->topology_->atoms.nr); j++) {
+                atomnr = mymol->topology_->atoms.atom[j].atomnumber;
+                qq     = mymol->topology_->atoms.atom[j].q;
                 qtot  += qq;
                 if (((qq < 0) && (atomnr == 1)) || 
                     ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 

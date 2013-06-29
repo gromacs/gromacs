@@ -306,8 +306,7 @@ void lo_dump_histo(char *fn,char *xaxis,output_env_t oenv,
     }
 }
 
-void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
-                output_env_t oenv)
+void dump_histo(t_bonds *b,double bspacing,double aspacing,output_env_t oenv)
 {
     int  i;
     char buf[256];
@@ -337,7 +336,7 @@ void dump_histo(t_bonds *b,double bspacing,double aspacing,double dspacing,
     }
 }
 
-void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,gmx_atomprop_t aps,
+void update_pd(FILE *fp,t_bonds *b,gmx_poldata_t pd,
                real Dm,real beta,real kt,real kp)
 {
     int i,N;
@@ -511,33 +510,33 @@ int main(int argc,char *argv[])
         }
         mmi.GenerateTopology(aps,pd,lot,"ESP",FALSE,2);
         
-#define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology->atoms.atomtype[ii])
-        for(i=0; (i<mmi.topology->atoms.nr); i++)
+#define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology_->atoms.atomtype[ii])
+        for(i=0; (i<mmi.topology_->atoms.nr); i++)
         {
             if (NULL == ATP(i))
             {
                 printf("No bond-type support for atom %s in %s\n",
-                       *mmi.topology->atoms.atomtype[i],mmi.GetMolname().c_str());
+                       *mmi.topology_->atoms.atomtype[i],mmi.GetMolname().c_str());
                 break;
             }
         }    
-        if ((mmi.topology->atoms.nr <= 0) || (i < mmi.topology->atoms.nr))
+        if ((mmi.topology_->atoms.nr <= 0) || (i < mmi.topology_->atoms.nr))
             continue;
         
-        for(int j=0; (j<mmi.ltop->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1)
+        for(int j=0; (j<mmi.ltop_->idef.il[ftb].nr); j+=interaction_function[ftb].nratoms+1)
         {
-            int ai = mmi.ltop->idef.il[ftb].iatoms[j+1];
-            int aj = mmi.ltop->idef.il[ftb].iatoms[j+2];
+            int ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
+            int aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
             rvec_sub(mmi.x[ai],mmi.x[aj],dx);
             const char *cai = ATP(ai);
             const char *caj = ATP(aj);
             add_bond(fp,mmi.GetMolname().c_str(),b,cai,caj,1000*norm(dx),bspacing);
         }
-        for(int j=0; (j<mmi.ltop->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) 
+        for(int j=0; (j<mmi.ltop_->idef.il[fta].nr); j+=interaction_function[fta].nratoms+1) 
         {
-            int ai = mmi.ltop->idef.il[fta].iatoms[j+1];
-            int aj = mmi.ltop->idef.il[fta].iatoms[j+2];
-            int ak = mmi.ltop->idef.il[fta].iatoms[j+3];
+            int ai = mmi.ltop_->idef.il[fta].iatoms[j+1];
+            int aj = mmi.ltop_->idef.il[fta].iatoms[j+2];
+            int ak = mmi.ltop_->idef.il[fta].iatoms[j+3];
             rvec_sub(mmi.x[ai],mmi.x[aj],dx);
             rvec_sub(mmi.x[ak],mmi.x[aj],dx2);
             double ang = RAD2DEG*gmx_angle(dx,dx2);
@@ -549,12 +548,12 @@ int main(int argc,char *argv[])
         clear_mat(box);
         set_pbc(&pbc,epbcNONE,box);
         
-        for(int j=0; (j<mmi.ltop->idef.il[ftd].nr); j+=interaction_function[ftd].nratoms+1) 
+        for(int j=0; (j<mmi.ltop_->idef.il[ftd].nr); j+=interaction_function[ftd].nratoms+1) 
         {
-            int ai = mmi.ltop->idef.il[ftd].iatoms[j+1];
-            int aj = mmi.ltop->idef.il[ftd].iatoms[j+2];
-            int ak = mmi.ltop->idef.il[ftd].iatoms[j+3];
-            int al = mmi.ltop->idef.il[ftd].iatoms[j+4];
+            int ai = mmi.ltop_->idef.il[ftd].iatoms[j+1];
+            int aj = mmi.ltop_->idef.il[ftd].iatoms[j+2];
+            int ak = mmi.ltop_->idef.il[ftd].iatoms[j+3];
+            int al = mmi.ltop_->idef.il[ftd].iatoms[j+4];
             double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
                                            mmi.x[ak],mmi.x[al],
                                            &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
@@ -566,12 +565,12 @@ int main(int argc,char *argv[])
             add_dih(fp,mmi.GetMolname().c_str(),b,cai,caj,cak,cal,ang,dspacing,egdPDIHS);
         }
         
-        for(int j=0; (j<mmi.ltop->idef.il[fti].nr); j+=interaction_function[fti].nratoms+1) 
+        for(int j=0; (j<mmi.ltop_->idef.il[fti].nr); j+=interaction_function[fti].nratoms+1) 
         {
-            int ai = mmi.ltop->idef.il[fti].iatoms[j+1];
-            int aj = mmi.ltop->idef.il[fti].iatoms[j+2];
-            int ak = mmi.ltop->idef.il[fti].iatoms[j+3];
-            int al = mmi.ltop->idef.il[fti].iatoms[j+4];
+            int ai = mmi.ltop_->idef.il[fti].iatoms[j+1];
+            int aj = mmi.ltop_->idef.il[fti].iatoms[j+2];
+            int ak = mmi.ltop_->idef.il[fti].iatoms[j+3];
+            int al = mmi.ltop_->idef.il[fti].iatoms[j+4];
             double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
                                            mmi.x[ak],mmi.x[al],
                                            &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
@@ -586,9 +585,9 @@ int main(int argc,char *argv[])
     sort_bonds(b);
     if (bHisto)
     {
-        dump_histo(b,bspacing,aspacing,dspacing,oenv);
+        dump_histo(b,bspacing,aspacing,oenv);
     }
-    update_pd(fp,b,pd,aps,Dm,beta,kt,kp);
+    update_pd(fp,b,pd,Dm,beta,kt,kp);
     
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),pd,compress);    
     

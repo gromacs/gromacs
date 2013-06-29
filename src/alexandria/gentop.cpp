@@ -476,7 +476,7 @@ int main(int argc, char *argv[])
         {    
             mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
                                 ftp2fn(efTOP,NFILE,fnm),
-                                pd,iModel,bVerbose);
+                                iModel,bVerbose);
         }
         else if (bRTP) 
         {

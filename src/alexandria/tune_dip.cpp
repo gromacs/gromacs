@@ -207,7 +207,7 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
                        const char *cdiff,const char *mudiff,const char *Qdiff,
                        const char *espdiff,
                        std::vector<alexandria::MyMol> mol,
-                       gmx_poldata_t pd,int iModel,real hfac,
+                       real hfac,
                        real dip_toler,real quad_toler,real q_toler,output_env_t oenv)
 {
     FILE   *xvgf,*qdiff,*mud,*tdiff,*hh,*espd;
@@ -285,31 +285,31 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
 
             d2 += sqr(mi->dip_exp-mi->dip_calc);
             fprintf(fp,"Atom   Type      q_EEM     q_ESP       x       y       z\n");
-            aloop = gmx_mtop_atomloop_all_init(mi->mtop);
+            aloop = gmx_mtop_atomloop_all_init(mi->mtop_);
             j = 0;
             while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
                 gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);
                 for(k=0; (k<nlsqt); k++) 
-                    if (strcmp(atomtypes[k],*(mi->topology->atoms.atomtype[j])) == 0)
+                    if (strcmp(atomtypes[k],*(mi->topology_->atoms.atomtype[j])) == 0)
                         break;
                 if (k == nlsqt) 
                 {
                     srenew(lsqt,++nlsqt);
                     srenew(atomtypes,nlsqt);
-                    atomtypes[k] = strdup(*(mi->topology->atoms.atomtype[j]));
+                    atomtypes[k] = strdup(*(mi->topology_->atoms.atomtype[j]));
                     lsqt[k] = gmx_stats_init();
                 }
                 qq = atom->q;
                 fprintf(fp,"%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
                         atomnm,j+1,
-                        *(mi->topology->atoms.atomtype[j]),qq,mi->qESP[j],
+                        *(mi->topology_->atoms.atomtype[j]),qq,mi->qESP[j],
                         mi->x[j][XX],mi->x[j][YY],mi->x[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
                 gmx_stats_add_point(lsqt[k],mi->qESP[j],atom->q,0,0);
                 gmx_stats_add_point(lsq_q,mi->qESP[j],atom->q,0,0);
                 j++;
             }
-            gmx_assert(j,mi->topology->atoms.nr);
+            gmx_assert(j,mi->topology_->atoms.nr);
             fprintf(fp,"\n");
             n++;
         }
@@ -589,8 +589,8 @@ static int guess_all_param(FILE *fplog,alexandria::MolDip *md,
 
 static void optimize_moldip(FILE *fp,FILE *fplog,const char *convfn,
                             alexandria::MolDip *md,int maxiter,real tol,
-                            int nrun,int reinit,real stepsize,int seed,
-                            gmx_bool bRandom,real stol,output_env_t oenv)
+                            int nrun,real stepsize,int seed,
+                            gmx_bool bRandom,output_env_t oenv)
 {
     FILE   *cfp=NULL;
     double chi2,chi2_min;
@@ -951,14 +951,14 @@ int main(int argc, char *argv[])
             TRUE,TRUE,TRUE,watoms,TRUE);
     
     optimize_moldip(MASTER(cr) ? stderr : NULL,fp,opt2fn_null("-conv",NFILE,fnm),
-                    &md,maxiter,tol,nrun,reinit,step,seed,
-                    bRandom,stol,oenv);
+                    &md,maxiter,tol,nrun,step,seed,
+                    bRandom,oenv);
     if (MASTER(cr)) 
     {
         print_mols(fp,opt2fn("-x",NFILE,fnm),opt2fn("-qhisto",NFILE,fnm),
                    opt2fn("-qdiff",NFILE,fnm),opt2fn("-mudiff",NFILE,fnm),
                    opt2fn("-thetadiff",NFILE,fnm),opt2fn("-espdiff",NFILE,fnm),
-                   md._mymol,md._pd,iModel,md._hfac,
+                   md._mymol,md._hfac,
                    dip_toler,quad_toler,q_toler,oenv);
   
         ffclose(fp);

@@ -58,7 +58,6 @@ private:
     
     //! Generate Atoms based on quantum calculation with specified level of theory
     immStatus GenerateAtoms(gmx_atomprop_t ap,
-                            gmx_poldata_t pd,
                             const char *lot,
                             const char *q_algorithm);
 
@@ -67,8 +66,6 @@ private:
     //! Generate bonds between atoms
     int MakeBonds(gmx_poldata_t pd,
                   gmx_conect gc,int nbond[],
-                  gmx_bool bH14,gmx_bool bAllDihedrals,
-                  gmx_bool bRemoveDoubleDihedrals,
                   gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
                   gmx_bool bMovePlists);
                             
@@ -80,20 +77,20 @@ public:
     tensor         Q_exp,Q_calc,Q_esp;
     int            bts[ebtsNR];
     eSupport       eSupp;
-    t_state        state;
-    t_forcerec     *fr;
-    gmx_mtop_t     *mtop;
-    gmx_localtop_t *ltop;
+    t_state        state_;
+    t_forcerec     *fr_;
+    gmx_mtop_t     *mtop_;
+    gmx_localtop_t *ltop_;
     gpp_atomtype_t atype_;
-    gentop_qgen_t  qgen;
-    t_symtab       *symtab;
-    t_inputrec     *inputrec;
-    gmx_shellfc_t  shell;
-    gmx_enerdata_t enerd;
+    gentop_qgen_t  qgen_;
+    t_symtab       *symtab_;
+    t_inputrec     *inputrec_;
+    gmx_shellfc_t  shell_;
+    gmx_enerdata_t enerd_;
     gmx_resp_t     gr_;
-    t_mdatoms      *md;
-    t_topology     *topology;
-    t_params       plist[F_NRE];
+    t_mdatoms      *md_;
+    t_topology     *topology_;
+    t_params       *plist_;
                                
     //! Constructor
     MyMol();
@@ -117,7 +114,8 @@ public:
     
     //! Print the topology that was generated previously in GROMACS format.
     //! fp is a File pointer opened previously.
-    void PrintTopology(const char *fn,gmx_poldata_t pd,int iModel,
+    void PrintTopology(const char *fn,
+                       int iModel,
                        bool bVerbose);
     
     //! Print some info about the molecule to a file

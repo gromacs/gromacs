@@ -8,7 +8,7 @@
  *          GROningen MAchine for Chemical Simulations
  * 
  *                        VERSION 4.0.99
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+r * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
@@ -147,28 +147,28 @@ static opt_mask_t *analyze_idef(FILE *fp,
             for(std::vector<alexandria::MyMol>::iterator mymol = mm.begin();
                 (mymol < mm.end()); mymol++)
             {
-                for(i=0; (i<mymol->ltop->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
-                    ai = mymol->ltop->idef.il[ft].iatoms[i+1];
-                    aai = *mymol->topology->atoms.atomtype[ai];
-                    aj = mymol->ltop->idef.il[ft].iatoms[i+2];
-                    aaj = *mymol->topology->atoms.atomtype[aj];
+                for(i=0; (i<mymol->ltop_->idef.il[ft].nr); i+=interaction_function[ft].nratoms+1) {
+                    ai = mymol->ltop_->idef.il[ft].iatoms[i+1];
+                    aai = *mymol->topology_->atoms.atomtype[ai];
+                    aj = mymol->ltop_->idef.il[ft].iatoms[i+2];
+                    aaj = *mymol->topology_->atoms.atomtype[aj];
                     switch (bt) {
                     case ebtsBONDS:
                         gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,
                                                      NULL,NULL,NULL,&params);
                         break;
                     case ebtsANGLES:
-                        ak = mymol->ltop->idef.il[ft].iatoms[i+3];
-                        aak = *mymol->topology->atoms.atomtype[ak];
+                        ak = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        aak = *mymol->topology_->atoms.atomtype[ak];
                         gt = gmx_poldata_search_angle(pd,aai,aaj,aak,NULL,
                                                       NULL,NULL,&params);
                         break;
                     case ebtsPDIHS:
                     case ebtsIDIHS:
-                        ak = mymol->ltop->idef.il[ft].iatoms[i+3];
-                        aak = *mymol->topology->atoms.atomtype[ak];
-                        al = mymol->ltop->idef.il[ft].iatoms[i+4];
-                        aal = *mymol->topology->atoms.atomtype[al];
+                        ak = mymol->ltop_->idef.il[ft].iatoms[i+3];
+                        aak = *mymol->topology_->atoms.atomtype[ak];
+                        al = mymol->ltop_->idef.il[ft].iatoms[i+4];
+                        aal = *mymol->topology_->atoms.atomtype[al];
                         gt = gmx_poldata_search_dihedral(pd,(bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                          aai,aaj,aak,aal,
                                                          NULL,NULL,NULL,&params);
@@ -257,7 +257,7 @@ public:
     
     void InitOpt(FILE *fplog,int *nparam,
                  bool bOpt[ebtsNR],
-                 real D0,real beta0,real D0_min,real beta_min,
+                 real D0,real beta0,
                  opt_mask_t *omt,real factor);
 
     void MkInvGt();
@@ -269,12 +269,12 @@ public:
     void Print(FILE *fp);
     double CalcDeviation();
     double EnergyFunction(double v[]);
-    void GuessAll(FILE *fplog,int iter,real stepsize,
+    void GuessAll(int iter,real stepsize,
                   bool bRandom,gmx_rng_t rng);
     void Optimize(FILE *fp,FILE *fplog,
-                  int maxiter,real tol,
-                  int nrun,int reinit,real stepsize,int seed,
-                  bool bRandom,real stol,output_env_t oenv,
+                  int maxiter,//real tol,
+                  int nrun,real stepsize,int seed,
+                  bool bRandom,output_env_t oenv,
                   bool bOpt[ebtsNR],
                   real D0,real beta0,real D0_min,real beta_min,
                   opt_mask_t *omt,real factor,int nprint,
@@ -450,11 +450,11 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
     for(std::vector<alexandria::MyMol>::iterator mymol = _mymol.begin();
         (mymol < _mymol.end()); mymol++,j++)
     {
-        for(i=0; (i<mymol->ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
-            ai = mymol->ltop->idef.il[ftb].iatoms[i+1];
-            aj = mymol->ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol->topology->atoms.atomtype[ai];
-            aaj = *mymol->topology->atoms.atomtype[aj];
+        for(i=0; (i<mymol->ltop_->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) {
+            ai = mymol->ltop_->idef.il[ftb].iatoms[i+1];
+            aj = mymol->ltop_->idef.il[ftb].iatoms[i+2];
+            aai = *mymol->topology_->atoms.atomtype[ai];
+            aaj = *mymol->topology_->atoms.atomtype[aj];
             if ((gt = gmx_poldata_search_bond(_pd,aai,aaj,
                                               NULL,NULL,NULL,NULL,NULL)) != 0) {
                 gti = _inv_gt[ebtsBONDS][gt-1];
@@ -545,7 +545,7 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
 
 void OptParam::InitOpt(FILE *fplog,int *nparam,
                        bool bOpt[ebtsNR],
-                       real D0,real beta0,real D0_min,real beta_min,
+                       real D0,real beta0,
                        opt_mask_t *omt,real factor)
 {
     char   *ai[4];
@@ -737,25 +737,25 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
     if (bOpt[ebtsBONDS]) 
     {
         ftb = gmx_poldata_get_bond_ftype(pd);
-        for(i=0; (i<mymol.ltop->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
+        for(i=0; (i<mymol.ltop_->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
         {
-            tp = mymol.ltop->idef.il[ftb].iatoms[i];
-            ai = mymol.ltop->idef.il[ftb].iatoms[i+1];
-            aj = mymol.ltop->idef.il[ftb].iatoms[i+2];
-            aai = *mymol.topology->atoms.atomtype[ai];
-            aaj = *mymol.topology->atoms.atomtype[aj];
+            tp = mymol.ltop_->idef.il[ftb].iatoms[i];
+            ai = mymol.ltop_->idef.il[ftb].iatoms[i+1];
+            aj = mymol.ltop_->idef.il[ftb].iatoms[i+2];
+            aai = *mymol.topology_->atoms.atomtype[ai];
+            aaj = *mymol.topology_->atoms.atomtype[aj];
             /* Here unfortunately we need a case statement for the types */
             if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) 
             {
-                mymol.mtop->ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
+                mymol.mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
                   
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop->ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
+                    mymol.mtop_->ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol.mtop->ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
+                    mymol.mtop_->ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -769,21 +769,21 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
     }
     if (bOpt[ebtsANGLES]) {
         fta = gmx_poldata_get_angle_ftype(pd);
-        for(i=0; (i<mymol.ltop->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
-            tp = mymol.ltop->idef.il[fta].iatoms[i];
-            ai = mymol.ltop->idef.il[fta].iatoms[i+1];
-            aj = mymol.ltop->idef.il[fta].iatoms[i+2];
-            ak = mymol.ltop->idef.il[fta].iatoms[i+3];
-            aai = *mymol.topology->atoms.atomtype[ai];
-            aaj = *mymol.topology->atoms.atomtype[aj];
-            aak = *mymol.topology->atoms.atomtype[ak];
+        for(i=0; (i<mymol.ltop_->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) {
+            tp = mymol.ltop_->idef.il[fta].iatoms[i];
+            ai = mymol.ltop_->idef.il[fta].iatoms[i+1];
+            aj = mymol.ltop_->idef.il[fta].iatoms[i+2];
+            ak = mymol.ltop_->idef.il[fta].iatoms[i+3];
+            aai = *mymol.topology_->atoms.atomtype[ai];
+            aaj = *mymol.topology_->atoms.atomtype[aj];
+            aak = *mymol.topology_->atoms.atomtype[ak];
             if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) {
-                mymol.mtop->ffparams.iparams[tp].harmonic.rA = 
-                    mymol.mtop->ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop_->ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop_->ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop->ffparams.iparams[tp].harmonic.krA = 
-                        mymol.mtop->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop_->ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -798,28 +798,28 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
     if (bOpt[ebtsPDIHS]) {
         ftd = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
         
-        for(i=0; (i<mymol.ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
-            tp = mymol.ltop->idef.il[ftd].iatoms[i];
-            ai = mymol.ltop->idef.il[ftd].iatoms[i+1];
-            aj = mymol.ltop->idef.il[ftd].iatoms[i+2];
-            ak = mymol.ltop->idef.il[ftd].iatoms[i+3];
-            al = mymol.ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol.topology->atoms.atomtype[ai];
-            aaj = *mymol.topology->atoms.atomtype[aj];
-            aak = *mymol.topology->atoms.atomtype[ak];
-            aal = *mymol.topology->atoms.atomtype[al];
+        for(i=0; (i<mymol.ltop_->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = mymol.ltop_->idef.il[ftd].iatoms[i];
+            ai = mymol.ltop_->idef.il[ftd].iatoms[i+1];
+            aj = mymol.ltop_->idef.il[ftd].iatoms[i+2];
+            ak = mymol.ltop_->idef.il[ftd].iatoms[i+3];
+            al = mymol.ltop_->idef.il[ftd].iatoms[i+4];
+            aai = *mymol.topology_->atoms.atomtype[ai];
+            aaj = *mymol.topology_->atoms.atomtype[aj];
+            aak = *mymol.topology_->atoms.atomtype[ak];
+            aal = *mymol.topology_->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol.mtop->ffparams.iparams[tp].pdihs.phiA = value;
+                mymol.mtop_->ffparams.iparams[tp].pdihs.phiA = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop->ffparams.iparams[tp].pdihs.cpA = 
-                        mymol.mtop->ffparams.iparams[tp].pdihs.cpB = 
+                    mymol.mtop_->ffparams.iparams[tp].pdihs.cpA = 
+                        mymol.mtop_->ffparams.iparams[tp].pdihs.cpB = 
                         atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 if (NULL != ptr[1]) {
-                    mymol.mtop->ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
+                    mymol.mtop_->ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
                     sfree(ptr[1]);
                 }
                 sfree(ptr);
@@ -834,24 +834,24 @@ static void update_idef(alexandria::MyMol mymol,gmx_poldata_t pd,bool bOpt[])
     if (bOpt[ebtsIDIHS]) {
         ftd = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
         
-        for(i=0; (i<mymol.ltop->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
-            tp = mymol.ltop->idef.il[ftd].iatoms[i];
-            ai = mymol.ltop->idef.il[ftd].iatoms[i+1];
-            aj = mymol.ltop->idef.il[ftd].iatoms[i+2];
-            ak = mymol.ltop->idef.il[ftd].iatoms[i+3];
-            al = mymol.ltop->idef.il[ftd].iatoms[i+4];
-            aai = *mymol.topology->atoms.atomtype[ai];
-            aaj = *mymol.topology->atoms.atomtype[aj];
-            aak = *mymol.topology->atoms.atomtype[ak];
-            aal = *mymol.topology->atoms.atomtype[al];
+        for(i=0; (i<mymol.ltop_->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = mymol.ltop_->idef.il[ftd].iatoms[i];
+            ai = mymol.ltop_->idef.il[ftd].iatoms[i+1];
+            aj = mymol.ltop_->idef.il[ftd].iatoms[i+2];
+            ak = mymol.ltop_->idef.il[ftd].iatoms[i+3];
+            al = mymol.ltop_->idef.il[ftd].iatoms[i+4];
+            aai = *mymol.topology_->atoms.atomtype[ai];
+            aaj = *mymol.topology_->atoms.atomtype[aj];
+            aak = *mymol.topology_->atoms.atomtype[ak];
+            aal = *mymol.topology_->atoms.atomtype[al];
             if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
                                                   &value,NULL,NULL,&params)) != 0) {
-                mymol.mtop->ffparams.iparams[tp].harmonic.rA = 
-                    mymol.mtop->ffparams.iparams[tp].harmonic.rB = value;
+                mymol.mtop_->ffparams.iparams[tp].harmonic.rA = 
+                    mymol.mtop_->ffparams.iparams[tp].harmonic.rB = value;
                 ptr = split(' ',params);
                 if (NULL != ptr[0]) {
-                    mymol.mtop->ffparams.iparams[tp].harmonic.krA = 
-                        mymol.mtop->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    mymol.mtop_->ffparams.iparams[tp].harmonic.krA = 
+                        mymol.mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
                     sfree(ptr[0]);
                 }
                 sfree(ptr);
@@ -907,8 +907,8 @@ double OptParam::CalcDeviation()
             update_idef(*mymol,_pd,_bOpt);
             
             /* Now compute energy */
-            atoms2md(mymol->mtop,mymol->inputrec,0,NULL,0,
-                     mymol->mtop->natoms,mymol->md);
+            atoms2md(mymol->mtop_,mymol->inputrec_,0,NULL,0,
+                     mymol->mtop_->natoms,mymol->md_);
 
             for(j=0; (j<mymol->NAtom()); j++)
                 clear_rvec(mymol->f[j]);
@@ -916,28 +916,28 @@ double OptParam::CalcDeviation()
             /* Now optimize the shell positions */
             dbcopy = debug;
             debug = NULL;
-            if (mymol->shell) { 
+            if (mymol->shell_) { 
                 count = 
                     relax_shell_flexcon(debug,_cr,FALSE,0,
-                                        mymol->inputrec,TRUE,flags,FALSE,
-                                        mymol->ltop,NULL,NULL,&(mymol->enerd),
-                                        NULL,&(mymol->state),
-                                        mymol->f,force_vir,mymol->md,
+                                        mymol->inputrec_,TRUE,flags,FALSE,
+                                        mymol->ltop_,NULL,NULL,&(mymol->enerd_),
+                                        NULL,&(mymol->state_),
+                                        mymol->f,force_vir,mymol->md_,
                                         &my_nrnb,wcycle,NULL,
-                                        &(mymol->mtop->groups),
-                                        mymol->shell,mymol->fr,FALSE,t,mu_tot,
+                                        &(mymol->mtop_->groups),
+                                        mymol->shell_,mymol->fr_,FALSE,t,mu_tot,
                                         mymol->NAtom(),&bConverged,NULL,NULL);
             }
             else {
                 lambda = 0;
-                do_force(debug,_cr,mymol->inputrec,0,
-                         &my_nrnb,wcycle,mymol->ltop,
-                         mymol->mtop,&(mymol->mtop->groups),
+                do_force(debug,_cr,mymol->inputrec_,0,
+                         &my_nrnb,wcycle,mymol->ltop_,
+                         mymol->mtop_,&(mymol->mtop_->groups),
                          mymol->box,mymol->x,NULL,
-                         mymol->f,force_vir,mymol->md,
-                         &mymol->enerd,NULL,
+                         mymol->f,force_vir,mymol->md_,
+                         &mymol->enerd_,NULL,
                          &lambda,NULL,
-                         mymol->fr,
+                         mymol->fr_,
                          NULL,mu_tot,t,NULL,NULL,FALSE,
                          flags);
             }
@@ -947,7 +947,7 @@ double OptParam::CalcDeviation()
                 mymol->Force2 += iprod(mymol->f[j],mymol->f[j]);
             mymol->Force2 /= mymol->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
-            mymol->Ecalc = mymol->enerd.term[F_EPOT];
+            mymol->Ecalc = mymol->enerd_.term[F_EPOT];
             ener = sqr(mymol->Ecalc-mymol->Emol);
             _ener[ermsEPOT] += _fc[ermsEPOT]*ener/_nmol_support;
         }
@@ -1013,7 +1013,7 @@ static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng,
         return x;
 }
 
-void OptParam::GuessAll(FILE *fplog,int iter,real stepsize,
+void OptParam::GuessAll(int iter,real stepsize,
                         bool bRandom,gmx_rng_t rng)
 {
     double   ppp,xxx;
@@ -1131,9 +1131,9 @@ void OptParam::Bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
 }
 
 void OptParam::Optimize(FILE *fp,FILE *fplog,
-                        int maxiter,real tol,
-                        int nrun,int reinit,real stepsize,int seed,
-                        bool bRandom,real stol,output_env_t oenv,
+                        int maxiter,
+                        int nrun,real stepsize,int seed,
+                        bool bRandom,output_env_t oenv,
                         bool bOpt[ebtsNR],
                         real D0,real beta0,real D0_min,real beta_min,
                         opt_mask_t *omt,real factor,int nprint,
@@ -1155,7 +1155,7 @@ void OptParam::Optimize(FILE *fp,FILE *fplog,
                 fprintf(fp,"\nStarting run %d out of %d\n",n+1,nrun);
             }
                     
-            GuessAll(fplog,n,stepsize,bRandom,rng);
+            GuessAll(n,stepsize,bRandom,rng);
             
             Bayes(fplog,xvgconv,xvgepot,_param,_psigma,_nparam,nprint,
                   stepsize,seed,temperature,maxiter,&chi2,oenv);
@@ -1220,8 +1220,8 @@ static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
     {
         fprintf(fp,"%-30s  %d\n",mi->GetMolname().c_str(),mi->NAtom());
         for(j=0; (j<mi->NAtom()); j++) {
-            fprintf(fp,"  %-5s  %-5s  q = %10g",*(mi->topology->atoms.atomname[j]),
-                    *(mi->topology->atoms.atomtype[j]),mi->topology->atoms.atom[j].q);
+            fprintf(fp,"  %-5s  %-5s  q = %10g",*(mi->topology_->atoms.atomname[j]),
+                    *(mi->topology_->atoms.atomtype[j]),mi->topology_->atoms.atom[j].q);
             if (bForce) 
             {
                 fprintf(fp,"  %8.3f  %8.3f  %8.3f",
@@ -1235,15 +1235,15 @@ static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
         {
             for(k=0; (k<F_NRE); k++)
             {
-                if ((mi->enerd.term[k] != 0) || 
-                    (mi->mtop->moltype[0].ilist[k].nr > 0))
+                if ((mi->enerd_.term[k] != 0) || 
+                    (mi->mtop_->moltype[0].ilist[k].nr > 0))
                     fprintf(fp,"%s %d %g\n",interaction_function[k].name,
-                            mi->mtop->moltype[0].ilist[k].nr,
-                            mi->enerd.term[k]);
+                            mi->mtop_->moltype[0].ilist[k].nr,
+                            mi->enerd_.term[k]);
             }
         }
         if (bMtop)
-            pr_mtop(fp,0,mi->GetMolname().c_str(),mi->mtop,TRUE);
+            pr_mtop(fp,0,mi->GetMolname().c_str(),mi->mtop_,TRUE);
     }
 }
 
@@ -1476,16 +1476,16 @@ int main(int argc, char *argv[])
                        bOpt);
              
     opt.InitOpt(fp,&nparam,bOpt,D0,beta0,
-                D0_min,beta_min,omt,factor);
+                omt,factor);
              
     print_moldip_mols(fp,opt._mymol,FALSE,FALSE);
     opt.PrintSpecs(fp,(char *)"Before optimization",NULL,oenv);
     omt = analyze_idef(fp,opt._mymol,opt._pd,bOpt);
 
     opt.Optimize(MASTER(cr) ? stderr : NULL,fp,
-                 maxiter,tol,nrun,reinit,step,seed,
-                 bRandom,stol,oenv,bOpt,D0,beta0,
-                 D0_min,beta_min,omt,factor,nprint,
+                 maxiter,nrun,step,seed,
+                 bRandom,oenv,bOpt,D0,beta0,D0_min,beta_min,
+                 omt,factor,nprint,
                  opt2fn("-conv",NFILE,fnm),
                  opt2fn("-epot",NFILE,fnm),
                  temperature);

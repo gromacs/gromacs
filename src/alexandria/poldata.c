@@ -860,7 +860,6 @@ const char *gmx_poldata_atype_to_btype(gmx_poldata_t pd,const char *atype)
             return pd->alexandria[i].btype;
         }
     }
-    gmx_fatal(FARGS,"No bondtype for %s",atype);
     return NULL;
 }
 
