@@ -101,7 +101,7 @@ static int count_hydrogens (char ***atomname, int nra, atom_id a[])
     return nh;
 }
 
-void make_shake (t_params plist[], t_atoms *atoms, gpp_atomtype_t at, int nshake)
+void make_shake (t_params plist[], t_atoms *atoms, int nshake)
 {
     char          ***info = atoms->atomname;
     t_params        *pr;

@@ -770,8 +770,7 @@ static void do_ssbonds(t_params *ps, t_atoms *atoms,
 static void at2bonds(t_params *psb, t_hackblock *hb,
                      t_atoms *atoms,
                      rvec x[],
-                     real long_bond_dist, real short_bond_dist,
-                     gmx_bool bAllowMissing)
+                     real long_bond_dist, real short_bond_dist)
 {
     int         resind, i, j, k;
     atom_id     ai, aj;
@@ -967,7 +966,7 @@ static void check_restp_types(t_restp *r0, t_restp *r1)
     }
 }
 
-void add_atom_to_restp(t_restp *restp, int resnr, int at_start, const t_hack *hack)
+void add_atom_to_restp(t_restp *restp, int at_start, const t_hack *hack)
 {
     char        buf[STRLEN];
     int         k;
@@ -1149,8 +1148,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                     if ( (*hb)[i].hack[j].oname == NULL)
                     {
                         /* we're adding: */
-                        add_atom_to_restp(&(*restp)[i], resinfo[i].nr, l,
-                                          &(*hb)[i].hack[j]);
+                        add_atom_to_restp(&(*restp)[i], l, &(*hb)[i].hack[j]);
                     }
                     else
                     {
@@ -1322,8 +1320,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                                       start_at, rptr->resname, newnm);
                         }
                         /* We can add the atom after atom start_nr */
-                        add_atom_to_restp(rptr, resnr, start_nr,
-                                          &hbr->hack[j]);
+                        add_atom_to_restp(rptr, start_nr, &hbr->hack[j]);
 
                         bFoundInAdd = TRUE;
                     }
@@ -1524,10 +1521,9 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              t_atoms *atoms, rvec **x, gpp_atomtype_t atype, t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
-             int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
              gmx_bool bAllowMissing,
              gmx_bool bVsites, gmx_bool bVsiteAromatics,
-             const char *ff, const char *ffdir,
+             const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond *ssbonds,
              real long_bond_dist, real short_bond_dist,
@@ -1559,7 +1555,7 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
     /* Make bonds */
     at2bonds(&(plist[F_BONDS]), hb,
              atoms, *x,
-             long_bond_dist, short_bond_dist, bAllowMissing);
+             long_bond_dist, short_bond_dist);
 
     /* specbonds: disulphide bonds & heme-his */
     do_ssbonds(&(plist[F_BONDS]),
