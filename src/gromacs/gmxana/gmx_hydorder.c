@@ -131,8 +131,8 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
     snew(skmol, maxidx);
 
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc,ePBC,box);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    set_pbc(&pbc, ePBC, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     gmx_rmpbc(gpbc, natoms, box, x);
 
     *sgmean = 0.0;
@@ -391,7 +391,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     sfree(grpname);

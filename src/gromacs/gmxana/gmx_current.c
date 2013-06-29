@@ -446,7 +446,7 @@ static void dielectric(FILE *fmj, FILE *fmd, FILE *outf, FILE *fcur, FILE *mcor,
     clear_rvec(mjd_tmp);
     clear_rvec(mdvec);
     clear_rvec(tmp);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, fr.box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
 
     do
     {

@@ -468,7 +468,7 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
 
     nfr = 0;
@@ -585,7 +585,7 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
         }
         nfr++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     if (bPBC)
     {

@@ -77,7 +77,7 @@ static gmx_bool do_binwrite(t_fileio *fio, const void *item, int nitem, int eio,
     size_t size = 0, wsize;
     int    ssize;
 
-    gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
         case eioREAL:
@@ -140,7 +140,7 @@ static gmx_bool do_binread(t_fileio *fio, void *item, int nitem, int eio,
     size_t size = 0, rsize;
     int    ssize;
 
-    gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
         case eioREAL:
