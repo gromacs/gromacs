@@ -643,7 +643,7 @@ static void estimate_error(const char *eefile, int nb_min, int resol, int n,
             }
             low_do_autocorr(NULL, oenv, NULL, n, 1, -1, &ac,
                             dt, eacNormal, 1, FALSE, TRUE,
-                            FALSE, 0, 0, effnNONE, 0);
+                            FALSE, 0, 0, effnNONE);
 
             fitlen = n/nb_min;
 
@@ -737,8 +737,7 @@ static void luzar_correl(int nn, real *time, int nset, real **val, real temp,
     }
 }
 
-static void filter(real flen, int n, int nset, real **val, real dt,
-                   const output_env_t oenv)
+static void filter(real flen, int n, int nset, real **val, real dt)
 {
     int     f, s, i, j;
     double *filt, sum, vf, fluc, fluctot;
@@ -886,11 +885,10 @@ static void do_fit(FILE *out, int n, gmx_bool bYdy,
 static void do_ballistic(const char *balFile, int nData,
                          real *t, real **val, int nSet,
                          real balTime, int nBalExp,
-                         gmx_bool bDerivative,
                          const output_env_t oenv)
 {
     double     **ctd   = NULL, *td = NULL;
-    t_gemParams *GP    = init_gemParams(0, 0, t, nData, 0, 0, 0, balTime, nBalExp, bDerivative);
+    t_gemParams *GP    = init_gemParams(0, 0, t, nData, 0, 0, 0, balTime, nBalExp);
     static char *leg[] = {"Ac'(t)"};
     FILE        *fp;
     int          i, set;
@@ -951,7 +949,7 @@ static void do_geminate(const char *gemFile, int nData,
 {
     double     **ctd = NULL, **ctdGem = NULL, *td = NULL;
     t_gemParams *GP  = init_gemParams(rcut, D, t, nData, nFitPoints,
-                                      begFit, endFit, balTime, 1, FALSE);
+                                      begFit, endFit, balTime, 1);
     const char  *leg[] = {"Ac\\sgem\\N(t)"};
     FILE        *fp;
     int          i, set;
@@ -1326,7 +1324,7 @@ int gmx_analyze(int argc, char *argv[])
 
     if (filtlen)
     {
-        filter(filtlen, n, nset, val, dt, oenv);
+        filter(filtlen, n, nset, val, dt);
     }
 
     if (msdfile)
@@ -1378,7 +1376,7 @@ int gmx_analyze(int argc, char *argv[])
     }
     if (balfile)
     {
-        do_ballistic(balfile, n, t, val, nset, balTime, nBalExp, bDer, oenv);
+        do_ballistic(balfile, n, t, val, nset, balTime, nBalExp, oenv);
     }
 /*   if (gemfile) */
 /*       do_geminate(gemfile,n,t,val,nset,diffusion,rcut,balTime, */

@@ -51,13 +51,13 @@
 
 
 static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
-                     rvec head, rvec tail, matrix box, int isize, atom_id index[],
+                     rvec head, rvec tail, int isize, atom_id index[],
                      rvec xout[], rvec vout[])
 {
-    rvec     arrow, center, xcm;
+    rvec     arrow, xcm;
     real     theta, phi, arrow_len;
-    mat4     Rx, Ry, Rz, Rinvy, Rinvz, Mtot, Tcm, Tinvcm, Tx;
-    mat4     temp1, temp2, temp3, temp4, temp21, temp43;
+    mat4     Rx, Ry, Rz, Rinvy, Rinvz, Mtot;
+    mat4     temp1, temp2, temp3;
     vec4     xv;
     int      i, j, ai;
 
@@ -230,7 +230,7 @@ int gmx_dyndom(int argc, char *argv[])
         trans = trans0*0.1*angle/maxangle;
         printf("Frame: %2d (label %c), angle: %8.3f deg., trans: %8.3f nm\n",
                i, label, angle, trans);
-        rot_conf(&atoms, x, v, trans, angle, head, tail, box, isize, index, xout, vout);
+        rot_conf(&atoms, x, v, trans, angle, head, tail, isize, index, xout, vout);
 
         if (label > 'Z')
         {

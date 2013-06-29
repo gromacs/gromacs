@@ -407,7 +407,7 @@ int gmx_dos(int argc, char *argv[])
                gnx, nframes);
     }
     low_do_autocorr(NULL, oenv, NULL, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
-                    FALSE, FALSE, -1, -1, 0, 0);
+                    FALSE, FALSE, -1, -1, 0);
     snew(dos, DOS_NR);
     for (j = 0; (j < DOS_NR); j++)
     {
