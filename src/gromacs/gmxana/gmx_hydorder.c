@@ -87,7 +87,7 @@ static void check_length(real length, int a, int b)
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
                                   rvec x[], int maxidx, atom_id index[],
-                                  real time, real *sgmean, real *skmean,
+                                  real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)
 {
@@ -367,7 +367,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
             }
         }
 
-        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0], t,
+        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0],
                               &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
         for (i = 0; i < *nslicex; i++)
         {

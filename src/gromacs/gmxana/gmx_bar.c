@@ -2433,7 +2433,6 @@ static gmx_bool read_lambda_vector(const char   *str,
  */
 static gmx_bool legend2lambda(const char   *fn,
                               const char   *legend,
-                              xvg_t        *ba,
                               lambda_vec_t *lam)
 {
     double        lambda = 0;
@@ -2679,7 +2678,7 @@ static gmx_bool subtitle2lambda(const char *subtitle, xvg_t *ba, const char *fn,
     return bFound;
 }
 
-static void filename2lambda(const char *fn, xvg_t *ba)
+static void filename2lambda(const char *fn)
 {
     double        lambda;
     const char   *ptr, *digitptr;
@@ -2807,7 +2806,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
             if (!native_lambda_read)
             {
                 /* Deduce lambda from the file name */
-                filename2lambda(fn, ba);
+                filename2lambda(fn);
                 native_lambda_read = TRUE;
             }
             ba->lambda[0] = ba->native_lambda;
@@ -2825,7 +2824,7 @@ static void read_bar_xvg_lowlevel(const char *fn, real *temp, xvg_t *ba,
             /* Read lambda from the legend */
             lambda_vec_init( &(ba->lambda[i]), lc );
             lambda_vec_copy( &(ba->lambda[i]), &(ba->native_lambda));
-            use = legend2lambda(fn, legend[i], ba, &(ba->lambda[i]));
+            use = legend2lambda(fn, legend[i], &(ba->lambda[i]));
             if (use)
             {
                 lambda_vec_print(&(ba->lambda[i]), buf, FALSE);

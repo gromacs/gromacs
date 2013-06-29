@@ -287,6 +287,32 @@ typedef int gmx_large_int_t;
 
 #endif
 
+/*
+ * These attributes suppress compiler warnings about unused function arguments
+ * by marking them as possibly unused. Some arguments are unused but
+ * have to be retained to preserve a function signature
+ * that must match that of another function.
+ * Some arguments are only used in *some* code paths (e.g. MPI)
+ */
+
+#ifndef gmx_unused
+#ifdef __GNUC__
+/* GCC, clang, and some ICC pretending to be GCC */
+#  define gmx_unused __attribute__ ((unused))
+#elif (defined(__INTEL_COMPILER) || defined(__ECC)) && !defined(_MSC_VER)
+/* ICC on *nix */
+#  define gmx_unused __attribute__ ((unused))
+#elif defined _MSC_VER
+/* MSVC */
+#  define gmx_unused /*@unused@*/
+#elif defined(__xlC__)
+/* IBM */
+#  define gmx_unused __attribute__ ((unused))
+#else
+#  define gmx_unused
+#endif
+#endif
+
 /* Standard sizes for char* string buffers */
 #define STRLEN 4096
 #define BIG_STRLEN 1048576

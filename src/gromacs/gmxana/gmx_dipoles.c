@@ -726,7 +726,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
                    gmx_bool bPhi,     int  *nlevels,  int ndegrees,
                    int  ncos,
                    const char *cmap,    real rcmax,
-                   gmx_bool bQuad,    const char *quadfn,
+                   gmx_bool bQuad,
                    gmx_bool bMU,      const char *mufn,
                    int  *gnx,     int  *molindex[],
                    real mu_max,   real mu_aver,
@@ -1530,7 +1530,7 @@ int gmx_dipoles(int argc, char *argv[])
     };
     real           mu_max     = 5, mu_aver = -1, rcmax = 0;
     real           epsilonRF  = 0.0, temp = 300;
-    gmx_bool       bAverCorr  = FALSE, bMolCorr = FALSE, bPairs = TRUE, bPhi = FALSE;
+    gmx_bool       bAverCorr  = FALSE, bMolCorr = FALSE, bPairs = TRUE, bPhi = FALSE, bQuad = FALSE;
     const char    *corrtype[] = {NULL, "none", "mol", "molsep", "total", NULL};
     const char    *axtitle    = "Z";
     int            nslices    = 10; /* nr of slices defined       */
@@ -1552,6 +1552,8 @@ int gmx_dipoles(int argc, char *argv[])
           "Correlation function to calculate" },
         { "-pairs",    FALSE, etBOOL, {&bPairs},
           "Calculate [MAG][COS][GRK]theta[grk][cos][mag] between all pairs of molecules. May be slow" },
+        { "-quad",     FALSE, etBOOL, {&bQuad},
+          "Take quadrupole into account"},
         { "-ncos",     FALSE, etINT, {&ncos},
           "Must be 1 or 2. Determines whether the [CHEVRON][COS][GRK]theta[grk][cos][chevron] is computed between all molecules in one group, or between molecules in two different groups. This turns on the [TT]-g[tt] flag." },
         { "-axis",     FALSE, etSTR, {&axtitle},
@@ -1575,7 +1577,7 @@ int gmx_dipoles(int argc, char *argv[])
     int            nFF[2];
     atom_id      **grpindex;
     char         **grpname = NULL;
-    gmx_bool       bCorr, bQuad, bGkr, bMU, bSlab;
+    gmx_bool       bCorr, bGkr, bMU, bSlab;
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
@@ -1591,7 +1593,6 @@ int gmx_dipoles(int argc, char *argv[])
         { efXVG, "-dip3d", "dip3d",    ffOPTWR },
         { efXVG, "-cos", "cosaver",    ffOPTWR },
         { efXPM, "-cmap", "cmap",       ffOPTWR },
-        { efXVG, "-q",   "quadrupole", ffOPTWR },
         { efXVG, "-slab", "slab",       ffOPTWR }
     };
 #define NFILE asize(fnm)
@@ -1619,7 +1620,6 @@ int gmx_dipoles(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Due to new ways of treating molecules in GROMACS the total dipole in the energy file may be incorrect, because molecules can be split over periodic boundary conditions before computing the dipole. Please use your trajectory file.");
     }
-    bQuad = opt2bSet("-q", NFILE, fnm);
     bGkr  = opt2bSet("-g", NFILE, fnm);
     if (opt2parg_bSet("-ncos", asize(pa), pa))
     {
@@ -1679,8 +1679,7 @@ int gmx_dipoles(int argc, char *argv[])
            bPhi,    &nlevels,  ndegrees,
            ncos,
            opt2fn("-cmap", NFILE, fnm), rcmax,
-           bQuad,   opt2fn("-q", NFILE, fnm),
-           bMU,     opt2fn("-en", NFILE, fnm),
+           bQuad, bMU,     opt2fn("-en", NFILE, fnm),
            gnx, grpindex, mu_max, mu_aver, epsilonRF, temp, nFF, skip,
            bSlab, nslices, axtitle, opt2fn("-slab", NFILE, fnm), oenv);
 

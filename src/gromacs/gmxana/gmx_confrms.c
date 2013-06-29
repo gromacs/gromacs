@@ -123,9 +123,9 @@ int debug_strcmp(char s1[], char s2[])
     return strcmp(s1, s2);
 }
 
-int find_next_match_atoms_in_res(int *i1, int isize1, atom_id index1[],
+int find_next_match_atoms_in_res(int *i1, atom_id index1[],
                                  int m1, char **atnms1[],
-                                 int *i2, int isize2, atom_id index2[],
+                                 int *i2, atom_id index2[],
                                  int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
@@ -388,8 +388,8 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, *isize1, index1, m1, atnms1,
-                                                 &i2, *isize2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
+                                                 &i2, index2, m2, atnms2);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
@@ -425,8 +425,8 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, *isize1, index1, m1, atnms1,
-                                                 &i2, *isize2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
+                                                 &i2, index2, m2, atnms2);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,

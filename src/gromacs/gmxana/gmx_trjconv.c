@@ -72,8 +72,7 @@ enum {
 
 
 static void calc_pbc_cluster(int ecenter, int nrefat, t_topology *top, int ePBC,
-                             rvec x[], atom_id index[],
-                             rvec clust_com, matrix box, rvec clustercenter)
+                             rvec x[], atom_id index[], matrix box)
 {
     int       m, i, j, j0, j1, jj, ai, aj;
     int       imin, jmin;
@@ -1451,7 +1450,7 @@ int gmx_trjconv(int argc, char *argv[])
                 {
                     rvec com;
 
-                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, com, fr.box, clustercenter);
+                    calc_pbc_cluster(ecenter, ifit, &top, ePBC, fr.x, ind_fit, fr.box);
                 }
 
                 if (bPFit)
