@@ -34,67 +34,43 @@
  */
 /*! \internal \file
  * \brief
- * Tests for SIMD functionality
+ * Tests for functionality to do a table load for 2xnn kernels.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#include "tests.h"
+#include "base.h"
 
 namespace SIMDTests
 {
 
-/********************************************************************
- * Tests for SIMD wrapper functions
- */
+#ifdef GMX_NBNXN_SIMD_2XNN
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(ReferenceFunction_V_VVV referenceFunction, RealArray theReals)
+//! TODO this makes more sense as a nbnxn-specific test, rather than a
+//! general SIMD test
+
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_2xnn_outer_header.h"
+
+#include "load_table.h"
+
+typedef SimdFunctionDoingTableLoad_f SimdFunctionDoing2xnnTableLoad_f;
+
+TEST_F(SimdFunctionDoing2xnnTableLoad_f, load_table_f_Works)
 {
-    gmx_simd_ref_pr a, b, c, result;
-    a      = gmx_simd_ref_load_pr(theReals[0]);
-    b      = gmx_simd_ref_load_pr(theReals[1]);
-    c      = gmx_simd_ref_load_pr(theReals[2]);
-    result = referenceFunction(a, b, c);
-    gmx_simd_ref_store_pr(referenceResult[0], result);
+    Tester(ReferenceFunctions::load_table_f,
+           TestFunctions::load_table_f);
 }
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(TestFunction_V_VVV testFunction, RealArray theReals)
+typedef SimdFunctionDoingTableLoad_f_v SimdFunctionDoing2xnnTableLoad_f_v;
+
+TEST_F(SimdFunctionDoing2xnnTableLoad_f_v, load_table_f_v_Works)
 {
-    gmx_mm_pr a, b, c, result;
-    a      = gmx_load_pr(theReals[0]);
-    b      = gmx_load_pr(theReals[1]);
-    c      = gmx_load_pr(theReals[2]);
-    result = testFunction(a, b, c);
-    gmx_store_pr(testResult[0], result);
+    
+    Tester(ReferenceFunctions::load_table_f_v,
+           TestFunctions::load_table_f_v);
 }
 
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV> SimdFunctionWithSignature_V_VVV;
-
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_madd_pr_Works)
-{
-    Tester(gmx_simd_ref_madd_pr,
-           gmx_madd_pr,
-           reals);
-}
-
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_nmsub_pr_Works)
-{
-    Tester(gmx_simd_ref_nmsub_pr,
-           gmx_nmsub_pr,
-           reals);
-}
-
-#ifdef GMX_SIMD_HAVE_BLENDV
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_blendv_pr_Works)
-{
-    Tester(gmx_simd_ref_blendv_pr,
-           gmx_blendv_pr,
-           reals);
-}
 #endif
 
 } // namespace

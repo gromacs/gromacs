@@ -35,81 +35,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    GMX_SIMD_WIDTH_HERE
-
-/* The stride of all the atom data arrays is max(UNROLLI,UNROLLJ) */
-#if GMX_SIMD_WIDTH_HERE >= UNROLLI
-#define STRIDE     GMX_SIMD_WIDTH_HERE
-#else
-#define STRIDE     UNROLLI
-#endif
-
-#if GMX_SIMD_WIDTH_HERE == 2
-#define SUM_SIMD(x)  (x[0]+x[1])
-#else
-#if GMX_SIMD_WIDTH_HERE == 4
-#define SUM_SIMD(x)  SUM_SIMD4(x)
-#else
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
-#endif
-
-
-/* Decide if we should use the FDV0 table layout */
-#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
-/* With full AVX-256 SIMD, half SIMD-width table loads are optimal */
-#if GMX_SIMD_WIDTH_HERE/2 == 4
-#define TAB_FDV0
-#endif
-#else
-/* We use the FDV0 table layout when we can use aligned table loads */
-#if GMX_SIMD_WIDTH_HERE == 4
-#define TAB_FDV0
-#endif
-#endif
-
-/* Decide the stride for the 2 LJ parameters */
-#ifdef GMX_X86_SSE2
-#ifdef GMX_DOUBLE
-#define NBFP_STRIDE  2
-#else
-#define NBFP_STRIDE  4
-#endif
-#else
-#if GMX_SIMD_WIDTH_HERE > 4
-#define NBFP_STRIDE  4
-#else
-#define NBFP_STRIDE  GMX_SIMD_WIDTH_HERE
-#endif
-#endif
-
-
-#define SIMD_MASK_ALL   0xffffffff
-
-#include "nbnxn_kernel_simd_utils.h"
-
-/* All functionality defines are set here, except for:
- * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
- * CHECK_EXCLS, which is set just before including the inner loop contents.
- * The combination rule defines, LJ_COMB_GEOM or LJ_COMB_LB are currently
- * set before calling the kernel function. We might want to move that
- * to inside the n-loop and have a different combination rule for different
- * ci's, as no combination rule gives a 50% performance hit for LJ.
- */
-
-/* We always calculate shift forces, because it's cheap anyhow */
-#define CALC_SHIFTFORCES
-
-/* Assumes all LJ parameters are identical */
-/* #define FIX_LJ_C */
-
 /* The NBK_FUNC_NAME... macros below generate the whole zoo of kernels names
  * with all combinations off electrostatics (coul), LJ combination rules (ljc)
  * and energy calculations (ene), depending on the defines set.
@@ -399,10 +324,10 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both mask and exclusion info a treated the same way.
      */
-    mask_S0    = gmx_load_exclmask(excl_mask + 0*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
-    mask_S1    = gmx_load_exclmask(excl_mask + 1*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
-    mask_S2    = gmx_load_exclmask(excl_mask + 2*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
-    mask_S3    = gmx_load_exclmask(excl_mask + 3*UNROLLJ*EXCL_MASK_POINTER_STRIDE);
+    mask_S0    = gmx_load_exclmask(excl_mask + 0*UNROLLJ*EXCL_MASK_STRIDE);
+    mask_S1    = gmx_load_exclmask(excl_mask + 1*UNROLLJ*EXCL_MASK_STRIDE);
+    mask_S2    = gmx_load_exclmask(excl_mask + 2*UNROLLJ*EXCL_MASK_STRIDE);
+    mask_S3    = gmx_load_exclmask(excl_mask + 3*UNROLLJ*EXCL_MASK_STRIDE);
 
 #ifdef CALC_COUL_TAB
 #ifdef STORE_TABLE_INDICES
@@ -812,12 +737,3 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 
 #undef STORE_TABLE_INDICES
 
-#undef CALC_SHIFTFORCES
-
-#undef UNROLLI
-#undef UNROLLJ
-#undef STRIDE
-#undef TAB_FDV0
-#undef NBFP_STRIDE
-
-#undef GMX_USE_HALF_WIDTH_SIMD_HERE
