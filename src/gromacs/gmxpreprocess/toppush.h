@@ -96,11 +96,10 @@ extern void push_bond(directive d, t_params bondtype[], t_params bond[],
 
 extern void push_cmap(directive d, t_params bondtype[], t_params bond[],
                       t_atoms *at, gpp_atomtype_t atype, char *line,
-                      gmx_bool *bWarn_copy_A_B,
                       warninp_t wi);
 
-extern void push_vsitesn(directive d, t_params bondtype[], t_params bond[],
-                         t_atoms *at, gpp_atomtype_t atype, char *line,
+extern void push_vsitesn(directive d, t_params bond[],
+                         t_atoms *at, char *line,
                          warninp_t wi);
 
 extern void push_mol(int nrmols, t_molinfo mols[], char *pline,

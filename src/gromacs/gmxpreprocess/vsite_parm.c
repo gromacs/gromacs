@@ -110,7 +110,7 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
 }
 
 static void get_bondeds(int nrat, t_iatom atoms[],
-                        at2vsitebond_t *at2vb, t_params plist[],
+                        at2vsitebond_t *at2vb,
                         int *nrbond, t_mybonded **bonds,
                         int *nrang,  t_mybonded **angles,
                         int *nridih, t_mybonded **idihs )
@@ -861,7 +861,7 @@ int set_vsites(gmx_bool bVerbose, t_atoms *atoms, gpp_atomtype_t atype,
                     idihs  = NULL;
                     nrset++;
                     /* now set the vsite parameters: */
-                    get_bondeds(NRAL(ftype), plist[ftype].param[i].a, at2vb, plist,
+                    get_bondeds(NRAL(ftype), plist[ftype].param[i].a, at2vb,
                                 &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
                     if (debug)
                     {
