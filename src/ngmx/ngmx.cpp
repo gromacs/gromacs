@@ -305,8 +305,8 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
-    parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
+    gmx::ProgramInfo::init(argc, argv);
+    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_STANDALONE, NFILE, fnm,
                       0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
 
     if ((x11 = GetX11(&argc, argv)) == NULL)

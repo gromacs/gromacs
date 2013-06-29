@@ -382,10 +382,12 @@ class CommandLineModuleManager::Impl
          * The pointed module is owned by the \a modules_ container.
          */
         CommandLineHelpModule  *helpModule_;
+        //! Whether all stderr output should be suppressed.
+        bool                    bQuiet_;
 };
 
 CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
-    : programInfo_(programInfo), helpModule_(NULL)
+    : programInfo_(programInfo), helpModule_(NULL), bQuiet_(false)
 {
 }
 
@@ -427,6 +429,11 @@ CommandLineModuleManager::~CommandLineModuleManager()
 {
 }
 
+void CommandLineModuleManager::setQuiet(bool bQuiet)
+{
+    impl_->bQuiet_ = bQuiet;
+}
+
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 {
     GMX_ASSERT(impl_->modules_.find(module->name()) == impl_->modules_.end(),
@@ -447,12 +454,19 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     int argOffset = 0;
     CommandLineModuleMap::const_iterator module
         = impl_->findModuleFromBinaryName(impl_->programInfo_);
+    if (!impl_->bQuiet_)
+    {
+        printBinaryInformation(stderr, impl_->programInfo_);
+    }
     if (module == impl_->modules_.end())
     {
         if (argc < 2)
         {
             impl_->helpModule_->printUsage();
-            gmx_thanx(stderr);
+            if (!impl_->bQuiet_)
+            {
+                gmx_thanx(stderr);
+            }
             return 2;
         }
         module    = impl_->findModuleByName(argv[1]);
@@ -462,11 +476,17 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     {
         fprintf(stderr, "Unknown command: '%s'\n\n", argv[1]);
         impl_->helpModule_->printUsage();
-        gmx_thanx(stderr);
+        if (!impl_->bQuiet_)
+        {
+            gmx_thanx(stderr);
+        }
         return 2;
     }
     int rc = module->second->run(argc - argOffset, argv + argOffset);
-    gmx_thanx(stderr);
+    if (!impl_->bQuiet_)
+    {
+        gmx_thanx(stderr);
+    }
     return rc;
 }
 
