@@ -40,7 +40,6 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "force.h"
 #include "pull.h"
 #include "gmx_random.h"
 #include "maths.h"

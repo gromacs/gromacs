@@ -48,6 +48,7 @@
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "statutil.h"
+#include "force.h"
 #include "mdrun.h"
 #include "md_logging.h"
 #include "md_support.h"
