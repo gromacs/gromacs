@@ -232,7 +232,7 @@ static void check_box_unchanged(matrix f_box, matrix box, char fn[], warninp_t w
 
 /* Extract the reference positions for the rotation group(s) */
 extern void set_reference_positions(
-        t_rot *rot, gmx_mtop_t *mtop, rvec *x, matrix box,
+        t_rot *rot, rvec *x, matrix box,
         const char *fn, gmx_bool bSet, warninp_t wi)
 {
     int         g, i, ii;
