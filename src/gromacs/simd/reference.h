@@ -38,7 +38,9 @@
 #ifndef _gmx_simd_ref_h_
 #define _gmx_simd_ref_h_
 
+#include "reference_types.h"
 #include "typedefs.h"
+#include <maths.h>
 
 /* This file contains a reference plain-C implementation of arbitrary width.
  * This code is only useful for testing and documentation.
@@ -49,23 +51,6 @@
 #ifndef GMX_SIMD_REF_WIDTH
 #error "GMX_SIMD_REF_WIDTH should be defined before including gromacs/simd/reference.h"
 #endif
-
-/* float/double SIMD register type */
-typedef struct {
-    real r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_pr;
-
-/* boolean SIMD register type */
-typedef struct {
-    char r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_pb;
-
-/* integer SIMD register type, only for table indexing and exclusion masks */
-typedef struct {
-    int r[GMX_SIMD_REF_WIDTH];
-} gmx_simd_ref_epi32;
-#define GMX_SIMD_REF_EPI32_WIDTH  GMX_SIMD_REF_WIDTH
-typedef gmx_simd_ref_epi32 gmx_simd_ref_exclmask;
 
 /* Load GMX_SIMD_REF_WIDTH reals for memory starting at r */
 static gmx_inline gmx_simd_ref_pr
@@ -389,9 +374,8 @@ gmx_simd_ref_store_pb(real *dest, gmx_simd_ref_pb src)
     }
 };
 
-
 static gmx_inline gmx_simd_ref_exclmask
-gmx_simd_ref_load1_exclmask(int src)
+gmx_simd_ref_load1_exclmask(unsigned int src)
 {
     gmx_simd_ref_exclmask a;
     int                   i;
@@ -405,7 +389,7 @@ gmx_simd_ref_load1_exclmask(int src)
 }
 
 static gmx_inline gmx_simd_ref_exclmask
-gmx_simd_ref_load_exclmask(const int *src)
+gmx_simd_ref_load_exclmask(const unsigned int *src)
 {
     gmx_simd_ref_exclmask a;
     int                   i;
@@ -418,13 +402,13 @@ gmx_simd_ref_load_exclmask(const int *src)
     return a;
 }
 
-/* For topology exclusion-pair checking we need: ((a & b) ? True :
- * False). The x86 implementations use hardware-suitable integer-
- * and/or real-valued SIMD operations and a bit-wise "and" to do
- * this. The reference implementation normally uses logical operations
- * for logic, but in this case the i- and j-atom exclusion masks
- * computed during searching expect to be combined with bit-wise
- * "and".
+/* For topology exclusion-pair checking we need: (anytrue(a & b) ?
+ * False : True). The x86 implementations use hardware-suitable
+ * integer- and/or real-valued SIMD operations and a bit-wise "and" to
+ * do this. The reference implementation normally uses logical
+ * operations for logic, but in this case the i- and j-atom exclusion
+ * masks computed during searching expect to be combined with bit-wise
+ * "and," so we do that.
  *
  * If the same bit is set in both input masks, return TRUE, else
  * FALSE. This function is only called with a single bit set in b.

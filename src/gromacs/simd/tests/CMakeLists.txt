@@ -33,16 +33,26 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
-gmx_add_unit_test(SIMDUnitTests simd-test
-                  utils.cpp
-                  test_memory_operations.cpp
-                  test_masking_operations.cpp
-                  test_logical_operations.cpp
-# The next sets of files all have tests that are primarily
-# arithmetical in nature
-                  test_v_v.cpp
-                  test_v_vv.cpp
-                  test_v_vvv.cpp
-                  test_i_vpp.cpp
-                  )
+    gmx_add_unit_test(SIMDTests simd-test
+        utils.cpp
+        load_table.cpp
+        load_exclusions.cpp
+        arithmetic.cpp
+        logic.cpp
+        masking.cpp
+        load.cpp
+        set.cpp
+        store.cpp
+        )
+
+    # Suppress warnings when the template value parameter for the
+    # number of input values has size 0. That value leads to correct
+    # behaviour in for loops, i.e. not looping over the number of
+    # input values.
+    if(CMAKE_COMPILER_IS_GNUCC AND C_COMPILER_VERSION AND C_COMPILER_VERSION VERSION_LESS 4.7)
+        set_property(SOURCE set.cpp PROPERTY COMPILE_FLAGS -Wno-type-limits)
+    endif()
+    if (${CMAKE_C_COMPILER_ID} MATCHES "Clang")
+        set_property(SOURCE set.cpp PROPERTY COMPILE_FLAGS -Wno-tautological-compare)
+    endif()
 endif()

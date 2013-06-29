@@ -1,6 +1,9 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2012, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
  * Copyright (c) 2012, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
@@ -32,33 +35,33 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Tests for SIMD functionality
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_simd
- */
+#ifndef _load_2xnn_exclusions_h
+#define _load_2xnn_exclusions_h
 
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "gromacs/simd/types.h"
 
-namespace SIMDTests
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
+
+/* Load NBNXN kernel exclusion masks into SIMD vectors for the kernels
+ * to use. Only the kernels and the test code should use this
+ * function, but the test code needs a seam upon which to work. */
+static void
+gmx_load_2xnn_exclusions(unsigned int excl,
+                         gmx_exclmask mask_S0,
+                         gmx_exclmask mask_S2,
+                         gmx_mm_pb *interact_S0,
+                         gmx_mm_pb *interact_S2);
+
+#if 0
 {
+#endif
+#ifdef __cplusplus
+}
+#endif
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
-typedef union
-{
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
-
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scale = 1.0f);
-
-} // namespace
+#endif
