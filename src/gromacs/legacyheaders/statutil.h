@@ -89,7 +89,6 @@ const char *command_line(void);
  * directory from its location!
  */
 const char *Program(void);
-void set_program_name(const char *argvzero);
 /* Id. without leading directory */
 const char *ShortProgram(void);
 
@@ -256,8 +255,8 @@ t_topology *read_top(const char *fn, int *ePBC);
 /* set time unit for output */
 #define PCA_KEEP_ARGS      (1<<8)
 /* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
-#define PCA_SILENT         (1<<9)
-/* don't print options by default */
+#define PCA_STANDALONE     (1<<9)
+/* add options for standalone programs and print a header */
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /* does something for non-master mdrun nodes */
 #define PCA_NOEXIT_ON_ARGS (1<<11)

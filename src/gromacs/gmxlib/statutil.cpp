@@ -114,13 +114,6 @@ const char *command_line(void)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-void set_program_name(const char *argvzero)
-{
-    // The negative argc is a hack to make the ProgramInfo overridable in
-    // parse_common_args(), where the full command-line is known.
-    gmx::ProgramInfo::init(-1, &argvzero);
-}
-
 /* utility functions */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
@@ -580,11 +573,20 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     };
 #define NPCA_PA asize(pca_pa)
     FILE    *fp;
-    gmx_bool bPrint, bExit, bXvgr;
+    gmx_bool bExit, bXvgr;
     int      i, j, k, npall, max_pa;
 
+    // Handle the flags argument, which is a bit field
+    // The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
+    // Ensure that the program info is initialized; if already done, returns
+    // the already initialized object.
+    const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(*argc, argv);
+    if (FF(PCA_STANDALONE))
+    {
+        gmx::printBinaryInformation(stderr, programInfo);
+    }
     /* Check for double arguments */
     for (i = 1; (i < *argc); i++)
     {
@@ -610,12 +612,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
     }
     debug_gmx();
-    gmx::ProgramInfo::init(*argc, argv);
-
-    /* Handle the flags argument, which is a bit field
-     * The FF macro returns whether or not the bit is set
-     */
-    bPrint        = !FF(PCA_SILENT);
 
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
@@ -797,7 +793,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
             write_man(stderr, "help", output_env_get_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
         }
-        else if (bPrint)
+        else
         {
             pr_fns(stderr, nfile, fnm);
             print_pargs(stderr, npall, all_pa, FALSE);

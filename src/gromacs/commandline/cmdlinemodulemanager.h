@@ -67,7 +67,6 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
    {
        const gmx::ProgramInfo &programInfo =
            gmx::ProgramInfo::init("gmx", argc, argv);
-       CopyRight(stderr, argv[0]);
        try
        {
            gmx::CommandLineModuleManager manager(programInfo);
@@ -99,6 +98,18 @@ class CommandLineModuleManager
          */
         explicit CommandLineModuleManager(const ProgramInfo &programInfo);
         ~CommandLineModuleManager();
+
+        /*! \brief
+         * Sets the module manager to quiet mode: don't print anything.
+         *
+         * \param[in] bQuiet  Whether the module manager should remain silent.
+         *
+         * Normally, the module manager prints out some information to stderr
+         * before it starts the module and after it finishes.  This removes
+         * that output, which is useful in particular for unit tests so that
+         * they don't spam stderr.
+         */
+        void setQuiet(bool bQuiet);
 
         /*! \brief
          * Adds a given module to this manager.
