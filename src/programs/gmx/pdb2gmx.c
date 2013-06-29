@@ -2094,8 +2094,8 @@ int gmx_pdb2gmx(int argc, char *argv[])
         pdb2top(top_file2, posre_fn, molname, pdba, &x, atype, &symtab,
                 nrtp, restp,
                 restp_chain, hb_chain,
-                cc->nterpairs, cc->ntdb, cc->ctdb, bAllowMissing,
-                bVsites, bVsiteAromatics, forcefield, ffdir,
+                bAllowMissing,
+                bVsites, bVsiteAromatics, ffdir,
                 mHmult, nssbonds, ssbonds,
                 long_bond_dist, short_bond_dist, bDeuterate, bChargeGroups, bCmap,
                 bRenumRes, bRTPresname);

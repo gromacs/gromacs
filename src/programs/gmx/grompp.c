@@ -1877,7 +1877,7 @@ int gmx_grompp(int argc, char *argv[])
 
     if (ir->bRot)
     {
-        set_reference_positions(ir->rot, sys, state.x, state.box,
+        set_reference_positions(ir->rot, state.x, state.box,
                                 opt2fn("-ref", NFILE, fnm), opt2bSet("-ref", NFILE, fnm),
                                 wi);
     }
