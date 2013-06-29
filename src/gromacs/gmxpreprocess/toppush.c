@@ -1209,7 +1209,7 @@ push_cmaptype(directive d, t_params bt[], int nral, gpp_atomtype_t at,
 static void push_atom_now(t_symtab *symtab, t_atoms *at, int atomnr,
                           int atomicnumber,
                           int type, char *ctype, int ptype,
-                          char *resnumberic, int cgnumber,
+                          char *resnumberic,
                           char *resname, char *name, real m0, real q0,
                           int typeB, char *ctypeB, real mB, real qB)
 {
@@ -1384,7 +1384,7 @@ void push_atom(t_symtab *symtab, t_block *cgs,
     push_cg(cgs, lastcg, cgnumber, nr);
 
     push_atom_now(symtab, at, atomnr, get_atomtype_atomnumber(type, atype),
-                  type, ctype, ptype, resnumberic, cgnumber,
+                  type, ctype, ptype, resnumberic,
                   resname, name, m0, q0, typeB,
                   typeB == type ? ctype : ctypeB, mB, qB);
 }
@@ -1517,7 +1517,7 @@ static gmx_bool default_nb_params(int ftype, t_params bt[], t_atoms *at,
     return bFound;
 }
 
-static gmx_bool default_cmap_params(int ftype, t_params bondtype[],
+static gmx_bool default_cmap_params(t_params bondtype[],
                                     t_atoms *at, gpp_atomtype_t atype,
                                     t_param *p, gmx_bool bB,
                                     int *cmap_type, int *nparam_def)
@@ -2080,7 +2080,6 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
 
 void push_cmap(directive d, t_params bondtype[], t_params bond[],
                t_atoms *at, gpp_atomtype_t atype, char *line,
-               gmx_bool *bWarn_copy_A_B,
                warninp_t wi)
 {
     const char *aaformat[MAXATOMLIST+1] =
@@ -2154,7 +2153,7 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
     }
 
     /* Get the cmap type for this cmap angle */
-    bFound = default_cmap_params(ftype, bondtype, at, atype, &param, FALSE, &cmap_type, &ncmap_params);
+    bFound = default_cmap_params(bondtype, at, atype, &param, FALSE, &cmap_type, &ncmap_params);
 
     /* We want exactly one parameter (the cmap type in state A (currently no state B) back */
     if (bFound && ncmap_params == 1)
@@ -2173,8 +2172,8 @@ void push_cmap(directive d, t_params bondtype[], t_params bond[],
 
 
 
-void push_vsitesn(directive d, t_params bondtype[], t_params bond[],
-                  t_atoms *at, gpp_atomtype_t atype, char *line,
+void push_vsitesn(directive d, t_params bond[],
+                  t_atoms *at, char *line,
                   warninp_t wi)
 {
     char   *ptr;
