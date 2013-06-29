@@ -256,8 +256,8 @@ real morse_bonds(int nbonds,
                  const rvec x[], rvec f[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
                  real lambda, real *dvdlambda,
-                 const t_mdatoms *md, t_fcdata *fcd,
-                 int *global_atom_index)
+                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                 int gmx_unused *global_atom_index)
 {
     const real one = 1.0;
     const real two = 2.0;
@@ -329,9 +329,9 @@ real cubic_bonds(int nbonds,
                  const t_iatom forceatoms[], const t_iparams forceparams[],
                  const rvec x[], rvec f[], rvec fshift[],
                  const t_pbc *pbc, const t_graph *g,
-                 real lambda, real *dvdlambda,
-                 const t_mdatoms *md, t_fcdata *fcd,
-                 int *global_atom_index)
+                 real gmx_unused lambda, real gmx_unused *dvdlambda,
+                 const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                 int gmx_unused *global_atom_index)
 {
     const real three = 3.0;
     const real two   = 2.0;
@@ -391,8 +391,8 @@ real FENE_bonds(int nbonds,
                 const t_iatom forceatoms[], const t_iparams forceparams[],
                 const rvec x[], rvec f[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
-                real lambda, real *dvdlambda,
-                const t_mdatoms *md, t_fcdata *fcd,
+                real gmx_unused lambda, real gmx_unused *dvdlambda,
+                const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
                 int *global_atom_index)
 {
     const real half = 0.5;
@@ -488,8 +488,8 @@ real bonds(int nbonds,
            const rvec x[], rvec f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
-           const t_mdatoms *md, t_fcdata *fcd,
-           int *global_atom_index)
+           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+           int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type;
     real dr, dr2, fbond, vbond, fij, vtot;
@@ -550,8 +550,8 @@ real restraint_bonds(int nbonds,
                      const rvec x[], rvec f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real lambda, real *dvdlambda,
-                     const t_mdatoms *md, t_fcdata *fcd,
-                     int *global_atom_index)
+                     const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                     int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type;
     real dr, dr2, fbond, vbond, fij, vtot;
@@ -652,8 +652,8 @@ real polarize(int nbonds,
               const rvec x[], rvec f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
-              const t_mdatoms *md, t_fcdata *fcd,
-              int *global_atom_index)
+              const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+              int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type;
     real dr, dr2, fbond, vbond, fij, vtot, ksh;
@@ -708,8 +708,8 @@ real anharm_polarize(int nbonds,
                      const rvec x[], rvec f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
                      real lambda, real *dvdlambda,
-                     const t_mdatoms *md, t_fcdata *fcd,
-                     int *global_atom_index)
+                     const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+                     int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type;
     real dr, dr2, fbond, vbond, fij, vtot, ksh, khyp, drcut, ddr, ddr3;
@@ -770,11 +770,11 @@ real anharm_polarize(int nbonds,
 
 real water_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
-               const rvec x[], rvec f[], rvec fshift[],
-               const t_pbc *pbc, const t_graph *g,
-               real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               const rvec x[], rvec f[], rvec gmx_unused fshift[],
+               const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
+               real gmx_unused lambda, real gmx_unused *dvdlambda,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index)
 {
     /* This routine implements anisotropic polarizibility for water, through
      * a shell connected to a dummy with spring constant that differ in the
@@ -945,10 +945,10 @@ static real do_1_thole(const rvec xi, const rvec xj, rvec fi, rvec fj,
 real thole_pol(int nbonds,
                const t_iatom forceatoms[], const t_iparams forceparams[],
                const rvec x[], rvec f[], rvec fshift[],
-               const t_pbc *pbc, const t_graph *g,
-               real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               const t_pbc *pbc, const t_graph gmx_unused *g,
+               real gmx_unused lambda, real gmx_unused *dvdlambda,
+               const t_mdatoms *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index)
 {
     /* Interaction between two pairs of particles with opposite charge */
     int  i, type, a1, da1, a2, da2;
@@ -1000,8 +1000,8 @@ real angles(int nbonds,
             const rvec x[], rvec f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index)
+            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type;
     rvec r_ij, r_kj;
@@ -1091,10 +1091,10 @@ static gmx_inline void
 angles_noener_simd(int nbonds,
                    const t_iatom forceatoms[], const t_iparams forceparams[],
                    const rvec x[], rvec f[],
-                   const t_pbc *pbc, const t_graph *g,
-                   real lambda,
-                   const t_mdatoms *md, t_fcdata *fcd,
-                   int *global_atom_index)
+                   const t_pbc *pbc, const t_graph gmx_unused *g,
+                   real gmx_unused lambda,
+                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
 {
 #define UNROLL GMX_SIMD_WIDTH_HERE
     const int      nfa1 = 4;
@@ -1123,7 +1123,7 @@ angles_noener_simd(int nbonds,
     dr    = gmx_simd_align_real(dr_array);
     f_buf = gmx_simd_align_real(f_buf_array);
 
-    set_pbc_simd(pbc,&pbc_simd);
+    set_pbc_simd(pbc, &pbc_simd);
 
     one_S = gmx_set1_pr(1.0);
 
@@ -1242,8 +1242,8 @@ real linear_angles(int nbonds,
                    const rvec x[], rvec f[], rvec fshift[],
                    const t_pbc *pbc, const t_graph *g,
                    real lambda, real *dvdlambda,
-                   const t_mdatoms *md, t_fcdata *fcd,
-                   int *global_atom_index)
+                   const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
 {
     int  i, m, ai, aj, ak, t1, t2, type;
     rvec f_i, f_j, f_k;
@@ -1312,8 +1312,8 @@ real urey_bradley(int nbonds,
                   const rvec x[], rvec f[], rvec fshift[],
                   const t_pbc *pbc, const t_graph *g,
                   real lambda, real *dvdlambda,
-                  const t_mdatoms *md, t_fcdata *fcd,
-                  int *global_atom_index)
+                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                  int gmx_unused *global_atom_index)
 {
     int  i, m, ai, aj, ak, t1, t2, type, ki;
     rvec r_ij, r_kj, r_ik;
@@ -1426,9 +1426,9 @@ real quartic_angles(int nbonds,
                     const t_iatom forceatoms[], const t_iparams forceparams[],
                     const rvec x[], rvec f[], rvec fshift[],
                     const t_pbc *pbc, const t_graph *g,
-                    real lambda, real *dvdlambda,
-                    const t_mdatoms *md, t_fcdata *fcd,
-                    int *global_atom_index)
+                    real gmx_unused lambda, real gmx_unused *dvdlambda,
+                    const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                    int gmx_unused *global_atom_index)
 {
     int  i, j, ai, aj, ak, t1, t2, type;
     rvec r_ij, r_kj;
@@ -1882,8 +1882,8 @@ real pdihs(int nbonds,
            const rvec x[], rvec f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
-           const t_mdatoms *md, t_fcdata *fcd,
-           int *global_atom_index)
+           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+           int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
@@ -1941,10 +1941,10 @@ static void
 pdihs_noener(int nbonds,
              const t_iatom forceatoms[], const t_iparams forceparams[],
              const rvec x[], rvec f[],
-             const t_pbc *pbc, const t_graph *g,
+             const t_pbc gmx_unused *pbc, const t_graph gmx_unused *g,
              real lambda,
-             const t_mdatoms *md, t_fcdata *fcd,
-             int *global_atom_index)
+             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+             int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
@@ -1997,29 +1997,29 @@ static void
 pdihs_noener_simd(int nbonds,
                   const t_iatom forceatoms[], const t_iparams forceparams[],
                   const rvec x[], rvec f[],
-                  const t_pbc *pbc, const t_graph *g,
-                  real lambda,
-                  const t_mdatoms *md, t_fcdata *fcd,
-                  int *global_atom_index)
+                  const t_pbc *pbc, const t_graph gmx_unused *g,
+                  real gmx_unused lambda,
+                  const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                  int gmx_unused *global_atom_index)
 {
 #define UNROLL GMX_SIMD_WIDTH_HERE
-    const int      nfa1 = 5;
-    int            i, iu, s;
-    int            type, ai[UNROLL], aj[UNROLL], ak[UNROLL], al[UNROLL];
-    int            t1[UNROLL], t2[UNROLL], t3[UNROLL];
-    real           ddphi;
-    real           dr_array[3*DIM*UNROLL+UNROLL], *dr;
-    real           buf_array[7*UNROLL+UNROLL], *buf;
+    const int       nfa1 = 5;
+    int             i, iu, s;
+    int             type, ai[UNROLL], aj[UNROLL], ak[UNROLL], al[UNROLL];
+    int             t1[UNROLL], t2[UNROLL], t3[UNROLL];
+    real            ddphi;
+    real            dr_array[3*DIM*UNROLL+UNROLL], *dr;
+    real            buf_array[7*UNROLL+UNROLL], *buf;
     real           *cp, *phi0, *mult, *phi, *p, *q, *sf_i, *msf_l;
-    gmx_mm_pr      phi0_S, phi_S;
-    gmx_mm_pr      mx_S, my_S, mz_S;
-    gmx_mm_pr      nx_S, ny_S, nz_S;
-    gmx_mm_pr      nrkj_m2_S, nrkj_n2_S;
-    gmx_mm_pr      cp_S, mdphi_S, mult_S;
-    gmx_mm_pr      sin_S, cos_S;
-    gmx_mm_pr      mddphi_S;
-    gmx_mm_pr      sf_i_S, msf_l_S;
-    pbc_simd_t     pbc_simd;
+    gmx_mm_pr       phi0_S, phi_S;
+    gmx_mm_pr       mx_S, my_S, mz_S;
+    gmx_mm_pr       nx_S, ny_S, nz_S;
+    gmx_mm_pr       nrkj_m2_S, nrkj_n2_S;
+    gmx_mm_pr       cp_S, mdphi_S, mult_S;
+    gmx_mm_pr       sin_S, cos_S;
+    gmx_mm_pr       mddphi_S;
+    gmx_mm_pr       sf_i_S, msf_l_S;
+    pbc_simd_t      pbc_simd;
 
     /* Ensure SIMD register alignment */
     dr  = gmx_simd_align_real(dr_array);
@@ -2130,8 +2130,8 @@ real idihs(int nbonds,
            const rvec x[], rvec f[], rvec fshift[],
            const t_pbc *pbc, const t_graph *g,
            real lambda, real *dvdlambda,
-           const t_mdatoms *md, t_fcdata *fcd,
-           int *global_atom_index)
+           const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+           int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al;
     int  t1, t2, t3;
@@ -2563,8 +2563,8 @@ real angres(int nbonds,
             const rvec x[], rvec f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index)
+            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
 {
     return low_angres(nbonds, forceatoms, forceparams, x, f, fshift, pbc, g,
                       lambda, dvdlambda, FALSE);
@@ -2575,8 +2575,8 @@ real angresz(int nbonds,
              const rvec x[], rvec f[], rvec fshift[],
              const t_pbc *pbc, const t_graph *g,
              real lambda, real *dvdlambda,
-             const t_mdatoms *md, t_fcdata *fcd,
-             int *global_atom_index)
+             const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+             int gmx_unused *global_atom_index)
 {
     return low_angres(nbonds, forceatoms, forceparams, x, f, fshift, pbc, g,
                       lambda, dvdlambda, TRUE);
@@ -2587,8 +2587,8 @@ real dihres(int nbonds,
             const rvec x[], rvec f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index)
+            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+            int gmx_unused  *global_atom_index)
 {
     real vtot = 0;
     int  ai, aj, ak, al, i, k, type, t1, t2, t3;
@@ -2677,13 +2677,13 @@ real dihres(int nbonds,
 }
 
 
-real unimplemented(int nbonds,
-                   const t_iatom forceatoms[], const t_iparams forceparams[],
-                   const rvec x[], rvec f[], rvec fshift[],
-                   const t_pbc *pbc, const t_graph *g,
-                   real lambda, real *dvdlambda,
-                   const t_mdatoms *md, t_fcdata *fcd,
-                   int *global_atom_index)
+real unimplemented(int gmx_unused nbonds,
+                   const t_iatom gmx_unused forceatoms[], const t_iparams gmx_unused forceparams[],
+                   const rvec gmx_unused x[], rvec gmx_unused f[], rvec gmx_unused fshift[],
+                   const t_pbc gmx_unused *pbc, const t_graph  gmx_unused *g,
+                   real gmx_unused lambda, real gmx_unused *dvdlambda,
+                   const t_mdatoms  gmx_unused *md, t_fcdata gmx_unused *fcd,
+                   int gmx_unused *global_atom_index)
 {
     gmx_impl("*** you are using a not implemented function");
 
@@ -2695,8 +2695,8 @@ real rbdihs(int nbonds,
             const rvec x[], rvec f[], rvec fshift[],
             const t_pbc *pbc, const t_graph *g,
             real lambda, real *dvdlambda,
-            const t_mdatoms *md, t_fcdata *fcd,
-            int *global_atom_index)
+            const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+            int gmx_unused *global_atom_index)
 {
     const real c0 = 0.0, c1 = 1.0, c2 = 2.0, c3 = 3.0, c4 = 4.0, c5 = 5.0;
     int        type, ai, aj, ak, al, i, j;
@@ -2838,9 +2838,9 @@ real cmap_dihs(int nbonds,
                const gmx_cmap_t *cmap_grid,
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
-               real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               real gmx_unused lambda, real gmx_unused *dvdlambda,
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int  gmx_unused *global_atom_index)
 {
     int         i, j, k, n, idx;
     int         ai, aj, ak, al, am;
@@ -3278,8 +3278,8 @@ real g96bonds(int nbonds,
               const rvec x[], rvec f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
-              const t_mdatoms *md, t_fcdata *fcd,
-              int *global_atom_index)
+              const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+              int gmx_unused *global_atom_index)
 {
     int  i, m, ki, ai, aj, type;
     real dr2, fbond, vbond, fij, vtot;
@@ -3348,8 +3348,8 @@ real g96angles(int nbonds,
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+               int gmx_unused *global_atom_index)
 {
     int  i, ai, aj, ak, type, m, t1, t2;
     rvec r_ij, r_kj;
@@ -3419,9 +3419,9 @@ real cross_bond_bond(int nbonds,
                      const t_iatom forceatoms[], const t_iparams forceparams[],
                      const rvec x[], rvec f[], rvec fshift[],
                      const t_pbc *pbc, const t_graph *g,
-                     real lambda, real *dvdlambda,
-                     const t_mdatoms *md, t_fcdata *fcd,
-                     int *global_atom_index)
+                     real gmx_unused lambda, real gmx_unused *dvdlambda,
+                     const t_mdatoms gmx_unused *md, t_fcdata gmx_unused  *fcd,
+                     int gmx_unused *global_atom_index)
 {
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
      * pp. 842-847
@@ -3493,9 +3493,9 @@ real cross_bond_angle(int nbonds,
                       const t_iatom forceatoms[], const t_iparams forceparams[],
                       const rvec x[], rvec f[], rvec fshift[],
                       const t_pbc *pbc, const t_graph *g,
-                      real lambda, real *dvdlambda,
-                      const t_mdatoms *md, t_fcdata *fcd,
-                      int *global_atom_index)
+                      real gmx_unused lambda, real gmx_unused *dvdlambda,
+                      const t_mdatoms gmx_unused *md, t_fcdata gmx_unused *fcd,
+                      int gmx_unused *global_atom_index)
 {
     /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
      * pp. 842-847
@@ -3618,8 +3618,8 @@ real tab_bonds(int nbonds,
                const rvec x[], rvec f[], rvec fshift[],
                const t_pbc *pbc, const t_graph *g,
                real lambda, real *dvdlambda,
-               const t_mdatoms *md, t_fcdata *fcd,
-               int *global_atom_index)
+               const t_mdatoms gmx_unused *md, t_fcdata *fcd,
+               int gmx_unused  *global_atom_index)
 {
     int  i, m, ki, ai, aj, type, table;
     real dr, dr2, fbond, vbond, fij, vtot;
@@ -3682,8 +3682,8 @@ real tab_angles(int nbonds,
                 const rvec x[], rvec f[], rvec fshift[],
                 const t_pbc *pbc, const t_graph *g,
                 real lambda, real *dvdlambda,
-                const t_mdatoms *md, t_fcdata *fcd,
-                int *global_atom_index)
+                const t_mdatoms gmx_unused  *md, t_fcdata *fcd,
+                int gmx_unused *global_atom_index)
 {
     int  i, ai, aj, ak, t1, t2, type, table;
     rvec r_ij, r_kj;
@@ -3766,8 +3766,8 @@ real tab_dihs(int nbonds,
               const rvec x[], rvec f[], rvec fshift[],
               const t_pbc *pbc, const t_graph *g,
               real lambda, real *dvdlambda,
-              const t_mdatoms *md, t_fcdata *fcd,
-              int *global_atom_index)
+              const t_mdatoms gmx_unused *md, t_fcdata *fcd,
+              int gmx_unused *global_atom_index)
 {
     int  i, type, ai, aj, ak, al, table;
     int  t1, t2, t3;
@@ -4080,7 +4080,7 @@ static real calc_one_bond(FILE *fplog, int thread,
                           rvec x[], rvec f[], rvec fshift[],
                           t_forcerec *fr,
                           const t_pbc *pbc, const t_graph *g,
-                          gmx_enerdata_t *enerd, gmx_grppairener_t *grpp,
+                          gmx_enerdata_t gmx_unused *enerd, gmx_grppairener_t *grpp,
                           t_nrnb *nrnb,
                           real *lambda, real *dvdl,
                           const t_mdatoms *md, t_fcdata *fcd,
@@ -4198,13 +4198,13 @@ static real calc_one_bond(FILE *fplog, int thread,
    to reduce duplication.
  */
 
-static real calc_one_bond_foreign(FILE *fplog, int ftype, const t_idef *idef,
+static real calc_one_bond_foreign(FILE gmx_unused *fplog, int ftype, const t_idef *idef,
                                   rvec x[], rvec f[], t_forcerec *fr,
                                   const t_pbc *pbc, const t_graph *g,
                                   gmx_grppairener_t *grpp, t_nrnb *nrnb,
                                   real *lambda, real *dvdl,
                                   const t_mdatoms *md, t_fcdata *fcd,
-                                  int *global_atom_index, gmx_bool bPrintSepPot)
+                                  int *global_atom_index, gmx_bool gmx_unused bPrintSepPot)
 {
     int      ind, nat1, nbonds, efptFTYPE, nbonds_np;
     real     v = 0;
@@ -4277,7 +4277,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
                 real *lambda,
                 const t_mdatoms *md,
                 t_fcdata *fcd, int *global_atom_index,
-                t_atomtypes *atype, gmx_genborn_t *born,
+                t_atomtypes gmx_unused *atype, gmx_genborn_t gmx_unused *born,
                 int force_flags,
                 gmx_bool bPrintSepPot, gmx_large_int_t step)
 {

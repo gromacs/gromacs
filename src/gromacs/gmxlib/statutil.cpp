@@ -142,7 +142,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
     }
 }
 
-int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
+int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int  r;
 
@@ -178,7 +178,7 @@ int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
 
 int check_times(real t)
 {
-    return check_times2(t, t, t, t, FALSE);
+    return check_times2(t, t, FALSE);
 }
 
 

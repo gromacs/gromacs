@@ -108,8 +108,7 @@ static void tabulate_eir(int natom, rvec x[], int kmax, cvec **eir, rvec lll)
     }
 }
 
-void init_ewald_tab(ewald_tab_t *et, const t_commrec *cr, const t_inputrec *ir,
-                    FILE *fp)
+void init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir, FILE *fp)
 {
     int n;
 
