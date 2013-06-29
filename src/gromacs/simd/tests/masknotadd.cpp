@@ -34,46 +34,48 @@
  */
 /*! \internal \file
  * \brief
- * Header file for utility class, union and function for testing of SIMD functionality.
+ * Tests for functionality that does masking-style operations in SIMD.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
-
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "general.h"
 
 namespace SIMDTests
 {
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
+/* We can't actually do a SIMD load of a vector of bool from memory,
+ * because it is not implemented since there is no need for that in
+ * the kernels. Instead, a vector of bool is always generated from a
+ * comparison, so we do that in testing also. gmx_cmplt_pr is tested
+ * separately. */
 
-/*! \brief Union type to facilitate low-level manipulations */
-typedef union
+typedef SimdFunctionTestNew<real> SimdFunctionMasknotadd;
+
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionMasknotadd::callFunction(SimdFunctionSet &simdFunctionSet,
+                                     FunctionType     function,
+                                     real            *_result)
 {
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+    typename SimdFunctionSet::realType a, b, c, d, result;
+    typename SimdFunctionSet::boolType mask;
 
-/*! \brief Helper function that test whether two vectors of reals
- * compare as equal, given the tolerance described by scaleMaxUlps.
- *
- * An "ulp" is a "unit in last place." By default, GoogleTest will
- * tolerate a range of +/- 2 in the last digit of the significand when
- * comparing for equality. This is multiplied by scaleMaxUlps. See
- * gtest-internal.h for details.
- */
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scaleMaxUlps = 1.0f);
+    a      = simdFunctionSet.load_pr(inputs_[0]);
+    b      = simdFunctionSet.load_pr(inputs_[1]);
+    c      = simdFunctionSet.load_pr(inputs_[2]);
+    d      = simdFunctionSet.load_pr(inputs_[3]);
+    mask   = simdFunctionSet.cmplt_pr(c, d);
+    result = function(mask, a, b);
+    simdFunctionSet.store_pr(_result, result);
+}
 
-}      // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */
+TEST_F(SimdFunctionMasknotadd, gmx_masknot_add_pr_Works)
+{
+    prepare(4, 1, 5, 0);
+    Tester(ReferenceFunctions::gmx_simd_ref_masknot_add_pr,
+           TestFunctions::gmx_masknot_add_pr, real(0));
+}
+} // namespace

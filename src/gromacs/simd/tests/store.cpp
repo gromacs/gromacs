@@ -34,67 +34,45 @@
  */
 /*! \internal \file
  * \brief
- * Tests for SIMD functionality
+ * Tests for functionality that stores a SIMD vector to memory.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#include "tests.h"
+#include "general.h"
 
 namespace SIMDTests
 {
 
-/********************************************************************
- * Tests for SIMD wrapper functions
- */
+/* It's hard to test load and store independently, since you need one
+   of them to be in a position to test the other. If this test fails
+   because of store_pr, so will almost all the others. If it fails
+   because of load_pr, then those that don't load a real may still
+   pass. */
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(ReferenceFunction_V_VVV referenceFunction, RealArray theReals)
+/* Test store function */
+
+typedef SimdFunctionTestNew<real> SimdFunctionStore;
+
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionStore::callFunction(SimdFunctionSet &simdFunctionSet,
+                                FunctionType     function,
+                                real            *_result)
 {
-    gmx_simd_ref_pr a, b, c, result;
-    a      = gmx_simd_ref_load_pr(theReals[0]);
-    b      = gmx_simd_ref_load_pr(theReals[1]);
-    c      = gmx_simd_ref_load_pr(theReals[2]);
-    result = referenceFunction(a, b, c);
-    gmx_simd_ref_store_pr(referenceResult[0], result);
+    typename SimdFunctionSet::realType a;
+
+    a      = simdFunctionSet.load_pr(inputs_[0]);
+    function(_result, a);
 }
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(TestFunction_V_VVV testFunction, RealArray theReals)
+TEST_F(SimdFunctionStore, gmx_store_pr_Works)
 {
-    gmx_mm_pr a, b, c, result;
-    a      = gmx_load_pr(theReals[0]);
-    b      = gmx_load_pr(theReals[1]);
-    c      = gmx_load_pr(theReals[2]);
-    result = testFunction(a, b, c);
-    gmx_store_pr(testResult[0], result);
+    prepare(1, 1);
+    Tester(ReferenceFunctions::gmx_simd_ref_store_pr,
+           TestFunctions::gmx_store_pr, real(0));
 }
-
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV> SimdFunctionWithSignature_V_VVV;
-
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_madd_pr_Works)
-{
-    Tester(gmx_simd_ref_madd_pr,
-           gmx_madd_pr,
-           reals);
-}
-
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_nmsub_pr_Works)
-{
-    Tester(gmx_simd_ref_nmsub_pr,
-           gmx_nmsub_pr,
-           reals);
-}
-
-#ifdef GMX_SIMD_HAVE_BLENDV
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_blendv_pr_Works)
-{
-    Tester(gmx_simd_ref_blendv_pr,
-           gmx_blendv_pr,
-           reals);
-}
-#endif
 
 } // namespace
