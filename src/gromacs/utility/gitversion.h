@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -35,8 +35,17 @@
 #ifndef GMX_UTILITY_GITVERSION_H
 #define GMX_UTILITY_GITVERSION_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern const char _gmx_ver_string[];
 extern const char _gmx_full_git_hash[];
 extern const char _gmx_central_base_hash[];
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

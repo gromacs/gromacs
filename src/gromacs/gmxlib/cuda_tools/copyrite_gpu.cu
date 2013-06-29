@@ -46,7 +46,7 @@
 
 #include "buildinfo.h"
 
-extern "C" void gmx_print_version_info_gpu(FILE *fp) 
+void gmx_print_version_info_gpu(FILE *fp)
 {
     int cuda_driver,cuda_runtime;
     fprintf(fp, "CUDA compiler:      %s\n",CUDA_NVCC_COMPILER_INFO);
