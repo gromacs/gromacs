@@ -139,7 +139,7 @@ static void read_atom(char *line, gmx_bool bAdd,
     }
 }
 
-static void print_atom(FILE *out, t_atom *a, gpp_atomtype_t atype, char *newnm)
+static void print_atom(FILE *out, t_atom *a, gpp_atomtype_t atype)
 {
     fprintf(out, "\t%s\t%g\t%g\n",
             get_atomtype_name(a->type, atype), a->m, a->q);
@@ -190,7 +190,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
                 if (tb[i].hack[j].oname != NULL && tb[i].hack[j].nname != NULL)
                 {
                     fprintf(out, "%s\t", tb[i].hack[j].oname);
-                    print_atom(out, tb[i].hack[j].atom, atype, tb[i].hack[j].nname);
+                    print_atom(out, tb[i].hack[j].atom, atype);
                 }
             }
         }
@@ -202,7 +202,7 @@ static void print_ter_db(const char *ff, char C, int nb, t_hackblock tb[],
                 if (tb[i].hack[j].oname == NULL && tb[i].hack[j].nname != NULL)
                 {
                     print_ab(out, &(tb[i].hack[j]), tb[i].hack[j].nname);
-                    print_atom(out, tb[i].hack[j].atom, atype, tb[i].hack[j].nname);
+                    print_atom(out, tb[i].hack[j].atom, atype);
                 }
             }
         }

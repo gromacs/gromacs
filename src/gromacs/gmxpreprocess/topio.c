@@ -119,7 +119,7 @@ static int copy_nbparams(t_nbparam **param, int ftype, t_params *plist, int nr)
     return ncopy;
 }
 
-static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb, gmx_bool bVerbose)
+static void gen_pairs(t_params *nbs, t_params *pairs, real fudge, int comb)
 {
     int     i, j, ntp, nrfp, nrfpA, nrfpB, nnn;
     real    scaling;
@@ -294,7 +294,6 @@ static void get_nbparm(char *nb_str, char *comb_str, int *nb, int *comb,
 }
 
 static char ** cpp_opts(const char *define, const char *include,
-                        const char *infile,
                         warninp_t wi)
 {
     int         n, len;
@@ -550,7 +549,6 @@ static char **read_topol(const char *infile, const char *outfile,
                          gmx_bool        bFEP,
                          gmx_bool        bGenborn,
                          gmx_bool        bZero,
-                         gmx_bool        bVerbose,
                          warninp_t   wi)
 {
     FILE           *out;
@@ -596,7 +594,7 @@ static char **read_topol(const char *infile, const char *outfile,
     }
 
     /* open input file */
-    status = cpp_open_file(infile, &handle, cpp_opts(define, include, infile, wi));
+    status = cpp_open_file(infile, &handle, cpp_opts(define, include, wi));
     if (status != 0)
     {
         gmx_fatal(FARGS, cpp_error(&handle, status));
@@ -869,7 +867,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs(&(plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, comb, bVerbose);
+                                    gen_pairs(&(plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, comb);
                                     ncopy = copy_nbparams(pair, nb_funct, &(plist[F_LJ14]),
                                                           ntype);
                                     fprintf(stderr, "Generated %d of the %d 1-4 parameter combinations\n", ncombs-ncopy, ncombs);
@@ -916,12 +914,11 @@ static char **read_topol(const char *infile, const char *outfile,
                                       bGenPairs, *fudgeQQ, bZero, &bWarn_copy_A_B, wi);
                             break;
                         case d_cmap:
-                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline,
-                                      &bWarn_copy_A_B, wi);
+                            push_cmap(d, plist, mi0->plist, &(mi0->atoms), atype, pline,wi);
                             break;
 
                         case d_vsitesn:
-                            push_vsitesn(d, plist, mi0->plist, &(mi0->atoms), atype, pline, wi);
+                            push_vsitesn(d, plist, &(mi0->atoms), pline, wi);
                             break;
                         case d_exclusions:
                             assert(block2);
@@ -974,7 +971,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                               &(mi0->excls));
                                 merge_excl(&(mi0->excls), &(block2[whichmol]));
                                 done_block2(&(block2[whichmol]));
-                                make_shake(mi0->plist, &mi0->atoms, atype, opts->nshake);
+                                make_shake(mi0->plist, &mi0->atoms, opts->nshake);
 
 
 
@@ -1104,8 +1101,7 @@ char **do_top(gmx_bool          bVerbose,
                        symtab, atype, nrmols, molinfo,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, nmolblock, molblock,
-                       ir->efep != efepNO, bGenborn, bZero, bVerbose,
-                       wi);
+                       ir->efep != efepNO, bGenborn, bZero, wi);
     if ((*combination_rule != eCOMB_GEOMETRIC) &&
         (ir->vdwtype == evdwUSER))
     {
