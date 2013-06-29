@@ -40,7 +40,7 @@
  * \ingroup module_simd
  */
 
-#include "tests.h"
+#include "general.h"
 
 namespace SIMDTests
 {
@@ -49,52 +49,54 @@ namespace SIMDTests
  * Tests for SIMD wrapper functions
  */
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(ReferenceFunction_V_VVV referenceFunction, RealArray theReals)
+/* It's hard to test set and store independently, since you need one
+   of them to be in a position to test the other. If a test here fails
+   because of store_pr, so will almost all the others. If a test here
+   fails because of the set function under test, then most of the
+   other tests will pass, because they do not use a set. */
+
+/* Test "set" functions */
+
+typedef SimdFunctionTest<1,1,real> SimdFunctionSet1;
+
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionSet1::callFunction(SimdFunctionSet &simdFunctionSet,
+                               FunctionType function,
+                               real *_result)
 {
-    gmx_simd_ref_pr a, b, c, result;
-    a      = gmx_simd_ref_load_pr(theReals[0]);
-    b      = gmx_simd_ref_load_pr(theReals[1]);
-    c      = gmx_simd_ref_load_pr(theReals[2]);
-    result = referenceFunction(a, b, c);
-    gmx_simd_ref_store_pr(referenceResult[0], result);
+    typename SimdFunctionSet::realType result;
+    
+    result = function(inputs[0][0]);
+    simdFunctionSet.store_pr(_result, result);
 }
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(TestFunction_V_VVV testFunction, RealArray theReals)
+TEST_F(SimdFunctionSet1, gmx_set1_pr_Works)
 {
-    gmx_mm_pr a, b, c, result;
-    a      = gmx_load_pr(theReals[0]);
-    b      = gmx_load_pr(theReals[1]);
-    c      = gmx_load_pr(theReals[2]);
-    result = testFunction(a, b, c);
-    gmx_store_pr(testResult[0], result);
+    Tester(ReferenceFunctions::gmx_simd_ref_set1_pr,
+           TestFunctions::gmx_set1_pr, real(0));
 }
 
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV> SimdFunctionWithSignature_V_VVV;
+typedef SimdFunctionTest<0,1,real> SimdFunctionSetzero;
 
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_madd_pr_Works)
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionSetzero::callFunction(SimdFunctionSet &simdFunctionSet,
+                               FunctionType function,
+                               real *_result)
 {
-    Tester(gmx_simd_ref_madd_pr,
-           gmx_madd_pr,
-           reals);
+    typename SimdFunctionSet::realType result;
+    
+    result = function();
+    simdFunctionSet.store_pr(_result, result);
 }
 
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_nmsub_pr_Works)
+TEST_F(SimdFunctionSetzero, gmx_setzero_pr_Works)
 {
-    Tester(gmx_simd_ref_nmsub_pr,
-           gmx_nmsub_pr,
-           reals);
+    Tester(ReferenceFunctions::gmx_simd_ref_setzero_pr,
+           TestFunctions::gmx_setzero_pr, real(0));
 }
-
-#ifdef GMX_SIMD_HAVE_BLENDV
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_blendv_pr_Works)
-{
-    Tester(gmx_simd_ref_blendv_pr,
-           gmx_blendv_pr,
-           reals);
-}
-#endif
 
 } // namespace

@@ -40,30 +40,49 @@
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
-
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "base.h"
 
 namespace SIMDTests
 {
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
-typedef union
-{
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+#ifdef GMX_NBNXN_SIMD_4XN
 
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scale = 1.0f);
+//! TODO this makes more sense as a nbnxn-specific test, rather than a
+//! general SIMD test
+
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_4xn_outer_header.h"
+
+namespace TestFunctions
+{
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
+}
+
+namespace ReferenceFunctions
+{
+#define GMX_SIMD_REFERENCE_PLAIN_C
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ref.h"
+#undef GMX_SIMD_REFERENCE_PLAIN_C
+}
+
+#include "load_table.h"
+
+typedef SimdFunctionDoingTableLoad_f SimdFunctionDoing4xnTableLoad_f;
+
+TEST_F(SimdFunctionDoing4xnTableLoad_f, load_table_f_Works)
+{
+    Tester(ReferenceFunctions::load_table_f,
+           TestFunctions::load_table_f);
+}
+
+typedef SimdFunctionDoingTableLoad_f_v SimdFunctionDoing4xnTableLoad_f_v;
+
+TEST_F(SimdFunctionDoing4xnTableLoad_f_v, load_table_f_v_Works)
+{
+    
+    Tester(ReferenceFunctions::load_table_f_v,
+           TestFunctions::load_table_f_v);
+}
+
+#endif
 
 } // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */
