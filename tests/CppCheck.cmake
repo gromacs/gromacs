@@ -73,7 +73,7 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         ${_outputopt})
     set(_c_flags
         -I src/gromacs/gmxpreprocess
-        -I src/programs/mdrun -I src/programs/pdb2gmx
+        -I src/programs/mdrun
         --suppress=variableScope
         --suppress=unusedVariable
         --suppress=unreadVariable

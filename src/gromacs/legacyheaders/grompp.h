@@ -103,6 +103,7 @@ typedef struct {
 gmx_bool is_int(double x);
 /* Returns TRUE when x is integer */
 
+/* Must correspond to strings in topdirs.c */
 typedef enum {
     d_defaults,
     d_atomtypes,
@@ -145,48 +146,6 @@ typedef enum {
     d_invalid,
     d_none
 } directive;
-
-static const char *ds[d_maxdir+1] = {
-    "defaults",
-    "atomtypes",
-    "bondtypes",
-    "constrainttypes",
-    "pairtypes",
-    "angletypes",
-    "dihedraltypes",
-    "nonbond_params",
-    "implicit_genborn_params",
-    "implicit_surface_params",
-    "cmaptypes",
-    /* All the directives above can not appear after moleculetype */
-    "moleculetype",
-    "atoms",
-    "virtual_sites2",
-    "virtual_sites3",
-    "virtual_sites4",
-    "virtual_sitesn",
-    "bonds",
-    "exclusions",
-    "pairs",
-    "pairs_nb",
-    "angles",
-    "dihedrals",
-    "constraints",
-    "settles",
-    "polarization",
-    "water_polarization",
-    "thole_polarization",
-    "system",
-    "molecules",
-    "position_restraints",
-    "angle_restraints",
-    "angle_restraints_z",
-    "distance_restraints",
-    "orientation_restraints",
-    "dihedral_restraints",
-    "cmap",
-    "invalid"
-};
 
 #ifdef __cplusplus
 }

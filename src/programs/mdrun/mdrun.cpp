@@ -34,29 +34,24 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 #ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "config.h"
 #endif
 
-#include "typedefs.h"
-#include "macros.h"
-#include "copyrite.h"
-#include "main.h"
-#include "statutil.h"
-#include "smalloc.h"
-#include "futil.h"
-#include "smalloc.h"
-#include "edsam.h"
-#include "mdrun.h"
-#include "xmdrun.h"
-#include "checkpoint.h"
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include <stdio.h>
 
-/* afm stuf */
-#include "pull.h"
+#include "gromacs/legacyheaders/checkpoint.h"
+#include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/filenm.h"
+#include "gromacs/legacyheaders/gmx_fatal.h"
+#include "gromacs/legacyheaders/macros.h"
+#include "gromacs/legacyheaders/main.h"
+#include "gromacs/legacyheaders/mdrun.h"
+#include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/readinp.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/typedefs.h"
 
-int cmain(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
     const char   *desc[] = {
         "The [TT]mdrun[tt] program is the main computational chemistry engine",
@@ -406,8 +401,6 @@ int cmain(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    gmx_bool      bCart         = FALSE;
-    gmx_bool      bPPPME        = FALSE;
     gmx_bool      bPartDec      = FALSE;
     gmx_bool      bDDBondCheck  = TRUE;
     gmx_bool      bDDBondComm   = TRUE;
@@ -544,7 +537,6 @@ int cmain(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    gmx_edsam_t   ed;
     unsigned long Flags, PCA_Flags;
     ivec          ddxyz;
     int           dd_node_order;
@@ -594,7 +586,6 @@ int cmain(int argc, char *argv[])
     /* now check the -multi and -multidir option */
     if (opt2bSet("-multidir", NFILE, fnm))
     {
-        int i;
         if (nmultisim > 0)
         {
             gmx_fatal(FARGS, "mdrun -multi and -multidir options are mutually exclusive.");

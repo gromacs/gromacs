@@ -30,6 +30,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#include <algorithm>
+
 #include "statutil.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -69,21 +71,6 @@ enum {
     eParselogResetProblem,
     eParselogNr
 };
-
-
-typedef struct
-{
-    int    nPMEnodes;     /* number of PME only nodes used in this test */
-    int    nx, ny, nz;    /* DD grid */
-    int    guessPME;      /* if nPMEnodes == -1, this is the guessed number of PME nodes */
-    float *Gcycles;       /* This can contain more than one value if doing multiple tests */
-    float  Gcycles_Av;
-    float *ns_per_day;
-    float  ns_per_day_Av;
-    float *PME_f_load;     /* PME mesh/force load average*/
-    float  PME_f_load_Av;  /* Average average ;) ... */
-    char  *mdrun_cmd_line; /* Mdrun command line used for this test */
-} t_perf;
 
 
 typedef struct
@@ -135,7 +122,6 @@ static void calc_q2all(
     real            q2_all = 0;  /* Sum of squared charges */
     int             nrq_mol;     /* Number of charges in a single molecule */
     int             nrq_all;     /* Total number of charges in the MD system */
-    real            nrq_all_r;   /* No of charges in real format */
     real            qi, q2_mol;
     gmx_moltype_t  *molecule;
     gmx_molblock_t *molblock;
@@ -169,7 +155,6 @@ static void calc_q2all(
                 imol, molblock->natoms_mol, q2_mol, nrq_mol, molblock->nmol, q2_all, nrq_all);
 #endif
     }
-    nrq_all_r = nrq_all;
 
     *q2all   = q2_all;
     *q2allnr = nrq_all;
@@ -256,14 +241,14 @@ static inline real eps_poly2(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -2.0*n );
+        nom += pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += pow( tmp, -2.0*n );
+        nom += pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
@@ -296,14 +281,14 @@ static inline real eps_poly3(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * pow( tmp, -2.0*n );
+        nom += i * pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * pow( tmp, -2.0*n );
+        nom += i * pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
@@ -336,14 +321,14 @@ static inline real eps_poly4(
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * i * pow( tmp, -2.0*n );
+        nom += i * i * pow( tmp, -2*n );
     }
 
     for (i = SUMORDER; i > 0; i--)
     {
         tmp  = m / K + i;
         tmp *= 2.0*M_PI;
-        nom += i * i * pow( tmp, -2.0*n );
+        nom += i * i * pow( tmp, -2*n );
     }
 
     for (i = -SUMORDER; i < SUMORDER+1; i++)
@@ -385,7 +370,7 @@ static inline real eps_self(
     {
         tmp    = -sin(2.0 * M_PI * i * K * rcoord);
         tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = pow(tmp1, -1.0*n);
+        tmp2   = pow(tmp1, -n);
         nom   += tmp * tmp2 * i;
         denom += tmp2;
     }
@@ -394,14 +379,14 @@ static inline real eps_self(
     {
         tmp    = -sin(2.0 * M_PI * i * K * rcoord);
         tmp1   = 2.0 * M_PI * m / K + 2.0 * M_PI * i;
-        tmp2   = pow(tmp1, -1.0*n);
+        tmp2   = pow(tmp1, -n);
         nom   += tmp * tmp2 * i;
         denom += tmp2;
     }
 
 
     tmp    = 2.0 * M_PI * m / K;
-    tmp1   = pow(tmp, -1.0*n);
+    tmp1   = pow(tmp, -n);
     denom += tmp1;
 
     return 2.0 * M_PI * nom / denom * K;
@@ -499,7 +484,7 @@ static real estimate_reciprocal(
     xtot        = stopglobal*2+1;
     if (PAR(cr))
     {
-        x_per_core = ceil((real)xtot / (real)cr->nnodes);
+        x_per_core = static_cast<int>(ceil(static_cast<real>(xtot) / cr->nnodes));
         startlocal = startglobal + x_per_core*cr->nodeid;
         stoplocal  = startlocal + x_per_core -1;
         if (stoplocal > stopglobal)
@@ -645,18 +630,18 @@ static real estimate_reciprocal(
         /* Here xtot is the number of samples taken for the Monte Carlo calculation
          * of the average of term IV of equation 35 in Wang2010. Round up to a
          * number of samples that is divisible by the number of nodes */
-        x_per_core  = ceil(info->fracself * nr / (real)cr->nnodes);
+        x_per_core  = static_cast<int>(ceil(info->fracself * nr / cr->nnodes));
         xtot        = x_per_core * cr->nnodes;
     }
     else
     {
         /* In this case we use all nr particle positions */
         xtot       = nr;
-        x_per_core = ceil( (real)xtot / (real)cr->nnodes );
+        x_per_core = static_cast<int>(ceil(static_cast<real>(xtot) / cr->nnodes));
     }
 
     startlocal = x_per_core *  cr->nodeid;
-    stoplocal  = min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
+    stoplocal  = std::min(startlocal + x_per_core, xtot);  /* min needed if xtot == nr */
 
     if (bFraction)
     {
@@ -668,7 +653,7 @@ static real estimate_reciprocal(
         {
             for (i = 0; i < xtot; i++)
             {
-                numbers[i] = floor(gmx_rng_uniform_real(rng) * nr );
+                numbers[i] = static_cast<int>(floor(gmx_rng_uniform_real(rng) * nr));
             }
         }
         /* Broadcast the random number array to the other nodes */
@@ -1031,7 +1016,7 @@ static void estimate_PME_error(t_inputinfo *info, t_state *state,
         edir = info->e_dir[0];
         erec = info->e_rec[0];
         derr = edir-erec;
-        while (fabs(derr/min(erec, edir)) > 1e-4)
+        while (fabs(derr/std::min(erec, edir)) > 1e-4)
         {
 
             beta                = info->ewald_beta[0];

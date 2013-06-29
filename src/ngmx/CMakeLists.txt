@@ -14,15 +14,15 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 # List of programs with single corresponding *.c source file,
 # used to create build rules automatically.
 #
-set(NGMX_PROGRAMS 
+set(NGMX_PROGRAMS
     ngmx g_xrama)
 
 foreach(PROG ${NGMX_PROGRAMS})
-        add_executable(${PROG} ${PROG}.c ${NGMX_COMMON_SOURCE})
+        add_executable(${PROG} ${PROG}.cpp ${NGMX_COMMON_SOURCE})
         target_link_libraries(${PROG} libgromacs ${GMX_EXTRA_LIBRARIES})
         gmx_add_man_page(${PROG})
         set_target_properties(${PROG} PROPERTIES OUTPUT_NAME "${PROG}${GMX_BINARY_SUFFIX}")
-endforeach(PROG) 
+endforeach(PROG)
 
 install(TARGETS ${NGMX_PROGRAMS}
         COMPONENT ngmx
