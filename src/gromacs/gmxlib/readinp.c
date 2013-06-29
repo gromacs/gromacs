@@ -55,7 +55,6 @@ static int search_einp(int ninp, const t_inpfile *inp, const char *name);
 
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
-                        char **cppopts,
                         warninp_t wi)
 {
     FILE      *in;

@@ -2454,7 +2454,7 @@ void init_forcerec(FILE              *fp,
             }
         }
         fr->ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
-        init_ewald_tab(&(fr->ewald_table), cr, ir, fp);
+        init_ewald_tab(&(fr->ewald_table), ir, fp);
         if (fp)
         {
             fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
@@ -2486,7 +2486,7 @@ void init_forcerec(FILE              *fp,
 
         if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
         {
-            set_shift_consts(fp, fr->rcoulomb_switch, fr->rcoulomb, box_size, fr);
+            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
         }
     }
 
