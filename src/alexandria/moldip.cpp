@@ -440,20 +440,20 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
             if (imsTrain == gmx_molselect_status(gms,mpi->GetIupac().c_str()))
             {
                 int dest = (n % _cr->nnodes);
-                alexandria::MyMol *mpnew = new alexandria::MyMol;
+                alexandria::MyMol mpnew;
                 
-                mpnew->Merge(*mpi);
+                mpnew.Merge(*mpi);
                 
-                imm = mpnew->GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+                imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
     
                 if (immOK == imm)
                 {
-                    mpnew->gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew->GetCharge(),
+                    mpnew.gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
                                              1,100,5,
                                              TRUE,watoms,5,TRUE,TRUE,
                                              1,TRUE,
                                              TRUE,NULL);
-                    if (NULL == mpnew->gr_)
+                    if (NULL == mpnew.gr_)
                     {
                         imm = immRespInit;
                     }
@@ -461,16 +461,16 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
 
                 if (immOK == imm)
                 {
-                    imm = mpnew->GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
+                    imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
                                                 lot,TRUE,NULL);
                 }
                 if (immOK == imm)
                 {
-                    mpnew->GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
+                    mpnew.GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
                 }
      
                 if (0)
-                    imm = mpnew->Initxx(fp,gap,
+                    imm = mpnew.Initxx(fp,gap,
                                        _bQM,lot,bZero,
                                        _pd,_atomprop,
                                        _iModel,_cr,&nwarn,bCharged,oenv,
@@ -482,20 +482,20 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 {
                     if (dest > 0)
                     {
-                        mpnew->eSupp = eSupportRemote;
+                        mpnew.eSupp = eSupportRemote;
                         /* Send another molecule */
                         gmx_send_int(_cr,dest,1);
                         mpi->Send(_cr,dest);
                         imm = (immStatus) gmx_recv_int(_cr,dest);
                         if (imm != immOK) 
                             fprintf(stderr,"Molecule %s was not accepted on node %d - error %s\n",
-                                    mpnew->GetMolname().c_str(),dest,alexandria::immsg(imm));
+                                    mpnew.GetMolname().c_str(),dest,alexandria::immsg(imm));
                     }
                     else
-                        mpnew->eSupp = eSupportLocal;
+                        mpnew.eSupp = eSupportLocal;
                     if (immOK == imm)
                     {
-                        _mymol.push_back(*mpnew);
+                        _mymol.push_back(mpnew);
                         n++;
                     }
                 }
@@ -504,7 +504,6 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                     fprintf(debug,"IMM: Dest: %d %s - %s\n",
                             dest,mpi->GetMolname().c_str(),immsg(imm));
                 }
-                delete mpnew;
             }
             else
             {

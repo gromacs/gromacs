@@ -478,12 +478,14 @@ void MolProp::Merge(MolProp& src)
     for(alexandria::MolecularCompositionIterator mci=src.BeginMolecularComposition(); 
         (mci<src.EndMolecularComposition()); mci++) 
     {
+        alexandria::MolecularComposition mc(mci->GetCompName());
+        
         for(alexandria::AtomNumIterator ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++) 
         {
             AtomNum an(ani->GetAtom(),ani->GetNumber());
-            mci->AddAtom(an);
+            mc.AddAtom(an);
         }
-        AddComposition(*mci);
+        AddComposition(mc);
     }
 }
 
