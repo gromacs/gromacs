@@ -34,46 +34,36 @@
  */
 /*! \internal \file
  * \brief
- * Header file for utility class, union and function for testing of SIMD functionality.
+ * Tests for functionality to do a table load for 2xnn kernels.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
-
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "base.h"
 
 namespace SIMDTests
 {
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
+#ifdef GMX_NBNXN_SIMD_2XNN
 
-/*! \brief Union type to facilitate low-level manipulations */
-typedef union
+//! TODO this makes more sense as a nbnxn-specific test, rather than a
+//! general SIMD test
+
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_2xnn_outer_header.h"
+
+#include "load_table.h"
+#include "load_table_f_v.h"
+
+typedef SimdFunctionDoingTableLoad_f_v SimdFunctionDoing2xnnTableLoad_f_v;
+
+TEST_F(SimdFunctionDoing2xnnTableLoad_f_v, load_table_f_v_Works)
 {
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+    prepare(1024, 3);
+    Tester(ReferenceFunctions::load_table_f_v,
+           TestFunctions::load_table_f_v);
+}
 
-/*! \brief Helper function that test whether two vectors of reals
- * compare as equal, given the tolerance described by scaleMaxUlps.
- *
- * An "ulp" is a "unit in last place." By default, GoogleTest will
- * tolerate a range of +/- 2 in the last digit of the significand when
- * comparing for equality. This is multiplied by scaleMaxUlps. See
- * gtest-internal.h for details.
- */
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scaleMaxUlps = 1.0f);
+#endif
 
-}      // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */
+} // namespace

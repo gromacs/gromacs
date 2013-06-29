@@ -33,47 +33,40 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \internal \file
- * \brief
- * Header file for utility class, union and function for testing of SIMD functionality.
+ * \brief Tests for functionality for table loads common to both 2xnn
+ * and 4xn kernels. TAB_FDV0 can change between the two, so we compile
+ * the two test fixtures in separate object files, and the common code
+ * goes here.
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
+/* TODO this makes more sense as a nbnxn-specific file, rather than a
+   general SIMD test file. */
 
-#include <gmock/gmock.h>
-#include "typedefs.h"
+typedef SimdFunctionDoingTableLoad SimdFunctionDoingTableLoad_f;
 
-namespace SIMDTests
+template<class SimdFunctionSet,
+         typename FunctionType>
+void SimdFunctionDoingTableLoad_f::callFunction(SimdFunctionSet &simdFunctionSet,
+                                                FunctionType     function,
+                                                real            *_result)
 {
+    typename SimdFunctionSet::realType indices;
+    indices   = simdFunctionSet.load_pr(index);
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
+    typename SimdFunctionSet::epiType index_epi;
+    index_epi = simdFunctionSet.cvttpr_epi32(indices);
 
-/*! \brief Union type to facilitate low-level manipulations */
-typedef union
-{
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+    typename SimdFunctionSet::realType *result;
+    //    snew_aligned(result, numOutputs_, GMX_SIMD_WIDTH_HERE * sizeof(real));
+    snew(result, numOutputs_);
 
-/*! \brief Helper function that test whether two vectors of reals
- * compare as equal, given the tolerance described by scaleMaxUlps.
- *
- * An "ulp" is a "unit in last place." By default, GoogleTest will
- * tolerate a range of +/- 2 in the last digit of the significand when
- * comparing for equality. This is multiplied by scaleMaxUlps. See
- * gtest-internal.h for details.
- */
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scaleMaxUlps = 1.0f);
+    function(table, index_epi, ti, &result[0], &result[1]);
 
-}      // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */
+    for (size_t i = 0; i != numOutputs_; ++i)
+    {
+        simdFunctionSet.store_pr(_result + i * GMX_SIMD_WIDTH_HERE, result[i]);
+    }
+}

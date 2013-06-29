@@ -283,7 +283,7 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_4xn_exclusions(l_cj[cjind].excl, mask_S0, mask_S1, mask_S2, mask_S3, &interact_S0, &interact_S1, &interact_S2, &interact_S3);
+    gmx_load_4xn_exclusions(l_cj[cjind].excl, mask_S0, mask_S1, mask_S2, mask_S3, &interact_S0, &interact_S1, &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
