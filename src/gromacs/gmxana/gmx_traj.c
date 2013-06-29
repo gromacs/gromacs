@@ -918,7 +918,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bCom && bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, fr.box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
     }
 
     do

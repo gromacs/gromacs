@@ -505,8 +505,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     }
                     *dvdlt  = 0;
                     *Vcorrt =
-                        ewald_LRcorrection(fplog,
-                                           fr->excl_load[t], fr->excl_load[t+1],
+                        ewald_LRcorrection(fr->excl_load[t], fr->excl_load[t+1],
                                            cr, t, fr,
                                            md->chargeA,
                                            md->nChargePerturbed ? md->chargeB : NULL,

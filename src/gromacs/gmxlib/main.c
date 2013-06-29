@@ -506,7 +506,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     }
 }
 
-t_commrec *init_par(int *argc, char ***argv_ptr)
+t_commrec *init_par(int gmx_unused *argc, char ***argv_ptr)
 {
     t_commrec    *cr;
     char        **argv;

@@ -115,7 +115,7 @@ void maxwell_speed(real tempi, int seed, gmx_mtop_t *mtop, rvec v[])
     gmx_rng_destroy(rng);
 }
 
-real calc_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[],
+real calc_cm(int natoms, real mass[], rvec x[], rvec v[],
              rvec xcm, rvec vcm, rvec acm, matrix L)
 {
     rvec dx, a0;
@@ -179,7 +179,7 @@ real calc_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[],
     return tm;
 }
 
-void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[])
+void stop_cm(FILE gmx_unused *log, int natoms, real mass[], rvec x[], rvec v[])
 {
     rvec   xcm, vcm, acm;
     tensor L;
@@ -188,7 +188,7 @@ void stop_cm(FILE *log, int natoms, real mass[], rvec x[], rvec v[])
 #ifdef DEBUG
     fprintf(log, "stopping center of mass motion...\n");
 #endif
-    (void)calc_cm(log, natoms, mass, x, v, xcm, vcm, acm, L);
+    (void)calc_cm(natoms, mass, x, v, xcm, vcm, acm, L);
 
     /* Subtract center of mass velocity */
     for (i = 0; (i < natoms); i++)
