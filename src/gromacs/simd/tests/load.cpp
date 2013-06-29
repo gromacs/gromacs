@@ -40,30 +40,48 @@
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
-
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "general.h"
 
 namespace SIMDTests
 {
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
-typedef union
-{
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+/********************************************************************
+ * Tests for SIMD wrapper functions
+ */
 
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scale = 1.0f);
+/* It's hard to test load and store independently, since you need one
+   of them to be in a position to test the other. If a test here fails
+   because of store_pr, so will almost all the others. If a test here
+   fails because of the load function under test, then those other
+   tests that don't load a real may still pass. */
+
+/* Test "load" functions */
+
+typedef SimdFunctionTest<1,1,real> SimdFunctionLoad;
+
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionLoad::callFunction(SimdFunctionSet &simdFunctionSet,
+                               FunctionType function,
+                               real *_result)
+{
+    typename SimdFunctionSet::realType result;
+    
+    result = function(inputs[0]);
+    simdFunctionSet.store_pr(_result, result);
+}
+
+TEST_F(SimdFunctionLoad, gmx_load_pr_Works)
+{
+    Tester(ReferenceFunctions::gmx_simd_ref_load_pr,
+           TestFunctions::gmx_load_pr, real(0));
+}
+
+TEST_F(SimdFunctionLoad, gmx_load1_pr_Works)
+{
+    Tester(ReferenceFunctions::gmx_simd_ref_load1_pr,
+           TestFunctions::gmx_load1_pr, real(0));
+}
 
 } // namespace
-
-#endif /* _gmx_simd_tests_utils_h_ */

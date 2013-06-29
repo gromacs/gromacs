@@ -40,61 +40,49 @@
  * \ingroup module_simd
  */
 
-#include "tests.h"
+#include "base.h"
 
 namespace SIMDTests
 {
 
-/********************************************************************
- * Tests for SIMD wrapper functions
- */
+#ifdef GMX_NBNXN_SIMD_4XN
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(ReferenceFunction_V_VVV referenceFunction, RealArray theReals)
+//! TODO this makes more sense as a nbnxn-specific test, rather than a
+//! general SIMD test
+
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_4xn_outer_header.h"
+
+namespace TestFunctions
 {
-    gmx_simd_ref_pr a, b, c, result;
-    a      = gmx_simd_ref_load_pr(theReals[0]);
-    b      = gmx_simd_ref_load_pr(theReals[1]);
-    c      = gmx_simd_ref_load_pr(theReals[2]);
-    result = referenceFunction(a, b, c);
-    gmx_simd_ref_store_pr(referenceResult[0], result);
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils.h"
 }
 
-template<> void
-SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV>::call(TestFunction_V_VVV testFunction, RealArray theReals)
+namespace ReferenceFunctions
 {
-    gmx_mm_pr a, b, c, result;
-    a      = gmx_load_pr(theReals[0]);
-    b      = gmx_load_pr(theReals[1]);
-    c      = gmx_load_pr(theReals[2]);
-    result = testFunction(a, b, c);
-    gmx_store_pr(testResult[0], result);
+#define GMX_SIMD_REFERENCE_PLAIN_C
+#include "gromacs/mdlib/nbnxn_kernels/nbnxn_kernel_simd_utils_ref.h"
+#undef GMX_SIMD_REFERENCE_PLAIN_C
 }
 
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_V_VVV, TestFunction_V_VVV> SimdFunctionWithSignature_V_VVV;
+#include "load_table.h"
 
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_madd_pr_Works)
+typedef SimdFunctionDoingTableLoad_f SimdFunctionDoing4xnTableLoad_f;
+
+TEST_F(SimdFunctionDoing4xnTableLoad_f, load_table_f_Works)
 {
-    Tester(gmx_simd_ref_madd_pr,
-           gmx_madd_pr,
-           reals);
+    Tester(ReferenceFunctions::load_table_f,
+           TestFunctions::load_table_f);
 }
 
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_nmsub_pr_Works)
+typedef SimdFunctionDoingTableLoad_f_v SimdFunctionDoing4xnTableLoad_f_v;
+
+TEST_F(SimdFunctionDoing4xnTableLoad_f_v, load_table_f_v_Works)
 {
-    Tester(gmx_simd_ref_nmsub_pr,
-           gmx_nmsub_pr,
-           reals);
+    
+    Tester(ReferenceFunctions::load_table_f_v,
+           TestFunctions::load_table_f_v);
 }
 
-#ifdef GMX_SIMD_HAVE_BLENDV
-TEST_F(SimdFunctionWithSignature_V_VVV, gmx_blendv_pr_Works)
-{
-    Tester(gmx_simd_ref_blendv_pr,
-           gmx_blendv_pr,
-           reals);
-}
 #endif
 
 } // namespace
