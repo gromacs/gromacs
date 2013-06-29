@@ -47,10 +47,6 @@ const char *GromacsVersion(void);
 void
 gmx_print_version_info(FILE *fp);
 
-void
-CopyRight(FILE *out, const char *szProgram);
-
-
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This
  * is necessary to make the routines threadsafe and avoid allocating
@@ -74,6 +70,22 @@ please_cite(FILE *fp, const char *key);
 
 #ifdef __cplusplus
 }
+
+namespace gmx
+{
+
+class ProgramInfo;
+
+/*! \brief
+ * Print basic information about the executable.
+ *
+ * \param     fp           Where to print the information to.
+ * \param[in] programInfo  Program information object to use.
+ */
+void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo);
+
+} // namespace gmx;
+
 #endif
 
 #endif  /* _copyright_h */

@@ -51,6 +51,8 @@
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
+#include "gromacs/utility/programinfo.h"
+
 int main(int argc, char *argv[])
 {
     const char   *desc[] = {
@@ -550,13 +552,9 @@ int main(int argc, char *argv[])
 
 
     cr = init_par(&argc, &argv);
+    gmx::ProgramInfo::init(argc, argv);
 
-    if (MASTER(cr))
-    {
-        CopyRight(stderr, argv[0]);
-    }
-
-    PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
+    PCA_Flags = (PCA_CAN_SET_DEFFNM | PCA_STANDALONE | (MASTER(cr) ? 0 : PCA_QUIET));
 
     /* Comment this in to do fexist calls only on master
      * works not with rerun or tables at the moment
@@ -704,7 +702,6 @@ int main(int argc, char *argv[])
     {
         gmx_log_open(ftp2fn(efLOG, NFILE, fnm), cr,
                      !bSepPot, Flags & MD_APPENDFILES, &fplog);
-        CopyRight(fplog, argv[0]);
         please_cite(fplog, "Hess2008b");
         please_cite(fplog, "Spoel2005a");
         please_cite(fplog, "Lindahl2001a");
