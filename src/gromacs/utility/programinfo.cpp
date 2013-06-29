@@ -68,8 +68,6 @@ namespace
 {
 //! Mutex for updates to the global program info objects.
 tMPI::mutex                    g_programInfoMutex;
-//! Partially filled program info, needed to support set_program_name().
-boost::scoped_ptr<ProgramInfo> g_partialProgramInfo;
 //! Global program info; stores the object initialized with ProgramInfo::init().
 boost::scoped_ptr<ProgramInfo> g_programInfo;
 }   // namespace
@@ -154,10 +152,6 @@ const ProgramInfo &ProgramInfo::getInstance()
     tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
     if (g_programInfo.get() == NULL)
     {
-        if (g_partialProgramInfo.get() != NULL)
-        {
-            return *g_partialProgramInfo;
-        }
         static ProgramInfo fallbackInfo;
         return fallbackInfo;
     }
@@ -179,17 +173,6 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
         tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
         if (g_programInfo.get() == NULL)
         {
-            // TODO: Remove this hack with negative argc once there is no need for
-            // set_program_name().
-            if (argc < 0)
-            {
-                if (g_partialProgramInfo.get() == NULL)
-                {
-                    g_partialProgramInfo.reset(
-                            new ProgramInfo(realBinaryName, -argc, argv));
-                }
-                return *g_partialProgramInfo;
-            }
             g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
         }
         return *g_programInfo;

@@ -305,7 +305,8 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    CopyRight(stderr, argv[0]);
+    const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(argc, argv);
+    gmx::printBinaryInformation(stderr, programInfo);
     parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                       0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
 
