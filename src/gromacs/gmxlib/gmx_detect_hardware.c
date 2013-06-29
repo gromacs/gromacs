@@ -59,7 +59,7 @@ static const char * invalid_gpuid_hint =
 /* FW decl. */
 void limit_num_gpus_used(gmx_hw_info_t *hwinfo, int count);
 
-static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info, gmx_bool bPrintAll)
+static void sprint_gpus(char *sbuf, const gmx_gpu_info_t *gpu_info)
 {
     int      i, ndev;
     char     stmp[STRLEN];
@@ -99,7 +99,7 @@ static void print_gpu_detection_stats(FILE                 *fplog,
 
     if (ngpu > 0)
     {
-        sprint_gpus(stmp, gpu_info, TRUE);
+        sprint_gpus(stmp, gpu_info);
         md_print_warn(cr, fplog, "%d GPU%s detected%s:\n%s\n",
                       ngpu, (ngpu > 1) ? "s" : "", onhost, stmp);
     }
@@ -171,12 +171,6 @@ static void parse_gpu_id_plain_string(const char *idstr, int *nid, int *idlist)
         }
         idlist[i] = idstr[i] - '0';
     }
-}
-
-static void parse_gpu_id_csv_string(const char *idstr, int *nid, int *idlist)
-{
-    /* XXX implement cvs format to support more than 10 different GPUs in a box. */
-    gmx_incons("Not implemented yet");
 }
 
 void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
@@ -407,7 +401,7 @@ void gmx_check_hw_runconf_consistency(FILE *fplog, gmx_hw_info_t *hwinfo,
  * We assume that this is equal with the number of CPUs reported to be
  * online by the OS at the time of the call.
  */
-static int get_nthreads_hw_avail(FILE *fplog, const t_commrec *cr)
+static int get_nthreads_hw_avail(FILE gmx_unused *fplog, const t_commrec gmx_unused *cr)
 {
     int ret = 0;
 

@@ -60,7 +60,6 @@ typedef struct {
 
 
 t_inpfile *read_inpfile(const char *fn, int *ninp,
-                        char **cppopts,
                         warninp_t wi);
 /* Create & populate a t_inpfile struct from values in file fn.
    fn = the file name
