@@ -87,6 +87,7 @@ RealArraysAreEqual(const real         *expected,
 {
     bool              bAllWereEqual(true);
     std::stringstream errorString;
+    typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
 
     for (unsigned long i = 0; i < length; ++i)
     {
@@ -100,10 +101,16 @@ RealArraysAreEqual(const real         *expected,
                 errorString << ",\n";
             }
             bAllWereEqual = false;
+            BitManipulater manipulater_expected, manipulater_actual;
+            manipulater_expected.r = expected[i];
+            manipulater_actual.r = actual[i];
             errorString << "element [" << i << "] was not equal: expected "
-            << expected[i] << " but was " << actual[i];
+                        << expected[i] << " (0x" << std::hex << manipulater_expected.i
+                        << ") but was "
+                        << actual[i] << " (0x" << std::hex << manipulater_actual.i << ")";
         }
     }
+
     if (bAllWereEqual)
     {
         return ::testing::AssertionSuccess();
