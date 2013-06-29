@@ -782,7 +782,7 @@ rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
 }
 
 static int plot_clusters(int nf, real **mat, t_clusters *clust,
-                         int nlevels, int minstruct)
+                         int minstruct)
 {
     int  i, j, ncluster, ci;
     int *cl_id, *nstruct, *strind;
@@ -1806,7 +1806,7 @@ int gmx_cluster(int argc, char *argv[])
     {
         if (minstruct > 1)
         {
-            ncluster = plot_clusters(nf, rms->mat, &clust, nlevels, minstruct);
+            ncluster = plot_clusters(nf, rms->mat, &clust, minstruct);
         }
         else
         {

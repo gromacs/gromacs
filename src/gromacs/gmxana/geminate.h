@@ -130,7 +130,7 @@ extern void takeAwayBallistic(double *ct, double *t,
 extern t_gemParams *init_gemParams(const double sigma, const double D,
                                    const real *t, const int len, const int nFitPoints,
                                    const real begFit, const real endFit,
-                                   const real ballistic, const int nBalExp, const gmx_bool bDt);
+                                   const real ballistic, const int nBalExp);
 
 /* Fit to geminate recombination model.
    Returns root mean square error of fit. */

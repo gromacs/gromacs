@@ -70,7 +70,7 @@ static void my_sub_xcm(int nbb, atom_id bbind[], rvec x[], rvec xcm)
 
 real fit_ahx(int nres, t_bb bb[], int natoms, int nall, atom_id allindex[],
              rvec x[], int nca,
-             atom_id caindex[], matrix box, gmx_bool bFit)
+             atom_id caindex[], gmx_bool bFit)
 {
     static rvec *xref = NULL;
     static real *mass = NULL;

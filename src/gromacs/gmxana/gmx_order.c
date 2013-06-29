@@ -69,10 +69,9 @@
 /* P.J. van Maaren, November 2005     Added tetrahedral stuff               */
 /****************************************************************************/
 
-static void find_nearest_neighbours(t_topology top, int ePBC,
+static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
                                     rvec x[], int maxidx, atom_id index[],
-                                    real time,
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -307,7 +306,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
     nframes = 0;
     do
     {
-        find_nearest_neighbours(top, ePBC, natoms, box, x, isize[0], index[0], t,
+        find_nearest_neighbours(ePBC, natoms, box, x, isize[0], index[0],
                                 &sg, &sk, nslice, slice_dim, sg_slice, sk_slice, gpbc);
         for (i = 0; (i < nslice); i++)
         {

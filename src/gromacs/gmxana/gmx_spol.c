@@ -51,7 +51,7 @@
 
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         atom_id index[], rvec xref, int ePBC, matrix box)
+                         atom_id index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -274,7 +274,7 @@ int gmx_spol(int argc, char *argv[])
         set_pbc(&pbc, ir->ePBC, box);
         if (bCom)
         {
-            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC, box);
+            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC);
         }
 
         for (m = 0; m < isize[1]; m++)
