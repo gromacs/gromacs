@@ -34,46 +34,64 @@
  */
 /*! \internal \file
  * \brief
- * Header file for utility class, union and function for testing of SIMD functionality.
+ * Tests for arithmetic SIMD functionality
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_simd
  */
 
-#ifndef _gmx_simd_tests_utils_h_
-#define _gmx_simd_tests_utils_h_
-
-#include <gmock/gmock.h>
-#include "typedefs.h"
+#include "general.h"
+#include <algorithm>
 
 namespace SIMDTests
 {
 
-/* Thanks to the magic of Google Test, we have an unsigned integer
-   type whose size is that of real. */
-typedef ::testing::internal::FloatingPoint<real>::Bits UnsignedIntWithSizeOfReal;
+//! Typedef for the test fixture
+typedef SimdFunctionTest<real> SimdFunctionWithThreeRealInputs;
 
-/*! \brief Union type to facilitate low-level manipulations */
-typedef union
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionWithThreeRealInputs::callFunction(SimdFunctionSet &simdFunctionSet,
+                                              FunctionType     function,
+                                              real            *_result)
 {
-    real                      r;
-    UnsignedIntWithSizeOfReal i;
-} BitManipulater;
+    typename SimdFunctionSet::realType a, b, c, result;
 
-/*! \brief Helper function that test whether two vectors of reals
- * compare as equal, given the tolerance described by scaleMaxUlps.
- *
- * An "ulp" is a "unit in last place." By default, GoogleTest will
- * tolerate a range of +/- 2 in the last digit of the significand when
- * comparing for equality. This is multiplied by scaleMaxUlps. See
- * gtest-internal.h for details.
- */
-::testing::AssertionResult
-RealArraysAreEqual(const real   *expected,
-                   const real   *actual,
-                   unsigned long length,
-                   const real    scaleMaxUlps = 1.0f);
+    a      = simdFunctionSet.load_pr(inputs_[0]);
+    b      = simdFunctionSet.load_pr(inputs_[1]);
+    c      = simdFunctionSet.load_pr(inputs_[2]);
+    result = function(a, b, c);
+    simdFunctionSet.store_pr(_result, result);
+}
 
-}      // namespace
+TEST_F(SimdFunctionWithThreeRealInputs, gmx_madd_pr_Works)
+{
+    prepare(3, 1, -0.5, 5);
+    Tester(ReferenceFunctions::gmx_simd_ref_madd_pr,
+           TestFunctions::gmx_madd_pr, real(0));
+}
 
-#endif /* _gmx_simd_tests_utils_h_ */
+TEST_F(SimdFunctionWithThreeRealInputs, gmx_nmsub_pr_Works)
+{
+    prepare(3, 1, -0.5, 5);
+    Tester(ReferenceFunctions::gmx_simd_ref_nmsub_pr,
+           TestFunctions::gmx_nmsub_pr, real(0));
+}
+
+#ifdef GMX_SIMD_HAVE_BLENDV
+TEST_F(SimdFunctionWithThreeRealInputs, gmx_blendv_pr_Works)
+{
+    prepare(3, 1, -0.5, 5);
+    /* gmx_blendv_pr is only used with a positive first argument and a
+       second argument of zero. Only the sign of its third argument is
+       actually used. So this test covers a wider range than is
+       actually used, but that does no real harm. */
+    shift_[0] = 0;
+    scale_[1] = 0;
+    Tester(ReferenceFunctions::gmx_simd_ref_blendv_pr,
+           TestFunctions::gmx_blendv_pr, real(0));
+}
+#endif
+
+} // namespace
