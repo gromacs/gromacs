@@ -116,7 +116,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
         /* for libraries we can use the low-level close routines */
         ffclose(fp);
         seed   = time(NULL);
-        *cqnum = nhlp*rando(&seed);
+        *cqnum = static_cast<int>(nhlp*rando(&seed));
         if (strlen(help[*cqnum]) >= STRLEN)
         {
             help[*cqnum][STRLEN-1] = '\0';
@@ -130,6 +130,7 @@ static void pukeit(const char *db, const char *defstring, char *retstring,
     }
     else
     {
+        *cqnum = -1;
         strncpy(retstring, defstring, retsize);
     }
 }
@@ -146,7 +147,7 @@ void bromacs(char *retstring, int retsize)
 void cool_quote(char *retstring, int retsize, int *cqnum)
 {
     char *tmpstr;
-    char *s, *ptr;
+    char *ptr;
     int   tmpcq, *p;
 
     if (cqnum != NULL)
@@ -263,12 +264,12 @@ void CopyRight(FILE *out, const char *szProgram)
 void gmx_thanx(FILE *fp)
 {
     char cq[1024];
-    int  cqnum;
+    int  cqnum = -1;
 
     /* protect the audience from suggestive discussions */
     cool_quote(cq, 1023, &cqnum);
 
-    if (be_cool())
+    if (cqnum >= 0)
     {
         fprintf(fp, "\ngcq#%d: %s\n\n", cqnum, cq);
     }
@@ -573,7 +574,7 @@ void please_cite(FILE *fp, const char *key)
     };
 #define NSTR (int)asize(citedb)
 
-    int   j, index;
+    int   index;
     char *author;
     char *title;
 #define LINE_WIDTH 79

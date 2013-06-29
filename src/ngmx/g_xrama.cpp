@@ -351,7 +351,6 @@ int main(int argc, char *argv[])
 
     output_env_t oenv;
     t_x11       *x11;
-    t_topology  *ramatop;
     t_app       *app;
     t_filenm     fnm[] = {
         { efTRX, "-f", NULL, ffREAD },
@@ -372,8 +371,8 @@ int main(int argc, char *argv[])
     XSetForeground(x11->disp, x11->gc, x11->fg);
     app = init_app(x11, argc, argv);
 
-    ramatop = init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm),
-                        app->xr, 3);
+    init_rama(oenv, ftp2fn(efTRX, NFILE, fnm), ftp2fn(efTPX, NFILE, fnm),
+              app->xr, 3);
     mk_gly(app);
 
     XMapWindow(x11->disp, app->wd.self);

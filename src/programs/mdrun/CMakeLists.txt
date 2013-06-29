@@ -2,9 +2,8 @@ include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 set(MDRUN_SOURCES
     do_gct.c      gctio.c       genalg.c    ionize.c
-    md.c          mdrun.c     membed.c
-    pme_loadbal.c repl_ex.c     runner.c    xutils.c
-    ../main.cpp)
+    md.c          mdrun.cpp     membed.c
+    pme_loadbal.c repl_ex.c     runner.c    xutils.c)
 
 if(GMX_OPENMM)
     # Even though the OpenMM build has "moved to contrib", many things
