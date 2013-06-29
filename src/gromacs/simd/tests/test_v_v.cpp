@@ -99,7 +99,7 @@ TEST_F(SimdFunctionWithSignature_V_V, gmx_rsqrt_pr_Works)
            gmx_invsqrt_pr,
            positiveReals
 #ifdef GMX_DOUBLE
-           , 8.0 // empirically determined to be enough on x86
+           , 40.0 // empirically determined to be enough on x86
 #endif
            );
 }
@@ -115,7 +115,7 @@ TEST_F(SimdFunctionWithSignature_V_V, gmx_inv_pr_Works)
            gmx_inv_pr,
            reals
 #ifdef GMX_DOUBLE
-           , 2.0 // empirically determined to be enough on x86
+           , 40.0 // empirically determined to be enough on x86
 #endif
            );
 }
@@ -135,7 +135,7 @@ TEST_F(SimdFunctionWithSignature_V_V, gmx_exp_pr_Works)
            gmx_exp_pr,
            reals
 #ifdef GMX_DOUBLE
-           , 2.0
+           , 8.0 // empirically determined to be enough on x86
 #endif
            );
 }
@@ -182,9 +182,10 @@ static gmx_inline gmx_mm_pr gmx_truncate_real_pr(gmx_mm_pr a)
 }
 
 /* This tests both gmx_cvttpr_epi32 and gmx_cvtepi32_pr. These two are
-   inconvenient to test seperately. The latter is only ever used after
-   the former, and only when gmx_floor_pr is unavailable. The former
-   is also used before table lookups, which are tested next. */
+   inconvenient to test separately. gmx_cvtepi32_pr is only ever used
+   after gmx_cvttpr_epi32, and only when gmx_floor_pr is
+   unavailable. gmx_cvttpr_epi32 is also used before table lookups,
+   which are tested elsewhere. */
 
 TEST_F(SimdFunctionWithSignature_V_V, PairDoingTruncationOfReals_Works)
 {

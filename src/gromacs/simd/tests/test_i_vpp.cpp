@@ -79,7 +79,7 @@ TEST_F(SimdFunctionWithSignature_I_VPP, gmx_sincos_pr_Works)
            gmx_sincos_pr,
            reals,
 #ifdef GMX_DOUBLE
-           2.0, // empirically determined to be enough on x86
+           8.0, // empirically determined to be enough on x86
 #else
            1.0,
 #endif
