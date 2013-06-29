@@ -205,7 +205,7 @@ static void do_bonds(FILE *log, const char *fn, const char *fbond,
             fprintf(outd, "\n");
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     if (fdist)

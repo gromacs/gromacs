@@ -157,7 +157,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 #define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
 #endif
 
-int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble);
+int check_times2(real t, real t0, gmx_bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
@@ -222,8 +222,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
-                     int natoms, rvec x[], matrix box);
+gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
