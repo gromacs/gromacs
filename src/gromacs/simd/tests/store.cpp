@@ -40,7 +40,7 @@
  * \ingroup module_simd
  */
 
-#include "tests.h"
+#include "general.h"
 
 namespace SIMDTests
 {
@@ -49,41 +49,33 @@ namespace SIMDTests
  * Tests for SIMD wrapper functions
  */
 
-template<> void
-SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP>::call(ReferenceFunction_I_VPP referenceFunction, RealArray theReals)
-{
-    gmx_simd_ref_pr a, b, c;
+/* It's hard to test load and store independently, since you need one
+   of them to be in a position to test the other. If this test fails
+   because of store_pr, so will almost all the others. If it fails
+   because of load_pr, then those that don't load a real may still
+   pass. */
 
-    a = gmx_simd_ref_load_pr(theReals[0]);
-    referenceFunction(a, &b, &c);
-    gmx_simd_ref_store_pr(referenceResult[0], b);
-    gmx_simd_ref_store_pr(referenceResult[1], c);
+/* Test "store" function */
+
+typedef SimdFunctionTest<1,1,real> SimdFunctionStore;
+
+template<>
+template<class SimdFunctionSet,
+         typename FunctionType> void
+SimdFunctionStore::callFunction(SimdFunctionSet &simdFunctionSet,
+                                FunctionType function,
+                                real *_result)
+{
+    typename SimdFunctionSet::realType a;
+    
+    a      = simdFunctionSet.load_pr(inputs[0]);
+    function(_result, a);
 }
 
-template<> void
-SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP>::call(TestFunction_I_VPP testFunction, RealArray theReals)
+TEST_F(SimdFunctionStore, gmx_store_pr_Works)
 {
-    gmx_mm_pr a, b, c;
-    a = gmx_load_pr(theReals[0]);
-    testFunction(a, &b, &c);
-    gmx_store_pr(testResult[0], b);
-    gmx_store_pr(testResult[1], c);
-}
-
-/* Helper typedef to keep the output pretty */
-typedef SimdFunctionTest<ReferenceFunction_I_VPP, TestFunction_I_VPP> SimdFunctionWithSignature_I_VPP;
-
-TEST_F(SimdFunctionWithSignature_I_VPP, gmx_sincos_pr_Works)
-{
-    Tester(gmx_simd_ref_sincos_pr,
-           gmx_sincos_pr,
-           reals,
-#ifdef GMX_DOUBLE
-           2.0, // empirically determined to be enough on x86
-#else
-           1.0,
-#endif
-           2); // Make sure we test both outputs
+    Tester(ReferenceFunctions::gmx_simd_ref_store_pr,
+           TestFunctions::gmx_store_pr, real(0));
 }
 
 } // namespace

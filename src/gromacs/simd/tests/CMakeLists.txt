@@ -33,16 +33,17 @@
 # the research papers on the package. Check out http://www.gromacs.org.
 
 if(NOT GMX_CPU_ACCELERATION STREQUAL "NONE")
-gmx_add_unit_test(SIMDUnitTests simd-test
-                  utils.cpp
-                  test_memory_operations.cpp
-                  test_masking_operations.cpp
-                  test_logical_operations.cpp
-# The next sets of files all have tests that are primarily
-# arithmetical in nature
-                  test_v_v.cpp
-                  test_v_vv.cpp
-                  test_v_vvv.cpp
-                  test_i_vpp.cpp
-                  )
+    gmx_add_unit_test(SIMDTests simd-test
+        utils.cpp
+        load_table_2xnn.cpp
+        load_table_4xn.cpp
+        load_exclusions_2xnn.cpp
+        load_exclusions_4xn.cpp
+        arithmetic.cpp
+        logic.cpp
+        masking.cpp
+        load.cpp
+        set.cpp
+        store.cpp
+        )
 endif()
