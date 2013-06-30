@@ -494,7 +494,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
                        int nbugs, const char **bugs,
                        output_env_t *oenv)
 {
-    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bQuiet = FALSE, bVersion = FALSE;
+    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE, bVersion = FALSE;
     const char *manstr[] = {
         NULL, "no", "html", "tex", "nroff", "ascii",
         "completion", "py", "xml", "wiki", NULL
@@ -506,7 +506,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         NULL, "fs", "ps", "ns", "us", "ms", "s",
         NULL
     };
-    int         nicelevel = 0, debug_level = 0, verbose_level = 0;
+    int         nicelevel = 0, debug_level = 0;
     char       *deffnm    = NULL;
     real        tbegin    = 0, tend = 0, tdelta = 0;
     gmx_bool    bView     = FALSE;
@@ -560,12 +560,10 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
           "Print help info and quit" },
         { "-version",  FALSE, etBOOL, {&bVersion},
           "Print version info and quit" },
-        { "-verb",    FALSE,  etINT, {&verbose_level},
-          "HIDDENLevel of verbosity for this program" },
+        { "-verbose",  FALSE, etBOOL, {&bVerbose},
+          "HIDDENShow options during normal run" },
         { "-hidden", FALSE, etBOOL, {&bHidden},
           "HIDDENPrint hidden options" },
-        { "-quiet", FALSE, etBOOL, {&bQuiet},
-          "HIDDENDo not print help info" },
         { "-man",  FALSE, etENUM,  {manstr},
           "HIDDENWrite manual and quit" },
         { "-debug", FALSE, etINT, {&debug_level},
@@ -573,9 +571,11 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     };
 #define NPCA_PA asize(pca_pa)
     FILE    *fp;
-    gmx_bool bPrint, bExit, bXvgr;
+    gmx_bool bExit, bXvgr;
     int      i, j, k, npall, max_pa;
 
+    // Handle the flags argument, which is a bit field
+    // The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
     gmx::ProgramInfo::init(*argc, argv);
@@ -604,11 +604,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
     }
     debug_gmx();
-
-    /* Handle the flags argument, which is a bit field
-     * The FF macro returns whether or not the bit is set
-     */
-    bPrint        = !FF(PCA_SILENT);
 
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
@@ -699,7 +694,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     /* set program name, command line, and default values for output options */
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
-                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
+                    (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     if (bVersion)
     {
@@ -783,14 +778,14 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #endif
 #endif
 
-    if (!(FF(PCA_QUIET) || bQuiet ))
+    if (!FF(PCA_QUIET))
     {
         if (bHelp)
         {
             write_man(stderr, "help", output_env_get_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
         }
-        else if (bPrint)
+        else if (bVerbose)
         {
             pr_fns(stderr, nfile, fnm);
             print_pargs(stderr, npall, all_pa, FALSE);
