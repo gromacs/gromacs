@@ -1306,7 +1306,7 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
     snew(msg, length + 500);
 
     fprintf(stdout, "Making shure the benchmarks can be executed ...\n");
-    sprintf(command, "%s-h -quiet", mdrun_cmd_line);
+    sprintf(command, "%s-h", mdrun_cmd_line);
     ret = gmx_system_call(command);
 
     if (0 != ret)

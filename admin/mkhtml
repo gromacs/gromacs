@@ -140,7 +140,7 @@ foreach program ( $PROGRAMS )
   if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) ) then
     echo -n "$program "
     cd $HTMLOL
-    $GMXBINDIR/$program -quiet -man html >& /dev/null
+    $GMXBINDIR/$program -man html >& /dev/null
     cd ..
     endif
   endif

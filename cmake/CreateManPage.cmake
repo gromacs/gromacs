@@ -1,5 +1,5 @@
 #Create a single man page. Used by CreateManPage.cmake
-execute_process(COMMAND ${EXENAME} -quiet -man nroff
+execute_process(COMMAND ${EXENAME} -man nroff
     RESULT_VARIABLE SUCCESS OUTPUT_QUIET ERROR_QUIET)
 if(SUCCESS EQUAL 0)
     configure_file(${INFILE} ${OUTFILE})
