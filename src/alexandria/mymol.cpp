@@ -738,8 +738,9 @@ static void fill_inputrec(t_inputrec *ir)
     ir->coulombtype = eelCUT;
 }
 
-MyMol::MyMol(): MolProp()
+MyMol::MyMol()//: MolProp()
 {
+    printf("BOE F_NRE = %d\n",F_NRE);
     bHaveShells_ = false;
     bHaveVSites_ = false;
     cgnr_ = NULL;
@@ -766,6 +767,7 @@ MyMol::MyMol(): MolProp()
     /* Topology_ stuff */
     snew(plist_,F_NRE);
     init_plist(plist_);
+    printf("BOE F_NRE = %d\n",F_NRE);
 }
 
 MyMol::~MyMol()

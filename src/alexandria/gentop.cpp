@@ -201,8 +201,9 @@ int main(int argc, char *argv[])
     static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
     static char *molnm = (char *)"",*iupac = (char *)"",*dbname = (char *)"", *symm_string = (char *)"",*conf=(char *)"minimum",*basis=(char *)"";
     static int maxpot = 0;
-    static const char *cqgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
-                                   "AXp", "AXs", "AXg", "ESP", "RESP", NULL };
+    static const char *cqgen[] = { NULL, "None", 
+                                   "AXp", "AXs", "AXg", "ESP", "RESP", 
+                                   "Yang", "Bultinck", "Rappe", NULL };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
     static const char *cgopt[] = { NULL, "Atom", "Group", "Neutral", NULL };
     static const char *lot = "B3LYP/aug-cc-pVTZ";

@@ -41,8 +41,7 @@
 
 /* This source code file is part of the Alexandria project */
 	
-enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
-       eqgAXp, eqgAXs, eqgAXg, eqgESP, eqgRESP, eqgNR };
+enum { eqgNone, eqgAXp, eqgAXs, eqgAXg, eqgESP, eqgRESP, eqgYang, eqgBultinck, eqgRappe,eqgNR };
 
 #ifdef __cplusplus
 extern "C" {

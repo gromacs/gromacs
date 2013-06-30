@@ -1344,7 +1344,9 @@ int main(int argc, char *argv[])
     static real th_toler=170,ph_toler=5,dip_toler=0.5;
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
-    static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
+    static const char *cqgen[] = { NULL, "None", 
+                                   "AXp", "AXs", "AXg", "ESP", "RESP", 
+                                   "Yang", "Bultinck", "Rappe", NULL };
     static bool bOpt[ebtsNR] = { true, false, false, false, false, false };
     static real beta0=0,D0=0,beta_min=10,D0_min=50,temperature;
     static int nprint=10;
@@ -1364,6 +1366,8 @@ int main(int argc, char *argv[])
           "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
         { "-nrun",   FALSE, etINT,  {&nrun},
           "This many runs will be done, before each run a complete randomization will be done" },
+        { "-qgen",   FALSE, etENUM, {cqgen},
+          "Algorithm used for charge generation" },
         { "-bonds",  FALSE, etBOOL, {&bOpt[ebtsBONDS]},
           "Optimize bond parameters" },
         { "-angles",  FALSE, etBOOL, {&bOpt[ebtsANGLES]},
@@ -1432,10 +1436,10 @@ int main(int argc, char *argv[])
 #ifndef GMX_THREAD_MPI
     nthreads=1;
 #endif
-    if (qgen[0]) 
-        iModel = name2eemtype(qgen[0]);
+    if (cqgen[0]) 
+        iModel = name2eemtype(cqgen[0]);
     else
-        iModel = eqgAXg;
+        iModel = eqgNone;
     
     if (MASTER(cr)) {
         fp = ffopen(opt2fn("-g",NFILE,fnm),"w");

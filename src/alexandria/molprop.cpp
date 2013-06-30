@@ -348,9 +348,9 @@ CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
 
 void Calculation::AddAtom(CalcAtom ca)
 {
-    CalcAtomIterator cai;
+    CalcAtomIterator cai = SearchAtom(ca);
     
-    if ((cai = SearchAtom(ca)) == EndAtom())
+    if (cai == EndAtom())
     { 
         _catom.push_back(ca); 
     }

@@ -418,7 +418,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
         MolPropRead(fn,mp);
         for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
         {
-            if (FALSE == mpi->GenerateComposition(_pd))
+            if (false == mpi->GenerateComposition(_pd))
             {
                 mpi = mp.erase(mpi);
             }
@@ -446,23 +446,26 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 
                 imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
     
-                if (immOK == imm)
+                if (_iModel != eqgNone)
                 {
-                    mpnew.gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
-                                             1,100,5,
-                                             TRUE,watoms,5,TRUE,TRUE,
-                                             1,TRUE,
-                                             TRUE,NULL);
-                    if (NULL == mpnew.gr_)
+                    if (immOK == imm)
                     {
-                        imm = immRespInit;
+                        mpnew.gr_ = gmx_resp_init(_iModel,TRUE,0.001,0.1,mpnew.GetCharge(),
+                                                  1,100,5,
+                                                  TRUE,watoms,5,TRUE,TRUE,
+                                                  1,TRUE,
+                                                  TRUE,NULL);
+                        if (NULL == mpnew.gr_)
+                        {
+                            imm = immRespInit;
+                        }
                     }
-                }
-
-                if (immOK == imm)
-                {
-                    imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
-                                                lot,TRUE,NULL);
+                    
+                    if (immOK == imm)
+                    {
+                        imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
+                                                    lot,TRUE,NULL);
+                    }
                 }
                 if (immOK == imm)
                 {
