@@ -323,13 +323,12 @@ void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
 class CommandLineModuleManager::Impl
 {
     public:
-
         /*! \brief
          * Initializes the implementation class.
          *
-         * \param[in] programInfo  Program information for the running binary.
+         * \param     programInfo  Program information for the running binary.
          */
-        explicit Impl(const ProgramInfo &programInfo);
+        explicit Impl(ProgramInfo *programInfo);
 
         /*! \brief
          * Finds a module that matches a name.
@@ -386,7 +385,7 @@ class CommandLineModuleManager::Impl
          */
         CommandLineModuleMap    modules_;
         //! Information about the currently running program.
-        const ProgramInfo      &programInfo_;
+        ProgramInfo            &programInfo_;
         /*! \brief
          * Module that implements help for the binary.
          *
@@ -399,10 +398,13 @@ class CommandLineModuleManager::Impl
         bool                    bQuiet_;
         //! Whether to write the startup information to stdout iso stderr.
         bool                    bStdOutInfo_;
+
+    private:
+        GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
-    : programInfo_(programInfo), helpModule_(NULL), bQuiet_(false),
+CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
+    : programInfo_(*programInfo), helpModule_(NULL), bQuiet_(false),
       bStdOutInfo_(false)
 {
 }
@@ -487,6 +489,8 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
         std::string message = formatString("'%s' is not a GROMACS command.", moduleName);
         GMX_THROW(InvalidInputError(message));
     }
+    programInfo_.setDisplayName(
+            programInfo_.realBinaryName() + "-" + module->first);
     *argc -= moduleArgOffset;
     *argv += moduleArgOffset;
     return module->second.get();
@@ -496,7 +500,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(const ProgramInfo &programInfo)
+CommandLineModuleManager::CommandLineModuleManager(ProgramInfo *programInfo)
     : impl_(new Impl(programInfo))
 {
     impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
