@@ -217,6 +217,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
 {
     try
     {
+        // TODO: Use the display name once it doesn't break anything.
         return oenv->programInfo.programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
