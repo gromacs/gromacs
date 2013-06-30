@@ -69,7 +69,7 @@ void printFatalErrorHeader(FILE *fp, const char *title,
     const char *programName = "GROMACS";
     try
     {
-        programName = ProgramInfo::getInstance().programName().c_str();
+        programName = ProgramInfo::getInstance().displayName().c_str();
     }
     catch (const std::exception &)
     {

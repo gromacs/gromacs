@@ -91,6 +91,7 @@ const char *ShortProgram(void)
 {
     try
     {
+        // TODO: Use the display name once it doesn't break anything.
         return gmx::ProgramInfo::getInstance().programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;

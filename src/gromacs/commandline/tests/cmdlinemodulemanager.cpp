@@ -115,7 +115,7 @@ void CommandLineModuleManagerTest::initManager(const CommandLine &args)
 {
     manager_.reset();
     programInfo_.reset(new gmx::ProgramInfo("g_test", args.argc(), args.argv()));
-    manager_.reset(new gmx::CommandLineModuleManager(*programInfo_));
+    manager_.reset(new gmx::CommandLineModuleManager(programInfo_.get()));
     manager_->setQuiet(true);
 }
 

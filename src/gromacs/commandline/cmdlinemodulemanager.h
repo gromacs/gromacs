@@ -90,13 +90,16 @@ class CommandLineModuleManager
         /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param[in] programInfo  Program information for the running binary.
+         * \param     programInfo  Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
          * The binary name is used to detect when the binary is run through a
          * symlink, and automatically invoke a matching module in such a case.
+         *
+         * \p programInfo is non-const to allow the manager to amend it based
+         * on the actual module that is getting executed.
          */
-        explicit CommandLineModuleManager(const ProgramInfo &programInfo);
+        explicit CommandLineModuleManager(ProgramInfo *programInfo);
         ~CommandLineModuleManager();
 
         /*! \brief

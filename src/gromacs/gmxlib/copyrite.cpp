@@ -706,7 +706,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
-    const std::string &name = programInfo.programName();
+    const std::string &name = programInfo.displayName();
     if (settings.bGeneratedByHeader_)
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
