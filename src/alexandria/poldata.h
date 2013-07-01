@@ -41,11 +41,18 @@
 
 /* This source code file is part of the Alexandria project */
 	
-enum { eqgNone, eqgAXp, eqgAXs, eqgAXg, eqgESP, eqgRESP, eqgYang, eqgBultinck, eqgRappe,eqgNR };
-
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/*! \brief
+ * Enumerated type holding the types of observables stored in MolProp 
+ *
+ * \inpublicapi
+ * \ingroup module_alexandria
+ */
+
+enum { eqgNone, eqgAXp, eqgAXg, eqgAXs, eqgESP, eqgRESP, eqgYang, eqgBultinck, eqgRappe, eqgNR };
 
 enum { egdPDIHS, egdIDIHS, egdNR };
 

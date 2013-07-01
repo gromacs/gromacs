@@ -76,7 +76,7 @@
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
 
-void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
+bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms)
 {
@@ -98,8 +98,8 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
     ra->atomtype    = strdup(atomtype);
     ra->nZeta       = gmx_poldata_get_nzeta(pd,iModel,ra->atomtype);
     if (ra->nZeta <= 0)
-        gmx_fatal(FARGS,"No support in charge model %s for atom type %s",
-                  get_eemtype_name(iModel),atomtype);
+        return false;
+        
     ra->bRestrained = bRestr;
         
     snew(ra->zeta,ra->nZeta);
@@ -117,7 +117,8 @@ void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
         ra->zeta_ref[zz] = 
             ra->zeta[zz] = gmx_poldata_get_zeta(pd,iModel,ra->atomtype,zz);
         ra->row[zz]  = gmx_poldata_get_row(pd,iModel,ra->atomtype,zz);
-    }    
+    }  
+    return true;  
 }
 
 void gmx_ra_done(gmx_ra *ra)
@@ -267,7 +268,7 @@ void gmx_resp_fill_q(gmx_resp_t gr,t_atoms *atoms)
     }
 }
 
-void gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,gmx_poldata_t pd)
+bool gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,gmx_poldata_t pd)
 {
     int  i;
     
@@ -276,10 +277,14 @@ void gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,gmx_poldata_t pd)
 
     for(i=0; (i<gr->natom); i++) 
     {
-        gmx_ra_init(&gr->ra[i],
-                    atoms->atom[i].atomnumber,atoms->atom[i].type,
-                    *(atoms->atomtype[i]),pd,gr->iModel,gr->dzatoms);
+        if (!gmx_ra_init(&gr->ra[i],
+                         atoms->atom[i].atomnumber,atoms->atom[i].type,
+                         *(atoms->atomtype[i]),pd,gr->iModel,gr->dzatoms))
+        {
+            return false;
+        }
     }
+    return true;
 }
 
 void gmx_resp_summary(FILE *fp,gmx_resp_t gr,int *symmetric_atoms)

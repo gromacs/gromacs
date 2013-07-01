@@ -79,6 +79,7 @@ public:
     eSupport       eSupp;
     t_state        state_;
     t_forcerec     *fr_;
+    t_params       *plist_;
     gmx_mtop_t     *mtop_;
     gmx_localtop_t *ltop_;
     gpp_atomtype_t atype_;
@@ -90,7 +91,6 @@ public:
     gmx_resp_t     gr_;
     t_mdatoms      *md_;
     t_topology     *topology_;
-    t_params       *plist_;
                                
     //! Constructor
     MyMol();

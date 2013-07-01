@@ -661,19 +661,19 @@ static void plist_to_mtop(gmx_poldata_t pd,t_params plist_[],gmx_mtop_t *mtop_)
     }
 }
 
-void mtop_update_cgs(gmx_mtop_t *mtop_)
+void mtop_update_cgs(gmx_mtop_t *mtop)
 {
     int i,j;
     
-    for(i=0; (i<mtop_->nmoltype); i++) 
+    for(i=0; (i<mtop->nmoltype); i++) 
     {
-        if (mtop_->moltype[i].atoms.nr > mtop_->moltype[i].cgs.nr)
+        if (mtop->moltype[i].atoms.nr > mtop->moltype[i].cgs.nr)
         {
-            mtop_->moltype[i].cgs.nr = mtop_->moltype[i].atoms.nr;
-            mtop_->moltype[i].cgs.nalloc_index = mtop_->moltype[i].atoms.nr+1;
-            srenew(mtop_->moltype[i].cgs.index,mtop_->moltype[i].cgs.nr+1);
-            for(j=0; (j<=mtop_->moltype[i].cgs.nr); j++)
-                mtop_->moltype[i].cgs.index[j] = j;
+            mtop->moltype[i].cgs.nr = mtop->moltype[i].atoms.nr;
+            mtop->moltype[i].cgs.nalloc_index = mtop->moltype[i].atoms.nr+1;
+            srenew(mtop->moltype[i].cgs.index,mtop->moltype[i].cgs.nr+1);
+            for(j=0; (j<=mtop->moltype[i].cgs.nr); j++)
+                mtop->moltype[i].cgs.index[j] = j;
         }
     }
 }
@@ -772,6 +772,7 @@ MyMol::MyMol()//: MolProp()
 
 MyMol::~MyMol()
 {
+    return;
     if (NULL != cgnr_)
     {
         sfree(cgnr_);
@@ -784,7 +785,7 @@ MyMol::~MyMol()
     }
     if (NULL != atype_)
     {
-        //done_atomtype(atype_);
+        done_atomtype(atype_);
         atype_ = NULL;
     }
     if (NULL != inputrec_)
@@ -1070,56 +1071,64 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     if (immOK == imm)
     {    
         //gmx_resp_get_atom_info(gr,&topology_->atoms,symtab,&x);
-        gmx_resp_add_atom_info(gr_,&topology_->atoms,pd);
-        gmx_resp_add_atom_symmetry(gr_,symmetric_charges_);
-        gmx_resp_update_atomtypes(gr_,&(topology_->atoms));
-        gmx_resp_summary(stdout,gr_,symmetric_charges_);
-        gmx_resp_add_atom_coords(gr_,x);
+        if (gmx_resp_add_atom_info(gr_,&topology_->atoms,pd))
+        {
+            gmx_resp_add_atom_symmetry(gr_,symmetric_charges_);
+            gmx_resp_update_atomtypes(gr_,&(topology_->atoms));
+            gmx_resp_summary(stdout,gr_,symmetric_charges_);
+            gmx_resp_add_atom_coords(gr_,x);
+            
+            CalculationIterator ci = GetLot(lot);
+            if (ci != EndCalculation())
+            {
+                printf("There are %d potential points\n",ci->NPotential());
+                for(ElectrostaticPotentialIterator epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
+                {
+                    /* Maybe not convert to gmx ? */
+                    int xu = string2unit(epi->GetXYZunit().c_str());
+                    int vu = string2unit(epi->GetVunit().c_str());
+                    if (-1 == xu)
+                        xu = eg2cAngstrom;
+                    if (-1 == vu)
+                        vu = eg2cHartree_e;
+                    gmx_resp_add_point(gr_,
+                                       convert2gmx(epi->GetX(),xu),
+                                       convert2gmx(epi->GetY(),xu),
+                                       convert2gmx(epi->GetZ(),xu),
+                                       convert2gmx(epi->GetV(),vu));
+                }
+            }
         
-        CalculationIterator ci = GetLot(lot);
-        if (ci != EndCalculation())
-        {
-            printf("There are %d potential points\n",ci->NPotential());
-            for(ElectrostaticPotentialIterator epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
+            /* Check which algorithm to use for charge generation */
+            strcpy(qgen_msg,"");
+            if (iModel == eqgNone)
             {
-                /* Maybe not convert to gmx ? */
-                int xu = string2unit(epi->GetXYZunit().c_str());
-                int vu = string2unit(epi->GetVunit().c_str());
-                if (-1 == xu)
-                    xu = eg2cAngstrom;
-                if (-1 == vu)
-                    vu = eg2cHartree_e;
-                gmx_resp_add_point(gr_,
-                                   convert2gmx(epi->GetX(),xu),
-                                   convert2gmx(epi->GetY(),xu),
-                                   convert2gmx(epi->GetZ(),xu),
-                                   convert2gmx(epi->GetV(),vu));
+                printf("Using zero charges!\n");
+                for(i=0; (i<topology_->atoms.nr); i++)
+                {
+                    topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+                }
+                eQGEN = eQGEN_OK;
             }
-        }
-
-        /* Check which algorithm to use for charge generation */
-        strcpy(qgen_msg,"");
-        if (iModel == eqgNone)
-        {
-            printf("Using zero charges!\n");
-            for(i=0; (i<topology_->atoms.nr); i++)
+            else 
             {
-                topology_->atoms.atom[i].q  = topology_->atoms.atom[i].qB = 0;
+                qgen_ = gentop_qgen_init(pd,&topology_->atoms,ap,x,iModel,hfac,GetCharge(),epsr);
+                
+                if (NULL == qgen_)
+                    gmx_fatal(FARGS,"Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n",GetMolname().c_str());
+                eQGEN = generate_charges(NULL,
+                                         qgen_,gr_,GetMolname().c_str(),pd,&topology_->atoms,x,0.0001,
+                                         10000,1,ap,hfac);
+                qgen_message(qgen_,sizeof(qgen_msg),qgen_msg,gr_);
+                if (eQGEN_OK != eQGEN)
+                {
+                    imm = immChargeGeneration;
+                }
             }
-            eQGEN = eQGEN_OK;
         }
         else 
         {
-            qgen_ = gentop_qgen_init(pd,&topology_->atoms,ap,x,iModel,hfac,GetCharge(),epsr);
-            
-            if (NULL == qgen_)
-                gmx_fatal(FARGS,"Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n",GetMolname().c_str());
-            eQGEN = generate_charges(NULL,
-                                     qgen_,gr_,GetMolname().c_str(),pd,&topology_->atoms,x,0.0001,
-                                     10000,1,ap,hfac);
-            qgen_message(qgen_,sizeof(qgen_msg),qgen_msg,gr_);
-            if (eQGEN_OK != eQGEN)
-                imm = immChargeGeneration;
+            imm = immAtomTypes;
         }
     }
     

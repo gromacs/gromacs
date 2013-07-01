@@ -244,17 +244,22 @@ void Calculation::Dump(FILE *fp)
 
 void Experiment::Merge(Experiment& src)
 {
+    MergeLow(&src);
+}
+
+void Experiment::MergeLow(Experiment *src)
+{
     alexandria::MolecularEnergyIterator mei;
     alexandria::MolecularDipPolarIterator dpi;
     alexandria::MolecularQuadrupoleIterator mqi;
     
-    for(mei=src.BeginEnergy(); (mei<src.EndEnergy()); mei++)
+    for(mei=src->BeginEnergy(); (mei<src->EndEnergy()); mei++)
     {
         alexandria::MolecularEnergy me(mei->GetType(),mei->GetUnit(),mei->GetValue(),mei->GetError());
         AddEnergy(me);
     }
 
-    for(dpi=src.BeginDipole(); (dpi<src.EndDipole()); dpi++) 
+    for(dpi=src->BeginDipole(); (dpi<src->EndDipole()); dpi++) 
     {
         alexandria::MolecularDipPolar dp(dpi->GetType(),dpi->GetUnit(),
                                          dpi->GetX(),dpi->GetY(),dpi->GetZ(),
@@ -262,7 +267,7 @@ void Experiment::Merge(Experiment& src)
         AddDipole(dp);
     }
       
-    for(dpi=src.BeginPolar(); (dpi<src.EndPolar()); dpi++) 
+    for(dpi=src->BeginPolar(); (dpi<src->EndPolar()); dpi++) 
     {
         alexandria::MolecularDipPolar dp(dpi->GetType(),dpi->GetUnit(),
                                          dpi->GetX(),dpi->GetY(),dpi->GetZ(),
@@ -270,7 +275,7 @@ void Experiment::Merge(Experiment& src)
         AddPolar(dp);
     }
 
-    for(mqi=src.BeginQuadrupole(); (mqi<src.EndQuadrupole()); mqi++)
+    for(mqi=src->BeginQuadrupole(); (mqi<src->EndQuadrupole()); mqi++)
     {
         alexandria::MolecularQuadrupole mq(mqi->GetType(),mqi->GetUnit(),
                                            mqi->GetXX(),mqi->GetYY(),mqi->GetZZ(),
@@ -281,7 +286,7 @@ void Experiment::Merge(Experiment& src)
 
 void Calculation::Merge(Calculation& src)
 {
-    Experiment::Merge(src);
+    Experiment::MergeLow(&src);
     
     for(CalcAtomIterator cai=src.BeginAtom(); (cai<src.EndAtom()); cai++)
     {

@@ -825,6 +825,7 @@ private:
     std::vector<MolecularDipPolar> _polar,_dipole;
     std::vector<MolecularEnergy> _energy;
     std::vector<MolecularQuadrupole> _quadrupole;
+
 public:
     //! Empty constructor
     Experiment() { }
@@ -912,6 +913,8 @@ public:
                 tensor quadrupole);
     
     
+    //! Merge in another object - Low level function
+    void MergeLow(Experiment *src);
 
     //! Merge in another object
     void Merge(Experiment& src);

@@ -1344,6 +1344,10 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
 
+    if ((NULL == atom1) || (NULL == atom2)) 
+    {
+        return 0;
+    }
     gt_b = search_bond(pd,atom1,atom2,0);
     if (NULL != gt_b) 
     {
@@ -1460,6 +1464,10 @@ int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
     t_gt_angle *gt_b;
     int i;
   
+    if ((NULL == atom1) || (NULL == atom2) || (NULL == atom3)) 
+    {
+        return 0;
+    }
     for(i=0; (i<pd->ngt_angle); i++) 
     {
         gt_b = &(pd->gt_angle[i]);
@@ -1518,6 +1526,10 @@ static t_gt_dihedral *search_dihedral(gmx_poldata_t pd,int egd,
     t_gt_dihedral gt_a,*gt_res,*gt_dptr;
     int nd;
     
+    if ((NULL == atom1) || (NULL == atom2) || (NULL == atom3) || (NULL == atom4))
+    {
+        return NULL;
+    }
     gt_dptr = pd->gt_dihedral[egd];
     nd = pd->ngt_dihedral[egd];
     gt_a.atom1 = atom1;
@@ -1543,6 +1555,7 @@ int gmx_poldata_set_dihedral_params(gmx_poldata_t pd,int egd,
 {
     t_gt_dihedral *gt_b;
     
+
     gt_b = search_dihedral(pd,egd,atom1,atom2,atom3,atom4);
     if (NULL != gt_b) 
     {

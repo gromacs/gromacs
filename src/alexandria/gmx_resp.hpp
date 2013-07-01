@@ -80,7 +80,7 @@ extern "C" {
 #endif
 int atomicnumber2row(int elem);
 
-void gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
+bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms);
 
@@ -103,7 +103,7 @@ void gmx_resp_fill_q(gmx_resp_t gr,t_atoms *atoms);
 
 void gmx_resp_add_atom_coords(gmx_resp_t gr,rvec *x);
 
-void gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,
+bool gmx_resp_add_atom_info(gmx_resp_t gr,t_atoms *atoms,
                             gmx_poldata_t pd);
 
 void gmx_resp_get_atom_info(gmx_resp_t gr,t_atoms *atoms,

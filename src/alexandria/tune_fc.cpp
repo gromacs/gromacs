@@ -1345,7 +1345,7 @@ int main(int argc, char *argv[])
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
     static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
     static const char *cqgen[] = { NULL, "None", 
-                                   "AXp", "AXs", "AXg", "ESP", "RESP", 
+                                   "AXp", "AXg", "AXs", "ESP", "RESP", 
                                    "Yang", "Bultinck", "Rappe", NULL };
     static bool bOpt[ebtsNR] = { true, false, false, false, false, false };
     static real beta0=0,D0=0,beta_min=10,D0_min=50,temperature;
