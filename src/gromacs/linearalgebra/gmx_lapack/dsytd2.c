@@ -14,7 +14,7 @@ F77_FUNC(dsytd2,DSYTD2)(const char *    uplo,
 	double *  d,
 	double *  e,
 	double *  tau,
-	int *     info)
+    int gmx_unused *     info)
 {
   double minusone,zero;
   double taui,alpha,tmp;
