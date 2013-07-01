@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -39,16 +39,26 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_utility
  */
-#include "path.h"
+#include "gromacs/utility/path.h"
 
-#include "gmx_header_config.h"
+#include <cerrno>
+#include <cstdlib>
+#include <cstring>
 
-#include <errno.h>
+#include <algorithm>
+
+#include "config.h"
+
 #include <sys/stat.h>
-
 #ifdef GMX_NATIVE_WINDOWS
 #include <direct.h>
+#else
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
+#endif
+
+#include "gromacs/fileio/futil.h"
 
 namespace
 {
@@ -58,10 +68,47 @@ const char cDirSeparator = '/';
 //! Directory separators to use when parsing paths.
 const char cDirSeparators[] = "/\\";
 
+//! Check whether a given character is a directory separator.
+bool isDirSeparator(char chr)
+{
+    return std::strchr(cDirSeparators, chr);
+}
+
 } // namespace
 
 namespace gmx
 {
+
+/********************************************************************
+ * Path
+ */
+
+bool Path::containsDirectory(const std::string &path)
+{
+    return path.find_first_of(cDirSeparators) != std::string::npos;
+}
+
+/* Check if the program name begins with "/" on unix/cygwin, or
+ * with "\" or "X:\" on windows. If not, the program name
+ * is relative to the current directory.
+ */
+bool Path::isAbsolute(const char *path)
+{
+    if (isDirSeparator(path[0]))
+    {
+        return true;
+    }
+#ifdef GMX_NATIVE_WINDOWS
+    return path[0] != '\0' && path[1] == ':' && isDirSeparator(path[2]);
+#else
+    return false;
+#endif
+}
+
+bool Path::isAbsolute(const std::string &path)
+{
+    return isAbsolute(path.c_str());
+}
 
 std::string Path::join(const std::string &path1,
                        const std::string &path2)
@@ -90,6 +137,89 @@ Path::splitToPathAndFilename(const std::string &path)
     return std::make_pair(path.substr(0, pos), path.substr(pos+1));
 }
 
+std::string Path::normalize(const std::string &path)
+{
+    std::string result(path);
+    if (DIR_SEPARATOR != '/')
+    {
+        std::replace(result.begin(), result.end(), '/', DIR_SEPARATOR);
+    }
+    return result;
+}
+
+bool Path::exists(const char *path)
+{
+    return gmx_fexist(path);
+}
+
+bool Path::exists(const std::string &path)
+{
+    return exists(path.c_str());
+}
+
+std::string Path::getWorkingDirectory()
+{
+    // TODO: Use exceptions instead of gmx_fatal().
+    char cwd[GMX_PATH_MAX];
+    gmx_getcwd(cwd, sizeof(cwd));
+    return cwd;
+}
+
+void Path::splitPathEnvironment(const std::string        &pathEnv,
+                                std::vector<std::string> *result)
+{
+    size_t                   prevPos = 0;
+    size_t                   separator;
+    do
+    {
+        separator = pathEnv.find_first_of(PATH_SEPARATOR, prevPos);
+        result->push_back(pathEnv.substr(prevPos, separator - prevPos));
+        prevPos = separator + 1;
+    }
+    while (separator != std::string::npos);
+}
+
+std::vector<std::string> Path::getExecutablePaths()
+{
+    std::vector<std::string> result;
+#ifdef GMX_NATIVE_WINDOWS // TODO: Should CYGWIN be here as well?
+    // Add the local dir since it is not in the path on Windows.
+    result.push_back("");
+#endif
+    const char *path = std::getenv("PATH");
+    if (path != NULL)
+    {
+        splitPathEnvironment(path, &result);
+    }
+    return result;
+}
+
+std::string Path::resolveSymlinks(const std::string &path)
+{
+    std::string result(path);
+#ifndef GMX_NATIVE_WINDOWS
+    char        buf[GMX_PATH_MAX];
+    int         length;
+    while ((length = readlink(result.c_str(), buf, sizeof(buf)-1)) > 0)
+    {
+        buf[length] = '\0';
+        if (isAbsolute(buf))
+        {
+            result = buf;
+        }
+        else
+        {
+            result = join(splitToPathAndFilename(result).first, buf);
+        }
+    }
+#endif
+    return result;
+}
+
+
+/********************************************************************
+ * Directory
+ */
 
 int Directory::create(const char *path)
 {
