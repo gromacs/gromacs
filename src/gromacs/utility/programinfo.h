@@ -173,12 +173,6 @@ class ProgramInfo
          */
         const std::string &realBinaryName() const;
         /*! \brief
-         * Returns the path and name of the binary as it was invoked.
-         *
-         * Does not throw.
-         */
-        const std::string &programNameWithPath() const;
-        /*! \brief
          * Returns the name of the binary as it was invoked without any path.
          *
          * Does not throw.
@@ -208,6 +202,15 @@ class ProgramInfo
          * Does not throw.
          */
         const std::string &commandLine() const;
+
+        /*! \brief
+         * Returns the full path of the invoked binary.
+         *
+         * Returns argv[0] if there was an error in finding the absolute path.
+         *
+         * Does not throw.
+         */
+        const std::string &fullBinaryPath() const;
 
     private:
         class Impl;

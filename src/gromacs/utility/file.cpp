@@ -242,7 +242,7 @@ void File::writeLine()
 // static
 bool File::exists(const char *filename)
 {
-    return gmx_fexist(filename);
+    return gmx_is_file(filename);
 }
 
 // static

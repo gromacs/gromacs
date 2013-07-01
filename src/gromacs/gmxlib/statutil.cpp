@@ -101,7 +101,7 @@ const char *Program(void)
 {
     try
     {
-        return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
+        return gmx::ProgramInfo::getInstance().fullBinaryPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
@@ -780,7 +780,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     {
         if (bHelp)
         {
-            write_man(stderr, "help", output_env_get_program_name(*oenv),
+            write_man(stderr, "help", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
         }
         else if (bVerbose)
@@ -796,23 +796,22 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         {
             /* one file each for csh, bash and zsh if we do completions */
             fp = man_file(*oenv, "completion-zsh");
-
-            write_man(fp, "completion-zsh", output_env_get_program_name(*oenv),
+            write_man(fp, "completion-zsh", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
             gmx_fio_fclose(fp);
             fp = man_file(*oenv, "completion-bash");
-            write_man(fp, "completion-bash", output_env_get_program_name(*oenv),
+            write_man(fp, "completion-bash", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
             gmx_fio_fclose(fp);
             fp = man_file(*oenv, "completion-csh");
-            write_man(fp, "completion-csh", output_env_get_program_name(*oenv),
+            write_man(fp, "completion-csh", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
             gmx_fio_fclose(fp);
         }
         else
         {
             fp = man_file(*oenv, manstr[0]);
-            write_man(fp, manstr[0], output_env_get_program_name(*oenv),
+            write_man(fp, manstr[0], output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
             gmx_fio_fclose(fp);
         }

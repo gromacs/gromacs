@@ -44,6 +44,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace gmx
 {
@@ -51,6 +52,10 @@ namespace gmx
 class Path
 {
     public:
+        static bool containsDirectory(const std::string &path);
+        static bool isAbsolute(const char *path);
+        static bool isAbsolute(const std::string &path);
+
         static std::string join(const std::string &path1,
                                 const std::string &path2);
         static std::string join(const std::string &path1,
@@ -58,6 +63,12 @@ class Path
                                 const std::string &path3);
         static std::pair<std::string, std::string>
         splitToPathAndFilename(const std::string &path);
+
+        static bool exists(const char *path);
+        static bool exists(const std::string &path);
+        static std::string getWorkingDirectory();
+        static std::vector<std::string> getSplittedPathEnvironment();
+        static std::string resolveSymlinks(const std::string &path);
 
     private:
         // Disallow instantiation.
