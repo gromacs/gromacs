@@ -221,8 +221,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               t_ilist *il_local);
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop,
-                             gmx_constr_t  constr);
+                             gmx_mtop_t   *mtop);
 
 void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite);
 
@@ -285,7 +284,7 @@ real dd_choose_grid(FILE *fplog,
                     gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
-                    gmx_bool bInterCGBondeds, gmx_bool bInterCGMultiBody);
+                    gmx_bool bInterCGBondeds);
 /* Determines the optimal DD cell setup dd->nc and possibly npmenodes
  * for the system.
  * On the master node returns the actual cellsize limit used.

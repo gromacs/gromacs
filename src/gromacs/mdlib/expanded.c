@@ -723,7 +723,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k, gmx_rng_t rng)
+static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k, gmx_rng_t rng)
 {
     /* Choose new lambda value, and update transition matrix */
 
@@ -1316,7 +1316,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
         }
     }
 
-    lamnew = ChooseNewLambda(log, nlim, expand, dfhist, nlam, weighted_lamee, p_k, mcrng);
+    lamnew = ChooseNewLambda(nlim, expand, dfhist, nlam, weighted_lamee, p_k, mcrng);
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp && (lamnew != nlam)) /* only need to change the temperatures if we change the state */
     {

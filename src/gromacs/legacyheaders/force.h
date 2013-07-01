@@ -52,16 +52,15 @@ extern "C" {
 
 static const char *sepdvdlformat = "  %-30s V %12.5e  dVdl %12.5e\n";
 
-void calc_vir(FILE *fplog, int nxf, rvec x[], rvec f[], tensor vir,
+void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
-void f_calc_vir(FILE *fplog, int i0, int i1, rvec x[], rvec f[], tensor vir,
+void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
                 t_graph *g, rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-real RF_excl_correction(FILE *fplog,
-                        const t_forcerec *fr, t_graph *g,
+real RF_excl_correction(const t_forcerec *fr, t_graph *g,
                         const t_mdatoms *mdatoms, const t_blocka *excl,
                         rvec x[], rvec f[], rvec *fshift, const t_pbc *pbc,
                         real lambda, real *dvdlambda);
@@ -109,10 +108,8 @@ bondedtable_t make_bonded_table(FILE *fplog, char *fn, int angle);
  */
 
 /* Return a table for GB calculations */
-t_forcetable make_gb_table(FILE *out, const output_env_t oenv,
-                           const t_forcerec *fr,
-                           const char *fn,
-                           real rtab);
+t_forcetable make_gb_table(const output_env_t oenv,
+                           const t_forcerec  *fr);
 
 /* Read a table for AdResS Thermo Force calculations */
 extern t_forcetable make_atf_table(FILE *out, const output_env_t oenv,
@@ -196,13 +193,12 @@ void destroy_enerdata(gmx_enerdata_t *enerd);
 void reset_foreign_enerdata(gmx_enerdata_t *enerd);
 /* Resets only the foreign energy data */
 
-void reset_enerdata(t_grpopts *opts,
-                    t_forcerec *fr, gmx_bool bNS,
+void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
                     gmx_enerdata_t *enerd,
                     gmx_bool bMaster);
 /* Resets the energy data, if bNS=TRUE also zeros the long-range part */
 
-void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot);
+void sum_epot(gmx_grppairener_t *grpp, real *epot);
 /* Locally sum the non-bonded potential energy terms */
 
 void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals);
@@ -244,17 +240,12 @@ extern void do_force(FILE *log, t_commrec *cr,
 
 void ns(FILE              *fplog,
         t_forcerec        *fr,
-        rvec               x[],
         matrix             box,
         gmx_groups_t      *groups,
-        t_grpopts         *opts,
         gmx_localtop_t    *top,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        real              *lambda,
-        real              *dvdlambda,
-        gmx_grppairener_t *grppener,
         gmx_bool           bFillGrid,
         gmx_bool           bDoLongRangeNS);
 /* Call the neighborsearcher */
@@ -268,14 +259,12 @@ extern void do_force_lowlevel(FILE         *fplog,
                               t_nrnb       *nrnb,
                               gmx_wallcycle_t wcycle,
                               t_mdatoms    *md,
-                              t_grpopts    *opts,
                               rvec         x[],
                               history_t    *hist,
                               rvec         f_shortrange[],
                               rvec         f_longrange[],
                               gmx_enerdata_t *enerd,
                               t_fcdata     *fcd,
-                              gmx_mtop_t     *mtop,
                               gmx_localtop_t *top,
                               gmx_genborn_t *born,
                               t_atomtypes  *atype,

@@ -313,8 +313,8 @@ void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     snew(lambda, efptNR);
     snew(dvdl, efptNR);
     init_neighbor_list(fp, fr, md->homenr);
-    search_neighbours(fp, fr, x, box, top,
-                      &mtop->groups, cr, &nrnb, md, lambda, dvdl, NULL, TRUE, FALSE, FALSE);
+    search_neighbours(fp, fr, box, top,
+                      &mtop->groups, cr, &nrnb, md, TRUE, FALSE);
 
     if (debug)
     {

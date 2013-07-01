@@ -421,7 +421,7 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
 
 
 void construct_vsites_thread(gmx_vsite_t *vsite,
-                             rvec x[], t_nrnb *nrnb,
+                             rvec x[],
                              real dt, rvec *v,
                              t_iparams ip[], t_ilist ilist[],
                              t_pbc *pbc_null)
@@ -594,8 +594,8 @@ void construct_vsites_thread(gmx_vsite_t *vsite,
     }
 }
 
-void construct_vsites(FILE *log, gmx_vsite_t *vsite,
-                      rvec x[], t_nrnb *nrnb,
+void construct_vsites(gmx_vsite_t *vsite,
+                      rvec x[],
                       real dt, rvec *v,
                       t_iparams ip[], t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC, t_graph *graph,
@@ -651,7 +651,7 @@ void construct_vsites(FILE *log, gmx_vsite_t *vsite,
     if (vsite->nthreads == 1)
     {
         construct_vsites_thread(vsite,
-                                x, nrnb, dt, v,
+                                x, dt, v,
                                 ip, ilist,
                                 pbc_null);
     }
@@ -660,13 +660,13 @@ void construct_vsites(FILE *log, gmx_vsite_t *vsite,
 #pragma omp parallel num_threads(vsite->nthreads)
         {
             construct_vsites_thread(vsite,
-                                    x, nrnb, dt, v,
+                                    x, dt, v,
                                     ip, vsite->tdata[gmx_omp_get_thread_num()].ilist,
                                     pbc_null);
         }
         /* Now we can construct the vsites that might depend on other vsites */
         construct_vsites_thread(vsite,
-                                x, nrnb, dt, v,
+                                x, dt, v,
                                 ip, vsite->tdata[vsite->nthreads].ilist,
                                 pbc_null);
     }
@@ -722,7 +722,7 @@ static void spread_vsite2(t_iatom ia[], real a,
     /* TOTAL: 13 flops */
 }
 
-void construct_vsites_mtop(FILE *log, gmx_vsite_t *vsite,
+void construct_vsites_mtop(gmx_vsite_t *vsite,
                            gmx_mtop_t *mtop, rvec x[])
 {
     int             as, mb, mol;
@@ -736,7 +736,7 @@ void construct_vsites_mtop(FILE *log, gmx_vsite_t *vsite,
         molt = &mtop->moltype[molb->type];
         for (mol = 0; mol < molb->nmol; mol++)
         {
-            construct_vsites(log, vsite, x+as, NULL, 0.0, NULL,
+            construct_vsites(vsite, x+as, 0.0, NULL,
                              mtop->ffparams.iparams, molt->ilist,
                              epbcNONE, TRUE, NULL, NULL, NULL);
             as += molt->atoms.nr;
@@ -1551,7 +1551,7 @@ static void spread_vsite_f_thread(gmx_vsite_t *vsite,
     }
 }
 
-void spread_vsite_f(FILE *log, gmx_vsite_t *vsite,
+void spread_vsite_f(gmx_vsite_t *vsite,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,

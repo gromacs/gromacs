@@ -165,7 +165,7 @@ int init_gb_plist(t_params *p_list)
 
 
 
-int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
+int init_gb_still(const t_commrec *cr,
                   const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
                   gmx_genborn_t *born, int natoms)
 {
@@ -356,7 +356,7 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
 /* Initialize all GB datastructs and compute polarization energies */
 int init_gb(gmx_genborn_t **p_born,
             const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
-            const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm)
+            const gmx_mtop_t *mtop, int gb_algorithm)
 {
     int             i, j, m, ai, aj, jj, natoms, nalloc;
     real            rai, sk, p, doffset;
@@ -438,7 +438,7 @@ int init_gb(gmx_genborn_t **p_born,
     /* If Still model, initialise the polarisation energies */
     if (gb_algorithm == egbSTILL)
     {
-        init_gb_still(cr, fr, &(mtop->atomtypes), &(localtop->idef), &atoms,
+        init_gb_still(cr, &(mtop->atomtypes), &(localtop->idef), &atoms,
                       born, natoms);
     }
 

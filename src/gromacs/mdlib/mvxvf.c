@@ -54,7 +54,7 @@
 #include "partdec.h"
 
 void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
-                int left, int right, rvec vecs[], rvec buf[],
+                rvec vecs[], rvec buf[],
                 int shift, t_nrnb *nrnb)
 {
     int     i, j, j0 = 137, j1 = 391;
@@ -112,7 +112,7 @@ void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
                                GMX_LEFT, vecs[index[prev]], HOMENRI(index, prev)*DIM);
             }
             /* Wait for communication to end */
-            gmx_wait(cr, right, left);
+            gmx_wait(cr);
         }
 
         /* Backward pulse around the ring, to decreasing NODE number */
@@ -131,7 +131,7 @@ void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
                                GMX_RIGHT, vecs[index[next]], HOMENRI(index, next)*DIM);
             }
             /* Wait for communication to end */
-            gmx_wait(cr, left, right);
+            gmx_wait(cr);
         }
 
         /* Actual summation */
@@ -161,155 +161,27 @@ void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
 }
 
 
-void move_reals(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
-                int left, int right, real reals[], real buf[],
-                int shift, t_nrnb *nrnb)
+void move_x(const t_commrec *cr,
+            rvec x[], t_nrnb *nrnb)
 {
-    int     i, j, j0 = 137, j1 = 391;
-    int     cur, nsum;
-    int    *index;
-#define next ((cur + 1) % cr->nnodes)
-#define prev ((cur - 1 + cr->nnodes) % cr->nnodes)
+    move_rvecs(cr, FALSE, FALSE, x, NULL, pd_shift(cr), nrnb);
+    move_rvecs(cr, TRUE, FALSE, x, NULL, pd_bshift(cr), nrnb);
 
-#define HOMENRI(ind, i) ((ind)[(i)+1] - (ind)[(i)])
-
-    index = pd_index(cr);
-
-    if (bSum)
-    {
-        cur = (cr->nodeid + pd_shift(cr)) % cr->nnodes;
-    }
-    else
-    {
-        cur = cr->nodeid;
-    }
-
-    nsum = 0;
-    for (i = 0; (i < shift); i++)
-    {
-        if (bSum)
-        {
-            if (bForward)
-            {
-                j0 = index[prev];
-                j1 = index[prev+1];
-            }
-            else
-            {
-                j0 = index[next];
-                j1 = index[next+1];
-            }
-            for (j = j0; (j < j1); j++)
-            {
-                buf[j] = 0.0;
-            }
-        }
-        /* Forward pulse around the ring, to increasing NODE number */
-        if (bForward)
-        {
-            if (bSum)
-            {
-                gmx_tx_rx_real(cr,
-                               GMX_RIGHT, reals+index[cur ], HOMENRI(index, cur ),
-                               GMX_LEFT, buf+index[prev], HOMENRI(index, prev));
-            }
-            else
-            {
-                gmx_tx_rx_real(cr,
-                               GMX_RIGHT, reals+index[cur ], HOMENRI(index, cur ),
-                               GMX_LEFT, reals+index[prev], HOMENRI(index, prev));
-            }
-            /* Wait for communication to end */
-            gmx_wait(cr, right, left);
-        }
-        else
-        {
-            /* Backward pulse around the ring, to decreasing NODE number */
-            if (bSum)
-            {
-                gmx_tx_rx_real(cr,
-                               GMX_LEFT, reals+index[cur ], HOMENRI(index, cur ),
-                               GMX_RIGHT, buf+index[next], HOMENRI(index, next));
-            }
-            else
-            {
-                gmx_tx_rx_real(cr,
-                               GMX_LEFT, reals+index[cur ], HOMENRI(index, cur ),
-                               GMX_RIGHT, reals+index[next], HOMENRI(index, next));
-                /* Wait for communication to end */
-            }
-            gmx_wait(cr, left, right);
-        }
-
-        /* Actual summation */
-        if (bSum)
-        {
-            for (j = j0; (j < j1); j++)
-            {
-                reals[j] += buf[j];
-            }
-            nsum += (j1-j0);
-        }
-        if (bForward)
-        {
-            cur = prev;
-        }
-        else
-        {
-            cur = next;
-        }
-    }
-
-    if (nsum > 0)
-    {
-        inc_nrnb(nrnb, eNR_FSUM, nsum/3);
-    }
-#undef next
-#undef prev
+    where();
 }
 
-void move_x(FILE *log, const t_commrec *cr,
-            int left, int right, rvec x[],
+
+void move_f(const t_commrec *cr,
+            rvec f[], rvec fadd[],
             t_nrnb *nrnb)
 {
-    move_rvecs(cr, FALSE, FALSE, left, right, x, NULL, pd_shift(cr), nrnb);
-    move_rvecs(cr, TRUE, FALSE, left, right, x, NULL, pd_bshift(cr), nrnb);
+    move_rvecs(cr, TRUE, TRUE, f, fadd, pd_shift(cr), nrnb);
+    move_rvecs(cr, FALSE, TRUE, f, fadd, pd_bshift(cr), nrnb);
 
     where();
 }
 
-void move_rborn(FILE *log, const t_commrec *cr,
-                int left, int right, real rborn[],
-                t_nrnb *nrnb)
-{
-    move_reals(cr, FALSE, FALSE, left, right, rborn, NULL, pd_shift(cr), nrnb);
-    move_reals(cr, TRUE, FALSE, left, right, rborn, NULL, pd_bshift(cr), nrnb);
-
-    where();
-}
-
-void move_f(FILE *log, const t_commrec *cr,
-            int left, int right, rvec f[], rvec fadd[],
-            t_nrnb *nrnb)
-{
-    move_rvecs(cr, TRUE, TRUE, left, right, f, fadd, pd_shift(cr), nrnb);
-    move_rvecs(cr, FALSE, TRUE, left, right, f, fadd, pd_bshift(cr), nrnb);
-
-    where();
-}
-
-void move_gpol(FILE *log, const t_commrec *cr,
-               int left, int right, real gpol[], real gpol_add[],
-               t_nrnb *nrnb)
-{
-    move_reals(cr, TRUE, TRUE, left, right, gpol, gpol_add, pd_shift(cr), nrnb);
-    move_reals(cr, FALSE, TRUE, left, right, gpol, gpol_add, pd_bshift(cr), nrnb);
-
-    where();
-}
-
-
-void move_cgcm(FILE *log, const t_commrec *cr, rvec cg_cm[])
+void move_cgcm(FILE gmx_unused *log, const t_commrec *cr, rvec cg_cm[])
 {
     int  i, start, nr;
     int  cur = cr->nodeid;
@@ -335,8 +207,8 @@ void move_cgcm(FILE *log, const t_commrec *cr, rvec cg_cm[])
 #ifdef DEBUG
         fprintf(log, "move_cgcm: RX start=%d, nr=%d\n", start, nr);
 #endif
-        gmx_tx_wait(cr, GMX_LEFT);
-        gmx_rx_wait(cr, GMX_RIGHT);
+        gmx_tx_wait(cr);
+        gmx_rx_wait(cr);
 
         if (debug)
         {

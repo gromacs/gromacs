@@ -166,8 +166,7 @@ static void check_cons(FILE *fp, char *title, real x[], int OW1, int HW2, int HW
 #endif
 
 
-void settle_proj(FILE *fp,
-                 gmx_settledata_t settled, int econq,
+void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,
                  rvec x[],
