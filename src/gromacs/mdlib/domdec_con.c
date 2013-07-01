@@ -1321,8 +1321,7 @@ static gmx_domdec_specat_comm_t *specat_comm_init(int nthread)
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop,
-                             gmx_constr_t  constr)
+                             gmx_mtop_t   *mtop)
 {
     gmx_domdec_constraints_t *dc;
     gmx_molblock_t           *molb;

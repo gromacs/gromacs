@@ -126,7 +126,7 @@ gmx_gettime()
 #define difftime(end, start) ((double)(end)-(double)(start))
 
 void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
-                t_inputrec *ir, t_commrec *cr)
+                t_inputrec *ir, t_commrec gmx_unused *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
@@ -306,7 +306,7 @@ static void sum_forces(int start, int end, rvec f[], rvec flr[])
  * Solution: implement a self-consitent electric field into PME.
  */
 static void calc_f_el(FILE *fp, int  start, int homenr,
-                      real charge[], rvec x[], rvec f[],
+                      real charge[], rvec f[],
                       t_cosines Ex[], t_cosines Et[], double t)
 {
     rvec Ext;
@@ -352,7 +352,7 @@ static void calc_f_el(FILE *fp, int  start, int homenr,
     }
 }
 
-static void calc_virial(FILE *fplog, int start, int homenr, rvec x[], rvec f[],
+static void calc_virial(int start, int homenr, rvec x[], rvec f[],
                         tensor vir_part, t_graph *graph, matrix box,
                         t_nrnb *nrnb, const t_forcerec *fr, int ePBC)
 {
@@ -361,13 +361,13 @@ static void calc_virial(FILE *fplog, int start, int homenr, rvec x[], rvec f[],
 
     /* The short-range virial from surrounding boxes */
     clear_mat(vir_part);
-    calc_vir(fplog, SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
+    calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md
      */
-    f_calc_vir(fplog, start, start+homenr, x, f, vir_part, graph, box);
+    f_calc_vir(start, start+homenr, x, f, vir_part, graph, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
 
     /* Add position restraint contribution */
@@ -395,7 +395,6 @@ static void posres_wrapper(FILE *fplog,
                            t_nrnb *nrnb,
                            gmx_localtop_t *top,
                            matrix box, rvec x[],
-                           rvec f[],
                            gmx_enerdata_t *enerd,
                            real *lambda,
                            t_forcerec *fr)
@@ -527,8 +526,7 @@ static void print_large_forces(FILE *fp, t_mdatoms *md, t_commrec *cr,
     }
 }
 
-static void post_process_forces(FILE *fplog,
-                                t_commrec *cr,
+static void post_process_forces(t_commrec *cr,
                                 gmx_large_int_t step,
                                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                                 gmx_localtop_t *top,
@@ -549,7 +547,7 @@ static void post_process_forces(FILE *fplog,
              * if the constructing atoms aren't local.
              */
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, fr->f_novirsum, NULL,
+            spread_vsite_f(vsite, x, fr->f_novirsum, NULL,
                            (flags & GMX_FORCE_VIRIAL), fr->vir_el_recip,
                            nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
@@ -590,8 +588,7 @@ static void do_nb_verlet(t_forcerec *fr,
                          gmx_enerdata_t *enerd,
                          int flags, int ilocality,
                          int clearF,
-                         t_nrnb *nrnb,
-                         gmx_wallcycle_t wcycle)
+                         t_nrnb *nrnb)
 {
     int                        nnbl, kernel_type, enr_nbnxn_kernel_ljc, enr_nbnxn_kernel_lj;
     char                      *env;
@@ -720,8 +717,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                          t_inputrec *inputrec,
                          gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                          gmx_localtop_t *top,
-                         gmx_mtop_t *mtop,
-                         gmx_groups_t *groups,
+                         gmx_groups_t gmx_unused *groups,
                          matrix box, rvec x[], history_t *hist,
                          rvec f[],
                          tensor vir_force,
@@ -784,7 +780,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bStateChanged)
     {
-        update_forcerec(fplog, fr, box);
+        update_forcerec(fr, box);
 
         if (NEED_MUTOT(*inputrec))
         {
@@ -953,7 +949,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
         /* launch local nonbonded F on GPU */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFNo,
-                     nrnb, wcycle);
+                     nrnb);
         wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
     }
 
@@ -1034,7 +1030,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start(wcycle, ewcLAUNCH_GPU_NB);
             /* launch non-local nonbonded F on GPU */
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFNo,
-                         nrnb, wcycle);
+                         nrnb);
             cycles_force += wallcycle_stop(wcycle, ewcLAUNCH_GPU_NB);
         }
     }
@@ -1083,7 +1079,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(&(inputrec->opts), fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (DOMAINDECOMP(cr))
@@ -1165,7 +1161,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     {
         /* Maybe we should move this into do_force_lowlevel */
         do_nb_verlet(fr, ic, enerd, flags, eintLocal, enbvClearFYes,
-                     nrnb, wcycle);
+                     nrnb);
     }
 
     if (!bUseOrEmulGPU || bDiffKernels)
@@ -1176,7 +1172,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             do_nb_verlet(fr, ic, enerd, flags, eintNonlocal,
                          bDiffKernels ? enbvClearFYes : enbvClearFNo,
-                         nrnb, wcycle);
+                         nrnb);
         }
 
         if (!bUseOrEmulGPU)
@@ -1218,13 +1214,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
         posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
-                       f, enerd, lambda, fr);
+                       enerd, lambda, fr);
     }
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
+                      cr, nrnb, wcycle, mdatoms,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
@@ -1267,7 +1263,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             {
                 wallcycle_start_nocount(wcycle, ewcFORCE);
                 do_nb_verlet(fr, ic, enerd, flags, eintNonlocal, enbvClearFYes,
-                             nrnb, wcycle);
+                             nrnb);
                 cycles_force += wallcycle_stop(wcycle, ewcFORCE);
             }
             wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1340,7 +1336,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
             wallcycle_start_nocount(wcycle, ewcFORCE);
             do_nb_verlet(fr, ic, enerd, flags, eintLocal,
                          DOMAINDECOMP(cr) ? enbvClearFNo : enbvClearFYes,
-                         nrnb, wcycle);
+                         nrnb);
             wallcycle_stop(wcycle, ewcFORCE);
         }
         wallcycle_start(wcycle, ewcNB_XF_BUF_OPS);
@@ -1370,7 +1366,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, x, fr->f_novirsum,
+                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);
         }
 
@@ -1380,14 +1376,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(fplog, vsite, x, fr->f_twin, NULL, FALSE, NULL,
+                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
                                nrnb,
                                &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
                 wallcycle_stop(wcycle, ewcVSITESPREAD);
@@ -1397,7 +1393,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(fplog, mdatoms->start, mdatoms->homenr, x, f,
+            calc_virial(mdatoms->start, mdatoms->homenr, x, f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1426,20 +1422,19 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        post_process_forces(fplog, cr, step, nrnb, wcycle,
+        post_process_forces(cr, step, nrnb, wcycle,
                             top, box, x, f, vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts), &(enerd->grpp), enerd->term);
+    sum_epot(&(enerd->grpp), enerd->term);
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
                         t_inputrec *inputrec,
                         gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
                         gmx_localtop_t *top,
-                        gmx_mtop_t *mtop,
                         gmx_groups_t *groups,
                         matrix box, rvec x[], history_t *hist,
                         rvec f[],
@@ -1509,7 +1504,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bStateChanged)
     {
-        update_forcerec(fplog, fr, box);
+        update_forcerec(fr, box);
 
         if (NEED_MUTOT(*inputrec))
         {
@@ -1598,7 +1593,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
         else
         {
-            move_x(fplog, cr, GMX_LEFT, GMX_RIGHT, x, nrnb);
+            move_x(cr, x, nrnb);
         }
         wallcycle_stop(wcycle, ewcMOVEX);
     }
@@ -1662,7 +1657,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(&(inputrec->opts), fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (bNS)
@@ -1682,9 +1677,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             dvdlambda[i] = 0;
         }
-        ns(fplog, fr, x, box,
-           groups, &(inputrec->opts), top, mdatoms,
-           cr, nrnb, lambda, dvdlambda, &enerd->grpp, bFillGrid,
+        ns(fplog, fr, box,
+           groups, top, mdatoms,
+           cr, nrnb, bFillGrid,
            bDoLongRangeNS);
 
         wallcycle_stop(wcycle, ewcNS);
@@ -1692,7 +1687,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (inputrec->implicit_solvent && bNS)
     {
-        make_gb_nblist(cr, inputrec->gb_algorithm, inputrec->rlist,
+        make_gb_nblist(cr, inputrec->gb_algorithm,
                        x, box, fr, &top->idef, graph, fr->born);
     }
 
@@ -1773,7 +1768,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0)
     {
         posres_wrapper(fplog, flags, bSepDVDL, inputrec, nrnb, top, box, x,
-                       f, enerd, lambda, fr);
+                       enerd, lambda, fr);
     }
 
     if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_FBPOSRES].nr > 0)
@@ -1794,8 +1789,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
+                      cr, nrnb, wcycle, mdatoms,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
@@ -1836,7 +1831,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             /* Compute forces due to electric field */
             calc_f_el(MASTER(cr) ? field : NULL,
-                      start, homenr, mdatoms->chargeA, x, fr->f_novirsum,
+                      start, homenr, mdatoms->chargeA, fr->f_novirsum,
                       inputrec->ex, inputrec->et, t);
         }
 
@@ -1891,14 +1886,14 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(fplog, vsite, x, fr->f_twin, NULL, FALSE, NULL,
+                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
                                nrnb,
                                &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
                 wallcycle_stop(wcycle, ewcVSITESPREAD);
@@ -1908,7 +1903,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (flags & GMX_FORCE_VIRIAL)
         {
             /* Calculation of the virial must be done after vsites! */
-            calc_virial(fplog, mdatoms->start, mdatoms->homenr, x, f,
+            calc_virial(mdatoms->start, mdatoms->homenr, x, f,
                         vir_force, graph, box, nrnb, fr, inputrec->ePBC);
         }
     }
@@ -1937,20 +1932,19 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     if (bDoForces)
     {
-        post_process_forces(fplog, cr, step, nrnb, wcycle,
+        post_process_forces(cr, step, nrnb, wcycle,
                             top, box, x, f, vir_force, mdatoms, graph, fr, vsite,
                             flags);
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts), &(enerd->grpp), enerd->term);
+    sum_epot(&(enerd->grpp), enerd->term);
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
               t_inputrec *inputrec,
               gmx_large_int_t step, t_nrnb *nrnb, gmx_wallcycle_t wcycle,
               gmx_localtop_t *top,
-              gmx_mtop_t *mtop,
               gmx_groups_t *groups,
               matrix box, rvec x[], history_t *hist,
               rvec f[],
@@ -1975,7 +1969,7 @@ void do_force(FILE *fplog, t_commrec *cr,
         case ecutsVERLET:
             do_force_cutsVERLET(fplog, cr, inputrec,
                                 step, nrnb, wcycle,
-                                top, mtop,
+                                top,
                                 groups,
                                 box, x, hist,
                                 f, vir_force,
@@ -1991,7 +1985,7 @@ void do_force(FILE *fplog, t_commrec *cr,
         case ecutsGROUP:
             do_force_cutsGROUP(fplog, cr, inputrec,
                                step, nrnb, wcycle,
-                               top, mtop,
+                               top,
                                groups,
                                box, x, hist,
                                f, vir_force,
@@ -2011,9 +2005,8 @@ void do_force(FILE *fplog, t_commrec *cr,
 
 void do_constrain_first(FILE *fplog, gmx_constr_t constr,
                         t_inputrec *ir, t_mdatoms *md,
-                        t_state *state, rvec *f,
-                        t_graph *graph, t_commrec *cr, t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir)
+                        t_state *state, t_commrec *cr, t_nrnb *nrnb,
+                        t_forcerec *fr, gmx_localtop_t *top)
 {
     int             i, m, start, end;
     gmx_large_int_t step;
@@ -2472,12 +2465,11 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
     low_do_pbc_mtop(fplog, ePBC, box, mtop, x, FALSE);
 }
 
-void finish_run(FILE *fplog, t_commrec *cr, const char *confout,
+void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
                 wallclock_gpu_t *gputimes,
-                int omp_nth_pp,
                 gmx_bool bWriteStat)
 {
     int     i, j;
@@ -2660,7 +2652,7 @@ void init_md(FILE *fplog,
              int nfile, const t_filenm fnm[],
              gmx_mdoutf_t **outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir, rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm, t_state *state, unsigned long Flags)
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags)
 {
     int  i, j, n;
     real tmpt, mod;
@@ -2687,7 +2679,7 @@ void init_md(FILE *fplog,
 
     if (upd)
     {
-        *upd = init_update(fplog, ir);
+        *upd = init_update(ir);
     }
 
 

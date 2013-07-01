@@ -77,20 +77,15 @@ int calc_naaj(int icg, int cgtot);
  ****************************************************/
 void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
-             const gmx_mtop_t *mtop,
-             matrix box);
+             const gmx_mtop_t *mtop);
 
-int search_neighbours(FILE *log, t_forcerec *fr,
-                      rvec x[], matrix box,
+int search_neighbours(FILE *log, t_forcerec *fr, matrix box,
                       gmx_localtop_t *top,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
-                      real *lambda, real *dvdlambda,
-                      gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
-                      gmx_bool bDoLongRangeNS,
-                      gmx_bool bPadListsForKernels);
+                      gmx_bool bDoLongRangeNS);
 
 
 /* Debugging routines from wnblist.c */

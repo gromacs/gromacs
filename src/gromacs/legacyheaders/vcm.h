@@ -62,10 +62,10 @@ typedef struct {
 t_vcm *init_vcm(FILE *fp, gmx_groups_t *groups, t_inputrec *ir);
 
 /* Do a per group center of mass things */
-void calc_vcm_grp(FILE *fp, int start, int homenr, t_mdatoms *md,
+void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                   rvec x[], rvec v[], t_vcm *vcm);
 
-void do_stopcm_grp(FILE *fp, int start, int homenr,
+void do_stopcm_grp(int start, int homenr,
                    unsigned short *group_id,
                    rvec x[], rvec v[], t_vcm *vcm);
 

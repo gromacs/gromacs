@@ -142,7 +142,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              gmx_edsam_t ed, t_forcerec *fr,
              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed, gmx_membed_t membed,
              real cpt_period, real max_hours,
-             const char *deviceOptions,
+             const char gmx_unused *deviceOptions,
              unsigned long Flags,
              gmx_runtime_t *runtime)
 {
@@ -305,7 +305,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
-            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, state_global, Flags);
+            force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -570,13 +570,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (constr)
         {
             /* Constrain the initial coordinates and velocities */
-            do_constrain_first(fplog, constr, ir, mdatoms, state, f,
-                               graph, cr, nrnb, fr, top, shake_vir);
+            do_constrain_first(fplog, constr, ir, mdatoms, state,
+                               cr, nrnb, fr, top);
         }
         if (vsite)
         {
             /* Construct the virtual sites for the initial configuration */
-            construct_vsites(fplog, vsite, state->x, nrnb, ir->delta_t, NULL,
+            construct_vsites(vsite, state->x, ir->delta_t, NULL,
                              top->idef.iparams, top->idef.il,
                              fr->ePBC, fr->bMolPBC, graph, cr, state->box);
         }
@@ -589,11 +589,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     nstfep = ir->fepvals->nstdhdl;
     if (ir->bExpanded)
     {
-        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl,nstfep);
+        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl, nstfep);
     }
     if (repl_ex_nst > 0)
     {
-        nstfep = gmx_greatest_common_divisor(repl_ex_nst,nstfep);
+        nstfep = gmx_greatest_common_divisor(repl_ex_nst, nstfep);
     }
 
     /* I'm assuming we need global communication the first time! MRS */
@@ -608,7 +608,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                     NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                     constr, NULL, FALSE, state->box,
-                    top_global, &pcurr, top_global->natoms, &bSumEkinhOld, cglo_flags);
+                    top_global, &pcurr, &bSumEkinhOld, cglo_flags);
     if (ir->eI == eiVVAK)
     {
         /* a second call to get the half step temperature initialized as well */
@@ -620,7 +620,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                         NULL, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                         constr, NULL, FALSE, state->box,
-                        top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                        top_global, &pcurr, &bSumEkinhOld,
                         cglo_flags &~(CGLO_STOPCM | CGLO_PRESSURE));
     }
 
@@ -904,7 +904,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     mk_mshift(fplog, graph, fr->ePBC, state->box, state->x);
                     shift_self(graph, state->box, state->x);
                 }
-                construct_vsites(fplog, vsite, state->x, nrnb, ir->delta_t, state->v,
+                construct_vsites(vsite, state->x, ir->delta_t, state->v,
                                  top->idef.iparams, top->idef.il,
                                  fr->ePBC, fr->bMolPBC, graph, cr, state->box);
                 if (graph)
@@ -1045,7 +1045,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                             constr, NULL, FALSE, state->box,
-                            top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                            top_global, &pcurr, &bSumEkinhOld,
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
@@ -1145,12 +1145,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Now is the time to relax the shells */
             count = relax_shell_flexcon(fplog, cr, bVerbose, bFFscan ? step+1 : step,
                                         ir, bNS, force_flags,
-                                        bStopCM, top, top_global,
+                                        top,
                                         constr, enerd, fcd,
                                         state, f, force_vir, mdatoms,
                                         nrnb, wcycle, graph, groups,
                                         shellfc, fr, bBornRadii, t, mu_tot,
-                                        state->natoms, &bConverged, vsite,
+                                        &bConverged, vsite,
                                         outf->fp_field);
             tcount += count;
 
@@ -1166,7 +1166,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * This is parallellized as well, and does communication too.
              * Check comments in sim_util.c
              */
-            do_force(fplog, cr, ir, step, nrnb, wcycle, top, top_global, groups,
+            do_force(fplog, cr, ir, step, nrnb, wcycle, top, groups,
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
@@ -1216,7 +1216,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC,
                           f, bUpdateDoLR, fr->f_twin, fcd,
-                          ekind, M, wcycle, upd, bInitStep, etrtVELOCITY1,
+                          ekind, M, upd, bInitStep, etrtVELOCITY1,
                           cr, nrnb, constr, &top->idef);
 
             if (bIterativeCase && do_per_step(step-1, ir->nstpcouple) && !bInitStep)
@@ -1262,9 +1262,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
-                                       &top->idef, shake_vir, NULL,
+                                       &top->idef, shake_vir,
                                        cr, nrnb, wcycle, upd, constr,
-                                       bInitStep, TRUE, bCalcVir, vetanew);
+                                       TRUE, bCalcVir, vetanew);
 
                     if (!bOK && !bFFscan)
                     {
@@ -1301,7 +1301,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, state->box,
-                                    top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                                    top_global, &pcurr, &bSumEkinhOld,
                                     cglo_flags
                                     | CGLO_ENERGY
                                     | (bTemp ? CGLO_TEMPERATURE : 0)
@@ -1338,7 +1338,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                             wcycle, enerd, NULL, NULL, NULL, NULL, mu_tot,
                                             constr, NULL, FALSE, state->box,
-                                            top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                                            top_global, &pcurr, &bSumEkinhOld,
                                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
                         }
                     }
@@ -1360,7 +1360,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 if (IR_NVT_TROTTER(ir) && ir->eI == eiVV)
                 {
                     /* update temperature and kinetic energy now that step is over - this is the v(t+dt) point */
-                    enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, NULL, (ir->eI == eiVV), FALSE, FALSE);
+                    enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, NULL, (ir->eI == eiVV), FALSE);
                     enerd->term[F_EKIN] = trace(ekind->ekin);
                 }
             }
@@ -1624,7 +1624,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             if (!bInitStep)
             {
-                update_tcouple(fplog, step, ir, state, ekind, wcycle, upd, &MassQ, mdatoms);
+                update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
             }
             if (ETC_ANDERSEN(ir->etc)) /* keep this outside of update_tcouple because of the extra info required to pass */
             {
@@ -1635,9 +1635,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
-                                       &top->idef, tmp_vir, NULL,
+                                       &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, constr,
-                                       bInitStep, TRUE, bCalcVir, vetanew);
+                                       TRUE, bCalcVir, vetanew);
                 }
             }
         }
@@ -1669,7 +1669,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             copy_mat(state->box, lastbox);
 
-            bOK = TRUE;
+            bOK         = TRUE;
             dvdl_constr = 0;
 
             if (!(bRerunMD && !rerun_fr.bV && !bForceUpdate))
@@ -1702,9 +1702,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 }
                 else
                 {
-                    update_tcouple(fplog, step, ir, state, ekind, wcycle, upd, &MassQ, mdatoms);
-                    update_pcouple(fplog, step, ir, state, pcoupl_mu, M, wcycle,
-                                   upd, bInitStep);
+                    update_tcouple(step, ir, state, ekind, upd, &MassQ, mdatoms);
+                    update_pcouple(fplog, step, ir, state, pcoupl_mu, M, bInitStep);
                 }
 
                 if (bVV)
@@ -1714,7 +1713,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     /* velocity half-step update */
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
-                                  ekind, M, wcycle, upd, FALSE, etrtVELOCITY2,
+                                  ekind, M, upd, FALSE, etrtVELOCITY2,
                                   cr, nrnb, constr, &top->idef);
                 }
 
@@ -1731,14 +1730,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                               bUpdateDoLR, fr->f_twin, fcd,
-                              ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                              ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                 wallcycle_stop(wcycle, ewcUPDATE);
 
                 update_constraints(fplog, step, &dvdl_constr, ir, ekind, mdatoms, state,
                                    fr->bMolPBC, graph, f,
-                                   &top->idef, shake_vir, force_vir,
+                                   &top->idef, shake_vir,
                                    cr, nrnb, wcycle, upd, constr,
-                                   bInitStep, FALSE, bCalcVir, state->veta);
+                                   FALSE, bCalcVir, state->veta);
 
                 if (ir->eI == eiVVAK)
                 {
@@ -1747,7 +1746,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                     compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                     wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                     constr, NULL, FALSE, lastbox,
-                                    top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                                    top_global, &pcurr, &bSumEkinhOld,
                                     cglo_flags | CGLO_TEMPERATURE
                                     );
                     wallcycle_start(wcycle, ewcUPDATE);
@@ -1759,7 +1758,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                     update_coords(fplog, step, ir, mdatoms, state, fr->bMolPBC, f,
                                   bUpdateDoLR, fr->f_twin, fcd,
-                                  ekind, M, wcycle, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
+                                  ekind, M, upd, bInitStep, etrtPOSITION, cr, nrnb, constr, &top->idef);
                     wallcycle_stop(wcycle, ewcUPDATE);
 
                     /* do we need an extra constraint here? just need to copy out of state->v to upd->xp? */
@@ -1769,9 +1768,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      * For now, will call without actually constraining, constr=NULL*/
                     update_constraints(fplog, step, NULL, ir, ekind, mdatoms,
                                        state, fr->bMolPBC, graph, f,
-                                       &top->idef, tmp_vir, force_vir,
+                                       &top->idef, tmp_vir,
                                        cr, nrnb, wcycle, upd, NULL,
-                                       bInitStep, FALSE, bCalcVir,
+                                       FALSE, bCalcVir,
                                        state->veta);
                 }
                 if (!bOK && !bFFscan)
@@ -1798,7 +1797,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                        investigated, hopefully for 4.6.3. However,
                        this current solution is much better than
                        having it completely wrong.
-                    */
+                     */
                     enerd->term[F_DVDL_CONSTR] += 2*dvdl_constr;
                 }
                 else
@@ -1819,7 +1818,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 {
                     shift_self(graph, state->box, state->x);
                 }
-                construct_vsites(fplog, vsite, state->x, nrnb, ir->delta_t, state->v,
+                construct_vsites(vsite, state->x, ir->delta_t, state->v,
                                  top->idef.iparams, top->idef.il,
                                  fr->ePBC, fr->bMolPBC, graph, cr, state->box);
 
@@ -1848,7 +1847,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 (step_rel % gs.nstms == 0) &&
                                 (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
                                 lastbox,
-                                top_global, &pcurr, top_global->natoms, &bSumEkinhOld,
+                                top_global, &pcurr, &bSumEkinhOld,
                                 cglo_flags
                                 | (!EI_VV(ir->eI) || bRerunMD ? CGLO_ENERGY : 0)
                                 | (!EI_VV(ir->eI) && bStopCM ? CGLO_STOPCM : 0)
@@ -1886,8 +1885,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* sum up the foreign energy and dhdl terms for md and sd. currently done every step so that dhdl is correct in the .edr */
             sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
-        update_box(fplog, step, ir, mdatoms, state, graph, f,
-                   ir->nstlist == -1 ? &nlh.scale_tot : NULL, pcoupl_mu, nrnb, wcycle, upd, bInitStep, FALSE);
+        update_box(fplog, step, ir, mdatoms, state, f,
+                   ir->nstlist == -1 ? &nlh.scale_tot : NULL, pcoupl_mu, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */

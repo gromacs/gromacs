@@ -107,7 +107,7 @@ static void mde_delta_h_init(t_mde_delta_h *dh, int nbins,
 }
 
 /* Add a value to the delta_h list */
-static void mde_delta_h_add_dh(t_mde_delta_h *dh, double delta_h, double time)
+static void mde_delta_h_add_dh(t_mde_delta_h *dh, double delta_h)
 {
     if (dh->ndh >= dh->ndhmax)
     {
@@ -584,23 +584,23 @@ void mde_delta_h_coll_add_dh(t_mde_delta_h_coll *dhc,
 
     for (i = 0; i < dhc->ndhdl; i++)
     {
-        mde_delta_h_add_dh(dhc->dh_dhdl+i, dhdl[i], time);
+        mde_delta_h_add_dh(dhc->dh_dhdl+i, dhdl[i]);
     }
     for (i = 0; i < dhc->nlambda; i++)
     {
-        mde_delta_h_add_dh(dhc->dh_du+i, foreign_dU[i], time);
+        mde_delta_h_add_dh(dhc->dh_du+i, foreign_dU[i]);
     }
     if (dhc->dh_pv != NULL)
     {
-        mde_delta_h_add_dh(dhc->dh_pv, pV, time);
+        mde_delta_h_add_dh(dhc->dh_pv, pV);
     }
     if (dhc->dh_energy != NULL)
     {
-        mde_delta_h_add_dh(dhc->dh_energy, energy, time);
+        mde_delta_h_add_dh(dhc->dh_energy, energy);
     }
     if (dhc->dh_expanded != NULL)
     {
-        mde_delta_h_add_dh(dhc->dh_expanded, fep_state, time);
+        mde_delta_h_add_dh(dhc->dh_expanded, fep_state);
     }
 
 }

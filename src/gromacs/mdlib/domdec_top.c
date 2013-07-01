@@ -685,7 +685,7 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop, gmx_bool bFE,
 
 void dd_make_reverse_top(FILE *fplog,
                          gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite, gmx_constr_t constr,
+                         gmx_vsite_t *vsite,
                          t_inputrec *ir, gmx_bool bBCheck)
 {
     int             mb, n_recursive_vsite, nexcl, nexcl_icg, a;
@@ -759,7 +759,7 @@ void dd_make_reverse_top(FILE *fplog,
 
     if (dd->bInterCGcons || dd->bInterCGsettles)
     {
-        init_domdec_constraints(dd, mtop, constr);
+        init_domdec_constraints(dd, mtop);
     }
     if (fplog)
     {
@@ -1160,7 +1160,7 @@ static int make_bondeds_zone(gmx_domdec_t *dd,
                              real rc2,
                              int *la2lc, t_pbc *pbc_null, rvec *cg_cm,
                              const t_iparams *ip_in,
-                             t_idef *idef, gmx_vsite_t *vsite,
+                             t_idef *idef,
                              int **vsite_pbc,
                              int *vsite_pbc_nalloc,
                              int iz, int nzone,
@@ -1697,7 +1697,7 @@ static int make_local_bondeds_excls(gmx_domdec_t *dd,
                                   bRCheckMB, rcheck, bRCheck2B, rc2,
                                   la2lc, pbc_null, cg_cm, idef->iparams,
                                   idef_t,
-                                  vsite, vsite_pbc, vsite_pbc_nalloc,
+                                  vsite_pbc, vsite_pbc_nalloc,
                                   iz, zones->n,
                                   dd->cgindex[cg0t], dd->cgindex[cg1t]);
 
@@ -1773,8 +1773,7 @@ void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs)
     lcgs->index = dd->cgindex;
 }
 
-void dd_make_local_top(FILE *fplog,
-                       gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
                        rvec cellsize_min, ivec npulse,
                        t_forcerec *fr,
@@ -2259,7 +2258,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
 
     if (vsite)
     {
-        construct_vsites(NULL, vsite, xs, NULL, 0.0, NULL,
+        construct_vsites(vsite, xs, 0.0, NULL,
                          ffparams->iparams, molt->ilist,
                          epbcNONE, TRUE, NULL, NULL, NULL);
     }
@@ -2286,7 +2285,7 @@ static int have_vsite_molt(gmx_moltype_t *molt)
 }
 
 void dd_bonded_cg_distance(FILE *fplog,
-                           gmx_domdec_t *dd, gmx_mtop_t *mtop,
+                           gmx_mtop_t *mtop,
                            t_inputrec *ir, rvec *x, matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb)
