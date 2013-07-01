@@ -66,8 +66,6 @@ int
                                real **real_data,
                                t_complex **complex_data,
                                MPI_Comm                  comm[2],
-                               int *                     slab2index_major,
-                               int *                     slab2index_minor,
                                gmx_bool                  bReproducible,
                                int                       nthreads);
 
@@ -97,8 +95,6 @@ gmx_parallel_3dfft_complex_limits(gmx_parallel_3dfft_t      pfft_setup,
 int
 gmx_parallel_3dfft_execute(gmx_parallel_3dfft_t    pfft_setup,
                            enum gmx_fft_direction  dir,
-                           void *                  in_data,
-                           void *                  out_data,
                            int                     thread,
                            gmx_wallcycle_t         wcycle);
 
