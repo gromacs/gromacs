@@ -59,7 +59,7 @@ void accumulate_u(t_commrec *cr, t_grpopts *opts,
  */
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinFullStep, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin);
+              gmx_bool bEkinFullStep, gmx_bool bScaleEkin);
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */

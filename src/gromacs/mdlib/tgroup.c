@@ -65,8 +65,7 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
     }
 }
 
-static void init_grpstat(FILE *log,
-                         gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
     gmx_groups_t           *groups;
     gmx_mtop_atomloop_all_t aloop;
@@ -92,7 +91,7 @@ static void init_grpstat(FILE *log,
     }
 }
 
-void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
+void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
     int i;
@@ -149,7 +148,7 @@ void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
 
     ekind->ngacc = opts->ngacc;
     snew(ekind->grpstat, opts->ngacc);
-    init_grpstat(log, mtop, opts->ngacc, ekind->grpstat);
+    init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
 void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
@@ -236,7 +235,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin)
+              gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T, ek;

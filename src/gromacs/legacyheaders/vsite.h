@@ -78,8 +78,8 @@ typedef struct {
     int                 th_ind_nalloc;        /* Size of th_ind                          */
 } gmx_vsite_t;
 
-void construct_vsites(FILE *log, gmx_vsite_t *vsite,
-                      rvec x[], t_nrnb *nrnb,
+void construct_vsites(gmx_vsite_t *vsite,
+                      rvec x[],
                       real dt, rvec v[],
                       t_iparams ip[], t_ilist ilist[],
                       int ePBC, gmx_bool bMolPBC, t_graph *graph,
@@ -94,14 +94,14 @@ void construct_vsites(FILE *log, gmx_vsite_t *vsite,
  * for the integration, they are only useful for analysis.
  */
 
-void construct_vsites_mtop(FILE *log, gmx_vsite_t *vsite,
+void construct_vsites_mtop(gmx_vsite_t *vsite,
                            gmx_mtop_t *mtop, rvec x[]);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the whole system.
  * This function assumes that all molecules are whole.
  */
 
-void spread_vsite_f(FILE *log, gmx_vsite_t *vsite,
+void spread_vsite_f(gmx_vsite_t *vsite,
                     rvec x[], rvec f[], rvec *fshift,
                     gmx_bool VirCorr, matrix vir,
                     t_nrnb *nrnb, t_idef *idef,
