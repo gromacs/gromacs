@@ -58,7 +58,7 @@ extern "C" {
 /* Initialise GB stuff */
 int init_gb(gmx_genborn_t **p_born,
             const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
-            const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm);
+            const gmx_mtop_t *mtop, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */

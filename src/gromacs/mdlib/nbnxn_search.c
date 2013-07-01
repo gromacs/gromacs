@@ -423,8 +423,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
                             nbnxn_grid_t *grid,
                             int dd_zone,
                             int n, rvec corner0, rvec corner1,
-                            real atom_density,
-                            int XFormat)
+                            real atom_density)
 {
     rvec size;
     int  na_c;
@@ -1770,8 +1769,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     nc_max_grid = set_grid_size_xy(nbs, grid,
                                    dd_zone, n-nmoved, corner0, corner1,
-                                   nbs->grid[0].atom_density,
-                                   nbat->XFormat);
+                                   nbs->grid[0].atom_density);
 
     nc_max = grid->cell0 + nc_max_grid;
 

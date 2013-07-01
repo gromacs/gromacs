@@ -1102,7 +1102,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop);
+        init_parallel(cr, inputrec, mtop);
 
         /* This check needs to happen after get_nthreads_mpi() */
         if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
@@ -1440,7 +1440,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initialize QM-MM */
         if (fr->bQMMM)
         {
-            init_QMMMrec(cr, box, mtop, inputrec, fr);
+            init_QMMMrec(cr, mtop, inputrec, fr);
         }
 
         /* Initialize the mdatoms structure.
@@ -1476,7 +1476,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(fplog, vsite, mtop, state->x);
+                construct_vsites_mtop(vsite, mtop, state->x);
             }
         }
 
@@ -1596,7 +1596,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->ePull != epullNO)
         {
-            finish_pull(fplog, inputrec->pull);
+            finish_pull(inputrec->pull);
         }
 
         if (inputrec->bRot)
