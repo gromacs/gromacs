@@ -44,7 +44,7 @@ extern "C"
 
 double **alloc_matrix(int n, int m);
 
-void free_matrix(double **a, int n);
+void free_matrix(double **a);
 
 void matrix_multiply(FILE *fp, int n, int m, double **x, double **y, double **z);
 
