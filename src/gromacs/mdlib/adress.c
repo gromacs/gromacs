@@ -111,7 +111,7 @@ adress_weight(rvec                 x,
 }
 
 void
-update_adress_weights_com(FILE *               fplog,
+update_adress_weights_com(FILE gmx_unused    * fplog,
                           int                  cg0,
                           int                  cg1,
                           t_block *            cgs,

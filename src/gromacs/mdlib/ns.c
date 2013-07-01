@@ -367,8 +367,7 @@ static void reset_neighbor_lists(t_forcerec *fr, gmx_bool bResetSR, gmx_bool bRe
 
 
 
-static inline void new_i_nblist(t_nblist *nlist,
-                                gmx_bool bLR, atom_id i_atom, int shift, int gid)
+static inline void new_i_nblist(t_nblist *nlist, atom_id i_atom, int shift, int gid)
 {
     int    i, k, nri, nshift;
 
@@ -690,20 +689,20 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             /* Create new i_atom for each energy group */
             if (bDoCoul && bDoVdW)
             {
-                new_i_nblist(vdwc, bLR, i_atom, shift, gid);
+                new_i_nblist(vdwc, i_atom, shift, gid);
 #ifndef DISABLE_WATERWATER_NLIST
-                new_i_nblist(vdwc_ww, bLR, i_atom, shift, gid);
+                new_i_nblist(vdwc_ww, i_atom, shift, gid);
 #endif
             }
             if (bDoVdW)
             {
-                new_i_nblist(vdw, bLR, i_atom, shift, gid);
+                new_i_nblist(vdw, i_atom, shift, gid);
             }
             if (bDoCoul)
             {
-                new_i_nblist(coul, bLR, i_atom, shift, gid);
+                new_i_nblist(coul, i_atom, shift, gid);
 #ifndef DISABLE_WATERWATER_NLIST
-                new_i_nblist(coul_ww, bLR, i_atom, shift, gid);
+                new_i_nblist(coul_ww, i_atom, shift, gid);
 #endif
             }
             /* Loop over the j charge groups */
@@ -862,15 +861,15 @@ put_in_list_at(gmx_bool              bHaveVdW[],
                 /* Create new i_atom for each energy group */
                 if (bDoVdW && bDoCoul)
                 {
-                    new_i_nblist(vdwc, bLR, i_atom, shift, gid);
+                    new_i_nblist(vdwc, i_atom, shift, gid);
                 }
                 if (bDoVdW)
                 {
-                    new_i_nblist(vdw, bLR, i_atom, shift, gid);
+                    new_i_nblist(vdw, i_atom, shift, gid);
                 }
                 if (bDoCoul)
                 {
-                    new_i_nblist(coul, bLR, i_atom, shift, gid);
+                    new_i_nblist(coul, i_atom, shift, gid);
                 }
                 bDoVdW_i  = (bDoVdW  && bHaveVdW[type[i_atom]]);
                 bDoCoul_i = (bDoCoul && qi != 0);
@@ -959,20 +958,20 @@ put_in_list_at(gmx_bool              bHaveVdW[],
             /* Create new i_atom for each energy group */
             if (bDoVdW && bDoCoul)
             {
-                new_i_nblist(vdwc, bLR, i_atom, shift, gid);
+                new_i_nblist(vdwc, i_atom, shift, gid);
             }
             if (bDoVdW)
             {
-                new_i_nblist(vdw, bLR, i_atom, shift, gid);
+                new_i_nblist(vdw, i_atom, shift, gid);
             }
             if (bDoCoul)
             {
-                new_i_nblist(coul, bLR, i_atom, shift, gid);
+                new_i_nblist(coul, i_atom, shift, gid);
             }
 
-            new_i_nblist(vdw_free, bLR, i_atom, shift, gid);
-            new_i_nblist(coul_free, bLR, i_atom, shift, gid);
-            new_i_nblist(vdwc_free, bLR, i_atom, shift, gid);
+            new_i_nblist(vdw_free, i_atom, shift, gid);
+            new_i_nblist(coul_free, i_atom, shift, gid);
+            new_i_nblist(vdwc_free, i_atom, shift, gid);
 
             bDoVdW_i  = (bDoVdW  &&
                          (bHaveVdW[type[i_atom]] || bHaveVdW[typeB[i_atom]]));
@@ -1222,20 +1221,20 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
         /* Create new i_atom for each energy group */
         if (bDoVdW && bDoCoul)
         {
-            new_i_nblist(vdwc, bLR, i_atom, shift, gid);
-            new_i_nblist(vdwc_adress, bLR, i_atom, shift, gid);
+            new_i_nblist(vdwc, i_atom, shift, gid);
+            new_i_nblist(vdwc_adress, i_atom, shift, gid);
 
         }
         if (bDoVdW)
         {
-            new_i_nblist(vdw, bLR, i_atom, shift, gid);
-            new_i_nblist(vdw_adress, bLR, i_atom, shift, gid);
+            new_i_nblist(vdw, i_atom, shift, gid);
+            new_i_nblist(vdw_adress, i_atom, shift, gid);
 
         }
         if (bDoCoul)
         {
-            new_i_nblist(coul, bLR, i_atom, shift, gid);
-            new_i_nblist(coul_adress, bLR, i_atom, shift, gid);
+            new_i_nblist(coul, i_atom, shift, gid);
+            new_i_nblist(coul_adress, i_atom, shift, gid);
         }
         bDoVdW_i  = (bDoVdW  && bHaveVdW[type[i_atom]]);
         bDoCoul_i = (bDoCoul && qi != 0);
@@ -1375,21 +1374,21 @@ put_in_list_adress(gmx_bool              bHaveVdW[],
 }
 
 static void
-put_in_list_qmmm(gmx_bool              bHaveVdW[],
-                 int                   ngid,
-                 t_mdatoms     *       md,
-                 int                   icg,
-                 int                   jgid,
-                 int                   nj,
-                 atom_id               jjcg[],
-                 atom_id               index[],
-                 t_excl                bExcl[],
-                 int                   shift,
-                 t_forcerec     *      fr,
-                 gmx_bool              bLR,
-                 gmx_bool              bDoVdW,
-                 gmx_bool              bDoCoul,
-                 int                   solvent_opt)
+put_in_list_qmmm(gmx_bool gmx_unused              bHaveVdW[],
+                 int                              ngid,
+                 t_mdatoms gmx_unused     *       md,
+                 int                              icg,
+                 int                              jgid,
+                 int                              nj,
+                 atom_id                          jjcg[],
+                 atom_id                          index[],
+                 t_excl                           bExcl[],
+                 int                              shift,
+                 t_forcerec                *      fr,
+                 gmx_bool                         bLR,
+                 gmx_bool  gmx_unused             bDoVdW,
+                 gmx_bool  gmx_unused             bDoCoul,
+                 int       gmx_unused             solvent_opt)
 {
     t_nblist  *   coul;
     int           i, j, jcg, igid, gid;
@@ -1412,7 +1411,7 @@ put_in_list_qmmm(gmx_bool              bHaveVdW[],
         i_atom = i0+i;
         gid    = GID(igid, jgid, ngid);
         /* Create new i_atom for each energy group */
-        new_i_nblist(coul, bLR, i_atom, shift, gid);
+        new_i_nblist(coul, i_atom, shift, gid);
 
         /* Loop over the j charge groups */
         for (j = 0; j < nj; j++)
@@ -1440,21 +1439,21 @@ put_in_list_qmmm(gmx_bool              bHaveVdW[],
 }
 
 static void
-put_in_list_cg(gmx_bool              bHaveVdW[],
-               int                   ngid,
-               t_mdatoms     *       md,
-               int                   icg,
-               int                   jgid,
-               int                   nj,
-               atom_id               jjcg[],
-               atom_id               index[],
-               t_excl                bExcl[],
-               int                   shift,
-               t_forcerec     *      fr,
-               gmx_bool              bLR,
-               gmx_bool              bDoVdW,
-               gmx_bool              bDoCoul,
-               int                   solvent_opt)
+put_in_list_cg(gmx_bool  gmx_unused             bHaveVdW[],
+               int                              ngid,
+               t_mdatoms  gmx_unused    *       md,
+               int                              icg,
+               int                              jgid,
+               int                              nj,
+               atom_id                          jjcg[],
+               atom_id                          index[],
+               t_excl                           bExcl[],
+               int                              shift,
+               t_forcerec                *      fr,
+               gmx_bool                         bLR,
+               gmx_bool   gmx_unused            bDoVdW,
+               gmx_bool   gmx_unused            bDoCoul,
+               int        gmx_unused            solvent_opt)
 {
     int          cginfo;
     int          igid, gid, nbl_ind;
@@ -1489,7 +1488,7 @@ put_in_list_cg(gmx_bool              bHaveVdW[],
      * If required, zero interactions could be removed here
      * or in the force loop.
      */
-    new_i_nblist(vdwc, bLR, index[icg], shift, gid);
+    new_i_nblist(vdwc, index[icg], shift, gid);
     vdwc->iinr_end[vdwc->nri] = index[icg+1];
 
     for (j = 0; (j < nj); j++)
@@ -2101,14 +2100,12 @@ static void init_nsgrid_lists(t_forcerec *fr, int ngid, gmx_ns_t *ns)
     }
 }
 
-static int nsgrid_core(FILE *log, t_commrec *cr, t_forcerec *fr,
-                       matrix box, rvec box_size, int ngid,
+static int nsgrid_core(t_commrec *cr, t_forcerec *fr,
+                       matrix box, int ngid,
                        gmx_localtop_t *top,
-                       t_grid *grid, rvec x[],
+                       t_grid *grid,
                        t_excl bexcl[], gmx_bool *bExcludeAlleg,
-                       t_nrnb *nrnb, t_mdatoms *md,
-                       real *lambda, real *dvdlambda,
-                       gmx_grppairener_t *grppener,
+                       t_mdatoms *md,
                        put_in_list_t *put_in_list,
                        gmx_bool bHaveVdW[],
                        gmx_bool bDoLongRange, gmx_bool bMakeQMMMnblist)
@@ -2568,8 +2565,7 @@ void ns_realloc_natoms(gmx_ns_t *ns, int natoms)
 
 void init_ns(FILE *fplog, const t_commrec *cr,
              gmx_ns_t *ns, t_forcerec *fr,
-             const gmx_mtop_t *mtop,
-             matrix box)
+             const gmx_mtop_t *mtop)
 {
     int  mt, icg, nr_in_cg, maxcg, i, j, jcg, ngid, ncg;
     t_block *cgs;
@@ -2685,16 +2681,13 @@ void init_ns(FILE *fplog, const t_commrec *cr,
 
 
 int search_neighbours(FILE *log, t_forcerec *fr,
-                      rvec x[], matrix box,
+                      matrix box,
                       gmx_localtop_t *top,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb, t_mdatoms *md,
-                      real *lambda, real *dvdlambda,
-                      gmx_grppairener_t *grppener,
                       gmx_bool bFillGrid,
-                      gmx_bool bDoLongRangeNS,
-                      gmx_bool bPadListsForKernels)
+                      gmx_bool bDoLongRangeNS)
 {
     t_block  *cgs = &(top->cgs);
     rvec     box_size, grid_x0, grid_x1;
@@ -2761,7 +2754,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             get_nsgrid_boundaries(grid->nboundeddim, box, NULL, NULL, NULL, NULL,
                                   cgs->nr, fr->cg_cm, grid_x0, grid_x1, &grid_dens);
 
-            grid_first(log, grid, NULL, NULL, fr->ePBC, box, grid_x0, grid_x1,
+            grid_first(log, grid, NULL, NULL, box, grid_x0, grid_x1,
                        fr->rlistlong, grid_dens);
         }
         debug_gmx();
@@ -2778,13 +2771,13 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         if (DOMAINDECOMP(cr))
         {
             end = cgs->nr;
-            fill_grid(log, dd_zones, grid, end, -1, end, fr->cg_cm);
+            fill_grid(dd_zones, grid, end, -1, end, fr->cg_cm);
             grid->icg0 = 0;
             grid->icg1 = dd_zones->izone[dd_zones->nizone-1].cg1;
         }
         else
         {
-            fill_grid(log, NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
+            fill_grid(NULL, grid, cgs->nr, fr->cg0, fr->hcg, fr->cg_cm);
             grid->icg0 = fr->cg0;
             grid->icg1 = fr->hcg;
             debug_gmx();
@@ -2796,13 +2789,13 @@ int search_neighbours(FILE *log, t_forcerec *fr,
             debug_gmx();
         }
 
-        calc_elemnr(log, grid, start, end, cgs->nr);
+        calc_elemnr(grid, start, end, cgs->nr);
         calc_ptrs(grid);
-        grid_last(log, grid, start, end, cgs->nr);
+        grid_last(grid, start, end, cgs->nr);
 
         if (gmx_debug_at)
         {
-            check_grid(debug, grid);
+            check_grid(grid);
             print_grid(debug, grid);
         }
     }
@@ -2811,7 +2804,7 @@ int search_neighbours(FILE *log, t_forcerec *fr,
         /* Set the grid cell index for the test particle only.
          * The cell to cg index is not corrected, but that does not matter.
          */
-        fill_grid(log, NULL, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
+        fill_grid(NULL, ns->grid, fr->hcg, fr->hcg-1, fr->hcg, fr->cg_cm);
     }
     debug_gmx();
 
@@ -2835,10 +2828,9 @@ int search_neighbours(FILE *log, t_forcerec *fr,
     if (bGrid)
     {
         grid    = ns->grid;
-        nsearch = nsgrid_core(log, cr, fr, box, box_size, ngid, top,
-                              grid, x, ns->bexcl, ns->bExcludeAlleg,
-                              nrnb, md, lambda, dvdlambda, grppener,
-                              put_in_list, ns->bHaveVdW,
+        nsearch = nsgrid_core(cr, fr, box, ngid, top,
+                              grid, ns->bexcl, ns->bExcludeAlleg,
+                              md, put_in_list, ns->bHaveVdW,
                               bDoLongRangeNS, FALSE);
 
         /* neighbour searching withouth QMMM! QM atoms have zero charge in
@@ -2852,10 +2844,9 @@ int search_neighbours(FILE *log, t_forcerec *fr,
          */
         if (fr->bQMMM && fr->qr->QMMMscheme != eQMMMschemeoniom)
         {
-            nsearch += nsgrid_core(log, cr, fr, box, box_size, ngid, top,
-                                   grid, x, ns->bexcl, ns->bExcludeAlleg,
-                                   nrnb, md, lambda, dvdlambda, grppener,
-                                   put_in_list_qmmm, ns->bHaveVdW,
+            nsearch += nsgrid_core(cr, fr, box, ngid, top,
+                                   grid, ns->bexcl, ns->bExcludeAlleg,
+                                   md, put_in_list_qmmm, ns->bHaveVdW,
                                    bDoLongRangeNS, TRUE);
         }
     }

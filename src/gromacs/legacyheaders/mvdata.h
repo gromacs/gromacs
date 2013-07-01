@@ -64,27 +64,13 @@ void bcast_state(const t_commrec *cr, t_state *state, gmx_bool bAlloc);
 
 void move_cgcm(FILE *log, const t_commrec *cr, rvec cg_cm[]);
 
-void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
-                int left, int right, rvec vecs[], rvec buf[],
+void move_rvecs(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum, rvec vecs[], rvec buf[],
                 int shift, t_nrnb *nrnb);
 
-void move_reals(const t_commrec *cr, gmx_bool bForward, gmx_bool bSum,
-                int left, int right, real reals[], real buf[],
-                int shift, t_nrnb *nrnb);
+void move_x(const t_commrec *cr, rvec x[], t_nrnb *nrnb);
 
-void move_x(FILE *log, const t_commrec *cr,
-            int left, int right, rvec x[], t_nrnb *nrnb);
-
-void move_rborn(FILE *log, const t_commrec *cr,
-                int left, int right, real rborn[], t_nrnb *nrnb);
-
-void move_f(FILE *log, const t_commrec *cr,
-            int left, int right, rvec f[], rvec fadd[],
+void move_f(const t_commrec *cr, rvec f[], rvec fadd[],
             t_nrnb *nrnb);
-
-void move_gpol(FILE *log, const t_commrec *cr,
-               int left, int right, real gpol[], real gpol_add[],
-               t_nrnb *nrnb);
 
 #ifdef __cplusplus
 }

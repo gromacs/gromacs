@@ -6757,7 +6757,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         limit = dd_choose_grid(fplog, cr, dd, ir, mtop, box, ddbox,
                                comm->eDLB != edlbNO, dlb_scale,
                                comm->cellsize_limit, comm->cutoff,
-                               comm->bInterCGBondeds, comm->bInterCGMultiBody);
+                               comm->bInterCGBondeds);
 
         if (dd->nc[XX] == 0)
         {
@@ -9430,7 +9430,7 @@ void dd_partition_system(FILE                *fplog,
     {
         case ecutsGROUP:
             copy_ivec(fr->ns.grid->n, ncells_old);
-            grid_first(fplog, fr->ns.grid, dd, &ddbox, fr->ePBC,
+            grid_first(fplog, fr->ns.grid, dd, &ddbox,
                        state_local->box, cell_ns_x0, cell_ns_x1,
                        fr->rlistlong, grid_density);
             break;
@@ -9478,7 +9478,7 @@ void dd_partition_system(FILE                *fplog,
                 nbnxn_get_ncells(fr->nbv->nbs, &ncells_new[XX], &ncells_new[YY]);
                 break;
             case ecutsGROUP:
-                fill_grid(fplog, &comm->zones, fr->ns.grid, dd->ncg_home,
+                fill_grid(&comm->zones, fr->ns.grid, dd->ncg_home,
                           0, dd->ncg_home, fr->cg_cm);
 
                 copy_ivec(fr->ns.grid->n, ncells_new);

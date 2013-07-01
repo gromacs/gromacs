@@ -77,12 +77,10 @@ void get_nsgrid_boundaries(int nboundeddim, matrix box,
  */
 
 void grid_first(FILE *log, t_grid *grid,
-                gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
-                int ePBC, matrix box, rvec izones_x0, rvec izones_x1,
+                gmx_domdec_t *dd, const gmx_ddbox_t *ddbox, matrix box, rvec izones_x0, rvec izones_x1,
                 real rlong, real grid_density);
 
-void fill_grid(FILE *log,
-               gmx_domdec_zones_t *dd_zones,
+void fill_grid(gmx_domdec_zones_t *dd_zones,
                t_grid *grid, int ncg_tot,
                int cg0, int cg1, rvec cg_cm[]);
 /* Allocates space on the grid for ncg_tot cg's.
@@ -90,11 +88,11 @@ void fill_grid(FILE *log,
  * When cg0 is -1, contiues filling from grid->nr to cg1.
  */
 
-void calc_elemnr(FILE *log, t_grid *grid, int cg0, int cg1, int ncg);
+void calc_elemnr(t_grid *grid, int cg0, int cg1, int ncg);
 
 void calc_ptrs(t_grid *grid);
 
-void grid_last(FILE *log, t_grid *grid, int cg0, int cg1, int ncg);
+void grid_last(t_grid *grid, int cg0, int cg1, int ncg);
 
 int xyz2ci_(int nry, int nrz, int x, int y, int z);
 #define xyz2ci(nry, nrz, x, y, z) ((nry)*(nrz)*(x)+(nrz)*(y)+(z))
@@ -102,7 +100,7 @@ int xyz2ci_(int nry, int nrz, int x, int y, int z);
 
 void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z);
 
-void check_grid(FILE *log, t_grid *grid);
+void check_grid(t_grid *grid);
 
 void print_grid(FILE *log, t_grid *grid);
 

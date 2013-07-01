@@ -50,7 +50,7 @@ static void upd_vir(rvec vir, real dvx, real dvy, real dvz)
     vir[ZZ] -= 0.5*dvz;
 }
 
-void calc_vir(FILE *log, int nxf, rvec x[], rvec f[], tensor vir,
+void calc_vir(int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box)
 {
     int      i, isx;
@@ -217,7 +217,7 @@ static void lo_fcv2(int i0, int i1,
     upd_vir(vir[ZZ], dvzx, dvzy, dvzz);
 }
 
-void f_calc_vir(FILE *log, int i0, int i1, rvec x[], rvec f[], tensor vir,
+void f_calc_vir(int i0, int i1, rvec x[], rvec f[], tensor vir,
                 t_graph *g, matrix box)
 {
     int start, end;
@@ -241,15 +241,15 @@ void f_calc_vir(FILE *log, int i0, int i1, rvec x[], rvec f[], tensor vir,
          */
         if (start > i0)
         {
-            calc_vir(log, start-i0, x + i0, f + i0, vir, FALSE, box);
+            calc_vir(start-i0, x + i0, f + i0, vir, FALSE, box);
         }
         if (end < i1)
         {
-            calc_vir(log, i1-end, x + end, f + end, vir, FALSE, box);
+            calc_vir(i1-end, x + end, f + end, vir, FALSE, box);
         }
     }
     else
     {
-        calc_vir(log, i1-i0, x + i0, f + i0, vir, FALSE, box);
+        calc_vir(i1-i0, x + i0, f + i0, vir, FALSE, box);
     }
 }

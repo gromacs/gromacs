@@ -759,7 +759,7 @@ void dd_make_reverse_top(FILE *fplog,
 
     if (dd->bInterCGcons || dd->bInterCGsettles)
     {
-        init_domdec_constraints(dd, mtop, constr);
+        init_domdec_constraints(dd, mtop);
     }
     if (fplog)
     {
@@ -2259,7 +2259,7 @@ static void get_cgcm_mol(gmx_moltype_t *molt, gmx_ffparams_t *ffparams,
 
     if (vsite)
     {
-        construct_vsites(NULL, vsite, xs, NULL, 0.0, NULL,
+        construct_vsites(vsite, xs, 0.0, NULL,
                          ffparams->iparams, molt->ilist,
                          epbcNONE, TRUE, NULL, NULL, NULL);
     }

@@ -182,7 +182,7 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
 }
 
 int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
-               int natoms, real invmass[], int ncon,
+               real invmass[], int ncon,
                t_iparams ip[], t_iatom *iatom,
                real tol, rvec x[], rvec prime[], real omega,
                gmx_bool bFEP, real lambda, real lagr[],
@@ -378,7 +378,7 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 }
 
 gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
-                 int natoms, real invmass[], int nblocks, int sblock[],
+                 real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *lagr, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
@@ -406,7 +406,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     {
         blen  = (sblock[i+1]-sblock[i]);
         blen /= 3;
-        n0    = vec_shakef(log, shaked, natoms, invmass, blen, idef->iparams,
+        n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
                            econq, vetavar);
@@ -436,7 +436,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     {
         if (ir->efep != efepNO)
         {
-            real bondA,bondB;
+            real bondA, bondB;
             dt_2 = 1/sqr(ir->delta_t);
             dvdl = 0;
             for (i = 0; i < ncons; i++)

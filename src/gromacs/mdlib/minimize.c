@@ -114,7 +114,7 @@ static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
 
     wallcycle_start(wcycle, ewcRUN);
 }
-static void em_time_end(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
+static void em_time_end(gmx_runtime_t  *runtime,
                         gmx_wallcycle_t wcycle)
 {
     wallcycle_stop(wcycle, ewcRUN);
@@ -461,7 +461,7 @@ void init_em(FILE *fplog, const char *title,
     calc_shifts(ems->s.box, fr->shift_vec);
 }
 
-static void finish_em(FILE *fplog, t_commrec *cr, gmx_mdoutf_t *outf,
+static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
                       gmx_runtime_t *runtime, gmx_wallcycle_t wcycle)
 {
     if (!(cr->duty & DUTY_PME))
@@ -472,7 +472,7 @@ static void finish_em(FILE *fplog, t_commrec *cr, gmx_mdoutf_t *outf,
 
     done_mdoutf(outf);
 
-    em_time_end(fplog, cr, runtime, wcycle);
+    em_time_end(runtime, wcycle);
 }
 
 static void swap_em_state(em_state_t *ems1, em_state_t *ems2)
@@ -676,8 +676,8 @@ static void em_dd_partition_system(FILE *fplog, int step, t_commrec *cr,
     wallcycle_stop(wcycle, ewcDOMDEC);
 }
 
-static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
-                            t_state *state_global, gmx_mtop_t *top_global,
+static void evaluate_energy(FILE *fplog, t_commrec *cr,
+                            gmx_mtop_t *top_global,
                             em_state_t *ems, gmx_localtop_t *top,
                             t_inputrec *inputrec,
                             t_nrnb *nrnb, gmx_wallcycle_t wcycle,
@@ -725,7 +725,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
 
     if (vsite)
     {
-        construct_vsites(fplog, vsite, ems->s.x, nrnb, 1, NULL,
+        construct_vsites(vsite, ems->s.x, 1, NULL,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, graph, cr, ems->s.box);
     }
@@ -950,22 +950,22 @@ static real pr_beta(t_commrec *cr, t_grpopts *opts, t_mdatoms *mdatoms,
 
 double do_cg(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-             int nstglobalcomm,
+             const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+             int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
-             int stepout,
+             int gmx_unused stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,
+             gmx_edsam_t gmx_unused ed,
              t_forcerec *fr,
-             int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-             gmx_membed_t membed,
-             real cpt_period, real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
+             int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
+             gmx_membed_t gmx_unused membed,
+             real gmx_unused cpt_period, real gmx_unused max_hours,
+             const char gmx_unused *deviceOptions,
+             unsigned long gmx_unused Flags,
              gmx_runtime_t *runtime)
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
@@ -1025,8 +1025,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
     /* do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in congrad.c
      */
-    evaluate_energy(fplog, bVerbose, cr,
-                    state_global, top_global, s_min, top,
+    evaluate_energy(fplog, cr,
+                    top_global, s_min, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
@@ -1202,8 +1202,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
         neval++;
         /* Calculate energy for the trial step */
-        evaluate_energy(fplog, bVerbose, cr,
-                        state_global, top_global, s_c, top,
+        evaluate_energy(fplog, cr,
+                        top_global, s_c, top,
                         inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, -1, FALSE);
@@ -1310,8 +1310,8 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
                 neval++;
                 /* Calculate energy for the trial step */
-                evaluate_energy(fplog, bVerbose, cr,
-                                state_global, top_global, s_b, top,
+                evaluate_energy(fplog, cr,
+                                top_global, s_b, top,
                                 inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, -1, FALSE);
@@ -1553,7 +1553,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(fplog, cr, outf, runtime, wcycle);
+    finish_em(cr, outf, runtime, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     runtime->nsteps_done = step;
@@ -1564,22 +1564,22 @@ double do_cg(FILE *fplog, t_commrec *cr,
 
 double do_lbfgs(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-                int nstglobalcomm,
+                const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
-                int stepout,
+                int gmx_unused stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                gmx_edsam_t ed,
+                gmx_edsam_t gmx_unused ed,
                 t_forcerec *fr,
-                int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                gmx_membed_t membed,
-                real cpt_period, real max_hours,
-                const char *deviceOptions,
-                unsigned long Flags,
+                int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
+                gmx_membed_t gmx_unused membed,
+                real gmx_unused cpt_period, real gmx_unused max_hours,
+                const char gmx_unused *deviceOptions,
+                unsigned long gmx_unused Flags,
                 gmx_runtime_t *runtime)
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
@@ -1707,7 +1707,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
     if (vsite)
     {
-        construct_vsites(fplog, vsite, state->x, nrnb, 1, NULL,
+        construct_vsites(vsite, state->x, 1, NULL,
                          top->idef.iparams, top->idef.il,
                          fr->ePBC, fr->bMolPBC, graph, cr, state->box);
     }
@@ -1719,8 +1719,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     neval++;
     ems.s.x = state->x;
     ems.f   = f;
-    evaluate_energy(fplog, bVerbose, cr,
-                    state, top_global, &ems, top,
+    evaluate_energy(fplog, cr,
+                    top_global, &ems, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
@@ -1912,8 +1912,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         /* Calculate energy for the trial step */
         ems.s.x = (rvec *)xc;
         ems.f   = (rvec *)fc;
-        evaluate_energy(fplog, bVerbose, cr,
-                        state, top_global, &ems, top,
+        evaluate_energy(fplog, cr,
+                        top_global, &ems, top,
                         inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, step, FALSE);
@@ -2010,8 +2010,8 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 /* Calculate energy for the trial step */
                 ems.s.x = (rvec *)xb;
                 ems.f   = (rvec *)fb;
-                evaluate_energy(fplog, bVerbose, cr,
-                                state, top_global, &ems, top,
+                evaluate_energy(fplog, cr,
+                                top_global, &ems, top,
                                 inputrec, nrnb, wcycle, gstat,
                                 vsite, constr, fcd, graph, mdatoms, fr,
                                 mu_tot, enerd, vir, pres, step, FALSE);
@@ -2335,7 +2335,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(fplog, cr, outf, runtime, wcycle);
+    finish_em(cr, outf, runtime, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     runtime->nsteps_done = step;
@@ -2346,22 +2346,22 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
 
 double do_steep(FILE *fplog, t_commrec *cr,
                 int nfile, const t_filenm fnm[],
-                const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-                int nstglobalcomm,
+                const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+                int gmx_unused nstglobalcomm,
                 gmx_vsite_t *vsite, gmx_constr_t constr,
-                int stepout,
+                int gmx_unused stepout,
                 t_inputrec *inputrec,
                 gmx_mtop_t *top_global, t_fcdata *fcd,
                 t_state *state_global,
                 t_mdatoms *mdatoms,
                 t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-                gmx_edsam_t ed,
+                gmx_edsam_t gmx_unused  ed,
                 t_forcerec *fr,
-                int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-                gmx_membed_t membed,
-                real cpt_period, real max_hours,
-                const char *deviceOptions,
-                unsigned long Flags,
+                int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
+                gmx_membed_t gmx_unused membed,
+                real gmx_unused cpt_period, real gmx_unused max_hours,
+                const char  gmx_unused *deviceOptions,
+                unsigned long gmx_unused Flags,
                 gmx_runtime_t *runtime)
 {
     const char       *SD = "Steepest Descents";
@@ -2437,8 +2437,8 @@ double do_steep(FILE *fplog, t_commrec *cr,
                        constr, top, nrnb, wcycle, count);
         }
 
-        evaluate_energy(fplog, bVerbose, cr,
-                        state_global, top_global, s_try, top,
+        evaluate_energy(fplog, cr,
+                        top_global, s_try, top,
                         inputrec, nrnb, wcycle, gstat,
                         vsite, constr, fcd, graph, mdatoms, fr,
                         mu_tot, enerd, vir, pres, count, count == 0);
@@ -2560,7 +2560,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
     }
 
-    finish_em(fplog, cr, outf, runtime, wcycle);
+    finish_em(cr, outf, runtime, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     inputrec->nsteps = count;
@@ -2573,22 +2573,22 @@ double do_steep(FILE *fplog, t_commrec *cr,
 
 double do_nm(FILE *fplog, t_commrec *cr,
              int nfile, const t_filenm fnm[],
-             const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-             int nstglobalcomm,
+             const output_env_t gmx_unused oenv, gmx_bool bVerbose, gmx_bool gmx_unused  bCompact,
+             int gmx_unused nstglobalcomm,
              gmx_vsite_t *vsite, gmx_constr_t constr,
-             int stepout,
+             int gmx_unused stepout,
              t_inputrec *inputrec,
              gmx_mtop_t *top_global, t_fcdata *fcd,
              t_state *state_global,
              t_mdatoms *mdatoms,
              t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-             gmx_edsam_t ed,
+             gmx_edsam_t  gmx_unused ed,
              t_forcerec *fr,
-             int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-             gmx_membed_t membed,
-             real cpt_period, real max_hours,
-             const char *deviceOptions,
-             unsigned long Flags,
+             int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
+             gmx_membed_t gmx_unused membed,
+             real gmx_unused cpt_period, real gmx_unused max_hours,
+             const char gmx_unused *deviceOptions,
+             unsigned long gmx_unused Flags,
              gmx_runtime_t *runtime)
 {
     const char          *NM = "Normal Mode Analysis";
@@ -2709,8 +2709,8 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
     /* Make evaluate_energy do a single node force calculation */
     cr->nnodes = 1;
-    evaluate_energy(fplog, bVerbose, cr,
-                    state_global, top_global, state_work, top,
+    evaluate_energy(fplog, cr,
+                    top_global, state_work, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
@@ -2752,8 +2752,8 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
             /* Make evaluate_energy do a single node force calculation */
             cr->nnodes = 1;
-            evaluate_energy(fplog, bVerbose, cr,
-                            state_global, top_global, state_work, top,
+            evaluate_energy(fplog, cr,
+                            top_global, state_work, top,
                             inputrec, nrnb, wcycle, gstat,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2, FALSE);
@@ -2765,8 +2765,8 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
             state_work->s.x[atom][d] = x_min + der_range;
 
-            evaluate_energy(fplog, bVerbose, cr,
-                            state_global, top_global, state_work, top,
+            evaluate_energy(fplog, cr,
+                            top_global, state_work, top,
                             inputrec, nrnb, wcycle, gstat,
                             vsite, constr, fcd, graph, mdatoms, fr,
                             mu_tot, enerd, vir, pres, atom*2+1, FALSE);
@@ -2855,7 +2855,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(fplog, cr, outf, runtime, wcycle);
+    finish_em(cr, outf, runtime, wcycle);
 
     runtime->nsteps_done = natoms*2;
 

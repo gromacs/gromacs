@@ -376,7 +376,7 @@ static void copy2table(int n, int offset, int stride,
     }
 }
 
-static void init_table(FILE *fp, int n, int nx0,
+static void init_table(int n, int nx0,
                        double tabscale, t_tabledata *td, gmx_bool bAlloc)
 {
     int i;
@@ -691,7 +691,7 @@ static void read_tables(FILE *fp, const char *fn,
 
     for (k = 0; (k < ntab); k++)
     {
-        init_table(fp, nx, nx0, tabscale, &(td[k]), TRUE);
+        init_table(nx, nx0, tabscale, &(td[k]), TRUE);
         for (i = 0; (i < nx); i++)
         {
             td[k].x[i] = yy[0][i];
@@ -1261,7 +1261,7 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     {
         if (tabsel[k] != etabUSER)
         {
-            init_table(out, nx, nx0,
+            init_table(nx, nx0,
                        (tabsel[k] == etabEXPMIN) ? table.scale_exp : table.scale,
                        &(td[k]), !bReadTab);
             fill_table(&(td[k]), tabsel[k], fr);
@@ -1322,10 +1322,8 @@ t_forcetable make_tables(FILE *out, const output_env_t oenv,
     return table;
 }
 
-t_forcetable make_gb_table(FILE *out, const output_env_t oenv,
-                           const t_forcerec *fr,
-                           const char *fn,
-                           real rtab)
+t_forcetable make_gb_table(const output_env_t oenv,
+                           const t_forcerec  *fr)
 {
     const char     *fns[3]   = { "gbctab.xvg", "gbdtab.xvg", "gbrtab.xvg" };
     const char     *fns14[3] = { "gbctab14.xvg", "gbdtab14.xvg", "gbrtab14.xvg" };
@@ -1385,7 +1383,7 @@ t_forcetable make_gb_table(FILE *out, const output_env_t oenv,
 
     snew_aligned(table.data, 4*nx, 32);
 
-    init_table(out, nx, nx0, table.scale, &(td[0]), !bReadTab);
+    init_table(nx, nx0, table.scale, &(td[0]), !bReadTab);
 
     /* Local implementation so we don't have to use the etabGB
      * enum above, which will cause problems later when
