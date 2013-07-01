@@ -3191,7 +3191,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
     pme->nthread = nthread;
 
-     /* Check if any of the PME MPI ranks uses threads */
+    /* Check if any of the PME MPI ranks uses threads */
     use_threads = (pme->nthread > 1 ? 1 : 0);
 #ifdef GMX_MPI
     if (pme->nnodes > 1)
@@ -3343,7 +3343,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     gmx_parallel_3dfft_init(&pme->pfft_setupA, ndata,
                             &pme->fftgridA, &pme->cfftgridA,
                             pme->mpi_comm_d,
-                            pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                             bReproducible, pme->nthread);
 
     if (bFreeEnergy)
@@ -3360,7 +3359,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         gmx_parallel_3dfft_init(&pme->pfft_setupB, ndata,
                                 &pme->fftgridB, &pme->cfftgridB,
                                 pme->mpi_comm_d,
-                                pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                                 bReproducible, pme->nthread);
     }
     else
@@ -4490,7 +4488,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
-                                           fftgrid, cfftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
@@ -4524,7 +4522,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
-                                           cfftgrid, fftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
