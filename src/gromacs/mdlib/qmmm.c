@@ -109,10 +109,10 @@ call_gaussian(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
 /* ORCA interface */
 
 void
-init_orca(t_commrec *cr, t_QMrec *qm, t_MMrec *mm);
+init_orca(t_QMrec *qm);
 
 real
-call_orca(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
+call_orca(t_forcerec *fr, t_QMrec *qm,
           t_MMrec *mm, rvec f[], rvec fshift[]);
 
 #endif
@@ -150,8 +150,8 @@ static int QMlayer_comp(const void *a, const void *b)
 
 } /* QMlayer_comp */
 
-real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
-                    t_MMrec *mm, rvec f[], rvec fshift[])
+real call_QMroutine(t_commrec gmx_unused *cr, t_forcerec gmx_unused *fr, t_QMrec gmx_unused *qm,
+                    t_MMrec gmx_unused *mm, rvec gmx_unused f[], rvec gmx_unused fshift[])
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
      * Note that f is actually the gradient, i.e. -f
@@ -203,7 +203,7 @@ real call_QMroutine(t_commrec *cr, t_forcerec *fr, t_QMrec *qm,
     return (QMener);
 }
 
-void init_QMroutine(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_QMroutine(t_commrec gmx_unused *cr, t_QMrec gmx_unused *qm, t_MMrec gmx_unused *mm)
 {
     /* makes a call to the requested QM routine (qm->QMmethod)
      */
@@ -224,7 +224,7 @@ void init_QMroutine(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 #elif defined GMX_QMMM_GAUSSIAN
         init_gaussian(cr, qm, mm);
 #elif defined GMX_QMMM_ORCA
-        init_orca(cr, qm, mm);
+        init_orca(qm);
 #else
         gmx_fatal(FARGS, "Ab-initio calculation only supported with Gamess, Gaussian or ORCA.");
 #endif
@@ -462,7 +462,6 @@ t_QMMMrec *mk_QMMMrec(void)
 } /* mk_QMMMrec */
 
 void init_QMMMrec(t_commrec  *cr,
-                  matrix      box,
                   gmx_mtop_t *mtop,
                   t_inputrec *ir,
                   t_forcerec *fr)
@@ -1079,8 +1078,7 @@ void update_QMMMrec(t_commrec      *cr,
 
 real calculate_QMMM(t_commrec *cr,
                     rvec x[], rvec f[],
-                    t_forcerec *fr,
-                    t_mdatoms *md)
+                    t_forcerec *fr)
 {
     real
         QMener = 0.0;

@@ -66,7 +66,7 @@
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
                               int natoms, gmx_localtop_t *top,
-                              const t_atomtypes *atype, double *x, t_nblist *nl,
+                              double *x, t_nblist *nl,
                               gmx_genborn_t *born)
 {
     int           i, k, n, ii, is3, ii3, nj0, nj1, offset;
@@ -301,7 +301,7 @@ calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr,
 
 int
 calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec * fr, int natoms, gmx_localtop_t *top,
-                                const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm)
+                                double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm)
 {
     int           i, ai, k, n, ii, ii3, is3, nj0, nj1, at0, at1, offset;
     int           jnrA, jnrB;

@@ -625,14 +625,13 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     }
 }
 
-static void prepare_verlet_scheme(FILE                *fplog,
-                                  const gmx_hw_info_t *hwinfo,
-                                  t_commrec           *cr,
-                                  const char          *nbpu_opt,
-                                  t_inputrec          *ir,
-                                  const gmx_mtop_t    *mtop,
-                                  matrix               box,
-                                  gmx_bool            *bUseGPU)
+static void prepare_verlet_scheme(FILE                           *fplog,
+                                  const gmx_hw_info_t            *hwinfo,
+                                  t_commrec                      *cr,
+                                  t_inputrec                     *ir,
+                                  const gmx_mtop_t               *mtop,
+                                  matrix                          box,
+                                  gmx_bool                       *bUseGPU)
 {
     /* Here we only check for GPU usage on the MPI master process,
      * as here we don't know how many GPUs we will use yet.
@@ -985,7 +984,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->cutoff_scheme == ecutsVERLET)
         {
-            prepare_verlet_scheme(fplog, hwinfo, cr, nbpu_opt,
+            prepare_verlet_scheme(fplog, hwinfo, cr,
                                   inputrec, mtop, state->box,
                                   &minf.bUseGPU);
         }
@@ -1103,7 +1102,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     if (PAR(cr))
     {
         /* now broadcast everything to the non-master nodes/threads: */
-        init_parallel(fplog, cr, inputrec, mtop);
+        init_parallel(cr, inputrec, mtop);
 
         /* This check needs to happen after get_nthreads_mpi() */
         if (inputrec->cutoff_scheme == ecutsVERLET && (Flags & MD_PARTDEC))
@@ -1147,7 +1146,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_fatal(FARGS, "The .mdp file specified an energy mininization or normal mode algorithm, and these are not compatible with mdrun -rerun");
     }
 
-    if (can_use_allvsall(inputrec, mtop, TRUE, cr, fplog) && PAR(cr))
+    if (can_use_allvsall(inputrec, TRUE, cr, fplog) && PAR(cr))
     {
         /* Simple neighbour searching and (also?) all-vs-all loops
          * do not work with domain decomposition. */
@@ -1399,7 +1398,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initiate forcerecord */
         fr         = mk_forcerec();
         fr->hwinfo = hwinfo;
-        init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box, FALSE,
+        init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box,
                       opt2fn("-table", nfile, fnm),
                       opt2fn("-tabletf", nfile, fnm),
                       opt2fn("-tablep", nfile, fnm),
@@ -1416,7 +1415,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         /* Initialize QM-MM */
         if (fr->bQMMM)
         {
-            init_QMMMrec(cr, box, mtop, inputrec, fr);
+            init_QMMMrec(cr, mtop, inputrec, fr);
         }
 
         /* Initialize the mdatoms structure.
@@ -1452,7 +1451,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                  * for the initial distribution in the domain decomposition
                  * and for the initial shell prediction.
                  */
-                construct_vsites_mtop(fplog, vsite, mtop, state->x);
+                construct_vsites_mtop(vsite, mtop, state->x);
             }
         }
 
@@ -1547,10 +1546,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (DOMAINDECOMP(cr))
         {
-            dd_init_bondeds(fplog, cr->dd, mtop, vsite, constr, inputrec,
+            dd_init_bondeds(fplog, cr->dd, mtop, vsite, inputrec,
                             Flags & MD_DDBONDCHECK, fr->cginfo_mb);
 
-            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, fr, &ddbox);
+            set_dd_parameters(fplog, cr->dd, dlb_scale, inputrec, &ddbox);
 
             setup_dd_grid(fplog, cr->dd);
         }
@@ -1572,7 +1571,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
         if (inputrec->ePull != epullNO)
         {
-            finish_pull(fplog, inputrec->pull);
+            finish_pull(inputrec->pull);
         }
 
         if (inputrec->bRot)
@@ -1584,7 +1583,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, ewaldcoeff, FALSE, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, ewaldcoeff, inputrec);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
@@ -1608,11 +1607,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* Finish up, write some stuff
      * if rerunMD, don't write last frame again
      */
-    finish_run(fplog, cr, ftp2fn(efSTO, nfile, fnm),
+    finish_run(fplog, cr,
                inputrec, nrnb, wcycle, &runtime,
                fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
                nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
-               nthreads_pp,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
 
     if ((cr->duty & DUTY_PP) && fr->nbv != NULL && fr->nbv->bUseGPU)

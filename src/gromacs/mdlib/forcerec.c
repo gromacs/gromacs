@@ -883,7 +883,7 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
     }
 }
 
-void update_forcerec(FILE *log, t_forcerec *fr, matrix box)
+void update_forcerec(t_forcerec *fr, matrix box)
 {
     if (fr->eeltype == eelGRF)
     {
@@ -1399,8 +1399,7 @@ static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
 
 }
 
-gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
-                          gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
+gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
 {
     gmx_bool bAllvsAll;
 
@@ -1473,12 +1472,9 @@ static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
 }
 
 
-static void pick_nbnxn_kernel_cpu(FILE             *fp,
-                                  const t_commrec  *cr,
-                                  const gmx_cpuid_t cpuid_info,
-                                  const t_inputrec *ir,
-                                  int              *kernel_type,
-                                  int              *ewald_excl)
+static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
+                                  int                         *kernel_type,
+                                  int                         *ewald_excl)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1597,7 +1593,6 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(FILE                *fp,
                               const t_commrec     *cr,
-                              const gmx_hw_info_t *hwinfo,
                               gmx_bool             use_cpu_acceleration,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
@@ -1629,8 +1624,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp, cr, hwinfo->cpuid_info, ir,
-                                  kernel_type, ewald_excl);
+            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
         else
         {
@@ -1647,8 +1641,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
 }
 
-static void pick_nbnxn_resources(FILE                *fp,
-                                 const t_commrec     *cr,
+static void pick_nbnxn_resources(const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
@@ -1885,7 +1878,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(fp, cr, fr->hwinfo,
+    pick_nbnxn_resources(cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU);
@@ -1901,9 +1894,8 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                              nbv->bUseGPU, bEmulateGPU,
-                              ir,
+            pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                              nbv->bUseGPU, bEmulateGPU, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
                               fr->bNonbonded);
@@ -1913,9 +1905,8 @@ static void init_nb_verlet(FILE                *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt, "gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                                  FALSE, FALSE,
-                                  ir,
+                pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                                  FALSE, FALSE, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
                                   fr->bNonbonded);
@@ -2023,7 +2014,6 @@ void init_forcerec(FILE              *fp,
                    const gmx_mtop_t  *mtop,
                    const t_commrec   *cr,
                    matrix             box,
-                   gmx_bool           bMolEpot,
                    const char        *tabfn,
                    const char        *tabafn,
                    const char        *tabpfn,
@@ -2205,7 +2195,7 @@ void init_forcerec(FILE              *fp,
     fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
     /* Check if we can/should do all-vs-all kernels */
-    fr->bAllvsAll       = can_use_allvsall(ir, mtop, FALSE, NULL, NULL);
+    fr->bAllvsAll       = can_use_allvsall(ir, FALSE, NULL, NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
@@ -2606,9 +2596,9 @@ void init_forcerec(FILE              *fp,
 #endif
 
         fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(fp, oenv, fr, tabpfn, fr->gbtabscale);
+        fr->gbtab  = make_gb_table(oenv, fr);
 
-        init_gb(&fr->born, cr, fr, ir, mtop, ir->rgbradii, ir->gb_algorithm);
+        init_gb(&fr->born, cr, fr, ir, mtop, ir->gb_algorithm);
 
         /* Copy local gb data (for dd, this is done in dd_partition_system) */
         if (!DOMAINDECOMP(cr))
@@ -2861,11 +2851,11 @@ void init_forcerec(FILE              *fp,
     fr->timesteps = 0;
 
     /* Initialize neighbor search */
-    init_ns(fp, cr, &fr->ns, fr, mtop, box);
+    init_ns(fp, cr, &fr->ns, fr, mtop);
 
     if (cr->duty & DUTY_PP)
     {
-        gmx_nonbonded_setup(fp, fr, bGenericKernelOnly);
+        gmx_nonbonded_setup(fr, bGenericKernelOnly);
         /*
            if (ir->bAdress)
             {
@@ -2901,7 +2891,7 @@ void init_forcerec(FILE              *fp,
 #define pr_int(fp, i)  fprintf((fp), "%s: %d\n",#i, i)
 #define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, bool_names[b])
 
-void pr_forcerec(FILE *fp, t_forcerec *fr, t_commrec *cr)
+void pr_forcerec(FILE *fp, t_forcerec *fr)
 {
     int i;
 

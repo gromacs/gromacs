@@ -58,12 +58,11 @@ extern "C" {
 /* Initialise GB stuff */
 int init_gb(gmx_genborn_t **p_born,
             const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
-            const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm);
+            const gmx_mtop_t *mtop, int gb_algorithm);
 
 
 /* Born radii calculations, both with and without SSE acceleration */
-int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
-                const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
+int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb);
 
 
 
@@ -88,13 +87,13 @@ convert_gb_params(gmx_ffparams_t *ffparams, t_functype ftype, t_params *gb_plist
 
 /* Functions for calculating adjustments due to ie chain rule terms */
 void
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
                const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd);
 
 
 int
-make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
+make_gb_nblist(t_commrec *cr, int gb_algorithm,
                rvec x[], matrix box,
                t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born);
 

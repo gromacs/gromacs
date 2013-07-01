@@ -294,11 +294,11 @@ void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     /* create free energy data to avoid NULLs */
     snew(ir->fepvals, 1);
     printf("Neighborsearching with a cut-off of %g\n", rlong);
-    init_forcerec(stdout, oenv, fr, NULL, ir, mtop, cr, box, FALSE,
+    init_forcerec(stdout, oenv, fr, NULL, ir, mtop, cr, box,
                   NULL, NULL, NULL, NULL, NULL, TRUE, -1);
     if (debug)
     {
-        pr_forcerec(debug, fr, cr);
+        pr_forcerec(debug, fr);
     }
 
     /* Calculate new stuff dependent on coords and box */
@@ -313,8 +313,8 @@ void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     snew(lambda, efptNR);
     snew(dvdl, efptNR);
     init_neighbor_list(fp, fr, md->homenr);
-    search_neighbours(fp, fr, x, box, top,
-                      &mtop->groups, cr, &nrnb, md, lambda, dvdl, NULL, TRUE, FALSE, FALSE);
+    search_neighbours(fp, fr, box, top,
+                      &mtop->groups, cr, &nrnb, md, TRUE, FALSE);
 
     if (debug)
     {

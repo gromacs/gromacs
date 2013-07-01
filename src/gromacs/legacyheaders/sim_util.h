@@ -158,12 +158,11 @@ void runtime_upd_proc(gmx_runtime_t *runtime);
 void print_date_and_time(FILE *log, int pid, const char *title,
                          const gmx_runtime_t *runtime);
 
-void finish_run(FILE *log, t_commrec *cr, const char *confout,
+void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
                 gmx_runtime_t *runtime,
                 wallclock_gpu_t *gputimes,
-                int omp_nth_pp,
                 gmx_bool bWriteStat);
 
 void calc_enervirdiff(FILE *fplog, int eDispCorr, t_forcerec *fr);
@@ -177,9 +176,8 @@ void initialize_lambdas(FILE *fplog, t_inputrec *ir, int *fep_state, real *lambd
 
 void do_constrain_first(FILE *log, gmx_constr_t constr,
                         t_inputrec *inputrec, t_mdatoms *md,
-                        t_state *state, rvec *f,
-                        t_graph *graph, t_commrec *cr, t_nrnb *nrnb,
-                        t_forcerec *fr, gmx_localtop_t *top, tensor shake_vir);
+                        t_state *state, t_commrec *cr, t_nrnb *nrnb,
+                        t_forcerec *fr, gmx_localtop_t *top);
 
 void init_md(FILE *fplog,
              t_commrec *cr, t_inputrec *ir, const output_env_t oenv,
@@ -191,8 +189,7 @@ void init_md(FILE *fplog,
              gmx_mdoutf_t **outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
-             gmx_bool *bSimAnn, t_vcm **vcm,
-             t_state *state, unsigned long Flags);
+             gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
 
 #ifdef __cplusplus

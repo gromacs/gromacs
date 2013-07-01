@@ -608,7 +608,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 /* Make do_force do a single node force calculation */
                 cr->nnodes = 1;
                 do_force(fplog, cr, inputrec,
-                         step, nrnb, wcycle, top, top_global, &top_global->groups,
+                         step, nrnb, wcycle, top, &top_global->groups,
                          state->box, state->x, &state->hist,
                          f, force_vir, mdatoms, enerd, fcd,
                          state->lambda,
