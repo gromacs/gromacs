@@ -98,7 +98,7 @@ const char *Program(void)
 {
     try
     {
-        return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
+        return gmx::ProgramInfo::getInstance().fullBinaryPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
