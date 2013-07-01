@@ -1426,7 +1426,6 @@ void write_man(FILE *out, const char *mantp,
                int nbug, const char **bugs,
                gmx_bool bHidden)
 {
-    const char *pr;
     int         i, npar;
     t_pargs    *par;
 
@@ -1457,45 +1456,37 @@ void write_man(FILE *out, const char *mantp,
         }
     }
 
-    if ((pr = strrchr(program, DIR_SEPARATOR)) == NULL)
-    {
-        pr = program;
-    }
-    else
-    {
-        pr += 1;
-    }
     if (strcmp(mantp, "tex") == 0)
     {
-        write_texman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_texman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "nroff") == 0)
     {
-        write_nroffman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_nroffman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "ascii") == 0)
     {
-        write_ttyman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, TRUE, links);
+        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, TRUE, links);
     }
     if (strcmp(mantp, "wiki") == 0)
     {
-        write_wikiman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, TRUE, links);
+        write_wikiman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, TRUE, links);
     }
     if (strcmp(mantp, "help") == 0)
     {
-        write_ttyman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, FALSE, links);
+        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, FALSE, links);
     }
     if (strcmp(mantp, "html") == 0)
     {
-        write_htmlman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_htmlman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "py") == 0)
     {
-        write_py(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_py(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "xml") == 0)
     {
-        write_xmlman(out, pr, nldesc, desc, nfile, fnm, npargs, pa, nbug, bugs, links);
+        write_xmlman(out, program, nldesc, desc, nfile, fnm, npargs, pa, nbug, bugs, links);
     }
     if (strcmp(mantp, "completion-zsh") == 0)
     {
