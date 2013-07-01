@@ -132,7 +132,7 @@ then
     echo "See comments in the script file for how to get one."
     exit 2
 fi
-if ! which -s "$UNCRUSTIFY"
+if ! which "$UNCRUSTIFY"
 then
     echo "Uncrustify not found: $UNCRUSTIFY"
     exit 2
@@ -150,7 +150,7 @@ then
 fi
 
 # Actual processing starts: create a temporary directory
-tmpdir=`mktemp -d -t gmxuncrust`
+tmpdir=`mktemp -d -t gmxuncrust.XXXXXX`
 
 # Produce a list of changed files
 # Only include files that have uncrustify set as filter in .gitattributes
