@@ -1,5 +1,6 @@
 #include <ctype.h>
 #include "../gmx_lapack.h"
+#include <types/simple.h>
 
 void
 F77_FUNC(dorml2,DORML2)(const char *side,
@@ -13,7 +14,7 @@ F77_FUNC(dorml2,DORML2)(const char *side,
 	double *c,
 	int *ldc,
 	double *work,
-	int *info)
+    int gmx_unused *info)
 {
   const char xside=toupper(*side);
   const char xtrans=toupper(*trans);
