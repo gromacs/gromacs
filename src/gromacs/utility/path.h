@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace gmx
 {
@@ -51,6 +52,10 @@ namespace gmx
 class Path
 {
     public:
+        static bool containsDirectory(const std::string &path);
+        static bool isAbsolute(const char *path);
+        static bool isAbsolute(const std::string &path);
+
         static std::string join(const std::string &path1,
                                 const std::string &path2);
         static std::string join(const std::string &path1,
@@ -58,6 +63,17 @@ class Path
                                 const std::string &path3);
         static std::pair<std::string, std::string>
         splitToPathAndFilename(const std::string &path);
+        static std::string normalize(const std::string &path);
+
+        static bool exists(const char *path);
+        static bool exists(const std::string &path);
+        static std::string getWorkingDirectory();
+
+        static void splitPathEnvironment(const std::string        &pathEnv,
+                                         std::vector<std::string> *result);
+        static std::vector<std::string> getExecutablePaths();
+
+        static std::string resolveSymlinks(const std::string &path);
 
     private:
         // Disallow instantiation.

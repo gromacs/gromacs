@@ -41,7 +41,6 @@
  */
 #include "programinfo.h"
 
-// For GMX_BINARY_SUFFIX
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -49,15 +48,15 @@
 #include <cstdlib>
 #include <cstring>
 
-#include <algorithm>
 #include <string>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
 #include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
@@ -86,6 +85,68 @@ std::string quoteIfNecessary(const char *str)
     return str;
 }
 
+class DefaultExecutableEnvironment : public ExecutableEnvironmentInterface
+{
+    public:
+        virtual std::string getWorkingDirectory() const
+        {
+            return Path::getWorkingDirectory();
+        }
+        virtual std::vector<std::string> getExecutablePaths() const
+        {
+            return Path::getExecutablePaths();
+        }
+};
+
+/*! \brief
+ * Finds the absolute path of the binary from \c argv[0].
+ *
+ * \param[in] invokedName \c argv[0] the binary was invoked with.
+ * \param[in] env         Executable environment.
+ * \returns   The full path of the binary.
+ *
+ * If a binary with the given name cannot be located, \p invokedName is
+ * returned.
+ */
+std::string findFullBinaryPath(const std::string                    &invokedName,
+                               const ExecutableEnvironmentInterface &env)
+{
+    std::string searchName = invokedName;
+    // On Windows & Cygwin we need to add the .exe extension,
+    // or we wont be able to detect that the file exists.
+#if (defined GMX_NATIVE_WINDOWS || defined GMX_CYGWIN)
+    if (!endsWith(searchName, ".exe"))
+    {
+        searchName.append(".exe");
+    }
+#endif
+    if (!Path::containsDirectory(searchName))
+    {
+        // No directory in name means it must be in the path - search it!
+        std::vector<std::string>                 pathEntries = env.getExecutablePaths();
+        std::vector<std::string>::const_iterator i;
+        for (i = pathEntries.begin(); i != pathEntries.end(); ++i)
+        {
+            const std::string &dir      = i->empty() ? env.getWorkingDirectory() : *i;
+            std::string        testPath = Path::join(dir, searchName);
+            if (File::exists(testPath))
+            {
+                return testPath;
+            }
+        }
+    }
+    else if (!Path::isAbsolute(searchName))
+    {
+        // Name contains directories, but is not absolute, i.e.,
+        // it is relative to the current directory.
+        std::string cwd      = env.getWorkingDirectory();
+        std::string testPath = Path::join(cwd, searchName);
+        // TODO: Check for existence?
+        return testPath;
+    }
+    return searchName;
+}
+
 }   // namespace
 
 /********************************************************************
@@ -96,39 +157,31 @@ class ProgramInfo::Impl
 {
     public:
         Impl();
-        Impl(const char *realBinaryName, int argc, const char *const argv[]);
+        Impl(const char *realBinaryName, int argc, const char *const argv[],
+             const ExecutableEnvironmentInterface &env);
 
         std::string             realBinaryName_;
-        std::string             fullInvokedProgram_;
         std::string             programName_;
         std::string             invariantProgramName_;
-        std::string             commandLine_;
         std::string             displayName_;
+        std::string             commandLine_;
+        std::string             fullBinaryPath_;
         mutable tMPI::mutex     displayNameMutex_;
 };
 
 ProgramInfo::Impl::Impl()
-    : realBinaryName_("GROMACS"), fullInvokedProgram_("GROMACS"),
+    : realBinaryName_("GROMACS"),
       programName_("GROMACS"), invariantProgramName_("GROMACS")
 {
 }
 
 ProgramInfo::Impl::Impl(const char *realBinaryName,
-                        int argc, const char *const argv[])
-    : realBinaryName_(realBinaryName != NULL ? realBinaryName : ""),
-      fullInvokedProgram_(argc != 0 ? argv[0] : ""),
-      programName_(Path::splitToPathAndFilename(fullInvokedProgram_).second)
+                        int argc, const char *const argv[],
+                        const ExecutableEnvironmentInterface &env)
+    : realBinaryName_(realBinaryName != NULL ? realBinaryName : "")
 {
-    // Temporary hack to make things work on Windows while waiting for #950.
-    // Some places in the existing code expect to have DIR_SEPARATOR in all
-    // input paths, but Windows may also give '/' (and does that, e.g., for
-    // tests invoked through CTest).
-    // When removing this, remove also the #include "futil.h".
-    if (DIR_SEPARATOR == '\\')
-    {
-        std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),
-                     '/', '\\');
-    }
+    std::string invokedName = (argc != 0 ? argv[0] : "");
+    programName_          = Path::splitToPathAndFilename(invokedName).second;
     programName_          = stripSuffixIfPresent(programName_, ".exe");
     invariantProgramName_ = programName_;
 #ifdef GMX_BINARY_SUFFIX
@@ -139,6 +192,16 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
     {
         realBinaryName_ = invariantProgramName_;
     }
+
+    // TODO: Consider lazy evaluation of these variables and/or broadcasting
+    // the result with MPI to avoid unnecessary I/O.
+    fullBinaryPath_ =
+        Path::normalize(
+                Path::resolveSymlinks(findFullBinaryPath(invokedName, env)));
+    // TODO: Investigate/Consider using a dladdr()-based solution.
+    // Potentially less portable, but significantly simpler, and also works
+    // with user binaries even if they are located in some arbitrary location,
+    // as long as shared libraries are used.
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
     for (int i = 1; i < argc; ++i)
@@ -196,18 +259,28 @@ ProgramInfo::ProgramInfo()
 }
 
 ProgramInfo::ProgramInfo(const char *realBinaryName)
-    : impl_(new Impl(realBinaryName, 1, &realBinaryName))
+    : impl_(new Impl(realBinaryName, 1, &realBinaryName,
+                     DefaultExecutableEnvironment()))
 {
 }
 
 ProgramInfo::ProgramInfo(int argc, const char *const argv[])
-    : impl_(new Impl(NULL, argc, argv))
+    : impl_(new Impl(NULL, argc, argv,
+                     DefaultExecutableEnvironment()))
 {
 }
 
 ProgramInfo::ProgramInfo(const char *realBinaryName,
                          int argc, const char *const argv[])
-    : impl_(new Impl(realBinaryName, argc, argv))
+    : impl_(new Impl(realBinaryName, argc, argv,
+                     DefaultExecutableEnvironment()))
+{
+}
+
+ProgramInfo::ProgramInfo(const char *realBinaryName,
+                         int argc, const char *const argv[],
+                         const ExecutableEnvironmentInterface &env)
+    : impl_(new Impl(realBinaryName, argc, argv, env))
 {
 }
 
@@ -228,11 +301,6 @@ const std::string &ProgramInfo::realBinaryName() const
     return impl_->realBinaryName_;
 }
 
-const std::string &ProgramInfo::programNameWithPath() const
-{
-    return impl_->fullInvokedProgram_;
-}
-
 const std::string &ProgramInfo::programName() const
 {
     return impl_->programName_;
@@ -247,13 +315,18 @@ const std::string &ProgramInfo::displayName() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
-        ? impl_->programName_
-        : impl_->displayName_;
+           ? impl_->programName_
+           : impl_->displayName_;
 }
 
 const std::string &ProgramInfo::commandLine() const
 {
     return impl_->commandLine_;
+}
+
+const std::string &ProgramInfo::fullBinaryPath() const
+{
+    return impl_->fullBinaryPath_;
 }
 
 } // namespace gmx

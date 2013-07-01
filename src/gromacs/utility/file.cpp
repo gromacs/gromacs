@@ -49,11 +49,13 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/futil.h"
+#include <sys/stat.h>
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
+
+#include "gmx_header_config.h"
 
 namespace gmx
 {
@@ -242,7 +244,30 @@ void File::writeLine()
 // static
 bool File::exists(const char *filename)
 {
-    return gmx_fexist(filename);
+    if (filename == NULL)
+    {
+        return false;
+    }
+    FILE *test = fopen(filename, "r");
+    if (test == NULL)
+    {
+        return false;
+    }
+    else
+    {
+        fclose(test);
+        // Windows doesn't allow fopen of directory, so we don't need to check
+        // this separately.
+#ifndef GMX_NATIVE_WINDOWS
+        struct stat st_buf;
+        int         status = stat(filename, &st_buf);
+        if (status != 0 || !S_ISREG(st_buf.st_mode))
+        {
+            return false;
+        }
+#endif
+        return true;
+    }
 }
 
 // static
