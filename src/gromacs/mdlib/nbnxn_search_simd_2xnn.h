@@ -94,8 +94,8 @@ static gmx_inline gmx_mm_pr gmx_set_2real_shift_pr(const real *a, real shift)
 static gmx_inline void
 icell_set_x_simd_2xnn(int ci,
                       real shx, real shy, real shz,
-                      int na_c,
-                      int stride, const real *x,
+                      int gmx_unused na_c,
+                      int gmx_unused stride, const real *x,
                       nbnxn_list_work_t *work)
 {
     int                     ia;
@@ -186,7 +186,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjf <= cjl)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjf, gridj->bbj);
+        d2       = subc_bb_dist2_sse(0, bb_ci, cjf, gridj->bbj);
         *ndistc += 2;
 
         /* Check if the distance is within the distance where
@@ -244,7 +244,7 @@ make_cluster_list_simd_2xnn(const nbnxn_grid_t *gridj,
     InRange = FALSE;
     while (!InRange && cjl > cjf)
     {
-        d2       = subc_bb_dist2_sse(4, 0, bb_ci, cjl, gridj->bbj);
+        d2       = subc_bb_dist2_sse(0, bb_ci, cjl, gridj->bbj);
         *ndistc += 2;
 
         /* Check if the distance is within the distance where

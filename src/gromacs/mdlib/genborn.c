@@ -165,7 +165,7 @@ int init_gb_plist(t_params *p_list)
 
 
 
-int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
+int init_gb_still(const t_commrec *cr,
                   const t_atomtypes *atype, t_idef *idef, t_atoms *atoms,
                   gmx_genborn_t *born, int natoms)
 {
@@ -356,7 +356,7 @@ int init_gb_still(const t_commrec *cr, t_forcerec  *fr,
 /* Initialize all GB datastructs and compute polarization energies */
 int init_gb(gmx_genborn_t **p_born,
             const t_commrec *cr, t_forcerec *fr, const t_inputrec *ir,
-            const gmx_mtop_t *mtop, real rgbradii, int gb_algorithm)
+            const gmx_mtop_t *mtop, int gb_algorithm)
 {
     int             i, j, m, ai, aj, jj, natoms, nalloc;
     real            rai, sk, p, doffset;
@@ -438,7 +438,7 @@ int init_gb(gmx_genborn_t **p_born,
     /* If Still model, initialise the polarisation energies */
     if (gb_algorithm == egbSTILL)
     {
-        init_gb_still(cr, fr, &(mtop->atomtypes), &(localtop->idef), &atoms,
+        init_gb_still(cr, &(mtop->atomtypes), &(localtop->idef), &atoms,
                       born, natoms);
     }
 
@@ -481,7 +481,7 @@ int init_gb(gmx_genborn_t **p_born,
 
 static int
 calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
-                  const t_atomtypes *atype, rvec x[], t_nblist *nl,
+                  rvec x[], t_nblist *nl,
                   gmx_genborn_t *born, t_mdatoms *md)
 {
     int  i, k, n, nj0, nj1, ai, aj, type;
@@ -613,7 +613,7 @@ calc_gb_rad_still(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top
 
 static int
 calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
-                const t_atomtypes *atype, rvec x[], t_nblist *nl,
+                rvec x[], t_nblist *nl,
                 gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, n, ai, aj, nj0, nj1, at0, at1;
@@ -833,7 +833,7 @@ calc_gb_rad_hct(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 
 static int
 calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
-                const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
+                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md)
 {
     int   i, k, ai, aj, nj0, nj1, n, at0, at1;
     int   shift;
@@ -1059,7 +1059,7 @@ calc_gb_rad_obc(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
 
 
 int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *top,
-                const t_atomtypes *atype, rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
+                rvec x[], t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, t_nrnb     *nrnb)
 {
     real *p;
     int   cnt;
@@ -1191,13 +1191,13 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_still(cr, fr, born->nr, top, x, nl, born, md);
             break;
         case egbHCT:
-            calc_gb_rad_hct(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_hct(cr, fr, born->nr, top, x, nl, born, md);
             break;
         case egbOBC:
-            calc_gb_rad_obc(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
             break;
 
         default:
@@ -1215,32 +1215,32 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
         case egbSTILL:
             if (fr->use_acceleration)
             {
-                calc_gb_rad_still_sse2_single(cr, fr, born->nr, top, atype, x[0], nl, born);
+                calc_gb_rad_still_sse2_single(cr, fr, born->nr, top, x[0], nl, born);
             }
             else
             {
-                calc_gb_rad_still(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_still(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
         case egbHCT:
             if (fr->use_acceleration)
             {
-                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
+                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
             }
             else
             {
-                calc_gb_rad_hct(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_hct(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
 
         case egbOBC:
             if (fr->use_acceleration)
             {
-                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, atype, x[0], nl, born, md, ir->gb_algorithm);
+                calc_gb_rad_hct_obc_sse2_single(cr, fr, born->nr, top, x[0], nl, born, md, ir->gb_algorithm);
             }
             else
             {
-                calc_gb_rad_obc(cr, fr, born->nr, top, atype, x, nl, born, md);
+                calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
             }
             break;
 
@@ -1252,13 +1252,13 @@ int calc_gb_rad(t_commrec *cr, t_forcerec *fr, t_inputrec *ir, gmx_localtop_t *t
     switch (ir->gb_algorithm)
     {
         case egbSTILL:
-            calc_gb_rad_still(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_still(cr, fr, born->nr, top, x, nl, born, md);
             break;
         case egbHCT:
-            calc_gb_rad_hct(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_hct(cr, fr, born->nr, top, x, nl, born, md);
             break;
         case egbOBC:
-            calc_gb_rad_obc(cr, fr, born->nr, top, atype, x, nl, born, md);
+            calc_gb_rad_obc(cr, fr, born->nr, top, x, nl, born, md);
             break;
 
         default:
@@ -1384,7 +1384,7 @@ real gb_bonds_tab(rvec x[], rvec f[], rvec fshift[], real *charge, real *p_gbtab
 }
 
 real calc_gb_selfcorrections(t_commrec *cr, int natoms,
-                             real *charge, gmx_genborn_t *born, real *dvda, t_mdatoms *md, double facel)
+                             real *charge, gmx_genborn_t *born, real *dvda, double facel)
 {
     int  i, ai, at0, at1;
     real rai, e, derb, q, q2, fi, rai_inv, vtot;
@@ -1434,7 +1434,7 @@ real calc_gb_selfcorrections(t_commrec *cr, int natoms,
 }
 
 real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *born, gmx_localtop_t *top,
-                      const t_atomtypes *atype, real *dvda, int gb_algorithm, t_mdatoms *md)
+                      real *dvda, t_mdatoms *md)
 {
     int  ai, i, at0, at1;
     real e, es, rai, rbi, term, probe, tmp, factor;
@@ -1501,7 +1501,7 @@ real calc_gb_nonpolar(t_commrec *cr, t_forcerec *fr, int natoms, gmx_genborn_t *
 
 
 real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[], rvec t[], rvec fshift[],
-                       rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born, t_mdatoms *md)
+                       rvec shift_vec[], int gb_algorithm, gmx_genborn_t *born)
 {
     int          i, k, n, ai, aj, nj0, nj1, n0, n1;
     int          shift;
@@ -1617,8 +1617,8 @@ real calc_gb_chainrule(int natoms, t_nblist *nl, real *dadx, real *dvda, rvec x[
 
 
 void
-calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top, const t_atomtypes *atype,
-               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb, gmx_bool bRad,
+calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t *top,
+               rvec x[], rvec f[], t_forcerec *fr, t_idef *idef, int gb_algorithm, int sa_algorithm, t_nrnb *nrnb,
                const t_pbc *pbc, const t_graph *graph, gmx_enerdata_t *enerd)
 {
     real v = 0;
@@ -1640,7 +1640,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     if (sa_algorithm == esaAPPROX)
     {
         /* Do a simple ACE type approximation for the non-polar solvation */
-        enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr, born->nr, born, top, atype, fr->dvda, gb_algorithm, md);
+        enerd->term[F_NPSOLVATION] += calc_gb_nonpolar(cr, fr, born->nr, born, top, fr->dvda, md);
     }
 
     /* Calculate the bonded GB-interactions using either table or analytical formula */
@@ -1648,7 +1648,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
                                                fr->invsqrta, fr->dvda, fr->gbtab.data, idef, born->epsilon_r, born->gb_epsilon_solvent, fr->epsfac, pbc_null, graph);
 
     /* Calculate self corrections to the GB energies - currently only A state used! (FIXME) */
-    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda, md, fr->epsfac);
+    enerd->term[F_GBPOL]       += calc_gb_selfcorrections(cr, born->nr, md->chargeA, born, fr->dvda,fr->epsfac);
 
     /* If parallel, sum the derivative of the potential w.r.t the born radii */
     if (PARTDECOMP(cr))
@@ -1703,7 +1703,7 @@ calc_gb_forces(t_commrec *cr, t_mdatoms *md, gmx_genborn_t *born, gmx_localtop_t
     }
 #else
     calc_gb_chainrule(fr->natoms_force, &(fr->gblist), fr->dadx, fr->dvda,
-                      x, f, fr->fshift, fr->shift_vec, gb_algorithm, born, md);
+                      x, f, fr->fshift, fr->shift_vec, gb_algorithm, born);
 #endif
 
     if (!fr->bAllvsAll)
@@ -1819,7 +1819,7 @@ compare_int (const void * a, const void * b)
 
 
 
-int make_gb_nblist(t_commrec *cr, int gb_algorithm, real gbcut,
+int make_gb_nblist(t_commrec *cr, int gb_algorithm,
                    rvec x[], matrix box,
                    t_forcerec *fr, t_idef *idef, t_graph *graph, gmx_genborn_t *born)
 {

@@ -64,7 +64,7 @@
 
 /* ORCA interface routines */
 
-void init_orca(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
+void init_orca(t_QMrec *qm)
 {
     char
     *buf;
@@ -105,7 +105,7 @@ void init_orca(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
 }
 
 
-void write_orca_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
+void write_orca_input(t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
     int
         i;
@@ -283,7 +283,7 @@ void write_orca_input(int step, t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     fclose(out);
 }  /* write_orca_input */
 
-real read_orca_output(rvec QMgrad[], rvec MMgrad[], int step, t_forcerec *fr,
+real read_orca_output(rvec QMgrad[], rvec MMgrad[], t_forcerec *fr,
                       t_QMrec *qm, t_MMrec *mm)
 {
     int
@@ -456,7 +456,7 @@ real read_orca_output(rvec QMgrad[], rvec MMgrad[], int step, t_forcerec *fr,
     return(QMener);
 }
 
-void do_orca(int step, char *exe, char *orca_dir, char *basename)
+void do_orca(char *orca_dir, char *basename)
 {
 
     /* make the call to the orca binary through system()
@@ -477,7 +477,7 @@ void do_orca(int step, char *exe, char *orca_dir, char *basename)
     }
 }
 
-real call_orca(t_commrec *cr,  t_forcerec *fr,
+real call_orca(t_forcerec *fr,
                t_QMrec *qm, t_MMrec *mm, rvec f[], rvec fshift[])
 {
     /* normal orca jobs */
@@ -497,9 +497,9 @@ real call_orca(t_commrec *cr,  t_forcerec *fr,
     snew(QMgrad, qm->nrQMatoms);
     snew(MMgrad, mm->nrMMatoms);
 
-    write_orca_input(step, fr, qm, mm);
-    do_orca(step, exe, qm->orca_dir, qm->orca_basename);
-    QMener = read_orca_output(QMgrad, MMgrad, step, fr, qm, mm);
+    write_orca_input(fr, qm, mm);
+    do_orca(qm->orca_dir, qm->orca_basename);
+    QMener = read_orca_output(QMgrad, MMgrad, fr, qm, mm);
     /* put the QMMM forces in the force array and to the fshift
      */
     for (i = 0; i < qm->nrQMatoms; i++)

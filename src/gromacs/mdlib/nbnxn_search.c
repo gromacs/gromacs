@@ -423,8 +423,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
                             nbnxn_grid_t *grid,
                             int dd_zone,
                             int n, rvec corner0, rvec corner1,
-                            real atom_density,
-                            int XFormat)
+                            real atom_density)
 {
     rvec size;
     int  na_c;
@@ -1032,7 +1031,7 @@ static void print_bbsizes_supersub(FILE                *fp,
 /* Potentially sorts atoms on LJ coefficients !=0 and ==0.
  * Also sets interaction flags.
  */
-void sort_on_lj(nbnxn_atomdata_t *nbat, int na_c,
+void sort_on_lj(int na_c,
                 int a0, int a1, const int *atinfo,
                 int *order,
                 int *flags)
@@ -1121,7 +1120,7 @@ void fill_cell(const nbnxn_search_t nbs,
 
     if (grid->bSimple)
     {
-        sort_on_lj(nbat, grid->na_c, a0, a1, atinfo, nbs->a,
+        sort_on_lj(grid->na_c, a0, a1, atinfo, nbs->a,
                    grid->flags+(a0>>grid->na_c_2log)-grid->cell0);
     }
 
@@ -1770,8 +1769,7 @@ void nbnxn_put_on_grid(nbnxn_search_t nbs,
 
     nc_max_grid = set_grid_size_xy(nbs, grid,
                                    dd_zone, n-nmoved, corner0, corner1,
-                                   nbs->grid[0].atom_density,
-                                   nbat->XFormat);
+                                   nbs->grid[0].atom_density);
 
     nc_max = grid->cell0 + nc_max_grid;
 
@@ -2061,8 +2059,7 @@ static float subc_bb_dist2(int si, const float *bb_i_ci,
 #ifdef NBNXN_SEARCH_BB_SSE
 
 /* SSE code for bb distance for bb format xyz0 */
-static float subc_bb_dist2_sse(int na_c,
-                               int si, const float *bb_i_ci,
+static float subc_bb_dist2_sse(int si, const float *bb_i_ci,
                                int csj, const float *bb_j_all)
 {
     const float *bb_i, *bb_j;
@@ -2883,8 +2880,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 /* Plain C or SSE code for making a pair list of super-cell sci vs scj.
  * Checks bounding box distances and possibly atom pair distances.
  */
-static void make_cluster_list_supersub(const nbnxn_search_t nbs,
-                                       const nbnxn_grid_t *gridi,
+static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                                        const nbnxn_grid_t *gridj,
                                        nbnxn_pairlist_t *nbl,
                                        int sci, int scj,
@@ -3360,8 +3356,7 @@ static void nb_realloc_sci(nbnxn_pairlist_t *nbl, int n)
 }
 
 /* Make a new ci entry at index nbl->nci */
-static void new_ci_entry(nbnxn_pairlist_t *nbl, int ci, int shift, int flags,
-                         nbnxn_list_work_t *work)
+static void new_ci_entry(nbnxn_pairlist_t *nbl, int ci, int shift, int flags)
 {
     if (nbl->nci + 1 > nbl->ci_nalloc)
     {
@@ -3376,8 +3371,7 @@ static void new_ci_entry(nbnxn_pairlist_t *nbl, int ci, int shift, int flags,
 }
 
 /* Make a new sci entry at index nbl->nsci */
-static void new_sci_entry(nbnxn_pairlist_t *nbl, int sci, int shift, int flags,
-                          nbnxn_list_work_t *work)
+static void new_sci_entry(nbnxn_pairlist_t *nbl, int sci, int shift)
 {
     if (nbl->nsci + 1 > nbl->sci_nalloc)
     {
@@ -3667,7 +3661,7 @@ static void set_icell_bb_supersub(const float *bb, int ci,
 /* Copies PBC shifted i-cell atom coordinates x,y,z to working array */
 static void icell_set_x_simple(int ci,
                                real shx, real shy, real shz,
-                               int na_c,
+                               int gmx_unused na_c,
                                int stride, const real *x,
                                nbnxn_list_work_t *work)
 {
@@ -4441,13 +4435,11 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
 
                     if (nbl->bSimple)
                     {
-                        new_ci_entry(nbl, cell0_i+ci, shift, flags_i[ci],
-                                     nbl->work);
+                        new_ci_entry(nbl, cell0_i+ci, shift, flags_i[ci]);
                     }
                     else
                     {
-                        new_sci_entry(nbl, cell0_i+ci, shift, flags_i[ci],
-                                      nbl->work);
+                        new_sci_entry(nbl, cell0_i+ci, shift);
                     }
 
 #ifndef NBNXN_SHIFT_BACKWARD
@@ -4646,7 +4638,7 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
                                             check_subcell_list_space_supersub(nbl, cl-cf+1);
                                             for (cj = cf; cj <= cl; cj++)
                                             {
-                                                make_cluster_list_supersub(nbs, gridi, gridj,
+                                                make_cluster_list_supersub(gridi, gridj,
                                                                            nbl, ci, cj,
                                                                            (gridi == gridj && shift == CENTRAL && ci == cj),
                                                                            nbat->xstride, nbat->x,

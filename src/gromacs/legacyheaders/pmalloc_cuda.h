@@ -36,6 +36,8 @@
 #ifndef PMALLOC_CUDA_H
 #define PMALLOC_CUDA_H
 
+#include "types/simple.h"
+
 #ifdef GMX_GPU
 #define FUNC_TERM ;
 #else
@@ -47,13 +49,13 @@ extern "C" {
 #endif
 
 /*! Allocates nbytes of page-locked memory. */
-void pmalloc(void **h_ptr, size_t nbytes) FUNC_TERM
+void pmalloc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
 
 /*! Allocates nbytes of page-locked memory with write-combining. */
-void pmalloc_wc(void **h_ptr, size_t nbytes) FUNC_TERM
+void pmalloc_wc(void gmx_unused **h_ptr, size_t gmx_unused nbytes) FUNC_TERM
 
 /*! Frees page locked memory allocated with pmalloc. */
-void pfree(void *h_ptr) FUNC_TERM
+void pfree(void gmx_unused *h_ptr) FUNC_TERM
 
 #ifdef __cplusplus
 }
