@@ -429,16 +429,14 @@ int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep)
     }
 }
 
-static void moveit(t_commrec *cr,
-                   int left, int right, const char *s, rvec xx[])
+static void moveit(t_commrec *cr, rvec xx[])
 {
     if (!xx)
     {
         return;
     }
 
-    move_rvecs(cr, FALSE, FALSE, left, right,
-               xx, NULL, (cr->nnodes-cr->npmenodes)-1, NULL);
+    move_rvecs(cr, FALSE, FALSE, xx, NULL, (cr->nnodes-cr->npmenodes)-1, NULL);
 }
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
@@ -569,7 +567,7 @@ void write_traj(FILE *fplog, t_commrec *cr,
     rvec         *local_v;
     rvec         *global_v;
 
-#define MX(xvf) moveit(cr, GMX_LEFT, GMX_RIGHT,#xvf, xvf)
+#define MX(xvf) moveit(cr, xvf)
 
     /* MRS -- defining these variables is to manage the difference
      * between half step and full step velocities, but there must be a better way . . . */

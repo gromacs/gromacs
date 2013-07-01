@@ -57,8 +57,7 @@ calc_ewaldcoeff(real rc, real dtol);
 
 
 real
-do_ewald(FILE *log,       gmx_bool bVerbose,
-         t_inputrec *ir,
+do_ewald(t_inputrec *ir,
          rvec x[],        rvec f[],
          real chargeA[],  real chargeB[],
          rvec box,

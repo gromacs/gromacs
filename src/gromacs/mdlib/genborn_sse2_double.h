@@ -44,7 +44,7 @@
 
 int
 calc_gb_rad_still_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
-                              const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born);
+                              double *x, t_nblist *nl, gmx_genborn_t *born);
 
 int
 calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dvda, double *xd, double *f,
@@ -53,7 +53,7 @@ calc_gb_chainrule_sse2_double(int natoms, t_nblist *nl, double *dadx, double *dv
 
 int
 calc_gb_rad_hct_obc_sse2_double(t_commrec *cr, t_forcerec *fr, int natoms, gmx_localtop_t *top,
-                                const t_atomtypes *atype, double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm);
+                                double *x, t_nblist *nl, gmx_genborn_t *born, t_mdatoms *md, int gb_algorithm);
 
 
 
