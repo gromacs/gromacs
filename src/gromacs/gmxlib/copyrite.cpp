@@ -714,7 +714,7 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
     fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
             GromacsVersion(), precisionString, suffix);
     fprintf(fp, "%sExecutable: %s%s\n", prefix,
-            programInfo.programNameWithPath().c_str(), suffix);
+            programInfo.fullBinaryPath().c_str(), suffix);
     fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
             prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
     if (settings.bCopyright_)
