@@ -179,7 +179,7 @@ class File
         void writeLine();
 
         /*! \brief
-         * Checks whether a file exists.
+         * Checks whether a file exists and is a regular file.
          *
          * \param[in] filename  Path to the file to check.
          * \returns   true if \p filename exists and is accessible.

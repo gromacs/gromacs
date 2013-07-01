@@ -208,7 +208,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
     {
-        return oenv->programInfo.programNameWithPath().c_str();
+        return oenv->programInfo.fullBinaryPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
