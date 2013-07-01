@@ -372,13 +372,13 @@ static void calc_virial(FILE *fplog, int start, int homenr, rvec x[], rvec f[],
 
     /* The short-range virial from surrounding boxes */
     clear_mat(vir_part);
-    calc_vir(fplog, SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
+    calc_vir(SHIFTS, fr->shift_vec, fr->fshift, vir_part, ePBC == epbcSCREW, box);
     inc_nrnb(nrnb, eNR_VIRIAL, SHIFTS);
 
     /* Calculate partial virial, for local atoms only, based on short range.
      * Total virial is computed in global_stat, called from do_md
      */
-    f_calc_vir(fplog, start, start+homenr, x, f, vir_part, graph, box);
+    f_calc_vir(start, start+homenr, x, f, vir_part, graph, box);
     inc_nrnb(nrnb, eNR_VIRIAL, homenr);
 
     /* Add position restraint contribution */
@@ -561,7 +561,7 @@ static void post_process_forces(FILE *fplog,
              * if the constructing atoms aren't local.
              */
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, fr->f_novirsum, NULL,
+            spread_vsite_f(vsite, x, fr->f_novirsum, NULL,
                            (flags & GMX_FORCE_VIRIAL), fr->vir_el_recip,
                            nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
@@ -1091,7 +1091,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(&(inputrec->opts), fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (DOMAINDECOMP(cr))
@@ -1231,8 +1231,8 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
+                      cr, nrnb, wcycle, mdatoms,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
                       inputrec->fepvals, lambda, graph, &(top->excls), fr->mu_tot,
                       flags, &cycles_pme);
@@ -1388,14 +1388,14 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(fplog, vsite, x, fr->f_twin, NULL, FALSE, NULL,
+                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
                                nrnb,
                                &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
                 wallcycle_stop(wcycle, ewcVSITESPREAD);
@@ -1440,7 +1440,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts), &(enerd->grpp), enerd->term);
+    sum_epot(&(enerd->grpp), enerd->term);
 }
 
 void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
@@ -1606,7 +1606,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         }
         else
         {
-            move_x(fplog, cr, GMX_LEFT, GMX_RIGHT, x, nrnb);
+            move_x(cr, x, nrnb);
         }
         wallcycle_stop(wcycle, ewcMOVEX);
     }
@@ -1670,7 +1670,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Reset energies */
-    reset_enerdata(&(inputrec->opts), fr, bNS, enerd, MASTER(cr));
+    reset_enerdata(fr, bNS, enerd, MASTER(cr));
     clear_rvecs(SHIFTS, fr->fshift);
 
     if (bNS)
@@ -1690,9 +1690,9 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         {
             dvdlambda[i] = 0;
         }
-        ns(fplog, fr, x, box,
-           groups, &(inputrec->opts), top, mdatoms,
-           cr, nrnb, lambda, dvdlambda, &enerd->grpp, bFillGrid,
+        ns(fplog, fr, box,
+           groups, top, mdatoms,
+           cr, nrnb, bFillGrid,
            bDoLongRangeNS);
         if (bSepDVDL)
         {
@@ -1808,8 +1808,8 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
 
     /* Compute the bonded and non-bonded energies and optionally forces */
     do_force_lowlevel(fplog, step, fr, inputrec, &(top->idef),
-                      cr, nrnb, wcycle, mdatoms, &(inputrec->opts),
-                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, mtop, top, fr->born,
+                      cr, nrnb, wcycle, mdatoms,
+                      x, hist, f, bSepLRF ? fr->f_twin : f, enerd, fcd, top, fr->born,
                       &(top->atomtypes), bBornRadii, box,
                       inputrec->fepvals, lambda,
                       graph, &(top->excls), fr->mu_tot,
@@ -1905,14 +1905,14 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
         if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL)))
         {
             wallcycle_start(wcycle, ewcVSITESPREAD);
-            spread_vsite_f(fplog, vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
+            spread_vsite_f(vsite, x, f, fr->fshift, FALSE, NULL, nrnb,
                            &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
             wallcycle_stop(wcycle, ewcVSITESPREAD);
 
             if (bSepLRF)
             {
                 wallcycle_start(wcycle, ewcVSITESPREAD);
-                spread_vsite_f(fplog, vsite, x, fr->f_twin, NULL, FALSE, NULL,
+                spread_vsite_f(vsite, x, fr->f_twin, NULL, FALSE, NULL,
                                nrnb,
                                &top->idef, fr->ePBC, fr->bMolPBC, graph, box, cr);
                 wallcycle_stop(wcycle, ewcVSITESPREAD);
@@ -1957,7 +1957,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
     }
 
     /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts), &(enerd->grpp), enerd->term);
+    sum_epot(&(enerd->grpp), enerd->term);
 }
 
 void do_force(FILE *fplog, t_commrec *cr,
@@ -2702,7 +2702,7 @@ void init_md(FILE *fplog,
 
     if (upd)
     {
-        *upd = init_update(fplog, ir);
+        *upd = init_update(ir);
     }
 
 

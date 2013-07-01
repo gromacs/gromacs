@@ -86,7 +86,7 @@ void init_pull(FILE              *fplog,
                unsigned long      Flags);
 
 /* Close the pull output files */
-void finish_pull(FILE *fplog, t_pull *pull);
+void finish_pull(t_pull *pull);
 
 /* Print the pull output (x and/or f) */
 void pull_print_output(t_pull *pull, gmx_large_int_t step, double time);

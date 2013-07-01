@@ -61,13 +61,6 @@
 #define NOT_FINISHED(l1, l2) \
     printf("not finished yet: lines %d .. %d in %s\n", l1, l2, __FILE__)
 
-static char *int_title(const char *title, int nodeid, char buf[], int size)
-{
-    sprintf(buf, "%s (%d)", title, nodeid);
-
-    return buf;
-}
-
 void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes)
 {
     int nnhpres;
@@ -192,7 +185,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes)
 }
 
 
-void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop)
 {
     bcast_ir_mtop(cr, inputrec, mtop);

@@ -2216,7 +2216,7 @@ void init_forcerec(FILE              *fp,
      * group kernels are OK. See Redmine #1249. */
     if (fr->bAllvsAll)
     {
-        fr->bAllvsAll = FALSE;
+        fr->bAllvsAll            = FALSE;
         fr->use_cpu_acceleration = FALSE;
         if (fp != NULL)
         {
@@ -2608,9 +2608,9 @@ void init_forcerec(FILE              *fp,
 #endif
 
         fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(fp, oenv, fr, tabpfn, fr->gbtabscale);
+        fr->gbtab  = make_gb_table(oenv, fr);
 
-        init_gb(&fr->born, cr, fr, ir, mtop, ir->rgbradii, ir->gb_algorithm);
+        init_gb(&fr->born, cr, fr, ir, mtop, ir->gb_algorithm);
 
         /* Copy local gb data (for dd, this is done in dd_partition_system) */
         if (!DOMAINDECOMP(cr))
@@ -2863,11 +2863,11 @@ void init_forcerec(FILE              *fp,
     fr->timesteps = 0;
 
     /* Initialize neighbor search */
-    init_ns(fp, cr, &fr->ns, fr, mtop, box);
+    init_ns(fp, cr, &fr->ns, fr, mtop);
 
     if (cr->duty & DUTY_PP)
     {
-        gmx_nonbonded_setup(fp, fr, bGenericKernelOnly);
+        gmx_nonbonded_setup(fr, bGenericKernelOnly);
         /*
            if (ir->bAdress)
             {

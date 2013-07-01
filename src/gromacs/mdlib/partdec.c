@@ -127,7 +127,7 @@ void gmx_tx(const t_commrec *cr, int dir, void *buf, int bufsize)
 #endif
 }
 
-void gmx_tx_wait(const t_commrec *cr, int dir)
+void gmx_tx_wait(const t_commrec *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_tx_wait");
@@ -163,7 +163,7 @@ void gmx_rx(const t_commrec *cr, int dir, void *buf, int bufsize)
 #endif
 }
 
-void gmx_rx_wait(const t_commrec *cr, int nodeid)
+void gmx_rx_wait(const t_commrec *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_rx_wait");
@@ -244,13 +244,13 @@ void gmx_tx_rx_void(const t_commrec *cr,
 
 /*void gmx_wait(int dir_send,int dir_recv)*/
 
-void gmx_wait(const t_commrec *cr, int dir_send, int dir_recv)
+void gmx_wait(const t_commrec *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_wait");
 #else
-    gmx_tx_wait(cr, dir_send);
-    gmx_rx_wait(cr, dir_recv);
+    gmx_tx_wait(cr);
+    gmx_rx_wait(cr);
 #endif
 }
 
@@ -262,7 +262,7 @@ static void set_left_right(t_commrec *cr)
 
 void pd_move_f(const t_commrec *cr, rvec f[], t_nrnb *nrnb)
 {
-    move_f(NULL, cr, GMX_LEFT, GMX_RIGHT, f, cr->pd->vbuf, nrnb);
+    move_f(cr, f, cr->pd->vbuf, nrnb);
 }
 
 int *pd_cgindex(const t_commrec *cr)
@@ -692,7 +692,7 @@ static void pr_idef_division(FILE *fp, t_idef *idef, int nnodes, int **multinr)
     }
 }
 
-static void select_my_ilist(FILE *log, t_ilist *il, int *multinr, t_commrec *cr)
+static void select_my_ilist(t_ilist *il, int *multinr, t_commrec *cr)
 {
     t_iatom *ia;
     int      i, start, end, nr;
@@ -728,13 +728,13 @@ static void select_my_ilist(FILE *log, t_ilist *il, int *multinr, t_commrec *cr)
     il->nr = nr;
 }
 
-static void select_my_idef(FILE *log, t_idef *idef, int **multinr, t_commrec *cr)
+static void select_my_idef(t_idef *idef, int **multinr, t_commrec *cr)
 {
     int i;
 
     for (i = 0; (i < F_NRE); i++)
     {
-        select_my_ilist(log, &idef->il[i], multinr[i], cr);
+        select_my_ilist(&idef->il[i], multinr[i], cr);
     }
 }
 
@@ -810,7 +810,7 @@ gmx_localtop_t *split_system(FILE *log,
     /* This should be fine */
     /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
 
-    select_my_idef(log, &(top->idef), multinr_nre, cr);
+    select_my_idef(&(top->idef), multinr_nre, cr);
 
     if (top->idef.il[F_CONSTR].nr > 0)
     {

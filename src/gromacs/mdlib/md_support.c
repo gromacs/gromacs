@@ -284,7 +284,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global, real *pcurr,
-                     int natoms, gmx_bool *bSumEkinhOld, int flags)
+                     gmx_bool *bSumEkinhOld, int flags)
 {
     int      i, gsi;
     real     gs_buf[eglsNR];
@@ -345,7 +345,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
     {
-        calc_vcm_grp(fplog, mdatoms->start, mdatoms->homenr, mdatoms,
+        calc_vcm_grp(mdatoms->start, mdatoms->homenr, mdatoms,
                      state->x, state->v, vcm);
     }
 
@@ -425,7 +425,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        do_stopcm_grp(fplog, mdatoms->start, mdatoms->homenr, mdatoms->cVCM,
+        do_stopcm_grp(mdatoms->start, mdatoms->homenr, mdatoms->cVCM,
                       state->x, state->v, vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
@@ -448,7 +448,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            If FALSE, we go ahead and erase over it.
          */
         enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
-                                       bEkinAveVel, bIterate, bScaleEkin);
+                                       bEkinAveVel, bScaleEkin);
         enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);

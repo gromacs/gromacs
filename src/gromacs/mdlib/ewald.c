@@ -129,8 +129,7 @@ void init_ewald_tab(ewald_tab_t *et, const t_inputrec *ir, FILE *fp)
 
 
 
-real do_ewald(FILE *log,       gmx_bool bVerbose,
-              t_inputrec *ir,
+real do_ewald(t_inputrec *ir,
               rvec x[],        rvec f[],
               real chargeA[],  real chargeB[],
               rvec box,
