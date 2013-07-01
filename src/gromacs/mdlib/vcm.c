@@ -124,7 +124,7 @@ static void update_tensor(rvec x, real m0, tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(FILE *fp, int start, int homenr, t_mdatoms *md,
+void calc_vcm_grp(int start, int homenr, t_mdatoms *md,
                   rvec x[], rvec v[], t_vcm *vcm)
 {
     int    i, g, m;
@@ -183,7 +183,7 @@ void calc_vcm_grp(FILE *fp, int start, int homenr, t_mdatoms *md,
     }
 }
 
-void do_stopcm_grp(FILE *fp, int start, int homenr, unsigned short *group_id,
+void do_stopcm_grp(int start, int homenr, unsigned short *group_id,
                    rvec x[], rvec v[], t_vcm *vcm)
 {
     int  i, g, m;

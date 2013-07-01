@@ -94,7 +94,7 @@ init_domain_decomposition(FILE *fplog,
 
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     gmx_vsite_t *vsite,
                      t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb);
 /* Initialize data structures for bonded interactions */
 
@@ -102,7 +102,7 @@ gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd, int ePBC);
 /* Returns if we need to do pbc for calculating bonded interactions */
 
 void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
-                       t_inputrec *ir, t_forcerec *fr,
+                       t_inputrec *ir,
                        gmx_ddbox_t *ddbox);
 /* Set DD grid dimensions and limits,
  * should be called after calling dd_init_bondeds.
@@ -221,8 +221,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd, int at_start,
                               t_ilist *il_local);
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-                             gmx_mtop_t   *mtop,
-                             gmx_constr_t  constr);
+                             gmx_mtop_t   *mtop);
 
 void init_domdec_vsites(gmx_domdec_t *dd, int n_intercg_vsite);
 
@@ -234,13 +233,12 @@ void dd_print_missing_interactions(FILE *fplog, t_commrec *cr,
 
 void dd_make_reverse_top(FILE *fplog,
                          gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                         gmx_vsite_t *vsite, gmx_constr_t constr,
+                         gmx_vsite_t *vsite,
                          t_inputrec *ir, gmx_bool bBCheck);
 
 void dd_make_local_cgs(gmx_domdec_t *dd, t_block *lcgs);
 
-void dd_make_local_top(FILE *fplog,
-                       gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
+void dd_make_local_top(gmx_domdec_t *dd, gmx_domdec_zones_t *zones,
                        int npbcdim, matrix box,
                        rvec cellsize_min, ivec npulse,
                        t_forcerec *fr,
@@ -260,8 +258,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
 t_blocka *make_charge_group_links(gmx_mtop_t *mtop, gmx_domdec_t *dd,
                                   cginfo_mb_t *cginfo_mb);
 
-void dd_bonded_cg_distance(FILE *fplog,
-                           gmx_domdec_t *dd, gmx_mtop_t *mtop,
+void dd_bonded_cg_distance(FILE *fplog, gmx_mtop_t *mtop,
                            t_inputrec *ir, rvec *x, matrix box,
                            gmx_bool bBCheck,
                            real *r_2b, real *r_mb);
@@ -285,7 +282,7 @@ real dd_choose_grid(FILE *fplog,
                     gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
-                    gmx_bool bInterCGBondeds, gmx_bool bInterCGMultiBody);
+                    gmx_bool bInterCGBondeds);
 /* Determines the optimal DD cell setup dd->nc and possibly npmenodes
  * for the system.
  * On the master node returns the actual cellsize limit used.

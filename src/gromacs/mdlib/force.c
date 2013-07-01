@@ -67,17 +67,12 @@
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
-        rvec               x[],
         matrix             box,
         gmx_groups_t      *groups,
-        t_grpopts         *opts,
         gmx_localtop_t    *top,
         t_mdatoms         *md,
         t_commrec         *cr,
         t_nrnb            *nrnb,
-        real              *lambda,
-        real              *dvdlambda,
-        gmx_grppairener_t *grppener,
         gmx_bool           bFillGrid,
         gmx_bool           bDoLongRangeNS)
 {
@@ -95,9 +90,8 @@ void ns(FILE              *fp,
         fr->nlr = 0;
     }
 
-    nsearch = search_neighbours(fp, fr, x, box, top, groups, cr, nrnb, md,
-                                lambda, dvdlambda, grppener,
-                                bFillGrid, bDoLongRangeNS, TRUE);
+    nsearch = search_neighbours(fp, fr, box, top, groups, cr, nrnb, md,
+                                bFillGrid, bDoLongRangeNS);
     if (debug)
     {
         fprintf(debug, "nsearch = %d\n", nsearch);
@@ -144,13 +138,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_idef     *idef,    t_commrec  *cr,
                        t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
                        t_mdatoms  *md,
-                       t_grpopts  *opts,
                        rvec       x[],      history_t  *hist,
                        rvec       f[],
                        rvec       f_longrange[],
                        gmx_enerdata_t *enerd,
                        t_fcdata   *fcd,
-                       gmx_mtop_t     *mtop,
                        gmx_localtop_t *top,
                        gmx_genborn_t *born,
                        t_atomtypes *atype,
@@ -206,7 +198,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     /* do QMMM first if requested */
     if (fr->bQMMM)
     {
-        enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr, md);
+        enerd->term[F_EQM] = calculate_QMMM(cr, x, f, fr);
     }
 
     if (bSepDVDL)
@@ -248,7 +240,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
 
         if (bBornRadii)
         {
-            calc_gb_rad(cr, fr, ir, top, atype, x, &(fr->gblist), born, md, nrnb);
+            calc_gb_rad(cr, fr, ir, top, x, &(fr->gblist), born, md, nrnb);
         }
 
         wallcycle_sub_stop(wcycle, ewcsNONBONDED);
@@ -277,8 +269,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
         }
 
         wallcycle_sub_start(wcycle, ewcsNONBONDED);
-        do_nonbonded(cr, fr, x, f, f_longrange, md, excl,
-                     &enerd->grpp, box_size, nrnb,
+        do_nonbonded(fr, x, f, f_longrange, md, excl,
+                     &enerd->grpp, nrnb,
                      lambda, dvdl_nb, -1, -1, donb_flags);
 
         /* If we do foreign lambda and we have soft-core interactions
@@ -293,11 +285,11 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                     lam_i[j] = (i == 0 ? lambda[j] : fepvals->all_lambda[j][i-1]);
                 }
                 reset_foreign_enerdata(enerd);
-                do_nonbonded(cr, fr, x, f, f_longrange, md, excl,
-                             &(enerd->foreign_grpp), box_size, nrnb,
+                do_nonbonded(fr, x, f, f_longrange, md, excl,
+                             &(enerd->foreign_grpp), nrnb,
                              lam_i, dvdl_dum, -1, -1,
                              (donb_flags & ~GMX_NONBONDED_DO_FORCE) | GMX_NONBONDED_DO_FOREIGNLAMBDA);
-                sum_epot(&ir->opts, &(enerd->foreign_grpp), enerd->foreign_term);
+                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
         }
@@ -311,8 +303,8 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     if (ir->implicit_solvent)
     {
         wallcycle_sub_start(wcycle, ewcsBONDED);
-        calc_gb_forces(cr, md, born, top, atype, x, f, fr, idef,
-                       ir->gb_algorithm, ir->sa_algorithm, nrnb, bBornRadii, &pbc, graph, enerd);
+        calc_gb_forces(cr, md, born, top, x, f, fr, idef,
+                       ir->gb_algorithm, ir->sa_algorithm, nrnb, &pbc, graph, enerd);
         wallcycle_sub_stop(wcycle, ewcsBONDED);
     }
 
@@ -427,7 +419,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 }
                 calc_bonds_lambda(fplog, idef, x, fr, &pbc, graph, &(enerd->foreign_grpp), enerd->foreign_term, nrnb, lam_i, md,
                                   fcd, DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL);
-                sum_epot(&ir->opts, &(enerd->foreign_grpp), enerd->foreign_term);
+                sum_epot(&(enerd->foreign_grpp), enerd->foreign_term);
                 enerd->enerpart_lambda[i] += enerd->foreign_term[F_EPOT];
             }
         }
@@ -602,7 +594,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                 }
                 break;
             case eelEWALD:
-                Vlr = do_ewald(fplog, FALSE, ir, x, fr->f_novirsum,
+                Vlr = do_ewald(ir, x, fr->f_novirsum,
                                md->chargeA, md->chargeB,
                                box_size, cr, md->homenr,
                                fr->vir_el_recip, fr->ewaldcoeff,
@@ -640,7 +632,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
             {
                 dvdl                   = 0;
                 enerd->term[F_RF_EXCL] =
-                    RF_excl_correction(fplog, fr, graph, md, excl, x, f,
+                    RF_excl_correction(fr, graph, md, excl, x, f,
                                        fr->fshift, &pbc, lambda[efptCOUL], &dvdl);
             }
 
@@ -758,7 +750,7 @@ static real sum_v(int n, real v[])
     return t;
 }
 
-void sum_epot(t_grpopts *opts, gmx_grppairener_t *grpp, real *epot)
+void sum_epot(gmx_grppairener_t *grpp, real *epot)
 {
     int i;
 
@@ -861,10 +853,11 @@ void sum_dhdl(gmx_enerdata_t *enerd, real *lambda, t_lambda *fepvals)
     enerd->term[F_DVDL_CONSTR] = 0;
 
     for (i = 0; i < fepvals->n_lambda; i++)
-    {                                         /* note we are iterating over fepvals here!
-                                                 For the current lam, dlam = 0 automatically,
-                                                 so we don't need to add anything to the
-                                                 enerd->enerpart_lambda[0] */
+    {
+        /* note we are iterating over fepvals here!
+           For the current lam, dlam = 0 automatically,
+           so we don't need to add anything to the
+           enerd->enerpart_lambda[0] */
 
         /* we don't need to worry about dvdl_lin contributions to dE at
            current lambda, because the contributions to the current
@@ -908,8 +901,7 @@ void reset_foreign_enerdata(gmx_enerdata_t *enerd)
     }
 }
 
-void reset_enerdata(t_grpopts *opts,
-                    t_forcerec *fr, gmx_bool bNS,
+void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
                     gmx_enerdata_t *enerd,
                     gmx_bool bMaster)
 {

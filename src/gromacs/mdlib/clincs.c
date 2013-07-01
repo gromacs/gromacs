@@ -1468,43 +1468,6 @@ static void cconerr(gmx_domdec_t *dd,
     *imax      = im;
 }
 
-static void dump_conf(gmx_domdec_t *dd, struct gmx_lincsdata *li,
-                      t_blocka *at2con,
-                      char *name, gmx_bool bAll, rvec *x, matrix box)
-{
-    char  str[STRLEN];
-    FILE *fp;
-    int   ac0, ac1, i;
-
-    dd_get_constraint_range(dd, &ac0, &ac1);
-
-    sprintf(str, "%s_%d_%d_%d.pdb", name, dd->ci[XX], dd->ci[YY], dd->ci[ZZ]);
-    fp = gmx_fio_fopen(str, "w");
-    fprintf(fp, "CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-            10*norm(box[XX]), 10*norm(box[YY]), 10*norm(box[ZZ]),
-            90.0, 90.0, 90.0);
-    for (i = 0; i < ac1; i++)
-    {
-        if (i < dd->nat_home || (bAll && i >= ac0 && i < ac1))
-        {
-            fprintf(fp, "%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-                    "ATOM", ddglatnr(dd, i), "C", "ALA", ' ', i+1,
-                    10*x[i][XX], 10*x[i][YY], 10*x[i][ZZ],
-                    1.0, i < dd->nat_tot ? 0.0 : 1.0);
-        }
-    }
-    if (bAll)
-    {
-        for (i = 0; i < li->nc; i++)
-        {
-            fprintf(fp, "CONECT%5d%5d\n",
-                    ddglatnr(dd, li->bla[2*i]),
-                    ddglatnr(dd, li->bla[2*i+1]));
-        }
-    }
-    gmx_fio_fclose(fp);
-}
-
 gmx_bool constrain_lincs(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                          t_inputrec *ir,
                          gmx_large_int_t step,
