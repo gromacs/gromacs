@@ -686,7 +686,7 @@ enum order {
    pN, pM, pK is local size specific to current processor (only different to max if not divisible)
    NG, MG, KG is size of global data*/
 static void splitaxes(t_complex* lout, const t_complex* lin,
-                      int maxN, int maxM, int maxK, int pN, int pM, int pK,
+                      int maxN, int maxM, int maxK, int pM,
                       int P, int NG, int *N, int* oN, int starty, int startz, int endy, int endz)
 {
     int x, y, z, i;
@@ -740,7 +740,7 @@ static void splitaxes(t_complex* lout, const t_complex* lin,
    N,M,K local dimensions
    KG global size*/
 static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
-                            int maxN, int maxM, int maxK, int pN, int pM, int pK,
+                            int maxN, int maxM, int maxK, int pM,
                             int P, int KG, int* K, int* oK, int starty, int startx, int endy, int endx)
 {
     int i, x, y, z;
@@ -792,7 +792,7 @@ static void joinAxesTrans13(t_complex* lout, const t_complex* lin,
    the minor, middle, major order is only correct for x,y,z (N,M,K) for the input
    N,M,K local size
    MG, global size*/
-static void joinAxesTrans12(t_complex* lout, const t_complex* lin, int maxN, int maxM, int maxK, int pN, int pM, int pK,
+static void joinAxesTrans12(t_complex* lout, const t_complex* lin, int maxN, int maxM, int maxK, int pN,
                             int P, int MG, int* M, int* oM, int startx, int startz, int endx, int endz)
 {
     int i, z, y, x;
@@ -1088,7 +1088,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
             {
                 tend    = ((thread+1)*pM[s]*pK[s]/plan->nthreads);
                 tstart /= C[s];
-                splitaxes(lout2, lout, N[s], M[s], K[s], pN[s], pM[s], pK[s], P[s], C[s], iNout[s], oNout[s], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
+                splitaxes(lout2, lout, N[s], M[s], K[s], pM[s], P[s], C[s], iNout[s], oNout[s], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
             }
 #pragma omp barrier /*barrier required before AllToAll (all input has to be their) - before timing to make timing more acurate*/
 #ifdef NOGMX
@@ -1167,7 +1167,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
             {
                 tstart = ( thread   *pM[s]*pN[s]/plan->nthreads);
                 tend   = ((thread+1)*pM[s]*pN[s]/plan->nthreads);
-                joinAxesTrans13(lin, joinin, N[s], pM[s], K[s], pN[s], pM[s], pK[s], P[s], C[s+1], iNin[s+1], oNin[s+1], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
+                joinAxesTrans13(lin, joinin, N[s], pM[s], K[s], pM[s], P[s], C[s+1], iNin[s+1], oNin[s+1], tstart%pM[s], tstart/pM[s], tend%pM[s], tend/pM[s]);
             }
         }
         else
@@ -1176,7 +1176,7 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
             {
                 tstart = ( thread   *pK[s]*pN[s]/plan->nthreads);
                 tend   = ((thread+1)*pK[s]*pN[s]/plan->nthreads);
-                joinAxesTrans12(lin, joinin, N[s], M[s], pK[s], pN[s], pM[s], pK[s], P[s], C[s+1], iNin[s+1], oNin[s+1], tstart%pN[s], tstart/pN[s], tend%pN[s], tend/pN[s]);
+                joinAxesTrans12(lin, joinin, N[s], M[s], pK[s], pN[s], P[s], C[s+1], iNin[s+1], oNin[s+1], tstart%pN[s], tstart/pN[s], tend%pN[s], tend/pN[s]);
             }
         }
 
