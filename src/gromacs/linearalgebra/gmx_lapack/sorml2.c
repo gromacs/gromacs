@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <types/simple.h>
 #include "../gmx_lapack.h"
 
 void
@@ -13,7 +14,7 @@ F77_FUNC(sorml2,SORML2)(const char *side,
                         float *c,
                         int *ldc,
                         float *work,
-                        int *info)
+                        int gmx_unused *info)
 {
   const char xside=toupper(*side);
   const char xtrans=toupper(*trans);
