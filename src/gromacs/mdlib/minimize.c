@@ -797,7 +797,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
                   NULL, &shake_vir, nrnb, econqForceDispl, FALSE, 0, 0);
         if (fr->bSepDVDL && fplog)
         {
-            fprintf(fplog, sepdvdlformat, "Constraints", t, dvdl_constr);
+            gmx_print_sepdvdl(fplog, "Constraints", t, dvdl_constr);
         }
         enerd->term[F_DVDL_CONSTR] += dvdl_constr;
         m_add(force_vir, shake_vir, vir);

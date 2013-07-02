@@ -50,7 +50,7 @@
 extern "C" {
 #endif
 
-static const char *sepdvdlformat = "  %-30s V %12.5e  dVdl %12.5e\n";
+void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda);
 
 void calc_vir(FILE *fplog, int nxf, rvec x[], rvec f[], tensor vir,
               gmx_bool bScrewPBC, matrix box);

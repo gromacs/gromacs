@@ -1780,7 +1780,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
                 if (fr->bSepDVDL && fplog && do_log)
                 {
-                    fprintf(fplog, sepdvdlformat, "Constraint dV/dl", 0.0, dvdl_constr);
+                    gmx_print_sepdvdl(fplog, "Constraint dV/dl", 0.0, dvdl_constr);
                 }
                 if (bVV)
                 {
