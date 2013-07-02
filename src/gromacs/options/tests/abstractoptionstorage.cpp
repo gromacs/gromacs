@@ -101,14 +101,17 @@ class MockOptionStorage : public gmx::OptionStorageTemplate<std::string>
         // using MyBase::addValue;
         // using MyBase::commitValues;
         // "using" is correct but MSVC gives error C2248. Workaround:
+        //! \copydoc gmx::OptionStorageTemplate::markAsSet()
         void markAsSet()
         {
             MyBase::markAsSet();
         }
+        //! \copydoc gmx::OptionStorageTemplate::addValue()
         void addValue(const std::string &value)
         {
             MyBase::addValue(value);
         }
+        //! \copydoc gmx::OptionStorageTemplate::commitValues()
         void commitValues()
         {
             MyBase::commitValues();

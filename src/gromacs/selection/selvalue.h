@@ -77,7 +77,6 @@ typedef struct gmx_ana_selvalue_t
      * the number of atoms in the group.
      */
     int                         nr;
-    /** Pointer to the value. */
     union {
         /*! \brief
          * Generic pointer for operations that do not need type information.
@@ -98,6 +97,7 @@ typedef struct gmx_ana_selvalue_t
         /** Boolean value (only parameters of type \ref NO_VALUE); */
         bool                   *b;
     }                           u;
+    //!< Pointer to the value.
     /*! \brief
      * Number of elements allocated for the value array.
      */

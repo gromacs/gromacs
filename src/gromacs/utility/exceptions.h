@@ -431,8 +431,7 @@ int translateException(const std::exception &ex);
 
 /*!\}*/
 
-/*! \cond libapi */
-/*! \libinternal \brief
+/*! \brief
  * Macro for catching exceptions at C++ -> C boundary.
  *
  * This macro is intended for uniform handling of exceptions when C++ code is
@@ -461,7 +460,6 @@ int translateException(const std::exception &ex);
         ::gmx::printFatalErrorMessage(stderr, ex); \
         std::exit(1); \
     }
-//! \endcond
 
 } // namespace gmx
 

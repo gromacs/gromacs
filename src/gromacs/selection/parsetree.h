@@ -230,7 +230,6 @@ class SelectionParserValue
         gmx::SelectionTreeElementPointer expr;
         //! String value for \a type ::STR_VALUE.
         std::string                      str;
-        //! The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
         union {
             //! The integer value/range (\a type ::INT_VALUE).
             struct {
@@ -249,6 +248,7 @@ class SelectionParserValue
             //! The position value (\a type ::POS_VALUE).
             rvec                x;
         }                       u;
+        //!< The actual value if \a expr is NULL and \a type is not ::STR_VALUE.
 
     private:
         /*! \brief

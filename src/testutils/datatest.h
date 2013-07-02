@@ -386,7 +386,7 @@ class AnalysisDataTestFixture : public ::testing::Test
         gmx::test::TestReferenceData  data_;
 };
 
-
+//! \cond
 template <class ArrayData>
 void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
                                              ArrayData                   *data)
@@ -413,6 +413,7 @@ void AnalysisDataTestFixture::setupArrayData(const AnalysisDataTestInput &input,
         }
     }
 }
+//! \endcond
 
 } // namespace test
 

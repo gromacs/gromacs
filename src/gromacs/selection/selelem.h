@@ -331,7 +331,6 @@ class SelectionTreeElement
          * \ref selelem_flags "flags for gmx::SelectionTreeElement".
          */
         int                                 flags;
-        //! Data required by the evaluation function.
         union {
             /*! \brief Index group data for several element types.
              *
@@ -373,6 +372,7 @@ class SelectionTreeElement
                 int                         id;
             }                               gref;
         }                                   u;
+        //!< Data required by the evaluation function.
         //! Memory pool to use for values, or NULL if standard memory handling.
         struct gmx_sel_mempool_t           *mempool;
         //! Internal data for the selection compiler.

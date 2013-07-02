@@ -60,13 +60,13 @@
  */
 typedef struct
 {
-    /** Value for each atom to match. */
     union
     {
         int                 *i;
         char               **s;
         void                *ptr;
     }                        val;
+    //!< Value for each atom to match.
     /*! \brief
      * Number of values in the \p as array.
      *
@@ -74,13 +74,13 @@ typedef struct
      * \p as_s_sorted array.
      */
     int                      nas;
-    /** Values to match against. */
     union
     {
         int                 *i;
         char               **s;
         void                *ptr;
     }                        as;
+    //!< Values to match against.
     /*! \brief
      * Separate array for sorted \p as.s array.
      *
