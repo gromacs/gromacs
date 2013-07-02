@@ -74,6 +74,7 @@ namespace tMPI
 template <class Mutex> class TMPI_EXPORT lock_guard
 {
     public:
+        //! Lockable type that this lock operates on.
         typedef Mutex mutex_type;
         /*! \brief The constructor, which locks the mutex.
 
@@ -101,6 +102,7 @@ template <class Mutex> class TMPI_EXPORT lock_guard
 class TMPI_EXPORT mutex
 {
     public:
+        //! Type of the native mutex handle.
         typedef tMPI_Thread_mutex_t* native_handle_type;
 
         /*! \brief The constructor.
@@ -158,6 +160,7 @@ class TMPI_EXPORT mutex
             }
         }
 
+        //! Returns the native handle for this mutex.
         native_handle_type native_handle() { return &handle_; }
     private:
         // forbid copy constructor & assignment
