@@ -49,33 +49,38 @@ namespace gmx
 /*! \brief
  * Template class for typesafe handling of combination of flags.
  *
- * \tparam T An enumerated type that holds the possible single flags.
+ * \tparam FlagType An enumerated type that holds the possible single flags.
  *
  * This class is not used publicly, but is present in an installed header
  * because it is used internally in public template classes.
  *
+ * Currently, it is not completely transparent, since or'ing together two
+ * \p FlagType flags does not automatically create a FlagsTemplate object.
+ * Also, some operators and more complex operations (like testing for multiple
+ * flags at the same time) are missing, but can be added if the need arises.
+ *
  * \inlibraryapi
  * \ingroup module_utility
  */
-template <typename T>
+template <typename FlagType>
 class FlagsTemplate
 {
     public:
         //! Creates a flags object with no flags set.
         FlagsTemplate() : flags_(0) {}
         //! Creates a flags object from a single flag.
-        FlagsTemplate(T flag) : flags_(flag) {}
+        FlagsTemplate(FlagType flag) : flags_(flag) {}
 
         //! Returns true if the given flag is set.
-        bool test(T flag) const { return flags_ & flag; }
+        bool test(FlagType flag) const { return (flags_ & flag) == flag; }
         //! Clears all flags.
         void clearAll() { flags_ = 0; }
         //! Sets the given flag.
-        void set(T flag) { flags_ |= flag; }
+        void set(FlagType flag) { flags_ |= flag; }
         //! Clears the given flag.
-        void clear(T flag) { flags_ &= ~flag; }
+        void clear(FlagType flag) { flags_ &= ~flag; }
         //! Sets or clears the given flag.
-        void set(T flag, bool bSet)
+        void set(FlagType flag, bool bSet)
         {
             if (bSet)
             {
@@ -88,25 +93,28 @@ class FlagsTemplate
         }
 
         //! Combines flags from two flags objects.
-        FlagsTemplate<T> operator|(const FlagsTemplate<T> &other) const
+        FlagsTemplate<FlagType>
+        operator|(const FlagsTemplate<FlagType> &other) const
         {
-            return FlagsTemplate<T>(flags_ | other.flags_);
+            return FlagsTemplate<FlagType>(flags_ | other.flags_);
         }
         //! Combines flags from another flag object.
-        FlagsTemplate<T> &operator|=(const FlagsTemplate<T> &other)
+        FlagsTemplate<FlagType> &
+        operator|=(const FlagsTemplate<FlagType> &other)
         {
             flags_ |= other.flags_;
             return *this;
         }
         //! Combined flags from two flags objects.
-        FlagsTemplate<T> operator&(const FlagsTemplate<T> &other) const
+        FlagsTemplate<FlagType>
+        operator&(const FlagsTemplate<FlagType> &other) const
         {
-            return FlagsTemplate<T>(flags_ & other.flags_);
+            return FlagsTemplate<FlagType>(flags_ & other.flags_);
         }
         //! Returns an object with all flags flipped.
-        FlagsTemplate<T> operator~() const
+        FlagsTemplate<FlagType> operator~() const
         {
-            return FlagsTemplate<T>(~flags_);
+            return FlagsTemplate<FlagType>(~flags_);
         }
 
     private:

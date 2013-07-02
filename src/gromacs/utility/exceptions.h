@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares common exception classes for fatal error handling.
+ * Declares common exception classes and macros for fatal error handling.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -66,7 +66,7 @@ namespace internal
 typedef std::vector<boost::exception_ptr> NestedExceptionList;
 }   // namespace internal
 
-/*! \addtopublicapi
+/*! \addtogroup module_utility
  * \{
  */
 
@@ -156,7 +156,7 @@ class ExceptionInitializer
  * -# Because the constructor takes an argument, virtual inheritance would
  *    complicate any classes that inherit indirectly from this class.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class GromacsException : public std::exception, public boost::exception
 {
@@ -203,7 +203,7 @@ class GromacsException : public std::exception, public boost::exception
 /*! \brief
  * Exception class for file I/O errors.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class FileIOError : public GromacsException
 {
@@ -230,7 +230,7 @@ class FileIOError : public GromacsException
  * Derived classes should be used to indicate the nature of the error instead
  * of throwing this class directly.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class UserInputError : public GromacsException
 {
@@ -243,7 +243,7 @@ class UserInputError : public GromacsException
 /*! \brief
  * Exception class for situations where user input cannot be parsed/understood.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InvalidInputError : public UserInputError
 {
@@ -258,7 +258,7 @@ class InvalidInputError : public UserInputError
 /*! \brief
  * Exception class for situations where user input is inconsistent.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InconsistentInputError : public UserInputError
 {
@@ -273,7 +273,7 @@ class InconsistentInputError : public UserInputError
 /*! \brief
  * Exception class for simulation instabilities.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class SimulationInstabilityError : public GromacsException
 {
@@ -288,7 +288,7 @@ class SimulationInstabilityError : public GromacsException
 /*! \brief
  * Exception class for internal errors.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class InternalError : public GromacsException
 {
@@ -303,7 +303,7 @@ class InternalError : public GromacsException
 /*! \brief
  * Exception class for incorrect use of an API.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class APIError : public GromacsException
 {
@@ -318,7 +318,7 @@ class APIError : public GromacsException
 /*! \brief
  * Exception class for use of an unimplemented feature.
  *
- * \ingroup module_utility
+ * \inpublicapi
  */
 class NotImplementedError : public APIError
 {

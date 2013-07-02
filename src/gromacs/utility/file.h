@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares functions for file handling.
+ * Declares gmx::File.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -240,7 +240,7 @@ class File
          * \param[in]  bClose Whether this object should close its file handle.
          * \throws     std::bad_alloc if out of memory.
          *
-         * Used internally to implement standardError().
+         * Used internally to implement standardOutput() and standardError().
          */
         File(FILE *fp, bool bClose);
 

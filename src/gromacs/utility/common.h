@@ -49,34 +49,32 @@
 
 #include <boost/scoped_ptr.hpp>
 
-/*! \cond libapi */
-/*! \libinternal \brief
+/*! \brief
  * Macro to declare a class non-copyable and non-assignable.
  *
  * For consistency, should appear last in the class declaration.
  *
- * \inlibraryapi
+ * \ingroup module_utility
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     private: \
         ClassName(const ClassName &); \
-        ClassName                 &operator=(const ClassName &)
-/*! \libinternal \brief
+        ClassName &operator=(const ClassName &)
+/*! \brief
  * Macro to declare a class non-assignable.
  *
  * For consistency, should appear last in the class declaration.
  *
- * \inlibraryapi
+ * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
     private: \
         ClassName &operator=(const ClassName &)
-//! \endcond
 
 namespace gmx
 {
 
-/*! \libinternal \brief
+/*! \brief
  * Helper class to manage a pointer to a private implementation class.
  *
  * This helper provides the following benefits (all but the last could also be
