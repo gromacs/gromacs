@@ -322,7 +322,8 @@ class SelectionCollection
          * \param[in] nframes Total number of frames.
          *
          * This method restores the selections to the state they were after
-         * compile().
+         * compile(), and also computes averages over frames for the
+         * selections.
          *
          * \p nframes should equal the number of times evaluate() has been
          * called.

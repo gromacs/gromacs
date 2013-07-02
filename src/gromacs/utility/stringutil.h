@@ -43,6 +43,7 @@
 #ifndef GMX_UTILITY_STRINGUTIL_H
 #define GMX_UTILITY_STRINGUTIL_H
 
+#include <cstdarg>
 #include <cstring>
 
 #include <string>
@@ -114,6 +115,7 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix);
  * \inpublicapi
  */
 std::string formatString(const char *fmt, ...);
+std::string formatStringV(const char *fmt, va_list ap);
 
 /*! \brief
  * Joins strings in an array to a single string.

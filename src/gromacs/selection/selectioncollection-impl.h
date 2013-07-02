@@ -53,6 +53,7 @@
 #include "../legacyheaders/typedefs.h"
 
 #include "../onlinehelp/helptopicinterface.h"
+#include "../utility/debugtrace.h"
 #include "../utility/uniqueptr.h"
 #include "indexutil.h"
 #include "poscalc.h"
@@ -170,6 +171,10 @@ class SelectionCollection::Impl
          *  - 4: combine 2 and 3
          */
         int                     debugLevel_;
+        //! Debug tracer for the selection collection.
+        DebugTracer             debugTracer_;
+        //! Debug trace file for the selection collection.
+        std::string             debugTraceFile_;
         //! Whether setIndexGroups() has been called.
         bool                    bExternalGroupsSet_;
         //! External index groups (can be NULL).
@@ -179,8 +184,7 @@ class SelectionCollection::Impl
 /*! \internal \brief
  * Implements selection evaluation.
  *
- * This class is used to implement SelectionCollection::evaluate() and
- * SelectionCollection::evaluateFinal().
+ * This class is used to implement SelectionCollection::evaluate().
  *
  * \ingroup module_selection
  */
@@ -193,10 +197,6 @@ class SelectionEvaluator
          * Evaluates selections in a collection.
          */
         void evaluate(SelectionCollection *sc, t_trxframe *fr, t_pbc *pbc);
-        /*! \brief
-         * Evaluates the final state for dynamic selections.
-         */
-        void evaluateFinal(SelectionCollection *sc, int nframes);
 };
 
 } // namespace gmx

@@ -81,6 +81,7 @@ std::string stripSuffixIfPresent(const std::string &str, const char *suffix)
 
 std::string formatString(const char *fmt, ...)
 {
+    // TODO: Investigate implementing as a call to formatStringV()
     va_list           ap;
     char              staticBuf[1024];
     int               length = 1024;
@@ -94,6 +95,36 @@ std::string formatString(const char *fmt, ...)
         va_start(ap, fmt);
         int n = vsnprintf(buf, length, fmt, ap);
         va_end(ap);
+        if (n > -1 && n < length)
+        {
+            std::string result(buf);
+            return result;
+        }
+        if (n > -1)
+        {
+            length = n + 1;
+        }
+        else
+        {
+            length *= 2;
+        }
+        dynamicBuf.resize(length);
+        buf = &dynamicBuf[0];
+    }
+}
+
+std::string formatStringV(const char *fmt, va_list ap)
+{
+    char              staticBuf[1024];
+    int               length = 1024;
+    std::vector<char> dynamicBuf;
+    char             *buf = staticBuf;
+
+    // TODO: There may be a better way of doing this on Windows, Microsoft
+    // provides their own way of doing things...
+    while (1)
+    {
+        int n = vsnprintf(buf, length, fmt, ap);
         if (n > -1 && n < length)
         {
             std::string result(buf);

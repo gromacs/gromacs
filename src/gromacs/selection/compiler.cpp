@@ -2656,7 +2656,6 @@ void
 SelectionCompiler::compile(SelectionCollection *coll)
 {
     gmx_ana_selcollection_t    *sc = &coll->impl_->sc_;
-    gmx_sel_evaluate_t          evaldata;
     SelectionTreeElementPointer item;
     e_poscalc_t                 post;
     size_t                      i;
@@ -2666,9 +2665,9 @@ SelectionCompiler::compile(SelectionCollection *coll)
 
     /* FIXME: Clean up the collection on exceptions */
 
-    sc->mempool = _gmx_sel_mempool_create();
-    _gmx_sel_evaluate_init(&evaldata, sc->mempool, &sc->gall,
-                           sc->top, NULL, NULL);
+    sc->mempool = _gmx_sel_mempool_create(&coll->impl_->debugTracer_);
+    gmx_sel_evaluate_t evaldata(sc->mempool, &sc->gall, sc->top, NULL, NULL,
+                                &coll->impl_->debugTracer_);
 
     /* Clear the symbol table because it is not possible to parse anything
      * after compilation, and variable references in the symbol table can

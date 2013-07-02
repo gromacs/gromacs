@@ -399,6 +399,10 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
 {
     int          i;
 
+    if (fp == NULL)
+    {
+        fp = stderr;
+    }
     fprintf(fp, "%*c %s %s", level*2+1, '*',
             _gmx_selelem_type_str(sel), _gmx_sel_value_type_str(&sel.v));
     if (!sel.name().empty())
@@ -444,11 +448,15 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     }
     if (sel.type == SEL_CONST)
     {
-        if (sel.v.type == INT_VALUE)
+        if (sel.v.type != GROUP_VALUE && sel.v.type != POS_VALUE)
+        {
+            fprintf(fp, " %d values", sel.v.nr);
+        }
+        if (sel.v.type == INT_VALUE && sel.v.nr == 1)
         {
             fprintf(fp, " %d", sel.v.u.i[0]);
         }
-        else if (sel.v.type == REAL_VALUE)
+        else if (sel.v.type == REAL_VALUE && sel.v.nr == 1)
         {
             fprintf(fp, " %f", sel.v.u.r[0]);
         }
@@ -479,6 +487,10 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     if (!(sel.flags & SEL_ALLOCVAL))
     {
         fprintf(fp, " (ext)");
+    }
+    if (sel.v.u.p == NULL)
+    {
+        fprintf(fp, " (null)");
     }
     fprintf(fp, "\n");
 
@@ -514,9 +526,15 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
     {
         if (sel.u.expr.pc)
         {
-            fprintf(fp, "%*c COM", level*2+3, '*');
+            fprintf(fp, "%*c POSCALC", level*2+3, '*');
             fprintf(fp, "\n");
         }
+    }
+    else if (sel.type == SEL_SUBEXPR && sel.u.cgrp.isize > 0)
+    {
+        fprintf(fp, "%*c cgrp", level*2+1, ' ');
+        fprintf(fp, " (%d atoms)", sel.u.cgrp.isize);
+        fprintf(fp, "\n");
     }
 
     if (sel.cdata)
@@ -526,40 +544,68 @@ _gmx_selelem_print_tree(FILE *fp, const gmx::SelectionTreeElement &sel,
 
     if (bValues && sel.type != SEL_CONST && sel.type != SEL_ROOT && sel.v.u.ptr)
     {
-        fprintf(fp, "%*c value: ", level*2+1, ' ');
+        fprintf(fp, "%*c value (%d pcs):", level*2+1, ' ', sel.v.nr);
         switch (sel.v.type)
         {
-            case POS_VALUE:
-                /* In normal use, the pointer should never be NULL, but it's
-                 * useful to have the check for debugging to avoid accidental
-                 * segfaults when printing the selection tree. */
-                if (sel.v.u.p->x)
+            case INT_VALUE:
+            {
+                int n = sel.v.nr;
+                if (n > 20)
                 {
-                    fprintf(fp, "(%f, %f, %f)",
-                            sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY],
-                            sel.v.u.p->x[0][ZZ]);
+                    n = 20;
                 }
-                else
+                for (i = 0; i < n; ++i)
                 {
-                    fprintf(fp, "(null)");
+                    fprintf(fp, " %d", sel.v.u.i[i]);
+                }
+                if (n < sel.v.nr)
+                {
+                    fprintf(fp, " ...");
+                }
+                break;
+            }
+            case POS_VALUE:
+                fprintf(fp, " %d pos", sel.v.u.p->nr);
+                if (sel.v.u.p->nr == 1)
+                {
+                    /* In normal use, the pointer should never be NULL, but it's
+                     * useful to have the check for debugging to avoid accidental
+                     * segfaults when printing the selection tree. */
+                    if (sel.v.u.p->x)
+                    {
+                        fprintf(fp, ": (%f, %f, %f)",
+                                sel.v.u.p->x[0][XX], sel.v.u.p->x[0][YY],
+                                sel.v.u.p->x[0][ZZ]);
+                    }
+                    else
+                    {
+                        fprintf(fp, ": (null)");
+                    }
                 }
                 break;
             case GROUP_VALUE:
-                fprintf(fp, "%d atoms", sel.v.u.g->isize);
+                fprintf(fp, " %d atoms", sel.v.u.g->isize);
                 if (sel.v.u.g->isize < 20)
                 {
                     if (sel.v.u.g->isize > 0)
                     {
                         fprintf(fp, ":");
                     }
-                    for (i = 0; i < sel.v.u.g->isize; ++i)
+                    if (sel.v.u.g->index != NULL)
                     {
-                        fprintf(fp, " %d", sel.v.u.g->index[i] + 1);
+                        for (i = 0; i < sel.v.u.g->isize; ++i)
+                        {
+                            fprintf(fp, " %d", sel.v.u.g->index[i] + 1);
+                        }
+                    }
+                    else
+                    {
+                        fprintf(fp, " (null)");
                     }
                 }
                 break;
             default:
-                fprintf(fp, "???");
+                fprintf(fp, " ???");
                 break;
         }
         fprintf(fp, "\n");

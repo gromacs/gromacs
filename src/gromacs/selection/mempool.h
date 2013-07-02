@@ -47,6 +47,11 @@
 #ifndef GMX_SELECTION_MEMPOOL_H
 #define GMX_SELECTION_MEMPOOL_H
 
+namespace gmx
+{
+class DebugTracer;
+}
+
 struct gmx_ana_index_t;
 
 /** Opaque struct for memory pooling. */
@@ -54,7 +59,7 @@ typedef struct gmx_sel_mempool_t gmx_sel_mempool_t;
 
 /** Create an empty memory pool. */
 gmx_sel_mempool_t *
-_gmx_sel_mempool_create();
+_gmx_sel_mempool_create(gmx::DebugTracer *trace);
 /** Destroy a memory pool. */
 void
 _gmx_sel_mempool_destroy(gmx_sel_mempool_t *mp);

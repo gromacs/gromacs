@@ -60,6 +60,7 @@
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/debugtrace.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 
@@ -319,24 +320,14 @@ _gmx_sel_print_evalfunc_name(FILE *fp, gmx::sel_evalfunc evalfunc)
     }
 }
 
-/*!
- * \param[out] data Evaluation data structure to initialize.
- * \param[in]  mp   Memory pool for intermediate evaluation values.
- * \param[in]  gall Index group with all the atoms.
- * \param[in]  top  Topology structure for evaluation.
- * \param[in]  fr   New frame for evaluation.
- * \param[in]  pbc  New PBC information for evaluation.
- */
-void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
-                       gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       t_topology *top, t_trxframe *fr, t_pbc *pbc)
+gmx_sel_evaluate_t::gmx_sel_evaluate_t(gmx_sel_mempool_t *mp,
+                                       gmx_ana_index_t   *gall,
+                                       t_topology        *top,
+                                       t_trxframe        *fr,
+                                       t_pbc             *pbc,
+                                       gmx::DebugTracer  *tracer)
+    : mp(mp), gall(gall), top(top), fr(fr), pbc(pbc), tracer(*tracer)
 {
-    data->mp   = mp;
-    data->gall = gall;
-    data->top  = top;
-    data->fr   = fr;
-    data->pbc  = pbc;
 }
 
 /*! \brief
@@ -397,9 +388,10 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
                              t_trxframe *fr, t_pbc *pbc)
 {
     gmx_ana_selcollection_t *sc = &coll->impl_->sc_;
-    gmx_sel_evaluate_t       data;
+    gmx_sel_evaluate_t       data(sc->mempool, &sc->gall, sc->top, fr, pbc,
+                                  &coll->impl_->debugTracer_);
 
-    _gmx_sel_evaluate_init(&data, sc->mempool, &sc->gall, sc->top, fr, pbc);
+    GMX_TRACE(data.tracer, "selection eval start");
     init_frame_eval(sc->root);
     SelectionTreeElementPointer sel = sc->root;
     while (sel)
@@ -413,7 +405,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
              * during first evaluation of the subexpression anyways, but we
              * clear the group for clarity. Note that this is _not_ done during
              * compilation because of some additional complexities involved
-             * (see compiler.cpp), so it should not be relied upon in
+             * (see compiler.c), so it should not be relied upon in
              * _gmx_sel_evaluate_subexpr(). */
             if (sel->child->v.type == GROUP_VALUE)
             {
@@ -434,24 +426,7 @@ SelectionEvaluator::evaluate(SelectionCollection *coll,
         sel.refreshMassesAndCharges(sc->top);
         sel.updateCoveredFractionForFrame();
     }
-}
-
-/*!
- * \param[in,out] coll  The selection collection to evaluate.
- * \param[in]     nframes Total number of frames.
- */
-void
-SelectionEvaluator::evaluateFinal(SelectionCollection *coll, int nframes)
-{
-    gmx_ana_selcollection_t          *sc = &coll->impl_->sc_;
-
-    SelectionDataList::const_iterator isel;
-    for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
-    {
-        internal::SelectionData &sel = **isel;
-        sel.restoreOriginalPositions(sc->top);
-        sel.computeAverageCoveredFraction(nframes);
-    }
+    GMX_TRACE(data.tracer, "selection eval finish");
 }
 
 } // namespace gmx
@@ -498,13 +473,14 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
 void
 _gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
                        const SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t                   *g)
+                       gmx_ana_index_t                   * /*g*/)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
         return;
     }
 
+    GMX_TRACE(data->tracer, "selection eval root \"" + sel->child->name() + "\"");
     sel->child->evaluate(data, sel->child,
                          sel->u.cgrp.isize < 0 ? NULL : &sel->u.cgrp);
 }
@@ -552,6 +528,7 @@ _gmx_sel_evaluate_subexpr_simple(gmx_sel_evaluate_t                *data,
                                  const SelectionTreeElementPointer &sel,
                                  gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval subexpr simple \"" + sel->name() + "\"");
     if (sel->child->evaluate)
     {
         sel->child->evaluate(data, sel->child, g);
@@ -580,6 +557,7 @@ _gmx_sel_evaluate_subexpr_staticeval(gmx_sel_evaluate_t                *data,
                                      const SelectionTreeElementPointer &sel,
                                      gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval subexpr staticeval \"" + sel->name() + "\"");
     if (sel->u.cgrp.isize == 0)
     {
         sel->child->evaluate(data, sel->child, g);
@@ -622,6 +600,7 @@ _gmx_sel_evaluate_subexpr(gmx_sel_evaluate_t                *data,
 {
     gmx_ana_index_t      gmiss;
 
+    GMX_TRACE(data->tracer, "selection eval subexpr full \"" + sel->name() + "\"");
     MempoolGroupReserver gmissreserver(data->mp);
     if (sel->u.cgrp.isize == 0)
     {
@@ -733,6 +712,7 @@ _gmx_sel_evaluate_subexprref_simple(gmx_sel_evaluate_t                *data,
                                     const SelectionTreeElementPointer &sel,
                                     gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval subexprref simple \"" + sel->name() + "\"");
     if (g)
     {
         _gmx_selvalue_setstore(&sel->child->v, sel->v.u.ptr);
@@ -774,6 +754,7 @@ _gmx_sel_evaluate_subexprref(gmx_sel_evaluate_t                *data,
 {
     int        i, j;
 
+    GMX_TRACE(data->tracer, "selection eval subexprref full \"" + sel->name() + "\"");
     if (g != NULL && sel->child->evaluate != NULL)
     {
         sel->child->evaluate(data, sel->child, g);
@@ -1021,6 +1002,7 @@ _gmx_sel_evaluate_not(gmx_sel_evaluate_t                *data,
                       const SelectionTreeElementPointer &sel,
                       gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval not");
     MempoolSelelemReserver reserver(sel->child, g->isize);
     sel->child->evaluate(data, sel->child, g);
     gmx_ana_index_difference(sel->v.u.g, g, sel->child->v.u.g);
@@ -1056,6 +1038,7 @@ _gmx_sel_evaluate_and(gmx_sel_evaluate_t                *data,
                       const SelectionTreeElementPointer &sel,
                       gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval and");
     SelectionTreeElementPointer child = sel->child;
     /* Skip the first child if it does not have an evaluation function. */
     if (!child->evaluate)
@@ -1109,6 +1092,7 @@ _gmx_sel_evaluate_or(gmx_sel_evaluate_t                *data,
                      const SelectionTreeElementPointer &sel,
                      gmx_ana_index_t                   *g)
 {
+    GMX_TRACE(data->tracer, "selection eval or");
     gmx_ana_index_t             tmp, tmp2;
 
     SelectionTreeElementPointer child = sel->child;

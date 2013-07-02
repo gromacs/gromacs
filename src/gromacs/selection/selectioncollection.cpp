@@ -406,6 +406,10 @@ SelectionCollection::initOptions(Options *options)
                            .defaultValue(debug_levels[impl_->debugLevel_])
                            .storeEnumIndex(&impl_->debugLevel_)
                            .description("Print out selection trees for debugging"));
+    // TODO: Could be nicer as a FileNameOption
+    options->addOption(StringOption("seltrace").hidden(impl_->debugLevel_ == 0)
+                           .store(&impl_->debugTraceFile_)
+                           .description("File to print out a selection compilation/evaluation trace"));
 }
 
 
@@ -537,7 +541,6 @@ SelectionCollection::parseFromStdin(int nr, bool bInteractive)
 SelectionList
 SelectionCollection::parseFromFile(const std::string &filename)
 {
-
     try
     {
         yyscan_t scanner;
@@ -586,6 +589,10 @@ SelectionCollection::compile()
     if (impl_->debugLevel_ >= 1)
     {
         printTree(stderr, false);
+    }
+    if (!impl_->debugTraceFile_.empty())
+    {
+        impl_->debugTracer_.startTrace(impl_->debugTraceFile_);
     }
 
     SelectionCompiler compiler;
@@ -656,8 +663,15 @@ SelectionCollection::evaluate(t_trxframe *fr, t_pbc *pbc)
 void
 SelectionCollection::evaluateFinal(int nframes)
 {
-    SelectionEvaluator evaluator;
-    evaluator.evaluateFinal(this, nframes);
+    gmx_ana_selcollection_t *sc = &impl_->sc_;
+
+    SelectionDataList::const_iterator isel;
+    for (isel = sc->sel.begin(); isel != sc->sel.end(); ++isel)
+    {
+        internal::SelectionData &sel = **isel;
+        sel.restoreOriginalPositions(sc->top);
+        sel.computeAverageCoveredFraction(nframes);
+    }
 }
 
 

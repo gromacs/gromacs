@@ -46,10 +46,14 @@
 #include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/selection/indexutil.h"
+#include "gromacs/utility/debugtrace.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "mempool.h"
+
+using gmx::formatString;
 
 //! Alignment in bytes for all returned blocks.
 #define ALIGN_STEP 8
@@ -70,6 +74,13 @@ typedef struct gmx_sel_mempool_block_t
  */
 struct gmx_sel_mempool_t
 {
+    explicit gmx_sel_mempool_t(gmx::DebugTracer *tracer)
+        : currsize(0), freesize(0), buffer(NULL), freeptr(NULL),
+          nblocks(0), blockstack(NULL), blockstack_nalloc(0), maxsize(0),
+          tracer(*tracer)
+    {
+    }
+
     //! Number of bytes currently allocated from the pool.
     size_t                      currsize;
     //! Number of bytes free in the pool, or 0 if \a buffer is NULL.
@@ -89,23 +100,13 @@ struct gmx_sel_mempool_t
      * simultaneously.
      */
     size_t                      maxsize;
+    gmx::DebugTracer           &tracer;
 };
 
 gmx_sel_mempool_t *
-_gmx_sel_mempool_create()
+_gmx_sel_mempool_create(gmx::DebugTracer *tracer)
 {
-    gmx_sel_mempool_t *mp;
-
-    snew(mp, 1);
-    mp->currsize          = 0;
-    mp->freesize          = 0;
-    mp->buffer            = NULL;
-    mp->freeptr           = NULL;
-    mp->nblocks           = 0;
-    mp->blockstack        = NULL;
-    mp->blockstack_nalloc = 0;
-    mp->maxsize           = 0;
-    return mp;
+    return new gmx_sel_mempool_t(tracer);
 }
 
 void
@@ -122,7 +123,7 @@ _gmx_sel_mempool_destroy(gmx_sel_mempool_t *mp)
     }
     sfree(mp->buffer);
     sfree(mp->blockstack);
-    sfree(mp);
+    delete mp;
 }
 
 void *
@@ -131,6 +132,10 @@ _gmx_sel_mempool_alloc(gmx_sel_mempool_t *mp, size_t size)
     void   *ptr = NULL;
     size_t  size_walign;
 
+    GMX_TRACE(mp->tracer, formatString("mempool block %d alloc %d used %d/%d",
+                                       mp->nblocks, static_cast<int>(size),
+                                       static_cast<int>(mp->currsize),
+                                       static_cast<int>(mp->maxsize)));
     size_walign = ((size + ALIGN_STEP - 1) / ALIGN_STEP) * ALIGN_STEP;
     if (mp->buffer)
     {
@@ -178,9 +183,12 @@ _gmx_sel_mempool_free(gmx_sel_mempool_t *mp, void *ptr)
     {
         return;
     }
-    GMX_RELEASE_ASSERT(mp->nblocks > 0 && mp->blockstack[mp->nblocks - 1].ptr == ptr,
+    GMX_RELEASE_ASSERT(mp->nblocks > 0,
+                       "No memory allocated, cannot free anything");
+    GMX_RELEASE_ASSERT(mp->blockstack[mp->nblocks - 1].ptr == ptr,
                        "Invalid order of memory pool free calls");
     mp->nblocks--;
+    GMX_TRACE(mp->tracer, formatString("mempool block %d free", mp->nblocks));
     size          = mp->blockstack[mp->nblocks].size;
     mp->currsize -= size;
     if (mp->buffer)
@@ -200,6 +208,9 @@ _gmx_sel_mempool_reserve(gmx_sel_mempool_t *mp, size_t size)
     GMX_RELEASE_ASSERT(mp->nblocks == 0,
                        "Cannot reserve memory pool when there is something allocated");
     GMX_RELEASE_ASSERT(!mp->buffer, "Cannot reserve memory pool twice");
+    GMX_TRACE(mp->tracer, formatString("mempool reserve %d maxsize %d",
+                                       static_cast<int>(size),
+                                       static_cast<int>(mp->maxsize)));
     if (size == 0)
     {
         size = mp->maxsize;

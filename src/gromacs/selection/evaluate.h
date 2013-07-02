@@ -57,13 +57,32 @@
 
 struct gmx_sel_mempool_t;
 
+namespace gmx
+{
+class DebugTracer;
+}
+
 /*! \internal \brief
  * Data structure for passing information required during evaluation.
  */
-typedef struct gmx_sel_evaluate_t
+struct gmx_sel_evaluate_t
 {
+    /*! \brief
+     * Initializes an evaluation data structure.
+     *
+     * \param[in]  mp   Memory pool for intermediate evaluation values.
+     * \param[in]  gall Index group with all the atoms.
+     * \param[in]  top  Topology structure for evaluation.
+     * \param[in]  fr   New frame for evaluation.
+     * \param[in]  pbc  New PBC information for evaluation.
+     * \param[in]  trace Debug trace object.
+     */
+    gmx_sel_evaluate_t(gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
+                       t_topology *top, t_trxframe *fr, t_pbc *pbc,
+                       gmx::DebugTracer *tracer);
+
     /** Memory pool for intermediate values. */
-    struct gmx_sel_mempool_t *mp;
+    gmx_sel_mempool_t        *mp;
     /** Index group that contains all the atoms. */
     gmx_ana_index_t          *gall;
     /** Topology information. */
@@ -72,16 +91,12 @@ typedef struct gmx_sel_evaluate_t
     t_trxframe               *fr;
     /** PBC data. */
     t_pbc                    *pbc;
-} gmx_sel_evaluate_t;
+    gmx::DebugTracer         &tracer;
+};
 
 /*! \name Utility functions
  */
 /*@{*/
-/** Initializes an evaluation data structure. */
-void
-_gmx_sel_evaluate_init(gmx_sel_evaluate_t *data,
-                       struct gmx_sel_mempool_t *mp, gmx_ana_index_t *gall,
-                       t_topology *top, t_trxframe *fr, t_pbc *pbc);
 /** Evaluates the children of a general selection element. */
 void
 _gmx_sel_evaluate_children(gmx_sel_evaluate_t                     *data,
