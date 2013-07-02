@@ -58,6 +58,7 @@ namespace tMPI
 class system_error : public std::runtime_error
 {
     public:
+        //! Type to represent error codes within this class.
         typedef int error_code;
 
         //system_error(error_code ec, const std::string& what_arg);
