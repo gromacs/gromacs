@@ -300,6 +300,50 @@ void HelpExportLatex::exportHelpTopics(const RootHelpTopic &root)
     root.writeHelp(context);
 }
 
+/********************************************************************
+ * HelpExportHtml
+ */
+
+class HelpExportHtml : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport() {}
+        virtual void exportModuleHelp(const std::string &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
+        virtual void exportHelpTopics(const RootHelpTopic &root);
+};
+
+void HelpExportHtml::exportModuleHelp(const std::string &tag,
+                                      const CommandLineModuleInterface &module)
+{
+    File file(tag + ".html", "w");
+    HelpWriterContext context(&file, eHelpOutputFormat_Html);
+    file.writeFormatted("<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n", tag.c_str());
+    file.writeLine("<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">");
+    file.writeLine("</HEAD>\n<BODY>\n");
+    file.writeLine("<TABLE WIDTH=\"98%%\" NOBORDER >\n<TR><TD WIDTH=400>\n");
+    file.writeLine("<TABLE WIDTH=400 NOBORDER>\n<TD WIDTH=116>\n");
+    file.writeLine("<a href=\"http://www.gromacs.org/\">"
+                   "<img SRC=\"../images/gmxlogo_small.png\""
+                   "BORDER=0 </a></TD>\n");
+    file.writeLine("<TD ALIGN=LEFT VALIGN=TOP WIDTH=280>\n");
+    file.writeFormatted("<br><h2>%s</h2>\n", tag.c_str());
+    file.writeLine("<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
+    file.writeFormatted("<br></td>\n</TABLE></TD>\n<TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM><p><B>%s<br>\n",GromacsVersion());
+    // TODO: Implement date generation
+    file.writeFormatted("%s</B></td></tr></TABLE>\n<HR>\n", "2012-08-24");
+    module.writeHelp(context);
+}
+
+void HelpExportHtml::exportHelpTopics(const RootHelpTopic &root)
+{
+    File file("help-topics.html", "w");
+    HelpWriterContext context(&file, eHelpOutputFormat_Html);
+    // TODO: Write header
+    root.writeHelp(context);
+}
+
 }   // namespace
 
 /********************************************************************
@@ -377,6 +421,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         else if (std::strcmp(argv[2], "latex") == 0)
         {
             exporter.reset(new HelpExportLatex);
+        }
+        else if (std::strcmp(argv[2], "html") == 0)
+        {
+            exporter.reset(new HelpExportHtml);
         }
         else
         {
