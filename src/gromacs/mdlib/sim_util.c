@@ -426,8 +426,7 @@ static void posres_wrapper(FILE *fplog,
                   fr->rc_scaling, fr->ePBC, fr->posres_com, fr->posres_comB);
     if (bSepDVDL)
     {
-        fprintf(fplog, sepdvdlformat,
-                interaction_function[F_POSRES].longname, v, dvdl);
+        gmx_print_sepdvdl(fplog, interaction_function[F_POSRES].longname, v, dvdl);
     }
     enerd->term[F_POSRES] += v;
     /* If just the force constant changes, the FEP term is linear,
@@ -480,7 +479,7 @@ static void pull_potential_wrapper(FILE *fplog,
                        cr, t, lambda[efptRESTRAINT], x, f, vir_force, &dvdl);
     if (bSepDVDL)
     {
-        fprintf(fplog, sepdvdlformat, "Com pull", enerd->term[F_COM_PULL], dvdl);
+        gmx_print_sepdvdl(fplog, "Com pull", enerd->term[F_COM_PULL], dvdl);
     }
     enerd->dvdl_lin[efptRESTRAINT] += dvdl;
 }
@@ -507,7 +506,7 @@ static void pme_receive_force_ener(FILE           *fplog,
                       &cycles_seppme);
     if (bSepDVDL)
     {
-        fprintf(fplog, sepdvdlformat, "PME mesh", e, dvdl);
+        gmx_print_sepdvdl(fplog, "PME mesh", e, dvdl);
     }
     enerd->term[F_COUL_RECIP] += e;
     enerd->dvdl_lin[efptCOUL] += dvdl;
@@ -1694,12 +1693,6 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
            groups, &(inputrec->opts), top, mdatoms,
            cr, nrnb, lambda, dvdlambda, &enerd->grpp, bFillGrid,
            bDoLongRangeNS);
-        if (bSepDVDL)
-        {
-            fprintf(fplog, sepdvdlformat, "LR non-bonded", 0.0, dvdlambda);
-        }
-        enerd->dvdl_lin[efptVDW]  += dvdlambda[efptVDW];
-        enerd->dvdl_lin[efptCOUL] += dvdlambda[efptCOUL];
 
         wallcycle_stop(wcycle, ewcNS);
     }
@@ -2384,8 +2377,7 @@ void calc_dispcorr(FILE *fplog, t_inputrec *ir, t_forcerec *fr,
 
         if (fr->bSepDVDL && do_per_step(step, ir->nstlog))
         {
-            fprintf(fplog, sepdvdlformat, "Dispersion correction",
-                    *enercorr, dvdlambda);
+            gmx_print_sepdvdl(fplog, "Dispersion correction", *enercorr, dvdlambda);
         }
         if (fr->efep != efepNO)
         {

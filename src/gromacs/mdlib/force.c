@@ -139,6 +139,11 @@ static void reduce_thread_forces(int n, rvec *f,
     }
 }
 
+void gmx_print_sepdvdl(FILE *fplog, const char *s, real v, real dvdlambda)
+{
+    fprintf(fplog, "  %-30s V %12.5e  dVdl %12.5e\n", s, v, dvdlambda);
+}
+
 void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
                        t_forcerec *fr,      t_inputrec *ir,
                        t_idef     *idef,    t_commrec  *cr,
@@ -182,8 +187,7 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     double  t0 = 0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
 
-#define PRINT_SEPDVDL(s, v, dvdlambda) if (bSepDVDL) {fprintf(fplog, sepdvdlformat, s, v, dvdlambda); }
-
+#define PRINT_SEPDVDL(s, v, dvdlambda) if (bSepDVDL) { gmx_print_sepdvdl(fplog, s, v, dvdlambda); }
 
     set_pbc(&pbc, fr->ePBC, box);
 
