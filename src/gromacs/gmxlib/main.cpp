@@ -75,12 +75,6 @@
 #include <process.h>
 #endif
 
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
-
 #define BUFSIZE 1024
 
 
@@ -88,8 +82,6 @@ static void par_fn(char *base, int ftp, const t_commrec *cr,
                    gmx_bool bAppendSimId, gmx_bool bAppendNodeId,
                    char buf[], int bufsize)
 {
-    int n;
-
     if ((size_t)bufsize < (strlen(base)+10))
     {
         gmx_mem("Character buffer too small!");
@@ -252,7 +244,7 @@ char *gmx_gethostname(char *name, size_t len)
 void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
                   gmx_bool bAppendFiles, FILE** fplog)
 {
-    int    len, testlen, pid;
+    int    len, pid;
     char   buf[256], host[256];
     time_t t;
     char   timebuf[STRLEN];
@@ -400,8 +392,8 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     char            buf[256];
 #ifdef GMX_MPI
     MPI_Group       mpi_group_world;
-#endif
     int            *rank;
+#endif
 
 #ifndef GMX_MPI
     if (nsim > 1)
@@ -478,7 +470,6 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 
     if (multidirs)
     {
-        int ret;
         if (debug)
         {
             fprintf(debug, "Changing to directory %s\n", multidirs[cr->ms->sim]);
@@ -509,15 +500,11 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
 t_commrec *init_par(int gmx_unused *argc, char ***argv_ptr)
 {
     t_commrec    *cr;
-    char        **argv;
-    int           i;
-    gmx_bool      pe = FALSE;
 
     snew(cr, 1);
 
-    argv = argv_ptr ? *argv_ptr : NULL;
-
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
+    char **argv = argv_ptr ? *argv_ptr : NULL;
     cr->sim_nodeid = gmx_setup(argc, argv, &cr->nnodes);
 
     if (!PAR(cr) && (cr->sim_nodeid != 0))

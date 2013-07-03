@@ -64,12 +64,6 @@
 #include "corewrap.h"
 #endif
 
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
-
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024

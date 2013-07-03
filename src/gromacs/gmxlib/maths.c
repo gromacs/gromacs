@@ -749,6 +749,12 @@ gmx_bool gmx_isfinite(real x)
     return returnval;
 }
 
+gmx_bool gmx_isnan(real x)
+{
+    /* cppcheck-suppress duplicateExpression */
+    return x != x;
+}
+
 gmx_bool
 check_int_multiply_for_overflow(gmx_large_int_t  a,
                                 gmx_large_int_t  b,
