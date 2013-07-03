@@ -99,10 +99,10 @@ int over_alloc_dd(int n);
  */
 
 /* Over allocation for small data types: int, real etc. */
-#define over_alloc_small(n) (OVER_ALLOC_FAC*(n) + 8000)
+#define over_alloc_small(n) (int)(OVER_ALLOC_FAC*(n) + 8000)
 
 /* Over allocation for large data types: complex structs */
-#define over_alloc_large(n) (OVER_ALLOC_FAC*(n) + 1000)
+#define over_alloc_large(n) (int)(OVER_ALLOC_FAC*(n) + 1000)
 
 int gmx_large_int_to_int(gmx_large_int_t step, const char *warn);
 /* Convert a gmx_large_int_t value to int.

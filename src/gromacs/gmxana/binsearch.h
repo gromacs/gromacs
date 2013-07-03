@@ -39,6 +39,11 @@
 
 #include "types/simple.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern void rangeArray(int *ar, int size);
 
 extern void insertionSort(real *ar, int *perm, int start, int end, int direction);
@@ -50,5 +55,9 @@ extern int start_binsearch(real *array, int *perm, int low, int high,
 
 extern int LinearSearch(double *array, int startindx, int stopindx,
                         double key, int *count, int direction);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

@@ -38,6 +38,8 @@
 #include <string.h>
 #include <math.h>
 
+#include <algorithm>
+
 #include "macros.h"
 #include "statutil.h"
 #include "sysstuff.h"
@@ -85,30 +87,28 @@ static t_gkrbin *mk_gkrbin(real radius, real rcmax, gmx_bool bPhi, int ndegrees)
 
     if ((ptr = getenv("GKRWIDTH")) != NULL)
     {
-        double bw;
-
-        sscanf(ptr, "%lf", &bw);
+        double bw = strtod(ptr, NULL);
         gb->spacing = bw;
     }
     else
     {
         gb->spacing = 0.01; /* nm */
     }
-    gb->nelem   = 1 + radius/gb->spacing;
+    gb->nelem   = 1 + static_cast<int>(radius/gb->spacing);
     if (rcmax == 0)
     {
         gb->nx = gb->nelem;
     }
     else
     {
-        gb->nx = 1 + rcmax/gb->spacing;
+        gb->nx = 1 + static_cast<int>(rcmax/gb->spacing);
     }
     gb->radius  = radius;
     snew(gb->elem, gb->nelem);
     snew(gb->count, gb->nelem);
 
     snew(gb->cmap, gb->nx);
-    gb->ny = max(2, ndegrees);
+    gb->ny = std::max(2, ndegrees);
     for (i = 0; (i < gb->nx); i++)
     {
         snew(gb->cmap[i], gb->ny);
@@ -141,13 +141,13 @@ static void add2gkr(t_gkrbin *gb, real r, real cosa, real phi)
         alpha = acos(cosa);
         if (gb->bPhi)
         {
-            cy = (M_PI+phi)*gb->ny/(2*M_PI);
+            cy = static_cast<int>((M_PI+phi)*gb->ny/(2*M_PI));
         }
         else
         {
-            cy = (alpha*gb->ny)/M_PI; /*((1+cosa)*0.5*(gb->ny));*/
+            cy = static_cast<int>((alpha*gb->ny)/M_PI); /*((1+cosa)*0.5*(gb->ny));*/
         }
-        cy = min(gb->ny-1, max(0, cy));
+        cy = std::min(gb->ny-1, std::max(0, cy));
         if (debug)
         {
             fprintf(debug, "CY: %10f  %5d\n", alpha, cy);
@@ -171,8 +171,8 @@ void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
             int ePBC, matrix box, t_atom *atom, int *nAtom)
 {
     static rvec *xcm[2] = { NULL, NULL};
-    int          gi, gj, j0, j1, i, j, k, n, index, grp0, grp1;
-    real         qtot, q, r2, cosa, rr, phi;
+    int          gi, gj, j0, j1, i, j, k, n, grp0, grp1;
+    real         qtot, q, cosa, rr, phi;
     rvec         dx;
     t_pbc        pbc;
 
@@ -265,7 +265,8 @@ void do_gkr(t_gkrbin *gb, int ncos, int *ngrp, int *molindex[],
 static real normalize_cmap(t_gkrbin *gb)
 {
     int    i, j;
-    double hi, vol;
+    real   hi;
+    double vol;
 
     hi = 0;
     for (i = 0; (i < gb->nx); i++)
@@ -274,7 +275,7 @@ static real normalize_cmap(t_gkrbin *gb)
         for (j = 0; (j < gb->ny); j++)
         {
             gb->cmap[i][j] /= vol;
-            hi              = max(hi, gb->cmap[i][j]);
+            hi              = std::max(hi, gb->cmap[i][j]);
         }
     }
     if (hi <= 0)
@@ -336,7 +337,7 @@ static void print_gkrbin(const char *fn, t_gkrbin *gb,
      */
     FILE       *fp;
     const char *leg[] = { "G\\sk\\N(r)", "< cos >", "h\\sOO\\N", "g\\sOO\\N", "Energy" };
-    int         i, j, n, last;
+    int         i, last;
     real        x0, x1, ggg, Gkr, vol_s, rho, gOO, hOO, cosav, ener;
     double      fac;
 
@@ -492,7 +493,6 @@ static void mol_quad(int k0, int k1, rvec x[], t_atom atom[], rvec quad)
     real     q, r2, mass, masstot;
     rvec     com;        /* center of mass */
     rvec     r;          /* distance of atoms to center of mass */
-    real     rcom_m, rcom_n;
     double **inten;
     double   dd[DIM], **ev, tmp;
 
@@ -688,7 +688,7 @@ static void dump_slab_dipoles(const char *fn, int idim, int nslice,
 static void compute_avercos(int n, rvec dip[], real *dd, rvec axis, gmx_bool bPairs)
 {
     int    i, j, k;
-    double dc, dc1, d, n5, ddc1, ddc2, ddc3;
+    double dc, d, ddc1, ddc2, ddc3;
     rvec   xxx = { 1, 0, 0 };
     rvec   yyy = { 0, 1, 0 };
     rvec   zzz = { 0, 0, 1 };
@@ -779,19 +779,18 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     t_enxframe   *fr;
     int           nframes = 1000, nre, timecheck = 0, ncolour = 0;
     ener_file_t   fmu     = NULL;
-    int           i, j, k, n, m, natom = 0, nmol, gnx_tot, teller, tel3;
+    int           i, n, m, natom = 0, gnx_tot, teller, tel3;
     t_trxstatus  *status;
-    int          *dipole_bin, ndipbin, ibin, iVol, step, idim = -1;
+    int          *dipole_bin, ndipbin, ibin, iVol, idim = -1;
     unsigned long mode;
-    char          buf[STRLEN];
-    real          rcut = 0, t, t0, t1, dt, lambda, dd, rms_cos;
+    real          rcut = 0, t, t0, t1, dt, dd, rms_cos;
     rvec          dipaxis;
     matrix        box;
     gmx_bool      bCorr, bTotal, bCont;
     double        M_diff = 0, epsilon, invtel, vol_aver;
     double        mu_ave, mu_mol, M2_ave = 0, M_ave2 = 0, M_av[DIM], M_av2[DIM];
     double        M[3], M2[3], M4[3], Gk = 0, g_k = 0;
-    gmx_stats_t   Mx, My, Mz, Msq, Vol, *Qlsq, mulsq, muframelsq = NULL;
+    gmx_stats_t  *Qlsq, mulsq, muframelsq = NULL;
     ivec          iMu;
     real        **muall        = NULL;
     rvec         *slab_dipoles = NULL;
@@ -996,9 +995,8 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     }
 
     /* Calculate spacing for dipole bin (simple histogram) */
-    ndipbin = 1+(mu_max/0.01);
+    ndipbin = 1 + static_cast<int>(mu_max/0.01);
     snew(dipole_bin, ndipbin);
-    epsilon    = 0.0;
     mu_ave     = 0.0;
     for (m = 0; (m < DIM); m++)
     {
@@ -1016,7 +1014,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     gpbc = gmx_rmpbc_init(&top->idef, ePBC, natom, box);
 
     /* Start while loop over frames */
-    t1     = t0 = t;
+    t0     = t;
     teller = 0;
     do
     {
@@ -1068,7 +1066,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
             {
                 for (i = 0; (i < gnx[n]); i++)
                 {
-                    int gi, ind0, ind1;
+                    int ind0, ind1;
 
                     ind0  = mols->index[molindex[n][i]];
                     ind1  = mols->index[molindex[n][i]+1];
@@ -1393,7 +1391,7 @@ static void do_dip(t_topology *top, int ePBC, real volume,
     }
     if (!bMU)
     {
-        real aver, sigma, error, lsq;
+        real aver, sigma, error;
 
         gmx_stats_get_ase(mulsq, &aver, &sigma, &error);
         printf("\nDipole moment (Debye)\n");
@@ -1403,7 +1401,6 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         if (bQuad)
         {
             rvec a, s, e;
-            int  mm;
             for (m = 0; (m < DIM); m++)
             {
                 gmx_stats_get_ase(mulsq, &(a[m]), &(s[m]), &(e[m]));
@@ -1530,7 +1527,7 @@ int gmx_dipoles(int argc, char *argv[])
     };
     real           mu_max     = 5, mu_aver = -1, rcmax = 0;
     real           epsilonRF  = 0.0, temp = 300;
-    gmx_bool       bAverCorr  = FALSE, bMolCorr = FALSE, bPairs = TRUE, bPhi = FALSE;
+    gmx_bool       bPairs = TRUE, bPhi = FALSE;
     const char    *corrtype[] = {NULL, "none", "mol", "molsep", "total", NULL};
     const char    *axtitle    = "Z";
     int            nslices    = 10; /* nr of slices defined       */
@@ -1575,7 +1572,7 @@ int gmx_dipoles(int argc, char *argv[])
     int            nFF[2];
     atom_id      **grpindex;
     char         **grpname = NULL;
-    gmx_bool       bCorr, bQuad, bGkr, bMU, bSlab;
+    gmx_bool       bQuad, bGkr, bMU, bSlab;
     t_filenm       fnm[] = {
         { efEDR, "-en", NULL,         ffOPTRD },
         { efTRX, "-f", NULL,           ffREAD },
@@ -1633,7 +1630,6 @@ int gmx_dipoles(int argc, char *argv[])
              opt2parg_bSet("-axis", asize(pa), pa));
     if (bMU)
     {
-        bAverCorr = TRUE;
         if (bQuad)
         {
             printf("WARNING: Can not determine quadrupoles from energy file\n");
