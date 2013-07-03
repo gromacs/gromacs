@@ -38,6 +38,11 @@
 
 #include "typedefs.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern atom_id search_atom(const char *type, int start,
                            t_atoms *atoms,
                            const char *bondtype, gmx_bool bAllowMissing);
@@ -49,5 +54,9 @@ extern atom_id search_atom(const char *type, int start,
  */
 
 extern void set_at(t_atom *at, real m, real q, int type, int resind);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _pgutil_h */
