@@ -45,16 +45,8 @@ enum {
     eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR
 };
 
-static const char *constraints[eshNR+1]    = {
-    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL
-};
-
 enum {
     ecouplamVDWQ, ecouplamVDW, ecouplamQ, ecouplamNONE, ecouplamNR
-};
-
-static const char *couple_lam[ecouplamNR+1]    = {
-    "vdw-q", "vdw", "q", "none", NULL
 };
 
 typedef struct {
