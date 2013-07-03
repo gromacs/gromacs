@@ -152,52 +152,55 @@ void save_free_aligned(const char *name, const char *file, int line, void *ptr);
 
 /* Use of sizeof(T) in _snew() and _srenew() can cause obscure bugs if
  * several files define distinct data structures with identical names and
- * allocate memory for them using the macros below.
- * For this reason, the size of an element is passed as a parameter.
- *
+ * allocate memory for them using the macros below.  Note that by the standard,
+ * such declarations cause undefined behavior.
  * The C versions work fine in such cases, but when compiled with a C++
  * compiler (and if the compiler does not inline the calls), the linker cannot
  * tell that data structures with identical names are actually different and
  * links calls to these template functions incorrectly, which can result in
  * allocation of an incorrect amount of memory if the element size is computed
- * within the function. Even with the size passed as a parameter, incorrect
- * linkage will occur, but as the type is now only present in the cast, it
- * should not cause problems.
+ * within the function.
+ *
+ * This could be solved by passing the size as a parameter, but this has other
+ * issues: it provokes warnings from cppcheck for some invokations.
+ * Even with the size passed as a parameter, incorrect linkage will occur.
+ * When converting files to C++, locally declared structs should be enclosed in
+ * anonymous namespaces or some other means taken to ensure they are unique.
  */
-template <typename T>
+template <typename T> inline
 void _snew(const char *name, const char *file, int line,
-           T * &ptr, size_t nelem, size_t elsize)
+           T * &ptr, size_t nelem)
 {
-    ptr = (T *)save_calloc(name, file, line, nelem, elsize);
+    ptr = (T *)save_calloc(name, file, line, nelem, sizeof(T));
 }
-template <typename T>
+template <typename T> inline
 void _srenew(const char *name, const char *file, int line,
-             T * &ptr, size_t nelem, size_t elsize)
+             T * &ptr, size_t nelem)
 {
-    ptr = (T *)save_realloc(name, file, line, ptr, nelem, elsize);
+    ptr = (T *)save_realloc(name, file, line, ptr, nelem, sizeof(T));
 }
-template <typename T>
+template <typename T> inline
 void _smalloc(const char *name, const char *file, int line, T * &ptr, size_t size)
 {
     ptr = (T *)save_malloc(name, file, line, size);
 }
-template <typename T>
+template <typename T> inline
 void _srealloc(const char *name, const char *file, int line, T * &ptr, size_t size)
 {
     ptr = (T *)save_realloc(name, file, line, ptr, size, sizeof(char));
 }
-template <typename T>
+template <typename T> inline
 void _snew_aligned(const char *name, const char *file, int line,
-                   T * &ptr, size_t nelem, size_t elsize, size_t alignment)
+                   T * &ptr, size_t nelem, size_t alignment)
 {
-    ptr = (T *)save_calloc_aligned(name, file, line, nelem, elsize, alignment);
+    ptr = (T *)save_calloc_aligned(name, file, line, nelem, sizeof(T), alignment);
 }
 
-#define snew(ptr, nelem) _snew(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
-#define srenew(ptr, nelem) _srenew(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)))
+#define snew(ptr, nelem) _snew(#ptr, __FILE__, __LINE__, (ptr), (nelem))
+#define srenew(ptr, nelem) _srenew(#ptr, __FILE__, __LINE__, (ptr), (nelem))
 #define smalloc(ptr, size) _smalloc(#ptr, __FILE__, __LINE__, (ptr), (size))
 #define srealloc(ptr, size) _srealloc(#ptr, __FILE__, __LINE__, (ptr), (size))
-#define snew_aligned(ptr, nelem, alignment) _snew_aligned(#ptr, __FILE__, __LINE__, (ptr), (nelem), sizeof(*(ptr)), alignment)
+#define snew_aligned(ptr, nelem, alignment) _snew_aligned(#ptr, __FILE__, __LINE__, (ptr), (nelem), alignment)
 
 #else /* __cplusplus */
 

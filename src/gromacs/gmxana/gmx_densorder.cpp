@@ -118,7 +118,7 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
     gmx_rmpbc_t  gpbc = NULL;
     matrix       box;                    /* Box - 3x3 -each step*/
     rvec        *x0;                     /* List of Coord without PBC*/
-    int          natoms, i, j, k, n,     /* loop indices, checks etc*/
+    int          natoms, i, j,           /* loop indices, checks etc*/
                  ax1     = 0, ax2 = 0,   /* tangent directions */
                  framenr = 0,            /* frame number in trajectory*/
                  slicex, slicey, slicez; /*slice # of x y z position */
@@ -182,7 +182,9 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
         bbww[ZZ] = box[axis][axis]/ *zslices;
         gmx_rmpbc(gpbc, top->atoms.nr, box, x0);
         /*Reset Densslice every nsttblock steps*/
-        if   (framenr % nsttblock == 0)
+        /* The first conditional is for clang to understand that this branch is
+         * always taken the first time. */
+        if (Densslice == NULL || framenr % nsttblock == 0)
         {
             snew(Densslice, *xslices);
             for (i = 0; i < *xslices; i++)
@@ -194,11 +196,12 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
                 }
             }
 
-            /*Allocate Memory to  extra frame in Densdevel -  rather stupid approach:				                *A single frame each time, although only every nsttblock steps.*/
+            /* Allocate Memory to  extra frame in Densdevel -  rather stupid approach:
+             * A single frame each time, although only every nsttblock steps.
+             */
             srenew(*Densdevel, *tblock+1);
-
+            (*Densdevel)[*tblock] = Densslice;
         }
-
 
         dscale = (*xslices)*(*yslices)*(*zslices)*AMU/ (box[ax1][ax1]*box[ax2][ax2]*box[axis][axis]*nsttblock*(NANO*NANO*NANO));
 
@@ -244,8 +247,6 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
             slicey = ((int) (y/bbww[YY])) % *yslices;
             slicez = ((int) (z/bbww[ZZ])) % *zslices;
             Densslice[slicex][slicey][slicez] += (top->atoms.atom[index[0][j]].m*dscale);
-
-
         }
 
         framenr++;
@@ -254,7 +255,6 @@ static void density_in_time (const char *fn, atom_id **index, int gnx[], real bw
         {
             /*Implicit incrementation of Densdevel via renewal of Densslice*/
             /*only every nsttblock steps*/
-            (*Densdevel)[*tblock] = Densslice;
             (*tblock)++;
         }
 
@@ -322,9 +322,8 @@ static void outputfield(const char *fldfn, real ****Densmap,
 static void filterdensmap(real ****Densmap, int xslices, int yslices, int zslices, int tblocks, int ftsize)
 {
     real *kernel;
-    real *output;
     real  std, var;
-    int   i, j, k, n, order;
+    int   i, j, n, order;
     order = ftsize/2;
     std   = ((real)order/2.0);
     var   = std*std;
@@ -355,8 +354,8 @@ static void interfaces_txy (real ****Densmap, int xslices, int yslices, int zsli
     real       *zDensavg; /* zDensavg[z]*/
     int         i, j, k, n;
     int         xysize;
-    int         ndx1, ndx2, deltandx, *zperm;
-    real        densmid, densl, densr, alpha, pos, spread;
+    int         ndx1, ndx2, *zperm;
+    real        densmid;
     real        splitpoint, startpoint, endpoint;
     real       *sigma1, *sigma2;
     real        beginfit1[4];
@@ -657,7 +656,7 @@ int gmx_densorder(int argc, char *argv[])
 
     output_env_t       oenv;
     t_topology        *top;
-    char               title[STRLEN], **grpname;
+    char             **grpname;
     int                ePBC, *ngx;
     static real        binw      = 0.2;
     static real        binwz     = 0.05;
@@ -666,7 +665,7 @@ int gmx_densorder(int argc, char *argv[])
     static int         ftorder   = 0;
     static int         nsttblock = 100;
     static int         axis      = 2;
-    static char       *axtitle   = "Z";
+    static const char *axtitle   = "Z";
     atom_id          **index; /* Index list for single group*/
     int                xslices, yslices, zslices, tblock;
     static gmx_bool    bGraph   = FALSE;

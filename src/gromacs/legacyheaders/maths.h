@@ -97,6 +97,7 @@ float   gmx_erfcf(float x);
 #endif
 
 gmx_bool gmx_isfinite(real x);
+gmx_bool gmx_isnan(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *

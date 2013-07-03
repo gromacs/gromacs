@@ -42,6 +42,11 @@
 #include "toputil.h"
 #include "hackblock.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* this *MUST* correspond to array in pdb2top.c */
 enum {
     ehisA, ehisB, ehisH, ehis1, ehisNR
@@ -120,5 +125,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
 void print_sums(t_atoms *atoms, gmx_bool bSystem);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _pdb2top_h */

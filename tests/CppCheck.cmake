@@ -83,8 +83,12 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         --suppress=missingInclude:src/programs/mdrun/gmx_gpu_utils/gmx_gpu_utils.cu
         --inline-suppr)
     set(_cxx_flags
+        -D__cplusplus
         --suppress=variableScope
         --suppress=unnecessaryForwardDeclaration
+        --suppress=invalidscanf:src/gromacs/gmxlib/matio.cpp
+        --suppress=invalidscanf:src/gromacs/gmxlib/xvgr.cpp
+        --suppress=invalidscanf:src/gromacs/gmxpreprocess/pdb2top.cpp
         --suppress=*:src/gromacs/selection/scanner.cpp)
 
     # This list will hold the list of all files with cppcheck errors
