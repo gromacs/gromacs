@@ -56,11 +56,6 @@
 #include "vec.h"
 #include "gmxfio.h"
 
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
-
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
     int xvg_format;
@@ -284,7 +279,6 @@ FILE *xvgropen_type(const char *fn, const char *title, const char *xaxis,
                     const output_env_t oenv)
 {
     FILE  *fp;
-    time_t t;
 
     fp = gmx_fio_fopen(fn, "w");
 
@@ -441,7 +435,6 @@ void xvgr_box(FILE *out,
 /* reads a line into ptr, adjusting len and renewing ptr if neccesary */
 static char *fgets3(FILE *fp, char **ptr, int *len, int maxlen)
 {
-    char *p;
     int   len_remaining = *len; /* remaining amount of allocated bytes in buf */
     int   curp          = 0;    /* current position in buf to read into */
 
@@ -551,7 +544,7 @@ int read_xvg_legend(const char *fn, double ***y, int *ny,
                     char **subtitle, char ***legend)
 {
     FILE    *fp;
-    char    *ptr, *ptr0, *ptr1;
+    char    *ptr;
     char    *base = NULL;
     char    *fmt  = NULL;
     int      k, line = 0, nny, nx, maxx, rval, legend_nalloc, set, nchar;
@@ -738,7 +731,7 @@ real **read_xvg_time(const char *fn,
     char       line0[MAXLINELEN];
     char      *line;
     int        t_nalloc, *val_nalloc, a, narg, n, sin, set, nchar;
-    double     dbl, tend = 0;
+    double     dbl;
     gmx_bool   bEndOfSet, bTimeInRange, bFirstLine = TRUE;
     real     **val;
 

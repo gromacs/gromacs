@@ -38,6 +38,9 @@
 
 #include <stdio.h>
 #include <ctype.h>
+
+#include <algorithm>
+
 #include "sysstuff.h"
 #include "futil.h"
 #include "string2.h"
@@ -351,7 +354,7 @@ void read_xpm_entry(FILE *in, t_matrix *mm)
             {
                 gmx_fatal(FARGS, "Dimensions of xpm-file have to be larger than 0\n");
             }
-            llmax        = max(STRLEN, mm->nx+10);
+            llmax        = std::max(STRLEN, mm->nx+10);
             bGetOnWithIt = TRUE;
         }
     }
@@ -659,7 +662,8 @@ static int calc_nmid(int nlevels, real lo, real mid, real hi)
 {
     /* Take care that we have at least 1 entry in the mid to hi range
      */
-    return min(max(0, ((mid-lo)/(hi-lo))*(nlevels-1)), nlevels-1);
+    return std::min(std::max(0, static_cast<int>(((mid-lo)/(hi-lo))*(nlevels-1))),
+                    nlevels-1);
 }
 
 void write_xpm_map3(FILE *out, int n_x, int n_y, int *nlevels,
@@ -766,7 +770,7 @@ static void pr_discrete_cmap(FILE *out, int *nlevel, int i0)
 
     int    i, n;
 
-    *nlevel = min(16, *nlevel);
+    *nlevel = std::min(16, *nlevel);
     n       = *nlevel;
     for (i = 0; (i < n); i++)
     {
@@ -789,8 +793,7 @@ void write_xpm_map_split(FILE *out, int n_x, int n_y,
                          int *nlevel_bot, real lo_bot, real hi_bot,
                          t_rgb rlo_bot, t_rgb rhi_bot)
 {
-    int    i, ntot;
-    real   r, g, b, fac;
+    int    ntot;
 
     ntot = *nlevel_top + *nlevel_bot;
     if (ntot > NMAP)
