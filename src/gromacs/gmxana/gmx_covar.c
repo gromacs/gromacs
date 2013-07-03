@@ -69,11 +69,6 @@
 
 #include "gromacs/linearalgebra/eigensolver.h"
 
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
-
 int gmx_covar(int argc, char *argv[])
 {
     const char     *desc[] = {

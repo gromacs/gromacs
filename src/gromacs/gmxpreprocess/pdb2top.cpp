@@ -75,7 +75,7 @@ static int missing_atoms(t_restp *rp, int resind, t_atoms *at, int i0, int i)
 {
     int      j, k, nmiss;
     char    *name;
-    gmx_bool bFound, bRet;
+    gmx_bool bFound;
 
     nmiss = 0;
     for (j = 0; j < rp->natom; j++)
@@ -300,7 +300,7 @@ choose_ff(const char *ffsel,
 
             if (pret != NULL)
             {
-                sscanf(buf, "%d", &sel);
+                sel = strtol(buf, NULL, 10);
                 sel--;
             }
         }
@@ -414,7 +414,7 @@ void choose_watermodel(const char *wmsel, const char *ffdir,
 
         if (pret != NULL)
         {
-            sscanf(buf, "%d", &sel);
+            sel = strtol(buf, NULL, 10);
             sel--;
         }
     }
@@ -441,14 +441,13 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
 {
     int         i, j, prevresind, resind, i0, prevcg, cg, curcg;
     char       *name;
-    gmx_bool    bProt, bNterm;
+    gmx_bool    bNterm;
     double      qt;
     int         nmissat;
 
     nmissat = 0;
 
     resind = -1;
-    bProt  = FALSE;
     bNterm = FALSE;
     i0     = 0;
     snew(*cgnr, at->nr);
@@ -463,6 +462,7 @@ static int name2type(t_atoms *at, int **cgnr, gpp_atomtype_t atype,
         prevresind = resind;
         if (at->atom[i].resind != resind)
         {
+            gmx_bool bProt;
             resind = at->atom[i].resind;
             bProt  = gmx_residuetype_is_protein(rt, *(at->resinfo[resind].name));
             bNterm = bProt && (resind == 0);
@@ -545,7 +545,6 @@ void print_top_comment(FILE       *out,
                        const char *ffdir,
                        gmx_bool    bITP)
 {
-    char  tmp[256];
     char  ffdir_parent[STRLEN];
     char *p;
 
@@ -801,9 +800,9 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
              * for missing atoms in bonds, as the hydrogens and terminal atoms
              * have not been added yet.
              */
-            ai = search_atom(hb[resind].rb[ebtsBONDS].b[j].AI, i, atoms,
+            ai = search_atom(hb[resind].rb[ebtsBONDS].b[j].a[0], i, atoms,
                              ptr, TRUE);
-            aj = search_atom(hb[resind].rb[ebtsBONDS].b[j].AJ, i, atoms,
+            aj = search_atom(hb[resind].rb[ebtsBONDS].b[j].a[1], i, atoms,
                              ptr, TRUE);
             if (ai != NO_ATID && aj != NO_ATID)
             {
@@ -828,7 +827,7 @@ static void at2bonds(t_params *psb, t_hackblock *hb,
             {
                 if ( ( hb[resind].hack[j].tp > 0 ||
                        hb[resind].hack[j].oname == NULL ) &&
-                     strcmp(hb[resind].hack[j].AI, *(atoms->atomname[i])) == 0)
+                     strcmp(hb[resind].hack[j].a[0], *(atoms->atomname[i])) == 0)
                 {
                     switch (hb[resind].hack[j].tp)
                     {
@@ -858,10 +857,10 @@ static int pcompar(const void *a, const void *b)
     pa = (t_param *)a;
     pb = (t_param *)b;
 
-    d = pa->AI - pb->AI;
+    d = pa->a[0] - pb->a[0];
     if (d == 0)
     {
-        d = pa->AJ - pb->AJ;
+        d = pa->a[1] - pb->a[1];
     }
     if (d == 0)
     {
@@ -883,11 +882,11 @@ static void clean_bonds(t_params *ps)
         /* swap atomnumbers in bond if first larger than second: */
         for (i = 0; (i < ps->nr); i++)
         {
-            if (ps->param[i].AJ < ps->param[i].AI)
+            if (ps->param[i].a[1] < ps->param[i].a[0])
             {
-                a               = ps->param[i].AI;
-                ps->param[i].AI = ps->param[i].AJ;
-                ps->param[i].AJ = a;
+                a                 = ps->param[i].a[0];
+                ps->param[i].a[0] = ps->param[i].a[1];
+                ps->param[i].a[1] = a;
             }
         }
 
@@ -898,8 +897,8 @@ static void clean_bonds(t_params *ps)
         j = 1;
         for (i = 1; (i < ps->nr); i++)
         {
-            if ((ps->param[i].AI != ps->param[j-1].AI) ||
-                (ps->param[i].AJ != ps->param[j-1].AJ) )
+            if ((ps->param[i].a[0] != ps->param[j-1].a[0]) ||
+                (ps->param[i].a[1] != ps->param[j-1].a[1]) )
             {
                 if (j != i)
                 {
@@ -1032,10 +1031,8 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
     int         i, j, k, l;
     char       *key;
     t_restp    *res;
-    char        buf[STRLEN];
-    const char *Hnum = "123456";
     int         tern, terc;
-    gmx_bool    bN, bC, bRM;
+    gmx_bool    bRM;
 
     snew(*hb, nres);
     snew(*restp, nres);
@@ -1115,7 +1112,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                 for (l = 0; l < (*restp)[i].natom; l++)
                 {
                     if ( ( (*hb)[i].hack[j].oname == NULL &&
-                           strcmp((*hb)[i].hack[j].AI, *(*restp)[i].atomname[l]) == 0 ) ||
+                           strcmp((*hb)[i].hack[j].a[0], *(*restp)[i].atomname[l]) == 0 ) ||
                          ( (*hb)[i].hack[j].oname != NULL &&
                            strcmp((*hb)[i].hack[j].oname, *(*restp)[i].atomname[l]) == 0 ) )
                     {
@@ -1140,7 +1137,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
                                   "atom %s not found in buiding block %d%s "
                                   "while combining tdb and rtp",
                                   (*hb)[i].hack[j].oname != NULL ?
-                                  (*hb)[i].hack[j].oname : (*hb)[i].hack[j].AI,
+                                  (*hb)[i].hack[j].oname : (*hb)[i].hack[j].a[0],
                                   i+1, *resinfo[i].rtp);
                     }
                 }
@@ -1236,7 +1233,7 @@ static gmx_bool match_atomnames_with_rtp_atom(t_atoms *pdba, rvec *x, int atind,
                                               gmx_bool bVerbose)
 {
     int      resnr;
-    int      i, j, k;
+    int      j, k;
     char    *oldnm, *newnm;
     int      anmnr;
     char    *start_at, buf[STRLEN];
@@ -1393,20 +1390,13 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
                               t_atoms *pdba, rvec *x,
                               gmx_bool bVerbose)
 {
-    int          i, j, k;
-    char        *oldnm, *newnm;
-    int          resnr;
+    int          i, j;
+    char        *oldnm;
     t_restp     *rptr;
-    t_hackblock *hbr;
-    int          anmnr;
-    char        *start_at, buf[STRLEN];
-    int          start_nr;
-    gmx_bool     bFoundInAdd;
 
     for (i = 0; i < pdba->nr; i++)
     {
         oldnm = *pdba->atomname[i];
-        resnr = pdba->resinfo[pdba->atom[i].resind].nr;
         rptr  = &restp[pdba->atom[i].resind];
         for (j = 0; (j < rptr->natom); j++)
         {

@@ -100,6 +100,13 @@ enum {
                         * make a rest group for the remaining particles.    */
 };
 
+static const char *constraints[eshNR+1]    = {
+    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL
+};
+
+static const char *couple_lam[ecouplamNR+1]    = {
+    "vdw-q", "vdw", "q", "none", NULL
+};
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
