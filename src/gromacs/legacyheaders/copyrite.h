@@ -77,12 +77,55 @@ namespace gmx
 class ProgramInfo;
 
 /*! \brief
+ * Settings for printBinaryInformation().
+ *
+ * This class is used to specify what printBinaryInformation() prints.
+ */
+class BinaryInformationSettings
+{
+    public:
+        BinaryInformationSettings();
+
+        //! Print information about build settings.
+        BinaryInformationSettings &extendedInfo(bool bEnabled)
+        {
+            bExtendedInfo_ = bEnabled;
+            return *this;
+        }
+        //! Print copyright and license information.
+        BinaryInformationSettings &copyright(bool bEnabled)
+        {
+            bCopyright_ = bEnabled;
+            return *this;
+        }
+
+    private:
+        bool        bExtendedInfo_;
+        bool        bCopyright_;
+
+        //! Needed to read the members without otherwise unnecessary accessors.
+        friend void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+                                           const BinaryInformationSettings &settings);
+};
+
+/*! \brief
  * Print basic information about the executable.
  *
  * \param     fp           Where to print the information to.
  * \param[in] programInfo  Program information object to use.
  */
 void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo);
+/*! \brief
+ * Print basic information about the executable with custom settings.
+ *
+ * \param     fp           Where to print the information to.
+ * \param[in] programInfo  Program information object to use.
+ * \param[in] settings     Specifies what to print.
+ *
+ * \see BinaryInformationSettings
+ */
+void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+                            const BinaryInformationSettings &settings);
 
 } // namespace gmx;
 

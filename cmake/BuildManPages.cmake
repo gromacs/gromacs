@@ -52,8 +52,6 @@ function (gmx_add_man_page EXENAME)
             message(WARNING "Missing description for ${EXENAME}")
         endif()
         add_custom_command(TARGET ${EXENAME} POST_BUILD 
-            #The redirect is a hack to avoid showing copyright. 
-            #Ideally there would be a -quiet that would skip all output.
             COMMAND ${CMAKE_COMMAND} -DINFILE=${EXENAME}${GMX_BINARY_SUFFIX}.nroff 
                 -DOUTFILE=${MAN1_PATH}/${EXENAME}.1 -DDESC=" - ${DESC}"
                 -DEXENAME="${CMAKE_BINARY_DIR}/bin/${EXENAME}${GMX_BINARY_SUFFIX}"

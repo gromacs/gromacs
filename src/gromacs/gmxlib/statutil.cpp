@@ -584,10 +584,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     // Ensure that the program info is initialized; if already done, returns
     // the already initialized object.
     const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(*argc, argv);
-    if (FF(PCA_STANDALONE))
-    {
-        gmx::printBinaryInformation(stderr, programInfo);
-    }
     /* Check for double arguments */
     for (i = 1; (i < *argc); i++)
     {
@@ -705,11 +701,12 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
-    if (bVersion)
+    if (!FF(PCA_QUIET) && FF(PCA_STANDALONE) && (!bQuiet || bVersion))
     {
-        printf("Program: %s\n", output_env_get_program_name(*oenv));
-        gmx_print_version_info(stdout);
-        exit(0);
+        gmx::BinaryInformationSettings settings;
+        settings.extendedInfo(bVersion);
+        gmx::printBinaryInformation(bVersion ? stdout : stderr,
+                                    programInfo, settings);
     }
 
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm != NULL))
@@ -752,7 +749,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    bExit = bHelp || (strcmp(manstr[0], "no") != 0);
+    bExit = bHelp || bVersion || (strcmp(manstr[0], "no") != 0);
 
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
