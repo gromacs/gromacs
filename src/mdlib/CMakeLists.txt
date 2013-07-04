@@ -66,13 +66,6 @@ if(GMX_BUILD_OWN_FFTW)
     # disabling GMX_BUILD_OWN_FFTW changes dependencies correctly.
     add_dependencies(md gmxfftw)
 endif()
-option(GMX_PREFIX_LIBMD "Change install name of libmd to libgmxmd to avoid collision with BSD's/Martin Hinner's libmd, which is used in X11 and zfs" OFF)
-mark_as_advanced(GMX_PREFIX_LIBMD)
-if (GMX_PREFIX_LIBMD)
-  set(MD_PREFIX "gmx")
-else()
-  set(MD_PREFIX)
-endif()
 set_target_properties(md PROPERTIES OUTPUT_NAME "${MD_PREFIX}md${GMX_LIBS_SUFFIX}" SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
     COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 

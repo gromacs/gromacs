@@ -1,7 +1,7 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libgmx
+Name: libgmx@GMX_LIBS_SUFFIX@
 Description: Gromacs default lib
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
