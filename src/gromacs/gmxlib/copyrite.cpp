@@ -178,7 +178,7 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     sfree(tmpstr);
 }
 
-void CopyRight(FILE *out)
+static void CopyRight(FILE *out)
 {
     static const char * const CopyrightText[] = {
         "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
@@ -211,6 +211,8 @@ void CopyRight(FILE *out)
     char tmpstr[1024];
     int  i;
 
+    // TODO: Consider making the output more compact to fit better with
+    // other information written by printBinaryInformation().
     ster_print(out, "G  R  O  M  A  C  S");
     fprintf(out, "\n");
 
@@ -678,7 +680,18 @@ void gmx_print_version_info(FILE *fp)
 namespace gmx
 {
 
+BinaryInformationSettings::BinaryInformationSettings()
+    : bExtendedInfo_(false), bCopyright_(false)
+{
+}
+
 void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
+{
+    printBinaryInformation(fp, programInfo, BinaryInformationSettings());
+}
+
+void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
+                            const BinaryInformationSettings &settings)
 {
     const char *precisionString = "";
 #ifdef GMX_DOUBLE
@@ -689,6 +702,16 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
             GromacsVersion(), precisionString);
     fprintf(fp, "Executable: %s\n", programInfo.programNameWithPath().c_str());
     fprintf(fp, "Command line:\n  %s\n", programInfo.commandLine().c_str());
+    if (settings.bCopyright_)
+    {
+        fprintf(fp, "\n");
+        CopyRight(fp);
+    }
+    if (settings.bExtendedInfo_)
+    {
+        fprintf(fp, "\n");
+        gmx_print_version_info(fp);
+    }
     fprintf(fp, "\n");
 }
 
