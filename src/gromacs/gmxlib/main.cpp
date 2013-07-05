@@ -63,6 +63,9 @@
 #include "thread_mpi.h"
 #endif
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
+
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
 
@@ -332,7 +335,14 @@ void gmx_log_open(const char *lognm, const t_commrec *cr, gmx_bool bMasterOnly,
             "Log file opened on %s"
             "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
             timebuf, host, pid, cr->nodeid, cr->nnodes);
-    gmx_print_version_info(fp);
+    try
+    {
+        gmx::BinaryInformationSettings settings;
+        settings.extendedInfo(true);
+        settings.copyright(!bAppendFiles);
+        gmx::printBinaryInformation(fp, gmx::ProgramInfo::getInstance(), settings);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     fprintf(fp, "\n\n");
 
     fflush(fp);

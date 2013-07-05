@@ -105,15 +105,6 @@ const char *Program(void)
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-const char *command_line(void)
-{
-    try
-    {
-        return gmx::ProgramInfo::getInstance().commandLine().c_str();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
 /* utility functions */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)

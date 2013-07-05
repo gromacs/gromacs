@@ -1229,7 +1229,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     gmx_residuetype_t rt;
     const char       *top_fn;
     char              fn[256], itp_fn[STRLEN], posre_fn[STRLEN], buf_fn[STRLEN];
-    char              molname[STRLEN], title[STRLEN], quote[STRLEN], generator[STRLEN];
+    char              molname[STRLEN], title[STRLEN], quote[STRLEN];
     char             *c, forcefield[STRLEN], ffdir[STRLEN];
     char              ffname[STRLEN], suffix[STRLEN], buf[STRLEN];
     char             *watermodel;
@@ -1751,9 +1751,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
     top_fn   = ftp2fn(efTOP, NFILE, fnm);
     top_file = gmx_fio_fopen(top_fn, "w");
 
-    sprintf(generator, "%s - %s", ShortProgram(), GromacsVersion() );
-
-    print_top_header(top_file, top_fn, generator, FALSE, ffdir, mHmult);
+    print_top_header(top_file, top_fn, FALSE, ffdir, mHmult);
 
     nincl = 0;
     nmol  = 0;
@@ -2074,7 +2072,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
 
         if (bITP)
         {
-            print_top_comment(itp_file, itp_fn, generator, ffdir, TRUE);
+            print_top_comment(itp_file, itp_fn, ffdir, TRUE);
         }
 
         if (cc->bAllWat)

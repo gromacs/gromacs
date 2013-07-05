@@ -59,6 +59,7 @@
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/fft/fft.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
 #include "buildinfo.h"
@@ -598,9 +599,9 @@ const char *GromacsVersion()
     return _gmx_ver_string;
 }
 
-void gmx_print_version_info_gpu(FILE *fp);
+extern void gmx_print_version_info_gpu(FILE *fp);
 
-void gmx_print_version_info(FILE *fp)
+static void gmx_print_version_info(FILE *fp)
 {
     fprintf(fp, "Gromacs version:    %s\n", _gmx_ver_string);
 #ifdef GMX_GIT_VERSION_INFO
@@ -686,7 +687,8 @@ namespace gmx
 {
 
 BinaryInformationSettings::BinaryInformationSettings()
-    : bExtendedInfo_(false), bCopyright_(false)
+    : bExtendedInfo_(false), bCopyright_(false),
+      bGeneratedByHeader_(false), prefix_(""), suffix_("")
 {
 }
 
@@ -698,26 +700,37 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo)
 void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
                             const BinaryInformationSettings &settings)
 {
+    const char *prefix          = settings.prefix_;
+    const char *suffix          = settings.suffix_;
     const char *precisionString = "";
 #ifdef GMX_DOUBLE
     precisionString = " (double precision)";
 #endif
     const std::string &name = programInfo.programName();
-    fprintf(fp, "GROMACS:    %s, %s%s\n", name.c_str(),
-            GromacsVersion(), precisionString);
-    fprintf(fp, "Executable: %s\n", programInfo.programNameWithPath().c_str());
-    fprintf(fp, "Command line:\n  %s\n", programInfo.commandLine().c_str());
+    if (settings.bGeneratedByHeader_)
+    {
+        fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
+    }
+    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+            GromacsVersion(), precisionString, suffix);
+    fprintf(fp, "%sExecutable: %s%s\n", prefix,
+            programInfo.programNameWithPath().c_str(), suffix);
+    fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
+            prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
     if (settings.bCopyright_)
     {
+        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
+                           "Prefix/suffix not supported with copyright");
         fprintf(fp, "\n");
         CopyRight(fp);
     }
     if (settings.bExtendedInfo_)
     {
+        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
+                           "Prefix/suffix not supported with extended info");
         fprintf(fp, "\n");
         gmx_print_version_info(fp);
     }
-    fprintf(fp, "\n");
 }
 
 } // namespace gmx

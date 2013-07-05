@@ -56,6 +56,9 @@
 #include "vec.h"
 #include "gmxfio.h"
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
+
 gmx_bool output_env_get_print_xvgr_codes(const output_env_t oenv)
 {
     int xvg_format;
@@ -243,7 +246,15 @@ void xvgr_header(FILE *fp, const char *title, const char *xaxis,
         time(&t);
         gmx_ctime_r(&t, buf, STRLEN);
         fprintf(fp, "# This file was created %s", buf);
-        fprintf(fp, "# by the following command:\n# %s\n#\n", command_line());
+        try
+        {
+            gmx::BinaryInformationSettings settings;
+            settings.generatedByHeader(true);
+            settings.linePrefix("# ");
+            gmx::printBinaryInformation(fp, gmx::ProgramInfo::getInstance(),
+                                        settings);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
         fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
         bromacs(pukestr, 99);
         fprintf(fp, "# %s\n#\n", pukestr);

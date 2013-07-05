@@ -81,9 +81,6 @@ typedef struct t_trxstatus t_trxstatus;
    global informaion, their existence in a multi-threaded environment is not
    a real problem. */
 
-/* Return the name of the program */
-const char *command_line(void);
-
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
