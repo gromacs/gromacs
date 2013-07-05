@@ -127,10 +127,6 @@ mark_as_advanced(GMX_FAHCORE)
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
-# TODO: move OpenMM to contrib
-option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
-mark_as_advanced(GMX_OPENMM)
-
 include(gmxDetectAcceleration)
 if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
