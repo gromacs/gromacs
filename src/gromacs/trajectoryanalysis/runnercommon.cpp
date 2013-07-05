@@ -83,7 +83,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
 
         bool                        bHelp_;
         bool                        bShowHidden_;
-        bool                        bQuiet_;
+        bool                        bVerbose_;
         //! Name of the trajectory file (empty if not provided).
         std::string                 trjfile_;
         //! Name of the topology file (empty if no topology provided).
@@ -107,7 +107,7 @@ class TrajectoryAnalysisRunnerCommon::Impl
 
 TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
-      bHelp_(false), bShowHidden_(false), bQuiet_(false),
+      bHelp_(false), bShowHidden_(false), bVerbose_(false),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       grps_(NULL),
       bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
@@ -179,9 +179,9 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
     options->addOption(BooleanOption("hidden").store(&impl_->bShowHidden_)
                            .hidden()
                            .description("Show hidden options"));
-    options->addOption(BooleanOption("quiet").store(&impl_->bQuiet_)
+    options->addOption(BooleanOption("verbose").store(&impl_->bVerbose_)
                            .hidden()
-                           .description("Hide options in normal run"));
+                           .description("Show options during normal run"));
 
     // Add common file name arguments.
     options->addOption(FileNameOption("f")
@@ -453,17 +453,18 @@ TrajectoryAnalysisRunnerCommon::helpFlags() const
 {
     HelpFlags flags = 0;
 
-    if (!impl_->bQuiet_)
+    if (impl_->bVerbose_)
     {
         flags |= efHelpShowOptions;
-        if (impl_->bHelp_)
-        {
-            flags |= efHelpShowDescriptions;
-        }
-        if (impl_->bShowHidden_)
-        {
-            flags |= efHelpShowHidden;
-        }
+    }
+    if (impl_->bHelp_)
+    {
+        flags |= efHelpShowOptions;
+        flags |= efHelpShowDescriptions;
+    }
+    if (flags != 0 && impl_->bShowHidden_)
+    {
+        flags |= efHelpShowHidden;
     }
     return flags;
 }
