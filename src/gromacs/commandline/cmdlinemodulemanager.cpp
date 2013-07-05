@@ -544,8 +544,10 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     }
     if (!impl_->bQuiet_)
     {
-        printBinaryInformation(impl_->bStdOutInfo_ ? stdout : stderr,
-                               impl_->programInfo_, impl_->binaryInfoSettings_);
+        FILE *out = (impl_->bStdOutInfo_ ? stdout : stderr);
+        printBinaryInformation(out, impl_->programInfo_,
+                               impl_->binaryInfoSettings_);
+        fprintf(out, "\n");
     }
     if (module == NULL)
     {

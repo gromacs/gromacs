@@ -58,6 +58,10 @@
 #include "binsearch.h"
 #include "powerspect.h"
 #include "gmx_ana.h"
+#include "copyrite.h"
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 #ifdef GMX_DOUBLE
 #define FLOOR(x) ((int) floor(x))
@@ -615,10 +619,19 @@ static void writeraw(t_interf ***int1, t_interf ***int2, int tblocks, int xbins,
 
     raw1 = ffopen(fnms[0], "w");
     raw2 = ffopen(fnms[1], "w");
-    fprintf(raw1, "#Produced by: %s #\n", command_line());
-    fprintf(raw2, "#Produced by: %s #\n", command_line());
-    fprintf(raw1, "#Legend: nt nx ny\n#Xbin Ybin Z t\n");
-    fprintf(raw2, "#Legend: nt nx ny\n#Xbin Ybin Z t\n");
+    try
+    {
+        gmx::BinaryInformationSettings settings;
+        settings.generatedByHeader(true);
+        settings.linePrefix("# ");
+        gmx::printBinaryInformation(raw1, gmx::ProgramInfo::getInstance(),
+                                    settings);
+        gmx::printBinaryInformation(raw2, gmx::ProgramInfo::getInstance(),
+                                    settings);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    fprintf(raw1, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");
+    fprintf(raw2, "# Legend: nt nx ny\n# Xbin Ybin Z t\n");
     fprintf(raw1, "%i %i %i\n", tblocks, xbins, ybins);
     fprintf(raw2, "%i %i %i\n", tblocks, xbins, ybins);
     for (n = 0; n < tblocks; n++)

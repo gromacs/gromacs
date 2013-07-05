@@ -61,7 +61,10 @@
 #include "nrjac.h"
 #include "matio.h"
 #include "gmx_ana.h"
+#include "copyrite.h"
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 #define e2d(x) ENM2DEBYE*(x)
 #define EANG2CM  E_CHARGE*1.0e-10       /* e Angstrom to Coulomb meter */
@@ -944,9 +947,15 @@ static void do_dip(t_topology *top, int ePBC, real volume,
         ffclose(dip3d);
 
         dip3d = (FILE *)ffopen(fndip3d, "w");
-        fprintf(dip3d, "# This file was created by %s\n", Program());
-        fprintf(dip3d, "# which is part of G R O M A C S:\n");
-        fprintf(dip3d, "#\n");
+        try
+        {
+            gmx::BinaryInformationSettings settings;
+            settings.generatedByHeader(true);
+            settings.linePrefix("# ");
+            gmx::printBinaryInformation(dip3d, gmx::ProgramInfo::getInstance(),
+                                        settings);
+        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
 
     /* Write legends to all the files */

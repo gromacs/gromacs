@@ -44,9 +44,6 @@ extern "C" {
 /* Has to be a function, so we can get version number from autoconf */
 const char *GromacsVersion(void);
 
-void
-gmx_print_version_info(FILE *fp);
-
 /* For both bromacs() and cool_quote() you have to provide a pointer to
  * a string of reasonable length (say 256) and the string length. This
  * is necessary to make the routines threadsafe and avoid allocating
@@ -98,10 +95,28 @@ class BinaryInformationSettings
             bCopyright_ = bEnabled;
             return *this;
         }
+        BinaryInformationSettings &generatedByHeader(bool bEnabled)
+        {
+            bGeneratedByHeader_ = bEnabled;
+            return *this;
+        }
+        BinaryInformationSettings &linePrefix(const char *prefix)
+        {
+            prefix_ = prefix;
+            return *this;
+        }
+        BinaryInformationSettings &lineSuffix(const char *suffix)
+        {
+            suffix_ = suffix;
+            return *this;
+        }
 
     private:
         bool        bExtendedInfo_;
         bool        bCopyright_;
+        bool        bGeneratedByHeader_;
+        const char *prefix_;
+        const char *suffix_;
 
         //! Needed to read the members without otherwise unnecessary accessors.
         friend void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
