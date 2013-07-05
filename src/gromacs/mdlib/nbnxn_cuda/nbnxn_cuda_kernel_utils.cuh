@@ -52,7 +52,7 @@
 const unsigned supercl_interaction_mask = ((1U << NCL_PER_SUPERCL) - 1U);
 
 /*! Interpolate Ewald coulomb force using the table through the tex_nbfp texture.
- *  Original idea: OpenMM
+ *  Original idea: from the OpenMM project
  */
 static inline __device__
 float interpolate_coulomb_force_r(float r, float scale)

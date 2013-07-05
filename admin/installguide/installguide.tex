@@ -28,7 +28,6 @@
 \newcommand{\threadmpi}{ThreadMPI}
 \newcommand{\openmpi}{OpenMPI}
 \newcommand{\openmp}{OpenMP}
-\newcommand{\openmm}{OpenMM}
 \newcommand{\lammpi}{LAM/MPI}
 \newcommand{\mpich}{MPICH}
 \newcommand{\cmake}{CMake}
@@ -144,17 +143,6 @@ If you wish to use the excellent new native GPU support in \gromacs,
 \cudaversion{} software development kit is required, and the latest
 version is strongly encouraged. \nvidia{} GPUs with at least \nvidia{} compute
 capability 2.0 are required, e.g. Fermi or Kepler cards.
-
-The GPU support from \gromacs{} version 4.5 using \openmm{}
-\url{https://simtk.org/home/openmm} is still contained in the code,
-but in the ``user contributions'' section (\verb+src/contrib+). You
-will need to set
-\verb+-DGMX_OPENMM=on -DGMX_GPU=off -DGMX_MPI=off
--DGMX_THREAD_MPI=off\+ in order to build it. It also requires \cuda{},
-and remains the only hardware-based acceleration available for
-implicit solvent simulations in \gromacs{} at the moment. However, the
-long-term plan is to enable this functionality in core Gromacs, and
-not have the OpenMM interface supported by the \gromacs team.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have
