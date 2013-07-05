@@ -102,7 +102,6 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
     : parent_(*parent), bDatasetsIncluded_(false)
 {
     cmdline_.append("module");
-    cmdline_.append("-quiet");
 }
 
 TrajectoryAnalysisModule &
