@@ -67,6 +67,10 @@
 #include "toputil.h"
 #include "fflibutil.h"
 #include "strdb.h"
+#include "copyrite.h"
+
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
 
 /* this must correspond to enum in pdb2top.h */
 const char *hh[ehisNR]   = { "HISD", "HISE", "HISH", "HIS1" };
@@ -543,7 +547,6 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 
 void print_top_comment(FILE       *out,
                        const char *filename,
-                       const char *generator,
                        const char *ffdir,
                        gmx_bool    bITP)
 {
@@ -552,9 +555,15 @@ void print_top_comment(FILE       *out,
 
     nice_header(out, filename);
     fprintf(out, ";\tThis is a %s topology file\n;\n", bITP ? "include" : "standalone");
-    fprintf(out, ";\tIt was generated using program:\n;\t%s\n;\n",
-            (NULL == generator) ? "unknown" : generator);
-    fprintf(out, ";\tCommand line was:\n;\t%s\n;\n", command_line());
+    try
+    {
+        gmx::BinaryInformationSettings settings;
+        settings.generatedByHeader(true);
+        settings.linePrefix(";\t");
+        gmx::printBinaryInformation(out, gmx::ProgramInfo::getInstance(),
+                                    settings);
+    }
+    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if (strchr(ffdir, '/') == NULL)
     {
@@ -585,11 +594,11 @@ void print_top_comment(FILE       *out,
 }
 
 void print_top_header(FILE *out, const char *filename,
-                      const char *title, gmx_bool bITP, const char *ffdir, real mHmult)
+                      gmx_bool bITP, const char *ffdir, real mHmult)
 {
     const char *p;
 
-    print_top_comment(out, filename, title, ffdir, bITP);
+    print_top_comment(out, filename, ffdir, bITP);
 
     print_top_heavy_H(out, mHmult);
     fprintf(out, "; Include forcefield parameters\n");
