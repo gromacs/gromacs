@@ -37,7 +37,7 @@
  */
 
 #ifndef _nbnxn_search_h
-#define _nsnxn_search_h
+#define _nbnxn_search_h
 #include "visibility.h"
 #include "typedefs.h"
 
