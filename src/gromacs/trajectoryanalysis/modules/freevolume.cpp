@@ -340,6 +340,7 @@ void
 FreeVolume::finishAnalysis(int nframes)
 {
     please_cite(stdout, "Bondi1964a");
+    please_cite(stdout, "Lourenco2013a");
 }
 
 void
