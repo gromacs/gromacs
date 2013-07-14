@@ -116,7 +116,7 @@ nb_kernel_list_hash_destroy()
 
 
 nb_kernel_t *
-nb_kernel_list_findkernel(FILE *              log,
+nb_kernel_list_findkernel(FILE gmx_unused *   log,
                           const char *        arch,
                           const char *        electrostatics,
                           const char *        electrostatics_modifier,
