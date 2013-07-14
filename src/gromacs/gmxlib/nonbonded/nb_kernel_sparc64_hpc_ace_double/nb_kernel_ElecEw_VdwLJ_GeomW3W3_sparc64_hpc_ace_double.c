@@ -57,13 +57,13 @@
  */
 void
 nb_kernel_ElecEw_VdwLJ_GeomW3W3_VF_sparc64_hpc_ace_double
-                    (t_nblist * gmx_restrict                nlist,
-                     rvec * gmx_restrict                    xx,
-                     rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
-                     t_nrnb * gmx_restrict                  nrnb)
+                    (t_nblist                    * gmx_restrict       nlist,
+                     rvec                        * gmx_restrict          xx,
+                     rvec                        * gmx_restrict          ff,
+                     t_forcerec                  * gmx_restrict          fr,
+                     t_mdatoms                   * gmx_restrict     mdatoms,
+                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
+                     t_nrnb                      * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
@@ -1154,13 +1154,13 @@ nb_kernel_ElecEw_VdwLJ_GeomW3W3_VF_sparc64_hpc_ace_double
  */
 void
 nb_kernel_ElecEw_VdwLJ_GeomW3W3_F_sparc64_hpc_ace_double
-                    (t_nblist * gmx_restrict                nlist,
-                     rvec * gmx_restrict                    xx,
-                     rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
-                     t_nrnb * gmx_restrict                  nrnb)
+                    (t_nblist                    * gmx_restrict       nlist,
+                     rvec                        * gmx_restrict          xx,
+                     rvec                        * gmx_restrict          ff,
+                     t_forcerec                  * gmx_restrict          fr,
+                     t_mdatoms                   * gmx_restrict     mdatoms,
+                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
+                     t_nrnb                      * gmx_restrict        nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or
      * just 0 for non-waters.
