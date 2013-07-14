@@ -143,15 +143,12 @@ static int low_fflib_search_file_end(const char *ffdir,
                                      char     ***filenames,
                                      char     ***filenames_short)
 {
-    char           *ret = NULL;
     char           *lib, *dir;
-    char            buf[1024];
     char           *libpath;
     gmx_bool        env_is_set;
     int             len_fe, len_name;
     char          **fns, **fns_short;
     char            dir_print[GMX_PATH_MAX];
-    char           *pdum;
     char           *s, fn_dir[GMX_PATH_MAX];
     gmx_directory_t dirhandle;
     char            nextname[STRLEN];

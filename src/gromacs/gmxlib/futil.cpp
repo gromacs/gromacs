@@ -486,8 +486,7 @@ gmx_bool make_backup(const char * name)
         env = getenv("GMX_MAXBACKUP");
         if (env != NULL)
         {
-            count_max = 0;
-            sscanf(env, "%d", &count_max);
+            count_max = strtol(env, NULL, 10);
             if (count_max == -1)
             {
                 /* Do not make backups and possibly overwrite old files */
@@ -522,7 +521,7 @@ FILE *ffopen(const char *file, const char *mode)
     return fopen(file, mode);
 #else
     FILE    *ff = NULL;
-    char     buf[256], *bf, *bufsize = 0, *ptr;
+    char     buf[256], *bufsize = 0, *ptr;
     gmx_bool bRead;
     int      bs;
 
@@ -850,7 +849,7 @@ gmx_bool get_libdir(char *libdir)
     char     buf[GMX_BINNAME_MAX];
     char     full_path[GMX_PATH_MAX+GMX_BINNAME_MAX];
     char     system_path[GMX_PATH_MAX];
-    char    *dir, *ptr, *s, *pdum;
+    char    *dir, *ptr, *s;
     gmx_bool found = FALSE;
     int      i;
 
