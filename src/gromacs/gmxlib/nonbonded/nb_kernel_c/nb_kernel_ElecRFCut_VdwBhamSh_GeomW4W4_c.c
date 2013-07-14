@@ -656,7 +656,7 @@ nb_kernel_ElecRFCut_VdwBhamSh_GeomW4W4_F_c
                      rvec * gmx_restrict                    ff,
                      t_forcerec * gmx_restrict              fr,
                      t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
+                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
                      t_nrnb * gmx_restrict                  nrnb)
 {
     int              i_shift_offset,i_coord_offset,j_coord_offset;
