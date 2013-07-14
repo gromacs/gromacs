@@ -1401,7 +1401,7 @@ nb_kernel_ElecEwSh_VdwNone_GeomW4W4_F_sse2_single
                      rvec * gmx_restrict                    ff,
                      t_forcerec * gmx_restrict              fr,
                      t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
+                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
                      t_nrnb * gmx_restrict                  nrnb)
 {
     /* Suffixes 0,1,2,3 refer to particle indices for waters in the inner or outer loop, or 
