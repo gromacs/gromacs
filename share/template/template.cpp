@@ -195,16 +195,5 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    ProgramInfo::init(argc, argv);
-    try
-    {
-        AnalysisTemplate                    module;
-        TrajectoryAnalysisCommandLineRunner runner(&module);
-        return runner.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+    return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<AnalysisTemplate>(argc, argv);
 }

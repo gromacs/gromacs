@@ -41,8 +41,6 @@
  */
 #include "gromacs/trajectoryanalysis/modules.h"
 
-#include "gromacs/commandline/cmdlinemodule.h"
-#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/trajectoryanalysis/cmdlinerunner.h"
 
 #include "modules/angle.h"
@@ -56,81 +54,33 @@ namespace gmx
 namespace
 {
 
-/*! \internal \brief
- * Base class for trajectory analysis module command-line wrappers.
+/*! \brief
+ * Convenience method for registering a module for a trajectory analysis module.
  *
- * This class exists to avoid multiple identical copies of the \p run() method
- * to be generated for the TrajAnalysisCmdLineWrapper template classes.
+ * \tparam ModuleType  Trajectory analysis module to wrap.
  *
- * \ingroup module_trajectoryanalysis
- */
-class AbstractTrajAnalysisCmdLineWrapper : public CommandLineModuleInterface
-{
-    public:
-        virtual const char *name() const             = 0;
-        virtual const char *shortDescription() const = 0;
-
-        virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const HelpWriterContext &context) const;
-
-    protected:
-        //! Creates the analysis module for this wrapper.
-        virtual TrajectoryAnalysisModulePointer createModule() const = 0;
-};
-
-int AbstractTrajAnalysisCmdLineWrapper::run(int argc, char *argv[])
-{
-    TrajectoryAnalysisModulePointer     module(createModule());
-    TrajectoryAnalysisCommandLineRunner runner(module.get());
-    runner.setStandalone(false);
-    return runner.run(argc, argv);
-}
-
-void AbstractTrajAnalysisCmdLineWrapper::writeHelp(const HelpWriterContext &context) const
-{
-    TrajectoryAnalysisModulePointer     module(createModule());
-    TrajectoryAnalysisCommandLineRunner runner(module.get());
-    runner.writeHelp(context);
-}
-
-/*! \internal \brief
- * Template for command-line wrapper of a trajectory analysis module.
- *
- * \tparam Module  Trajectory analysis module to wrap.
- *
- * \p Module should be default-constructible, derive from
- * TrajectoryAnalysisModule, and have a static public members
+ * \p ModuleType should be default-constructible, derive from
+ * TrajectoryAnalysisModule, and have static public members
  * \c "const char name[]" and \c "const char shortDescription[]".
  *
  * \ingroup module_trajectoryanalysis
  */
-template <class Module>
-class TrajAnalysisCmdLineWrapper : public AbstractTrajAnalysisCmdLineWrapper
+template <class ModuleType>
+void registerModule(CommandLineModuleManager *manager)
 {
-    public:
-        virtual const char *name() const
-        {
-            return Module::name;
-        }
-        virtual const char *shortDescription() const
-        {
-            return Module::shortDescription;
-        }
-        virtual TrajectoryAnalysisModulePointer createModule() const
-        {
-            return TrajectoryAnalysisModulePointer(new Module);
-        }
-};
+    TrajectoryAnalysisCommandLineRunner::registerModule<ModuleType>(
+            manager, ModuleType::name, ModuleType::shortDescription);
+}
 
 }   // namespace
 
 void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
 {
     using namespace gmx::analysismodules;
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Angle> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Distance> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<FreeVolume> >();
-    manager->registerModule<TrajAnalysisCmdLineWrapper<Select> >();
+    registerModule<Angle>(manager);
+    registerModule<Distance>(manager);
+    registerModule<FreeVolume>(manager);
+    registerModule<Select>(manager);
 }
 
 } // namespace gmx
