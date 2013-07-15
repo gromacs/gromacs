@@ -62,8 +62,7 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  *
  * Typical usage:
  * \code
-   int
-   main(int argc, char *argv[])
+   int main(int argc, char *argv[])
    {
        const gmx::ProgramInfo &programInfo =
            gmx::ProgramInfo::init("gmx", argc, argv);
@@ -87,6 +86,39 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
 class CommandLineModuleManager
 {
     public:
+        /*! \brief
+         * Implements a main() method that runs a single module.
+         *
+         * \param argc   \c argc passed to main().
+         * \param argv   \c argv passed to main().
+         * \param module Module to run.
+         *
+         * This method allows for uniform behavior for binaries that only
+         * contain a single module without duplicating any of the
+         * implementation from CommandLineModuleManager (startup headers,
+         * common options etc.).
+         *
+         * The signature assumes that \p module construction does not throw
+         * (because otherwise the caller would need to duplicate all the
+         * exception handling code).  It is possible to move the construction
+         * inside the try/catch in this method using an indirection similar to
+         * TrajectoryAnalysisCommandLineRunner::runAsMain(), but until that is
+         * necessary, the current approach leads to simpler code.
+         *
+         * Usage:
+         * \code
+           int main(int argc, char *argv[])
+           {
+               CustomCommandLineModule module;
+               return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+           }
+         * \endcode
+         *
+         * Does not throw.  All exceptions are caught and handled internally.
+         */
+        static int runAsMainSingleModule(int argc, char *argv[],
+                                         CommandLineModuleInterface *module);
+
         /*! \brief
          * Initializes a command-line module manager.
          *
