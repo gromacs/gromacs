@@ -165,7 +165,7 @@ const ProgramInfo &ProgramInfo::getInstance()
 }
 
 // static
-const ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
+ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
 {
     return init(NULL, argc, argv);
 }

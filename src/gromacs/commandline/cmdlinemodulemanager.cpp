@@ -383,29 +383,31 @@ class CommandLineModuleManager::Impl
          *
          * Owns the contained modules.
          */
-        CommandLineModuleMap    modules_;
+        CommandLineModuleMap         modules_;
         //! Information about the currently running program.
-        ProgramInfo            &programInfo_;
+        ProgramInfo                 &programInfo_;
         /*! \brief
          * Module that implements help for the binary.
          *
          * The pointed module is owned by the \a modules_ container.
          */
-        CommandLineHelpModule  *helpModule_;
+        CommandLineHelpModule       *helpModule_;
         //! Settings for what to write in the startup header.
-        BinaryInformationSettings binaryInfoSettings_;
+        BinaryInformationSettings    binaryInfoSettings_;
+        //! If non-NULL, run this module in single-module mode.
+        CommandLineModuleInterface  *singleModule_;
         //! Whether all stderr output should be suppressed.
-        bool                    bQuiet_;
+        bool                         bQuiet_;
         //! Whether to write the startup information to stdout iso stderr.
-        bool                    bStdOutInfo_;
+        bool                         bStdOutInfo_;
 
     private:
         GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
 CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
-    : programInfo_(*programInfo), helpModule_(NULL), bQuiet_(false),
-      bStdOutInfo_(false)
+    : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
+      bQuiet_(false), bStdOutInfo_(false)
 {
 }
 
@@ -435,6 +437,11 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
 CommandLineModuleInterface *
 CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
 {
+    if (singleModule_ != NULL)
+    {
+        // TODO: Process common options also in this case.
+        return singleModule_;
+    }
     // Check if the module is called through a symlink.
     CommandLineModuleMap::const_iterator module
         = findModuleFromBinaryName(programInfo_);
@@ -503,8 +510,6 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
 CommandLineModuleManager::CommandLineModuleManager(ProgramInfo *programInfo)
     : impl_(new Impl(programInfo))
 {
-    impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
-    addModule(CommandLineModulePointer(impl_->helpModule_));
 }
 
 CommandLineModuleManager::~CommandLineModuleManager()
@@ -528,6 +533,11 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
+    if (impl_->helpModule_ == NULL)
+    {
+        impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
+        addModule(CommandLineModulePointer(impl_->helpModule_));
+    }
     impl_->helpModule_->addTopic(move(topic));
 }
 
@@ -563,6 +573,24 @@ int CommandLineModuleManager::run(int argc, char *argv[])
         gmx_thanx(stderr);
     }
     return rc;
+}
+
+// static
+int CommandLineModuleManager::runAsMainSingleModule(
+        int argc, char *argv[], CommandLineModuleInterface *module)
+{
+    ProgramInfo &programInfo = ProgramInfo::init(argc, argv);
+    try
+    {
+       CommandLineModuleManager manager(&programInfo);
+       manager.impl_->singleModule_ = module;
+       return manager.run(argc, argv);
+    }
+    catch (const std::exception &ex)
+    {
+       printFatalErrorMessage(stderr, ex);
+       return 1;
+    }
 }
 
 } // namespace gmx

@@ -256,8 +256,6 @@
  * To implement a command-line tool, it should create a module and run it using
  * gmx::TrajectoryAnalysisCommandLineRunner using the boilerplate code below:
  * \skip  int
- * \until return 1;
- * \until }
  * \until }
  *
  *

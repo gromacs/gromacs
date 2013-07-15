@@ -96,7 +96,7 @@ class ProgramInfo
          *
          * Does not throw. Terminates the program on out-of-memory error.
          */
-        static const ProgramInfo &init(int argc, const char *const argv[]);
+        static ProgramInfo &init(int argc, const char *const argv[]);
         /*! \brief
          * Initializes global program information with explicit binary name.
          *
