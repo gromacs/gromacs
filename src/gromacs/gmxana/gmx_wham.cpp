@@ -1683,7 +1683,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             {
                 bExact = TRUE;
             }
-            if (((i%opt->stepchange) == 0 || i == 1) && !i == 0)
+            if (((i%opt->stepchange) == 0 || i == 1) && i != 0)
             {
                 printf("\t%4d) Maximum change %e\n", i, maxchange);
             }
@@ -3595,7 +3595,7 @@ int gmx_wham(int argc, char *argv[])
             printf("Switched to exact iteration in iteration %d\n", i);
         }
         calc_profile(profile, window, nwins, &opt, bExact);
-        if (((i%opt.stepchange) == 0 || i == 1) && !i == 0)
+        if (((i%opt.stepchange) == 0 || i == 1) && i != 0)
         {
             printf("\t%4d) Maximum change %e\n", i, maxchange);
         }
