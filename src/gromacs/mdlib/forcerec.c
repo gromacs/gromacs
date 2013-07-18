@@ -2049,9 +2049,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        snew(fr->hwinfo, 1);
-        gmx_detect_hardware(fp, fr->hwinfo, cr,
-                            FALSE, FALSE, NULL);
+        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE, FALSE, NULL);
     }
 
     /* By default we turn acceleration on, but it might be turned off further down... */
@@ -2216,7 +2214,7 @@ void init_forcerec(FILE              *fp,
      * group kernels are OK. See Redmine #1249. */
     if (fr->bAllvsAll)
     {
-        fr->bAllvsAll = FALSE;
+        fr->bAllvsAll            = FALSE;
         fr->use_cpu_acceleration = FALSE;
         if (fp != NULL)
         {
