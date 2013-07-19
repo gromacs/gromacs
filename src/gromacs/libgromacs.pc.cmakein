@@ -1,7 +1,7 @@
 libdir=@LIB_INSTALL_DIR@
 includedir=@INCL_INSTALL_DIR@
 
-Name: libgromacs
+Name: libgromacs@GMX_LIBS_SUFFIX@
 Description: Gromacs library
 URL: http://www.gromacs.org
 Version: @PROJECT_VERSION@
