@@ -78,6 +78,12 @@
 /* Use AMD core math library */
 #cmakedefine GMX_FFT_ACML
 
+/* Target platform is x86 or x86_64 */
+#cmakedefine GMX_TARGET_X86
+
+/* Target platform is BlueGene/Q */
+#cmakedefine GMX_TARGET_BGQ
+
 /* SSE2 instructions available */
 #cmakedefine GMX_X86_SSE2
 
