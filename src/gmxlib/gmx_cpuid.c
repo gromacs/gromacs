@@ -63,7 +63,7 @@
 /* For convenience, and to enable configure-time invocation, we keep all architectures
  * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
  */
-#ifdef GMX_IS_X86
+#ifdef GMX_TARGET_X86
 /* OK, it is x86, but can we execute cpuid? */
 #if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)))
 #    define GMX_CPUID_X86

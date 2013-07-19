@@ -260,7 +260,7 @@ int gmx_node_rank(void)
 #endif
 }
 
-#if defined GMX_LIB_MPI && defined GMX_IS_BGQ
+#if defined GMX_LIB_MPI && defined GMX_TARGET_BGQ
 #include <spi/include/kernel/location.h>
 #endif
 
@@ -280,7 +280,7 @@ int gmx_hostname_num()
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Get_processor_name(mpi_hostname, &resultlen);
-#ifdef GMX_IS_BGQ
+#ifdef GMX_TARGET_BGQ
     Personality_t personality;
     Kernel_GetPersonality(&personality, sizeof(personality));
     /* Each MPI rank has a unique coordinate in a 6-dimensional space
@@ -332,7 +332,7 @@ int gmx_hostname_num()
     {
         fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
                 mpi_hostname, hostnum);
-#ifdef GMX_IS_BGQ
+#ifdef GMX_TARGET_BGQ
         fprintf(debug,
                 "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\nNode ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
                 personality.Network_Config.Acoord,
