@@ -131,19 +131,14 @@ include(gmxManageGPU)
 option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
 mark_as_advanced(GMX_OPENMM)
 
+# Detect the architecture the compiler is targetting, detect
+# acceleration possibilities on that hardware, suggest an acceleration
+# to use if none is specified, and populate the cache option for CPU
+# accleration.
+include(gmxDetectTargetArchitecture)
+gmx_detect_target_architecture()
 include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_CPU_ACCELERATION)
-    if(CMAKE_CROSSCOMPILING)
-        if("${CMAKE_SYSTEM_NAME}" MATCHES "BlueGeneQ")
-            set(GMX_SUGGESTED_CPU_ACCELERATION "IBM_QPX")
-        else()
-            set(GMX_SUGGESTED_CPU_ACCELERATION "None")
-        endif()
-    else(CMAKE_CROSSCOMPILING)
-        gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
-    endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_CPU_ACCELERATION)
-
+gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
     CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX, Sparc64_HPC_ACE")
 
@@ -715,7 +710,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
     if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+      message(STATUS "Enabling SSE2 Gromacs acceleration")
     endif()
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
@@ -760,7 +755,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
     if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
@@ -833,7 +828,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
         set(GMX_X86_AVX_128_FMA 1)
         if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add)")
         endif()
 
         # We don't have the full compiler version string yet (BUILD_C_COMPILER),
@@ -860,7 +855,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
         set(GMX_X86_AVX_256 1)
         if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration")
         endif()
     endif()
 
