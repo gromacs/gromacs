@@ -584,15 +584,16 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     debug_gmx();
 
-    /* set free energy calculation frequency as the minimum of nstdhdl, nstexpanded, and nstrepl_ex_nst*/
+    /* set free energy calculation frequency as the minimum
+       greatest common denominator of nstdhdl, nstexpanded, and repl_ex_nst*/
     nstfep = ir->fepvals->nstdhdl;
-    if (ir->bExpanded && (nstfep > ir->expandedvals->nstexpanded))
+    if (ir->bExpanded)
     {
-        nstfep = ir->expandedvals->nstexpanded;
+        nstfep = gmx_greatest_common_divisor(ir->fepvals->nstdhdl,nstfep);
     }
-    if (repl_ex_nst > 0 && nstfep > repl_ex_nst)
+    if (repl_ex_nst > 0)
     {
-        nstfep = repl_ex_nst;
+        nstfep = gmx_greatest_common_divisor(repl_ex_nst,nstfep);
     }
 
     /* I'm assuming we need global communication the first time! MRS */

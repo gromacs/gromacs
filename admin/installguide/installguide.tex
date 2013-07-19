@@ -3,7 +3,7 @@
 % latexmlpost --destination installguide.xhtml --format=xhtml installguide.xml
 %
 % Crude hack to remove ugly symbols:
-% sed -e 's/Â§//g' -i installguide.xhtml
+% sed -e 's/[Â§]//g' -i installguide.xhtml
 %
 % Strip off header for pasting into the website at
 % http://www.gromacs.org/Documentation/Installation_Instructions:
@@ -70,8 +70,8 @@ see the documentation at
 \end{enumerate}
 Or, as a sequence of commands to execute:
 \begin{verbatim}
-tar xfz gromacs-4.6.1.tar.gz
-cd gromacs-4.6.1
+tar xfz gromacs-4.6.3.tar.gz
+cd gromacs-4.6.3
 mkdir build
 cd build
 cmake .. -DGMX_BUILD_OWN_FFTW=ON
@@ -255,7 +255,7 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} with \icc{} 11 or higher is very simple. Set up your
+Using \mkl{} with icc 11 or higher is very simple. Set up your
 compiler environment correctly, perhaps with a command like
 \verb+source /path/to/compilervars.sh intel64+ (or consult your local
 documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
@@ -318,8 +318,8 @@ line is the name of the directory containing the
 example, download the source tarball and use
 % TODO: keep up to date with new releases!
 \begin{verbatim}
-$ tar xfz gromacs-4.6.1.tgz
-$ cd gromacs-4.6.1
+$ tar xfz gromacs-4.6.3.tgz
+$ cd gromacs-4.6.3
 $ mkdir build-cmake
 $ cd build-cmake
 $ cmake ..
@@ -510,7 +510,7 @@ cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_BINARY_SUFFIX=_mod -DGMX_LIBS_SUFFIX=_mo
 \end{verbatim}
 
 Thus the names of all binaries and libraries will be appended with
-"_mod."
+"\_mod."
 
 \subsection{Building \gromacs{}}
 

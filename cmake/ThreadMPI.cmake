@@ -71,6 +71,40 @@ endif (CMAKE_USE_PTHREADS_INIT)
 # Turns on thread_mpi core threading functions.
 MACRO(TMPI_ENABLE_CORE INCDIR)
     TMPI_TEST_ATOMICS(${INCDIR})
+
+# affinity checks
+    include(CheckFunctionExists)
+    if (THREAD_PTHREADS)
+        set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
+        # check for sched_setaffinity
+        check_c_source_compiles(
+            "#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+    int main(void) { cpu_set_t set;
+        CPU_ZERO(&set);
+        CPU_SET(0, &set);
+        pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
+        return 0;
+    }"
+            PTHREAD_SETAFFINITY
+        )
+        if (PTHREAD_SETAFFINITY)
+            set(HAVE_PTHREAD_SETAFFINITY 1)
+        endif (PTHREAD_SETAFFINITY)
+        set(CMAKE_REQUIRED_LIBRARIES)
+    endif (THREAD_PTHREADS)
+
+
+# this runs on POSIX systems
+    check_include_files(unistd.h        HAVE_UNISTD_H)
+    check_include_files(sched.h         HAVE_SCHED_H)
+    check_include_files(sys/time.h      HAVE_SYS_TIME_H)
+    check_function_exists(sysconf       HAVE_SYSCONF)
+# this runs on windows
+#check_include_files(windows.h		HAVE_WINDOWS_H)
 ENDMACRO(TMPI_ENABLE_CORE)
 
 # enable C++ library build.
@@ -129,40 +163,6 @@ MACRO(TMPI_ENABLE)
     endif (THREAD_MPI_WARNINGS)
 
     include(CheckCSourceCompiles)
-
-# affinity checks
-    include(CheckFunctionExists)
-    if (THREAD_PTHREADS)
-        set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-        # check for sched_setaffinity
-        check_c_source_compiles(
-            "#define _GNU_SOURCE
-#include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
-    int main(void) { cpu_set_t set;
-        CPU_ZERO(&set);
-        CPU_SET(0, &set);
-        pthread_setaffinity_np(pthread_self(), sizeof(set), &set);
-        return 0;
-    }"
-            PTHREAD_SETAFFINITY
-        )
-        if (PTHREAD_SETAFFINITY)
-            set(HAVE_PTHREAD_SETAFFINITY 1)
-        endif (PTHREAD_SETAFFINITY)
-        set(CMAKE_REQUIRED_LIBRARIES)
-    endif (THREAD_PTHREADS)
-
-
-# this runs on POSIX systems
-    check_include_files(unistd.h        HAVE_UNISTD_H)
-    check_include_files(sched.h         HAVE_SCHED_H)
-    check_include_files(sys/time.h      HAVE_SYS_TIME_H)
-    check_function_exists(sysconf       HAVE_SYSCONF)
-# this runs on windows
-#check_include_files(windows.h		HAVE_WINDOWS_H)
 ENDMACRO(TMPI_ENABLE)
 
 
