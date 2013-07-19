@@ -1,3 +1,7 @@
+# Need to help GMock find its dependency, since FindPthreads.cmake is
+# neither bundled with this version of GMock, or in any CMake
+# distribution.
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../CMakeModules)
 find_package(Pthreads)
 
 set(GMOCK_DIR ${CMAKE_CURRENT_SOURCE_DIR})
