@@ -1024,7 +1024,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                 gmx_fatal(FARGS, "GPU requested, but can't be used without cutoff-scheme=Verlet");
             }
         }
-#ifdef GMX_IS_BGQ
+#ifdef GMX_TARGET_BGQ
         else
         {
             md_print_warn(cr, fplog,

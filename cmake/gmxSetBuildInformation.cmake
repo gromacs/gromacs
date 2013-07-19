@@ -84,7 +84,10 @@ macro(gmx_set_build_information)
 
     if(NOT CMAKE_CROSSCOMPILING)
         # Get CPU acceleration information
-        set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE -DGMX_IS_X86")
+        set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE")
+        if(GMX_TARGET_X86)
+            set(_compile_definitions "${_compile_definitions} -DGMX_TARGET_X86")
+        endif()
         try_run(GMX_CPUID_RUN_VENDOR GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
