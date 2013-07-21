@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -94,26 +94,6 @@ class CommandLineParser
          * implemented.
          */
         void parse(int *argc, char *argv[]);
-        /*! \brief
-         * Parses the command line from a std::vector.
-         *
-         * \param[in] commandLine  Array of command-line strings.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  InvalidInputError if any errors were detected in the input.
-         *
-         * \p commandLine should relate to the standard \c argv array
-         * one-to-one.
-         *
-         * This method is provided for convenience for cases where the command
-         * line needs to be stored before parsing.
-         *
-         * Currently, the input parameters are not modified, but this may
-         * change if/when support for parsing only part of the options is
-         * implemented.
-         *
-         * \see parse(int *, char *[])
-         */
-        void parse(std::vector<std::string> *commandLine);
 
     private:
         class Impl;
