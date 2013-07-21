@@ -67,8 +67,6 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
-        static void SetUpTestCase();
-
         static int               s_debugLevel;
 
         SelectionCollectionTest();
@@ -90,11 +88,11 @@ class SelectionCollectionTest : public ::testing::Test
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
-void SelectionCollectionTest::SetUpTestCase()
+GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
-    gmx::Options options(NULL, NULL);
-    options.addOption(gmx::IntegerOption("seldebug").store(&s_debugLevel));
-    gmx::test::parseTestOptions(&options);
+    options->addOption(gmx::IntegerOption("seldebug")
+                           .store(&SelectionCollectionTest::s_debugLevel)
+                           .description("Set selection debug level"));
 }
 
 SelectionCollectionTest::SelectionCollectionTest()
