@@ -46,6 +46,13 @@
    obj:*/mdrun*
 }
 
+{
+   strdup/strtod
+   Memcheck:Addr8
+   fun:__GI___strncasecmp_l
+   fun:____strtod_l_internal
+}
+
 
 #MacOS rules
 {

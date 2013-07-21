@@ -43,15 +43,15 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
-#include <new>
 #include <string>
 
 #include <gtest/gtest.h>
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -76,7 +76,8 @@ class TestReferenceDataEnvironment : public ::testing::Environment
 };
 
 //! Global reference data mode set with gmx::test::setReferenceDataMode().
-gmx::test::ReferenceDataMode g_referenceDataMode = gmx::test::erefdataCompare;
+// TODO: Make this a real enum; requires solving a TODO in StringOption.
+int g_referenceDataMode = gmx::test::erefdataCompare;
 
 } // namespace
 
@@ -87,7 +88,7 @@ namespace test
 
 ReferenceDataMode getReferenceDataMode()
 {
-    return g_referenceDataMode;
+    return static_cast<ReferenceDataMode>(g_referenceDataMode);
 }
 
 void setReferenceDataMode(ReferenceDataMode mode)
@@ -100,34 +101,16 @@ std::string getReferenceDataPath()
     return TestFileManager::getInputFilePath("refdata");
 }
 
-void initReferenceData(int *argc, char **argv)
+void initReferenceData(Options *options)
 {
-    int i, newi;
-
-    for (i = newi = 1; i < *argc; ++i, ++newi)
-    {
-        argv[newi] = argv[i];
-        if (!std::strcmp(argv[i], "--create-ref-data"))
-        {
-            setReferenceDataMode(erefdataCreateMissing);
-            --newi;
-        }
-        else if (!std::strcmp(argv[i], "--update-ref-data"))
-        {
-            setReferenceDataMode(erefdataUpdateAll);
-            --newi;
-        }
-    }
-    *argc = newi;
-    try
-    {
-        ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
-    }
-    catch (const std::bad_alloc &)
-    {
-        std::fprintf(stderr, "Out of memory\n");
-        std::exit(1);
-    }
+    // Needs to correspond to the enum order in refdata.h.
+    const char *const refDataEnum[] = { "check", "create", "update" };
+    options->addOption(
+            StringOption("ref-data").enumValue(refDataEnum)
+                .defaultEnumIndex(0)
+                .storeEnumIndex(&g_referenceDataMode)
+                .description("Operation mode for tests that use reference data"));
+    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
 }
 
 /********************************************************************
