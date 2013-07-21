@@ -69,9 +69,6 @@ namespace test
 class StringTestBase : public ::testing::Test
 {
     public:
-        //! Static fixture setup to parse command-line options.
-        static void SetUpTestCase();
-
         StringTestBase();
         ~StringTestBase();
 
@@ -102,8 +99,6 @@ class StringTestBase : public ::testing::Test
         void checkFileContents(const std::string &filename, const char *id);
 
     private:
-        static bool                             s_bWriteToStdOut;
-
         TestReferenceData                       data_;
         boost::scoped_ptr<TestReferenceChecker> checker_;
 };
