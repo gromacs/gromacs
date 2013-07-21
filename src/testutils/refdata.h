@@ -50,6 +50,9 @@
 
 namespace gmx
 {
+
+class Options;
+
 namespace test
 {
 
@@ -105,17 +108,13 @@ std::string getReferenceDataPath();
 /*! \libinternal \brief
  * Initializes reference data handling.
  *
- * Sets the reference data mode based on command-line arguments.  By default,
- * ::erefdataCompare is used, but \c --create-ref-data or \c --update-ref-data
- * can be used to change it.
- * Recognized command-line arguments are removed from the list.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
+ * Adds command-line options to \p options to set the reference data mode.
+ * By default, ::erefdataCompare is used, but \c "--ref-data create" or
+ * \c "--ref-data update" can be used to change it.
  *
  * This function is automatically called by initTestUtils().
  */
-void initReferenceData(int *argc, char **argv);
+void initReferenceData(Options *options);
 
 
 class TestReferenceChecker;
