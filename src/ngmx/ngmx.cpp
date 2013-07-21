@@ -60,20 +60,6 @@
 void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
               const output_env_t oenv);
 
-static void dump_xw(char *dispname, Window w, char *fn)
-{
-    char comm[256];
-
-    sprintf(comm, "xwd -id %d -display %s > %s", (int)w, dispname, fn);
-
-#ifdef GMX_NO_SYSTEM
-    printf("Warning-- No calls to system(3) supported on this platform.");
-    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
-#else
-    (void)system(comm);
-#endif
-}
-
 static void dump_it(t_manager *man)
 {
     t_psdata ps;

@@ -41,12 +41,13 @@
  */
 #include "cmdlineparser.h"
 
-#include <cctype>
+#include <cstdlib>
 
 #include <string>
 #include <vector>
 
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
@@ -67,6 +68,16 @@ class CommandLineParser::Impl
         //! Sets the options object to parse to.
         explicit Impl(Options *options);
 
+        /*! \brief
+         * Determines whether a cmdline parameter starts an option and the name
+         * of that option.
+         *
+         * \param[in] arg  Individual argument from \c argv.
+         * \returns The beginning of the option name in \p arg, or NULL if
+         *     \p arg does not look like an option.
+         */
+        const char *toOptionName(const char *arg) const;
+
         //! Helper object for assigning the options.
         OptionsAssigner         assigner_;
 };
@@ -76,6 +87,29 @@ CommandLineParser::Impl::Impl(Options *options)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
     assigner_.setNoStrictSectioning(true);
+}
+
+const char *CommandLineParser::Impl::toOptionName(const char *arg) const
+{
+    // Lone '-' or '--' is not an option.
+    if (arg[0] != '-' || arg[1] == '\0' || (arg[1] == '-' && arg[2] == '\0'))
+    {
+        return NULL;
+    }
+    // Something starting with '--' is always an option.
+    if (arg[1] == '-')
+    {
+        return arg + 2;
+    }
+    // Don't return numbers as option names.
+    char *endptr;
+    // We are only interested in endptr, not in the actual value.
+    GMX_IGNORE_RETURN_VALUE(std::strtod(arg, &endptr));
+    if (*endptr == '\0')
+    {
+        return NULL;
+    }
+    return arg + 1;
 }
 
 /********************************************************************
@@ -93,27 +127,17 @@ CommandLineParser::~CommandLineParser()
 
 void CommandLineParser::parse(int *argc, char *argv[])
 {
-    std::vector<std::string> commandLine;
-    for (int i = 0; i < *argc; ++i)
-    {
-        commandLine.push_back(argv[i]);
-    }
-    parse(&commandLine);
-}
-
-void CommandLineParser::parse(std::vector<std::string> *commandLine)
-{
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
     // Start in the discard phase to skip options that can't be understood.
     bool                 bDiscard = true;
 
     impl_->assigner_.start();
-    std::vector<std::string>::const_iterator arg;
-    for (arg = commandLine->begin() + 1; arg != commandLine->end(); ++arg)
+    for (int i = 1; i != *argc; ++i)
     {
-        // Lone '-' and numbers are passed as values.
-        if ((*arg)[0] == '-' && std::isalpha((*arg)[1]))
+        const char *const arg        = argv[i];
+        const char *const optionName = impl_->toOptionName(arg);
+        if (optionName != NULL)
         {
             if (!bDiscard)
             {
@@ -128,12 +152,11 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                 }
                 currentContext.clear();
             }
-            currentContext = "In command-line option " + *arg;
+            currentContext = "In command-line option " + std::string(arg);
             bDiscard       = false;
             try
             {
-                const char *name = arg->c_str() + 1;
-                impl_->assigner_.startOption(name);
+                impl_->assigner_.startOption(optionName);
             }
             catch (UserInputError &ex)
             {
@@ -147,7 +170,7 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
         {
             try
             {
-                impl_->assigner_.appendValue(*arg);
+                impl_->assigner_.appendValue(arg);
             }
             catch (UserInputError &ex)
             {

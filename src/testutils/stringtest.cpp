@@ -44,6 +44,7 @@
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
 #include "gromacs/utility/file.h"
+
 #include "testutils/testoptions.h"
 
 namespace gmx
@@ -51,13 +52,21 @@ namespace gmx
 namespace test
 {
 
-bool StringTestBase::s_bWriteToStdOut = false;
-
-void StringTestBase::SetUpTestCase()
+namespace
 {
-    Options options(NULL, NULL);
-    options.addOption(BooleanOption("stdout").store(&s_bWriteToStdOut));
-    parseTestOptions(&options);
+//! Stores the -stdout flag value to print out values instead of checking them.
+bool g_bWriteToStdOut = false;
+}
+
+// TODO: Only add this option to those test binaries that actually need it
+// (depending on the linker, it may or may not appear right now),
+// or replace by a generic mechanism in TestReferenceData.
+GMX_TEST_OPTIONS(StringTestOptions, options)
+{
+    options->addOption(
+            BooleanOption("stdout")
+                .store(&g_bWriteToStdOut)
+                .description("Print the test string to stdout instead of checking against reference data"));
 }
 
 StringTestBase::StringTestBase()
@@ -81,7 +90,7 @@ StringTestBase::checker()
 void
 StringTestBase::checkText(const std::string &text, const char *id)
 {
-    if (s_bWriteToStdOut)
+    if (g_bWriteToStdOut)
     {
         printf("%s:\n", id);
         printf("%s[END]\n", text.c_str());

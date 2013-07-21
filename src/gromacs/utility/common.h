@@ -49,6 +49,19 @@
 
 #include <boost/scoped_ptr.hpp>
 
+namespace gmx
+{
+namespace internal
+{
+/*! \internal \brief
+ * Helper for ignoring values in macros.
+ *
+ * \ingroup module_utility
+ */
+template <typename T>
+void inline ignoreValueHelper(const T &) {}
+} // namespace internal
+
 /*! \cond libapi */
 /*! \libinternal \brief
  * Macro to declare a class non-copyable and non-assignable.
@@ -71,10 +84,22 @@
 #define GMX_DISALLOW_ASSIGN(ClassName) \
     private: \
         ClassName &operator=(const ClassName &)
+/*! \libinternal \brief
+ * Macro to explicitly ignore a return value of a call.
+ *
+ * Mainly meant for ignoring values of functions declared with
+ * __attribute__((warn_unused_return)).  Makes it easy to find those places if
+ * they need to be fixed, and document the intent in cases where the return
+ * value really can be ignored.  It also makes it easy to adapt the approach so
+ * that they don't produce warnings.  A cast to void doesn't remove the warning
+ * in gcc, while adding a dummy variable can cause warnings about an unused
+ * variable.
+ *
+ * \inlibraryapi
+ */
+#define GMX_IGNORE_RETURN_VALUE(call) \
+    ::gmx::internal::ignoreValueHelper(call)
 //! \endcond
-
-namespace gmx
-{
 
 /*! \libinternal \brief
  * Helper class to manage a pointer to a private implementation class.
