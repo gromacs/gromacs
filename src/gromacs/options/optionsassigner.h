@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -127,13 +127,13 @@ class OptionsAssigner
         void setNoStrictSectioning(bool bEnabled);
 
         /*! \brief
-         * Start assigning values.
+         * Starts assigning values.
          *
          * Does not throw.
          */
         void start();
         /*! \brief
-         * Start assigning values to options in a subsection.
+         * Starts assigning values to options in a subsection.
          *
          * \param[in] name  Name of the subsection to start assigning to.
          * \throws InvalidInputError if such a subsection is not found.
@@ -142,15 +142,22 @@ class OptionsAssigner
          */
         void startSubSection(const char *name);
         /*! \brief
-         * Start assigning values for an option.
+         * Starts assigning values for an option.
          *
          * \param[in] name  Name of the option to start assigning to.
          * \throws InvalidInputError if such an option is not found, or if the
          *      option is specified more than once but doesn't support it.
-         *
-         * Strong exception safety guarantee.
          */
         void startOption(const char *name);
+        /*! \brief
+         * Starts assigning values for an option.
+         *
+         * \param[in] name  Name of the option to start assigning to.
+         * \returns   true if \p name is a valid option name.
+         * \throws InvalidInputError if the option is specified more than once
+         *      but doesn't support it.
+         */
+        bool tryStartOption(const char *name);
         /*! \brief
          * Appends a value to the value list of the current option.
          *

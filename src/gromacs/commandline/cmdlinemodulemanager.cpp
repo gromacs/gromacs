@@ -437,70 +437,98 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
 CommandLineModuleInterface *
 CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
 {
-    if (singleModule_ != NULL)
+    // Check if we are directly invoking a certain module.
+    CommandLineModuleInterface *module = singleModule_;
+    if (module == NULL)
     {
-        // TODO: Process common options also in this case.
-        return singleModule_;
+        // Also check for invokation through named symlinks.
+        CommandLineModuleMap::const_iterator moduleIter
+            = findModuleFromBinaryName(programInfo_);
+        if (moduleIter != modules_.end())
+        {
+            module = moduleIter->second.get();
+        }
     }
-    // Check if the module is called through a symlink.
-    CommandLineModuleMap::const_iterator module
-        = findModuleFromBinaryName(programInfo_);
-    if (module != modules_.end())
-    {
-        // TODO: Process common options also in this case.
-        return module->second.get();
-    }
-    // If not, process options to the wrapper binary.
-    // TODO: This should be done by CommandLineParser
-    // (together with the above TODO).
-    int moduleArgOffset = 1;
-    while (moduleArgOffset < *argc && (*argv)[moduleArgOffset][0] == '-')
-    {
-        ++moduleArgOffset;
-    }
+
     bool bHelp      = false;
     bool bVersion   = false;
     bool bCopyright = false;
-    if (moduleArgOffset > 1)
+    // TODO: Print the common options into the help.
+    // TODO: It would be nice to propagate at least the -quiet option to
+    // the modules so that they can also be quiet in response to this.
+    // TODO: Consider handling -h and related options here instead of in the
+    // modules (also -hidden needs to be transfered here to make that work).
+    // That would mean that with -h, all module-specific options would get
+    // ignored.  This means that the help output would not depend on the
+    // command line, but would always show the default values (making it
+    // possible to simplify it further), but also that mdrun -h could not be
+    // used for option validation in g_tune_pme.
+    Options options(NULL, NULL);
+    if (module == NULL)
     {
-        // TODO: Print these options into the help.
-        // TODO: It would be nice to propagate at least the -quiet option to
-        // the modules so that they can also be quiet in response to this.
-        Options options(NULL, NULL);
         options.addOption(BooleanOption("h").store(&bHelp));
-        options.addOption(BooleanOption("quiet").store(&bQuiet_));
-        options.addOption(BooleanOption("version").store(&bVersion));
-        options.addOption(BooleanOption("copyright").store(&bCopyright));
-        CommandLineParser(&options).parse(&moduleArgOffset, *argv);
-        options.finish();
-        binaryInfoSettings_.extendedInfo(bVersion);
-        binaryInfoSettings_.copyright(bCopyright);
     }
+    options.addOption(BooleanOption("quiet").store(&bQuiet_));
+    options.addOption(BooleanOption("version").store(&bVersion));
+    options.addOption(BooleanOption("copyright").store(&bCopyright));
+
+    if (module == NULL)
+    {
+        // If not in single-module mode, process options to the wrapper binary.
+        // TODO: Ideally, this could be done by CommandLineParser.
+        int argcForWrapper = 1;
+        while (argcForWrapper < *argc && (*argv)[argcForWrapper][0] == '-')
+        {
+            ++argcForWrapper;
+        }
+        if (argcForWrapper > 1)
+        {
+            CommandLineParser(&options).parse(&argcForWrapper, *argv);
+        }
+        // If no action requested and there is a module specified, process it.
+        if (argcForWrapper < *argc && !bHelp && !bVersion && !bCopyright)
+        {
+            const char *moduleName = (*argv)[argcForWrapper];
+            CommandLineModuleMap::const_iterator moduleIter
+                = findModuleByName(moduleName);
+            if (moduleIter == modules_.end())
+            {
+                std::string message =
+                    formatString("'%s' is not a GROMACS command.", moduleName);
+                GMX_THROW(InvalidInputError(message));
+            }
+            module = moduleIter->second.get();
+            programInfo_.setDisplayName(
+                    programInfo_.realBinaryName() + "-" + moduleIter->first);
+            *argc -= argcForWrapper;
+            *argv += argcForWrapper;
+            // After this point, argc and argv are the same independent of
+            // which path is taken: (*argv)[0] is the module name.
+        }
+    }
+    else
+    {
+        // In single-module mode, recognize the common options also after the
+        // module name.
+        CommandLineParser(&options).skipUnknown(true).parse(argc, *argv);
+    }
+    options.finish();
+    binaryInfoSettings_.extendedInfo(bVersion);
+    binaryInfoSettings_.copyright(bCopyright);
     if (bVersion || bCopyright)
     {
         bQuiet_      = false;
         bStdOutInfo_ = true;
         return NULL;
     }
-    // If no module or help requested, show the help.
-    if (moduleArgOffset == *argc || bHelp)
+    // If no module specified and no other action, show the help.
+    // Also explicitly specifying -h for the wrapper binary goes here.
+    if (module == NULL)
     {
         *argc = 1;
         return helpModule_;
     }
-    // Find the module to run and arguments to it.
-    const char *moduleName = (*argv)[moduleArgOffset];
-    module = findModuleByName(moduleName);
-    if (module == modules_.end())
-    {
-        std::string message = formatString("'%s' is not a GROMACS command.", moduleName);
-        GMX_THROW(InvalidInputError(message));
-    }
-    programInfo_.setDisplayName(
-            programInfo_.realBinaryName() + "-" + module->first);
-    *argc -= moduleArgOffset;
-    *argv += moduleArgOffset;
-    return module->second.get();
+    return module;
 }
 
 /********************************************************************

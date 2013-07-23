@@ -147,4 +147,28 @@ TEST_F(CommandLineParserTest, HandlesOptionsStartingWithNumbers)
     EXPECT_EQ(-12, ivalue1p_);
 }
 
+TEST_F(CommandLineParserTest, HandlesSkipUnknown)
+{
+    const char *const cmdline[] = {
+        "test", "-opt1", "-flag", "-opt2", "value", "-mvi", "2", "-mvd", "2.7", "-opt3"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    parser_.skipUnknown(true);
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_EQ(5, args.argc());
+    EXPECT_STREQ("test", args.arg(0));
+    EXPECT_STREQ("-opt1", args.arg(1));
+    EXPECT_STREQ("-opt2", args.arg(2));
+    EXPECT_STREQ("value", args.arg(3));
+    EXPECT_STREQ("-opt3", args.arg(4));
+
+    EXPECT_TRUE(flag_);
+    ASSERT_EQ(1U, ivalues_.size());
+    EXPECT_EQ(2, ivalues_[0]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
+}
+
 } // namespace

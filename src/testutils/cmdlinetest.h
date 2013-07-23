@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -64,9 +64,8 @@ namespace test
  * Note that although the interface allows passing the argc and argv pointers
  * to methods that modify them (typically as \p f(&argc(), argv())), currently
  * the CommandLine object is not in a consistent state internally if the
- * parameters are actually modified.
- * Currently, the C++ methods with this signature do not modify their
- * parameters, so this is not yet a problem.
+ * parameters are actually modified.  Reading the command line is possible
+ * afterwards, but modification is not.
  *
  * All constructors and methods that modify this class may throw an
  * std::bad_alloc.  Const methods and accessors do not throw.
