@@ -95,6 +95,7 @@ const char *ShortProgram(void)
         return gmx::ProgramInfo::getInstance().programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return 1; // Keep compilers happy
 }
 
 const char *Program(void)
@@ -104,6 +105,7 @@ const char *Program(void)
         return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return 1; // Keep compilers happy
 }
 
 /* utility functions */

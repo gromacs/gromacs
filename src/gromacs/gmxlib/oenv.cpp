@@ -211,6 +211,7 @@ const char *output_env_get_program_name(const output_env_t oenv)
         return oenv->programInfo.programNameWithPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return 1; // Keep compilers happy
 }
 
 const char *output_env_get_short_program_name(const output_env_t oenv)
@@ -221,6 +222,7 @@ const char *output_env_get_short_program_name(const output_env_t oenv)
         return oenv->programInfo.programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return 1; // Keep compilers happy
 }
 
 const char *output_env_get_cmd_line(const output_env_t oenv)
@@ -230,4 +232,5 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
         return oenv->programInfo.commandLine().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
+    return 1; // Keep compilers happy
 }
