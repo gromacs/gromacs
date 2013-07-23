@@ -51,9 +51,9 @@
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
 
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
-int main(int argc, char *argv[])
+int gmx_mdrun(int argc, char *argv[])
 {
     const char   *desc[] = {
         "The [TT]mdrun[tt] program is the main computational chemistry engine",
@@ -551,10 +551,9 @@ int main(int argc, char *argv[])
     char        **multidir = NULL;
 
 
-    cr = init_par(&argc, &argv);
-    gmx::ProgramInfo::init(argc, argv);
+    cr = init_par();
 
-    PCA_Flags = (PCA_CAN_SET_DEFFNM | PCA_STANDALONE | (MASTER(cr) ? 0 : PCA_QUIET));
+    PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
 
     /* Comment this in to do fexist calls only on master
      * works not with rerun or tables at the moment
@@ -728,13 +727,6 @@ int main(int argc, char *argv[])
                   nmultisim, repl_ex_nst, repl_ex_nex, repl_ex_seed,
                   pforce, cpt_period, max_hours, deviceOptions, Flags);
 
-    gmx_finalize_par();
-
-    if (MULTIMASTER(cr))
-    {
-        gmx_thanx(stderr);
-    }
-
     /* Log file has to be closed in mdrunner if we are appending to it
        (fplog not set here) */
     if (MASTER(cr) && !bAppendFiles)
@@ -743,4 +735,9 @@ int main(int argc, char *argv[])
     }
 
     return rc;
+}
+
+int main(int argc, char *argv[])
+{
+    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &gmx_mdrun);
 }

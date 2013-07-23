@@ -186,7 +186,7 @@ ProgramInfo &ProgramInfo::init(const char *realBinaryName,
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(1);
+        std::exit(processExceptionAtExit(ex));
     }
 }
 
