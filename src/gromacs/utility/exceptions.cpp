@@ -41,6 +41,10 @@
  */
 #include "exceptions.h"
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <cstring>
 
 #include <new>
@@ -50,6 +54,7 @@
 #include <boost/exception/get_error_info.hpp>
 #include <boost/shared_ptr.hpp>
 
+#include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/thread_mpi/system_error.h"
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/gmxassert.h"
@@ -488,6 +493,17 @@ void formatExceptionMessageToFile(FILE *fp, const std::exception &ex)
 {
     MessageWriterFileNoThrow writer(fp);
     formatExceptionMessageInternal(&writer, ex, 0);
+}
+
+int processExceptionAtExit(const std::exception &/*ex*/)
+{
+    int returnCode = 1;
+#ifdef GMX_LIB_MPI
+    // TODO: Consider moving the output done in gmx_abort() into the message
+    // printing routine above, so that this could become a simple MPI_Abort().
+    gmx_abort(gmx_node_rank(), gmx_node_num(), returnCode);
+#endif
+    return returnCode;
 }
 
 } // namespace gmx
