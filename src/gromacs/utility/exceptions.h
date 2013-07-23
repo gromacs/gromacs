@@ -396,7 +396,7 @@ class NotImplementedError : public APIError
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo::init(argc, argv);
+       gmx::init(&argc, &argv);
        try
        {
            // The actual code for the program
@@ -405,7 +405,7 @@ class NotImplementedError : public APIError
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return 1;
+           return gmx::processExceptionAtExit(ex);
        }
    }
  * \endcode
@@ -423,6 +423,22 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex);
  * uses for the function arise.
  */
 std::string formatException(const std::exception &ex);
+/*! \brief
+ * Handles an exception that is causing the program to terminate.
+ *
+ * \param[in] ex  Exception that is the cause for terminating the program.
+ * \returns   Return code to return from main().
+ *
+ * This method should be called as the last thing before terminating the
+ * program because of an exception.  It exists to terminate the program as
+ * gracefully as possible in the case of MPI processing (but the current
+ * implementation always calls MPI_Abort()).
+ *
+ * See printFatalErrorMessage() for example usage.
+ *
+ * Does not throw.
+ */
+int processExceptionAtExit(const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.
