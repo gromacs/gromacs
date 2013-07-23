@@ -81,6 +81,24 @@ class CommandLineParser
         ~CommandLineParser();
 
         /*! \brief
+         * Makes the parser skip unknown options and keep them in \c argv.
+         *
+         * \param[in] bEnabled  Whether to skip and keep unknown options.
+         * \returns   *this
+         *
+         * Setting this option to true has dual effect: unknown options are
+         * silently skipped, and all recognized options are removed from
+         * \c argc and \c argv in parse().  These effects should be easy to
+         * separate into different flags if there is need for it.
+         *
+         * The default is false: unknown options result in exceptions and
+         * \c argc and \c argv are not modified.
+         *
+         * Does not throw.
+         */
+        CommandLineParser &skipUnknown(bool bEnabled);
+
+        /*! \brief
          * Parses the command line.
          *
          * \throws  std::bad_alloc if out of memory.
@@ -89,9 +107,9 @@ class CommandLineParser
          * All command-line arguments are parsed, and an aggregate exception
          * with all the detected errors is thrown in the end.
          *
-         * Currently, the input parameters are not modified, but this may
-         * change if/when support for parsing only part of the options is
-         * implemented.
+         * If skipUnknown() is false, the input parameters are not modified.
+         * If skipUnknown() is true, recognized options and their values are
+         * removed from the argument list.  \c argv[0] is never modified.
          */
         void parse(int *argc, char *argv[]);
 
