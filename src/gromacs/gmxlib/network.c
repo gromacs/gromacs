@@ -64,7 +64,7 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-int gmx_setup(int gmx_unused *argc, char gmx_unused **argv, int *nnodes)
+int gmx_setup(int gmx_unused *argc, char gmx_unused ***argv, int *nnodes)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_setup");
@@ -80,9 +80,9 @@ int gmx_setup(int gmx_unused *argc, char gmx_unused **argv, int *nnodes)
     /* Call the MPI routines */
 #ifdef GMX_LIB_MPI
 #ifdef GMX_FAHCORE
-    (void) fah_MPI_Init(argc, &argv);
+    (void) fah_MPI_Init(argc, argv);
 #else
-    (void) MPI_Init(argc, &argv);
+    (void) MPI_Init(argc, argv);
 #endif
 #endif
     (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );

@@ -48,6 +48,7 @@
 #include <utility>
 
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/network.h"
 
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
@@ -60,6 +61,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/init.h"
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -311,6 +313,78 @@ void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
     // TODO: More information.
 }
 
+namespace
+{
+
+/********************************************************************
+ * CMainCommandLineModule
+ */
+
+/*! \internal \brief
+ * Implements a CommandLineModuleInterface, given a function with C/C++ main()
+ * signature.
+ *
+ * \ingroup module_commandline
+ */
+class CMainCommandLineModule : public CommandLineModuleInterface
+{
+    public:
+        //! \copydoc gmx::CommandLineModuleManager::CMainFunction
+        typedef CommandLineModuleManager::CMainFunction CMainFunction;
+
+        /*! \brief
+         * Creates a wrapper module for the given main function.
+         *
+         * \param[in] name             Name for the module.
+         * \param[in] shortDescription One-line description for the module.
+         * \param[in] mainFunction     Main function to wrap.
+         *
+         * Does not throw.  This is essential for correct implementation of
+         * CommandLineModuleManager::runAsMainCMain().
+         */
+        CMainCommandLineModule(const char *name, const char *shortDescription,
+                               CMainFunction mainFunction)
+            : name_(name), shortDescription_(shortDescription),
+              mainFunction_(mainFunction)
+        {
+        }
+
+        virtual const char *name() const
+        {
+            return name_;
+        }
+        virtual const char *shortDescription() const
+        {
+            return shortDescription_;
+        }
+
+        virtual int run(int argc, char *argv[])
+        {
+            return mainFunction_(argc, argv);
+        }
+        virtual void writeHelp(const HelpWriterContext &context) const
+        {
+            if (context.outputFormat() != eHelpOutputFormat_Console)
+            {
+                GMX_THROW(NotImplementedError(
+                                  "Command-line help is not implemented for this output format"));
+            }
+            char *argv[2];
+            // TODO: The constness should not be cast away.
+            argv[0] = const_cast<char *>(name_);
+            argv[1] = const_cast<char *>("-h");
+            mainFunction_(2, argv);
+        }
+
+    private:
+        const char             *name_;
+        const char             *shortDescription_;
+        CMainFunction           mainFunction_;
+
+};
+
+} // namespace
+
 /********************************************************************
  * CommandLineModuleManager::Impl
  */
@@ -559,6 +633,15 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
     addHelpTopic(move(helpTopic));
 }
 
+void CommandLineModuleManager::addModuleCMain(
+        const char *name, const char *shortDescription,
+        CMainFunction mainFunction)
+{
+    CommandLineModulePointer module(
+            new CMainCommandLineModule(name, shortDescription, mainFunction));
+    addModule(move(module));
+}
+
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
     if (impl_->helpModule_ == NULL)
@@ -572,17 +655,22 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
     CommandLineModuleInterface *module;
+    const bool bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
     try
     {
         module = impl_->processCommonOptions(&argc, &argv);
     }
     catch (const std::exception &)
     {
-        if (!impl_->bQuiet_)
+        if (bMaster && !impl_->bQuiet_)
         {
             printBinaryInformation(stderr, impl_->programInfo_);
         }
         throw;
+    }
+    if (!bMaster)
+    {
+        impl_->bQuiet_ = true;
     }
     if (!impl_->bQuiet_)
     {
@@ -607,18 +695,28 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
-    ProgramInfo &programInfo = ProgramInfo::init(argc, argv);
+    ProgramInfo &programInfo = gmx::init(&argc, &argv);
     try
     {
-       CommandLineModuleManager manager(&programInfo);
-       manager.impl_->singleModule_ = module;
-       return manager.run(argc, argv);
+        CommandLineModuleManager manager(&programInfo);
+        manager.impl_->singleModule_ = module;
+        int rc = manager.run(argc, argv);
+        gmx::finalize();
+        return rc;
     }
     catch (const std::exception &ex)
     {
-       printFatalErrorMessage(stderr, ex);
-       return 1;
+        printFatalErrorMessage(stderr, ex);
+        return processExceptionAtExit(ex);
     }
+}
+
+// static
+int CommandLineModuleManager::runAsMainCMain(
+        int argc, char *argv[], CMainFunction mainFunction)
+{
+    CMainCommandLineModule module(argv[0], NULL, mainFunction);
+    return runAsMainSingleModule(argc, argv, &module);
 }
 
 } // namespace gmx

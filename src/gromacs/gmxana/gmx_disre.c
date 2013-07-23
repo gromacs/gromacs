@@ -723,7 +723,7 @@ int gmx_disre(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    cr  = init_par(&argc, &argv);
+    cr  = init_par();
     parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
 
@@ -941,8 +941,6 @@ int gmx_disre(int argc, char *argv[])
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
     }
-
-    gmx_finalize_par();
 
     gmx_log_close(fplog);
 
