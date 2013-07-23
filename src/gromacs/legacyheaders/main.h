@@ -79,12 +79,9 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
 
-t_commrec *init_par(int *argc, char ***argv_ptr);
+t_commrec *init_par(void);
 /* Initiate the parallel computer. Return the communication record
- * (see network.h). The command line arguments are communicated so that they can be
- * parsed on each processor.
- * Arguments are the number of command line arguments, and a pointer to the
- * array of argument strings. Both are allowed to be NULL.
+ * (see network.h).
  */
 
 t_commrec *init_par_threads(const t_commrec *cro);
