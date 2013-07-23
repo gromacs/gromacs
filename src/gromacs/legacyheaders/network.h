@@ -53,7 +53,7 @@
 extern "C" {
 #endif
 
-int gmx_setup(int *argc, char **argv, int *nnodes);
+int gmx_setup(int *argc, char ***argv, int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
 
 int gmx_node_num(void);
