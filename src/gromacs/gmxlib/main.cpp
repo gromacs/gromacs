@@ -360,40 +360,6 @@ void gmx_log_close(FILE *fp)
     }
 }
 
-static void comm_args(const t_commrec *cr, int *argc, char ***argv)
-{
-    int i, len;
-
-    if (PAR(cr))
-    {
-        gmx_bcast(sizeof(*argc), argc, cr);
-    }
-
-    if (!MASTER(cr))
-    {
-        snew(*argv, *argc+1);
-    }
-    if (debug)
-    {
-        fprintf(debug, "NODEID=%d argc=%d\n", cr->nodeid, *argc);
-    }
-    for (i = 0; (i < *argc); i++)
-    {
-        if (MASTER(cr))
-        {
-            len = strlen((*argv)[i])+1;
-        }
-        gmx_bcast(sizeof(len), &len, cr);
-        if (!MASTER(cr))
-        {
-            snew((*argv)[i], len);
-        }
-        /*gmx_bcast(len*sizeof((*argv)[i][0]),(*argv)[i],cr);*/
-        gmx_bcast(len*sizeof(char), (*argv)[i], cr);
-    }
-    debug_gmx();
-}
-
 void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
                       int nfile, const t_filenm fnm[], gmx_bool bParFn)
 {
@@ -507,16 +473,19 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     }
 }
 
-t_commrec *init_par(int gmx_unused *argc, char ***argv_ptr)
+t_commrec *init_par()
 {
     t_commrec    *cr;
 
     snew(cr, 1);
 
 #if defined GMX_MPI && !defined GMX_THREAD_MPI
-    char **argv = argv_ptr ? *argv_ptr : NULL;
-    cr->sim_nodeid = gmx_setup(argc, argv, &cr->nnodes);
-
+    if (!gmx_mpi_initialized())
+    {
+        gmx_comm("MPI has not been initialized properly");
+    }
+    cr->nnodes     = gmx_node_num();
+    cr->sim_nodeid = gmx_node_rank();
     if (!PAR(cr) && (cr->sim_nodeid != 0))
     {
         gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
@@ -535,14 +504,6 @@ t_commrec *init_par(int gmx_unused *argc, char ***argv_ptr)
     cr->nodeid = cr->sim_nodeid;
 
     cr->duty = (DUTY_PP | DUTY_PME);
-
-    /* Communicate arguments if parallel */
-#ifndef GMX_THREAD_MPI
-    if (PAR(cr))
-    {
-        comm_args(cr, argc, argv_ptr);
-    }
-#endif /* GMX_THREAD_MPI */
 
 #ifdef GMX_MPI
 #if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
