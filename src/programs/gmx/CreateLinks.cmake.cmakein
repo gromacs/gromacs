@@ -100,6 +100,7 @@ set(SYMLINK_NAMES
     g_nmtraj
     g_options
     g_order
+    g_pme_error
     g_polystat
     g_potential
     g_principal

@@ -41,7 +41,6 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
@@ -486,8 +485,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
                        int nbugs, const char **bugs,
                        output_env_t *oenv)
 {
-    gmx_bool    bHelp    = FALSE, bHidden  = FALSE;
-    gmx_bool    bQuiet   = FALSE, bVerbose = FALSE, bVersion = FALSE;
+    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE;
     const char *manstr[] = {
         NULL, "no", "html", "tex", "nroff", "ascii",
         "completion", "py", "xml", "wiki", NULL
@@ -551,14 +549,10 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     t_pargs  pca_pa[] = {
         { "-h",    FALSE, etBOOL, {&bHelp},
           "Print help info and quit" },
-        { "-version",  FALSE, etBOOL, {&bVersion},
-          "Print version info and quit" },
         { "-verbose",  FALSE, etBOOL, {&bVerbose},
           "HIDDENShow options during normal run" },
         { "-hidden", FALSE, etBOOL, {&bHidden},
           "HIDDENPrint hidden options" },
-        { "-quiet", FALSE, etBOOL, {&bQuiet},
-          "HIDDENDo not print help info" },
         { "-man",  FALSE, etENUM,  {manstr},
           "HIDDENWrite manual and quit" },
         { "-debug", FALSE, etINT, {&debug_level},
@@ -573,9 +567,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     // The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
-    // Ensure that the program info is initialized; if already done, returns
-    // the already initialized object.
-    const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(*argc, argv);
     /* Check for double arguments */
     for (i = 1; (i < *argc); i++)
     {
@@ -693,14 +684,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
                     (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
-    if (!FF(PCA_QUIET) && FF(PCA_STANDALONE) && (!bQuiet || bVersion))
-    {
-        gmx::BinaryInformationSettings settings;
-        settings.extendedInfo(bVersion);
-        gmx::printBinaryInformation(bVersion ? stdout : stderr,
-                                    programInfo, settings);
-    }
-
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm != NULL))
     {
         set_default_file_name(deffnm);
@@ -741,7 +724,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    bExit = bHelp || bVersion || (strcmp(manstr[0], "no") != 0);
+    bExit = bHelp || (strcmp(manstr[0], "no") != 0);
 
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
@@ -776,7 +759,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #endif
 #endif
 
-    if (!(FF(PCA_QUIET) || bQuiet))
+    if (!(FF(PCA_QUIET)))
     {
         if (bHelp)
         {
