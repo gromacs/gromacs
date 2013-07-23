@@ -59,7 +59,7 @@
 #include "gromacs/utility/errorcodes.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/init.h"
 
 #include "refdata.h"
 #include "testfilemanager.h"
@@ -71,6 +71,19 @@ namespace test
 
 namespace
 {
+
+/*! \internal \brief
+ * Global test environment for freeing up libxml2 internal buffers.
+ */
+class GromacsTestEnvironment : public ::testing::Environment
+{
+    public:
+        //! Calls MPI_Finalize() if necessary.
+        virtual void TearDown()
+        {
+            gmx::finalize();
+        }
+};
 
 /*! \brief
  * Singleton registry for test options added with GMX_TEST_OPTIONS.
@@ -138,12 +151,12 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestUtils(const char *dataPath, int *argc, char *argv[])
+void initTestUtils(const char *dataPath, int *argc, char ***argv)
 {
     try
     {
-        ProgramInfo::init(*argc, argv);
-        ::testing::InitGoogleMock(argc, argv);
+        gmx::init(argc, argv);
+        ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {
             TestFileManager::setInputDataDirectory(dataPath);
@@ -162,7 +175,7 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         TestOptionsRegistry::getInstance().initOptions(&options);
         try
         {
-            CommandLineParser(&options).parse(argc, argv);
+            CommandLineParser(&options).parse(argc, *argv);
             options.finish();
         }
         catch (const UserInputError &)
@@ -175,11 +188,12 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
             printHelp(options);
         }
         setFatalErrorHandler(NULL);
+        ::testing::AddGlobalTestEnvironment(new GromacsTestEnvironment);
     }
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(1);
+        std::exit(processExceptionAtExit(ex));
     }
 }
 
