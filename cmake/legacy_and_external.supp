@@ -10,6 +10,26 @@
    fun:inflateInit2_
 }
 
+# OpenMPI
+{
+   MPI_Init/Leak
+   Memcheck:Leak
+   ...
+   fun:PMPI_Init
+}
+{
+   MPI_Init/Addr4
+   Memcheck:Addr4
+   ...
+   fun:PMPI_Init
+}
+{
+   MPI_Init/Param
+   Memcheck:Param
+   ...
+   fun:PMPI_Init
+}
+
 {
    gmx_fio_fopen
    Memcheck:Leak
