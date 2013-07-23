@@ -41,7 +41,6 @@
 #include <string.h>
 #include "macros.h"
 #include "Xstuff.h"
-#include "copyrite.h"
 #include "xutil.h"
 #include "futil.h"
 #include "x11.h"
@@ -50,7 +49,7 @@
 #include "rama.bm"
 #include "nrama.h"
 
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 #define MAXDEG 360
 
@@ -341,7 +340,7 @@ static void mk_gly(t_app *app)
     }
 }
 
-int main(int argc, char *argv[])
+int gmx_xrama(int argc, char *argv[])
 {
     const char  *desc[] = {
         "[TT]g_xrama[tt] shows a Ramachandran movie, that is, it shows",
@@ -360,8 +359,7 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    gmx::ProgramInfo::init(argc, argv);
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_STANDALONE, NFILE, fnm,
+    parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                       0, NULL, asize(desc), desc, 0, NULL, &oenv);
 
 
@@ -382,7 +380,10 @@ int main(int argc, char *argv[])
     x11->MainLoop(x11);
     x11->CleanUp(x11);
 
-    gmx_thanx(stderr);
-
     return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &gmx_xrama);
 }
