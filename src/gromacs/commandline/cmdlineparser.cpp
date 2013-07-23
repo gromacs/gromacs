@@ -80,10 +80,12 @@ class CommandLineParser::Impl
 
         //! Helper object for assigning the options.
         OptionsAssigner         assigner_;
+        //! Whether to allow and skip unknown options.
+        bool                    bSkipUnknown_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options)
+    : assigner_(options), bSkipUnknown_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
     assigner_.setNoStrictSectioning(true);
@@ -125,21 +127,27 @@ CommandLineParser::~CommandLineParser()
 {
 }
 
+CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
+{
+    impl_->bSkipUnknown_ = bEnabled;
+    return *this;
+}
+
 void CommandLineParser::parse(int *argc, char *argv[])
 {
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
-    // Start in the discard phase to skip options that can't be understood.
-    bool                 bDiscard = true;
+    bool                 bInOption = false;
 
     impl_->assigner_.start();
+    int newi = 1;
     for (int i = 1; i != *argc; ++i)
     {
         const char *const arg        = argv[i];
         const char *const optionName = impl_->toOptionName(arg);
         if (optionName != NULL)
         {
-            if (!bDiscard)
+            if (bInOption)
             {
                 try
                 {
@@ -150,23 +158,36 @@ void CommandLineParser::parse(int *argc, char *argv[])
                     ex.prependContext(currentContext);
                     errors.addCurrentExceptionAsNested();
                 }
-                currentContext.clear();
             }
             currentContext = "In command-line option " + std::string(arg);
-            bDiscard       = false;
             try
             {
-                impl_->assigner_.startOption(optionName);
+                bInOption = impl_->assigner_.tryStartOption(optionName);
+                if (!bInOption)
+                {
+                    currentContext.clear();
+                    if (!impl_->bSkipUnknown_)
+                    {
+                        std::string message =
+                            "Unknown command-line option " + std::string(arg);
+                        GMX_THROW(InvalidInputError(message));
+                    }
+                }
             }
             catch (UserInputError &ex)
             {
-                bDiscard = true;
+                // If tryStartOption() throws, make sure that the rest gets
+                // ignored.
+                // TODO: Consider whether we should remove the option from the
+                // command line nonetheless, as it is recognized, but just
+                // invalid.
+                bInOption = false;
                 ex.prependContext(currentContext);
                 errors.addCurrentExceptionAsNested();
                 currentContext.clear();
             }
         }
-        else if (!bDiscard)
+        else if (bInOption)
         {
             try
             {
@@ -178,8 +199,20 @@ void CommandLineParser::parse(int *argc, char *argv[])
                 errors.addCurrentExceptionAsNested();
             }
         }
+        // Remove recognized options if applicable.
+        if (!bInOption && impl_->bSkipUnknown_)
+        {
+            argv[newi] = argv[i];
+            ++newi;
+        }
     }
-    if (!bDiscard)
+    // Update the argc count if argv was modified.
+    if (impl_->bSkipUnknown_)
+    {
+        *argc = newi;
+    }
+    // Finish the last option.
+    if (bInOption)
     {
         try
         {
