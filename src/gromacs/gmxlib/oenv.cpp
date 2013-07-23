@@ -204,6 +204,8 @@ xvg_format_t output_env_get_xvg_format(const output_env_t oenv)
     return oenv->xvg_format;
 }
 
+// Stop XLC complaining about missing return statement
+#pragma report(disable,"1540-1101")
 const char *output_env_get_program_name(const output_env_t oenv)
 {
     try
@@ -231,3 +233,4 @@ const char *output_env_get_cmd_line(const output_env_t oenv)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
+#pragma report(pop)

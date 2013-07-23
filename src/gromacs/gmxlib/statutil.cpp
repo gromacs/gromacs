@@ -87,6 +87,8 @@
 
 /* progam names, etc. */
 
+// Stop XLC complaining about missing return statement
+#pragma report(disable,"1540-1101")
 const char *ShortProgram(void)
 {
     try
@@ -105,6 +107,7 @@ const char *Program(void)
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
+#pragma report(pop)
 
 /* utility functions */
 

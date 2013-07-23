@@ -170,6 +170,8 @@ ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
     return init(NULL, argc, argv);
 }
 
+// Stop XLC complaining about missing return statement
+#pragma report(disable,"1540-1101")
 // static
 ProgramInfo &ProgramInfo::init(const char *realBinaryName,
                                int argc, const char *const argv[])
@@ -189,6 +191,7 @@ ProgramInfo &ProgramInfo::init(const char *realBinaryName,
         std::exit(1);
     }
 }
+#pragma report(pop)
 
 ProgramInfo::ProgramInfo()
     : impl_(new Impl)

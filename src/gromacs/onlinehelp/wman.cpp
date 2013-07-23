@@ -488,6 +488,8 @@ static void finish_linkdata(t_linkdata *p)
     sfree(p);
 }
 
+// Stop XLC complaining about missing return statement
+#pragma report(disable,"1540-1101")
 static char *repall(const char *s, int nsr, const t_sandr_const sa[])
 {
     try
@@ -515,6 +517,7 @@ static char *repallww(const char *s, int nsr, const t_sandr sa[])
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
+#pragma report(pop)
 
 static char *html_xref(char *s, const char *program, t_linkdata *links, gmx_bool bWiki)
 {
