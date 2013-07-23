@@ -47,6 +47,7 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
 namespace gmx
@@ -119,6 +120,8 @@ CommandLine::~CommandLine()
 
 void CommandLine::append(const char *arg)
 {
+    GMX_RELEASE_ASSERT(impl_->argc_ == static_cast<int>(impl_->args_.size()),
+                       "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);
     impl_->argv_.reserve(newSize);

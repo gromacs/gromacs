@@ -64,9 +64,8 @@ namespace test
  * Note that although the interface allows passing the argc and argv pointers
  * to methods that modify them (typically as \p f(&argc(), argv())), currently
  * the CommandLine object is not in a consistent state internally if the
- * parameters are actually modified.
- * Currently, the C++ methods with this signature do not modify their
- * parameters, so this is not yet a problem.
+ * parameters are actually modified.  Reading the command line is possible
+ * afterwards, but modification is not.
  *
  * All constructors and methods that modify this class may throw an
  * std::bad_alloc.  Const methods and accessors do not throw.
