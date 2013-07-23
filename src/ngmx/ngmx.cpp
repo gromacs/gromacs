@@ -56,6 +56,8 @@
 #include "nmol.h"
 #include "tpxio.h"
 
+#include "gromacs/commandline/cmdlinemodulemanager.h"
+
 /* Forward declarations: I Don't want all that init shit here */
 void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
               const output_env_t oenv);
@@ -259,7 +261,7 @@ static gmx_bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
     return result;
 }
 
-int main(int argc, char *argv[])
+int gmx_ngmx(int argc, char *argv[])
 {
     const char  *desc[] = {
         "[TT]ngmx[tt] is the GROMACS trajectory viewer. This program reads a",
@@ -291,8 +293,7 @@ int main(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    gmx::ProgramInfo::init(argc, argv);
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_STANDALONE, NFILE, fnm,
+    parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
                       0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
 
     if ((x11 = GetX11(&argc, argv)) == NULL)
@@ -306,9 +307,12 @@ int main(int argc, char *argv[])
     x11->MainLoop(x11);
     x11->CleanUp(x11);
 
-    gmx_thanx(stderr);
-
     return 0;
+}
+
+int main(int argc, char *argv[])
+{
+    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &gmx_ngmx);
 }
 
 static t_mentry  FileMenu[] = {
