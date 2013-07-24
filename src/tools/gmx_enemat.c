@@ -185,6 +185,10 @@ int gmx_enemat(int argc, char *argv[])
     parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
                       NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
 
+    for (i = 0; (i < egNR+egSP); i++)
+    {
+        egrp_use[i] = FALSE;
+    }
     egrp_use[egCOULSR] = bCoulSR;
     egrp_use[egLJSR]   = bLJSR;
     egrp_use[egBHAMSR] = bBhamSR;
