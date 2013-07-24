@@ -34,7 +34,7 @@
  */
 
 #ifndef _nbnxn_atomdata_h
-#define _nsnxn_atomdata_h
+#define _nbnxn_atomdata_h
 
 #include "typedefs.h"
 

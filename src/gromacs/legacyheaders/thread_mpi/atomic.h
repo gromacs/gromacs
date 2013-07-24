@@ -114,7 +114,7 @@ extern "C"
 #elif defined(__FUJITSU) && ( defined(__sparc_v9__) || defined (__sparcv9) )
 
 /* Fujitsu FX10 SPARC compiler */
-#include "atomic/fujitsu_sparc.h"
+#include "atomic/fujitsu_sparc64.h"
 
 #else
 /* otherwise, there's a generic gcc intrinsics version: */

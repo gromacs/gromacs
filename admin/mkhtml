@@ -12,8 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 4.6.2
-set DATE        = `date "+%B %d, %Y`
+set VER		= 4.6.3
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -57,8 +56,7 @@ Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION $VER<br>
-$DATE</B></td>
+<B>VERSION $VER</B></td>
 </tr>
 </table>
 
@@ -136,8 +134,9 @@ echo "-------------------------------------------"
 
 cd $dir
 
+setenv GMX_MAXBACKUP -1
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) ) then
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "demux.pl" ) ) then
     echo -n "$program "
     cd $HTMLOL
     $GMXBINDIR/$program -quiet -man html >& /dev/null
@@ -145,5 +144,6 @@ foreach program ( $PROGRAMS )
     endif
   endif
 end
+echo
 
 #last line

@@ -338,7 +338,7 @@ static int get_tmpi_omp_thread_division(const gmx_hw_info_t *hwinfo,
  * Thus all options should be internally consistent and consistent
  * with the hardware, except that ntmpi could be larger than #GPU.
  */
-static int get_nthreads_mpi(gmx_hw_info_t *hwinfo,
+static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
                             gmx_hw_opt_t *hw_opt,
                             t_inputrec *inputrec, gmx_mtop_t *mtop,
                             const t_commrec *cr,
@@ -625,14 +625,14 @@ static void increase_nstlist(FILE *fp, t_commrec *cr,
     }
 }
 
-static void prepare_verlet_scheme(FILE             *fplog,
-                                  gmx_hw_info_t    *hwinfo,
-                                  t_commrec        *cr,
-                                  const char       *nbpu_opt,
-                                  t_inputrec       *ir,
-                                  const gmx_mtop_t *mtop,
-                                  matrix            box,
-                                  gmx_bool         *bUseGPU)
+static void prepare_verlet_scheme(FILE                *fplog,
+                                  const gmx_hw_info_t *hwinfo,
+                                  t_commrec           *cr,
+                                  const char          *nbpu_opt,
+                                  t_inputrec          *ir,
+                                  const gmx_mtop_t    *mtop,
+                                  matrix               box,
+                                  gmx_bool            *bUseGPU)
 {
     /* Here we only check for GPU usage on the MPI master process,
      * as here we don't know how many GPUs we will use yet.
@@ -961,6 +961,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     bForceUseGPU = (strncmp(nbpu_opt, "gpu", 3) == 0);
     bTryUseGPU   = (strncmp(nbpu_opt, "auto", 4) == 0) || bForceUseGPU;
 
+    /* Detect hardware, gather information. This is an operation that is
+     * global for this process (MPI rank). */
+    hwinfo = gmx_detect_hardware(fplog, cr,
+                                 bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
+
+
     snew(state, 1);
     if (SIMMASTER(cr))
     {
@@ -973,11 +979,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
             convert_to_verlet_scheme(fplog, inputrec, mtop, det(state->box));
         }
 
-        /* Detect hardware, gather information. With tMPI only thread 0 does it
-         * and after threads are started broadcasts hwinfo around. */
-        snew(hwinfo, 1);
-        gmx_detect_hardware(fplog, hwinfo, cr,
-                            bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
 
         minf.cutoff_scheme = inputrec->cutoff_scheme;
         minf.bUseGPU       = FALSE;
@@ -1116,33 +1117,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     {
         pr_inputrec(fplog, 0, "Input Parameters", inputrec, FALSE);
     }
-
-#if defined GMX_THREAD_MPI
-    /* With tMPI we detected on thread 0 and we'll just pass the hwinfo pointer
-     * to the other threads  -- slightly uncool, but works fine, just need to
-     * make sure that the data doesn't get freed twice. */
-    if (cr->nnodes > 1)
-    {
-        if (!SIMMASTER(cr))
-        {
-            snew(hwinfo, 1);
-        }
-        gmx_bcast(sizeof(&hwinfo), &hwinfo, cr);
-    }
-#else
-    if (PAR(cr) && !SIMMASTER(cr))
-    {
-        /* now we have inputrec on all nodes, can run the detection */
-        /* TODO: perhaps it's better to propagate within a node instead? */
-        snew(hwinfo, 1);
-        gmx_detect_hardware(fplog, hwinfo, cr,
-                            bForceUseGPU, bTryUseGPU, hw_opt->gpu_id);
-    }
-
-    /* Now do the affinity check with MPI/no-MPI (done earlier with thread-MPI). */
-    gmx_check_thread_affinity_set(fplog, cr,
-                                  hw_opt, hwinfo->nthreads_hw_avail, FALSE);
-#endif
 
     /* now make sure the state is initialized and propagated */
     set_state_entries(state, inputrec, cr->nnodes);
@@ -1379,7 +1353,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                           (cr->duty & DUTY_PP) == 0,
                           inputrec->cutoff_scheme == ecutsVERLET);
 
-    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi, minf.bUseGPU);
+    /* check consistency and decide on the number of gpus to use. */
+    gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi,
+                                     minf.bUseGPU);
 
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
@@ -1658,12 +1634,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         sfree(membed);
     }
 
-#ifdef GMX_THREAD_MPI
-    if (PAR(cr) && SIMMASTER(cr))
-#endif
-    {
-        gmx_hardware_info_free(hwinfo);
-    }
+    gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
     print_date_and_time(fplog, cr->nodeid, "Finished mdrun", &runtime);
