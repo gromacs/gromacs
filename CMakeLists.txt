@@ -185,6 +185,11 @@ mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
 
+option(GMX_BUILD_FOR_COVERAGE
+       "Tune build for better code coverage metrics (e.g., disable asserts)"
+       OFF)
+mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
+
 ######################################################################
 # Compiler tests
 # These need to be done early (before further tests).
@@ -1220,6 +1225,15 @@ else()
             DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
             COMPONENT development)
 endif()
+
+if (GMX_BUILD_FOR_COVERAGE)
+    # Code heavy with asserts makes conditional coverage close to useless metric,
+    # as by design most of the false branches are impossible to trigger in
+    # correctly functioning code.  And the benefit of testing those that could
+    # be triggered by using an API against its specification isn't usually
+    # worth the effort.
+    add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
+endif ()
 
 add_subdirectory(doxygen)
 add_subdirectory(share)
