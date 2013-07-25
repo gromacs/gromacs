@@ -102,7 +102,7 @@ static void low_comm_tcr(t_commrec *cr, t_coupl_rec *tcr)
     block_bc(cr, tcr->combrule);
 }
 
-void comm_tcr(FILE *log, t_commrec *cr, t_coupl_rec **tcr)
+void comm_tcr(t_commrec *cr, t_coupl_rec **tcr)
 {
     if (!MASTER(cr))
     {

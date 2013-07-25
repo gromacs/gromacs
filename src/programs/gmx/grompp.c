@@ -1216,7 +1216,7 @@ static void check_gbsa_params_charged(gmx_mtop_t *sys, gpp_atomtype_t atype)
 }
 
 
-static void check_gbsa_params(t_inputrec *ir, gpp_atomtype_t atype)
+static void check_gbsa_params(gpp_atomtype_t atype)
 {
     int  nmiss, i;
 
@@ -1682,7 +1682,7 @@ int gmx_grompp(int argc, char *argv[])
     if (ir->implicit_solvent != eisNO)
     {
         /* Now we have renumbered the atom types, we can check the GBSA params */
-        check_gbsa_params(ir, atype);
+        check_gbsa_params(atype);
 
         /* Check that all atoms that have charge and/or LJ-parameters also have
          * sensible GB-parameters

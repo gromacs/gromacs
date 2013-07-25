@@ -306,7 +306,7 @@ static void reduce_topology_x(int gnx, atom_id index[],
     mtop->natoms                 = top.atoms.nr;
 }
 
-static void zeroq(int n, atom_id index[], gmx_mtop_t *mtop)
+static void zeroq(atom_id index[], gmx_mtop_t *mtop)
 {
     int mt, i;
 
@@ -666,7 +666,7 @@ int gmx_tpbconv(int argc, char *argv[])
             }
             else if (bZeroQ)
             {
-                zeroq(gnx, index, &mtop);
+                zeroq(index, &mtop);
                 fprintf(stderr, "Zero-ing charges for group %s\n", grpname);
             }
             else

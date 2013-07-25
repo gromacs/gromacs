@@ -207,7 +207,7 @@ t_genalg *init_ga(FILE *fplog, const char *infile, int D, t_range range[])
     return ga;
 }
 
-void update_ga(FILE *fpout_ptr, t_range range[], t_genalg *ga)
+void update_ga(t_range range[], t_genalg *ga)
 {
     static int  i_init = 0;         /* Initialisation related stuff       */
     int         i, j, L, n;         /* counting variables                 */
@@ -450,7 +450,7 @@ void update_ga(FILE *fpout_ptr, t_range range[], t_genalg *ga)
 }
 
 gmx_bool print_ga(FILE *fp, t_genalg *ga, real msf, tensor pres, rvec scale,
-                  real energy, t_range range[], real tol)
+                  real energy, real tol)
 {
     static int      nfeval = 0; /* number of function evaluations     */
     static gmx_bool bImproved;

@@ -64,8 +64,7 @@ real mol_dipole(int k0, int k1, rvec x[], real q[])
     return norm(mu); /* Dipole moment of this molecule in e nm */
 }
 
-real calc_mu_aver(t_commrec *cr, rvec x[], real q[], rvec mu,
-                  t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[])
+real calc_mu_aver(rvec x[], real q[], t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[])
 {
     int     i, start, end;
     real    mu_ave;
@@ -450,7 +449,7 @@ gmx_bool update_forcefield(FILE *fplog,
     }
     if (ga)
     {
-        update_ga(fplog, range, ga);
+        update_ga(range, ga);
     }
     else
     {
@@ -524,7 +523,7 @@ static real msf(int n, rvec f1[], rvec f2[])
 }
 
 static void print_grid(FILE *fp, real ener[], int natoms, rvec f[], rvec fshake[],
-                       rvec x[], t_block *mols, real mass[], tensor pres)
+                       tensor pres)
 {
     static gmx_bool    bFirst = TRUE;
     static const char *desc[] = {
@@ -557,7 +556,7 @@ static void print_grid(FILE *fp, real ener[], int natoms, rvec f[], rvec fshake[
 }
 
 gmx_bool print_forcefield(FILE *fp, real ener[], int natoms, rvec f[], rvec fshake[],
-                          rvec x[], t_block *mols, real mass[], tensor pres)
+                          tensor pres)
 {
     real msf1;
 
@@ -570,7 +569,7 @@ gmx_bool print_forcefield(FILE *fp, real ener[], int natoms, rvec f[], rvec fsha
                     ener[F_PRES], sqrt(msf1), ener[F_EPOT]/ff.nmol-ff.epot,
                     cost(pres, msf1, ener[F_EPOT]/ff.nmol));
         }
-        if (print_ga(fp, ga, msf1, pres, scale, (ener[F_EPOT]/ff.nmol), range, ff.tol))
+        if (print_ga(fp, ga, msf1, pres, scale, (ener[F_EPOT]/ff.nmol), ff.tol))
         {
             return TRUE;
         }
@@ -578,7 +577,7 @@ gmx_bool print_forcefield(FILE *fp, real ener[], int natoms, rvec f[], rvec fsha
     }
     else
     {
-        print_grid(fp, ener, natoms, f, fshake, x, mols, mass, pres);
+        print_grid(fp, ener, natoms, f, fshake, pres);
     }
     return FALSE;
 }
