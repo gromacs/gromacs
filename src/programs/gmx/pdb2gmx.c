@@ -675,7 +675,7 @@ int pdbicomp(const void *a, const void *b)
     return d;
 }
 
-static void sort_pdbatoms(int nrtp, t_restp restp[], t_hackblock hb[],
+static void sort_pdbatoms(t_restp restp[],
                           int natoms, t_atoms **pdbaptr, rvec **x,
                           t_blocka *block, char ***gnames)
 {
@@ -1932,8 +1932,7 @@ int gmx_pdb2gmx(int argc, char *argv[])
         {
             block = new_blocka();
             snew(gnames, 1);
-            sort_pdbatoms(pdba->nres, restp_chain, hb_chain,
-                          natom, &pdba, &x, block, &gnames);
+            sort_pdbatoms(restp_chain, natom, &pdba, &x, block, &gnames);
             natom = remove_duplicate_atoms(pdba, x, bVerbose);
             if (ftp2bSet(efNDX, NFILE, fnm))
             {

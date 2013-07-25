@@ -253,7 +253,7 @@ static int   ionize_seed = 1993;
 #define NENER asize(Energies)
 /* END GLOBAL VARIABLES */
 
-void dump_ca(FILE *fp, t_cross_atom *ca, int i, const char *file, int line)
+void dump_ca(FILE *fp, t_cross_atom *ca, int i, int line)
 {
     fprintf(fp, PREFIX "(line %d) atom %d, z = %d, n = %d, k = %d\n",
             line, i, ca->z, ca->n, ca->k);
@@ -530,7 +530,7 @@ void rand_vector(rvec v, int *seed)
     polar2cart(phi, theta, v);
 }
 
-gmx_bool khole_decay(FILE *fp, t_cross_atom *ca, rvec x[], rvec v[], int ion,
+gmx_bool khole_decay(t_cross_atom *ca, rvec v[], int ion,
                      int *seed, real dt)
 {
     rvec dv;
@@ -538,7 +538,7 @@ gmx_bool khole_decay(FILE *fp, t_cross_atom *ca, rvec x[], rvec v[], int ion,
 
     if ((ca->vAuger < 0) || (recoil[ca->z].tau == 0))
     {
-        dump_ca(stderr, ca, ion, __FILE__, __LINE__);
+        dump_ca(stderr, ca, ion, __LINE__);
         exit(1);
     }
     if ((rando(seed) < dt/recoil[ca->z].tau) && (number_L(ca) > 1))
@@ -923,7 +923,7 @@ void ionize(FILE *fp, const output_env_t oenv, t_mdatoms *md, gmx_mtop_t *mtop,
         nkh = ca[i].k;
         for (kk = 0; (kk < nkh); kk++)
         {
-            if (khole_decay(fp, &(ca[i]), x, v, i, &ionize_seed, ir->delta_t))
+            if (khole_decay(&(ca[i]), v, i, &ionize_seed, ir->delta_t))
             {
                 nkdecay++;
                 ndecay[i]++;
@@ -934,7 +934,7 @@ void ionize(FILE *fp, const output_env_t oenv, t_mdatoms *md, gmx_mtop_t *mtop,
 
         if (debug && (ca[i].n > 0))
         {
-            dump_ca(debug, &(ca[i]), i, __FILE__, __LINE__);
+            dump_ca(debug, &(ca[i]), i, __LINE__);
         }
     }
 

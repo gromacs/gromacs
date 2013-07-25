@@ -118,12 +118,12 @@ extern void write_gct(const char *fn, t_coupl_rec *tcr, t_idef *idef);
 
 extern void read_gct(const char *fn, t_coupl_rec *tcr);
 
-extern void comm_tcr(FILE *log, t_commrec *cr, t_coupl_rec **tcr);
+extern void comm_tcr(t_commrec *cr, t_coupl_rec **tcr);
 
 extern void copy_ff(t_coupl_rec *tcr, t_forcerec *fr, t_mdatoms *md,
                     t_idef *idef);
 
-extern t_coupl_rec *init_coupling(FILE *log, int nfile, const t_filenm fnm[],
+extern t_coupl_rec *init_coupling(int nfile, const t_filenm fnm[],
                                   t_commrec *cr, t_forcerec *fr, t_mdatoms *md,
                                   t_idef *idef);
 
@@ -135,11 +135,11 @@ extern void calc_f_dev(int natoms, real charge[], rvec x[], rvec f[],
 extern void do_coupling(FILE *log, const output_env_t oenv, int nfile,
                         const t_filenm fnm[],
                         t_coupl_rec *tcr, real t, int step, real ener[],
-                        t_forcerec *fr, t_inputrec *ir, gmx_bool bMaster,
+                        t_forcerec *fr, t_inputrec *ir,
                         t_mdatoms *md, t_idef *idef, real mu_aver, int nmols,
                         t_commrec *cr, matrix box, tensor virial,
                         tensor pres, rvec mu_tot,
-                        rvec x[], rvec f[], gmx_bool bDoIt);
+                        rvec x[], gmx_bool bDoIt);
 
 /* CODE TO ADD SPECIAL 2-DIMENSIONAL LENNARD-JONES CORRECTION TO FORCES AND ENERGY */
 extern void do_glas(FILE *log, int start, int homenr, rvec x[], rvec f[],
@@ -149,7 +149,7 @@ extern void do_glas(FILE *log, int start, int homenr, rvec x[], rvec f[],
 extern real mol_dipole(int k0, int k1, rvec x[], real q[]);
 /* Calculate total dipole for group of atoms */
 
-extern real calc_mu_aver(t_commrec *cr, rvec x[], real q[], rvec mu,
+extern real calc_mu_aver(rvec x[], real q[],
                          t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[]);
 /* Compute average dipole */
 
