@@ -67,10 +67,10 @@ extern real value_rand(t_range *r, int *seed);
 
 extern t_genalg *init_ga(FILE *fplog, const char *infile, int D, t_range range[]);
 
-extern void update_ga(FILE *fpout_ptr, t_range range[], t_genalg *ga);
+extern void update_ga(t_range range[], t_genalg *ga);
 
 extern gmx_bool print_ga(FILE *fp, t_genalg *ga, real msf, tensor pres, rvec scale,
-                         real energy, t_range range[], real tol);
+                         real energy, real tol);
 
 extern real cost(tensor P, real MSF, real energy);
 

@@ -54,7 +54,7 @@
 #include "txtdump.h"
 
 /*#define DEBUGGCT*/
-t_coupl_rec *init_coupling(FILE *log, int nfile, const t_filenm fnm[],
+t_coupl_rec *init_coupling(int nfile, const t_filenm fnm[],
                            t_commrec *cr, t_forcerec *fr,
                            t_mdatoms *md, t_idef *idef)
 {
@@ -71,7 +71,7 @@ t_coupl_rec *init_coupling(FILE *log, int nfile, const t_filenm fnm[],
     /* Update all processors with coupling info */
     if (PAR(cr))
     {
-        comm_tcr(log, cr, &tcr);
+        comm_tcr(cr, &tcr);
     }
 
     /* Copy information from the coupling to the force field stuff */
@@ -111,7 +111,7 @@ static char *mk_gct_nm(const char *fn, int ftp, int ati, int atj)
 }
 
 static void pr_ff(t_coupl_rec *tcr, real time, t_idef *idef,
-                  t_commrec *cr, int nfile, const t_filenm fnm[],
+                  int nfile, const t_filenm fnm[],
                   const output_env_t oenv)
 {
     static FILE  *prop;
@@ -288,7 +288,7 @@ static void pr_ff(t_coupl_rec *tcr, real time, t_idef *idef,
 }
 
 static void pr_dev(t_coupl_rec *tcr,
-                   real t, real dev[eoObsNR], t_commrec *cr, int nfile,
+                   real t, real dev[eoObsNR], int nfile,
                    const t_filenm fnm[], const output_env_t oenv)
 {
     static FILE *fp = NULL;
@@ -326,7 +326,7 @@ static void pr_dev(t_coupl_rec *tcr,
     fflush(fp);
 }
 
-static void upd_nbfplj(FILE *log, real *nbfp, int atnr, real f6[], real f12[],
+static void upd_nbfplj(real *nbfp, int atnr, real f6[], real f12[],
                        int combrule)
 {
     double *sigma, *epsilon, c6, c12, eps, sig, sig6;
@@ -390,7 +390,7 @@ static void upd_nbfplj(FILE *log, real *nbfp, int atnr, real f6[], real f12[],
     }
 }
 
-static void upd_nbfpbu(FILE *log, real *nbfp, int atnr,
+static void upd_nbfpbu(real *nbfp, int atnr,
                        real fa[], real fb[], real fc[])
 {
     int n, m, k;
@@ -459,7 +459,7 @@ static void set_factor_matrix(int ntypes, real f[], real fmult, int ati, int atj
 #undef FMAX
 }
 
-static real calc_deviation(real xav, real xt, real x0)
+static real calc_deviation(real xav, real x0)
 {
     /* This may prevent overshooting in GCT coupling... */
 
@@ -520,20 +520,20 @@ static real calc_dist(FILE *log, rvec x[])
     }
 }
 
-real run_aver(real old, real cur, int step, int nmem)
+real run_aver(real old, real cur, int nmem)
 {
     nmem   = max(1, nmem);
 
     return ((nmem-1)*old+cur)/nmem;
 }
 
-static void set_act_value(t_coupl_rec *tcr, int index, real val, int step)
+static void set_act_value(t_coupl_rec *tcr, int index, real val)
 {
     tcr->act_value[index] = val;
-    tcr->av_value[index]  = run_aver(tcr->av_value[index], val, step, tcr->nmemory);
+    tcr->av_value[index]  = run_aver(tcr->av_value[index], val, tcr->nmemory);
 }
 
-static void upd_f_value(FILE *log, int atnr, real xi, real dt, real factor,
+static void upd_f_value(int atnr, real xi, real dt, real factor,
                         real ff[], int ati, int atj)
 {
     real fff;
@@ -566,10 +566,10 @@ static void dump_fm(FILE *fp, int n, real f[], char *s)
 void do_coupling(FILE *log, const output_env_t oenv, int nfile,
                  const t_filenm fnm[], t_coupl_rec *tcr, real t,
                  int step, real ener[], t_forcerec *fr, t_inputrec *ir,
-                 gmx_bool bMaster, t_mdatoms *md, t_idef *idef, real mu_aver, int nmols,
+                 t_mdatoms *md, t_idef *idef, real mu_aver, int nmols,
                  t_commrec *cr, matrix box, tensor virial,
                  tensor pres, rvec mu_tot,
-                 rvec x[], rvec f[], gmx_bool bDoIt)
+                 rvec x[], gmx_bool bDoIt)
 {
 #define enm2Debye 48.0321
 #define d2e(x) (x)/enm2Debye
@@ -671,17 +671,17 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
      * average observable over the last tcr->nmemory steps. This may help
      * in avoiding local minima in parameter space.
      */
-    set_act_value(tcr, eoPres, ener[F_PRES], step);
-    set_act_value(tcr, eoEpot, Eintern,     step);
-    set_act_value(tcr, eoVir,  Virial,      step);
-    set_act_value(tcr, eoDist, dist,        step);
-    set_act_value(tcr, eoMu,   muabs,       step);
-    set_act_value(tcr, eoFx,   fmol[0][XX], step);
-    set_act_value(tcr, eoFy,   fmol[0][YY], step);
-    set_act_value(tcr, eoFz,   fmol[0][ZZ], step);
-    set_act_value(tcr, eoPx,   pres[XX][XX], step);
-    set_act_value(tcr, eoPy,   pres[YY][YY], step);
-    set_act_value(tcr, eoPz,   pres[ZZ][ZZ], step);
+    set_act_value(tcr, eoPres, ener[F_PRES]);
+    set_act_value(tcr, eoEpot, Eintern     );
+    set_act_value(tcr, eoVir,  Virial      );
+    set_act_value(tcr, eoDist, dist        );
+    set_act_value(tcr, eoMu,   muabs       );
+    set_act_value(tcr, eoFx,   fmol[0][XX] );
+    set_act_value(tcr, eoFy,   fmol[0][YY] );
+    set_act_value(tcr, eoFz,   fmol[0][ZZ] );
+    set_act_value(tcr, eoPx,   pres[XX][XX]);
+    set_act_value(tcr, eoPy,   pres[YY][YY]);
+    set_act_value(tcr, eoPz,   pres[ZZ][ZZ]);
 
     epot0 = tcr->ref_value[eoEpot];
     /* If dipole != 0.0 assume we want to use polarization corrected coupling */
@@ -704,22 +704,20 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
 
     if (bPrint)
     {
-        pr_ff(tcr, t, idef, cr, nfile, fnm, oenv);
+        pr_ff(tcr, t, idef, nfile, fnm, oenv);
     }
     /* Calculate the deviation of average value from the target value */
     for (i = 0; (i < eoObsNR); i++)
     {
-        deviation[i] = calc_deviation(tcr->av_value[i], tcr->act_value[i],
-                                      tcr->ref_value[i]);
+        deviation[i] = calc_deviation(tcr->av_value[i], tcr->ref_value[i]);
         prdev[i]     = tcr->ref_value[i] - tcr->act_value[i];
     }
-    deviation[eoEpot] = calc_deviation(tcr->av_value[eoEpot], tcr->act_value[eoEpot],
-                                       epot0);
+    deviation[eoEpot] = calc_deviation(tcr->av_value[eoEpot], epot0);
     prdev[eoEpot]     = epot0 - tcr->act_value[eoEpot];
 
     if (bPrint)
     {
-        pr_dev(tcr, t, prdev, cr, nfile, fnm, oenv);
+        pr_dev(tcr, t, prdev, nfile, fnm, oenv);
     }
 
     /* First set all factors to 1 */
@@ -786,8 +784,8 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
                     }
                     factor = deviation[tclj->eObs];
 
-                    upd_f_value(log, idef->atnr, tclj->xi_6, dt, factor, f6, ati, atj);
-                    upd_f_value(log, idef->atnr, tclj->xi_12, dt, factor, f12, ati, atj);
+                    upd_f_value(idef->atnr, tclj->xi_6, dt, factor, f6, ati, atj);
+                    upd_f_value(idef->atnr, tclj->xi_12, dt, factor, f12, ati, atj);
                 }
             }
         }
@@ -800,7 +798,7 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
             dump_fm(log, idef->atnr, f12, "f12");
 #endif
         }
-        upd_nbfplj(log, fr->nbfp, idef->atnr, f6, f12, tcr->combrule);
+        upd_nbfplj(fr->nbfp, idef->atnr, f6, f12, tcr->combrule);
 
         /* Copy for printing */
         for (i = 0; (i < tcr->nLJ); i++)
@@ -828,9 +826,9 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
                 ati    = tcbu->at_i;
                 atj    = tcbu->at_j;
 
-                upd_f_value(log, idef->atnr, tcbu->xi_a, dt, factor, fa, ati, atj);
-                upd_f_value(log, idef->atnr, tcbu->xi_b, dt, factor, fb, ati, atj);
-                upd_f_value(log, idef->atnr, tcbu->xi_c, dt, factor, fc, ati, atj);
+                upd_f_value(idef->atnr, tcbu->xi_a, dt, factor, fa, ati, atj);
+                upd_f_value(idef->atnr, tcbu->xi_b, dt, factor, fb, ati, atj);
+                upd_f_value(idef->atnr, tcbu->xi_c, dt, factor, fc, ati, atj);
             }
         }
         if (PAR(cr))
@@ -839,7 +837,7 @@ void do_coupling(FILE *log, const output_env_t oenv, int nfile,
             gprod(cr, atnr2, fb);
             gprod(cr, atnr2, fc);
         }
-        upd_nbfpbu(log, fr->nbfp, idef->atnr, fa, fb, fc);
+        upd_nbfpbu(fr->nbfp, idef->atnr, fa, fb, fc);
         /* Copy for printing */
         for (i = 0; (i < tcr->nBU); i++)
         {
