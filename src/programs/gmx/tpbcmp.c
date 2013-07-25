@@ -650,7 +650,7 @@ static void cmp_adress(FILE *fp, t_adress *ad1, t_adress *ad2,
     cmp_real(fp, "ir->adress->ex_forcecap", -1, ad1->ex_forcecap, ad2->ex_forcecap, ftol, abstol);
 }
 
-static void cmp_pull(FILE *fp, t_pull *pull1, t_pull *pull2, real ftol, real abstol)
+static void cmp_pull(FILE *fp)
 {
     fprintf(fp, "WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
 }
@@ -843,7 +843,7 @@ static void cmp_inputrec(FILE *fp, t_inputrec *ir1, t_inputrec *ir2, real ftol, 
     cmp_int(fp, "inputrec->ePull", -1, ir1->ePull, ir2->ePull);
     if (ir1->ePull == ir2->ePull && ir1->ePull != epullNO)
     {
-        cmp_pull(fp, ir1->pull, ir2->pull, ftol, abstol);
+        cmp_pull(fp);
     }
 
     cmp_int(fp, "inputrec->eDisre", -1, ir1->eDisre, ir2->eDisre);
@@ -1189,7 +1189,7 @@ static gmx_bool enernm_equal(const char *nm1, const char *nm2)
 
 static void cmp_energies(FILE *fp, int step1, int step2,
                          t_energy e1[], t_energy e2[],
-                         gmx_enxnm_t *enm1, gmx_enxnm_t *enm2,
+                         gmx_enxnm_t *enm1,
                          real ftol, real abstol,
                          int nre, int *ind1, int *ind2, int maxener)
 {
@@ -1470,7 +1470,7 @@ void comp_enx(const char *fn1, const char *fn2, real ftol, real abstol, const ch
             if ((fr1->nre >= nre) && (fr2->nre >= nre))
             {
                 cmp_energies(stdout, fr1->step, fr1->step, fr1->ener, fr2->ener,
-                             enm1, enm2, ftol, abstol, nre, ind1, ind2, maxener);
+                             enm1, ftol, abstol, nre, ind1, ind2, maxener);
             }
             /*cmp_disres(fr1,fr2,ftol,abstol);*/
             cmp_eblocks(fr1, fr2, ftol, abstol);

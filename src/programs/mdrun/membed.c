@@ -534,7 +534,7 @@ static void resize(rvec *r_ins, rvec *r, pos_ins_t *pos_ins, rvec fac)
 /* generate the list of membrane molecules that overlap with the molecule to be embedded. *
  * The molecule to be embedded is already reduced in size. */
 static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc, gmx_mtop_t *mtop,
-                       rvec *r, rvec *r_ins, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad,
+                       rvec *r, mem_t *mem_p, pos_ins_t *pos_ins, real probe_rad,
                        int low_up_rm, gmx_bool bALLOW_ASYMMETRY)
 {
     int      i, j, k, l, at, at2, mol_id;
@@ -690,7 +690,7 @@ static int gen_rm_list(rm_t *rm_p, t_block *ins_at, t_block *rest_at, t_pbc *pbc
 }
 
 /*remove all lipids and waters overlapping and update all important structures (e.g. state and mtop)*/
-static void rm_group(t_inputrec *ir, gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
+static void rm_group(gmx_groups_t *groups, gmx_mtop_t *mtop, rm_t *rm_p, t_state *state,
                      t_block *ins_at, pos_ins_t *pos_ins)
 {
     int             i, j, k, n, rm, mol_id, at, block;
@@ -888,7 +888,7 @@ int rm_bonded(t_block *ins_at, gmx_mtop_t *mtop)
 }
 
 /* Write a topology where the number of molecules is correct for the system after embedding */
-static void top_update(const char *topfile, char *ins, rm_t *rm_p, gmx_mtop_t *mtop)
+static void top_update(const char *topfile, rm_t *rm_p, gmx_mtop_t *mtop)
 {
 #define TEMP_FILENM "temp.top"
     int        bMolecules = 0;
@@ -1241,7 +1241,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         set_pbc(pbc, inputrec->ePBC, state->box);
 
         snew(rm_p, 1);
-        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x, r_ins, mem_p, pos_ins,
+        lip_rm = gen_rm_list(rm_p, ins_at, rest_at, pbc, mtop, state->x, mem_p, pos_ins,
                              probe_rad, low_up_rm, bALLOW_ASYMMETRY);
         lip_rm -= low_up_rm;
 
@@ -1275,7 +1275,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
         }
 
         /*remove all lipids and waters overlapping and update all important structures*/
-        rm_group(inputrec, groups, mtop, rm_p, state, ins_at, pos_ins);
+        rm_group(groups, mtop, rm_p, state, ins_at, pos_ins);
 
         rm_bonded_at = rm_bonded(ins_at, mtop);
         if (rm_bonded_at != ins_at->nr)
@@ -1293,7 +1293,7 @@ gmx_membed_t init_membed(FILE *fplog, int nfile, const t_filenm fnm[], gmx_mtop_
 
         if (ftp2bSet(efTOP, nfile, fnm))
         {
-            top_update(opt2fn("-mp", nfile, fnm), ins, rm_p, mtop);
+            top_update(opt2fn("-mp", nfile, fnm), rm_p, mtop);
         }
 
         sfree(pbc);
