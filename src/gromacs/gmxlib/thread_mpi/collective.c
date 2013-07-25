@@ -54,12 +54,9 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "types/simple.h"
 #include "impl.h"
 #include "collective.h"
-
-
-
-
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
 /* initialize a copy buffer */
@@ -146,13 +143,6 @@ void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl,
 }
 #endif
 
-
-
-
-
-
-
-
 int tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
 {
     tMPI_Atomic_set(&(met->current_sync), 0);
@@ -186,7 +176,6 @@ int tMPI_Coll_envt_init(struct coll_env_thread *met, int N)
     tMPI_Event_init( &(met->recv_ev) );
     return TMPI_SUCCESS;
 }
-
 
 void tMPI_Coll_envt_destroy(struct coll_env_thread *met)
 {
@@ -234,7 +223,6 @@ void tMPI_Coll_env_destroy(struct coll_env *cev)
     free( (void*)cev->met );
 }
 
-
 int tMPI_Coll_sync_init(struct coll_sync *csync, int N)
 {
     int i;
@@ -268,11 +256,6 @@ void tMPI_Coll_sync_destroy(struct coll_sync *csync)
     }
     free(csync->events);
 }
-
-
-
-
-
 
 /* get a pointer the next coll_env once it's ready. */
 struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
@@ -312,10 +295,6 @@ struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *counter)
 
     return cev;
 }
-
-
-
-
 
 void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,
                     int index, int expected_tag, tMPI_Datatype recvtype,
@@ -524,7 +503,6 @@ int tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
     return TMPI_SUCCESS;
 }
 
-
 void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 {
 #if defined(TMPI_PROFILE)
@@ -576,7 +554,7 @@ void tMPI_Wait_for_others(struct coll_env *cev, int myrank)
 #endif
 }
 
-void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev,
+void tMPI_Wait_for_data(struct tmpi_thread gmx_unused *cur, struct coll_env *cev,
                         int myrank)
 {
 #if defined(TMPI_PROFILE)
@@ -588,11 +566,6 @@ void tMPI_Wait_for_data(struct tmpi_thread *cur, struct coll_env *cev,
     tMPI_Profile_wait_stop(cur, TMPIWAIT_Coll_recv);
 #endif
 }
-
-
-
-
-
 
 int tMPI_Barrier(tMPI_Comm comm)
 {
