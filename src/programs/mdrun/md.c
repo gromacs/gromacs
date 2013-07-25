@@ -1142,13 +1142,13 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (bTCR)
         {
-            mu_aver = calc_mu_aver(cr, state->x, mdatoms->chargeA,
-                                   mu_tot, &top_global->mols, mdatoms, gnx, grpindex);
+            mu_aver = calc_mu_aver(state->x, mdatoms->chargeA,
+                                   &top_global->mols, mdatoms, gnx, grpindex);
         }
 
         if (bTCR && bFirstStep)
         {
-            tcr = init_coupling(fplog, nfile, fnm, cr, fr, mdatoms, &(top->idef));
+            tcr = init_coupling(nfile, fnm, cr, fr, mdatoms, &(top->idef));
             fprintf(fplog, "Done init_coupling\n");
             fflush(fplog);
         }
@@ -1878,11 +1878,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * we want the new box state->box too. / EL 20040121
              */
             do_coupling(fplog, oenv, nfile, fnm, tcr, t, step, enerd->term, fr,
-                        ir, MASTER(cr),
-                        mdatoms, &(top->idef), mu_aver,
+                        ir, mdatoms, &(top->idef), mu_aver,
                         top_global->mols.nr, cr,
                         state->box, total_vir, pres,
-                        mu_tot, state->x, f, bConverged);
+                        mu_tot, state->x, bConverged);
             debug_gmx();
         }
 
