@@ -425,6 +425,9 @@ void get_pullgrp_distance(t_pull *pull, t_pbc *pbc, int g, double t,
                 dev[m] = (dr[m] - ref[m])*pull->dim[m];
             }
             break;
+        case epullgCOLLRAD:
+	    gmx_fatal(FARGS,"To be implemented by Neha :)\n");
+	    break;
     }
 }
 
@@ -907,7 +910,8 @@ static void do_pull_pot(int ePull,
     for (g = 1; g < 1+pull->ngrp; g++)
     {
         pgrp = &pull->grp[g];
-        get_pullgrp_distance(pull, pbc, g, t, pgrp->dr, dev);
+	/* Radial pulling: dev[0] should contain sigma */
+        get_pullgrp_distance(pull, pbc, g, t, pgrp->dr, dev);	
 
         k    = (1.0 - lambda)*pgrp->k + lambda*pgrp->kB;
         dkdl = pgrp->kB - pgrp->k;
@@ -976,6 +980,23 @@ static void do_pull_pot(int ePull,
                     }
                 }
                 break;
+	    case epullgCOLLRAD:
+		gmx_fatal(FARGS,"To be implemented by Neha :)\n");		
+		if (ePull == epullUMBRELLA)
+		{
+		    /* You need a new force variable that is an array over all atoms, because
+		       we don't have a single force on the COM of the pull group
+		       pgrp->fsingle[iatom][XX]  = 0.;
+		       pgrp->fsingle[iatom][YY]  = 0.;
+		      *V          +-
+		      */
+		}
+		else
+		{
+		    gmx_fatal(FARGS,"Radial collective pulling not implemented with constraints"
+			      " (use umbrella)\n");
+		}
+		break;
         }
 
         if (vir)
@@ -998,7 +1019,10 @@ real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 {
     real V, dVdl;
 
-    pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
+    if (pull->eGeom != epullgCOLLRAD)
+    {
+	pull_calc_coms(cr, pull, md, pbc, t, x, NULL);
+    }
 
     do_pull_pot(ePull, pull, pbc, t, lambda,
                 &V, pull->bVirial && MASTER(cr) ? vir : NULL, &dVdl);

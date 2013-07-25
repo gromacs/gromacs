@@ -142,6 +142,9 @@ char **read_pullparams(int *ninp_p, t_inpfile **inp_p,
     EETYPE("pull_start",      *bStart, yesno_names);
     ITYPE("pull_nstxout",     pull->nstxout, 10);
     ITYPE("pull_nstfout",     pull->nstfout,  1);
+    CTYPE("Collective radial pulling parameters");
+    RTYPE("pull_sigma0",      pull->sigma0, 0.0);
+    RTYPE("pull_zeta",        pull->zeta,   1.0);
     CTYPE("Number of pull groups");
     ITYPE("pull_ngroups",     pull->ngrp, 1);
 

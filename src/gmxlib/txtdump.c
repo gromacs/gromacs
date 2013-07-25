@@ -684,6 +684,8 @@ static void pr_pull(FILE *fp, int indent, t_pull *pull)
     PR("pull-constr-tol", pull->constr_tol);
     PI("pull-nstxout", pull->nstxout);
     PI("pull-nstfout", pull->nstfout);
+    PR("pull-sigma0", pull->sigma0);
+    PR("pull-zeta", pull->zeta);
     PI("pull-ngrp", pull->ngrp);
     for (g = 0; g < pull->ngrp+1; g++)
     {

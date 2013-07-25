@@ -577,6 +577,8 @@ static void do_pull(t_fileio *fio, t_pull *pull, gmx_bool bRead, int file_versio
     gmx_fio_do_real(fio, pull->constr_tol);
     gmx_fio_do_int(fio, pull->nstxout);
     gmx_fio_do_int(fio, pull->nstfout);
+    gmx_fio_do_real(fio, pull->sigma0);
+    gmx_fio_do_real(fio, pull->zeta);
     if (bRead)
     {
         snew(pull->grp, pull->ngrp+1);

@@ -124,6 +124,7 @@ typedef struct {
     dvec        dr;         /* The distance from the reference group */
     double      f_scal;     /* Scalar force for directional pulling */
     dvec        f;          /* force due to the pulling/constraining */
+    dvec       *fsingle;    /* Collective radial pulling: force on atoms */
 } t_pullgrp;
 
 typedef struct {
@@ -204,6 +205,8 @@ typedef struct {
     real           constr_tol; /* absolute tolerance for constraints in (nm) */
     int            nstxout;    /* Output frequency for pull x */
     int            nstfout;    /* Output frequency for pull f */
+    real           sigma0;     /* Radial collective pulling: equlibrium value of sigma */
+    real           zeta;       /* Radial collective pulling: parameter zeta */
     int            ePBC;       /* the boundary conditions */
     int            npbcdim;    /* do pbc in dims 0 <= dim < npbcdim */
     gmx_bool       bRefAt;     /* do we need reference atoms for a group COM ? */
