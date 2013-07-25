@@ -52,8 +52,7 @@ real mol_dipole(int k0, int k1, rvec x[], real q[])
     return norm(mu); /* Dipole moment of this molecule in e nm */
 }
 
-real calc_mu_aver(t_commrec *cr, rvec x[], real q[], rvec mu,
-                  t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[])
+real calc_mu_aver(rvec x[], real q[], t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[])
 {
     int     i, start, end;
     real    mu_ave;
