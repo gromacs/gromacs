@@ -45,6 +45,7 @@
 
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 
 /*! \internal \brief
@@ -63,7 +64,15 @@ typedef struct
 /** Allocates data for the merging selection modifiers. */
 static void *
 init_data_merge(int npar, gmx_ana_selparam_t *param);
-/** Initializes data for the merging selection modifiers. */
+/*! \brief
+ * Initializes data for the merging selection modifiers.
+ *
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used (should be 2 or 3).
+ * \param[in] param Method parameters (should point to \ref smparams_merge).
+ * \param[in] data  Should point to a \p t_methoddata_merge.
+ * \returns   0 if everything is successful, -1 on error.
+ */
 static void
 init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p merge selection modifier. */
@@ -75,14 +84,32 @@ init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the merging selection modifiers. */
 static void
 free_data_merge(void *data);
-/** Evaluates the \p merge selection modifier. */
+/*! \brief
+ * Evaluates the \p merge selection modifier.
+ *
+ * \param[in]  top   Not used.
+ * \param[in]  fr    Not used.
+ * \param[in]  pbc   Not used.
+ * \param[in]  p     Positions to merge (should point to \p data->p1).
+ * \param[out] out   Output data structure (\p out->u.p is used).
+ * \param[in]  data  Should point to a \p t_methoddata_merge.
+ */
 static void
 evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
-/** Evaluates the \p plus selection modifier. */
+               gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
+/*! \brief
+ * Evaluates the \p plus selection modifier.
+ *
+ * \param[in]  top   Not used.
+ * \param[in]  fr    Not used.
+ * \param[in]  pbc   Not used.
+ * \param[in]  p     Positions to merge (should point to \p data->p1).
+ * \param[out] out   Output data structure (\p out->u.p is used).
+ * \param[in]  data  Should point to a \p t_methoddata_merge.
+ */
 static void
 evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-              gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
+              gmx_ana_pos_t * p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the merging selection modifiers. */
 static gmx_ana_selparam_t smparams_merge[] = {
@@ -169,15 +196,8 @@ init_data_merge(int npar, gmx_ana_selparam_t *param)
     return data;
 }
 
-/*!
- * \param[in] top   Not used.
- * \param[in] npar  Not used (should be 2 or 3).
- * \param[in] param Method parameters (should point to \ref smparams_merge).
- * \param[in] data  Should point to a \p t_methoddata_merge.
- * \returns   0 if everything is successful, -1 on error.
- */
 static void
-init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_merge(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t * /* param */, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
@@ -208,6 +228,7 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
 
+    GMX_UNUSED_VALUE(top);
     if (d->p1.m.type != d->p2.m.type)
     {
         /* TODO: Maybe we could pick something else here? */
@@ -279,17 +300,9 @@ free_data_merge(void *data)
     delete d;
 }
 
-/*!
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
- * \param[in]  p     Positions to merge (should point to \p data->p1).
- * \param[out] out   Output data structure (\p out->u.p is used).
- * \param[in]  data  Should point to a \p t_methoddata_merge.
- */
 static void
-evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-               gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
+evaluate_merge(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+               gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i, j;
@@ -317,17 +330,9 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     gmx_ana_pos_append_finish(out->u.p);
 }
 
-/*!
- * \param[in]  top   Not used.
- * \param[in]  fr    Not used.
- * \param[in]  pbc   Not used.
- * \param[in]  p     Positions to merge (should point to \p data->p1).
- * \param[out] out   Output data structure (\p out->u.p is used).
- * \param[in]  data  Should point to a \p t_methoddata_merge.
- */
 static void
-evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-              gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
+evaluate_plus(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
+              gmx_ana_pos_t * /* p */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
     int                 i;

@@ -333,7 +333,7 @@ static char *check_html(const char *s, const char *program, t_linkdata *links)
 #define NSR(s) check_html(s, program, links)
 
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
-char *fileopt(unsigned long flag, char buf[], int maxsize)
+char *fileopt(unsigned long flag, char buf[])
 {
     char tmp[256];
 
@@ -385,8 +385,7 @@ static void write_nroffman(FILE *out,
                            int nldesc, const char **desc,
                            int nfile, t_filenm *fnm,
                            int npargs, t_pargs *pa,
-                           int nbug, const char **bugs,
-                           t_linkdata *links)
+                           int nbug, const char **bugs)
 
 {
     int  i;
@@ -439,7 +438,7 @@ static void write_nroffman(FILE *out,
             fprintf(out, ".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
                     check_nroff(fnm[i].opt),
                     check_nroff(fnm[i].fns[0]),
-                    check_nroff(fileopt(fnm[i].flag, tmp, 255)),
+                    check_nroff(fileopt(fnm[i].flag, tmp)),
                     check_nroff(ftp2desc(fnm[i].ftp)));
         }
     }
@@ -484,8 +483,7 @@ char *check_tty(const char *s)
 }
 
 static void
-print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
-                    t_linkdata *links, const char *program)
+print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent)
 {
     char *buf;
     char *temp;
@@ -517,12 +515,10 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
 }
 
 static void write_ttyman(FILE *out,
-                         const char *program,
                          int nldesc, const char **desc,
                          int nfile, t_filenm *fnm,
                          int npargs, t_pargs *pa,
-                         int nbug, const char **bugs,
-                         t_linkdata *links)
+                         int nbug, const char **bugs)
 {
     int   i;
     char *tmp;
@@ -530,7 +526,7 @@ static void write_ttyman(FILE *out,
     if (nldesc > 0)
     {
         fprintf(out, "DESCRIPTION\n-----------\n");
-        print_tty_formatted(out, nldesc, desc, 0, links, program);
+        print_tty_formatted(out, nldesc, desc, 0);
     }
     if (nbug > 0)
     {
@@ -585,10 +581,9 @@ static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
                 "<TD> %s </TD>"
                 "<TD> %s </TD>"
                 "</TR>\n",
-                fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp, 255),
+                fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp),
                 NSR(ftp2desc(fnm[i].ftp)));
     }
-
     fprintf(out, "</TABLE>\n");
 }
 
@@ -820,11 +815,11 @@ void write_man(const char *mantp,
     if (strcmp(mantp, "nroff") == 0)
     {
         write_nroffman(out, context->moduleDisplayName(), nldesc, desc,
-                       nfile, fnm, npar, par, nbug, bugs, links);
+                       nfile, fnm, npar, par, nbug, bugs);
     }
     if (strcmp(mantp, "help") == 0)
     {
-        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_ttyman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs);
     }
     if (strcmp(mantp, "html") == 0)
     {
