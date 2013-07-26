@@ -171,7 +171,7 @@ class AnalysisDataFrameAverageModule : public AbstractAnalysisData,
 
         virtual int flags() const;
 
-        virtual void dataStarted(AbstractAnalysisData *data);
+        virtual void dataStarted(AbstractAnalysisData * /* data */);
         virtual void frameStarted(const AnalysisDataFrameHeader &header);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
