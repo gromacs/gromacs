@@ -94,7 +94,7 @@ class FreeVolume : public TrajectoryAnalysisModule
                                   TrajectoryAnalysisModuleData *pdata);
 
         //! Last routine called by the analysis frame work
-        virtual void finishAnalysis(int nframes);
+        virtual void finishAnalysis(int /* nframes */);
 
         //! Routine to write output, that is additional over the built-in
         virtual void writeOutput();
