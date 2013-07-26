@@ -93,7 +93,7 @@ class AbstractSimpleHelpTopic : public HelpTopicInterface
         virtual const char *title() const = 0;
 
         virtual bool hasSubTopics() const;
-        virtual const HelpTopicInterface *findSubTopic(const char *name) const;
+        virtual const HelpTopicInterface *findSubTopic(const char * /* name */) const;
 
         virtual void writeHelp(const HelpWriterContext &context) const;
 
