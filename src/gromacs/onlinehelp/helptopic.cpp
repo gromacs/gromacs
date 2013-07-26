@@ -78,7 +78,7 @@ bool AbstractSimpleHelpTopic::hasSubTopics() const
 }
 
 const HelpTopicInterface *
-AbstractSimpleHelpTopic::findSubTopic(const char *name) const
+AbstractSimpleHelpTopic::findSubTopic(const char * /* name */) const
 {
     return NULL;
 }

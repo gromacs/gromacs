@@ -72,25 +72,59 @@ struct t_methoddata_distance
     gmx::AnalysisNeighborhoodSearch  nbsearch;
 };
 
-/** Allocates data for distance-based selection methods. */
+/** \brief Allocates data for distance-based selection methods.
+ *
+ * \param[in]     npar  Not used (should be 2).
+ * \param[in,out] param Method parameters (should point to one of the distance
+ *   parameter arrays).
+ * \returns       Pointer to the allocated data (\c t_methoddata_distance).
+ *
+ * Allocates memory for a \c t_methoddata_distance structure and
+ * initializes the parameter as follows:
+ *  - the first parameter defines the value for
+ *    \c t_methoddata_distance::cutoff.
+ *  - the second parameter defines the reference positions and the value is
+ *    stored in \c t_methoddata_distance::p.
+ */
 static void *
 init_data_common(int npar, gmx_ana_selparam_t *param);
-/** Initializes a distance-based selection method. */
+/** \brief Initializes a distance-based selection method.
+ *
+ * \param   top   Not used.
+ * \param   npar  Not used (should be 2).
+ * \param   param Method parameters (should point to one of the distance
+ *   parameter arrays).
+ * \param   data  Pointer to \c t_methoddata_distance to initialize.
+ * \returns 0 on success, a non-zero error code on failure.
+ *
+ * Initializes the neighborhood search data structure
+ * (\c t_methoddata_distance::nb).
+ * Also checks that the cutoff is valid.
+ */
 static void
 init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for a distance-based selection method. */
 static void
 free_data_common(void *data);
-/** Initializes the evaluation of a distance-based within selection method for a frame. */
+/** \brief Initializes the evaluation of a distance-based within selection method for a frame.
+ *
+ * \param[in]  top  Not used.
+ * \param[in]  fr   Current frame.
+ * \param[in]  pbc  PBC structure.
+ * \param      data Should point to a \c t_methoddata_distance.
+ * \returns    0 on success, a non-zero error code on error.
+ *
+ * Initializes the neighborhood search for the current frame.
+ */
 static void
-init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+init_frame_common(t_topology *top, t_trxframe * fr, t_pbc *pbc, void *data);
 /** Evaluates the \p distance selection method. */
 static void
-evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p within selection method. */
 static void
-evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p distance selection method. */
@@ -177,21 +211,8 @@ gmx_ana_selmethod_t sm_within = {
     {"within REAL of POS_EXPR", asize(help_distance), help_distance},
 };
 
-/*!
- * \param[in]     npar  Not used (should be 2).
- * \param[in,out] param Method parameters (should point to one of the distance
- *   parameter arrays).
- * \returns       Pointer to the allocated data (\c t_methoddata_distance).
- *
- * Allocates memory for a \c t_methoddata_distance structure and
- * initializes the parameter as follows:
- *  - the first parameter defines the value for
- *    \c t_methoddata_distance::cutoff.
- *  - the second parameter defines the reference positions and the value is
- *    stored in \c t_methoddata_distance::p.
- */
 static void *
-init_data_common(int npar, gmx_ana_selparam_t *param)
+init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_distance *data = new t_methoddata_distance();
     param[0].val.u.r = &data->cutoff;
@@ -199,20 +220,8 @@ init_data_common(int npar, gmx_ana_selparam_t *param)
     return data;
 }
 
-/*!
- * \param   top   Not used.
- * \param   npar  Not used (should be 2).
- * \param   param Method parameters (should point to one of the distance
- *   parameter arrays).
- * \param   data  Pointer to \c t_methoddata_distance to initialize.
- * \returns 0 on success, a non-zero error code on failure.
- *
- * Initializes the neighborhood search data structure
- * (\c t_methoddata_distance::nb).
- * Also checks that the cutoff is valid.
- */
 static void
-init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
@@ -235,17 +244,8 @@ free_data_common(void *data)
     delete static_cast<t_methoddata_distance *>(data);
 }
 
-/*!
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \c t_methoddata_distance.
- * \returns    0 on success, a non-zero error code on error.
- *
- * Initializes the neighborhood search for the current frame.
- */
 static void
-init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
@@ -262,7 +262,7 @@ init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * and puts them in \p out->u.r.
  */
 static void
-evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
@@ -286,7 +286,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \c t_methoddata_distance::xref and puts them in \p out.g.
  */
 static void
-evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;

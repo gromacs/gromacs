@@ -45,16 +45,8 @@
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
 
-/*!
- * \param[in]  top    Topology structure (unused, can be NULL).
- * \param[in]  x      Position vectors of all atoms.
- * \param[in]  nrefat Number of atoms in the index.
- * \param[in]  index  Indices of atoms.
- * \param[out] xout   COG position for the indexed atoms.
- * \returns    0 on success.
- */
 int
-gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout)
+gmx_calc_cog(t_topology * /* top */, rvec x[], int nrefat, atom_id index[], rvec xout)
 {
     int                 m, ai;
 
@@ -141,16 +133,8 @@ gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout
     return 0;
 }
 
-/*!
- * \param[in]  top    Topology structure (unused, can be NULL).
- * \param[in]  f      Forces on all atoms.
- * \param[in]  nrefat Number of atoms in the index.
- * \param[in]  index  Indices of atoms.
- * \param[out] fout   Force on the COM position for the indexed atoms.
- * \returns    0 on success.
- */
 int
-gmx_calc_com_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout)
+gmx_calc_com_f(t_topology * /* top */, rvec f[], int nrefat, atom_id index[], rvec fout)
 {
     clear_rvec(fout);
     for (int m = 0; m < nrefat; ++m)
@@ -376,16 +360,8 @@ gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
 }
 
 
-/*!
- * \param[in]  top   Topology structure (unused, can be NULL).
- * \param[in]  x     Position vectors of all atoms.
- * \param[in]  block t_block structure that divides \p index into blocks.
- * \param[in]  index Indices of atoms.
- * \param[out] xout  \p block->nr COG positions.
- * \returns    0 on success.
- */
 int
-gmx_calc_cog_block(t_topology *top, rvec x[], t_block *block, atom_id index[],
+gmx_calc_cog_block(t_topology * /* top */, rvec x[], t_block *block, atom_id index[],
                    rvec xout[])
 {
     int                 b, i, ai;
@@ -487,16 +463,8 @@ gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
     return 0;
 }
 
-/*!
- * \param[in]  top   Topology structure (unused, can be NULL).
- * \param[in]  f     Forces on all atoms.
- * \param[in]  block t_block structure that divides \p index into blocks.
- * \param[in]  index Indices of atoms.
- * \param[out] fout  \p block->nr Forces on COM positions.
- * \returns    0 on success.
- */
 int
-gmx_calc_com_f_block(t_topology *top, rvec f[], t_block *block, atom_id index[],
+gmx_calc_com_f_block(t_topology * /* top */, rvec f[], t_block *block, atom_id index[],
                      rvec fout[])
 {
     for (int b = 0; b < block->nr; ++b)
