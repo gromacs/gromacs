@@ -582,7 +582,12 @@ set_refpos_type(gmx::PositionCalculationCollection *pcc,
 SelectionTreeElementPointer
 _gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
                          const SelectionTreeElementPointer &right,
-                         char op, yyscan_t scanner)
+                         char op, yyscan_t scanner);
+
+SelectionTreeElementPointer
+_gmx_sel_init_arithmetic(const SelectionTreeElementPointer &left,
+                         const SelectionTreeElementPointer &right,
+                         char op, yyscan_t /* scanner */)
 {
     SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_ARITHMETIC));
     sel->v.type        = REAL_VALUE;
