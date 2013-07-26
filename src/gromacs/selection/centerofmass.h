@@ -76,7 +76,16 @@
 
 #include "../legacyheaders/typedefs.h"
 
-/** Calculate a single center of geometry. */
+/*! \brief
+ * Calculate a single center of geometry.
+ *
+ * \param[in]  top    Topology structure (unused, can be NULL).
+ * \param[in]  x      Position vectors of all atoms.
+ * \param[in]  nrefat Number of atoms in the index.
+ * \param[in]  index  Indices of atoms.
+ * \param[out] xout   COG position for the indexed atoms.
+ * \returns    0 on success.
+ */
 int
 gmx_calc_cog(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout);
 /** Calculate a single center of mass. */
@@ -85,7 +94,16 @@ gmx_calc_com(t_topology *top, rvec x[], int nrefat, atom_id index[], rvec xout);
 /** Calculate force on a single center of geometry. */
 int
 gmx_calc_cog_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout);
-/** Calculate force on a single center of mass. */
+/*! \brief
+ * Calculate force on a single center of mass.
+ *
+ * \param[in]  top    Topology structure (unused, can be NULL).
+ * \param[in]  f      Forces on all atoms.
+ * \param[in]  nrefat Number of atoms in the index.
+ * \param[in]  index  Indices of atoms.
+ * \param[out] fout   Force on the COM position for the indexed atoms.
+ * \returns    0 on success.
+ */
 int
 gmx_calc_com_f(t_topology *top, rvec f[], int nrefat, atom_id index[], rvec fout);
 /** Calculate a single center of mass/geometry. */
@@ -110,7 +128,16 @@ int
 gmx_calc_comg_pbc(t_topology *top, rvec x[], t_pbc *pbc,
                   int nrefat, atom_id index[], bool bMass, rvec xout);
 
-/** Calculate centers of geometry for a blocked index. */
+/*! \brief
+ * Calculate centers of geometry for a blocked index.
+ *
+ * \param[in]  top   Topology structure (unused, can be NULL).
+ * \param[in]  x     Position vectors of all atoms.
+ * \param[in]  block t_block structure that divides \p index into blocks.
+ * \param[in]  index Indices of atoms.
+ * \param[out] xout  \p block->nr COG positions.
+ * \returns    0 on success.
+ */
 int
 gmx_calc_cog_block(t_topology *top, rvec x[], t_block *block,
                    atom_id index[], rvec xout[]);
@@ -122,7 +149,16 @@ gmx_calc_com_block(t_topology *top, rvec x[], t_block *block,
 int
 gmx_calc_cog_f_block(t_topology *top, rvec f[], t_block *block,
                      atom_id index[], rvec fout[]);
-/** Calculate forces on centers of mass for a blocked index. */
+/*! \brief
+ * Calculate forces on centers of mass for a blocked index.
+ *
+ * \param[in]  top   Topology structure (unused, can be NULL).
+ * \param[in]  f     Forces on all atoms.
+ * \param[in]  block t_block structure that divides \p index into blocks.
+ * \param[in]  index Indices of atoms.
+ * \param[out] fout  \p block->nr Forces on COM positions.
+ * \returns    0 on success.
+ */
 int
 gmx_calc_com_f_block(t_topology *top, rvec f[], t_block *block,
                      atom_id index[], rvec fout[]);

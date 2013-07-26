@@ -95,7 +95,7 @@ class AnalysisDataTestInputPointSet
         //! Returns the error in column \p i.
         real error(int i) const { return values_[i].error; }
         //! Returns whether the value in column \p i is present.
-        bool present(int i) const { return true; }
+        bool present(int /*i*/) const { return true; }
         //! Returns an AnalysisDataValue for column \p i.
         AnalysisDataValue value(int i) const
         {
