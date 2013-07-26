@@ -320,37 +320,6 @@ if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_LESS "12.0
     message(WARNING "Intel compilers before 12.0.0 are not routinely tested, so there may be problems. Version 11.1 with SSE4.1 is known to produce incorrect results. It is highly recommended to use a more up-to-date compiler. If you choose to use this version, make sure you run the regressiontests.")
 endif()
 
-########################################################################
-# Set up binary and library suffixing 
-########################################################################
-set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
-set(GMX_LIBS_SUFFIX "" 
-  CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
-if (GMX_DEFAULT_SUFFIX)
-  set(GMX_BINARY_SUFFIX "")
-  set(GMX_LIBS_SUFFIX "")
-  if (GMX_MPI)
-    set(GMX_BINARY_SUFFIX "_mpi")
-    set(GMX_LIBS_SUFFIX "_mpi")
-  endif(GMX_MPI)
-  if (GMX_DOUBLE)
-    set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
-    set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
-  endif(GMX_DOUBLE)
-  mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  if (NOT SUFFIX_QUIETLY)
-    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
-else(GMX_DEFAULT_SUFFIX)
-  mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
-  if (NOT SUFFIX_QUIETLY)
-    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
-    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
-  endif (NOT SUFFIX_QUIETLY)
-endif(GMX_DEFAULT_SUFFIX)
-set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
-
 set(PKG_CFLAGS "")
 if(GMX_DOUBLE)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_DOUBLE")
@@ -1165,6 +1134,37 @@ set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
 set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
 set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
+
+########################################################################
+# Set up binary and library suffixing
+########################################################################
+set(GMX_BINARY_SUFFIX "" CACHE STRING "Suffix for GROMACS binaries (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
+set(GMX_LIBS_SUFFIX ""
+  CACHE STRING "Suffix for GROMACS libs (default: _d for double, _mpi for MPI, _mpi_d for MPI and double).")
+if (GMX_DEFAULT_SUFFIX)
+  set(GMX_BINARY_SUFFIX "")
+  set(GMX_LIBS_SUFFIX "")
+  if (GMX_MPI)
+    set(GMX_BINARY_SUFFIX "_mpi")
+    set(GMX_LIBS_SUFFIX "_mpi")
+  endif(GMX_MPI)
+  if (GMX_DOUBLE)
+    set (GMX_BINARY_SUFFIX "${GMX_BINARY_SUFFIX}_d")
+    set (GMX_LIBS_SUFFIX "${GMX_LIBS_SUFFIX}_d")
+  endif(GMX_DOUBLE)
+  mark_as_advanced(FORCE GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using default binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using default library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
+else(GMX_DEFAULT_SUFFIX)
+  mark_as_advanced(CLEAR GMX_BINARY_SUFFIX GMX_LIBS_SUFFIX)
+  if (NOT SUFFIX_QUIETLY)
+    message(STATUS "Using manually set binary suffix: \"${GMX_BINARY_SUFFIX}\"")
+    message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
+  endif (NOT SUFFIX_QUIETLY)
+endif(GMX_DEFAULT_SUFFIX)
+set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 ##################################################################
 # Shared library settings - Darwin uses INSTALL_NAME_DIR instead!
