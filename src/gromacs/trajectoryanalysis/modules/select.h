@@ -74,7 +74,7 @@ class Select : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+        virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                                   TrajectoryAnalysisModuleData *pdata);
 
         virtual void finishAnalysis(int nframes);

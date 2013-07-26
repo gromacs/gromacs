@@ -67,19 +67,19 @@ typedef struct
 
 /** Allocates data for the \p permute selection modifier. */
 static void *
-init_data_permute(int npar, gmx_ana_selparam_t *param);
+init_data_permute(int /* npar */, gmx_ana_selparam_t *param);
 /** Initializes data for the \p permute selection modifier. */
 static void
-init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_permute(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for the \p permute selection modifier. */
 static void
-init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_permute(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data);
 /** Frees the memory allocated for the \p permute selection modifier. */
 static void
 free_data_permute(void *data);
 /** Evaluates the \p permute selection modifier. */
 static void
-evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p permute selection modifier. */
@@ -131,7 +131,7 @@ gmx_ana_selmethod_t sm_permute = {
  * Allocates memory for a \p t_methoddata_permute structure.
  */
 static void *
-init_data_permute(int npar, gmx_ana_selparam_t *param)
+init_data_permute(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_permute *data;
 
@@ -148,7 +148,7 @@ init_data_permute(int npar, gmx_ana_selparam_t *param)
  * \returns   0 if the input permutation is valid, -1 on error.
  */
 static void
-init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_permute(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i;
@@ -187,7 +187,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \param[in,out] data  Should point to \c t_methoddata_permute.
  */
 static void
-init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_permute(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;
     int                   i, j, b;
@@ -234,7 +234,7 @@ free_data_permute(void *data)
  * elements in the permutation.
  */
 static void
-evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_permute(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                  gmx_ana_pos_t *p, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_permute *d = (t_methoddata_permute *)data;

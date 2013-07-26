@@ -598,7 +598,7 @@ AnalysisDataSimpleHistogramModule::flags() const
 
 
 void
-AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData *data)
+AnalysisDataSimpleHistogramModule::dataStarted(AbstractAnalysisData * /* data */)
 {
     addModule(impl_->averager_);
     setColumnCount(settings().binCount());
@@ -709,7 +709,7 @@ AnalysisDataWeightedHistogramModule::flags() const
 
 
 void
-AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData *data)
+AnalysisDataWeightedHistogramModule::dataStarted(AbstractAnalysisData * /* data */)
 {
     addModule(impl_->averager_);
     setColumnCount(settings().binCount());

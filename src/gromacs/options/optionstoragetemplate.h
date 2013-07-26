@@ -144,7 +144,7 @@ class OptionStorageTemplate : public AbstractOptionStorage
          * in such a case ensure that a correct number of values is produced.
          * If the derived class throws, all values in \p values are discarded.
          */
-        virtual void processSetValues(ValueList *values)
+        virtual void processSetValues(ValueList * /* values */)
         {
         }
         /*! \copydoc gmx::AbstractOptionStorage::processSet()

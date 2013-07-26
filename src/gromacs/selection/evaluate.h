@@ -101,10 +101,10 @@ _gmx_sel_evaluate_method_params(gmx_sel_evaluate_t                     *data,
 void
 _gmx_sel_evaluate_root(gmx_sel_evaluate_t                     *data,
                        const gmx::SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t                        *g);
+                       gmx_ana_index_t                        * /* g */);
 /** Evaluates a static group selection element. */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t                     *data,
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t                     * /* data */,
                          const gmx::SelectionTreeElementPointer &sel,
                          gmx_ana_index_t                        *g);
 /** Evaluates an arithmetic expression element. */

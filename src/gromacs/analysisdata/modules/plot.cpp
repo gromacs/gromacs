@@ -297,7 +297,7 @@ AbstractPlotModule::flags() const
 
 
 void
-AbstractPlotModule::dataStarted(AbstractAnalysisData *data)
+AbstractPlotModule::dataStarted(AbstractAnalysisData * /* data */)
 {
     if (!impl_->filename_.empty())
     {

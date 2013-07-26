@@ -99,10 +99,10 @@ typedef struct
 
 /** Allocates data for comparison expression evaluation. */
 static void *
-init_data_compare(int npar, gmx_ana_selparam_t *param);
+init_data_compare(int /* npar */, gmx_ana_selparam_t *param);
 /** Initializes data for comparison expression evaluation. */
 static void
-init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_compare(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for comparison expression evaluation. */
 static void
 free_data_compare(void *data);
@@ -245,7 +245,7 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data)
  * Allocates memory for a \c t_methoddata_compare structure.
  */
 static void *
-init_data_compare(int npar, gmx_ana_selparam_t *param)
+init_data_compare(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_compare *data;
 
@@ -399,7 +399,7 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
  * \returns   0 if the input data is valid, -1 on error.
  */
 static void
-init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_compare(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   n1, n2;
@@ -503,7 +503,7 @@ free_data_compare(void *data)
  * \param[in]  data  Should point to a \c t_methoddata_compare.
  */
 static void
-evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_compare_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                      gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
@@ -551,7 +551,7 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \param[in]  data  Should point to a \c t_methoddata_compare.
  */
 static void
-evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_compare_real(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                       gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;

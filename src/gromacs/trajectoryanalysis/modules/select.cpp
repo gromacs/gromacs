@@ -510,7 +510,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
 
 
 void
-Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
+Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc * /* pbc */,
                      TrajectoryAnalysisModuleData *pdata)
 {
     AnalysisDataHandle   sdh = pdata->dataHandle(sdata_);

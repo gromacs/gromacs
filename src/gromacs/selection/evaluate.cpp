@@ -498,7 +498,7 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
 void
 _gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
                        const SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t                   *g)
+                       gmx_ana_index_t                   * /* g */)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -521,7 +521,7 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
  * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
  */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t                *data,
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t                * /* data */,
                          const SelectionTreeElementPointer &sel,
                          gmx_ana_index_t                   *g)
 {

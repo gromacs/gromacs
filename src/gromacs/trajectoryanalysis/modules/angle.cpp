@@ -180,7 +180,7 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
 
 
 void
-Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings *settings)
+Angle::optionsFinished(Options *options, TrajectoryAnalysisSettings * /* settings */)
 {
     bool bSingle = (g1type_[0] == 'a' || g1type_[0] == 'd');
 
@@ -270,7 +270,7 @@ Angle::checkSelections(const SelectionList &sel1,
 
 void
 Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
-                    const TopologyInformation        &top)
+                    const TopologyInformation        & /* top */)
 {
     checkSelections(sel1_, sel2_);
 

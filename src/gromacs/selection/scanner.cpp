@@ -296,9 +296,9 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_buffer (char *base,yy_size_t size ,yyscan_t yys
 YY_BUFFER_STATE _gmx_sel_yy_scan_string (yyconst char *yy_str ,yyscan_t yyscanner );
 YY_BUFFER_STATE _gmx_sel_yy_scan_bytes (yyconst char *bytes,yy_size_t len ,yyscan_t yyscanner );
 
-void *_gmx_sel_yyalloc (yy_size_t ,yyscan_t yyscanner );
-void *_gmx_sel_yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
-void _gmx_sel_yyfree (void * ,yyscan_t yyscanner );
+void *_gmx_sel_yyalloc (yy_size_t , yyscan_t /* yyscanner */);
+void *_gmx_sel_yyrealloc (void *, yy_size_t , yyscan_t /* yyscanner */);
+void _gmx_sel_yyfree (void * , yyscan_t /* yyscanner */);
 
 #define yy_new_buffer _gmx_sel_yy_create_buffer
 
@@ -1868,7 +1868,7 @@ YY_BUFFER_STATE _gmx_sel_yy_scan_bytes  (yyconst char * yybytes, yy_size_t  _yyb
 #define YY_EXIT_FAILURE 2
 #endif
 
-static void yy_fatal_error (yyconst char* msg , yyscan_t yyscanner)
+static void yy_fatal_error (yyconst char* msg , yyscan_t /* yyscanner */)
 {
     	(void) fprintf( stderr, "%s\n", msg );
 	exit( YY_EXIT_FAILURE );
@@ -2188,12 +2188,12 @@ static int yy_flex_strlen (yyconst char * s , yyscan_t yyscanner)
 }
 #endif
 
-void *_gmx_sel_yyalloc (yy_size_t  size , yyscan_t yyscanner)
+void *_gmx_sel_yyalloc (yy_size_t  size , yyscan_t /* yyscanner */)
 {
 	return (void *) malloc( size );
 }
 
-void *_gmx_sel_yyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+void *_gmx_sel_yyrealloc  (void * ptr, yy_size_t  size , yyscan_t /* yyscanner */)
 {
 	/* The cast to (char *) in the following accommodates both
 	 * implementations that use char* generic pointers, and those
@@ -2205,7 +2205,7 @@ void *_gmx_sel_yyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
 	return (void *) realloc( (char *) ptr, size );
 }
 
-void _gmx_sel_yyfree (void * ptr , yyscan_t yyscanner)
+void _gmx_sel_yyfree (void * ptr , yyscan_t /* yyscanner */)
 {
 	free( (char *) ptr );	/* see _gmx_sel_yyrealloc() for (char *) cast */
 }

@@ -75,23 +75,23 @@ struct t_methoddata_distance
 
 /** Allocates data for distance-based selection methods. */
 static void *
-init_data_common(int npar, gmx_ana_selparam_t *param);
+init_data_common(int /* npar */, gmx_ana_selparam_t *param);
 /** Initializes a distance-based selection method. */
 static void
-init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for a distance-based selection method. */
 static void
 free_data_common(void *data);
 /** Initializes the evaluation of a distance-based within selection method for a frame. */
 static void
-init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
+init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data);
 /** Evaluates the \p distance selection method. */
 static void
-evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 /** Evaluates the \p within selection method. */
 static void
-evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p distance selection method. */
@@ -192,7 +192,7 @@ gmx_ana_selmethod_t sm_within = {
  *    stored in \c t_methoddata_distance::p.
  */
 static void *
-init_data_common(int npar, gmx_ana_selparam_t *param)
+init_data_common(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_distance *data = new t_methoddata_distance();
     param[0].val.u.r = &data->cutoff;
@@ -213,7 +213,7 @@ init_data_common(int npar, gmx_ana_selparam_t *param)
  * Also checks that the cutoff is valid.
  */
 static void
-init_common(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_common(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
@@ -246,7 +246,7 @@ free_data_common(void *data)
  * Initializes the neighborhood search for the current frame.
  */
 static void
-init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+init_frame_common(t_topology * /* top */, t_trxframe * /* fr */, t_pbc *pbc, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
@@ -263,7 +263,7 @@ init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * and puts them in \p out->u.r.
  */
 static void
-evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_distance(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
@@ -287,7 +287,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * \c t_methoddata_distance::xref and puts them in \p out.g.
  */
 static void
-evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_within(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                 gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;

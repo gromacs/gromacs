@@ -419,7 +419,7 @@ static void mynum(char *buf, int n)
     }
 }
 
-static char *mydate(char buf[], int maxsize, gmx_bool bWiki)
+static char *mydate(char buf[], gmx_bool bWiki)
 {
     const char *mon[] = {
         "Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -587,7 +587,7 @@ static char *check_html(const char *s, const char *program, t_linkdata *links)
 #define NSR(s) check_html(s, program, links)
 
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
-char *fileopt(unsigned long flag, char buf[], int maxsize)
+char *fileopt(unsigned long flag, char buf[])
 {
     char tmp[256];
 
@@ -638,8 +638,7 @@ static void write_texman(FILE *out, const char *program,
                          int nldesc, const char **desc,
                          int nfile, t_filenm *fnm,
                          int npargs, t_pargs *pa,
-                         int nbug, const char **bugs,
-                         t_linkdata *links)
+                         int nbug, const char **bugs)
 {
     int  i;
     char tmp[256];
@@ -665,7 +664,7 @@ static void write_texman(FILE *out, const char *program,
             fprintf(out, "\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
                     "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
                     check_tex(fnm[i].opt), check_tex(fnm[i].fns[0]),
-                    check_tex(fileopt(fnm[i].flag, tmp, 255)),
+                    check_tex(fileopt(fnm[i].flag, tmp)),
                     check_tex(ftp2desc(fnm[i].ftp)));
         }
         fprintf(out, "\\end{tabbing}\\vspace{-4ex}\n");
@@ -716,15 +715,14 @@ static void write_nroffman(FILE *out,
                            int nldesc, const char **desc,
                            int nfile, t_filenm *fnm,
                            int npargs, t_pargs *pa,
-                           int nbug, const char **bugs,
-                           t_linkdata *links)
+                           int nbug, const char **bugs)
 
 {
     int  i;
     char tmp[256];
 
 
-    fprintf(out, ".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n", program, mydate(tmp, 255, FALSE), GromacsVersion());
+    fprintf(out, ".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n", program, mydate(tmp, FALSE), GromacsVersion());
     fprintf(out, ".SH NAME\n");
     fprintf(out, "%s@DESC@\n\n", program);
     fprintf(out, ".B %s\n", GromacsVersion());
@@ -776,7 +774,7 @@ static void write_nroffman(FILE *out,
             fprintf(out, ".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
                     check_nroff(fnm[i].opt),
                     check_nroff(fnm[i].fns[0]),
-                    check_nroff(fileopt(fnm[i].flag, tmp, 255)),
+                    check_nroff(fileopt(fnm[i].flag, tmp)),
                     check_nroff(ftp2desc(fnm[i].ftp)));
         }
     }
@@ -879,7 +877,7 @@ static void write_ttyman(FILE *out,
     if (bHeader)
     {
         fprintf(out, "%s\n\n", check_tty(program));
-        fprintf(out, "%s\n%s\n", GromacsVersion(), mydate(buf, 255, FALSE));
+        fprintf(out, "%s\n%s\n", GromacsVersion(), mydate(buf, FALSE));
     }
     if (nldesc > 0)
     {
@@ -946,7 +944,7 @@ static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
             fprintf(out, " %-10s %-16s %-12s %-s\n",
                     fnm[i].opt,
                     NWR(fnm[i].fns[0]),
-                    fileopt(fnm[i].flag, tmp, 255),
+                    fileopt(fnm[i].flag, tmp),
                     NWR(ftp2desc(fnm[i].ftp)));
         }
         else
@@ -958,7 +956,7 @@ static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
                     "<TD> %s </TD>"
                     "<TD> %s </TD>"
                     "</TR>\n",
-                    fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp, 255),
+                    fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp),
                     NSR(ftp2desc(fnm[i].ftp)));
         }
     }
@@ -973,7 +971,7 @@ static void write_wikiman(FILE *out,
                           int nldesc, const char **desc,
                           int nfile, t_filenm *fnm,
                           int npargs, t_pargs *pa,
-                          int nbug, const char **bugs, gmx_bool bHeader,
+                          int nbug, const char **bugs,
                           t_linkdata *links)
 {
     int   i;
@@ -982,7 +980,7 @@ static void write_wikiman(FILE *out,
     fprintf(out, "<page>\n<title>Manual:%s_%s</title>\n", program,
             VERSION);
     fprintf(out, "<revision>\n");
-    fprintf(out, "<timestamp>%s</timestamp>\n", mydate(buf, 255, TRUE));
+    fprintf(out, "<timestamp>%s</timestamp>\n", mydate(buf, TRUE));
     fprintf(out, "<text xml:space=\"preserve\">\n");
     if (nldesc > 0)
     {
@@ -1049,7 +1047,7 @@ static void write_htmlman(FILE *out,
             "<br><h2>%s</h2>", program);
     fprintf(out, "<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
     fprintf(out, "<br></td>\n</TABLE></TD><TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM><p><B>%s<br>\n", GromacsVersion());
-    fprintf(out, "%s</B></td></tr></TABLE>\n<HR>\n", mydate(tmp, 255, FALSE));
+    fprintf(out, "%s</B></td></tr></TABLE>\n<HR>\n", mydate(tmp, FALSE));
 
     if (nldesc > 0)
     {
@@ -1136,7 +1134,7 @@ static void write_xmlman(FILE *out,
 #define NSR2(s) check_xml(s, program, links)
 #define FLAG(w, f) (((w) & (f)) == (f))
 
-    fprintf(out, "<gromacs-manual version=\"%s\" date=\"%s\" www=\"http://www.gromacs.org\">\n", GromacsVersion(), mydate(buf, 255, FALSE));
+    fprintf(out, "<gromacs-manual version=\"%s\" date=\"%s\" www=\"http://www.gromacs.org\">\n", GromacsVersion(), mydate(buf, FALSE));
     /* fprintf(out,"<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n"); */
 
     fprintf(out, "<program name=\"%s\">", program);
@@ -1467,11 +1465,11 @@ void write_man(FILE *out, const char *mantp,
     }
     if (strcmp(mantp, "tex") == 0)
     {
-        write_texman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_texman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs);
     }
     if (strcmp(mantp, "nroff") == 0)
     {
-        write_nroffman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_nroffman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs);
     }
     if (strcmp(mantp, "ascii") == 0)
     {
@@ -1479,7 +1477,7 @@ void write_man(FILE *out, const char *mantp,
     }
     if (strcmp(mantp, "wiki") == 0)
     {
-        write_wikiman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, TRUE, links);
+        write_wikiman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "help") == 0)
     {

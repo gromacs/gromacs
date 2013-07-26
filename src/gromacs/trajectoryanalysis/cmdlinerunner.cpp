@@ -198,7 +198,7 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 
 
 void
-TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
+TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int /* debuglevel */)
 {
     impl_->debugLevel_ = 1;
 }

@@ -78,23 +78,22 @@ static void
 set_poscoll_pos(gmx::PositionCalculationCollection *pcc, void *data);
 /** Initializes position evaluation keywords. */
 static void
-init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_kwpos(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Initializes the \p cog selection method. */
 static void
-init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_cog(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Initializes the \p cog selection method. */
 static void
-init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
+init_com(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data);
 /** Initializes output for position evaluation selection methods. */
 static void
-init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data);
+init_output_pos(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data);
 /** Frees the data allocated for position evaluation selection methods. */
 static void
 free_data_pos(void *data);
 /** Evaluates position evaluation selection methods. */
 static void
-evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
+evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc, gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for position keyword evaluation. */
 static gmx_ana_selparam_t smparams_keyword_pos[] = {
@@ -257,7 +256,7 @@ _gmx_selelem_set_kwpos_flags(gmx::SelectionTreeElement *sel, int flags)
  * externally using _gmx_selelem_set_kwpos_type().
  */
 static void
-init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_kwpos(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -281,7 +280,7 @@ init_kwpos(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \returns       0 on success, a non-zero error code on error.
  */
 static void
-init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_cog(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -298,7 +297,7 @@ init_cog(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \returns       0 on success, a non-zero error code on error.
  */
 static void
-init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_com(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -315,7 +314,7 @@ init_com(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
  * \returns       0 for success.
  */
 static void
-init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
+init_output_pos(t_topology * /* top */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
@@ -347,8 +346,8 @@ free_data_pos(void *data)
  * in \c t_methoddata_pos::g and stores the results in \p out->u.p.
  */
 static void
-evaluate_pos(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-             gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
+evaluate_pos(t_topology * /* top */, t_trxframe *fr, t_pbc *pbc,
+             gmx_ana_index_t * /* g */, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 

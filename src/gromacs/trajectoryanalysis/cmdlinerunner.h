@@ -131,7 +131,7 @@ class TrajectoryAnalysisCommandLineRunner
          *
          * \see SelectionCollection::setDebugLevel()
          */
-        void setSelectionDebugLevel(int debuglevel);
+        void setSelectionDebugLevel(int /* debuglevel */);
         /*! \brief
          * Parses options from the given command line and runs the analysis.
          *
