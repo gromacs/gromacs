@@ -253,7 +253,7 @@ std::string check(const char *s, const gmx::HelpWriterContext &context)
 }
 
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
-char *fileopt(unsigned long flag, char buf[], int maxsize)
+char *fileopt(unsigned long flag, char buf[])
 {
     char tmp[256];
 
@@ -361,7 +361,7 @@ static void write_nroffman(FILE *out,
             fprintf(out, ".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
                     check(fnm[i].opt, context).c_str(),
                     check(fnm[i].fns[0], context).c_str(),
-                    check(fileopt(fnm[i].flag, tmp, 255), context).c_str(),
+                    check(fileopt(fnm[i].flag, tmp), context).c_str(),
                     check(ftp2desc(fnm[i].ftp), context).c_str());
         }
     }
@@ -504,10 +504,9 @@ static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
                 "<TD> %s </TD>"
                 "<TD> %s </TD>"
                 "</TR>\n",
-                fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp, 255),
+                fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp),
                 check(ftp2desc(fnm[i].ftp), context).c_str());
     }
-
     fprintf(out, "</TABLE>\n");
 }
 

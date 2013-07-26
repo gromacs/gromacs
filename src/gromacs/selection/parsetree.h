@@ -396,11 +396,26 @@ void
 _gmx_selelem_set_method(const gmx::SelectionTreeElementPointer &sel,
                         struct gmx_ana_selmethod_t *method, void *scanner);
 
-/** Creates a gmx::SelectionTreeElement for arithmetic expression evaluation. */
+/* An opaque pointer. */
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
+/** \brief Creates a gmx::SelectionTreeElement for arithmetic expression evaluation.
+ *
+ * \param[in]  left    Selection element for the left hand side.
+ * \param[in]  right   Selection element for the right hand side.
+ * \param[in]  op      String representation of the operator.
+ * \param[in]  scanner Scanner data structure.
+ * \returns    The created selection element.
+ *
+ * This function handles the creation of a gmx::SelectionTreeElement object for
+ * arithmetic expressions.
+ */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_arithmetic(const gmx::SelectionTreeElementPointer &left,
                          const gmx::SelectionTreeElementPointer &right,
-                         char op, void *scanner);
+                         char op, yyscan_t scanner);
 /** Creates a gmx::SelectionTreeElement for comparsion expression evaluation. */
 gmx::SelectionTreeElementPointer
 _gmx_sel_init_comparison(const gmx::SelectionTreeElementPointer &left,

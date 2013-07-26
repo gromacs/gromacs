@@ -44,6 +44,7 @@
 #include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/selection/selmethod.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 
 /** Defines the comparison operator for comparison expressions. */
@@ -97,10 +98,27 @@ typedef struct
     t_compare_value  right;
 } t_methoddata_compare;
 
-/** Allocates data for comparison expression evaluation. */
+/*! \brief
+ * Allocates data for comparison expression evaluation.
+ *
+ * \param[in]     npar  Not used (should be 5).
+ * \param[in,out] param Method parameters (should point to a copy of
+ *   \ref smparams_compare).
+ * \returns       Pointer to the allocated data (\c t_methoddata_compare).
+ *
+ * Allocates memory for a \c t_methoddata_compare structure.
+ */
 static void *
 init_data_compare(int npar, gmx_ana_selparam_t *param);
-/** Initializes data for comparison expression evaluation. */
+/*! \brief
+ * Initializes data for comparison expression evaluation.
+ *
+ * \param[in] top   Not used.
+ * \param[in] npar  Not used (should be 5).
+ * \param[in] param Method parameters (should point to \ref smparams_compare).
+ * \param[in] data  Should point to a \c t_methoddata_compare.
+ * \returns   0 if the input data is valid, -1 on error.
+ */
 static void
 init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the memory allocated for comparison expression evaluation. */
@@ -236,16 +254,8 @@ _gmx_selelem_print_compare_info(FILE *fp, void *data)
     fprintf(fp, "\"");
 }
 
-/*!
- * \param[in]     npar  Not used (should be 5).
- * \param[in,out] param Method parameters (should point to a copy of
- *   \ref smparams_compare).
- * \returns       Pointer to the allocated data (\c t_methoddata_compare).
- *
- * Allocates memory for a \c t_methoddata_compare structure.
- */
 static void *
-init_data_compare(int npar, gmx_ana_selparam_t *param)
+init_data_compare(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_compare *data;
 
@@ -391,15 +401,8 @@ convert_real_int(int n, t_compare_value *val, e_comparison_t cmpt, bool bRight)
     val->flags |= CMP_ALLOCINT;
 }
 
-/*!
- * \param[in] top   Not used.
- * \param[in] npar  Not used (should be 5).
- * \param[in] param Method parameters (should point to \ref smparams_compare).
- * \param[in] data  Should point to a \c t_methoddata_compare.
- * \returns   0 if the input data is valid, -1 on error.
- */
 static void
-init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_compare(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_compare *d = (t_methoddata_compare *)data;
     int                   n1, n2;
@@ -490,7 +493,9 @@ free_data_compare(void *data)
     sfree(d);
 }
 
-/*!
+/*! \brief
+ * Implementation for evaluate_compare() for integer values.
+ *
  * \param[in]  top   Not used.
  * \param[in]  fr    Not used.
  * \param[in]  pbc   Not used.
@@ -507,6 +512,9 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                   a, b;
     bool                  bAccept;
 
+    GMX_UNUSED_VALUE(top);
+    GMX_UNUSED_VALUE(fr);
+    GMX_UNUSED_VALUE(pbc);
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a       = d->left.i[i1];
@@ -538,13 +546,18 @@ evaluate_compare_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     out->u.g->isize = ig;
 }
 
-/*!
+/*! \brief
+ * Implementation for evaluate_compare() if either value is non-integer.
+ *
  * \param[in]  top   Not used.
  * \param[in]  fr    Not used.
  * \param[in]  pbc   Not used.
  * \param[in]  g     Evaluation index group.
  * \param[out] out   Output data structure (\p out->u.g is used).
  * \param[in]  data  Should point to a \c t_methoddata_compare.
+ *
+ * Left value is assumed to be real-valued; right value can be either.
+ * This is ensured by the initialization method.
  */
 static void
 evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
@@ -555,6 +568,9 @@ evaluate_compare_real(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     real                  a, b;
     bool                  bAccept;
 
+    GMX_UNUSED_VALUE(top);
+    GMX_UNUSED_VALUE(fr);
+    GMX_UNUSED_VALUE(pbc);
     for (i = i1 = i2 = ig = 0; i < g->isize; ++i)
     {
         a       = d->left.r[i1];
