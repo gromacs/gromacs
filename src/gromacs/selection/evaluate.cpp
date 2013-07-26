@@ -480,25 +480,10 @@ _gmx_sel_evaluate_children(gmx_sel_evaluate_t                *data,
     }
 }
 
-/*!
- * \param[in] data Data for the current frame.
- * \param[in] sel Selection element being evaluated.
- * \param[in] g   Group for which \p sel should be evaluated
- *   (not used, can be NULL).
- * \returns   0 on success, a non-zero error code on error.
- *
- * Evaluates the first child element in the group defined by \p sel->u.cgrp.
- * If \p sel->u.cgrp is empty, nothing is done.
- * The value of \p sel is not touched (root elements do not evaluate to
- * values).
- *
- * This function can be used as gmx::SelectionTreeElement::evaluate for
- * \ref SEL_ROOT elements.
- */
 void
-_gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
-                       const SelectionTreeElementPointer &sel,
-                       gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_root(gmx_sel_evaluate_t                     *data,
+                       const gmx::SelectionTreeElementPointer &sel,
+                       gmx_ana_index_t                         * /* g */)
 {
     if (sel->u.cgrp.isize == 0 || !sel->child->evaluate)
     {
@@ -509,21 +494,10 @@ _gmx_sel_evaluate_root(gmx_sel_evaluate_t                *data,
                          sel->u.cgrp.isize < 0 ? NULL : &sel->u.cgrp);
 }
 
-/*!
- * \param[in] data Data for the current frame.
- * \param[in] sel Selection element being evaluated.
- * \param[in] g   Group for which \p sel should be evaluated.
- * \returns   0 for success.
- *
- * Sets the value of \p sel to the intersection of \p g and \p sel->u.cgrp.
- *
- * This function can be used as gmx::SelectionTreeElement::evaluate for
- * \ref SEL_CONST elements with value type \ref GROUP_VALUE.
- */
 void
-_gmx_sel_evaluate_static(gmx_sel_evaluate_t                *data,
-                         const SelectionTreeElementPointer &sel,
-                         gmx_ana_index_t                   *g)
+_gmx_sel_evaluate_static(gmx_sel_evaluate_t                      * /* data */,
+                         const gmx::SelectionTreeElementPointer &sel,
+                         gmx_ana_index_t                        *g)
 {
     gmx_ana_index_intersection(sel->v.u.g, &sel->u.cgrp, g);
 }
