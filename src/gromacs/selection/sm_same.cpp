@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -94,28 +94,63 @@ typedef struct
     bool                     bSorted;
 } t_methoddata_same;
 
-/** Allocates data for the \p same selection method. */
+/*! \brief
+ * Allocates data for the \p same selection method.
+ *
+ * \param[in]     npar  Not used (should be 2).
+ * \param[in,out] param Method parameters (should point to a copy of
+ *      ::smparams_same_int or ::smparams_same_str).
+ * \returns Pointer to the allocated data (\ref t_methoddata_same).
+ */
 static void *
 init_data_same(int npar, gmx_ana_selparam_t *param);
-/** Initializes the \p same selection method. */
+/*! Initializes the \p same selection method.
+ *
+ * \param   top   Not used.
+ * \param   npar  Not used (should be 2).
+ * \param   param Initialized method parameters (should point to a copy of
+ *      ::smparams_same_int or ::smparams_same_str).
+ * \param   data  Pointer to \ref t_methoddata_same to initialize.
+ * \returns 0 on success, -1 on failure.
+ */
 static void
 init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data);
 /** Frees the data allocated for the \p same selection method. */
 static void
 free_data_same(void *data);
-/** Initializes the evaluation of the \p same selection method for a frame. */
+/*! \brief
+ * Initializes the evaluation of the \p same selection method for a frame.
+ *
+ * \param[in]  top  Not used.
+ * \param[in]  fr   Current frame.
+ * \param[in]  pbc  PBC structure.
+ * \param      data Should point to a \ref t_methoddata_same.
+ *
+ * Sorts the \c data->as.i array and removes identical values for faster and
+ * simpler lookup.
+ */
 static void
 init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
 static void
-evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
-/** Initializes the evaluation of the \p same selection method for a frame. */
+/*! \brief
+ * Initializes the evaluation of the \p same selection method for a frame.
+ *
+ * \param[in]  top  Not used.
+ * \param[in]  fr   Current frame.
+ * \param[in]  pbc  PBC structure.
+ * \param      data Should point to a \ref t_methoddata_same.
+ *
+ * Sorts the \c data->as.s array and removes identical values for faster and
+ * simpler lookup.
+ */
 static void
 init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data);
 /** Evaluates the \p same selection method. */
 static void
-evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data);
 
 /** Parameters for the \p same selection method. */
@@ -177,14 +212,8 @@ static gmx_ana_selmethod_t sm_same_str = {
     {"same KEYWORD as ATOM_EXPR", asize(help_same), help_same},
 };
 
-/*!
- * \param[in]     npar  Not used (should be 2).
- * \param[in,out] param Method parameters (should point to a copy of
- *      ::smparams_same_int or ::smparams_same_str).
- * \returns Pointer to the allocated data (\ref t_methoddata_same).
- */
 static void *
-init_data_same(int npar, gmx_ana_selparam_t *param)
+init_data_same(int /* npar */, gmx_ana_selparam_t *param)
 {
     t_methoddata_same *data;
 
@@ -255,16 +284,8 @@ _gmx_selelem_custom_init_same(gmx_ana_selmethod_t                           **me
     return 0;
 }
 
-/*!
- * \param   top   Not used.
- * \param   npar  Not used (should be 2).
- * \param   param Initialized method parameters (should point to a copy of
- *      ::smparams_same_int or ::smparams_same_str).
- * \param   data  Pointer to \ref t_methoddata_same to initialize.
- * \returns 0 on success, -1 on failure.
- */
 static void
-init_same(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
+init_same(t_topology * /* top */, int /* npar */, gmx_ana_selparam_t *param, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
 
@@ -311,17 +332,8 @@ cmp_int(const void *a, const void *b)
     return 0;
 }
 
-/*!
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \ref t_methoddata_same.
- *
- * Sorts the \c data->as.i array and removes identical values for faster and
- * simpler lookup.
- */
 static void
-init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+init_frame_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
     int                i, j;
@@ -369,7 +381,7 @@ init_frame_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * \c data->val.
  */
 static void
-evaluate_same_int(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_same_int(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same     *d = (t_methoddata_same *)data;
@@ -444,17 +456,8 @@ cmp_str(const void *a, const void *b)
     return strcmp(*(char **)a, *(char **)b);
 }
 
-/*!
- * \param[in]  top  Not used.
- * \param[in]  fr   Current frame.
- * \param[in]  pbc  PBC structure.
- * \param      data Should point to a \ref t_methoddata_same.
- *
- * Sorts the \c data->as.s array and removes identical values for faster and
- * simpler lookup.
- */
 static void
-init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
+init_frame_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */, void *data)
 {
     t_methoddata_same *d = (t_methoddata_same *)data;
     int                i, j;
@@ -497,7 +500,7 @@ init_frame_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
  * \c data->val.
  */
 static void
-evaluate_same_str(t_topology *top, t_trxframe *fr, t_pbc *pbc,
+evaluate_same_str(t_topology * /* top */, t_trxframe * /* fr */, t_pbc * /* pbc */,
                   gmx_ana_index_t *g, gmx_ana_selvalue_t *out, void *data)
 {
     t_methoddata_same     *d = (t_methoddata_same *)data;

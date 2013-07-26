@@ -127,6 +127,8 @@ class TrajectoryAnalysisCommandLineRunner
          *
          * This is intended only for use by internal debugging tools.
          *
+         * \param[in] debuglevel  Level of debugging verbosity.
+         *
          * Does not throw.
          *
          * \see SelectionCollection::setDebugLevel()

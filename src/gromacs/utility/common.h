@@ -60,9 +60,11 @@ namespace internal
  * \ingroup module_utility
  */
 template <typename T>
-void inline ignoreValueHelper(const T &) {}
+void inline ignoreValueHelper(const T &)
+{
+}
 //! \endcond
-} // namespace internal
+}   // namespace internal
 
 /*! \cond libapi */
 /*! \libinternal \brief
@@ -100,7 +102,13 @@ void inline ignoreValueHelper(const T &) {}
  * \inlibraryapi
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
-    ::gmx::internal::ignoreValueHelper(call)
+        ::gmx::internal::ignoreValueHelper(call)
+/*! \libinternal \brief
+ * Macro to explicitly ignore an unused value.
+ *
+ * \inlibraryapi
+ */
+#define GMX_UNUSED_VALUE(value) (void)value
 //! \endcond
 
 /*! \libinternal \brief

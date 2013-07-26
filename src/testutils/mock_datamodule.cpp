@@ -574,7 +574,7 @@ MockAnalysisDataModule::setupStaticCheck(const AnalysisDataTestInput &data,
 void
 MockAnalysisDataModule::setupStaticColumnCheck(
         const AnalysisDataTestInput &data,
-        int firstcol, int n, AbstractAnalysisData *source)
+        int firstcol, int n, AbstractAnalysisData * /*source*/)
 {
     impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
 
