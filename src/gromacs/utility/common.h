@@ -102,6 +102,12 @@ void inline ignoreValueHelper(const T &)
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
         ::gmx::internal::ignoreValueHelper(call)
+/*! \libinternal \brief
+ * Macro to explicitly ignore an unused value.
+ *
+ * \inlibraryapi
+ */
+#define GMX_UNUSED_VALUE(value) (void)value
 
 /*! \brief
  * Helper class to manage a pointer to a private implementation class.
