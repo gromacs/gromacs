@@ -1,6 +1,12 @@
 *.c     filter=uncrustify
 *.cpp   filter=uncrustify
 *.h     filter=uncrustify
+CMakeLists.txt  filter=copyright
+*.cmake         filter=copyright
+*.cmakein       filter=copyright
+*.py            filter=copyright
+*.l             filter=copyright
+*.y             filter=copyright
 src/contrib/*                           !filter
 nb_kernel_Elec*                         !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter

@@ -91,7 +91,7 @@
 
 # Parse command-line arguments
 function usage() {
-    echo "usage: uncrustify.sh [-f|--force] [--rev=REV] [action]"
+    echo "usage: uncrustify.sh [-f|--force] [--rev=REV] [--no-copyright] [action]"
     echo "actions: (check|diff|update)[-(index|workdir)] (default:check-workdir)"
 }
 
@@ -99,6 +99,7 @@ action="check-workdir"
 declare -a diffargs
 baserev="HEAD"
 force=
+copyright=1
 for arg in "$@" ; do
     if [[ "$arg" == "check-index" || "$arg" == "check-workdir" || \
           "$arg" == "diff-index" || "$arg" == "diff-workdir" || \
@@ -109,6 +110,8 @@ for arg in "$@" ; do
         action=$arg-workdir
     elif [[ "$action" == diff-* ]] ; then
         diffargs+=("$arg")
+    elif [[ "$arg" == "--no-copyright" ]] ; then
+        copyright=
     elif [[ "$arg" == "-f" || "$arg" == "--force" ]] ; then
         force=1
     elif [[ "$arg" == --rev=* ]] ; then
@@ -159,33 +162,68 @@ if [[ $action == *-index ]]
 then
     internal_diff_args="--cached"
 fi
-git diff-index $internal_diff_args --diff-filter=ACMR $baserev >$tmpdir/difflist
-cut -f2 <$tmpdir/difflist | \
-    git check-attr --stdin filter | \
+git diff-index $internal_diff_args --diff-filter=ACMR --name-only $baserev >$tmpdir/difflist
+git check-attr --stdin filter <$tmpdir/difflist | \
     sed -e 's/.*: filter: //' | \
     paste $tmpdir/difflist - | \
-    grep 'uncrustify$' >$tmpdir/filtered
-cut -f2 <$tmpdir/filtered >$tmpdir/filelist
-git diff-files --name-only | grep -Ff $tmpdir/filelist >$tmpdir/localmods
+    grep -E '(uncrustify|copyright)$' >$tmpdir/filtered
+cut -f1 <$tmpdir/filtered >$tmpdir/filelist_all
+grep 'uncrustify$' <$tmpdir/filtered | cut -f1 >$tmpdir/filelist_uncrustify
+git diff-files --name-only | grep -Ff $tmpdir/filelist_all >$tmpdir/localmods
 
 # Extract changed files to a temporary directory
 mkdir $tmpdir/org
-mkdir $tmpdir/new
 if [[ $action == *-index ]] ; then
-    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist
+    git checkout-index --prefix=$tmpdir/org/ --stdin <$tmpdir/filelist_all
 else
-    rsync --files-from=$tmpdir/filelist $srcdir $tmpdir/org
+    rsync --files-from=$tmpdir/filelist_all $srcdir $tmpdir/org
 fi
+# Duplicate the original files to a separate directory, where all changes will
+# be made.
+cp -r $tmpdir/org $tmpdir/new
+
+# Create output file for what was done (in case no messages get written)
+touch $tmpdir/messages
 
 # Run uncrustify on the temporary directory
-cd $tmpdir/org
-
-if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist --prefix=../new/ -q ; then
+cd $tmpdir/new
+# TODO: Consider replacing -q with a redirect to show error messages if the
+# command fails.
+if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist_uncrustify --no-backup -q ; then
     echo "Reformatting failed!"
     rm -rf $tmpdir
     exit 2
 fi
+# Find the changed files if necessary
+if [[ $action != diff-* ]] ; then
+    msg="needs uncrustify"
+    if [[ $action == update-* ]] ; then
+        msg="uncrustified"
+    fi
+    git diff --no-index --name-only ../org/ . | \
+        awk -v msg="$msg" '{sub(/.\//,""); print $0 ": " msg}' >> $tmpdir/messages
+fi
 # TODO: Consider checking whether rerunning uncrustify causes additional changes
+
+# If not requested otherwise, also update the copyright headers
+if [[ $copyright ]] ; then
+    # TODO: Remove the --no-add once all relevant files actually have the
+    # correct header.
+    cpscript_args="--no-add --update"
+    if [[ $action == check-* ]] ; then
+        cpscript_args+=" --check"
+    fi
+    # TODO: Probably better to invoke python explicitly through a customizable
+    # variable.
+    # TODO: Consider making the script output to stdout iso stderr, to allow
+    # error messages to get printed in case the command fails.
+    if ! $admin_dir/copyright.py -F $tmpdir/filelist_all $cpscript_args 2>>$tmpdir/messages
+    then
+        echo "Copyright checking failed!"
+        rm -rf $tmpdir
+        exit 2
+    fi
+fi
 
 cd $tmpdir
 
@@ -197,24 +235,23 @@ if [[ $action == diff-* ]] ; then
 fi
 
 # Find the changed files
-touch $tmpdir/messages
 changes=
 set -o pipefail
 if ! git diff --no-index --name-only --exit-code org/ new/ | \
          sed -e 's#new/##' > $tmpdir/changed
 then
     changes=1
-    awk '{print $0 ": needs uncrustify"}' $tmpdir/changed \
-        >> $tmpdir/messages
 fi
+
 # Check if changed files have changed outside the index
 if grep -Ff $tmpdir/localmods $tmpdir/changed > $tmpdir/conflicts
 then
     awk '{print $0 ": has changes in work tree"}' $tmpdir/conflicts \
         >> $tmpdir/messages
     if [[ ! $force && $action == update-* ]] ; then
+        echo "Modified files found in work tree, skipping update. Use -f to override."
+        echo "The following would have been done:"
         sort $tmpdir/messages
-        echo "Modified files found in work tree, skipping update."
         rm -rf $tmpdir
         exit 2
     fi
@@ -246,11 +283,7 @@ elif [[ $action == update-workdir ]] ; then
 fi
 
 # Report what was done
-if [[ $action == update-* ]] ; then
-    sort $tmpdir/messages | sed -e 's/needs uncrustify/uncrustified/'
-else
-    sort $tmpdir/messages
-fi
+sort $tmpdir/messages
 
 rm -rf $tmpdir
 exit $changes
