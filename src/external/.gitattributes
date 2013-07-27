@@ -1,1 +1,2 @@
 * !filter
+gmock-1.6.0/CMakeLists.txt      filter=copyright
