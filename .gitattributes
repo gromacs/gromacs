@@ -1,11 +1,26 @@
+# Generic rules
 *.c     filter=uncrustify
 *.cpp   filter=uncrustify
 *.h     filter=uncrustify
+CMakeLists.txt  filter=copyright
+*.cmake         filter=copyright
+*.cmakein       filter=copyright
+*.py            filter=copyright
+*.l             filter=copyright
+*.y             filter=copyright
+*.pre           filter=copyright
+# Exceptions: extra files to incldue
+admin/uncrustify.sh                     filter=copyright
+admin/git-pre-commit                    filter=copyright
+# Exceptions: files to exclude
+cmake/*.c                               !filter
+cmake/*.c.cmakein                       !filter
+doxygen/*.cmakein                       !filter
 src/contrib/*                           !filter
-nb_kernel_Elec*                         !filter
 src/gromacs/linearalgebra/gmx_blas/*    !filter
 src/gromacs/linearalgebra/gmx_lapack/*  !filter
-src/gromacs/selection/parser.cpp        !filter
-src/gromacs/selection/parser.h          !filter
-src/gromacs/selection/scanner.cpp       !filter
-src/gromacs/selection/scanner_flex.h    !filter
+nb_kernel_Elec*                         filter=copyright
+src/gromacs/selection/parser.cpp        filter=copyright
+src/gromacs/selection/parser.h          filter=copyright
+src/gromacs/selection/scanner.cpp       filter=copyright
+src/gromacs/selection/scanner_flex.h    filter=copyright
