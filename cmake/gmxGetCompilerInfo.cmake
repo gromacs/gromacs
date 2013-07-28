@@ -32,7 +32,7 @@ macro(get_compiler_version)
         endif ()
     endif()
 
-    if(NOT CXX_COMPILER_VERSION AND CMAKE_CXX_COMPILER_LOADED)
+    if(NOT CXX_COMPILER_VERSION)
         set(_cxx_dumpversion_res 0)
         if (DEFINED CMAKE_CXX_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
             set(_cxx_version ${CMAKE_CXX_COMPILER_VERSION})
@@ -52,7 +52,7 @@ macro(get_compiler_version)
         endif ()
     endif ()
 
-    if (NOT "${C_COMPILER_VERSION}" STREQUAL "${CXX_COMPILER_VERSION}" AND CMAKE_CXX_COMPILER_LOADED)
+    if (NOT "${C_COMPILER_VERSION}" STREQUAL "${CXX_COMPILER_VERSION}")
         message(WARNING "The version of the C and C++ compilers does not match. Note that mixing different C/C++ compilers can cause problems!")
     endif ()
 
