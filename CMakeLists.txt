@@ -14,12 +14,12 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# PROJECT_VERSION should have the following structure: 
+# PROJECT_VERSION should have the following structure:
 # VERSION-dev[-SUFFIX] where the VERSION should have the for: vMajor.vMinor.vPatch
 #
-# The "-dev" suffix is important to keep because it makes possible to distinguish 
-# between a build from official release and a build from git release branch on a 
-# machine with no git. 
+# The "-dev" suffix is important to keep because it makes possible to distinguish
+# between a build from official release and a build from git release branch on a
+# machine with no git.
 #
 # NOTE: when releasing the "-dev" suffix needs to be stripped off!
 set(PROJECT_VERSION "5.0-dev")
@@ -45,7 +45,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "0")
 math(EXPR NUM_VERSION 
     "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
 if(CPACK_PACKAGE_VERSION_PATCH)
-    math(EXPR NUM_VERSION 
+    math(EXPR NUM_VERSION
          "${NUM_VERSION} + ${CPACK_PACKAGE_VERSION_PATCH}")
 endif()
 
@@ -304,12 +304,11 @@ endif(GMX_SOFTWARE_INVSQRT)
 ########################################################################
 include(CheckIncludeFiles)
 include(CheckIncludeFileCXX)
-check_include_files(unistd.h	 HAVE_UNISTD_H)
+check_include_files(unistd.h     HAVE_UNISTD_H)
 check_include_files(pwd.h        HAVE_PWD_H)
-check_include_files(pthread.h    HAVE_PTHREAD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
-check_include_files(io.h  		 HAVE_IO_H)
+check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
 
 check_include_files(regex.h      HAVE_POSIX_REGEX)
@@ -318,7 +317,6 @@ check_include_file_cxx(regex     HAVE_CXX11_REGEX)
 # as selections won't be fully functional.
 
 include(CheckFunctionExists)
-check_function_exists(strdup            HAVE_STRDUP)
 check_function_exists(posix_memalign    HAVE_POSIX_MEMALIGN)
 check_function_exists(memalign          HAVE_MEMALIGN)
 check_function_exists(_aligned_malloc   HAVE__ALIGNED_MALLOC)
@@ -341,17 +339,11 @@ check_library_exists(m sqrt "" HAVE_LIBM)
 
 include(CheckTypeSize)
 
-check_type_size("int"           SIZEOF_INT) 
-check_type_size("long int"      SIZEOF_LONG_INT) 
-check_type_size("long long int" SIZEOF_LONG_LONG_INT) 
+check_type_size("int"           SIZEOF_INT)
+check_type_size("long int"      SIZEOF_LONG_INT)
+check_type_size("long long int" SIZEOF_LONG_LONG_INT)
 check_type_size("off_t"         SIZEOF_OFF_T)
 check_type_size("void *"        SIZEOF_VOIDP)
-
-if (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
-    set(GMX_64_BIT TRUE)
-else (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
-    set(GMX_64_BIT FALSE)
-endif (CMAKE_C_SIZEOF_DATA_PTR EQUAL 8)
 
 include(TestBigEndian)
 test_big_endian(GMX_INTEGER_BIG_ENDIAN)
@@ -436,10 +428,8 @@ IF( WIN32 AND NOT CYGWIN)
       #Only setting Debug and Release flags. Others configurations are current not used.
       STRING(REPLACE /MD /MT CMAKE_C_FLAGS_RELEASE ${CMAKE_C_FLAGS_RELEASE})
       STRING(REPLACE /MD /MT CMAKE_C_FLAGS_DEBUG ${CMAKE_C_FLAGS_DEBUG})
-      if(CMAKE_CXX_COMPILER_LOADED)
-          STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
-          STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
-      endif()
+      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_RELEASE ${CMAKE_CXX_FLAGS_RELEASE})
+      STRING(REPLACE /MD /MT CMAKE_CXX_FLAGS_DEBUG ${CMAKE_CXX_FLAGS_DEBUG})
   ENDIF()
   IF( CMAKE_C_COMPILER_ID MATCHES "Intel" )
     if(BUILD_SHARED_LIBS) #not sure why incremental building with shared libs doesn't work
@@ -601,7 +591,7 @@ if(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
 endif(BUILD_CPU_FEATURES MATCHES "rdtscp" AND NOT GMX_DISTRIBUTABLE_BUILD)
 
 include(gmxTestFloatFormat)
-gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754 
+gmx_test_float_format(GMX_FLOAT_FORMAT_IEEE754
                       GMX_IEEE754_BIG_ENDIAN_BYTE_ORDER
                       GMX_IEEE754_BIG_ENDIAN_WORD_ORDER)
 
@@ -692,7 +682,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
     if (NOT GNU_SSE4_CFLAG AND NOT MSVC_SSE4_CFLAG)
         # Not surprising if we end up here! MSVC current does not support the SSE4.1 flag. However, it appears to accept SSE4.1
         # intrinsics when SSE2 support is enabled, so we try that instead first.
-	if (GMX_NATIVE_WINDOWS)
+        if (GMX_NATIVE_WINDOWS)
             GMX_TEST_CFLAG(MSVC_SSE2_CFLAG "/arch:SSE2" ACCELERATION_C_FLAGS)
             message(WARNING "Neither SSE4.1 or SSE2 seems to be supported by your Windows compiler. Something is likely broken.")
         else()
@@ -759,14 +749,12 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         endif(NOT GNU_FMA_CFLAG)
         GMX_TEST_CFLAG(GNU_XOP_CFLAG "-mxop" ACCELERATION_C_FLAGS)
         # No big deal if we do not have xop, so no point yelling warnings about it.
-        if (CMAKE_CXX_COMPILER_LOADED)
-            GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" ACCELERATION_CXX_FLAGS)
-            if (NOT GNU_FMA_CXXFLAG)
-                message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
-            endif (NOT GNU_FMA_CXXFLAG)
-            GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" ACCELERATION_CXX_FLAGS)
-            # No big deal if we do not have xop, so no point yelling warnings about it.
-        endif()
+        GMX_TEST_CXXFLAG(GNU_FMA_CXXFLAG "-mfma4" ACCELERATION_CXX_FLAGS)
+        if (NOT GNU_FMA_CXXFLAG)
+            message(WARNING "No C++ FMA flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
+        endif (NOT GNU_FMA_CXXFLAG)
+        GMX_TEST_CXXFLAG(GNU_XOP_CXXFLAG "-mxop" ACCELERATION_CXX_FLAGS)
+        # No big deal if we do not have xop, so no point yelling warnings about it.
     endif()
 
     # Only test the header after we have tried to add the flag for AVX support
@@ -844,7 +832,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
             message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
         endif()
     endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "XL" AND CMAKE_CXX_COMPILER_LOADED)
+    if (CMAKE_CXX_COMPILER_ID MATCHES "XL")
         GMX_TEST_CXXFLAG(XLC_BLUEGENEQ_CXXFLAG "-qarch=qp -qtune=qp" ACCELERATION_CXX_FLAGS)
         try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
             "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
@@ -985,10 +973,6 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
         MESSAGE(STATUS "Using external FFT library - Intel MKL")
     endif()
-
-#elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
-#    MESSAGE(STATUS "Using external FFT library - AMD core math library")
-#    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
     set(GMX_FFT_FFTPACK 1)
     if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
@@ -999,14 +983,15 @@ else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
 set(GMX_FFT_LIBRARY_PREVIOUS_VALUE ${GMX_FFT_LIBRARY} CACHE INTERNAL "Previous value for GMX_FFT_LIBRARY, so that we can detect when it changes.")
 
-# enable threaded fftw3 if we've found it 
+# enable threaded fftw3 if we've found it
 if(FFTW3_THREADS OR FFTW3F_THREADS)
     add_definitions(-DFFT5D_FFTW_THREADS)
 endif()
 
 include(gmxManageLinearAlgebraLibraries)
 
-set(GMX_USE_PLUGINS OFF CACHE INTERNAL "Whether GROMACS will really try to compile support for VMD plugins")
+# Whether GROMACS will really try to compile support for VMD plugins
+set(GMX_USE_PLUGINS OFF)
 
 if(GMX_LOAD_PLUGINS)
   if(CYGWIN OR NOT WIN32)
@@ -1053,11 +1038,11 @@ mark_as_advanced(GMX_BUILD_MANPAGES)
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
-    list(APPEND	GMX_EXTRA_LIBRARIES m)
+    list(APPEND GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
 
 if(GMX_FAHCORE)
-  set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
+  set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
   set_property(CACHE GMX_COOL_QUOTES PROPERTY VALUE OFF)
@@ -1097,13 +1082,10 @@ set(PKG_CFLAGS "${PKG_CFLAGS} ${OpenMP_C_FLAGS}")
 # Output compiler and CFLAGS used
 ######################################
 get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
-if (CMAKE_CXX_COMPILER_LOADED)
-    get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
-endif ()
+get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 if(GMX_GPU)
     get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
 endif(GMX_GPU)
-
 
 ########################################################################
 # Specify install locations
@@ -1204,8 +1186,6 @@ add_subdirectory(scripts)
 # Don't bother the user after the first configure pass.
 if ((CUDA_NOTFOUND_AUTO AND GMX_DETECT_GPU_AVAILABLE) AND NOT GMX_GPU_DETECTION_DONE)
     message(WARNING "${CUDA_NOTFOUND_MESSAGE}")
-    unset(CUDA_NOTFOUND_AUTO)
-    unset(CUDA_NOTFOUND_MESSAGE)
 endif()
 set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has already been done")
 
@@ -1218,7 +1198,7 @@ set(GMX_GPU_DETECTION_DONE TRUE CACHE INTERNAL "Whether GPU detection has alread
                    IMMEDIATE @ONLY)
 ###########################
 ADD_CUSTOM_TARGET(uninstall
-                  "${CMAKE_COMMAND}" -P 
+                  "${CMAKE_COMMAND}" -P
                   "${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake")
 ###########################
 
