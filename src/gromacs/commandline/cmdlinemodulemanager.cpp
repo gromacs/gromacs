@@ -383,7 +383,7 @@ class CMainCommandLineModule : public CommandLineModuleInterface
 
 };
 
-} // namespace
+}   // namespace
 
 /********************************************************************
  * CommandLineModuleManager::Impl
@@ -483,6 +483,7 @@ CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
     : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
       bQuiet_(false), bStdOutInfo_(false)
 {
+    binaryInfoSettings_.copyright(true);
 }
 
 CommandLineModuleMap::const_iterator
@@ -526,7 +527,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
 
     bool bHelp      = false;
     bool bVersion   = false;
-    bool bCopyright = false;
+    bool bCopyright = true;
     // TODO: Print the common options into the help.
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
@@ -560,7 +561,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
             CommandLineParser(&options).parse(&argcForWrapper, *argv);
         }
         // If no action requested and there is a module specified, process it.
-        if (argcForWrapper < *argc && !bHelp && !bVersion && !bCopyright)
+        if (argcForWrapper < *argc && !bHelp && !bVersion)
         {
             const char *moduleName = (*argv)[argcForWrapper];
             CommandLineModuleMap::const_iterator moduleIter
@@ -589,7 +590,7 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     options.finish();
     binaryInfoSettings_.extendedInfo(bVersion);
     binaryInfoSettings_.copyright(bCopyright);
-    if (bVersion || bCopyright)
+    if (bVersion)
     {
         bQuiet_      = false;
         bStdOutInfo_ = true;
@@ -655,7 +656,7 @@ void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
     CommandLineModuleInterface *module;
-    const bool bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
+    const bool                  bMaster = (!gmx_mpi_initialized() || gmx_node_rank() == 0);
     try
     {
         module = impl_->processCommonOptions(&argc, &argv);
@@ -664,7 +665,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
     {
         if (bMaster && !impl_->bQuiet_)
         {
-            printBinaryInformation(stderr, impl_->programInfo_);
+            printBinaryInformation(stderr, impl_->programInfo_,
+                                   impl_->binaryInfoSettings_);
         }
         throw;
     }
