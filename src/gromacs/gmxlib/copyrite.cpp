@@ -78,32 +78,6 @@ static gmx_bool be_cool(void)
 #endif
 }
 
-static void space(FILE *out, int n)
-{
-    fprintf(out, "%*s", n, "");
-}
-
-static void sp_print(FILE *out, const char *s)
-{
-    int slen;
-
-    slen = strlen(s);
-    space(out, (80-slen)/2);
-    fprintf(out, "%s\n", s);
-}
-
-static void ster_print(FILE *out, const char *s)
-{
-    int  slen;
-    char buf[128];
-
-    snprintf(buf, 128, ":-)  %s  (-:", s);
-    slen = strlen(buf);
-    space(out, (80-slen)/2);
-    fprintf(out, "%s\n", buf);
-}
-
-
 static void pukeit(const char *db, const char *defstring, char *retstring,
                    int retsize, int *cqnum)
 {
@@ -179,55 +153,45 @@ void cool_quote(char *retstring, int retsize, int *cqnum)
     sfree(tmpstr);
 }
 
-static void CopyRight(FILE *out)
+static void printCopyright(FILE *fp)
 {
     static const char * const CopyrightText[] = {
-        "Written by Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
-        "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra, ",
-        "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff, ",
-        "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz, ",
+        "GROMACS is written by:",
+        "Emile Apol, Rossen Apostolov, Herman J.C. Berendsen,",
+        "Aldert van Buuren, Pär Bjelkmar, Rudi van Drunen, Anton Feenstra,",
+        "Gerrit Groenhof, Peter Kasson, Per Larsson, Pieter Meulenhoff,",
+        "Teemu Murtola, Szilard Pall, Sander Pronk, Roland Schulz,",
         "Michael Shirts, Alfons Sijbers, Peter Tieleman,\n",
         "Berk Hess, David van der Spoel, and Erik Lindahl.\n",
         "Copyright (c) 1991-2000, University of Groningen, The Netherlands.",
         "Copyright (c) 2001-2013, The GROMACS development team at",
         "Uppsala University & The Royal Institute of Technology, Sweden.",
-        "check out http://www.gromacs.org for more information.\n"
+        "check out http://www.gromacs.org for more information."
     };
 
     static const char * const LicenseText[] = {
-        "This program is free software; you can redistribute it and/or",
-        "modify it under the terms of the GNU Lesser General Public License",
+        "GROMACS is free software; you can redistribute it and/or modify it",
+        "under the terms of the GNU Lesser General Public License",
         "as published by the Free Software Foundation; either version 2.1",
         "of the License, or (at your option) any later version."
     };
 
 #define NCR (int)asize(CopyrightText)
-/* TODO: Is this exception still needed? */
+// FAH has an exception permission from LGPL to allow digital signatures in Gromacs.
 #ifdef GMX_FAHCORE
-#define NLICENSE 0 /*FAH has an exception permission from LGPL to allow digital signatures in Gromacs*/
+#define NLICENSE 0
 #else
 #define NLICENSE (int)asize(LicenseText)
 #endif
 
-    char tmpstr[1024];
-    int  i;
-
-    // TODO: Consider making the output more compact to fit better with
-    // other information written by printBinaryInformation().
-    ster_print(out, "G  R  O  M  A  C  S");
-    fprintf(out, "\n");
-
-    bromacs(tmpstr, 1023);
-    sp_print(out, tmpstr);
-    fprintf(out, "\n");
-
-    for (i = 0; (i < NCR); i++)
+    for (int i = 0; i < NCR; ++i)
     {
-        sp_print(out, CopyrightText[i]);
+        fprintf(fp, "%s\n", CopyrightText[i]);
     }
-    for (i = 0; (i < NLICENSE); i++)
+    fprintf(fp, "\n");
+    for (int i = 0; i < NLICENSE; ++i)
     {
-        sp_print(out, LicenseText[i]);
+        fprintf(fp, "%s\n", LicenseText[i]);
     }
 }
 
@@ -711,19 +675,30 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
+    if (settings.bCopyright_)
+    {
+        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
+                           "Prefix/suffix not supported with copyright");
+        // This line is printed again after the copyright notice to make it
+        // appear together with all the other information, so that it is not
+        // necessary to read stuff above the copyright notice.
+        // The line above the copyright notice puts the copyright notice is
+        // context, though.
+        // TODO: It would be nice to know here whether we are really running a
+        // Gromacs binary or some other binary that is calling Gromacs; we
+        // could then print "%s is part of GROMACS" or some alternative text.
+        fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+                GromacsVersion(), precisionString, suffix);
+        fprintf(fp, "\n");
+        printCopyright(fp);
+        fprintf(fp, "\n");
+    }
     fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
             GromacsVersion(), precisionString, suffix);
     fprintf(fp, "%sExecutable: %s%s\n", prefix,
             programInfo.programNameWithPath().c_str(), suffix);
     fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
             prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
-    if (settings.bCopyright_)
-    {
-        GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
-                           "Prefix/suffix not supported with copyright");
-        fprintf(fp, "\n");
-        CopyRight(fp);
-    }
     if (settings.bExtendedInfo_)
     {
         GMX_RELEASE_ASSERT(prefix[0] == '\0' && suffix[0] == '\0',
