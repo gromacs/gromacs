@@ -52,6 +52,21 @@
 #else
 #ifdef GMX_X86_SSE2
 /* Include x86 SSE2 compatible SIMD functions */
+
+/* Align a stack-based thread-local working array. Table loads on
+ * full-width AVX_256 use the array, but other implementations do
+ * not. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
+#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+    return gmx_simd_align_int(array);
+#else
+    return NULL;
+#endif
+}
+
+
 #if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
 #ifdef GMX_DOUBLE
 #include "nbnxn_kernel_simd_utils_x86_256d.h"

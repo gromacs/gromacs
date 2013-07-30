@@ -121,9 +121,10 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * This is only faster when we use FDV0 formatted tables, where we also need
  * to multiple the index by 4, which can be done by a SIMD bit shift.
  * With single precision AVX, 8 extracts are much slower than 1 store.
- * Because of this, the load_table_f macro always takes the ti parameter,
- * but it is only used with AVX.
- */
+ * Because of this, the load_table_f function always takes the ti
+ * parameter, which should contain a buffer that is aligned with
+ * prepare_table_load_buffer(), but it is only used with full-width
+ * AVX_256. */
 
 static gmx_inline void
 load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,

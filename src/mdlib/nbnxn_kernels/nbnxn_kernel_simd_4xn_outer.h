@@ -260,18 +260,11 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#if GMX_SIMD_WIDTH_HERE >= 8 || (defined GMX_DOUBLE && GMX_SIMD_WIDTH_HERE >= 4)
-#define STORE_TABLE_INDICES
-#endif
-#ifdef STORE_TABLE_INDICES
-    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0;
-    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1;
-    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2;
-    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3;
-#else
-    /* Table indices not used, but a function requires the argument */
-    int        *ti0 = NULL, *ti1 = NULL, *ti2 = NULL, *ti3 = NULL;
-#endif
+    /* Thread-local working buffers for force and potential lookups */
+    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0 = NULL;
+    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1 = NULL;
+    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2 = NULL;
+    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3 = NULL;
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_S;
 #endif
@@ -424,13 +417,11 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #undef FILTER_STRIDE
 
 #ifdef CALC_COUL_TAB
-#ifdef STORE_TABLE_INDICES
     /* Generate aligned table index pointers */
-    ti0 = gmx_simd_align_int(ti0_array);
-    ti1 = gmx_simd_align_int(ti1_array);
-    ti2 = gmx_simd_align_int(ti2_array);
-    ti3 = gmx_simd_align_int(ti3_array);
-#endif
+    ti0 = prepare_table_load_buffer(ti0_array);
+    ti1 = prepare_table_load_buffer(ti1_array);
+    ti2 = prepare_table_load_buffer(ti2_array);
+    ti3 = prepare_table_load_buffer(ti3_array);
 
     invtsp_S  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
@@ -828,8 +819,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #undef gmx_store_pr4
 #undef gmx_store_pr4
 #endif
-
-#undef STORE_TABLE_INDICES
 
 #undef CALC_SHIFTFORCES
 

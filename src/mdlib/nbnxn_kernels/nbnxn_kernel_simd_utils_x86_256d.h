@@ -128,6 +128,11 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     *c12_S = gmx_2_m128d_to_m256d(c12t_S[0], c12t_S[1]);
 }
 
+/* The load_table functions below are performance critical. They
+ * always take the ti parameter, which should contain a buffer that
+ * is aligned with prepare_table_load_buffer(), but it is only used
+ * with full-width AVX_256. */
+
 static gmx_inline void
 load_table_f(const real *tab_coul_F, __m128i ti_S, int *ti,
              __m256d *ctab0_S, __m256d *ctab1_S)
