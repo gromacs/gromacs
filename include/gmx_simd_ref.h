@@ -236,9 +236,14 @@ gmx_simd_ref_blendzero_pr(gmx_simd_ref_pr a, gmx_simd_ref_pb b)
 }
 
 /* Note that this reference implementation rounds away from zero,
- * whereas most SIMD intrinsics will round to nearest even.
- * Since this function is only used for periodic image calculations,
- * the rounding of mantissas close to 0.5 is irrelevant.
+ * whereas most SIMD intrinsics will round to nearest even. Since this
+ * function is only used for periodic image calculations, the rounding
+ * of mantissas close to 0.5 is irrelevant, except in testing. This
+ * could be fixed by using rint/rintf, but the bigger problem is that
+ * MSVC does not support full C99, and none of the round or rint
+ * functions are defined. It's much easier to approximately implement
+ * round() than rint(), so we do that and hope we never get bitten in
+ * testing. (Thanks, Microsoft.)
  */
 static gmx_inline gmx_simd_ref_pr
 gmx_simd_ref_round_pr(gmx_simd_ref_pr a)
@@ -248,7 +253,12 @@ gmx_simd_ref_round_pr(gmx_simd_ref_pr a)
 
     for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
     {
-#ifdef GMX_DOUBLE
+#ifdef _MSC_VER
+        int temp = (a.r[i] >= 0.)
+            ? (a.r[i] + 0.5)
+            : (a.r[i] - 0.5);
+        b.r[i] = (real) temp;
+#elif defined GMX_DOUBLE
         b.r[i] = round(a.r[i]);
 #else
         b.r[i] = roundf(a.r[i]);
