@@ -69,6 +69,17 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
 };
 
 const char *
+gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
+{
+    "CannotDetect",
+    "Unknown",
+    "GenuineIntel",
+    "AuthenticAMD",
+    "Fujitsu",
+    "ibm" /* Used on BlueGene/Q */
+};
+
+const char *
 gmx_cpuid_feature_string[GMX_CPUID_NFEATURES] =
 {
     "CannotDetect",
@@ -117,7 +128,8 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS] =
     "SSE4.1",
     "AVX_128_FMA",
     "AVX_256",
-    "Sparc64 HPC-ACE"
+    "Sparc64 HPC-ACE",
+    "IBM_QPX"
 };
 
 /* Max length of brand string */
@@ -219,6 +231,10 @@ enum gmx_cpuid_acceleration
 static const
 enum gmx_cpuid_acceleration
     compiled_acc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+#elif defined GMX_CPU_ACCELERATION_IBM_QPX
+static const
+enum gmx_cpuid_acceleration
+    compiled_acc = GMX_CPUID_ACCELERATION_IBM_QPX;
 #else
 static const
 enum gmx_cpuid_acceleration
@@ -745,7 +761,7 @@ cpuid_check_vendor(void)
     unsigned int               eax, ebx, ecx, edx;
     char                       vendorstring[13];
     FILE *                     fp;
-    char                       buffer[255],buffer2[255];
+    char                       buffer[255],before_colon[255], after_colon[255];
 
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
@@ -772,15 +788,21 @@ cpuid_check_vendor(void)
     {
         while( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer,sizeof(buffer),fp) != NULL))
         {
-            chomp_substring_before_colon(buffer,buffer2,sizeof(buffer2));
-            /* Intel/AMD use "vendor_id", IBM "vendor". Fujitsu "manufacture". Add others if you have them! */
-            if( !strcmp(buffer2,"vendor_id") || !strcmp(buffer2,"vendor") || !strcmp(buffer2,"manufacture") )
+            chomp_substring_before_colon(buffer,before_colon,sizeof(before_colon));
+            /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture". Add others if you have them! */
+            if( !strcmp(before_colon,"vendor_id")
+                || !strcmp(before_colon,"vendor")
+                || !strcmp(before_colon,"manufacture")
+                || !strcmp(before_colon,"model"))
             {
-                chomp_substring_after_colon(buffer,buffer2,sizeof(buffer2));
+                chomp_substring_after_colon(buffer,after_colon,sizeof(after_colon));
                 for(i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
                 {
-                    /* Be liberal and accept if we find the vendor anywhere in string */
-                    if(strstr(buffer2,gmx_cpuid_vendor_string[i]))
+                    /* Be liberal and accept if we find the vendor
+                     * string (or alternative string) anywhere. Using
+                     * strcasestr() would be non-portable. */
+                    if(strstr(after_colon,gmx_cpuid_vendor_string[i])
+                       || strstr(after_colon,gmx_cpuid_vendor_string_alternative[i]))
                     {
                         vendor = i;
                     }
@@ -1039,6 +1061,13 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
         if(strstr(gmx_cpuid_brand(cpuid),"SPARC64"))
         {
             tmpacc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+        }
+    }
+    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_IBM)
+    {
+        if(strstr(gmx_cpuid_brand(cpuid),"A2"))
+        {
+            tmpacc = GMX_CPUID_ACCELERATION_IBM_QPX;
         }
     }
     return tmpacc;
