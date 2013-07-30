@@ -381,8 +381,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */
-    ti0 = gmx_simd_align_int(ti0_array);
-    ti2 = gmx_simd_align_int(ti2_array);
+    ti0 = prepare_table_load_buffer(ti0_array);
+    ti2 = prepare_table_load_buffer(ti2_array);
 
     invtsp_S  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
