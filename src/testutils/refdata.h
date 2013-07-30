@@ -149,7 +149,7 @@ class TestReferenceChecker;
        checker.checkInteger(functionToTest(3), "ValueWith3");
        checker.checkInteger(functionToTest(5), "ValueWith5");
        gmx::test::TestReferenceChecker compound(
-               checker.startCompound("CustomCompound", "Item"));
+               checker.checkCompound("CustomCompound", "Item"));
        compound.checkInteger(function2ToTest(3), "ValueWith3");
        compound.checkInteger(function2ToTest(5), "ValueWith5");
        checker.checkInteger(functionToTest(4), "ValueWith4");
