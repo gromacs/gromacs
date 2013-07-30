@@ -782,7 +782,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         GMX_TEST_CFLAG(MSVC_AVX_CFLAG "/arch:AVX" ACCELERATION_C_FLAGS)
     endif (NOT GNU_AVX_CFLAG AND GMX_NATIVE_WINDOWS)
     if (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
-        message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
+        message(WARNING "No C AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance) giving the -DGMX_CPU_ACCELERATION=SSE4.1 to cmake.")
     endif (NOT GNU_AVX_CFLAG AND NOT MSVC_AVX_CFLAG)
 
     if (CMAKE_CXX_COMPILER_LOADED)
@@ -791,7 +791,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
             GMX_TEST_CXXFLAG(MSVC_AVX_CXXFLAG "/arch:AVX" ACCELERATION_CXX_FLAGS)
         endif (NOT GNU_AVX_CXXFLAG AND GMX_NATIVE_WINDOWS)
         if (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
-            message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
+            message(WARNING "No C++ AVX flag found. Consider a newer compiler, or try SSE4.1 (lower performance) giving the -DGMX_CPU_ACCELERATION=SSE4.1 to cmake.")
         endif (NOT GNU_AVX_CXXFLAG AND NOT MSVC_AVX_CXXFLAG)
     endif()
 
@@ -948,7 +948,7 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     include_directories(${${FFTW}_INCLUDE_DIRS})
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
     if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library, enable the advanced option to let GROMACS build FFTW 3 for you, or use the really slow GROMACS built-in fftpack library.")
+      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON) , or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
     endif()
 
     set(GMX_FFT_FFTW3 1)
