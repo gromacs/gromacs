@@ -257,6 +257,11 @@ typedef struct {
      */
     unsigned                *simd_exclusion_filter1;
     unsigned                *simd_exclusion_filter2;
+    /* Table loads in kernels need to compute indices in SIMD
+     * registers, and then use them, perhaps elsewhere. On some
+     * architectures (e.g. AVX, QPX), this needs a transfer via
+     * (aligned) memory. */
+    int                     *table_index_buffer;
 
     int                      nout;            /* The number of force arrays                         */
     nbnxn_atomdata_output_t *out;             /* Output data structures               */

@@ -248,8 +248,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-    int        ti0_array[2*GMX_SIMD_WIDTH_HERE], *ti0;
-    int        ti2_array[2*GMX_SIMD_WIDTH_HERE], *ti2;
+    int        *ti0 = nbat->table_index_buffer + 0 * GMX_SIMD_WIDTH_HERE;
+    int        *ti2 = nbat->table_index_buffer + 1 * GMX_SIMD_WIDTH_HERE;
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_S;
 #endif
@@ -380,9 +380,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #undef FILTER_STRIDE
 
 #ifdef CALC_COUL_TAB
-    /* Generate aligned table index pointers */
-    ti0 = gmx_simd_align_int(ti0_array);
-    ti2 = gmx_simd_align_int(ti2_array);
 
     invtsp_S  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES

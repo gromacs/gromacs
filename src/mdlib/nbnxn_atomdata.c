@@ -711,6 +711,13 @@ void nbnxn_atomdata_init(FILE *fp,
             nbat->simd_exclusion_filter2[j*2 + 0] = (1U << j);
             nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
         }
+
+        /* Allocate a helper array sometimes used in kernels for
+           transferring the indices used in table loads from SIMD
+           registers to elsewhere. */
+        snew_aligned(nbat->table_index_buffer,
+                     NBNXN_CPU_CLUSTER_I_SIZE * simd_width,
+                     NBNXN_MEM_ALIGN);
     }
 #endif
 

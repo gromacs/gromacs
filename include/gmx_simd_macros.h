@@ -555,23 +555,15 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 
 
 #ifdef GMX_HAVE_SIMD_MACROS
-/* Generic functions to extract a SIMD aligned pointer from a pointer x.
+/* Function to extract a SIMD aligned pointer from a pointer x.
  * x should have at least GMX_SIMD_WIDTH_HERE elements extra compared
  * to how many you want to use, to avoid indexing outside the aligned region.
  */
-
 static gmx_inline real *
 gmx_simd_align_real(const real *x)
 {
     return (real *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(real)-1))));
 }
-
-static gmx_inline int *
-gmx_simd_align_int(const int *x)
-{
-    return (int  *)(((size_t)((x)+GMX_SIMD_WIDTH_HERE)) & (~((size_t)(GMX_SIMD_WIDTH_HERE*sizeof(int )-1))));
-}
-
 
 /* Include the math functions which only need the above macros,
  * generally these are the ones that don't need masking operations.
