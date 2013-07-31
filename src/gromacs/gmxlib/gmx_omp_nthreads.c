@@ -106,10 +106,10 @@ static omp_module_nthreads_t modth = { 0, 0, {0, 0, 0, 0, 0, 0, 0, 0, 0}, FALSE}
  *  The "group" scheme supports OpenMP only in PME and in thise case all but
  *  the PME nthread values default to 1.
  */
-static int pick_module_nthreads(FILE *fplog, int m,
-                                gmx_bool bSimMaster,
-                                gmx_bool bFullOmpSupport,
-                                gmx_bool bSepPME)
+static void pick_module_nthreads(FILE *fplog, int m,
+                                 gmx_bool bSimMaster,
+                                 gmx_bool bFullOmpSupport,
+                                 gmx_bool bSepPME)
 {
     char    *env;
     int      nth;
@@ -126,7 +126,7 @@ static int pick_module_nthreads(FILE *fplog, int m,
      * as it's always equal with gnth. */
     if (m == emntDefault)
     {
-        return modth.nth[emntDefault];
+        return;
     }
 
     /* check the environment variable */
@@ -183,7 +183,7 @@ static int pick_module_nthreads(FILE *fplog, int m,
         nth = (bSepPME && m == emntPME) ? modth.gnth_pme : modth.gnth;
     }
 
-    return modth.nth[m] = nth;
+    gmx_omp_nthreads_set(m, nth);
 }
 
 void gmx_omp_nthreads_read_env(int     *nthreads_omp,
@@ -463,4 +463,14 @@ int gmx_omp_nthreads_get(int mod)
     {
         return modth.nth[mod];
     }
+}
+
+void
+gmx_omp_nthreads_set(int mod, int nthreads)
+{
+    /* Catch an attempt to set the number of threads on an invalid
+     * OpenMP module. */
+    assert(mod < 0 || mod >= emntNR);
+
+    modth.nth[mod] = nthreads;
 }
