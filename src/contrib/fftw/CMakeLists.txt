@@ -28,24 +28,19 @@ endif()
 
 # Machinery for running the external project
 set(EXTERNAL_FFTW_VERSION 3.3.2)
-set(EXTERNAL_FFTW_VERSION_MD5_SUM 6977ee770ed68c85698c7168ffa6e178)
 include(ExternalProject)
-if(CMAKE_VERSION VERSION_LESS 2.8.3)
-    # Can't check MD5 sum with this CMake version
-    message(WARNING "GROMACS is downloading FFTW ${EXTERNAL_FFTW_VERSION}, but your version of CMake is too old to allow GROMACS to check that the archive it receives is correct. GROMACS will build and link to FFTW anyway, but there is a security risk if you execute a GROMACS tool that calls this library. Either build your own FFTW, or update CMake to at least version 2.8.3.")
-        ExternalProject_add(gmxfftw
-            URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
-            CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
-            ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
-            ${GMX_BUILD_OWN_FFTW_PREC})
-else()
+# TODO in master branch - show this warning only on the first run
+# by using gmx_check_if_changed_result from I21b791ab8e4f3 when
+# that becomes available
+message(WARNING "The GROMACS build will download FFTW ${EXTERNAL_FFTW_VERSION} as requested, but it will not know the file it receives is correct. GROMACS will build and link to FFTW anyway, but there is a possible security risk if you execute a GROMACS tool that calls this library. You can use\nmake gmxfftw\n to do the download and build, and then run\nmd5sum src/contrib/fftw/gmxfftw-prefix/src/fftw-3.3.2.tar.gz\nto see if it matches 6977ee770ed68c85698c7168ffa6e178. If so, everything is OK and you should proceed with the rest of the GROMACS build. Alternatively, you can follow the GROMACS installation instructions to build FFTW yourself.")
+# TODO if/when CMake fixes http://www.cmake.org/Bug/view.php?id=14330
+# (ie. at least version > 2.8.11.2), consider reverting to using an
+# md5sum check to avoid needing the above warning
     ExternalProject_add(gmxfftw
         URL "http://www.fftw.org/fftw-${EXTERNAL_FFTW_VERSION}.tar.gz"
-        URL_MD5 ${EXTERNAL_FFTW_VERSION_MD5_SUM}
         CONFIGURE_COMMAND <SOURCE_DIR>/configure --prefix=<INSTALL_DIR>
         ${GMX_BUILD_OWN_FFTW_SHARED_FLAG} ${GMX_BUILD_OWN_FFTW_OPTIMIZATION_CONFIGURATION}
         ${GMX_BUILD_OWN_FFTW_PREC})
-endif()
 externalproject_get_property(gmxfftw INSTALL_DIR)
 # The dependency that triggers building the gmxfftw target gets made where libmd is constructed
 
