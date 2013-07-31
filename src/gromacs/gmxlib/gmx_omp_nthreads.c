@@ -183,7 +183,7 @@ static int pick_module_nthreads(FILE *fplog, int m,
         nth = (bSepPME && m == emntPME) ? modth.gnth_pme : modth.gnth;
     }
 
-    return modth.nth[m] = nth;
+    return gmx_omp_nthreads_set(m, nth);
 }
 
 void gmx_omp_nthreads_read_env(int     *nthreads_omp,
@@ -462,5 +462,19 @@ int gmx_omp_nthreads_get(int mod)
     else
     {
         return modth.nth[mod];
+    }
+}
+
+int
+gmx_omp_nthreads_set(int mod, int nthreads)
+{
+    if (mod >= 0 && mod < emntNR)
+    {
+        return modth.nth[mod] = nthreads;
+    }
+    else
+    {
+        /* invalid module */
+        return -1;
     }
 }
