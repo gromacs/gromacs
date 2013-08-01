@@ -53,14 +53,21 @@
 #include "gmx_simd_macros.h"
 #endif
 
-#ifdef __cplusplus
-extern "C" {
+
+/* Bounding box calculations are (currently) always in single precision.
+ * This uses less (cache-)memory and SIMD is faster, at least on x86.
+ */
+#define GMX_SIMD4_SINGLE
+/* Include the 4-wide SIMD macro file */
+#include "gmx_simd4_macros.h"
+/* Check if we have 4-wide SIMD macro support */
+#ifdef GMX_HAVE_SIMD4_MACROS
+#define NBNXN_SEARCH_BB_SIMD4
 #endif
 
 
-#ifdef GMX_X86_SSE2
-/* Use 4-way SIMD for, always, single precision bounding box calculations */
-#define NBNXN_SEARCH_BB_SSE
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 
@@ -73,9 +80,18 @@ extern "C" {
 #endif
 
 
+#ifdef NBNXN_SEARCH_BB_SIMD4
+/* Memory alignment in bytes as required by SIMD aligned loads/stores */
+#define NBNXN_SEARCH_BB_MEM_ALIGN  (GMX_SIMD4_WIDTH*sizeof(float))
+#else
+/* No alignment required, but set it so we can call the same routines */
+#define NBNXN_SEARCH_BB_MEM_ALIGN  32
+#endif
+
+
 /* Pair search box lower and upper corner in x,y,z.
- * Store this in 4 iso 3 reals, which is useful with SSE.
- * To avoid complicating the code we also use 4 without SSE.
+ * Store this in 4 iso 3 reals, which is useful with 4-wide SIMD.
+ * To avoid complicating the code we also use 4 without 4-wide SIMD.
  */
 #define NNBSBB_C         4
 /* Pair search box lower and upper bound in z only. */
@@ -122,7 +138,8 @@ typedef struct {
     int        *nsubc;         /* The number of sub cells for each super cell */
     float      *bbcz;          /* Bounding boxes in z for the super cells     */
     nbnxn_bb_t *bb;            /* 3D bounding boxes for the sub cells         */
-    nbnxn_bb_t *bbj;           /* 3D j-b.boxes for SSE-double or AVX-single   */
+    nbnxn_bb_t *bbj;           /* 3D j-bounding boxes for the case where      *
+                                * the i- and j-cluster sizes are different    */
     float      *pbb;           /* 3D b. boxes in xxxx format per super cell   */
     int        *flags;         /* Flag for the super cells                    */
     int         nc_nalloc;     /* Allocation size for the pointers above      */
@@ -139,16 +156,16 @@ typedef struct {
 
 typedef struct nbnxn_x_ci_simd_4xn {
     /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_SSE0, iy_SSE0, iz_SSE0;
-    gmx_mm_pr ix_SSE1, iy_SSE1, iz_SSE1;
-    gmx_mm_pr ix_SSE2, iy_SSE2, iz_SSE2;
-    gmx_mm_pr ix_SSE3, iy_SSE3, iz_SSE3;
+    gmx_mm_pr ix_S0, iy_S0, iz_S0;
+    gmx_mm_pr ix_S1, iy_S1, iz_S1;
+    gmx_mm_pr ix_S2, iy_S2, iz_S2;
+    gmx_mm_pr ix_S3, iy_S3, iz_S3;
 } nbnxn_x_ci_simd_4xn_t;
 
 typedef struct nbnxn_x_ci_simd_2xnn {
     /* The i-cluster coordinates for simple search */
-    gmx_mm_pr ix_SSE0, iy_SSE0, iz_SSE0;
-    gmx_mm_pr ix_SSE2, iy_SSE2, iz_SSE2;
+    gmx_mm_pr ix_S0, iy_S0, iz_S0;
+    gmx_mm_pr ix_S2, iy_S2, iz_S2;
 } nbnxn_x_ci_simd_2xnn_t;
 
 #endif
