@@ -377,10 +377,7 @@ gmx_simd_ref_or_pb(gmx_simd_ref_pb a, gmx_simd_ref_pb b)
     return c;
 }
 
-/* Not required, gmx_anytrue_pb(x) returns if any of the boolean is x is True.
- * If this is not present, define GMX_SIMD_IS_TRUE(real x),
- * which should return x==True, where True is True as defined in SIMD.
- */
+/* Returns a single int (0/1) which tells if any of the booleans is True */
 static gmx_inline int
 gmx_simd_ref_anytrue_pb(gmx_simd_ref_pb a)
 {
@@ -398,18 +395,6 @@ gmx_simd_ref_anytrue_pb(gmx_simd_ref_pb a)
 
     return anytrue;
 }
-
-/* If we don't have gmx_anytrue_pb, we need to store gmx_mm_pb */
-static gmx_inline void
-gmx_simd_ref_store_pb(real *dest, gmx_simd_ref_pb src)
-{
-    int i;
-
-    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
-    {
-        dest[i] = src.r[i];
-    }
-};
 
 /* Conversions only used for PME table lookup */
 static gmx_inline gmx_simd_ref_epi32
