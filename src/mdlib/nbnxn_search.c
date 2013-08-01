@@ -62,29 +62,26 @@
 #include "nrnb.h"
 
 
-#ifdef NBNXN_SEARCH_BB_SSE
-/* We use SSE or AVX-128bit for bounding box calculations */
+#ifdef NBNXN_SEARCH_BB_SIMD4
+/* We use 4-wide SIMD for bounding box calculations */
 
 #ifndef GMX_DOUBLE
-/* Single precision BBs + coordinates, we can also load coordinates using SSE */
-#define NBNXN_SEARCH_SSE_SINGLE
+/* Single precision BBs + coordinates, we can also load coordinates with SIMD */
+#define NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 #endif
 
-/* Include basic SSE2 stuff */
-#include <emmintrin.h>
-
-#if defined NBNXN_SEARCH_SSE_SINGLE && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
+#if defined NBNXN_SEARCH_SIMD4_FLOAT_X_BB && (GPU_NSUBCELL == 4 || GPU_NSUBCELL == 8)
 /* Store bounding boxes with x, y and z coordinates in packs of 4 */
-#define NBNXN_PBB_SSE
+#define NBNXN_PBB_SIMD4
 #endif
 
-/* The width of SSE/AVX128 with single precision for bounding boxes with GPU.
- * Here AVX-256 turns out to be slightly slower than AVX-128.
+/* The packed bounding box coordinate stride is always set to 4.
+ * With AVX we could use 8, but that turns out not to be faster.
  */
 #define STRIDE_PBB        4
 #define STRIDE_PBB_2LOG   2
 
-#endif /* NBNXN_SEARCH_BB_SSE */
+#endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 #ifdef GMX_NBNXN_SIMD
 
@@ -145,7 +142,7 @@
 #endif /* GMX_NBNXN_SIMD */
 
 
-#ifdef NBNXN_SEARCH_BB_SSE
+#ifdef NBNXN_SEARCH_BB_SIMD4
 /* Store bounding boxes corners as quadruplets: xxxxyyyyzzzz */
 #define NBNXN_BBXXXX
 /* Size of bounding box corners quadruplet */
@@ -497,7 +494,7 @@ static int set_grid_size_xy(const nbnxn_search_t nbs,
 
         sfree_aligned(grid->bb);
         /* This snew also zeros the contents, this avoid possible
-         * floating exceptions in SSE with the unused bb elements.
+         * floating exceptions in SIMD with the unused bb elements.
          */
         if (grid->bSimple)
         {
@@ -805,19 +802,21 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
         /* Set the "empty" bounding box to the same as the first one,
          * so we don't need to treat special cases in the rest of the code.
          */
-#ifdef NBNXN_SEARCH_BB_SSE
-        _mm_store_ps(&bbj[1].lower[0], _mm_load_ps(&bbj[0].lower[0]));
-        _mm_store_ps(&bbj[1].upper[0], _mm_load_ps(&bbj[0].upper[0]));
+#ifdef NBNXN_SEARCH_BB_SIMD4
+        gmx_simd4_store_pr(&bbj[1].lower[0], gmx_simd4_load_pr(&bbj[0].lower[0]));
+        gmx_simd4_store_pr(&bbj[1].upper[0], gmx_simd4_load_pr(&bbj[0].upper[0]));
 #else
         bbj[1] = bbj[0];
 #endif
     }
 
-#ifdef NBNXN_SEARCH_BB_SSE
-    _mm_store_ps(&bb->lower[0], _mm_min_ps(_mm_load_ps(&bbj[0].lower[0]),
-                                           _mm_load_ps(&bbj[1].lower[0])));
-    _mm_store_ps(&bb->upper[0], _mm_max_ps(_mm_load_ps(&bbj[0].upper[0]),
-                                           _mm_load_ps(&bbj[1].upper[0])));
+#ifdef NBNXN_SEARCH_BB_SIMD4
+    gmx_simd4_store_pr(&bb->lower[0],
+                       gmx_simd4_min_pr(gmx_simd4_load_pr(&bbj[0].lower[0]),
+                                        gmx_simd4_load_pr(&bbj[1].lower[0])));
+    gmx_simd4_store_pr(&bb->upper[0],
+                       gmx_simd4_max_pr(gmx_simd4_load_pr(&bbj[0].upper[0]),
+                                        gmx_simd4_load_pr(&bbj[1].upper[0])));
 #else
     {
         int i;
@@ -831,7 +830,7 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
 #endif
 }
 
-#ifdef NBNXN_SEARCH_BB_SSE
+#ifdef NBNXN_SEARCH_BB_SIMD4
 
 /* Coordinate order xyz, bb order xxxxyyyyzzzz */
 static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
@@ -866,38 +865,38 @@ static void calc_bounding_box_xxxx(int na, int stride, const real *x, float *bb)
     bb[5*STRIDE_PBB] = R2F_U(zh);
 }
 
-#endif /* NBNXN_SEARCH_BB_SSE */
+#endif /* NBNXN_SEARCH_BB_SIMD4 */
 
-#ifdef NBNXN_SEARCH_SSE_SINGLE
+#ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 
 /* Coordinate order xyz?, bb order xyz0 */
-static void calc_bounding_box_sse(int na, const float *x, nbnxn_bb_t *bb)
+static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 {
-    __m128 bb_0_SSE, bb_1_SSE;
-    __m128 x_SSE;
+    gmx_simd4_pr bb_0_S, bb_1_S;
+    gmx_simd4_pr x_S;
 
     int    i;
 
-    bb_0_SSE = _mm_load_ps(x);
-    bb_1_SSE = bb_0_SSE;
+    bb_0_S = gmx_simd4_load_pr(x);
+    bb_1_S = bb_0_S;
 
     for (i = 1; i < na; i++)
     {
-        x_SSE    = _mm_load_ps(x+i*NNBSBB_C);
-        bb_0_SSE = _mm_min_ps(bb_0_SSE, x_SSE);
-        bb_1_SSE = _mm_max_ps(bb_1_SSE, x_SSE);
+        x_S    = gmx_simd4_load_pr(x+i*NNBSBB_C);
+        bb_0_S = gmx_simd4_min_pr(bb_0_S, x_S);
+        bb_1_S = gmx_simd4_max_pr(bb_1_S, x_S);
     }
 
-    _mm_store_ps(&bb->lower[0], bb_0_SSE);
-    _mm_store_ps(&bb->upper[0], bb_1_SSE);
+    gmx_simd4_store_pr(&bb->lower[0], bb_0_S);
+    gmx_simd4_store_pr(&bb->upper[0], bb_1_S);
 }
 
 /* Coordinate order xyz?, bb order xxxxyyyyzzzz */
-static void calc_bounding_box_xxxx_sse(int na, const float *x,
-                                       nbnxn_bb_t *bb_work_aligned,
-                                       real *bb)
+static void calc_bounding_box_xxxx_simd4(int na, const float *x,
+                                         nbnxn_bb_t *bb_work_aligned,
+                                         real *bb)
 {
-    calc_bounding_box_sse(na, x, bb_work_aligned);
+    calc_bounding_box_simd4(na, x, bb_work_aligned);
 
     bb[0*STRIDE_PBB] = bb_work_aligned->lower[BB_X];
     bb[1*STRIDE_PBB] = bb_work_aligned->lower[BB_Y];
@@ -907,7 +906,7 @@ static void calc_bounding_box_xxxx_sse(int na, const float *x,
     bb[5*STRIDE_PBB] = bb_work_aligned->upper[BB_Z];
 }
 
-#endif /* NBNXN_SEARCH_SSE_SINGLE */
+#endif /* NBNXN_SEARCH_SIMD4_FLOAT_X_BB */
 
 
 /* Combines pairs of consecutive bounding boxes */
@@ -923,15 +922,15 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
         nc2 = (grid->cxy_na[i]+3)>>(2+1);
         for (c2 = sc2; c2 < sc2+nc2; c2++)
         {
-#ifdef NBNXN_SEARCH_BB_SSE
-            __m128 min_SSE, max_SSE;
+#ifdef NBNXN_SEARCH_BB_SIMD4
+            gmx_simd4_pr min_S, max_S;
 
-            min_SSE = _mm_min_ps(_mm_load_ps(&bb[c2*2+0].lower[0]),
-                                 _mm_load_ps(&bb[c2*2+1].lower[0]));
-            max_SSE = _mm_max_ps(_mm_load_ps(&bb[c2*2+0].upper[0]),
-                                 _mm_load_ps(&bb[c2*2+1].upper[0]));
-            _mm_store_ps(&grid->bbj[c2].lower[0], min_SSE);
-            _mm_store_ps(&grid->bbj[c2].upper[0], max_SSE);
+            min_S = gmx_simd4_min_pr(gmx_simd4_load_pr(&bb[c2*2+0].lower[0]),
+                                     gmx_simd4_load_pr(&bb[c2*2+1].lower[0]));
+            max_S = gmx_simd4_max_pr(gmx_simd4_load_pr(&bb[c2*2+0].upper[0]),
+                                     gmx_simd4_load_pr(&bb[c2*2+1].upper[0]));
+            gmx_simd4_store_pr(&grid->bbj[c2].lower[0], min_S);
+            gmx_simd4_store_pr(&grid->bbj[c2].upper[0], max_S);
 #else
             for (j = 0; j < NNBSBB_C; j++)
             {
@@ -1176,18 +1175,18 @@ void fill_cell(const nbnxn_search_t nbs,
     else if (!grid->bSimple)
     {
         /* Store the bounding boxes in a format convenient
-         * for SSE calculations: xxxxyyyyzzzz...
+         * for SIMD4 calculations: xxxxyyyyzzzz...
          */
         pbb_ptr =
             grid->pbb +
             ((a0-grid->cell0*grid->na_sc)>>(grid->na_c_2log+STRIDE_PBB_2LOG))*NNBSBB_XXXX +
             (((a0-grid->cell0*grid->na_sc)>>grid->na_c_2log) & (STRIDE_PBB-1));
 
-#ifdef NBNXN_SEARCH_SSE_SINGLE
+#ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
         if (nbat->XFormat == nbatXYZQ)
         {
-            calc_bounding_box_xxxx_sse(na, nbat->x+a0*nbat->xstride,
-                                       bb_work_aligned, pbb_ptr);
+            calc_bounding_box_xxxx_simd4(na, nbat->x+a0*nbat->xstride,
+                                         bb_work_aligned, pbb_ptr);
         }
         else
 #endif
@@ -2066,134 +2065,114 @@ static float subc_bb_dist2(int si, const nbnxn_bb_t *bb_i_ci,
     return d2;
 }
 
-#ifdef NBNXN_SEARCH_BB_SSE
+#ifdef NBNXN_SEARCH_BB_SIMD4
 
-/* SSE code for bb distance for bb format xyz0 */
-static float subc_bb_dist2_sse(int si, const nbnxn_bb_t *bb_i_ci,
-                               int csj, const nbnxn_bb_t *bb_j_all)
+/* 4-wide SIMD code for bb distance for bb format xyz0 */
+static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
+                                 int csj, const nbnxn_bb_t *bb_j_all)
 {
-    __m128       bb_i_SSE0, bb_i_SSE1;
-    __m128       bb_j_SSE0, bb_j_SSE1;
-    __m128       dl_SSE;
-    __m128       dh_SSE;
-    __m128       dm_SSE;
-    __m128       dm0_SSE;
-    __m128       d2_SSE;
-#ifndef GMX_X86_SSE4_1
-    float        d2_array[7], *d2_align;
+    gmx_simd4_pr bb_i_S0, bb_i_S1;
+    gmx_simd4_pr bb_j_S0, bb_j_S1;
+    gmx_simd4_pr dl_S;
+    gmx_simd4_pr dh_S;
+    gmx_simd4_pr dm_S;
+    gmx_simd4_pr dm0_S;
 
-    d2_align = (float *)(((size_t)(d2_array+3)) & (~((size_t)15)));
-#else
-    float d2;
-#endif
+    bb_i_S0 = gmx_simd4_load_pr(&bb_i_ci[si].lower[0]);
+    bb_i_S1 = gmx_simd4_load_pr(&bb_i_ci[si].upper[0]);
+    bb_j_S0 = gmx_simd4_load_pr(&bb_j_all[csj].lower[0]);
+    bb_j_S1 = gmx_simd4_load_pr(&bb_j_all[csj].upper[0]);
 
-    bb_i_SSE0 = _mm_load_ps(&bb_i_ci[si].lower[0]);
-    bb_i_SSE1 = _mm_load_ps(&bb_i_ci[si].upper[0]);
-    bb_j_SSE0 = _mm_load_ps(&bb_j_all[csj].lower[0]);
-    bb_j_SSE1 = _mm_load_ps(&bb_j_all[csj].upper[0]);
+    dl_S    = gmx_simd4_sub_pr(bb_i_S0, bb_j_S1);
+    dh_S    = gmx_simd4_sub_pr(bb_j_S0, bb_i_S1);
 
-    dl_SSE    = _mm_sub_ps(bb_i_SSE0, bb_j_SSE1);
-    dh_SSE    = _mm_sub_ps(bb_j_SSE0, bb_i_SSE1);
+    dm_S    = gmx_simd4_max_pr(dl_S, dh_S);
+    dm0_S   = gmx_simd4_max_pr(dm_S, gmx_simd4_setzero_pr());
 
-    dm_SSE    = _mm_max_ps(dl_SSE, dh_SSE);
-    dm0_SSE   = _mm_max_ps(dm_SSE, _mm_setzero_ps());
-#ifndef GMX_X86_SSE4_1
-    d2_SSE    = _mm_mul_ps(dm0_SSE, dm0_SSE);
-
-    _mm_store_ps(d2_align, d2_SSE);
-
-    return d2_align[0] + d2_align[1] + d2_align[2];
-#else
-    /* SSE4.1 dot product of components 0,1,2 */
-    d2_SSE    = _mm_dp_ps(dm0_SSE, dm0_SSE, 0x71);
-
-    _mm_store_ss(&d2, d2_SSE);
-
-    return d2;
-#endif
+    return gmx_simd4_dotproduct3(dm0_S, dm0_S);
 }
 
 /* Calculate bb bounding distances of bb_i[si,...,si+3] and store them in d2 */
-#define SUBC_BB_DIST2_SSE_XXXX_INNER(si, bb_i, d2) \
+#define SUBC_BB_DIST2_SIMD4_XXXX_INNER(si, bb_i, d2) \
     {                                                \
         int    shi;                                  \
                                                  \
-        __m128 dx_0, dy_0, dz_0;                       \
-        __m128 dx_1, dy_1, dz_1;                       \
+        gmx_simd4_pr dx_0, dy_0, dz_0;                       \
+        gmx_simd4_pr dx_1, dy_1, dz_1;                       \
                                                  \
-        __m128 mx, my, mz;                             \
-        __m128 m0x, m0y, m0z;                          \
+        gmx_simd4_pr mx, my, mz;                             \
+        gmx_simd4_pr m0x, m0y, m0z;                          \
                                                  \
-        __m128 d2x, d2y, d2z;                          \
-        __m128 d2s, d2t;                              \
+        gmx_simd4_pr d2x, d2y, d2z;                          \
+        gmx_simd4_pr d2s, d2t;                              \
                                                  \
         shi = si*NNBSBB_D*DIM;                       \
                                                  \
-        xi_l = _mm_load_ps(bb_i+shi+0*STRIDE_PBB);   \
-        yi_l = _mm_load_ps(bb_i+shi+1*STRIDE_PBB);   \
-        zi_l = _mm_load_ps(bb_i+shi+2*STRIDE_PBB);   \
-        xi_h = _mm_load_ps(bb_i+shi+3*STRIDE_PBB);   \
-        yi_h = _mm_load_ps(bb_i+shi+4*STRIDE_PBB);   \
-        zi_h = _mm_load_ps(bb_i+shi+5*STRIDE_PBB);   \
+        xi_l = gmx_simd4_load_pr(bb_i+shi+0*STRIDE_PBB);   \
+        yi_l = gmx_simd4_load_pr(bb_i+shi+1*STRIDE_PBB);   \
+        zi_l = gmx_simd4_load_pr(bb_i+shi+2*STRIDE_PBB);   \
+        xi_h = gmx_simd4_load_pr(bb_i+shi+3*STRIDE_PBB);   \
+        yi_h = gmx_simd4_load_pr(bb_i+shi+4*STRIDE_PBB);   \
+        zi_h = gmx_simd4_load_pr(bb_i+shi+5*STRIDE_PBB);   \
                                                  \
-        dx_0 = _mm_sub_ps(xi_l, xj_h);                \
-        dy_0 = _mm_sub_ps(yi_l, yj_h);                \
-        dz_0 = _mm_sub_ps(zi_l, zj_h);                \
+        dx_0 = gmx_simd4_sub_pr(xi_l, xj_h);                \
+        dy_0 = gmx_simd4_sub_pr(yi_l, yj_h);                \
+        dz_0 = gmx_simd4_sub_pr(zi_l, zj_h);                \
                                                  \
-        dx_1 = _mm_sub_ps(xj_l, xi_h);                \
-        dy_1 = _mm_sub_ps(yj_l, yi_h);                \
-        dz_1 = _mm_sub_ps(zj_l, zi_h);                \
+        dx_1 = gmx_simd4_sub_pr(xj_l, xi_h);                \
+        dy_1 = gmx_simd4_sub_pr(yj_l, yi_h);                \
+        dz_1 = gmx_simd4_sub_pr(zj_l, zi_h);                \
                                                  \
-        mx   = _mm_max_ps(dx_0, dx_1);                \
-        my   = _mm_max_ps(dy_0, dy_1);                \
-        mz   = _mm_max_ps(dz_0, dz_1);                \
+        mx   = gmx_simd4_max_pr(dx_0, dx_1);                \
+        my   = gmx_simd4_max_pr(dy_0, dy_1);                \
+        mz   = gmx_simd4_max_pr(dz_0, dz_1);                \
                                                  \
-        m0x  = _mm_max_ps(mx, zero);                  \
-        m0y  = _mm_max_ps(my, zero);                  \
-        m0z  = _mm_max_ps(mz, zero);                  \
+        m0x  = gmx_simd4_max_pr(mx, zero);                  \
+        m0y  = gmx_simd4_max_pr(my, zero);                  \
+        m0z  = gmx_simd4_max_pr(mz, zero);                  \
                                                  \
-        d2x  = _mm_mul_ps(m0x, m0x);                  \
-        d2y  = _mm_mul_ps(m0y, m0y);                  \
-        d2z  = _mm_mul_ps(m0z, m0z);                  \
+        d2x  = gmx_simd4_mul_pr(m0x, m0x);                  \
+        d2y  = gmx_simd4_mul_pr(m0y, m0y);                  \
+        d2z  = gmx_simd4_mul_pr(m0z, m0z);                  \
                                                  \
-        d2s  = _mm_add_ps(d2x, d2y);                  \
-        d2t  = _mm_add_ps(d2s, d2z);                  \
+        d2s  = gmx_simd4_add_pr(d2x, d2y);                  \
+        d2t  = gmx_simd4_add_pr(d2s, d2z);                  \
                                                  \
-        _mm_store_ps(d2+si, d2t);                     \
+        gmx_simd4_store_pr(d2+si, d2t);                     \
     }
 
-/* SSE code for nsi bb distances for bb format xxxxyyyyzzzz */
-static void subc_bb_dist2_sse_xxxx(const float *bb_j,
-                                   int nsi, const float *bb_i,
-                                   float *d2)
+/* 4-wide SIMD code for nsi bb distances for bb format xxxxyyyyzzzz */
+static void subc_bb_dist2_simd4_xxxx(const float *bb_j,
+                                     int nsi, const float *bb_i,
+                                     float *d2)
 {
-    __m128 xj_l, yj_l, zj_l;
-    __m128 xj_h, yj_h, zj_h;
-    __m128 xi_l, yi_l, zi_l;
-    __m128 xi_h, yi_h, zi_h;
+    gmx_simd4_pr xj_l, yj_l, zj_l;
+    gmx_simd4_pr xj_h, yj_h, zj_h;
+    gmx_simd4_pr xi_l, yi_l, zi_l;
+    gmx_simd4_pr xi_h, yi_h, zi_h;
 
-    __m128 zero;
+    gmx_simd4_pr zero;
 
-    zero = _mm_setzero_ps();
+    zero = gmx_simd4_setzero_pr();
 
-    xj_l = _mm_set1_ps(bb_j[0*STRIDE_PBB]);
-    yj_l = _mm_set1_ps(bb_j[1*STRIDE_PBB]);
-    zj_l = _mm_set1_ps(bb_j[2*STRIDE_PBB]);
-    xj_h = _mm_set1_ps(bb_j[3*STRIDE_PBB]);
-    yj_h = _mm_set1_ps(bb_j[4*STRIDE_PBB]);
-    zj_h = _mm_set1_ps(bb_j[5*STRIDE_PBB]);
+    xj_l = gmx_simd4_set1_pr(bb_j[0*STRIDE_PBB]);
+    yj_l = gmx_simd4_set1_pr(bb_j[1*STRIDE_PBB]);
+    zj_l = gmx_simd4_set1_pr(bb_j[2*STRIDE_PBB]);
+    xj_h = gmx_simd4_set1_pr(bb_j[3*STRIDE_PBB]);
+    yj_h = gmx_simd4_set1_pr(bb_j[4*STRIDE_PBB]);
+    zj_h = gmx_simd4_set1_pr(bb_j[5*STRIDE_PBB]);
 
     /* Here we "loop" over si (0,STRIDE_PBB) from 0 to nsi with step STRIDE_PBB.
      * But as we know the number of iterations is 1 or 2, we unroll manually.
      */
-    SUBC_BB_DIST2_SSE_XXXX_INNER(0, bb_i, d2);
+    SUBC_BB_DIST2_SIMD4_XXXX_INNER(0, bb_i, d2);
     if (STRIDE_PBB < nsi)
     {
-        SUBC_BB_DIST2_SSE_XXXX_INNER(STRIDE_PBB, bb_i, d2);
+        SUBC_BB_DIST2_SIMD4_XXXX_INNER(STRIDE_PBB, bb_i, d2);
     }
 }
 
-#endif /* NBNXN_SEARCH_BB_SSE */
+#endif /* NBNXN_SEARCH_BB_SIMD4 */
 
 /* Plain C function which determines if any atom pair between two cells
  * is within distance sqrt(rl2).
@@ -2227,44 +2206,44 @@ static gmx_bool subc_in_range_x(int na_c,
     return FALSE;
 }
 
-#ifdef NBNXN_SEARCH_SSE_SINGLE
+#ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
 /* When we make seperate single/double precision SIMD vector operation
  * include files, this function should be moved there (also using FMA).
  */
-static inline __m128
-gmx_mm_calc_rsq_ps(__m128 x, __m128 y, __m128 z)
+static inline gmx_simd4_pr
+gmx_simd4_calc_rsq_pr(gmx_simd4_pr x, gmx_simd4_pr y, gmx_simd4_pr z)
 {
-    return _mm_add_ps( _mm_add_ps( _mm_mul_ps(x, x), _mm_mul_ps(y, y) ), _mm_mul_ps(z, z) );
+    return gmx_simd4_add_pr( gmx_simd4_add_pr( gmx_simd4_mul_pr(x, x), gmx_simd4_mul_pr(y, y) ), gmx_simd4_mul_pr(z, z) );
 }
 #endif
 
-/* SSE function which determines if any atom pair between two cells,
+/* 4-wide SIMD function which determines if any atom pair between two cells,
  * both with 8 atoms, is within distance sqrt(rl2).
- * Not performance critical, so only uses plain SSE.
+ * Using 8-wide AVX is not faster on Intel Sandy Bridge.
  */
-static gmx_bool subc_in_range_sse8(int na_c,
-                                   int si, const real *x_i,
-                                   int csj, int stride, const real *x_j,
-                                   real rl2)
+static gmx_bool subc_in_range_simd4(int na_c,
+                                    int si, const real *x_i,
+                                    int csj, int stride, const real *x_j,
+                                    real rl2)
 {
-#ifdef NBNXN_SEARCH_SSE_SINGLE
-    __m128 ix_SSE0, iy_SSE0, iz_SSE0;
-    __m128 ix_SSE1, iy_SSE1, iz_SSE1;
+#ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
+    gmx_simd4_pr ix_S0, iy_S0, iz_S0;
+    gmx_simd4_pr ix_S1, iy_S1, iz_S1;
 
-    __m128 rc2_SSE;
+    gmx_simd4_pr rc2_S;
 
-    int    na_c_sse;
+    int    dim_stride;
     int    j0, j1;
 
-    rc2_SSE   = _mm_set1_ps(rl2);
+    rc2_S   = gmx_simd4_set1_pr(rl2);
 
-    na_c_sse = NBNXN_GPU_CLUSTER_SIZE/STRIDE_PBB;
-    ix_SSE0  = _mm_load_ps(x_i+(si*na_c_sse*DIM+0)*STRIDE_PBB);
-    iy_SSE0  = _mm_load_ps(x_i+(si*na_c_sse*DIM+1)*STRIDE_PBB);
-    iz_SSE0  = _mm_load_ps(x_i+(si*na_c_sse*DIM+2)*STRIDE_PBB);
-    ix_SSE1  = _mm_load_ps(x_i+(si*na_c_sse*DIM+3)*STRIDE_PBB);
-    iy_SSE1  = _mm_load_ps(x_i+(si*na_c_sse*DIM+4)*STRIDE_PBB);
-    iz_SSE1  = _mm_load_ps(x_i+(si*na_c_sse*DIM+5)*STRIDE_PBB);
+    dim_stride = NBNXN_GPU_CLUSTER_SIZE/STRIDE_PBB*DIM;
+    ix_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+0)*STRIDE_PBB);
+    iy_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+1)*STRIDE_PBB);
+    iz_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+2)*STRIDE_PBB);
+    ix_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+3)*STRIDE_PBB);
+    iy_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+4)*STRIDE_PBB);
+    iz_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+5)*STRIDE_PBB);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -2273,63 +2252,63 @@ static gmx_bool subc_in_range_sse8(int na_c,
     j1 = j0 + na_c - 1;
     while (j0 < j1)
     {
-        __m128 jx0_SSE, jy0_SSE, jz0_SSE;
-        __m128 jx1_SSE, jy1_SSE, jz1_SSE;
+        gmx_simd4_pr jx0_S, jy0_S, jz0_S;
+        gmx_simd4_pr jx1_S, jy1_S, jz1_S;
 
-        __m128 dx_SSE0, dy_SSE0, dz_SSE0;
-        __m128 dx_SSE1, dy_SSE1, dz_SSE1;
-        __m128 dx_SSE2, dy_SSE2, dz_SSE2;
-        __m128 dx_SSE3, dy_SSE3, dz_SSE3;
+        gmx_simd4_pr dx_S0, dy_S0, dz_S0;
+        gmx_simd4_pr dx_S1, dy_S1, dz_S1;
+        gmx_simd4_pr dx_S2, dy_S2, dz_S2;
+        gmx_simd4_pr dx_S3, dy_S3, dz_S3;
 
-        __m128 rsq_SSE0;
-        __m128 rsq_SSE1;
-        __m128 rsq_SSE2;
-        __m128 rsq_SSE3;
+        gmx_simd4_pr rsq_S0;
+        gmx_simd4_pr rsq_S1;
+        gmx_simd4_pr rsq_S2;
+        gmx_simd4_pr rsq_S3;
 
-        __m128 wco_SSE0;
-        __m128 wco_SSE1;
-        __m128 wco_SSE2;
-        __m128 wco_SSE3;
-        __m128 wco_any_SSE01, wco_any_SSE23, wco_any_SSE;
+        gmx_simd4_pb wco_S0;
+        gmx_simd4_pb wco_S1;
+        gmx_simd4_pb wco_S2;
+        gmx_simd4_pb wco_S3;
+        gmx_simd4_pb wco_any_S01, wco_any_S23, wco_any_S;
 
-        jx0_SSE = _mm_load1_ps(x_j+j0*stride+0);
-        jy0_SSE = _mm_load1_ps(x_j+j0*stride+1);
-        jz0_SSE = _mm_load1_ps(x_j+j0*stride+2);
+        jx0_S = gmx_simd4_set1_pr(x_j[j0*stride+0]);
+        jy0_S = gmx_simd4_set1_pr(x_j[j0*stride+1]);
+        jz0_S = gmx_simd4_set1_pr(x_j[j0*stride+2]);
 
-        jx1_SSE = _mm_load1_ps(x_j+j1*stride+0);
-        jy1_SSE = _mm_load1_ps(x_j+j1*stride+1);
-        jz1_SSE = _mm_load1_ps(x_j+j1*stride+2);
+        jx1_S = gmx_simd4_set1_pr(x_j[j1*stride+0]);
+        jy1_S = gmx_simd4_set1_pr(x_j[j1*stride+1]);
+        jz1_S = gmx_simd4_set1_pr(x_j[j1*stride+2]);
 
         /* Calculate distance */
-        dx_SSE0            = _mm_sub_ps(ix_SSE0, jx0_SSE);
-        dy_SSE0            = _mm_sub_ps(iy_SSE0, jy0_SSE);
-        dz_SSE0            = _mm_sub_ps(iz_SSE0, jz0_SSE);
-        dx_SSE1            = _mm_sub_ps(ix_SSE1, jx0_SSE);
-        dy_SSE1            = _mm_sub_ps(iy_SSE1, jy0_SSE);
-        dz_SSE1            = _mm_sub_ps(iz_SSE1, jz0_SSE);
-        dx_SSE2            = _mm_sub_ps(ix_SSE0, jx1_SSE);
-        dy_SSE2            = _mm_sub_ps(iy_SSE0, jy1_SSE);
-        dz_SSE2            = _mm_sub_ps(iz_SSE0, jz1_SSE);
-        dx_SSE3            = _mm_sub_ps(ix_SSE1, jx1_SSE);
-        dy_SSE3            = _mm_sub_ps(iy_SSE1, jy1_SSE);
-        dz_SSE3            = _mm_sub_ps(iz_SSE1, jz1_SSE);
+        dx_S0            = gmx_simd4_sub_pr(ix_S0, jx0_S);
+        dy_S0            = gmx_simd4_sub_pr(iy_S0, jy0_S);
+        dz_S0            = gmx_simd4_sub_pr(iz_S0, jz0_S);
+        dx_S1            = gmx_simd4_sub_pr(ix_S1, jx0_S);
+        dy_S1            = gmx_simd4_sub_pr(iy_S1, jy0_S);
+        dz_S1            = gmx_simd4_sub_pr(iz_S1, jz0_S);
+        dx_S2            = gmx_simd4_sub_pr(ix_S0, jx1_S);
+        dy_S2            = gmx_simd4_sub_pr(iy_S0, jy1_S);
+        dz_S2            = gmx_simd4_sub_pr(iz_S0, jz1_S);
+        dx_S3            = gmx_simd4_sub_pr(ix_S1, jx1_S);
+        dy_S3            = gmx_simd4_sub_pr(iy_S1, jy1_S);
+        dz_S3            = gmx_simd4_sub_pr(iz_S1, jz1_S);
 
         /* rsq = dx*dx+dy*dy+dz*dz */
-        rsq_SSE0           = gmx_mm_calc_rsq_ps(dx_SSE0, dy_SSE0, dz_SSE0);
-        rsq_SSE1           = gmx_mm_calc_rsq_ps(dx_SSE1, dy_SSE1, dz_SSE1);
-        rsq_SSE2           = gmx_mm_calc_rsq_ps(dx_SSE2, dy_SSE2, dz_SSE2);
-        rsq_SSE3           = gmx_mm_calc_rsq_ps(dx_SSE3, dy_SSE3, dz_SSE3);
+        rsq_S0           = gmx_simd4_calc_rsq_pr(dx_S0, dy_S0, dz_S0);
+        rsq_S1           = gmx_simd4_calc_rsq_pr(dx_S1, dy_S1, dz_S1);
+        rsq_S2           = gmx_simd4_calc_rsq_pr(dx_S2, dy_S2, dz_S2);
+        rsq_S3           = gmx_simd4_calc_rsq_pr(dx_S3, dy_S3, dz_S3);
 
-        wco_SSE0           = _mm_cmplt_ps(rsq_SSE0, rc2_SSE);
-        wco_SSE1           = _mm_cmplt_ps(rsq_SSE1, rc2_SSE);
-        wco_SSE2           = _mm_cmplt_ps(rsq_SSE2, rc2_SSE);
-        wco_SSE3           = _mm_cmplt_ps(rsq_SSE3, rc2_SSE);
+        wco_S0           = gmx_simd4_cmplt_pr(rsq_S0, rc2_S);
+        wco_S1           = gmx_simd4_cmplt_pr(rsq_S1, rc2_S);
+        wco_S2           = gmx_simd4_cmplt_pr(rsq_S2, rc2_S);
+        wco_S3           = gmx_simd4_cmplt_pr(rsq_S3, rc2_S);
 
-        wco_any_SSE01      = _mm_or_ps(wco_SSE0, wco_SSE1);
-        wco_any_SSE23      = _mm_or_ps(wco_SSE2, wco_SSE3);
-        wco_any_SSE        = _mm_or_ps(wco_any_SSE01, wco_any_SSE23);
+        wco_any_S01      = gmx_simd4_or_pb(wco_S0, wco_S1);
+        wco_any_S23      = gmx_simd4_or_pb(wco_S2, wco_S3);
+        wco_any_S        = gmx_simd4_or_pb(wco_any_S01, wco_any_S23);
 
-        if (_mm_movemask_ps(wco_any_SSE))
+        if (gmx_simd4_anytrue_pb(wco_any_S))
         {
             return TRUE;
         }
@@ -2340,8 +2319,8 @@ static gmx_bool subc_in_range_sse8(int na_c,
     return FALSE;
 
 #else
-    /* No SSE */
-    gmx_incons("SSE function called without SSE support");
+    /* No SIMD4 */
+    gmx_incons("SIMD4 function called without 4-wide SIMD support");
 
     return TRUE;
 #endif
@@ -2494,22 +2473,22 @@ static void nbnxn_init_pairlist(nbnxn_pairlist_t *nbl,
     snew(nbl->work, 1);
     if (nbl->bSimple)
     {
-        snew_aligned(nbl->work->bb_ci, 1, NBNXN_MEM_ALIGN);
+        snew_aligned(nbl->work->bb_ci, 1, NBNXN_SEARCH_BB_MEM_ALIGN);
     }
     else
     {
 #ifdef NBNXN_BBXXXX
-        snew_aligned(nbl->work->pbb_ci, GPU_NSUBCELL/STRIDE_PBB*NNBSBB_XXXX, NBNXN_MEM_ALIGN);
+        snew_aligned(nbl->work->pbb_ci, GPU_NSUBCELL/STRIDE_PBB*NNBSBB_XXXX, NBNXN_SEARCH_BB_MEM_ALIGN);
 #else
-        snew_aligned(nbl->work->bb_ci, GPU_NSUBCELL, NBNXN_MEM_ALIGN);
+        snew_aligned(nbl->work->bb_ci, GPU_NSUBCELL, NBNXN_SEARCH_BB_MEM_ALIGN);
 #endif
     }
-    snew_aligned(nbl->work->x_ci, NBNXN_NA_SC_MAX*DIM, NBNXN_MEM_ALIGN);
+    snew_aligned(nbl->work->x_ci, NBNXN_NA_SC_MAX*DIM, NBNXN_SEARCH_BB_MEM_ALIGN);
 #ifdef GMX_NBNXN_SIMD
     snew_aligned(nbl->work->x_ci_simd_4xn, 1, NBNXN_MEM_ALIGN);
     snew_aligned(nbl->work->x_ci_simd_2xnn, 1, NBNXN_MEM_ALIGN);
 #endif
-    snew_aligned(nbl->work->d2, GPU_NSUBCELL, NBNXN_MEM_ALIGN);
+    snew_aligned(nbl->work->d2, GPU_NSUBCELL, NBNXN_SEARCH_BB_MEM_ALIGN);
 
     nbl->work->sort            = NULL;
     nbl->work->sort_nalloc     = 0;
@@ -2902,7 +2881,7 @@ static void make_cluster_list_simple(const nbnxn_grid_t *gridj,
 #include "nbnxn_search_simd_2xnn.h"
 #endif
 
-/* Plain C or SSE code for making a pair list of super-cell sci vs scj.
+/* Plain C or SIMD4 code for making a pair list of super-cell sci vs scj.
  * Checks bounding box distances and possibly atom pair distances.
  */
 static void make_cluster_list_supersub(const nbnxn_search_t nbs,
@@ -2969,8 +2948,8 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
         }
 
 #ifdef NBNXN_BBXXXX
-        /* Determine all ci1 bb distances in one call with SSE */
-        subc_bb_dist2_sse_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
+        /* Determine all ci1 bb distances in one call with SIMD4 */
+        subc_bb_dist2_simd4_xxxx(gridj->pbb+(cj>>STRIDE_PBB_2LOG)*NNBSBB_XXXX+(cj & (STRIDE_PBB-1)),
                                ci1, pbb_ci, d2l);
         *ndistc += na_c*2;
 #endif
@@ -3000,8 +2979,8 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
             *ndistc += na_c*na_c;
             if (d2 < rbb2 ||
                 (d2 < rl2 &&
-#ifdef NBNXN_PBB_SSE
-                 subc_in_range_sse8
+#ifdef NBNXN_PBB_SIMD4
+                 subc_in_range_simd4
 #else
                  subc_in_range_x
 #endif
@@ -3032,8 +3011,8 @@ static void make_cluster_list_supersub(const nbnxn_search_t nbs,
         {
             /* Avoid using function pointers here, as it's slower */
             if (
-#ifdef NBNXN_PBB_SSE
-                !subc_in_range_sse8
+#ifdef NBNXN_PBB_SIMD4
+                !subc_in_range_simd4
 #else
                 !subc_in_range_x
 #endif
@@ -3129,7 +3108,7 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
             ndirect++;
         }
     }
-#ifdef NBNXN_SEARCH_BB_SSE
+#ifdef NBNXN_SEARCH_BB_SIMD4
     else
     {
         while (cj_ind_first + ndirect <= cj_ind_last &&
@@ -3735,13 +3714,13 @@ static void icell_set_x_supersub(int ci,
     }
 }
 
-#ifdef NBNXN_SEARCH_BB_SSE
+#ifdef NBNXN_SEARCH_BB_SIMD4
 /* Copies PBC shifted super-cell packed atom coordinates to working array */
-static void icell_set_x_supersub_sse8(int ci,
-                                      real shx, real shy, real shz,
-                                      int na_c,
-                                      int stride, const real *x,
-                                      nbnxn_list_work_t *work)
+static void icell_set_x_supersub_simd4(int ci,
+                                       real shx, real shy, real shz,
+                                       int na_c,
+                                       int stride, const real *x,
+                                       nbnxn_list_work_t *work)
 {
     int  si, io, ia, i, j;
     real *x_ci;
@@ -4987,8 +4966,8 @@ void nbnxn_make_pairlist(const nbnxn_search_t  nbs,
     }
     else
     {
-#ifdef NBNXN_SEARCH_BB_SSE
-        nbs->icell_set_x = icell_set_x_supersub_sse8;
+#ifdef NBNXN_SEARCH_BB_SIMD4
+        nbs->icell_set_x = icell_set_x_supersub_simd4;
 #else
         nbs->icell_set_x = icell_set_x_supersub;
 #endif
