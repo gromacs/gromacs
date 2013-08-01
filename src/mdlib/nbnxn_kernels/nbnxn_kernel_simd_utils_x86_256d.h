@@ -45,6 +45,9 @@
  *   energy group pair energy storage
  */
 
+#define gmx_exclfilter gmx_mm_pr
+static const unsigned filter_stride = 2;
+
 /* Transpose 2 double precision registers */
 static gmx_inline void
 gmx_mm_transpose2_op_pd(__m128d in0, __m128d in1,
@@ -120,7 +123,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 
     for (p = 0; p < UNROLLJ; p++)
     {
-        clj_S[p] = _mm_load_pd(nbfp+type[aj+p]*NBFP_STRIDE);
+        clj_S[p] = _mm_load_pd(nbfp+type[aj+p]*nbfp_stride);
     }
     gmx_mm_transpose2_op_pd(clj_S[0], clj_S[1], &c6t_S[0], &c12t_S[0]);
     gmx_mm_transpose2_op_pd(clj_S[2], clj_S[3], &c6t_S[1], &c12t_S[1]);
@@ -176,6 +179,29 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
     }
     /* Shuffle the energy table entries to a single register */
     *ctabv_S = gmx_2_m128d_to_m256d(_mm_shuffle_pd(ctab_S[4], ctab_S[5], _MM_SHUFFLE2(0, 0)), _mm_shuffle_pd(ctab_S[6], ctab_S[7], _MM_SHUFFLE2(0, 0)));
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load1_exclfilter(int e)
+{
+    return _mm256_castsi256_pd(_mm256_set1_epi32(e));
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load_exclusion_filter(const unsigned *i)
+{
+    return gmx_load_pr((real *) (i));
+}
+
+static gmx_inline gmx_mm_pb
+gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
+{
+    /* With <= 16 bits used the cast and conversion should not be
+     * required, since only mantissa bits are set and that would give
+     * a non-zero float, but with the Intel compiler this does not
+     * work correctly. Because AVX does not have int->double
+     * conversion, we convert via float. */
+    return _mm256_cmp_pd(_mm256_castps_pd(_mm256_cvtepi32_ps(_mm256_castpd_si256(_mm256_and_pd(m0, m1)))), _mm256_setzero_pd(), 0x0c);
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s256d_h_ */

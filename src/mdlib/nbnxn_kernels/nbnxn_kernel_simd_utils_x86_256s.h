@@ -45,6 +45,8 @@
  *   energy group pair energy storage
  */
 
+#define gmx_exclfilter gmx_mm_pr
+static const unsigned filter_stride = 1;
 
 /* The 4xn kernel operates on 4-wide i-force registers */
 #define gmx_mm_pr4     __m128
@@ -53,6 +55,7 @@
 #define gmx_add_pr4    _mm_add_ps
 
 
+#ifdef GMX_NBNXN_SIMD_2XNN
 /* Half-width operations are required for the 2xnn kernels */
 
 /* Half-width SIMD real type */
@@ -87,6 +90,8 @@ gmx_2hpr_to_pr(gmx_mm_hpr a, gmx_mm_hpr b, gmx_mm_pr *c)
 {
     *c = _mm256_insertf128_ps(_mm256_castps128_ps256(a), b, 0x1);
 }
+
+#endif /* GMX_NBNXN_SIMD_2XNN */
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
 static gmx_inline void
@@ -156,7 +161,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */
-        clj_S[p] = _mm_load_ps(nbfp+type[aj+p]*NBFP_STRIDE);
+        clj_S[p] = _mm_load_ps(nbfp+type[aj+p]*nbfp_stride);
     }
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S[0], clj_S[1], clj_S[2], clj_S[3],
                                    &c6t_S[0], &c12t_S[0]);
@@ -180,12 +185,12 @@ load_lj_pair_params2(const real *nbfp0, const real *nbfp1,
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */
-        clj_S0[p] = _mm_load_ps(nbfp0+type[aj+p]*NBFP_STRIDE);
+        clj_S0[p] = _mm_load_ps(nbfp0+type[aj+p]*nbfp_stride);
     }
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */
-        clj_S1[p] = _mm_load_ps(nbfp1+type[aj+p]*NBFP_STRIDE);
+        clj_S1[p] = _mm_load_ps(nbfp1+type[aj+p]*nbfp_stride);
     }
     gmx_shuffle_4_ps_fil01_to_2_ps(clj_S0[0], clj_S0[1], clj_S0[2], clj_S0[3],
                                    &c6t_S[0], &c12t_S[0]);
@@ -261,6 +266,24 @@ load_table_f_v(const real *tab_coul_FDV0, gmx_epi32 ti_S, int *ti,
                                                 ctab_S[6], ctab_S[7]);
 
     *ctabv_S = gmx_2_mm_to_m256(ctabvt_S[0], ctabvt_S[1]);
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load1_exclfilter(int e)
+{
+    return _mm256_castsi256_ps(_mm256_set1_epi32(e));
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load_exclusion_filter(const unsigned *i)
+{
+    return gmx_load_pr((real *) (i));
+}
+
+static gmx_inline gmx_mm_pb
+gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
+{
+    return _mm256_cmp_ps(_mm256_cvtepi32_ps(_mm256_castps_si256(_mm256_and_ps(m0, m1))), _mm256_setzero_ps(), 0x0c);
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s256s_h_ */

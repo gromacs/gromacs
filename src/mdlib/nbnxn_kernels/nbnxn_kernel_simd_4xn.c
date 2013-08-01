@@ -56,13 +56,41 @@
 #endif
 #include "gmx_simd_macros.h"
 #include "gmx_simd_vec.h"
-#include "nbnxn_kernel_exclusion_utils.h"
 
 #include "nbnxn_kernel_simd_4xn.h"
 
 #if !(GMX_SIMD_WIDTH_HERE == 2 || GMX_SIMD_WIDTH_HERE == 4 || GMX_SIMD_WIDTH_HERE == 8)
 #error "unsupported SIMD width"
 #endif
+
+#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    GMX_SIMD_WIDTH_HERE
+
+/* The stride of all the atom data arrays is max(UNROLLI,UNROLLJ) */
+#if GMX_SIMD_WIDTH_HERE >= UNROLLI
+#define STRIDE     GMX_SIMD_WIDTH_HERE
+#else
+#define STRIDE     UNROLLI
+#endif
+
+#if GMX_SIMD_WIDTH_HERE == 2
+#define SUM_SIMD(x)  (x[0]+x[1])
+#else
+#if GMX_SIMD_WIDTH_HERE == 4
+#define SUM_SIMD(x)  SUM_SIMD4(x)
+#else
+#if GMX_SIMD_WIDTH_HERE == 8
+#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif
+#endif
+
+
+#include "nbnxn_kernel_simd_utils.h"
 
 static inline void
 gmx_load_simd_4xn_interactions(int excl,

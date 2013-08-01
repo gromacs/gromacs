@@ -54,13 +54,36 @@
 /* Include the full width SIMD macros */
 #include "gmx_simd_macros.h"
 #include "gmx_simd_vec.h"
-#include "nbnxn_kernel_exclusion_utils.h"
 
 #include "nbnxn_kernel_simd_2xnn.h"
 
 #if !(GMX_SIMD_WIDTH_HERE == 8 || GMX_SIMD_WIDTH_HERE == 16)
 #error "unsupported SIMD width"
 #endif
+
+#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/2)
+
+/* The stride of all the atom data arrays is equal to half the SIMD width */
+#define STRIDE     (GMX_SIMD_WIDTH_HERE/2)
+
+#if GMX_SIMD_WIDTH_HERE == 8
+#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
+#else
+#if GMX_SIMD_WIDTH_HERE == 16
+/* This is getting ridiculous, SIMD horizontal adds would help,
+ * but this is not performance critical (only used to reduce energies)
+ */
+#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7]+x[8]+x[9]+x[10]+x[11]+x[12]+x[13]+x[14]+x[15])
+#else
+#error "unsupported kernel configuration"
+#endif
+#endif
+
+
+#include "nbnxn_kernel_simd_utils.h"
 
 static inline void
 gmx_load_simd_2xnn_interactions(int excl,

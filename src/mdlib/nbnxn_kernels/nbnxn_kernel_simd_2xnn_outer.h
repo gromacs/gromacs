@@ -65,41 +65,6 @@
  */
 
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    (GMX_SIMD_WIDTH_HERE/2)
-
-/* The stride of all the atom data arrays is equal to half the SIMD width */
-#define STRIDE     (GMX_SIMD_WIDTH_HERE/2)
-
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#if GMX_SIMD_WIDTH_HERE == 16
-/* This is getting ridiculous, SIMD horizontal adds would help,
- * but this is not performance critical (only used to reduce energies)
- */
-#define SUM_SIMD(x) (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7]+x[8]+x[9]+x[10]+x[11]+x[12]+x[13]+x[14]+x[15])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
-
-
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-/* AVX-256 single precision 2x(4+4) kernel,
- * we can do half SIMD-width aligned FDV0 table loads.
- */
-#define TAB_FDV0
-#endif
-
-/* Currently stride 4 for the 2 LJ parameters is hard coded */
-#define NBFP_STRIDE  4
-
-
-#include "nbnxn_kernel_simd_utils.h"
-
 /* All functionality defines are set here, except for:
  * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
  * CHECK_EXCLS, which is set just before including the inner loop contents.
@@ -188,7 +153,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
     real                facel;
     real               *nbfp_ptr;
-    int                 nbfp_stride;
     int                 n, ci, ci_sh;
     int                 ish, ish3;
     gmx_bool            do_LJ, half_LJ, do_coul;
@@ -312,16 +276,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     ljc = nbat->lj_comb;
 #else
     /* No combination rule used */
-#if NBFP_STRIDE == 2
-    nbfp_ptr    = nbat->nbfp;
-#else
-#if NBFP_STRIDE == 4
-    nbfp_ptr    = nbat->nbfp_s4;
-#else
-#error "Only NBFP_STRIDE 2 and 4 are currently supported"
-#endif
-#endif
-    nbfp_stride = NBFP_STRIDE;
+    nbfp_ptr    = (4 == nbfp_stride) ? nbat->nbfp_s4 : nbat->nbfp;
 #endif
 
     /* Load j-i for the first i */
@@ -347,13 +302,13 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #endif
 #endif
 
-    /* Load masks for topology exclusion masking. FILTER_STRIDE is
+    /* Load masks for topology exclusion masking. filter_stride is
        static const, so the conditional will be optimized away. */
-    if (1 == FILTER_STRIDE)
+    if (1 == filter_stride)
     {
         exclusion_filter = nbat->simd_exclusion_filter1;
     }
-    else /* (2 == FILTER_STRIDE) */
+    else /* (2 == filter_stride) */
     {
         exclusion_filter = nbat->simd_exclusion_filter2;
     }
@@ -363,8 +318,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
      * represent does not matter, as long as both mask and exclusion
      * info are treated the same way.
      */
-    filter_S0 = gmx_load_exclusion_filter(exclusion_filter + 0*2*UNROLLJ*FILTER_STRIDE);
-    filter_S2 = gmx_load_exclusion_filter(exclusion_filter + 1*2*UNROLLJ*FILTER_STRIDE);
+    filter_S0 = gmx_load_exclusion_filter(exclusion_filter + 0*2*UNROLLJ*filter_stride);
+    filter_S2 = gmx_load_exclusion_filter(exclusion_filter + 1*2*UNROLLJ*filter_stride);
 
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */
@@ -723,9 +678,3 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 
 
 #undef CALC_SHIFTFORCES
-
-#undef UNROLLI
-#undef UNROLLJ
-#undef STRIDE
-#undef TAB_FDV0
-#undef NBFP_STRIDE
