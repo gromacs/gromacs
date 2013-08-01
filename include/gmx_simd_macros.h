@@ -121,17 +121,8 @@
 #define gmx_and_pb        gmx_simd_ref_and_pb
 #define gmx_or_pb         gmx_simd_ref_or_pb
 
-/* Not required, gmx_anytrue_pb(x) returns if any of the boolean is x is True.
- * If this is not present, define GMX_SIMD_IS_TRUE(real x),
- * which should return x==True, where True is True as defined in SIMD.
- */
-#define GMX_SIMD_HAVE_ANYTRUE
-#ifdef GMX_SIMD_HAVE_ANYTRUE
+/* Returns a single int (0/1) which tells if any of the 4 booleans is True */
 #define gmx_anytrue_pb    gmx_simd_ref_anytrue_pb
-#else
-/* If we don't have gmx_anytrue_pb, we need to store gmx_mm_pb */
-#define gmx_store_pb      gmx_simd_ref_store_pb
-#endif
 
 /* Conversions only used for PME table lookup */
 #define gmx_cvttpr_epi32  gmx_simd_ref_cvttpr_epi32
@@ -283,7 +274,6 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
 
 static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm_add_ps(b, _mm_andnot_ps(a, c)); };
 
-#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pb    _mm_movemask_ps
 
 #define gmx_cvttpr_epi32  _mm_cvttps_epi32
@@ -356,7 +346,6 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_and_pb        _mm_and_pd
 #define gmx_or_pb         _mm_or_pd
 
-#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pb    _mm_movemask_pd
 
 #define gmx_cvttpr_epi32  _mm_cvttpd_epi32
@@ -423,7 +412,6 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_and_pb        _mm256_and_ps
 #define gmx_or_pb         _mm256_or_ps
 
-#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pb    _mm256_movemask_ps
 
 #define gmx_cvttpr_epi32  _mm256_cvttps_epi32
@@ -484,7 +472,6 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_and_pb        _mm256_and_pd
 #define gmx_or_pb         _mm256_or_pd
 
-#define GMX_SIMD_HAVE_ANYTRUE
 #define gmx_anytrue_pb    _mm256_movemask_pd
 
 #define gmx_cvttpr_epi32  _mm256_cvttpd_epi32
