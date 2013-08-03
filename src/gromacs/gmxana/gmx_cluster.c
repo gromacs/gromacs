@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "macros.h"
 #include "index.h"
-#include "random.h"
+#include "gmx_random.h"
 #include "pbc.h"
 #include "rmpbc.h"
 #include "xvgr.h"
@@ -149,81 +149,134 @@ void cp_index(int nn, int from[], int to[])
     }
 }
 
-void mc_optimize(FILE *log, t_mat *m, int maxiter, int *seed, real kT)
+void mc_optimize(FILE *log, t_mat *m, real *time,
+                 int maxiter, int nrandom,
+                 int seed, real kT,
+                 const char *conv, output_env_t oenv)
 {
-    real  e[2], ei, ej, efac;
-    int  *low_index;
-    int   cur = 0;
-#define next (1-cur)
-    int   i, isw, jsw, iisw, jjsw, nn;
+    FILE      *fp = NULL;
+    real       ecur, enext, emin, prob, enorm;
+    int        i, j, isw, jsw, nn, nuphill = 0;
+    gmx_rng_t  rng;
+    t_mat     *minimum;
 
-    fprintf(stderr, "\nDoing Monte Carlo clustering\n");
-    nn = m->nn;
-    snew(low_index, nn);
-    cp_index(nn, m->m_ind, low_index);
-    if (getenv("TESTMC"))
+    if (m->n1 != m->nn)
     {
-        e[cur] = mat_energy(m);
-        pr_energy(log, e[cur]);
-        fprintf(log, "Doing 1000 random swaps\n");
-        for (i = 0; (i < 1000); i++)
+        fprintf(stderr,"Can not do Monte Carlo optimization with a non-square matrix.\n");
+        return;
+    }
+    printf("\nDoing Monte Carlo optimization to find the smoothest trajectory.\n");
+    
+    isw = jsw = -1;
+    enorm = m->mat[0][0];
+    for(i = 0; (i < m->n1); i++)
+    {
+        for(j = 0; (j < m->nn); j++)
         {
-            do
+            if (m->mat[i][j] > enorm) 
             {
-                isw = nn*rando(seed);
-                jsw = nn*rando(seed);
+                enorm = m->mat[i][j];
+                isw   = i;
+                jsw   = j;
             }
-            while ((isw == jsw) || (isw >= nn) || (jsw >= nn));
-            iisw          = m->m_ind[isw];
-            jjsw          = m->m_ind[jsw];
-            m->m_ind[isw] = jjsw;
-            m->m_ind[jsw] = iisw;
         }
     }
-    e[cur] = mat_energy(m);
-    pr_energy(log, e[cur]);
+    if ((isw == -1) || (jsw == -1))
+    {
+        fprintf(stderr, "Matrix contains identical values in all fields\n");
+        return;
+    }
+    swap_rows(m, 0, isw);
+    swap_rows(m, m->n1-1, jsw);
+    emin = ecur = mat_energy(m);
+    printf("Largest distance %g between %d and %d. Energy: %g.\n",
+           enorm, isw, jsw, emin);
+
+    rng = gmx_rng_init(seed);
+    nn = m->nn;
+
+    /* Initiate and store global minimum */
+    minimum = init_mat(nn, m->b1D);
+    minimum->nn = nn;
+    copy_t_mat(minimum, m);
+
+    if (NULL != conv)
+    {
+        fp = xvgropen(conv, "Convergence of the MC optimization",
+                      "Energy", "Step", oenv);
+    }
     for (i = 0; (i < maxiter); i++)
     {
+        /* Generate new swapping candidates */
         do
         {
-            isw = nn*rando(seed);
-            jsw = nn*rando(seed);
+            isw = 1+(nn-2)*gmx_rng_uniform_real(rng);
+            jsw = 1+(nn-2)*gmx_rng_uniform_real(rng);
         }
-        while ((isw == jsw) || (isw >= nn) || (jsw >= nn));
+        while ((isw == jsw) || (isw >= nn-1) || (jsw >= nn-1));
 
-        iisw = m->m_ind[isw];
-        jjsw = m->m_ind[jsw];
-        ei   = row_energy(nn, iisw, m->mat[jsw]);
-        ej   = row_energy(nn, jjsw, m->mat[isw]);
+        /* Apply swap and compute energy */
+        swap_rows(m, isw, jsw);
+        enext = mat_energy(m);
 
-        e[next] = e[cur] + (ei+ej-EROW(m, isw)-EROW(m, jsw))/nn;
-
-        efac = kT ? exp((e[next]-e[cur])/kT) : -1;
-        if ((e[next] > e[cur]) || (efac > rando(seed)))
+        /* Compute probability */
+        prob = 0;
+        if ((enext < ecur) || (i < nrandom))
         {
-
-            if (e[next] > e[cur])
+            prob = 1;
+            if (enext < emin)
             {
-                cp_index(nn, m->m_ind, low_index);
+                /* Store global minimum */
+                copy_t_mat(minimum, m);
+                emin = enext;
             }
-            else
+        }
+        else if (kT > 0)
+        {
+            /* Try Monte Carlo step */
+            prob = exp(-(enext-ecur)/(enorm*kT));
+        }
+
+        if ((prob == 1) || (gmx_rng_uniform_real(rng) < prob))
+        {
+            if (enext > ecur)
             {
-                fprintf(log, "Taking uphill step\n");
+                nuphill++;
             }
 
-            /* Now swapping rows */
-            m->m_ind[isw]  = jjsw;
-            m->m_ind[jsw]  = iisw;
-            EROW(m, isw)   = ei;
-            EROW(m, jsw)   = ej;
-            cur            = next;
-            fprintf(log, "Iter: %d Swapped %4d and %4d (now %g)",
-                    i, isw, jsw, mat_energy(m));
-            pr_energy(log, e[cur]);
+            fprintf(log, "Iter: %d Swapped %4d and %4d (energy: %g prob: %g)\n",
+                    i, isw, jsw, enext, prob);
+            if (NULL != fp)
+            {
+                fprintf(fp, "%6d  %10g\n", i, enext);
+            }
+        }
+        else
+        {
+            swap_rows(m, jsw, isw);
         }
     }
-    /* Now restore the highest energy index */
-    cp_index(nn, low_index, m->m_ind);
+    fprintf(log, "%d uphill steps were taken during optimization\n",
+            nuphill);
+
+    /* Now swap the matrix to get it into global minimum mode */
+    copy_t_mat(m, minimum);
+
+    fprintf(log, "Global minimum energy %g\n", mat_energy(minimum));
+    fprintf(log, "Global minimum energy %g\n", mat_energy(m));
+    fprintf(log, "Swapped time and frame indices and RMSD to next neighbor:\n");
+    for(i=0; (i<m->nn); i++)
+    {
+        fprintf(log, "%10g  %5d  %10g\n",
+                time[m->m_ind[i]],
+                m->m_ind[i],
+                (i<m->nn-1) ? m->mat[m->m_ind[i]][m->m_ind[i+1]] : 0);
+    }
+
+    if (NULL != fp)
+    {
+        fclose(fp);
+    }
 }
 
 static void calc_dist(int nind, rvec x[], real **d)
@@ -1290,7 +1343,16 @@ int gmx_cluster(int argc, char *argv[])
         "of a structure are the M closest structures or all structures within",
         "[TT]cutoff[tt].[PAR]",
 
-        "Monte Carlo: reorder the RMSD matrix using Monte Carlo.[PAR]",
+        "Monte Carlo: reorder the RMSD matrix using Monte Carlo such that",
+        "the order of the frames is using the smallest possible increments.",
+        "With this it is possible to make a smooth animation going from one",
+        "structure to another with the largest possible (e.g.) RMSD between",
+        "them, however the intermediate steps should be as small as possible.",
+        "Applications could be to visualize a potential of mean force",
+        "ensemble of simulations or a pulling simulation. Obviously the user",
+        "has to prepare the trajectory well (e.g. by not superimposing frames).",
+        "The final result can be inspect visually by looking at the matrix",
+        "[TT].xpm[tt] file, which should vary smoothly from bottom to top.[PAR]",
 
         "diagonalization: diagonalize the RMSD matrix.[PAR]",
 
@@ -1344,7 +1406,7 @@ int gmx_cluster(int argc, char *argv[])
     rvec              *xtps, *usextps, *x1, **xx = NULL;
     const char        *fn, *trx_out_fn;
     t_clusters         clust;
-    t_mat             *rms;
+    t_mat             *rms, *orig=NULL;
     real              *eigenvalues;
     t_topology         top;
     int                ePBC;
@@ -1376,7 +1438,7 @@ int gmx_cluster(int argc, char *argv[])
     static int   nlevels  = 40, skip = 1;
     static real  scalemax = -1.0, rmsdcut = 0.1, rmsmin = 0.0;
     gmx_bool     bRMSdist = FALSE, bBinary = FALSE, bAverage = FALSE, bFit = TRUE;
-    static int   niter    = 10000, seed = 1993, write_ncl = 0, write_nst = 1, minstruct = 1;
+    static int   niter    = 10000, nrandom = 0, seed = 1993, write_ncl = 0, write_nst = 1, minstruct = 1;
     static real  kT       = 1e-3;
     static int   M        = 10, P = 3;
     output_env_t oenv;
@@ -1416,9 +1478,11 @@ int gmx_cluster(int argc, char *argv[])
         { "-P",     FALSE, etINT,  {&P},
           "Number of identical nearest neighbors required to form a cluster" },
         { "-seed",  FALSE, etINT,  {&seed},
-          "Random number seed for Monte Carlo clustering algorithm" },
+          "Random number seed for Monte Carlo clustering algorithm: <= 0 means generate" },
         { "-niter", FALSE, etINT,  {&niter},
           "Number of iterations for MC" },
+        { "-nrandom", FALSE, etINT,  {&nrandom},
+          "The first iterations for MC may be done complete random, to shuffle the frames" },
         { "-kT",    FALSE, etREAL, {&kT},
           "Boltzmann weighting factor for Monte Carlo optimization "
           "(zero turns off uphill steps)" },
@@ -1430,10 +1494,12 @@ int gmx_cluster(int argc, char *argv[])
         { efTPS, "-s",     NULL,        ffOPTRD },
         { efNDX, NULL,     NULL,        ffOPTRD },
         { efXPM, "-dm",   "rmsd",       ffOPTRD },
+        { efXPM, "-om",   "rmsd-raw",   ffWRITE },
         { efXPM, "-o",    "rmsd-clust", ffWRITE },
         { efLOG, "-g",    "cluster",    ffWRITE },
         { efXVG, "-dist", "rmsd-dist",  ffOPTWR },
         { efXVG, "-ev",   "rmsd-eig",   ffOPTWR },
+        { efXVG, "-conv", "mc-conv",    ffOPTWR },
         { efXVG, "-sz",   "clust-size", ffOPTWR},
         { efXPM, "-tr",   "clust-trans", ffOPTWR},
         { efXVG, "-ntr",  "clust-trans", ffOPTWR},
@@ -1719,7 +1785,7 @@ int gmx_cluster(int argc, char *argv[])
                 rms->minrms, rms->maxrms);
     ffprintf_g(stderr, log, buf, "Average RMSD is %g\n", 2*rms->sumrms/(nf*(nf-1)));
     ffprintf_d(stderr, log, buf, "Number of structures for matrix %d\n", nf);
-    ffprintf_g(stderr, log, buf, "Energy of the matrix is %g nm\n", mat_energy(rms));
+    ffprintf_g(stderr, log, buf, "Energy of the matrix is %g.\n", mat_energy(rms));
     if (bUseRmsdCut && (rmsdcut < rms->minrms || rmsdcut > rms->maxrms) )
     {
         fprintf(stderr, "WARNING: rmsd cutoff %g is outside range of rmsd values "
@@ -1781,9 +1847,11 @@ int gmx_cluster(int argc, char *argv[])
             ffclose(fp);
             break;
         case m_monte_carlo:
-            mc_optimize(log, rms, niter, &seed, kT);
-            swap_mat(rms);
-            reset_index(rms);
+            orig = init_mat(rms->nn, FALSE);
+            orig->nn = rms->nn;
+            copy_t_mat(orig, rms);
+            mc_optimize(log, rms, time, niter, nrandom, seed, kT, 
+                        opt2fn_null("-conv",NFILE,fnm), oenv);
             break;
         case m_jarvis_patrick:
             jarvis_patrick(rms->nn, rms->mat, M, P, bJP_RMSD ? rmsdcut : -1, &clust);
@@ -1797,7 +1865,7 @@ int gmx_cluster(int argc, char *argv[])
 
     if (method == m_monte_carlo || method == m_diagonalize)
     {
-        fprintf(stderr, "Energy of the matrix after clustering is %g nm\n",
+        fprintf(stderr, "Energy of the matrix after clustering is %g.\n",
                 mat_energy(rms));
     }
 
@@ -1878,7 +1946,18 @@ int gmx_cluster(int argc, char *argv[])
     }
     fprintf(stderr, "\n");
     ffclose(fp);
-
+    if (NULL != orig)
+    {
+        fp = opt2FILE("-om", NFILE, fnm, "w");
+        sprintf(buf, "Time (%s)", output_env_get_time_unit(oenv));
+        sprintf(title, "RMS%sDeviation", bRMSdist ? " Distance " : " ");
+        write_xpm(fp, 0, title, "RMSD (nm)", buf, buf,
+                  nf, nf, time, time, orig->mat, 0.0, orig->maxrms,
+                  rlo_top, rhi_top, &nlevels);
+        ffclose(fp);
+        done_mat(&orig);
+        sfree(orig);
+    }
     /* now show what we've done */
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-sz", NFILE, fnm), "-nxy");
@@ -1893,6 +1972,7 @@ int gmx_cluster(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-ntr", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn_null("-clid", NFILE, fnm), "-nxy");
     }
+    do_view(oenv, opt2fn_null("-conv", NFILE, fnm), NULL);
 
     return 0;
 }
