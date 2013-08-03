@@ -51,7 +51,7 @@ typedef struct {
     int      n1, nn;
     int     *m_ind;
     gmx_bool b1D;
-    real     emat, minrms, maxrms, sumrms;
+    real     minrms, maxrms, sumrms;
     real    *erow;
     real   **mat;
 } t_mat;
@@ -60,6 +60,8 @@ typedef struct {
 #define EROW(m, i)  m->erow[i]
 
 extern t_mat *init_mat(int n1, gmx_bool b1D);
+
+extern void copy_t_mat(t_mat *dst, t_mat *src);
 
 extern void enlarge_mat(t_mat *m, int deltan);
 
@@ -70,8 +72,6 @@ extern void swap_rows(t_mat *m, int isw, int jsw);
 extern void set_mat_entry(t_mat *m, int i, int j, real val);
 
 extern void done_mat(t_mat **m);
-
-extern real row_energy(int n1, int row, real *mat);
 
 extern real mat_energy(t_mat *mat);
 
