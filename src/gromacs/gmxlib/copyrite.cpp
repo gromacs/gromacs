@@ -711,10 +711,12 @@ void printBinaryInformation(FILE *fp, const ProgramInfo &programInfo,
     {
         fprintf(fp, "%sCreated by:%s\n", prefix, suffix);
     }
-    fprintf(fp, "%sGROMACS:    %s, %s%s%s\n", prefix, name.c_str(),
+    fprintf(fp, "%sGROMACS:      %s, %s%s%s\n", prefix, name.c_str(),
             GromacsVersion(), precisionString, suffix);
-    fprintf(fp, "%sExecutable: %s%s\n", prefix,
+    fprintf(fp, "%sExecutable:   %s%s\n", prefix,
             programInfo.fullBinaryPath().c_str(), suffix);
+    fprintf(fp, "%sLibrary dir:  %s%s\n", prefix,
+            programInfo.defaultLibraryFilePath().c_str(), suffix);
     fprintf(fp, "%sCommand line:%s\n%s  %s%s\n",
             prefix, suffix, prefix, programInfo.commandLine().c_str(), suffix);
     if (settings.bCopyright_)

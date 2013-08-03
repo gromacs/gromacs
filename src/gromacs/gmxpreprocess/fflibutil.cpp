@@ -61,6 +61,9 @@
 
 #include "fflibutil.h"
 
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/programinfo.h"
+
 const char *fflib_forcefield_dir_ext()
 {
     return ".ff";
@@ -143,9 +146,9 @@ static int low_fflib_search_file_end(const char *ffdir,
                                      char     ***filenames,
                                      char     ***filenames_short)
 {
-    char           *lib, *dir;
+    char           *dir;
     char           *libpath;
-    gmx_bool        env_is_set;
+    bool            bEnvIsSet = false;
     int             len_fe, len_name;
     char          **fns, **fns_short;
     char            dir_print[GMX_PATH_MAX];
@@ -156,30 +159,35 @@ static int low_fflib_search_file_end(const char *ffdir,
 
     len_fe = strlen(file_end);
 
-    env_is_set = FALSE;
     if (ffdir != NULL)
     {
-        /* Search in current dir and ffdir */
+        /* Search ffdir in current dir and library dirs */
         libpath = gmxlibfn(ffdir);
     }
     else
     {
         /* GMXLIB can be a path now */
-        lib = getenv("GMXLIB");
-        snew(libpath, GMX_PATH_MAX);
-        if (bAddCWD)
+        const char *lib = getenv("GMXLIB");
+        try
         {
-            sprintf(libpath, "%s%s", ".", PATH_SEPARATOR);
+            std::string libPathString;
+            if (bAddCWD)
+            {
+                libPathString = "." PATH_SEPARATOR;
+            }
+            if (lib != NULL)
+            {
+                bEnvIsSet = TRUE;
+                libPathString.append(lib);
+            }
+            else
+            {
+                libPathString.append(
+                        gmx::ProgramInfo::getInstance().defaultLibraryFilePath());
+            }
+            libpath = gmx_strdup(libPathString.c_str());
         }
-        if (lib != NULL)
-        {
-            env_is_set = TRUE;
-            strncat(libpath, lib, GMX_PATH_MAX);
-        }
-        else
-        {
-            get_libdir(libpath + strlen(libpath));
-        }
+        GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
     }
     s         = libpath;
     n         = 0;
@@ -224,7 +232,7 @@ static int low_fflib_search_file_end(const char *ffdir,
                          * working directory of GMXLIB.
                          */
                         srenew(fns_short, n+1);
-                        if (strcmp(dir, ".") == 0 || env_is_set)
+                        if (strcmp(dir, ".") == 0 || bEnvIsSet)
                         {
                             fns_short[n] = strdup(fn_dir);
                         }

@@ -147,6 +147,86 @@ std::string findFullBinaryPath(const std::string                    &invokedName
     return searchName;
 }
 
+bool isAcceptableLibraryPath(const std::string &path)
+{
+    return Path::exists(Path::join(path, "gurgle.dat"));
+}
+
+bool isAcceptableLibraryPathPrefix(const std::string &path, std::string *result)
+{
+    std::string testPath = Path::join(path, GMXLIB_SEARCH_DIR);
+    if (isAcceptableLibraryPath(testPath))
+    {
+        *result = testPath;
+        return true;
+    }
+    return false;
+}
+
+std::string findFallbackLibraryFilePath()
+{
+#ifndef GMX_NATIVE_WINDOWS
+    if (!isAcceptableLibraryPath(GMXLIB_FALLBACK))
+    {
+        std::string foundPath;
+        if (isAcceptableLibraryPathPrefix("/usr/local", &foundPath))
+        {
+            return foundPath;
+        }
+        if (isAcceptableLibraryPathPrefix("/usr", &foundPath))
+        {
+            return foundPath;
+        }
+        if (isAcceptableLibraryPathPrefix("/opt", &foundPath))
+        {
+            return foundPath;
+        }
+    }
+#endif
+    return GMXLIB_FALLBACK;
+}
+
+std::string findDefaultLibraryFilePath(const std::string &binaryPath)
+{
+    if (Path::isAbsolute(binaryPath))
+    {
+        // If running directly from the build tree, try to use the source
+        // directory.
+#if (defined CMAKE_SOURCE_DIR && defined CMAKE_BINARY_DIR)
+        // TODO: Consider adding Path::startsWith(), as this may not work as
+        // expected.
+        if (startsWith(binaryPath, CMAKE_BINARY_DIR))
+        {
+            std::string testPath = Path::join(CMAKE_SOURCE_DIR, "share/top");
+            if (isAcceptableLibraryPath(testPath))
+            {
+                return testPath;
+            }
+        }
+#endif
+
+        // Remove the executable name
+        std::string searchPath = Path::splitToPathAndFilename(binaryPath).first;
+        // Now we have the full path to the gromacs executable.
+        // Use it to find the library dir.
+        while (!searchPath.empty())
+        {
+            std::string testPath = Path::join(searchPath, GMXLIB_SEARCH_DIR);
+            if (isAcceptableLibraryPath(testPath))
+            {
+                return testPath;
+            }
+            searchPath = Path::splitToPathAndFilename(searchPath).first;
+        }
+    }
+
+    // End of smart searching. If we didn't find it in our parent tree,
+    // or if the program name wasn't set, at least try some standard
+    // locations before giving up, in case we are running from e.g.
+    // a users home directory.
+    return findFallbackLibraryFilePath();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -166,6 +246,7 @@ class ProgramInfo::Impl
         std::string             displayName_;
         std::string             commandLine_;
         std::string             fullBinaryPath_;
+        std::string             defaultLibraryFilePath_;
         mutable tMPI::mutex     displayNameMutex_;
 };
 
@@ -173,6 +254,7 @@ ProgramInfo::Impl::Impl()
     : realBinaryName_("GROMACS"),
       programName_("GROMACS"), invariantProgramName_("GROMACS")
 {
+    // TODO: Try to find the binary paths etc.?
 }
 
 ProgramInfo::Impl::Impl(const char *realBinaryName,
@@ -202,6 +284,8 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
     // Potentially less portable, but significantly simpler, and also works
     // with user binaries even if they are located in some arbitrary location,
     // as long as shared libraries are used.
+    defaultLibraryFilePath_ =
+        Path::normalize(findDefaultLibraryFilePath(fullBinaryPath_));
 
     commandLine_ = quoteIfNecessary(programName_.c_str());
     for (int i = 1; i < argc; ++i)
@@ -327,6 +411,11 @@ const std::string &ProgramInfo::commandLine() const
 const std::string &ProgramInfo::fullBinaryPath() const
 {
     return impl_->fullBinaryPath_;
+}
+
+const std::string &ProgramInfo::defaultLibraryFilePath() const
+{
+    return impl_->defaultLibraryFilePath_;
 }
 
 } // namespace gmx

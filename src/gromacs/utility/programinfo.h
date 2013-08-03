@@ -263,6 +263,7 @@ class ProgramInfo
          * Does not throw.
          */
         const std::string &fullBinaryPath() const;
+        const std::string &defaultLibraryFilePath() const;
 
     private:
         class Impl;

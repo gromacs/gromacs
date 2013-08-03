@@ -165,9 +165,6 @@ int
 gmx_directory_close(gmx_directory_t gmxdir);
 
 
-
-void get_libdir(char *libdir);
-
 char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal);
 
 FILE *low_libopen(const char *file, gmx_bool bFatal);
