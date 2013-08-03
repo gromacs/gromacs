@@ -39,6 +39,7 @@
 #include "cmat.h"
 #include "smalloc.h"
 #include "macros.h"
+#include "vec.h"
 #include "xvgr.h"
 #include "matio.h"
 #include "futil.h"
@@ -55,7 +56,6 @@ t_mat *init_mat(int n1, gmx_bool b1D)
     m->maxrms = 0;
     m->minrms = 1e20;
     m->sumrms = 0;
-    m->nn     = 0;
     m->mat    = mk_matrix(n1, n1, b1D);
 
     snew(m->erow, n1);
@@ -63,6 +63,30 @@ t_mat *init_mat(int n1, gmx_bool b1D)
     reset_index(m);
 
     return m;
+}
+
+void copy_t_mat(t_mat *dst, t_mat *src)
+{
+    int i, j;
+
+    if (dst->nn != src->nn)
+    {
+        fprintf(stderr, "t_mat structures not identical in size dst %d src %d\n",dst->nn,src->nn);
+        return;
+    }
+    dst->emat   = src->emat;
+    dst->maxrms = src->maxrms;
+    dst->minrms = src->minrms;
+    dst->sumrms = src->sumrms;
+    for(i = 0; (i < src->nn); i++)
+    {
+        for(j = 0; (j < src->nn); j++)
+        {
+            dst->mat[i][j] = src->mat[i][j];
+        }
+        dst->erow[i] = src->erow[i];
+        dst->m_ind[i] = src->m_ind[i];
+    }
 }
 
 void enlarge_mat(t_mat *m, int deltan)
@@ -122,39 +146,27 @@ void done_mat(t_mat **m)
     *m = NULL;
 }
 
-real row_energy(int nn, int row, real *mat)
-{
-    real re = 0;
-    int  i;
-
-    for (i = 0; (i < nn); i++)
-    {
-        re += abs(i-row)*mat[i];
-    }
-    return re/nn;
-}
-
 real mat_energy(t_mat *m)
 {
-    real re, retot;
-    int  j, jj;
+    int  j;
 
-    retot = 0;
-    for (j = 0; (j < m->nn); j++)
+    m->emat = 0;
+    for (j = 0; (j < m->nn-1); j++)
     {
-        jj         = m->m_ind[j];
-        re         = row_energy(m->nn, jj, m->mat[j]);
-        m->erow[j] = re;
-        retot     += re;
+        m->emat += sqr(m->mat[j][j+1]);
     }
-    m->emat = retot/m->nn;
     return m->emat;
 }
 
 void swap_rows(t_mat *m, int isw, int jsw)
 {
     real *tmp, ttt;
-    int   i;
+    int   i, itmp;
+
+    /* Swap indices */
+    itmp          = m->m_ind[isw];
+    m->m_ind[isw] = m->m_ind[jsw];
+    m->m_ind[jsw] = itmp;
 
     /* Swap rows */
     tmp         = m->mat[isw];
@@ -163,9 +175,9 @@ void swap_rows(t_mat *m, int isw, int jsw)
     /* Swap columns */
     for (i = 0; (i < m->nn); i++)
     {
-        ttt            = m->mat[isw][i];
-        m->mat[isw][i] = m->mat[jsw][i];
-        m->mat[jsw][i] = ttt;
+        ttt            = m->mat[i][isw];
+        m->mat[i][isw] = m->mat[i][jsw];
+        m->mat[i][jsw] = ttt;
     }
 }
 
