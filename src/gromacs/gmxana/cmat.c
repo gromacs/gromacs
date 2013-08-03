@@ -55,7 +55,6 @@ t_mat *init_mat(int n1, gmx_bool b1D)
     m->maxrms = 0;
     m->minrms = 1e20;
     m->sumrms = 0;
-    m->nn     = 0;
     m->mat    = mk_matrix(n1, n1, b1D);
 
     snew(m->erow, n1);
@@ -63,6 +62,30 @@ t_mat *init_mat(int n1, gmx_bool b1D)
     reset_index(m);
 
     return m;
+}
+
+void copy_t_mat(t_mat *dst, t_mat *src)
+{
+    int i, j;
+    
+    if (dst->nn != src->nn)
+    {
+        fprintf(stderr, "t_mat structures not identical in size dst %d src %d\n",dst->nn,src->nn);
+        return;
+    }
+    dst->emat   = src->emat;
+    dst->maxrms = src->maxrms;
+    dst->minrms = src->minrms;
+    dst->sumrms = src->sumrms;
+    for(i = 0; (i < src->nn); i++)
+    {
+        for(j = 0; (j < src->nn); j++)
+        {
+            dst->mat[i][j] = src->mat[i][j];
+        }
+        dst->erow[i] = src->erow[i];
+        dst->m_ind[i] = src->m_ind[i];
+    }
 }
 
 void enlarge_mat(t_mat *m, int deltan)
@@ -154,8 +177,13 @@ real mat_energy(t_mat *m)
 void swap_rows(t_mat *m, int isw, int jsw)
 {
     real *tmp, ttt;
-    int   i;
+    int   i, itmp;
 
+    /* Swap indices */
+    itmp          = m->m_ind[isw];
+    m->m_ind[isw] = m->m_ind[jsw];
+    m->m_ind[jsw] = itmp;
+    
     /* Swap rows */
     tmp         = m->mat[isw];
     m->mat[isw] = m->mat[jsw];
@@ -163,9 +191,9 @@ void swap_rows(t_mat *m, int isw, int jsw)
     /* Swap columns */
     for (i = 0; (i < m->nn); i++)
     {
-        ttt            = m->mat[isw][i];
-        m->mat[isw][i] = m->mat[jsw][i];
-        m->mat[jsw][i] = ttt;
+        ttt            = m->mat[i][isw];
+        m->mat[i][isw] = m->mat[i][jsw];
+        m->mat[i][jsw] = ttt;
     }
 }
 

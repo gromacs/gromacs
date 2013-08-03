@@ -61,6 +61,8 @@ typedef struct {
 
 extern t_mat *init_mat(int n1, gmx_bool b1D);
 
+extern void copy_t_mat(t_mat *dst, t_mat *src);
+
 extern void enlarge_mat(t_mat *m, int deltan);
 
 extern void reset_index(t_mat *m);
