@@ -32,7 +32,10 @@
 #cmakedefine GMX_GIT_VERSION_INFO
 
 /* Default location of data files */
-#define GMXLIBDIR "@GMXLIBDIR@"
+#define GMXLIB_SEARCH_DIR "@GMXLIB_SEARCH_DIR@"
+
+/* Default location of data files */
+#define GMXLIB_FALLBACK "@GMXLIB_FALLBACK@"
 
 /* Binary suffix for the created binaries */
 #define GMX_BINARY_SUFFIX "@GMX_BINARY_SUFFIX@"
