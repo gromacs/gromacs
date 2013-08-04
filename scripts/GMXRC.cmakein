@@ -9,27 +9,9 @@
 test $shell && goto CSH
 
 # if we got here, shell is bsh/bash/zsh/ksh
-. @BIN_INSTALL_DIR@/GMXRC.bash
+. @CMAKE_INSTALL_PREFIX@/@BIN_INSTALL_DIR@/GMXRC.bash
 return
 
 # csh/tcsh jump here
 CSH:
-source @BIN_INSTALL_DIR@/GMXRC.csh
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+source @CMAKE_INSTALL_PREFIX@/@BIN_INSTALL_DIR@/GMXRC.csh
