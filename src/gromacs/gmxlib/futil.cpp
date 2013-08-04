@@ -799,23 +799,8 @@ static gmx_bool search_subdirs(const char *parent, char *libdir)
     found = gmx_fexist(libdir);
     if (!found)
     {
-        sprintf(libdir, "%s%cshare%cgromacs%ctop%cgurgle.dat", parent,
-                DIR_SEPARATOR, DIR_SEPARATOR,
-                DIR_SEPARATOR, DIR_SEPARATOR);
-        found = gmx_fexist(libdir);
-    }
-    if (!found)
-    {
-        sprintf(libdir, "%s%cshare%cgromacs-%s%ctop%cgurgle.dat", parent,
-                DIR_SEPARATOR, DIR_SEPARATOR, VERSION,
-                DIR_SEPARATOR, DIR_SEPARATOR);
-        found = gmx_fexist(libdir);
-    }
-    if (!found)
-    {
-        sprintf(libdir, "%s%cshare%cgromacs%cgromacs-%s%ctop%cgurgle.dat", parent,
-                DIR_SEPARATOR, DIR_SEPARATOR, DIR_SEPARATOR,
-                VERSION, DIR_SEPARATOR, DIR_SEPARATOR);
+        sprintf(libdir, "%s%c%s%cgurgle.dat", parent,
+                DIR_SEPARATOR, GMXLIB_SEARCH_DIR, DIR_SEPARATOR);
         found = gmx_fexist(libdir);
     }
 
@@ -842,7 +827,7 @@ static gmx_bool filename_is_absolute(char *name)
 #endif
 }
 
-gmx_bool get_libdir(char *libdir)
+void get_libdir(char *libdir)
 {
 #define GMX_BINNAME_MAX 512
     char     bin_name[GMX_BINNAME_MAX];
@@ -899,7 +884,8 @@ gmx_bool get_libdir(char *libdir)
                 }
                 if (!found)
                 {
-                    return FALSE;
+                    strcpy(libdir, GMXLIB_FALLBACK);
+                    return;
                 }
             }
             else if (!filename_is_absolute(bin_name))
@@ -943,7 +929,7 @@ gmx_bool get_libdir(char *libdir)
             {
                 if (search_subdirs(CMAKE_SOURCE_DIR, libdir))
                 {
-                    return TRUE;
+                    return;
                 }
             }
 #endif
@@ -980,7 +966,10 @@ gmx_bool get_libdir(char *libdir)
         found = search_subdirs("/opt", libdir);
     }
 #endif
-    return found;
+    if (!found)
+    {
+        strcpy(libdir, GMXLIB_FALLBACK);
+    }
 }
 
 
@@ -1000,9 +989,9 @@ char *low_gmxlibfn(const char *file, gmx_bool bAddCWD, gmx_bool bFatal)
         env_is_set = TRUE;
         strncpy(libpath, lib, GMX_PATH_MAX);
     }
-    else if (!get_libdir(libpath))
+    else
     {
-        strncpy(libpath, GMXLIBDIR, GMX_PATH_MAX);
+        get_libdir(libpath);
     }
 
     ret = NULL;

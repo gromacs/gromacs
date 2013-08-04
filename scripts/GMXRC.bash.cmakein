@@ -48,13 +48,14 @@ MANPATH=$tmppath
 ##########################################################
 # This is the real configuration part. We save the Gromacs
 # things in separate vars, so we can remove them later.
-# If you move gromacs, change the next four line.
+# If you move gromacs, change the first line.
 ##########################################################
-GMXBIN=@BIN_INSTALL_DIR@
-GMXLDLIB=@LIB_INSTALL_DIR@
-GMXMAN=@MAN_INSTALL_DIR@
-GMXDATA=@DATA_INSTALL_DIR@
-	
+GMXPREFIX=@CMAKE_INSTALL_PREFIX@
+GMXBIN=${GMXPREFIX}/@BIN_INSTALL_DIR@
+GMXLDLIB=${GMXPREFIX}/@LIB_INSTALL_DIR@
+GMXMAN=${GMXPREFIX}/@MAN_INSTALL_DIR@
+GMXDATA=${GMXPREFIX}/@DATA_INSTALL_DIR@
+
 LD_LIBRARY_PATH=${GMXLDLIB}${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}
 PKG_CONFIG_PATH=${GMXLDLIB}/pkgconfig${PKG_CONFIG_PATH:+:}${PKG_CONFIG_PATH}
 PATH=${GMXBIN}${PATH:+:}${PATH}

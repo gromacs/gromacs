@@ -1179,16 +1179,20 @@ endif(GMX_GPU)
 ########################################################################
 # Specify install locations
 ########################################################################
-if ( NOT DEFINED GMXLIB )
-    set(GMXLIB lib)
-endif()
-set(LIB_INSTALL_DIR "${GMX_INSTALL_PREFIX}${GMXLIB}")
+set(GMX_LIB_INSTALL_DIR lib CACHE STRING
+    "Library installation directory (default: lib)")
+set(GMX_DATA_INSTALL_DIR gromacs CACHE STRING
+    "Data installation directory under share/ (default: gromacs)")
+mark_as_advanced(GMX_LIB_INSTALL_DIR GMX_DATA_INSTALL_DIR)
+
+set(LIB_INSTALL_DIR  ${GMX_INSTALL_PREFIX}${GMX_LIB_INSTALL_DIR})
 set(BIN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}bin)
-set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/gromacs)
+set(DATA_INSTALL_DIR ${GMX_INSTALL_PREFIX}share/${GMX_DATA_INSTALL_DIR})
 set(MAN_INSTALL_DIR  ${GMX_INSTALL_PREFIX}share/man)
 set(INCL_INSTALL_DIR ${GMX_INSTALL_PREFIX}include)
 
-set(GMXLIBDIR        ${DATA_INSTALL_DIR}/top)
+set(GMXLIB_SEARCH_DIR share/${GMX_DATA_INSTALL_DIR}/top)
+set(GMXLIB_FALLBACK   ${CMAKE_INSTALL_PREFIX}/${DATA_INSTALL_DIR}/top)
 
 ##################################################################
 # Shared library settings
