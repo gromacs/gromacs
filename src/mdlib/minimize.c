@@ -371,7 +371,7 @@ void init_em(FILE *fplog, const char *title,
         }
         copy_mat(state_global->box, ems->s.box);
 
-        if (PAR(cr) && ir->eI != eiNM)
+        if (PAR(cr))
         {
             /* Initialize the particle decomposition and split the topology */
             *top = split_system(fplog, top_global, ir, cr);
@@ -761,7 +761,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
     clear_mat(pres);
 
     /* Communicate stuff when parallel */
-    if (PAR(cr) && inputrec->eI != eiNM)
+    if (PAR(cr))
     {
         wallcycle_start(wcycle, ewcMoveE);
 
@@ -815,7 +815,7 @@ static void evaluate_energy(FILE *fplog, gmx_bool bVerbose, t_commrec *cr,
 
     sum_dhdl(enerd, ems->s.lambda, inputrec->fepvals);
 
-    if (EI_ENERGY_MINIMIZATION(inputrec->eI))
+    if (EI_ENERGY_MINIMIZATION(inputrec->eI) || (eiNM == inputrec->eI))
     {
         get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, ems);
     }
@@ -2657,24 +2657,35 @@ double do_nm(FILE *fplog, t_commrec *cr,
      */
     if (EEL_FULL(fr->eeltype) || fr->rlist == 0.0)
     {
-        fprintf(stderr, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        }
         bSparse = FALSE;
     }
     else if (top_global->natoms < 1000)
     {
-        fprintf(stderr, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        }
         bSparse = FALSE;
     }
     else
     {
-        fprintf(stderr, "Using compressed symmetric sparse Hessian format.\n");
+        if (MASTER(cr))
+        {
+            fprintf(stderr, "Using compressed symmetric sparse Hessian format.\n");
+        }
         bSparse = TRUE;
     }
 
     sz = DIM*top_global->natoms;
 
-    fprintf(stderr, "Allocating Hessian memory...\n\n");
-
+    if (MASTER(cr))
+    {
+        fprintf(stderr, "Allocating Hessian memory...\n\n");
+    }
     if (bSparse)
     {
         sparse_matrix = gmx_sparsematrix_init(sz);
@@ -2709,21 +2720,17 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
     nnodes = cr->nnodes;
 
-    /* Make evaluate_energy do a single node force calculation */
-    cr->nnodes = 1;
     evaluate_energy(fplog, bVerbose, cr,
                     state_global, top_global, state_work, top,
                     inputrec, nrnb, wcycle, gstat,
                     vsite, constr, fcd, graph, mdatoms, fr,
                     mu_tot, enerd, vir, pres, -1, TRUE);
-    cr->nnodes = nnodes;
-
-    /* if forces are not small, warn user */
-    get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, state_work);
 
     if (MASTER(cr))
     {
-        fprintf(stderr, "Maximum force:%12.5e\n", state_work->fmax);
+        fprintf(stderr, "Maximum force:%12.5e  atom: %d\n",
+                state_work->fmax, state_work->a_fmax+1);
+        /* if forces are not small, warn user */
         if (state_work->fmax > 1.0e-3)
         {
             fprintf(stderr, "Maximum force probably not small enough to");
