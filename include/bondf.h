@@ -157,13 +157,13 @@ t_ifunc tab_bonds, tab_angles, tab_dihs;
 t_ifunc polarize, anharm_polarize, water_pol, thole_pol, angres, angresz, dihres, unimplemented;
 
 
-/* Initialize the setup for the bonded force buffer reduction
- * over threads. This should be called each time the bonded setup
- * changes; i.e. at start-up without domain decomposition and at DD.
+/* Divided the bonded interactions over the threads, count=fr->nthreads
+ * and set up the bonded thread-force buffer reduction.
+ * This should be called each time the bonded setup changes;
+ * i.e. at start-up without domain decomposition and at DD.
  */
 GMX_LIBGMX_EXPORT
-void init_bonded_thread_force_reduction(t_forcerec   *fr,
-                                        const t_idef *idef);
+void setup_bonded_threading(t_forcerec *fr, t_idef *idef);
 
 #ifdef __cplusplus
 }
