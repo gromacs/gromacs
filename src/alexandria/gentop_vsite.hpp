@@ -38,7 +38,7 @@
 #define _gentop_vsite_h
 
 #include "grompp.h"
-#include "poldata.h"
+#include "poldata.hpp"
 
 enum { egvtNO, egvtLINEAR, egvtPLANAR, egvtRING_PLANAR, egvtALL, egvtNR };
 

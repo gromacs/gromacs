@@ -41,7 +41,7 @@
 #include "atomprop.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gentop_vsite.hpp"
 
 extern int nm2type(FILE *fp,const char *molname,

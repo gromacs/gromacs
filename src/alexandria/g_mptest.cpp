@@ -40,7 +40,7 @@
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
 #include "atomprop.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 
 int main(int argc,char*argv[])
 {
@@ -63,11 +63,11 @@ int main(int argc,char*argv[])
         if ((pd = gmx_poldata_read("tune_pol.dat",ap)) == NULL)
             gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
         
-        merge_xml(1,&argv[1],mpt,"g_mptest_out.dat",
+        merge_xml(1,&argv[1],mpt,(char *)"g_mptest_out.dat",
                   NULL,(char *)"double_dip.dat",
                   ap,pd,TRUE,TRUE,170,15);
     }
-    printf("Read %d molecules from %s\n",mpt.size(),argv[1]);
+    printf("Read %d molecules from %s\n",(int)mpt.size(),argv[1]);
     MolPropWrite(argv[2],mpt,1);
     
     return 0;

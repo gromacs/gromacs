@@ -42,7 +42,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "toputil.h"
 #include "gentop_vsite.hpp"
 

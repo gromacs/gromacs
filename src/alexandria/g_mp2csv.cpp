@@ -43,7 +43,7 @@
 #include "molprop_xml.hpp"
 #include "molprop_util.hpp"
 #include "atomprop.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 
 static void gmx_molprop_csv(const char *fn,
                             std::vector<alexandria::MolProp> mp,

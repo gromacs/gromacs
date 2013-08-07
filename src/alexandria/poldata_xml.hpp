@@ -34,25 +34,17 @@
  * Groningen Machine for Chemical Simulation
  */
 
-#ifndef _poldata_xml_h
-#define _poldata_xml_h
+#ifndef _poldata_xml_hpp
+#define _poldata_xml_hpp
 
-#include "poldata.h"
+#include "poldata.hpp"
 #include "atomprop.h"
 
 /* This source code file is part of the Alexandria project */
 	
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 extern void gmx_poldata_write(const char *fn,gmx_poldata_t pd,
 			      gmx_bool bCompress);
 
 extern gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps);
 
-#ifdef __cplusplus
-}
-#endif
-			  
 #endif

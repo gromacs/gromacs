@@ -37,7 +37,7 @@
 #include <stdlib.h>
 #include <gmx_fatal.h>
 #include "atomprop.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 
 #include <vector>
 #include "molprop.hpp"

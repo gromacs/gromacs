@@ -47,7 +47,7 @@
 #include "symtab.h"
 #include "string2.h"
 #include "vec.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "atomprop.h"
 #include "molprop.hpp"
 #include "molprop_util.hpp"

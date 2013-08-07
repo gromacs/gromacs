@@ -40,7 +40,7 @@
 #include "grompp.h"
 #include "atomprop.h"
 #include "molprop.hpp"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "molselect.hpp"
 
 extern void generate_formula(std::vector<alexandria::MolProp>& mp,gmx_atomprop_t ap);

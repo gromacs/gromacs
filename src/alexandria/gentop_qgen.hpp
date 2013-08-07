@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include "grompp.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gmx_resp.hpp"
 	
 enum { eQGEN_OK, eQGEN_NOTCONVERGED, eQGEN_NOSUPPORT, eQGEN_ERROR, eQGEN_NR };
@@ -48,9 +48,10 @@ typedef struct gentop_qgen *gentop_qgen_t;
 
 extern gentop_qgen_t 
 gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,
-		 gmx_atomprop_t aps,
-		 rvec *x,int eqg_model,real hfac,int qtotal,
-		 real epsr);
+                 gmx_atomprop_t aps,
+                 rvec *x,ChargeGenerationModel eqg_model,
+                 real hfac,int qtotal,
+                 real epsr);
 
 extern void 
 gentop_qgen_done(gentop_qgen_t qgen);
@@ -74,7 +75,7 @@ extern void
 qgen_message(gentop_qgen_t qgen,int len,char buf[],gmx_resp_t gr);
 
 extern gmx_bool 
-bSplitQ(int iModel);
+bSplitQ(ChargeGenerationModel iModel);
 
 /* The routines below return NOTSET if something is out of the ordinary */
 extern int gentop_qgen_get_nzeta(gentop_qgen_t qgen,int atom);

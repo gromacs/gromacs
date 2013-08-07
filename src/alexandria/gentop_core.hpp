@@ -43,7 +43,7 @@
 #include "gentop_nm2type.hpp"
 #include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
-#include "poldata.h"
+#include "poldata.hpp"
 
 #ifdef __cplusplus
 extern "C" {

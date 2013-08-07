@@ -53,8 +53,8 @@
 #include "gmx_statistics.h"
 #include "gmx_fatal.h"
 #include "gromacs/linearalgebra/matrix.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata.hpp"
+#include "poldata_xml.hpp"
 #include "molselect.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
@@ -798,7 +798,7 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
     char   *spref,*desc,*ptype,*btype;
 #define prev (1-cur)
 #define NEQG 5
-    int    eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
+    ChargeGenerationModel eqgcol[NEQG] = { eqgAXp, eqgAXs, eqgAXg };
     int    npcol[NEQG]  = { 2, 3, 3 };
     const char   *clab[3] = { "$J_0$", "$\\chi_0$", "$\\zeta$" };
     int    ncol;
@@ -816,7 +816,8 @@ static void gmx_molprop_atomtype_dip_table(FILE *fp,gmx_poldata_t pd)
         fprintf(fp,"c");
     fprintf(fp,"}\n\\hline\n");
     for(i=0; (i<NEQG); i++) 
-        fprintf(fp," & \\multicolumn{%d}{c}{%s}",npcol[i],get_eemtype_name(eqgcol[i]));
+        fprintf(fp," & \\multicolumn{%d}{c}{%s}",npcol[i],
+                get_eemtype_name(eqgcol[i]));
     fprintf(fp,"\\\\\n");
     for(i=0; (i<NEQG); i++) 
         for(m=0; (m<npcol[i]); m++)

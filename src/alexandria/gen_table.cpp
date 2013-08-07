@@ -46,8 +46,8 @@
 #include "coulomb.h"
 #include "gromacs/coulombintegrals.h"
 #include "atomprop.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata.hpp"
+#include "poldata_xml.hpp"
 
 enum { mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mDEC, mDEC_pair, mDEC_qd_q, mDEC_qd_qd, mDEC_q_q, mNR };
 
@@ -71,7 +71,7 @@ static double erf1(double x)
 
 static void do_hard(FILE *fp,int pts_nm,double efac,double delta)
 {
-    int    i,k,imax;
+    int    i,imax;
     double x,vr,vr2,vc,vc2;
   
     if (delta < 0)
@@ -185,7 +185,6 @@ static void lo_do_guillot(double r,double xi, double xir,
     double qO     = -0.888;
     double qOd    =  0.226;
     double f0     = qOd/qO;
-    double sqpi   = sqrt(M_PI);
     double rxi1,rxi2,z;
     double r2,r_6;
 
@@ -260,7 +259,6 @@ void lo_do_guillot_maple(double r,double xi,double xir,
     double qO     = -0.888;
     double qOd    = 0.226;
     double f0     = qOd/qO;
-    double sqpi   = sqrt(M_PI);
 
     *vc = pow(-f0/(1.0+f0)+1.0,2.0)/r+pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/r+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/r;
     *vc2 = 2.0*pow(-f0/(1.0+f0)+1.0,2.0)/(r*r*r)-pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/4.0)/2.0-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/4.0)/xi/(r*r)+2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*f0*erf(r/xi/2.0)/(r*r*r)-2.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)/(xi*xi*xi)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)-4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0/sqrt(M_PI)*exp(-r*r/(xi*xi)/2.0)*sqrt(2.0)/xi/(r*r)+4.0*pow(-f0/(1.0+f0)+1.0,2.0)*f0*erf(r*sqrt(2.0)/xi/2.0)/(r*r*r);
@@ -279,7 +277,6 @@ static void lo_do_DEC(double r,double xi,double xir,
     double qO     = -0.888;
     double qOd    =  0.226;
     double f0     = qOd/qO;
-    double sqpi   = sqrt(M_PI);
     double r2,xi2;
 
     r2 = r*r;
@@ -355,8 +352,6 @@ void lo_do_DEC_q_qd(double r,double xi,double xir,
                     double *vd,double *fd,
                     double *vr,double *fr)
 {
-    double sqpi   = sqrt(M_PI);
-
     *vc = erf(r/(sqrt(2)*xi)) / r;
     *fc = -(sqrt(2/M_PI)/(exp(r*r/(2*xi*xi))*r*xi)) + (erf(r/(sqrt(2)*xi))/(r*r));
 
@@ -426,7 +421,7 @@ void lo_do_DEC_q_q(double r,double xi,double xir,
 
 static void do_guillot(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     double r,vc,fc,vd,fd,vr,fr;
 
     imax = 3*pts_nm;
@@ -456,7 +451,7 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
     FILE *fp=NULL;
     char buf[256];
     const char *atype[]   = { "HW", "OW", "HWd", "OWd", NULL };
-    int    i,j,k,i0,imax,atypemax=4;
+    int    i,j,k,imax,atypemax=4;
     double r,vc,fc,vd,fd,vr,fr;
 
     /* For Guillot2001a we have four types: HW, OW, HWd and OWd. */
@@ -564,7 +559,7 @@ static void do_DEC_pair(const char *file,int eel,int pts_nm,double rc,double rto
     FILE *fp=NULL;
     char buf[256];
     const char *atype[]   = { "OW", "HW", "OWd", "HWd", NULL };
-    int    i,j,k,i0,imax,atypemax=4;
+    int    i,j,k,imax,atypemax=4;
     double r,vc,fc,vd,fd,vr,fr;
     char fbuf[256];
   
@@ -678,7 +673,7 @@ static void do_Slater(const char *file,int eel,int pts_nm,
 {
     FILE *fp=NULL;
     char buf[256];
-    int    i,j,k,l,kl,m,i0,imax;
+    int    i,imax;
     double r,vc,fc,vd,fd,vr,fr;
   
     sprintf(buf,"table_%d-%g_%d-%g.xvg",nrow1,w1,nrow2,w2);
@@ -717,7 +712,7 @@ static void do_Slater(const char *file,int eel,int pts_nm,
 
 static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
 { 
-    int    i,i0,imax;
+    int    i,imax;
     double r,vc,fc,vd,fd,vr,fr;
 
     imax = 3*pts_nm;
@@ -740,7 +735,7 @@ static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
 
 static void do_guillot_maple(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     /*  double xi     = 0.15;*/
     double r,vc,vc2,vd,vd2,vr,vr2;
 
@@ -764,7 +759,7 @@ static void do_guillot_maple(FILE *fp,int eel,int pts_nm,double rc,double rtol,d
 
 static void do_DEC(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     double r,vc,vc2,vd,vd2,vr,vr2;
 
     imax = 3*pts_nm;
@@ -787,7 +782,7 @@ static void do_DEC(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,d
 
 static void do_DEC_q_q(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     double r,vc,vc2,vd,vd2,vr,vr2;
 
     imax = 3*pts_nm;
@@ -810,7 +805,7 @@ static void do_DEC_q_q(FILE *fp,int eel,int pts_nm,double rc,double rtol,double 
 
 static void do_DEC_q_qd(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     /*  double xi     = 0.15;*/
     double r,vc,vc2,vd,vd2,vr,vr2;
 
@@ -832,17 +827,15 @@ static void do_DEC_q_qd(FILE *fp,int eel,int pts_nm,double rc,double rtol,double
     }
 } 
 
-static void gen_alexandria_rho(gmx_poldata_t pd,const char *fn,int iModel,
+static void gen_alexandria_rho(gmx_poldata_t pd,const char *fn,ChargeGenerationModel iModel,
                                real rcut,real spacing,output_env_t oenv)
 {
     FILE   *fp;
-    int    i,j,k,l,n,nmax;
-    int    eqg_model;
+    int    j,n,nmax;
+    ChargeGenerationModel eqg_model;
     char   *name;
     double rho,rr,J0,*A,chi0,*zeta,*q,qtot;
     int    *row,nzeta;
-    int    natypemax = 32,natype = 0;
-    int    nzi0,nzi1,nzk0,nzk1;
     char   buf[STRLEN];
     
     nmax = 1+(int)(rcut/spacing);
@@ -912,12 +905,12 @@ static void gen_alexandria_rho(gmx_poldata_t pd,const char *fn,int iModel,
     }
 }
     
-static void gen_alexandria_tables(gmx_poldata_t pd,const char *fn,int iModel,
+static void gen_alexandria_tables(gmx_poldata_t pd,const char *fn,ChargeGenerationModel iModel,
                                   real rcut,real spacing,output_env_t oenv)
 {
     FILE   *fp;
     int    i,j,k,l,n,nmax,bi,bk;
-    int    eqg_model;
+    ChargeGenerationModel    eqg_model;
     gmx_bool   *bSplit;
     char   **name;
     double dV,V,dVp,Vp,rr,*J0,*chi0,**zeta,**q,qij,qkl;
@@ -1057,7 +1050,7 @@ static void gen_alexandria_tables(gmx_poldata_t pd,const char *fn,int iModel,
 
 static void do_DEC_qd_qd(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
-    int    i,i0,imax;
+    int    i,imax;
     /*  double xi     = 0.15;*/
     double r,vc,vc2,vd,vd2,vr,vr2;
 
@@ -1081,7 +1074,7 @@ static void do_DEC_qd_qd(FILE *fp,int eel,int pts_nm,double rc,double rtol,doubl
 
 static void do_maaren(FILE *fp,int eel,int pts_nm,int npow)
 {
-    int    i,i0,imax;
+    int    i,imax;
     double xi     = 0.05;
     double xir     = 0.0615;
     double r,vc,vc2,vd,vd2,vr,vr2;
@@ -1179,7 +1172,8 @@ int main(int argc,char *argv[])
     const char *fn;
     gmx_poldata_t pd;
     gmx_atomprop_t aps;
-    int  eel=0,m=0,iModel;
+    int  eel=0,m=0;
+    ChargeGenerationModel iModel;
     output_env_t oenv;
   
     CopyRight(stderr,argv[0]);
@@ -1221,7 +1215,7 @@ int main(int argc,char *argv[])
     else 
         gmx_fatal(FARGS,"Invalid argument %s for option -m",opt[0]);
     
-    if ((iModel = name2eemtype(cqgen[0])) == -1)
+    if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
     {
         fprintf(stderr,"Running in old mode!\n");
         fn = opt2fn("-o",NFILE,fnm);

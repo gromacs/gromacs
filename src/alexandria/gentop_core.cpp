@@ -64,7 +64,7 @@
 #include "pdbio.h"
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gentop_nm2type.hpp"
 #include "gentop_core.hpp"
 #include "gentop_vsite.hpp"

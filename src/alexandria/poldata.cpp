@@ -43,7 +43,7 @@
 #include "smalloc.h"
 #include "names.h"
 #include "gmx_fatal.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gmx_simple_comm.h"
 
 typedef struct {
@@ -101,13 +101,14 @@ typedef struct {
 #define EEMBUFSIZE 256
 #define MAXZETA    12
 typedef struct {
-    int    eqg_model,nzeta,row[MAXZETA];
+    ChargeGenerationModel eqg_model;
+    int    nzeta,row[MAXZETA];
     char   name[EEMBUFSIZE],zetastr[EEMBUFSIZE],qstr[EEMBUFSIZE],rowstr[EEMBUFSIZE];
     double J0,chi0,q[MAXZETA],zeta[MAXZETA]; 
 } t_eemprops;
 
 typedef struct {
-    int  eqg_model;
+    ChargeGenerationModel eqg_model;
     char *epref;
 } t_epref;
 
@@ -293,8 +294,7 @@ void gmx_poldata_add_ptype(gmx_poldata_t pd,
                              double sig_pol)
 {
     t_ptype *sp;
-    char      buf[EEMBUFSIZE],**ptr;
-    int       i,j;
+    int     i;
   
     for(i=0; (i<pd->nptype); i++) 
         if (strcmp(pd->ptype[i].type,ptype) == 0)
@@ -341,10 +341,8 @@ void gmx_poldata_add_atype(gmx_poldata_t pd,
                            const char *btype,
                            const char *vdwparams)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_ffatype *sp;
-    char    buf[EEMBUFSIZE],**ptr;
-    int     i,j;
+    int       i;
   
     for(i=0; (i<pd->nalexandria); i++) 
         if (strcmp(pd->alexandria[i].type,atype) == 0)
@@ -373,7 +371,6 @@ void gmx_poldata_add_bonding_rule(gmx_poldata_t pd,
                                   char *neighbors)
 {
     t_brule *sp;
-    char    buf[EEMBUFSIZE],**ptr;
     int     i,j;
   
     for(j=0; (j<pd->nalexandria); j++) 
@@ -580,22 +577,16 @@ void gmx_poldata_set_polar_ref(gmx_poldata_t pd,const char *polar_ref)
 
 char *gmx_poldata_get_force_field(gmx_poldata_t pd)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     return pd->alexandria_forcefield;
 }
 
 void gmx_poldata_set_force_field(gmx_poldata_t pd,const char *forcefield)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     pd->alexandria_forcefield   = strdup(forcefield);
 }
 
 void gmx_poldata_set_length_unit(gmx_poldata_t pd,const char *length_unit)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     pd->gt_length_unit   = strdup(length_unit);
 }
 
@@ -681,7 +672,7 @@ char **gmx_poldata_get_bonding_rules(gmx_poldata_t pd,char *elem,
                                      const char *geometry,
                                      int iAromatic)
 {
-    int nnb,i,j,nptr=0,best=-1,score;
+    int nnb,i,nptr=0,best=-1,score;
     char **ptr = NULL;
     
     for(i=0; (i<pd->nbrule); i++) 
@@ -789,7 +780,6 @@ int gmx_poldata_get_ptype(gmx_poldata_t pd,
                             double *sig_pol)
 {
     t_ptype *sp;
-    int i;
     
     if (pd->nptype_c < pd->nptype) {
         sp = &(pd->ptype[pd->nptype_c]);
@@ -816,7 +806,6 @@ int gmx_poldata_get_atype(gmx_poldata_t pd,
                           char **vdwparams)
 {
     t_ffatype *sp;
-    int i;
     
     if (pd->nalexandria_c < pd->nalexandria) {
         sp = &(pd->alexandria[pd->nalexandria_c]);
@@ -1045,7 +1034,7 @@ static t_gt_bond *search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
     key.atom2 = atom2;
     key.bondorder = bondorder;
 
-    gt_b = bsearch(&key,pd->gt_bond,pd->ngt_bond,sizeof(key),gtb_comp);
+    gt_b = (t_gt_bond *) bsearch(&key,pd->gt_bond,pd->ngt_bond,sizeof(key),gtb_comp);
     if (NULL != gt_b)
     {
         i = gt_b - pd->gt_bond;
@@ -1061,9 +1050,8 @@ static t_gt_bond *search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
 double gmx_poldata_atype_bondorder(gmx_poldata_t pd,char *atype1,char *atype2,
                                    double distance,double toler)
 {
-    char *ba1,*ba2;
     double dev,dev_best = 100000;
-    int j,i,i_best=-1;
+    int i,i_best=-1;
     t_gt_bond *gt_b;
     
     if ((NULL == atype1) || (NULL == atype2))
@@ -1094,7 +1082,6 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,
                             double tau_ahc,
                             double alpha_ahp)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_miller *mil;
   
     pd->nmiller++;
@@ -1108,8 +1095,6 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,
 				  
 void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     pd->miller_tau_unit = strdup(tau_unit);
     pd->miller_ahp_unit = strdup(ahp_unit);
 }
@@ -1117,8 +1102,6 @@ void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit
 void gmx_poldata_get_miller_units(gmx_poldata_t pd,char **tau_unit,
                                   char **ahp_unit)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     assign_str(tau_unit,pd->miller_tau_unit);
     assign_str(ahp_unit,pd->miller_ahp_unit);
 }
@@ -1192,8 +1175,6 @@ int gmx_poldata_get_bosque(gmx_poldata_t pd,
                            char **bosque,
                            double *polarizability)
 {
-    int i;
-
     if (pd->nbosque_c < pd->nbosque)
     {  
         assign_str(bosque,pd->bosque[pd->nbosque_c].bosque);
@@ -1227,15 +1208,11 @@ int gmx_poldata_get_bosque_pol(gmx_poldata_t pd,
 				  
 void gmx_poldata_set_bosque_unit(gmx_poldata_t pd,char *polar_unit)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     pd->bosque_polar_unit   = strdup(polar_unit);
 }
 				  
 char *gmx_poldata_get_bosque_unit(gmx_poldata_t pd)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     return pd->bosque_polar_unit;
 }
 
@@ -1288,7 +1265,7 @@ int gmx_poldata_add_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                          double bondorder,char *params)
 {
     t_gt_bond *gt_b;
-    int j,a1,a2;
+    int       a1,a2;
 
     if (-1 == (a1 = search_bondtype(pd,atom1)))
         return 0;
@@ -1341,7 +1318,6 @@ int gmx_poldata_search_bond(gmx_poldata_t pd,char *atom1,char *atom2,
                             double *length,double *sigma,int *ntrain,
                             double *bondorder,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_bond *gt_b;
 
     if ((NULL == atom1) || (NULL == atom2)) 
@@ -1374,7 +1350,6 @@ int gmx_poldata_set_angle_params(gmx_poldata_t pd,char *atom1,char *atom2,
                                  char *atom3,double angle,double sigma,int ntrain,
                                  char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
     int i;
   
@@ -1406,9 +1381,7 @@ int gmx_poldata_add_angle(gmx_poldata_t pd,char *atom1,char *atom2,
                           char *atom3,double angle,double sigma,
                           int ntrain,char *params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
-    int i;
   
     if ((-1 == search_bondtype(pd,atom1)) ||
         (-1 == search_bondtype(pd,atom2)) ||
@@ -1434,9 +1407,7 @@ int gmx_poldata_get_angle(gmx_poldata_t pd,char **atom1,char **atom2,
                           char **atom3,double *angle,double *sigma,
                           int *ntrain,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
-    int i;
   
     if (pd->ngt_angle_c < pd->ngt_angle) {
         gt_b = &(pd->gt_angle[pd->ngt_angle_c]);
@@ -1460,7 +1431,6 @@ int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
                              char *atom3,double *angle,double *sigma,
                              int *ntrain,char **params)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_gt_angle *gt_b;
     int i;
   
@@ -1490,15 +1460,11 @@ int gmx_poldata_search_angle(gmx_poldata_t pd,char *atom1,char *atom2,
 
 void gmx_poldata_set_angle_unit(gmx_poldata_t pd,char *angle_unit)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     pd->gt_angle_unit   = strdup(angle_unit);
 }
 
 char *gmx_poldata_get_angle_unit(gmx_poldata_t pd)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     return pd->gt_angle_unit;
 }
 
@@ -1536,13 +1502,13 @@ static t_gt_dihedral *search_dihedral(gmx_poldata_t pd,int egd,
     gt_a.atom2 = atom2;
     gt_a.atom3 = atom3;
     gt_a.atom4 = atom4;
-    gt_res = bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),&gtd_comp);
+    gt_res = (t_gt_dihedral *) bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),&gtd_comp);
     if (NULL == gt_res) {
         gt_a.atom1 = atom4;
         gt_a.atom2 = atom3;
         gt_a.atom3 = atom2;
         gt_a.atom4 = atom1;
-        gt_res = bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),gtd_comp);
+        gt_res = (t_gt_dihedral *) bsearch(&gt_a,gt_dptr,nd,sizeof(gt_a),gtd_comp);
     }
     return gt_res;
 }
@@ -1579,7 +1545,6 @@ int gmx_poldata_add_dihedral(gmx_poldata_t pd,int egd,
                              double sigma,int ntrain,char *params)
 {
     t_gt_dihedral *gt_b;
-    int i;
 
     if ((-1 == search_bondtype(pd,atom1)) ||
         (-1 == search_bondtype(pd,atom2)) ||
@@ -1613,7 +1578,6 @@ int gmx_poldata_get_dihedral(gmx_poldata_t pd,int egd,
                              double *sigma,int *ntrain,char **params)
 {
     t_gt_dihedral *gt_b;
-    int i;
   
     if (pd->ngt_dihedral_c[egd] < pd->ngt_dihedral[egd]) {
         gt_b = &(pd->gt_dihedral[egd][pd->ngt_dihedral_c[egd]]);
@@ -1657,7 +1621,6 @@ int gmx_poldata_search_dihedral(gmx_poldata_t pd,int egd,
 void gmx_poldata_add_symcharges(gmx_poldata_t pd,char *central,
                                 char *attached,int numattach)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_symcharges *sc;
     int i;
   
@@ -1681,9 +1644,7 @@ void gmx_poldata_add_symcharges(gmx_poldata_t pd,char *central,
 int gmx_poldata_get_symcharges(gmx_poldata_t pd,char **central,
                                char **attached,int *numattach)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_symcharges *sc;
-    int i;
   
     if (pd->nsymcharges_c < pd->nsymcharges) {
         sc = &(pd->symcharges[pd->nsymcharges_c]);
@@ -1702,7 +1663,6 @@ int gmx_poldata_get_symcharges(gmx_poldata_t pd,char **central,
 int gmx_poldata_search_symcharges(gmx_poldata_t pd,char *central,
                                   char *attached,int numattach)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     t_symcharges *sc;
     int i;
   
@@ -1718,10 +1678,9 @@ int gmx_poldata_search_symcharges(gmx_poldata_t pd,char *central,
 }
 
 /* Electrostatics properties */
-static t_eemprops *get_eep(gmx_poldata *pd,int eqg_model,char *name) 
+static t_eemprops *get_eep(gmx_poldata *pd,ChargeGenerationModel eqg_model,char *name) 
 {
-    int i,j;
-    t_eemprops *eep;
+    int i;
   
     for(i=0; (i<pd->nep); i++) 
         if ((strcasecmp(pd->eep[i].name,name) == 0) &&
@@ -1731,7 +1690,7 @@ static t_eemprops *get_eep(gmx_poldata *pd,int eqg_model,char *name)
 }
 
 void gmx_poldata_set_eemprops(gmx_poldata_t pd,
-                              int eqg_model,char *name,
+                              ChargeGenerationModel eqg_model,char *name,
                               double J0,double chi0,char *zeta,char *q,char *row)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
@@ -1796,11 +1755,9 @@ void gmx_poldata_set_eemprops(gmx_poldata_t pd,
 }
 
 int gmx_poldata_get_eemprops(gmx_poldata_t pd,
-                             int *eqg_model,char **name,
+                             ChargeGenerationModel *eqg_model,char **name,
                              double *J0,double *chi0,char **zeta,char **q,char **row)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-
     if (pd->nep_c < pd->nep) {
         assign_scal(eqg_model,pd->eep[pd->nep_c].eqg_model);
         assign_str(name,pd->eep[pd->nep_c].name);
@@ -1818,9 +1775,8 @@ int gmx_poldata_get_eemprops(gmx_poldata_t pd,
     }
 }
 
-int gmx_poldata_get_numprops(gmx_poldata_t pd,int eqg_model)
+int gmx_poldata_get_numprops(gmx_poldata_t pd,ChargeGenerationModel eqg_model)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     int i,n=0;
   
     for(i=0; (i<pd->nep); i++) 
@@ -1840,7 +1796,7 @@ int gmx_poldata_have_pol_support(gmx_poldata_t pd,const char *atype)
     return 0;
 }
 
-int gmx_poldata_have_eem_support(gmx_poldata_t pd,int eqg_model,char *name,
+int gmx_poldata_have_eem_support(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name,
                                  gmx_bool bAllowZeroParameters)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
@@ -1849,7 +1805,7 @@ int gmx_poldata_have_eem_support(gmx_poldata_t pd,int eqg_model,char *name,
     return (eep && (bAllowZeroParameters || ((eep->J0 > 0) && (eep->chi0 > 0))));
 }
 
-double gmx_poldata_get_j00(gmx_poldata_t pd,int eqg_model,char *name)
+double gmx_poldata_get_j00(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name)
 {
     gmx_poldata *pold = (gmx_poldata *) pd;
     t_eemprops *eer;
@@ -1862,7 +1818,7 @@ double gmx_poldata_get_j00(gmx_poldata_t pd,int eqg_model,char *name)
     return -1;
 }
 
-char *gmx_poldata_get_qstr(gmx_poldata_t pd,int eqg_model,char *name)
+char *gmx_poldata_get_qstr(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name)
 {
     t_eemprops *eer;
     
@@ -1873,7 +1829,7 @@ char *gmx_poldata_get_qstr(gmx_poldata_t pd,int eqg_model,char *name)
     return NULL;
 }
 
-char *gmx_poldata_get_rowstr(gmx_poldata_t pd,int eqg_model,char *name)
+char *gmx_poldata_get_rowstr(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name)
 {
     t_eemprops *eer;
     
@@ -1884,7 +1840,7 @@ char *gmx_poldata_get_rowstr(gmx_poldata_t pd,int eqg_model,char *name)
     return NULL;
 }
 
-int gmx_poldata_get_row(gmx_poldata_t pd,int eqg_model,char *name,int zz)
+int gmx_poldata_get_row(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name,int zz)
 {
     t_eemprops *eer;
   
@@ -1896,7 +1852,7 @@ int gmx_poldata_get_row(gmx_poldata_t pd,int eqg_model,char *name,int zz)
     return -1;
 }
 
-double gmx_poldata_get_zeta(gmx_poldata_t pd,int eqg_model,char *name,int zz)
+double gmx_poldata_get_zeta(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name,int zz)
 {
     t_eemprops *eer;
   
@@ -1910,7 +1866,7 @@ double gmx_poldata_get_zeta(gmx_poldata_t pd,int eqg_model,char *name,int zz)
     return -1;
 }
 
-int gmx_poldata_get_nzeta(gmx_poldata_t pd,int eqg_model,char *name)
+int gmx_poldata_get_nzeta(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name)
 {
     t_eemprops *eer;
   
@@ -1921,7 +1877,7 @@ int gmx_poldata_get_nzeta(gmx_poldata_t pd,int eqg_model,char *name)
     return 0;
 }
 
-double gmx_poldata_get_q(gmx_poldata_t pd,int eqg_model,char *name,int zz)
+double gmx_poldata_get_q(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name,int zz)
 {
     t_eemprops *eer;
   
@@ -1933,7 +1889,7 @@ double gmx_poldata_get_q(gmx_poldata_t pd,int eqg_model,char *name,int zz)
     return -1;
 }
 
-double gmx_poldata_get_chi0(gmx_poldata_t pd,int eqg_model,char *name)
+double gmx_poldata_get_chi0(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *name)
 {
     t_eemprops *eer;
     
@@ -1944,9 +1900,8 @@ double gmx_poldata_get_chi0(gmx_poldata_t pd,int eqg_model,char *name)
     return -1;
 }
 
-void gmx_poldata_set_epref(gmx_poldata_t pd,int eqg_model,char *epref)
+void gmx_poldata_set_epref(gmx_poldata_t pd,ChargeGenerationModel eqg_model,char *epref)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     int i;
   
     for(i=0; (i<pd->ner); i++) {
@@ -1966,9 +1921,8 @@ void gmx_poldata_set_epref(gmx_poldata_t pd,int eqg_model,char *epref)
     }
 }
 
-char *gmx_poldata_get_epref(gmx_poldata_t pd,int eqg_model)
+char *gmx_poldata_get_epref(gmx_poldata_t pd,ChargeGenerationModel eqg_model)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
     int i;
   
     for(i=0; (i<pd->ner); i++) 
@@ -1977,11 +1931,8 @@ char *gmx_poldata_get_epref(gmx_poldata_t pd,int eqg_model)
     return NULL;
 }
 
-int gmx_poldata_list_epref(gmx_poldata_t pd,int *eqg_model,char **epref)
+int gmx_poldata_list_epref(gmx_poldata_t pd,ChargeGenerationModel *eqg_model,char **epref)
 {
-    gmx_poldata *pold = (gmx_poldata *) pd;
-    int i;
-  
     if (pd->ner_c < pd->ner)
     {
         assign_scal(eqg_model,pd->epr[pd->ner_c].eqg_model);
@@ -2082,39 +2033,48 @@ void gmx_poldata_check_consistency(FILE *fp,gmx_poldata pd)
 }
 
 typedef struct {
+    ChargeGenerationModel eqg;
     const char *name,*ref;
     gmx_bool bWeight;
 } t_eemtype_props;
 
 static t_eemtype_props eemtype_props[eqgNR] = { 
-    { "None",     "None",	         FALSE },   
-    { "Yang", 	"Yang2006b",     TRUE },    
-    { "Bultinck", "Bultinck2002a", FALSE },
-    { "Rappe",    "Rappe1991a",	 TRUE },  
-    { "AXp",    	"Maaren2010a",	 FALSE },    
-    { "AXs", 	    "Maaren2010a",   TRUE },
-    { "AXg",      "Maaren2010a",   TRUE },
-    { "ESP",      "Kollman1991a",  FALSE },
-    { "RESP",     "Kollman1991a",  FALSE }
+    { eqgNone,     "None",     "None",	         FALSE },   
+    { eqgAXp,      "AXp",      "Maaren2014a",	 FALSE },    
+    { eqgAXs,      "AXs", 	   "Maaren2014a",   TRUE },
+    { eqgAXg,      "AXg",      "Maaren2014a",   TRUE },
+    { eqgESP,      "ESP",      "Kollman1991a",  FALSE },
+    { eqgRESP,     "RESP",     "Kollman1991a",  FALSE },
+    { eqgYang,     "Yang",     "Yang2006b",     TRUE },    
+    { eqgBultinck, "Bultinck", "Bultinck2002a", FALSE },
+    { eqgRappe,    "Rappe",    "Rappe1991a",	 TRUE }
 };
 
-int name2eemtype(const char *name)
+ChargeGenerationModel name2eemtype(const char *name)
 {
-    int i;
+    ChargeGenerationModel i;
   
-    for(i=0; (i<eqgNR); i++) {
+    for(i=eqgNone; (i<eqgNR); i++) 
+    {
         if (strcasecmp(name,eemtype_props[i].name) == 0)
-            return i;
+        {
+            return eemtype_props[i].eqg;
+        }
     }
-    return -1;
+    return eqgNR;
 }
 
-const char *get_eemtype_name(int eem)
+const char *get_eemtype_name(ChargeGenerationModel eem)
 {
-    int i;
+    ChargeGenerationModel i;
   
-    if ((eem >= 0) && (eem < eqgNR))
-        return eemtype_props[eem].name;
+    for(i=eqgNone; (i<eqgNR); i++) 
+    {
+        if (eem == eemtype_props[i].eqg)
+        {
+            return eemtype_props[i].name;
+        }
+    }
     
     return NULL;
 }

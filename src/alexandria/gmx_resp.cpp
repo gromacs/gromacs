@@ -72,13 +72,13 @@
 #include <atomprop.h>
 #include "nmsimplex.h"
 #include "gromacs/coulombintegrals.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gmx_resp.hpp"
 #include "gentop_qgen.hpp"
 
 bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
-                 int iModel,char **dzatoms)
+                 ChargeGenerationModel iModel,char **dzatoms)
 {
     int  k,zz;
     bool bRestr; 
@@ -142,7 +142,7 @@ real gmx_ra_get_q(gmx_ra *ra)
     return q;
 }
 
-gmx_resp_t gmx_resp_init(int iModel,
+gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
                          bool bAXpRESP,real qfac,real b_hyper,real qtot,
                          real zmin,real zmax,real delta_z,bool bZatype,
                          real watoms,real rDecrZeta,bool bRandZeta,
@@ -837,8 +837,8 @@ void gmx_resp_calc_pot(gmx_resp_t gr)
                     vv += gr->ra[j].q[k]*Nuclear_GG(r,gr->ra[j].zeta[k]);
                 break;
             default:
-                gmx_fatal(FARGS,"Krijg nou wat, iModel = %d!",
-                          gr->iModel);
+                gmx_fatal(FARGS,"Krijg nou wat, iModel = %s!",
+                          get_eemtype_name(gr->iModel));
             }
             V  += vv;
         }
@@ -1202,7 +1202,6 @@ int gmx_resp_optimize_charges(FILE *fp,gmx_resp_t gr,int maxiter,
     if (bConv)
     {
         gmx_resp_statistics(gr,STRLEN-1,buf);
-        printf("Optimization converged!\n%s\n",buf);
     }
     else
         printf("NM Simplex did not converge\n\n");

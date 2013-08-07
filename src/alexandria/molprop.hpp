@@ -21,7 +21,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "atomprop.h"
-#include "poldata.h"
+#include "poldata.hpp"
 
 /*! \brief
  * Enumerated type holding the types of observables stored in MolProp 
@@ -1245,9 +1245,9 @@ public:
     MolecularCompositionIterator SearchMolecularComposition(std::string str);
     
     //! Return number of atoms in the first composition if present, or 0 otherwise
-    int NAtom() { if (_mol_comp.size() > 0) return _mol_comp[0].CountAtoms(); else return 0; };
+    int NAtom();
     
-    //! Routine to generate composition based on calculation data
+    //! Routine to generate compositions based on calculation data
     bool GenerateComposition(gmx_poldata_t pd);
     
     //! Returns boolean stating whether a particular composition is present

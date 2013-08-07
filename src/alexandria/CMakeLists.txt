@@ -1,8 +1,8 @@
 
 set(ALEXANDRIA_SOURCES
 	xml_util.c
-	poldata.c
-	poldata_xml.c
+	poldata.cpp
+	poldata_xml.cpp
 	gmx_simple_comm.c
 	molselect.cpp
 	gmx_resp.cpp
@@ -25,7 +25,7 @@ set_target_properties(alexandria PROPERTIES OUTPUT_NAME "alexandria${GMX_LIBS_SU
 
 list(APPEND GMX_EXTRA_LIBRARIES alexandria libgromacs)
 
-add_executable(g_poldata_test g_poldata_test.c)
+add_executable(g_poldata_test g_poldata_test.cpp)
 target_link_libraries(g_poldata_test ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_poldata_test PROPERTIES OUTPUT_NAME "g_poldata_test${GMX_BINARY_SUFFIX}")
 
@@ -65,7 +65,7 @@ add_executable(mkyaw mkyaw.c)
 target_link_libraries(mkyaw ${GMX_EXTRA_LIBRARIES})
 set_target_properties(mkyaw PROPERTIES OUTPUT_NAME "mkyaw${GMX_BINARY_SUFFIX}")
 
-add_executable(gen_table gen_table.c)
+add_executable(gen_table gen_table.cpp)
 target_link_libraries(gen_table ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_table PROPERTIES OUTPUT_NAME "gen_table${GMX_BINARY_SUFFIX}")
 
@@ -81,7 +81,7 @@ add_executable(g_mp2csv g_mp2csv.cpp)
 target_link_libraries(g_mp2csv ${GMX_EXTRA_LIBRARIES})
 set_target_properties(g_mp2csv PROPERTIES OUTPUT_NAME "g_mp2csv${GMX_BINARY_SUFFIX}")
 
-add_executable(gen_ff gen_ff.c)
+add_executable(gen_ff gen_ff.cpp)
 target_link_libraries(gen_ff ${GMX_EXTRA_LIBRARIES})
 set_target_properties(gen_ff PROPERTIES OUTPUT_NAME "gen_ff${GMX_BINARY_SUFFIX}")
 

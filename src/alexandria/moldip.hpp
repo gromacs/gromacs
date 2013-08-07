@@ -28,7 +28,8 @@ public:
     bool       _bDone,_bFinal,_bGaussianBug;
     bool       _bFitZeta;
     std::vector<alexandria::MyMol> _mymol;
-    int            _nmol_support,_iModel;
+    int            _nmol_support;
+    ChargeGenerationModel _iModel;
     t_index_count *_ic;
     real           _J0_0,_Chi0_0,_w_0,_J0_1,_Chi0_1,_w_1;
     real           _hfac,_hfac0,_decrzeta,_epsr;
@@ -46,7 +47,7 @@ public:
     ~MolDip() {};
     
     void Init(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
-              int  iModel,real rDecrZeta,real epsr,
+              ChargeGenerationModel iModel,real rDecrZeta,real epsr,
               real J0_0,real Chi0_0,real w_0,
               real J0_1,real Chi0_1,real w_1,
               real fc_bound,real fc_mu,real fc_quad,real fc_charge,

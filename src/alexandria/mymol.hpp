@@ -12,7 +12,7 @@
 #include "gentop_core.hpp"
 #include "molprop.hpp"
 #include "molselect.hpp"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gauss_io.hpp"
 
 enum immStatus { 
@@ -20,7 +20,8 @@ enum immStatus {
     immOK, immZeroDip, immNoQuad, immCharged, 
     immAtomTypes, immAtomNumber, immMolpropConv, immBondOrder, immRespInit,
     immChargeGeneration, immLOT,
-    immQMInconsistency, immTest, immNoData, immNR 
+    immQMInconsistency, immTest, immNoData, 
+    immGenShells, immGenBonds, immNR 
 };
 
 enum eDih { edihNo, edihOne, edihAll, edihNR };
@@ -42,14 +43,13 @@ class MyMol : public MolProp
 {
 private:
     gmx_bool       *bRing;
-    //char           **smnames;
     //! Gromacs structures
     int            nexcl_;
     t_excls        *excls;
     int            *symmetric_charges_;
     int            *cgnr_;
     gentop_vsite_t gvt;
-    immStatus      immAtoms,immCharges,immTopology;
+    immStatus      immAtoms_,immCharges_,immTopology_;
     std::string    forcefield_;
     bool           bHaveShells_,bHaveVSites_;
     
@@ -59,7 +59,7 @@ private:
     //! Generate Atoms based on quantum calculation with specified level of theory
     immStatus GenerateAtoms(gmx_atomprop_t ap,
                             const char *lot,
-                            const char *q_algorithm);
+                            ChargeGenerationModel iModel);
 
     //! Read atoms?
                             
@@ -70,7 +70,7 @@ private:
                   gmx_bool bMovePlists);
                             
 public:
-    rvec           *x,*f,*buf,mu_exp,mu_calc,mu_esp,coq;
+    rvec           *x_,*f_,*buf,mu_exp,mu_calc,mu_esp,coq;
     matrix         box;
     real           dip_exp,mu_exp2,dip_err,dip_weight,dip_calc,chieq,Hform,Emol,Ecalc,Force2;
     real           *qESP;
@@ -82,7 +82,7 @@ public:
     t_params       *plist_;
     gmx_mtop_t     *mtop_;
     gmx_localtop_t *ltop_;
-    gpp_atomtype_t atype_;
+    gpp_atomtype_t  atype_;
     gentop_qgen_t  qgen_;
     t_symtab       *symtab_;
     t_inputrec     *inputrec_;
@@ -102,20 +102,24 @@ public:
     immStatus GenerateTopology(gmx_atomprop_t ap,
                                gmx_poldata_t pd,
                                const char *lot,
-                               const char *q_algorithm,
+                               ChargeGenerationModel iModel,
                                bool bPol,
                                int nexcl);
     //! Generate Charges
     immStatus GenerateCharges(gmx_poldata_t pd,gmx_atomprop_t ap,
-                              int iModel,real hfac,real epsr,
+                              ChargeGenerationModel iModel,real hfac,real epsr,
                               const char *lot,
                               bool bSymmetricCharges,
                               const char *symm_string);
     
+    // Collect the experimental properties
+    immStatus GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+                          alexandria::GaussAtomProp &gap);
+    
     //! Print the topology that was generated previously in GROMACS format.
     //! fp is a File pointer opened previously.
     void PrintTopology(const char *fn,
-                       int iModel,
+                       ChargeGenerationModel iModel,
                        bool bVerbose);
     
     //! Print some info about the molecule to a file
@@ -127,6 +131,9 @@ public:
     //! Set the force field
     void SetForceField(const char *ff) { forcefield_.assign(ff); }
     
+    //! Updated internal structures due to changes in pd
+    void UpdateIdef(gmx_poldata_t pd,bool bOpt[]);
+
     //! Get the force field
     std::string GetForceField() { return forcefield_; }
     
@@ -135,10 +142,12 @@ public:
     void GenerateVsitesShells(gmx_poldata_t pd,bool bGenVsites,bool bAddShells,
                               bool bPairs,eDih edih);
     
-    void GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
-                              const char *ndxfn,int nmol);
+    immStatus GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
+                                   const char *ndxfn,int nmol);
     
-    void GenerateCube(int iModel,
+    immStatus GenerateGromacs(output_env_t oenv,t_commrec *cr);
+    
+    void GenerateCube(ChargeGenerationModel iModel,
                       gmx_poldata_t pd,
                       real spacing,
                       const char *reffn,
@@ -159,7 +168,7 @@ public:
     immStatus Initxx(FILE *fp,GaussAtomProp &gap,
                    gmx_bool bQM,char *lot,gmx_bool bZero,
                    gmx_poldata_t pd,gmx_atomprop_t aps,
-                   int  iModel,t_commrec *cr,int *nwarn,
+                   ChargeGenerationModel iModel,t_commrec *cr,int *nwarn,
                    gmx_bool bCharged,const output_env_t oenv,
                    real th_toler,real ph_toler,
                    real dip_toler,real hfac,gmx_bool bH14,

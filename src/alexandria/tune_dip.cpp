@@ -80,8 +80,8 @@
 #include "grompp.h"
 #include "gen_ad.h"
 #include "gromacs/coulombintegrals.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata.hpp"
+#include "poldata_xml.hpp"
 #include "molselect.hpp"
 #include "mtop_util.h"
 #include "gmx_simple_comm.h"
@@ -303,7 +303,7 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
                 fprintf(fp,"%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
                         atomnm,j+1,
                         *(mi->topology_->atoms.atomtype[j]),qq,mi->qESP[j],
-                        mi->x[j][XX],mi->x[j][YY],mi->x[j][ZZ],
+                        mi->x_[j][XX],mi->x_[j][YY],mi->x_[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
                 gmx_stats_add_point(lsqt[k],mi->qESP[j],atom->q,0,0);
                 gmx_stats_add_point(lsq_q,mi->qESP[j],atom->q,0,0);
@@ -902,7 +902,7 @@ int main(int argc, char *argv[])
     };
     alexandria::MolDip md;
     FILE      *fp;
-    int       iModel;
+    ChargeGenerationModel iModel;
     t_commrec *cr;
     output_env_t oenv;
     gmx_molselect_t gms;

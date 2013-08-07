@@ -54,7 +54,7 @@
 
 // Alexandria stuff
 #include "gmx_statistics.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 #include "mymol.hpp"
 #include "molprop_util.hpp"
 
@@ -432,7 +432,7 @@ int main(int argc,char *argv[])
     };
     //alexandria::MolDip    md;
     FILE      *fp;
-    int       iModel;
+    ChargeGenerationModel iModel;
     t_commrec *cr;
     gmx_molselect_t gms;
     time_t    my_t;
@@ -508,7 +508,7 @@ int main(int argc,char *argv[])
             printf("Empty molname for molecule with formula %s\n",mmi.GetFormula().c_str());
             continue;
         }
-        mmi.GenerateTopology(aps,pd,lot,"ESP",FALSE,2);
+        mmi.GenerateTopology(aps,pd,lot,iModel,FALSE,2);
         
 #define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology_->atoms.atomtype[ii])
         for(i=0; (i<mmi.topology_->atoms.nr); i++)
@@ -527,7 +527,7 @@ int main(int argc,char *argv[])
         {
             int ai = mmi.ltop_->idef.il[ftb].iatoms[j+1];
             int aj = mmi.ltop_->idef.il[ftb].iatoms[j+2];
-            rvec_sub(mmi.x[ai],mmi.x[aj],dx);
+            rvec_sub(mmi.x_[ai],mmi.x_[aj],dx);
             const char *cai = ATP(ai);
             const char *caj = ATP(aj);
             add_bond(fp,mmi.GetMolname().c_str(),b,cai,caj,1000*norm(dx),bspacing);
@@ -537,8 +537,8 @@ int main(int argc,char *argv[])
             int ai = mmi.ltop_->idef.il[fta].iatoms[j+1];
             int aj = mmi.ltop_->idef.il[fta].iatoms[j+2];
             int ak = mmi.ltop_->idef.il[fta].iatoms[j+3];
-            rvec_sub(mmi.x[ai],mmi.x[aj],dx);
-            rvec_sub(mmi.x[ak],mmi.x[aj],dx2);
+            rvec_sub(mmi.x_[ai],mmi.x_[aj],dx);
+            rvec_sub(mmi.x_[ak],mmi.x_[aj],dx2);
             double ang = RAD2DEG*gmx_angle(dx,dx2);
             const char *cai = ATP(ai);
             const char *caj = ATP(aj);
@@ -554,8 +554,8 @@ int main(int argc,char *argv[])
             int aj = mmi.ltop_->idef.il[ftd].iatoms[j+2];
             int ak = mmi.ltop_->idef.il[ftd].iatoms[j+3];
             int al = mmi.ltop_->idef.il[ftd].iatoms[j+4];
-            double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
-                                           mmi.x[ak],mmi.x[al],
+            double ang = RAD2DEG*dih_angle(mmi.x_[ai],mmi.x_[aj],
+                                           mmi.x_[ak],mmi.x_[al],
                                            &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
                                            &sign,&t1,&t2,&t3);
             const char *cai = ATP(ai);
@@ -571,8 +571,8 @@ int main(int argc,char *argv[])
             int aj = mmi.ltop_->idef.il[fti].iatoms[j+2];
             int ak = mmi.ltop_->idef.il[fti].iatoms[j+3];
             int al = mmi.ltop_->idef.il[fti].iatoms[j+4];
-            double ang = RAD2DEG*dih_angle(mmi.x[ai],mmi.x[aj],
-                                           mmi.x[ak],mmi.x[al],
+            double ang = RAD2DEG*dih_angle(mmi.x_[ai],mmi.x_[aj],
+                                           mmi.x_[ak],mmi.x_[al],
                                            &pbc,r_ij,r_kj,r_kl,mm,nn, /* out */
                                            &sign,&t1,&t2,&t3);
             const char *cai = ATP(ai);

@@ -60,7 +60,7 @@
 #include "bondf.h"
 #include "names.h"
 #include "atomprop.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gentop_nm2type.hpp"
 #include "gentop_vsite.hpp"
 

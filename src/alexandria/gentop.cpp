@@ -64,8 +64,8 @@
 #include "gromacs/coulombintegrals.h"
 #include "gpp_atomtype.h"
 #include "atomprop.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata.hpp"
+#include "poldata_xml.hpp"
 #include "gmx_resp.hpp"
 #include "gentop_vsite.hpp"
 #include "gentop_nm2type.hpp"
@@ -373,8 +373,8 @@ int main(int argc, char *argv[])
     /* Check command line options of type enum */
     eDih edih = (eDih) get_option(dihopt);
     eChargeGroup ecg = (eChargeGroup) get_option(cgopt);
-    int iModel;
-    if ((iModel = name2eemtype(cqgen[0])) == -1)
+    ChargeGenerationModel iModel;
+    if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
         gmx_fatal(FARGS,"Invalid model %s. How could you!\n",cqgen[0]);
     
     /* Read standard atom properties */
@@ -425,7 +425,7 @@ int main(int argc, char *argv[])
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
     
-    imm = mymol.GenerateTopology(aps,pd,lot,"ESP",bAddShells,nexcl);
+    imm = mymol.GenerateTopology(aps,pd,lot,iModel,bAddShells,nexcl);
     
     if (immOK == imm)
     {

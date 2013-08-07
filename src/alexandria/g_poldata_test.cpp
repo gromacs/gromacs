@@ -35,8 +35,7 @@
  */
 #include <stdlib.h>
 #include "typedefs.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 #include "atomprop.h"
 
 int main(int argc,char*argv[])

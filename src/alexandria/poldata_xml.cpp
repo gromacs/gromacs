@@ -46,7 +46,7 @@
 #include "string2.h"
 #include "grompp.h"
 #include "smalloc.h"
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 #include "xml_util.h"
 #include "futil.h"
 
@@ -407,7 +407,6 @@ static void process_tree(FILE *fp,xmlNodePtr tree,int parent,int indent,
 gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
 {
     xmlDocPtr     doc;
-    int           i,npd;
     gmx_poldata_t pd;
     char *fn2=NULL;
   
@@ -441,10 +440,11 @@ gmx_poldata_t gmx_poldata_read(const char *fn,gmx_atomprop_t aps)
 
 static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
 {
-    xmlNodePtr child,grandchild,comp;
+    xmlNodePtr child,grandchild;
     int    i,atomnumber,numbonds,nexcl,
-        numattach,element,model,bAromatic,ntrain;
-    char *elem,*geometry,*name,*atype,*alexandria_equiv,*vdwparams,*blu,*btype,
+        numattach,bAromatic,ntrain;
+    ChargeGenerationModel model;
+    char *elem,*geometry,*name,*atype,*vdwparams,*blu,*btype,
         *atom1,*atom2,*atom3,*atom4,*tmp,*central,*attached,*tau_unit,*ahp_unit,
         *epref,*desc,*params,*func;
     char *neighbors,*zeta,*qstr,*rowstr;
@@ -641,7 +641,8 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     child = add_xml_child(parent,exml_names[exmlEEMPROPS]);
     while (gmx_poldata_get_eemprops(pd,&model,&name,&J0,&chi0,&zeta,&qstr,&rowstr) == 1) {
         grandchild = add_xml_child(child,exml_names[exmlEEMPROP]);
-        add_xml_char(grandchild,exml_names[exmlMODEL],get_eemtype_name(model));
+        add_xml_char(grandchild,exml_names[exmlMODEL],
+                     get_eemtype_name(model));
         add_xml_char(grandchild,exml_names[exmlNAME],name);
         add_xml_double(grandchild,exml_names[exmlJ0],J0);
         add_xml_double(grandchild,exml_names[exmlCHI0],chi0);
@@ -666,7 +667,6 @@ void gmx_poldata_write(const char *fn,gmx_poldata_t pd,
     xmlDocPtr  doc;
     xmlDtdPtr  dtd;
     xmlNodePtr myroot;
-    int        i,nmt;
     xmlChar    *libdtdname,*dtdname,*gmx;
   
     gmx        = (xmlChar *) "gentop";

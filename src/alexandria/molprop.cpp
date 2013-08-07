@@ -3,7 +3,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "maths.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gmx_simple_comm.h"
 #include "molprop.hpp"
       
@@ -95,6 +95,16 @@ void MolecularComposition::AddAtom(AtomNum an)
     {
         mci->SetNumber(mci->GetNumber()+an.GetNumber());
     }
+}
+
+int MolProp::NAtom()
+{
+    if (_mol_comp.size() > 0)
+    {
+        int nat = BeginMolecularComposition()->CountAtoms(); 
+        return nat;
+    }
+    return 0;
 }
 
 void MolProp::AddBond(Bond b)
@@ -543,9 +553,13 @@ bool MolProp::GenerateComposition(gmx_poldata_t pd)
 {
     CalculationIterator ci;
     CalcAtomIterator cai;
-    MolecularComposition mci_bosque("bosque"),mci_spoel("spoel"),mci_miller("miller");
+    const char *spoel = "spoel", *bosque = "bosque", *miller = "miller";
+    MolecularComposition mci_bosque(bosque),mci_spoel(spoel),mci_miller(miller);
     AtomNumIterator ani;
     
+    DeleteComposition(spoel);
+    DeleteComposition(bosque);
+    DeleteComposition(miller);
     for(ci=BeginCalculation(); (mci_spoel.CountAtoms() <= 0) && (ci<EndCalculation()); ci++) 
     {
         /* This assumes we have either all atoms or none. 

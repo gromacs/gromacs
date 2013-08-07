@@ -1,5 +1,5 @@
 /* 
- * $Id: mymol2.cpp,v 1.23 2009/06/01 06:13:18 spoel Exp $
+ * $Id: mymol.cpp,v 1.23 2009/06/01 06:13:18 spoel Exp $
  * 
  *                This source code is part of
  * 
@@ -62,8 +62,8 @@
 #include "gen_ad.h"
 #include "gpp_atomtype.h"
 #include "topdirs.h"
-#include "poldata.h"
-#include "poldata_xml.h"
+#include "poldata.hpp"
+#include "poldata_xml.hpp"
 #include "gmx_simple_comm.h"
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
@@ -168,7 +168,8 @@ const char *immsg(immStatus imm)
         "Determining bond order", "RESP Initialization",
         "Charge generation", "Requested level of theory missing",
         "QM Inconsistency (ESP dipole does not match Elec)", 
-        "Not in training set", "No experimental data"
+        "Not in training set", "No experimental data",
+        "Generating shells", "Generating bonds"
     };
     
     return msg[imm];
@@ -401,9 +402,9 @@ int MyMol::MakeBonds(gmx_poldata_t pd,
             if (NULL != debug)
                 fprintf(debug,"Testing %s-%d vs. %s-%d\n",elem_i,i,elem_j,j); 
             if (bPBC)
-                pbc_dx(&pbc,x[i],x[j],dx);
+                pbc_dx(&pbc,x_[i],x_[j],dx);
             else
-                rvec_sub(x[i],x[j],dx);
+                rvec_sub(x_[i],x_[j],dx);
       
             dx11 = norm(dx);
             dx1 = gmx2convert(dx11,string2unit(length_unit));
@@ -498,30 +499,72 @@ static void generate_nbparam(int ftype,int comb,double ci[],double cj[],
     }
 }
 
-static void do_init_mtop(gmx_mtop_t *mtop_,int nmoltype,char **molname,
-                         int natoms)
+static void do_init_mtop(gmx_poldata_t pd,
+                         gmx_mtop_t *mtop_,
+                         char **molname,
+                         t_atoms *atoms)
 {
     init_mtop(mtop_);
-    if (nmoltype <= 0)
-    {
-        gmx_incons("Number of moltypes less than 1 in do_init_mtop");
-    } 
     mtop_->name = molname;
-    mtop_->nmoltype = nmoltype;
+    mtop_->nmoltype = 1;
     snew(mtop_->moltype,mtop_->nmoltype);
     mtop_->moltype[0].name = molname;
-    mtop_->nmolblock = nmoltype;
+    mtop_->nmolblock = 1;
     snew(mtop_->molblock,mtop_->nmolblock);
     mtop_->molblock[0].nmol = 1;
     mtop_->molblock[0].type = 0;
-    mtop_->molblock[0].natoms_mol = natoms;
-    mtop_->ffparams.functype = NULL;
-    mtop_->ffparams.iparams = NULL;
-    /* Create a charge group block */
-    stupid_fill_block(&(mtop_->moltype[0].cgs),natoms,FALSE);
+    mtop_->molblock[0].natoms_mol = atoms->nr;
+    //! Count the number of types in this molecule, at least 1 assuming there is one atom
+    int ntype = 1;
+    for(int i=1; (i<atoms->nr); i++)
+    {
+        int itp = atoms->atom[i].type;
+        bool found = false;
+        for(int j=0; !found && (j<i); j++)
+        {
+            found = (itp == atoms->atom[j].type);
+        }
+        if (!found)
+        {
+            ntype++;
+        }
+    }
     
-    mtop_->natoms = natoms;
-    init_t_atoms(&(mtop_->moltype[0].atoms),natoms,FALSE);
+    mtop_->ffparams.atnr = ntype;
+    int vdw_type = gmx_poldata_get_vdw_ftype(pd);
+    int comb_rule = gmx_poldata_get_vdw_ftype(pd);
+    
+    snew(mtop_->ffparams.functype,ntype*ntype);
+    snew(mtop_->ffparams.iparams,ntype*ntype);
+    for(int i=0; (i<ntype); i++)
+    {
+        for(int j=0; (j<ntype); j++)
+        {
+            int idx = ntype*i+j;
+            mtop_->ffparams.functype[idx] = vdw_type;
+            switch (vdw_type)
+            {
+            case F_LJ:
+                mtop_->ffparams.iparams[idx].lj.c6  = 0;
+                mtop_->ffparams.iparams[idx].lj.c12 = 0;
+                break;
+            case F_BHAM:
+                mtop_->ffparams.iparams[idx].bham.a = 0;
+                mtop_->ffparams.iparams[idx].bham.b = 0;
+                mtop_->ffparams.iparams[idx].bham.c = 0;
+                break;
+            default:
+                fprintf(stderr,"Invalid van der waals type %s\n",
+                        gmx_poldata_get_vdw_function(pd));
+            }
+        }
+    }
+    /* Create a charge group block */
+    stupid_fill_block(&(mtop_->moltype[0].cgs),atoms->nr,FALSE);
+    stupid_fill_blocka(&(mtop_->moltype[0].excls),atoms->nr);
+    
+    mtop_->natoms = atoms->nr;
+    init_t_atoms(&(mtop_->moltype[0].atoms),atoms->nr,FALSE);
 }
 
 static void mk_ff_mtop(gmx_mtop_t *mtop_,gmx_poldata_t pd)
@@ -693,7 +736,7 @@ bool MyMol::IsSymmetric(real toler)
         tm += mm; 
         for(m=0; (m<DIM); m++) 
         {
-            com[m] += mm*x[i][m];
+            com[m] += mm*x_[i][m];
         }
     }
     if (tm > 0) 
@@ -702,15 +745,15 @@ bool MyMol::IsSymmetric(real toler)
             com[m] /= tm;
     }
     for(i=0; (i<topology_->atoms.nr); i++)
-        rvec_dec(x[i],com);
+        rvec_dec(x_[i],com);
     
     snew(bSymm,topology_->atoms.nr);
     for(i=0; (i<topology_->atoms.nr); i++) 
     {
-        bSymm[i] = (norm(x[i]) < toler);
+        bSymm[i] = (norm(x_[i]) < toler);
         for(j=i+1; (j<topology_->atoms.nr) && !bSymm[i]; j++) 
         {
-            rvec_add(x[i],x[j],test);
+            rvec_add(x_[i],x_[j],test);
             if (norm(test) < toler) 
             {
                 bSymm[i] = TRUE;
@@ -724,7 +767,7 @@ bool MyMol::IsSymmetric(real toler)
     }
     sfree(bSymm);
     for(i=0; (i<topology_->atoms.nr); i++) 
-        rvec_inc(x[i],com);
+        rvec_inc(x_[i],com);
   
     return bSymmAll;
 }
@@ -736,19 +779,19 @@ static void fill_inputrec(t_inputrec *ir)
     ir->epsilon_r   = 1;
     ir->vdwtype     = evdwCUT;
     ir->coulombtype = eelCUT;
+    snew(ir->fepvals,1);
 }
 
 MyMol::MyMol()//: MolProp()
 {
-    printf("BOE F_NRE = %d\n",F_NRE);
     bHaveShells_ = false;
     bHaveVSites_ = false;
     cgnr_ = NULL;
     symmetric_charges_ = NULL;
     gr_ = NULL;
-    immAtoms = immOK;
-    immTopology = immOK;
-    immCharges = immOK;
+    immAtoms_ = immOK;
+    immTopology_ = immOK;
+    immCharges_ = immOK;
     snew(symtab_,1);
     open_symtab(symtab_);
     atype_ = init_atomtype();
@@ -759,6 +802,10 @@ MyMol::MyMol()//: MolProp()
     clear_mat(box);
     mtop_ = NULL;
     ltop_ = NULL;
+    md_   = NULL;
+    shell_ = NULL;
+    
+    init_enerdata(1,0,&enerd_);
     
     /* Inputrec parameters */
     snew(inputrec_,1);
@@ -767,7 +814,6 @@ MyMol::MyMol()//: MolProp()
     /* Topology_ stuff */
     snew(plist_,F_NRE);
     init_plist(plist_);
-    printf("BOE F_NRE = %d\n",F_NRE);
 }
 
 MyMol::~MyMol()
@@ -814,7 +860,7 @@ MyMol::~MyMol()
 
 immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
                                const char *lot,
-                               const char *q_algorithm)
+                               ChargeGenerationModel iModel)
 {
     int       myunit;
     double    q,xx,yy,zz;
@@ -830,7 +876,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
         memset(&nb,0,sizeof(nb));
         natom = 0;
         init_t_atoms(&(topology_->atoms),ci->NAtom(),FALSE);
-        snew(x,ci->NAtom());
+        snew(x_,ci->NAtom());
         snew(topology_->atoms.atomtype,ci->NAtom());
         snew(topology_->atoms.atomtypeB,ci->NAtom());
         
@@ -841,14 +887,15 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
                 gmx_fatal(FARGS,"Unknown unit '%s' for atom coords",
                           cai->GetUnit().c_str());
             cai->GetCoords(&xx,&yy,&zz);
-            x[natom][XX] = convert2gmx(xx,myunit);
-            x[natom][YY] = convert2gmx(yy,myunit);
-            x[natom][ZZ] = convert2gmx(zz,myunit);
+            x_[natom][XX] = convert2gmx(xx,myunit);
+            x_[natom][YY] = convert2gmx(yy,myunit);
+            x_[natom][ZZ] = convert2gmx(zz,myunit);
             
             q = 0;
             for(AtomicChargeIterator qi=cai->BeginQ(); (qi<cai->EndQ()); qi++) 
             {
-                if (strcmp(qi->GetType().c_str(),q_algorithm) == 0)
+                ChargeGenerationModel qtp = name2eemtype(qi->GetType().c_str());
+                if (qtp == iModel)
                 {
                     myunit = string2unit((char *)qi->GetUnit().c_str());
                     q = convert2gmx(qi->GetQ(),myunit);
@@ -911,7 +958,7 @@ immStatus MyMol::GenerateAtoms(gmx_atomprop_t ap,
 immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
                                   gmx_poldata_t pd,
                                   const char *lot,
-                                  const char *q_algorithm,
+                                  ChargeGenerationModel iModel,
                                   bool bPol,
                                   int nexcl)
 {
@@ -922,17 +969,25 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
     t_nextnb nnb;
     t_restp *rtp;
    
-    printf("Generating topology_ for %s\n",GetMolname().c_str());
+    //printf("Generating topology_ for %s\n",GetMolname().c_str());
     
     /* Set bts for topology_ output */
     if (NOTSET == (bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd)))
+    {
         gmx_fatal(FARGS,"No bonded type defined in force field file");
+    }
     if (NOTSET == (bts[ebtsANGLES] = gmx_poldata_get_angle_ftype(pd)))
-        gmx_fatal(FARGS,"No angle type defined in force field file");
+    {
+       gmx_fatal(FARGS,"No angle type defined in force field file");
+    }
     if (NOTSET == (bts[ebtsIDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS)))
+    {
         gmx_fatal(FARGS,"No improper dihedral type defined in force field file");
+    }
     if (NOTSET == (bts[ebtsPDIHS]  = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS)))
-         gmx_fatal(FARGS,"No dihedral type defined in force field file");
+    {
+        gmx_fatal(FARGS,"No dihedral type defined in force field file");
+    }
     bts[ebtsCMAP] = F_CMAP;
     bts[ebtsEXCLS] = 0;
     
@@ -940,23 +995,30 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
     nexcl_ = nexcl;
     GenerateComposition(pd);
     if (NAtom() <= 0)
+    {
         imm = immAtomTypes;
+    }
     else
     {
         if (bPol)
+        {
             nalloc = NAtom()*2+2;
+        }
         else
+        {
             nalloc = NAtom();
+        }
         
         //if ((GetCharge() != 0) && !bCharged)
         //   imm = immCharged;
     }
-    snew(topology_,1);
-    init_top(topology_);
-    
-    /* Get atoms */
-    imm = GenerateAtoms(ap,lot,q_algorithm);
-
+    if (immOK == imm)
+    {
+        snew(topology_,1);
+        init_top(topology_);
+        /* Get atoms */
+        imm = GenerateAtoms(ap,lot,iModel);
+    }
     if (immOK == imm)
     {    
         /* Store bonds in harmonic potential list first, update type later */
@@ -969,7 +1031,13 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
             add_param_to_list(&(plist_[ftb]),&b);
         }
         natom = topology_->atoms.nr;
-        
+        if (NBond() == 0)
+        {
+            imm = immGenBonds;
+        }
+    }
+    if (immOK == imm) 
+    {
         /* Make Angles and Dihedrals */
         snew(excls,natom);
         init_nnb(&nnb,natom,nexcl_+2);
@@ -986,24 +1054,27 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
         gen_pad(&nnb,&(topology_->atoms),rtp,plist_,excls,NULL,FALSE);
         sfree(rtp);
         done_nnb(&nnb);
+        
+        /* Move the plist_ to the correct function */
+        if (true)
+        {
+            mv_plists(pd,plist_,true);
+        }
     }
-    /* Move the plist_ to the correct function */
-    if (true)
-        mv_plists(pd,plist_,true);
 
     if (immOK == imm)
     {    
         get_force_constants(pd,plist_,&topology_->atoms);
-    }
     
-    char **molnameptr = put_symtab(symtab_,GetMolname().c_str());
-    snew(mtop_,1);
-    do_init_mtop(mtop_,1,molnameptr,natom);
-    
-    plist_to_mtop(pd,plist_,mtop_);
-    
-    ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
+        char **molnameptr = put_symtab(symtab_,GetMolname().c_str());
+        snew(mtop_,1);
+        do_init_mtop(pd,mtop_,molnameptr,&topology_->atoms);
         
+        plist_to_mtop(pd,plist_,mtop_);
+        
+        ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
+    }
+
     return imm;
 }
 
@@ -1023,16 +1094,16 @@ void MyMol::CalcMultipoles()
     clear_rvec(coq);
     while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
         q = atom->q;
-        svmul(ENM2DEBYE*q,x[i],mm);
+        svmul(ENM2DEBYE*q,x_[i],mm);
         rvec_inc(mu,mm);
         
         dfac = q*0.5*10*ENM2DEBYE;
-        r2   = iprod(x[i],x[i]);
+        r2   = iprod(x_[i],x_[i]);
         for(m=0; (m<DIM); m++)
-            Q_calc[m][m] += dfac*(3*sqr(x[i][m]) - r2);
-        Q_calc[XX][YY] += dfac*3*(x[i][XX]+coq[XX])*(x[i][YY]+coq[YY]);
-        Q_calc[XX][ZZ] += dfac*3*(x[i][XX]+coq[XX])*(x[i][ZZ]+coq[ZZ]);
-        Q_calc[YY][ZZ] += dfac*3*(x[i][YY]+coq[YY])*(x[i][ZZ]+coq[ZZ]);
+            Q_calc[m][m] += dfac*(3*sqr(x_[i][m]) - r2);
+        Q_calc[XX][YY] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][YY]+coq[YY]);
+        Q_calc[XX][ZZ] += dfac*3*(x_[i][XX]+coq[XX])*(x_[i][ZZ]+coq[ZZ]);
+        Q_calc[YY][ZZ] += dfac*3*(x_[i][YY]+coq[YY])*(x_[i][ZZ]+coq[ZZ]);
         
         i++;
     }
@@ -1043,7 +1114,7 @@ void MyMol::CalcMultipoles()
 
 immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                  gmx_atomprop_t ap,
-                                 int iModel,
+                                 ChargeGenerationModel iModel,
                                  real hfac,real epsr,
                                  const char *lot,
                                  bool bSymmetricCharges,
@@ -1076,9 +1147,14 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             gmx_resp_add_atom_symmetry(gr_,symmetric_charges_);
             gmx_resp_update_atomtypes(gr_,&(topology_->atoms));
             gmx_resp_summary(stdout,gr_,symmetric_charges_);
-            gmx_resp_add_atom_coords(gr_,x);
+            gmx_resp_add_atom_coords(gr_,x_);
             
-            CalculationIterator ci = GetLot(lot);
+            /* Even if we get the right LoT it may still not have
+             * the ESP
+             */
+            CalculationIterator ci = GetLotPropType(lot,
+                                                    MPO_POTENTIAL, 
+                                                    NULL);
             if (ci != EndCalculation())
             {
                 printf("There are %d potential points\n",ci->NPotential());
@@ -1112,12 +1188,12 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
             }
             else 
             {
-                qgen_ = gentop_qgen_init(pd,&topology_->atoms,ap,x,iModel,hfac,GetCharge(),epsr);
+                qgen_ = gentop_qgen_init(pd,&topology_->atoms,ap,x_,iModel,hfac,GetCharge(),epsr);
                 
                 if (NULL == qgen_)
                     gmx_fatal(FARGS,"Can not generate charges for %s. Probably due to issues with atomtype detection or support.\n",GetMolname().c_str());
                 eQGEN = generate_charges(NULL,
-                                         qgen_,gr_,GetMolname().c_str(),pd,&topology_->atoms,x,0.0001,
+                                         qgen_,gr_,GetMolname().c_str(),pd,&topology_->atoms,x_,0.0001,
                                          10000,1,ap,hfac);
                 qgen_message(qgen_,sizeof(qgen_msg),qgen_msg,gr_);
                 if (eQGEN_OK != eQGEN)
@@ -1133,6 +1209,21 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
     }
     
     return imm;
+}
+
+immStatus MyMol::GenerateGromacs(output_env_t oenv,t_commrec *cr)
+{
+    int nalloc = 2 * topology_->atoms.nr;
+    
+    snew(f_,nalloc);
+    fr_ = mk_forcerec();
+    init_forcerec(NULL,oenv,fr_,NULL,inputrec_,mtop_,cr,
+                  box,FALSE,NULL,NULL,NULL,NULL,NULL,NULL,TRUE,-1);
+    init_state(&state_,topology_->atoms.nr,1,1,1,0);
+    ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
+    md_ = init_mdatoms(NULL,mtop_,FALSE);
+    
+    return immOK;
 }
 
 static void put_in_box(int natom,matrix box,rvec x[],real dbox)
@@ -1165,13 +1256,13 @@ void MyMol::PrintConformation(const char *fn)
 {
     char title[STRLEN];
     
-    put_in_box(topology_->atoms.nr,box,x,0.3);
+    put_in_box(topology_->atoms.nr,box,x_,0.3);
     sprintf(title,"%s processed by %s",GetMolname().c_str(),ShortProgram());
-    write_sto_conf(fn,title,&topology_->atoms,x,NULL,epbcNONE,box);
+    write_sto_conf(fn,title,&topology_->atoms,x_,NULL,epbcNONE,box);
 }
 
 static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
-                         t_atoms *atoms,int iModel)
+                         t_atoms *atoms,ChargeGenerationModel iModel)
 {
     int    i,ii,j,k,nz,row;
     double zeta,q;
@@ -1243,7 +1334,7 @@ static void write_zeta_q(FILE *fp,gentop_qgen_t qgen,
 }
 
 static void write_zeta_q2(gentop_qgen_t qgen,gpp_atomtype_t atype,
-                          t_atoms *atoms,int iModel)
+                          t_atoms *atoms,ChargeGenerationModel iModel)
 {
     FILE   *fp;
     int    i,j,k,nz,row;
@@ -1323,7 +1414,7 @@ static void write_top2(FILE *out, char *molname,
     }
 }
 
-void MyMol::PrintTopology(const char *fn,int iModel,bool bVerbose)
+void MyMol::PrintTopology(const char *fn,ChargeGenerationModel iModel,bool bVerbose)
 {
     FILE   *fp;
     t_mols printmol;
@@ -1415,7 +1506,7 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
     {
         int anr = topology_->atoms.nr;
         
-        gentop_vsite_generate_special(gvt,bGenVSites,&topology_->atoms,&x,plist_,
+        gentop_vsite_generate_special(gvt,bGenVSites,&topology_->atoms,&x_,plist_,
                                       symtab_,atype_,&excls,pd);
         bHaveVSites_ = (topology_->atoms.nr > anr);
     }
@@ -1427,17 +1518,17 @@ void MyMol::GenerateVsitesShells(gmx_poldata_t pd,bool bGenVSites,bool bAddShell
     if (bAddShells)
     {
         int nalloc = topology_->atoms.nr*2+2;
-        srenew(x,nalloc);
+        srenew(x_,nalloc);
         //srenew(smnames,nalloc);
         srenew(excls,nalloc);
-        add_shells(pd,nalloc,&topology_->atoms,atype_,plist_,x,symtab_,&excls);
+        add_shells(pd,nalloc,&topology_->atoms,atype_,plist_,x_,symtab_,&excls);
         bHaveShells_ = true;
     }
     //real mu = calc_dip(&topology_->atoms,x);
 }
 
-void MyMol::GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
-                                 const char *ndxfn,int nmol)
+immStatus MyMol::GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
+                                      const char *ndxfn,int nmol)
 {
     real qtot,mtot;
     
@@ -1445,13 +1536,18 @@ void MyMol::GenerateChargeGroups(eChargeGroup ecg,bool bUsePDBcharge,
                                         &plist_[bts[ebtsBONDS]],&plist_[F_POLARIZATION],
                                         bUsePDBcharge,
                                         &qtot,&mtot)) == NULL)
-        gmx_fatal(FARGS,"Error generating charge groups");
+    {
+        return immChargeGeneration;
+    }
         
     if (ecg != ecgAtom)
-        sort_on_charge_groups(cgnr_,&topology_->atoms,plist_,x,excls,ndxfn,nmol);
+    {
+        sort_on_charge_groups(cgnr_,&topology_->atoms,plist_,x_,excls,ndxfn,nmol);
+    }
+    return immOK;
 }
 
-void MyMol::GenerateCube(int iModel,
+void MyMol::GenerateCube(ChargeGenerationModel iModel,
                          gmx_poldata_t pd,
                          real spacing,
                          const char *reffn,
@@ -1491,7 +1587,7 @@ void MyMol::GenerateCube(int iModel,
             }
             else 
             {
-                gmx_resp_make_grid(gr_,spacing,box,x);
+                gmx_resp_make_grid(gr_,spacing,box,x_);
             }
             if (NULL != rhofn)
             {
@@ -1523,12 +1619,93 @@ void MyMol::GenerateCube(int iModel,
         gmx_resp_destroy(grref);
     }
 }
+
+immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
+                             alexandria::GaussAtomProp &gap)
+{
+    immStatus imm = immOK;
+    unsigned int m,nwarn=0;
+    double value,dv0,dv298,error,vec[3];
+    tensor quadrupole;
+    char   *myref,*mylot;
+    int    ia;
+
+    if (GetPropRef(MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
+                   lot,NULL,(char *)"elec",
+                   &value,&error,&myref,&mylot,
+                   vec,quadrupole))
+    {
+        if (!bZero)
+            imm = immZeroDip;
+        if (NULL != myref)
+            sfree(myref);
+        if (NULL != mylot)
+            sfree(mylot);
+    }
+    else
+    {
+        dip_exp  = value;
+        dip_err  = error;
+        lot      = mylot;
+        //ref      = myref;
+        for(m=0; (m<DIM); m++)
+        {
+            mu_exp[m] = vec[m];
+        }
+        mu_exp2 = sqr(value);
+        if (error <= 0) {
+            if (debug)
+                fprintf(debug,"WARNING: Error for %s is %g, assuming it is 10%%.\n",
+                        GetMolname().c_str(),error);
+            nwarn++;
+            error = 0.1*value;
+        }
+        dip_weight = sqr(1.0/error);
+    }
+    if (GetPropRef(MPO_DIPOLE,iqmQM,
+                   lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole))
+    {
+        for(m=0; (m<DIM); m++)
+        {
+            mu_esp[m] = vec[m];
+        }
+    }
+    if (GetProp(MPO_ENERGY,(bQM ? iqmQM : iqmBoth),
+                lot,NULL,(char *)"DHf(298.15K)",&value))
+    {
+        Hform = value;
+        Emol = value;
+        for(ia=0; (ia<topology_->atoms.nr); ia++) {
+            if (gap.GetValue(*topology_->atoms.atomname[ia],
+                             (char *)"exp",(char *)"DHf(0K)",0,&dv0) &&
+                gap.GetValue(*topology_->atoms.atomname[ia],
+                             (char *)"exp",(char *)"H(0K)-H(298.15K)",
+                             298.15,&dv298))
+            {
+                Emol -= convert2gmx(dv0+dv298,eg2cHartree);
+            }
+            else {
+                Emol = 0;
+                break;
+            }
+        }
+        if (ia < topology_->atoms.nr)
+        {
+            imm = immNoData;
+        }
+    }
+    else {
+        imm = immNoData;
+    }
+    return imm;
+}
    
 immStatus MyMol::Initxx(FILE *fp,
-                      alexandria::GaussAtomProp &gap,
+                        alexandria::GaussAtomProp &gap,
                       gmx_bool bQM,char *lot,gmx_bool bZero,
                       gmx_poldata_t pd,gmx_atomprop_t aps,
-                      int  iModel,t_commrec *cr,int *nwarn,
+                      ChargeGenerationModel iModel,
+                      t_commrec *cr,int *nwarn,
                       gmx_bool bCharged,const output_env_t oenv,
                       real th_toler,real ph_toler,
                       real dip_toler,real hfac,gmx_bool bH14,
@@ -1552,11 +1729,10 @@ immStatus MyMol::Initxx(FILE *fp,
     gmx_resp_t gr;
     
     ftb = gmx_poldata_get_bond_ftype(pd);
-    if (immTopology != immOK)
+    if (immTopology_ != immOK)
     {
         printf("Sorry, no topology!\n");
     }
-    init_enerdata(1,0,&enerd_);
     
     if (immOK == imm)
     {
@@ -1570,11 +1746,11 @@ immStatus MyMol::Initxx(FILE *fp,
             qESP[i] = topology_->atoms.atom[i].q;
             for(m=0; (m<DIM); m++)
             {
-                if (x[i][m] < xmin[m])
-                    xmin[m] = x[i][m];
-                else if (x[i][m] > xmax[m])
-                    xmax[m] = x[i][m];
-                coq[m] += x[i][m]*topology_->atoms.atom[i].atomnumber;
+                if (x_[i][m] < xmin[m])
+                    xmin[m] = x_[i][m];
+                else if (x_[i][m] > xmax[m])
+                    xmax[m] = x_[i][m];
+                coq[m] += x_[i][m]*topology_->atoms.atom[i].atomnumber;
             }
             tatomnumber += topology_->atoms.atom[i].atomnumber;
         }
@@ -1583,7 +1759,7 @@ immStatus MyMol::Initxx(FILE *fp,
             for(m=0; (m<DIM); m++)
                 coq[m] /= tatomnumber;
             for(i=0; (i<topology_->atoms.nr); i++) 
-                rvec_dec(x[i],coq);
+                rvec_dec(x_[i],coq);
         }
         else
         {
@@ -1650,7 +1826,7 @@ immStatus MyMol::Initxx(FILE *fp,
     }
     if (immOK == imm) 
     {
-        gentop_vsite_generate_special(gvt,FALSE,&(topology_->atoms),&x,plist_,
+        gentop_vsite_generate_special(gvt,FALSE,&(topology_->atoms),&x_,plist_,
                                       symtab_,atype_,&excls,pd);
 
         gentop_vsite_done(&gvt);
@@ -1770,7 +1946,7 @@ immStatus MyMol::Initxx(FILE *fp,
             gmx_resp_update_atomtypes(gr,&(topology_->atoms));
             gmx_resp_add_atom_symmetry(gr,
                                        symmetric_charges_);
-            gmx_resp_add_atom_coords(gr,x);
+            gmx_resp_add_atom_coords(gr,x_);
             ci = GetLot(lot);
             if (ci != EndCalculation())
             {
@@ -1804,9 +1980,9 @@ immStatus MyMol::Initxx(FILE *fp,
             //gmx_vsite_t *vs = init_vsite(mtop_,cr,TRUE);
             snew(buf,nalloc);
             snew(newexcls,nalloc);
-            srenew(x,nalloc);
+            srenew(x_,nalloc);
             add_shells(pd,nalloc,&(mtop_->moltype[0].atoms),
-                       atype_,plist_,x,symtab_,
+                       atype_,plist_,x_,symtab_,
                        &newexcls);
             mtop_->natoms = mtop_->moltype[0].atoms.nr;
             mtop_->molblock[0].natoms_mol = mtop_->natoms;
@@ -1814,14 +1990,22 @@ immStatus MyMol::Initxx(FILE *fp,
                             &(mtop_->moltype[0].excls));
             mtop_update_cgs(mtop_);
             reset_q(&(topology_->atoms));
-            shell_ = init_shell_flexcon(debug,mtop_,0,x);
+            shell_ = init_shell_flexcon(debug,mtop_,0,x_);
+            if (NULL == shell_)
+            {
+                imm = immGenShells;
+            }
         }
-        else {
+        else 
+        {
             shell_ = NULL;
             excls_to_blocka(nalloc,excls,&(mtop_->moltype[0].excls));
         }
+    }
+    if (immOK == imm)
+    {
         plist_to_mtop(pd,plist_,mtop_);
-        snew(f,nalloc);
+        snew(f_,nalloc);
         fr_ = mk_forcerec();
         init_forcerec(NULL,oenv,fr_,NULL,inputrec_,mtop_,cr,
                       box,FALSE,NULL,NULL,NULL,NULL,NULL,NULL,TRUE,-1);
@@ -1869,7 +2053,7 @@ void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
             sptot  += sqr(sigpol);
         }
         for(m=0; (m<DIM); m++)
-            mu[m] += x[i][m]*topology_->atoms.atom[i].q;
+            mu[m] += x_[i][m]*topology_->atoms.atom[i].q;
     }
     int qq = GetCharge();
     double mm = GetMass();
@@ -1877,6 +2061,165 @@ void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
     fprintf(fp,"Total charge is %d, total mass is %g, dipole is %f D\n",
             qq,mm,mutot);
     fprintf(fp,"Polarizability is %g +/- %g A^3.\n",poltot,sqrt(sptot/topology_->atoms.nr));
+}
+
+void MyMol::UpdateIdef(gmx_poldata_t pd,bool bOpt[])
+{
+    int  gt,i,tp,ai,aj,ak,al;
+    int  ftb,fta,ftd;
+    char *aai,*aaj,*aak,*aal,*params,**ptr;
+    int  lu;
+    double value;
+    
+    lu = string2unit(gmx_poldata_get_length_unit(pd));
+    if (bOpt[ebtsBONDS]) 
+    {
+        ftb = gmx_poldata_get_bond_ftype(pd);
+        for(i=0; (i<ltop_->idef.il[ftb].nr); i+=interaction_function[ftb].nratoms+1) 
+        {
+            tp = ltop_->idef.il[ftb].iatoms[i];
+            ai = ltop_->idef.il[ftb].iatoms[i+1];
+            aj = ltop_->idef.il[ftb].iatoms[i+2];
+            aai = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ai]);
+            aaj = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[aj]);
+            /* Here unfortunately we need a case statement for the types */
+            if ((gt = gmx_poldata_search_bond(pd,aai,aaj,&value,NULL,NULL,NULL,&params)) != 0) 
+            {
+                mtop_->ffparams.iparams[tp].morse.b0A = convert2gmx(value,lu);
+                  
+                ptr = split(' ',params);
+                if (NULL != ptr[0]) 
+                {
+                    mtop_->ffparams.iparams[tp].morse.cbA = atof(ptr[0]);
+                    sfree(ptr[0]);
+                }
+                if (NULL != ptr[1]) 
+                {
+                    mtop_->ffparams.iparams[tp].morse.betaA = atof(ptr[1]);
+                    sfree(ptr[1]);
+                }
+                sfree(ptr);
+                if (NULL != params)
+                {
+                    sfree(params);
+                }
+            }
+            else 
+            {
+                gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field",aai,aaj);
+            }
+        }
+    }
+    if (bOpt[ebtsANGLES]) 
+    {
+        fta = gmx_poldata_get_angle_ftype(pd);
+        for(i=0; (i<ltop_->idef.il[fta].nr); i+=interaction_function[fta].nratoms+1) 
+        {
+            tp = ltop_->idef.il[fta].iatoms[i];
+            ai = ltop_->idef.il[fta].iatoms[i+1];
+            aj = ltop_->idef.il[fta].iatoms[i+2];
+            ak = ltop_->idef.il[fta].iatoms[i+3];
+            aai = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ai]);
+            aaj = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[aj]);
+            aak = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ak]);
+            
+            if ((gt = gmx_poldata_search_angle(pd,aai,aaj,aak,&value,NULL,NULL,&params)) != 0) 
+            {
+                mtop_->ffparams.iparams[tp].harmonic.rA = 
+                    mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                ptr = split(' ',params);
+                if (NULL != ptr[0]) 
+                {
+                    mtop_->ffparams.iparams[tp].harmonic.krA = 
+                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    sfree(ptr[0]);
+                }
+                sfree(ptr);
+                if (NULL != params)
+                {
+                    sfree(params);
+                }
+            }
+            else 
+            {
+                gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
+            }
+        }
+    }
+    if (bOpt[ebtsPDIHS]) 
+    {
+        ftd = gmx_poldata_get_dihedral_ftype(pd,egdPDIHS);
+        
+        for(i=0; (i<ltop_->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) 
+        {
+            tp = ltop_->idef.il[ftd].iatoms[i];
+            ai = ltop_->idef.il[ftd].iatoms[i+1];
+            aj = ltop_->idef.il[ftd].iatoms[i+2];
+            ak = ltop_->idef.il[ftd].iatoms[i+3];
+            al = ltop_->idef.il[ftd].iatoms[i+4];
+            aai = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ai]);
+            aaj = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[aj]);
+            aak = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ak]);
+            aal = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[al]);
+            if ((gt = gmx_poldata_search_dihedral(pd,egdPDIHS,aai,aaj,aak,aal,
+                                                  &value,NULL,NULL,&params)) != 0) 
+            {
+                mtop_->ffparams.iparams[tp].pdihs.phiA = value;
+                ptr = split(' ',params);
+                if (NULL != ptr[0]) 
+                {
+                    mtop_->ffparams.iparams[tp].pdihs.cpA = 
+                        mtop_->ffparams.iparams[tp].pdihs.cpB = 
+                        atof(ptr[0]);
+                    sfree(ptr[0]);
+                }
+                if (NULL != ptr[1]) 
+                {
+                    mtop_->ffparams.iparams[tp].pdihs.mult = atof(ptr[1]);
+                    sfree(ptr[1]);
+                }
+                sfree(ptr);
+                if (NULL != params)
+                    sfree(params);
+            }
+            else {
+                gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
+            }
+        }
+    }
+    if (bOpt[ebtsIDIHS]) {
+        ftd = gmx_poldata_get_dihedral_ftype(pd,egdIDIHS);
+        
+        for(i=0; (i<ltop_->idef.il[ftd].nr); i+=interaction_function[ftd].nratoms+1) {
+            tp = ltop_->idef.il[ftd].iatoms[i];
+            ai = ltop_->idef.il[ftd].iatoms[i+1];
+            aj = ltop_->idef.il[ftd].iatoms[i+2];
+            ak = ltop_->idef.il[ftd].iatoms[i+3];
+            al = ltop_->idef.il[ftd].iatoms[i+4];
+            aai = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ai]);
+            aaj = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[aj]);
+            aak = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[ak]);
+            aal = (char *)gmx_poldata_atype_to_btype(pd,*topology_->atoms.atomtype[al]);
+            if ((gt = gmx_poldata_search_dihedral(pd,egdIDIHS,aai,aaj,aak,aal,
+                                                  &value,NULL,NULL,&params)) != 0) {
+                mtop_->ffparams.iparams[tp].harmonic.rA = 
+                    mtop_->ffparams.iparams[tp].harmonic.rB = value;
+                ptr = split(' ',params);
+                if (NULL != ptr[0]) {
+                    mtop_->ffparams.iparams[tp].harmonic.krA = 
+                        mtop_->ffparams.iparams[tp].harmonic.krB = atof(ptr[0]);
+                    sfree(ptr[0]);
+                }
+                sfree(ptr);
+                if (NULL != params)
+                    sfree(params);
+            }
+            else {
+                gmx_fatal(FARGS,"There are no parameters for improper %-%s-%s-%s in the force field for %s",
+                          aai,aaj,aak,aal,GetMolname().c_str());
+            }
+        }
+    }
 }
 
 }

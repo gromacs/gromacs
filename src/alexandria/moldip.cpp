@@ -13,7 +13,7 @@
 #include "shellfc.h"
 
 // Alexandria stuff
-#include "poldata_xml.h"
+#include "poldata_xml.hpp"
 #include "molprop_xml.hpp"
 #include "gmx_simple_comm.h"
 #include "moldip.hpp"
@@ -133,7 +133,7 @@ static gmx_bool const_index_count(t_index_count *ic,char *name)
 }
 
 static void dump_index_count(t_index_count *ic,FILE *fp,
-                             int iModel,gmx_poldata_t pd,
+                             ChargeGenerationModel iModel,gmx_poldata_t pd,
                              gmx_bool bFitZeta)
 {
     int i,j,nZeta,nZopt;
@@ -191,7 +191,7 @@ static int clean_index_count(t_index_count *ic,int minimum_data,FILE *fp)
 static int check_data_sufficiency(FILE *fp,
                                   std::vector<alexandria::MyMol> mol,
                                   int minimum_data,gmx_poldata_t pd,
-                                  t_index_count *ic, int iModel,char *opt_elem,char *const_elem,
+                                  t_index_count *ic, ChargeGenerationModel iModel,char *opt_elem,char *const_elem,
                                   t_commrec *cr,gmx_bool bPol,
                                   gmx_bool bFitZeta)
 {
@@ -201,7 +201,8 @@ static int check_data_sufficiency(FILE *fp,
     gmx_mtop_atomloop_all_t aloop;
     t_atom *atom;
     char   **ptr,*myname;
-    int    k,at_global,mymodel;
+    int    k,at_global;
+    ChargeGenerationModel mymodel;
   
     /* Parse opt_elem list to test which elements to optimize */
     if (const_elem) {
@@ -334,10 +335,15 @@ MolDip::MolDip()
     _ic = NULL;
     _cr = NULL;
     _fixchi = NULL;
+    for(int i=0; (i<ermsNR); i++)
+    {
+        _fc[i] = 0;
+        _ener[i] = 0;
+    }
 }
 
 void MolDip::Init(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
-                  int  iModel,real rDecrZeta,real epsr,
+                  ChargeGenerationModel iModel,real rDecrZeta,real epsr,
                   real J0_0,real Chi0_0,real w_0,
                   real J0_1,real Chi0_1,real w_1,
                   real fc_bound,real fc_mu,real fc_quad,real fc_charge,
@@ -398,10 +404,15 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
     
     /* Force field data */
     if ((_pd = gmx_poldata_read(pd_fn,_atomprop)) == NULL)
+    {
         gmx_fatal(FARGS,"Can not read the force field information. File %s missing or incorrect.",pd_fn);
+    }
     
     if ((n = gmx_poldata_get_numprops(_pd,_iModel)) == 0)
+    {
         gmx_fatal(FARGS,"File %s does not contain the requested parameters for model %d",pd_fn,_iModel);
+    }
+    
     nexcl = gmx_poldata_get_nexcl(_pd);
     
     if (NULL != fp)
@@ -426,7 +437,8 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
         }
         nmol_cpu = mp.size()/_cr->nnodes + 1;
     }
-    else {
+    else
+    {
         nmol_cpu = 0;
     }
     if (PAR(_cr))
@@ -444,7 +456,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 
                 mpnew.Merge(*mpi);
                 
-                imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+                imm = mpnew.GenerateTopology(_atomprop,_pd,lot,_iModel,_bPol,nexcl);
     
                 if (_iModel != eqgNone)
                 {
@@ -469,9 +481,17 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 }
                 if (immOK == imm)
                 {
-                    mpnew.GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
+                    imm = mpnew.GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
                 }
-     
+                if (immOK == imm)
+                {
+                    imm = mpnew.GenerateGromacs(oenv,_cr);
+                }
+                if (immOK == imm)
+                {
+                    imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
+                }
+            
                 if (0)
                     imm = mpnew.Initxx(fp,gap,
                                        _bQM,lot,bZero,
@@ -530,7 +550,7 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
             
             mpnew.Receive(_cr,0);
                 
-            imm = mpnew.GenerateTopology(_atomprop,_pd,lot,"ESP",_bPol,nexcl);
+            imm = mpnew.GenerateTopology(_atomprop,_pd,lot,_iModel,_bPol,nexcl);
     
             if (immOK == imm)
             {
@@ -550,7 +570,18 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 imm = mpnew.GenerateCharges(_pd,_atomprop,_iModel,_hfac,_epsr,
                                             lot,TRUE,NULL);
             }
-            
+            if (immOK == imm)
+            {
+                imm = mpnew.GenerateChargeGroups(ecgAtom,FALSE,NULL,1);
+            }
+            if (immOK == imm)
+            {
+                imm = mpnew.GenerateGromacs(oenv,_cr);
+            }
+            if (immOK == imm)
+            {
+                imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
+            }
             
             if (0)
                 imm = mpnew.Initxx(fp,gap,_bQM,lot,bZero,
@@ -695,13 +726,13 @@ void MolDip::CalcDeviation()
             if (NULL == mymol->qgen_)
                 mymol->qgen_ =
                     gentop_qgen_init(_pd,&(mymol->topology_->atoms),_atomprop,
-                                     mymol->x,_iModel,_hfac,
+                                     mymol->x_,_iModel,_hfac,
                                      mymol->GetCharge(),_epsr);
             /*if (strcmp(mymol->molname,"1-butene") == 0)
               fprintf(stderr,"Ready for %s\n",mymol->molname);*/
             eQ = generate_charges_sm(debug,mymol->qgen_,
                                      _pd,&(mymol->topology_->atoms),
-                                     mymol->x,1e-4,100,_atomprop,
+                                     mymol->x_,1e-4,100,_atomprop,
                                      _hfac,
                                      &(mymol->chieq));
             if (eQ != eQGEN_OK)
@@ -731,7 +762,7 @@ void MolDip::CalcDeviation()
                                         GMX_FORCE_ALLFORCES,FALSE,
                                         mymol->ltop_,NULL,NULL,NULL,
                                         NULL,&(mymol->state_),
-                                        mymol->f,force_vir,mymol->md_,
+                                        mymol->f_,force_vir,mymol->md_,
                                         &my_nrnb,wcycle,NULL,
                                         &(mymol->mtop_->groups),
                                         mymol->shell_,mymol->fr_,FALSE,t,mu_tot,

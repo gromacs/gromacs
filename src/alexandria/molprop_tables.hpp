@@ -39,7 +39,7 @@
 
 #include "grompp.h"
 #include "atomprop.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "molprop.hpp"
 #include "molprop_util.hpp"
 #include "molselect.hpp"

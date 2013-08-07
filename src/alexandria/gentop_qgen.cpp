@@ -61,7 +61,7 @@
 #include "molprop.hpp"
 #include "gromacs/linearalgebra/matrix.h"
 #include "gromacs/coulombintegrals.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "gentop_nm2type.hpp"
 #include "gentop_qgen.hpp"
 #include "gmx_resp.hpp"
@@ -69,7 +69,8 @@
 typedef struct gentop_qgen
 {
     gmx_bool bWarned;
-    int  iModel,natom,eQGEN;
+    ChargeGenerationModel iModel;
+    int  natom,eQGEN;
     real qtotal,chieq,hfac,epsr;
     /* For each atom i there is an elem, atomnr, chi0, rhs, j00 and x */
     char **elem;
@@ -181,7 +182,7 @@ static real Coulomb_NN(real r)
     return 1/r;
 }
 
-static real calc_jab(int iModel,
+static real calc_jab(ChargeGenerationModel iModel,
                      rvec xi,rvec xj,
                      int nZi,int nZj,
                      real *zeta_i,real *zeta_j,
@@ -515,7 +516,7 @@ int atomicnumber2rowXX(int elem)
 
 gentop_qgen_t 
 gentop_qgen_init(gmx_poldata_t pd,t_atoms *atoms,gmx_atomprop_t aps,
-                 rvec *x,int iModel,real hfac,int qtotal,real epsr)
+                 rvec *x,ChargeGenerationModel iModel,real hfac,int qtotal,real epsr)
 {
     gentop_qgen *qgen;
     char *atp;

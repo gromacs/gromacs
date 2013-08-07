@@ -39,7 +39,7 @@
 	
 #include <stdio.h>
 #include "grompp.h"
-#include "poldata.h"
+#include "poldata.hpp"
 #include "atomprop.h"
 #include "gmx_statistics.h"
 #include "molprop.hpp"
@@ -56,7 +56,8 @@ typedef struct
 
 typedef struct gmx_resp 
 {
-    int    nesp,nrho,natom,natype,ngridp,iModel;
+    ChargeGenerationModel iModel;
+    int    nesp,nrho,natom,natype,ngridp;
     double qtot,qsum,watoms;
     double rms,rrms,penalty,pfac,entropy,wtot;
     dvec   origin,space;
@@ -84,7 +85,7 @@ bool gmx_ra_init(gmx_ra *ra,int atomnumber,int atype,
                  const char *atomtype,gmx_poldata_t pd,
                  int iModel,char **dzatoms);
 
-gmx_resp_t gmx_resp_init(int eqg_model,
+gmx_resp_t gmx_resp_init(ChargeGenerationModel iModel,
                          bool bAXpRESP,real qfac,real b_hyper,real qtot,
                          real zmin,real zmax,real delta_z,bool bZatyp,
                          real watoms,real rDecrZeta,
