@@ -387,7 +387,7 @@ void init_em(FILE *fplog, const char *title,
 
         forcerec_set_excl_load(fr, *top, cr);
 
-        init_bonded_thread_force_reduction(fr, &(*top)->idef);
+        setup_bonded_threading(fr, &(*top)->idef);
 
         if (ir->ePBC != epbcNONE && !fr->bMolPBC)
         {
