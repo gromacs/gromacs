@@ -40,6 +40,7 @@
 #endif
 
 #include <math.h>
+#include <assert.h>
 #include "physics.h"
 #include "vec.h"
 #include "maths.h"
@@ -3618,6 +3619,73 @@ real tab_dihs(int nbonds,
     return vtot;
 }
 
+/* Return if this is a potential calculated in bondfree.c,
+ * i.e. not an interaction without (its own) potential
+ * and not a position restraint.
+ */
+static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
+{
+    return
+        (interaction_function[ftype].flags & IF_BOND) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
+        (ftype < F_GB12 || ftype > F_GB14);
+}
+
+static void divide_bondeds_over_threads(t_idef *idef, int nthreads)
+{
+    int ftype;
+    int nat1;
+    int t;
+    int il_nr_thread;
+
+    idef->nthreads = nthreads;
+
+    if (F_NRE*(nthreads+1) > idef->il_thread_division_nalloc)
+    {
+        idef->il_thread_division_nalloc = F_NRE*(nthreads+1);
+        snew(idef->il_thread_division, idef->il_thread_division_nalloc);
+    }
+
+    for (ftype = 0; ftype < F_NRE; ftype++)
+    {
+        if (ftype_is_bonded_potential(ftype))
+        {
+            nat1 = interaction_function[ftype].nratoms + 1;
+
+            for (t = 0; t <= nthreads; t++)
+            {
+                /* Divide the interactions equally over the threads.
+                 * When the different types of bonded interactions
+                 * are distributed roughly equally over the threads,
+                 * this should lead to well localized output into
+                 * the force buffer on each thread.
+                 * If this is not the case, a more advanced scheme
+                 * (not implemented yet) will do better.
+                 */
+                il_nr_thread = (((idef->il[ftype].nr/nat1)*t)/nthreads)*nat1;
+
+                /* Ensure that distance restraint pairs with the same label
+                 * end up on the same thread.
+                 * This is slighlty tricky code, since the next for iteration
+                 * may have an initial il_nr_thread lower than the final value
+                 * in the previous iteration, but this will anyhow be increased
+                 * to the approriate value again by this while loop.
+                 */
+                while (ftype == F_DISRES &&
+                       il_nr_thread > 0 &&
+                       il_nr_thread < idef->il[ftype].nr &&
+                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread]].disres.label ==
+                       idef->iparams[idef->il[ftype].iatoms[il_nr_thread-nat1]].disres.label)
+                {
+                    il_nr_thread += nat1;
+                }
+
+                idef->il_thread_division[ftype*(nthreads+1)+t] = il_nr_thread;
+            }
+        }
+    }
+}
+
 static unsigned
 calc_bonded_reduction_mask(const t_idef *idef,
                            int shift,
@@ -3630,9 +3698,7 @@ calc_bonded_reduction_mask(const t_idef *idef,
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES) &&
-            (ftype<F_GB12 || ftype>F_GB14))
+        if (ftype_is_bonded_potential(ftype))
         {
             nb = idef->il[ftype].nr;
             if (nb > 0)
@@ -3642,8 +3708,8 @@ calc_bonded_reduction_mask(const t_idef *idef,
                 /* Divide this interaction equally over the threads.
                  * This is not stored: should match division in calc_bonds.
                  */
-                nb0 = (((nb/nat1)* t   )/nt)*nat1;
-                nb1 = (((nb/nat1)*(t+1))/nt)*nat1;
+                nb0 = idef->il_thread_division[ftype*(nt+1)+t];
+                nb1 = idef->il_thread_division[ftype*(nt+1)+t+1];
 
                 for (i = nb0; i < nb1; i += nat1)
                 {
@@ -3659,14 +3725,20 @@ calc_bonded_reduction_mask(const t_idef *idef,
     return mask;
 }
 
-void init_bonded_thread_force_reduction(t_forcerec   *fr,
-                                        const t_idef *idef)
+void setup_bonded_threading(t_forcerec   *fr, t_idef *idef)
 {
 #define MAX_BLOCK_BITS 32
     int t;
     int ctot, c, b;
 
-    if (fr->nthreads <= 1)
+#ifndef NDEBUG
+    assert(fr->nthreads >= 1);
+#endif
+
+    /* Divide the bonded interaction over the threads */
+    divide_bondeds_over_threads(idef, fr->nthreads);
+
+    if (fr->nthreads == 1)
     {
         fr->red_nblock = 0;
 
@@ -3919,8 +3991,8 @@ static real calc_one_bond(FILE *fplog, int thread,
         nbonds    = idef->il[ftype].nr/nat1;
         iatoms    = idef->il[ftype].iatoms;
 
-        nb0 = ((nbonds* thread   )/(fr->nthreads))*nat1;
-        nbn = ((nbonds*(thread+1))/(fr->nthreads))*nat1 - nb0;
+        nb0 = idef->il_thread_division[ftype*(idef->nthreads+1)+thread];
+        nbn = idef->il_thread_division[ftype*(idef->nthreads+1)+thread+1] - nb0;
 
         if (!IS_LISTED_LJ_C(ftype))
         {
@@ -4029,52 +4101,46 @@ static real calc_one_bond_foreign(FILE *fplog, int ftype, const t_idef *idef,
         efptFTYPE = efptBONDED;
     }
 
-    if (ftype < F_GB12 || ftype > F_GB14)
+    ind       = interaction_function[ftype].nrnb_ind;
+    nat1      = interaction_function[ftype].nratoms+1;
+    nbonds_np = idef->il[ftype].nr_nonperturbed;
+    nbonds    = idef->il[ftype].nr - nbonds_np;
+    iatoms    = idef->il[ftype].iatoms + nbonds_np;
+    if (nbonds > 0)
     {
-        if (interaction_function[ftype].flags & IF_BOND &&
-            !(ftype == F_CONNBONDS || ftype == F_POSRES))
+        if (!IS_LISTED_LJ_C(ftype))
         {
-            ind       = interaction_function[ftype].nrnb_ind;
-            nat1      = interaction_function[ftype].nratoms+1;
-            nbonds_np = idef->il[ftype].nr_nonperturbed;
-            nbonds    = idef->il[ftype].nr - nbonds_np;
-            iatoms    = idef->il[ftype].iatoms + nbonds_np;
-            if (nbonds > 0)
+            if (ftype == F_CMAP)
             {
-                if (!IS_LISTED_LJ_C(ftype))
-                {
-                    if (ftype == F_CMAP)
-                    {
-                        v = cmap_dihs(nbonds, iatoms,
-                                      idef->iparams, &idef->cmap_grid,
-                                      (const rvec*)x, f, fr->fshift,
-                                      pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
-                                      global_atom_index);
-                    }
-                    else
-                    {
-                        v =     interaction_function[ftype].ifunc(nbonds, iatoms,
-                                                                  idef->iparams,
-                                                                  (const rvec*)x, f, fr->fshift,
-                                                                  pbc, g, lambda[efptFTYPE], &dvdl[efptFTYPE],
-                                                                  md, fcd, global_atom_index);
-                    }
-                }
-                else
-                {
-                    v = do_nonbonded_listed(ftype, nbonds, iatoms,
-                                            idef->iparams,
-                                            (const rvec*)x, f, fr->fshift,
-                                            pbc, g, lambda, dvdl,
-                                            md, fr, grpp, global_atom_index);
-                }
-                if (ind != -1)
-                {
-                    inc_nrnb(nrnb, ind, nbonds/nat1);
-                }
+                v = cmap_dihs(nbonds, iatoms,
+                              idef->iparams, &idef->cmap_grid,
+                              (const rvec*)x, f, fr->fshift,
+                              pbc, g, lambda[efptFTYPE], &(dvdl[efptFTYPE]), md, fcd,
+                              global_atom_index);
+            }
+            else
+            {
+                v = interaction_function[ftype].ifunc(nbonds, iatoms,
+                                                      idef->iparams,
+                                                      (const rvec*)x, f, fr->fshift,
+                                                      pbc, g, lambda[efptFTYPE], &dvdl[efptFTYPE],
+                                                      md, fcd, global_atom_index);
             }
         }
+        else
+        {
+            v = do_nonbonded_listed(ftype, nbonds, iatoms,
+                                    idef->iparams,
+                                    (const rvec*)x, f, fr->fshift,
+                                    pbc, g, lambda, dvdl,
+                                    md, fr, grpp, global_atom_index);
+        }
+        if (ind != -1)
+        {
+            inc_nrnb(nrnb, ind, nbonds/nat1);
+        }
     }
+
     return v;
 }
 
@@ -4098,6 +4164,10 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     const  t_pbc *pbc_null;
     char          buf[22];
     int           thread;
+
+#ifndef NDEBUG
+    assert(fr->nthreads == idef->nthreads);
+#endif
 
     bCalcEnerVir = (force_flags & (GMX_FORCE_VIRIAL | GMX_FORCE_ENERGY));
 
@@ -4152,7 +4222,6 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
         rvec              *ft, *fshift;
         real              *dvdlt;
         gmx_grppairener_t *grpp;
-        int                nb0, nbn;
 
         if (thread == 0)
         {
@@ -4176,10 +4245,7 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
         /* Loop over all bonded force types to calculate the bonded forces */
         for (ftype = 0; (ftype < F_NRE); ftype++)
         {
-            if (idef->il[ftype].nr > 0 &&
-                (interaction_function[ftype].flags & IF_BOND) &&
-                (ftype < F_GB12 || ftype > F_GB14) &&
-                !(ftype == F_CONNBONDS || ftype == F_POSRES))
+            if (idef->il[ftype].nr > 0 && ftype_is_bonded_potential(ftype))
             {
                 v = calc_one_bond(fplog, thread, ftype, idef, x,
                                   ft, fshift, fr, pbc_null, g, enerd, grpp,
@@ -4250,10 +4316,13 @@ void calc_bonds_lambda(FILE *fplog,
     /* Loop over all bonded force types to calculate the bonded forces */
     for (ftype = 0; (ftype < F_NRE); ftype++)
     {
-        v = calc_one_bond_foreign(fplog, ftype, idef, x,
-                                  f, fr, pbc_null, g, grpp, nrnb, lambda, dvdl_dum,
-                                  md, fcd, global_atom_index, FALSE);
-        epot[ftype] += v;
+        if (ftype_is_bonded_potential(ftype))
+        {
+            v = calc_one_bond_foreign(fplog, ftype, idef, x,
+                                      f, fr, pbc_null, g, grpp, nrnb, lambda, dvdl_dum,
+                                      md, fcd, global_atom_index, FALSE);
+            epot[ftype] += v;
+        }
     }
 
     sfree(fr->fshift);
