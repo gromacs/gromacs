@@ -942,15 +942,14 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     else()
       find_package(FFTW COMPONENTS ${FFTW})
     endif()
+    if(NOT ${FFTW}_FOUND)
+      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON) , or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
+    endif()
 
     string(TOUPPER "${FFTW}" FFTW)
     set(PKG_FFT "${${FFTW}_PKG}")
     include_directories(${${FFTW}_INCLUDE_DIRS})
     set(FFT_LIBRARIES ${${FFTW}_LIBRARIES})
-    if(NOT ${FFTW}_FOUND)
-      MESSAGE(FATAL_ERROR "Cannot find FFTW 3 (with correct precision - libfftw3f for single-precision GROMACS or libfftw3 for double-precision GROMACS). Either choose the right precision, choose another FFT(W) library (-DGMX_FFT_LIBRARY), enable the advanced option to let GROMACS build FFTW 3 for you (-DGMX_BUILD_OWN_FFTW=ON) , or use the really slow GROMACS built-in fftpack library (-DGMX_FFT_LIBRARY=fftpack).")
-    endif()
-
     set(GMX_FFT_FFTW3 1)
 
     if ((${GMX_CPU_ACCELERATION} MATCHES "SSE" OR ${GMX_CPU_ACCELERATION} MATCHES "AVX") AND NOT ${FFTW}_HAVE_SIMD)
