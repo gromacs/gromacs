@@ -385,7 +385,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
-        /* Steps are divided over the nodes iso splitting the atoms */
+        /* Dims/steps are divided over the nodes iso splitting the atoms */
         min_atoms_per_mpi_thread = 0;
     }
     else
@@ -773,6 +773,14 @@ static void check_and_update_hw_opt(gmx_hw_opt_t *hw_opt,
     {
         gmx_fatal(FARGS, "Setting the number of thread-MPI threads is only supported with thread-MPI and Gromacs was compiled without thread-MPI");
     }
+#endif
+
+#ifndef GMX_OPENMP
+    if (hw_opt->nthreads_omp > 1)
+    {
+        gmx_fatal(FARGS, "More than 1 OpenMP thread requested, but Gromacs was compiled without OpenMP support");
+    }
+    hw_opt->nthreads_omp = 1;
 #endif
 
     if (hw_opt->nthreads_tot > 0 && hw_opt->nthreads_omp_pme <= 0)
@@ -1312,7 +1320,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
         npme_minor    = 1;
-        if (!EI_TPI(inputrec->eI))
+        /* NM and TPI perform single node energy calculations in parallel */
+        if (!(inputrec->eI == eiNM || EI_TPI(inputrec->eI)))
         {
             npme_major = cr->nnodes;
         }
