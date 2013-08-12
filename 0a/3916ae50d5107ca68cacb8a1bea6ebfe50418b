@@ -1,0 +1,9 @@
+Code-Review+2: Teemu Murtola <teemu.murtola@gmail.com>
+Code-Review+2: Kasson <kasson@gmail.com>
+Code-Review+1: Christoph Junghans <junghans@votca.org>
+Verified+2: Jenkins Buildbot
+Submitted-by: Kasson <kasson@gmail.com>
+Submitted-at: Mon, 12 Aug 2013 14:21:55 +0200
+Reviewed-on: https://gerrit.gromacs.org/2553
+Project: gromacs
+Branch: refs/heads/release-4-6
