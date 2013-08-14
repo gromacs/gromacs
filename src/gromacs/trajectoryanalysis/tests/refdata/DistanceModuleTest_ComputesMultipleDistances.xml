@@ -1,0 +1,269 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <String Name="CommandLine">distance -select 'atomname S1 S2' 'resindex 1 to 4 and atomname CB merge resindex 2 to 5 and atomname CB' -len 2 -binw 0.5</String>
+  <OutputData Name="Data">
+    <AnalysisData Name="average">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">1.432455</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.810660</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="dist">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">5</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3.162278</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">4</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">3.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.414214</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.414214</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.414214</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="histogram">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.250000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0.750000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame2">
+        <Real Name="X">1.250000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">1.600000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.500000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame3">
+        <Real Name="X">1.750000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame4">
+        <Real Name="X">2.250000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame5">
+        <Real Name="X">2.750000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame6">
+        <Real Name="X">3.250000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.400000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.500000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame7">
+        <Real Name="X">3.750000</Real>
+        <DataValues>
+          <Int Name="Count">2</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+            <Real Name="Error">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+    <AnalysisData Name="xyz">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">15</Int>
+          <Int Name="DataSet">0</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">-3.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </DataValues>
+        <DataValues>
+          <Int Name="Count">12</Int>
+          <Int Name="DataSet">1</Int>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">3.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">-1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">-1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">-1.000000</Real>
+          </DataValue>
+          <DataValue>
+            <Real Name="Value">0.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
+  </OutputData>
+</ReferenceData>
