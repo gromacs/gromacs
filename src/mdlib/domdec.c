@@ -2006,7 +2006,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_large_int_t step,
                         cx[ZZ] = grid_r[i*2+z][ZZ];
                         mvmul(tric, cx, r);
                         fprintf(out, format, "ATOM", a++, "CA", "GLY", ' ', 1+i,
-                                10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
+                                ' ', 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
                     }
                 }
             }
