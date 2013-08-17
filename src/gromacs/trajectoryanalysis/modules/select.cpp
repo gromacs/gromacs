@@ -260,7 +260,9 @@ Select::Select()
     : TrajectoryAnalysisModule(name, shortDescription),
       selOpt_(NULL),
       bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
-      top_(NULL), occupancyModule_(new AnalysisDataAverageModule())
+      bCumulativeLifetimes_(true), top_(NULL),
+      occupancyModule_(new AnalysisDataAverageModule()),
+      lifetimeModule_(new AnalysisDataLifetimeModule())
 {
     registerAnalysisDataset(&sdata_, "size");
     registerAnalysisDataset(&cdata_, "cfrac");
@@ -270,6 +272,7 @@ Select::Select()
     registerAnalysisDataset(&mdata_, "mask");
     occupancyModule_->setXAxis(1.0, 1.0);
     registerBasicDataset(occupancyModule_.get(), "occupancy");
+    registerBasicDataset(lifetimeModule_.get(), "lifetime");
 }
 
 
@@ -338,8 +341,13 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "present, with [TT]maxsel[tt] all atoms possibly selected by the",
         "selection are present, and with [TT]selected[tt] only atoms that are",
         "selected at least in one frame are present.[PAR]",
-        "With [TT]-om[tt], [TT]-of[tt] and [TT]-ofpdb[tt], only one selection",
-        "can be provided. [TT]-om[tt] and [TT]-of[tt] only accept dynamic",
+        "With [TT]-olt[tt], a histogram is produced that shows the number of",
+        "selected positions as a function of the time the position was",
+        "continuously selected. [TT]-cumlt[tt] can be used to control whether",
+        "subintervals of longer intervals are included in the histogram.[PAR]",
+        "With [TT]-om[tt], [TT]-of[tt], [TT]-olt[tt], and [TT]-ofpdb[tt],",
+        "only one selection can be provided.",
+        "[TT]-om[tt], [TT]-of[tt], and [TT]-olt[tt] only accept dynamic",
         "selections."
     };
 
@@ -366,6 +374,9 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(FileNameOption("ofpdb").filetype(eftPDB).outputFile()
                            .store(&fnPDB_).defaultBasename("occupancy")
                            .description("PDB file with occupied fraction for selected positions"));
+    options->addOption(FileNameOption("olt").filetype(eftPlot).outputFile()
+                           .store(&fnLifetime_).defaultBasename("lifetime")
+                           .description("Lifetime histogram"));
 
     selOpt_ = options->addOption(SelectionOption("select").storeVector(&sel_)
                                      .required().multiValue()
@@ -385,6 +396,8 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(StringOption("pdbatoms").store(&pdbAtoms_)
                            .enumValue(cPDBAtomsEnum).defaultEnumIndex(0)
                            .description("Atoms to write with -ofpdb"));
+    options->addOption(BooleanOption("cumlt").store(&bCumulativeLifetimes_)
+                           .description("Cumulate subintervals of longer intervals in -olt"));
 }
 
 void
@@ -397,7 +410,8 @@ Select::optionsFinished(Options                     * /*options*/,
         settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
     }
     if ((!fnIndex_.empty() && bDump_)
-        || !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty())
+        || !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty()
+        || !fnLifetime_.empty())
     {
         selOpt_->setValueCount(1);
     }
@@ -407,10 +421,11 @@ void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation        &top)
 {
-    if (!sel_[0].isDynamic() && (!fnMask_.empty() || !fnOccupancy_.empty()))
+    if (!sel_[0].isDynamic()
+        && (!fnMask_.empty() || !fnOccupancy_.empty() || !fnLifetime_.empty()))
     {
         GMX_THROW(InconsistentInputError(
-                          "-om or -of are not meaningful with a static selection"));
+                          "-om, -of, or -olt are not meaningful with a static selection"));
     }
     bResInd_ = (resNumberType_ == "index");
 
@@ -479,8 +494,11 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         idata_.addModule(writer);
     }
 
+    // TODO: Write out the mask and lifetimes for all the selections.
     mdata_.setColumnCount(0, sel_[0].posCount());
     mdata_.addModule(occupancyModule_);
+    mdata_.addModule(lifetimeModule_);
+    lifetimeModule_->setCumulative(bCumulativeLifetimes_);
     if (!fnMask_.empty())
     {
         AnalysisDataPlotModulePointer plot(
@@ -503,6 +521,16 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setXLabel("Selected position");
         plot->setYLabel("Occupied fraction");
         occupancyModule_->addColumnModule(0, 1, plot);
+    }
+    if (!fnLifetime_.empty())
+    {
+        AnalysisDataPlotModulePointer plot(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plot->setFileName(fnLifetime_);
+        plot->setTitle("Lifetime histogram");
+        plot->setXAxisIsTime();
+        plot->setYLabel("Number of occurrences");
+        lifetimeModule_->addModule(plot);
     }
 
     top_ = &top;

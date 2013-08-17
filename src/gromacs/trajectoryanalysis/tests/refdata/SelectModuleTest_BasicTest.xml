@@ -267,6 +267,26 @@
         </DataValues>
       </DataFrame>
     </AnalysisData>
+    <AnalysisData Name="lifetime">
+      <DataFrame Name="Frame0">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">8.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+      <DataFrame Name="Frame1">
+        <Real Name="X">0.000000</Real>
+        <DataValues>
+          <Int Name="Count">1</Int>
+          <DataValue>
+            <Real Name="Value">3.000000</Real>
+          </DataValue>
+        </DataValues>
+      </DataFrame>
+    </AnalysisData>
     <AnalysisData Name="mask">
       <DataFrame Name="Frame0">
         <Real Name="X">0.000000</Real>
