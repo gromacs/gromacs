@@ -34,19 +34,22 @@
 #
 # - Check the username performing the build, as well as date and time
 #
-# GMX_DETECT_ACCELERATION(GMX_SUGGESTED_ACCELERATION)
+# gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
 #
 # Try to detect CPU information and suggest an acceleration option
-# (such as SSE/AVX) that fits the current CPU.
+# (such as SSE/AVX) that fits the current CPU. These functions assume
+# that gmx_detect_target_architecture() has already been run, so that
+# things like GMX_IS_X86 are already available.
 #
-# GMX_SUGGESTED_ACCELERATION
+# Sets ${GMX_SUGGESTED_CPU_ACCELERATION} in the parent scope if
+# GMX_CPU_ACCELERATION is not set (e.g. by the user, or a previous run
+# of CMake).
 #
 
 # we rely on inline asm support for GNU!
 include(gmxTestInlineASM)
 
-macro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
-    IF(NOT DEFINED ${GMX_SUGGESTED_ACCELERATION})
+function(gmx_suggest_x86_acceleration _suggested_acceleration)
 
     gmx_test_inline_asm_gcc_x86(GMX_X86_GCC_INLINE_ASM)
 
@@ -62,7 +65,7 @@ macro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
     try_run(GMX_CPUID_RUN_ACC GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE -DGMX_IS_X86"
             RUN_OUTPUT_VARIABLE OUTPUT_TMP
             COMPILE_OUTPUT_VARIABLE GMX_CPUID_COMPILE_OUTPUT
             ARGS "-acceleration")
@@ -79,10 +82,20 @@ macro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
 
     string(STRIP "@OUTPUT_TMP@" OUTPUT_ACC)
 
-    message(STATUS "Detecting best acceleration for this CPU - @OUTPUT_ACC@")
+    set(${_suggested_acceleration} "@OUTPUT_ACC@" PARENT_SCOPE)
+    message(STATUS "Detected best acceleration for this CPU - @OUTPUT_ACC@")
+endfunction()
 
-    set(${GMX_SUGGESTED_ACCELERATION}    "@OUTPUT_ACC@" CACHE INTERNAL "GROMACS CPU-specific acceleration")
+function(gmx_detect_acceleration _suggested_acceleration)
+    if(NOT DEFINED GMX_CPU_ACCELERATION)
+        if(GMX_IS_BGQ)
+            set(${_suggested_acceleration} "IBM_QPX")
+        elseif(GMX_IS_X86)
+            gmx_suggest_x86_acceleration(${_suggested_acceleration})
+        else()
+            set(${_suggested_acceleration} "None")
+        endif()
 
-    ENDIF(NOT DEFINED ${GMX_SUGGESTED_ACCELERATION})
-endmacro(gmx_detect_acceleration GMX_SUGGESTED_ACCELERATION)
-
+        set(${_suggested_acceleration} ${${_suggested_acceleration}} PARENT_SCOPE)
+    endif()
+endfunction()
