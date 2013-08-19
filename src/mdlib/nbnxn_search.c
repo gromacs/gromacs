@@ -803,8 +803,8 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
          * so we don't need to treat special cases in the rest of the code.
          */
 #ifdef NBNXN_SEARCH_BB_SIMD4
-        gmx_simd4_store_pr(&bbj[1].lower[0], gmx_simd4_load_pr(&bbj[0].lower[0]));
-        gmx_simd4_store_pr(&bbj[1].upper[0], gmx_simd4_load_pr(&bbj[0].upper[0]));
+        gmx_simd4_store_pr(&bbj[1].lower[0], gmx_simd4_load_bb_pr(&bbj[0].lower[0]));
+        gmx_simd4_store_pr(&bbj[1].upper[0], gmx_simd4_load_bb_pr(&bbj[0].upper[0]));
 #else
         bbj[1] = bbj[0];
 #endif
@@ -812,11 +812,11 @@ static void calc_bounding_box_x_x4_halves(int na, const real *x,
 
 #ifdef NBNXN_SEARCH_BB_SIMD4
     gmx_simd4_store_pr(&bb->lower[0],
-                       gmx_simd4_min_pr(gmx_simd4_load_pr(&bbj[0].lower[0]),
-                                        gmx_simd4_load_pr(&bbj[1].lower[0])));
+                       gmx_simd4_min_pr(gmx_simd4_load_bb_pr(&bbj[0].lower[0]),
+                                        gmx_simd4_load_bb_pr(&bbj[1].lower[0])));
     gmx_simd4_store_pr(&bb->upper[0],
-                       gmx_simd4_max_pr(gmx_simd4_load_pr(&bbj[0].upper[0]),
-                                        gmx_simd4_load_pr(&bbj[1].upper[0])));
+                       gmx_simd4_max_pr(gmx_simd4_load_bb_pr(&bbj[0].upper[0]),
+                                        gmx_simd4_load_bb_pr(&bbj[1].upper[0])));
 #else
     {
         int i;
@@ -877,12 +877,12 @@ static void calc_bounding_box_simd4(int na, const float *x, nbnxn_bb_t *bb)
 
     int    i;
 
-    bb_0_S = gmx_simd4_load_pr(x);
+    bb_0_S = gmx_simd4_load_bb_pr(x);
     bb_1_S = bb_0_S;
 
     for (i = 1; i < na; i++)
     {
-        x_S    = gmx_simd4_load_pr(x+i*NNBSBB_C);
+        x_S    = gmx_simd4_load_bb_pr(x+i*NNBSBB_C);
         bb_0_S = gmx_simd4_min_pr(bb_0_S, x_S);
         bb_1_S = gmx_simd4_max_pr(bb_1_S, x_S);
     }
@@ -925,10 +925,10 @@ static void combine_bounding_box_pairs(nbnxn_grid_t *grid, const nbnxn_bb_t *bb)
 #ifdef NBNXN_SEARCH_BB_SIMD4
             gmx_simd4_pr min_S, max_S;
 
-            min_S = gmx_simd4_min_pr(gmx_simd4_load_pr(&bb[c2*2+0].lower[0]),
-                                     gmx_simd4_load_pr(&bb[c2*2+1].lower[0]));
-            max_S = gmx_simd4_max_pr(gmx_simd4_load_pr(&bb[c2*2+0].upper[0]),
-                                     gmx_simd4_load_pr(&bb[c2*2+1].upper[0]));
+            min_S = gmx_simd4_min_pr(gmx_simd4_load_bb_pr(&bb[c2*2+0].lower[0]),
+                                     gmx_simd4_load_bb_pr(&bb[c2*2+1].lower[0]));
+            max_S = gmx_simd4_max_pr(gmx_simd4_load_bb_pr(&bb[c2*2+0].upper[0]),
+                                     gmx_simd4_load_bb_pr(&bb[c2*2+1].upper[0]));
             gmx_simd4_store_pr(&grid->bbj[c2].lower[0], min_S);
             gmx_simd4_store_pr(&grid->bbj[c2].upper[0], max_S);
 #else
@@ -2077,10 +2077,10 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
     gmx_simd4_pr dm_S;
     gmx_simd4_pr dm0_S;
 
-    bb_i_S0 = gmx_simd4_load_pr(&bb_i_ci[si].lower[0]);
-    bb_i_S1 = gmx_simd4_load_pr(&bb_i_ci[si].upper[0]);
-    bb_j_S0 = gmx_simd4_load_pr(&bb_j_all[csj].lower[0]);
-    bb_j_S1 = gmx_simd4_load_pr(&bb_j_all[csj].upper[0]);
+    bb_i_S0 = gmx_simd4_load_bb_pr(&bb_i_ci[si].lower[0]);
+    bb_i_S1 = gmx_simd4_load_bb_pr(&bb_i_ci[si].upper[0]);
+    bb_j_S0 = gmx_simd4_load_bb_pr(&bb_j_all[csj].lower[0]);
+    bb_j_S1 = gmx_simd4_load_bb_pr(&bb_j_all[csj].upper[0]);
 
     dl_S    = gmx_simd4_sub_pr(bb_i_S0, bb_j_S1);
     dh_S    = gmx_simd4_sub_pr(bb_j_S0, bb_i_S1);
@@ -2107,12 +2107,12 @@ static float subc_bb_dist2_simd4(int si, const nbnxn_bb_t *bb_i_ci,
                                                  \
         shi = si*NNBSBB_D*DIM;                       \
                                                  \
-        xi_l = gmx_simd4_load_pr(bb_i+shi+0*STRIDE_PBB);   \
-        yi_l = gmx_simd4_load_pr(bb_i+shi+1*STRIDE_PBB);   \
-        zi_l = gmx_simd4_load_pr(bb_i+shi+2*STRIDE_PBB);   \
-        xi_h = gmx_simd4_load_pr(bb_i+shi+3*STRIDE_PBB);   \
-        yi_h = gmx_simd4_load_pr(bb_i+shi+4*STRIDE_PBB);   \
-        zi_h = gmx_simd4_load_pr(bb_i+shi+5*STRIDE_PBB);   \
+        xi_l = gmx_simd4_load_bb_pr(bb_i+shi+0*STRIDE_PBB);   \
+        yi_l = gmx_simd4_load_bb_pr(bb_i+shi+1*STRIDE_PBB);   \
+        zi_l = gmx_simd4_load_bb_pr(bb_i+shi+2*STRIDE_PBB);   \
+        xi_h = gmx_simd4_load_bb_pr(bb_i+shi+3*STRIDE_PBB);   \
+        yi_h = gmx_simd4_load_bb_pr(bb_i+shi+4*STRIDE_PBB);   \
+        zi_h = gmx_simd4_load_bb_pr(bb_i+shi+5*STRIDE_PBB);   \
                                                  \
         dx_0 = gmx_simd4_sub_pr(xi_l, xj_h);                \
         dy_0 = gmx_simd4_sub_pr(yi_l, yj_h);                \
@@ -2237,12 +2237,12 @@ static gmx_bool subc_in_range_simd4(int na_c,
     rc2_S   = gmx_simd4_set1_pr(rl2);
 
     dim_stride = NBNXN_GPU_CLUSTER_SIZE/STRIDE_PBB*DIM;
-    ix_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+0)*STRIDE_PBB);
-    iy_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+1)*STRIDE_PBB);
-    iz_S0      = gmx_simd4_load_pr(x_i+(si*dim_stride+2)*STRIDE_PBB);
-    ix_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+3)*STRIDE_PBB);
-    iy_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+4)*STRIDE_PBB);
-    iz_S1      = gmx_simd4_load_pr(x_i+(si*dim_stride+5)*STRIDE_PBB);
+    ix_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+0)*STRIDE_PBB);
+    iy_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+1)*STRIDE_PBB);
+    iz_S0      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+2)*STRIDE_PBB);
+    ix_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+3)*STRIDE_PBB);
+    iy_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+4)*STRIDE_PBB);
+    iz_S1      = gmx_simd4_load_bb_pr(x_i+(si*dim_stride+5)*STRIDE_PBB);
 
     /* We loop from the outer to the inner particles to maximize
      * the chance that we find a pair in range quickly and return.
@@ -3190,6 +3190,12 @@ static void set_ci_top_excls(const nbnxn_search_t nbs,
                         inner_e = ge - (se << na_cj_2log);
 
                         nbl->cj[found].excl &= ~(1U<<((inner_i<<na_cj_2log) + inner_e));
+/* The next code line is usually not needed. We do not want to version
+ * away the above line, because there is logic that relies on being
+ * able to detect easily whether any exclusions exist. */
+#if (defined GMX_CPU_ACCELERATION_IBM_QPX)
+                        nbl->cj[found].interaction_mask_indices[inner_i] &= ~(1U << inner_e);
+#endif
                     }
                 }
             }

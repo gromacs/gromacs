@@ -283,7 +283,20 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_4xn_interactions(l_cj[cjind].excl, filter_S0, filter_S1, filter_S2, filter_S3, &interact_S0, &interact_S1, &interact_S2, &interact_S3);
+    gmx_load_simd_4xn_interactions(l_cj[cjind].excl,
+                                   filter_S0, filter_S1,
+                                   filter_S2, filter_S3,
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+                                   l_cj[cjind].interaction_mask_indices,
+                                   nbat->simd_interaction_array,
+#else
+                                   /* The struct fields do not exist
+                                      except on BlueGene/Q */
+                                   NULL,
+                                   NULL,
+#endif
+                                   &interact_S0, &interact_S1,
+                                   &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -867,13 +880,15 @@
 #endif
 #endif
 #ifndef ENERGY_GROUPS
-    Vvdwtot_S   = gmx_add_pr(Vvdwtot_S,
 #ifndef HALF_LJ
+    Vvdwtot_S   = gmx_add_pr(Vvdwtot_S,
                              gmx_sum4_pr(VLJ_S0, VLJ_S1, VLJ_S2, VLJ_S3)
-#else
-                             gmx_add_pr(VLJ_S0, VLJ_S1)
-#endif
                              );
+#else
+    Vvdwtot_S   = gmx_add_pr(Vvdwtot_S,
+                             gmx_add_pr(VLJ_S0, VLJ_S1)
+                             );
+#endif
 #else
     add_ener_grp(VLJ_S0, vvdwtp[0], egp_jj);
     add_ener_grp(VLJ_S1, vvdwtp[1], egp_jj);
@@ -886,39 +901,47 @@
 #endif /* CALC_ENERGIES */
 
 #ifdef CALC_LJ
+#ifdef CALC_COULOMB
     fscal_S0    = gmx_mul_pr(rinvsq_S0,
-#ifdef CALC_COULOMB
                              gmx_add_pr(frcoul_S0,
-#else
-                             (
-#endif
                                         gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
-    fscal_S1    = gmx_mul_pr(rinvsq_S1,
-#ifdef CALC_COULOMB
-                             gmx_add_pr(frcoul_S1,
 #else
+    fscal_S0    = gmx_mul_pr(rinvsq_S0,
                              (
+                                        gmx_sub_pr(FrLJ12_S0, FrLJ6_S0)));
 #endif
+#ifdef CALC_COULOMB
+    fscal_S1    = gmx_mul_pr(rinvsq_S1,
+                             gmx_add_pr(frcoul_S1,
                                         gmx_sub_pr(FrLJ12_S1, FrLJ6_S1)));
+#else
+    fscal_S1    = gmx_mul_pr(rinvsq_S1,
+                             (
+                                        gmx_sub_pr(FrLJ12_S1, FrLJ6_S1)));
+#endif
 #else
     fscal_S0    = gmx_mul_pr(rinvsq_S0, frcoul_S0);
     fscal_S1    = gmx_mul_pr(rinvsq_S1, frcoul_S1);
 #endif /* CALC_LJ */
 #if defined CALC_LJ && !defined HALF_LJ
+#ifdef CALC_COULOMB
     fscal_S2    = gmx_mul_pr(rinvsq_S2,
-#ifdef CALC_COULOMB
                              gmx_add_pr(frcoul_S2,
-#else
-                             (
-#endif
                                         gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
-    fscal_S3    = gmx_mul_pr(rinvsq_S3,
-#ifdef CALC_COULOMB
-                             gmx_add_pr(frcoul_S3,
 #else
+    fscal_S2    = gmx_mul_pr(rinvsq_S2,
                              (
+                                        gmx_sub_pr(FrLJ12_S2, FrLJ6_S2)));
 #endif
+#ifdef CALC_COULOMB
+    fscal_S3    = gmx_mul_pr(rinvsq_S3,
+                             gmx_add_pr(frcoul_S3,
                                         gmx_sub_pr(FrLJ12_S3, FrLJ6_S3)));
+#else
+    fscal_S3    = gmx_mul_pr(rinvsq_S3,
+                             (
+                                        gmx_sub_pr(FrLJ12_S3, FrLJ6_S3)));
+#endif
 #else
     /* Atom 2 and 3 don't have LJ, so only add Coulomb forces */
     fscal_S2    = gmx_mul_pr(rinvsq_S2, frcoul_S2);

@@ -84,36 +84,38 @@ macro(gmx_set_build_information)
 
     if(NOT CMAKE_CROSSCOMPILING)
         # Get CPU acceleration information
+        set(_compile_definitions "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE -DGMX_IS_X86")
         try_run(GMX_CPUID_RUN_VENDOR GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_VENDOR ARGS "-vendor")
         try_run(GMX_CPUID_RUN_BRAND GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_BRAND ARGS "-brand")
         try_run(GMX_CPUID_RUN_FAMILY GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FAMILY ARGS "-family")
         try_run(GMX_CPUID_RUN_MODEL GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_MODEL ARGS "-model")
        try_run(GMX_CPUID_RUN_STEPPING GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_STEPPING ARGS "-stepping")
         try_run(GMX_CPUID_RUN_FEATURES GMX_CPUID_COMPILED
             ${CMAKE_BINARY_DIR}
             ${CMAKE_SOURCE_DIR}/src/gmxlib/gmx_cpuid.c
-            COMPILE_DEFINITIONS "@GCC_INLINE_ASM_DEFINE@ -I${CMAKE_SOURCE_DIR}/include -DGMX_CPUID_STANDALONE"
+            COMPILE_DEFINITIONS ${_compile_definitions}
             RUN_OUTPUT_VARIABLE OUTPUT_CPU_FEATURES ARGS "-features")
+        unset(_compile_definitions)
 
         string(STRIP "@OUTPUT_CPU_VENDOR@" OUTPUT_CPU_VENDOR)
         string(STRIP "@OUTPUT_CPU_BRAND@" OUTPUT_CPU_BRAND)
