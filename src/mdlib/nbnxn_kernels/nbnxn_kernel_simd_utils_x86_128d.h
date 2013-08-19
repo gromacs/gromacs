@@ -45,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-#define gmx_exclfilter gmx_epi32
+typedef gmx_epi32 gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
 
 /* Transpose 2 double precision registers */
