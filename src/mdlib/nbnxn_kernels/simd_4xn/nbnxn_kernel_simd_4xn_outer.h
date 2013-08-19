@@ -75,10 +75,10 @@
 #if UNROLLJ >= 4
     /* We use an i-force SIMD register width of 4 */
 #if UNROLLJ == 4
-#define gmx_mm_pr4     gmx_mm_pr
-#define gmx_load_pr4   gmx_load_pr
-#define gmx_store_pr4  gmx_store_pr
-#define gmx_add_pr4    gmx_add_pr
+#define gmx_mm_pr4    gmx_mm_pr
+#define gmx_load_pr4  gmx_load_pr
+#define gmx_store_pr4 gmx_store_pr
+#define gmx_add_pr4   gmx_add_pr
 #else
     /* The pr4 stuff is defined in nbnxn_kernel_simd_utils.h */
 #endif
@@ -100,16 +100,16 @@
     unsigned      *exclusion_filter;
     gmx_exclfilter filter_S0, filter_S1, filter_S2, filter_S3;
 
-    gmx_mm_pr  zero_S = gmx_set1_pr(0);
+    gmx_mm_pr      zero_S = gmx_set1_pr(0.0);
 
-    gmx_mm_pr  one_S  = gmx_set1_pr(1.0);
-    gmx_mm_pr  iq_S0  = gmx_setzero_pr();
-    gmx_mm_pr  iq_S1  = gmx_setzero_pr();
-    gmx_mm_pr  iq_S2  = gmx_setzero_pr();
-    gmx_mm_pr  iq_S3  = gmx_setzero_pr();
-    gmx_mm_pr  mrc_3_S;
+    gmx_mm_pr      one_S  = gmx_set1_pr(1.0);
+    gmx_mm_pr      iq_S0  = gmx_setzero_pr();
+    gmx_mm_pr      iq_S1  = gmx_setzero_pr();
+    gmx_mm_pr      iq_S2  = gmx_setzero_pr();
+    gmx_mm_pr      iq_S3  = gmx_setzero_pr();
+    gmx_mm_pr      mrc_3_S;
 #ifdef CALC_ENERGIES
-    gmx_mm_pr  hrc_3_S, moh_rc_S;
+    gmx_mm_pr      hrc_3_S, moh_rc_S;
 #endif
 
 #ifdef CALC_COUL_TAB
