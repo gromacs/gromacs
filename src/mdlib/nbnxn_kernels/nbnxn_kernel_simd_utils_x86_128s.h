@@ -45,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-#define gmx_exclfilter gmx_epi32
+typedef gmx_epi32 gmx_exclfilter;
 static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
 
 /* Collect element 0 and 1 of the 4 inputs to out0 and out1, respectively */
@@ -81,7 +81,7 @@ gmx_mm_transpose_sum4_pr(__m128 in0, __m128 in1,
     _MM_TRANSPOSE4_PS(in0, in1, in2, in3);
     in0  = _mm_add_ps(in0, in1);
     in2  = _mm_add_ps(in2, in3);
-    
+
     return _mm_add_ps(in0, in2);
 }
 
@@ -91,7 +91,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 {
     __m128 clj_S[UNROLLJ];
     int    p;
-    
+
     for (p = 0; p < UNROLLJ; p++)
     {
         /* Here we load 4 aligned floats, but we need just 2 */

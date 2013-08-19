@@ -67,8 +67,11 @@ int gmx_node_rank(void);
 
 GMX_LIBGMX_EXPORT
 int gmx_hostname_num(void);
-/* If the first part of the hostname (up to the first dot) ends with a number, returns this number.
-   If the first part of the hostname does not ends in a number (0-9 characters), returns 0.
+/* Ostensibly, returns a integer characteristic of and unique to each
+   physical node in the MPI system. If the first part of the MPI
+   hostname (up to the first dot) ends with a number, returns this
+   number. If the first part of the MPI hostname does not ends in a
+   number (0-9 characters), returns 0.
  */
 
 GMX_LIBGMX_EXPORT
