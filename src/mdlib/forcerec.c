@@ -1584,11 +1584,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 #endif
 #endif
 #endif
-#else /* GMX_X86_SSE2 */
+#else   /* GMX_X86_SSE2 */
             /* not GMX_X86_SSE2, but other SIMD */
             returnvalue  = "SIMD";
 #endif /* GMX_X86_SSE2 */
-#else /* GMX_NBNXN_SIMD */
+#else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
             break;
