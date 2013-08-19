@@ -58,7 +58,7 @@ extern "C" {
 /* #define GMX_NBNXN_SIMD_2XNN */
 
 
-#ifdef GMX_X86_SSE2
+#if (defined GMX_X86_SSE2) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
 /* Use SIMD accelerated nbnxn search and kernels */
 #define GMX_NBNXN_SIMD
 

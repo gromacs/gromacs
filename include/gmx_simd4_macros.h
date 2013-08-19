@@ -90,6 +90,7 @@ typedef float   gmx_simd4_real;
 #define gmx_simd4_pb  gmx_simd4_ref_pb
 
 #define gmx_simd4_load_pr       gmx_simd4_ref_load_pr
+#define gmx_simd4_load_bb_pr    gmx_simd4_ref_load_pr
 #define gmx_simd4_set1_pr       gmx_simd4_ref_set1_pr
 #define gmx_simd4_setzero_pr    gmx_simd4_ref_setzero_pr
 #define gmx_simd4_store_pr      gmx_simd4_ref_store_pr
@@ -184,6 +185,7 @@ typedef float   gmx_simd4_real;
 #define gmx_simd4_pb  __m128
 
 #define gmx_simd4_load_pr       _mm_load_ps
+#define gmx_simd4_load_bb_pr    _mm_load_ps
 #define gmx_simd4_set1_pr       _mm_set1_ps
 #define gmx_simd4_setzero_pr    _mm_setzero_ps
 #define gmx_simd4_store_pr      _mm_store_ps
@@ -253,6 +255,7 @@ static inline float gmx_simd4_dotproduct3(__m128 a, __m128 b)
 #define gmx_simd4_pb  __m256d
 
 #define gmx_simd4_load_pr       _mm256_load_pd
+#define gmx_simd4_load_bb_pr    _mm256_load_pd
 #define gmx_simd4_set1_pr       _mm256_set1_pd
 #define gmx_simd4_setzero_pr    _mm256_setzero_pd
 #define gmx_simd4_store_pr      _mm256_store_pd
@@ -288,9 +291,168 @@ static inline float gmx_simd4_dotproduct3(__m128 a, __m128 b)
 
 #endif /* GMX_HAVE_SIMD4_MACROS */
 
-
 #endif /* GMX_X86_SSE2 */
 
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+/* i.e. BlueGene/Q */
+
+/* This hack works on the compilers that can reach this code. A real
+   solution with broader scope will be proposed in master branch. */
+#define gmx_always_inline __attribute__((always_inline))
+
+#ifdef GMX_SIMD4_SINGLE
+#define GMX_HAVE_SIMD4_MACROS
+#endif
+
+typedef vector4double gmx_simd4_pr;
+typedef vector4double gmx_simd4_pb;
+
+/* The declarations of vec_ld* use non-const pointers, and IBM
+   can't/won't fix this any time soon. So GROMACS has to cast away the
+   const-ness of its pointers before loads. Four-wide SIMD loads
+   sometimes occur from variables of type real, and sometimes from
+   variables of type float (even at double precison), so the correct
+   cast cannot be done easily. The correct cast is necessary because
+   the resulting type determines the alignment assumption of vec_ld*,
+   which is different for float and double. So the loads of
+   always-float variables have to be done with a function that does
+   the correct cast. Since functions cannot be overloaded by type in
+   C, they have to have different names. Thus we have
+   gmx_simd4_load_pr and gmx_simd4_load_bb_pr.
+ */
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_pr(const real *a)
+{
+#ifdef NDEBUG
+    return vec_ld(0, (real *) a);
+#else
+    return vec_lda(0, (real *) a);
+#endif
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_load_bb_pr(const float *a)
+{
+#ifdef NDEBUG
+    return vec_ld(0, (float *) a);
+#else
+    return vec_lda(0, (float *) a);
+#endif
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_set1_pr(const real a)
+{
+    return vec_splats(a);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_setzero_pr()
+{
+    return vec_splats(0.0);
+}
+
+/* TODO this will not yet work, because the function might be passed a
+   pointer to a float when running in double precision.
+ */
+static gmx_inline void gmx_always_inline gmx_simd4_store_pr(real *a, gmx_simd4_pr b)
+{
+#ifdef NDEBUG
+    vec_st(b, 0, a);
+#else
+    vec_sta(b, 0, a);
+#endif
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_add_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_add(a, b);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_sub_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_sub(a, b);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_mul_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_mul(a, b);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_madd_pr(gmx_simd4_pr a, gmx_simd4_pr b, gmx_simd4_pr c)
+{
+    return vec_madd(a, b, c);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_nmsub_pr(gmx_simd4_pr a, gmx_simd4_pr b, gmx_simd4_pr c)
+{
+    return vec_nmsub(a, b, c);
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_min_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    /* Implemented the same way as max, but with the subtraction
+       operands swapped. */
+    return vec_sel(b, a, vec_sub(b, a));
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_max_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_sel(b, a, vec_sub(a, b));
+}
+
+static gmx_inline gmx_simd4_pr gmx_always_inline gmx_simd4_blendzero_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_sel(gmx_setzero_pr(), a, b);
+}
+
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_cmplt_pr(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    return vec_cmplt(a, b);
+}
+
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_and_pb(gmx_simd4_pb a, gmx_simd4_pb b)
+{
+    return vec_and(a, b);
+}
+
+static gmx_inline gmx_simd4_pb gmx_always_inline gmx_simd4_or_pb(gmx_simd4_pb a, gmx_simd4_pb b)
+{
+    return vec_or(a, b);
+}
+
+static gmx_inline float gmx_always_inline gmx_simd4_dotproduct3(gmx_simd4_pr a, gmx_simd4_pr b)
+{
+    /* The dot product is done solely on the QPX AXU (which is the
+       only available FPU). This is awkward, because pretty much no
+       "horizontal" SIMD-vector operations exist, unlike x86 where
+       SSE4.1 added various kinds of horizontal operations. So we have
+       to make do with shifting vector elements and operating on the
+       results. This makes for lots of data dependency, but the main
+       alternative of storing to memory and reloading is not going to
+       help, either. OpenMP over 2 or 4 hardware threads per core will
+       hide much of the latency from the data dependency. The
+       vec_extract() lets the compiler correctly use a floating-point
+       comparison on the zeroth vector element, which avoids needing
+       memory at all.
+     */
+
+    gmx_simd4_pr dp_shifted_left_0 = vec_mul(a, b);
+    gmx_simd4_pr dp_shifted_left_1 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 1);
+    gmx_simd4_pr dp_shifted_left_2 = vec_sldw(dp_shifted_left_0, dp_shifted_left_0, 2);
+    gmx_simd4_pr dp                = vec_add(dp_shifted_left_2,
+                                             vec_add(dp_shifted_left_0, dp_shifted_left_1));
+
+    /* See comment in nbnxn_make_pairlist_part() about how this should
+       be able to return a double on PowerPC. */
+    return (float) vec_extract(dp, 0);
+}
+
+static gmx_inline int gmx_always_inline gmx_simd4_anytrue_pb(gmx_simd4_pb a)
+{
+    return gmx_anytrue_pb(a);
+}
+
+#undef gmx_always_inline
+
+#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
 
 #ifdef GMX_HAVE_SIMD4_MACROS
 /* Generic functions to extract a SIMD4 aligned pointer from a pointer x.

@@ -45,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-#define gmx_exclfilter gmx_mm_pr
+typedef gmx_mm_pr gmx_exclfilter;
 static const int filter_stride = 1;
 
 /* The 4xn kernel operates on 4-wide i-force registers */

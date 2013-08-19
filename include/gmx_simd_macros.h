@@ -168,6 +168,7 @@
 #endif
 #endif
 
+#ifdef GMX_IS_X86
 
 #ifdef GMX_X86_SSE2
 /* This is for general x86 SIMD instruction sets that also support SSE2 */
@@ -178,39 +179,40 @@
 #include "gmx_x86_avx_256.h"
 #ifdef GMX_DOUBLE
 #include "gmx_math_x86_avx_256_double.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "gmx_math_x86_avx_256_single.h"
-#endif
-#else
+#endif /* GMX_DOUBLE */
+#else  /* GMX_X86_AVX_256 */
 #ifdef GMX_X86_AVX_128_FMA
 #include "gmx_x86_avx_128_fma.h"
 #ifdef GMX_DOUBLE
 #include "gmx_math_x86_avx_128_fma_double.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "gmx_math_x86_avx_128_fma_single.h"
-#endif
-#else
+#endif /* GMX_DOUBLE */
+#else  /* GMX_X86_AVX_128_FMA */
 #ifdef GMX_X86_SSE4_1
 #include "gmx_x86_sse4_1.h"
 #ifdef GMX_DOUBLE
 #include "gmx_math_x86_sse4_1_double.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "gmx_math_x86_sse4_1_single.h"
-#endif
-#else
+#endif /* GMX_DOUBLE */
+#else  /* GMX_X86_SSE4_1 */
 #ifdef GMX_X86_SSE2
 #include "gmx_x86_sse2.h"
 #ifdef GMX_DOUBLE
 #include "gmx_math_x86_sse2_double.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "gmx_math_x86_sse2_single.h"
-#endif
-#else
+#endif /* GMX_DOUBLE */
+#else  /* GMX_X86_SSE2 */
 #error No x86 acceleration defined
-#endif
-#endif
-#endif
-#endif
+#endif /* GMX_X86_SSE2 */
+#endif /* GMX_X86_SSE4_1 */
+#endif /* GMX_X86_AVX_128_FMA */
+#endif /* GMX_X86_AVX_256 */
+
 /* exp and trigonometric functions are included above */
 #define GMX_SIMD_HAVE_EXP
 #define GMX_SIMD_HAVE_TRIGONOMETRIC
@@ -272,7 +274,10 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm_or_ps(_mm_and_ps(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm_add_ps(b, _mm_andnot_ps(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_ps(b, _mm_andnot_ps(a, c));
+};
 
 #define gmx_anytrue_pb    _mm_movemask_ps
 
@@ -339,7 +344,10 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm_or_pd(_mm_and_pd(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm_add_pd(b, _mm_andnot_pd(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm_add_pd(b, _mm_andnot_pd(a, c));
+};
 
 #define gmx_cmplt_pr      _mm_cmplt_pd
 
@@ -405,7 +413,10 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm256_or_ps(_mm256_and_ps(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm256_add_ps(b, _mm256_andnot_ps(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_ps(b, _mm256_andnot_ps(a, c));
+};
 
 /* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_ps(x, y, 0x11)
@@ -464,7 +475,10 @@ static gmx_inline gmx_mm_pr gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
     return _mm256_or_pd(_mm256_and_pd(a, sign_mask), b);
 };
 
-static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c) { return _mm256_add_pd(b, _mm256_andnot_pd(a, c)); };
+static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return _mm256_add_pd(b, _mm256_andnot_pd(a, c));
+};
 
 /* Less-than (we use ordered, non-signaling, but that's not required) */
 #define gmx_cmplt_pr(x, y) _mm256_cmp_pd(x, y, 0x11)
@@ -491,6 +505,285 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 
 #endif /* GMX_X86_SSE2 */
 
+#endif /* GMX_IS_X86 */
+
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+
+/* This hack works on the compilers that can reach this code. A real
+   solution with broader scope will be proposed in master branch. */
+#define gmx_always_inline __attribute__((always_inline))
+
+/* This is for the A2 core on BlueGene/Q that supports IBM's QPX
+   vector built-in functions */
+#define GMX_HAVE_SIMD_MACROS
+#ifdef __clang__
+#include <qpxmath.h>
+#else
+#include "mass_simd.h"
+#endif
+
+/* No need to version the code by the precision, because the QPX AXU
+   extends to and truncates from double precision for free. */
+
+#define GMX_SIMD_WIDTH_HERE  4
+typedef vector4double gmx_mm_pr;
+typedef vector4double gmx_mm_pb;
+typedef vector4double gmx_epi32;
+#define GMX_SIMD_EPI32_WIDTH  4
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_load_pr(const real *a)
+{
+#ifdef NDEBUG
+    return vec_ld(0, (real *) a);
+#else
+    return vec_lda(0, (real *) a);
+#endif
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_load1_pr(const real *a)
+{
+    return vec_splats(*a);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_set1_pr(real a)
+{
+    return vec_splats(a);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_setzero_pr()
+{
+    return vec_splats(0.0);
+}
+
+static gmx_inline void gmx_always_inline gmx_store_pr(real *a, gmx_mm_pr b)
+{
+#ifdef NDEBUG
+    vec_st(b, 0, a);
+#else
+    vec_sta(b, 0, a);
+#endif
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_add_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_add(a, b);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_sub_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_sub(a, b);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_mul_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_mul(a, b);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_madd_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return vec_madd(a, b, c);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_nmsub_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return vec_nmsub(a, b, c);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_max_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_sel(b, a, vec_sub(a, b));
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_blendzero_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_sel(gmx_setzero_pr(), a, b);
+}
+
+static gmx_inline gmx_mm_pb gmx_always_inline gmx_cmplt_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_cmplt(a, b);
+}
+
+static gmx_inline gmx_mm_pb gmx_always_inline gmx_and_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return vec_and(a, b);
+}
+
+static gmx_inline gmx_mm_pb gmx_always_inline gmx_or_pb(gmx_mm_pb a, gmx_mm_pb b)
+{
+    return vec_or(a, b);
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_round_pr(gmx_mm_pr a)
+{
+    return vec_round(a);
+}
+
+#define GMX_SIMD_HAVE_FLOOR
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_floor_pr(gmx_mm_pr a)
+{
+    return vec_floor(a);
+}
+
+#define GMX_SIMD_HAVE_BLENDV
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_blendv_pr(gmx_mm_pr a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return vec_sel(b, a, gmx_cmplt_pr(gmx_setzero_pr(), c));
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_cpsgn_nonneg_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+    return vec_cpsgn(a, b);
+};
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_pr c)
+{
+    return vec_add(b, vec_sel(c, gmx_setzero_pr(), a));
+};
+
+static gmx_inline gmx_bool gmx_always_inline
+GMX_SIMD_IS_TRUE(real x)
+{
+    return x >= 0.0;
+}
+
+static gmx_inline gmx_epi32 gmx_always_inline gmx_cvttpr_epi32(gmx_mm_pr a)
+{
+    return vec_ctiwuz(a);
+}
+/* Don't want this, we have floor */
+/* #define gmx_cvtepi32_pr   vec_cvtepi32 */
+
+/* A2 core on BG/Q delivers relative error of 2^-14, whereas Power ISA
+   Architecture only promises 2^-8. So probably no need for
+   Newton-Raphson iterates at single or double. */
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_rsqrt_pr(gmx_mm_pr a)
+{
+    return vec_rsqrte(a);
+}
+
+/* A2 core on BG/Q delivers relative error of 2^-14, whereas Power ISA
+   Architecture only promises 2^-5. So probably no need for
+   Newton-Raphson iterates at single or double. */
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_rcp_pr(gmx_mm_pr a)
+{
+    return vec_re(a);
+}
+
+/* Note that here, and below, we use the built-in SLEEF port when
+   compiling on BlueGene/Q with clang */
+
+#define GMX_SIMD_HAVE_EXP
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_exp_pr(gmx_mm_pr a)
+{
+#ifdef __clang__
+#ifndef GMX_DOUBLE
+    return xexpf(a);
+#else
+    return xexp(a);
+#endif
+#else
+#ifndef GMX_DOUBLE
+    return expf4(a);
+#else
+    return expd4(a);
+#endif
+#endif
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_sqrt_pr(gmx_mm_pr a)
+{
+#ifdef NDEBUG
+    return vec_swsqrt_nochk(a);
+#else
+    return vec_swsqrt(a);
+#endif
+}
+
+#define GMX_SIMD_HAVE_TRIGONOMETRIC
+static gmx_inline int gmx_always_inline gmx_sincos_pr(gmx_mm_pr a, gmx_mm_pr *b, gmx_mm_pr *c)
+{
+#ifdef __clang__
+#ifndef GMX_DOUBLE
+    xsincosf(a, b, c);
+#else
+    xsincos(a, b, c);
+#endif
+#else
+#ifndef GMX_DOUBLE
+    sincosf4(a, b, c);
+#else
+    sincosd4(a, b, c);
+#endif
+#endif
+    return 1;
+}
+
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_acos_pr(gmx_mm_pr a)
+{
+#ifdef __clang__
+#ifndef GMX_DOUBLE
+    return xacosf(a);
+#else
+    return xacos(a);
+#endif
+#else
+#ifndef GMX_DOUBLE
+    return acosf4(a);
+#else
+    return acosd4(a);
+#endif
+#endif
+}
+
+/* NB The order of parameters here is correct; the
+   documentation of atan2[df]4 in SIMD MASS is wrong. */
+static gmx_inline gmx_mm_pr gmx_always_inline gmx_atan2_pr(gmx_mm_pr a, gmx_mm_pr b)
+{
+#ifdef __clang__
+#ifndef GMX_DOUBLE
+    return xatan2f(a, b);
+#else
+    return xatan2(a, b);
+#endif
+#else
+#ifndef GMX_DOUBLE
+    return atan2f4(a, b);
+#else
+    return atan2d4(a, b);
+#endif
+#endif
+}
+
+static gmx_inline int gmx_always_inline
+gmx_anytrue_pb(gmx_mm_pb a)
+{
+    /* The "anytrue" is done solely on the QPX AXU (which is the only
+       available FPU). This is awkward, because pretty much no
+       "horizontal" SIMD-vector operations exist, unlike x86 where
+       SSE4.1 added various kinds of horizontal operations. So we have
+       to make do with shifting vector elements and operating on the
+       results. This makes for lots of data dependency, but the main
+       alternative of storing to memory and reloading is not going to
+       help, either. OpenMP over 2 or 4 hardware threads per core will
+       hide much of the latency from the data dependency. The
+       vec_extract() lets the compiler correctly use a floating-point
+       comparison on the zeroth vector element, which avoids needing
+       memory at all.
+     */
+    gmx_mm_pb vec_shifted_left_0 = a;
+    gmx_mm_pb vec_shifted_left_1 = vec_sldw(a, a, 1);
+    gmx_mm_pb vec_shifted_left_2 = vec_sldw(a, a, 2);
+    gmx_mm_pb vec_shifted_left_3 = vec_sldw(a, a, 3);
+
+    gmx_mm_pb vec_return = vec_or(vec_or(vec_shifted_left_2, vec_shifted_left_3),
+                                  vec_or(vec_shifted_left_0, vec_shifted_left_1));
+    return (0.0 < vec_extract(vec_return, 0));
+};
+
+#undef gmx_always_inline
+
+#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
 
 #ifdef GMX_HAVE_SIMD_MACROS
 /* Generic functions to extract a SIMD aligned pointer from a pointer x.
@@ -519,6 +812,7 @@ gmx_simd_align_int(const int *x)
 #else
 #include "gmx_simd_math_single.h"
 #endif
+
 
 #endif /* GMX_HAVE_SIMD_MACROS */
 
