@@ -133,6 +133,15 @@ static const int nbfp_stride = 4;
 static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #endif
 
+/* We use the FDV0 table layout when we can use aligned table loads */
+#if GMX_SIMD_WIDTH_HERE == 4
+#define TAB_FDV0
+#endif
+
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+#include "nbnxn_kernel_simd_utils_ibm_qpx.h"
+#endif /* GMX_CPU_ACCELERATION_IBM_QPX */
+
 #endif /* GMX_X86_SSE2 */
 #endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 

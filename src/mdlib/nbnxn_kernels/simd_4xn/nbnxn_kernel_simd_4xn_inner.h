@@ -283,7 +283,13 @@
     ajz           = ajy + STRIDE;
 
 #ifdef CHECK_EXCLS
-    gmx_load_simd_4xn_interactions(l_cj[cjind].excl, filter_S0, filter_S1, filter_S2, filter_S3, &interact_S0, &interact_S1, &interact_S2, &interact_S3);
+    gmx_load_simd_4xn_interactions(l_cj[cjind].excl,
+                                   filter_S0, filter_S1,
+                                   filter_S2, filter_S3,
+                                   l_cj[cjind].interaction_mask_indices,
+                                   nbat->simd_interaction_array,
+                                   &interact_S0, &interact_S1,
+                                   &interact_S2, &interact_S3);
 #endif /* CHECK_EXCLS */
 
     /* load j atom coordinates */
@@ -953,13 +959,9 @@
     fiz_S2      = gmx_add_pr(fiz_S2, tz_S2);
     fiz_S3      = gmx_add_pr(fiz_S3, tz_S3);
 
-    /* Decrement j atom force */
-    gmx_store_pr(f+ajx,
-                 gmx_sub_pr( gmx_load_pr(f+ajx), gmx_sum4_pr(tx_S0, tx_S1, tx_S2, tx_S3) ));
-    gmx_store_pr(f+ajy,
-                 gmx_sub_pr( gmx_load_pr(f+ajy), gmx_sum4_pr(ty_S0, ty_S1, ty_S2, ty_S3) ));
-    gmx_store_pr(f+ajz,
-                 gmx_sub_pr( gmx_load_pr(f+ajz), gmx_sum4_pr(tz_S0, tz_S1, tz_S2, tz_S3) ));
+    decrement_j_atom_force(f+ajx, tx_S0, tx_S1, tx_S2, tx_S3);
+    decrement_j_atom_force(f+ajy, ty_S0, ty_S1, ty_S2, ty_S3);
+    decrement_j_atom_force(f+ajz, tz_S0, tz_S1, tz_S2, tz_S3);
 }
 
 #undef  rinv_ex_S0

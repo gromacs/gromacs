@@ -41,6 +41,8 @@
 # - with cmake <=2.8.8: compilers that accept "-dumpversion" argument:
 #   gcc, Intel Compiler (on Linux and Mac OS), Open64, EkoPath, clang
 #   (and probably other gcc-compatible compilers).
+# - with cmake <=2.8.8: xlC is not supported (it does not take -dumpversion,
+#   but fortunately so far GROMACS never needs to know the version number)
 #
 # C_COMPILER_VERSION    - version string of the current C compiler (CMAKE_C_COMPILER)
 # CXX_COMPILER_VERSION  - version string of the current C++ compiler (CMAKE_CXX_COMPILER)
@@ -50,6 +52,8 @@ macro(get_compiler_version)
         set(_cc_dumpversion_res 0)
         if (DEFINED CMAKE_C_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
             set(_cc_version ${CMAKE_C_COMPILER_VERSION})
+        elseif (CMAKE_C_COMPILER_ID MATCHES "XL")
+            set(_cc_dumpversion_res 1)
         else()
             execute_process(COMMAND ${CMAKE_C_COMPILER} -dumpversion
                 RESULT_VARIABLE _cc_dumpversion_res
@@ -70,6 +74,8 @@ macro(get_compiler_version)
         set(_cxx_dumpversion_res 0)
         if (DEFINED CMAKE_CXX_COMPILER_VERSION AND CMAKE_VERSION VERSION_GREATER 2.8.8)
             set(_cxx_version ${CMAKE_CXX_COMPILER_VERSION})
+        elseif (CMAKE_CXX_COMPILER_ID MATCHES "XL")
+            set(_cxx_dumpversion_res 1)
         else()
             execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion
                 RESULT_VARIABLE _cxx_dumpversion_res
@@ -103,12 +109,18 @@ endmacro()
 #   BUILD_FLAGS    - [output variable] flags for the compiler
 #
 macro(get_compiler_info LANGUAGE BUILD_COMPILER BUILD_FLAGS)
-    execute_process(COMMAND ${CMAKE_${LANGUAGE}_COMPILER} --version
+    if (CMAKE_C_COMPILER_ID MATCHES "XL")
+        set(_flag_to_query_version "-qversion")
+    else()
+        set(_flag_to_query_version "--version")
+    endif()
+    execute_process(COMMAND ${CMAKE_${LANGUAGE}_COMPILER} ${_flag_to_query_version}
         RESULT_VARIABLE _exec_result
         OUTPUT_VARIABLE _compiler_version
         ERROR_VARIABLE  _compiler_version)
-    # Try executing just the compiler command --version failed
+
     if(_exec_result)
+        # Try executing just the compiler command, since --version failed
         execute_process(COMMAND ${CMAKE_${LANGUAGE}_COMPILER}
             RESULT_VARIABLE _exec_result
             OUTPUT_VARIABLE _compiler_version
