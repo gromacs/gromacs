@@ -45,7 +45,6 @@
 extern "C" {
 #endif
 
-
 /* Returns the j-cluster size for kernel of type nb_kernel_type */
 int nbnxn_kernel_to_cj_size(int nb_kernel_type);
 

@@ -1523,11 +1523,12 @@ static void pick_nbnxn_kernel_cpu(FILE             *fp,
 #endif
         }
 
-        /* Analytical Ewald exclusion correction is only an option in the
-         * x86 SIMD kernel. This is faster in single precision
-         * on Bulldozer and slightly faster on Sandy Bridge.
+        /* Analytical Ewald exclusion correction is only an option in
+         * the SIMD kernel. On BlueGene/Q, this is faster regardless
+         * of precision. In single precision, this is faster on
+         * Bulldozer, and slightly faster on Sandy Bridge.
          */
-#if (defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE
+#if ((defined GMX_X86_AVX_128_FMA || defined GMX_X86_AVX_256) && !defined GMX_DOUBLE) || (defined GMX_CPU_ACCELERATION_IBM_QPX)
         *ewald_excl = ewaldexclAnalytical;
 #endif
         if (getenv("GMX_NBNXN_EWALD_TABLE") != NULL)
@@ -1540,7 +1541,7 @@ static void pick_nbnxn_kernel_cpu(FILE             *fp,
         }
 
     }
-#endif /* GMX_X86_SSE2 */
+#endif /* GMX_NBNXN_SIMD */
 }
 
 
@@ -1584,11 +1585,11 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 #endif
 #endif
 #endif
-#else /* GMX_X86_SSE2 */
+#else   /* GMX_X86_SSE2 */
             /* not GMX_X86_SSE2, but other SIMD */
             returnvalue  = "SIMD";
 #endif /* GMX_X86_SSE2 */
-#else /* GMX_NBNXN_SIMD */
+#else  /* GMX_NBNXN_SIMD */
             returnvalue = "not available";
 #endif /* GMX_NBNXN_SIMD */
             break;

@@ -37,8 +37,6 @@
 #  GMX_TEST_INLINE_ASM_GCC_X86(VARIABLE)
 #
 #  VARIABLE will be set to true if GCC x86 inline asm works.
-#
-#  Remember to have a cmakedefine for it too...
 
 MACRO(GMX_TEST_INLINE_ASM_GCC_X86 VARIABLE)
     IF(NOT DEFINED ${VARIABLE})
