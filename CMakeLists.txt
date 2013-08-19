@@ -169,19 +169,19 @@ mark_as_advanced(GMX_SOFTWARE_INVSQRT)
 option(GMX_FAHCORE "Build a library with mdrun functionality" OFF)
 mark_as_advanced(GMX_FAHCORE)
 
-include(gmxDetectAcceleration)
-if(NOT DEFINED GMX_CPU_ACCELERATION)
-    if(CMAKE_CROSSCOMPILING)
-        if("${CMAKE_SYSTEM_NAME}" MATCHES "BlueGeneQ")
-            set(GMX_SUGGESTED_CPU_ACCELERATION "IBM_QPX")
-        else()
-            set(GMX_SUGGESTED_CPU_ACCELERATION "None")
-        endif()
-    else(CMAKE_CROSSCOMPILING)
-        gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
-    endif(CMAKE_CROSSCOMPILING)
-endif(NOT DEFINED GMX_CPU_ACCELERATION)
+if(NOT DEFINED GMX_CPU_ACCELERATION AND NOT CMAKE_CROSSCOMPILING)
+    include(gmxDetectAcceleration)
+    gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
+endif()
 
+# Detect the architecture the compiler is targetting, detect
+# acceleration possibilities on that hardware, suggest an acceleration
+# to use if none is specified, and populate the cache option for CPU
+# accleration.
+include(gmxDetectTargetArchitecture)
+gmx_detect_target_architecture()
+include(gmxDetectAcceleration)
+gmx_detect_acceleration(GMX_SUGGESTED_CPU_ACCELERATION)
 set(GMX_CPU_ACCELERATION "@GMX_SUGGESTED_CPU_ACCELERATION@"
     CACHE STRING "Accelerated CPU kernels. Pick one of: None, SSE2, SSE4.1, AVX_128_FMA, AVX_256, IBM_QPX, Sparc64_HPC_ACE")
 
@@ -689,7 +689,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE2")
     # The user should not be able to set this orthogonally to the acceleration
     set(GMX_X86_SSE2 1)
     if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE2 Gromacs acceleration, and it will help compiler optimization.")
+      message(STATUS "Enabling SSE2 Gromacs acceleration")
     endif()
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
@@ -736,7 +736,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "SSE4.1")
     set(GMX_X86_SSE4_1 1)
     set(GMX_X86_SSE2   1)
     if (NOT ACCELERATION_QUIETLY)
-      message(STATUS "Enabling SSE4.1 Gromacs acceleration, and it will help compiler optimization.")
+      message(STATUS "Enabling SSE4.1 Gromacs acceleration")
     endif()
 
     if(CMAKE_C_COMPILER_ID MATCHES "Intel" AND C_COMPILER_VERSION VERSION_EQUAL "11.1")
@@ -811,7 +811,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         set(GMX_CPU_ACCELERATION_X86_AVX_128_FMA 1)
         set(GMX_X86_AVX_128_FMA 1)
         if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
+          message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add)")
         endif()
 
         # We don't have the full compiler version string yet (BUILD_C_COMPILER),
@@ -832,7 +832,7 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
         set(GMX_X86_AVX_256 1)
         if (NOT ACCELERATION_QUIETLY)
-          message(STATUS "Enabling 256-bit AVX Gromacs acceleration, and it will help compiler optimization.")
+          message(STATUS "Enabling 256-bit AVX Gromacs acceleration")
         endif()
     endif()
 
@@ -841,31 +841,14 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
     gmx_test_avx_gcc_maskload_bug(${ACCELERATION_C_FLAGS} GMX_X86_AVX_GCC_MASKLOAD_BUG)
 
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
-    # Used on BlueGene/Q
-    if (CMAKE_C_COMPILER_ID MATCHES "XL")
-        GMX_TEST_CFLAG(XLC_BLUEGENEQ_CFLAG "-qarch=qp -qtune=qp" ACCELERATION_C_FLAGS)
-        try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
-            COMPILE_DEFINITIONS "${ACCELERATION_C_FLAGS}")
-        if(NOT TEST_QPX)
-            message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
-        endif()
-    endif()
-    if (CMAKE_CXX_COMPILER_ID MATCHES "XL" AND CMAKE_CXX_COMPILER_LOADED)
-        GMX_TEST_CXXFLAG(XLC_BLUEGENEQ_CXXFLAG "-qarch=qp -qtune=qp" ACCELERATION_CXX_FLAGS)
-        try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-            "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
-            COMPILE_DEFINITIONS "${ACCELERATION_CXX_FLAGS}")
-        if(NOT TEST_QPX)
-            message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
-        endif()
-    endif()
+    try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
+        "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c")
 
     if (TEST_QPX)
-        message(WARNING "IBM QPX acceleration was selected and could be compiled, but the accelerated kernels are not yet available.")
+        message(WARNING "IBM QPX acceleration was selected. This will work, but SIMD-accelerated kernels are only available for the Verlet cut-off scheme. The plain C kernels that are used for the group cut-off scheme kernels will be slow, so please consider using the Verlet cut-off scheme.")
         set(GMX_CPU_ACCELERATION_IBM_QPX 1)
     else()
-        message(FATAL_ERROR "Cannot compile IBM QPX intrinsics without the XL compiler. If you are compiling for BlueGene/Q, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C' to set up the tool chain.")
+        message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics. If you are compiling for BlueGene/Q with the XL compilers, use 'cmake .. -DCMAKE_TOOLCHAIN_FILE=Platform/BlueGeneQ-static-XL-C' to set up the tool chain.")
     endif()
 elseif(${GMX_CPU_ACCELERATION} STREQUAL "SPARC64_HPC_ACE")
     set(GMX_CPU_ACCELERATION_SPARC64_HPC_ACE 1)
@@ -1063,6 +1046,14 @@ mark_as_advanced(GMX_BUILD_MANPAGES)
 if(HAVE_LIBM)
     list(APPEND	GMX_EXTRA_LIBRARIES m)
 endif(HAVE_LIBM)
+if (${CMAKE_SYSTEM_NAME} MATCHES "BlueGene")
+    check_library_exists(mass_simd atan2f4 "" HAVE_MASS_SIMD)
+    if(HAVE_MASS_SIMD)
+        list(APPEND GMX_EXTRA_LIBRARIES mass_simd)
+    else()
+        message(FATAL_ERROR "Could not link to the SIMD version of the IBM MASS library. Please adjust your CMAKE_PREFIX_PATH to contain it")
+    endif()
+endif()
 
 if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
