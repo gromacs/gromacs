@@ -537,7 +537,7 @@ void nbnxn_cuda_init(FILE *fplog,
     bTMPIAtomics = false;
 #endif
 
-#if defined(i386) || defined(__x86_64__)
+#ifdef GMX_IS_X86
     bX86 = true;
 #else
     bX86 = false;

@@ -39,6 +39,10 @@
 #ifndef _nbnxn_pairlist_h
 #define _nbnxn_pairlist_h
 
+#ifdef HAVE_CONFIG_H
+#  include <config.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -74,8 +78,12 @@ typedef void nbnxn_free_t (void *ptr);
  * is found, all subsequent j-entries in the i-entry also have full masks.
  */
 typedef struct {
-    int      cj;    /* The j-cluster                             */
-    unsigned excl;  /* The topology exclusion (interaction) bits */
+    int      cj;    /* The j-cluster                    */
+    unsigned excl;  /* The exclusion (interaction) bits */
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+    /* Indices into the arrays of SIMD interaction masks. */
+    char     interaction_mask_indices[4];
+#endif
 } nbnxn_cj_t;
 
 /* In nbnxn_ci_t the integer shift contains the shift in the lower 7 bits.
@@ -257,12 +265,14 @@ typedef struct {
      */
     unsigned                *simd_exclusion_filter1;
     unsigned                *simd_exclusion_filter2;
-
-    int                      nout;            /* The number of force arrays                         */
-    nbnxn_atomdata_output_t *out;             /* Output data structures               */
-    int                      nalloc;          /* Allocation size of all arrays (for x/f *x/fstride) */
-    gmx_bool                 bUseBufferFlags; /* Use the flags or operate on all atoms     */
-    nbnxn_buffer_flags_t     buffer_flags;    /* Flags for buffer zeroing+reduc.  */
+#ifdef GMX_CPU_ACCELERATION_IBM_QPX
+    real                    *simd_interaction_array; /* Array of masks needed for exclusions on QPX */
+#endif
+    int                      nout;                   /* The number of force arrays                         */
+    nbnxn_atomdata_output_t *out;                    /* Output data structures               */
+    int                      nalloc;                 /* Allocation size of all arrays (for x/f *x/fstride) */
+    gmx_bool                 bUseBufferFlags;        /* Use the flags or operate on all atoms     */
+    nbnxn_buffer_flags_t     buffer_flags;           /* Flags for buffer zeroing+reduc.  */
 } nbnxn_atomdata_t;
 
 #ifdef __cplusplus
