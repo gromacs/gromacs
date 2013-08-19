@@ -260,6 +260,9 @@ int gmx_node_rank(void)
 #endif
 }
 
+#if defined GMX_LIB_MPI && defined GMX_IS_BGQ
+#include <spi/include/kernel/location.h>
+#endif
 
 int gmx_hostname_num()
 {
@@ -277,6 +280,28 @@ int gmx_hostname_num()
     char mpi_hostname[MPI_MAX_PROCESSOR_NAME], hostnum_str[MPI_MAX_PROCESSOR_NAME];
 
     MPI_Get_processor_name(mpi_hostname, &resultlen);
+#ifdef GMX_IS_BGQ
+    Personality_t personality;
+    Kernel_GetPersonality(&personality, sizeof(personality));
+    /* Each MPI rank has a unique coordinate in a 6-dimensional space
+       (A,B,C,D,E,T), with dimensions A-E corresponding to different
+       physical nodes, and T within each node. Each node has sixteen
+       physical cores, each of which can have up to four hardware
+       threads, so 0 <= T <= 63 (but the maximum value of T depends on
+       the confituration of ranks and OpenMP threads per
+       node). However, T is irrelevant for computing a suitable return
+       value for gmx_hostname_num().
+     */
+    hostnum  = personality.Network_Config.Acoord;
+    hostnum *= personality.Network_Config.Bnodes;
+    hostnum += personality.Network_Config.Bcoord;
+    hostnum *= personality.Network_Config.Cnodes;
+    hostnum += personality.Network_Config.Ccoord;
+    hostnum *= personality.Network_Config.Dnodes;
+    hostnum += personality.Network_Config.Dcoord;
+    hostnum *= personality.Network_Config.Enodes;
+    hostnum += personality.Network_Config.Ecoord;
+#else
     /* This procedure can only differentiate nodes with host names
      * that end on unique numbers.
      */
@@ -301,11 +326,32 @@ int gmx_hostname_num()
         /* Use only the last 9 decimals, so we don't overflow an int */
         hostnum = strtol(hostnum_str + max(0, j-9), NULL, 10);
     }
+#endif
 
     if (debug)
     {
-        fprintf(debug, "In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
+        fprintf(debug, "In gmx_hostname_num: hostname '%s', hostnum %d\n",
                 mpi_hostname, hostnum);
+#ifdef GMX_IS_BGQ
+        fprintf(debug,
+                "Torus ID A: %d / %d B: %d / %d C: %d / %d D: %d / %d E: %d / %d\nNode ID T: %d / %d core: %d / %d hardware thread: %d / %d\n",
+                personality.Network_Config.Acoord,
+                personality.Network_Config.Anodes,
+                personality.Network_Config.Bcoord,
+                personality.Network_Config.Bnodes,
+                personality.Network_Config.Ccoord,
+                personality.Network_Config.Cnodes,
+                personality.Network_Config.Dcoord,
+                personality.Network_Config.Dnodes,
+                personality.Network_Config.Ecoord,
+                personality.Network_Config.Enodes,
+                Kernel_ProcessorCoreID(),
+                16,
+                Kernel_ProcessorID(),
+                64,
+                Kernel_ProcessorThreadID(),
+                4);
+#endif
     }
     return hostnum;
 #endif

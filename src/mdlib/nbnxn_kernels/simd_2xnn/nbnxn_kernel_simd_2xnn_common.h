@@ -39,6 +39,9 @@
 #include "maths.h"
 #endif
 
+#ifndef GMX_SIMD_J_UNROLL_SIZE
+#error "Need to define GMX_SIMD_J_UNROLL_SIZE before including the 2xnn kernel common header file"
+#endif
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
 
