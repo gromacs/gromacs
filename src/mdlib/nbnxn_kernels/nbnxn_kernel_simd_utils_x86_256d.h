@@ -45,7 +45,7 @@
  *   energy group pair energy storage
  */
 
-#define gmx_exclfilter gmx_mm_pr
+typedef gmx_mm_pr gmx_exclfilter;
 static const int filter_stride = 2;
 
 /* Transpose 2 double precision registers */
@@ -65,7 +65,7 @@ gmx_mm_transpose_sum4_pr(__m256d in0, __m256d in1,
     in0 = _mm256_hadd_pd(in0, in1);
     in2 = _mm256_hadd_pd(in2, in3);
 
-    return _mm256_add_pd(_mm256_permute2f128_pd(in0, in2, 0x20), _mm256_permute2f128_pd(in0, in2, 0x31)); 
+    return _mm256_add_pd(_mm256_permute2f128_pd(in0, in2, 0x20), _mm256_permute2f128_pd(in0, in2, 0x31));
 }
 
 static gmx_inline __m256
@@ -106,7 +106,7 @@ gmx_mm_invsqrt2_pd(__m256d in0, __m256d in1,
     __m256        s, ir;
     __m256d       lu0, lu1;
 
-    s    =  gmx_2_m128_to_m256(_mm256_cvtpd_ps(in0), _mm256_cvtpd_ps(in1));
+    s     =  gmx_2_m128_to_m256(_mm256_cvtpd_ps(in0), _mm256_cvtpd_ps(in1));
     ir    = gmx_mm256_invsqrt_ps_single(s);
     lu0   = _mm256_cvtps_pd(_mm256_castps256_ps128(ir));
     lu1   = _mm256_cvtps_pd(_mm256_extractf128_ps(ir, 1));
