@@ -82,12 +82,15 @@ class Distance : public TrajectoryAnalysisModule
         std::string                              fnAll_;
         std::string                              fnXYZ_;
         std::string                              fnHistogram_;
+        std::string                              fnAllStats_;
         double                                   meanLength_;
         double                                   lengthDev_;
         double                                   binWidth_;
 
         AnalysisData                             distances_;
         AnalysisData                             xyz_;
+        AnalysisDataAverageModulePointer         summaryStatsModule_;
+        AnalysisDataAverageModulePointer         allStatsModule_;
         AnalysisDataFrameAverageModulePointer    averageModule_;
         AnalysisDataSimpleHistogramModulePointer histogramModule_;
 

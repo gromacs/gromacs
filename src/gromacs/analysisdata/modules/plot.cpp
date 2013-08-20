@@ -119,7 +119,8 @@ class AbstractPlotModule::Impl
         FILE                     *fp_;
 
         bool                      bPlain_;
-        bool                      gOmitX_;
+        bool                      bOmitX_;
+        bool                      bErrorsAsSeparateColumn_;
         std::string               title_;
         std::string               subtitle_;
         std::string               xlabel_;
@@ -131,8 +132,8 @@ class AbstractPlotModule::Impl
 };
 
 AbstractPlotModule::Impl::Impl(const AnalysisDataPlotSettings &settings)
-    : settings_(settings), fp_(NULL), bPlain_(false), gOmitX_(false),
-      xscale_(1.0)
+    : settings_(settings), fp_(NULL), bPlain_(false), bOmitX_(false),
+      bErrorsAsSeparateColumn_(false), xscale_(1.0)
 {
     strcpy(xformat_, "%11.3f");
     strcpy(yformat_, " %8.3f");
@@ -204,9 +205,16 @@ AbstractPlotModule::setPlainOutput(bool bPlain)
 
 
 void
+AbstractPlotModule::setErrorsAsSeparateColumn(bool bSeparate)
+{
+    impl_->bErrorsAsSeparateColumn_ = bSeparate;
+}
+
+
+void
 AbstractPlotModule::setOmitX(bool bOmitX)
 {
-    impl_->gOmitX_ = bOmitX;
+    impl_->bOmitX_ = bOmitX;
 }
 
 
@@ -352,7 +360,7 @@ AbstractPlotModule::frameStarted(const AnalysisDataFrameHeader &frame)
     {
         return;
     }
-    if (!impl_->gOmitX_)
+    if (!impl_->bOmitX_)
     {
         std::fprintf(impl_->fp_, impl_->xformat_, frame.x() * impl_->xscale_);
     }
@@ -385,10 +393,16 @@ AbstractPlotModule::isFileOpen() const
 
 
 void
-AbstractPlotModule::writeValue(real value) const
+AbstractPlotModule::writeValue(const AnalysisDataValue &value) const
 {
     GMX_ASSERT(isFileOpen(), "File not opened, but write attempted");
-    std::fprintf(impl_->fp_, impl_->yformat_, value);
+    const real y = value.isSet() ? value.value() : 0.0;
+    std::fprintf(impl_->fp_, impl_->yformat_, y);
+    if (impl_->bErrorsAsSeparateColumn_)
+    {
+        const real dy = value.isSet() ? value.error() : 0.0;
+        std::fprintf(impl_->fp_, impl_->yformat_, dy);
+    }
 }
 //! \endcond
 
@@ -416,7 +430,7 @@ AnalysisDataPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
     }
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        writeValue(points.y(i));
+        writeValue(points.values()[i]);
     }
 }
 
@@ -502,13 +516,14 @@ AnalysisDataVectorPlotModule::pointsAdded(const AnalysisDataPointSetRef &points)
         {
             if (bWrite_[i])
             {
-                writeValue(points.y(i + d));
+                writeValue(points.values()[i + d]);
             }
         }
         if (bWrite_[DIM])
         {
-            rvec y = { points.y(i), points.y(i + 1), points.y(i + 2) };
-            writeValue(norm(y));
+            const rvec        y = { points.y(i), points.y(i + 1), points.y(i + 2) };
+            AnalysisDataValue value(norm(y));
+            writeValue(value);
         }
     }
 }

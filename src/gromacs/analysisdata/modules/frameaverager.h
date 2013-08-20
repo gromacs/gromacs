@@ -78,6 +78,11 @@ class AnalysisDataFrameAverager
         AnalysisDataFrameAverager() : bFinished_(false) {}
 
         /*! \brief
+         * Returns the number of columns in this averager.
+         */
+        int columnCount() const { return values_.size(); }
+
+        /*! \brief
          * Sets the number of columns in the input data.
          *
          * \throws std::bad_alloc if out of memory.
@@ -123,7 +128,7 @@ class AnalysisDataFrameAverager
          */
         real average(int index) const
         {
-            GMX_ASSERT(index >= 0 && index <= static_cast<int>(values_.size()),
+            GMX_ASSERT(index >= 0 && index < columnCount(),
                        "Invalid column index");
             GMX_ASSERT(bFinished_,
                        "Values available only after finished() has been called");
@@ -136,7 +141,7 @@ class AnalysisDataFrameAverager
          */
         real variance(int index) const
         {
-            GMX_ASSERT(index >= 0 && index <= static_cast<int>(values_.size()),
+            GMX_ASSERT(index >= 0 && index < columnCount(),
                        "Invalid column index");
             GMX_ASSERT(bFinished_,
                        "Values available only after finished() has been called");

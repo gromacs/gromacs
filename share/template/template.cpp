@@ -185,7 +185,7 @@ AnalysisTemplate::writeOutput()
     for (size_t g = 0; g < sel_.size(); ++g)
     {
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                sel_[g].name(), avem_->average(g));
+                sel_[g].name(), avem_->average(0, g));
     }
 }
 

@@ -54,6 +54,7 @@
 namespace gmx
 {
 
+class AnalysisDataValue;
 class Options;
 class SelectionCollection;
 
@@ -163,6 +164,10 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          */
         void setPlainOutput(bool bPlain);
         /*! \brief
+         * Plot errors as a separate output column after each value column.
+         */
+        void setErrorsAsSeparateColumn(bool bSeparate);
+        /*! \brief
          * Omit the X coordinates from the output.
          *
          * This method only makes sense when combined with setPlainOutput().
@@ -240,7 +245,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          *
          * Must not be called if isFileOpen() returns false.
          */
-        void writeValue(real value) const;
+        void writeValue(const AnalysisDataValue &value) const;
         //! \endcond
 
     private:
