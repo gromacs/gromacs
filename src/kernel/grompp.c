@@ -1530,6 +1530,23 @@ int cmain (int argc, char *argv[])
         pr_symtab(debug, 0, "After new_status", &sys->symtab);
     }
 
+    nvsite = 0;
+    /* set parameters for virtual site construction (not for vsiten) */
+    for (mt = 0; mt < sys->nmoltype; mt++)
+    {
+        nvsite +=
+            set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
+    }
+    /* now throw away all obsolete bonds, angles and dihedrals: */
+    /* note: constraints are ALWAYS removed */
+    if (nvsite)
+    {
+        for (mt = 0; mt < sys->nmoltype; mt++)
+        {
+            clean_vsite_bondeds(mi[mt].plist, sys->moltype[mt].atoms.nr, bRmVSBds);
+        }
+    }
+
     if (ir->cutoff_scheme == ecutsVERLET)
     {
         fprintf(stderr, "Removing all charge groups because cutoff-scheme=%s\n",
@@ -1627,23 +1644,6 @@ int cmain (int argc, char *argv[])
                    ir->refcoord_scaling, ir->ePBC,
                    ir->posres_com, ir->posres_comB,
                    wi);
-    }
-
-    nvsite = 0;
-    /* set parameters for virtual site construction (not for vsiten) */
-    for (mt = 0; mt < sys->nmoltype; mt++)
-    {
-        nvsite +=
-            set_vsites(bVerbose, &sys->moltype[mt].atoms, atype, mi[mt].plist);
-    }
-    /* now throw away all obsolete bonds, angles and dihedrals: */
-    /* note: constraints are ALWAYS removed */
-    if (nvsite)
-    {
-        for (mt = 0; mt < sys->nmoltype; mt++)
-        {
-            clean_vsite_bondeds(mi[mt].plist, sys->moltype[mt].atoms.nr, bRmVSBds);
-        }
     }
 
     /* If we are using CMAP, setup the pre-interpolation grid */
