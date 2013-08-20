@@ -586,7 +586,8 @@ void
 MockAnalysisDataModule::setupReferenceCheck(const TestReferenceChecker &checker,
                                             AbstractAnalysisData       *source)
 {
-    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
+    impl_->flags_ |= efAllowMulticolumn | efAllowMultipoint | efAllowMissing
+        | efAllowMultipleDataSets;
 
     impl_->rootChecker_.reset(new TestReferenceChecker(checker));
     // Google Mock does not support checking the order fully, because

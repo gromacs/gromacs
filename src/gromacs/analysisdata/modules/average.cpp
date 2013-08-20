@@ -43,6 +43,7 @@
 
 #include <cmath>
 
+#include <algorithm>
 #include <vector>
 
 #include "gromacs/analysisdata/dataframe.h"
@@ -60,32 +61,56 @@ namespace gmx
 class AnalysisDataAverageModule::Impl
 {
     public:
-        //! Averaging helper object.
-        AnalysisDataFrameAverager averager_;
+        Impl() : bDataSets_(false) {}
+
+        //! Averaging helper objects for each input data set.
+        std::vector<AnalysisDataFrameAverager>  averagers_;
+        //! Whether to average all columns in a data set into a single value.
+        bool                                    bDataSets_;
 };
 
 AnalysisDataAverageModule::AnalysisDataAverageModule()
     : impl_(new Impl())
 {
-    setColumnCount(2);
 }
 
 AnalysisDataAverageModule::~AnalysisDataAverageModule()
 {
 }
 
-int
-AnalysisDataAverageModule::flags() const
+void AnalysisDataAverageModule::setAverageDataSets(bool bDataSets)
 {
-    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing;
+    impl_->bDataSets_ = bDataSets;
+}
+
+int AnalysisDataAverageModule::flags() const
+{
+    return efAllowMultipoint | efAllowMulticolumn | efAllowMissing
+           | efAllowMultipleDataSets;
 }
 
 void
 AnalysisDataAverageModule::dataStarted(AbstractAnalysisData *data)
 {
-    const int valueCount = data->columnCount();
-    impl_->averager_.setColumnCount(valueCount);
-    setRowCount(valueCount);
+    if (impl_->bDataSets_)
+    {
+        setColumnCount(1);
+        setRowCount(data->dataSetCount());
+        impl_->averagers_.resize(1);
+        impl_->averagers_[0].setColumnCount(data->dataSetCount());
+    }
+    else
+    {
+        setColumnCount(data->dataSetCount());
+        impl_->averagers_.resize(data->dataSetCount());
+        int rowCount = 0;
+        for (int i = 0; i < data->dataSetCount(); ++i)
+        {
+            impl_->averagers_[i].setColumnCount(data->columnCount(i));
+            rowCount = std::max(rowCount, data->columnCount(i));
+        }
+        setRowCount(rowCount);
+    }
 }
 
 void
@@ -96,7 +121,21 @@ AnalysisDataAverageModule::frameStarted(const AnalysisDataFrameHeader & /*header
 void
 AnalysisDataAverageModule::pointsAdded(const AnalysisDataPointSetRef &points)
 {
-    impl_->averager_.addPoints(points);
+    if (impl_->bDataSets_)
+    {
+        const int dataSet = points.dataSetIndex();
+        for (int i = 0; i < points.columnCount(); ++i)
+        {
+            if (points.present(i))
+            {
+                impl_->averagers_[0].addValue(dataSet, points.y(i));
+            }
+        }
+    }
+    else
+    {
+        impl_->averagers_[points.dataSetIndex()].addPoints(points);
+    }
 }
 
 void
@@ -107,26 +146,55 @@ AnalysisDataAverageModule::frameFinished(const AnalysisDataFrameHeader & /*heade
 void
 AnalysisDataAverageModule::dataFinished()
 {
-    impl_->averager_.finish();
     allocateValues();
-    for (int i = 0; i < rowCount(); ++i)
+    for (int i = 0; i < columnCount(); ++i)
     {
-        value(i, 0).setValue(impl_->averager_.average(i));
-        value(i, 1).setValue(std::sqrt(impl_->averager_.variance(i)));
+        impl_->averagers_[i].finish();
+        int j = 0;
+        for (; j < impl_->averagers_[i].columnCount(); ++j)
+        {
+            value(j, i).setValue(impl_->averagers_[i].average(j),
+                                 std::sqrt(impl_->averagers_[i].variance(j)));
+        }
+        for (; j < rowCount(); ++j)
+        {
+            value(j, i).setValue(0.0, 0.0, false);
+        }
     }
     valuesReady();
 }
 
-real
-AnalysisDataAverageModule::average(int index) const
+real AnalysisDataAverageModule::average(int dataSet, int column) const
 {
-    return value(index, 0).value();
+    if (impl_->bDataSets_)
+    {
+        GMX_ASSERT(column == 0,
+                   "Column should be zero with setAverageDataSets(true)");
+        std::swap(dataSet, column);
+    }
+    return value(column, dataSet).value();
 }
 
-real
-AnalysisDataAverageModule::stddev(int index) const
+real AnalysisDataAverageModule::standardDeviation(int dataSet, int column) const
 {
-    return value(index, 1).value();
+    if (impl_->bDataSets_)
+    {
+        GMX_ASSERT(column == 0,
+                   "Column should be zero with setAverageDataSets(true)");
+        std::swap(dataSet, column);
+    }
+    return value(column, dataSet).error();
+}
+
+int AnalysisDataAverageModule::sampleCount(int dataSet, int column) const
+{
+    if (impl_->bDataSets_)
+    {
+        GMX_ASSERT(column == 0,
+                   "Column should be zero with setAverageDataSets(true)");
+        std::swap(dataSet, column);
+    }
+    return impl_->averagers_[dataSet].sampleCount(column);
 }
 
 

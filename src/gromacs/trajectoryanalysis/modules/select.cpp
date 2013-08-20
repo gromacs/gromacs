@@ -634,7 +634,7 @@ Select::writeOutput()
             ConstArrayRef<int>::const_iterator ai;
             for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
             {
-                pdbinfo[*ai].occup = occupancyModule_->average(i);
+                pdbinfo[*ai].occup = occupancyModule_->average(0, i);
             }
         }
 
@@ -665,7 +665,7 @@ Select::writeOutput()
             std::vector<int> indices;
             for (int i = 0; i < sel_[0].posCount(); ++i)
             {
-                if (occupancyModule_->average(i) > 0)
+                if (occupancyModule_->average(0, i) > 0)
                 {
                     ConstArrayRef<int>                 atomIndices = sel_[0].position(i).atomIndices();
                     ConstArrayRef<int>::const_iterator ai;

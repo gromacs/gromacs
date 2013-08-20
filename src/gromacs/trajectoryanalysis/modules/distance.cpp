@@ -69,6 +69,11 @@ Distance::Distance()
     : TrajectoryAnalysisModule(name, shortDescription),
       meanLength_(0.1), lengthDev_(1.0), binWidth_(0.001)
 {
+    summaryStatsModule_.reset(new AnalysisDataAverageModule());
+    summaryStatsModule_->setAverageDataSets(true);
+    distances_.addModule(summaryStatsModule_);
+    allStatsModule_.reset(new AnalysisDataAverageModule());
+    distances_.addModule(allStatsModule_);
     averageModule_.reset(new AnalysisDataFrameAverageModule());
     distances_.addModule(averageModule_);
     histogramModule_.reset(new AnalysisDataSimpleHistogramModule());
@@ -76,6 +81,8 @@ Distance::Distance()
 
     registerAnalysisDataset(&distances_, "dist");
     registerAnalysisDataset(&xyz_, "xyz");
+    registerBasicDataset(summaryStatsModule_.get(), "stats");
+    registerBasicDataset(allStatsModule_.get(), "allstats");
     registerBasicDataset(averageModule_.get(), "average");
     registerBasicDataset(&histogramModule_->averager(), "histogram");
 }
@@ -103,6 +110,8 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
         "[TT]-oh[tt] writes a histogram of the distances for each selection.",
         "The location of the histogram is set with [TT]-len[tt] and",
         "[TT]-tol[tt]. Bin width is set with [TT]-binw[tt].",
+        "[TT]-oallstat[tt] writes out the average and standard deviation for",
+        "each individual distance, calculated over the frames."
     };
 
     options->setDescription(concatenateStrings(desc));
@@ -119,6 +128,9 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
     options->addOption(FileNameOption("oh").filetype(eftPlot).outputFile()
                            .store(&fnHistogram_).defaultBasename("disthist")
                            .description("Histogram of the distances"));
+    options->addOption(FileNameOption("oallstat").filetype(eftPlot).outputFile()
+                           .store(&fnAllStats_).defaultBasename("diststat")
+                           .description("Statistics for individual distances"));
     // TODO: Consider what is the best way to support dynamic selections.
     // Again, most of the code already supports it, but it needs to be
     // considered how should -oall work, and additional checks should be added.
@@ -227,6 +239,20 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         // TODO: Add legends
         histogramModule_->averager().addModule(plotm);
     }
+
+    if (!fnAllStats_.empty())
+    {
+        AnalysisDataPlotModulePointer plotm(
+                new AnalysisDataPlotModule(settings.plotSettings()));
+        plotm->setFileName(fnAllStats_);
+        plotm->setErrorsAsSeparateColumn(true);
+        plotm->setTitle("Statistics for individual distances");
+        plotm->setXLabel("Distance index");
+        plotm->setYLabel("Average/standard deviation (nm)");
+        // TODO: Add legends
+        // TODO: Consider whether this output format is the best possible.
+        allStatsModule_->addModule(plotm);
+    }
 }
 
 
@@ -281,9 +307,18 @@ Distance::finishAnalysis(int /*nframes*/)
 void
 Distance::writeOutput()
 {
-    // TODO: Print bond length statistics
-    //fprintf(stderr, "Average distance: %f\n", avem_->average(0));
-    //fprintf(stderr, "Std. deviation:   %f\n", avem_->stddev(0));
+    SelectionList::const_iterator sel;
+    int                           index;
+    for (sel = sel_.begin(), index = 0; sel != sel_.end(); ++sel, ++index)
+    {
+        printf("%s:\n", sel->name());
+        printf("  Number of samples:  %d\n",
+               summaryStatsModule_->sampleCount(index, 0));
+        printf("  Average distance:   %-6.3f nm\n",
+               summaryStatsModule_->average(index, 0));
+        printf("  Standard deviation: %-6.3f nm\n",
+               summaryStatsModule_->standardDeviation(index, 0));
+    }
 }
 
 } // namespace analysismodules

@@ -347,16 +347,16 @@ void
 FreeVolume::writeOutput()
 {
     // Final results come from statistics module in analysis framework
-    double FVaver  = adata_->average(0);
-    double FVerror = adata_->stddev(0);
+    double FVaver  = adata_->average(0, 0);
+    double FVerror = adata_->standardDeviation(0, 0);
     printf("Free volume %.2f +/- %.2f %%\n", FVaver, FVerror);
 
-    double Vaver  = adata_->average(1);
-    double Verror = adata_->stddev(1);
+    double Vaver  = adata_->average(0, 1);
+    double Verror = adata_->standardDeviation(0, 1);
     printf("Total volume %.2f +/- %.2f nm^3\n", Vaver, Verror);
 
     printf("Number of molecules %d total mass %.2f Dalton\n", nmol_, mtot_);
-    double RhoAver  = mtot_ / (adata_->average(1) * 1e-24 * AVOGADRO);
+    double RhoAver  = mtot_ / (Vaver * 1e-24 * AVOGADRO);
     double RhoError = sqr(RhoAver / Vaver)*Verror;
     printf("Average molar mass: %.2f Dalton\n", mtot_/nmol_);
 
