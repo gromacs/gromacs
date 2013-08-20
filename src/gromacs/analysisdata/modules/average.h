@@ -57,17 +57,21 @@ namespace gmx
  * Data module for independently averaging each column in input data.
  *
  * Computes the average and standard deviation independently for each column in
- * the input data.  Multipoint data and missing data points are both supported.
+ * the input data.  Multipoint data, multiple data sets, and missing data
+ * points are all supported.
  * The average is always calculated over all frames and data points for a
  * column.
- * Multiple input data sets are currently not supported.
  *
- * Output data contains a frame for each column in the input data.
- * The first column of each output frame is the average of the corresponding
- * input column.  The second output column is the standard deviation of the
- * corresponding input column.
- * average() and stddev() methods are also provided for convenient access to
- * these properties.
+ * Output data contains a column for each data set in the input data, and a
+ * frame for each column in the input data.  If different data sets have
+ * different number of columns, the frame count accomodates the largest data
+ * set.  Other columns are padded with zero values that are additionally marked
+ * as missing.
+ * Each value in the output data is the average of the corresponding
+ * input column in the corresponding input data set.  The error value for each
+ * value provides the standard deviation of the corresponding input column.
+ * average(), standardDeviation(), and sampleCount() methods are also
+ * provided for convenient access to these properties.
  *
  * The output data becomes available only after the input data has been
  * finished.
@@ -84,6 +88,20 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
 
         using AbstractAnalysisArrayData::setXAxis;
 
+        /*! \brief
+         * Sets the averaging to happen over entire data sets.
+         *
+         * If \p bDataSets is false (the default), the module averages each
+         * column separately.  The output will have a column for each data set,
+         * and a row for each column.
+         *
+         * If \p bDataSets is true, the module averages all values within
+         * a single data set into a single average/standard deviation.
+         * The output will have only one column, with one row for each data
+         * set.
+         */
+        void setAverageDataSets(bool bDataSets);
+
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
@@ -92,10 +110,29 @@ class AnalysisDataAverageModule : public AbstractAnalysisArrayData,
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
         virtual void dataFinished();
 
-        //! Convenience access to the average of a data column.
-        real average(int index) const;
-        //! Convenience access to the standard deviation of a data column.
-        real stddev(int index) const;
+        /*! \brief
+         * Convenience access to the average of a data column.
+         *
+         * Note that the interpretation of the parameters follows their naming:
+         * with \c setAverageDataSets(false), \p dataSet corresponds to a
+         * column in the output, but with \c setAverageDataSets(false) it
+         * corresponds to an output row.  In both cases, it selects the data
+         * set; with \c setAverageDataSets(false), \p column should always be
+         * zero as there is only one value per data set.
+         */
+        real average(int dataSet, int column) const;
+        /*! \brief
+         * Convenience access to the standard deviation of a data column.
+         *
+         * See average() for the interpretation of the parameters.
+         */
+        real standardDeviation(int dataSet, int column) const;
+        /*! \brief
+         * Access the number of samples for a data column.
+         *
+         * See average() for the interpretation of the parameters.
+         */
+        int sampleCount(int dataSet, int column) const;
 
     private:
         class Impl;

@@ -54,6 +54,14 @@ and use the copy_xsl.sh script to copy it to relevant locations.
     </table>
 </xsl:template>
 
+<xsl:template match="DataValue[Bool[@Name='Present']='false']">
+    (
+    <xsl:value-of select="Real[@Name='Value']"/>
+    <xsl:if test="Real[@Name='Error']">
+        &#177; <xsl:value-of select="Real[@Name='Error']"/>
+    </xsl:if>
+    )
+</xsl:template>
 <xsl:template match="DataValue">
     <xsl:value-of select="Real[@Name='Value']"/>
     <xsl:if test="Real[@Name='Error']">

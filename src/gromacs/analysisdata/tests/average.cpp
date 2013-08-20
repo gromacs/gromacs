@@ -183,6 +183,39 @@ TEST_F(AverageModuleTest, HandlesMultipointData)
     ASSERT_NO_THROW_GMX(presentAllData(input, &data));
 }
 
+TEST_F(AverageModuleTest, HandlesMultipleDataSets)
+{
+    const AnalysisDataTestInput &input = MultiDataSetInputData::get();
+    gmx::AnalysisData            data;
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
+    gmx::AnalysisDataAverageModulePointer module(
+            new gmx::AnalysisDataAverageModule);
+    data.addModule(module);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+}
+
+TEST_F(AverageModuleTest, HandlesDataSetAveraging)
+{
+    const AnalysisDataTestInput &input = MultiDataSetInputData::get();
+    gmx::AnalysisData            data;
+    ASSERT_NO_THROW_GMX(setupDataObject(input, &data));
+
+    gmx::AnalysisDataAverageModulePointer module(
+            new gmx::AnalysisDataAverageModule);
+    module->setAverageDataSets(true);
+    data.addModule(module);
+
+    ASSERT_NO_THROW_GMX(addStaticCheckerModule(input, &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("InputData", &data));
+    ASSERT_NO_THROW_GMX(addReferenceCheckerModule("Average", module.get()));
+    ASSERT_NO_THROW_GMX(presentAllData(input, &data));
+}
+
 TEST_F(AverageModuleTest, CanCustomizeXAxis)
 {
     const AnalysisDataTestInput &input = SimpleInputData::get();
