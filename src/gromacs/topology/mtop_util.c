@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2008,2009,2010,2012,2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2008,2009,2010,2012,2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -625,8 +625,16 @@ gmx_bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
     }
 
     iloop->mblock++;
-    if (iloop->mblock == iloop->mtop->nmolblock)
+    if (iloop->mblock >= iloop->mtop->nmolblock)
     {
+        if (iloop->mblock == iloop->mtop->nmolblock &&
+            iloop->mtop->bIntermolecularInteractions)
+        {
+            *ilist_mol = iloop->mtop->intermolecular_ilist;
+            *nmol      = 1;
+            return TRUE;
+        }
+
         gmx_mtop_ilistloop_destroy(iloop);
         return FALSE;
     }
@@ -683,12 +691,25 @@ gmx_bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
 
     iloop->mol++;
 
-    if (iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol)
+    /* Inter-molecular interactions, if present, are indexed with
+     * iloop->mblock == iloop->mtop->nmolblock, thus we should separately
+     * check for this value in this conditional.
+     */
+    if (iloop->mblock == iloop->mtop->nmolblock ||
+        iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol)
     {
         iloop->mblock++;
         iloop->mol = 0;
-        if (iloop->mblock == iloop->mtop->nmolblock)
+        if (iloop->mblock >= iloop->mtop->nmolblock)
         {
+            if (iloop->mblock == iloop->mtop->nmolblock &&
+                iloop->mtop->bIntermolecularInteractions)
+            {
+                *ilist_mol   = iloop->mtop->intermolecular_ilist;
+                *atnr_offset = 0;
+                return TRUE;
+            }
+
             gmx_mtop_ilistloop_all_destroy(iloop);
             return FALSE;
         }
@@ -714,6 +735,11 @@ int gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype)
     while (gmx_mtop_ilistloop_next(iloop, &il, &nmol))
     {
         n += nmol*il[ftype].nr/(1+NRAL(ftype));
+    }
+
+    if (mtop->bIntermolecularInteractions)
+    {
+        n += mtop->intermolecular_ilist[ftype].nr/(1+NRAL(ftype));
     }
 
     return n;
@@ -1112,6 +1138,15 @@ static void gen_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir,
         natoms += molb->nmol*srcnr;
     }
 
+    if (mtop->bIntermolecularInteractions)
+    {
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            ilistcat(ftype, &idef->il[ftype], &mtop->intermolecular_ilist[ftype],
+                     1, 0, mtop->natoms);
+        }
+    }
+
     if (ir == NULL)
     {
         top->idef.ilsort = ilsortUNKNOWN;
@@ -1159,14 +1194,15 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 
     gen_local_top(mtop, NULL, FALSE, &ltop);
 
-    top.name      = mtop->name;
-    top.idef      = ltop.idef;
-    top.atomtypes = ltop.atomtypes;
-    top.cgs       = ltop.cgs;
-    top.excls     = ltop.excls;
-    top.atoms     = gmx_mtop_global_atoms(mtop);
-    top.mols      = mtop->mols;
-    top.symtab    = mtop->symtab;
+    top.name                        = mtop->name;
+    top.idef                        = ltop.idef;
+    top.atomtypes                   = ltop.atomtypes;
+    top.cgs                         = ltop.cgs;
+    top.excls                       = ltop.excls;
+    top.atoms                       = gmx_mtop_global_atoms(mtop);
+    top.mols                        = mtop->mols;
+    top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
+    top.symtab                      = mtop->symtab;
 
     /* We only need to free the moltype and molblock data,
      * all other pointers have been copied to top.
