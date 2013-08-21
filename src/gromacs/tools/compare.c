@@ -454,6 +454,7 @@ static void cmp_top(FILE *fp, t_topology *t1, t_topology *t2, real ftol, real ab
         cmp_atoms(fp, &(t1->atoms), &(t2->atoms), ftol, abstol);
         cmp_block(fp, &t1->cgs, &t2->cgs, "cgs");
         cmp_block(fp, &t1->mols, &t2->mols, "mols");
+        cmp_bool(fp, "bIntermolecularInteractions", -1, t1->bIntermolecularInteractions, t2->bIntermolecularInteractions);
         cmp_blocka(fp, &t1->excls, &t2->excls, "excls");
     }
     else
