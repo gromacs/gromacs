@@ -68,7 +68,6 @@
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
-
 /* The tpx_version number should be increased whenever the file format changes!
  *
  * The following comment section helps to keep track of which feature has been
@@ -77,8 +76,7 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
  */
-static const int tpx_version = 96;
-
+static const int tpx_version = 97;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -90,7 +88,7 @@ static const int tpx_version = 96;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 26;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -2871,16 +2869,19 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
 
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
-    int        mt, i, npair;
-    t_iparams *ip;
-    t_ilist   *il;
-    t_iatom   *a;
+    t_iparams            *ip;
+    gmx_mtop_ilistloop_t  iloop;
+    t_ilist              *ilist, *il;
+    int                   nmol, i, npair;
+    t_iatom              *a;
 
     ip = mtop->ffparams.iparams;
 
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    iloop     = gmx_mtop_ilistloop_init(mtop);
+    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
     {
-        il = &mtop->moltype[mt].ilist[F_DISRES];
+        il = &ilist[F_DISRES];
+
         if (il->nr > 0)
         {
             a     = il->iatoms;
@@ -2967,6 +2968,23 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->molblock[0].natoms_mol = mtop->moltype[0].atoms.nr;
         mtop->molblock[0].nposres_xA = 0;
         mtop->molblock[0].nposres_xB = 0;
+    }
+
+    if (file_version >= 97)
+    {
+        gmx_fio_do_gmx_bool(fio, mtop->bIntermolecularInteractions);
+        if (mtop->bIntermolecularInteractions)
+        {
+            if (bRead)
+            {
+                snew(mtop->intermolecular_ilist, F_NRE);
+            }
+            do_ilists(fio, mtop->intermolecular_ilist, bRead, file_version);
+        }
+    }
+    else
+    {
+        mtop->bIntermolecularInteractions = FALSE;
     }
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
