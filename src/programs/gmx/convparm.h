@@ -39,7 +39,9 @@
 #include "typedefs.h"
 
 extern void convert_params(int atnr, t_params nbtypes[],
-                           t_molinfo *mi, int comb, double reppow, real fudgeQQ,
+                           t_molinfo *mi,
+                           t_molinfo *intermolecular_interactions,
+                           int comb, double reppow, real fudgeQQ,
                            gmx_mtop_t *mtop);
 
 #endif  /* _convparm_h */

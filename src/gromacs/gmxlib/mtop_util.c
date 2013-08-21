@@ -658,6 +658,11 @@ int gmx_mtop_ftype_count(const gmx_mtop_t *mtop, int ftype)
         n += nmol*il[ftype].nr/(1+NRAL(ftype));
     }
 
+    if (mtop->bIntermolecularInteractions)
+    {
+        n += mtop->intermolecular_ilist[ftype].nr/(1+NRAL(ftype));
+    }
+
     return n;
 }
 
@@ -1054,6 +1059,15 @@ static void gen_local_top(const gmx_mtop_t *mtop, const t_inputrec *ir,
         natoms += molb->nmol*srcnr;
     }
 
+    if (mtop->bIntermolecularInteractions)
+    {
+        for (ftype = 0; ftype < F_NRE; ftype++)
+        {
+            ilistcat(ftype, &idef->il[ftype], &mtop->intermolecular_ilist[ftype],
+                     1, 0, mtop->natoms);
+        }
+    }
+
     if (ir == NULL)
     {
         top->idef.ilsort = ilsortUNKNOWN;
@@ -1108,6 +1122,7 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     top.excls     = ltop.excls;
     top.atoms     = gmx_mtop_global_atoms(mtop);
     top.mols      = mtop->mols;
+    top.bIntermolecularInteractions = mtop->bIntermolecularInteractions;
     top.symtab    = mtop->symtab;
 
     /* We only need to free the moltype and molblock data,

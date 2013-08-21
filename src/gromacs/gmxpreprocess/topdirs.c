@@ -86,6 +86,7 @@ static const char *directive_names[d_maxdir+1] = {
     "orientation_restraints",
     "dihedral_restraints",
     "cmap",
+    "intermolecular_interactions",
     "invalid"
 };
 
@@ -390,6 +391,7 @@ void DS_Init(DirStack **DS)
         set_nec(&(necessary[d_orientation_restraints]), d_atoms, d_none);
         set_nec(&(necessary[d_dihedral_restraints]), d_atoms, d_none);
         set_nec(&(necessary[d_cmap]), d_atoms, d_none);
+        set_nec(&(necessary[d_intermolecular_interactions]), d_molecules, d_none);
 
         for (i = 0; (i < d_maxdir); i++)
         {
