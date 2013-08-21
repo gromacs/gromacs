@@ -63,12 +63,12 @@ char **do_top(gmx_bool         bVerbose,
               gpp_atomtype_t   atype,
               int             *nrmols,
               t_molinfo      **molinfo,
+              t_molinfo      **intermolecular_interactions,
               t_inputrec      *ir,
               int             *nmolblock,
               gmx_molblock_t **molblock,
               gmx_bool         bGB,
               warninp_t        wi);
-
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);
