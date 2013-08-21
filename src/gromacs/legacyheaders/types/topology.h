@@ -55,11 +55,11 @@ enum {
 };
 
 typedef struct {
-    char          **name;       /* Name of the molecule type            */
-    t_atoms         atoms;      /* The atoms                            */
-    t_ilist         ilist[F_NRE];
-    t_block         cgs;        /* The charge groups                    */
-    t_blocka        excls;      /* The exclusions                       */
+    char          **name;         /* Name of the molecule type            */
+    t_atoms         atoms;        /* The atoms in this molecule           */
+    t_ilist         ilist[F_NRE]; /* Interaction list with local indices  */
+    t_block         cgs;          /* The charge groups                    */
+    t_blocka        excls;        /* The exclusions                       */
 } gmx_moltype_t;
 
 typedef struct {
@@ -95,6 +95,11 @@ typedef struct {
     gmx_moltype_t   *moltype;
     int              nmolblock;
     gmx_molblock_t  *molblock;
+    gmx_bool         bIntermolecularInteractions; /* Are there intermolecular
+                                                   * interactions?            */
+    t_ilist         *intermolecular_ilist; /* List of intermolecular interactions
+                                            * using system wide atom indices,
+                                            * either NULL or size F_NRE           */
     int              natoms;
     int              maxres_renum; /* Parameter for residue numbering      */
     int              maxresnr;     /* The maximum residue number in moltype */
@@ -120,6 +125,7 @@ typedef struct {
     t_atomtypes     atomtypes;  /* Atomtype properties                  */
     t_block         cgs;        /* The charge groups                    */
     t_block         mols;       /* The molecules                        */
+    gmx_bool        bIntermolecularInteractions; /* Inter.mol. int. ?   */
     t_blocka        excls;      /* The exclusions                       */
     t_symtab        symtab;     /* The symbol table                     */
 } t_topology;
