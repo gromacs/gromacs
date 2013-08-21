@@ -528,6 +528,31 @@ generate_gb_exclusion_interactions(t_molinfo *mi, gpp_atomtype_t atype, t_nextnb
 }
 
 
+static void make_atoms_sys(int nmolb, const gmx_molblock_t *molb,
+                           const t_molinfo *molinfo,
+                           t_atoms *atoms)
+{
+    int            mb, m, a;
+    const t_atoms *mol_atoms;
+
+    atoms->nr   = 0;
+    atoms->atom = NULL;
+
+    for (mb = 0; mb < nmolb; mb++)
+    {
+        mol_atoms = &molinfo[molb[mb].type].atoms;
+
+        srenew(atoms->atom, atoms->nr + molb[mb].nmol*mol_atoms->nr);
+
+        for (m = 0; m < molb[mb].nmol; m++)
+        {
+            for (a = 0; a < mol_atoms->nr; a++)
+            {
+                atoms->atom[atoms->nr++] = mol_atoms->atom[a];
+            }
+        }
+    }
+}
 
 
 static char **read_topol(const char *infile, const char *outfile,
@@ -536,6 +561,7 @@ static char **read_topol(const char *infile, const char *outfile,
                          gpp_atomtype_t atype,
                          int         *nrmols,
                          t_molinfo   **molinfo,
+                         t_molinfo   **intermolecular_interactions,
                          t_params    plist[],
                          int         *combination_rule,
                          double      *reppow,
@@ -562,6 +588,7 @@ static char **read_topol(const char *infile, const char *outfile,
     DirStack       *DS;
     directive       d, newd;
     t_nbparam     **nbparam, **pair;
+    gmx_bool        bIntermolecularInteractions;
     t_block2       *block2;
     real            fudgeLJ = -1;    /* Multiplication factor to generate 1-4 from LJ */
     gmx_bool        bReadDefaults, bReadMolType, bGenPairs, bWarn_copy_A_B;
@@ -605,9 +632,10 @@ static char **read_topol(const char *infile, const char *outfile,
     pair     = NULL;      /* The temporary pair interaction matrix */
     block2   = NULL;      /* the extra exclusions			 */
     nb_funct = F_LJ;
+
     *reppow  = 12.0;      /* Default value for repulsion power     */
 
-    comb     = 0;
+    *intermolecular_interactions = NULL;
 
     /* Init the number of CMAP torsion angles  and grid spacing */
     plist[F_CMAP].grid_spacing = 0;
@@ -728,6 +756,22 @@ static char **read_topol(const char *infile, const char *outfile,
                                       cpp_error(&handle, eCPP_SYNTAX), dir2str(newd));
                             /* d = d_invalid; */
                         }
+
+                        if (d == d_intermolecular_interactions)
+                        {
+                            if (*intermolecular_interactions == NULL)
+                            {
+                                /* We (mis)use the moleculetype processing
+                                 * to process the intermolecular interactions
+                                 * by making a "molecule" of the size of the system.
+                                 */
+                                snew(*intermolecular_interactions, 1);
+                                init_molinfo(*intermolecular_interactions);
+                                mi0 = *intermolecular_interactions;
+                                make_atoms_sys(nmolb, molb, *molinfo,
+                                               &mi0->atoms);
+                            }
+                        }
                     }
                     sfree(dirstr);
                 }
@@ -758,8 +802,7 @@ static char **read_topol(const char *infile, const char *outfile,
                                 fudgeLJ   = 1.0;
                                 *fudgeQQ  = 1.0;
 
-                                get_nbparm(nb_str, comb_str, &nb_funct, &comb, wi);
-                                *combination_rule = comb;
+                                get_nbparm(nb_str, comb_str, &nb_funct, combination_rule, wi);
                                 if (nscan >= 3)
                                 {
                                     bGenPairs = (gmx_strncasecmp(genpairs, "Y", 1) == 0);
@@ -857,14 +900,14 @@ static char **read_topol(const char *infile, const char *outfile,
                                 }
                                 ntype  = get_atomtype_ntypes(atype);
                                 ncombs = (ntype*(ntype+1))/2;
-                                generate_nbparams(comb, nb_funct, &(plist[nb_funct]), atype, wi);
+                                generate_nbparams(*combination_rule, nb_funct, &(plist[nb_funct]), atype, wi);
                                 ncopy = copy_nbparams(nbparam, nb_funct, &(plist[nb_funct]),
                                                       ntype);
                                 fprintf(stderr, "Generated %d of the %d non-bonded parameter combinations\n", ncombs-ncopy, ncombs);
                                 free_nbparam(nbparam, ntype);
                                 if (bGenPairs)
                                 {
-                                    gen_pairs(&(plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, comb);
+                                    gen_pairs(&(plist[nb_funct]), &(plist[F_LJ14]), fudgeLJ, *combination_rule);
                                     ncopy = copy_nbparams(pair, nb_funct, &(plist[F_LJ14]),
                                                           ntype);
                                     fprintf(stderr, "Generated %d of the %d 1-4 parameter combinations\n", ncombs-ncopy, ncombs);
@@ -1051,6 +1094,11 @@ static char **read_topol(const char *infile, const char *outfile,
 
     done_bond_atomtype(&batype);
 
+    if (*intermolecular_interactions != NULL)
+    {
+        sfree(mi0->atoms.atom);
+    }
+
     *nrmols = nmol;
 
     *nmolblock = nmolb;
@@ -1072,6 +1120,7 @@ char **do_top(gmx_bool          bVerbose,
               gpp_atomtype_t    atype,
               int              *nrmols,
               t_molinfo       **molinfo,
+              t_molinfo       **intermolecular_interactions,
               t_inputrec       *ir,
               int              *nmolblock,
               gmx_molblock_t  **molblock,
@@ -1096,7 +1145,8 @@ char **do_top(gmx_bool          bVerbose,
         printf("processing topology...\n");
     }
     title = read_topol(topfile, tmpfile, opts->define, opts->include,
-                       symtab, atype, nrmols, molinfo,
+                       symtab, atype,
+                       nrmols, molinfo, intermolecular_interactions,
                        plist, combination_rule, repulsion_power,
                        opts, fudgeQQ, nmolblock, molblock,
                        ir->efep != efepNO, bGenborn, bZero, wi);

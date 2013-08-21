@@ -1169,10 +1169,17 @@ in \tabref{topfile2}} \\
 {\em mandatory} & {\tts molecules}	& & &	\multicolumn{2}{l|}{molecule name; number of molecules}	\\
 \dline
 \multicolumn{6}{c}{~} \\
+\multicolumn{6}{c}{\bf \large Inter-molecular interactions} \\
+\dline
+{\em optional}  & \multicolumn{4}{l}{\tts intermolecular_interactions}	& \\
+\hline
+\multicolumn{6}{|c|}{one or more bonded interactions as described in \tabref{topfile2}, with two or more atoms,} \\
+\multicolumn{6}{|c|}{no interactions that generate exclusions, no constraints, use global atom numbers} \\
+\dline
+\multicolumn{6}{c}{~} \\
 \multicolumn{6}{l}{`\# at' is the required number of atom type indices for this directive} \\
 \multicolumn{6}{l}{`f. tp' is the value used to select this function type} \\
-\multicolumn{6}{l}{`F. E.' indicates which of the parameters for this interaction can be} \\
-\multicolumn{6}{l}{\phantom{`F. E.'} interpolated during free energy calculations} \\
+\multicolumn{6}{l}{`F. E.' indicates which of the parameters can be interpolated in free energy calculations} \\
 \multicolumn{6}{l}{~$^{(cr)}$ the combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\\
 \multicolumn{6}{l}{~$^{(*)}$ for {\tts dihedraltypes} one can specify 4 atoms or the inner (outer for improper) 2 atoms}\\
 \multicolumn{6}{l}{~$^{(nrexcl)}$ exclude neighbors $n_{ex}$ bonds away for non-bonded interactions}\\
@@ -1202,7 +1209,7 @@ Name of interaction              & Topology file directive          & num.  & fu
 % The footnotetext fields only work inside the body, and not from a
 % column with ``p'' formatting'!
 bond                               & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 1     & $b_0$ (nm); $k_b$ (\kJmolnm{-2})                      & all        & \ssecref{harmonicbond}
-\label{tab:topfile2} \footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters for this interaction can be interpolated during free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}
+\label{tab:topfile2} \footnotetext[1]{The required number of atom indices for this directive}\footnotetext[2]{The index to use to select this function type}\footnotetext[3]{Indicates which of the parameters can be interpolated in free energy calculations}\footnotetext[4]{This interaction type will be used by {{\tts grompp}} for generating exclusions}\footnotetext[5]{This interaction type can be converted to constraints by {{\tts grompp}}}\footnotetext[7]{The combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\footnotetext[6]{No connection, and so no exclusions, are generated for this interaction}
 \\
 G96 bond                           & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 2     & $b_0$ (nm); $k_b$ (\kJmolnm{-4})                      & all        & \ssecref{G96bond} \\
 Morse                              & {\tts bonds}\fnm{4},\fnm{5}    & 2     & 3     & $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$)         & all        & \ssecref{Morsebond} \\

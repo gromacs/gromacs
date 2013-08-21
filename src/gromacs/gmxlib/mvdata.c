@@ -833,6 +833,13 @@ void bcast_ir_mtop(const t_commrec *cr, t_inputrec *inputrec, gmx_mtop_t *mtop)
         bc_moltype(cr, &mtop->symtab, &mtop->moltype[i]);
     }
 
+    block_bc(cr, mtop->bIntermolecularInteractions);
+    if (mtop->bIntermolecularInteractions)
+    {
+        snew_bc(cr, mtop->intermolecular_ilist, F_NRE);
+        bc_ilists(cr, mtop->intermolecular_ilist);
+    }
+
     block_bc(cr, mtop->nmolblock);
     snew_bc(cr, mtop->molblock, mtop->nmolblock);
     for (i = 0; i < mtop->nmolblock; i++)

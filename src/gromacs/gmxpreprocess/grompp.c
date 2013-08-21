@@ -499,7 +499,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
            t_gromppopts *opts, t_inputrec *ir, gmx_bool bZero,
            gmx_bool bGenVel, gmx_bool bVerbose, t_state *state,
            gpp_atomtype_t atype, gmx_mtop_t *sys,
-           int *nmi, t_molinfo **mi, t_params plist[],
+           int *nmi, t_molinfo **mi, t_molinfo **intermolecular_interactions,
+           t_params plist[],
            int *comb, double *reppow, real *fudgeQQ,
            gmx_bool bMorse,
            warninp_t wi)
@@ -524,7 +525,8 @@ new_status(const char *topfile, const char *topppfile, const char *confin,
     /* TOPOLOGY processing */
     sys->name = do_top(bVerbose, topfile, topppfile, opts, bZero, &(sys->symtab),
                        plist, comb, reppow, fudgeQQ,
-                       atype, &nrmols, &molinfo, ir,
+                       atype, &nrmols, &molinfo, intermolecular_interactions,
+                       ir,
                        &nmolblock, &molblock, bGB,
                        wi);
 
@@ -1503,7 +1505,7 @@ int gmx_grompp(int argc, char *argv[])
     t_gromppopts      *opts;
     gmx_mtop_t        *sys;
     int                nmi;
-    t_molinfo         *mi;
+    t_molinfo         *mi, *intermolecular_interactions;
     gpp_atomtype_t     atype;
     t_inputrec        *ir;
     int                natoms, nvsite, comb, mt;
@@ -1629,7 +1631,8 @@ int gmx_grompp(int argc, char *argv[])
     }
     new_status(fn, opt2fn_null("-pp", NFILE, fnm), opt2fn("-c", NFILE, fnm),
                opts, ir, bZero, bGenVel, bVerbose, &state,
-               atype, sys, &nmi, &mi, plist, &comb, &reppow, &fudgeQQ,
+               atype, sys, &nmi, &mi, &intermolecular_interactions,
+               plist, &comb, &reppow, &fudgeQQ,
                opts->bMorse,
                wi);
 
@@ -1798,7 +1801,8 @@ int gmx_grompp(int argc, char *argv[])
     }
 
     ntype = get_atomtype_ntypes(atype);
-    convert_params(ntype, plist, mi, comb, reppow, fudgeQQ, sys);
+    convert_params(ntype, plist, mi, intermolecular_interactions,
+                   comb, reppow, fudgeQQ, sys);
 
     if (debug)
     {

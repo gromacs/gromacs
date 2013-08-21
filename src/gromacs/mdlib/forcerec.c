@@ -2553,26 +2553,48 @@ void init_forcerec(FILE              *fp,
     {
         if (!DOMAINDECOMP(cr))
         {
+            gmx_bool bSHAKE;
+
+            bSHAKE = (ir->eConstrAlg == econtSHAKE &&
+                      (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 ||
+                       gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0));
+
             /* The group cut-off scheme and SHAKE assume charge groups
              * are whole, but not using molpbc is faster in most cases.
+             * With intermolecular interactions we need PBC for calculating
+             * distances between atoms in different molecules.
              */
-            if (fr->cutoff_scheme == ecutsGROUP ||
-                (ir->eConstrAlg == econtSHAKE &&
-                 (gmx_mtop_ftype_count(mtop, F_CONSTR) > 0 ||
-                  gmx_mtop_ftype_count(mtop, F_CONSTRNC) > 0)))
+            if ((fr->cutoff_scheme == ecutsGROUP || bSHAKE) &&
+                !mtop->bIntermolecularInteractions)
             {
                 fr->bMolPBC = ir->bPeriodicMols;
+
+                if (bSHAKE && fr->bMolPBC)
+                {
+                    gmx_fatal(FARGS, "SHAKE is not supported with periodic molecules");
+                }
             }
             else
             {
                 fr->bMolPBC = TRUE;
+
                 if (getenv("GMX_USE_GRAPH") != NULL)
                 {
                     fr->bMolPBC = FALSE;
                     if (fp)
                     {
-                        fprintf(fp, "\nGMX_MOLPBC is set, using the graph for bonded interactions\n\n");
+                        md_print_warn(cr, fp, "GMX_USE_GRAPH is set, using the graph for bonded interactions\n");
                     }
+
+                    if (mtop->bIntermolecularInteractions)
+                    {
+                        md_print_warn(cr, fp, "WARNING: Molecules linked by intermolecular interactions have to reside in the same periodic image, otherwise artifacts will occur!\n");
+                    }
+                }
+
+                if (bSHAKE && fr->bMolPBC)
+                {
+                    gmx_fatal(FARGS, "SHAKE is not properly supported with intermolecular interactions. For short simulations where linked molecules remain in the same periodic image, the environment variable GMX_USE_GRAPH can be used to override this check.\n");
                 }
             }
         }

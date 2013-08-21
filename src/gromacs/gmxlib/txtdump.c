@@ -1873,7 +1873,7 @@ static void pr_molblock(FILE *fp, int indent, const char *title,
 void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
              gmx_bool bShowNumbers)
 {
-    int mt, mb;
+    int mt, mb, j;
 
     if (available(fp, mtop, indent, title))
     {
@@ -1885,6 +1885,16 @@ void pr_mtop(FILE *fp, int indent, const char *title, gmx_mtop_t *mtop,
         for (mb = 0; mb < mtop->nmolblock; mb++)
         {
             pr_molblock(fp, indent, "molblock", &mtop->molblock[mb], mb, mtop->moltype);
+        }
+        pr_str(fp, indent, "bIntermolecularInteractions", EBOOL(mtop->bIntermolecularInteractions));
+        if (mtop->bIntermolecularInteractions)
+        {
+            for (j = 0; (j < F_NRE); j++)
+            {
+                pr_ilist(fp, indent, interaction_function[j].longname,
+                         mtop->ffparams.functype,
+                         &mtop->intermolecular_ilist[j], bShowNumbers);
+            }
         }
         pr_ffparams(fp, indent, "ffparams", &(mtop->ffparams), bShowNumbers);
         pr_atomtypes(fp, indent, "atomtypes", &(mtop->atomtypes), bShowNumbers);
@@ -1908,6 +1918,7 @@ void pr_top(FILE *fp, int indent, const char *title, t_topology *top, gmx_bool b
         pr_atomtypes(fp, indent, "atomtypes", &(top->atomtypes), bShowNumbers);
         pr_block(fp, indent, "cgs", &top->cgs, bShowNumbers);
         pr_block(fp, indent, "mols", &top->mols, bShowNumbers);
+        pr_str(fp, indent, "bIntermolecularInteractions", EBOOL(top->bIntermolecularInteractions));
         pr_blocka(fp, indent, "excls", &top->excls, bShowNumbers);
         pr_idef(fp, indent, "idef", &top->idef, bShowNumbers);
     }

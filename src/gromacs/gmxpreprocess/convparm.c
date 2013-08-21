@@ -569,7 +569,8 @@ static void enter_function(t_params *p, t_functype ftype, int comb, real reppow,
 }
 
 void convert_params(int atnr, t_params nbtypes[],
-                    t_molinfo *mi, int comb, double reppow, real fudgeQQ,
+                    t_molinfo *mi, t_molinfo *intermolecular_interactions,
+                    int comb, double reppow, real fudgeQQ,
                     gmx_mtop_t *mtop)
 {
     int             i, j, maxtypes, mt;
@@ -613,6 +614,57 @@ void convert_params(int atnr, t_params nbtypes[],
             }
         }
     }
+
+    mtop->bIntermolecularInteractions = FALSE;
+    if (intermolecular_interactions != NULL)
+    {
+        /* Process the intermolecular interaction list */
+        snew(mtop->intermolecular_ilist, F_NRE);
+
+        for (i = 0; (i < F_NRE); i++)
+        {
+            mtop->intermolecular_ilist[i].nr     = 0;
+            mtop->intermolecular_ilist[i].iatoms = NULL;
+
+            plist = intermolecular_interactions->plist;
+
+            if (plist[i].nr > 0)
+            {
+                flags = interaction_function[i].flags;
+                /* For intermolecular interactions we (currently)
+                 * only support potentials.
+                 * Constraints and virtual sites would be possible,
+                 * but require a lot of extra (bug-prone) code.
+                 */
+                if (!(flags & IF_BOND))
+                {
+                    gmx_fatal(FARGS, "The intermolecular_interaction section may only contain bonded potentials");
+                }
+                else if (NRAL(i) == 1) /* e.g. position restraints */
+                {
+                    gmx_fatal(FARGS, "Single atom interactions don't make sense in the intermolecular_interaction section, you can put them in the moleculetype section");
+                }
+                else if (flags & IF_CHEMBOND)
+                {
+                    gmx_fatal(FARGS, "The intermolecular_interaction can not contain chemically bonding interactions");
+                }
+                else
+                {
+                    enter_function(&(plist[i]), (t_functype)i, comb, reppow,
+                                   ffp, &mtop->intermolecular_ilist[i],
+                                   &maxtypes, FALSE, FALSE);
+
+                    mtop->bIntermolecularInteractions = TRUE; 
+                }
+            }
+        }
+
+        if (!mtop->bIntermolecularInteractions)
+        {
+            sfree(mtop->intermolecular_ilist);
+        }
+    }
+
     if (debug)
     {
         fprintf(debug, "%s, line %d: There are %d functypes in idef\n",

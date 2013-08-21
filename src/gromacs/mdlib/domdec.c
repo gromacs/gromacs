@@ -6724,7 +6724,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
 
     comm->bCGs = (ncg_mtop(mtop) < mtop->natoms);
 
-    comm->bInterCGBondeds = (ncg_mtop(mtop) > mtop->mols.nr);
+    comm->bInterCGBondeds = ((ncg_mtop(mtop) > mtop->mols.nr) ||
+                             mtop->bIntermolecularInteractions);
     if (comm->bInterCGBondeds)
     {
         comm->bInterCGMultiBody = (multi_body_bondeds_count(mtop) > 0);

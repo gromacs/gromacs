@@ -51,24 +51,24 @@ double check_mol(gmx_mtop_t *mtop, warninp_t wi);
 /* Check mass and charge */
 
 char **do_top(gmx_bool         bVerbose,
-              const char      *topfile,
-              const char      *topppfile,
-              t_gromppopts    *opts,
-              gmx_bool         bZero,
-              t_symtab        *symtab,
-              t_params         plist[],
-              int             *combination_rule,
-              double          *repulsion_power,
-              real            *fudgeQQ,
-              gpp_atomtype_t   atype,
-              int             *nrmols,
-              t_molinfo      **molinfo,
-              t_inputrec      *ir,
-              int             *nmolblock,
-              gmx_molblock_t **molblock,
-              gmx_bool         bGB,
-              warninp_t        wi);
-
+                     const char      *topfile,
+                     const char      *topppfile,
+                     t_gromppopts    *opts,
+                     gmx_bool         bZero,
+                     t_symtab        *symtab,
+                     t_params         plist[],
+                     int             *combination_rule,
+                     double          *repulsion_power,
+                     real            *fudgeQQ,
+                     gpp_atomtype_t   atype,
+                     int             *nrmols,
+                     t_molinfo      **molinfo,
+                     t_molinfo      **intermolecular_interactions,
+                     t_inputrec      *ir,
+                     int             *nmolblock,
+                     gmx_molblock_t **molblock,
+                     gmx_bool         bGB,
+                     warninp_t        wi);
 
 /* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void generate_qmexcl(gmx_mtop_t *sys, t_inputrec *ir, warninp_t    wi);

@@ -89,7 +89,8 @@ enum tpxv {
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
-    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_IntermolecularBondeds                               /**< permit inter-molecular bonded interactions in the topology */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -103,7 +104,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RemoveObsoleteParameters1;
+static const int tpx_version = tpxv_IntermolecularBondeds;
 
 
 /* This number should only be increased when you edit the TOPOLOGY section
@@ -3003,16 +3004,19 @@ static void add_posres_molblock(gmx_mtop_t *mtop)
 
 static void set_disres_npair(gmx_mtop_t *mtop)
 {
-    int        mt, i, npair;
-    t_iparams *ip;
-    t_ilist   *il;
-    t_iatom   *a;
+    t_iparams            *ip;
+    gmx_mtop_ilistloop_t  iloop;
+    t_ilist              *ilist, *il;
+    int                   nmol, i, npair;
+    t_iatom              *a;
 
     ip = mtop->ffparams.iparams;
 
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    iloop     = gmx_mtop_ilistloop_init(mtop);
+    while (gmx_mtop_ilistloop_next(iloop, &ilist, &nmol))
     {
-        il = &mtop->moltype[mt].ilist[F_DISRES];
+        il = &ilist[F_DISRES];
+
         if (il->nr > 0)
         {
             a     = il->iatoms;
@@ -3099,6 +3103,23 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->molblock[0].natoms_mol = mtop->moltype[0].atoms.nr;
         mtop->molblock[0].nposres_xA = 0;
         mtop->molblock[0].nposres_xB = 0;
+    }
+
+    if (file_version >= tpxv_IntermolecularBondeds)
+    {
+        gmx_fio_do_gmx_bool(fio, mtop->bIntermolecularInteractions);
+        if (mtop->bIntermolecularInteractions)
+        {
+            if (bRead)
+            {
+                snew(mtop->intermolecular_ilist, F_NRE);
+            }
+            do_ilists(fio, mtop->intermolecular_ilist, bRead, file_version);
+        }
+    }
+    else
+    {
+        mtop->bIntermolecularInteractions = FALSE;
     }
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);
