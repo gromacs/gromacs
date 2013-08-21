@@ -68,7 +68,6 @@
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
-
 /* The tpx_version number should be increased whenever the file format changes!
  *
  * The following comment section helps to keep track of which feature has been
@@ -76,9 +75,9 @@ static const char *tpx_tag = TPX_TAG_RELEASE;
  *
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
+ *    97    support for intermolecular bonded interactions
  */
-static const int tpx_version = 96;
-
+static const int tpx_version = 97;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -90,7 +89,7 @@ static const int tpx_version = 96;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 25;
+static const int tpx_generation = 26;
 
 /* This number should be the most recent backwards incompatible version
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -2967,6 +2966,23 @@ static void do_mtop(t_fileio *fio, gmx_mtop_t *mtop, gmx_bool bRead,
         mtop->molblock[0].natoms_mol = mtop->moltype[0].atoms.nr;
         mtop->molblock[0].nposres_xA = 0;
         mtop->molblock[0].nposres_xB = 0;
+    }
+
+    if (file_version >= 96)
+    {
+        gmx_fio_do_gmx_bool(fio, mtop->bIntermolecularInteractions);
+        if (mtop->bIntermolecularInteractions)
+        {
+            if (bRead)
+            {
+                snew(mtop->intermolecular_ilist, F_NRE);
+            }
+            do_ilists(fio, mtop->intermolecular_ilist, bRead, file_version);
+        }
+    }
+    else
+    {
+        mtop->bIntermolecularInteractions = FALSE;
     }
 
     do_atomtypes (fio, &(mtop->atomtypes), bRead, file_version);

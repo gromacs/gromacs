@@ -143,6 +143,7 @@ typedef enum {
     d_orientation_restraints,
     d_dihedral_restraints,
     d_cmap,
+    d_intermolecular_interactions,
     d_maxdir,
     d_invalid,
     d_none
