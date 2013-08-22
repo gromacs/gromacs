@@ -81,7 +81,7 @@ int gmx_spatial(int argc, char *argv[])
         "Cartesian coordinate. To do that, simply omit the preliminary [TT]trjconv[tt] steps. \n",
         "USAGE: \n",
         "1. Use [TT]make_ndx[tt] to create a group containing the atoms around which you want the SDF \n",
-        "2. [TT]trjconv -s a.tpr -f a.xtc -o b.xtc -center tric -ur compact -pbc none[tt] \n",
+        "2. [TT]trjconv -s a.tpr -f a.xtc -o b.xtc -boxcenter tric -ur compact -pbc none[tt] \n",
         "3. [TT]trjconv -s a.tpr -f b.xtc -o c.xtc -fit rot+trans[tt] \n",
         "4. run [TT]g_spatial[tt] on the [TT].xtc[tt] output of step #3. \n",
         "5. Load [TT]grid.cube[tt] into VMD and view as an isosurface. \n",
