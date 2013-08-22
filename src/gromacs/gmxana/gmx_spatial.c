@@ -42,7 +42,6 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include <math.h>
@@ -245,7 +244,7 @@ int gmx_spatial(int argc, char *argv[])
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     /* This is the main loop over frames */
     do
@@ -464,8 +463,6 @@ int gmx_spatial(int argc, char *argv[])
         printf("grid.cube contains counts per frame in all %ld cubes\n", numcu);
         printf("Raw data: average %le, min %le, max %le\n", 1.0/norm, (double)min/(double)numfr, (double)max/(double)numfr);
     }
-
-    thanx(stderr);
 
     return 0;
 }

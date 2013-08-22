@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <IndexMapping Name="Initialized">
+    <Sequence Name="Input">
+      <Int Name="Length">5</Int>
+      <Int>3</Int>
+      <Int>4</Int>
+      <Int>7</Int>
+      <Int>8</Int>
+      <Int>13</Int>
+    </Sequence>
+    <Int Name="Count">3</Int>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>3</Int>
+        <Int>4</Int>
+      </Sequence>
+      <Int Name="RefId">0</Int>
+      <Int Name="MapId">1</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">2</Int>
+        <Int>7</Int>
+        <Int>8</Int>
+      </Sequence>
+      <Int Name="RefId">1</Int>
+      <Int Name="MapId">2</Int>
+    </Block>
+    <Block>
+      <Sequence Name="Atoms">
+        <Int Name="Length">1</Int>
+        <Int>13</Int>
+      </Sequence>
+      <Int Name="RefId">2</Int>
+      <Int Name="MapId">4</Int>
+    </Block>
+  </IndexMapping>
+</ReferenceData>

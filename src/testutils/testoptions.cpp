@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,35 +44,99 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <new>
-#include <string>
-#include <vector>
+#include <list>
 
-#include <boost/scoped_ptr.hpp>
 #include <gmock/gmock.h>
 
+#include "gromacs/legacyheaders/thread_mpi/mutex.h"
+
+#include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/onlinehelp/helpwritercontext.h"
+#include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/errorcodes.h"
-#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/programinfo.h"
 
 #include "refdata.h"
-#include "testexceptions.h"
 #include "testfilemanager.h"
-
-namespace
-{
-
-//! Stored command line for gmx::test::parseTestOptions().
-boost::scoped_ptr<std::vector<std::string> > s_commandLine;
-
-} // namespace
 
 namespace gmx
 {
 namespace test
 {
+
+namespace
+{
+
+/*! \brief
+ * Singleton registry for test options added with GMX_TEST_OPTIONS.
+ *
+ * \ingroup module_testutils
+ */
+class TestOptionsRegistry
+{
+    public:
+        //! Returns the singleton instance of this class.
+        static TestOptionsRegistry &getInstance()
+        {
+            static TestOptionsRegistry singleton;
+            return singleton;
+        }
+
+        //! Adds a provider into the registry.
+        void add(const char * /*name*/, TestOptionsProvider *provider)
+        {
+            tMPI::lock_guard<tMPI::mutex> lock(listMutex_);
+            providerList_.push_back(provider);
+        }
+
+        //! Initializes the options from all the provides.
+        void initOptions(Options *options);
+
+    private:
+        TestOptionsRegistry() {}
+
+        typedef std::list<TestOptionsProvider *> ProviderList;
+
+        tMPI::mutex             listMutex_;
+        ProviderList            providerList_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(TestOptionsRegistry);
+};
+
+void TestOptionsRegistry::initOptions(Options *options)
+{
+    // TODO: Have some deterministic order for the options; now it depends on
+    // the order in which the global initializers are run.
+    tMPI::lock_guard<tMPI::mutex> lock(listMutex_);
+    ProviderList::const_iterator i;
+    for (i = providerList_.begin(); i != providerList_.end(); ++i)
+    {
+        (*i)->initOptions(options);
+    }
+}
+
+//! Prints the command-line options for the unit test binary.
+void printHelp(const Options &options)
+{
+    std::fprintf(stderr,
+                 "\nYou can use the following GROMACS-specific command-line flags\n"
+                 "to control the behavior of the tests:\n\n");
+    HelpWriterContext context(&File::standardError(),
+                              eHelpOutputFormat_Console);
+    CommandLineHelpWriter(options).writeHelp(context);
+}
+
+} // namespace
+
+void registerTestOptions(const char *name, TestOptionsProvider *provider)
+{
+    TestOptionsRegistry::getInstance().add(name, provider);
+}
 
 void initTestUtils(const char *dataPath, int *argc, char *argv[])
 {
@@ -84,35 +148,38 @@ void initTestUtils(const char *dataPath, int *argc, char *argv[])
         {
             TestFileManager::setInputDataDirectory(dataPath);
         }
-        initReferenceData(argc, argv);
-        boost::scoped_ptr<std::vector<std::string> > commandLine(
-                new std::vector<std::string>());
-        for (int i = 0; i < *argc; ++i)
+        bool bHelp = false;
+        Options options(NULL, NULL);
+        // TODO: A single option that accepts multiple names would be nicer.
+        // Also, we recognize -help, but GTest doesn't, which leads to a bit
+        // unintuitive behavior.
+        options.addOption(BooleanOption("h").store(&bHelp)
+                              .description("Print GROMACS-specific unit test options"));
+        options.addOption(BooleanOption("help").store(&bHelp).hidden());
+        options.addOption(BooleanOption("?").store(&bHelp).hidden());
+        // TODO: Consider removing this option from test binaries that do not need it.
+        initReferenceData(&options);
+        TestOptionsRegistry::getInstance().initOptions(&options);
+        try
         {
-            commandLine->push_back(argv[i]);
+            CommandLineParser(&options).parse(argc, argv);
+            options.finish();
         }
-        swap(commandLine, s_commandLine);
+        catch (const UserInputError &)
+        {
+            printHelp(options);
+            throw;
+        }
+        if (bHelp)
+        {
+            printHelp(options);
+        }
+        setFatalErrorHandler(NULL);
     }
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
         std::exit(1);
-    }
-    ::gmx::setFatalErrorHandler(NULL);
-}
-
-void parseTestOptions(Options *options)
-{
-    GMX_RELEASE_ASSERT(s_commandLine.get() != NULL,
-                       "Test options not initialized");
-    try
-    {
-        CommandLineParser(options).parse(s_commandLine.get());
-        options->finish();
-    }
-    catch (const GromacsException &ex)
-    {
-        GMX_THROW_WRAPPER_TESTEXCEPTION(ex);
     }
 }
 

@@ -973,7 +973,7 @@ static void remove_drift(int nset, int nbmin, int nbmax, real dt, enerdata_t *ed
 
 static void calc_fluctuation_props(FILE *fp,
                                    gmx_bool bDriftCorr, real dt,
-                                   int nset, int set[], int nmol,
+                                   int nset, int nmol,
                                    char **leg, enerdata_t *edat,
                                    int nbmin, int nbmax)
 {
@@ -1129,7 +1129,7 @@ static void calc_fluctuation_props(FILE *fp,
 }
 
 static void analyse_ener(gmx_bool bCorr, const char *corrfn,
-                         gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct, gmx_bool bTempFluct,
+                         gmx_bool bFee, gmx_bool bSum, gmx_bool bFluct,
                          gmx_bool bVisco, const char *visfn, int nmol,
                          gmx_large_int_t start_step, double start_t,
                          gmx_large_int_t step, double t,
@@ -1385,13 +1385,13 @@ static void analyse_ener(gmx_bool bCorr, const char *corrfn,
             strcpy(buf, "Shear Viscosity");
             low_do_autocorr(corrfn, oenv, buf, edat->nframes, 3,
                             (edat->nframes+1)/2, eneset, Dt,
-                            eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0, 1);
+                            eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0);
 
             /* Now for bulk viscosity */
             strcpy(buf, "Bulk Viscosity");
             low_do_autocorr(corrfn, oenv, buf, edat->nframes, 1,
                             (edat->nframes+1)/2, &(eneset[11]), Dt,
-                            eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0, 1);
+                            eacNormal, 1, TRUE, FALSE, FALSE, 0.0, 0.0, 0);
 
             factor = (Vaver*1e-26/(BOLTZMANN*Temp))*Dt;
             fp     = xvgropen(visfn, buf, "Time (ps)", "\\8h\\4 (cp)", oenv);
@@ -2791,7 +2791,7 @@ int gmx_energy(int argc, char *argv[])
     {
         double dt = (frame[cur].t-start_t)/(edat.nframes-1);
         analyse_ener(opt2bSet("-corr", NFILE, fnm), opt2fn("-corr", NFILE, fnm),
-                     bFee, bSum, bFluct, opt2parg_bSet("-nmol", npargs, ppa),
+                     bFee, bSum, opt2parg_bSet("-nmol", npargs, ppa),
                      bVisco, opt2fn("-vis", NFILE, fnm),
                      nmol,
                      start_step, start_t, frame[cur].step, frame[cur].t,
@@ -2800,7 +2800,7 @@ int gmx_energy(int argc, char *argv[])
                      oenv);
         if (bFluctProps)
         {
-            calc_fluctuation_props(stdout, bDriftCorr, dt, nset, set, nmol, leg, &edat,
+            calc_fluctuation_props(stdout, bDriftCorr, dt, nset, nmol, leg, &edat,
                                    nbmin, nbmax);
         }
     }
@@ -2823,7 +2823,6 @@ int gmx_energy(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-oten", NFILE, fnm), nxy);
         do_view(oenv, opt2fn_null("-odh", NFILE, fnm), nxy);
     }
-    thanx(stderr);
 
     return 0;
 }

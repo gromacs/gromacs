@@ -46,7 +46,6 @@
 #include "enxio.h"
 #include "statutil.h"
 #include "names.h"
-#include "copyrite.h"
 #include "macros.h"
 #include "xvgr.h"
 #include "gstat.h"
@@ -579,8 +578,6 @@ int gmx_enemat(int argc, char *argv[])
  */
     }
     close_enx(in);
-
-    thanx(stderr);
 
     return 0;
 }

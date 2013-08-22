@@ -84,7 +84,7 @@ enum {
 #define NROT 4  /* number of rotamers: 1=g(-), 2=t, 3=g(+), 0=other */
 
 typedef struct {
-    int minO, minC, H, N, C, O, Cn[MAXCHI+3];
+    int minCalpha, minC, H, N, C, O, Cn[MAXCHI+3];
 } t_dihatms; /* Cn[0]=N, Cn[1]=Ca, Cn[2]=Cb etc. */
 
 typedef struct {
@@ -133,7 +133,7 @@ void low_do_autocorr(const char *fn, const output_env_t oenv,
                      int nout, real **c1, real dt, unsigned long mode,
                      int nrestart, gmx_bool bAver, gmx_bool bNormalize,
                      gmx_bool bVerbose, real tbeginfit, real tendfit,
-                     int nfitparm, int nskip);
+                     int nfitparm);
 /*
  * do_autocorr calculates autocorrelation functions for many things.
  * It takes a 2 d array containing nitem arrays of length nframes
@@ -403,13 +403,13 @@ void pr_dlist(FILE *fp, int nl, t_dlist dl[], real dt,  int printtype,
 
 int pr_trans(FILE *fp, int nl, t_dlist dl[], real dt, int Xi);
 
-void mk_chi_lookup (int **lookup, int maxchi, real **dih,
+void mk_chi_lookup (int **lookup, int maxchi,
                     int nlist, t_dlist dlist[]);
 
-void mk_multiplicity_lookup (int *multiplicity, int maxchi, real **dih,
+void mk_multiplicity_lookup (int *multiplicity, int maxchi,
                              int nlist, t_dlist dlist[], int nangle);
 
-void get_chi_product_traj (real **dih, int nframes, int nangles,
+void get_chi_product_traj (real **dih, int nframes,
                            int nlist, int maxchi, t_dlist dlist[],
                            real time[], int **lookup, int *multiplicity,
                            gmx_bool bRb, gmx_bool bNormalize,

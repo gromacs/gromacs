@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,13 +47,18 @@
 #include <string>
 #include <utility>
 
+#include "gromacs/legacyheaders/copyrite.h"
+
 #include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
-#include "gromacs/utility/file.h"
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
@@ -262,9 +267,6 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         virtual int run(int argc, char *argv[]);
         virtual void writeHelp(const HelpWriterContext &context) const;
 
-        //! Prints usage message to stderr.
-        void printUsage() const;
-
     private:
         CompositeHelpTopicPointer   rootTopic_;
 
@@ -299,7 +301,6 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 2;
     }
     helpManager.writeCurrentTopic();
-    fprintf(stderr, "\n");
     return 0;
 }
 
@@ -308,13 +309,6 @@ void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
     context.writeTextBlock(
             "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
     // TODO: More information.
-}
-
-void CommandLineHelpModule::printUsage() const
-{
-    HelpWriterContext context(&File::standardError(),
-                              eHelpOutputFormat_Console);
-    rootTopic_->writeHelp(context);
 }
 
 /********************************************************************
@@ -329,13 +323,12 @@ void CommandLineHelpModule::printUsage() const
 class CommandLineModuleManager::Impl
 {
     public:
-
         /*! \brief
          * Initializes the implementation class.
          *
-         * \param[in] programInfo  Program information for the running binary.
+         * \param     programInfo  Program information for the running binary.
          */
-        explicit Impl(const ProgramInfo &programInfo);
+        explicit Impl(ProgramInfo *programInfo);
 
         /*! \brief
          * Finds a module that matches a name.
@@ -368,23 +361,53 @@ class CommandLineModuleManager::Impl
         findModuleFromBinaryName(const ProgramInfo &programInfo) const;
 
         /*! \brief
+         * Processes command-line options for the wrapper binary.
+         *
+         * \param[in,out] argc On input, argc passed to run().
+         *     On output, argc to be passed to the module.
+         * \param[in,out] argv On input, argv passed to run().
+         *     On output, argv to be passed to the module.
+         * \throws    InvalidInputError if there are invalid options.
+         * \returns   The module that should be run.
+         *
+         * Handles command-line options that affect the wrapper binary
+         * (potentially changing the members of \c this in response to the
+         * options).  Also finds the module that should be run and the
+         * arguments that should be passed to it.
+         */
+        CommandLineModuleInterface *
+        processCommonOptions(int *argc, char ***argv);
+
+        /*! \brief
          * Maps module names to module objects.
          *
          * Owns the contained modules.
          */
-        CommandLineModuleMap    modules_;
+        CommandLineModuleMap         modules_;
         //! Information about the currently running program.
-        const ProgramInfo      &programInfo_;
+        ProgramInfo                 &programInfo_;
         /*! \brief
          * Module that implements help for the binary.
          *
          * The pointed module is owned by the \a modules_ container.
          */
-        CommandLineHelpModule  *helpModule_;
+        CommandLineHelpModule       *helpModule_;
+        //! Settings for what to write in the startup header.
+        BinaryInformationSettings    binaryInfoSettings_;
+        //! If non-NULL, run this module in single-module mode.
+        CommandLineModuleInterface  *singleModule_;
+        //! Whether all stderr output should be suppressed.
+        bool                         bQuiet_;
+        //! Whether to write the startup information to stdout iso stderr.
+        bool                         bStdOutInfo_;
+
+    private:
+        GMX_DISALLOW_COPY_AND_ASSIGN(Impl);
 };
 
-CommandLineModuleManager::Impl::Impl(const ProgramInfo &programInfo)
-    : programInfo_(programInfo)
+CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
+    : programInfo_(*programInfo), helpModule_(NULL), singleModule_(NULL),
+      bQuiet_(false), bStdOutInfo_(false)
 {
 }
 
@@ -411,19 +434,119 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
     return findModuleByName(binaryName);
 }
 
+CommandLineModuleInterface *
+CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
+{
+    // Check if we are directly invoking a certain module.
+    CommandLineModuleInterface *module = singleModule_;
+    if (module == NULL)
+    {
+        // Also check for invokation through named symlinks.
+        CommandLineModuleMap::const_iterator moduleIter
+            = findModuleFromBinaryName(programInfo_);
+        if (moduleIter != modules_.end())
+        {
+            module = moduleIter->second.get();
+        }
+    }
+
+    bool bHelp      = false;
+    bool bVersion   = false;
+    bool bCopyright = false;
+    // TODO: Print the common options into the help.
+    // TODO: It would be nice to propagate at least the -quiet option to
+    // the modules so that they can also be quiet in response to this.
+    // TODO: Consider handling -h and related options here instead of in the
+    // modules (also -hidden needs to be transfered here to make that work).
+    // That would mean that with -h, all module-specific options would get
+    // ignored.  This means that the help output would not depend on the
+    // command line, but would always show the default values (making it
+    // possible to simplify it further), but also that mdrun -h could not be
+    // used for option validation in g_tune_pme.
+    Options options(NULL, NULL);
+    if (module == NULL)
+    {
+        options.addOption(BooleanOption("h").store(&bHelp));
+    }
+    options.addOption(BooleanOption("quiet").store(&bQuiet_));
+    options.addOption(BooleanOption("version").store(&bVersion));
+    options.addOption(BooleanOption("copyright").store(&bCopyright));
+
+    if (module == NULL)
+    {
+        // If not in single-module mode, process options to the wrapper binary.
+        // TODO: Ideally, this could be done by CommandLineParser.
+        int argcForWrapper = 1;
+        while (argcForWrapper < *argc && (*argv)[argcForWrapper][0] == '-')
+        {
+            ++argcForWrapper;
+        }
+        if (argcForWrapper > 1)
+        {
+            CommandLineParser(&options).parse(&argcForWrapper, *argv);
+        }
+        // If no action requested and there is a module specified, process it.
+        if (argcForWrapper < *argc && !bHelp && !bVersion && !bCopyright)
+        {
+            const char *moduleName = (*argv)[argcForWrapper];
+            CommandLineModuleMap::const_iterator moduleIter
+                = findModuleByName(moduleName);
+            if (moduleIter == modules_.end())
+            {
+                std::string message =
+                    formatString("'%s' is not a GROMACS command.", moduleName);
+                GMX_THROW(InvalidInputError(message));
+            }
+            module = moduleIter->second.get();
+            programInfo_.setDisplayName(
+                    programInfo_.realBinaryName() + "-" + moduleIter->first);
+            *argc -= argcForWrapper;
+            *argv += argcForWrapper;
+            // After this point, argc and argv are the same independent of
+            // which path is taken: (*argv)[0] is the module name.
+        }
+    }
+    else
+    {
+        // In single-module mode, recognize the common options also after the
+        // module name.
+        CommandLineParser(&options).skipUnknown(true).parse(argc, *argv);
+    }
+    options.finish();
+    binaryInfoSettings_.extendedInfo(bVersion);
+    binaryInfoSettings_.copyright(bCopyright);
+    if (bVersion || bCopyright)
+    {
+        bQuiet_      = false;
+        bStdOutInfo_ = true;
+        return NULL;
+    }
+    // If no module specified and no other action, show the help.
+    // Also explicitly specifying -h for the wrapper binary goes here.
+    if (module == NULL)
+    {
+        *argc = 1;
+        return helpModule_;
+    }
+    return module;
+}
+
 /********************************************************************
  * CommandLineModuleManager
  */
 
-CommandLineModuleManager::CommandLineModuleManager(const ProgramInfo &programInfo)
+CommandLineModuleManager::CommandLineModuleManager(ProgramInfo *programInfo)
     : impl_(new Impl(programInfo))
 {
-    impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
-    addModule(CommandLineModulePointer(impl_->helpModule_));
 }
 
 CommandLineModuleManager::~CommandLineModuleManager()
 {
+}
+
+void CommandLineModuleManager::setQuiet(bool bQuiet)
+{
+    impl_->bQuiet_ = bQuiet;
 }
 
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
@@ -438,31 +561,64 @@ void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
+    if (impl_->helpModule_ == NULL)
+    {
+        impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
+        addModule(CommandLineModulePointer(impl_->helpModule_));
+    }
     impl_->helpModule_->addTopic(move(topic));
 }
 
 int CommandLineModuleManager::run(int argc, char *argv[])
 {
-    int argOffset = 0;
-    CommandLineModuleMap::const_iterator module
-        = impl_->findModuleFromBinaryName(impl_->programInfo_);
-    if (module == impl_->modules_.end())
+    CommandLineModuleInterface *module;
+    try
     {
-        if (argc < 2)
+        module = impl_->processCommonOptions(&argc, &argv);
+    }
+    catch (const std::exception &)
+    {
+        if (!impl_->bQuiet_)
         {
-            impl_->helpModule_->printUsage();
-            return 2;
+            printBinaryInformation(stderr, impl_->programInfo_);
         }
-        module    = impl_->findModuleByName(argv[1]);
-        argOffset = 1;
+        throw;
     }
-    if (module == impl_->modules_.end())
+    if (!impl_->bQuiet_)
     {
-        fprintf(stderr, "Unknown command: '%s'\n\n", argv[1]);
-        impl_->helpModule_->printUsage();
-        return 2;
+        FILE *out = (impl_->bStdOutInfo_ ? stdout : stderr);
+        printBinaryInformation(out, impl_->programInfo_,
+                               impl_->binaryInfoSettings_);
+        fprintf(out, "\n");
     }
-    return module->second->run(argc - argOffset, argv + argOffset);
+    if (module == NULL)
+    {
+        return 0;
+    }
+    int rc = module->run(argc, argv);
+    if (!impl_->bQuiet_)
+    {
+        gmx_thanx(stderr);
+    }
+    return rc;
+}
+
+// static
+int CommandLineModuleManager::runAsMainSingleModule(
+        int argc, char *argv[], CommandLineModuleInterface *module)
+{
+    ProgramInfo &programInfo = ProgramInfo::init(argc, argv);
+    try
+    {
+       CommandLineModuleManager manager(&programInfo);
+       manager.impl_->singleModule_ = module;
+       return manager.run(argc, argv);
+    }
+    catch (const std::exception &ex)
+    {
+       printFatalErrorMessage(stderr, ex);
+       return 1;
+    }
 }
 
 } // namespace gmx

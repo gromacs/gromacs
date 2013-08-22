@@ -265,7 +265,7 @@ static void line(FILE *fp)
 }
 
 static void cluster_em_all(FILE *fp, int npdb, t_pdbfile *pdbf[],
-                           const char *pdbout, gmx_bool bFree, gmx_bool bRMSD, real cutoff)
+                           gmx_bool bFree, gmx_bool bRMSD, real cutoff)
 {
     int   i, j, k;
     int  *cndx, ncluster;
@@ -353,7 +353,6 @@ int gmx_anadock(int argc, char *argv[])
     };
     t_filenm        fnm[] = {
         { efPDB, "-f", NULL,       ffREAD  },
-        { efPDB, "-ox", "cluster", ffWRITE },
         { efXVG, "-od", "edocked", ffWRITE },
         { efXVG, "-of", "efree",   ffWRITE },
         { efLOG, "-g",  "anadock", ffWRITE }
@@ -388,13 +387,10 @@ int gmx_anadock(int argc, char *argv[])
     analyse_em_all(npdbf, pdbf, opt2fn("-od", NFILE, fnm), opt2fn("-of", NFILE, fnm),
                    oenv);
 
-    cluster_em_all(fp, npdbf, pdbf, opt2fn("-ox", NFILE, fnm),
-                   bFree, bRMS, cutoff);
+    cluster_em_all(fp, npdbf, pdbf, bFree, bRMS, cutoff);
 
-    thanx(fp);
+    gmx_thanx(fp);
     ffclose(fp);
-
-    thanx(stdout);
 
     return 0;
 }

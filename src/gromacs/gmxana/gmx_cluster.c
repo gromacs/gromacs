@@ -41,7 +41,6 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
@@ -771,7 +770,7 @@ rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
         }
         i++;
     }
-    while (read_next_x(oenv, status, &t, natom, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "Allocated %lu bytes for frames\n",
             (unsigned long) (max_nf*isize*sizeof(**xx)));
     fprintf(stderr, "Read %d frames from trajectory %s\n", i0, fn);
@@ -782,7 +781,7 @@ rvec **read_whole_trj(const char *fn, int isize, atom_id index[], int skip,
 }
 
 static int plot_clusters(int nf, real **mat, t_clusters *clust,
-                         int nlevels, int minstruct)
+                         int minstruct)
 {
     int  i, j, ncluster, ci;
     int *cl_id, *nstruct, *strind;
@@ -1553,7 +1552,7 @@ int gmx_cluster(int argc, char *argv[])
                       TRUE);
         if (bPBC)
         {
-            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, box);
+            gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
         }
 
         fprintf(stderr, "\nSelect group for least squares fit%s:\n",
@@ -1806,7 +1805,7 @@ int gmx_cluster(int argc, char *argv[])
     {
         if (minstruct > 1)
         {
-            ncluster = plot_clusters(nf, rms->mat, &clust, nlevels, minstruct);
+            ncluster = plot_clusters(nf, rms->mat, &clust, minstruct);
         }
         else
         {
@@ -1894,9 +1893,6 @@ int gmx_cluster(int argc, char *argv[])
         do_view(oenv, opt2fn_null("-ntr", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn_null("-clid", NFILE, fnm), "-nxy");
     }
-
-    /* Thank the user for her patience */
-    thanx(stderr);
 
     return 0;
 }

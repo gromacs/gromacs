@@ -2227,10 +2227,7 @@ int gmx_tune_pme(int argc, char *argv[])
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (launch only)" }
     };
 
-
 #define NFILE asize(fnm)
-
-    CopyRight(stderr, argv[0]);
 
     seconds = gettime();
 
@@ -2277,7 +2274,16 @@ int gmx_tune_pme(int argc, char *argv[])
     }
     else
     {
-        sprintf(bbuf, " -np %d ", nnodes);
+        /* This string will be used for MPI runs and will appear after the
+         * mpirun command. */
+        if (strcmp(procstring[0], "none") != 0)
+        {
+            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+        }
+        else
+        {
+            sprintf(bbuf, " ");
+        }
     }
 
     cmd_np = bbuf;

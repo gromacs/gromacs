@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -201,7 +200,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -255,7 +254,7 @@ void calc_electron_density(const char *fn, atom_id **index, int gnx[],
         }
         nr_frames++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     gmx_rmpbc_done(gpbc);
 
     /*********** done with status file **********/
@@ -322,7 +321,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
         snew((*slDensity)[i], *nslices);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -358,7 +357,7 @@ void calc_density(const char *fn, atom_id **index, int gnx[],
         }
         nr_frames++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     gmx_rmpbc_done(gpbc);
 
     /*********** done with status file **********/
@@ -554,6 +553,5 @@ int gmx_density(int argc, char *argv[])
                  bSymmetrize, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");  /* view xvgr file */
-    thanx(stderr);
     return 0;
 }

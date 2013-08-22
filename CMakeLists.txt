@@ -27,7 +27,7 @@ set(PROJECT_VERSION "5.0-dev")
 # git branch can be tested. Normally, this will be the version of the
 # last patch release. Comment the next line out for branches leading
 # to a major/minor release.
-set(REGRESSIONTEST_VERSION "4.6.1")
+set(REGRESSIONTEST_VERSION "4.6.2")
 set(CUSTOM_VERSION_STRING ""
     CACHE STRING "Custom version string (if empty, use hard-coded default)")
 mark_as_advanced(CUSTOM_VERSION_STRING)
@@ -127,10 +127,6 @@ mark_as_advanced(GMX_FAHCORE)
 # decide on GPU settings based on user-settings and GPU/CUDA detection
 include(gmxManageGPU)
 
-# TODO: move OpenMM to contrib
-option(GMX_OPENMM "Accelerated execution on GPUs through the OpenMM library (rerun cmake after changing to see relevant options)" OFF)
-mark_as_advanced(GMX_OPENMM)
-
 include(gmxDetectAcceleration)
 if(NOT DEFINED GMX_CPU_ACCELERATION)
     if(CMAKE_CROSSCOMPILING)
@@ -184,6 +180,11 @@ mark_as_advanced(GMX_CYCLE_SUBCOUNTERS)
 
 option(GMX_SKIP_DEFAULT_CFLAGS "Don't automatically add suggested/required Compiler flags." OFF)
 mark_as_advanced(GMX_SKIP_DEFAULT_CFLAGS)
+
+option(GMX_BUILD_FOR_COVERAGE
+       "Tune build for better code coverage metrics (e.g., disable asserts)"
+       OFF)
+mark_as_advanced(GMX_BUILD_FOR_COVERAGE)
 
 ######################################################################
 # Compiler tests
@@ -244,6 +245,11 @@ endif()
 include(gmxCFlags)
 gmx_c_flags()
 
+# This variable should be used for additional compiler flags which are not
+# generated in gmxCFlags nor are acceleration or MPI related.
+set(EXTRA_C_FLAGS "")
+set(EXTRA_CXX_FLAGS "")
+
 # gcc 4.4.x is buggy and crashes when compiling some files with O3 and OpenMP on.
 # Detect here whether applying a workaround is needed and will apply it later
 # on the affected files.
@@ -261,6 +267,18 @@ include(gmxDetectClang30)
 gmx_detect_clang_3_0(COMPILER_IS_CLANG_3_0)
 if(COMPILER_IS_CLANG_3_0)
     message(FATAL_ERROR "Your compiler is clang version 3.0, which is known to be buggy for GROMACS. Use a different compiler.")
+endif()
+
+# clang <=3.2 contains a bug that causes incorrect code to be generated for the
+# vfmaddps instruction and therefore the bug is triggered with AVX_128_FMA.
+# (see: http://llvm.org/bugs/show_bug.cgi?id=15040).
+# We can work around this by not using the integrated assembler (except on OS X
+# which has an outdated assembler that does not support AVX instructions).
+if (${CMAKE_C_COMPILER_ID} MATCHES "Clang" AND C_COMPILER_VERSION VERSION_LESS "3.3")
+    set(GMX_USE_CLANG_C_FMA_BUG_WORKAROUND TRUE)
+endif()
+if (${CMAKE_CXX_COMPILER_ID} MATCHES "Clang" AND CXX_COMPILER_VERSION VERSION_LESS "3.3")
+    set(GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND TRUE)
 endif()
 
 if (CMAKE_C_COMPILER_ID STREQUAL "PGI")
@@ -350,7 +368,6 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
-check_library_exists(m cbrt "" HAVE_CBRT)
 
 
 include(CheckTypeSize)
@@ -774,9 +791,6 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
 
     # Set the FMA4 flags (MSVC doesn't require any)
     if(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" AND NOT MSVC)
-        if (${CMAKE_COMPILER_ID} MATCHES "Clang")
-            message(FATAL_ERROR "Clang up to at least version 3.2 produces incorrect code for AVX_128_FMA. Sorry, but you will have to select a different compiler or acceleration.")
-        endif()
         GMX_TEST_CFLAG(GNU_FMA_CFLAG "-mfma4" ACCELERATION_C_FLAGS)
         if (NOT GNU_FMA_CFLAG)
             message(WARNING "No C FMA4 flag found. Consider a newer compiler, or try SSE4.1 (lower performance).")
@@ -824,6 +838,26 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "AVX_128_FMA" OR ${GMX_CPU_ACCELERATION}
         if (NOT ACCELERATION_QUIETLY)
           message(STATUS "Enabling 128-bit AVX Gromacs acceleration (with fused-multiply add), and it will help compiler optimization.")
         endif()
+
+        # We don't have the full compiler version string yet (BUILD_C_COMPILER),
+        # so we can't distinguish vanilla and Apple clang, but catering for AMD
+        # hackintoshes is not worth the effort.
+        if (APPLE AND (${CMAKE_C_COMPILER_ID} STREQUAL "Clang" OR
+                    ${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang"))
+            message(WARNING "Due to a known compiler bug, Clang up to version 3.2 (and Apple Clang up to version 4.1) produces incorrect code with AVX_128_FMA acceleration. As we can not work around this bug on OS X, you will have to select a different compiler or CPU acceleration.")
+        endif()
+
+        if (GMX_USE_CLANG_C_FMA_BUG_WORKAROUND)
+            # we assume that we have an external assembler that supports AVX
+            message(STATUS "Clang ${C_COMPILER_VERSION} detected, enabling FMA bug workaround")
+            set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -no-integrated-as")
+        endif()
+        if (GMX_USE_CLANG_CXX_FMA_BUG_WORKAROUND)
+            # we assume that we have an external assembler that supports AVX
+            message(STATUS "Clang ${CXX_COMPILER_VERSION} detected, enabling FMA bug workaround")
+            set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} -no-integrated-as")
+        endif()
+
     else()
         # If we are not doing AVX_128, it must be AVX_256...
         set(GMX_CPU_ACCELERATION_X86_AVX_256 1)
@@ -851,8 +885,8 @@ elseif(${GMX_CPU_ACCELERATION} STREQUAL "IBM_QPX")
     if (CMAKE_CXX_COMPILER_ID MATCHES "XL" AND CMAKE_CXX_COMPILER_LOADED)
         GMX_TEST_CXXFLAG(XLC_BLUEGENEQ_CXXFLAG "-qarch=qp -qtune=qp" ACCELERATION_CXX_FLAGS)
         try_compile(TEST_QPX ${CMAKE_BINARY_DIR}
-            "cmake/TestQPX.c"
-            COMPILE_DEFINITIONS "${ACCELERATION_CXX_FLAGS")
+            "${CMAKE_SOURCE_DIR}/cmake/TestQPX.c"
+            COMPILE_DEFINITIONS "${ACCELERATION_CXX_FLAGS}")
         if(NOT TEST_QPX)
             message(FATAL_ERROR "Cannot compile the requested IBM QPX intrinsics.")
         endif()
@@ -928,9 +962,10 @@ if(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
         message(WARNING "The FFTW library was compiled with --enable-avx to enable AVX SIMD instructions. That might sound like a good idea for your processor, but for FFTW versions up to 3.3.3, these are slower than the SSE/SSE2 SIMD instructions for the way GROMACS uses FFTs. Limitations in the way FFTW allows GROMACS to measure performance make it awkward for either GROMACS or FFTW to make the decision for you based on runtime performance. You should compile a different FFTW library with --enable-sse or --enable-sse2. If you have a more recent FFTW, you may like to compare the performance of GROMACS with FFTW libraries compiled with and without --enable-avx. However, the GROMACS developers do not really expect the FFTW AVX optimization to help, because the performance is limited by memory access, not computation.")
     endif()
 
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using external FFT library - FFTW3")
+    endif()
 elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
-    MESSAGE(STATUS "Using external FFT library - Intel MKL")
-
     # Intel 11 and up makes life somewhat easy if you just want to use
     # all their stuff. It's not easy if you only want some of their
     # stuff...
@@ -982,15 +1017,22 @@ elseif(${GMX_FFT_LIBRARY} STREQUAL "MKL")
     set(GMX_FFT_MKL 1)
     set(HAVE_LIBMKL 1)
 
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using external FFT library - Intel MKL")
+    endif()
+
 #elseif(${GMX_FFT_LIBRARY} STREQUAL "ACML")
 #    MESSAGE(STATUS "Using external FFT library - AMD core math library")
 #    set(GMX_FFT_ACML 1)
 elseif(${GMX_FFT_LIBRARY} STREQUAL "FFTPACK")
-    MESSAGE(STATUS "Using internal FFT library - fftpack")
     set(GMX_FFT_FFTPACK 1)
+    if(NOT "${GMX_FFT_LIBRARY}" STREQUAL "${GMX_FFT_LIBRARY_PREVIOUS_VALUE}")
+        MESSAGE(STATUS "Using internal FFT library - fftpack")
+    endif()
 else(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
     MESSAGE(FATAL_ERROR "Invalid FFT library setting: ${GMX_FFT_LIBRARY}. Choose one of: fftw3, mkl, fftpack")
 endif(${GMX_FFT_LIBRARY} STREQUAL "FFTW3")
+set(GMX_FFT_LIBRARY_PREVIOUS_VALUE ${GMX_FFT_LIBRARY} CACHE INTERNAL "Previous value for GMX_FFT_LIBRARY, so that we can detect when it changes.")
 
 # enable threaded fftw3 if we've found it 
 if(FFTW3_THREADS OR FFTW3F_THREADS)
@@ -1087,22 +1129,22 @@ if(GMX_FAHCORE)
   set(COREWRAP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../corewrap" CACHE STRING 
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
-  set_property(CACHE GMX_COOL_QUOTES VALUE OFF)
+  set_property(CACHE GMX_COOL_QUOTES PROPERTY VALUE OFF)
 endif(GMX_FAHCORE)
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)
-    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${CMAKE_C_FLAGS}")
-    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${CMAKE_CXX_FLAGS}")
+    set(CMAKE_C_FLAGS "${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${CMAKE_C_FLAGS}")
+    set(CMAKE_CXX_FLAGS "${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
     set(CMAKE_SHARED_LINKER_FLAGS "${MPI_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 else()
     message("Recommended flags which are not added because GMX_SKIP_DEFAULT_CFLAGS=yes:")
-    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${GMXC_CFLAGS}")
+    message("CMAKE_C_FLAGS: ${ACCELERATION_C_FLAGS} ${MPI_COMPILE_FLAGS} ${EXTRA_C_FLAGS} ${GMXC_CFLAGS}")
     message("CMAKE_C_FLAGS_RELEASE: ${GMXC_CFLAGS_RELEASE}")
     message("CMAKE_C_FLAGS_DEBUG: ${GMXC_CFLAGS_DEBUG}")
-    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${GMXC_CXXFLAGS}")
+    message("CMAKE_CXX_FLAGS: ${ACCELERATION_CXX_FLAGS} ${MPI_COMPILE_FLAGS} ${GMX_CXX11_FLAGS} ${EXTRA_CXX_FLAGS} ${GMXC_CXXFLAGS}")
     message("CMAKE_CXX_FLAGS_RELEASE: ${GMXC_CXXFLAGS_RELEASE}")
     message("CMAKE_CXX_FLAGS_DEBUG: ${GMXC_CXXFLAGS_DEBUG}")
     message("CMAKE_EXE_LINKER_FLAGS: ${FFT_LINKER_FLAGS} ${MPI_LINKER_FLAGS}")
@@ -1127,6 +1169,10 @@ get_compiler_info(C BUILD_C_COMPILER BUILD_CFLAGS)
 if (CMAKE_CXX_COMPILER_LOADED)
     get_compiler_info(CXX BUILD_CXX_COMPILER BUILD_CXXFLAGS)
 endif ()
+if(GMX_GPU)
+    get_cuda_compiler_info(CUDA_NVCC_COMPILER_INFO CUDA_NVCC_COMPILER_FLAGS)
+endif(GMX_GPU)
+
 
 ########################################################################
 # Specify install locations
@@ -1178,6 +1224,15 @@ else()
             COMPONENT development)
 endif()
 
+if (GMX_BUILD_FOR_COVERAGE)
+    # Code heavy with asserts makes conditional coverage close to useless metric,
+    # as by design most of the false branches are impossible to trigger in
+    # correctly functioning code.  And the benefit of testing those that could
+    # be triggered by using an API against its specification isn't usually
+    # worth the effort.
+    add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
+endif ()
+
 add_subdirectory(doxygen)
 add_subdirectory(share)
 add_subdirectory(src)
@@ -1212,7 +1267,7 @@ ADD_CUSTOM_TARGET(uninstall
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 #gmxtests target builds all binaries required for running gmxtest
-add_custom_target(gmxtests DEPENDS grompp mdrun pdb2gmx gmxcheck gmx links)
+add_custom_target(gmxtests DEPENDS mdrun gmx links)
 IF(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)

@@ -44,10 +44,12 @@
 #define GMX_TRAJECTORYANALYSIS_CMDLINERUNNER_H
 
 #include "../utility/common.h"
+#include "../utility/uniqueptr.h"
 
 namespace gmx
 {
 
+class CommandLineModuleManager;
 class HelpWriterContext;
 class TrajectoryAnalysisModule;
 
@@ -67,6 +69,48 @@ class TrajectoryAnalysisCommandLineRunner
 {
     public:
         /*! \brief
+         * Implements a main() method that runs a given module.
+         *
+         * \tparam ModuleType  Trajectory analysis module.
+         * \param  argc        \c argc passed to main().
+         * \param  argv        \c argv passed to main().
+         *
+         * This method abstracts away all the logic required to implement a
+         * main() method in user tools, allowing that to be changed without
+         * requiring changes to the tools themselves.
+         *
+         * \p ModuleType should be default-constructible and derive from
+         * TrajectoryAnalysisModule.
+         *
+         * Does not throw.  All exceptions are caught and handled internally.
+         */
+        template <class ModuleType>
+        static int runAsMain(int argc, char *argv[])
+        {
+            return runAsMain(argc, argv, &createModule<ModuleType>);
+        }
+        /*! \brief
+         * Registers a command-line module that runs a given module.
+         *
+         * \tparam ModuleType  Trajectory analysis module.
+         * \param  manager     Manager to register the module to.
+         * \param  name        Name of the module to register.
+         * \param  description One-line description for the module to register.
+         *
+         * \p ModuleType should be default-constructible and derive from
+         * TrajectoryAnalysisModule.
+         *
+         * \p name and \p descriptions must be string constants or otherwise
+         * stay valid for the duration of the program execution.
+         */
+        template <class ModuleType>
+        static void registerModule(CommandLineModuleManager *manager,
+                                   const char *name, const char *description)
+        {
+            registerModule(manager, name, description, &createModule<ModuleType>);
+        }
+
+        /*! \brief
          * Create a new runner with the provided module.
          *
          * \param  module  Analysis module to run using the runner.
@@ -78,18 +122,6 @@ class TrajectoryAnalysisCommandLineRunner
         TrajectoryAnalysisCommandLineRunner(TrajectoryAnalysisModule *module);
         ~TrajectoryAnalysisCommandLineRunner();
 
-        /*! \brief
-         * Sets whether the runner will print the copyright header.
-         *
-         * \param[in] bPrint  Whether to print the copyright header.
-         *
-         * By default, the copyright header is printed.
-         * This is used internally when executing the runner in a context where
-         * the copyright has already been printed at a higher level.
-         *
-         * Does not throw.
-         */
-        void setPrintCopyright(bool bPrint);
         /*! \brief
          * Sets the default debugging level for selections.
          *
@@ -117,6 +149,38 @@ class TrajectoryAnalysisCommandLineRunner
         void writeHelp(const HelpWriterContext &context);
 
     private:
+        //! Smart pointer type for managing a trajectory analysis module.
+        typedef gmx_unique_ptr<TrajectoryAnalysisModule>::type
+            TrajectoryAnalysisModulePointer;
+
+        /*! \brief
+         * Factory method type for creating a trajectory analysis module.
+         *
+         * This method allows the module creation to be postponed to be inside
+         * the try/catch block in runAsMain()/registerModule() implementation
+         * methods and still keep the implementation out of the header, making
+         * the ABI more stable.
+         */
+        typedef TrajectoryAnalysisModulePointer (*ModuleFactoryMethod)();
+        /*! \brief
+         * Creates a trajectory analysis module of a given type.
+         *
+         * \tparam ModuleType  Module to create.
+         */
+        template <class ModuleType>
+        static TrajectoryAnalysisModulePointer createModule()
+        {
+            return TrajectoryAnalysisModulePointer(new ModuleType());
+        }
+
+        //! Implements the template runAsMain() method.
+        static int runAsMain(int argc, char *argv[],
+                             ModuleFactoryMethod factory);
+        //! Implements the template registerModule() method.
+        static void registerModule(CommandLineModuleManager *manager,
+                                   const char *name, const char *description,
+                                   ModuleFactoryMethod factory);
+
         class Impl;
 
         PrivateImplPointer<Impl> impl_;

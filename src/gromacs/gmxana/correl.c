@@ -39,7 +39,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "gmx_fft.h"
+
+#include "gromacs/fft/fft.h"
 #include "smalloc.h"
 #include "correl.h"
 

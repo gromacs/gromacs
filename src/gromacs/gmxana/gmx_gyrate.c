@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -177,7 +176,7 @@ void calc_gyro_z(rvec x[], matrix box,
 int gmx_gyrate(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]g_gyrate[tt] computes the radius of gyration of a group of atoms",
+        "[TT]g_gyrate[tt] computes the radius of gyration of a molecule",
         "and the radii of gyration about the [IT]x[it]-, [IT]y[it]- and [IT]z[it]-axes,",
         "as a function of time. The atoms are explicitly mass weighted.[PAR]",
         "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
@@ -308,7 +307,7 @@ int gmx_gyrate(int argc, char *argv[])
     }
     if (nz == 0)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     do
     {
@@ -368,7 +367,7 @@ int gmx_gyrate(int argc, char *argv[])
         }
         j++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     if (nz == 0)
     {
@@ -388,8 +387,6 @@ int gmx_gyrate(int argc, char *argv[])
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

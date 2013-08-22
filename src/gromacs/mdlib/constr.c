@@ -446,7 +446,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
         {
             case (econqCoord):
                 bOK = bshakef(fplog, constr->shaked,
-                              homenr, md->invmass, constr->nblocks, constr->sblock,
+                              md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, xprime, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, v, vir != NULL, vir_r_m_dr,
@@ -454,7 +454,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
                 break;
             case (econqVeloc):
                 bOK = bshakef(fplog, constr->shaked,
-                              homenr, md->invmass, constr->nblocks, constr->sblock,
+                              md->invmass, constr->nblocks, constr->sblock,
                               idef, ir, x, min_proj, nrnb,
                               constr->lagr, lambda, dvdlambda,
                               invdt, NULL, vir != NULL, vir_r_m_dr,
@@ -546,7 +546,7 @@ gmx_bool constrain(FILE *fplog, gmx_bool bLog, gmx_bool bEner,
 
                     if (start_th >= 0 && end_th - start_th > 0)
                     {
-                        settle_proj(fplog, constr->settled, econq,
+                        settle_proj(constr->settled, econq,
                                     end_th-start_th,
                                     settle->iatoms+start_th*(1+NRAL(F_SETTLE)),
                                     pbc_null,
@@ -1094,8 +1094,7 @@ static void constr_recur(t_blocka *at2con,
     }
 }
 
-static real constr_r_max_moltype(FILE *fplog,
-                                 gmx_moltype_t *molt, t_iparams *iparams,
+static real constr_r_max_moltype(gmx_moltype_t *molt, t_iparams *iparams,
                                  t_inputrec *ir)
 {
     int      natoms, nflexcon, *path, at, count;
@@ -1172,7 +1171,7 @@ real constr_r_max(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir)
     for (mt = 0; mt < mtop->nmoltype; mt++)
     {
         rmax = max(rmax,
-                   constr_r_max_moltype(fplog, &mtop->moltype[mt],
+                   constr_r_max_moltype(&mtop->moltype[mt],
                                         mtop->ffparams.iparams, ir));
     }
 

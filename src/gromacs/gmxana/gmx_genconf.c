@@ -38,7 +38,6 @@
 
 #include "maths.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
@@ -312,7 +311,7 @@ int gmx_genconf(int argc, char *argv[])
                 }
                 if (bTRX)
                 {
-                    if (!read_next_x(oenv, status, &t, natoms, xx, boxx) &&
+                    if (!read_next_x(oenv, status, &t, xx, boxx) &&
                         ((i+1)*(j+1)*(k+1) < vol))
                     {
                         gmx_fatal(FARGS, "Not enough frames in trajectory");
@@ -369,8 +368,6 @@ int gmx_genconf(int argc, char *argv[])
     }
 
     write_sto_conf(opt2fn("-o", NFILE, fnm), title, atoms, x, v, ePBC, box);
-
-    thanx(stderr);
 
     return 0;
 }

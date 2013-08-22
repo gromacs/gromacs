@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -126,7 +125,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -206,7 +205,7 @@ void calc_h2order(const char *fn, atom_id index[], int ngx, rvec **slDipole,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");
@@ -332,7 +331,6 @@ int gmx_h2order(int argc, char *argv[])
                  slWidth, oenv);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy"); /* view xvgr file */
-    thanx(stderr);
 
     return 0;
 }

@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -214,11 +213,11 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
         distance2;        /* same for second of two atoms */
     t_trxstatus *status;
     int          natoms, teller = 0;
-    rvec        *x0;       /* coordinates, and coordinates corrected for pb */
+    rvec        *x0;                                            /* coordinates, and coordinates corrected for pb */
     matrix       box;
-    char         buf[256]; /* for xvgr title */
-    gmx_rmpbc_t  gpbc = NULL;
-    const char*  aleg[2] = { "cos(Angle)", "Angle (degrees)" };     /* legends for sg_angle output file */
+    char         buf[256];                                      /* for xvgr title */
+    gmx_rmpbc_t  gpbc    = NULL;
+    const char*  aleg[2] = { "cos(Angle)", "Angle (degrees)" }; /* legends for sg_angle output file */
 
     if ((natoms = read_first_x(oenv, &status, fn, &t, &x0, box)) == 0)
     {
@@ -247,7 +246,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
         sg_distance2 = xvgropen(d2file, buf, "Time (ps", "Distance (nm)", oenv);
     }
 
-    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms);
 
     do
     {
@@ -273,7 +272,7 @@ void sgangle_plot(const char *fn, const char *afile, const char *dfile,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -450,7 +449,7 @@ void sgangle_plot_single(const char *fn, const char *afile, const char *dfile,
     }
 
     snew(xzero, natoms);
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     do
     {
@@ -485,7 +484,7 @@ void sgangle_plot_single(const char *fn, const char *afile, const char *dfile,
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     gmx_rmpbc_done(gpbc);
 
     fprintf(stderr, "\n");
@@ -606,6 +605,5 @@ int gmx_sgangle(int argc, char *argv[])
     do_view(oenv, fnd1, "-nxy"); /* view xvgr file */
     do_view(oenv, fnd2, "-nxy"); /* view xvgr file */
 
-    thanx(stderr);
     return 0;
 }

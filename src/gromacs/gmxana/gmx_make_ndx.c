@@ -47,7 +47,6 @@
 #include "string2.h"
 #include "statutil.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "index.h"
 #include "smalloc.h"
@@ -113,7 +112,7 @@ static int or_groups(atom_id nr1, atom_id *at1, atom_id nr2, atom_id *at2,
             }
         }
 
-        printf("Merged two groups with OR: %u %u -> %u\n", nr1, nr2, *nr);
+        printf("Merged two groups with OR: %d %d -> %d\n", nr1, nr2, *nr);
     }
 
     return *nr;
@@ -137,7 +136,7 @@ static int and_groups(atom_id nr1, atom_id *at1, atom_id nr2, atom_id *at2,
         }
     }
 
-    printf("Merged two groups with AND: %u %u -> %u\n", nr1, nr2, *nr);
+    printf("Merged two groups with AND: %d %d -> %d\n", nr1, nr2, *nr);
 
     return *nr;
 }
@@ -316,14 +315,14 @@ static int select_atomnumbers(char **string, t_atoms *atoms, atom_id n1,
                 index[*nr] = i;
                 (*nr)++;
             }
-            printf("Found %u atom%s in range %u-%d\n", *nr, (*nr == 1) ? "" : "s", n1, up);
+            printf("Found %d atom%s in range %d-%d\n", *nr, (*nr == 1) ? "" : "s", n1, up);
             if (n1 == up)
             {
-                sprintf(buf, "a_%u", n1);
+                sprintf(buf, "a_%d", n1);
             }
             else
             {
-                sprintf(buf, "a_%u-%d", n1, up);
+                sprintf(buf, "a_%d-%d", n1, up);
             }
             strcpy(gname, buf);
         }
@@ -389,15 +388,15 @@ static int select_residuenumbers(char **string, t_atoms *atoms,
                 }
             }
         }
-        printf("Found %u atom%s with res.nr. in range %u-%d\n",
+        printf("Found %d atom%s with res.nr. in range %d-%d\n",
                *nr, (*nr == 1) ? "" : "s", n1, up);
         if (n1 == up)
         {
-            sprintf(buf, "r_%u", n1);
+            sprintf(buf, "r_%d", n1);
         }
         else
         {
-            sprintf(buf, "r_%u-%d", n1, up);
+            sprintf(buf, "r_%d-%d", n1, up);
         }
         strcpy(gname, buf);
     }
@@ -464,15 +463,15 @@ static int select_residueindices(char **string, t_atoms *atoms,
                 }
             }
         }
-        printf("Found %u atom%s with resind.+1 in range %u-%d\n",
+        printf("Found %d atom%s with resind.+1 in range %d-%d\n",
                *nr, (*nr == 1) ? "" : "s", n1, up);
         if (n1 == up)
         {
-            sprintf(buf, "r_%u", n1);
+            sprintf(buf, "r_%d", n1);
         }
         else
         {
-            sprintf(buf, "r_%u-%d", n1, up);
+            sprintf(buf, "r_%d-%d", n1, up);
         }
         strcpy(gname, buf);
     }
@@ -532,7 +531,7 @@ static gmx_bool atoms_from_residuenumbers(t_atoms *atoms, int group, t_blocka *b
             }
         }
     }
-    printf("Found %u atom%s in %d residues from group %s\n",
+    printf("Found %d atom%s in %d residues from group %s\n",
            *nr, (*nr == 1) ? "" : "s", j1-j0, gname);
     return *nr;
 }
@@ -595,7 +594,7 @@ static int select_chainnames(t_atoms *atoms, int n_names, char **names,
             (*nr)++;
         }
     }
-    printf("Found %u atom%s with chain identifier%s",
+    printf("Found %d atom%s with chain identifier%s",
            *nr, (*nr == 1) ? "" : "s", (n_names == 1) ? "" : "s");
     for (j = 0; (j < n_names); j++)
     {
@@ -635,7 +634,7 @@ static int select_atomnames(t_atoms *atoms, int n_names, char **names,
             (*nr)++;
         }
     }
-    printf("Found %u atoms with %s%s",
+    printf("Found %d atoms with %s%s",
            *nr, bType ? "type" : "name", (n_names == 1) ? "" : "s");
     for (j = 0; (j < n_names); j++)
     {
@@ -668,7 +667,7 @@ static int select_residuenames(t_atoms *atoms, int n_names, char **names,
             (*nr)++;
         }
     }
-    printf("Found %u atoms with residue name%s", *nr, (n_names == 1) ? "" : "s");
+    printf("Found %d atoms with residue name%s", *nr, (n_names == 1) ? "" : "s");
     for (j = 0; (j < n_names); j++)
     {
         printf(" %s", names[j]);
@@ -789,7 +788,7 @@ static void split_group(t_atoms *atoms, int sel_nr, t_blocka *block, char ***gn,
             srenew(*gn, block->nr);
             if (bAtom)
             {
-                sprintf(buf, "%s_%s_%u", (*gn)[sel_nr], *atoms->atomname[a], a+1);
+                sprintf(buf, "%s_%s_%d", (*gn)[sel_nr], *atoms->atomname[a], a+1);
             }
             else
             {
@@ -869,7 +868,7 @@ static int split_chain(t_atoms *atoms, rvec *x,
     }
     for (j = 0; j < nchain; j++)
     {
-        printf("%d:%6u atoms (%u to %u)\n",
+        printf("%d:%6d atoms (%d to %d)\n",
                j+1, end[j]-start[j]+1, start[j]+1, end[j]+1);
     }
 
@@ -1096,7 +1095,7 @@ static gmx_bool parse_entry(char **string, int natoms, t_atoms *atoms,
             gname[i] = gname[i-1];
         }
         gname[0] = '!';
-        printf("Complemented group: %u atoms\n", *nr);
+        printf("Complemented group: %d atoms\n", *nr);
     }
 
     return bRet;
@@ -1194,7 +1193,7 @@ static void edit_index(int natoms, t_atoms *atoms, rvec *x, t_blocka *block, cha
             }
             for (i = i0; i < i1; i++)
             {
-                printf("%3d %-20s: %5u atoms\n", i, (*gn)[i],
+                printf("%3d %-20s: %5d atoms\n", i, (*gn)[i],
                        block->index[i+1]-block->index[i]);
             }
             newgroup = NOTSET;
@@ -1623,8 +1622,6 @@ int gmx_make_ndx(int argc, char *argv[])
     edit_index(natoms, atoms, x, block, &gnames, bVerbose);
 
     write_index(ndxoutfile, block, gnames);
-
-    thanx(stderr);
 
     return 0;
 }

@@ -41,6 +41,7 @@
  */
 #include "selection.h"
 
+#include "nbsearch.h"
 #include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
@@ -50,6 +51,10 @@ namespace gmx
 
 namespace internal
 {
+
+/********************************************************************
+ * SelectionData
+ */
 
 SelectionData::SelectionData(SelectionTreeElement *elem,
                              const char           *selstr)
@@ -166,6 +171,13 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
 }       // namespace
 
 void
+SelectionData::refreshName()
+{
+    rootElement_.fillNameIfMissing(selectionText_.c_str());
+    name_ = rootElement_.name();
+}
+
+void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
 {
     GMX_ASSERT(posMass_.empty() && posCharge_.empty(),
@@ -230,6 +242,16 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
 }
 
 }   // namespace internal
+
+/********************************************************************
+ * Selection
+ */
+
+Selection::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(data().rawPositions_.x,
+                                         data().rawPositions_.nr);
+}
 
 
 void
@@ -316,6 +338,18 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
         }
     }
     fprintf(fp, "\n");
+}
+
+
+/********************************************************************
+ * SelectionPosition
+ */
+
+SelectionPosition::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
+                                         sel_->rawPositions_.nr)
+               .selectSingleFromArray(i_);
 }
 
 } // namespace gmx

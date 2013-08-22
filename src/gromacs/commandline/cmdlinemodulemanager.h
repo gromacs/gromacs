@@ -62,12 +62,10 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  *
  * Typical usage:
  * \code
-   int
-   main(int argc, char *argv[])
+   int main(int argc, char *argv[])
    {
        const gmx::ProgramInfo &programInfo =
            gmx::ProgramInfo::init("gmx", argc, argv);
-       CopyRight(stderr, argv[0]);
        try
        {
            gmx::CommandLineModuleManager manager(programInfo);
@@ -89,16 +87,64 @@ class CommandLineModuleManager
 {
     public:
         /*! \brief
+         * Implements a main() method that runs a single module.
+         *
+         * \param argc   \c argc passed to main().
+         * \param argv   \c argv passed to main().
+         * \param module Module to run.
+         *
+         * This method allows for uniform behavior for binaries that only
+         * contain a single module without duplicating any of the
+         * implementation from CommandLineModuleManager (startup headers,
+         * common options etc.).
+         *
+         * The signature assumes that \p module construction does not throw
+         * (because otherwise the caller would need to duplicate all the
+         * exception handling code).  It is possible to move the construction
+         * inside the try/catch in this method using an indirection similar to
+         * TrajectoryAnalysisCommandLineRunner::runAsMain(), but until that is
+         * necessary, the current approach leads to simpler code.
+         *
+         * Usage:
+         * \code
+           int main(int argc, char *argv[])
+           {
+               CustomCommandLineModule module;
+               return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+           }
+         * \endcode
+         *
+         * Does not throw.  All exceptions are caught and handled internally.
+         */
+        static int runAsMainSingleModule(int argc, char *argv[],
+                                         CommandLineModuleInterface *module);
+
+        /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param[in] programInfo  Program information for the running binary.
+         * \param     programInfo  Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
          * The binary name is used to detect when the binary is run through a
          * symlink, and automatically invoke a matching module in such a case.
+         *
+         * \p programInfo is non-const to allow the manager to amend it based
+         * on the actual module that is getting executed.
          */
-        explicit CommandLineModuleManager(const ProgramInfo &programInfo);
+        explicit CommandLineModuleManager(ProgramInfo *programInfo);
         ~CommandLineModuleManager();
+
+        /*! \brief
+         * Sets the module manager to quiet mode: don't print anything.
+         *
+         * \param[in] bQuiet  Whether the module manager should remain silent.
+         *
+         * Normally, the module manager prints out some information to stderr
+         * before it starts the module and after it finishes.  This removes
+         * that output, which is useful in particular for unit tests so that
+         * they don't spam stderr.
+         */
+        void setQuiet(bool bQuiet);
 
         /*! \brief
          * Adds a given module to this manager.

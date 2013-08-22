@@ -49,7 +49,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -162,7 +161,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
     }
 
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     /*********** Start processing trajectory ***********/
     do
@@ -222,7 +221,7 @@ void calc_potential(const char *fn, atom_id **index, int gnx[],
         }
         nr_frames++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -495,6 +494,5 @@ int gmx_potential(int argc, char *argv[])
     do_view(oenv, opt2fn("-oc", NFILE, fnm), NULL); /* view xvgr file */
     do_view(oenv, opt2fn("-of", NFILE, fnm), NULL); /* view xvgr file */
 
-    thanx(stderr);
     return 0;
 }

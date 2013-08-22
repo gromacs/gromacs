@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -62,13 +62,18 @@ class AnalysisDataParallelOptions;
 
 class AnalysisDataStorage;
 
+namespace internal
+{
+class AnalysisDataStorageFrameData;
+}   // namespace internal
+
 /*! \libinternal \brief
- * Stores a single data frame for AnalysisDataStorage.
+ * Allows assigning values for a data frame in AnalysisDataStorage.
  *
- * It also provides access to the frame outside AnalysisDataStorage.
- *
- * It is implemented such that the frame header is always valid, i.e.,
- * header().isValid() returns always true.
+ * This class implements the necessary methods to add new data into the
+ * storage.  AnalysisDataStorage::startFrame() returns an object of this type,
+ * which can be used to add one or more point sets to that data frame.
+ * When all data has been added, finishFrame() needs to be called.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -82,23 +87,24 @@ class AnalysisDataStorageFrame
          */
         ~AnalysisDataStorageFrame();
 
-        //! Returns header for the frame.
-        const AnalysisDataFrameHeader &header() const { return header_; }
-        //! Returns zero-based index of the frame.
-        int frameIndex() const { return header().index(); }
-        //! Returns x coordinate for the frame.
-        real x() const { return header().x(); }
-        //! Returns error in x coordinate for the frame if applicable.
-        real dx() const { return header().dx(); }
-        //! Returns number of columns for the frame.
-        int columnCount() const { return values_.size(); }
-
         /*! \brief
-         * Returns point set reference to currently set values.
+         * Select data set that all other methods operate on.
+         *
+         * \param[in] index  Zero-based data set index to select.
+         *
+         * With multipoint data, a single point set can only contain values in
+         * a single data set.
+         * With non-multipoint data, arbitrary sequences of selectDataSet() and
+         * setValue() are supported.  The full frame is notified to the modules
+         * once it is finished.
          *
          * Does not throw.
          */
-        AnalysisDataPointSetRef currentPoints() const;
+        void selectDataSet(int index);
+
+        //! Returns number of columns for the frame.
+        int columnCount() const { return columnCount_; }
+
         /*! \brief
          * Sets value for a column.
          *
@@ -115,7 +121,8 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[column].setValue(value, bPresent);
+            values_[currentOffset_ + column].setValue(value, bPresent);
+            bPointSetInProgress_ = true;
         }
         /*! \brief
          * Sets value for a column.
@@ -134,7 +141,8 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            values_[column].setValue(value, error, bPresent);
+            values_[currentOffset_ + column].setValue(value, error, bPresent);
+            bPointSetInProgress_ = true;
         }
         /*! \brief
          * Access value for a column.
@@ -151,7 +159,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[column].value();
+            return values_[currentOffset_ + column].value();
         }
         /*! \brief
          * Access value for a column.
@@ -167,7 +175,7 @@ class AnalysisDataStorageFrame
         {
             GMX_ASSERT(column >= 0 && column < columnCount(),
                        "Invalid column index");
-            return values_[column].value();
+            return values_[currentOffset_ + column].value();
         }
         /*! \brief
          * Mark point set as finished for multipoint data.
@@ -183,33 +191,50 @@ class AnalysisDataStorageFrame
          * exception this method throws.
          */
         void finishPointSet();
+        /*! \brief
+         * Finish storing a frame.
+         *
+         * Must be called exactly once for each frame returned by startFrame(),
+         * after the corresponding call.
+         * The frame object must not be accessed after the call.
+         *
+         * Calls notification methods in AbstractAnalysisData, and throws any
+         * exceptions these methods throw.
+         */
+        void finishFrame();
 
     private:
+
         /*! \brief
          * Create a new storage frame.
          *
-         * \param     storage      Storage object this frame belongs to.
-         * \param[in] columnCount  Number of columns for the frame.
-         * \param[in] index        Zero-based index for the frame.
+         * \param[in] data  Data object for which the frame is for
+         *      (used for data set and column counts).
          */
-        AnalysisDataStorageFrame(AnalysisDataStorage *storage, int columnCount,
-                                 int index);
+        explicit AnalysisDataStorageFrame(const AbstractAnalysisData &data);
 
         //! Clear all column values from the frame.
         void clearValues();
 
-        //! Storage object that contains this frame.
-        AnalysisDataStorage           &storage_;
-        //! Header for the frame.
-        AnalysisDataFrameHeader        header_;
-        //! Values for the frame.
-        std::vector<AnalysisDataValue> values_;
+        //! Implementation data.
+        internal::AnalysisDataStorageFrameData *data_;
+        //! Values for the currently in-progress point set.
+        std::vector<AnalysisDataValue>          values_;
 
-        /*! \brief
-         * Needed for full write access to the data and for access to
-         * constructor/destructor.
-         */
+        //! Index of the currently active dataset.
+        int                                     currentDataSet_;
+        //! Offset of the first value in \a values_ for the current data set.
+        int                                     currentOffset_;
+        //! Number of columns in the current data set.
+        int                                     columnCount_;
+
+        //! Whether any values have been set in the current point set.
+        bool                                    bPointSetInProgress_;
+
+        //! Needed for access to the constructor.
         friend class AnalysisDataStorage;
+        //! Needed for managing the frame the object points to.
+        friend class internal::AnalysisDataStorageFrameData;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(AnalysisDataStorageFrame);
 };
@@ -232,11 +257,6 @@ class AnalysisDataStorageFrame
  * AbstractAnalysisData::notifyFrameFinish() appropriately.
  *
  * \todo
- * Full support for multipoint data.
- * Currently, multipoint data is only supported in serial pass-through mode
- * without any storage.
- *
- * \todo
  * Proper multi-threaded implementation.
  *
  * \inlibraryapi
@@ -249,18 +269,6 @@ class AnalysisDataStorage
         AnalysisDataStorage();
         ~AnalysisDataStorage();
 
-        /*! \brief
-         * Sets whether the data will be multipoint.
-         *
-         * \exception APIError if storage has been requested.
-         *
-         * It is not mandatory to call this method (the multipoint property is
-         * automatically detected in startDataStorage()), but currently calling
-         * it will produce better diagnostic messages.
-         * When full support for multipoint data has been implemented, this
-         * method can be removed.
-         */
-        void setMultipoint(bool bMultipoint);
         /*! \brief
          * Set parallelization options for the storage.
          *
@@ -293,9 +301,6 @@ class AnalysisDataStorage
          * AbstractAnalysisData::requestStorageInternal() can be directly
          * forwarded to this method.  See that method for more documentation.
          *
-         * Currently, multipoint data cannot be stored, but all other storage
-         * request will be honored.
-         *
          * \see AbstractAnalysisData::requestStorageInternal()
          */
         bool requestStorage(int nframes);
@@ -305,8 +310,6 @@ class AnalysisDataStorage
          *
          * \param  data  AbstractAnalysisData object containing this storage.
          * \exception std::bad_alloc if storage allocation fails.
-         * \exception APIError if storage has been requested and \p data is
-         *      multipoint.
          *
          * Lifetime of \p data must exceed the lifetime of the storage object
          * (typically, the storage object will be a member in \p data).
@@ -368,39 +371,23 @@ class AnalysisDataStorage
          */
         AnalysisDataStorageFrame &currentFrame(int index);
         /*! \brief
-         * Finish storing a frame.
+         * Convenience method for finishing a data frame.
          *
          * \param[in] index  Frame index.
          *
-         * Must be called exactly once for each startFrame(), after the
-         * corresponding call.
+         * Identical to \c currentFrame(index).finishFrame().
          *
-         * Calls notification methods in AbstractAnalysisData, and throws any
-         * exceptions these methods throw.
+         * \see AnalysisDataStorageFrame::finishFrame()
          */
         void finishFrame(int index);
-        /*! \brief
-         * Convenience method for finishing a data frame.
-         *
-         * \param[in] frame  Frame object to finish.
-         *
-         * \p frame should have been previously obtained from startFrame() or
-         * currentFrame().  The \p frame reference is no longer valid after the
-         * call.
-         *
-         * Identical to \c finishframe(frame.frameIndex());
-         */
-        void finishFrame(const AnalysisDataStorageFrame &frame);
 
     private:
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
 
-        /*! \brief
-         * Needed because the frame object needs to trigger notifications.
-         */
-        friend void AnalysisDataStorageFrame::finishPointSet();
+        //! Needed because the frame needs to access the implementation class.
+        friend class internal::AnalysisDataStorageFrameData;
 };
 
 } // namespace gmx

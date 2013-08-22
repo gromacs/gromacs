@@ -252,11 +252,10 @@ cmd_plain:   /* empty */
                  BEGIN_ACTION;
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_id($1, scanner);
-                 if (!s) YYERROR;
                  SelectionTreeElementPointer p
                         = _gmx_sel_init_position(s, NULL, scanner);
                  if (!p) YYERROR;
-                 set($$, _gmx_sel_init_selection(s->name().c_str(), p, scanner));
+                 set($$, _gmx_sel_init_selection(NULL, p, scanner));
                  END_ACTION;
              }
            | string
@@ -265,11 +264,10 @@ cmd_plain:   /* empty */
                  scoped_ptr_sfree nameGuard($1);
                  SelectionTreeElementPointer s
                         = _gmx_sel_init_group_by_name($1, scanner);
-                 if (!s) YYERROR;
                  SelectionTreeElementPointer p
                         = _gmx_sel_init_position(s, NULL, scanner);
                  if (!p) YYERROR;
-                 set($$, _gmx_sel_init_selection(s->name().c_str(), p, scanner));
+                 set($$, _gmx_sel_init_selection(NULL, p, scanner));
                  END_ACTION;
              }
            | selection
@@ -433,14 +431,12 @@ sel_expr:    GROUP string
                  BEGIN_ACTION;
                  scoped_ptr_sfree nameGuard($2);
                  set($$, _gmx_sel_init_group_by_name($2, scanner));
-                 CHECK_SEL($$);
                  END_ACTION;
              }
            | GROUP TOK_INT
              {
                  BEGIN_ACTION;
                  set($$, _gmx_sel_init_group_by_id($2, scanner));
-                 CHECK_SEL($$);
                  END_ACTION;
              }
 ;

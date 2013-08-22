@@ -37,8 +37,6 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
@@ -50,14 +48,10 @@
 int
 main(int argc, char *argv[])
 {
-    const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("gmx", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    CopyRight(stderr, argv[0]);
+    gmx::ProgramInfo &info = gmx::ProgramInfo::init("gmx", argc, argv);
     try
     {
-        gmx::CommandLineModuleManager manager(info);
+        gmx::CommandLineModuleManager manager(&info);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());

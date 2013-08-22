@@ -108,7 +108,5 @@ int gmx_saxs(int argc, char *argv[])
 
     please_cite(stdout, "Cromer1968a");
 
-    thanx(stderr);
-
     return 0;
 }

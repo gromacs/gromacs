@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,6 +50,9 @@
 
 namespace gmx
 {
+
+class Options;
+
 namespace test
 {
 
@@ -105,17 +108,13 @@ std::string getReferenceDataPath();
 /*! \libinternal \brief
  * Initializes reference data handling.
  *
- * Sets the reference data mode based on command-line arguments.  By default,
- * ::erefdataCompare is used, but \c --create-ref-data or \c --update-ref-data
- * can be used to change it.
- * Recognized command-line arguments are removed from the list.
- *
- * Does not throw.  Terminates the program with a non-zero error code if an
- * error occurs.
+ * Adds command-line options to \p options to set the reference data mode.
+ * By default, ::erefdataCompare is used, but \c "--ref-data create" or
+ * \c "--ref-data update" can be used to change it.
  *
  * This function is automatically called by initTestUtils().
  */
-void initReferenceData(int *argc, char **argv);
+void initReferenceData(Options *options);
 
 
 class TestReferenceChecker;
@@ -150,7 +149,7 @@ class TestReferenceChecker;
        checker.checkInteger(functionToTest(3), "ValueWith3");
        checker.checkInteger(functionToTest(5), "ValueWith5");
        gmx::test::TestReferenceChecker compound(
-               checker.startCompound("CustomCompound", "Item"));
+               checker.checkCompound("CustomCompound", "Item"));
        compound.checkInteger(function2ToTest(3), "ValueWith3");
        compound.checkInteger(function2ToTest(5), "ValueWith5");
        checker.checkInteger(functionToTest(4), "ValueWith4");

@@ -39,7 +39,6 @@
 #include <math.h>
 
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "fitahx.h"
 #include "futil.h"
@@ -261,8 +260,8 @@ int gmx_helix(int argc, char *argv[])
     snew(xref, top->atoms.nr);
     read_tpx(ftp2fn(efTPX, NFILE, fnm),
              NULL, NULL, &natoms, xref, NULL, NULL, NULL);
-    calc_hxprops(nres, bb, xref, box);
-    do_start_end(nres, bb, xref, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
+    calc_hxprops(nres, bb, xref);
+    do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, bRange, rStart, rEnd);
     sfree(xref);
     if (bDBG)
     {
@@ -270,7 +269,7 @@ int gmx_helix(int argc, char *argv[])
         pr_bb(stdout, nres, bb);
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     snew(xav, natoms);
     teller = 0;
@@ -283,15 +282,15 @@ int gmx_helix(int argc, char *argv[])
         gmx_rmpbc(gpbc, natoms, box, x);
 
 
-        calc_hxprops(nres, bb, x, box);
+        calc_hxprops(nres, bb, x);
         if (bCheck)
         {
-            do_start_end(nres, bb, x, &nbb, bbindex, &nca, caindex, FALSE, 0, 0);
+            do_start_end(nres, bb, &nbb, bbindex, &nca, caindex, FALSE, 0, 0);
         }
 
         if (nca >= 5)
         {
-            rms = fit_ahx(nres, bb, natoms, nall, allindex, x, nca, caindex, box, bFit);
+            rms = fit_ahx(nres, bb, natoms, nall, allindex, x, nca, caindex, bFit);
 
             if (teller == 1)
             {
@@ -300,13 +299,13 @@ int gmx_helix(int argc, char *argv[])
             }
 
             xf[efhRAD].val   = radius(xf[efhRAD].fp2, nca, caindex, x);
-            xf[efhTWIST].val = twist(xf[efhTWIST].fp2, nca, caindex, x);
+            xf[efhTWIST].val = twist(nca, caindex, x);
             xf[efhRISE].val  = rise(nca, caindex, x);
-            xf[efhLEN].val   = ahx_len(nca, caindex, x, box);
+            xf[efhLEN].val   = ahx_len(nca, caindex, x);
             xf[efhCD222].val = ellipticity(nres, bb);
             xf[efhDIP].val   = dip(nbb, bbindex, x, top->atoms.atom);
             xf[efhRMS].val   = rms;
-            xf[efhCPHI].val  = ca_phi(nca, caindex, x, box);
+            xf[efhCPHI].val  = ca_phi(nca, caindex, x);
             xf[efhPPRMS].val = pprms(xf[efhPPRMS].fp2, nres, bb);
 
             for (j = 0; (j <= efhCPHI); j++)
@@ -327,7 +326,7 @@ int gmx_helix(int argc, char *argv[])
             }
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     gmx_rmpbc_done(gpbc);
@@ -371,8 +370,6 @@ int gmx_helix(int argc, char *argv[])
         }
         do_view(oenv, xf[i].filenm, "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

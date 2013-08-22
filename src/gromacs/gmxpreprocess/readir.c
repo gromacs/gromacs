@@ -100,6 +100,13 @@ enum {
                         * make a rest group for the remaining particles.    */
 };
 
+static const char *constraints[eshNR+1]    = {
+    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL
+};
+
+static const char *couple_lam[ecouplamNR+1]    = {
+    "vdw-q", "vdw", "q", "none", NULL
+};
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
@@ -1671,7 +1678,7 @@ void get_ir(const char *mdparin, const char *mdparout,
     t_lambda   *fep    = ir->fepvals;
     t_expanded *expand = ir->expandedvals;
 
-    inp = read_inpfile(mdparin, &ninp, NULL, wi);
+    inp = read_inpfile(mdparin, &ninp, wi);
 
     snew(dumstr[0], STRLEN);
     snew(dumstr[1], STRLEN);
@@ -2733,7 +2740,7 @@ static void calc_nrdf(gmx_mtop_t *mtop, t_inputrec *ir, char **gnames)
     sfree(na_vcm);
 }
 
-static void decode_cos(char *s, t_cosines *cosine, gmx_bool bTime)
+static void decode_cos(char *s, t_cosines *cosine)
 {
     char   *t;
     char    format[STRLEN], f1[STRLEN];
@@ -3385,12 +3392,12 @@ void do_index(const char* mdparin, const char *ndx,
         gmx_fatal(FARGS, "Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
     }
 
-    decode_cos(efield_x, &(ir->ex[XX]), FALSE);
-    decode_cos(efield_xt, &(ir->et[XX]), TRUE);
-    decode_cos(efield_y, &(ir->ex[YY]), FALSE);
-    decode_cos(efield_yt, &(ir->et[YY]), TRUE);
-    decode_cos(efield_z, &(ir->ex[ZZ]), FALSE);
-    decode_cos(efield_zt, &(ir->et[ZZ]), TRUE);
+    decode_cos(efield_x, &(ir->ex[XX]));
+    decode_cos(efield_xt, &(ir->et[XX]));
+    decode_cos(efield_y, &(ir->ex[YY]));
+    decode_cos(efield_yt, &(ir->et[YY]));
+    decode_cos(efield_z, &(ir->ex[ZZ]));
+    decode_cos(efield_zt, &(ir->et[ZZ]));
 
     if (ir->bAdress)
     {

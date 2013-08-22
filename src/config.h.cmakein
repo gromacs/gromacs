@@ -151,6 +151,9 @@
 /* Use (modified) Mopac 7 for QM-MM calculations */
 #cmakedefine GMX_QMMM_MOPAC
 
+/* Use ORCA for QM-MM calculations */
+#cmakedefine GMX_QMMM_ORCA
+
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
@@ -228,9 +231,6 @@
 
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
-
-/* Define to 1 if you have the cbrt() function. */
-#cmakedefine HAVE_CBRT
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE

@@ -462,7 +462,7 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
         gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
     }
     if (bReset)
@@ -712,7 +712,7 @@ int gmx_rms(int argc, char *argv[])
             }
         }
     }
-    while (read_next_x(oenv, status, &t, natoms_trx, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     if (bFile2)
@@ -780,7 +780,7 @@ int gmx_rms(int argc, char *argv[])
                 srenew(time2, maxframe2);
             }
         }
-        while (read_next_x(oenv, status, &t, natoms_trx2, x, box));
+        while (read_next_x(oenv, status, &t, x, box));
         close_trj(status);
     }
     else
@@ -1214,8 +1214,6 @@ int gmx_rms(int argc, char *argv[])
     do_view(oenv, opt2fn_null("-m", NFILE, fnm), NULL);
     do_view(oenv, opt2fn_null("-bm", NFILE, fnm), NULL);
     do_view(oenv, opt2fn_null("-dist", NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

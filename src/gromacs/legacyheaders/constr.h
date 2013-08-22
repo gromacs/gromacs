@@ -65,8 +65,7 @@ gmx_shakedata_t shake_init();
 /* Initializes and return the SHAKE data structure */
 
 gmx_bool bshakef(FILE           *log,          /* Log file			*/
-                 gmx_shakedata_t shaked,       /* SHAKE data */
-                 int             natoms,       /* Total number of atoms	*/
+                 gmx_shakedata_t shaked,       /* Total number of atoms	*/
                  real            invmass[],    /* Atomic masses		*/
                  int             nblocks,      /* The number of shake blocks	*/
                  int             sblock[],     /* The shake blocks             */
@@ -112,8 +111,7 @@ void csettle(gmx_settledata_t settled,
              t_vetavars      *vetavar           /* variables for pressure control */
              );
 
-void settle_proj(FILE *fp,
-                 gmx_settledata_t settled, int econq,
+void settle_proj(gmx_settledata_t settled, int econq,
                  int nsettle, t_iatom iatoms[],
                  const t_pbc *pbc,   /* PBC data pointer, can be NULL  */
                  rvec x[],

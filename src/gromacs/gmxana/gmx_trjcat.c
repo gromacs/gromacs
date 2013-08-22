@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "copyrite.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
@@ -897,7 +896,6 @@ int gmx_trjcat(int argc, char *argv[])
         fprintf(stderr, "\nLast frame written was %d, time %f %s\n",
                 frame, output_env_conv_time(oenv, last_ok_t), output_env_get_time_unit(oenv));
     }
-    thanx(stderr);
 
     return 0;
 }

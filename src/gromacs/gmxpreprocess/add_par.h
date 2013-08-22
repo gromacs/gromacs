@@ -39,6 +39,11 @@
 #include "typedefs.h"
 #include "pdb2top.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern void add_param(t_params *ps, int ai, int aj, real *c, char *s);
 
 extern void add_imp_param(t_params *ps, int ai, int aj, int ak, int al,
@@ -64,5 +69,9 @@ extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
                              int am);
 
 extern int search_jtype(t_restp *rp, char *name, gmx_bool bFirstRes);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _add_par_h */

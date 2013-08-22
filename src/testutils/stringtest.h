@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -69,9 +69,6 @@ namespace test
 class StringTestBase : public ::testing::Test
 {
     public:
-        //! Static fixture setup to parse command-line options.
-        static void SetUpTestCase();
-
         StringTestBase();
         ~StringTestBase();
 
@@ -102,8 +99,6 @@ class StringTestBase : public ::testing::Test
         void checkFileContents(const std::string &filename, const char *id);
 
     private:
-        static bool                             s_bWriteToStdOut;
-
         TestReferenceData                       data_;
         boost::scoped_ptr<TestReferenceChecker> checker_;
 };

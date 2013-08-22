@@ -233,7 +233,7 @@ setup_aadata(gmx_allvsall_data_t **  p_aadata,
 
 
 void
-nb_kernel_allvsallgb(t_nblist *                nlist,
+nb_kernel_allvsallgb(t_nblist gmx_unused *     nlist,
                      rvec *                    xx,
                      rvec *                    ff,
                      t_forcerec *              fr,

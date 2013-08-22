@@ -182,7 +182,7 @@ void cshake(atom_id iatom[], int ncon, int *nnit, int maxnit,
 }
 
 int vec_shakef(FILE *fplog, gmx_shakedata_t shaked,
-               int natoms, real invmass[], int ncon,
+               real invmass[], int ncon,
                t_iparams ip[], t_iatom *iatom,
                real tol, rvec x[], rvec prime[], real omega,
                gmx_bool bFEP, real lambda, real lagr[],
@@ -378,7 +378,7 @@ static void check_cons(FILE *log, int nc, rvec x[], rvec prime[], rvec v[],
 }
 
 gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
-                 int natoms, real invmass[], int nblocks, int sblock[],
+                 real invmass[], int nblocks, int sblock[],
                  t_idef *idef, t_inputrec *ir, rvec x_s[], rvec prime[],
                  t_nrnb *nrnb, real *lagr, real lambda, real *dvdlambda,
                  real invdt, rvec *v, gmx_bool bCalcVir, tensor vir_r_m_dr,
@@ -406,7 +406,7 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     {
         blen  = (sblock[i+1]-sblock[i]);
         blen /= 3;
-        n0    = vec_shakef(log, shaked, natoms, invmass, blen, idef->iparams,
+        n0    = vec_shakef(log, shaked, invmass, blen, idef->iparams,
                            iatoms, ir->shake_tol, x_s, prime, shaked->omega,
                            ir->efep != efepNO, lambda, lam, invdt, v, bCalcVir, vir_r_m_dr,
                            econq, vetavar);
@@ -436,13 +436,28 @@ gmx_bool bshakef(FILE *log, gmx_shakedata_t shaked,
     {
         if (ir->efep != efepNO)
         {
+            real bondA, bondB;
             dt_2 = 1/sqr(ir->delta_t);
             dvdl = 0;
             for (i = 0; i < ncons; i++)
             {
                 type  = idef->il[F_CONSTR].iatoms[3*i];
-                dvdl += lagr[i]*dt_2*
-                    (idef->iparams[type].constr.dB-idef->iparams[type].constr.dA);
+
+                /* dh/dl contribution from constraint force is  dh/dr (constraint force) dot dr/dl */
+                /* constraint force is -\sum_i lagr_i* d(constraint)/dr, with constrant = r^2-d^2  */
+                /* constraint force is -\sum_i lagr_i* 2 r  */
+                /* so dh/dl = -\sum_i lagr_i* 2 r * dr/dl */
+                /* However, by comparison with lincs and with
+                   comparison with a full thermodynamics cycle (see
+                   redmine issue #1255), this is off by a factor of
+                   two -- the 2r should apparently just be r.  Further
+                   investigation should be done at some point to
+                   understand why and see if there is something deeper
+                   we are missing */
+
+                bondA = idef->iparams[type].constr.dA;
+                bondB = idef->iparams[type].constr.dB;
+                dvdl += lagr[i] * dt_2 * ((1.0-lambda)*bondA + lambda*bondB) * (bondB-bondA);
             }
             *dvdlambda += dvdl;
         }

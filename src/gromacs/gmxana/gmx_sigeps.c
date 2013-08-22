@@ -43,7 +43,6 @@
 #include <math.h>
 #include "typedefs.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "pdbio.h"
@@ -63,7 +62,7 @@ real pot(real x, real qq, real c6, real cn, int npow)
     return cn*pow(x, -npow)-c6*pow(x, -6)+qq*ONE_4PI_EPS0/x;
 }
 
-real bhpot(real x, real qq, real A, real B, real C)
+real bhpot(real x, real A, real B, real C)
 {
     return A*exp(-B*x) - C*pow(x, -6.0);
 }
@@ -174,7 +173,7 @@ int gmx_sigeps(int argc, char *argv[])
         x        = sigfac*sig+sig*i*0.02;
         dp[next] = dpot(x, qq, c6, cn, npow);
         fprintf(fp, "%10g  %10g  %10g\n", x, pot(x, qq, c6, cn, npow),
-                bhpot(x, qq, Abh, Bbh, Cbh));
+                bhpot(x, Abh, Bbh, Cbh));
         if (qq != 0)
         {
             if ((i > 0) && (dp[cur]*dp[next] < 0))
@@ -192,8 +191,6 @@ int gmx_sigeps(int argc, char *argv[])
     ffclose(fp);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

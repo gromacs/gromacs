@@ -40,7 +40,6 @@
 #include "sysstuff.h"
 #include "statutil.h"
 #include <string.h>
-#include "copyrite.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "confio.h"
@@ -250,8 +249,6 @@ int gmx_genpr(int argc, char *argv[])
         sfree(x);
         sfree(v);
     }
-
-    thanx(stderr);
 
     return 0;
 }

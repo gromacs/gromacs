@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -41,12 +41,13 @@
  */
 #include "cmdlineparser.h"
 
-#include <cctype>
+#include <cstdlib>
 
 #include <string>
 #include <vector>
 
 #include "gromacs/options/optionsassigner.h"
+#include "gromacs/utility/common.h"
 #include "gromacs/utility/exceptions.h"
 
 namespace gmx
@@ -67,15 +68,50 @@ class CommandLineParser::Impl
         //! Sets the options object to parse to.
         explicit Impl(Options *options);
 
+        /*! \brief
+         * Determines whether a cmdline parameter starts an option and the name
+         * of that option.
+         *
+         * \param[in] arg  Individual argument from \c argv.
+         * \returns The beginning of the option name in \p arg, or NULL if
+         *     \p arg does not look like an option.
+         */
+        const char *toOptionName(const char *arg) const;
+
         //! Helper object for assigning the options.
         OptionsAssigner         assigner_;
+        //! Whether to allow and skip unknown options.
+        bool                    bSkipUnknown_;
 };
 
 CommandLineParser::Impl::Impl(Options *options)
-    : assigner_(options)
+    : assigner_(options), bSkipUnknown_(false)
 {
     assigner_.setAcceptBooleanNoPrefix(true);
     assigner_.setNoStrictSectioning(true);
+}
+
+const char *CommandLineParser::Impl::toOptionName(const char *arg) const
+{
+    // Lone '-' or '--' is not an option.
+    if (arg[0] != '-' || arg[1] == '\0' || (arg[1] == '-' && arg[2] == '\0'))
+    {
+        return NULL;
+    }
+    // Something starting with '--' is always an option.
+    if (arg[1] == '-')
+    {
+        return arg + 2;
+    }
+    // Don't return numbers as option names.
+    char *endptr;
+    // We are only interested in endptr, not in the actual value.
+    GMX_IGNORE_RETURN_VALUE(std::strtod(arg, &endptr));
+    if (*endptr == '\0')
+    {
+        return NULL;
+    }
+    return arg + 1;
 }
 
 /********************************************************************
@@ -91,31 +127,27 @@ CommandLineParser::~CommandLineParser()
 {
 }
 
-void CommandLineParser::parse(int *argc, char *argv[])
+CommandLineParser &CommandLineParser::skipUnknown(bool bEnabled)
 {
-    std::vector<std::string> commandLine;
-    for (int i = 0; i < *argc; ++i)
-    {
-        commandLine.push_back(argv[i]);
-    }
-    parse(&commandLine);
+    impl_->bSkipUnknown_ = bEnabled;
+    return *this;
 }
 
-void CommandLineParser::parse(std::vector<std::string> *commandLine)
+void CommandLineParser::parse(int *argc, char *argv[])
 {
     ExceptionInitializer errors("Invalid command-line options");
     std::string          currentContext;
-    // Start in the discard phase to skip options that can't be understood.
-    bool                 bDiscard = true;
+    bool                 bInOption = false;
 
     impl_->assigner_.start();
-    std::vector<std::string>::const_iterator arg;
-    for (arg = commandLine->begin() + 1; arg != commandLine->end(); ++arg)
+    int newi = 1;
+    for (int i = 1; i != *argc; ++i)
     {
-        // Lone '-' and numbers are passed as values.
-        if ((*arg)[0] == '-' && std::isalpha((*arg)[1]))
+        const char *const arg        = argv[i];
+        const char *const optionName = impl_->toOptionName(arg);
+        if (optionName != NULL)
         {
-            if (!bDiscard)
+            if (bInOption)
             {
                 try
                 {
@@ -126,28 +158,40 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                     ex.prependContext(currentContext);
                     errors.addCurrentExceptionAsNested();
                 }
-                currentContext.clear();
             }
-            currentContext = "In command-line option " + *arg;
-            bDiscard       = false;
+            currentContext = "In command-line option " + std::string(arg);
             try
             {
-                const char *name = arg->c_str() + 1;
-                impl_->assigner_.startOption(name);
+                bInOption = impl_->assigner_.tryStartOption(optionName);
+                if (!bInOption)
+                {
+                    currentContext.clear();
+                    if (!impl_->bSkipUnknown_)
+                    {
+                        std::string message =
+                            "Unknown command-line option " + std::string(arg);
+                        GMX_THROW(InvalidInputError(message));
+                    }
+                }
             }
             catch (UserInputError &ex)
             {
-                bDiscard = true;
+                // If tryStartOption() throws, make sure that the rest gets
+                // ignored.
+                // TODO: Consider whether we should remove the option from the
+                // command line nonetheless, as it is recognized, but just
+                // invalid.
+                bInOption = false;
                 ex.prependContext(currentContext);
                 errors.addCurrentExceptionAsNested();
                 currentContext.clear();
             }
         }
-        else if (!bDiscard)
+        else if (bInOption)
         {
             try
             {
-                impl_->assigner_.appendValue(*arg);
+                impl_->assigner_.appendValue(arg);
             }
             catch (UserInputError &ex)
             {
@@ -155,8 +199,20 @@ void CommandLineParser::parse(std::vector<std::string> *commandLine)
                 errors.addCurrentExceptionAsNested();
             }
         }
+        // Remove recognized options if applicable.
+        if (!bInOption && impl_->bSkipUnknown_)
+        {
+            argv[newi] = argv[i];
+            ++newi;
+        }
     }
-    if (!bDiscard)
+    // Update the argc count if argv was modified.
+    if (impl_->bSkipUnknown_)
+    {
+        *argc = newi;
+    }
+    // Finish the last option.
+    if (bInOption)
     {
         try
         {

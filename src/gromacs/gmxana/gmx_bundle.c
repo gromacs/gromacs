@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -347,7 +346,7 @@ int gmx_bundle(int argc, char *argv[])
     }
 
     read_first_frame(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &fr, TRX_NEED_X);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, fr.box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
 
     do
     {
@@ -435,8 +434,6 @@ int gmx_bundle(int argc, char *argv[])
         ffclose(fkinkr);
         ffclose(fkinkl);
     }
-
-    thanx(stderr);
 
     return 0;
 }

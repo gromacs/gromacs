@@ -42,6 +42,11 @@
 #include "toputil.h"
 #include "hackblock.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* this *MUST* correspond to array in pdb2top.c */
 enum {
     ehisA, ehisB, ehisH, ehis1, ehisNR
@@ -86,9 +91,9 @@ void match_atomnames_with_rtp(t_restp restp[], t_hackblock hb[],
  * add these atoms to restp.
  */
 
-void print_top_comment(FILE *out, const char *filename, const char *generator, const char *ffdir, gmx_bool bITP);
+void print_top_comment(FILE *out, const char *filename, const char *ffdir, gmx_bool bITP);
 
-void print_top_header(FILE *out, const char *filename, const char *title, gmx_bool bITP,
+void print_top_header(FILE *out, const char *filename, gmx_bool bITP,
                       const char *ffdir, real mHmult);
 
 void print_top_mols(FILE *out,
@@ -108,10 +113,9 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              gpp_atomtype_t atype, t_symtab *tab,
              int nrtp, t_restp rtp[],
              t_restp *restp, t_hackblock *hb,
-             int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
              gmx_bool bAllowMissing,
              gmx_bool bVsites, gmx_bool bVsiteAromatics,
-             const char *ff, const char *ffdir,
+             const char *ffdir,
              real mHmult,
              int nssbonds, t_ssbond ssbonds[],
              real long_bond_dist, real short_bond_dist,
@@ -121,5 +125,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 
 void print_sums(t_atoms *atoms, gmx_bool bSystem);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _pdb2top_h */

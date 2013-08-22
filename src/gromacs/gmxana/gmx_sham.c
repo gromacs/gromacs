@@ -44,7 +44,6 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "readinp.h"
 #include "statutil.h"
@@ -419,7 +418,7 @@ static void do_sham(const char *fn, const char *ndx,
                     real Tref,
                     real pmax, real gmax,
                     real *emin, real *emax, int nlevels, real pmin,
-                    const char *mname, gmx_bool bSham, int *idim, int *ibox,
+                    const char *mname, int *idim, int *ibox,
                     gmx_bool bXmin, real *xmin, gmx_bool bXmax, real *xmax)
 {
     FILE        *fp;
@@ -966,7 +965,7 @@ int gmx_sham(int argc, char *argv[])
         "is the natural quantity to use, as it will produce bins of the same",
         "volume."
     };
-    static real        tb        = -1, te = -1, frac = 0.5, filtlen = 0, binwidth = 0.1;
+    static real        tb        = -1, te = -1, frac = 0.5, filtlen = 0;
     static gmx_bool    bHaveT    = TRUE, bDer = FALSE, bSubAv = TRUE, bAverCorr = FALSE, bXYdy = FALSE;
     static gmx_bool    bEESEF    = FALSE, bEENLC = FALSE, bEeFitAc = FALSE, bPower = FALSE;
     static gmx_bool    bShamEner = TRUE, bSham = TRUE;
@@ -989,8 +988,6 @@ int gmx_sham(int argc, char *argv[])
           "Read this number of sets separated by lines containing only an ampersand" },
         { "-d",       FALSE, etBOOL, {&bDer},
           "Use the derivative" },
-        { "-bw",      FALSE, etREAL, {&binwidth},
-          "Binwidth for the distribution" },
         { "-sham",    FALSE, etBOOL, {&bSham},
           "Turn off energy weighting even if energies are given" },
         { "-tsham",   FALSE, etREAL, {&Tref},
@@ -1165,11 +1162,9 @@ int gmx_sham(int argc, char *argv[])
             opt2parg_bSet("-emin", NPA, pa) ? &emin : NULL,
             opt2parg_bSet("-emax", NPA, pa) ? &emax : NULL,
             nlevels, pmin,
-            mname, bSham, idim, ibox,
+            mname, idim, ibox,
             opt2parg_bSet("-xmin", NPA, pa), rmin,
             opt2parg_bSet("-xmax", NPA, pa), rmax);
-
-    thanx(stderr);
 
     return 0;
 }

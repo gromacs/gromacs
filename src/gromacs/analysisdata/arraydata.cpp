@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -51,7 +51,8 @@ namespace gmx
 {
 
 AbstractAnalysisArrayData::AbstractAnalysisArrayData()
-    : rowCount_(0), xstart_(0.0), xstep_(1.0), bReady_(false)
+    : rowCount_(0), pointSetInfo_(0, 0, 0, 0), xstart_(0.0), xstep_(1.0),
+      bReady_(false)
 {
 }
 
@@ -71,7 +72,8 @@ AbstractAnalysisArrayData::tryGetDataFrameInternal(int index) const
         = value_.begin() + index * columnCount();
     return AnalysisDataFrameRef(
             AnalysisDataFrameHeader(index, xvalue(index), 0.0),
-            AnalysisDataValuesRef(begin, begin + columnCount()));
+            AnalysisDataValuesRef(begin, begin + columnCount()),
+            AnalysisDataPointSetInfosRef(&pointSetInfo_, 1));
 }
 
 
@@ -87,7 +89,8 @@ AbstractAnalysisArrayData::setColumnCount(int ncols)
 {
     GMX_RELEASE_ASSERT(!isAllocated(),
                        "Cannot change column count after data has been allocated");
-    AbstractAnalysisData::setColumnCount(ncols);
+    AbstractAnalysisData::setColumnCount(0, ncols);
+    pointSetInfo_ = AnalysisDataPointSetInfo(0, ncols, 0, 0);
 }
 
 
@@ -141,9 +144,11 @@ AbstractAnalysisArrayData::valuesReady()
     {
         AnalysisDataFrameHeader header(i, xvalue(i), 0);
         notifyFrameStart(header);
-        notifyPointsAdd(AnalysisDataPointSetRef(header, 0,
-                                                AnalysisDataValuesRef(valueIter,
-                                                                      valueIter + columnCount())));
+        notifyPointsAdd(
+                AnalysisDataPointSetRef(
+                        header, pointSetInfo_,
+                        AnalysisDataValuesRef(valueIter,
+                                              valueIter + columnCount())));
         notifyFrameFinish(header);
     }
     notifyDataFinish();

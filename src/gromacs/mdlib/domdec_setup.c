@@ -99,9 +99,7 @@ static gmx_bool fits_pme_ratio(int nnodes, int npme, float ratio)
     return ((double)npme/(double)nnodes > 0.95*ratio);
 }
 
-static gmx_bool fits_pp_pme_perf(FILE *fplog,
-                                 t_inputrec *ir, matrix box, gmx_mtop_t *mtop,
-                                 int nnodes, int npme, float ratio)
+static gmx_bool fits_pp_pme_perf(int nnodes, int npme, float ratio)
 {
     int ndiv, *div, *mdiv, ldiv;
     int npp_root3, npme_root2;
@@ -179,7 +177,7 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
             /* Note that fits_perf might change the PME grid,
              * in the current implementation it does not.
              */
-            if (fits_pp_pme_perf(fplog, ir, box, mtop, nnodes, npme, ratio))
+            if (fits_pp_pme_perf(nnodes, npme, ratio))
             {
                 break;
             }
@@ -193,7 +191,7 @@ static int guess_npme(FILE *fplog, gmx_mtop_t *mtop, t_inputrec *ir, matrix box,
         while (npme <= nnodes/2)
         {
             /* Note that fits_perf may change the PME grid */
-            if (fits_pp_pme_perf(fplog, ir, box, mtop, nnodes, npme, ratio))
+            if (fits_pp_pme_perf(nnodes, npme, ratio))
             {
                 break;
             }
@@ -290,7 +288,7 @@ static float comm_pme_cost_vol(int npme, int a, int b, int c)
     return comm_vol;
 }
 
-static float comm_cost_est(gmx_domdec_t *dd, real limit, real cutoff,
+static float comm_cost_est(real limit, real cutoff,
                            matrix box, gmx_ddbox_t *ddbox,
                            int natoms, t_inputrec *ir,
                            float pbcdxr,
@@ -492,10 +490,10 @@ static void assign_factors(gmx_domdec_t *dd,
 
     if (ndiv == 0)
     {
-        ce = comm_cost_est(dd, limit, cutoff, box, ddbox,
+        ce = comm_cost_est(limit, cutoff, box, ddbox,
                            natoms, ir, pbcdxr, npme, ir_try);
         if (ce >= 0 && (opt[XX] == 0 ||
-                        ce < comm_cost_est(dd, limit, cutoff, box, ddbox,
+                        ce < comm_cost_est(limit, cutoff, box, ddbox,
                                            natoms, ir, pbcdxr,
                                            npme, opt)))
         {
@@ -549,7 +547,7 @@ static real optimize_ncells(FILE *fplog,
                             t_inputrec *ir,
                             gmx_domdec_t *dd,
                             real cellsize_limit, real cutoff,
-                            gmx_bool bInterCGBondeds, gmx_bool bInterCGMultiBody,
+                            gmx_bool bInterCGBondeds,
                             ivec nc)
 {
     int      npp, npme, ndiv, *div, *mdiv, d, nmax;
@@ -663,7 +661,7 @@ real dd_choose_grid(FILE *fplog,
                     gmx_mtop_t *mtop, matrix box, gmx_ddbox_t *ddbox,
                     gmx_bool bDynLoadBal, real dlb_scale,
                     real cellsize_limit, real cutoff_dd,
-                    gmx_bool bInterCGBondeds, gmx_bool bInterCGMultiBody)
+                    gmx_bool bInterCGBondeds)
 {
     gmx_large_int_t nnodes_div, ldiv;
     real            limit;
@@ -744,7 +742,7 @@ real dd_choose_grid(FILE *fplog,
                                 bDynLoadBal, dlb_scale,
                                 mtop, box, ddbox, ir, dd,
                                 cellsize_limit, cutoff_dd,
-                                bInterCGBondeds, bInterCGMultiBody,
+                                bInterCGBondeds,
                                 dd->nc);
     }
     else

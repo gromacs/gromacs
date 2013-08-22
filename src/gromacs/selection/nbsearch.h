@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -33,121 +33,477 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 /*! \file
- * \brief API for neighborhood searching.
+ * \brief API for neighborhood searching for analysis.
  *
- * The API is documented in more detail on a separate page:
- * \ref nbsearch
+ * The main part of the API is the class gmx::AnalysisNeighborhood.
+ * See the class documentation for usage.
  *
- * The functions within this file can be used independently of the other parts
+ * The classes within this file can be used independently of the other parts
  * of the library.
- * The library also uses the functions internally.
+ * The library also uses the classes internally.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \inpublicapi
  * \ingroup module_selection
  */
 #ifndef GMX_SELECTION_NBSEARCH_H
 #define GMX_SELECTION_NBSEARCH_H
 
+#include <boost/shared_ptr.hpp>
+
 #include "../legacyheaders/typedefs.h"
+#include "../utility/common.h"
+#include "../utility/gmxassert.h"
 
 #include "indexutil.h"
 
 struct gmx_ana_pos_t;
 
-/** Data structure for neighborhood searches. */
-typedef struct gmx_ana_nbsearch_t gmx_ana_nbsearch_t;
-
-/** Create a new neighborhood search data structure. */
-gmx_ana_nbsearch_t *
-gmx_ana_nbsearch_create(real cutoff, int maxn);
-/** Free memory allocated for neighborhood search. */
-void
-gmx_ana_nbsearch_free(gmx_ana_nbsearch_t *d);
-
-/** Initializes neighborhood search for a new frame. */
-void
-gmx_ana_nbsearch_init(gmx_ana_nbsearch_t *d, t_pbc *pbc, int n, const rvec x[]);
-/** Initializes neighborhood search for a frame using \c gmx_ana_pos_t.  */
-void
-gmx_ana_nbsearch_pos_init(gmx_ana_nbsearch_t *d, t_pbc *pbc,
-                          const struct gmx_ana_pos_t *p);
-/** Sets the exclusions for the next neighborhood search. */
-void
-gmx_ana_nbsearch_set_excl(gmx_ana_nbsearch_t *d, int nexcl, int excl[]);
-/** Check whether a point is within a neighborhood. */
-bool
-gmx_ana_nbsearch_is_within(gmx_ana_nbsearch_t *d, const rvec x);
-/** Check whether a position is within a neighborhood. */
-bool
-gmx_ana_nbsearch_pos_is_within(gmx_ana_nbsearch_t *d,
-                               const struct gmx_ana_pos_t *p, int i);
-/** Calculates the minimun distance from the reference points. */
-real
-gmx_ana_nbsearch_mindist(gmx_ana_nbsearch_t *d, const rvec x);
-/** Calculates the minimun distance from the reference points. */
-real
-gmx_ana_nbsearch_pos_mindist(gmx_ana_nbsearch_t *d,
-                             const struct gmx_ana_pos_t *p, int i);
-/** Finds the first reference position within the cutoff. */
-bool
-gmx_ana_nbsearch_first_within(gmx_ana_nbsearch_t *d, const rvec x, int *jp);
-/** Finds the first reference position within the cutoff. */
-bool
-gmx_ana_nbsearch_pos_first_within(gmx_ana_nbsearch_t *d,
-                                  const struct gmx_ana_pos_t *p, int i, int *jp);
-/** Finds the next reference position within the cutoff. */
-bool
-gmx_ana_nbsearch_next_within(gmx_ana_nbsearch_t *d, int *jp);
-
 namespace gmx
 {
 
-/*
- * C++ wrapper for neighborhood searching.
+namespace internal
+{
+class AnalysisNeighborhoodSearchImpl;
+class AnalysisNeighborhoodPairSearchImpl;
+};
+
+class AnalysisNeighborhoodSearch;
+class AnalysisNeighborhoodPairSearch;
+
+/*! \brief
+ * Input positions for neighborhood searching.
  *
+ * This class supports uniformly specifying sets of positions for various
+ * methods in the analysis neighborhood searching classes
+ * (AnalysisNeighborhood and AnalysisNeighborhoodSearch).
+ *
+ * Note that copies are not made: only a reference to the positions passed to
+ * the constructors are kept.  The caller is responsible to ensure that those
+ * positions remain in scope as long as the neighborhood search object requires
+ * access to them.
+ *
+ * Also note that in addition to constructors here, Selection and
+ * SelectionPosition provide conversions operators to this type.  It is done
+ * this way to not introduce a cyclic dependency between the selection code and
+ * the neighborhood search code, which in turn allows splitting this search
+ * code into a separate lower-level module if desired at some point.
+ *
+ * Methods in this class do not throw.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
  */
-class NeighborhoodSearch
+class AnalysisNeighborhoodPositions
 {
     public:
-        NeighborhoodSearch(real cutoff, int maxn)
-            : d_(gmx_ana_nbsearch_create(cutoff, maxn))
+        /*! \brief
+         * Initializes positions from a single position vector.
+         *
+         * For positions initialized this way, AnalysisNeighborhoodPair always
+         * returns zero in the corresponding index.
+         *
+         * This constructor is not explicit to allow directly passing an rvec
+         * to methods that accept positions.
+         */
+        AnalysisNeighborhoodPositions(const rvec &x)
+            : count_(1), index_(-1), x_(&x)
         {
         }
-        ~NeighborhoodSearch() { gmx_ana_nbsearch_free(d_); }
+        /*! \brief
+         * Initializes positions from an array of position vectors.
+         */
+        AnalysisNeighborhoodPositions(const rvec x[], int count)
+            : count_(count), index_(-1), x_(x)
+        {
+        }
 
-        void init(t_pbc *pbc, int n, const rvec x[])
-        { gmx_ana_nbsearch_init(d_, pbc, n, x); }
-
-        void init(t_pbc *pbc, const gmx_ana_pos_t *p)
-        { gmx_ana_nbsearch_pos_init(d_, pbc, p); }
-
-        void setExclusions(int nexcl, atom_id *excl)
-        { gmx_ana_nbsearch_set_excl(d_, nexcl, excl); }
-
-
-        bool isWithin(const rvec x)
-        { return gmx_ana_nbsearch_is_within(d_, x); }
-
-        bool isWithin(const gmx_ana_pos_t *p, int i)
-        { return gmx_ana_nbsearch_pos_is_within(d_, p, i); }
-
-        real minimumDistance(const rvec x)
-        { return gmx_ana_nbsearch_mindist(d_, x); }
-
-        real minimumDistance(const gmx_ana_pos_t *p, int i)
-        { return gmx_ana_nbsearch_pos_mindist(d_, p, i); }
-
-        bool firstWithin(const rvec x, int *jp)
-        { return gmx_ana_nbsearch_first_within(d_, x, jp); }
-
-        bool firstWithin(const gmx_ana_pos_t *p, int i, int *jp)
-        { return gmx_ana_nbsearch_pos_first_within(d_, p, i, jp); }
-
-        bool nextWithin(int *jp)
-        { return gmx_ana_nbsearch_next_within(d_, jp); }
+        /*! \brief
+         * Selects a single position to use from an array.
+         *
+         * If called, a single position from the array of positions passed to
+         * the constructor is used instead of the whole array.
+         * In contrast to the AnalysisNeighborhoodPositions(const rvec &)
+         * constructor, AnalysisNeighborhoodPair objects return \p index
+         * instead of zero.
+         */
+        AnalysisNeighborhoodPositions &selectSingleFromArray(int index)
+        {
+            GMX_ASSERT(index >= 0 && index < count_, "Invalid position index");
+            index_ = index;
+            return *this;
+        }
 
     private:
-        gmx_ana_nbsearch_t  *d_;
+        int                     count_;
+        int                     index_;
+        const rvec             *x_;
+
+        //! To access the positions for initialization.
+        friend class internal::AnalysisNeighborhoodSearchImpl;
+        //! To access the positions for initialization.
+        friend class internal::AnalysisNeighborhoodPairSearchImpl;
+};
+
+/*! \brief
+ * Neighborhood searching for analysis tools.
+ *
+ * This class implements neighborhood searching routines for analysis tools.
+ * The emphasis is in flexibility and ease of use; one main driver is to have
+ * a common implementation of grid-based searching to avoid replicating this in
+ * multiple tools (and to make more tools take advantage of the significant
+ * performance improvement this allows).
+ *
+ * To use the search, create an object of this type, call setCutoff() to
+ * initialize it, and then repeatedly call initSearch() to start a search with
+ * different sets of reference positions.  For each set of reference positions,
+ * use methods in the returned AnalysisNeighborhoodSearch to find the reference
+ * positions that are within the given cutoff from a provided position.
+ *
+ * initSearch() is thread-safe and can be called from multiple threads.  Each
+ * call returns a different instance of the search object that can be used
+ * independently of the others.  The returned AnalysisNeighborhoodSearch
+ * objects are also thread-safe, and can be used concurrently from multiple
+ * threads.  It is also possible to create multiple concurrent searches within
+ * a single thread.
+ *
+ * \todo
+ * Support for exclusions.
+ * The 4.5/4.6 C API had very low-level support for exclusions, which was not
+ * very convenient to use, and hadn't been tested much.  The internal code that
+ * it used to do the exclusion during the search itself is still there, but it
+ * needs more thought on what would be a convenient way to initialize it.
+ * Can be implemented once there is need for it in some calling code.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class AnalysisNeighborhood
+{
+    public:
+        //! Searching algorithm to use.
+        enum SearchMode
+        {
+            //! Select algorithm based on heuristic efficiency considerations.
+            eSearchMode_Automatic,
+            //! Use a simple loop over all pairs.
+            eSearchMode_Simple,
+            //! Use grid-based searching whenever possible.
+            eSearchMode_Grid
+        };
+
+        //! Creates an uninitialized neighborhood search.
+        AnalysisNeighborhood();
+        ~AnalysisNeighborhood();
+
+        /*! \brief
+         * Set cutoff distance for the neighborhood searching.
+         *
+         * \param[in]  cutoff Cutoff distance for the search
+         *   (<=0 stands for no cutoff).
+         *
+         * Currently, can only be called before the first call to initSearch().
+         * If this method is not called, no cutoff is used in the searches.
+         *
+         * Does not throw.
+         */
+        void setCutoff(real cutoff);
+        /*! \brief
+         * Sets the algorithm to use for searching.
+         *
+         * \param[in] mode  Search mode to use.
+         *
+         * Note that if \p mode is \ref eSearchMode_Grid, it is still only a
+         * suggestion: grid-based searching may not be possible with the
+         * provided input, in which case a simple search is still used.
+         * This is mainly useful for testing purposes to force a mode.
+         *
+         * Does not throw.
+         */
+        void setMode(SearchMode mode);
+        //! Returns the currently active search mode.
+        SearchMode mode() const;
+
+        /*! \brief
+         * Initializes neighborhood search for a set of positions.
+         *
+         * \param[in] pbc        PBC information for the frame.
+         * \param[in] positions  Set of reference positions to use.
+         * \returns   Search object that can be used to find positions from
+         *      \p x within the given cutoff.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * Currently, the input positions cannot use
+         * AnalysisNeighborhoodPositions::selectSingleFromArray().
+         */
+        AnalysisNeighborhoodSearch
+        initSearch(const t_pbc                         *pbc,
+                   const AnalysisNeighborhoodPositions &positions);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+/*! \brief
+ * Value type to represent a pair of positions found in neighborhood searching.
+ *
+ * Methods in this class do not throw.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class AnalysisNeighborhoodPair
+{
+    public:
+        //! Initializes an invalid pair.
+        AnalysisNeighborhoodPair() : refIndex_(-1), testIndex_(0) {}
+        //! Initializes a pair object with the given data.
+        AnalysisNeighborhoodPair(int refIndex, int testIndex)
+            : refIndex_(refIndex), testIndex_(testIndex)
+        {
+        }
+
+        /*! \brief
+         * Whether this pair is valid.
+         *
+         * If isValid() returns false, other methods should not be called.
+         */
+        bool isValid() const { return refIndex_ >= 0; }
+
+        /*! \brief
+         * Returns the index of the reference position in the pair.
+         *
+         * This index is always the index into the position array provided to
+         * AnalysisNeighborhood::initSearch().
+         */
+        int refIndex() const
+        {
+            GMX_ASSERT(isValid(), "Accessing invalid object");
+            return refIndex_;
+        }
+        /*! \brief
+         * Returns the index of the test position in the pair.
+         *
+         * The contents of this index depends on the context (method call) that
+         * produces the pair.
+         * If there was no array in the call, this index is zero.
+         */
+        int testIndex() const
+        {
+            GMX_ASSERT(isValid(), "Accessing invalid object");
+            return testIndex_;
+        }
+
+    private:
+        int                     refIndex_;
+        int                     testIndex_;
+};
+
+/*! \brief
+ * Initialized neighborhood search with a fixed set of reference positions.
+ *
+ * An instance of this class is obtained through
+ * AnalysisNeighborhood::initSearch(), and can be used to do multiple searches
+ * against the provided set of reference positions.
+ * It is possible to create concurrent pair searches (including from different
+ * threads), as well as call other methods in this class while a pair search is
+ * in progress.
+ *
+ * This class works like a pointer: copies of it point to the same search.
+ * In general, avoid creating copies, and only use the copy/assignment support
+ * for moving the variable around.  With C++11, this class would best be
+ * movable.
+ *
+ * Methods in this class do not throw unless otherwise indicated.
+ *
+ * \todo
+ * Make it such that reset() is not necessary to call in code that repeatedly
+ * assigns the result of AnalysisNeighborhood::initSearch() to the same
+ * variable (see sm_distance.cpp).
+ *
+ * \todo
+ * Consider merging nearestPoint() and minimumDistance() by adding the distance
+ * to AnalysisNeighborhoodPair.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class AnalysisNeighborhoodSearch
+{
+    public:
+        /*! \brief
+         * Internal short-hand type for a pointer to the implementation class.
+         *
+         * shared_ptr is used here to automatically keep a reference count to
+         * track whether an implementation class is still used outside the
+         * AnalysisNeighborhood object.  Ownership currently always stays with
+         * AnalysisNeighborhood; it always keeps one instance of the pointer.
+         */
+        typedef boost::shared_ptr<internal::AnalysisNeighborhoodSearchImpl>
+            ImplPointer;
+
+        /*! \brief
+         * Initializes an invalid search.
+         *
+         * Such an object cannot be used for searching.  It needs to be
+         * assigned a value from AnalysisNeighborhood::initSearch() before it
+         * can be used.  Provided to allow declaring a variable to hold the
+         * search before calling AnalysisNeighborhood::initSearch().
+         */
+        AnalysisNeighborhoodSearch();
+        /*! \brief
+         * Internally initialize the search.
+         *
+         * Used to implement AnalysisNeighborhood::initSearch().
+         * Cannot be called from user code.
+         */
+        explicit AnalysisNeighborhoodSearch(const ImplPointer &impl);
+
+        /*! \brief
+         * Clears this search.
+         *
+         * Equivalent to \c "*this = AnalysisNeighborhoodSearch();".
+         * Currently, this is necessary to avoid unnecessary memory allocation
+         * if the previous search variable is still in scope when you want to
+         * call AnalysisNeighborhood::initSearch() again.
+         */
+        void reset();
+
+        /*! \brief
+         * Returns the searching algorithm that this search is using.
+         *
+         * The return value is never AnalysisNeighborhood::eSearchMode_Automatic.
+         */
+        AnalysisNeighborhood::SearchMode mode() const;
+
+        /*! \brief
+         * Check whether a point is within a neighborhood.
+         *
+         * \param[in] positions  Set of test positions to use.
+         * \returns   true if any of the test positions is within the cutoff of
+         *     any reference position.
+         */
+        bool isWithin(const AnalysisNeighborhoodPositions &positions) const;
+        /*! \brief
+         * Calculates the minimum distance from the reference points.
+         *
+         * \param[in] positions  Set of test positions to use.
+         * \returns   The distance to the nearest reference position, or the
+         *     cutoff value if there are no reference positions within the
+         *     cutoff.
+         */
+        real minimumDistance(const AnalysisNeighborhoodPositions &positions) const;
+        /*! \brief
+         * Finds the closest reference point.
+         *
+         * \param[in] positions  Set of test positions to use.
+         * \returns   The reference index identifies the reference position
+         *     that is closest to the test positions.
+         *     The test index identifies the test position that is closest to
+         *     the provided test position.  The returned pair is invalid if
+         *     no reference position is within the cutoff.
+         */
+        AnalysisNeighborhoodPair
+        nearestPoint(const AnalysisNeighborhoodPositions &positions) const;
+
+        /*! \brief
+         * Start a search to find reference positions within a cutoff.
+         *
+         * \param[in] positions  Set of test positions to use.
+         * \returns   Initialized search object to loop through all reference
+         *     positions within the configured cutoff.
+         * \throws    std::bad_alloc if out of memory.
+         */
+        AnalysisNeighborhoodPairSearch
+        startPairSearch(const AnalysisNeighborhoodPositions &positions) const;
+
+    private:
+        typedef internal::AnalysisNeighborhoodSearchImpl Impl;
+
+        ImplPointer             impl_;
+};
+
+/*! \brief
+ * Initialized neighborhood pair search with a fixed set of positions.
+ *
+ * This class is used to loop through pairs of neighbors within the cutoff
+ * provided to AnalysisNeighborhood.  The following code demonstrates its use:
+ * \code
+   gmx::AnalysisNeighborhood       nb;
+   nb.setCutoff(cutoff);
+   gmx::AnalysisNeighborhoodPositions refPos(xref, nref);
+   gmx::AnalysisNeighborhoodSearch search = nb.initSearch(pbc, refPos);
+   gmx::AnalysisNeighborhoodPairSearch pairSearch = search.startPairSearch(selection);
+   gmx::AnalysisNeighborhoodPair pair;
+   while (pairSearch.findNextPair(&pair))
+   {
+       // <do something for each found pair the information in pair>
+   }
+ * \endcode
+ *
+ * It is not possible to use a single search object from multiple threads
+ * concurrently.
+ *
+ * This class works like a pointer: copies of it point to the same search.
+ * In general, avoid creating copies, and only use the copy/assignment support
+ * for moving the variable around.  With C++11, this class would best be
+ * movable.
+ *
+ * Methods in this class do not throw.
+ *
+ * \inpublicapi
+ * \ingroup module_selection
+ */
+class AnalysisNeighborhoodPairSearch
+{
+    public:
+        /*! \brief
+         * Internal short-hand type for a pointer to the implementation class.
+         *
+         * See AnalysisNeighborhoodSearch::ImplPointer for rationale of using
+         * shared_ptr and ownership semantics.
+         */
+        typedef boost::shared_ptr<internal::AnalysisNeighborhoodPairSearchImpl>
+            ImplPointer;
+
+        /*! \brief
+         * Internally initialize the search.
+         *
+         * Used to implement AnalysisNeighborhoodSearch::startPairSearch().
+         * Cannot be called from user code.
+         */
+        explicit AnalysisNeighborhoodPairSearch(const ImplPointer &impl);
+
+        /*! \brief
+         * Finds the next pair within the cutoff.
+         *
+         * \param[out] pair  Information about the found pair.
+         * \returns    false if there were no more pairs.
+         *
+         * If the method returns false, \p pair will be invalid.
+         *
+         * \see AnalysisNeighborhoodPair
+         * \see AnalysisNeighborhoodSearch::startPairSearch()
+         */
+        bool findNextPair(AnalysisNeighborhoodPair *pair);
+        /*! \brief
+         * Skip remaining pairs for a test position in the search.
+         *
+         * When called after findNextPair(), makes subsequent calls to
+         * findNextPair() skip any pairs that have the same test position as
+         * that previously returned.
+         * This is useful if the caller wants to search whether any reference
+         * position within the cutoff satisfies some condition.  This method
+         * can be used to skip remaining pairs after the first such position
+         * has been found if the remaining pairs would not have an effect on
+         * the outcome.
+         */
+        void skipRemainingPairsForTestPosition();
+
+    private:
+        ImplPointer             impl_;
 };
 
 } // namespace gmx

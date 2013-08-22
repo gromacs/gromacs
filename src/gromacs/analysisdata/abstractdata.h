@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -65,9 +65,9 @@ typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer
  * Abstract base class for all objects that provide data.
  *
  * The public interface includes methods for querying the data (isMultipoint(),
- * columnCount(), frameCount(), tryGetDataFrame(), getDataFrame(),
- * requestStorage()) and methods for using modules for processing the data
- * (addModule(), addColumnModule(), applyModule()).
+ * dataSetCount(), columnCount(), frameCount(), tryGetDataFrame(),
+ * getDataFrame(), requestStorage()) and methods for using modules for
+ * processing the data (addModule(), addColumnModule(), applyModule()).
  *
  * Notice that even for non-const objects, the interface does not provide any
  * means of altering the data.  It is only possible to add modules, making it
@@ -77,9 +77,10 @@ typedef boost::shared_ptr<AnalysisDataModuleInterface> AnalysisDataModulePointer
  *
  * \if libapi
  * This class also provides protected methods for use in derived classes.
- * The properties returned by isMultipoint() and columnCount() must be set using
- * setMultipoint() and setColumnCount(), and notify*() methods must be used to
- * report when data becomes available for modules to process it.
+ * The properties returned by isMultipoint(), dataSetCount(), and columnCount()
+ * must be set using setMultipoint(), setDataSetCount(), and setColumnCount(),
+ * and notify*() methods must be used to report when data becomes available for
+ * modules to process it.
  * There are also two protected pure virtual methods that need to be
  * implemented to provide access to stored data: requestStorageInternal() and
  * tryGetDataFrameInternal().
@@ -135,13 +136,31 @@ class AbstractAnalysisData
          *
          * Does not throw.
          */
-        bool isMultipoint() const { return bMultiPoint_; }
+        bool isMultipoint() const;
         /*! \brief
-         * Returns the number of columns in the data.
+         * Returns the number of data sets in the data object.
          *
+         * \returns The number of data sets in the data.
+         *
+         * If the number is not yet known, returns 0.
+         * The returned value does not change after modules have been notified
+         * of data start, but may change multiple times before that, depending
+         * on the actual data class.
+         * \if libapi
+         * Derived classes should set the number of columns with
+         * setDataSetCount(), within the above limitations.
+         * \endif
+         *
+         * Does not throw.
+         */
+        int dataSetCount() const;
+        /*! \brief
+         * Returns the number of columns in a data set.
+         *
+         * \param[in] dataSet Zero-based index of the data set to query.
          * \returns The number of columns in the data.
          *
-         * If the number of columns is yet known, returns 0.
+         * If the number of columns is not yet known, returns 0.
          * The returned value does not change after modules have been notified
          * of data start, but may change multiple times before that, depending
          * on the actual data class.
@@ -152,7 +171,20 @@ class AbstractAnalysisData
          *
          * Does not throw.
          */
-        int columnCount() const { return columnCount_; }
+        int columnCount(int dataSet) const;
+        /*! \brief
+         * Returns the number of columns in the data.
+         *
+         * \returns The number of columns in the data.
+         *
+         * This is a convenience method for data objects with a single data set.
+         * Can only be called if dataSetCount() == 1.
+         *
+         * Does not throw.
+         *
+         * \see columnCount(int)
+         */
+        int columnCount() const;
         /*! \brief
          * Returns the total number of frames in the data.
          *
@@ -239,6 +271,18 @@ class AbstractAnalysisData
          * \param     module  Module to add.
          * \throws    APIError in same situations as addModule().
          *
+         * Currently, all data sets are filtered using the same column mask.
+         *
+         * \todo
+         * This method doesn't currently work in all cases with multipoint
+         * data or with multiple data sets.  In particular, if the added module
+         * requests storage and uses getDataFrame(), it will behave
+         * unpredictably (most likely asserts).
+         *
+         * \todo
+         * Generalize this method to multiple data sets (e.g., for adding
+         * modules that only process a single data set).
+         *
          * \see addModule()
          */
         void addColumnModule(int col, int span, AnalysisDataModulePointer module);
@@ -272,33 +316,52 @@ class AbstractAnalysisData
         AbstractAnalysisData();
 
         /*! \brief
-         * Sets the number of columns.
+         * Sets the number of data sets.
          *
-         * \param[in] columnCount  Number of columns in the data (must be > 0).
+         * \param[in] dataSetCount  Number of data sets (must be > 0).
          *
-         * Can be called only before notifyDataStart(), otherwise asserts.
-         * Multiple calls are only allowed if all of them occur before
-         * addModule() has been called, otherwise asserts (a single call
-         * can occur after addModule() if no calls have been made earlier).
+         * It not called, the data object has a single data set.
+         * Can be called only before notifyDataStart().
+         * Multiple calls are allowed before that point; the last call takes
+         * effect.
+         *
+         * Does not throw, but this may change with the todo item in
+         * setColumnCount().
+         *
+         * \see dataSetCount()
+         */
+        void setDataSetCount(int dataSetCount);
+        /*! \brief
+         * Sets the number of columns for a data set.
+         *
+         * \param[in] dataSet      Zero-based index of the data set.
+         * \param[in] columnCount  Number of columns in \p dataSet (must be > 0).
+         *
+         * Must be called at least once before notifyDataStart() for each data
+         * set.
+         * Can be called only before notifyDataStart().
+         * Multiple calls are allowed before that point; the last call takes
+         * effect.
          *
          * Does not throw, but this may change with the below todo item.
          *
          * \todo
-         * Consider whether the semantics with respect to addModule() and
-         * notifyDataStart(), and the performed checks, are suitable for all
-         * purposes.
+         * Consider whether the call should check the modules that have already
+         * been added (currently it is only done in notifyDataStart()).
          *
          * \see columnCount()
          */
-        void setColumnCount(int columnCount);
+        void setColumnCount(int dataSet, int columnCount);
         /*! \brief
          * Sets whether the data has multiple points per column in a frame.
          *
          * \param[in] multipoint  Whether multiple points per column are
          *     possible.
          *
-         * Can be called only before addModule() or notifyDataStart(),
-         * otherwise asserts.
+         * If not called, only a single point per column is allowed.
+         * Can be called only before notifyDataStart().
+         * Multiple calls are allowed before that point; the last call takes
+         * effect.
          *
          * Does not throw, but this may change with the todo item in
          * setColumnCount().
@@ -420,8 +483,6 @@ class AbstractAnalysisData
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
-        int                      columnCount_;
-        bool                     bMultiPoint_;
 
         /*! \brief
          * Needed to provide access to notification methods.

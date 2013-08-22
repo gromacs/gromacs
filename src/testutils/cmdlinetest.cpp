@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include <new>
 #include <vector>
 
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
 
 namespace gmx
@@ -119,6 +120,8 @@ CommandLine::~CommandLine()
 
 void CommandLine::append(const char *arg)
 {
+    GMX_RELEASE_ASSERT(impl_->argc_ == static_cast<int>(impl_->args_.size()),
+                       "Command-line has been modified externally");
     size_t newSize = impl_->args_.size() + 1;
     impl_->args_.reserve(newSize);
     impl_->argv_.reserve(newSize);

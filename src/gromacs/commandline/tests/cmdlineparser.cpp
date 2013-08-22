@@ -68,11 +68,13 @@ class CommandLineParserTest : public ::testing::Test
         bool                    flag_;
         std::vector<int>        ivalues_;
         std::vector<double>     dvalues_;
+        int                     ivalue1p_;
+        int                     ivalue12_;
 };
 
 CommandLineParserTest::CommandLineParserTest()
     : options_(NULL, NULL), parser_(&options_),
-      flag_(false)
+      flag_(false), ivalue1p_(0), ivalue12_(0)
 {
     using gmx::BooleanOption;
     using gmx::IntegerOption;
@@ -80,6 +82,8 @@ CommandLineParserTest::CommandLineParserTest()
     options_.addOption(BooleanOption("flag").store(&flag_));
     options_.addOption(IntegerOption("mvi").storeVector(&ivalues_).multiValue());
     options_.addOption(DoubleOption("mvd").storeVector(&dvalues_).allowMultiple());
+    options_.addOption(IntegerOption("1p").store(&ivalue1p_));
+    options_.addOption(IntegerOption("12").store(&ivalue12_));
 }
 
 TEST_F(CommandLineParserTest, HandlesSingleValues)
@@ -112,6 +116,59 @@ TEST_F(CommandLineParserTest, HandlesNegativeNumbers)
     EXPECT_EQ(-2, ivalues_[1]);
     ASSERT_EQ(1U, dvalues_.size());
     EXPECT_DOUBLE_EQ(-2.7, dvalues_[0]);
+}
+
+TEST_F(CommandLineParserTest, HandlesDoubleDashOptionPrefix)
+{
+    const char *const cmdline[] = {
+        "test", "--mvi", "1", "-2", "--mvd", "-2.7"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_EQ(2U, ivalues_.size());
+    EXPECT_EQ(1, ivalues_[0]);
+    EXPECT_EQ(-2, ivalues_[1]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(-2.7, dvalues_[0]);
+}
+
+TEST_F(CommandLineParserTest, HandlesOptionsStartingWithNumbers)
+{
+    const char *const cmdline[] = {
+        "test", "--12", "1", "-1p", "-12"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    EXPECT_EQ(1, ivalue12_);
+    EXPECT_EQ(-12, ivalue1p_);
+}
+
+TEST_F(CommandLineParserTest, HandlesSkipUnknown)
+{
+    const char *const cmdline[] = {
+        "test", "-opt1", "-flag", "-opt2", "value", "-mvi", "2", "-mvd", "2.7", "-opt3"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    parser_.skipUnknown(true);
+    ASSERT_NO_THROW_GMX(parser_.parse(&args.argc(), args.argv()));
+    ASSERT_NO_THROW_GMX(options_.finish());
+
+    ASSERT_EQ(5, args.argc());
+    EXPECT_STREQ("test", args.arg(0));
+    EXPECT_STREQ("-opt1", args.arg(1));
+    EXPECT_STREQ("-opt2", args.arg(2));
+    EXPECT_STREQ("value", args.arg(3));
+    EXPECT_STREQ("-opt3", args.arg(4));
+
+    EXPECT_TRUE(flag_);
+    ASSERT_EQ(1U, ivalues_.size());
+    EXPECT_EQ(2, ivalues_[0]);
+    ASSERT_EQ(1U, dvalues_.size());
+    EXPECT_DOUBLE_EQ(2.7, dvalues_[0]);
 }
 
 } // namespace

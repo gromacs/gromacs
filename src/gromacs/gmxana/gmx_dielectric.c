@@ -416,7 +416,5 @@ int gmx_dielectric(int argc, char *argv[])
     do_view(oenv, opt2fn("-c", NFILE, fnm), NULL);
     do_view(oenv, opt2fn("-d", NFILE, fnm), "-nxy");
 
-    thanx(stderr);
-
     return 0;
 }

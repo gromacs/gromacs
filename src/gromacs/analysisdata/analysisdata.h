@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -56,8 +56,8 @@ class AnalysisDataParallelOptions;
  *
  * This is the main class used to implement parallelizable data processing in
  * analysis tools.  It is used by first creating an object and setting its
- * properties using setColumnCount() and setMultipoint(), and attaching
- * necessary modules using addModule() etc.  Then one or more
+ * properties using setDataSetCount(), setColumnCount() and setMultipoint(),
+ * and attaching necessary modules using addModule() etc.  Then one or more
  * AnalysisDataHandle objects can be created using startData().  Each data
  * handle can then be independently used to provide data frames (each frame
  * must be provided by a single handle, but different frames can be freely
@@ -66,9 +66,6 @@ class AnalysisDataParallelOptions;
  * The AnalysisData object takes care of internally sorting the frames and
  * passing them to the attached modules in the order in which the modules
  * expect them.
- *
- * \todo
- * Currently, multiple handles with multipoint data are not implemented.
  *
  * \todo
  * Parallel implementation is not complete.
@@ -99,18 +96,32 @@ class AnalysisData : public AbstractAnalysisData
         virtual ~AnalysisData();
 
         /*! \brief
-         * Sets the number of columns in the data.
+         * Sets the number of data sets.
          *
-         * \param[in] ncol  Number of columns in the data (must be > 0).
+         * \param[in] dataSetCount  Number of data sets (must be > 0).
          *
-         * Must be called before startData(), and can be called multiple times
-         * before modules are added.
          * Must not be called after startData() has been called.
+         * If not called, a single data set is assumed.
+         * If called multiple times, the last call takes effect.
          *
          * Does not currently throw, but this may change for the case that
          * modules have already been added.
          */
-        void setColumnCount(int ncol);
+        void setDataSetCount(int dataSetCount);
+        /*! \brief
+         * Sets the number of columns in a data set.
+         *
+         * \param[in] dataSet      Zero-based data set index.
+         * \param[in] columnCount  Number of columns in the data (must be > 0).
+         *
+         * Must be called before startData() for each data set.
+         * Must not be called after startData() has been called.
+         * If called multiple times for a data set, the last call takes effect.
+         *
+         * Does not currently throw, but this may change for the case that
+         * modules have already been added.
+         */
+        void setColumnCount(int dataSet, int columnCount);
         /*! \brief
          * Sets whether the data contains multiple points per column per frame.
          *
@@ -119,8 +130,7 @@ class AnalysisData : public AbstractAnalysisData
          *
          * If this method is not called, the data is not multipoint.
          *
-         * Must not be called after modules have been added or startData() has
-         * been called.
+         * Must not be called after startData() has been called.
          *
          * Does not currently throw, but this may change for the case that
          * modules have already been added.
@@ -193,15 +203,18 @@ class AnalysisDataHandleImpl;
  * called.
  *
  * For simple (non-multipoint) data, within a frame values can be set using
- * setPoint() and setPoints().  Setting the same column multiple times
- * overrides previously set values.  When the frame is finished, attached
- * modules are notified.
+ * selectDataSet(), setPoint() and setPoints().  Setting the same column in the
+ * same data set multiple times overrides previously set values.
+ * When the frame is finished, attached modules are notified.
  *
  * Multipoint data works otherwise similarly, but requires finishPointSet() to
  * be called for each set of points for which the modules need to be notified.
  * Each point set starts empty (after startFrame() or finishPointSet()), and
- * values can be set using setPoint()/setPoints().  finishPointSet() must also
- * be called for the last point set just before finishFrame().
+ * values can be set using setPoint()/setPoints().
+ * A single point set can contain values only for a single data set, which must
+ * be selected with selectDataSet() before setting any values.
+ * finishPointSet() must also be called for the last point set just before
+ * finishFrame().
  *
  * This class works like a pointer type: copying and assignment is lightweight,
  * and all copies work interchangeably, accessing the same internal handle.
@@ -247,6 +260,18 @@ class AnalysisDataHandle
          * is not finished).
          */
         void startFrame(int index, real x, real dx = 0.0);
+        /*! \brief
+         * Selects a data set for subsequent setPoint()/setPoints() calls.
+         *
+         * \param[in] index  Zero-based data set index.
+         *
+         * After startFrame(), the first data set is always selected.
+         * The set value is remembered until the end of the current frame, also
+         * across finishPointSet() calls.
+         *
+         * Does not throw.
+         */
+        void selectDataSet(int index);
         /*! \brief
          * Set a value for a single column for the current frame.
          *

@@ -47,12 +47,12 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "wman.h"
 #include "tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
 #include "gmxfio.h"
 
+#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
@@ -91,6 +91,7 @@ const char *ShortProgram(void)
 {
     try
     {
+        // TODO: Use the display name once it doesn't break anything.
         return gmx::ProgramInfo::getInstance().programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -103,22 +104,6 @@ const char *Program(void)
         return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-const char *command_line(void)
-{
-    try
-    {
-        return gmx::ProgramInfo::getInstance().commandLine().c_str();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-void set_program_name(const char *argvzero)
-{
-    // The negative argc is a hack to make the ProgramInfo overridable in
-    // parse_common_args(), where the full command-line is known.
-    gmx::ProgramInfo::init(-1, &argvzero);
 }
 
 /* utility functions */
@@ -142,7 +127,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
     }
 }
 
-int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
+int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int  r;
 
@@ -178,7 +163,7 @@ int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
 
 int check_times(real t)
 {
-    return check_times2(t, t, t, t, FALSE);
+    return check_times2(t, t, FALSE);
 }
 
 
@@ -501,7 +486,8 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
                        int nbugs, const char **bugs,
                        output_env_t *oenv)
 {
-    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bQuiet = FALSE, bVersion = FALSE;
+    gmx_bool    bHelp    = FALSE, bHidden  = FALSE;
+    gmx_bool    bQuiet   = FALSE, bVerbose = FALSE, bVersion = FALSE;
     const char *manstr[] = {
         NULL, "no", "html", "tex", "nroff", "ascii",
         "completion", "py", "xml", "wiki", NULL
@@ -513,7 +499,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         NULL, "fs", "ps", "ns", "us", "ms", "s",
         NULL
     };
-    int         nicelevel = 0, debug_level = 0, verbose_level = 0;
+    int         nicelevel = 0, debug_level = 0;
     char       *deffnm    = NULL;
     real        tbegin    = 0, tend = 0, tdelta = 0;
     gmx_bool    bView     = FALSE;
@@ -567,8 +553,8 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
           "Print help info and quit" },
         { "-version",  FALSE, etBOOL, {&bVersion},
           "Print version info and quit" },
-        { "-verb",    FALSE,  etINT, {&verbose_level},
-          "HIDDENLevel of verbosity for this program" },
+        { "-verbose",  FALSE, etBOOL, {&bVerbose},
+          "HIDDENShow options during normal run" },
         { "-hidden", FALSE, etBOOL, {&bHidden},
           "HIDDENPrint hidden options" },
         { "-quiet", FALSE, etBOOL, {&bQuiet},
@@ -580,11 +566,16 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     };
 #define NPCA_PA asize(pca_pa)
     FILE    *fp;
-    gmx_bool bPrint, bExit, bXvgr;
+    gmx_bool bExit, bXvgr;
     int      i, j, k, npall, max_pa;
 
+    // Handle the flags argument, which is a bit field
+    // The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
+    // Ensure that the program info is initialized; if already done, returns
+    // the already initialized object.
+    const gmx::ProgramInfo &programInfo = gmx::ProgramInfo::init(*argc, argv);
     /* Check for double arguments */
     for (i = 1; (i < *argc); i++)
     {
@@ -610,12 +601,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
     }
     debug_gmx();
-    gmx::ProgramInfo::init(*argc, argv);
-
-    /* Handle the flags argument, which is a bit field
-     * The FF macro returns whether or not the bit is set
-     */
-    bPrint        = !FF(PCA_SILENT);
 
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
@@ -706,13 +691,14 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     /* set program name, command line, and default values for output options */
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
-                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
+                    (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
-    if (bVersion)
+    if (!FF(PCA_QUIET) && FF(PCA_STANDALONE) && (!bQuiet || bVersion))
     {
-        printf("Program: %s\n", output_env_get_program_name(*oenv));
-        gmx_print_version_info(stdout);
-        exit(0);
+        gmx::BinaryInformationSettings settings;
+        settings.extendedInfo(bVersion);
+        gmx::printBinaryInformation(bVersion ? stdout : stderr,
+                                    programInfo, settings);
     }
 
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm != NULL))
@@ -755,7 +741,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    bExit = bHelp || (strcmp(manstr[0], "no") != 0);
+    bExit = bHelp || bVersion || (strcmp(manstr[0], "no") != 0);
 
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
@@ -790,14 +776,14 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #endif
 #endif
 
-    if (!(FF(PCA_QUIET) || bQuiet ))
+    if (!(FF(PCA_QUIET) || bQuiet))
     {
         if (bHelp)
         {
             write_man(stderr, "help", output_env_get_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
         }
-        else if (bPrint)
+        else if (bVerbose)
         {
             pr_fns(stderr, nfile, fnm);
             print_pargs(stderr, npall, all_pa, FALSE);

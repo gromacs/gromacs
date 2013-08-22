@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -47,6 +47,7 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -76,10 +77,22 @@ class Distance : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        std::string                      fnDist_;
-        Selection                        sel_[2];
-        AnalysisData                     data_;
-        AnalysisDataAverageModulePointer avem_;
+        SelectionList                            sel_;
+        std::string                              fnAverage_;
+        std::string                              fnAll_;
+        std::string                              fnXYZ_;
+        std::string                              fnHistogram_;
+        std::string                              fnAllStats_;
+        double                                   meanLength_;
+        double                                   lengthDev_;
+        double                                   binWidth_;
+
+        AnalysisData                             distances_;
+        AnalysisData                             xyz_;
+        AnalysisDataAverageModulePointer         summaryStatsModule_;
+        AnalysisDataAverageModulePointer         allStatsModule_;
+        AnalysisDataFrameAverageModulePointer    averageModule_;
+        AnalysisDataSimpleHistogramModulePointer histogramModule_;
 
         // Copy and assign disallowed by base.
 };

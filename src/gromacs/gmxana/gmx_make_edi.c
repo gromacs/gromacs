@@ -53,7 +53,6 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "pdbio.h"
@@ -983,7 +982,6 @@ int gmx_make_edi(int argc, char *argv[])
 
     /* Write edi-file */
     write_the_whole_thing(ffopen(EdiFile, "w"), &edi_params, eigvec1, nvec1, listen, evStepList);
-    thanx(stderr);
 
     return 0;
 }

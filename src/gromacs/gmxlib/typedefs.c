@@ -284,10 +284,9 @@ void done_blocka(t_blocka *block)
     block->nr    = 0;
     block->nra   = 0;
     sfree(block->index);
-    if (block->a)
-    {
-        sfree(block->a);
-    }
+    sfree(block->a);
+    block->index        = NULL;
+    block->a            = NULL;
     block->nalloc_index = 0;
     block->nalloc_a     = 0;
 }
@@ -651,6 +650,16 @@ void done_state(t_state *state)
         sfree(state->cg_gl);
     }
     state->cg_gl_nalloc = 0;
+    if (state->lambda)
+    {
+        sfree(state->lambda);
+    }
+    if (state->ngtc > 0)
+    {
+        sfree(state->nosehoover_xi);
+        sfree(state->nosehoover_vxi);
+        sfree(state->therm_integral);
+    }
 }
 
 static void do_box_rel(t_inputrec *ir, matrix box_rel, matrix b, gmx_bool bInit)
@@ -839,33 +848,64 @@ void free_t_atoms(t_atoms *atoms, gmx_bool bFreeNames)
 {
     int i;
 
-    if (bFreeNames)
+    if (bFreeNames && atoms->atomname != NULL)
     {
         for (i = 0; i < atoms->nr; i++)
         {
-            sfree(*atoms->atomname[i]);
-            *atoms->atomname[i] = NULL;
+            if (atoms->atomname[i] != NULL)
+            {
+                sfree(*atoms->atomname[i]);
+                *atoms->atomname[i] = NULL;
+            }
         }
+    }
+    if (bFreeNames && atoms->resinfo != NULL)
+    {
         for (i = 0; i < atoms->nres; i++)
         {
-            sfree(*atoms->resinfo[i].name);
-            *atoms->resinfo[i].name = NULL;
+            if (atoms->resinfo[i].name != NULL)
+            {
+                sfree(*atoms->resinfo[i].name);
+                *atoms->resinfo[i].name = NULL;
+            }
+        }
+    }
+    if (bFreeNames && atoms->atomtype != NULL)
+    {
+        for (i = 0; i < atoms->nr; i++)
+        {
+            if (atoms->atomtype[i] != NULL)
+            {
+                sfree(*atoms->atomtype[i]);
+                *atoms->atomtype[i] = NULL;
+            }
+        }
+    }
+    if (bFreeNames && atoms->atomtypeB != NULL)
+    {
+        for (i = 0; i < atoms->nr; i++)
+        {
+            if (atoms->atomtypeB[i] != NULL)
+            {
+                sfree(*atoms->atomtypeB[i]);
+                *atoms->atomtypeB[i] = NULL;
+            }
         }
     }
     sfree(atoms->atomname);
-    /* Do we need to free atomtype and atomtypeB as well ? */
+    sfree(atoms->atomtype);
+    sfree(atoms->atomtypeB);
     sfree(atoms->resinfo);
     sfree(atoms->atom);
-    if (atoms->pdbinfo)
-    {
-        sfree(atoms->pdbinfo);
-    }
-    atoms->nr       = 0;
-    atoms->nres     = 0;
-    atoms->atomname = NULL;
-    atoms->resinfo  = NULL;
-    atoms->atom     = NULL;
-    atoms->pdbinfo  = NULL;
+    sfree(atoms->pdbinfo);
+    atoms->nr        = 0;
+    atoms->nres      = 0;
+    atoms->atomname  = NULL;
+    atoms->atomtype  = NULL;
+    atoms->atomtypeB = NULL;
+    atoms->resinfo   = NULL;
+    atoms->atom      = NULL;
+    atoms->pdbinfo   = NULL;
 }
 
 real max_cutoff(real cutoff1, real cutoff2)

@@ -4,13 +4,11 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">insertcode " "</String>
-      <String Name="Name">insertcode " "</String>
       <String Name="Text">insertcode " "</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">insertcode A</String>
-      <String Name="Name">insertcode A</String>
       <String Name="Text">insertcode A</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

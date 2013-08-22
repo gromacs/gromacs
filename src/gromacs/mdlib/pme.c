@@ -60,6 +60,7 @@
 #include <config.h>
 #endif
 
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include <stdio.h>
@@ -78,9 +79,7 @@
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "copyrite.h"
 #include "gmx_wallcycle.h"
-#include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
@@ -1414,51 +1413,6 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 }
 
-static void clear_grid(int nx, int ny, int nz, real *grid,
-                       ivec fs, int *flag,
-                       int fx, int fy, int fz,
-                       int order)
-{
-    int nc, ncz;
-    int fsx, fsy, fsz, gx, gy, gz, g0x, g0y, x, y, z;
-    int flind;
-
-    nc  = 2 + (order - 2)/FLBS;
-    ncz = 2 + (order - 2)/FLBSZ;
-
-    for (fsx = fx; fsx < fx+nc; fsx++)
-    {
-        for (fsy = fy; fsy < fy+nc; fsy++)
-        {
-            for (fsz = fz; fsz < fz+ncz; fsz++)
-            {
-                flind = (fsx*fs[YY] + fsy)*fs[ZZ] + fsz;
-                if (flag[flind] == 0)
-                {
-                    gx  = fsx*FLBS;
-                    gy  = fsy*FLBS;
-                    gz  = fsz*FLBSZ;
-                    g0x = (gx*ny + gy)*nz + gz;
-                    for (x = 0; x < FLBS; x++)
-                    {
-                        g0y = g0x;
-                        for (y = 0; y < FLBS; y++)
-                        {
-                            for (z = 0; z < FLBSZ; z++)
-                            {
-                                grid[g0y+z] = 0;
-                            }
-                            g0y += nz;
-                        }
-                        g0x += ny*nz;
-                    }
-
-                    flag[flind] = 1;
-                }
-            }
-        }
-    }
-}
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
@@ -1580,7 +1534,7 @@ static void set_grid_alignment(int *pmegrid_nz, int pme_order)
 #endif
 }
 
-static void set_gridsize_alignment(int *gridsize, int pme_order)
+static void set_gridsize_alignment(int gmx_unused *gridsize, int gmx_unused pme_order)
 {
 #ifdef PME_SSE
 #ifndef PME_SSE_UNALIGNED
@@ -1888,7 +1842,7 @@ static void free_work(pme_work_t *work)
 
 #ifdef PME_SSE
 /* Calculate exponentials through SSE in float precision */
-inline static void calc_exponentials(int start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
+inline static void calc_exponentials(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
         const __m128 two = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
@@ -2744,7 +2698,7 @@ static double pme_load_imbalance(gmx_pme_t pme)
     return (n1 + n2 + 3*n3)/(double)(6*pme->nkx*pme->nky*pme->nkz);
 }
 
-static void init_atomcomm(gmx_pme_t pme, pme_atomcomm_t *atc, t_commrec *cr,
+static void init_atomcomm(gmx_pme_t pme, pme_atomcomm_t *atc,
                           int dimind, gmx_bool bSpread)
 {
     int nk, k, s, thread;
@@ -3191,7 +3145,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
     pme->nthread = nthread;
 
-     /* Check if any of the PME MPI ranks uses threads */
+    /* Check if any of the PME MPI ranks uses threads */
     use_threads = (pme->nthread > 1 ? 1 : 0);
 #ifdef GMX_MPI
     if (pme->nnodes > 1)
@@ -3343,7 +3297,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     gmx_parallel_3dfft_init(&pme->pfft_setupA, ndata,
                             &pme->fftgridA, &pme->cfftgridA,
                             pme->mpi_comm_d,
-                            pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                             bReproducible, pme->nthread);
 
     if (bFreeEnergy)
@@ -3360,7 +3313,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         gmx_parallel_3dfft_init(&pme->pfft_setupB, ndata,
                                 &pme->fftgridB, &pme->cfftgridB,
                                 pme->mpi_comm_d,
-                                pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                                 bReproducible, pme->nthread);
     }
     else
@@ -3382,10 +3334,10 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     /* Use atc[0] for spreading */
-    init_atomcomm(pme, &pme->atc[0], cr, nnodes_major > 1 ? 0 : 1, TRUE);
+    init_atomcomm(pme, &pme->atc[0], nnodes_major > 1 ? 0 : 1, TRUE);
     if (pme->ndecompdim >= 2)
     {
-        init_atomcomm(pme, &pme->atc[1], cr, 1, FALSE);
+        init_atomcomm(pme, &pme->atc[1], 1, FALSE);
     }
 
     if (pme->nnodes == 1)
@@ -4143,7 +4095,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 }
 
 
-static void reset_pmeonly_counters(t_commrec *cr, gmx_wallcycle_t wcycle,
+static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4198,7 +4150,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                real ewaldcoeff,  gmx_bool bGatherOnly,
+                real ewaldcoeff,
                 t_inputrec *ir)
 {
     int npmedata;
@@ -4253,7 +4205,7 @@ int gmx_pmeonly(gmx_pme_t pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(cr, wcycle, nrnb, ir, step);
+                reset_pmeonly_counters(wcycle, nrnb, ir, step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -4490,7 +4442,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
-                                           fftgrid, cfftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
@@ -4524,7 +4476,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
-                                           cfftgrid, fftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);

@@ -1,0 +1,11 @@
+*.c     filter=uncrustify
+*.cpp   filter=uncrustify
+*.h     filter=uncrustify
+src/contrib/*                           !filter
+nb_kernel_Elec*                         !filter
+src/gromacs/linearalgebra/gmx_blas/*    !filter
+src/gromacs/linearalgebra/gmx_lapack/*  !filter
+src/gromacs/selection/parser.cpp        !filter
+src/gromacs/selection/parser.h          !filter
+src/gromacs/selection/scanner.cpp       !filter
+src/gromacs/selection/scanner_flex.h    !filter

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -81,6 +81,24 @@ class CommandLineParser
         ~CommandLineParser();
 
         /*! \brief
+         * Makes the parser skip unknown options and keep them in \c argv.
+         *
+         * \param[in] bEnabled  Whether to skip and keep unknown options.
+         * \returns   *this
+         *
+         * Setting this option to true has dual effect: unknown options are
+         * silently skipped, and all recognized options are removed from
+         * \c argc and \c argv in parse().  These effects should be easy to
+         * separate into different flags if there is need for it.
+         *
+         * The default is false: unknown options result in exceptions and
+         * \c argc and \c argv are not modified.
+         *
+         * Does not throw.
+         */
+        CommandLineParser &skipUnknown(bool bEnabled);
+
+        /*! \brief
          * Parses the command line.
          *
          * \throws  std::bad_alloc if out of memory.
@@ -89,31 +107,11 @@ class CommandLineParser
          * All command-line arguments are parsed, and an aggregate exception
          * with all the detected errors is thrown in the end.
          *
-         * Currently, the input parameters are not modified, but this may
-         * change if/when support for parsing only part of the options is
-         * implemented.
+         * If skipUnknown() is false, the input parameters are not modified.
+         * If skipUnknown() is true, recognized options and their values are
+         * removed from the argument list.  \c argv[0] is never modified.
          */
         void parse(int *argc, char *argv[]);
-        /*! \brief
-         * Parses the command line from a std::vector.
-         *
-         * \param[in] commandLine  Array of command-line strings.
-         * \throws  std::bad_alloc if out of memory.
-         * \throws  InvalidInputError if any errors were detected in the input.
-         *
-         * \p commandLine should relate to the standard \c argv array
-         * one-to-one.
-         *
-         * This method is provided for convenience for cases where the command
-         * line needs to be stored before parsing.
-         *
-         * Currently, the input parameters are not modified, but this may
-         * change if/when support for parsing only part of the options is
-         * implemented.
-         *
-         * \see parse(int *, char *[])
-         */
-        void parse(std::vector<std::string> *commandLine);
 
     private:
         class Impl;

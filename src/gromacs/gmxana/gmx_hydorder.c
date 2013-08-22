@@ -51,7 +51,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -88,7 +87,7 @@ static void check_length(real length, int a, int b)
 static void find_tetra_order_grid(t_topology top, int ePBC,
                                   int natoms, matrix box,
                                   rvec x[], int maxidx, atom_id index[],
-                                  real time, real *sgmean, real *skmean,
+                                  real *sgmean, real *skmean,
                                   int nslicex, int nslicey, int nslicez,
                                   real ***sggrid, real ***skgrid)
 {
@@ -132,8 +131,8 @@ static void find_tetra_order_grid(t_topology top, int ePBC,
     snew(skmol, maxidx);
 
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc,ePBC,box);
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    set_pbc(&pbc, ePBC, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     gmx_rmpbc(gpbc, natoms, box, x);
 
     *sgmean = 0.0;
@@ -368,7 +367,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
             }
         }
 
-        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0], t,
+        find_tetra_order_grid(top, ePBC, natoms, box, x, isize[0], index[0],
                               &sg, &sk, *nslicex, *nslicey, nslicez, sg_grid, sk_grid);
         for (i = 0; i < *nslicex; i++)
         {
@@ -392,7 +391,7 @@ static void calc_tetra_order_interface(const char *fnNDX, const char *fnTPS, con
         }
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     sfree(grpname);
@@ -718,10 +717,6 @@ int gmx_hydorder(int argc, char *argv[])
         }
         writeraw(intfpos, frames, xslices, yslices, raw);
     }
-
-
-
-    thanx(stderr);
 
     return 0;
 }

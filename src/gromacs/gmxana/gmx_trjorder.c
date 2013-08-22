@@ -45,7 +45,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -235,7 +234,7 @@ int gmx_trjorder(int argc, char *argv[])
         }
         out = open_trx(opt2fn("-o", NFILE, fnm), "w");
     }
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     do
     {
         gmx_rmpbc(gpbc, natoms, box, x);
@@ -364,7 +363,7 @@ int gmx_trjorder(int argc, char *argv[])
             write_trx(out, natoms, swi, &top.atoms, 0, t, box, x, NULL, NULL);
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     if (out)
     {
@@ -375,8 +374,6 @@ int gmx_trjorder(int argc, char *argv[])
         ffclose(fp);
     }
     gmx_rmpbc_done(gpbc);
-
-    thanx(stderr);
 
     return 0;
 }

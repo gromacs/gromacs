@@ -44,7 +44,6 @@
 #include "tgroup.h"
 #include "filenm.h"
 #include "mshift.h"
-#include "force.h"
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
@@ -189,7 +188,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes);
 
 /* Broadcast the data for a simulation, and allocate node-specific settings
    such as rng generators. */
-void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
 int mdrunner(gmx_hw_opt_t *hw_opt,

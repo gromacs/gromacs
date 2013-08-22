@@ -97,6 +97,7 @@ float   gmx_erfcf(float x);
 #endif
 
 gmx_bool gmx_isfinite(real x);
+gmx_bool gmx_isnan(real x);
 
 /*! \brief Check if two numbers are within a tolerance
  *
@@ -168,6 +169,18 @@ gmx_bool
 check_int_multiply_for_overflow(gmx_large_int_t  a,
                                 gmx_large_int_t  b,
                                 gmx_large_int_t *result);
+
+static int gmx_greatest_common_divisor(int p, int q)
+{
+    int tmp;
+    while (q != 0)
+    {
+        tmp = q;
+        q = p % q;
+        p = tmp;
+    }
+    return p;
+}
 
 #ifdef __cplusplus
 }

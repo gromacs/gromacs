@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -71,13 +71,26 @@ class AbstractAnalysisData::Impl
 
         Impl();
 
+        //! Returns whether any data set has more than one column.
+        bool isMultiColumn() const;
+
+        /*! \brief
+         * Checks whether a module is compatible with the data properties.
+         *
+         * \param[in] module Module to check.
+         * \throws    APIError if \p module is not compatible with the data.
+         *
+         * Does not check the actual data (e.g., missing values), but only the
+         * dimensionality and other preset properties of the data.
+         */
+        void checkModuleProperties(const AnalysisDataModuleInterface &module) const;
+
         /*! \brief
          * Present data already added to the data object to a module.
          *
          * \param[in] data   Data object to read data from.
          * \param[in] module Module to present the data to.
-         * \throws    APIError if \p module is not compatible with the data
-         *      object.
+         * \throws    APIError if \p module is not compatible with the data.
          * \throws    APIError if all data is not available through
          *      getDataFrame().
          * \throws    unspecified Any exception thrown by \p module in its data
@@ -90,6 +103,10 @@ class AbstractAnalysisData::Impl
         void presentData(AbstractAnalysisData        *data,
                          AnalysisDataModuleInterface *module);
 
+        //! Column counts for each data set in the data.
+        std::vector<int>        columnCounts_;
+        //! Whether the data is multipoint.
+        bool                    bMultipoint_;
         //! List of modules added to the data.
         ModuleList              modules_;
         //! true if all modules support missing data.
@@ -111,10 +128,45 @@ class AbstractAnalysisData::Impl
 };
 
 AbstractAnalysisData::Impl::Impl()
-    : bAllowMissing_(true), bDataStart_(false), bInData_(false), bInFrame_(false),
+    : bMultipoint_(false), bAllowMissing_(true),
+      bDataStart_(false), bInData_(false), bInFrame_(false),
       currIndex_(-1), nframes_(0)
 {
+    columnCounts_.push_back(0);
 }
+
+bool
+AbstractAnalysisData::Impl::isMultiColumn() const
+{
+    std::vector<int>::const_iterator i;
+    for (i = columnCounts_.begin(); i != columnCounts_.end(); ++i)
+    {
+        if (*i > 1)
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+//! Helper macro for testing module flags.
+#define TEST_MODULE_FLAG(flags, flagname) \
+    ((flags) & AnalysisDataModuleInterface::flagname)
+void
+AbstractAnalysisData::Impl::checkModuleProperties(
+        const AnalysisDataModuleInterface &module) const
+{
+    const int flags = module.flags();
+    if ((!TEST_MODULE_FLAG(flags, efAllowMulticolumn) && isMultiColumn()) ||
+        (!TEST_MODULE_FLAG(flags, efAllowMultipoint)  && bMultipoint_) ||
+        ( TEST_MODULE_FLAG(flags, efOnlyMultipoint)   && !bMultipoint_) ||
+        (!TEST_MODULE_FLAG(flags, efAllowMultipleDataSets)
+         && columnCounts_.size() > 1U))
+    {
+        GMX_THROW(APIError("Data module not compatible with data object properties"));
+    }
+}
+#undef TEST_MODULE_FLAGS
 
 void
 AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
@@ -134,7 +186,10 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
             GMX_THROW(APIError("Missing data not supported by a module"));
         }
         module->frameStarted(frame.header());
-        module->pointsAdded(frame.points());
+        for (int j = 0; j < frame.pointSetCount(); ++j)
+        {
+            module->pointsAdded(frame.pointSet(j));
+        }
         module->frameFinished(frame.header());
     }
     if (!bInData_)
@@ -149,7 +204,7 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
  */
 /*! \cond libapi */
 AbstractAnalysisData::AbstractAnalysisData()
-    : impl_(new Impl()), columnCount_(0), bMultiPoint_(false)
+    : impl_(new Impl())
 {
 }
 //! \endcond
@@ -158,6 +213,33 @@ AbstractAnalysisData::~AbstractAnalysisData()
 {
 }
 
+bool
+AbstractAnalysisData::isMultipoint() const
+{
+    return impl_->bMultipoint_;
+}
+
+int
+AbstractAnalysisData::dataSetCount() const
+{
+    return impl_->columnCounts_.size();
+}
+
+int
+AbstractAnalysisData::columnCount(int dataSet) const
+{
+    GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+               "Out of range data set index");
+    return impl_->columnCounts_[dataSet];
+}
+
+int
+AbstractAnalysisData::columnCount() const
+{
+    GMX_ASSERT(dataSetCount() == 1,
+               "Convenience method not available for multiple data sets");
+    return columnCount(0);
+}
 
 int
 AbstractAnalysisData::frameCount() const
@@ -204,12 +286,7 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
-    {
-        GMX_THROW(APIError("Data module not compatible with data object properties"));
-    }
+    impl_->checkModuleProperties(*module);
 
     if (impl_->bDataStart_)
     {
@@ -229,7 +306,7 @@ void
 AbstractAnalysisData::addColumnModule(int col, int span,
                                       AnalysisDataModulePointer module)
 {
-    GMX_RELEASE_ASSERT(col >= 0 && span >= 1 && col + span <= columnCount_,
+    GMX_RELEASE_ASSERT(col >= 0 && span >= 1,
                        "Invalid columns specified for a column module");
     if (impl_->bDataStart_)
     {
@@ -246,12 +323,7 @@ AbstractAnalysisData::addColumnModule(int col, int span,
 void
 AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
-    {
-        GMX_THROW(APIError("Data module not compatible with data object properties"));
-    }
+    impl_->checkModuleProperties(*module);
     GMX_RELEASE_ASSERT(impl_->bDataStart_ && !impl_->bInData_,
                        "Data module can only be applied to ready data");
 
@@ -260,25 +332,31 @@ AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
 
 /*! \cond libapi */
 void
-AbstractAnalysisData::setColumnCount(int columnCount)
+AbstractAnalysisData::setDataSetCount(int dataSetCount)
 {
-    GMX_RELEASE_ASSERT(columnCount > 0, "Invalid data column count");
-    GMX_RELEASE_ASSERT(columnCount_ == 0 || impl_->modules_.empty(),
-                       "Data column count cannot be changed after modules are added");
+    GMX_RELEASE_ASSERT(dataSetCount > 0, "Invalid data column count");
     GMX_RELEASE_ASSERT(!impl_->bDataStart_,
-                       "Data column count cannot be changed after data has been added");
-    columnCount_ = columnCount;
+                       "Data set count cannot be changed after data has been added");
+    impl_->columnCounts_.resize(dataSetCount);
 }
 
+void
+AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
+{
+    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+                       "Out of range data set index");
+    GMX_RELEASE_ASSERT(columnCount > 0, "Invalid data column count");
+    GMX_RELEASE_ASSERT(!impl_->bDataStart_,
+                       "Data column count cannot be changed after data has been added");
+    impl_->columnCounts_[dataSet] = columnCount;
+}
 
 void
 AbstractAnalysisData::setMultipoint(bool multipoint)
 {
-    GMX_RELEASE_ASSERT(impl_->modules_.empty(),
-                       "Data type cannot be changed after modules are added");
     GMX_RELEASE_ASSERT(!impl_->bDataStart_,
                        "Data type cannot be changed after data has been added");
-    bMultiPoint_ = multipoint;
+    impl_->bMultipoint_ = multipoint;
 }
 
 
@@ -291,16 +369,17 @@ AbstractAnalysisData::notifyDataStart()
 {
     GMX_RELEASE_ASSERT(!impl_->bDataStart_,
                        "notifyDataStart() called more than once");
-    GMX_RELEASE_ASSERT(columnCount_ > 0, "Data column count is not set");
+    for (int d = 0; d < dataSetCount(); ++d)
+    {
+        GMX_RELEASE_ASSERT(columnCount(d) > 0,
+                           "Data column count is not set");
+    }
     impl_->bDataStart_ = impl_->bInData_ = true;
 
     Impl::ModuleList::const_iterator i;
     for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
     {
-        if (columnCount_ > 1 && !((*i)->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        {
-            GMX_THROW(APIError("Data module not compatible with data object properties"));
-        }
+        impl_->checkModuleProperties(**i);
         (*i)->dataStarted(this);
     }
 }
@@ -330,7 +409,8 @@ AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) con
 {
     GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
     GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
-    GMX_ASSERT(points.lastColumn() < columnCount(), "Invalid columns");
+    GMX_ASSERT(points.lastColumn() < columnCount(points.dataSetIndex()),
+               "Invalid columns");
     GMX_ASSERT(points.frameIndex() == impl_->currIndex_,
                "Points do not correspond to current frame");
     if (!impl_->bAllowMissing_ && !points.allPresent())

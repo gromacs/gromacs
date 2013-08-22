@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -69,10 +68,9 @@
 /* P.J. van Maaren, November 2005     Added tetrahedral stuff               */
 /****************************************************************************/
 
-static void find_nearest_neighbours(t_topology top, int ePBC,
+static void find_nearest_neighbours(int ePBC,
                                     int natoms, matrix box,
                                     rvec x[], int maxidx, atom_id index[],
-                                    real time,
                                     real *sgmean, real *skmean,
                                     int nslice, int slice_dim,
                                     real sgslice[], real skslice[],
@@ -303,11 +301,11 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
                     oenv);
 
     /* loop over frames */
-    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc    = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     nframes = 0;
     do
     {
-        find_nearest_neighbours(top, ePBC, natoms, box, x, isize[0], index[0], t,
+        find_nearest_neighbours(ePBC, natoms, box, x, isize[0], index[0],
                                 &sg, &sk, nslice, slice_dim, sg_slice, sk_slice, gpbc);
         for (i = 0; (i < nslice); i++)
         {
@@ -318,7 +316,7 @@ static void calc_tetra_order_parm(const char *fnNDX, const char *fnTPS,
         fprintf(fpsk, "%f %f\n", t, sk);
         nframes++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     gmx_rmpbc_done(gpbc);
 
@@ -490,7 +488,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
 
     teller = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     /*********** Start processing trajectory ***********/
     do
     {
@@ -704,7 +702,7 @@ void calc_order(const char *fn, atom_id *index, atom_id *a, rvec **order,
         nr_frames++;
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
     /*********** done with status file **********/
 
     fprintf(stderr, "\nRead trajectory. Printing parameters to file\n");
@@ -1114,7 +1112,6 @@ int gmx_order(int argc, char *argv[])
         do_view(oenv, opt2fn("-od", NFILE, fnm), NULL); /* view xvgr file */
     }
 
-    thanx(stderr);
     if (distvals != NULL)
     {
         for (i = 0; i < nslices; ++i)

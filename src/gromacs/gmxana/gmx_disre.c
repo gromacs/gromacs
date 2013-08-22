@@ -40,7 +40,6 @@
 
 #include "typedefs.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "mshift.h"
 #include "xvgr.h"
 #include "vec.h"
@@ -145,7 +144,7 @@ static void print5(FILE *fp)
 
 static void check_viol(FILE *log, t_commrec *cr,
                        t_ilist *disres, t_iparams forceparams[],
-                       t_functype functype[], rvec x[], rvec f[],
+                       rvec x[], rvec f[],
                        t_forcerec *fr, t_pbc *pbc, t_graph *g, t_dr_result dr[],
                        int clust_id, int isize, atom_id index[], real vvindex[],
                        t_fcdata *fcd)
@@ -828,12 +827,12 @@ int gmx_disre(int argc, char *argv[])
     update_mdatoms(mdatoms, ir.fepvals->init_lambda);
     fr      = mk_forcerec();
     fprintf(fplog, "Made forcerec\n");
-    init_forcerec(fplog, oenv, fr, NULL, &ir, &mtop, cr, box, FALSE,
+    init_forcerec(fplog, oenv, fr, NULL, &ir, &mtop, cr, box,
                   NULL, NULL, NULL, NULL, NULL, FALSE, -1);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ir.ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ir.ePBC, natoms);
     }
 
     j = 0;
@@ -860,13 +859,13 @@ int gmx_disre(int argc, char *argv[])
             my_clust = clust->inv_clust[j];
             range_check(my_clust, 0, clust->clust->nr);
             check_viol(fplog, cr, &(top->idef.il[F_DISRES]),
-                       top->idef.iparams, top->idef.functype,
+                       top->idef.iparams,
                        x, f, fr, pbc_null, g, dr_clust, my_clust, isize, index, vvindex, &fcd);
         }
         else
         {
             check_viol(fplog, cr, &(top->idef.il[F_DISRES]),
-                       top->idef.iparams, top->idef.functype,
+                       top->idef.iparams,
                        x, f, fr, pbc_null, g, &dr, 0, isize, index, vvindex, &fcd);
         }
         if (bPDB)
@@ -902,7 +901,7 @@ int gmx_disre(int argc, char *argv[])
         }
         j++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     if (ir.ePBC != epbcNONE)
     {
@@ -942,7 +941,6 @@ int gmx_disre(int argc, char *argv[])
         do_view(oenv, opt2fn("-ds", NFILE, fnm), "-nxy");
         do_view(oenv, opt2fn("-dm", NFILE, fnm), "-nxy");
     }
-    thanx(stderr);
 
     gmx_finalize_par();
 

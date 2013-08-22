@@ -62,6 +62,7 @@ namespace gmx
 class SelectionOptionStorage;
 class SelectionTreeElement;
 
+class AnalysisNeighborhoodPositions;
 class Selection;
 class SelectionPosition;
 
@@ -95,6 +96,8 @@ class SelectionData
         SelectionData(SelectionTreeElement *elem, const char *selstr);
         ~SelectionData();
 
+        //! Returns the name for this selection.
+        const char *name() const { return name_.c_str(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return selectionText_.c_str(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
@@ -118,6 +121,18 @@ class SelectionData
         //! \copydoc Selection::initCoveredFraction()
         bool initCoveredFraction(e_coverfrac_t type);
 
+        /*! \brief
+         * Updates the name of the selection if missing.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * If selections get their value from a group reference that cannot be
+         * resolved during parsing, the name is final only after group
+         * references have been resolved.
+         *
+         * This function is called by SelectionCollection::setIndexGroups().
+         */
+        void refreshName();
         /*! \brief
          * Computes total masses and charges for all selection positions.
          *
@@ -286,7 +301,7 @@ class Selection
         explicit Selection(internal::SelectionData *sel) : sel_(sel) {}
 
         //! Returns the name of the selection.
-        const char *name() const  { return data().name_.c_str(); }
+        const char *name() const  { return data().name(); }
         //! Returns the string that was parsed to produce this selection.
         const char *selectionText() const { return data().selectionText(); }
         //! Returns true if the size of the selection (posCount()) is dynamic.
@@ -383,13 +398,24 @@ class Selection
             return ConstArrayRef<int>(data().rawPositions_.m.mapid, posCount());
         }
 
-        //! Deprecated method for direct access to position data.
-        const gmx_ana_pos_t *positions() const { return &data().rawPositions_; }
-
         //! Returns whether the covered fraction can change between frames.
         bool isCoveredFractionDynamic() const { return data().isCoveredFractionDynamic(); }
         //! Returns the covered fraction for the current frame.
         real coveredFraction() const { return data().coveredFraction_; }
+
+        /*! \brief
+         * Allows passing a selection directly to neighborhood searching.
+         *
+         * When initialized this way, AnalysisNeighborhoodPair objects return
+         * indices that can be used to index the selection positions with
+         * position().
+         *
+         * Works exactly like if AnalysisNeighborhoodPositions had a
+         * constructor taking a Selection object as a parameter.
+         * See AnalysisNeighborhoodPositions for rationale and additional
+         * discussion.
+         */
+        operator AnalysisNeighborhoodPositions() const;
 
         /*! \brief
          * Initializes information about covered fractions.
@@ -676,6 +702,20 @@ class SelectionPosition
         {
             return sel_->rawPositions_.m.mapid[i_];
         }
+
+        /*! \brief
+         * Allows passing a selection position directly to neighborhood searching.
+         *
+         * When initialized this way, AnalysisNeighborhoodPair objects return
+         * the index that can be used to access this position using
+         * Selection::position().
+         *
+         * Works exactly like if AnalysisNeighborhoodPositions had a
+         * constructor taking a SelectionPosition object as a parameter.
+         * See AnalysisNeighborhoodPositions for rationale and additional
+         * discussion.
+         */
+        operator AnalysisNeighborhoodPositions() const;
 
     private:
         const internal::SelectionData  *sel_;

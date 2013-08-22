@@ -153,13 +153,13 @@ gmx_mm256_log_ps(__m256 x)
     const __m256  CE_0        = _mm256_set1_ps(1.3429983063133937f);
     const __m256  CE_1        = _mm256_set1_ps(1.807420826584643f);
 
-    __m256        fexp, fexp1;
+    __m256        fexp;
     __m256i       iexp;
     __m128i       iexp128a, iexp128b;
     __m256        mask;
     __m256i       imask;
     __m128i       imask128a, imask128b;
-    __m256        x1, x2;
+    __m256        x2;
     __m256        y;
     __m256        pA, pB, pC, pD, pE, tB, tC, tD, tE;
 
@@ -251,10 +251,10 @@ gmx_mm_log_ps(__m128 x)
     const __m128  CE_0        = _mm_set1_ps(1.3429983063133937f);
     const __m128  CE_1        = _mm_set1_ps(1.807420826584643f);
 
-    __m128        fexp, fexp1;
+    __m128        fexp;
     __m128i       iexp;
     __m128        mask;
-    __m128        x1, x2;
+    __m128        x2;
     __m128        y;
     __m128        pA, pB, pC, pD, pE, tB, tC, tD, tE;
 

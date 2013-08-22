@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -918,7 +917,7 @@ int gmx_traj(int argc, char *argv[])
 
     if (bCom && bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms, fr.box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, fr.natoms);
     }
 
     do
@@ -1120,8 +1119,6 @@ int gmx_traj(int argc, char *argv[])
 
     /* view it */
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }
