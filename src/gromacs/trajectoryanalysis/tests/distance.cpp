@@ -83,4 +83,15 @@ TEST_F(DistanceModuleTest, ComputesMultipleDistances)
     runTest(CommandLine::create(cmdline));
 }
 
+TEST_F(DistanceModuleTest, HandlesDynamicSelections)
+{
+    const char *const cmdline[] = {
+        "distance",
+        "-select", "atomname S1 S2 and res_cog x < 2.8",
+        "-len", "2", "-binw", "0.5"
+    };
+    setTopology("simple.gro");
+    runTest(CommandLine::create(cmdline));
+}
+
 } // namespace

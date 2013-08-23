@@ -619,7 +619,8 @@ AnalysisDataSimpleHistogramModule::settings() const
 int
 AnalysisDataSimpleHistogramModule::flags() const
 {
-    return efAllowMulticolumn | efAllowMultipoint | efAllowMultipleDataSets;
+    return efAllowMulticolumn | efAllowMultipoint | efAllowMissing
+           | efAllowMultipleDataSets;
 }
 
 
@@ -653,10 +654,13 @@ AnalysisDataSimpleHistogramModule::pointsAdded(const AnalysisDataPointSetRef &po
     frame.selectDataSet(points.dataSetIndex());
     for (int i = 0; i < points.columnCount(); ++i)
     {
-        int bin = settings().findBin(points.y(i));
-        if (bin != -1)
+        if (points.present(i))
         {
-            frame.value(bin) += 1;
+            const int bin = settings().findBin(points.y(i));
+            if (bin != -1)
+            {
+                frame.value(bin) += 1;
+            }
         }
     }
 }

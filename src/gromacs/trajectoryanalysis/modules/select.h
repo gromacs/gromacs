@@ -93,7 +93,6 @@ class Select : public TrajectoryAnalysisModule
         std::string                         fnOccupancy_;
         std::string                         fnPDB_;
         std::string                         fnLifetime_;
-        bool                                bDump_;
         bool                                bTotNorm_;
         bool                                bFracNorm_;
         bool                                bResInd_;

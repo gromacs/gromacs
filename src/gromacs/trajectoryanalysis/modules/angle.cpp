@@ -135,12 +135,6 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "set with [TT]-binw[tt].",
         "For [TT]-oav[tt] and [TT]-oh[tt], separate average/histogram is",
         "computed for each selection in [TT]-group1[tt]."
-        /* TODO: Consider if the dump option is necessary and how to best
-         * implement it.
-           "[TT]-od[tt] can be used to dump all the individual angles,",
-           "each on a separate line. This format is better suited for",
-           "further processing, e.g., if angles from multiple runs are needed."
-         */
     };
     static const char *const cGroup1TypeEnum[] =
     { "angle", "dihedral", "vector", "plane" };
@@ -168,15 +162,12 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(DoubleOption("binw").store(&binWidth_)
                            .description("Binwidth for -oh in degrees"));
 
-    // TODO: Consider what is the best way to support dynamic selections.
-    // Again, most of the code already supports it, but it needs to be
-    // considered how should -oall work, and additional checks should be added.
     sel1info_ = options->addOption(SelectionOption("group1")
-                                       .required().onlyStatic().storeVector(&sel1_)
+                                       .required().dynamicMask().storeVector(&sel1_)
                                        .multiValue()
                                        .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-                                       .onlyStatic().storeVector(&sel2_)
+                                       .dynamicMask().storeVector(&sel2_)
                                        .multiValue()
                                        .description("Second analysis/vector selection"));
 }
@@ -243,8 +234,8 @@ Angle::checkSelections(const SelectionList &sel1,
 
     for (size_t g = 0; g < sel1.size(); ++g)
     {
-        int na1 = sel1[g].posCount();
-        int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
+        const int na1 = sel1[g].posCount();
+        const int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
         if (natoms1_ > 1 && na1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
@@ -266,6 +257,30 @@ Angle::checkSelections(const SelectionList &sel1,
         {
             GMX_THROW(InconsistentInputError(
                               "The second group should contain a single position with -g2 sphnorm"));
+        }
+        if (sel1[g].isDynamic() || (natoms2_ > 0 && sel2[g].isDynamic()))
+        {
+            for (int i = 0, j = 0; i < na1; i += natoms1_, j += natoms2_)
+            {
+                const bool bSelected = sel1[g].position(i).selected();
+                bool       bOk       = true;
+                for (int k = 1; k < natoms1_ && bOk; ++k)
+                {
+                    bOk = (sel1[g].position(i+k).selected() == bSelected);
+                }
+                for (int k = 1; k < natoms2_ && bOk; ++k)
+                {
+                    bOk = (sel2[g].position(j+k).selected() == bSelected);
+                }
+                if (!bOk)
+                {
+                    std::string message =
+                        formatString("Dynamic selection %d does not select "
+                                     "a consistent set of angles over the frames",
+                                     static_cast<int>(g + 1));
+                    GMX_THROW(InconsistentInputError(message));
+                }
+            }
         }
     }
 }
@@ -422,6 +437,9 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         {
             rvec x[4];
             real angle;
+            // checkSelections() ensures that this reflects all the involved
+            // positions.
+            bool bPresent = sel1[g].position(i).selected();
             copy_pos(sel1, natoms1_, g, i, x);
             switch (g1type_[0])
             {
@@ -502,24 +520,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            /* TODO: Should we also calculate distances like g_sgangle?
-             * Could be better to leave that for a separate tool.
-               real dist = 0.0;
-               if (bDumpDist_)
-               {
-                if (pbc)
-                {
-                    rvec dx;
-                    pbc_dx(pbc, c2, c1, dx);
-                    dist = norm(dx);
-                }
-                else
-                {
-                    dist = sqrt(distance2(c1, c2));
-                }
-               }
-             */
-            dh.setPoint(n, angle * RAD2DEG);
+            dh.setPoint(n, angle * RAD2DEG, bPresent);
         }
     }
     dh.finishFrame();

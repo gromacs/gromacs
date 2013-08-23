@@ -131,11 +131,8 @@ Distance::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*
     options->addOption(FileNameOption("oallstat").filetype(eftPlot).outputFile()
                            .store(&fnAllStats_).defaultBasename("diststat")
                            .description("Statistics for individual distances"));
-    // TODO: Consider what is the best way to support dynamic selections.
-    // Again, most of the code already supports it, but it needs to be
-    // considered how should -oall work, and additional checks should be added.
     options->addOption(SelectionOption("select").storeVector(&sel_)
-                           .required().onlyStatic().multiValue()
+                           .required().dynamicMask().multiValue()
                            .description("Position pairs to calculate distances for"));
     // TODO: Extend the histogramming implementation to allow automatic
     // extension of the histograms to cover the data, removing the need for
@@ -166,6 +163,20 @@ void checkSelections(const SelectionList &sel)
                         "(there are %d positions)",
                         sel[g].name(), sel[g].posCount());
             GMX_THROW(InconsistentInputError(message));
+        }
+        if (sel[g].isDynamic())
+        {
+            for (int i = 0; i < sel[g].posCount(); i += 2)
+            {
+                if (sel[g].position(i).selected() != sel[g].position(i+1).selected())
+                {
+                    std::string message =
+                        formatString("Dynamic selection %d does not select "
+                                     "a consistent set of pairs over the frames",
+                                     static_cast<int>(g + 1));
+                    GMX_THROW(InconsistentInputError(message));
+                }
+            }
         }
     }
 }
@@ -285,8 +296,9 @@ Distance::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
             {
                 rvec_sub(p2.x(), p1.x(), dx);
             }
-            real dist = norm(dx);
-            distHandle.setPoint(n, dist);
+            real dist     = norm(dx);
+            bool bPresent = p1.selected() && p2.selected();
+            distHandle.setPoint(n, dist, bPresent);
             xyzHandle.setPoints(n*3, 3, dx);
         }
     }
