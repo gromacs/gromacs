@@ -112,7 +112,7 @@ TEST_F(SelectModuleTest, HandlesMaxPDBOutput)
 {
     const char *const cmdline[] = {
         "select",
-        "-select", "resname RA RD and y < 2.5",
+        "-select", "resname RA RD and y < 2.5", "resname RA RB",
         "-pdbatoms", "maxsel"
     };
     setTopology("simple.pdb");
@@ -126,26 +126,13 @@ TEST_F(SelectModuleTest, HandlesSelectedPDBOutput)
 {
     const char *const cmdline[] = {
         "select",
-        "-select", "resname RA RD and y < 2.5",
+        "-select", "resname RA RD and y < 2.5", "resname RA RB",
         "-pdbatoms", "selected"
     };
     setTopology("simple.pdb");
     setTrajectory("simple.gro");
     includeDataset("occupancy");
     setOutputFile("-ofpdb", "occupancy.pdb");
-    runTest(CommandLine::create(cmdline));
-}
-
-TEST_F(SelectModuleTest, HandlesDumpOption)
-{
-    const char *const cmdline[] = {
-        "select",
-        "-select", "y < 2.5",
-        "-dump"
-    };
-    setTopology("simple.gro");
-    setOutputFile("-oi", "index.dat");
-    includeDataset("index");
     runTest(CommandLine::create(cmdline));
 }
 

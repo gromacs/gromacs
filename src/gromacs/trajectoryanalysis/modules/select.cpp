@@ -45,6 +45,7 @@
 #include <cstring>
 
 #include <algorithm>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -259,11 +260,14 @@ const char Select::shortDescription[] =
 Select::Select()
     : TrajectoryAnalysisModule(name, shortDescription),
       selOpt_(NULL),
-      bDump_(false), bTotNorm_(false), bFracNorm_(false), bResInd_(false),
+      bTotNorm_(false), bFracNorm_(false), bResInd_(false),
       bCumulativeLifetimes_(true), top_(NULL),
       occupancyModule_(new AnalysisDataAverageModule()),
       lifetimeModule_(new AnalysisDataLifetimeModule())
 {
+    mdata_.addModule(occupancyModule_);
+    mdata_.addModule(lifetimeModule_);
+
     registerAnalysisDataset(&sdata_, "size");
     registerAnalysisDataset(&cdata_, "cfrac");
     idata_.setColumnCount(0, 2);
@@ -310,9 +314,7 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "of positions, followed by the atom/residue/molecule numbers.",
         "If more than one selection is specified, the size of the second",
         "group immediately follows the last number of the first group",
-        "and so on. With [TT]-dump[tt], the frame time and the number",
-        "of positions is omitted from the output. In this case, only one",
-        "selection can be given.[PAR]",
+        "and so on.[PAR]",
         "With [TT]-on[tt], the selected atoms are written as a index file",
         "compatible with [TT]make_ndx[tt] and the analyzing tools. Each selection",
         "is written as a selection group and for dynamic selections a",
@@ -328,8 +330,7 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "as a function of time. Each line in the output corresponds to",
         "one frame, and contains either 0/1 for each atom/residue/molecule",
         "possibly selected. 1 stands for the atom/residue/molecule being",
-        "selected for the current frame, 0 for not selected.",
-        "With [TT]-dump[tt], the frame time is omitted from the output.[PAR]",
+        "selected for the current frame, 0 for not selected.[PAR]",
         "With [TT]-of[tt], the occupancy fraction of each position (i.e.,",
         "the fraction of frames where the position is selected) is",
         "printed.[PAR]",
@@ -345,10 +346,8 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "selected positions as a function of the time the position was",
         "continuously selected. [TT]-cumlt[tt] can be used to control whether",
         "subintervals of longer intervals are included in the histogram.[PAR]",
-        "With [TT]-om[tt], [TT]-of[tt], [TT]-olt[tt], and [TT]-ofpdb[tt],",
-        "only one selection can be provided.",
-        "[TT]-om[tt], [TT]-of[tt], and [TT]-olt[tt] only accept dynamic",
-        "selections."
+        "[TT]-om[tt], [TT]-of[tt], and [TT]-olt[tt] only make sense with",
+        "dynamic selections."
     };
 
     options->setDescription(concatenateStrings(desc));
@@ -382,8 +381,6 @@ Select::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
                                      .required().multiValue()
                                      .description("Selections to analyze"));
 
-    options->addOption(BooleanOption("dump").store(&bDump_)
-                           .description("Do not print the frame time (-om, -oi) or the index size (-oi)"));
     options->addOption(BooleanOption("norm").store(&bTotNorm_)
                            .description("Normalize by total number of positions with -os"));
     options->addOption(BooleanOption("cfnorm").store(&bFracNorm_)
@@ -409,24 +406,12 @@ Select::optionsFinished(Options                     * /*options*/,
         settings->setFlag(TrajectoryAnalysisSettings::efRequireTop);
         settings->setFlag(TrajectoryAnalysisSettings::efUseTopX);
     }
-    if ((!fnIndex_.empty() && bDump_)
-        || !fnMask_.empty() || !fnOccupancy_.empty() || !fnPDB_.empty()
-        || !fnLifetime_.empty())
-    {
-        selOpt_->setValueCount(1);
-    }
 }
 
 void
 Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
                      const TopologyInformation        &top)
 {
-    if (!sel_[0].isDynamic()
-        && (!fnMask_.empty() || !fnOccupancy_.empty() || !fnLifetime_.empty()))
-    {
-        GMX_THROW(InconsistentInputError(
-                          "-om, -of, or -olt are not meaningful with a static selection"));
-    }
     bResInd_ = (resNumberType_ == "index");
 
     for (SelectionList::iterator i = sel_.begin(); i != sel_.end(); ++i)
@@ -473,15 +458,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setFileName(fnIndex_);
         plot->setPlainOutput(true);
         plot->setYFormat(4, 0);
-        if (bDump_)
-        {
-            plot->setOmitX(bDump_);
-            idata_.addColumnModule(1, 1, plot);
-        }
-        else
-        {
-            idata_.addModule(plot);
-        }
+        idata_.addModule(plot);
     }
     if (!fnNdx_.empty())
     {
@@ -494,18 +471,17 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         idata_.addModule(writer);
     }
 
-    // TODO: Write out the mask and lifetimes for all the selections.
-    mdata_.setColumnCount(0, sel_[0].posCount());
-    mdata_.addModule(occupancyModule_);
-    mdata_.addModule(lifetimeModule_);
+    mdata_.setDataSetCount(sel_.size());
+    for (size_t g = 0; g < sel_.size(); ++g)
+    {
+        mdata_.setColumnCount(g, sel_[g].posCount());
+    }
     lifetimeModule_->setCumulative(bCumulativeLifetimes_);
     if (!fnMask_.empty())
     {
         AnalysisDataPlotModulePointer plot(
                 new AnalysisDataPlotModule(settings.plotSettings()));
         plot->setFileName(fnMask_);
-        plot->setPlainOutput(bDump_);
-        plot->setOmitX(bDump_);
         plot->setTitle("Selection mask");
         plot->setXAxisIsTime();
         plot->setYLabel("Occupancy");
@@ -520,7 +496,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setTitle("Fraction of time selection matches");
         plot->setXLabel("Selected position");
         plot->setYLabel("Occupied fraction");
-        occupancyModule_->addColumnModule(0, 1, plot);
+        occupancyModule_->addModule(plot);
     }
     if (!fnLifetime_.empty())
     {
@@ -589,13 +565,17 @@ Select::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
     idh.finishFrame();
 
     mdh.startFrame(frnr, fr.time);
-    for (int i = 0; i < totsize_[0]; ++i)
+    for (size_t g = 0; g < sel.size(); ++g)
     {
-        mdh.setPoint(i, 0);
-    }
-    for (int i = 0; i < sel[0].posCount(); ++i)
-    {
-        mdh.setPoint(sel[0].position(i).refId(), 1);
+        mdh.selectDataSet(g);
+        for (int i = 0; i < totsize_[g]; ++i)
+        {
+            mdh.setPoint(i, 0);
+        }
+        for (int i = 0; i < sel[g].posCount(); ++i)
+        {
+            mdh.setPoint(sel[g].position(i).refId(), 1);
+        }
     }
     mdh.finishFrame();
 }
@@ -628,13 +608,17 @@ Select::writeOutput()
         {
             pdbinfo[i].occup = 0.0;
         }
-        for (int i = 0; i < sel_[0].posCount(); ++i)
+        for (size_t g = 0; g < sel_.size(); ++g)
         {
-            ConstArrayRef<int>                 atomIndices = sel_[0].position(i).atomIndices();
-            ConstArrayRef<int>::const_iterator ai;
-            for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
+            for (int i = 0; i < sel_[g].posCount(); ++i)
             {
-                pdbinfo[*ai].occup = occupancyModule_->average(0, i);
+                ConstArrayRef<int>                 atomIndices
+                    = sel_[g].position(i).atomIndices();
+                ConstArrayRef<int>::const_iterator ai;
+                for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
+                {
+                    pdbinfo[*ai].occup += occupancyModule_->average(g, i);
+                }
             }
         }
 
@@ -654,25 +638,27 @@ Select::writeOutput()
         }
         else if (pdbAtoms_ == "maxsel")
         {
-            ConstArrayRef<int> atomIndices = sel_[0].atomIndices();
-            t_trxstatus       *status      = open_trx(fnPDB_.c_str(), "w");
-            write_trxframe_indexed(status, &fr, atomIndices.size(),
-                                   atomIndices.data(), NULL);
+            std::set<int> atomIndicesSet;
+            for (size_t g = 0; g < sel_.size(); ++g)
+            {
+                ConstArrayRef<int> atomIndices = sel_[g].atomIndices();
+                atomIndicesSet.insert(atomIndices.begin(), atomIndices.end());
+            }
+            std::vector<int>  allAtomIndices(atomIndicesSet.begin(),
+                                             atomIndicesSet.end());
+            t_trxstatus      *status = open_trx(fnPDB_.c_str(), "w");
+            write_trxframe_indexed(status, &fr, allAtomIndices.size(),
+                                   &allAtomIndices[0], NULL);
             close_trx(status);
         }
         else if (pdbAtoms_ == "selected")
         {
             std::vector<int> indices;
-            for (int i = 0; i < sel_[0].posCount(); ++i)
+            for (int i = 0; i < atoms.nr; ++i)
             {
-                if (occupancyModule_->average(0, i) > 0)
+                if (pdbinfo[i].occup > 0.0)
                 {
-                    ConstArrayRef<int>                 atomIndices = sel_[0].position(i).atomIndices();
-                    ConstArrayRef<int>::const_iterator ai;
-                    for (ai = atomIndices.begin(); ai != atomIndices.end(); ++ai)
-                    {
-                        indices.push_back(*ai);
-                    }
+                    indices.push_back(i);
                 }
             }
             t_trxstatus *status = open_trx(fnPDB_.c_str(), "w");

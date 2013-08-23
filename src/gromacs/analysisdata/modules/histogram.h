@@ -338,7 +338,7 @@ class AbstractAverageHistogram : public AbstractAnalysisArrayData
  * Output data contains the same number of frames and data sets as the input
  * data.  Each frame contains the histogram(s) for the points in that frame.
  * Each input data set is processed independently into the corresponding output
- * data set.
+ * data set.  Missing values are ignored.
  * All input columns for a data set are averaged into the same histogram.
  * The number of columns for all data sets equals the number of bins in the
  * histogram.
