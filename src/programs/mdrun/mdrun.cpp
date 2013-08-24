@@ -33,6 +33,8 @@
  * And Hey:
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
+#include "mdrun_main.h"
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -50,8 +52,6 @@
 #include "gromacs/legacyheaders/readinp.h"
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/typedefs.h"
-
-#include "gromacs/commandline/cmdlinemodulemanager.h"
 
 int gmx_mdrun(int argc, char *argv[])
 {
@@ -735,9 +735,4 @@ int gmx_mdrun(int argc, char *argv[])
     }
 
     return rc;
-}
-
-int main(int argc, char *argv[])
-{
-    return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &gmx_mdrun);
 }

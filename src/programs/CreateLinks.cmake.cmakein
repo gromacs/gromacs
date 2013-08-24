@@ -36,6 +36,7 @@
 # but this has some complications.  As the same list is also needed for
 # man page generation, this can wait for now.
 set(SYMLINK_NAMES
+    mdrun
     gmxcheck
     gmxdump
     grompp
