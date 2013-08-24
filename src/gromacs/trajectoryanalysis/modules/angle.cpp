@@ -319,7 +319,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Average angle");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Angle (degrees)");
-        // TODO: Add legends
+        // TODO: Consider adding information about the second selection,
+        // and/or a subtitle describing what kind of angle this is.
+        for (size_t g = 0; g < sel1_.size(); ++g)
+        {
+            plotm->appendLegend(sel1_[g].name());
+        }
         averageModule_->addModule(plotm);
     }
 
@@ -343,7 +348,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Angle histogram");
         plotm->setXLabel("Angle (degrees)");
         plotm->setYLabel("Probability");
-        // TODO: Add legends
+        // TODO: Consider adding information about the second selection,
+        // and/or a subtitle describing what kind of angle this is.
+        for (size_t g = 0; g < sel1_.size(); ++g)
+        {
+            plotm->appendLegend(sel1_[g].name());
+        }
         histogramModule_->averager().addModule(plotm);
     }
 }

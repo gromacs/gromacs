@@ -211,7 +211,10 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Average distance");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Distance (nm)");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(sel_[g].name());
+        }
         averageModule_->addModule(plotm);
     }
 
@@ -247,7 +250,10 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Distance histogram");
         plotm->setXLabel("Distance (nm)");
         plotm->setYLabel("Probability");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(sel_[g].name());
+        }
         histogramModule_->averager().addModule(plotm);
     }
 
@@ -260,7 +266,11 @@ Distance::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Statistics for individual distances");
         plotm->setXLabel("Distance index");
         plotm->setYLabel("Average/standard deviation (nm)");
-        // TODO: Add legends
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plotm->appendLegend(std::string(sel_[g].name()) + " avg");
+            plotm->appendLegend(std::string(sel_[g].name()) + " std.dev.");
+        }
         // TODO: Consider whether this output format is the best possible.
         allStatsModule_->addModule(plotm);
     }
