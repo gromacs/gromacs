@@ -1230,7 +1230,7 @@ ADD_CUSTOM_TARGET(uninstall
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
 #gmxtests target builds all binaries required for running gmxtest
-add_custom_target(gmxtests DEPENDS mdrun gmx links)
+add_custom_target(gmxtests DEPENDS gmx links)
 IF(BUILD_TESTING)
     enable_testing()
     add_subdirectory(tests)

@@ -46,6 +46,8 @@
 
 #include "gromacs/gmxana/gmx_ana.h"
 
+#include "../mdrun/mdrun_main.h"
+
 extern "C"
 {
 
@@ -97,6 +99,9 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Protonate structures");
     registerModule(manager, &gmx_x2top, "x2top",
                    "Generate a primitive topology from coordinates");
+
+    registerModule(manager, &gmx_mdrun, "mdrun",
+                   "Perform a simulation, do a normal mode analysis or an energy minimization");
 
     // Modules from gmx_ana.h.
     registerModule(manager, &gmx_do_dssp, "do_dssp",
@@ -273,7 +278,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
     // TODO: Also include binaries from other directories than src/tools/:
     //        "g_xrama|Show animated Ramachandran plots");
     //        "mdrun|finds a potential energy minimum and calculates the Hessian");
-    //        "mdrun|performs a simulation, do a normal mode analysis or an energy minimization");
     //        "mdrun|with -rerun (re)calculates energies for trajectory frames");
     //        "ngmx|Display a trajectory");
 }
