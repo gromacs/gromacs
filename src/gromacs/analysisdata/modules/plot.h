@@ -210,6 +210,8 @@ class AbstractPlotModule : public AnalysisDataModuleSerial
          * together.
          */
         void appendLegend(const char *setname);
+        //! \copydoc appendLegend(const char *)
+        void appendLegend(const std::string &setname);
         /*! \brief
          * Set field width and precision for X value output.
          */

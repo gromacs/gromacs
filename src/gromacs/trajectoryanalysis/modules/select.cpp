@@ -434,6 +434,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setTitle("Selection size");
         plot->setXAxisIsTime();
         plot->setYLabel("Number");
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plot->appendLegend(sel_[g].name());
+        }
         sdata_.addModule(plot);
     }
 
@@ -447,6 +451,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setXAxisIsTime();
         plot->setYLabel("Fraction");
         plot->setYFormat(6, 4);
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plot->appendLegend(sel_[g].name());
+        }
         cdata_.addModule(plot);
     }
 
@@ -486,6 +494,7 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setXAxisIsTime();
         plot->setYLabel("Occupancy");
         plot->setYFormat(1, 0);
+        // TODO: Add legend? (there can be massive amount of columns)
         mdata_.addModule(plot);
     }
     if (!fnOccupancy_.empty())
@@ -496,6 +505,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setTitle("Fraction of time selection matches");
         plot->setXLabel("Selected position");
         plot->setYLabel("Occupied fraction");
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plot->appendLegend(sel_[g].name());
+        }
         occupancyModule_->addModule(plot);
     }
     if (!fnLifetime_.empty())
@@ -506,6 +519,10 @@ Select::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plot->setTitle("Lifetime histogram");
         plot->setXAxisIsTime();
         plot->setYLabel("Number of occurrences");
+        for (size_t g = 0; g < sel_.size(); ++g)
+        {
+            plot->appendLegend(sel_[g].name());
+        }
         lifetimeModule_->addModule(plot);
     }
 

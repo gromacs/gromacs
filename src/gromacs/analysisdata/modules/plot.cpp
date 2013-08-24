@@ -274,6 +274,13 @@ AbstractPlotModule::appendLegend(const char *setname)
 
 
 void
+AbstractPlotModule::appendLegend(const std::string &setname)
+{
+    impl_->legend_.push_back(setname);
+}
+
+
+void
 AbstractPlotModule::setXFormat(int width, int precision, char format)
 {
     GMX_RELEASE_ASSERT(width >= 0 && precision >= 0
