@@ -38,6 +38,14 @@ file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
 
 if(GMX_FAHCORE)
     add_library(fahcore ${MDRUN_SOURCES})
+elseif(GMX_BUILD_MDRUN_ONLY)
+    add_executable(mdrun ${MDRUN_SOURCES} mdrun_main.cpp)
+    target_link_libraries(mdrun
+        ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    set_target_properties(mdrun PROPERTIES
+        OUTPUT_NAME "mdrun${GMX_BINARY_SUFFIX}"
+        COMPILE_FLAGS "${OpenMP_C_FLAGS}")
+    install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 else()
     file(GLOB GMX_EXECUTABLE_SOURCES gmx/*.c gmx/*.cpp)
     add_executable(gmx ${GMX_EXECUTABLE_SOURCES} ${MDRUN_SOURCES})

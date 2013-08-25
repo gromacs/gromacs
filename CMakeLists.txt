@@ -169,6 +169,7 @@ option(GMX_DEFAULT_SUFFIX "Use default suffixes for GROMACS binaries and libs (_
 if(UNIX)
     option(GMX_SYMLINK_OLD_BINARY_NAMES "Create symbolic links for pre-5.0 binary names" ON)
 endif()
+option(GMX_BUILD_MDRUN_ONLY "Build and install only the mdrun binary" OFF)
 
 if(UNIX)
     option(GMX_PREFER_STATIC_LIBS "When finding libraries prefer static archives (not available on non-*nix platforms and it will only work if static versions of external dependencies are available and found)!" OFF)
@@ -318,6 +319,9 @@ else(GMX_DEFAULT_SUFFIX)
     message(STATUS "Using manually set library suffix: \"${GMX_LIBS_SUFFIX}\"")
   endif (NOT SUFFIX_QUIETLY)
 endif(GMX_DEFAULT_SUFFIX)
+if (GMX_BUILD_MDRUN_ONLY)
+    set(GMX_LIBS_SUFFIX "_mdrun${GMX_LIBS_SUFFIX}")
+endif ()
 set(SUFFIX_QUIETLY TRUE CACHE INTERNAL "")
 
 set(PKG_CFLAGS "")
@@ -1217,9 +1221,11 @@ else()
     # TODO: Propagate the above settings to the installed CMakeFiles.txt template
     # (from share/template/)
     set(PKG_CFLAGS "${PKG_CFLAGS} -DBOOST_NO_TYPEID -I${INCL_INSTALL_DIR}/gromacs/external/boost")
-    install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
-            DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
-            COMPONENT development)
+    if (NOT GMX_BUILD_MDRUN_ONLY)
+        install(DIRECTORY ${CMAKE_SOURCE_DIR}/src/external/boost/boost
+                DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
+                COMPONENT development)
+    endif ()
 endif()
 
 if (GMX_BUILD_FOR_COVERAGE)
@@ -1231,10 +1237,12 @@ if (GMX_BUILD_FOR_COVERAGE)
     add_definitions(-DNDEBUG -DBOOST_DISABLE_ASSERTS -DGMX_DISABLE_ASSERTS)
 endif ()
 
-add_subdirectory(doxygen)
-add_subdirectory(share)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(doxygen)
+    add_subdirectory(share)
+    add_subdirectory(scripts)
+endif ()
 add_subdirectory(src)
-add_subdirectory(scripts)
 
 # Issue a warning if NVIDIA GPUs were detected, but CUDA was not found.
 # Don't bother the user after the first configure pass.
@@ -1264,14 +1272,18 @@ ADD_CUSTOM_TARGET(uninstall
 
 include(CTest)
 mark_as_advanced(BUILD_TESTING)
-#gmxtests target builds all binaries required for running gmxtest
-add_custom_target(gmxtests DEPENDS gmx links)
 IF(BUILD_TESTING)
     enable_testing()
-    add_subdirectory(tests)
     #"check" target builds and runs all tests
     add_custom_target(check COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure)
-    add_dependencies(check gmxtests tests)
+    add_dependencies(check tests)
+    # TODO: This would be better within tests/CMakeLists.txt
+    if (NOT GMX_BUILD_MDRUN_ONLY)
+        #gmxtests target builds all binaries required for running gmxtest
+        add_custom_target(gmxtests DEPENDS gmx links)
+        add_dependencies(check gmxtests)
+        add_subdirectory(tests)
+    endif()
     #TODO: Add warning if NOT REGRESSIONTEST_PATH OR NOT GMX_XML that regression/unit tests are not run.
 ENDIF()
 

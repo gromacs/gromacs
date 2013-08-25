@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010, by the GROMACS development team, led by
+# Copyright (c) 2010,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -37,6 +37,4 @@ set(ANALYSISDATA_MODULES_PUBLIC_HEADERS
     displacement.h
     histogram.h
     plot.h)
-install(FILES ${ANALYSISDATA_MODULES_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/analysisdata/modules
-        COMPONENT development)
+gmx_install_headers(analysisdata/modules ${ANALYSISDATA_MODULES_PUBLIC_HEADERS})
