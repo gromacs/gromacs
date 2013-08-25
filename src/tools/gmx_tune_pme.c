@@ -76,6 +76,7 @@ enum {
     eParselogNoDDGrid,
     eParselogTPXVersion,
     eParselogNotParallel,
+    eParselogLargePrimeFactor,
     eParselogFatal,
     eParselogNr
 };
@@ -287,6 +288,11 @@ static int parse_logfile(const char *logfile, const char *errfile,
                 {
                     fclose(fp);
                     return eParselogNoDDGrid;
+                }
+                else if (str_starts(line, "The number of nodes you selected"))
+                {
+                    fclose(fp);
+                    return eParselogLargePrimeFactor;
                 }
                 else if (str_starts(line, "reading tpx file"))
                 {
@@ -1377,6 +1383,7 @@ static void do_the_tests(
         "No DD grid found for these settings.",
         "TPX version conflict!",
         "mdrun was not started in parallel!",
+        "Number of PP nodes has a prime factor that is too large.",
         "An error occured."
     };
     char        str_PME_f_load[13];
