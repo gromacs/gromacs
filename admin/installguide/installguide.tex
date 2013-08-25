@@ -715,9 +715,10 @@ routines - it is rare for this to be a bottleneck.
 
 \begin{verbatim}
 cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C \
-         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix
-make mdrun
-make install-mdrun
+         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
+         -DGMX_BUILD_MDRUN_ONLY=ON
+make
+make install
 \end{verbatim}
 It is possible to configure and make the remaining \gromacs{} tools
 with the compute node toolchain, but as none of those tools are

@@ -53,12 +53,8 @@ set(UTILITY_PUBLIC_HEADERS
     programinfo.h
     stringutil.h
     uniqueptr.h)
-install(FILES ${UTILITY_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
-        COMPONENT development)
-install(FILES ${GENERATED_HEADER_CONFIG}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/utility
-        COMPONENT development)
+gmx_install_headers(utility ${UTILITY_PUBLIC_HEADERS})
+gmx_install_headers(utility ${GENERATED_HEADER_CONFIG})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

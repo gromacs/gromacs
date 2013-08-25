@@ -43,9 +43,7 @@ set(OPTIONS_PUBLIC_HEADERS
     optionflags.h
     options.h
     timeunitmanager.h)
-install(FILES ${OPTIONS_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/options
-        COMPONENT development)
+gmx_install_headers(options ${OPTIONS_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)

@@ -19,6 +19,4 @@ set(LINEARALGEBRA_PUBLIC_HEADERS
     matrix.h
     mtxio.h
     sparsematrix.h)
-install(FILES ${LINEARALGEBRA_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/linearalgebra
-        COMPONENT development)
+gmx_install_headers(linearalgebra ${LINEARALGEBRA_PUBLIC_HEADERS})

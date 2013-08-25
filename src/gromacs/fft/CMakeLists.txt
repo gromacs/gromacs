@@ -53,9 +53,7 @@ set(LIBGROMACS_SOURCES
 
 set(FFT_PUBLIC_HEADERS
     fft.h)
-install(FILES ${FFT_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/fft
-        COMPONENT development)
+gmx_install_headers(fft ${FFT_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
     add_subdirectory(tests)
