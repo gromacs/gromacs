@@ -92,7 +92,6 @@
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 
-
 /* Include the SIMD macro file and then check for support */
 #include "gmx_simd_macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
@@ -4166,6 +4165,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 
 
 static void reset_pmeonly_counters(t_commrec *cr, gmx_wallcycle_t wcycle,
+                                   gmx_runtime_t *runtime,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4180,6 +4180,7 @@ static void reset_pmeonly_counters(t_commrec *cr, gmx_wallcycle_t wcycle,
     }
     ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
+    runtime_start(runtime);
 }
 
 
@@ -4220,6 +4221,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
+                gmx_runtime_t *runtime,
                 real ewaldcoeff,  gmx_bool bGatherOnly,
                 t_inputrec *ir)
 {
@@ -4275,7 +4277,7 @@ int gmx_pmeonly(gmx_pme_t pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(cr, wcycle, nrnb, ir, step);
+                reset_pmeonly_counters(cr, wcycle, runtime, nrnb, ir, step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -4291,6 +4293,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         if (count == 0)
         {
             wallcycle_start(wcycle, ewcRUN);
+            runtime_start(runtime);
         }
 
         wallcycle_start(wcycle, ewcPMEMESH);
@@ -4311,6 +4314,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         count++;
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
+
+    runtime_end(runtime);
 
     return 0;
 }
