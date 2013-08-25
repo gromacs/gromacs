@@ -92,7 +92,6 @@
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 
-
 /* Include the SIMD macro file and then check for support */
 #include "gmx_simd_macros.h"
 #if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
@@ -4220,6 +4219,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
+                gmx_runtime_t *runtime,
                 real ewaldcoeff,  gmx_bool bGatherOnly,
                 t_inputrec *ir)
 {
@@ -4249,6 +4249,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     pme_pp = gmx_pme_pp_init(cr);
 
     init_nrnb(nrnb);
+    runtime_start(runtime);
 
     count = 0;
     do /****** this is a quasi-loop over time steps! */
@@ -4311,6 +4312,8 @@ int gmx_pmeonly(gmx_pme_t pme,
         count++;
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
+
+    runtime_end(runtime);
 
     return 0;
 }
