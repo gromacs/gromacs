@@ -159,7 +159,7 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
         real charge = 0.0;
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
         {
-            int index = pos.g->index[i];
+            const int index = pos.m.mapb.a[i];
             mass   += top->atoms.atom[index].m;
             charge += top->atoms.atom[index].q;
         }
@@ -234,8 +234,8 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
     if (isDynamic())
     {
         gmx_ana_pos_t &p = rawPositions_;
-        gmx_ana_index_copy(p.g, rootElement().v.u.g, false);
-        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
+        gmx_ana_indexmap_update(&p.m, rootElement().v.u.g,
+                                hasFlag(gmx::efSelection_DynamicMask));
         p.nr = p.m.nr;
         refreshMassesAndCharges(top);
     }
@@ -273,7 +273,9 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     fprintf(fp, "  ");
     printInfo(fp);
     fprintf(fp, "    Group ");
-    gmx_ana_index_dump(fp, p.g, nmaxind);
+    gmx_ana_index_t g;
+    gmx_ana_index_set(&g, p.m.mapb.nra, p.m.mapb.a, 0);
+    gmx_ana_index_dump(fp, &g, nmaxind);
 
     fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
     if (!p.m.mapb.index)

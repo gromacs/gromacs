@@ -268,7 +268,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 {
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
-    out->nr = pos->g->isize;
+    out->nr = pos->m.mapb.nra;
     for (int b = 0; b < pos->nr; ++b)
     {
         real dist = d->nbsearch.minimumDistance(pos->x[b]);
@@ -297,7 +297,7 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         if (d->nbsearch.isWithin(pos->x[b]))
         {
-            gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
+            gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }
     }
 }

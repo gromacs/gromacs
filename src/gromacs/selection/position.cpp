@@ -62,7 +62,6 @@ gmx_ana_pos_clear(gmx_ana_pos_t *pos)
     pos->v  = NULL;
     pos->f  = NULL;
     gmx_ana_indexmap_clear(&pos->m);
-    pos->g        = NULL;
     pos->nalloc_x = 0;
 }
 
@@ -135,6 +134,36 @@ gmx_ana_pos_reserve_forces(gmx_ana_pos_t *pos)
     if (!pos->f)
     {
         snew(pos->f, pos->nalloc_x);
+    }
+}
+
+/*!
+ * \param[in,out] pos   Position data structure.
+ * \param[in]     n     Maximum number of positions.
+ * \param[in]     isize Maximum number of atoms.
+ * \param[in]     bVelocities Whether to reserve space for velocities.
+ * \param[in]     bForces     Whether to reserve space for forces.
+ *
+ * Ensures that enough memory is allocated in \p pos to calculate \p n
+ * positions from \p isize atoms.
+ *
+ * This method needs to be called instead of gmx_ana_pos_reserve() if the
+ * intent is to use gmx_ana_pos_append_init()/gmx_ana_pos_append().
+ */
+void
+gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
+                               bool bVelocities, bool bForces)
+{
+    gmx_ana_pos_reserve(pos, n, isize);
+    snew(pos->m.mapb.a, isize);
+    pos->m.mapb.nalloc_a = isize;
+    if (bVelocities)
+    {
+        gmx_ana_pos_reserve_velocities(pos);
+    }
+    if (bForces)
+    {
+        gmx_ana_pos_reserve_forces(pos);
     }
 }
 
@@ -228,7 +257,6 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
         memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
-    dest->g = src->g;
 }
 
 /*!
@@ -242,21 +270,6 @@ gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
 }
 
 /*!
- * \param[in,out] pos  Position data structure.
- * \param         g    Evaluation group.
- *
- * The old group, if any, is discarded.
- * Note that only a pointer to \p g is stored; it is the responsibility of
- * the caller to ensure that \p g is not freed while it can be accessed
- * through \p pos.
- */
-void
-gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
-{
-    pos->g = g;
-}
-
-/*!
  * \param[in,out] pos   Position data structure.
  *
  * Sets the number of positions to 0.
@@ -264,11 +277,12 @@ gmx_ana_pos_set_evalgrp(gmx_ana_pos_t *pos, gmx_ana_index_t *g)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr        = 0;
-    pos->m.nr      = 0;
-    pos->m.mapb.nr = 0;
-    pos->m.b.nr    = 0;
-    pos->m.b.nra   = 0;
+    pos->nr         = 0;
+    pos->m.nr       = 0;
+    pos->m.mapb.nr  = 0;
+    pos->m.mapb.nra = 0;
+    pos->m.b.nr     = 0;
+    pos->m.b.nra    = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
     pos->m.b.index[0]    = 0;
@@ -286,9 +300,10 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr        = 0;
-    pos->m.nr      = 0;
-    pos->m.mapb.nr = 0;
+    pos->nr         = 0;
+    pos->m.nr       = 0;
+    pos->m.mapb.nr  = 0;
+    pos->m.mapb.nra = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
     /* We set the flags to true, although really in the empty state they
@@ -301,13 +316,11 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 
 /*!
  * \param[in,out] dest  Data structure to which the new position is appended.
- * \param[in,out] g     Data structure to which the new atoms are appended.
  * \param[in]     src   Data structure from which the position is copied.
  * \param[in]     i     Index in \p from to copy.
  */
 void
-gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
-                        gmx_ana_pos_t *src, int i)
+gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
 {
     int  j, k;
 
@@ -340,11 +353,11 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
     dest->m.orgid[j] = src->m.orgid[i];
     for (k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
     {
-        g->index[g->isize++]         = src->g->index[k];
-        dest->m.b.a[dest->m.b.nra++] = src->m.b.a[k];
+        dest->m.mapb.a[dest->m.mapb.nra++] = src->m.mapb.a[k];
+        dest->m.b.a[dest->m.b.nra++]       = src->m.b.a[k];
     }
-    dest->m.mapb.index[j+1] = g->isize;
-    dest->m.b.index[j+1]    = g->isize;
+    dest->m.mapb.index[j+1] = dest->m.mapb.nra;
+    dest->m.b.index[j+1]    = dest->m.mapb.nra;
     dest->nr++;
     dest->m.nr      = dest->nr;
     dest->m.mapb.nr = dest->nr;
@@ -352,76 +365,66 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
 }
 
 /*!
- * \param[in,out] dest  Data structure to which the new position is appended
- *      (can be NULL, in which case only \p g is updated).
- * \param[in,out] g     Data structure to which the new atoms are appended.
+ * \param[in,out] dest  Data structure to which the new position is appended.
  * \param[in]     src   Data structure from which the position is copied.
  * \param[in]     i     Index in \p src to copy.
  * \param[in]     refid Reference ID in \p out
  *   (all negative values are treated as -1).
- *
- * If \p dest is NULL, the value of \p refid is not used.
  */
 void
-gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_index_t *g,
-                   gmx_ana_pos_t *src, int i, int refid)
+gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
 {
-    int  j, k;
-
-    for (k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
+    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
     {
-        g->index[g->isize++] = src->g->index[k];
+        dest->m.mapb.a[dest->m.mapb.nra++] = src->m.mapb.a[k];
     }
-    if (dest)
+    const int j = dest->nr;
+    if (dest->v)
     {
-        j = dest->nr;
-        if (dest->v)
+        if (src->v)
         {
-            if (src->v)
-            {
-                copy_rvec(src->v[i], dest->v[j]);
-            }
-            else
-            {
-                clear_rvec(dest->v[j]);
-            }
-        }
-        if (dest->f)
-        {
-            if (src->f)
-            {
-                copy_rvec(src->f[i], dest->f[j]);
-            }
-            else
-            {
-                clear_rvec(dest->f[j]);
-            }
-        }
-        copy_rvec(src->x[i], dest->x[j]);
-        if (refid < 0)
-        {
-            dest->m.refid[j] = -1;
-            dest->m.bStatic  = false;
-            /* If we are using masks, there is no need to alter the
-             * mapid field. */
+            copy_rvec(src->v[i], dest->v[j]);
         }
         else
         {
-            if (refid != j)
-            {
-                dest->m.bStatic    = false;
-                dest->m.bMapStatic = false;
-            }
-            dest->m.refid[j] = refid;
-            /* Use the original IDs from the output structure to correctly
-             * handle user customization. */
-            dest->m.mapid[j] = dest->m.orgid[refid];
+            clear_rvec(dest->v[j]);
         }
-        dest->m.mapb.index[j+1] = g->isize;
-        dest->nr++;
-        dest->m.nr      = dest->nr;
-        dest->m.mapb.nr = dest->nr;
     }
+    if (dest->f)
+    {
+        if (src->f)
+        {
+            copy_rvec(src->f[i], dest->f[j]);
+        }
+        else
+        {
+            clear_rvec(dest->f[j]);
+        }
+    }
+    copy_rvec(src->x[i], dest->x[j]);
+    if (refid < 0)
+    {
+        dest->m.refid[j] = -1;
+        dest->m.bStatic  = false;
+        /* If we are using masks, there is no need to alter the
+         * mapid field. */
+    }
+    else
+    {
+        if (refid != j)
+        {
+            dest->m.bStatic    = false;
+            dest->m.bMapStatic = false;
+        }
+        dest->m.refid[j] = refid;
+        /* Use the original IDs from the output structure to correctly
+         * handle user customization. */
+        dest->m.mapid[j] = dest->m.orgid[refid];
+    }
+    dest->m.mapb.index[j+1] = dest->m.mapb.nra;
+    dest->nr++;
+    dest->m.nr      = dest->nr;
+    dest->m.mapb.nr = dest->nr;
 }
 
 /*!
@@ -438,5 +441,19 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
     {
         pos->m.bStatic    = false;
         pos->m.bMapStatic = false;
+    }
+}
+
+/*!
+ * \param[in,out] g     Data structure to which the new atoms are appended.
+ * \param[in]     src   Data structure from which the position is copied.
+ * \param[in]     i     Index in \p src to copy.
+ */
+void
+gmx_ana_pos_add_to_group(gmx_ana_index_t *g, gmx_ana_pos_t *src, int i)
+{
+    for (int k = src->m.mapb.index[i]; k < src->m.mapb.index[i+1]; ++k)
+    {
+        g->index[g->isize++] = src->m.mapb.a[k];
     }
 }

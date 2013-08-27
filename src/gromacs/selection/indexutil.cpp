@@ -1030,6 +1030,9 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
     m->mapb.nr           = 0;
     m->mapb.index        = NULL;
     m->mapb.nalloc_index = 0;
+    m->mapb.nra          = 0;
+    m->mapb.a            = NULL;
+    m->mapb.nalloc_a     = 0;
     m->orgid             = NULL;
     m->b.nr              = 0;
     m->b.index           = NULL;
@@ -1119,7 +1122,9 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         m->refid[i] = i;
         m->mapid[i] = m->orgid[i];
     }
-    m->mapb.nr = m->nr;
+    m->mapb.nr  = m->nr;
+    m->mapb.nra = m->b.nra;
+    m->mapb.a   = m->b.a;
     std::memcpy(m->mapb.index, m->b.index, (m->nr+1)*sizeof(*(m->mapb.index)));
     m->bStatic    = true;
     m->bMapStatic = true;
@@ -1144,16 +1149,18 @@ void
 gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
 {
     sfree(m->mapid);
-    m->mapid = m->orgid;
-    sfree(m->b.index);
-    m->b.nalloc_index = 0;
-    m->b.index        = b->index;
     sfree(m->mapb.index);
-    m->mapb.nalloc_index = 0;
-    m->mapb.index        = m->b.index;
+    sfree(m->b.index);
     sfree(m->b.a);
-    m->b.nalloc_a = 0;
-    m->b.a        = b->a;
+    m->mapb.nalloc_index = 0;
+    m->mapb.nalloc_a     = 0;
+    m->b.nalloc_index    = 0;
+    m->b.nalloc_a        = 0;
+    m->mapid             = m->orgid;
+    m->mapb.index        = b->index;
+    m->mapb.a            = b->a;
+    m->b.index           = b->index;
+    m->b.a               = b->a;
 }
 
 /*!
@@ -1180,11 +1187,49 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
     }
     dest->nr         = src->nr;
     dest->mapb.nr    = src->mapb.nr;
+    dest->mapb.nra   = src->mapb.nra;
+    if (src->mapb.nalloc_a > 0)
+    {
+        if (bFirst)
+        {
+            snew(dest->mapb.a, src->mapb.nalloc_a);
+            dest->mapb.nalloc_a = src->mapb.nalloc_a;
+        }
+        std::memcpy(dest->mapb.a, src->mapb.a, dest->mapb.nra*sizeof(*dest->mapb.a));
+    }
+    else
+    {
+        dest->mapb.a = src->mapb.a;
+    }
     std::memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
     std::memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
     std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
     dest->bStatic    = src->bStatic;
     dest->bMapStatic = src->bMapStatic;
+}
+
+/*! \brief
+ * Helper function to set the source atoms in an index map.
+ *
+ * \param[in,out] m     Mapping structure.
+ * \param[in]     isize Number of atoms in the \p index array.
+ * \param[in]     index List of atoms.
+ */
+static void
+set_atoms(gmx_ana_indexmap_t *m, int isize, int *index)
+{
+    m->mapb.nra = isize;
+    if (m->mapb.nalloc_a == 0)
+    {
+        m->mapb.a = index;
+    }
+    else
+    {
+        for (int i = 0; i < isize; ++i)
+        {
+            m->mapb.a[i] = index[i];
+        }
+    }
 }
 
 /*!
@@ -1208,6 +1253,15 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
     {
         return;
+    }
+    // TODO: This could also be optimized away under some bStatic conditions.
+    if (bMaskOnly)
+    {
+        set_atoms(m, m->b.nra, m->b.a);
+    }
+    else
+    {
+        set_atoms(m, g->isize, g->index);
     }
     if (m->type == INDEX_ALL)
     {
@@ -1325,6 +1379,10 @@ gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
     if (m->mapb.nalloc_index > 0)
     {
         sfree(m->mapb.index);
+    }
+    if (m->mapb.nalloc_a > 0)
+    {
+        sfree(m->mapb.a);
     }
     sfree(m->orgid);
     if (m->b.nalloc_index > 0)

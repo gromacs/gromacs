@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -487,7 +487,7 @@ evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     {
         if (accept_insolidangle(pos->x[b], pbc, data))
         {
-            gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
+            gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }
     }
 }

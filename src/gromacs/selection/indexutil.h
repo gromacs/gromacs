@@ -139,8 +139,9 @@ typedef struct gmx_ana_indexmap_t
      * Mapped block structure.
      *
      * A block structure that corresponds to the current index group.
+     * \c mapb.nra and \c mapb.a correspond to the last mapped index group.
      */
-    t_block             mapb;
+    t_blocka            mapb;
 
     /*! \brief
      * Arbitrary ID numbers for the blocks.
