@@ -62,6 +62,7 @@
 #include "gromacs/topology/topology.h"
 #include "gromacs/utility/arraysize.h"
 #include "gromacs/utility/cstringutil.h"
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/fatalerror.h"
 #include "gromacs/utility/futil.h"
 #include "gromacs/utility/smalloc.h"
@@ -1420,7 +1421,7 @@ int gmx_cluster(int argc, char *argv[])
     gmx_int64_t        nrms = 0;
 
     matrix             box;
-    rvec              *xtps, *usextps, *x1, **xx = NULL;
+    rvec              *xtps, *usextps, *x1 = NULL, **xx = NULL;
     const char        *fn, *trx_out_fn;
     t_clusters         clust;
     t_mat             *rms, *orig = NULL;
@@ -1437,6 +1438,7 @@ int gmx_cluster(int argc, char *argv[])
     real               rmsd, **d1, **d2, *time = NULL, time_invfac, *mass = NULL;
     char               buf[STRLEN], buf1[80], title[STRLEN];
     gmx_bool           bAnalyze, bUseRmsdCut, bJP_RMSD = FALSE, bReadMat, bReadTraj, bPBC = TRUE;
+    gmx_bool           bOMP = GMX_OPENMP;
 
     int                method, ncluster = 0;
     static const char *methodname[] = {
@@ -1460,6 +1462,8 @@ int gmx_cluster(int argc, char *argv[])
     static int        M        = 10, P = 3;
     gmx_output_env_t *oenv;
     gmx_rmpbc_t       gpbc = NULL;
+
+    static int        nThreads = -1;
 
     t_pargs           pa[] = {
         { "-dista", FALSE, etBOOL, {&bRMSdist},
@@ -1504,7 +1508,11 @@ int gmx_cluster(int argc, char *argv[])
           "Boltzmann weighting factor for Monte Carlo optimization "
           "(zero turns off uphill steps)" },
         { "-pbc", FALSE, etBOOL,
-          { &bPBC }, "PBC check" }
+          { &bPBC }, "PBC check" },
+#ifdef GMX_OPENMP
+        { "-nt", FALSE, etINT, {&nThreads},
+          "Number of threads used for the parallel loop over RMSD matrix"},
+#endif
     };
     t_filenm          fnm[] = {
         { efTRX, "-f",     NULL,        ffOPTRD },
@@ -1524,6 +1532,8 @@ int gmx_cluster(int argc, char *argv[])
         { efTRX, "-cl",   "clusters.pdb", ffOPTWR }
     };
 #define NFILE asize(fnm)
+
+    nThreads = gmx_omp_get_max_threads();
 
     if (!parse_common_args(&argc, argv,
                            PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT,
@@ -1753,25 +1763,36 @@ int gmx_cluster(int argc, char *argv[])
     {
         rms  = init_mat(nf, method == m_diagonalize);
         nrms = (static_cast<gmx_int64_t>(nf)*static_cast<gmx_int64_t>(nf-1))/2;
+        if (bOMP)
+        {
+            fprintf(stderr, "Using %i OpenMP threads\n", nThreads);
+        }
+
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
-            /* Initialize work array */
-            snew(x1, isize);
-            for (i1 = 0; i1 < nf; i1++)
+
+            /* Create the thread pool at the outer loop */
+#pragma omp parallel private(i2,i,x1,rmsd) default(shared)
             {
-                for (i2 = i1+1; i2 < nf; i2++)
+                /* initialize private x1 in omp environment */
+                snew(x1, isize);
+#pragma omp for schedule(dynamic)
+                for (i1 = 0; i1 < nf; i1++)
                 {
-                    for (i = 0; i < isize; i++)
+                    for (i2 = i1+1; i2 < nf; i2++)
                     {
-                        copy_rvec(xx[i1][i], x1[i]);
+                        for (i = 0; i < isize; i++)
+                        {
+                            copy_rvec(xx[i1][i], x1[i]);
+                        }
+                        if (bFit)
+                        {
+                            do_fit(isize, mass, xx[i2], x1);
+                        }
+                        rmsd = rmsdev(isize, mass, xx[i2], x1);
+                        set_mat_entry(rms, i1, i2, rmsd);
                     }
-                    if (bFit)
-                    {
-                        do_fit(isize, mass, xx[i2], x1);
-                    }
-                    rmsd = rmsdev(isize, mass, xx[i2], x1);
-                    set_mat_entry(rms, i1, i2, rmsd);
                 }
                 nrms -= nf-i1-1;
                 fprintf(stderr, "\r# RMSD calculations left: " "%" GMX_PRId64 "   ", nrms);
@@ -1779,6 +1800,8 @@ int gmx_cluster(int argc, char *argv[])
             sfree(x1);
         }
         else /* bRMSdist */
+        /* Create the thread pool at the outer loop */
+#pragma omp parallel private(i2,d1,d2) default(shared)
         {
             fprintf(stderr, "Computing %dx%d RMS distance deviation matrix\n", nf, nf);
 
@@ -1790,6 +1813,7 @@ int gmx_cluster(int argc, char *argv[])
                 snew(d1[i], isize);
                 snew(d2[i], isize);
             }
+#pragma omp for schedule(dynamic)
             for (i1 = 0; i1 < nf; i1++)
             {
                 calc_dist(isize, xx[i1], d1);
