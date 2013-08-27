@@ -58,6 +58,7 @@
 #include "trnio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+#include "gmx_omp.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
 
@@ -1403,7 +1404,8 @@ int gmx_cluster(int argc, char *argv[])
     };
 
     FILE              *fp, *log;
-    int                i, i1, i2, j, nf, nrms;
+    int                nf, i, i1, i2, j;
+    unsigned long int       nrms = 0;
 
     matrix             box;
     rvec              *xtps, *usextps, *x1, **xx = NULL;
@@ -1446,6 +1448,8 @@ int gmx_cluster(int argc, char *argv[])
     static int   M        = 10, P = 3;
     output_env_t oenv;
     gmx_rmpbc_t  gpbc = NULL;
+
+    static int nThreads = -1;
 
     t_pargs      pa[] = {
         { "-dista", FALSE, etBOOL, {&bRMSdist},
@@ -1490,7 +1494,11 @@ int gmx_cluster(int argc, char *argv[])
           "Boltzmann weighting factor for Monte Carlo optimization "
           "(zero turns off uphill steps)" },
         { "-pbc", FALSE, etBOOL,
-          { &bPBC }, "PBC check" }
+          { &bPBC }, "PBC check" },
+#ifdef GMX_OPENMP
+        { "-nt", FALSE, etINT, {&nThreads},
+          "Number of threads used for the parallel loop over RMSD matrix"},
+#endif
     };
     t_filenm     fnm[] = {
         { efTRX, "-f",     NULL,        ffOPTRD },
@@ -1675,14 +1683,6 @@ int gmx_cluster(int argc, char *argv[])
             }
         }
     }
-    /* Initiate arrays */
-    snew(d1, isize);
-    snew(d2, isize);
-    for (i = 0; (i < isize); i++)
-    {
-        snew(d1[i], isize);
-        snew(d2[i], isize);
-    }
 
     if (bReadTraj)
     {
@@ -1746,34 +1746,59 @@ int gmx_cluster(int argc, char *argv[])
     else   /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
-        nrms = (nf*(nf-1))/2;
+        nrms = ((long)nf*((long)nf-1))/2;
+#ifdef GMX_OPENMP
+        fprintf(stderr, "Using %i OpenMP threads\n", nThreads);
+
+        /* setting number of omp threads globally */
+        gmx_omp_set_num_threads(nThreads);
+#endif
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
-            snew(x1, isize);
-            for (i1 = 0; (i1 < nf); i1++)
+
+            /* Create the thread pool at the outer loop */
+#pragma omp parallel private(i2,i,x1,rmsd) default(shared)
             {
-                for (i2 = i1+1; (i2 < nf); i2++)
+                /* initialize private x1 in omp environment */
+            	snew(x1, isize);
+#pragma omp for schedule(dynamic)
+                for (i1 = 0; i1 < nf; i1++)
                 {
-                    for (i = 0; i < isize; i++)
+                    for (i2 = i1+1; i2 < nf; i2++)
                     {
-                        copy_rvec(xx[i1][i], x1[i]);
+                        for (i = 0; i < isize; i++)
+                        {
+                            copy_rvec(xx[i1][i], x1[i]);
+                        }
+                        if (bFit)
+                        {
+                            do_fit(isize, mass, xx[i2], x1);
+                        }
+                        rmsd = rmsdev(isize, mass, xx[i2], x1);
+                        set_mat_entry(rms, i1, i2, rmsd);
                     }
-                    if (bFit)
-                    {
-                        do_fit(isize, mass, xx[i2], x1);
-                    }
-                    rmsd = rmsdev(isize, mass, xx[i2], x1);
-                    set_mat_entry(rms, i1, i2, rmsd);
+                    nrms -= (long) (nf-i1-1);
+                    fprintf(stderr, "\r# RMSD calculations left: %lu   ", nrms);
                 }
-                nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: %d   ", nrms);
             }
         }
         else /* bRMSdist */
+        /* Create the thread pool at the outer loop */
+#pragma omp parallel private(i2,d1,d2) default(shared)
         {
             fprintf(stderr, "Computing %dx%d RMS distance deviation matrix\n", nf, nf);
-            for (i1 = 0; (i1 < nf); i1++)
+
+            /* Initiate private arrays in omp environment */
+            snew(d1, isize);
+            snew(d2, isize);
+            for (i = 0; (i < isize); i++)
+            {
+                snew(d1[i], isize);
+                snew(d2[i], isize);
+            }
+#pragma omp for schedule(dynamic)
+            for (i1 = 0; i1 < nf ; i1++)
             {
                 calc_dist(isize, xx[i1], d1);
                 for (i2 = i1+1; (i2 < nf); i2++)
@@ -1782,7 +1807,7 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: %d   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: %lu   ", nrms);
             }
         }
         fprintf(stderr, "\n\n");
