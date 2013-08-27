@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -320,7 +320,6 @@ init_output_pos(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     t_methoddata_pos *d = (t_methoddata_pos *)data;
 
     gmx_ana_poscalc_init_pos(d->pc, out->u.p);
-    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
 }
 
 /*!

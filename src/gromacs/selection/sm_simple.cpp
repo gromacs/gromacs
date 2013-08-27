@@ -837,8 +837,6 @@ evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 /*! \brief
  * Internal utility function for position keyword evaluation.
  *
- * \param[in]  fr   Current frame.
- * \param[in]  g    Index group for which the coordinates should be evaluated.
  * \param[out] out  Output array.
  * \param[in]  pos  Position data to use instead of atomic coordinates
  *   (can be NULL).
@@ -848,33 +846,19 @@ evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * evaluate_z() to do the actual evaluation.
  */
 static void
-evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
-               gmx_ana_pos_t *pos, int d)
+evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
 {
-    int  b, i;
-    real v;
-
-    if (pos)
+    for (int b = 0; b < pos->nr; ++b)
     {
-        for (b = 0; b < pos->nr; ++b)
+        const real v = pos->x[b][d];
+        for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
         {
-            v = pos->x[b][d];
-            for (i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
-            {
-                out[i] = v;
-            }
+            out[i] = v;
         }
     }
-    else
-    {
-        // TODO: This loop is never reached in the current code.
-        // It would be useful to change the code such that it is, mostly for
-        // memory efficiency reasons.
-        for (i = 0; i < g->isize; ++i)
-        {
-            out[i] = fr->x[g->index[i]][d];
-        }
-    }
+    // TODO: Make this more efficient by directly extracting the coordinates
+    // from the frame coordinates for atomic positions instead of going through
+    // a position calculation.
 }
 
 /*!
@@ -884,11 +868,11 @@ evaluate_coord(t_trxframe *fr, gmx_ana_index_t *g, real out[],
  * Returns the \p x coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_x(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, XX);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, XX);
 }
 
 /*!
@@ -898,11 +882,11 @@ evaluate_x(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the \p y coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_y(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, YY);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, YY);
 }
 
 /*!
@@ -912,9 +896,9 @@ evaluate_y(t_topology *top, t_trxframe *fr, t_pbc *pbc,
  * Returns the \p z coordinate for each atom in \p out->u.r.
  */
 static void
-evaluate_z(t_topology *top, t_trxframe *fr, t_pbc *pbc,
-           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
+evaluate_z(t_topology * /*top*/, t_trxframe * /*fr*/, t_pbc * /*pbc*/,
+           gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void * /*data*/)
 {
-    out->nr = pos->g->isize;
-    evaluate_coord(fr, pos->g, out->u.r, pos, ZZ);
+    out->nr = pos->m.mapb.nra;
+    evaluate_coord(out->u.r, pos, ZZ);
 }

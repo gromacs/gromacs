@@ -2407,7 +2407,7 @@ init_root_item(const SelectionTreeElementPointer &root,
         /* For selections, store the maximum group for
          * gmx_ana_selcollection_evaluate_fin() as the value of the root
          * element (unused otherwise). */
-        if (expr->type != SEL_SUBEXPR && expr->v.u.p->g)
+        if (expr->type != SEL_SUBEXPR && expr->v.u.p->m.mapb.a != NULL)
         {
             SelectionTreeElementPointer child = expr;
 
@@ -2427,10 +2427,12 @@ init_root_item(const SelectionTreeElementPointer &root,
             }
             if (child->child->flags & SEL_DYNAMIC)
             {
+                gmx_ana_index_t g;
+                gmx_ana_index_set(&g, expr->v.u.p->m.mapb.nra, expr->v.u.p->m.mapb.a, 0);
                 _gmx_selelem_set_vtype(root, GROUP_VALUE);
                 root->flags  |= (SEL_ALLOCVAL | SEL_ALLOCDATA);
                 _gmx_selvalue_reserve(&root->v, 1);
-                gmx_ana_index_copy(root->v.u.g, expr->v.u.p->g, true);
+                gmx_ana_index_copy(root->v.u.g, &g, true);
             }
         }
     }

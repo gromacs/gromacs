@@ -312,17 +312,13 @@ class Selection
         //! Total number of atoms in the selection.
         int atomCount() const
         {
-            return data().rawPositions_.g != NULL ? data().rawPositions_.g->isize : 0;
+            return data().rawPositions_.m.mapb.nra;
         }
         //! Returns atom indices of all atoms in the selection.
         ConstArrayRef<int> atomIndices() const
         {
-            if (data().rawPositions_.g == NULL)
-            {
-                return ConstArrayRef<int>();
-            }
-            return ConstArrayRef<int>(data().rawPositions_.g->index,
-                                      data().rawPositions_.g->isize);
+            return ConstArrayRef<int>(sel_->rawPositions_.m.mapb.a,
+                                      sel_->rawPositions_.m.mapb.nra);
         }
         //! Number of positions in the selection.
         int posCount() const { return data().posCount(); }
@@ -636,13 +632,13 @@ class SelectionPosition
         //! Return atom indices that make up this position.
         ConstArrayRef<int> atomIndices() const
         {
-            if (sel_->rawPositions_.g == NULL)
+            const int *atoms = sel_->rawPositions_.m.mapb.a;
+            if (atoms == NULL)
             {
                 return ConstArrayRef<int>();
             }
-            int first = sel_->rawPositions_.m.mapb.index[i_];
-            return ConstArrayRef<int>(&sel_->rawPositions_.g->index[first],
-                                      atomCount());
+            const int first = sel_->rawPositions_.m.mapb.index[i_];
+            return ConstArrayRef<int>(&atoms[first], atomCount());
         }
         /*! \brief
          * Returns whether this position is selected in the current frame.

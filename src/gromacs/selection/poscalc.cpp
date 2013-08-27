@@ -1053,7 +1053,6 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
         gmx_ana_pos_reserve_forces(p);
     }
     gmx_ana_pos_set_nr(p, p->m.nr);
-    gmx_ana_pos_set_evalgrp(p, &pc->gmax);
 }
 
 /*!
@@ -1153,7 +1152,6 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)
     {
-        gmx_ana_pos_set_evalgrp(p, g);
         gmx_ana_indexmap_update(&p->m, g, false);
         p->nr = p->m.nr;
     }

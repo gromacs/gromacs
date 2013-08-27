@@ -234,8 +234,6 @@ void PositionCalculationTest::updateAndCheck(
         gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p, int count, const int atoms[],
         gmx::test::TestReferenceChecker *checker, const char *name)
 {
-    // TODO: The group reference may get stored in p and stays there after this
-    // function returns.
     gmx_ana_index_t g;
     g.isize = count;
     g.index = const_cast<int *>(atoms);
@@ -315,7 +313,6 @@ void PositionCalculationTest::checkPositions(
 {
     EXPECT_EQ(p->nr, p->m.nr);
     EXPECT_EQ(p->nr, p->m.mapb.nr);
-    ASSERT_TRUE(p->g != NULL);
     gmx::test::TestReferenceChecker compound(
             checker->checkCompound("Positions", name));
     compound.checkInteger(p->nr, "Count");
@@ -334,13 +331,9 @@ void PositionCalculationTest::checkPositions(
     {
         gmx::test::TestReferenceChecker posCompound(
                 compound.checkCompound("Position", NULL));
-        // Always true; should satisfy clang.
-        if (p->g != NULL)
-        {
-            posCompound.checkSequence(&p->g->index[p->m.mapb.index[i]],
-                                      &p->g->index[p->m.mapb.index[i+1]],
-                                      "Atoms");
-        }
+        posCompound.checkSequence(&p->m.mapb.a[p->m.mapb.index[i]],
+                                  &p->m.mapb.a[p->m.mapb.index[i+1]],
+                                  "Atoms");
         posCompound.checkInteger(p->m.refid[i], "RefId");
         if (bCoordinates)
         {
