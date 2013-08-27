@@ -1341,7 +1341,8 @@ int gmx_cluster(int argc, char *argv[])
     };
 
     FILE              *fp, *log;
-    int                i, i1, i2, j, nf, nrms;
+    int                nf, i, i1, i2, j;
+    gmx_large_int_t    nrms = 0;
 
     matrix             box;
     rvec              *xtps, *usextps, *x1, **xx = NULL;
@@ -1607,14 +1608,6 @@ int gmx_cluster(int argc, char *argv[])
             }
         }
     }
-    /* Initiate arrays */
-    snew(d1, isize);
-    snew(d2, isize);
-    for (i = 0; (i < isize); i++)
-    {
-        snew(d1[i], isize);
-        snew(d2[i], isize);
-    }
 
     if (bReadTraj)
     {
@@ -1678,14 +1671,15 @@ int gmx_cluster(int argc, char *argv[])
     else   /* !bReadMat */
     {
         rms  = init_mat(nf, method == m_diagonalize);
-        nrms = (nf*(nf-1))/2;
+        nrms = ((gmx_large_int_t)nf*((gmx_large_int_t)nf-1))/2;
         if (!bRMSdist)
         {
             fprintf(stderr, "Computing %dx%d RMS deviation matrix\n", nf, nf);
+            /* Initialize work array */
             snew(x1, isize);
-            for (i1 = 0; (i1 < nf); i1++)
+            for (i1 = 0; i1 < nf; i1++)
             {
-                for (i2 = i1+1; (i2 < nf); i2++)
+                for (i2 = i1+1; i2 < nf; i2++)
                 {
                     for (i = 0; i < isize; i++)
                     {
@@ -1698,14 +1692,24 @@ int gmx_cluster(int argc, char *argv[])
                     rmsd = rmsdev(isize, mass, xx[i2], x1);
                     set_mat_entry(rms, i1, i2, rmsd);
                 }
-                nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: %d   ", nrms);
+                nrms -= (gmx_large_int_t) (nf-i1-1);
+                fprintf(stderr, "\r# RMSD calculations left: "gmx_large_int_pfmt"   ", nrms);
             }
+            sfree(x1);
         }
         else /* bRMSdist */
         {
             fprintf(stderr, "Computing %dx%d RMS distance deviation matrix\n", nf, nf);
-            for (i1 = 0; (i1 < nf); i1++)
+
+            /* Initiate work arrays */
+            snew(d1, isize);
+            snew(d2, isize);
+            for (i = 0; (i < isize); i++)
+            {
+                snew(d1[i], isize);
+                snew(d2[i], isize);
+            }
+            for (i1 = 0; i1 < nf ; i1++)
             {
                 calc_dist(isize, xx[i1], d1);
                 for (i2 = i1+1; (i2 < nf); i2++)
@@ -1714,8 +1718,16 @@ int gmx_cluster(int argc, char *argv[])
                     set_mat_entry(rms, i1, i2, rms_dist(isize, d1, d2));
                 }
                 nrms -= (nf-i1-1);
-                fprintf(stderr, "\r# RMSD calculations left: %d   ", nrms);
+                fprintf(stderr, "\r# RMSD calculations left: "gmx_large_int_pfmt"   ", nrms);
             }
+            /* Clean up work arrays */
+            for (i = 0; (i < isize); i++)
+            {
+                sfree(d1[i]);
+                sfree(d2[i]);
+            }
+            sfree(d1);
+            sfree(d2);
         }
         fprintf(stderr, "\n\n");
     }
