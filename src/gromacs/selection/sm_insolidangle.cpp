@@ -427,7 +427,7 @@ init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 
     free_surface_points(d);
     clear_surface_points(d);
-    for (i = 0; i < d->span.nr; ++i)
+    for (i = 0; i < d->span.count(); ++i)
     {
         if (pbc)
         {
@@ -480,10 +480,8 @@ static void
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    int                        b;
-
     out->u.g->isize = 0;
-    for (b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         if (accept_insolidangle(pos->x[b], pbc, data))
         {

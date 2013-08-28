@@ -1024,7 +1024,6 @@ void
 gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
 {
     m->type              = INDEX_UNKNOWN;
-    m->nr                = 0;
     m->refid             = NULL;
     m->mapid             = NULL;
     m->mapb.nr           = 0;
@@ -1091,8 +1090,7 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     m->type   = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
-    m->nr = m->b.nr;
-    for (i = mi = 0; i < m->nr; ++i)
+    for (i = mi = 0; i < m->b.nr; ++i)
     {
         ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
         switch (type)
@@ -1116,15 +1114,15 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 break;
         }
     }
-    for (i = 0; i < m->nr; ++i)
+    for (i = 0; i < m->b.nr; ++i)
     {
         m->refid[i] = i;
         m->mapid[i] = m->orgid[i];
     }
-    m->mapb.nr  = m->nr;
+    m->mapb.nr  = m->b.nr;
     m->mapb.nra = m->b.nra;
     m->mapb.a   = m->b.a;
-    std::memcpy(m->mapb.index, m->b.index, (m->nr+1)*sizeof(*(m->mapb.index)));
+    std::memcpy(m->mapb.index, m->b.index, (m->b.nr+1)*sizeof(*(m->mapb.index)));
     m->bStatic  = true;
 }
 
@@ -1183,7 +1181,6 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
         std::memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
         std::memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
     }
-    dest->nr         = src->nr;
     dest->mapb.nr    = src->mapb.nr;
     dest->mapb.nra   = src->mapb.nra;
     if (src->mapb.nalloc_a > 0)
@@ -1199,8 +1196,8 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
     {
         dest->mapb.a = src->mapb.a;
     }
-    std::memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
-    std::memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
+    std::memcpy(dest->refid,      src->refid,      dest->mapb.nr*sizeof(*dest->refid));
+    std::memcpy(dest->mapid,      src->mapid,      dest->mapb.nr*sizeof(*dest->mapid));
     std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
     dest->bStatic = src->bStatic;
 }
@@ -1283,7 +1280,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
             }
         }
         set_atoms(m, m->b.nra, m->b.a);
-        m->nr = m->mapb.nr = m->b.nr;
+        m->mapb.nr = m->b.nr;
     }
     /* Exit immediately if the group is static */
     if (bToFull)
@@ -1294,7 +1291,6 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
 
     if (bMaskOnly)
     {
-        m->nr = m->b.nr;
         for (i = j = bj = 0; i < g->isize; ++i, ++j)
         {
             /* Find the next atom in the block */
@@ -1345,9 +1341,8 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         }
         /* Update the number of blocks */
         m->mapb.index[bi] = g->isize;
-        m->nr             = bi;
+        m->mapb.nr        = bi;
     }
-    m->mapb.nr = m->nr;
     m->bStatic = false;
 }
 

@@ -153,7 +153,7 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
     GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
-    for (int b = 0; b < pos.nr; ++b)
+    for (int b = 0; b < pos.count(); ++b)
     {
         real mass   = 0.0;
         real charge = 0.0;
@@ -236,7 +236,6 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
         gmx_ana_pos_t &p = rawPositions_;
         gmx_ana_indexmap_update(&p.m, rootElement().v.u.g,
                                 hasFlag(gmx::efSelection_DynamicMask));
-        p.nr = p.m.nr;
         refreshMassesAndCharges(top);
     }
 }
@@ -250,7 +249,7 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
 Selection::operator AnalysisNeighborhoodPositions() const
 {
     return AnalysisNeighborhoodPositions(data().rawPositions_.x,
-                                         data().rawPositions_.nr);
+                                         data().rawPositions_.count());
 }
 
 
@@ -350,7 +349,7 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
 SelectionPosition::operator AnalysisNeighborhoodPositions() const
 {
     return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
-                                         sel_->rawPositions_.nr)
+                                         sel_->rawPositions_.count())
                .selectSingleFromArray(i_);
 }
 

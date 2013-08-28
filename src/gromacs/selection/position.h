@@ -50,10 +50,9 @@
  */
 typedef struct gmx_ana_pos_t
 {
-    /*! \brief
-     * Number of positions.
-     */
-    int                 nr;
+    //! Returns the number of positions.
+    int count() const { return m.mapb.nr; }
+
     /*! \brief
      * Array of positions.
      */

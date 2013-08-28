@@ -848,7 +848,7 @@ evaluate_betafactor(t_topology *top, t_trxframe *fr, t_pbc *pbc,
 static void
 evaluate_coord(real out[], gmx_ana_pos_t *pos, int d)
 {
-    for (int b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         const real v = pos->x[b][d];
         for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)

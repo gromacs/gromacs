@@ -565,7 +565,7 @@ alloc_selection_pos_data(const SelectionTreeElementPointer &sel)
         GMX_RELEASE_ASSERT(child,
                            "Subexpression elements should always have a child element");
     }
-    nalloc = child->v.u.p->nr;
+    nalloc = child->v.u.p->count();
     isize  = child->v.u.p->m.b.nra;
 
     /* For positions, we want to allocate just a single structure

@@ -57,7 +57,6 @@
 void
 gmx_ana_pos_clear(gmx_ana_pos_t *pos)
 {
-    pos->nr = 0;
     pos->x  = NULL;
     pos->v  = NULL;
     pos->f  = NULL;
@@ -175,7 +174,6 @@ void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 {
     gmx_ana_pos_clear(pos);
-    pos->nr = 1;
     snew(pos->x, 1);
     snew(pos->v, 1);
     snew(pos->f, 1);
@@ -197,7 +195,6 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 void
 gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
 {
-    pos->nr               = 0;
     sfree(pos->x); pos->x = NULL;
     sfree(pos->v); pos->v = NULL;
     sfree(pos->f); pos->f = NULL;
@@ -234,7 +231,7 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
 {
     if (bFirst)
     {
-        gmx_ana_pos_reserve(dest, src->nr, 0);
+        gmx_ana_pos_reserve(dest, src->count(), 0);
         if (src->v)
         {
             gmx_ana_pos_reserve_velocities(dest);
@@ -244,17 +241,16 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
             gmx_ana_pos_reserve_forces(dest);
         }
     }
-    dest->nr = src->nr;
-    memcpy(dest->x, src->x, dest->nr*sizeof(*dest->x));
+    memcpy(dest->x, src->x, src->count()*sizeof(*dest->x));
     if (dest->v)
     {
         GMX_ASSERT(src->v, "src velocities should be non-null if dest velocities are allocated");
-        memcpy(dest->v, src->v, dest->nr*sizeof(*dest->v));
+        memcpy(dest->v, src->v, src->count()*sizeof(*dest->v));
     }
     if (dest->f)
     {
         GMX_ASSERT(src->f, "src forces should be non-null if dest forces are allocated");
-        memcpy(dest->f, src->f, dest->nr*sizeof(*dest->f));
+        memcpy(dest->f, src->f, src->count()*sizeof(*dest->f));
     }
     gmx_ana_indexmap_copy(&dest->m, &src->m, bFirst);
 }
@@ -266,7 +262,8 @@ gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst)
 void
 gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
 {
-    pos->nr = nr;
+    // TODO: This puts the mapping in a somewhat inconsistent state.
+    pos->m.mapb.nr = nr;
 }
 
 /*!
@@ -277,8 +274,6 @@ gmx_ana_pos_set_nr(gmx_ana_pos_t *pos, int nr)
 void
 gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 {
-    pos->nr         = 0;
-    pos->m.nr       = 0;
     pos->m.mapb.nr  = 0;
     pos->m.mapb.nra = 0;
     pos->m.b.nr     = 0;
@@ -299,8 +294,6 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
 void
 gmx_ana_pos_empty(gmx_ana_pos_t *pos)
 {
-    pos->nr         = 0;
-    pos->m.nr       = 0;
     pos->m.mapb.nr  = 0;
     pos->m.mapb.nra = 0;
     /* This should not really be necessary, but do it for safety... */
@@ -322,7 +315,7 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
 {
     int  j, k;
 
-    j = dest->nr;
+    j = dest->count();
     copy_rvec(src->x[i], dest->x[j]);
     if (dest->v)
     {
@@ -356,10 +349,8 @@ gmx_ana_pos_append_init(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i)
     }
     dest->m.mapb.index[j+1] = dest->m.mapb.nra;
     dest->m.b.index[j+1]    = dest->m.mapb.nra;
-    dest->nr++;
-    dest->m.nr      = dest->nr;
-    dest->m.mapb.nr = dest->nr;
-    dest->m.b.nr    = dest->nr;
+    dest->m.mapb.nr++;
+    dest->m.b.nr++;
 }
 
 /*!
@@ -376,7 +367,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
     {
         dest->m.mapb.a[dest->m.mapb.nra++] = src->m.mapb.a[k];
     }
-    const int j = dest->nr;
+    const int j = dest->count();
     if (dest->v)
     {
         if (src->v)
@@ -419,9 +410,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
         dest->m.mapid[j] = dest->m.orgid[refid];
     }
     dest->m.mapb.index[j+1] = dest->m.mapb.nra;
-    dest->nr++;
-    dest->m.nr      = dest->nr;
-    dest->m.mapb.nr = dest->nr;
+    dest->m.mapb.nr++;
 }
 
 /*!
@@ -434,7 +423,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
 void
 gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
-    if (pos->m.nr != pos->m.b.nr)
+    if (pos->m.mapb.nr != pos->m.b.nr)
     {
         pos->m.bStatic = false;
     }
