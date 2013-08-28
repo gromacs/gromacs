@@ -178,14 +178,6 @@ typedef struct gmx_ana_indexmap_t
      * actually static.
      */
     bool                bStatic;
-    /*! \brief
-     * true if the current mapping is for the whole group (internal use only).
-     *
-     * This is used internally to optimize the evaluation such that
-     * gmx_ana_indexmap_update() does not take any time if the group is
-     * actually static.
-     */
-    bool                bMapStatic;
 } gmx_ana_indexmap_t;
 
 
