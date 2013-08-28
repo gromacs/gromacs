@@ -103,16 +103,6 @@ typedef struct gmx_ana_indexmap_t
     /** Type of the mapping. */
     e_index_t           type;
     /*! \brief
-     * Current number of mapped values.
-     *
-     * This is the current number of values in the \p refid and \p mapid
-     * arrays.
-     * If \p bMaskOnly is provided to gmx_ana_indexmap_update(), this
-     * is always equal to \p b.nr, i.e., the number of blocks in the
-     * original index group.
-     */
-    int                 nr;
-    /*! \brief
      * Current reference IDs.
      *
      * This array provides a mapping from the current index group (last given

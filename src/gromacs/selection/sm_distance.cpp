@@ -251,7 +251,7 @@ init_frame_common(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
     d->nbsearch.reset();
-    gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.nr);
+    gmx::AnalysisNeighborhoodPositions pos(d->p.x, d->p.count());
     d->nbsearch = d->nb.initSearch(pbc, pos);
 }
 
@@ -269,7 +269,7 @@ evaluate_distance(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
     out->nr = pos->m.mapb.nra;
-    for (int b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         real dist = d->nbsearch.minimumDistance(pos->x[b]);
         for (int i = pos->m.mapb.index[b]; i < pos->m.mapb.index[b+1]; ++i)
@@ -293,7 +293,7 @@ evaluate_within(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     t_methoddata_distance *d = (t_methoddata_distance *)data;
 
     out->u.g->isize = 0;
-    for (int b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         if (d->nbsearch.isWithin(pos->x[b]))
         {

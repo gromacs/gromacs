@@ -1043,7 +1043,7 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
     {
         gmx_ana_indexmap_set_static(&p->m, &pc->b);
     }
-    gmx_ana_pos_reserve(p, p->m.nr, 0);
+    gmx_ana_pos_reserve(p, p->m.mapb.nr, 0);
     if (pc->flags & POS_VELOCITIES)
     {
         gmx_ana_pos_reserve_velocities(p);
@@ -1052,7 +1052,6 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
     {
         gmx_ana_pos_reserve_forces(p);
     }
-    gmx_ana_pos_set_nr(p, p->m.nr);
 }
 
 /*!
@@ -1153,7 +1152,6 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     if (pc->flags & POS_DYNAMIC)
     {
         gmx_ana_indexmap_update(&p->m, g, false);
-        p->nr = p->m.nr;
     }
     else if (pc->flags & POS_MASKONLY)
     {
@@ -1175,14 +1173,14 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
          * loop instead of in the beginning. */
         if (pc->flags & POS_DYNAMIC)
         {
-            for (bi = 0; bi < p->nr; ++bi)
+            for (bi = 0; bi < p->count(); ++bi)
             {
                 bj = pc->baseid[p->m.refid[bi]];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
             }
             if (p->v)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[p->m.refid[bi]];
                     copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
@@ -1190,7 +1188,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
             if (p->f)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[p->m.refid[bi]];
                     copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
@@ -1199,14 +1197,14 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         }
         else
         {
-            for (bi = 0; bi < p->nr; ++bi)
+            for (bi = 0; bi < p->count(); ++bi)
             {
                 bj = pc->baseid[bi];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
             }
             if (p->v)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[bi];
                     copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
@@ -1214,7 +1212,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
             if (p->f)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[bi];
                     copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
