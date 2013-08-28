@@ -311,11 +311,9 @@ void PositionCalculationTest::checkPositions(
         gmx::test::TestReferenceChecker *checker,
         const char *name, gmx_ana_pos_t *p, bool bCoordinates)
 {
-    EXPECT_EQ(p->nr, p->m.nr);
-    EXPECT_EQ(p->nr, p->m.mapb.nr);
     gmx::test::TestReferenceChecker compound(
             checker->checkCompound("Positions", name));
-    compound.checkInteger(p->nr, "Count");
+    compound.checkInteger(p->count(), "Count");
     const char *type = "???";
     switch (p->m.type)
     {
@@ -326,8 +324,8 @@ void PositionCalculationTest::checkPositions(
         case INDEX_ALL:     type = "single";    break;
     }
     compound.checkString(type, "Type");
-    compound.checkSequenceArray(p->nr + 1, p->m.mapb.index, "Block");
-    for (int i = 0; i < p->nr; ++i)
+    compound.checkSequenceArray(p->count() + 1, p->m.mapb.index, "Block");
+    for (int i = 0; i < p->count(); ++i)
     {
         gmx::test::TestReferenceChecker posCompound(
                 compound.checkCompound("Position", NULL));

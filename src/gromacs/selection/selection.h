@@ -106,7 +106,7 @@ class SelectionData
         e_index_t type() const { return rawPositions_.m.type; }
 
         //! Number of positions in the selection.
-        int posCount() const { return rawPositions_.nr; }
+        int posCount() const { return rawPositions_.count(); }
         //! Returns the root of the evaluation tree for this selection.
         SelectionTreeElement &rootElement() { return rootElement_; }
 

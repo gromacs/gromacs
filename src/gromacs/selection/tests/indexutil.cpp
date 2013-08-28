@@ -418,12 +418,11 @@ void IndexMapTest::testUpdate(int atomCount, const int atoms[], bool bMaskOnly,
 void IndexMapTest::checkMapping(int atomCount, const int atoms[],
                                 const char *name)
 {
-    ASSERT_EQ(map_.nr, map_.mapb.nr);
     gmx::test::TestReferenceChecker compound(
             checker_.checkCompound("IndexMapping", name));
     compound.checkSequenceArray(atomCount, atoms, "Input");
-    compound.checkInteger(map_.nr, "Count");
-    for (int i = 0; i < map_.nr; ++i)
+    compound.checkInteger(map_.mapb.nr, "Count");
+    for (int i = 0; i < map_.mapb.nr; ++i)
     {
         gmx::test::TestReferenceChecker blockCompound(
                 compound.checkCompound("Block", NULL));

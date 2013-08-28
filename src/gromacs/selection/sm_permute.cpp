@@ -153,7 +153,7 @@ init_permute(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
 
     d->n    = param[1].val.nr;
     d->perm = param[1].val.u.i;
-    if (d->p.nr % d->n != 0)
+    if (d->p.count() % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
                           gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
@@ -190,10 +190,10 @@ init_output_permute(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     int                   i, j, b;
 
     out->u.p->m.type = d->p.m.type;
-    gmx_ana_pos_reserve_for_append(out->u.p, d->p.nr, d->p.m.b.nra,
+    gmx_ana_pos_reserve_for_append(out->u.p, d->p.count(), d->p.m.b.nra,
                                    d->p.v != NULL, d->p.f != NULL);
     gmx_ana_pos_empty_init(out->u.p);
-    for (i = 0; i < d->p.nr; i += d->n)
+    for (i = 0; i < d->p.count(); i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
@@ -237,13 +237,13 @@ evaluate_permute(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                   i, j, b;
     int                   refid;
 
-    if (d->p.nr % d->n != 0)
+    if (d->p.count() % d->n != 0)
     {
         GMX_THROW(gmx::InconsistentInputError(
                           gmx::formatString("The number of positions to be permuted is not divisible by %d", d->n)));
     }
     gmx_ana_pos_empty(out->u.p);
-    for (i = 0; i < d->p.nr; i += d->n)
+    for (i = 0; i < d->p.count(); i += d->n)
     {
         for (j = 0; j < d->n; ++j)
         {
