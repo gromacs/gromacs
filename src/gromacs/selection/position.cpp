@@ -288,8 +288,7 @@ gmx_ana_pos_empty_init(gmx_ana_pos_t *pos)
     pos->m.b.index[0]    = 0;
     /* This function should only be used to construct all the possible
      * positions, so the result should always be static. */
-    pos->m.bStatic    = true;
-    pos->m.bMapStatic = true;
+    pos->m.bStatic       = true;
 }
 
 /*!
@@ -306,12 +305,11 @@ gmx_ana_pos_empty(gmx_ana_pos_t *pos)
     pos->m.mapb.nra = 0;
     /* This should not really be necessary, but do it for safety... */
     pos->m.mapb.index[0] = 0;
-    /* We set the flags to true, although really in the empty state they
-     * should be false. This makes it possible to update the flags in
+    /* We set the flag to true, although really in the empty state it
+     * should be false. This makes it possible to update the flag in
      * gmx_ana_pos_append(), and just make a simple check in
      * gmx_ana_pos_append_finish(). */
-    pos->m.bStatic    = true;
-    pos->m.bMapStatic = true;
+    pos->m.bStatic       = true;
 }
 
 /*!
@@ -413,8 +411,7 @@ gmx_ana_pos_append(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, int i, int refid)
     {
         if (refid != j)
         {
-            dest->m.bStatic    = false;
-            dest->m.bMapStatic = false;
+            dest->m.bStatic = false;
         }
         dest->m.refid[j] = refid;
         /* Use the original IDs from the output structure to correctly
@@ -439,8 +436,7 @@ gmx_ana_pos_append_finish(gmx_ana_pos_t *pos)
 {
     if (pos->m.nr != pos->m.b.nr)
     {
-        pos->m.bStatic    = false;
-        pos->m.bMapStatic = false;
+        pos->m.bStatic = false;
     }
 }
 
