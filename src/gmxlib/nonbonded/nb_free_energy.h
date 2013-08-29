@@ -43,11 +43,11 @@
 #include <typedefs.h>
 
 void
-gmx_nb_free_energy_kernel(t_nblist *                nlist,
-                          rvec *                    x,
+gmx_nb_free_energy_kernel(const t_nblist *          nlist,
+                          const rvec *              x,
                           rvec *                    f,
                           t_forcerec *              fr,
-                          t_mdatoms *               mdatoms,
+                          const t_mdatoms *         mdatoms,
                           nb_kernel_data_t *        kernel_data,
                           t_nrnb *                  nrnb);
 
