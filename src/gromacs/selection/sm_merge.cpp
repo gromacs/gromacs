@@ -158,9 +158,7 @@ gmx_ana_selmethod_t sm_plus = {
 static void *
 init_data_merge(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_merge *data;
-
-    snew(data, 1);
+    t_methoddata_merge *data = new t_methoddata_merge();
     data->stride     = 0;
     param[0].val.u.p = &data->p1;
     param[1].val.u.p = &data->p2;
@@ -278,8 +276,7 @@ static void
 free_data_merge(void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-
-    sfree(d);
+    delete d;
 }
 
 /*!

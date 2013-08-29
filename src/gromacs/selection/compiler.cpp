@@ -2582,7 +2582,7 @@ init_item_comg(const SelectionTreeElementPointer &sel,
                 gmx_ana_poscalc_set_flags(sel->u.expr.pc, cflags);
             }
             gmx_ana_poscalc_set_maxindex(sel->u.expr.pc, sel->cdata->gmax);
-            snew(sel->u.expr.pos, 1);
+            sel->u.expr.pos = new gmx_ana_pos_t();
             gmx_ana_poscalc_init_pos(sel->u.expr.pc, sel->u.expr.pos);
         }
     }

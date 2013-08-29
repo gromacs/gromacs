@@ -39,6 +39,8 @@
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \ingroup module_selection
  */
+#include "gromacs/selection/position.h"
+
 #include <string.h>
 
 #include "gromacs/legacyheaders/smalloc.h"
@@ -46,22 +48,23 @@
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/selection/indexutil.h"
-#include "gromacs/selection/position.h"
 #include "gromacs/utility/gmxassert.h"
 
-/*!
- * \param[out] pos      Output structure.
- *
- * Any contents of \p pos are discarded without freeing.
- */
-void
-gmx_ana_pos_clear(gmx_ana_pos_t *pos)
+gmx_ana_pos_t::gmx_ana_pos_t()
 {
-    pos->x  = NULL;
-    pos->v  = NULL;
-    pos->f  = NULL;
-    gmx_ana_indexmap_clear(&pos->m);
-    pos->nalloc_x = 0;
+    x = NULL;
+    v = NULL;
+    f = NULL;
+    gmx_ana_indexmap_clear(&m);
+    nalloc_x = 0;
+}
+
+gmx_ana_pos_t::~gmx_ana_pos_t()
+{
+    sfree(x);
+    sfree(v);
+    sfree(f);
+    gmx_ana_indexmap_deinit(&m);
 }
 
 /*!
@@ -173,7 +176,6 @@ gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
 void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
 {
-    gmx_ana_pos_clear(pos);
     snew(pos->x, 1);
     snew(pos->v, 1);
     snew(pos->f, 1);
@@ -182,39 +184,6 @@ gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x)
     clear_rvec(pos->v[0]);
     clear_rvec(pos->f[0]);
     gmx_ana_indexmap_init(&pos->m, NULL, NULL, INDEX_UNKNOWN);
-}
-
-/*!
- * \param[in,out] pos   Position data structure.
- *
- * Frees any memory allocated within \p pos.
- * The pointer \p pos itself is not freed.
- *
- * \see gmx_ana_pos_free()
- */
-void
-gmx_ana_pos_deinit(gmx_ana_pos_t *pos)
-{
-    sfree(pos->x); pos->x = NULL;
-    sfree(pos->v); pos->v = NULL;
-    sfree(pos->f); pos->f = NULL;
-    pos->nalloc_x         = 0;
-    gmx_ana_indexmap_deinit(&pos->m);
-}
-
-/*!
- * \param[in,out] pos   Position data structure.
- *
- * Frees any memory allocated for \p pos.
- * The pointer \p pos is also freed, and is invalid after the call.
- *
- * \see gmx_ana_pos_deinit()
- */
-void
-gmx_ana_pos_free(gmx_ana_pos_t *pos)
-{
-    gmx_ana_pos_deinit(pos);
-    sfree(pos);
 }
 
 /*!

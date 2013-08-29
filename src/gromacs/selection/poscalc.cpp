@@ -770,7 +770,7 @@ create_simple_base(gmx_ana_poscalc_t *pc)
     base  = pc->coll->createCalculation(pc->type, flags);
     set_poscalc_maxindex(base, &pc->gmax, true);
 
-    snew(base->p, 1);
+    base->p = new gmx_ana_pos_t();
 
     pc->sbase = base;
     pc->coll->removeCalculation(base);
@@ -1086,10 +1086,7 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
     {
         gmx_ana_index_deinit(&pc->gmax);
     }
-    if (pc->p)
-    {
-        gmx_ana_pos_free(pc->p);
-    }
+    delete pc->p;
     if (pc->sbase)
     {
         gmx_ana_poscalc_free(pc->sbase);
