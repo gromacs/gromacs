@@ -48,8 +48,12 @@
 /*! \brief
  * Stores a set of positions together with their origins.
  */
-typedef struct gmx_ana_pos_t
+struct gmx_ana_pos_t
 {
+    //! Initializes an empty position structure.
+    gmx_ana_pos_t();
+    ~gmx_ana_pos_t();
+
     //! Returns the number of positions.
     int count() const { return m.mapb.nr; }
 
@@ -75,11 +79,8 @@ typedef struct gmx_ana_pos_t
      * Number of elements allocated for \c x.
      */
     int                 nalloc_x;
-} gmx_ana_pos_t;
+};
 
-/** Initializes an empty position structure. */
-void
-gmx_ana_pos_clear(gmx_ana_pos_t *pos);
 /** Ensures that enough memory has been allocated to store positions. */
 void
 gmx_ana_pos_reserve(gmx_ana_pos_t *pos, int n, int isize);
@@ -96,12 +97,6 @@ gmx_ana_pos_reserve_for_append(gmx_ana_pos_t *pos, int n, int isize,
 /** Initializes a \c gmx_ana_pos_t to represent a constant position. */
 void
 gmx_ana_pos_init_const(gmx_ana_pos_t *pos, const rvec x);
-/** Frees the memory allocated for position storage. */
-void
-gmx_ana_pos_deinit(gmx_ana_pos_t *pos);
-/** Frees the memory allocated for positions. */
-void
-gmx_ana_pos_free(gmx_ana_pos_t *pos);
 /** Copies the evaluated positions to a preallocated data structure. */
 void
 gmx_ana_pos_copy(gmx_ana_pos_t *dest, gmx_ana_pos_t *src, bool bFirst);
