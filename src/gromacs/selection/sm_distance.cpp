@@ -60,7 +60,6 @@ struct t_methoddata_distance
 {
     t_methoddata_distance() : cutoff(-1.0)
     {
-        gmx_ana_pos_clear(&p);
     }
 
     /** Cutoff distance. */

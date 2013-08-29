@@ -131,9 +131,10 @@ gmx_ana_selmethod_t sm_permute = {
 static void *
 init_data_permute(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_permute *data;
-
-    snew(data, 1);
+    t_methoddata_permute *data = new t_methoddata_permute();
+    data->n          = 0;
+    data->perm       = NULL;
+    data->rperm      = NULL;
     param[0].val.u.p = &data->p;
     return data;
 }
@@ -214,7 +215,7 @@ free_data_permute(void *data)
     t_methoddata_permute *d = (t_methoddata_permute *)data;
 
     sfree(d->rperm);
-    sfree(d);
+    delete d;
 }
 
 /*!

@@ -331,10 +331,20 @@ gmx_ana_selmethod_t sm_insolidangle = {
 static void *
 init_data_insolidangle(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_insolidangle *data;
+    t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
+    data->angcut        = 5.0;
+    data->cfrac         = 0.0;
 
-    snew(data, 1);
-    data->angcut     = 5.0;
+    data->distccut      = 0.0;
+    data->targetbinsize = 0.0;
+
+    data->ntbins        = 0;
+    data->tbinsize      = 0.0;
+    data->tbin          = NULL;
+    data->maxbins       = 0;
+    data->nbins         = 0;
+    data->bin           = NULL;
+
     param[0].val.u.p = &data->center;
     param[1].val.u.p = &data->span;
     param[2].val.u.r = &data->angcut;
@@ -406,7 +416,7 @@ free_data_insolidangle(void *data)
     }
     free_surface_points(d);
     sfree(d->bin);
-    sfree(d);
+    delete d;
 }
 
 /*!

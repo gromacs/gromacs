@@ -50,6 +50,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/poscalc.h"
 #include "gromacs/selection/position.h"
+#include "gromacs/utility/uniqueptr.h"
 
 #include "testutils/refdata.h"
 
@@ -121,16 +122,17 @@ class PositionCalculationTest : public ::testing::Test
         gmx::PositionCalculationCollection  pcc_;
 
     private:
+        typedef gmx::gmx_unique_ptr<gmx_ana_pos_t>::type PositionPointer;
+
         struct PositionTest
         {
-            PositionTest() : pos(NULL), pc(NULL), name(NULL) {}
-            PositionTest(gmx_ana_pos_t *pos, gmx_ana_poscalc_t *pc,
+            PositionTest(PositionPointer pos, gmx_ana_poscalc_t *pc,
                          const char *name)
-                : pos(pos), pc(pc), name(name)
+                : pos(gmx::move(pos)), pc(pc), name(name)
             {
             }
 
-            gmx_ana_pos_t                  *pos;
+            PositionPointer                 pos;
             gmx_ana_poscalc_t              *pc;
             const char                     *name;
         };
@@ -159,12 +161,6 @@ PositionCalculationTest::~PositionCalculationTest()
     for (pci = pcList_.rbegin(); pci != pcList_.rend(); ++pci)
     {
         gmx_ana_poscalc_free(*pci);
-    }
-
-    PositionTestList::iterator pi;
-    for (pi = posList_.begin(); pi != posList_.end(); ++pi)
-    {
-        gmx_ana_pos_free(pi->pos);
     }
 }
 
@@ -212,11 +208,11 @@ gmx_ana_pos_t *
 PositionCalculationTest::initPositions(gmx_ana_poscalc_t *pc, const char *name)
 {
     posList_.reserve(posList_.size() + 1);
-    gmx_ana_pos_t *p;
-    snew(p, 1);
-    posList_.push_back(PositionTest(p, pc, name));
-    gmx_ana_poscalc_init_pos(pc, p);
-    return p;
+    PositionPointer p(new gmx_ana_pos_t());
+    gmx_ana_pos_t  *result = p.get();
+    posList_.push_back(PositionTest(gmx::move(p), pc, name));
+    gmx_ana_poscalc_init_pos(pc, result);
+    return result;
 }
 
 void PositionCalculationTest::checkInitialized()
@@ -226,7 +222,7 @@ void PositionCalculationTest::checkInitialized()
     PositionTestList::const_iterator pi;
     for (pi = posList_.begin(); pi != posList_.end(); ++pi)
     {
-        checkPositions(&compound, pi->name, pi->pos, false);
+        checkPositions(&compound, pi->name, pi->pos.get(), false);
     }
 }
 
