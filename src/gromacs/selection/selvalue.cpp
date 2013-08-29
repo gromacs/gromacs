@@ -44,6 +44,7 @@
 #include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/position.h"
 #include "gromacs/selection/selvalue.h"
+#include "gromacs/utility/gmxassert.h"
 
 /*!
  * \param[out] val  Output structure
@@ -97,11 +98,9 @@ _gmx_selvalue_reserve(gmx_ana_selvalue_t *val, int n)
                 }
                 break;
             case POS_VALUE:
-                srenew(val->u.p, n);
-                for (i = val->nalloc; i < n; ++i)
-                {
-                    gmx_ana_pos_clear(&val->u.p[i]);
-                }
+                GMX_RELEASE_ASSERT(val->u.ptr == NULL,
+                                   "Reallocation of position values not supported");
+                val->u.p = new gmx_ana_pos_t[n];
                 break;
             case GROUP_VALUE:
                 srenew(val->u.g, n);

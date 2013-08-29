@@ -63,8 +63,6 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
       bDynamic_(false), bDynamicCoveredFraction_(false)
 {
-    gmx_ana_pos_clear(&rawPositions_);
-
     if (elem->child->type == SEL_CONST)
     {
         // TODO: This is not exception-safe if any called function throws.
@@ -107,7 +105,6 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
 
 SelectionData::~SelectionData()
 {
-    gmx_ana_pos_deinit(&rawPositions_);
 }
 
 

@@ -174,12 +174,6 @@ void SelectionTreeElement::freeValues()
                     sfree(v.u.s[i]);
                 }
                 break;
-            case POS_VALUE:
-                for (int i = 0; i < n; ++i)
-                {
-                    gmx_ana_pos_deinit(&v.u.p[i]);
-                }
-                break;
             case GROUP_VALUE:
                 for (int i = 0; i < n; ++i)
                 {
@@ -190,9 +184,16 @@ void SelectionTreeElement::freeValues()
                 break;
         }
     }
-    if (flags & SEL_ALLOCVAL)
+    if (v.nalloc > 0)
     {
-        sfree(v.u.ptr);
+        if (v.type == POS_VALUE)
+        {
+            delete [] v.u.p;
+        }
+        else
+        {
+            sfree(v.u.ptr);
+        }
     }
     _gmx_selvalue_setstore(&v, NULL);
     if (type == SEL_SUBEXPRREF && u.param)
@@ -210,11 +211,8 @@ SelectionTreeElement::freeExpressionData()
         u.expr.mdata  = NULL;
         u.expr.method = NULL;
         /* Free position data */
-        if (u.expr.pos)
-        {
-            gmx_ana_pos_free(u.expr.pos);
-            u.expr.pos = NULL;
-        }
+        delete u.expr.pos;
+        u.expr.pos = NULL;
         /* Free position calculation data */
         if (u.expr.pc)
         {
@@ -451,9 +449,10 @@ _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
                 }
                 else if (param->val.type == POS_VALUE)
                 {
-                    for (j = 0; j < param->val.nr; ++j)
+                    if (param->val.nalloc > 0)
                     {
-                        gmx_ana_pos_deinit(&param->val.u.p[j]);
+                        delete[] param->val.u.p;
+                        _gmx_selvalue_setstore(&param->val, NULL);
                     }
                 }
 
