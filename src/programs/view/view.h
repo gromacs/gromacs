@@ -6,10 +6,8 @@
  *
  *          GROningen MAchine for Chemical Simulations
  *
- *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
- * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -30,42 +28,14 @@
  * For more info, check our website at http://www.gromacs.org
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _macros_h
-#define _macros_h
+#ifndef _view_h
+#define _view_h
 
-#include "typedefs.h" /* for real definition only */
+int
+gmx_view(int argc, char *argv[]);
 
-/* no extern "C" for this header because it only defines Macros */
-
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * angle.C0[23] instead if angle.c[0][23].
- * In a similar fashion, you can use angle.AI[3] instead of
- * angle.a[0][3]
- */
-#ifndef __cplusplus
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
-
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
 #endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-#endif
-
-/* This macro calculates the size of a array */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
-
-#endif  /* _macros_h */
+/* _view_h */
