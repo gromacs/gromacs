@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -71,7 +71,7 @@ t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
         dlgitem[i+1] = CreateRadioButton(x11, szRB[i], (i == nSelect),
                                          rb[i], GroupID, x, y, 0, 0, 0);
         y += dlgitem[i+1]->win.height+OFFS_Y;
-        w  = max(w, dlgitem[i+1]->win.width);
+        w  = std::max(w, dlgitem[i+1]->win.width);
     }
     for (i = 0; (i < nrb); i++)
     {
@@ -98,7 +98,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
     t_id         *ids;
     edlgitem      edlg;
     char         *name;
-    gmx_bool      bBool;
+    bool      bBool;
     Pixmap        pm;
     int           nlines, buflen;
     char         *buf, **lines;
@@ -135,12 +135,12 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
                 break;
             case edlgPM:
                 pm           = va_arg(ap, Pixmap);
-                dlgitem[i+1] = CreatePixmap(x11, pm, ids[i], GroupID, x, y, 0, 0, 0);
+                dlgitem[i+1] = CreatePixmap(pm, ids[i], GroupID, x, y, 0, 0, 0);
                 break;
             case edlgST:
                 nlines       = va_arg(ap, int);
                 lines        = va_arg(ap, char **);
-                dlgitem[i+1] = CreateStaticText(x11, nlines, lines, ids[i], GroupID,
+                dlgitem[i+1] = CreateStaticText(x11, nlines, (const char **)lines, ids[i], GroupID,
                                                 x, y, 0, 0, 0);
                 break;
             case edlgET:
@@ -155,7 +155,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
                 gmx_fatal(FARGS, "Invalid dlgitem type: %d\n", edlg);
         }
         y += dlgitem[i+1]->win.height+OFFS_Y;
-        w  = max(w, dlgitem[i+1]->win.width);
+        w  = std::max(w, dlgitem[i+1]->win.width);
     }
     va_end(ap);
     sfree(dlgitem[0]->u.groupbox.item);
@@ -171,7 +171,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
 }
 
 static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
-                             t_dlgitemlist **grid, gmx_bool bAutoPosition)
+                             t_dlgitemlist **grid, bool bAutoPosition)
 {
     t_dlgitemlist *item;
     int            x1, y1, w1, h1;
@@ -198,8 +198,8 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
                     AddDlgItems(dlg, item->nitem, item->list);
                     dw = item->w;
                     dh = item->h;
-                    w  = max(w, ((float) QueryDlgItemW(dlg, item->list[0]->ID))/dw);
-                    h  = max(h, ((float) QueryDlgItemH(dlg, item->list[0]->ID))/dh);
+                    w  = std::max(w, ((float) QueryDlgItemW(dlg, item->list[0]->ID))/dw);
+                    h  = std::max(h, ((float) QueryDlgItemH(dlg, item->list[0]->ID))/dh);
                 }
             }
         }
@@ -259,7 +259,7 @@ static void AddListItem(t_dlgitemlist *list, t_dlgitem *item)
 
 static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                          t_fitem *fitem, t_id GroupID, t_id *ID,
-                         int x, int *y, int *w, gmx_bool bUseMon)
+                         int x, int *y, int *w, bool bUseMon)
 {
     int  i, iSel, slen;
     char buf[STRLEN];
@@ -292,14 +292,14 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                             CreateRadioButton(x11, fitem->name[i], (iSel == i),
                                               (*ID)++, GroupID, x, (*y), 0, 0, 0));
                 (*y) += list->list[list->nitem-1]->win.height+OFFS_Y;
-                (*w)  = max((*w), list->list[list->nitem-1]->win.width);
+                (*w)  = std::max((*w), list->list[list->nitem-1]->win.width);
                 SetDlgitemOpts(list->list[list->nitem-1], bUseMon,
                                fitem->set, fitem->get, fitem->help);
             }
             break;
         case edlgCB:
         {
-            gmx_bool bCheck;
+            bool bCheck;
 
             bCheck = gmx_strcasecmp(fitem->def, "TRUE") == 0;
             AddListItem(list, CreateCheckBox(x11, fitem->name[0], bCheck,
@@ -308,7 +308,8 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
         }
         case edlgST:
             AddListItem(list,
-                        CreateStaticText(x11, fitem->nname, fitem->name, (*ID)++,
+                        CreateStaticText(x11, fitem->nname, 
+                                         (const char **) fitem->name, (*ID)++,
                                          GroupID, x, (*y), 0, 0, 0));
             break;
         case edlgET:
@@ -327,12 +328,12 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
     if (fitem->edlg != edlgRB)
     {
         (*y) += list->list[list->nitem-1]->win.height+OFFS_Y;
-        (*w)  = max((*w), list->list[list->nitem-1]->win.width);
+        (*w)  = std::max((*w), list->list[list->nitem-1]->win.width);
     }
 }
 
 static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
-                          t_fgroup *fgroup, t_id *ID, gmx_bool bUseMon)
+                          t_fgroup *fgroup, t_id *ID, bool bUseMon)
 {
     int            i;
     t_id           GroupID, *ids;
@@ -351,7 +352,7 @@ static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
         AddListFItem(x11, item, fgroup->fitem[i], GroupID, ID, x, &y, &w, bUseMon);
     }
 
-    w = max(w, item->list[0]->win.width+4*OFFS_X);
+    w = std::max(w, item->list[0]->win.width+4*OFFS_X);
     sfree(item->list[0]->u.groupbox.item);
     sfree(item->list[0]->win.text);
     snew(ids, item->nitem);
@@ -368,7 +369,7 @@ static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
 }
 
 static void AddListFSimple(t_x11 *x11, t_dlgitemlist **grid,
-                           t_fsimple *fsimple, t_id *ID, gmx_bool bUseMon)
+                           t_fsimple *fsimple, t_id *ID, bool bUseMon)
 {
     t_dlgitemlist *item;
     int            x, y, w;
@@ -383,8 +384,8 @@ static void AddListFSimple(t_x11 *x11, t_dlgitemlist **grid,
 }
 
 t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
-               unsigned long fg, unsigned long bg, const char *infile,
-               int x0, int y0, gmx_bool bAutoPosition, gmx_bool bUseMon,
+               const char *infile,
+               int x0, int y0, bool bAutoPosition, bool bUseMon,
                DlgCallback *cb, void *data)
 {
     t_fgrid        *fgrid;
@@ -394,7 +395,7 @@ t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
     t_id            ID;
 
     fgrid = FGridFromFile(infile);
-    dlg   = CreateDlg(x11, Parent, title, x0, y0, 0, 0, 0, fg, bg, cb, data);
+    dlg   = CreateDlg(x11, Parent, title, x0, y0, 0, 0, 0, cb, data);
     grid  = NewDlgitemList(fgrid->w, fgrid->h);
     ID    = 0;
 

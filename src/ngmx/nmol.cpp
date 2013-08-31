@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -53,7 +53,7 @@
 
 #define MSIZE 4
 
-static gmx_bool MWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_molwin *mw;
     Window    To;
@@ -131,7 +131,7 @@ void map_mw(t_x11 *x11, t_molwin *mw)
     XMapWindow(x11->disp, mw->wd.self);
 }
 
-gmx_bool toggle_hydrogen(t_x11 *x11, t_molwin *mw)
+bool toggle_hydrogen(t_x11 *x11, t_molwin *mw)
 {
     mw->bShowHydrogen = !mw->bShowHydrogen;
     ExposeWin(x11->disp, mw->wd.self);
@@ -175,7 +175,7 @@ void done_mw(t_x11 *x11, t_molwin *mw)
 
 static void draw_atom(Display *disp, Window w, GC gc,
                       atom_id ai, iv2 vec2[], unsigned long col[], int size[],
-                      gmx_bool bBall, gmx_bool bPlus)
+                      bool bBall, bool bPlus)
 {
     int xi, yi;
 
@@ -217,7 +217,7 @@ static void my_init_pbc(matrix box)
     }
 }
 
-static gmx_bool local_pbc_dx(rvec x1, rvec x2)
+static bool local_pbc_dx(rvec x1, rvec x2)
 {
     int  i;
     real dx;
@@ -239,7 +239,7 @@ static gmx_bool local_pbc_dx(rvec x1, rvec x2)
 
 static void draw_bond(Display *disp, Window w, GC gc,
                       atom_id ai, atom_id aj, iv2 vec2[],
-                      rvec x[], unsigned long col[], int size[], gmx_bool bBalls)
+                      rvec x[], unsigned long col[], int size[], bool bBalls)
 {
     unsigned long   ic, jc;
     int             xi, yi, xj, yj;
@@ -353,7 +353,7 @@ int filter_vis(t_manager *man)
 {
     int          i, nobj, nvis, nhide;
     atom_id      ai;
-    gmx_bool     bAdd, *bVis;
+    bool     bAdd, *bVis;
     t_object    *obj;
     t_object    *newobj;
 
@@ -391,10 +391,10 @@ int filter_vis(t_manager *man)
 
 void draw_objects(Display *disp, Window w, GC gc, int nobj,
                   t_object objs[], iv2 vec2[], rvec x[],
-                  unsigned long col[], int size[], gmx_bool bShowHydro, int bond_type,
-                  gmx_bool bPlus)
+                  unsigned long col[], int size[], bool bShowHydro, int bond_type,
+                  bool bPlus)
 {
-    gmx_bool     bBalls;
+    bool     bBalls;
     int          i;
     t_object    *obj;
 

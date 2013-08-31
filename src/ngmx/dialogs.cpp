@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -145,12 +145,12 @@ static void MBCallback(t_x11 *x11, int dlg_mess, int item_id,
 
 static t_dlg *about_mb(t_x11 *x11, t_gmx *gmx)
 {
-    char *lines[] = {
+    const char *lines[] = {
         "         G R O M A C S",
         " Machine for Simulating Chemistry",
-        "       Copyright (c) 1992-2000",
-        "  Dept. of Biophysical Chemistry",
-        "    University of Groningen"
+        "       Copyright (c) 1992-2013",
+        "  Berk Hess, David van der Spoel, Erik Lindahl",
+        "        and many collaborators!"
     };
 
     return MessageBox(x11, gmx->wd->self, gmx->wd->text,
@@ -176,7 +176,7 @@ static void QuitCB(t_x11 *x11, int dlg_mess, int item_id,
 
 static t_dlg *quit_mb(t_x11 *x11, t_gmx *gmx)
 {
-    char *lines[] = {
+    const char *lines[] = {
         " Do you really want to Quit ?"
     };
 
@@ -188,7 +188,7 @@ static t_dlg *quit_mb(t_x11 *x11, t_gmx *gmx)
 
 static t_dlg *help_mb(t_x11 *x11, t_gmx *gmx)
 {
-    char *lines[] = {
+    const char *lines[] = {
         " Help will soon be added"
     };
 
@@ -200,7 +200,7 @@ static t_dlg *help_mb(t_x11 *x11, t_gmx *gmx)
 
 static t_dlg *ni_mb(t_x11 *x11, t_gmx *gmx)
 {
-    char *lines[] = {
+    const char *lines[] = {
         " This feature has not been",
         " implemented yet."
     };
@@ -218,7 +218,7 @@ enum {
 static void ExportCB(t_x11 *x11, int dlg_mess, int item_id,
                      char *set, void *data)
 {
-    gmx_bool   bOk;
+    bool   bOk;
     t_gmx     *gmx;
     t_dlg     *dlg;
 
@@ -280,7 +280,7 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
 {
     static int ebond = -1;
     static int ebox  = -1;
-    gmx_bool   bOk, bBond = FALSE;
+    bool   bOk, bBond = FALSE;
     int        nskip, nwait;
     t_gmx     *gmx;
 
@@ -316,7 +316,7 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                     case ebDPlus:
                         DO_NOT(gmx->man->bPlus);
 #ifdef DEBUG
-                        fprintf(stderr, "gmx->man->bPlus=%s\n", gmx_bool_names[gmx->man->bPlus]);
+                        fprintf(stderr, "gmx->man->bPlus=%s\n", bool_names[gmx->man->bPlus]);
 #endif
                         break;
                     /*case ebSBox:
@@ -328,7 +328,7 @@ static void BondsCB(t_x11 *x11, int dlg_mess, int item_id,
                     case ebCue:
                         DO_NOT(gmx->man->bSort);
 #ifdef DEBUG
-                        fprintf(stderr, "gmx->man->bSort=%s\n", gmx_bool_names[gmx->man->bSort]);
+                        fprintf(stderr, "gmx->man->bSort=%s\n", bool_names[gmx->man->bSort]);
 #endif
                         break;
                     case ebSkip:
@@ -414,7 +414,7 @@ enum {
     esFUNCT = 1, esBSHOW, esINFIL, esINDEXFIL, esLSQ, esSHOW, esPLOTFIL
 };
 
-static gmx_bool in_set(int i, int n, int set[])
+static bool in_set(int i, int n, int set[])
 {
     int j;
     for (j = 0; (j < n); j++)
@@ -453,13 +453,13 @@ void init_dlgs(t_x11 *x11, t_gmx *gmx)
         { emAbout,      about_mb,   MBCallback },
         { emNotImplemented, ni_mb,      MBCallback }
     };
-    int i;
+    unsigned int i;
 
     snew(gmx->dlgs, edNR);
     for (i = 0; (i < asize(di)); i++)
     {
         gmx->dlgs[i] = ReadDlg(x11, gmx->wd->self, di[i].dlgfile,
-                               x11->fg, x11->bg, di[i].dlgfile,
+                               di[i].dlgfile,
                                0, 0, TRUE, FALSE, di[i].cb, gmx);
     }
 

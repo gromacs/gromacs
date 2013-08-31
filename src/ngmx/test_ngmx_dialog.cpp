@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -36,23 +36,33 @@
 #include <config.h>
 #endif
 
-#include "logo.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <xdlghi.h>
 
-int
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
-    t_x11  *x11;
-    t_logo *logo;
+    t_x11 *x11;
+    t_dlg *dlg;
 
     if ((x11 = GetX11(&argc, argv)) == NULL)
     {
         fprintf(stderr, "No X!\n");
         exit(1);
     }
-    logo = init_logo(x11, x11->root, TRUE);
-    show_logo(x11, logo);
-    x11->MainLoop(x11);
+    if (argc > 1)
+    {
+        dlg = ReadDlg(x11, 0, x11->title, x11->fg, x11->bg, argv[1], 100, 100, TRUE,
+                      TRUE, NULL, NULL);
+        ShowDlg(dlg);
+        x11->MainLoop(x11);
+    }
+    else
+    {
+        fprintf(stderr, "Usage: %s [ X options ] infile\n", argv[0]);
+    }
 
     x11->CleanUp(x11);
+
     return 0;
 }

@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@
 
 #define BUFSIZE 16
 
-t_dlgitem *newitem(t_x11 *x11)
+static t_dlgitem *newitem(void)
 {
     t_dlgitem *item;
 
@@ -319,7 +319,7 @@ static int WndProcST(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
     return ITEMOK;
 }
 
-static gmx_bool insert(char *s, char c, int *pos)
+static bool insert(char *s, char c, int *pos)
 {
     int i, sl;
 
@@ -338,7 +338,7 @@ static gmx_bool insert(char *s, char c, int *pos)
     return FALSE;
 }
 
-static gmx_bool my_backspace(char *s, int *pos)
+static bool my_backspace(char *s, int *pos)
 {
     int i, sl;
 
@@ -349,13 +349,13 @@ static gmx_bool my_backspace(char *s, int *pos)
         {
             s[i] = s[i+1];
         }
-        (*pos) = max(0, (*pos)-1);
+        (*pos) = std::max(0, (*pos)-1);
         return TRUE;
     }
     return FALSE;
 }
 
-static gmx_bool my_delete(char *s, int *pos)
+static bool my_delete(char *s, int *pos)
 {
     int i, sl;
 
@@ -373,12 +373,13 @@ static gmx_bool my_delete(char *s, int *pos)
 
 static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
 {
-    t_edittext *et;
-    t_windata  *win;
-    KeySym      keysym;
-    char        c[BUFSIZE+1], *bp;
-    char        scrbuf[STRLEN];
-    int         i, xp, xtitle, ewidth;
+    t_edittext  *et;
+    t_windata   *win;
+    KeySym       keysym;
+    char         c[BUFSIZE+1], *bp;
+    char         scrbuf[STRLEN];
+    int          i; 
+    int          xp, xtitle, ewidth;
 
     if (dlgitem->type != edlgET)
     {
@@ -470,7 +471,7 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     et->bChanged = TRUE;
                     return ETCHANGED;
                 case XK_End:
-                    if (strlen(et->buf) <= et->buflen)
+                    if (strlen(et->buf) <= (unsigned int)et->buflen)
                     {
                         et->pos = strlen(et->buf);
                     }
@@ -482,17 +483,18 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     et->bChanged = TRUE;
                     return ETCHANGED;
                 case XK_Left:
-                    et->pos      = max(0, et->pos-1);
-                    et->strbegin = min(et->strbegin, et->pos);
+                    et->pos      = std::max(0, et->pos-1);
+                    et->strbegin = std::min(et->strbegin, et->pos);
                     et->bChanged = TRUE;
                     return ETCHANGED;
                 case XK_Right:
-                    if ((et->pos < et->buflen) && (et->strbegin+et->buflen > strlen(et->buf)))
+                    if ((et->pos < et->buflen) && 
+                        (et->strbegin+et->buflen > (int)strlen(et->buf)))
                     {
                         et->pos++;
                     }
-                    else if ((et->buflen   < strlen(et->buf)) &&
-                             (et->strbegin < strlen(et->buf)-et->buflen))
+                    else if ((et->buflen   < (int)strlen(et->buf)) &&
+                             (et->strbegin < (int)strlen(et->buf)-et->buflen))
                     {
                         et->strbegin++;
                     }
@@ -544,13 +546,13 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
  *
  ****************************/
 t_dlgitem *CreateButton(t_x11 *x11,
-                        const char *szLab, gmx_bool bDef, t_id id, t_id groupid,
+                        const char *szLab, bool bDef, t_id id, t_id groupid,
                         int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
     char      *lab;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = XTextHeight(x11->font)+2*OFFS_Y;
@@ -580,13 +582,13 @@ t_dlgitem *CreateButton(t_x11 *x11,
 }
 
 t_dlgitem *CreateRadioButton(t_x11 *x11,
-                             const char *szLab, gmx_bool bSet, t_id id,
+                             const char *szLab, bool bSet, t_id id,
                              t_id groupid,
                              int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = XTextHeight(x11->font)+OFFS_Y;
@@ -612,7 +614,7 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
 {
     t_dlgitem *dlgitem;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = XTextHeight(x11->font)+OFFS_Y;
@@ -635,13 +637,13 @@ t_dlgitem *CreateGroupBox(t_x11 *x11,
 }
 
 t_dlgitem *CreateCheckBox(t_x11 *x11,
-                          const char *szLab, gmx_bool bCheckedInitial, t_id id,
+                          const char *szLab, bool bCheckedInitial, t_id id,
                           t_id groupid,
                           int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = XTextHeight(x11->font)+OFFS_Y;
@@ -660,13 +662,12 @@ t_dlgitem *CreateCheckBox(t_x11 *x11,
     return dlgitem;
 }
 
-t_dlgitem *CreatePixmap(t_x11 *x11,
-                        Pixmap pm, t_id id,
+t_dlgitem *CreatePixmap(Pixmap pm, t_id id,
                         t_id groupid, int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     InitWin(&(dlgitem->win), x0, y0, w, h, bw, NULL);
     dlgitem->ID          = id;
     dlgitem->type        = edlgPM;
@@ -677,14 +678,14 @@ t_dlgitem *CreatePixmap(t_x11 *x11,
 }
 
 t_dlgitem *CreateStaticText(t_x11 *x11,
-                            int nlines, char * const * lines, t_id id,
+                            int nlines, const char ** lines, t_id id,
                             t_id groupid,
                             int x0, int y0, int w, int h, int bw)
 {
     t_dlgitem *dlgitem;
     int        i;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = (XTextHeight(x11->font)+OFFS_Y)*nlines+OFFS_Y;
@@ -693,7 +694,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     {
         for (i = 0; (i < nlines); i++)
         {
-            w = max(w, XTextWidth(x11->font, lines[i], strlen(lines[i])));
+            w = std::max(w, XTextWidth(x11->font, lines[i], strlen(lines[i])));
         }
         w += 2*OFFS_X;
     }
@@ -720,7 +721,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
     t_dlgitem  *dlgitem;
     t_edittext *et;
 
-    dlgitem = newitem(x11);
+    dlgitem = newitem();
     if (h == 0)
     {
         h = XTextHeight(x11->font)+OFFS_Y;
@@ -753,7 +754,7 @@ t_dlgitem *CreateEditText(t_x11 *x11,
 
 #define SC(src) (strlen(src) ? strdup(src) : NULL)
 
-void SetDlgitemOpts(t_dlgitem *dlgitem, gmx_bool bUseMon,
+void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
                     char *set, char *get, char *help)
 {
     dlgitem->bUseMon = bUseMon;
