@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -67,8 +67,8 @@ enum {
 
 typedef struct {
     int            status;
-    gmx_bool       bShowGly;
-    gmx_bool      *bIsGly;
+    bool       bShowGly;
+    bool      *bIsGly;
     t_windata      wd;
     t_windata      xrwd;
     t_xrama       *xr;
@@ -90,7 +90,7 @@ static void plot_pp(t_x11 *x11, Window w, t_phipsi *pp, t_dih dih[])
     }
 }
 
-static gmx_bool label_pp(t_x11 *x11, Window w, int npp, t_phipsi pp[],
+static bool label_pp(int npp, t_phipsi pp[],
                          t_dih dih[], int mx, int my)
 {
     int d, md, x0, y0;
@@ -112,12 +112,12 @@ static gmx_bool label_pp(t_x11 *x11, Window w, int npp, t_phipsi pp[],
     if (imin != -1)
     {
         pp[imin].bShow = !pp[imin].bShow;
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
-static gmx_bool xrCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool xrCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_app   *app;
     t_xrama *xr;
@@ -148,7 +148,7 @@ static gmx_bool xrCallBack(struct t_x11 *x11, XEvent *event, Window w, void *dat
             }
             break;
         case ButtonPress:
-            if (label_pp(x11, app->xrwd.self, xr->npp, xr->pp, xr->dih,
+            if (label_pp(xr->npp, xr->pp, xr->dih,
                          event->xbutton.x, event->xbutton.y))
             {
                 ExposeWin(x11->disp, app->xrwd.self);
@@ -174,10 +174,10 @@ static gmx_bool xrCallBack(struct t_x11 *x11, XEvent *event, Window w, void *dat
 
         }
     }
-    return FALSE;
+    return false;
 }
 
-static gmx_bool appCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool appCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_app  *app;
     int     win;
@@ -192,7 +192,7 @@ static gmx_bool appCallBack(struct t_x11 *x11, XEvent *event, Window w, void *da
     }
     if (win == ebutNR)
     {
-        return FALSE;
+        return false;
     }
 
     switch (event->type)
@@ -225,7 +225,7 @@ static gmx_bool appCallBack(struct t_x11 *x11, XEvent *event, Window w, void *da
             }
             break;
     }
-    return FALSE;
+    return false;
 }
 
 static void size_app(t_x11 *x11, t_app *app)
@@ -244,7 +244,7 @@ static void size_app(t_x11 *x11, t_app *app)
                       app->wd.width-6, app->wd.height-th-10-4);
 }
 
-static gmx_bool mainCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool mainCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_app *app;
     int    wt, ht;
@@ -264,7 +264,7 @@ static gmx_bool mainCallBack(struct t_x11 *x11, XEvent *event, Window w, void *d
             }
             break;
     }
-    return FALSE;
+    return false;
 }
 
 static t_xrama *init_xrama(t_x11 *x11, Window Parent, int y0, t_app *app)
@@ -335,7 +335,7 @@ static void mk_gly(t_app *app)
     {
         if (strstr(app->xr->pp[i].label, "GLY") != NULL)
         {
-            app->bIsGly[i] = TRUE;
+            app->bIsGly[i] = true;
         }
     }
 }

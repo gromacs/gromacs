@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@ void SetIcon(unsigned char *bits, int w, int h, unsigned long fg, unsigned long 
 }
 
 t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
-                  int nlines, char ** lines, unsigned long Flags,
+                  int nlines, const char ** lines, unsigned long Flags,
                   DlgCallback *cb, void *data)
 {
     t_dlg                *dlg;
@@ -132,15 +132,15 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
         }
     }
 
-    dlg = CreateDlg(x11, Parent, title, 0, 0, 0, 0, 3, x11->fg, bg, cb, data);
+    dlg = CreateDlg(x11, Parent, title, 0, 0, 0, 0, 3, cb, data);
     x   = 2*OFFS_X;
     if (nicon > 0)
     {
         AddDlgItem(dlg, CreatePixmap
-                       (x11, XCreatePixmapFromBitmapData
-                           (x11->disp, dlg->win.self, icon_bits, icon_width, icon_height,
-                           icon_fg, icon_bg, x11->depth),
-                       ID_ICON, ID_BOX, 2*OFFS_X, 2*OFFS_Y, icon_width, icon_height, 0));
+                       (XCreatePixmapFromBitmapData
+                        (x11->disp, dlg->win.self, icon_bits, icon_width, icon_height,
+                         icon_fg, icon_bg, x11->depth),
+                        ID_ICON, ID_BOX, 2*OFFS_X, 2*OFFS_Y, icon_width, icon_height, 0));
         x += QueryDlgItemW(dlg, ID_ICON)+2*OFFS_X;
     }
 
@@ -160,7 +160,10 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
         {
             SetDlgItemPos(dlg, ID_ICON, 2*OFFS_X, 2*OFFS_Y+(y-yi)/2);
         }
-        y = max(y, yi);
+        if (yi > y)
+        {
+            y = yi;
+        }
     }
     x    += QueryDlgItemW(dlg, ID_TEXT)+2*OFFS_X;
     y    += 2*OFFS_Y;
@@ -177,7 +180,7 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     }
 
 #define CB(name, butx, id) AddDlgItem(dlg, CreateButton(x11, name, \
-                                                        TRUE, id, ID_BOX, \
+                                                        true, id, ID_BOX, \
                                                         butx, y, width, 0, 0))
     if (Flags & MB_OK)
     {
@@ -197,7 +200,7 @@ t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
     }
 
     SetDlgSize(dlg, x, y+2*OFFS_Y+
-               QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES), TRUE);
+               QueryDlgItemH(dlg, (Flags & MB_OK) ? MB_OK : MB_YES), true);
 
     if (Flags & MB_SYSTEMMODAL)
     {

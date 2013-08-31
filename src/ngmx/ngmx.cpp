@@ -81,7 +81,7 @@ static void done_gmx(t_x11 *x11, t_gmx *gmx)
 }
 
 static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
-                     gmx_bool bSizePD)
+                     bool bSizePD)
 {
     int y0, wl, hl;
 #ifdef DEBUG
@@ -102,7 +102,7 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
     XMoveWindow(x11->disp, gmx->logo->wd.self, (width-wl)/2, (height-y0-hl)/2);
 }
 
-static gmx_bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
+static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
 {
     t_pulldown *pd;
 
@@ -140,7 +140,7 @@ static gmx_bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
             break;
         case IDTERM:
             done_gmx(x11, gmx);
-            return TRUE;
+            return true;
 
         /* Edit Menu */
         case IDEDITTOP:
@@ -226,16 +226,16 @@ static gmx_bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
         default:
             break;
     }
-    return FALSE;
+    return false;
 }
 
-static gmx_bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_gmx    *gmx;
     int       nsel, width, height;
-    gmx_bool  result;
+    bool  result;
 
-    result = FALSE;
+    result = false;
     gmx    = (t_gmx *)data;
     switch (event->type)
     {
@@ -247,7 +247,7 @@ static gmx_bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             height = event->xconfigure.height;
             if ((width != gmx->wd->width) || (height != gmx->wd->height))
             {
-                move_gmx(x11, gmx, width, height, TRUE);
+                move_gmx(x11, gmx, width, height, true);
             }
             break;
         case ClientMessage:
@@ -316,22 +316,22 @@ int main(int argc, char *argv[])
 }
 
 static t_mentry  FileMenu[] = {
-    { 0,  IDEXPORT,   FALSE,  "Export..." },
-    { 0,  IDDUMPWIN,  FALSE,  "Print"     },
-    { 0,  IDQUIT,     FALSE,  "Quit"      }
+    { 0,  IDEXPORT,   false,  "Export..." },
+    { 0,  IDDUMPWIN,  false,  "Print"     },
+    { 0,  IDQUIT,     false,  "Quit"      }
 };
 
 static t_mentry  DispMenu[] = {
-    { 0,  IDFILTER,   FALSE,  "Filter..." },
-    { 0,  IDANIMATE,  FALSE,  "Animate"   },
-    { 0,  IDLABELSOFF,    FALSE,  "Labels Off"},
-    { 0,  IDRESETVIEW,    FALSE,  "Reset View"},
-    { 0,  IDBONDOPTS,     FALSE,  "Options..."}
+    { 0,  IDFILTER,   false,  "Filter..." },
+    { 0,  IDANIMATE,  false,  "Animate"   },
+    { 0,  IDLABELSOFF,    false,  "Labels Off"},
+    { 0,  IDRESETVIEW,    false,  "Reset View"},
+    { 0,  IDBONDOPTS,     false,  "Options..."}
 };
 
 static t_mentry  HelpMenu[] = {
-    { 0,  IDHELP,     FALSE,  "Help"             },
-    { 0,  IDABOUT,    FALSE,  "About Gromacs..." }
+    { 0,  IDHELP,     false,  "Help"             },
+    { 0,  IDABOUT,    false,  "About Gromacs..." }
 };
 
 static t_mentry *gmx_pd[] = { FileMenu, DispMenu, HelpMenu };
@@ -399,17 +399,17 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
     /* The order of creating windows is important here! */
     /* Manager */
     gmx->man  = init_man(x11, gmx->wd->self, 0, 0, 1, 1, WHITE, BLACK, ePBC, box, oenv);
-    gmx->logo = init_logo(x11, gmx->wd->self, FALSE);
+    gmx->logo = init_logo(x11, gmx->wd->self, false);
 
     /* Now put all windows in the proper place */
-    move_gmx(x11, gmx, w0, h0, FALSE);
+    move_gmx(x11, gmx, w0, h0, false);
 
     XMapWindow(x11->disp, gmx->wd->self);
     map_man(x11, gmx->man);
 
     /* Pull Down menu */
     gmx->pd = init_pd(x11, gmx->wd->self, gmx->wd->width,
-                      XTextHeight(x11->font), x11->fg, x11->bg,
+                      x11->fg, x11->bg,
                       MSIZE, gmx_pd_size, gmx_pd, MenuTitle);
 
     /* Dialogs & Filters */

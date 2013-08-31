@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -66,15 +66,15 @@ static t_atomcolor ac[] = {
 
 int search_ac(const char *type)
 {
-    int i, nb, mij, best, besti;
+    unsigned int i, nb, mij, best, besti;
 
     best  = 0;
     besti = 0;
-    if (type)
+    if (NULL != type)
     {
         for (i = 0; (i < NAC); i++)
         {
-            mij = min((int)strlen(type), (int)strlen(ac[i].tp));
+            mij = std::min((int)strlen(type), (int)strlen(ac[i].tp));
             for (nb = 0; (nb < mij); nb++)
             {
                 if (type[nb] != ac[i].tp[nb])
@@ -141,7 +141,7 @@ void DrawLegend(t_x11 *x11, t_windata *Win)
     XSetForeground(x11->disp, x11->gc, x11->fg);
 }
 
-static gmx_bool LegWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool LegWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_legendwin *lw;
 
@@ -154,7 +154,7 @@ static gmx_bool LegWCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
         default:
             break;
     }
-    return FALSE;
+    return false;
 }
 
 t_legendwin *init_legw(t_x11 *x11, Window Parent,
