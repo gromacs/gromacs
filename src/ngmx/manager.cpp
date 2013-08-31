@@ -220,7 +220,7 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
     read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, NULL, &man->top);
-    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom, man->box);
+    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom =
         read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
@@ -370,7 +370,7 @@ static gmx_bool step_man(t_manager *man, int *nat)
         fprintf(stderr, "Not initiated yet!");
         exit(1);
     }
-    bEof = read_next_x(man->oenv, man->status, &man->time, man->natom, man->x, man->box);
+    bEof = read_next_x(man->oenv, man->status, &man->time, man->x, man->box);
     *nat = man->natom;
     if (ncount == man->nSkip)
     {
@@ -458,7 +458,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
             if (man->status)
             {
                 rewind_trj(man->status);
-                read_next_x(man->oenv, man->status, &(man->time), man->natom, man->x,
+                read_next_x(man->oenv, man->status, &(man->time), man->x,
                             man->box);
                 man->bEof = FALSE;
                 draw_mol(x11, man);

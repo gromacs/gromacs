@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -71,7 +71,7 @@ t_dlgitem **CreateRadioButtonGroup(t_x11 *x11, char *szTitle,
         dlgitem[i+1] = CreateRadioButton(x11, szRB[i], (i == nSelect),
                                          rb[i], GroupID, x, y, 0, 0, 0);
         y += dlgitem[i+1]->win.height+OFFS_Y;
-        w  = max(w, dlgitem[i+1]->win.width);
+        w  = std::max(w, dlgitem[i+1]->win.width);
     }
     for (i = 0; (i < nrb); i++)
     {
@@ -155,7 +155,7 @@ t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
                 gmx_fatal(FARGS, "Invalid dlgitem type: %d\n", edlg);
         }
         y += dlgitem[i+1]->win.height+OFFS_Y;
-        w  = max(w, dlgitem[i+1]->win.width);
+        w  = std::max(w, dlgitem[i+1]->win.width);
     }
     va_end(ap);
     sfree(dlgitem[0]->u.groupbox.item);
@@ -198,8 +198,8 @@ static void AddDlgItemGroups(t_dlg *dlg, int gridx, int gridy,
                     AddDlgItems(dlg, item->nitem, item->list);
                     dw = item->w;
                     dh = item->h;
-                    w  = max(w, ((float) QueryDlgItemW(dlg, item->list[0]->ID))/dw);
-                    h  = max(h, ((float) QueryDlgItemH(dlg, item->list[0]->ID))/dh);
+                    w  = std::max(w, ((float) QueryDlgItemW(dlg, item->list[0]->ID))/dw);
+                    h  = std::max(h, ((float) QueryDlgItemH(dlg, item->list[0]->ID))/dh);
                 }
             }
         }
@@ -292,7 +292,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
                             CreateRadioButton(x11, fitem->name[i], (iSel == i),
                                               (*ID)++, GroupID, x, (*y), 0, 0, 0));
                 (*y) += list->list[list->nitem-1]->win.height+OFFS_Y;
-                (*w)  = max((*w), list->list[list->nitem-1]->win.width);
+                (*w)  = std::max((*w), list->list[list->nitem-1]->win.width);
                 SetDlgitemOpts(list->list[list->nitem-1], bUseMon,
                                fitem->set, fitem->get, fitem->help);
             }
@@ -327,7 +327,7 @@ static void AddListFItem(t_x11 *x11, t_dlgitemlist *list,
     if (fitem->edlg != edlgRB)
     {
         (*y) += list->list[list->nitem-1]->win.height+OFFS_Y;
-        (*w)  = max((*w), list->list[list->nitem-1]->win.width);
+        (*w)  = std::max((*w), list->list[list->nitem-1]->win.width);
     }
 }
 
@@ -351,7 +351,7 @@ static void AddListFGroup(t_x11 *x11, t_dlgitemlist **grid,
         AddListFItem(x11, item, fgroup->fitem[i], GroupID, ID, x, &y, &w, bUseMon);
     }
 
-    w = max(w, item->list[0]->win.width+4*OFFS_X);
+    w = std::max(w, item->list[0]->win.width+4*OFFS_X);
     sfree(item->list[0]->u.groupbox.item);
     sfree(item->list[0]->win.text);
     snew(ids, item->nitem);

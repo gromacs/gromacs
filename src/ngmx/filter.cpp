@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -123,7 +123,7 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     len = strlen(title);
     for (i = 0; (i < (int)gmx->filter->grps->nr); i++)
     {
-        len = max(len, (int)strlen(gmx->filter->grpnames[i]));
+        len = std::max(len, (int)strlen(gmx->filter->grpnames[i]));
     }
     len += 2;
 
