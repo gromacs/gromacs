@@ -378,14 +378,7 @@ static FILE *man_file(const output_env_t oenv, const char *mantp)
     char        buf[256];
     const char *pr = output_env_get_short_program_name(oenv);
 
-    if (strcmp(mantp, "ascii") != 0)
-    {
-        sprintf(buf, "%s.%s", pr, mantp);
-    }
-    else
-    {
-        sprintf(buf, "%s.txt", pr);
-    }
+    sprintf(buf, "%s.%s", pr, mantp);
     fp = gmx_fio_fopen(buf, "w");
 
     return fp;
@@ -487,8 +480,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 {
     gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE;
     const char *manstr[] = {
-        NULL, "no", "html", "tex", "nroff", "ascii",
-        "completion", "py", "xml", "wiki", NULL
+        NULL, "no", "html", "tex", "nroff", "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
