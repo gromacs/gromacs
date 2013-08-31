@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -137,7 +137,7 @@ t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
     mlen = 0;
     for (i = 0; (i < nent); i++)
     {
-        mlen = max(mlen, XTextWidth(x11->font, ent[i].str, strlen(ent[i].str)));
+        mlen = std::max(mlen, XTextWidth(x11->font, ent[i].str, strlen(ent[i].str)));
     }
     mht = XTextHeight(x11->font);
     /* Now we have the biggest single box, add a border of 2 pixels */

@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -69,7 +69,7 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
         "9x15", "6x13", "fixed"
     };
 #define MAXNAMES (sizeof(fontnames)/sizeof(fontnames[0]))
-    int                i;
+    unsigned int       i;
     XFontStruct       *font;
     int                count;
     char             **fontlist;
@@ -146,20 +146,6 @@ typedef struct {
     Window     w;
     gmx_bool   b;
 } t_peek;
-
-static Bool TestEvent(Display *disp, XEvent *event, char *arg)
-{
-    t_peek *tp;
-
-    fprintf(stderr, "TestEvent\n");
-    tp = (t_peek *)arg;
-    if ((event->xany.window == tp->w) && (event->type == ConfigureNotify))
-    {
-        tp->b = TRUE;
-        return True;
-    }
-    return False;
-}
 
 static void MainLoop(t_x11 *x11)
 {
@@ -382,7 +368,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     char           *fontname;
     char           *title, *FG = NULL, *BG = NULL;
     gmx_bool        bVerbose = FALSE;
-    int             i;
+    unsigned int    i;
 
     title = strdup(argv[0]);
 

@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -70,7 +70,7 @@ static gmx_bool PDCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
                     ;
                 }
                 pd->nsel = nsel;
-                x1       = max(0, min(pd_width(pd)-menu_width(pd->m[nsel]), pd->xpos[nsel]));
+                x1       = std::max(0, std::min(pd_width(pd)-menu_width(pd->m[nsel]), pd->xpos[nsel]));
                 show_menu(x11, pd->m[nsel], x1, y+1, FALSE);
             }
             break;
@@ -164,9 +164,9 @@ int pd_width(t_pulldown *pd)
     w = 0;
     for (i = 0; (i < pd->nmenu); i++)
     {
-        w = max(w, menu_width(pd->m[i]));
+        w = std::max(w, menu_width(pd->m[i]));
     }
-    w = max(w, pd->xpos[pd->nmenu]);
+    w = std::max(w, pd->xpos[pd->nmenu]);
     return w;
 }
 
@@ -177,7 +177,7 @@ int pd_height(t_pulldown *pd)
     h = 0;
     for (i = 0; (i < pd->nmenu); i++)
     {
-        h = max(h, menu_height(pd->m[i]));
+        h = std::max(h, menu_height(pd->m[i]));
     }
 
     return h;

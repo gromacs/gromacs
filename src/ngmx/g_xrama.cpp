@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -90,7 +90,7 @@ static void plot_pp(t_x11 *x11, Window w, t_phipsi *pp, t_dih dih[])
     }
 }
 
-static gmx_bool label_pp(t_x11 *x11, Window w, int npp, t_phipsi pp[],
+static gmx_bool label_pp(int npp, t_phipsi pp[],
                          t_dih dih[], int mx, int my)
 {
     int d, md, x0, y0;
@@ -148,7 +148,7 @@ static gmx_bool xrCallBack(struct t_x11 *x11, XEvent *event, Window w, void *dat
             }
             break;
         case ButtonPress:
-            if (label_pp(x11, app->xrwd.self, xr->npp, xr->pp, xr->dih,
+            if (label_pp(xr->npp, xr->pp, xr->dih,
                          event->xbutton.x, event->xbutton.y))
             {
                 ExposeWin(x11->disp, app->xrwd.self);

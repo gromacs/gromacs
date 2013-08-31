@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -349,7 +349,7 @@ static gmx_bool my_backspace(char *s, int *pos)
         {
             s[i] = s[i+1];
         }
-        (*pos) = max(0, (*pos)-1);
+        (*pos) = std::max(0, (*pos)-1);
         return TRUE;
     }
     return FALSE;
@@ -482,8 +482,8 @@ static int WndProcET(t_x11 *x11, t_dlgitem *dlgitem, XEvent *event)
                     et->bChanged = TRUE;
                     return ETCHANGED;
                 case XK_Left:
-                    et->pos      = max(0, et->pos-1);
-                    et->strbegin = min(et->strbegin, et->pos);
+                    et->pos      = std::max(0, et->pos-1);
+                    et->strbegin = std::min(et->strbegin, et->pos);
                     et->bChanged = TRUE;
                     return ETCHANGED;
                 case XK_Right:
@@ -693,7 +693,7 @@ t_dlgitem *CreateStaticText(t_x11 *x11,
     {
         for (i = 0; (i < nlines); i++)
         {
-            w = max(w, XTextWidth(x11->font, lines[i], strlen(lines[i])));
+            w = std::max(w, XTextWidth(x11->font, lines[i], strlen(lines[i])));
         }
         w += 2*OFFS_X;
     }
