@@ -30,42 +30,56 @@
  * For more info, check our website at http://www.gromacs.org
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gyas ROwers Mature At Cryogenic Speed
  */
 
-#ifndef _macros_h
-#define _macros_h
+#ifndef _fgrid_h
+#define _fgrid_h
 
-#include "typedefs.h" /* for real definition only */
+#include <typedefs.h>
+#include <xdlgitem.h>
 
-/* no extern "C" for this header because it only defines Macros */
+typedef struct {
+    edlgitem edlg;
+    bool     bDef;
+    int      nname;
+    char   **name;
+    char    *set, *get, *def, *help;
+} t_fitem;
 
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * angle.C0[23] instead if angle.c[0][23].
- * In a similar fashion, you can use angle.AI[3] instead of
- * angle.a[0][3]
- */
-#ifndef __cplusplus
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
+typedef struct {
+    char     *name;
+    int       x, y, w, h;
+    int       nfitem;
+    t_fitem **fitem;
+} t_fgroup;
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-#endif
+typedef struct {
+    int      x, y, w, h;
+    t_fitem *fitem;
+} t_fsimple;
 
-/* This macro calculates the size of a array */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+typedef struct {
+    int         w, h;
+    int         nfgroup;
+    t_fgroup  **fgroup;
+    int         nfsimple;
+    t_fsimple **fsimple;
+} t_fgrid;
 
-#endif  /* _macros_h */
+typedef enum {
+    eGRIDEXP, eACCOEXP, eACCCEXP, eGRPEXP, eITEMEXP, eSAMEPOINT,
+    eTOOWIDE, eTOOHIGH, eQUOTE,   eNOVALS
+} eDLGERR;
+
+void ReadDlgErr(const char *infile, eDLGERR err, const char *s);
+
+t_fgrid *FGridFromFile(const char *infile);
+
+void DoneFGrid(t_fgrid *fgrid);
+
+void DumpFGrid(t_fgrid *fgrid);
+
+void ReadQuoteString(const char *infile, FILE *in, char *buf);
+
+#endif  /* _fgrid_h */
