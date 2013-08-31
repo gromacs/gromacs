@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -66,10 +66,10 @@ void hide_logo(t_x11 *x11, t_logo *logo)
     XUnmapWindow(x11->disp, logo->wd.self);
 }
 
-static gmx_bool LogoCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool LogoCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     /* Assume window is 100x110 */
-    static gmx_bool bFirst = TRUE;
+    static bool bFirst = true;
 #define CSIZE 9
 #define NSIZE 8
 #define OSIZE 9
@@ -132,7 +132,7 @@ static gmx_bool LogoCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             Mess[i].fnt = (i == 0) ? logo->bigfont : (i == NMESS-1) ? x11->font :
                 logo->smallfont;
         }
-        bFirst = FALSE;
+        bFirst = false;
     }
     switch (event->type)
     {
@@ -168,10 +168,10 @@ static gmx_bool LogoCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             break;
     }
 
-    return FALSE;
+    return false;
 }
 
-t_logo *init_logo(t_x11 *x11, Window parent, gmx_bool bQuitOnClick)
+t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick)
 {
     static const char *bfname[] = {
         "-b&h-lucida-bold-i-normal-sans-34-240-100-100-p-215-iso8859-1",
@@ -188,7 +188,7 @@ t_logo *init_logo(t_x11 *x11, Window parent, gmx_bool bQuitOnClick)
         "fixed"
     };
 #define NSF asize(sfname)
-    int                i;
+    unsigned int       i;
     unsigned long      bg;
     char              *newcol;
     t_logo            *logo;

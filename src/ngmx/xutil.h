@@ -48,7 +48,7 @@ typedef struct {
     Window         self, Parent;
     unsigned long  color;
     char          *text;
-    gmx_bool       bFocus;
+    bool       bFocus;
     int            x, y, width, height, bwidth;
     Cursor         cursor;
 } t_windata;
@@ -87,9 +87,9 @@ extern void PushMouse(Display *disp, Window dest, int x, int y);
 
 extern void PopMouse(Display *disp);
 
-extern gmx_bool HelpPressed(XEvent *event);
+extern bool HelpPressed(XEvent *event);
 
-extern gmx_bool GrabOK(FILE *out, int err);
+extern bool GrabOK(FILE *out, int err);
 /* Return TRUE if grab succeeded, prints a message to out
  * and returns FALSE otherwise.
  */

@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -97,18 +97,11 @@ void ReadDlgError(const char *infile, eDLGERR err, const char *s,
 
 #define ReadDlgErr(in, er, es) ReadDlgError(in, er, es, __FILE__, __LINE__)
 
-static void GetBuf(FILE *in, char *buf)
-{
-    int rc;
-
-    rc = fscanf(in, "%s", buf);
-}
-
 static void ReadAccOpen(const char *infile, FILE *in)
 {
     char buf[STRLEN];
 
-    GetBuf(in, buf);
+    fscanf(in, "%s", buf);
     if (strcmp(buf, "{") != 0)
     {
         ReadDlgErr(infile, eACCOEXP, buf);
@@ -119,7 +112,7 @@ static void ReadAccClose(const char *infile, FILE *in)
 {
     char buf[STRLEN];
 
-    GetBuf(in, buf);
+    fscanf(in, "%s", buf);
     if (strcmp(buf, "}") != 0)
     {
         ReadDlgErr(infile, eACCCEXP, buf);
@@ -174,7 +167,7 @@ static void ReadQuoteStringOrAccClose(FILE *in, char *buf)
     buf[i] = '\0';
 }
 
-static gmx_bool bNotAccClose(const char *buf)
+static bool bNotAccClose(const char *buf)
 {
     return (strcmp(buf, "}") != 0);
 }
@@ -324,7 +317,7 @@ static t_fitem *ScanFItem(const char *infile, FILE *in, char *buf)
     {
         /* Special case */
         edlg        = edlgBN;
-        fitem->bDef = TRUE;
+        fitem->bDef = true;
     }
     if (edlg == edlgNR+1)
     {
@@ -373,8 +366,6 @@ t_fgrid *FGridFromFile(const char *infile)
 {
     FILE      *in;
     char       buf[STRLEN];
-    char      *gmxlib;
-    char       newinfile[STRLEN];
 
     t_fgrid   *fgrid;
     t_fgroup  *fgroup;
@@ -382,7 +373,7 @@ t_fgrid *FGridFromFile(const char *infile)
     int        gridx, gridy;
 
     in = libopen(infile);
-    GetBuf(in, buf);
+    fscanf(in, "%s", buf);
     if (strcmp(buf, "grid") != 0)
     {
         ReadDlgErr(infile, eGRIDEXP, buf);
@@ -395,7 +386,7 @@ t_fgrid *FGridFromFile(const char *infile)
     fgrid->w = gridx;
     fgrid->h = gridy;
     ReadAccOpen(infile, in);
-    GetBuf(in, buf);
+    fscanf(in, "%s", buf);
     while (bNotAccClose(buf))
     {
         if (strcmp(buf, "group") == 0)
@@ -416,11 +407,11 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, buf);
             }
             ReadAccOpen(infile, in);
-            GetBuf(in, buf);
+            fscanf(in, "%s", buf);
             while (bNotAccClose(buf))
             {
                 AddFGroupFItem(fgroup, ScanFItem(infile, in, buf));
-                GetBuf(in, buf);
+                fscanf(in, "%s", buf);
             }
         }
         else if (strcmp(buf, "simple") == 0)
@@ -439,11 +430,11 @@ t_fgrid *FGridFromFile(const char *infile)
                 ReadDlgErr(infile, eTOOHIGH, "simple");
             }
             ReadAccOpen(infile, in);
-            GetBuf(in, buf);
+            fscanf(in, "%s", buf);
             fsimple->fitem = ScanFItem(infile, in, buf);
             ReadAccClose(infile, in);
         }
-        GetBuf(in, buf);
+        fscanf(in, "%s", buf);
     }
     ffclose(in);
 
