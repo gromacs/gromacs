@@ -30,42 +30,30 @@
  * For more info, check our website at http://www.gromacs.org
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gyas ROwers Mature At Cryogenic Speed
  */
 
-#ifndef _macros_h
-#define _macros_h
+#ifndef _xmb_h
+#define _xmb_h
 
-#include "typedefs.h" /* for real definition only */
+#include <x11.h>
 
-/* no extern "C" for this header because it only defines Macros */
+#define MB_OK              1
+#define MB_CANCEL          (1<<1)
+#define MB_OKCANCEL        (MB_OK | MB_CANCEL)
+#define MB_YES             (1<<2)
+#define MB_NO              (1<<3)
+#define MB_YESNO           (MB_YES | MB_NO)
+#define MB_ICONSTOP        (1<<16)
+#define MB_ICONINFORMATION (1<<17)
+#define MB_ICONEXCLAMATION (1<<18)
+#define MB_ICONGMX         (1<<19)
+#define MB_SYSTEMMODAL     (1<<20)
+#define MB_APPLMODAL       (1<<21)
+#define MB_DONTSHOW        (1<<22)
 
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * angle.C0[23] instead if angle.c[0][23].
- * In a similar fashion, you can use angle.AI[3] instead of
- * angle.a[0][3]
- */
-#ifndef __cplusplus
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
+t_dlg *MessageBox(t_x11 *x11, Window Parent, const char *title,
+                  int nlines, const char * const *lines, unsigned long Flags,
+                  DlgCallback *cb, void *data);
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-#endif
-
-/* This macro calculates the size of a array */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
-
-#endif  /* _macros_h */
+#endif  /* _xmb_h */

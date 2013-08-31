@@ -74,6 +74,7 @@ else()
     # requires a target for each binary to which one can add a post-build role, and
     # the symlinks do not have such targets).
 
+    add_subdirectory(ngmx)
     install(TARGETS gmx
             RUNTIME DESTINATION ${BIN_INSTALL_DIR})
     if (GMX_SYMLINK_OLD_BINARY_NAMES)

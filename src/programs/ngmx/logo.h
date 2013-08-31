@@ -30,42 +30,28 @@
  * For more info, check our website at http://www.gromacs.org
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gyas ROwers Mature At Cryogenic Speed
  */
 
-#ifndef _macros_h
-#define _macros_h
+#ifndef _logo_h
+#define _logo_h
 
-#include "typedefs.h" /* for real definition only */
+#include <x11.h>
+#include <xutil.h>
 
-/* no extern "C" for this header because it only defines Macros */
+typedef struct {
+    XFontStruct *bigfont;
+    XFontStruct *smallfont;
+    t_windata    wd;
+    bool         bQuitOnClick;
+} t_logo;
 
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * angle.C0[23] instead if angle.c[0][23].
- * In a similar fashion, you can use angle.AI[3] instead of
- * angle.a[0][3]
- */
-#ifndef __cplusplus
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
+extern void show_logo(t_x11 *x11, t_logo *logo);
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-#endif
+extern void hide_logo(t_x11 *x11, t_logo *logo);
 
-/* This macro calculates the size of a array */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+extern t_logo *init_logo(t_x11 *x11, Window parent, bool bQuitOnClick);
 
-#endif  /* _macros_h */
+extern void done_logo(t_x11 *x11, t_logo *logo);
+
+#endif  /* _logo_h */
