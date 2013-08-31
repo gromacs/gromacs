@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -52,14 +52,14 @@ static void move_bbox(t_x11 *x11, t_butbox *bbox)
 {
     int        x0, y0;
     int        i, bw;
-    real       idb, bh;
+    real       idb, bh, one = 1.0;
     t_windata *wd;
 
-    bw  = max(1, bbox->wd.width-2*(AIR+BORDER));
+    bw  = std::max(1, bbox->wd.width-2*(AIR+BORDER));
     idb = bbox->nbut;
     bh  = (bbox->wd.height-AIR*(bbox->nbut+1));
     bh /= idb;
-    bh  = max(bh, 1.0);
+    bh  = std::max(bh, one);
 
     x0 = AIR;
     y0 = AIR;
@@ -75,7 +75,7 @@ static void move_bbox(t_x11 *x11, t_butbox *bbox)
     }
 }
 
-static gmx_bool BBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool BBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_butbox *bbox;
 
@@ -86,10 +86,10 @@ static gmx_bool BBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
         bbox->wd.height = event->xconfigure.height;
         move_bbox(x11, bbox);
     }
-    return FALSE;
+    return false;
 }
 
-static gmx_bool VBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool VBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_butbox  *vbox;
     int        y0;
@@ -105,7 +105,7 @@ static gmx_bool VBCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
         XDrawLine(x11->disp, vbox->wd.self, x11->gc, 0, y0, vbox->wd.width, y0);
         XSetForeground(x11->disp, x11->gc, x11->fg);
     }
-    return FALSE;
+    return false;
 }
 
 void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text)
@@ -115,7 +115,7 @@ void set_vbtime(t_x11 *x11, t_butbox *vbox, char *text)
     ExposeWin(x11->disp, vbox->wd.self);
 }
 
-static gmx_bool ButtonCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ButtonCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     XEvent     letter;
     t_mwbut   *but;
@@ -162,7 +162,7 @@ static gmx_bool ButtonCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
         default:
             break;
     }
-    return FALSE;
+    return false;
 }
 
 t_butbox *init_vbox(t_x11 *x11, Window Parent, Window SendTo, unsigned long fg, unsigned long bg)

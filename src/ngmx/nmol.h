@@ -53,7 +53,7 @@ extern int  compare_obj(const void *a, const void *b);
 extern int  filter_vis(t_manager *man);
 extern void set_sizes(t_manager *man, real sx, real sy);
 
-extern gmx_bool toggle_hydrogen(t_x11 *x11, t_molwin *mw);
+extern bool toggle_hydrogen(t_x11 *x11, t_molwin *mw);
 /* Toggle the state of the hydrogen drawing,
  * return the current state
  */

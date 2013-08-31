@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -145,7 +145,7 @@ static void Callback(t_x11 *x11, int dlg_mess, int item_id,
         data->nAppl = item_id;
         data->appl  = ReadDlg(x11, 0, data->name[item_id],
                               BLACK, LIGHTGREY, data->dlgfile[item_id],
-                              50, 50, FALSE, FALSE, ApplCallback, data);
+                              50, 50, false, false, ApplCallback, data);
         ShowDlg(data->appl);
     }
 }
@@ -158,20 +158,28 @@ static void read_opts(t_data *data)
 
     sprintf(fn, "xstat.dat");
     in = libopen(fn);
-    fscanf(in, "%d", &n);
-    data->nopt = n;
-    snew(data->name, data->nopt);
-    snew(data->description, data->nopt);
-    snew(data->dlgfile, data->nopt);
-
-    for (i = 0; (i < data->nopt); i++)
+    if (NULL != fgets(buf, STRLEN, in))
     {
-        ReadQuoteString(fn, in, buf);
-        data->name[i] = strdup(buf);
-        ReadQuoteString(fn, in, buf);
-        data->description[i] = strdup(buf);
-        ReadQuoteString(fn, in, buf);
-        data->dlgfile[i] = strdup(buf);
+        char *endptr;
+        n = strtol(buf, &endptr, 10);
+        
+        if (buf != endptr)
+        {
+            data->nopt = n;
+            snew(data->name, data->nopt);
+            snew(data->description, data->nopt);
+            snew(data->dlgfile, data->nopt);
+            
+            for (i = 0; (i < data->nopt); i++)
+            {
+                ReadQuoteString(fn, in, buf);
+                data->name[i] = strdup(buf);
+                ReadQuoteString(fn, in, buf);
+                data->description[i] = strdup(buf);
+                ReadQuoteString(fn, in, buf);
+                data->dlgfile[i] = strdup(buf);
+            }
+        }
     }
     ffclose(in);
 }
@@ -184,13 +192,13 @@ static void add_opts(t_x11 *x11, t_data *data)
     y0 = OFFS_Y;
     for (i = 0; (i < data->nopt); i++)
     {
-        but = CreateButton(x11, data->description[i], FALSE,
+        but = CreateButton(x11, data->description[i], false,
                            (t_id)i, (t_id)0,
                            OFFS_X, y0, 0, 0, 1);
         AddDlgItem(data->dlg, but);
         y0 += but->win.height+OFFS_Y;
     }
-    but = CreateButton(x11, "Quit", TRUE, (t_id)data->nopt, (t_id)0,
+    but = CreateButton(x11, "Quit", true, (t_id)data->nopt, (t_id)0,
                        OFFS_X, y0, 0, 0, 1);
     AddDlgItem(data->dlg, but);
     y0 += but->win.height+OFFS_Y;
@@ -205,7 +213,7 @@ static void add_opts(t_x11 *x11, t_data *data)
     {
         SetDlgItemSize(data->dlg, i, w, 0);
     }
-    SetDlgSize(data->dlg, w+2*OFFS_X, y0, TRUE);
+    SetDlgSize(data->dlg, w+2*OFFS_X, y0, true);
 }
 
 int

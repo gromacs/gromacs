@@ -42,21 +42,21 @@
 #include "logo.h"
 
 typedef struct {
-    gmx_bool  bMapped;
+    bool  bMapped;
     t_dlg    *dlg;
 } t_dialogs;
 
-typedef enum {
+enum eDialogs {
     edExport, edBonds, edFilter, edNR
-} eDialogs;
+};
 
-typedef enum {
+enum eMBoxes {
     emQuit, emHelp, emAbout, emNotImplemented, emNR
-} eMBoxes;
+};
 
-typedef enum {
+enum eExport {
     eExpGromos, eExpPDB, eExpNR
-} eExport;
+};
 
 typedef struct {
     char           confout[256]; /* Export file			*/

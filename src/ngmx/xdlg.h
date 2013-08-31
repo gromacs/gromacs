@@ -65,8 +65,8 @@ typedef struct {
     unsigned int          xmax, ymax; /* Dimensions of parent window        */
     unsigned long         flags;      /* Flags for display          */
     unsigned long         fg, bg;     /* The colours                */
-    gmx_bool              bPop;       /* Should we pop the mouse back   */
-    gmx_bool              bGrab;      /* Have we grabbed the mouse ?        */
+    bool              bPop;       /* Should we pop the mouse back   */
+    bool              bGrab;      /* Have we grabbed the mouse ?        */
     int                   nitem;      /* The number of items            */
     t_dlgitem           **dlgitem;    /* The array of item pointers         */
     DlgCallback          *cb;         /* User call back function		*/
@@ -80,7 +80,7 @@ typedef struct {
  *
  ****************************/
 t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
-                 int x0, int y0, int w, int h, int bw, unsigned long fg, unsigned long bg,
+                 int x0, int y0, int w, int h, int bw, 
                  DlgCallback *cb, void *data);
 
 /*****************************
@@ -101,9 +101,9 @@ void AddDlgItems(t_dlg *dlg, int nitem, t_dlgitem *item[]);
  * FALSE will mean most of the time, that item id was not found
  *
  ****************************/
-gmx_bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h);
+bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h);
 
-gmx_bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0);
+bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0);
 
 int QueryDlgItemX(t_dlg *dlg, t_id id);
 
@@ -113,11 +113,11 @@ int QueryDlgItemW(t_dlg *dlg, t_id id);
 
 int QueryDlgItemH(t_dlg *dlg, t_id id);
 
-gmx_bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h);
+bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h);
 
-gmx_bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0);
+bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0);
 
-void SetDlgSize(t_dlg *dlg, int w, int h, gmx_bool bAutoPosition);
+void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition);
 
 /*****************************
  *
@@ -125,7 +125,7 @@ void SetDlgSize(t_dlg *dlg, int w, int h, gmx_bool bAutoPosition);
  * after dlg is exec'ed
  *
  ****************************/
-gmx_bool IsCBChecked(t_dlg *dlg, t_id id);
+bool IsCBChecked(t_dlg *dlg, t_id id);
 
 t_id RBSelected(t_dlg *dlg, int gid);
 

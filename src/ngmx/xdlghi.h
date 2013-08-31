@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -68,8 +68,8 @@ extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
  */
 
 extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
-                      unsigned long fg, unsigned long bg, const char *infile,
-                      int x0, int y0, gmx_bool bAutoPosition, gmx_bool bUseMon,
+                      const char *infile,
+                      int x0, int y0, bool bAutoPosition, bool bUseMon,
                       DlgCallback *cb, void *data);
 /* Read a dialog box from a template file */
 

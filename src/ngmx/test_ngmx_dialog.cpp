@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -52,8 +52,8 @@ int main(int argc, char *argv[])
     }
     if (argc > 1)
     {
-        dlg = ReadDlg(x11, 0, x11->title, x11->fg, x11->bg, argv[1], 100, 100, TRUE,
-                      TRUE, NULL, NULL);
+        dlg = ReadDlg(x11, 0, x11->title, x11->fg, x11->bg, argv[1], 100, 100, true,
+                      true, NULL, NULL);
         ShowDlg(dlg);
         x11->MainLoop(x11);
     }
