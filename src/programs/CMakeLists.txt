@@ -35,6 +35,11 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
+if(X11_FOUND)
+    file(GLOB VIEW_SOURCES view/*.cpp)
+else()
+    file(GLOB VIEW_SOURCES view/view.cpp)
+endif(X11_FOUND)
 
 if(GMX_FAHCORE)
     add_library(fahcore ${MDRUN_SOURCES})
@@ -48,9 +53,14 @@ elseif(GMX_BUILD_MDRUN_ONLY)
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 else()
     file(GLOB GMX_EXECUTABLE_SOURCES gmx/*.c gmx/*.cpp)
-    add_executable(gmx ${GMX_EXECUTABLE_SOURCES} ${MDRUN_SOURCES})
-    target_link_libraries(gmx
-        ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    add_executable(gmx ${GMX_EXECUTABLE_SOURCES} ${MDRUN_SOURCES} ${VIEW_SOURCES})
+    if(X11_FOUND)
+        target_link_libraries(gmx
+            ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS} ${X11_LIBRARIES})
+    else()
+        target_link_libraries(gmx
+            ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
+    endif(X11_FOUND)
     set_target_properties(gmx PROPERTIES
         OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}"
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")

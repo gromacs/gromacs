@@ -515,6 +515,9 @@ if (GMX_X11)
     # X11 includes/libraries are only set in the ngmx subdirectory!
     if(NOT X11_FOUND)
         message(WARNING "X11 include files and/or libraries were not found. Will not build the GROMACS X11-binaries, such as ngmx")
+    else()
+        set(HAVE_X11 1)
+        include_directories(${X11_INCLUDE_DIR})
     endif()
 endif(GMX_X11)
 
