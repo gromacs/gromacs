@@ -69,9 +69,9 @@ static void add_object(t_manager *man, eObject eO, atom_id ai, atom_id aj)
 }
 
 static void add_bonds(t_manager *man, t_functype func[],
-                      t_ilist *b, gmx_bool bB[])
+                      t_ilist *b, bool bB[])
 {
-    gmx_bool    *bH = man->bHydro;
+    bool    *bH = man->bHydro;
     t_iatom     *ia;
     t_iatom      type, ai, aj, ak;
     int          i, delta, ftype;
@@ -91,7 +91,7 @@ static void add_bonds(t_manager *man, t_functype func[],
         {
             aj     = ia[2];
             ak     = ia[3];
-            bB[ai] = bB[aj] = bB[ak] = TRUE;
+            bB[ai] = bB[aj] = bB[ak] = true;
             add_object(man, eOHBond, ai, aj);
             add_object(man, eOHBond, ai, ak);
         }
@@ -101,7 +101,7 @@ static void add_bonds(t_manager *man, t_functype func[],
 #ifdef DEBUG
             fprintf(stderr, "Adding bond from %d to %d\n", ai, aj);
 #endif
-            bB[ai] = bB[aj] = TRUE;
+            bB[ai] = bB[aj] = true;
             if (!(bH[ai] == bH[aj]))
             {
                 add_object(man, eOHBond, ai, aj);
@@ -119,7 +119,7 @@ static void add_bonds(t_manager *man, t_functype func[],
     }
 }
 
-static void add_bpl(t_manager *man, t_idef *idef, gmx_bool bB[])
+static void add_bpl(t_manager *man, t_idef *idef, bool bB[])
 {
     int ftype;
 
@@ -151,7 +151,7 @@ static atom_id which_atom(t_manager *man, int x, int y)
     return NO_ATID;
 }
 
-static void do_label(t_x11 *x11, t_manager *man, int x, int y, gmx_bool bSet)
+static void do_label(t_x11 *x11, t_manager *man, int x, int y, bool bSet)
 {
     atom_id         ai;
     unsigned long   col;
@@ -163,12 +163,12 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, gmx_bool bSet)
         if (bSet && !man->bLabel[ai])
         {
             col             = WHITE;
-            man->bLabel[ai] = TRUE;
+            man->bLabel[ai] = true;
         }
         else if (!bSet && man->bLabel[ai])
         {
             col             = BLUE;
-            man->bLabel[ai] = FALSE;
+            man->bLabel[ai] = false;
         }
         else
         {
@@ -183,12 +183,12 @@ static void do_label(t_x11 *x11, t_manager *man, int x, int y, gmx_bool bSet)
 
 static void show_label(t_x11 *x11, t_manager *man, int x, int y)
 {
-    do_label(x11, man, x, y, TRUE);
+    do_label(x11, man, x, y, true);
 }
 
 static void hide_label(t_x11 *x11, t_manager *man, int x, int y)
 {
-    do_label(x11, man, x, y, FALSE);
+    do_label(x11, man, x, y, false);
 }
 
 void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
@@ -198,10 +198,10 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     char              buf[256], quote[256];
     t_tpxheader       sh;
     t_atoms          *at;
-    gmx_bool         *bB;
-    int               i, idum;
+    bool             *bB;
+    int               i;
 
-    read_tpxheader(status, &sh, TRUE, NULL, NULL);
+    read_tpxheader(status, &sh, true, NULL, NULL);
     snew(man->ix, sh.natoms);
     snew(man->zz, sh.natoms);
     snew(man->col, sh.natoms);
@@ -211,16 +211,16 @@ void set_file(t_x11 *x11, t_manager *man, const char *trajectory,
     snew(man->bVis, sh.natoms);
     for (i = 0; (i < sh.natoms); i++)
     {
-        man->bVis[i] = FALSE;
+        man->bVis[i] = false;
     }
 
-    man->bPbc = FALSE;
+    man->bPbc = false;
 
     snew(man->szLab, sh.natoms);
     snew(man->bHydro, sh.natoms);
     snew(bB, sh.natoms);
     read_tpx_top(status, NULL, man->box, &man->natom, NULL, NULL, NULL, &man->top);
-    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom, man->box);
+    man->gpbc = gmx_rmpbc_init(&man->top.idef, -1, man->natom);
 
     man->natom =
         read_first_x(man->oenv, &man->status, trajectory, &(man->time), &(man->x),
@@ -292,12 +292,12 @@ void step_message(t_x11 *x11, t_manager *man)
     XSendEvent(x11->disp, letter.xclient.window, True, 0, &letter);
 }
 
-gmx_bool ReadMonfile(char *fn, int *nbars, int *bars)
+bool ReadMonfile(char *fn, int *nbars, int *bars)
 {
     FILE *fp;
     if ((fp = fopen(fn, "r")) == NULL)
     {
-        return(FALSE);
+        return(false);
     }
     else
     {
@@ -306,7 +306,7 @@ gmx_bool ReadMonfile(char *fn, int *nbars, int *bars)
             ;
         }
         fclose(fp);
-        return (TRUE);
+        return (true);
     }
 }
 
@@ -357,12 +357,11 @@ static void reset_mols(t_block *mols, matrix box, rvec x[])
     }
 }
 
-static gmx_bool step_man(t_manager *man, int *nat)
+static bool step_man(t_manager *man, int *nat)
 {
     static int      ncount = 0;
-    static gmx_bool bWarn  = FALSE;
-    gmx_bool        bEof;
-    int             dum;
+    static bool     bWarn  = false;
+    bool            bEof;
     const char     *warn;
 
     if (!man->natom)
@@ -370,7 +369,7 @@ static gmx_bool step_man(t_manager *man, int *nat)
         fprintf(stderr, "Not initiated yet!");
         exit(1);
     }
-    bEof = read_next_x(man->oenv, man->status, &man->time, man->natom, man->x, man->box);
+    bEof = read_next_x(man->oenv, man->status, &man->time, man->x, man->box);
     *nat = man->natom;
     if (ncount == man->nSkip)
     {
@@ -385,7 +384,7 @@ static gmx_bool step_man(t_manager *man, int *nat)
                 if (warn && !bWarn)
                 {
                     fprintf(stderr, "\n%s\n", warn);
-                    bWarn = TRUE;
+                    bWarn = true;
                 }
                 break;
             case esbRect:
@@ -415,7 +414,7 @@ static gmx_bool step_man(t_manager *man, int *nat)
 static void HandleClient(t_x11 *x11, t_manager *man, long data[])
 {
     int      ID, button, x, y;
-    gmx_bool bPos;
+    bool bPos;
     real     fac;
 
     ID     = data[0];
@@ -458,9 +457,9 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
             if (man->status)
             {
                 rewind_trj(man->status);
-                read_next_x(man->oenv, man->status, &(man->time), man->natom, man->x,
+                read_next_x(man->oenv, man->status, &(man->time), man->x,
                             man->box);
-                man->bEof = FALSE;
+                man->bEof = false;
                 draw_mol(x11, man);
             }
             break;
@@ -471,8 +470,8 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
             nat = 0;
             if (!step_man(man, &nat))
             {
-                man->bEof  = TRUE;
-                man->bStop = TRUE;
+                man->bEof  = true;
+                man->bStop = true;
             }
             else
             {
@@ -485,10 +484,10 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
             break;
         }
         case IDFF:
-            man->bStop = FALSE;
+            man->bStop = false;
             break;
         case IDSTOP_ANI:
-            man->bStop = TRUE;
+            man->bStop = true;
             break;
         case IDDRAWMOL:
             draw_mol(x11, man);
@@ -514,7 +513,7 @@ static void HandleClient(t_x11 *x11, t_manager *man, long data[])
     }
 }
 
-static gmx_bool TitleCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool TitleCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_windata *wd;
 
@@ -535,10 +534,10 @@ static gmx_bool TitleCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
             wd->height = event->xconfigure.height;
             break;
     }
-    return FALSE;
+    return false;
 }
 
-static gmx_bool ManCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ManCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_manager *man;
     int        width, height;
@@ -560,7 +559,7 @@ static gmx_bool ManCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
         default:
             break;
     }
-    return FALSE;
+    return false;
 }
 
 void no_labels(t_x11 *x11, t_manager *man)
@@ -569,7 +568,7 @@ void no_labels(t_x11 *x11, t_manager *man)
 
     for (i = 0; (i < man->natom); i++)
     {
-        man->bLabel[i] = FALSE;
+        man->bLabel[i] = false;
     }
     draw_mol(x11, man);
 }
@@ -626,13 +625,13 @@ void map_man(t_x11 *x11, t_manager *man)
     show_but(x11, man->bbox);
 }
 
-gmx_bool toggle_animate (t_x11 *x11, t_manager *man)
+bool toggle_animate (t_x11 *x11, t_manager *man)
 {
     if (man->status)
     {
         man->bAnimate = !man->bAnimate;
-        man->bStop    = TRUE;
-        man->bEof     = FALSE;
+        man->bStop    = true;
+        man->bEof     = false;
         if (man->bAnimate)
         {
             show_but(x11, man->vbox);
@@ -645,7 +644,7 @@ gmx_bool toggle_animate (t_x11 *x11, t_manager *man)
     return man->bAnimate;
 }
 
-gmx_bool toggle_pbc (t_manager *man)
+bool toggle_pbc (t_manager *man)
 {
     man->bPbc = !man->bPbc;
 
@@ -663,8 +662,8 @@ t_manager *init_man(t_x11 *x11, Window Parent,
 
     snew(man, 1);
     man->status = NULL;
-    man->bPlus  = TRUE;
-    man->bSort  = TRUE;
+    man->bPlus  = true;
+    man->bSort  = true;
     man->oenv   = oenv;
     InitWin(&(man->wd), x, y, width, height, 0, "Manager");
     man->wd.self = XCreateSimpleWindow(x11->disp, Parent, man->wd.x, man->wd.y,
@@ -724,7 +723,7 @@ void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
 
     for (i = 0; (i < man->natom); i++)
     {
-        man->bVis[i] = FALSE;
+        man->bVis[i] = false;
     }
     for (i = 0; (i < filter->grps->nr); i++)
     {
@@ -732,7 +731,7 @@ void do_filter(t_x11 *x11, t_manager *man, t_filter *filter)
         {
             for (j = filter->grps->index[i]; (j < filter->grps->index[i+1]); j++)
             {
-                man->bVis[filter->grps->a[j]] = TRUE;
+                man->bVis[filter->grps->a[j]] = true;
             }
         }
     }

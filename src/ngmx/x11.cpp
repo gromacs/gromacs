@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -69,15 +69,15 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
         "9x15", "6x13", "fixed"
     };
 #define MAXNAMES (sizeof(fontnames)/sizeof(fontnames[0]))
-    int                i;
+    unsigned int       i;
     XFontStruct       *font;
     int                count;
     char             **fontlist;
-    gmx_bool           bFont = FALSE;
+    bool           bFont = false;
 
     if (name)
     {
-        bFont = (gmx_bool) ((font = XLQF(err, disp, name)) != NULL);
+        bFont = (bool) ((font = XLQF(err, disp, name)) != NULL);
     }
     else
     {
@@ -86,7 +86,7 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
 
     for (i = 0; (!bFont && (i < MAXNAMES)); i++)
     {
-        bFont = (gmx_bool) ((font = XLQF(err, disp, fontnames[i])) != NULL);
+        bFont = (bool) ((font = XLQF(err, disp, fontnames[i])) != NULL);
     }
 
     if (!bFont)
@@ -94,7 +94,7 @@ static XFontStruct *GetFont(FILE *err, Display *disp, char *name)
         fontlist = XListFonts(disp, "?", 1, &count);
         if (count != 0)
         {
-            bFont = (gmx_bool) ((font = XLQF(err, disp, fontlist[0])) != NULL);
+            bFont = (bool) ((font = XLQF(err, disp, fontlist[0])) != NULL);
         }
     }
     if (!bFont)
@@ -144,31 +144,17 @@ static t_wlist *GetWList(t_x11 *x11, Window w)
 
 typedef struct {
     Window     w;
-    gmx_bool   b;
+    bool   b;
 } t_peek;
-
-static Bool TestEvent(Display *disp, XEvent *event, char *arg)
-{
-    t_peek *tp;
-
-    fprintf(stderr, "TestEvent\n");
-    tp = (t_peek *)arg;
-    if ((event->xany.window == tp->w) && (event->type == ConfigureNotify))
-    {
-        tp->b = TRUE;
-        return True;
-    }
-    return False;
-}
 
 static void MainLoop(t_x11 *x11)
 {
-    gmx_bool    bReturn;
+    bool    bReturn;
     XEvent      event;
     t_wlist    *curs;
     Window      w;
 
-    for (bReturn = FALSE; (!bReturn); )
+    for (bReturn = false; (!bReturn); )
     {
         if (x11->wlist)
         {
@@ -177,7 +163,7 @@ static void MainLoop(t_x11 *x11)
             curs = GetWList(x11, w);
             if (!curs)
             {
-                bReturn = TRUE;
+                bReturn = true;
             }
             if (!bReturn)
             {
@@ -310,53 +296,6 @@ static void CleanUp(t_x11 *x11)
     XCloseDisplay(x11->disp);
 }
 
-static void Xrm(int *argc, char *argv[])
-{
-    /*
-       static XrmOptionDescRec opTable[] = {
-       {"-background",   "*background",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-bd",           "*borderColor",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-bg",           "*background",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-borderwidth",  "*TopLevelShell.borderwidth",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-bordercolor",   "*borderColor",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-bw",            "*TopLevelShell.borderColor",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-display",       ".display",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-fg",            "*foreground",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-fn",            "*font",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-font",          "*font",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-foreground",    "*foreground",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-geometry",      ".TopLevelShell.geometry",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-iconic",        ".TopLevelShell.iconic",
-         XrmoptionNoArg,  (caddr_t) "on"},
-       {"-name",          ".name",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-reverse",       "*reverseVideo",
-         XrmoptionNoArg,  (caddr_t) "on"},
-       {"-rv",            "*reverseVideo",
-         XrmoptionNoArg,  (caddr_t) "on"},
-       {"-synchronous",   ".synchronous",
-         XrmoptionNoArg,  (caddr_t) "on"},
-       {"-title",         ".TopLevelShell.title",
-         XrmoptionSepArg, (caddr_t) NULL},
-       {"-xrm",            NULL,
-         XrmoptionSepArg, (caddr_t) NULL},
-       };
-       #define TABLELENGTH (sizeof(opTable)/sizeof(opTable[0]))
-       XrmInitialize();*/
-}
-
 static void Flush(t_x11 *x11)
 {
     fflush(x11->console);
@@ -381,7 +320,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     char           *display;
     char           *fontname;
     char           *title, *FG = NULL, *BG = NULL;
-    gmx_bool        bVerbose = FALSE;
+    bool            bVerbose = false;
     int             i;
 
     title = strdup(argv[0]);
@@ -424,7 +363,7 @@ t_x11 *GetX11(int *argc, char *argv[])
                             title = strdup(argv[++i]);
                             break;
                         case 'v':
-                            bVerbose = TRUE;
+                            bVerbose = true;
                             break;
                         default:
                             ARGV[ARGC++] = argv[i];
@@ -492,7 +431,7 @@ t_x11 *GetX11(int *argc, char *argv[])
     if (x11->depth > 1)
     {
         /* Not B & W, Look what kind of screen we've got... */
-        for (i = 0; (i < NCLASS); i++)
+        for (i = 0; (i < (int)NCLASS); i++)
         {
             if (!XMatchVisualInfo(x11->disp, x11->screen, x11->depth,
                                   v_class[i], &v_info))

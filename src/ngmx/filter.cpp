@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,7 @@ t_filter *init_filter(t_atoms *atoms, const char *fn, int natom_trx)
     {
         snew(f->grps, 1);
         snew(f->grps->index, 1);
-        analyse(atoms, f->grps, &f->grpnames, FALSE, FALSE);
+        analyse(atoms, f->grps, &f->grpnames, false, false);
     }
     snew(f->bDisable, f->grps->nr);
     for (g = 0; g < f->grps->nr; g++)
@@ -97,7 +97,7 @@ static void FilterCB(t_x11 *x11, int dlg_mess, int item_id,
         case DLG_SET:
             if (set)
             {
-                if (sscanf(set, "%d", &nset) == 1)
+                if (sscanf(set, "%10d", &nset) == 1)
                 {
                     f->bShow[nset] = !f->bShow[nset];
                 }
@@ -113,7 +113,7 @@ static void FilterCB(t_x11 *x11, int dlg_mess, int item_id,
 t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
 {
     static const char *title = "Group";
-    static const char *dummy = "\"FALSE\"";
+    static const char *dummy = "\"false\"";
     static const char *ok    = "\"Ok\"";
     FILE              *tmp;
     t_dlg             *dlg;
@@ -123,7 +123,7 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     len = strlen(title);
     for (i = 0; (i < (int)gmx->filter->grps->nr); i++)
     {
-        len = max(len, (int)strlen(gmx->filter->grpnames[i]));
+        len = std::max(len, (int)strlen(gmx->filter->grpnames[i]));
     }
     len += 2;
 
@@ -181,8 +181,8 @@ t_dlg *select_filter(t_x11 *x11, t_gmx *gmx)
     fprintf(tmp, "}\n\n}\n");
     fclose(tmp);
 
-    dlg = ReadDlg(x11, gmx->wd->self, title, x11->fg, x11->bg, tmpfile,
-                  0, 0, TRUE, FALSE, FilterCB, gmx);
+    dlg = ReadDlg(x11, gmx->wd->self, title, tmpfile,
+                  0, 0, true, false, FilterCB, gmx);
 
     remove(tmpfile);
 

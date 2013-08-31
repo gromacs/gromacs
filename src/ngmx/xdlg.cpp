@@ -85,7 +85,7 @@ t_dlgitem *FindWin(t_dlg *dlg, Window win)
  * Routines to manipulate items on a dialog box
  *
  ****************************/
-gmx_bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
+bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
 {
     t_dlgitem *dlgitem;
 
@@ -93,12 +93,12 @@ gmx_bool QueryDlgItemSize(t_dlg *dlg, t_id id, int *w, int *h)
     {
         *w = dlgitem->win.width;
         *h = dlgitem->win.height;
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
-gmx_bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
+bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
 {
     t_dlgitem *dlgitem;
 
@@ -106,9 +106,9 @@ gmx_bool QueryDlgItemPos(t_dlg *dlg, t_id id, int *x0, int *y0)
     {
         *x0 = dlgitem->win.x;
         *y0 = dlgitem->win.y;
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 int QueryDlgItemX(t_dlg *dlg, t_id id)
@@ -155,7 +155,7 @@ int QueryDlgItemH(t_dlg *dlg, t_id id)
     return 0;
 }
 
-gmx_bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
+bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
 {
     t_dlgitem *dlgitem;
 #ifdef DEBUG
@@ -201,12 +201,12 @@ gmx_bool SetDlgItemSize(t_dlg *dlg, t_id id, int w, int h)
                 }
             }
         }
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
-gmx_bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
+bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
 {
     t_dlgitem *dlgitem;
     int        old_x, old_y;
@@ -242,9 +242,9 @@ gmx_bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
                 }
             }
         }
-        return TRUE;
+        return true;
     }
-    return FALSE;
+    return false;
 }
 
 /*****************************
@@ -253,7 +253,7 @@ gmx_bool SetDlgItemPos(t_dlg *dlg, t_id id, int x0, int y0)
  * after dlg is exec'ed
  *
  ****************************/
-gmx_bool IsCBChecked(t_dlg *dlg, t_id id)
+bool IsCBChecked(t_dlg *dlg, t_id id)
 {
     t_dlgitem *dlgitem;
 
@@ -265,7 +265,7 @@ gmx_bool IsCBChecked(t_dlg *dlg, t_id id)
         }
     }
 
-    return FALSE;
+    return false;
 }
 
 t_id RBSelected(t_dlg *dlg, int gid)
@@ -342,11 +342,11 @@ void ShowDlg(t_dlg *dlg)
         {
             PushMouse(dlg->x11->disp, dlgitem->win.self,
                       dlgitem->win.width/2, dlgitem->win.height/2);
-            dlg->bPop = TRUE;
+            dlg->bPop = true;
             break;
         }
     }
-    dlg->bGrab = FALSE;
+    dlg->bGrab = false;
 }
 
 void HideDlg(t_dlg *dlg)
@@ -362,21 +362,17 @@ void HideDlg(t_dlg *dlg)
 
 void NoHelp(t_dlg *dlg)
 {
-    char **lines = NULL;
-
-    snew(lines, 2);
-    lines[0] = strdup("Error");
-    lines[1] = strdup("No help for this item");
+    const char *lines[2] = {
+        "Error",
+        "No help for this item"
+    };
     MessageBox(dlg->x11, dlg->wDad, "No Help", 2, lines,
                MB_OK | MB_ICONSTOP | MB_APPLMODAL, NULL, NULL);
-    sfree(lines[0]);
-    sfree (lines[1]);
-    sfree(lines);
 }
 
 void HelpDlg(t_dlg *dlg)
 {
-    char *lines[] = {
+    const char *lines[] = {
         "Place the cursor over one of the items",
         "and press the F1 key to get more help.",
         "First press the OK button."
@@ -388,7 +384,7 @@ void HelpDlg(t_dlg *dlg)
 void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
 {
     char     buf[80];
-    gmx_bool bCont = TRUE;
+    bool bCont = true;
     int      i, nlines = 0;
     char   **lines = NULL;
 
@@ -429,7 +425,8 @@ void HelpNow(t_dlg *dlg, t_dlgitem *dlgitem)
     }
     while (bCont);
     MessageBox(dlg->x11, dlg->wDad, "Help",
-               nlines, lines, MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, NULL, NULL);
+               nlines, (const char **)lines, 
+               MB_OK | MB_ICONINFORMATION | MB_APPLMODAL, NULL, NULL);
     for (i = 0; (i < nlines); i++)
     {
         sfree(lines[i]);
@@ -454,7 +451,7 @@ static void ExitDlg(t_dlg *dlg)
     if (dlg->bGrab)
     {
         XUngrabPointer(dlg->x11->disp, CurrentTime);
-        dlg->bGrab = FALSE;
+        dlg->bGrab = false;
     }
     HideDlg(dlg);
     if (dlg->flags & DLG_FREEONBUTTON)
@@ -463,7 +460,7 @@ static void ExitDlg(t_dlg *dlg)
     }
 }
 
-static gmx_bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_dlg     *dlg = (t_dlg *)data;
     int        i, nWndProc;
@@ -526,14 +523,14 @@ static gmx_bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                 if (tid != -1)
                 {
                     t_dlgitem *dit = FindItem(dlg, tid);
-                    dit->u.radiobutton.bSelect = FALSE;
+                    dit->u.radiobutton.bSelect = false;
                     ExposeWin(x11->disp, dit->win.self);
                 }
                 else
                 {
                     gmx_fatal(FARGS, "No RB Selected initially!\n");
                 }
-                dlgitem->u.radiobutton.bSelect = TRUE;
+                dlgitem->u.radiobutton.bSelect = true;
                 ExposeWin(x11->disp, dlgitem->win.self);
                 if (dlg->cb)
                 {
@@ -586,7 +583,7 @@ static gmx_bool DlgCB(t_x11 *x11, XEvent *event, Window w, void *data)
                 break;
         }
     }
-    return FALSE;
+    return false;
 }
 
 /*****************************
@@ -765,7 +762,7 @@ void FreeDlg(t_dlg *dlg)
  *
  ****************************/
 t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
-                 int x0, int y0, int w, int h, int bw, unsigned long fg, unsigned long bg,
+                 int x0, int y0, int w, int h, int bw,
                  DlgCallback *cb, void *data)
 {
     t_dlg   *dlg;
@@ -831,7 +828,7 @@ t_dlg *CreateDlg(t_x11 *x11, Window Parent, const char *title,
     return dlg;
 }
 
-void SetDlgSize(t_dlg *dlg, int w, int h, gmx_bool bAutoPosition)
+void SetDlgSize(t_dlg *dlg, int w, int h, bool bAutoPosition)
 {
     if (bAutoPosition)
     {

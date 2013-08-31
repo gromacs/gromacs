@@ -42,7 +42,7 @@
 typedef struct {
     Window      send_to;  /* Window to send messages to			*/
     int         nreturn;  /* Value returned when entry is selected  */
-    gmx_bool    bChecked; /* Indicate whether menu item is check-marked	*/
+    bool    bChecked; /* Indicate whether menu item is check-marked	*/
     const char *str;      /* Text for menu entry				*/
 } t_mentry;
 
@@ -57,7 +57,7 @@ typedef struct {
     Window        Parent;   /* The parent of the menu                   */
     int           nitem;    /* The number of menu items			*/
     t_child      *item;     /* Array of child windows                   */
-    gmx_bool      bGrabbed; /* Did this menu grab the pointer?              */
+    bool      bGrabbed; /* Did this menu grab the pointer?              */
 } t_menu;
 
 extern t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned long bg,
@@ -76,7 +76,7 @@ extern t_menu *init_menu(t_x11 *x11, Window Parent, unsigned long fg, unsigned l
  * has to be shown, call show_menu.
  */
 
-extern void show_menu(t_x11 *x11, t_menu *m, int x, int y, gmx_bool bGrab);
+extern void show_menu(t_x11 *x11, t_menu *m, int x, int y, bool bGrab);
 /* Show the menu in m at (x,y)
  * This will popup the menu, and when a button is released in the
  * menu send a ClientMessage to the Parent window of the menu
@@ -87,7 +87,7 @@ extern void show_menu(t_x11 *x11, t_menu *m, int x, int y, gmx_bool bGrab);
 extern void hide_menu(t_x11 *x11, t_menu *m);
 /* Unmaps the window for m, hides the window */
 
-extern void check_menu_item(t_menu *m, int nreturn, gmx_bool bStatus);
+extern void check_menu_item(t_menu *m, int nreturn, bool bStatus);
 /* Set the bChecked field in the menu item with return code
  * nreturn to bStatus. This function must always be called when
  * the bChecked flag has to changed.
