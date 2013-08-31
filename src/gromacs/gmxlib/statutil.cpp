@@ -488,7 +488,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
     gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE;
     const char *manstr[] = {
         NULL, "no", "html", "tex", "nroff", "ascii",
-        "completion", "py", "xml", "wiki", NULL
+        "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
