@@ -50,15 +50,15 @@ enum {
 typedef int t_id;
 
 typedef struct {
-    gmx_bool bDefault;  /* This is the default button */
+    bool bDefault;  /* This is the default button */
 } t_button;
 
 typedef struct {
-    gmx_bool bSelect;   /* Is this rb selected ? */
+    bool bSelect;   /* Is this rb selected ? */
 } t_radiobutton;
 
 typedef struct {
-    gmx_bool bChecked;  /* Is this cb checked ? */
+    bool bChecked;  /* Is this cb checked ? */
 } t_checkbox;
 
 typedef struct {
@@ -75,7 +75,7 @@ typedef struct {
     int  pos /*,len*/;     /* Current length of the string and pos of caret */
     /* Pos is relative to strbegin, and is the pos   */
     /* in the window.                                */
-    gmx_bool bChanged;
+    bool bChanged;
     char    *buf;
 } t_edittext;
 
@@ -91,7 +91,7 @@ typedef enum {
 typedef struct t_dlgitem {
     t_windata         win;
     t_id              ID, GroupID;
-    gmx_bool          bUseMon;
+    bool          bUseMon;
     char             *set, *get, *help;
     edlgitem          type;
     int       (*WndProc)(t_x11 *x11, struct t_dlgitem *dlgitem, XEvent *event);
@@ -120,12 +120,12 @@ typedef struct t_dlgitem {
  * on the dlg box, and if wished resize them.
  *
  ****************************/
-extern t_dlgitem *CreateButton(t_x11 *x11, const char *szLab, gmx_bool bDef,
+extern t_dlgitem *CreateButton(t_x11 *x11, const char *szLab, bool bDef,
                                t_id id, t_id groupid,
                                int x0, int y0, int w, int h, int bw);
 
 extern t_dlgitem *CreateRadioButton(t_x11 *x11,
-                                    const char *szLab, gmx_bool bSet, t_id id,
+                                    const char *szLab, bool bSet, t_id id,
                                     t_id groupid,
                                     int x0, int y0, int w, int h, int bw);
 
@@ -134,7 +134,7 @@ extern t_dlgitem *CreateGroupBox(t_x11 *x11, const char *szLab, t_id id,
                                  int x0, int y0, int w, int h, int bw);
 
 extern t_dlgitem *CreateCheckBox(t_x11 *x11, const char *szLab,
-                                 gmx_bool bCheckedInitial,
+                                 bool bCheckedInitial,
                                  t_id id, t_id groupid,
                                  int x0, int y0, int w, int h, int bw);
 
@@ -142,7 +142,7 @@ extern t_dlgitem *CreatePixmap(t_x11 *x11, Pixmap pm, t_id id, t_id groupid,
                                int x0, int y0, int w, int h, int bw);
 
 extern t_dlgitem *CreateStaticText(t_x11 *x11,
-                                   int nlines, char * const * lines, t_id id,
+                                   int nlines, const char ** lines, t_id id,
                                    t_id groupid,
                                    int x0, int y0, int w, int h, int bw);
 
@@ -150,7 +150,7 @@ extern t_dlgitem *CreateEditText(t_x11 *x11, const char *title,
                                  int screenbuf, char *buf, t_id id, t_id groupid,
                                  int x0, int y0, int w, int h, int bw);
 
-extern void SetDlgitemOpts(t_dlgitem *dlgitem, gmx_bool bUseMon,
+extern void SetDlgitemOpts(t_dlgitem *dlgitem, bool bUseMon,
                            char *set, char *get, char *help);
 
 #endif  /* _xdlgitem_h */

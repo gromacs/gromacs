@@ -81,7 +81,7 @@ static void done_gmx(t_x11 *x11, t_gmx *gmx)
 }
 
 static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
-                     gmx_bool bSizePD)
+                     bool bSizePD)
 {
     int y0, wl, hl;
 #ifdef DEBUG
@@ -102,7 +102,7 @@ static void move_gmx(t_x11 *x11, t_gmx *gmx, int width, int height,
     XMoveWindow(x11->disp, gmx->logo->wd.self, (width-wl)/2, (height-y0-hl)/2);
 }
 
-static gmx_bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
+static bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
 {
     t_pulldown *pd;
 
@@ -229,11 +229,11 @@ static gmx_bool HandleClient(t_x11 *x11, int ID, t_gmx *gmx)
     return FALSE;
 }
 
-static gmx_bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
+static bool MainCallBack(t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_gmx    *gmx;
     int       nsel, width, height;
-    gmx_bool  result;
+    bool  result;
 
     result = FALSE;
     gmx    = (t_gmx *)data;
@@ -409,7 +409,7 @@ void init_gmx(t_x11 *x11, char *program, int nfile, t_filenm fnm[],
 
     /* Pull Down menu */
     gmx->pd = init_pd(x11, gmx->wd->self, gmx->wd->width,
-                      XTextHeight(x11->font), x11->fg, x11->bg,
+                      x11->fg, x11->bg,
                       MSIZE, gmx_pd_size, gmx_pd, MenuTitle);
 
     /* Dialogs & Filters */

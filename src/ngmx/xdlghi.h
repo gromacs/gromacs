@@ -69,7 +69,7 @@ extern t_dlgitem **CreateDlgitemGroup(t_x11 *x11, const char *szTitle,
 
 extern t_dlg *ReadDlg(t_x11 *x11, Window Parent, const char *title,
                       unsigned long fg, unsigned long bg, const char *infile,
-                      int x0, int y0, gmx_bool bAutoPosition, gmx_bool bUseMon,
+                      int x0, int y0, bool bAutoPosition, bool bUseMon,
                       DlgCallback *cb, void *data);
 /* Read a dialog box from a template file */
 

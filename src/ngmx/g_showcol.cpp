@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -56,7 +56,7 @@ typedef struct {
     t_col     *col;
 } t_sc;
 
-static gmx_bool ColCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool ColCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_col     *col;
     XColor    *xc;
@@ -78,7 +78,7 @@ static gmx_bool ColCallBack(struct t_x11 *x11, XEvent *event, Window w, void *da
     return FALSE;
 }
 
-static gmx_bool BCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool BCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_sc  *sc;
 
@@ -107,7 +107,7 @@ static gmx_bool BCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data
     return FALSE;
 }
 
-static gmx_bool scCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
+static bool scCallBack(struct t_x11 *x11, XEvent *event, Window w, void *data)
 {
     t_sc  *sc;
     int    i;

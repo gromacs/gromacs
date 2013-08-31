@@ -69,7 +69,7 @@ typedef struct t_x11 {
     void        (*GetNamedColor)(struct t_x11 *x11, const char *name, unsigned long *col);
     void        (*MainLoop)(struct t_x11 *x11);
     void        (*RegisterCallback)(struct t_x11 *x11, Window w, Window Parent,
-                                    gmx_bool cb CBARGS, void *data);
+                                    bool cb CBARGS, void *data);
     void        (*UnRegisterCallback)(struct t_x11 *x11, Window w);
     void        (*SetInputMask)(struct t_x11 *x11, Window w, unsigned long mask);
     unsigned long       (*GetInputMask)(struct t_x11 *x11, Window w);
@@ -77,7 +77,7 @@ typedef struct t_x11 {
     void        (*Flush)(struct t_x11 *x11);
 } t_x11;
 
-typedef gmx_bool CallBack CBARGS;
+typedef bool CallBack CBARGS;
 
 typedef struct t_wlist {
     Window                 w;      /* The window itself			*/

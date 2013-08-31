@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -78,7 +78,7 @@ static void init_pbc(matrix box)
     }
 }
 
-static gmx_bool local_pbc_dx(rvec x1, rvec x2)
+static bool local_pbc_dx(rvec x1, rvec x2)
 {
     int  i;
     real dx;
@@ -100,7 +100,7 @@ static gmx_bool local_pbc_dx(rvec x1, rvec x2)
 
 static void ps_draw_bond(t_psdata ps,
                          atom_id ai, atom_id aj, iv2 vec2[],
-                         rvec x[], char **atomnm[], int size[], gmx_bool bBalls)
+                         rvec x[], char **atomnm[], int size[], bool bBalls)
 {
     char    *ic, *jc;
     int      xi, yi, xj, yj;
@@ -142,10 +142,10 @@ static void ps_draw_bond(t_psdata ps,
 }
 
 void ps_draw_objects(t_psdata ps, int nobj, t_object objs[], iv2 vec2[], rvec x[],
-                     char **atomnm[], int size[], gmx_bool bShowHydro, int bond_type,
-                     gmx_bool bPlus)
+                     char **atomnm[], int size[], bool bShowHydro, int bond_type,
+                     bool bPlus)
 {
-    gmx_bool     bBalls;
+    bool     bBalls;
     int          i;
     t_object    *obj;
 

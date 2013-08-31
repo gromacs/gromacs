@@ -70,7 +70,7 @@ enum {
 
 typedef struct {
     t_windata     wd;            /* Mol window structure			*/
-    gmx_bool      bShowHydrogen; /* Show Hydrogens?			*/
+    bool      bShowHydrogen; /* Show Hydrogens?			*/
     int           bond_type;     /* Show one of the above bondtypes      */
     int           ePBC;          /* PBC type                             */
     int           boxtype;       /* Rectangular, Tric, TruncOct (display)*/
@@ -88,8 +88,8 @@ typedef struct {
 typedef struct {
     t_blocka    *grps;     /* Blocks with atom numbers		*/
     char       **grpnames; /* The names of the groups		*/
-    gmx_bool    *bDisable; /* Group indexes out of natoms in TRX   */
-    gmx_bool    *bShow;    /* Show a group ?			*/
+    bool    *bDisable; /* Group indexes out of natoms in TRX   */
+    bool    *bShow;    /* Show a group ?			*/
 } t_filter;
 
 /*
@@ -113,19 +113,19 @@ typedef struct {
     matrix         box;      /* The box				*/
     int            nobj;     /* The number of objects		*/
     t_object      *obj;      /* The objects on screen		*/
-    gmx_bool      *bHydro;   /* TRUE for hydrogen atoms		*/
-    gmx_bool      *bLabel;   /* Show a label on atom i?              */
+    bool      *bHydro;   /* TRUE for hydrogen atoms		*/
+    bool      *bLabel;   /* Show a label on atom i?              */
     char         **szLab;    /* Array of pointers to labels          */
     unsigned long *col;      /* The colour of the atoms		*/
     int           *size;     /* The size of the atoms		*/
     real          *vdw;      /* The VDWaals radius of the atoms	*/
-    gmx_bool      *bVis;     /* visibility of atoms                  */
-    gmx_bool       bPbc;     /* Remove Periodic boundary             */
-    gmx_bool       bAnimate; /* Animation going on?			*/
-    gmx_bool       bEof;     /* End of file reached?                 */
-    gmx_bool       bStop;    /* Stopped by user?                     */
-    gmx_bool       bSort;    /* Sort the coordinates			*/
-    gmx_bool       bPlus;    /* Draw plus for single atom		*/
+    bool      *bVis;     /* visibility of atoms                  */
+    bool       bPbc;     /* Remove Periodic boundary             */
+    bool       bAnimate; /* Animation going on?			*/
+    bool       bEof;     /* End of file reached?                 */
+    bool       bStop;    /* Stopped by user?                     */
+    bool       bSort;    /* Sort the coordinates			*/
+    bool       bPlus;    /* Draw plus for single atom		*/
     int            nSkip;    /* Skip n steps after each frame	*/
     int            nWait;    /* Wait n ms after each frame           */
     gmx_rmpbc_t    gpbc;     /* For removing peridiocity             */
@@ -161,9 +161,9 @@ extern void map_man(t_x11 *x11, t_manager *man);
 
 extern void move_man(t_x11 *x11, t_manager *man, int width, int height);
 
-extern gmx_bool toggle_animate (t_x11 *x11, t_manager *man);
+extern bool toggle_animate (t_x11 *x11, t_manager *man);
 
-extern gmx_bool toggle_pbc (t_manager *man);
+extern bool toggle_pbc (t_manager *man);
 
 extern void no_labels(t_x11 *x11, t_manager *man);
 /* Turn off all labels */
