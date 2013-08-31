@@ -30,42 +30,41 @@
  * For more info, check our website at http://www.gromacs.org
  *
  * And Hey:
- * Gromacs Runs On Most of All Computer Systems
+ * Gyas ROwers Mature At Cryogenic Speed
  */
 
-#ifndef _macros_h
-#define _macros_h
+#ifndef _nmol_h
+#define _nmol_h
 
-#include "typedefs.h" /* for real definition only */
+#include "x11.h"
+#include "xutil.h"
 
-/* no extern "C" for this header because it only defines Macros */
+extern t_molwin *init_mw(t_x11 *x11, Window Parent,
+                         int x, int y, int width, int height,
+                         unsigned long fg, unsigned long bg,
+                         int ePBC, matrix box);
+/* Create the molecule window using the x,y etc. */
 
-/*
- * With the macros below you don't
- * have to use an index if you don't wan't to. You can eg. use
- * angle.C0[23] instead if angle.c[0][23].
- * In a similar fashion, you can use angle.AI[3] instead of
- * angle.a[0][3]
+extern void map_mw(t_x11 *x11, t_molwin *mw);
+
+extern void z_fill(t_manager *man, real *zz);
+extern void create_visibility(t_manager *man);
+extern int  compare_obj(const void *a, const void *b);
+extern int  filter_vis(t_manager *man);
+extern void set_sizes(t_manager *man, real sx, real sy);
+
+extern bool toggle_hydrogen(t_x11 *x11, t_molwin *mw);
+/* Toggle the state of the hydrogen drawing,
+ * return the current state
  */
-#ifndef __cplusplus
-#define AI  a[0]
-#define AJ  a[1]
-#define AK  a[2]
-#define AL  a[3]
-#define AM  a[4]
-#define C0  c[0]
-#define C1  c[1]
-#define C2  c[2]
 
-#ifndef min
-#define min(a, b) (((a) < (b)) ? (a) : (b) )
-#endif
-#ifndef max
-#define max(a, b) (((a) > (b)) ? (a) : (b) )
-#endif
-#endif
+extern void set_bond_type(t_x11 *x11, t_molwin *mw, int bt);
+/* Set the state of the atoms drawing. */
 
-/* This macro calculates the size of a array */
-#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
+extern void set_box_type (t_x11 *x11, t_molwin *mw, int bt);
+/* Set the type of box or none (bt = 0)
+ */
 
-#endif  /* _macros_h */
+extern void done_mw(t_x11 *x11, t_molwin *mw);
+
+#endif  /* _nmol_h */
