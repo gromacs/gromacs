@@ -17,6 +17,6 @@ add_subdirectory(gromacs)
 add_subdirectory(programs)
 
 if(NOT GMX_FAHCORE)
-  add_subdirectory(ngmx)
   add_subdirectory(contrib)
 endif(NOT GMX_FAHCORE)
+
