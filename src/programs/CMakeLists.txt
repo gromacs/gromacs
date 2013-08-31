@@ -35,4 +35,5 @@
 add_subdirectory(mdrun)
 if (NOT GMX_FAHCORE)
     add_subdirectory(gmx)
+    add_subdirectory(ngmx)
 endif (NOT GMX_FAHCORE)
