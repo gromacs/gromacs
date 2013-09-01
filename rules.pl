@@ -1,4 +1,4 @@
-submit_rule(submit(CR, V, NoSubmitTags)) :-
+submit_rule(submit(CR, V)) :-
     base(CR, V),
     gerrit:commit_message_matches('(?!\\\[WIP\\\])|(?!\\\[RFC\\\])'),
     NoSubmitTags = label(_, ok(_)),
