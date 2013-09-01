@@ -293,8 +293,11 @@ int gmx_ngmx(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
-                      0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME, NFILE, fnm,
+                           0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     if ((x11 = GetX11(&argc, argv)) == NULL)
     {

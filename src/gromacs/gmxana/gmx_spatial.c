@@ -164,8 +164,11 @@ int gmx_spatial(int argc, char *argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree(xtop);

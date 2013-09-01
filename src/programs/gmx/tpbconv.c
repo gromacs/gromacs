@@ -406,8 +406,11 @@ int gmx_tpbconv(int argc, char *argv[])
     int             nerror = 0;
 
     /* Parse the command line */
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Convert int to gmx_large_int_t */
     nsteps_req = nsteps_req_int;

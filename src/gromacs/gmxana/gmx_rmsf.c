@@ -277,9 +277,12 @@ int gmx_rmsf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pargs), pargs, asize(desc), desc, 0, NULL,
+                           &oenv))
+    {
+        return 0;
+    }
 
     bReadPDB = ftp2bSet(efPDB, NFILE, fnm);
     devfn    = opt2fn_null("-od", NFILE, fnm);

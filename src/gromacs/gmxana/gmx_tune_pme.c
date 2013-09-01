@@ -2231,9 +2231,12 @@ int gmx_tune_pme(int argc, char *argv[])
 
     seconds = gettime();
 
-    parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Store the remaining unparsed command line entries in a string which
      * is then attached to the mdrun command line */

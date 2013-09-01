@@ -309,9 +309,12 @@ int gmx_h2order(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
-                      fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE, NFILE,
+                           fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
     bMicel = opt2bSet("-nm", NFILE, fnm);
 
     top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC); /* read topology file */

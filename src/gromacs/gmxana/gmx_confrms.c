@@ -553,8 +553,11 @@ int gmx_confrms(int argc, char *argv[])
     real    *msds;
 
 
-    parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     matchndxfile = opt2fn_null("-no", NFILE, fnm);
     conf1file    = ftp2fn(efTPS, NFILE, fnm);
     conf2file    = ftp2fn(efSTX, NFILE, fnm);

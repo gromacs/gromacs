@@ -1124,9 +1124,12 @@ int gmx_msd(int argc, char *argv[])
     real            dim_factor;
     output_env_t    oenv;
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_BEGIN | PCA_CAN_END | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     trx_file = ftp2fn_null(efTRX, NFILE, fnm);
     tps_file = ftp2fn_null(efTPS, NFILE, fnm);
     ndx_file = ftp2fn_null(efNDX, NFILE, fnm);

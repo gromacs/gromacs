@@ -109,9 +109,12 @@ int gmx_sigeps(int argc, char *argv[])
     int           cur = 0;
 #define next (1-cur)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc),
-                      desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc),
+                           desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bBham = (opt2parg_bSet("-A", asize(pa), pa) ||
              opt2parg_bSet("-B", asize(pa), pa) ||

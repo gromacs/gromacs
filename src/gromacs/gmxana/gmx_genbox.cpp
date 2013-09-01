@@ -102,7 +102,7 @@ static gmx_bool in_box(t_pbc *pbc, rvec x)
 }
 
 static void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
-                   real r_distance,real r_scale)
+                   real r_distance, real r_scale)
 {
     int i;
 
@@ -116,7 +116,7 @@ static void mk_vdw(t_atoms *a, real rvdw[], gmx_atomprop_t aps,
         {
             rvdw[i] = r_distance;
         }
-        else 
+        else
         {
             rvdw[i] *= r_scale;
         }
@@ -382,7 +382,7 @@ enum {
 
 static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int seed,
                          t_atoms *atoms, rvec **x, real **r, int ePBC, matrix box,
-                         gmx_atomprop_t aps, 
+                         gmx_atomprop_t aps,
                          real r_distance, real r_scale, real rshell,
                          const output_env_t oenv,
                          const char* posfn, const rvec deltaR, int enum_rot,
@@ -536,7 +536,7 @@ static char *insert_mols(const char *mol_insrt, int nmol_insrt, int ntry, int se
 
 static void add_solv(const char *fn, t_atoms *atoms, rvec **x, rvec **v, real **r,
                      int ePBC, matrix box,
-                     gmx_atomprop_t aps, 
+                     gmx_atomprop_t aps,
                      real r_distance, real r_scale, int *atoms_added,
                      int *residues_added, real rshell, int max_sol,
                      const output_env_t oenv)
@@ -957,8 +957,11 @@ int gmx_genbox(int argc, char *argv[])
           "Avoid momory leaks during neighbor searching with option -ci. May be slow for large systems." },
     };
 
-    parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     bInsert   = opt2bSet("-ci", NFILE, fnm) && ((nmol_ins > 0) || opt2bSet("-ip", NFILE, fnm));
     bSol      = opt2bSet("-cs", NFILE, fnm);
@@ -1026,7 +1029,7 @@ int gmx_genbox(int argc, char *argv[])
     if (bInsert)
     {
         title_ins = insert_mols(opt2fn("-ci", NFILE, fnm), nmol_ins, nmol_try, seed,
-                                &atoms, &x, &r, ePBC, box, aps, 
+                                &atoms, &x, &r, ePBC, box, aps,
                                 r_distance, r_scale, r_shell,
                                 oenv, opt2fn_null("-ip", NFILE, fnm), deltaR, enum_rot,
                                 bCheckAllPairDist);

@@ -508,8 +508,11 @@ int gmx_x2top(int argc, char *argv[])
           "Dihedral angle force constant (kJ/mol/rad^2)" }
     };
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
     bRTP = opt2bSet("-r", NFILE, fnm);
     bTOP = opt2bSet("-o", NFILE, fnm);
     /* C89 requirements mean that these struct members cannot be used in

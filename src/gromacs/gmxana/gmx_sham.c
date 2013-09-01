@@ -1047,8 +1047,11 @@ int gmx_sham(int argc, char *argv[])
     int     npargs;
 
     npargs = asize(pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     val = read_xvg_time(opt2fn("-f", NFILE, fnm), bHaveT,
                         opt2parg_bSet("-b", npargs, pa), tb-ttol,

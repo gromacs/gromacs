@@ -182,8 +182,11 @@ int gmx_saltbr(int argc, char *argv[])
     matrix             box;
     output_env_t       oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
     cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);

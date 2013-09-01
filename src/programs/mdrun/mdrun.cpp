@@ -403,50 +403,50 @@ int gmx_mdrun(int argc, char *argv[])
 #define NFILE asize(fnm)
 
     /* Command line options ! */
-    gmx_bool      bPartDec      = FALSE;
-    gmx_bool      bDDBondCheck  = TRUE;
-    gmx_bool      bDDBondComm   = TRUE;
-    gmx_bool      bTunePME      = TRUE;
-    gmx_bool      bTestVerlet   = FALSE;
-    gmx_bool      bVerbose      = FALSE;
-    gmx_bool      bCompact      = TRUE;
-    gmx_bool      bSepPot       = FALSE;
-    gmx_bool      bRerunVSite   = FALSE;
-    gmx_bool      bIonize       = FALSE;
-    gmx_bool      bConfout      = TRUE;
-    gmx_bool      bReproducible = FALSE;
+    gmx_bool        bPartDec      = FALSE;
+    gmx_bool        bDDBondCheck  = TRUE;
+    gmx_bool        bDDBondComm   = TRUE;
+    gmx_bool        bTunePME      = TRUE;
+    gmx_bool        bTestVerlet   = FALSE;
+    gmx_bool        bVerbose      = FALSE;
+    gmx_bool        bCompact      = TRUE;
+    gmx_bool        bSepPot       = FALSE;
+    gmx_bool        bRerunVSite   = FALSE;
+    gmx_bool        bIonize       = FALSE;
+    gmx_bool        bConfout      = TRUE;
+    gmx_bool        bReproducible = FALSE;
 
-    int           npme          = -1;
-    int           nmultisim     = 0;
-    int           nstglobalcomm = -1;
-    int           repl_ex_nst   = 0;
-    int           repl_ex_seed  = -1;
-    int           repl_ex_nex   = 0;
-    int           nstepout      = 100;
-    int           resetstep     = -1;
-    gmx_large_int_t nsteps      = -2; /* the value -2 means that the mdp option will be used */
+    int             npme          = -1;
+    int             nmultisim     = 0;
+    int             nstglobalcomm = -1;
+    int             repl_ex_nst   = 0;
+    int             repl_ex_seed  = -1;
+    int             repl_ex_nex   = 0;
+    int             nstepout      = 100;
+    int             resetstep     = -1;
+    gmx_large_int_t nsteps        = -2; /* the value -2 means that the mdp option will be used */
 
-    rvec          realddxyz          = {0, 0, 0};
-    const char   *ddno_opt[ddnoNR+1] =
+    rvec            realddxyz          = {0, 0, 0};
+    const char     *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-    const char   *dddlb_opt[] =
+    const char     *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
-    const char   *thread_aff_opt[threadaffNR+1] =
+    const char     *thread_aff_opt[threadaffNR+1] =
     { NULL, "auto", "on", "off", NULL };
-    const char   *nbpu_opt[] =
+    const char     *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
-    real          rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
-    char         *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
-    real          cpt_period            = 15.0, max_hours = -1;
-    gmx_bool      bAppendFiles          = TRUE;
-    gmx_bool      bKeepAndNumCPT        = FALSE;
-    gmx_bool      bResetCountersHalfWay = FALSE;
-    output_env_t  oenv                  = NULL;
-    const char   *deviceOptions         = "";
+    real            rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
+    char           *ddcsx                 = NULL, *ddcsy = NULL, *ddcsz = NULL;
+    real            cpt_period            = 15.0, max_hours = -1;
+    gmx_bool        bAppendFiles          = TRUE;
+    gmx_bool        bKeepAndNumCPT        = FALSE;
+    gmx_bool        bResetCountersHalfWay = FALSE;
+    output_env_t    oenv                  = NULL;
+    const char     *deviceOptions         = "";
 
-    gmx_hw_opt_t  hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
+    gmx_hw_opt_t    hw_opt = {0, 0, 0, 0, threadaffSEL, 0, 0, NULL};
 
-    t_pargs       pa[] = {
+    t_pargs         pa[] = {
 
         { "-pd",      FALSE, etBOOL, {&bPartDec},
           "Use particle decompostion" },
@@ -539,16 +539,16 @@ int gmx_mdrun(int argc, char *argv[])
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt]" }
     };
-    unsigned long Flags, PCA_Flags;
-    ivec          ddxyz;
-    int           dd_node_order;
-    gmx_bool      bAddPart;
-    FILE         *fplog, *fpmulti;
-    int           sim_part, sim_part_fn;
-    const char   *part_suffix = ".part";
-    char          suffix[STRLEN];
-    int           rc;
-    char        **multidir = NULL;
+    unsigned long   Flags, PCA_Flags;
+    ivec            ddxyz;
+    int             dd_node_order;
+    gmx_bool        bAddPart;
+    FILE           *fplog, *fpmulti;
+    int             sim_part, sim_part_fn;
+    const char     *part_suffix = ".part";
+    char            suffix[STRLEN];
+    int             rc;
+    char          **multidir = NULL;
 
 
     cr = init_par();
@@ -567,8 +567,11 @@ int gmx_mdrun(int argc, char *argv[])
        }
      */
 
-    parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_Flags, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
 
     /* we set these early because they might be used in init_multisystem()

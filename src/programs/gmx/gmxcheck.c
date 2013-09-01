@@ -781,8 +781,11 @@ int gmx_gmxcheck(int argc, char *argv[])
           "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
     };
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fn1 = opt2fn_null("-f", NFILE, fnm);
     fn2 = opt2fn_null("-f2", NFILE, fnm);

@@ -472,11 +472,11 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 }
 
 
-void parse_common_args(int *argc, char *argv[], unsigned long Flags,
-                       int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                       int ndesc, const char **desc,
-                       int nbugs, const char **bugs,
-                       output_env_t *oenv)
+gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                           int ndesc, const char **desc,
+                           int nbugs, const char **bugs,
+                           output_env_t *oenv)
 {
     gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE;
     const char *manstr[] = {
@@ -833,11 +833,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx_cmd(argv[1]);
         }
     }
-    if (bExit)
-    {
-        gmx_finalize_par();
-
-        exit(0);
-    }
+    return !bExit;
 #undef FF
 }

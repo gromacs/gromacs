@@ -292,11 +292,11 @@ int nenum(const char *const enumc[]);
  * array must be terminated by a NULL pointer
  */
 
-void parse_common_args(int *argc, char *argv[], unsigned long Flags,
-                       int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                       int ndesc, const char **desc,
-                       int nbugs, const char **bugs,
-                       output_env_t *oenv);
+gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                           int ndesc, const char **desc,
+                           int nbugs, const char **bugs,
+                           output_env_t *oenv);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables

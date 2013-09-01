@@ -1368,8 +1368,11 @@ int gmx_pdb2gmx(int argc, char *argv[])
     };
 #define NPARGS asize(pa)
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Force field selection, interactive or direct */
     choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
