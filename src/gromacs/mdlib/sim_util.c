@@ -1670,13 +1670,7 @@ void do_force_cutsGROUP(FILE *fplog, t_commrec *cr,
             mk_mshift(fplog, graph, fr->ePBC, box, x);
         }
 
-        /* Do the actual neighbour searching and if twin range electrostatics
-         * also do the calculation of long range forces and energies.
-         */
-        for (i = 0; i < efptNR; i++)
-        {
-            dvdlambda[i] = 0;
-        }
+        /* Do the actual neighbour searching */
         ns(fplog, fr, box,
            groups, top, mdatoms,
            cr, nrnb, bFillGrid,

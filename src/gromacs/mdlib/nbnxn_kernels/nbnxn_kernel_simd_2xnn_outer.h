@@ -36,35 +36,33 @@
  */
 
 
-/* Include the full width SIMD macros */
-#include "gmx_simd_macros.h"
-
-
-/* Define a few macros for half-width SIMD */
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-
-/* Half-width SIMD real type */
-#define gmx_mm_hpr  __m128
-
-/* Half-width SIMD operations */
-/* Load reals at half-width aligned pointer b into half-width SIMD register a */
-#define gmx_load_hpr(a, b)    a = _mm_load_ps(b)
-/* Load one real at pointer b into half-width SIMD register a */
-#define gmx_load1_hpr(a, b)   a = _mm_load1_ps(b)
-/* Load one real at b and one real at b+1 into halves of a, respectively */
-#define gmx_load1p1_pr(a, b)  a = _mm256_insertf128_ps(_mm256_castps128_ps256(_mm_load1_ps(b)), _mm_load1_ps(b+1), 0x1)
-/* Load reals at half-width aligned pointer b into two halves of a */
-#define gmx_loaddh_pr(a, b)   a = gmx_mm256_load4_ps(b)
-/* To half-width SIMD register b into half width aligned memory a */
-#define gmx_store_hpr(a, b)       _mm_store_ps(a, b)
-#define gmx_add_hpr               _mm_add_ps
-#define gmx_sub_hpr               _mm_sub_ps
-/* Horizontal sum over a half SIMD register */
-#define gmx_sum4_hpr              gmx_mm256_sum4h_m128
-
-#else
-#error "Half-width SIMD macros are not yet defined"
-#endif
+/* Half-width SIMD operations are required here.
+ * As the 4xn kernels are the "standard" kernels and some special operations
+ * are required only here, we define those in nbnxn_kernel_simd_utils_...
+ *
+ * Half-width SIMD real type:
+ * gmx_mm_hpr
+ *
+ * Half-width SIMD operations
+ * Load reals at half-width aligned pointer b into half-width SIMD register a:
+ * gmx_load_hpr(a, b)
+ * Set all entries in half-width SIMD register *a to b:
+ * gmx_set1_hpr(a, b)
+ * Load one real at b and one real at b+1 into halves of a, respectively:
+ * gmx_load1p1_pr(a, b)
+ * Load reals at half-width aligned pointer b into two halves of a:
+ * gmx_loaddh_pr(a, b)
+ * Store half-width SIMD register b into half width aligned memory a:
+ * gmx_store_hpr(a, b)
+ * gmx_add_hpr(a, b)
+ * gmx_sub_hpr(a, b)
+ * Sum over 4 half SIMD registers:
+ * gmx_sum4_hpr(a, b)
+ * Sum the elements of halfs of each input register and store sums in out:
+ * gmx_mm_transpose_sum4h_pr(a, b)
+ * Extract two half-width registers *b, *c from a full width register a:
+ * gmx_pr_to_2hpr(a, b, c)
+ */
 
 
 #define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
@@ -96,8 +94,9 @@
 #define TAB_FDV0
 #endif
 
+/* Currently stride 4 for the 2 LJ parameters is hard coded */
+#define NBFP_STRIDE  4
 
-#define SIMD_MASK_ALL   0xffffffff
 
 #include "nbnxn_kernel_simd_utils.h"
 
@@ -213,26 +212,24 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     gmx_mm_pr  ix_S2, iy_S2, iz_S2;
     gmx_mm_pr  fix_S0, fiy_S0, fiz_S0;
     gmx_mm_pr  fix_S2, fiy_S2, fiz_S2;
-#if UNROLLJ >= 4
-#ifndef GMX_DOUBLE
-    __m128     fix_S, fiy_S, fiz_S;
-#else
-    __m256d    fix_S, fiy_S, fiz_S;
-#endif
-#else
-    __m128d    fix0_S, fiy0_S, fiz0_S;
-    __m128d    fix2_S, fiy2_S, fiz2_S;
-#endif
+    /* We use an i-force SIMD register width of 4 */
+    /* The pr4 stuff is defined in nbnxn_kernel_simd_utils.h */
+    gmx_mm_pr4 fix_S, fiy_S, fiz_S;
 
-    gmx_mm_pr  diag_jmi_S;
+    gmx_mm_pr  diagonal_jmi_S;
 #if UNROLLI == UNROLLJ
-    gmx_mm_pr  diag_S0, diag_S2;
+    gmx_mm_pb  diagonal_mask_S0, diagonal_mask_S2;
 #else
-    gmx_mm_pr  diag0_S0, diag0_S2;
-    gmx_mm_pr  diag1_S0, diag1_S2;
+    gmx_mm_pb  diagonal_mask0_S0, diagonal_mask0_S2;
+    gmx_mm_pb  diagonal_mask1_S0, diagonal_mask1_S2;
 #endif
 
-    gmx_mm_pr  mask_S0, mask_S2;
+    unsigned   *excl_filter;
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
+    gmx_epi32  filter_S0, filter_S2;
+#else
+    gmx_mm_pr  filter_S0, filter_S2;
+#endif
 
     gmx_mm_pr  zero_S = gmx_set1_pr(0);
 
@@ -319,42 +316,68 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
     ljc = nbat->lj_comb;
 #else
     /* No combination rule used */
-#ifndef GMX_DOUBLE
-    nbfp_ptr    = nbat->nbfp_s4;
-#define NBFP_STRIDE  4
-#else
+#if NBFP_STRIDE == 2
     nbfp_ptr    = nbat->nbfp;
-#define NBFP_STRIDE  2
+#else
+#if NBFP_STRIDE == 4
+    nbfp_ptr    = nbat->nbfp_s4;
+#else
+#error "Only NBFP_STRIDE 2 and 4 are currently supported"
+#endif
 #endif
     nbfp_stride = NBFP_STRIDE;
 #endif
 
     /* Load j-i for the first i */
-    diag_jmi_S = gmx_load_pr(nbat->simd_2xnn_diag);
+    diagonal_jmi_S    = gmx_load_pr(nbat->simd_2xnn_diagonal_j_minus_i);
     /* Generate all the diagonal masks as comparison results */
 #if UNROLLI == UNROLLJ
-    diag_S0    = gmx_cmplt_pr(zero_S, diag_jmi_S);
-    diag_jmi_S = gmx_sub_pr(diag_jmi_S, one_S);
-    diag_jmi_S = gmx_sub_pr(diag_jmi_S, one_S);
-    diag_S2    = gmx_cmplt_pr(zero_S, diag_jmi_S);
+    diagonal_mask_S0  = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_mask_S2  = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
 #else
 #if 2*UNROLLI == UNROLLJ
-    diag0_S0 = gmx_cmplt_pr(diag_i_S, diag_j_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag0_S2 = gmx_cmplt_pr(diag_i_S, diag_j_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag1_S0 = gmx_cmplt_pr(diag_i_S, diag_j_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag_i_S = gmx_add_pr(diag_i_S, one_S);
-    diag1_S2 = gmx_cmplt_pr(diag_i_S, diag_j_S);
+    diagonal_mask0_S0 = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_mask0_S2 = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_mask1_S0 = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_jmi_S    = gmx_sub_pr(diagonal_jmi_S, one_S);
+    diagonal_mask1_S2 = gmx_cmplt_pr(zero_S, diagonal_jmi_S);
 #endif
 #endif
 
     /* Load masks for topology exclusion masking */
-    mask_S0    = gmx_load_pr((real *)nbat->simd_excl_mask + 0*2*UNROLLJ);
-    mask_S2    = gmx_load_pr((real *)nbat->simd_excl_mask + 1*2*UNROLLJ);
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
+#define FILTER_STRIDE  (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
+#else
+#ifdef GMX_DOUBLE
+#define FILTER_STRIDE  2
+#else
+#define FILTER_STRIDE  1
+#endif
+#endif
+#if FILTER_STRIDE == 1
+    excl_filter = nbat->simd_exclusion_filter1;
+#else
+    excl_filter = nbat->simd_exclusion_filter2;
+#endif
+    /* Here we cast the exclusion filters from unsigned * to int * or real *.
+     * Since we only check bits, the actual value they represent does not
+     * matter, as long as both filter and mask data are treated the same way.
+     */
+#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
+    filter_S0 = gmx_load_si((int *)excl_filter + 0*2*UNROLLJ*FILTER_STRIDE);
+    filter_S2 = gmx_load_si((int *)excl_filter + 1*2*UNROLLJ*FILTER_STRIDE);
+#else
+    filter_S0 = gmx_load_pr((real *)excl_filter + 0*2*UNROLLJ);
+    filter_S2 = gmx_load_pr((real *)excl_filter + 1*2*UNROLLJ);
+#endif
+#undef FILTER_STRIDE
 
 #ifdef CALC_COUL_TAB
     /* Generate aligned table index pointers */
@@ -513,9 +536,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #if UNROLLJ == 4
         if (do_coul && l_cj[nbln->cj_ind_start].cj == ci_sh)
 #endif
-#if UNROLLJ == 2
-        if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh<<1))
-#endif
 #if UNROLLJ == 8
         if (do_coul && l_cj[nbln->cj_ind_start].cj == (ci_sh>>1))
 #endif
@@ -556,12 +576,12 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         /* Load i atom data */
         sciy             = scix + STRIDE;
         sciz             = sciy + STRIDE;
-        gmx_load1p1_pr(ix_S0, x+scix);
-        gmx_load1p1_pr(ix_S2, x+scix+2);
-        gmx_load1p1_pr(iy_S0, x+sciy);
-        gmx_load1p1_pr(iy_S2, x+sciy+2);
-        gmx_load1p1_pr(iz_S0, x+sciz);
-        gmx_load1p1_pr(iz_S2, x+sciz+2);
+        gmx_load1p1_pr(&ix_S0, x+scix);
+        gmx_load1p1_pr(&ix_S2, x+scix+2);
+        gmx_load1p1_pr(&iy_S0, x+sciy);
+        gmx_load1p1_pr(&iy_S2, x+sciy+2);
+        gmx_load1p1_pr(&iz_S0, x+sciz);
+        gmx_load1p1_pr(&iz_S2, x+sciz+2);
         ix_S0          = gmx_add_pr(ix_S0, shX_S);
         ix_S2          = gmx_add_pr(ix_S2, shX_S);
         iy_S0          = gmx_add_pr(iy_S0, shY_S);
@@ -575,28 +595,28 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 
             facel_S    = gmx_set1_pr(facel);
 
-            gmx_load1p1_pr(iq_S0, q+sci);
-            gmx_load1p1_pr(iq_S2, q+sci+2);
+            gmx_load1p1_pr(&iq_S0, q+sci);
+            gmx_load1p1_pr(&iq_S2, q+sci+2);
             iq_S0      = gmx_mul_pr(facel_S, iq_S0);
             iq_S2      = gmx_mul_pr(facel_S, iq_S2);
         }
 
 #ifdef LJ_COMB_LB
-        gmx_load1p1_pr(hsig_i_S0, ljc+sci2+0);
-        gmx_load1p1_pr(hsig_i_S2, ljc+sci2+2);
-        gmx_load1p1_pr(seps_i_S0, ljc+sci2+STRIDE+0);
-        gmx_load1p1_pr(seps_i_S2, ljc+sci2+STRIDE+2);
+        gmx_load1p1_pr(&hsig_i_S0, ljc+sci2+0);
+        gmx_load1p1_pr(&hsig_i_S2, ljc+sci2+2);
+        gmx_load1p1_pr(&seps_i_S0, ljc+sci2+STRIDE+0);
+        gmx_load1p1_pr(&seps_i_S2, ljc+sci2+STRIDE+2);
 #else
 #ifdef LJ_COMB_GEOM
-        gmx_load1p1_pr(c6s_S0, ljc+sci2+0);
+        gmx_load1p1_pr(&c6s_S0, ljc+sci2+0);
         if (!half_LJ)
         {
-            gmx_load1p1_pr(c6s_S2, ljc+sci2+2);
+            gmx_load1p1_pr(&c6s_S2, ljc+sci2+2);
         }
-        gmx_load1p1_pr(c12s_S0, ljc+sci2+STRIDE+0);
+        gmx_load1p1_pr(&c12s_S0, ljc+sci2+STRIDE+0);
         if (!half_LJ)
         {
-            gmx_load1p1_pr(c12s_S2, ljc+sci2+STRIDE+2);
+            gmx_load1p1_pr(&c12s_S2, ljc+sci2+STRIDE+2);
         }
 #else
         nbfp0     = nbfp_ptr + type[sci  ]*nbat->ntype*nbfp_stride;
@@ -630,7 +650,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #define CALC_COULOMB
 #define HALF_LJ
 #define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
+            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
@@ -647,7 +667,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         {
 #define CALC_COULOMB
 #define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
+            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
@@ -662,7 +682,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         else
         {
 #define CHECK_EXCLS
-            while (cjind < cjind1 && nbl->cj[cjind].excl != SIMD_MASK_ALL)
+            while (cjind < cjind1 && nbl->cj[cjind].excl != NBNXN_INTERACTION_MASK_ALL)
             {
 #include "nbnxn_kernel_simd_2xnn_inner.h"
                 cjind++;
@@ -677,20 +697,13 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
         ninner += cjind1 - cjind0;
 
         /* Add accumulated i-forces to the force array */
-#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
-#define gmx_load_pr4  _mm_load_ps
-#define gmx_store_pr4 _mm_store_ps
-#define gmx_add_pr4   _mm_add_ps
-#else
-#error "You need to define 4-width SIM macros for i-force reduction"
-#endif
-        GMX_MM_TRANSPOSE_SUM4H_PR(fix_S0, fix_S2, fix_S);
+        fix_S = gmx_mm_transpose_sum4h_pr(fix_S0, fix_S2);
         gmx_store_pr4(f+scix, gmx_add_pr4(fix_S, gmx_load_pr4(f+scix)));
 
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiy_S0, fiy_S2, fiy_S);
+        fiy_S = gmx_mm_transpose_sum4h_pr(fiy_S0, fiy_S2);
         gmx_store_pr4(f+sciy, gmx_add_pr4(fiy_S, gmx_load_pr4(f+sciy)));
 
-        GMX_MM_TRANSPOSE_SUM4H_PR(fiz_S0, fiz_S2, fiz_S);
+        fiz_S = gmx_mm_transpose_sum4h_pr(fiz_S0, fiz_S2);
         gmx_store_pr4(f+sciz, gmx_add_pr4(fiz_S, gmx_load_pr4(f+sciz)));
 
 #ifdef CALC_SHIFTFORCES
@@ -722,10 +735,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 }
 
 
-#undef gmx_load_pr4
-#undef gmx_store_pr4
-#undef gmx_store_pr4
-
 #undef CALC_SHIFTFORCES
 
 #undef UNROLLI
@@ -733,15 +742,3 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_2xnn, energrp)
 #undef STRIDE
 #undef TAB_FDV0
 #undef NBFP_STRIDE
-
-#undef gmx_mm_hpr
-
-#undef gmx_load_hpr
-#undef gmx_load1_hpr
-#undef gmx_load1p1_pr
-#undef gmx_loaddh_pr
-#undef gmx_store_hpr
-#undef gmx_add_hpr
-#undef gmx_sub_hpr
-
-#undef gmx_sum4_hpr
