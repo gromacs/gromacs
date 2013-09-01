@@ -112,7 +112,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                 nchars += 5;   /* alchemical state */
             }
 
-            if (ir->fepvals->bPrintEnergy)
+            if (ir->fepvals->edHdLPrintEnergy!=edHdLPrintEnergyNO)
             {
                 nchars += 12; /* energy for dhdl */
             }
@@ -128,7 +128,7 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
                 {
                     ndh_tot += 1;
                 }
-                if (ir->fepvals->bPrintEnergy)
+                if (ir->fepvals->edHdLPrintEnergy!=edHdLPrintEnergyNO)
                 {
                     ndh_tot += 1;
                 }

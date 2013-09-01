@@ -797,7 +797,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         bufplace = sprintf(buf, "T = %g (K) ",
                            ir->opts.ref_t[0]);
     }
-    if (ir->efep != efepSLOWGROWTH)
+    if ((ir->efep != efepSLOWGROWTH) && (ir->efep != efepEXPANDED))
     {
         if ( (fep->init_lambda >= 0)  && (n_lambda_terms == 1 ))
         {
@@ -833,7 +833,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         nsets += 1;   /*add fep state for expanded ensemble */
     }
 
-    if (fep->bPrintEnergy)
+    if (fep->edHdLPrintEnergy!=edHdLPrintEnergyNO)
     {
         nsets += 1;  /* add energy to the dhdl as well */
     }
@@ -858,9 +858,18 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
         s         += 1;
     }
 
-    if (fep->bPrintEnergy)
+    if (fep->edHdLPrintEnergy!=edHdLPrintEnergyNO)
     {
-        sprintf(buf, "%s (%s)", "Energy", unit_energy);
+        switch (fep->edHdLPrintEnergy)
+        {
+        case edHdLPrintEnergyPOTENTIAL:
+            sprintf(buf, "%s (%s)", "Potential Energy", unit_energy);
+            break;
+        case edHdLPrintEnergyTOTAL:
+        case edHdLPrintEnergyYES:
+        default:
+            sprintf(buf, "%s (%s)", "Total Energy", unit_energy);
+        }
         setname[s] = strdup(buf);
         s         += 1;
     }
@@ -908,7 +917,7 @@ extern FILE *open_dhdl(const char *filename, const t_inputrec *ir,
             nsetsbegin = 0;
         }
 
-        if (fep->bPrintEnergy)
+        if (fep->edHdLPrintEnergy!=edHdLPrintEnergyNO)
         {
             nsetsbegin += 1;
         }
@@ -1216,9 +1225,18 @@ void upd_mdebin(t_mdebin       *md,
                 fprintf(md->fp_dhdl, " %4d", state->fep_state);
             }
             /* total energy (for if the temperature changes */
-            if (fep->bPrintEnergy)
+            if (fep->edHdLPrintEnergy!=edHdLPrintEnergyNO)
             {
-                store_energy = enerd->term[F_ETOT];
+                switch (fep->edHdLPrintEnergy)
+                {
+                case edHdLPrintEnergyPOTENTIAL:
+                    store_energy = enerd->term[F_EPOT];
+                    break;
+                case edHdLPrintEnergyTOTAL:
+                case edHdLPrintEnergyYES:
+                default:
+                    store_energy = enerd->term[F_ETOT];
+                }
                 fprintf(md->fp_dhdl, " %#.8g", store_energy);
             }
 
