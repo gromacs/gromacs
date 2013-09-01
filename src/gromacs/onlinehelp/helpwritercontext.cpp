@@ -55,8 +55,19 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
+namespace gmx
+{
+
 namespace
 {
+
+/*! \internal \brief
+ * Stores the global context set with HelpWriterGlobalContext.
+ *
+ * This is not protected by a mutex, since it is only used in command-line
+ * start-up (i.e., single-threaded context), and is inherently not thread-safe.
+ */
+const HelpWriterContext *g_globalContext = NULL;
 
 /*! \internal \brief
  * Make the string uppercase.
@@ -72,10 +83,7 @@ std::string toUpperCase(const std::string &text)
     return result;
 }
 
-} // namespace
-
-namespace gmx
-{
+}   // namespace
 
 /********************************************************************
  * HelpWriterContext::Impl
@@ -108,13 +116,6 @@ class HelpWriterContext::Impl
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
     : impl_(new Impl(file, format))
 {
-    if (format != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
 }
 
 HelpWriterContext::~HelpWriterContext()
@@ -133,6 +134,13 @@ File &HelpWriterContext::outputFile() const
 
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     char            *resultStr = check_tty(text.c_str());
     scoped_ptr_sfree resultGuard(resultStr);
     return std::string(resultStr);
@@ -140,6 +148,13 @@ std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     File &file = outputFile();
     file.writeLine(toUpperCase(title));
     file.writeLine();
@@ -147,11 +162,40 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     TextLineWrapper wrapper;
     wrapper.settings().setLineLength(78);
     const char     *program = ProgramInfo::getInstance().programName().c_str();
     std::string     newText = replaceAll(text, "[PROGRAM]", program);
     outputFile().writeLine(wrapper.wrapToString(substituteMarkup(newText)));
+}
+
+/********************************************************************
+ * HelpWriterGlobalContext
+ */
+
+// static
+const HelpWriterContext *HelpWriterGlobalContext::get()
+{
+    return g_globalContext;
+}
+
+HelpWriterGlobalContext::HelpWriterGlobalContext(const HelpWriterContext &context)
+{
+    GMX_RELEASE_ASSERT(g_globalContext == NULL,
+                       "Global context set more than once");
+    g_globalContext = &context;
+}
+
+HelpWriterGlobalContext::~HelpWriterGlobalContext()
+{
+    g_globalContext = NULL;
 }
 
 } // namespace gmx

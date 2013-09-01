@@ -47,6 +47,8 @@
 #include <string>
 #include <utility>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 
@@ -227,6 +229,89 @@ void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
     module_.writeHelp(context);
 }
 
+/********************************************************************
+ * HelpExportInterface
+ */
+
+/*! \internal \brief
+ * Callbacks for exporting help information for command-line modules.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportInterface
+{
+    public:
+        virtual ~HelpExportInterface() {};
+
+        /*! \brief
+         * Called to export the help for each module.
+         *
+         * \param[in] tag     Unique tag for the module (gmx-something).
+         * \param[in] module  Module for which the help should be exported.
+         */
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module) = 0;
+};
+
+/********************************************************************
+ * HelpExportHtml
+ */
+
+/*! \internal \brief
+ * Implements export for HTML help.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportHtml : public HelpExportInterface
+{
+    public:
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+};
+
+void HelpExportHtml::exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module)
+{
+    File file(tag + ".html", "w");
+
+    file.writeLine("<HTML>");
+    file.writeLine("<HEAD>");
+    file.writeLine(formatString("<TITLE>%s</TITLE>", tag.c_str()));
+    file.writeLine("<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">");
+    file.writeLine("<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">");
+    file.writeLine("<TABLE WIDTH=\"98%%\" NOBORDER><TR>");
+    file.writeLine("<TD WIDTH=400><TABLE WIDTH=400 NOBORDER>");
+    file.writeLine("<TD WIDTH=116>");
+    file.writeLine("<A HREF=\"http://www.gromacs.org/\">"
+                   "<IMG SRC=\"../images/gmxlogo_small.png\" BORDER=0>"
+                   "</A>");
+    file.writeLine("</TD>");
+    file.writeLine(formatString("<TD ALIGN=LEFT VALIGN=TOP WIDTH=280>"
+                                "<BR><H2>%s</H2>", tag.c_str()));
+    file.writeLine("<FONT SIZE=-1><A HREF=\"../online.html\">Main Table of Contents</A></FONT>");
+    file.writeLine("</TD>");
+    file.writeLine("</TABLE></TD>");
+    file.writeLine("<TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM>");
+    file.writeLine(formatString("<P><B>%s</B>", GromacsVersion()));
+    file.writeLine("</TD>");
+    file.writeLine("</TR></TABLE>");
+    file.writeLine("<HR>");
+
+    HelpWriterContext context(&file, eHelpOutputFormat_Html);
+    module.writeHelp(context);
+
+    file.writeLine("<P>");
+    file.writeLine("<HR>");
+    file.writeLine("<DIV ALIGN=RIGHT><FONT SIZE=\"-1\">");
+    file.writeLine("<A HREF=\"http://www.gromacs.org\">http://www.gromacs.org</A><BR>");
+    file.writeLine("<A HREF=\"mailto:gromacs@gromacs.org\">gromacs@gromacs.org</A>");
+    file.writeLine("</FONT></DIV>");
+    file.writeLine("</BODY>");
+    file.writeLine("</HTML>");
+
+    file.close();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -270,13 +355,16 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         virtual void writeHelp(const HelpWriterContext &context) const;
 
     private:
-        CompositeHelpTopicPointer   rootTopic_;
+        void exportHelp(HelpExportInterface *exporter) const;
+
+        boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        const CommandLineModuleMap       &modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
 CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules))
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules)
 {
 }
 
@@ -287,6 +375,28 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
+    const char *const exportFormats[] = { "html" };
+    std::string       exportFormat;
+    Options           options(NULL, NULL);
+    options.addOption(StringOption("export").store(&exportFormat)
+                          .enumValue(exportFormats));
+    CommandLineParser(&options).parse(&argc, argv);
+    if (!exportFormat.empty())
+    {
+        boost::scoped_ptr<HelpExportInterface> exporter;
+        if (exportFormat == "html")
+        {
+            exporter.reset(new HelpExportHtml);
+        }
+        else
+        {
+            GMX_RELEASE_ASSERT(false,
+                               "Export format list inconsistent with the implementation");
+        }
+        exportHelp(exporter.get());
+        return 0;
+    }
+
     HelpWriterContext context(&File::standardOutput(),
                               eHelpOutputFormat_Console);
     HelpManager       helpManager(*rootTopic_, context);
@@ -308,9 +418,33 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 
 void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
 {
+    // TODO: Implement.
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        return;
+    }
     context.writeTextBlock(
             "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
     // TODO: More information.
+}
+
+void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
+{
+    // TODO: Would be nicer to have the file names supplied by the build system
+    // and/or export a list of files from here.
+    const char *const program =
+        ProgramInfo::getInstance().programName().c_str();
+
+    CommandLineModuleMap::const_iterator module;
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        if (module->second->shortDescription() != NULL)
+        {
+            const char *const moduleName = module->first.c_str();
+            std::string       tag(formatString("%s-%s", program, moduleName));
+            exporter->exportModuleHelp(tag, *module->second);
+        }
+    }
 }
 
 namespace
@@ -364,16 +498,33 @@ class CMainCommandLineModule : public CommandLineModuleInterface
         }
         virtual void writeHelp(const HelpWriterContext &context) const
         {
-            if (context.outputFormat() != eHelpOutputFormat_Console)
-            {
-                GMX_THROW(NotImplementedError(
-                                  "Command-line help is not implemented for this output format"));
-            }
-            char *argv[2];
+            char *argv[3];
+            int   argc = 1;
             // TODO: The constness should not be cast away.
             argv[0] = const_cast<char *>(name_);
-            argv[1] = const_cast<char *>("-h");
-            mainFunction_(2, argv);
+            if (context.outputFormat() == eHelpOutputFormat_Console)
+            {
+                argv[1] = const_cast<char *>("-h");
+                argc    = 2;
+            }
+            else
+            {
+                const char *type;
+                switch (context.outputFormat())
+                {
+                    case eHelpOutputFormat_Html:
+                        type = "html";
+                        break;
+                    default:
+                        GMX_THROW(NotImplementedError(
+                                          "Command-line help is not implemented for this output format"));
+                }
+                argv[1] = const_cast<char *>("-man");
+                argv[2] = const_cast<char *>(type);
+                argc    = 3;
+            }
+            HelpWriterGlobalContext global(context);
+            mainFunction_(argc, argv);
         }
 
     private:

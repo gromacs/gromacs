@@ -57,6 +57,7 @@ class File;
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
+    eHelpOutputFormat_Html,     //!< Html output for online manual.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond
@@ -139,6 +140,38 @@ class HelpWriterContext
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+};
+
+/*! \libinternal \brief
+ * Helper for passing HelpWriterContext into parse_common_args().
+ *
+ * This class provides a mechanism to set and retrieve a global
+ * HelpWriterContext object.  It is used to pass this object into
+ * parse_common_args() from CommandLineModuleManager::runAsMainCMain() through
+ * the main() function that is not aware of the wrapper binary mechanism.
+ * It is not thread-safe because in this limited use case, it is always called
+ * from a single-threaded context.
+ *
+ * \inlibraryapi
+ * \ingroup module_onlinehelp
+ */
+class HelpWriterGlobalContext
+{
+    public:
+        //! Returns the global context, or NULL if not set.
+        static const HelpWriterContext *get();
+
+        /*! \brief
+         * Sets the global context for the scope.
+         *
+         * The global context is cleared when this object goes out of scope.
+         *
+         * It is an error to have more than one HelpWriterGlobalContext
+         * object in existence at the same time.
+         */
+        explicit HelpWriterGlobalContext(const HelpWriterContext &context);
+        //! Clears the global context.
+        ~HelpWriterGlobalContext();
 };
 
 } // namespace gmx

@@ -209,7 +209,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = impl_->module_;
 
-    SelectionCollection  selections;
+    SelectionCollection       selections;
     selections.setDebugLevel(impl_->debugLevel_);
 
     TrajectoryAnalysisSettings      settings;
@@ -361,6 +361,11 @@ int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
         const HelpWriterContext &context) const
 {
+    // TODO: Implement #969.
+    if (context.outputFormat() != eHelpOutputFormat_Console)
+    {
+        return;
+    }
     TrajectoryAnalysisModulePointer     module(factory_());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);
