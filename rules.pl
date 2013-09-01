@@ -4,8 +4,10 @@ submit_rule(submit(V, CR)) :-
 
 submit_rule(submit(WIP)) :-
     gerrit:commit_message_matches('\[WIP\]'),
-    WIP = label('Commit-Message-does-not-include-[WIP]', reject(_)).
+    !,
+    WIP = label('Commit-Message-does-not-include-[WIP]', need(_)).
 
 submit_rule(submit(RFC)) :-
     gerrit:commit_message_matches('\[RFC\]'),
-    RFC = label('Commit-Message-does-not-include-[RFC]', reject(_)).
+    !,
+    RFC = label('Commit-Message-does-not-include-[RFC]', need(_)).
