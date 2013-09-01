@@ -372,18 +372,6 @@ static void pdesc(char *desc)
     }
 }
 
-static FILE *man_file(const output_env_t oenv, const char *mantp)
-{
-    FILE       *fp;
-    char        buf[256];
-    const char *pr = output_env_get_short_program_name(oenv);
-
-    sprintf(buf, "%s.%s", pr, mantp);
-    fp = gmx_fio_fopen(buf, "w");
-
-    return fp;
-}
-
 static int add_parg(int npargs, t_pargs *pa, t_pargs *pa_add)
 {
     memcpy(&(pa[npargs]), pa_add, sizeof(*pa_add));
@@ -551,7 +539,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
           "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
 #define NPCA_PA asize(pca_pa)
-    FILE    *fp;
     gmx_bool bExit, bXvgr;
     int      i, j, k, npall, max_pa;
 
@@ -755,7 +742,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     {
         if (bHelp)
         {
-            write_man(stderr, "help", output_env_get_program_name(*oenv),
+            write_man("help", output_env_get_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
         }
         else if (bVerbose)
@@ -770,26 +757,17 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         if (!strcmp(manstr[0], "completion"))
         {
             /* one file each for csh, bash and zsh if we do completions */
-            fp = man_file(*oenv, "completion-zsh");
-
-            write_man(fp, "completion-zsh", output_env_get_program_name(*oenv),
+            write_man("completion-zsh", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
-            fp = man_file(*oenv, "completion-bash");
-            write_man(fp, "completion-bash", output_env_get_program_name(*oenv),
+            write_man("completion-bash", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
-            fp = man_file(*oenv, "completion-csh");
-            write_man(fp, "completion-csh", output_env_get_program_name(*oenv),
+            write_man("completion-csh", output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
         }
         else
         {
-            fp = man_file(*oenv, manstr[0]);
-            write_man(fp, manstr[0], output_env_get_program_name(*oenv),
+            write_man(manstr[0], output_env_get_short_program_name(*oenv),
                       ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
         }
     }
 
