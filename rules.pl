@@ -2,7 +2,7 @@ submit_rule(submit(CR, V, RFC)) :-
     base(CR, V),
     gerrit:commit_message_matches('(\\\[WIP\\\]|\\\[RFC\\\])'),
     !,
-    RFC = label('Not-RFC-or-WIP', need(_)).
+    RFC = label('Not-RFC-or-WIP', reject(_)).
 
 submit_rule(submit(CR, V)) :-
     base(CR, V).
