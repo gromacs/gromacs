@@ -1485,8 +1485,11 @@ int gmx_grompp(int argc, char *argv[])
     init_ir(ir, opts);
 
     /* Parse the command line */
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     wi = init_warning(TRUE, maxwarn);
 

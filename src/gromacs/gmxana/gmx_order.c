@@ -975,8 +975,11 @@ int gmx_order(int argc, char *argv[])
     const char   *sgfnm, *skfnm, *ndxfnm, *tpsfnm, *trxfnm;
     output_env_t  oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     if (nslices < 1)
     {
         gmx_fatal(FARGS, "Can not have nslices < 1");

@@ -154,8 +154,11 @@ int gmx_membed(int argc, char *argv[])
     char         buf[256], buf2[64];
     gmx_bool     bSucces;
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     data_out = ffopen(opt2fn("-dat", NFILE, fnm), "w");
 

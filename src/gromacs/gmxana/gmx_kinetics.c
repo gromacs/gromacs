@@ -942,8 +942,11 @@ int gmx_kinetics(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
 #ifdef HAVE_LIBGSL
     please_cite(stdout, "Spoel2006d");

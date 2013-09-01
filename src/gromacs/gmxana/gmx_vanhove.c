@@ -145,8 +145,11 @@ int gmx_vanhove(int argc, char *argv[])
     FILE        *fp;
     t_rgb        rlo = {1, 1, 1}, rhi = {0, 0, 0};
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     matfile = opt2fn_null("-om", NFILE, fnm);
     if (opt2parg_bSet("-fr", NPA, pa))

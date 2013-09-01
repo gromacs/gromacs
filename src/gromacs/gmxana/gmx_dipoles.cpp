@@ -1536,7 +1536,7 @@ int gmx_dipoles(int argc, char *argv[])
     };
     real           mu_max     = 5, mu_aver = -1, rcmax = 0;
     real           epsilonRF  = 0.0, temp = 300;
-    gmx_bool       bPairs = TRUE, bPhi = FALSE, bQuad = FALSE;
+    gmx_bool       bPairs     = TRUE, bPhi = FALSE, bQuad = FALSE;
     const char    *corrtype[] = {NULL, "none", "mol", "molsep", "total", NULL};
     const char    *axtitle    = "Z";
     int            nslices    = 10; /* nr of slices defined       */
@@ -1611,8 +1611,11 @@ int gmx_dipoles(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     printf("Using %g as mu_max and %g as the dipole moment.\n",
            mu_max, mu_aver);

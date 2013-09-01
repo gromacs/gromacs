@@ -906,8 +906,11 @@ int gmx_rdf(int argc, char *argv[])
         { efXVG, "-hq", "hq",     ffOPTWR },
     };
 #define NFILE asize(fnm)
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (bCM || closet[0][0] != 'n' || rdft[0][0] == 'm' || rdft[0][6] == 'm')
     {

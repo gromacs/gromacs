@@ -375,8 +375,11 @@ int gmx_anadock(int argc, char *argv[])
     t_pdbfile **pdbf = NULL;
     int         npdbf;
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
-                      NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, NPA, pa, asize(desc), desc, 0,
+                           NULL, &oenv))
+    {
+        return 0;
+    }
 
     fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
     please_cite(stdout, "Hetenyi2002b");

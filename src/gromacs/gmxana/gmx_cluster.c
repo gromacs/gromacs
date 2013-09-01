@@ -162,7 +162,7 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
     if (m->n1 != m->nn)
     {
-        fprintf(stderr,"Can not do Monte Carlo optimization with a non-square matrix.\n");
+        fprintf(stderr, "Can not do Monte Carlo optimization with a non-square matrix.\n");
         return;
     }
     printf("\nDoing Monte Carlo optimization to find the smoothest trajectory\n");
@@ -171,13 +171,13 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
 
     iswap = jswap = -1;
     enorm = m->mat[0][0];
-    for(i = 0; (i < m->n1); i++)
+    for (i = 0; (i < m->n1); i++)
     {
-        for(j = 0; (j < m->nn); j++)
+        for (j = 0; (j < m->nn); j++)
         {
-            if (m->mat[i][j] > enorm) 
+            if (m->mat[i][j] > enorm)
             {
-                enorm = m->mat[i][j];
+                enorm   = m->mat[i][j];
                 iswap   = i;
                 jswap   = j;
             }
@@ -195,10 +195,10 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
            enorm, iswap, jswap, emin);
 
     rng = gmx_rng_init(seed);
-    nn = m->nn;
+    nn  = m->nn;
 
     /* Initiate and store global minimum */
-    minimum = init_mat(nn, m->b1D);
+    minimum     = init_mat(nn, m->b1D);
     minimum->nn = nn;
     copy_t_mat(minimum, m);
 
@@ -268,12 +268,12 @@ void mc_optimize(FILE *log, t_mat *m, real *time,
     fprintf(log, "Global minimum energy %g\n", mat_energy(minimum));
     fprintf(log, "Global minimum energy %g\n", mat_energy(m));
     fprintf(log, "Swapped time and frame indices and RMSD to next neighbor:\n");
-    for(i=0; (i<m->nn); i++)
+    for (i = 0; (i < m->nn); i++)
     {
         fprintf(log, "%10g  %5d  %10g\n",
                 time[m->m_ind[i]],
                 m->m_ind[i],
-                (i<m->nn-1) ? m->mat[m->m_ind[i]][m->m_ind[i+1]] : 0);
+                (i < m->nn-1) ? m->mat[m->m_ind[i]][m->m_ind[i+1]] : 0);
     }
 
     if (NULL != fp)
@@ -1409,7 +1409,7 @@ int gmx_cluster(int argc, char *argv[])
     rvec              *xtps, *usextps, *x1, **xx = NULL;
     const char        *fn, *trx_out_fn;
     t_clusters         clust;
-    t_mat             *rms, *orig=NULL;
+    t_mat             *rms, *orig = NULL;
     real              *eigenvalues;
     t_topology         top;
     int                ePBC;
@@ -1511,10 +1511,13 @@ int gmx_cluster(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
-                      &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                           &oenv))
+    {
+        return 0;
+    }
 
     /* parse options */
     bReadMat   = opt2bSet("-dm", NFILE, fnm);
@@ -1850,11 +1853,11 @@ int gmx_cluster(int argc, char *argv[])
             ffclose(fp);
             break;
         case m_monte_carlo:
-            orig = init_mat(rms->nn, FALSE);
+            orig     = init_mat(rms->nn, FALSE);
             orig->nn = rms->nn;
             copy_t_mat(orig, rms);
-            mc_optimize(log, rms, time, niter, nrandom, seed, kT, 
-                        opt2fn_null("-conv",NFILE,fnm), oenv);
+            mc_optimize(log, rms, time, niter, nrandom, seed, kT,
+                        opt2fn_null("-conv", NFILE, fnm), oenv);
             break;
         case m_jarvis_patrick:
             jarvis_patrick(rms->nn, rms->mat, M, P, bJP_RMSD ? rmsdcut : -1, &clust);
