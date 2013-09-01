@@ -3,9 +3,9 @@ submit_rule(submit(CR, V)) :-
     gerrit:commit_message_matches('(?!\\\[WIP\\\])|(?!\\\[RFC\\\])'),
     !.
 
-submit_rule(submit(CR, V)) :-
+submit_rule(submit(CR, V, NoSubmitTags)) :-
     base(CR, V),
-    label('Commit-Message-does-not-include-[WIP]-or-[RFC]', need(_)).
+    NoSubmitTags = label('Commit-Message-does-not-include-[WIP]-or-[RFC]', need(_)).
 
 base(CR, V) :-
     gerrit:max_with_block(-2, 2, 'Code-Review', CR),
