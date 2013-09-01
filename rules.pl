@@ -1,11 +1,13 @@
-submit_rule(submit(WIP)) :-
-    WIP = label('Commit-Message-does-not-include-[WIP]', need(_)).
+submit_rule(submit(CR, V, NoSubmitTags)) :-
+    base(CR, V),
+    gerrit:commit_message_matches('(?!\\\[WIP\\\])|(?!\\\[RFC\\\])'),
+    NoSubmitTags = label('Commit-Message-does-not-include-[WIP]-or-[RFC]', ok(_)),
+    !.
 
-submit_rule(submit(RFC)) :-
-    RFC = label('Commit-Message-does-not-include-[RFC]', need(_)).
+submit_rule(submit(CR, V, NoSubmitTags)) :-
+    base(CR, V),
+    NoSubmitTags = label('Commit-Message-does-not-include-[WIP]-or-[RFC]', need(_)).
 
-submit_rule(submit(CR, V)) :-
-    gerrit:commit_message_matches('(?!\\\[WIP\\\])'),
-    gerrit:commit_message_matches('(?!\\\[RFC\\\])'),
+base(CR, V) :-
     gerrit:max_with_block(-2, 2, 'Code-Review', CR),
     gerrit:max_with_block(-2, 2, 'Verified', V).
