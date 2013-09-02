@@ -586,6 +586,9 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
         sprintf(err_buf, "Can't use postive delta-lambda (%g) with expanded ensemble simulations", fep->delta_lambda);
         CHECK(fep->delta_lambda > 0 && (ir->efep == efepEXPANDED));
 
+        sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
+        CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
+        
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
 
