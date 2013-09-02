@@ -521,7 +521,7 @@ void set_current_lambdas(gmx_large_int_t step, t_lambda *fepvals, gmx_bool bReru
     {
         if (rerun_fr->bLambda)
         {
-            if (fepvals->delta_lambda != 0)
+            if (fepvals->delta_lambda==0)
             {
                 state_global->lambda[efptFEP] = rerun_fr->lambda;
                 for (i = 0; i < efptNR; i++)
