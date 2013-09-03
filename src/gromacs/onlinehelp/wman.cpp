@@ -32,12 +32,6 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <time.h>
-
 #include <string>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -305,30 +299,6 @@ const t_sandr_const sandrHTML[] = {
 #define NSRHTML asize(sandrHTML)
 
 
-static char *mydate(char buf[], int maxsize)
-{
-    const char *mon[] = {
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    };
-    const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-    time_t      now;
-    struct tm   tm;
-
-    time(&now);
-#ifdef GMX_NATIVE_WINDOWS
-    /* Native windows */
-    localtime_s(&tm, &now);
-#else
-    localtime_r(&now, &tm);
-#endif
-
-    sprintf(buf, "%s %d %s %d", day[tm.tm_wday], tm.tm_mday,
-            mon[tm.tm_mon], tm.tm_year+1900);
-
-    return buf;
-}
-
 /* Data structure for saved HTML links */
 typedef struct t_linkdata {
     int      nsr;
@@ -575,12 +545,6 @@ static void write_nroffman(FILE *out,
     int  i;
     char tmp[256];
 
-
-    fprintf(out, ".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n", program, mydate(tmp, 255), GromacsVersion());
-    fprintf(out, ".SH NAME\n");
-    fprintf(out, "%s@DESC@\n\n", program);
-    fprintf(out, ".B %s\n", GromacsVersion());
-
     fprintf(out, ".SH SYNOPSIS\n");
     fprintf(out, "\\f3%s\\fP\n", program);
 
@@ -665,10 +629,6 @@ static void write_nroffman(FILE *out,
             fprintf(out, "\\- %s\n\n", check_nroff(bugs[i]));
         }
     }
-
-    fprintf(out, ".SH SEE ALSO\n.BR gromacs(7)\n\n");
-    fprintf(out, "More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.\n");
-
 }
 
 char *check_tty(const char *s)
@@ -1023,7 +983,8 @@ void write_man(const char *mantp,
     }
     if (strcmp(mantp, "nroff") == 0)
     {
-        write_nroffman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_nroffman(out, context->moduleDisplayName(), nldesc, desc,
+                       nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "help") == 0)
     {

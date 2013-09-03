@@ -43,6 +43,7 @@
 
 #include <cstdio>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <utility>
@@ -257,6 +258,52 @@ class HelpExportInterface
 };
 
 /********************************************************************
+ * HelpExportMan
+ */
+
+/*! \internal \brief
+ * Implements export for man pages.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportMan : public HelpExportInterface
+{
+    public:
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+};
+
+void HelpExportMan::exportModuleHelp(const std::string                &tag,
+                                     const CommandLineModuleInterface &module)
+{
+    File file("man1/" + tag + ".1", "w");
+
+    // TODO: Add date? The current version string contains the date, except for
+    // releases; with the date, it is too long to fit in a 80-column footer
+    // together with the date.
+    file.writeLine(formatString(".TH %s 1 \"\" \"%s\" \"Gromacs Manual\"\n",
+                                tag.c_str(),
+                                GromacsVersion()));
+    file.writeLine(".SH NAME");
+    file.writeLine(formatString("%s - %s", tag.c_str(),
+                                module.shortDescription()));
+    file.writeLine();
+
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Man);
+    std::string            displayName(tag);
+    std::replace(displayName.begin(), displayName.end(), '-', ' ');
+    context.setModuleDisplayName(displayName);
+    module.writeHelp(context);
+
+    file.writeLine(".SH SEE ALSO");
+    file.writeLine(".BR gromacs(7)");
+    file.writeLine();
+    file.writeLine("More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.");
+
+    file.close();
+}
+
+/********************************************************************
  * HelpExportHtml
  */
 
@@ -387,7 +434,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
-        if (exportFormat == "html")
+        if (exportFormat == "man")
+        {
+            exporter.reset(new HelpExportMan);
+        }
+        else if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml);
         }
@@ -516,6 +567,9 @@ class CMainCommandLineModule : public CommandLineModuleInterface
                 const char *type;
                 switch (format)
                 {
+                    case eHelpOutputFormat_Man:
+                        type = "nroff";
+                        break;
                     case eHelpOutputFormat_Html:
                         type = "html";
                         break;
