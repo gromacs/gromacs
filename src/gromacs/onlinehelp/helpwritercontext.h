@@ -57,6 +57,7 @@ class File;
 enum HelpOutputFormat
 {
     eHelpOutputFormat_Console,  //!< Plain text directly on the console.
+    eHelpOutputFormat_Man,      //!< Man page.
     eHelpOutputFormat_NR        //!< Used for the number of output formats.
 };
 //! \endcond
