@@ -777,14 +777,14 @@ do_listed_vdw_q(int ftype,int nbonds,
         {
             /* This is a bonded interaction, atoms are in the same box */
             shift_f = CENTRAL;
-            r2 = distance2(x[ai],x[aj]);
+			rvec_sub(x[ai],x[aj],dx);
         }
         else 
         {
             /* Apply full periodic boundary conditions */
             shift_f = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
-            r2 = norm2(dx);
         }
+		r2 = norm2(dx);
 
         if (r2 >= rtab2) 
         {
@@ -922,7 +922,7 @@ do_listed_vdw_q(int ftype,int nbonds,
             rvec_inc(fshift[shift_vir],f14[0]);
             rvec_dec(fshift[CENTRAL],f14[0]);
         }
-        
+
             localvir[XX][XX] = -0.5 * ( dx[XX] * f14[0][XX] );
             localvir[XX][YY] = -0.5 * ( dx[XX] * f14[0][YY] );
             localvir[XX][ZZ] = -0.5 * ( dx[XX] * f14[0][ZZ] );
