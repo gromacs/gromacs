@@ -575,12 +575,6 @@ static void write_nroffman(FILE *out,
     int  i;
     char tmp[256];
 
-
-    fprintf(out, ".TH %s 1 \"%s\" \"\" \"GROMACS suite, %s\"\n", program, mydate(tmp, 255), GromacsVersion());
-    fprintf(out, ".SH NAME\n");
-    fprintf(out, "%s@DESC@\n\n", program);
-    fprintf(out, ".B %s\n", GromacsVersion());
-
     fprintf(out, ".SH SYNOPSIS\n");
     fprintf(out, "\\f3%s\\fP\n", program);
 
@@ -665,10 +659,6 @@ static void write_nroffman(FILE *out,
             fprintf(out, "\\- %s\n\n", check_nroff(bugs[i]));
         }
     }
-
-    fprintf(out, ".SH SEE ALSO\n.BR gromacs(7)\n\n");
-    fprintf(out, "More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.\n");
-
 }
 
 char *check_tty(const char *s)
