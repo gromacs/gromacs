@@ -1,7 +1,6 @@
 configure_file(config.h.cmakein config.h)
 configure_file(buildinfo.h.cmakein buildinfo.h)
 
-include(../cmake/BuildManPages.cmake)
 if (BUILD_TESTING)
     add_custom_target(tests)
     if (GMX_BUILD_UNITTESTS)
