@@ -130,7 +130,7 @@
 .\" ========================================================================
 .\"
 .IX Title "GROMACS 7"
-.TH GROMACS 7 "${TODAYS_DATE}" "gromacs" "GROMACS suite, Version ${PROJECT_VERSION}"
+.TH GROMACS 7 "" "${PROJECT_VERSION}" "GROMACS Manual"
 .SH "NAME"
 gromacs \- molecular dynamics simulation suite
 .SH "DESCRIPTION"
