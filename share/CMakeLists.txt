@@ -35,6 +35,14 @@
 add_subdirectory(template)
 
 # TODO: ngmx and g_xrama would currently need special treatment
+set(MAN_DIR ${CMAKE_CURRENT_BINARY_DIR}/man)
+file(MAKE_DIRECTORY ${MAN_DIR}/man1)
+add_custom_target(man
+    gmx -quiet help -export man
+    WORKING_DIRECTORY ${MAN_DIR}
+    COMMENT "Generation man pages for programs"
+    VERBATIM)
+
 set(HTML_DIR ${CMAKE_CURRENT_BINARY_DIR}/html/online)
 file(MAKE_DIRECTORY ${HTML_DIR})
 add_custom_target(html
