@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -124,6 +124,14 @@ const char *CommandLineHelpContext::moduleDisplayName() const
 bool CommandLineHelpContext::showHidden() const
 {
     return impl_->bHidden_;
+}
+
+bool CommandLineHelpContext::isCompletionExport() const
+{
+    HelpOutputFormat format = writerContext().outputFormat();
+    return (format == eHelpOutputFormat_CompletionBash
+            || format == eHelpOutputFormat_CompletionCsh
+            || format == eHelpOutputFormat_CompletionZsh);
 }
 
 /********************************************************************

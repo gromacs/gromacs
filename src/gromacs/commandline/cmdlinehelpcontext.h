@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -97,6 +97,8 @@ class CommandLineHelpContext
         const char *moduleDisplayName() const;
         //! Returns whether hidden options should be shown in help output.
         bool showHidden() const;
+        //! Returns whether this context is for exporting shell completions.
+        bool isCompletionExport() const;
 
     private:
         class Impl;
