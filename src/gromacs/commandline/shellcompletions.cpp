@@ -38,9 +38,11 @@
 
 #include <cstdio>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/smalloc.h"
@@ -279,21 +281,22 @@ static void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell)
 }
 
 static void write_bashcompl(FILE *out,
+                            const char *moduleName,
                             int nfile,  t_filenm *fnm,
                             int npargs, t_pargs *pa)
 {
     /* Advanced bash completions are handled by shell functions.
      * p and c hold the previous and current word on the command line.
      * We need to use extended globbing, so write it in each completion file */
-    fprintf(out, "shopt -s extglob\n");
-    fprintf(out, "_%s_compl() {\nlocal p c\n", ShortProgram());
+    fprintf(out, "_%s_compl() {\n", moduleName);
+    fprintf(out, "local p c\n");
     fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
     pr_opts(out, nfile, fnm, npargs, pa, eshellBASH);
     fprintf(out, "case \"$p\" in\n");
 
     pr_enums(out, npargs, pa, eshellBASH);
     pr_fopts(out, nfile, fnm, eshellBASH);
-    fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
+    fprintf(out, "esac }\n");
 }
 
 static void write_cshcompl(FILE *out,
@@ -320,13 +323,11 @@ static void write_zshcompl(FILE *out,
     fprintf(out, "-- %s\n", ShortProgram());
 }
 
-void write_completions(const char *type, const char *program,
+void write_completions(const gmx::CommandLineHelpContext &context,
                        int nfile,  t_filenm *fnm,
                        int npargs, t_pargs *pa)
 {
-    char     buf[256];
-    sprintf(buf, "%s.%s", program, type);
-    FILE    *out = gmx_fio_fopen(buf, "w");
+    FILE    *out = context.writerContext().outputFile().handle();
 
     int      npar;
     t_pargs *par;
@@ -343,20 +344,20 @@ void write_completions(const char *type, const char *program,
         }
     }
 
-    if (strcmp(type, "completion-zsh") == 0)
+    switch (context.writerContext().outputFormat())
     {
-        write_zshcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(type, "completion-bash") == 0)
-    {
-        write_bashcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(type, "completion-csh") == 0)
-    {
-        write_cshcompl(out, nfile, fnm, npar, par);
+        case gmx::eHelpOutputFormat_CompletionBash:
+            write_bashcompl(out, context.moduleDisplayName(), nfile, fnm, npar, par);
+            break;
+        case gmx::eHelpOutputFormat_CompletionCsh:
+            write_cshcompl(out, nfile, fnm, npar, par);
+            break;
+        case gmx::eHelpOutputFormat_CompletionZsh:
+            write_zshcompl(out, nfile, fnm, npar, par);
+            break;
+        default:
+            GMX_THROW(gmx::NotImplementedError("Help format not implemented"));
     }
 
     sfree(par);
-
-    gmx_fio_fclose(out);
 }

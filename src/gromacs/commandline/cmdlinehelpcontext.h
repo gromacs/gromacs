@@ -97,6 +97,8 @@ class CommandLineHelpContext
         const char *moduleDisplayName() const;
         //! Returns whether hidden options should be shown in help output.
         bool showHidden() const;
+        //! Returns whether this context is for exporting shell completions.
+        bool isCompletionExport() const;
 
     private:
         class Impl;
