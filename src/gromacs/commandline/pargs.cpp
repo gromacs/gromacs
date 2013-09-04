@@ -575,9 +575,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nbugs, const char **bugs,
                            output_env_t *oenv)
 {
-    const char *manstr[] = {
-        NULL, "no", "completion", NULL
-    };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
     /* This array should match the order of the enum in oenv.h */
@@ -635,8 +632,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #define EXTRA_PA 16
 
     t_pargs  pca_pa[] = {
-        { "-man",  FALSE, etENUM,  {manstr},
-          "HIDDENWrite manual and quit" },
         { "-debug", FALSE, etINT, {&debug_level},
           "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
@@ -809,20 +804,16 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
     {
         const gmx::CommandLineHelpContext *context =
             gmx::GlobalCommandLineHelpContext::get();
-        bExit = (context != NULL || strcmp(manstr[0], "no") != 0);
-        if (!(FF(PCA_QUIET)))
+        bExit = (context != NULL);
+        if (context != NULL && !(FF(PCA_QUIET)))
         {
-            if (context != NULL)
+            if (context->isCompletionExport())
+            {
+                write_completions(*context, nfile, fnm, npall, all_pa);
+            }
+            else
             {
                 write_man(*context, ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            }
-            else if (!strcmp(manstr[0], "completion"))
-            {
-                const char *program = output_env_get_short_program_name(*oenv);
-                /* one file each for csh, bash and zsh if we do completions */
-                write_completions("completion-zsh", program, nfile, fnm, npall, all_pa);
-                write_completions("completion-bash", program, nfile, fnm, npall, all_pa);
-                write_completions("completion-csh", program, nfile, fnm, npall, all_pa);
             }
         }
     }

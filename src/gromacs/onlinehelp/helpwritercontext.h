@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -58,10 +58,13 @@ class TextLineWrapperSettings;
 //! \libinternal Output format for help writing.
 enum HelpOutputFormat
 {
-    eHelpOutputFormat_Console,  //!< Plain text directly on the console.
-    eHelpOutputFormat_Man,      //!< Man page.
-    eHelpOutputFormat_Html,     //!< Html output for online manual.
-    eHelpOutputFormat_NR        //!< Used for the number of output formats.
+    eHelpOutputFormat_Console,          //!< Plain text directly on the console.
+    eHelpOutputFormat_Man,              //!< Man page.
+    eHelpOutputFormat_Html,             //!< Html output for online manual.
+    eHelpOutputFormat_CompletionBash,   //!< Command-line completion for bash.
+    eHelpOutputFormat_CompletionCsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_CompletionZsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_NR                //!< Used for the number of output formats.
 };
 //! \endcond
 
