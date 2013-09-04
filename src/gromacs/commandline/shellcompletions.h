@@ -40,7 +40,12 @@
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
 
-void write_completions(const char *type, const char *program,
+namespace gmx
+{
+class CommandLineHelpContext;
+} // namespace gmx
+
+void write_completions(const gmx::CommandLineHelpContext &context,
                        int nfile,  t_filenm *fnm,
                        int npargs, t_pargs *pa);
 

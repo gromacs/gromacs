@@ -126,6 +126,14 @@ bool CommandLineHelpContext::showHidden() const
     return impl_->bHidden_;
 }
 
+bool CommandLineHelpContext::isCompletionExport() const
+{
+    HelpOutputFormat format = writerContext().outputFormat();
+    return (format == eHelpOutputFormat_CompletionBash
+            || format == eHelpOutputFormat_CompletionCsh
+            || format == eHelpOutputFormat_CompletionZsh);
+}
+
 /********************************************************************
  * GlobalCommandLineHelpContext
  */

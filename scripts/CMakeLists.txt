@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010, by the GROMACS development team, led by
+# Copyright (c) 2010,2013, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -42,6 +42,10 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash DESTINATION ${BIN_INSTAL
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.zsh  DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh  DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 
+add_custom_target(completion
+    gmx -quiet help -export completion
+    COMMENT "Generating command-line completions for programs"
+    VERBATIM)
 file(GLOB EXTRA_SCRIPTS completion.*)
 install(FILES ${EXTRA_SCRIPTS} DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 
