@@ -467,7 +467,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            output_env_t *oenv)
 {
     const char *manstr[] = {
-        NULL, "no", "help", "html", "tex", "nroff", "completion", NULL
+        NULL, "no", "help", "html", "tex", "nroff",
+        "completion-bash", "completion-csh", "completion-zsh", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
@@ -733,21 +734,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     if (strcmp(manstr[0], "no") != 0 && !(FF(PCA_QUIET)))
     {
-        if (!strcmp(manstr[0], "completion"))
-        {
-            /* one file each for csh, bash and zsh if we do completions */
-            write_man("completion-zsh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            write_man("completion-bash", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-            write_man("completion-csh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-        }
-        else
-        {
-            write_man(manstr[0], output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
-        }
+        write_man(manstr[0], output_env_get_short_program_name(*oenv),
+                  ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
     }
 
     /* convert time options, must be done after printing! */
