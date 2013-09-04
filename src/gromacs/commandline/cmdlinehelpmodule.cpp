@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -50,6 +51,7 @@
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlineparser.h"
+#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpmanager.h"
 #include "gromacs/onlinehelp/helptopic.h"
@@ -597,6 +599,70 @@ void HelpExportHtml::writeHtmlFooter(File *file) const
     file->writeLine(footer_);
 }
 
+/********************************************************************
+ * HelpExportCompletion
+ */
+
+/*! \internal \brief
+ * Implements export for command-line completion.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportCompletion : public HelpExportInterface
+{
+    public:
+        //! Initializes completion exporter.
+        explicit HelpExportCompletion(const CommandLineHelpModuleImpl &helpModule);
+
+        virtual void startModuleExport();
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName);
+        virtual void finishModuleExport();
+
+        virtual void startModuleGroupExport() {}
+        virtual void exportModuleGroup(const char                * /*title*/,
+                                       const ModuleGroupContents & /*modules*/) {}
+        virtual void finishModuleGroupExport() {}
+
+    private:
+        ShellCompletionWriter    bashWriter_;
+        std::vector<std::string> modules_;
+};
+
+HelpExportCompletion::HelpExportCompletion(
+        const CommandLineHelpModuleImpl &helpModule)
+    : bashWriter_(helpModule.binaryName_, eShellCompletionFormat_Bash)
+{
+}
+
+void HelpExportCompletion::startModuleExport()
+{
+    bashWriter_.startCompletions();
+}
+
+void HelpExportCompletion::exportModuleHelp(
+        const CommandLineModuleInterface &module,
+        const std::string                &tag,
+        const std::string                 & /*displayName*/)
+{
+    modules_.push_back(module.name());
+    {
+        CommandLineHelpContext context(&bashWriter_);
+        std::string            displayName(tag);
+        std::replace(displayName.begin(), displayName.end(), '-', '_');
+        context.setModuleDisplayName(displayName);
+        module.writeHelp(context);
+    }
+}
+
+void HelpExportCompletion::finishModuleExport()
+{
+    bashWriter_.writeWrapperCompletions(modules_);
+    bashWriter_.finishCompletions();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -700,6 +766,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         else if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml(*impl_));
+        }
+        else if (exportFormat == "completion")
+        {
+            exporter.reset(new HelpExportCompletion(*impl_));
         }
         else
         {

@@ -861,6 +861,17 @@ if(GMX_FAHCORE)
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif(GMX_FAHCORE)
 
+option(GMX_BUILD_HELP "Build man pages and HTML help automatically (requires that compiled binaries can be executed on the build host)" OFF)
+mark_as_advanced(GMX_BUILD_HELP)
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
+    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+
+    message(FATAL_ERROR
+        "Rebuilding HTML and man pages it not supported for in-source "
+        "builds from a source distribution. "
+        "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
+endif()
+
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else
 if (NOT GMX_SKIP_DEFAULT_CFLAGS)

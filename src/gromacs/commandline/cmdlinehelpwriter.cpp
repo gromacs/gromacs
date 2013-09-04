@@ -46,6 +46,7 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/commandline/shellcompletions.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -510,6 +511,12 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
 
 void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
 {
+    if (context.isCompletionExport())
+    {
+        context.shellCompletionWriter().writeModuleCompletions(
+                context.moduleDisplayName(), impl_->options_);
+        return;
+    }
     const HelpWriterContext &writerContext = context.writerContext();
     const bool               bConsole
         = (writerContext.outputFormat() == eHelpOutputFormat_Console);
