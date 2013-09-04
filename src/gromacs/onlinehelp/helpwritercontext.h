@@ -56,10 +56,13 @@ class File;
 //! \libinternal Output format for help writing.
 enum HelpOutputFormat
 {
-    eHelpOutputFormat_Console,  //!< Plain text directly on the console.
-    eHelpOutputFormat_Man,      //!< Man page.
-    eHelpOutputFormat_Html,     //!< Html output for online manual.
-    eHelpOutputFormat_NR        //!< Used for the number of output formats.
+    eHelpOutputFormat_Console,          //!< Plain text directly on the console.
+    eHelpOutputFormat_Man,              //!< Man page.
+    eHelpOutputFormat_Html,             //!< Html output for online manual.
+    eHelpOutputFormat_CompletionBash,   //!< Command-line completion for bash.
+    eHelpOutputFormat_CompletionCsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_CompletionZsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_NR                //!< Used for the number of output formats.
 };
 //! \endcond
 
@@ -90,6 +93,13 @@ class HelpWriterContext
         ~HelpWriterContext();
 
         /*! \brief
+         * Sets a display name for the module for which help is being written.
+         *
+         * \throws std::bad_alloc if out of memory.
+         */
+        void setModuleDisplayName(const std::string &name);
+
+        /*! \brief
          * Returns the active output format.
          *
          * Does not throw.
@@ -105,6 +115,12 @@ class HelpWriterContext
          * Does not throw.
          */
         File &outputFile() const;
+        /*! \brief
+         * Returns a display name for the module for which help is being written.
+         *
+         * Does not throw.
+         */
+        const char *moduleDisplayName() const;
 
         /*! \brief
          * Substitutes markup used in help text.

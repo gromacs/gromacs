@@ -46,6 +46,7 @@
 #include <map>
 #include <string>
 #include <utility>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -244,6 +245,14 @@ class HelpExportInterface
         virtual ~HelpExportInterface() {};
 
         /*! \brief
+         * Called once before exporting individual modules.
+         *
+         * Can, e.g., open shared output files (e.g., if the output is written
+         * into a single file, or if a separate index is required) and write
+         * headers into them.
+         */
+        virtual void startModuleExport() = 0;
+        /*! \brief
          * Called to export the help for each module.
          *
          * \param[in] tag     Unique tag for the module (gmx-something).
@@ -251,6 +260,13 @@ class HelpExportInterface
          */
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module) = 0;
+        /*! \brief
+         * Called after all modules have been exported.
+         *
+         * Can close files opened in startModuleExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleExport() = 0;
 };
 
 /********************************************************************
@@ -265,8 +281,10 @@ class HelpExportInterface
 class HelpExportMan : public HelpExportInterface
 {
     public:
+        virtual void startModuleExport() {}
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
 };
 
 void HelpExportMan::exportModuleHelp(const std::string                &tag,
@@ -308,8 +326,10 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
 class HelpExportHtml : public HelpExportInterface
 {
     public:
+        virtual void startModuleExport() {}
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
 };
 
 void HelpExportHtml::exportModuleHelp(const std::string                &tag,
@@ -353,6 +373,100 @@ void HelpExportHtml::exportModuleHelp(const std::string                &tag,
     file.writeLine("</HTML>");
 
     file.close();
+}
+
+/********************************************************************
+ * HelpExportCompletion
+ */
+
+/*! \internal \brief
+ * Implements export for command-line completion.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportCompletion : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport();
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport();
+
+    private:
+        boost::scoped_ptr<File>  bashFile_;
+        boost::scoped_ptr<File>  cshFile_;
+        boost::scoped_ptr<File>  zshFile_;
+        std::vector<std::string> modules_;
+};
+
+void HelpExportCompletion::startModuleExport()
+{
+    bashFile_.reset(new File("completion.bash", "w"));
+    bashFile_->writeLine("shopt -s extglob");
+    cshFile_.reset(new File("completion.csh", "w"));
+    zshFile_.reset(new File("completion.zsh", "w"));
+}
+
+void HelpExportCompletion::exportModuleHelp(const std::string                 & /*tag*/,
+                                            const CommandLineModuleInterface &module)
+{
+    modules_.push_back(module.name());
+    {
+        HelpWriterContext context(bashFile_.get(), eHelpOutputFormat_CompletionBash);
+        context.setModuleDisplayName(std::string("gmx_") + module.name());
+        module.writeHelp(context);
+    }
+    {
+        HelpWriterContext context(cshFile_.get(), eHelpOutputFormat_CompletionCsh);
+        module.writeHelp(context);
+    }
+    {
+        HelpWriterContext context(zshFile_.get(), eHelpOutputFormat_CompletionZsh);
+        module.writeHelp(context);
+    }
+}
+
+void HelpExportCompletion::finishModuleExport()
+{
+    const char *const programName = ProgramInfo::getInstance().programName().c_str();
+
+    bashFile_->writeLine("_gmx_compl() {");
+    bashFile_->writeLine("local i c m");
+    bashFile_->writeLine("COMPREPLY=()");
+    bashFile_->writeLine("unset COMP_WORDS[0]");
+    bashFile_->writeLine("for ((i=1;i<COMP_CWORD;++i)) ; do");
+    bashFile_->writeLine("if [[ \"${COMP_WORDS[i]}\" != -* ]]; then break ; fi");
+    bashFile_->writeLine("unset COMP_WORDS[i]");
+    bashFile_->writeLine("done");
+    bashFile_->writeLine("if (( i == COMP_CWORD )); then");
+    bashFile_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
+    std::string gmxCompletions("-h -quiet -version -nocopyright");
+    for (std::vector<std::string>::const_iterator i = modules_.begin();
+         i != modules_.end(); ++i)
+    {
+        gmxCompletions.append(" ");
+        gmxCompletions.append(*i);
+    }
+    bashFile_->writeLine("COMPREPLY=( $(compgen -W '" + gmxCompletions + "' -- $c) )");
+    bashFile_->writeLine("return 0");
+    bashFile_->writeLine("fi");
+    bashFile_->writeLine("m=${COMP_WORDS[i]}");
+    bashFile_->writeLine("COMP_WORDS=( \"${COMP_WORDS[@]}\" )");
+    bashFile_->writeLine("COMP_CWORD=$((COMP_CWORD-i))");
+    bashFile_->writeLine("case \"$m\" in");
+    for (std::vector<std::string>::const_iterator i = modules_.begin();
+         i != modules_.end(); ++i)
+    {
+        const char *const name = i->c_str();
+        bashFile_->writeLine(formatString("%s) _gmx_%s_compl ;;", name, name));
+    }
+    bashFile_->writeLine("esac }");
+    bashFile_->writeLine(formatString("complete -F _gmx_compl %s", programName));
+    bashFile_->close();
+
+    cshFile_->close();
+
+    zshFile_->close();
 }
 
 }   // namespace
@@ -418,7 +532,7 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
-    const char *const exportFormats[] = { "man", "html" };
+    const char *const exportFormats[] = { "man", "html", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
     options.addOption(StringOption("export").store(&exportFormat)
@@ -434,6 +548,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         else if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml);
+        }
+        else if (exportFormat == "completion")
+        {
+            exporter.reset(new HelpExportCompletion);
         }
         else
         {
@@ -482,6 +600,7 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
     const char *const program =
         ProgramInfo::getInstance().programName().c_str();
 
+    exporter->startModuleExport();
     CommandLineModuleMap::const_iterator module;
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
@@ -492,6 +611,7 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
             exporter->exportModuleHelp(tag, *module->second);
         }
     }
+    exporter->finishModuleExport();
 }
 
 namespace
@@ -564,6 +684,15 @@ class CMainCommandLineModule : public CommandLineModuleInterface
                         break;
                     case eHelpOutputFormat_Html:
                         type = "html";
+                        break;
+                    case eHelpOutputFormat_CompletionBash:
+                        type = "completion-bash";
+                        break;
+                    case eHelpOutputFormat_CompletionCsh:
+                        type = "completion-csh";
+                        break;
+                    case eHelpOutputFormat_CompletionZsh:
+                        type = "completion-zsh";
                         break;
                     default:
                         GMX_THROW(NotImplementedError(
