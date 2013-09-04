@@ -38,6 +38,7 @@
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_fatal.h"
@@ -902,21 +903,22 @@ static void write_zshcompl(FILE *out,
 }
 
 static void write_bashcompl(FILE *out,
+                            const char *moduleName,
                             int nfile,  t_filenm *fnm,
                             int npargs, t_pargs *pa)
 {
     /* Advanced bash completions are handled by shell functions.
      * p and c hold the previous and current word on the command line.
      * We need to use extended globbing, so write it in each completion file */
-    fprintf(out, "shopt -s extglob\n");
-    fprintf(out, "_%s_compl() {\nlocal p c\n", ShortProgram());
+    fprintf(out, "_%s_compl() {\n", moduleName);
+    fprintf(out, "local p c\n");
     fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
     pr_opts(out, nfile, fnm, npargs, pa, eshellBASH);
     fprintf(out, "case \"$p\" in\n");
 
     pr_enums(out, npargs, pa, eshellBASH);
     pr_fopts(out, nfile, fnm, eshellBASH);
-    fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
+    fprintf(out, "esac }\n");
 }
 
 void write_man(const char *mantp,
@@ -993,7 +995,9 @@ void write_man(const char *mantp,
     }
     if (strcmp(mantp, "completion-bash") == 0)
     {
-        write_bashcompl(out, nfile, fnm, npar, par);
+        GMX_RELEASE_ASSERT(context != NULL,
+                           "Completion export only implemented with the new context");
+        write_bashcompl(out, context->moduleDisplayName(), nfile, fnm, npar, par);
     }
     if (strcmp(mantp, "completion-csh") == 0)
     {
