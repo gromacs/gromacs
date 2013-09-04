@@ -44,6 +44,7 @@
 #include <cctype>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/legacyheaders/smalloc.h"
 
@@ -107,6 +108,8 @@ class HelpWriterContext::Impl
         File                   &file_;
         //! Output format for the help output.
         HelpOutputFormat        format_;
+        //! Display name for the module for which help is written.
+        std::string             moduleDisplayName_;
 };
 
 /********************************************************************
@@ -122,6 +125,11 @@ HelpWriterContext::~HelpWriterContext()
 {
 }
 
+void HelpWriterContext::setModuleDisplayName(const std::string &name)
+{
+    impl_->moduleDisplayName_ = name;
+}
+
 HelpOutputFormat HelpWriterContext::outputFormat() const
 {
     return impl_->format_;
@@ -130,6 +138,13 @@ HelpOutputFormat HelpWriterContext::outputFormat() const
 File &HelpWriterContext::outputFile() const
 {
     return impl_->file_;
+}
+
+const char *HelpWriterContext::moduleDisplayName() const
+{
+    return impl_->moduleDisplayName_.empty()
+           ? "gmx"
+           : impl_->moduleDisplayName_.c_str();
 }
 
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
