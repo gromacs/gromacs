@@ -43,6 +43,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 #include <boost/scoped_ptr.hpp>
 
@@ -597,6 +598,116 @@ void HelpExportHtml::writeHtmlFooter(File *file) const
     file->writeLine(footer_);
 }
 
+/********************************************************************
+ * HelpExportCompletion
+ */
+
+/*! \internal \brief
+ * Implements export for command-line completion.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportCompletion : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport();
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName);
+        virtual void finishModuleExport();
+
+        virtual void startModuleGroupExport() {}
+        virtual void exportModuleGroup(const char                * /*title*/,
+                                       const ModuleGroupContents & /*modules*/) {}
+        virtual void finishModuleGroupExport() {}
+
+    private:
+        boost::scoped_ptr<File>  bashFile_;
+        boost::scoped_ptr<File>  cshFile_;
+        boost::scoped_ptr<File>  zshFile_;
+        std::vector<std::string> modules_;
+};
+
+void HelpExportCompletion::startModuleExport()
+{
+    bashFile_.reset(new File("completion.bash", "w"));
+    // TODO: Move all the actual completion stuff into shellcompletions.cpp.
+    bashFile_->writeLine("shopt -s extglob");
+    cshFile_.reset(new File("completion.csh", "w"));
+    zshFile_.reset(new File("completion.zsh", "w"));
+}
+
+void HelpExportCompletion::exportModuleHelp(
+        const CommandLineModuleInterface &module,
+        const std::string                &tag,
+        const std::string                 & /*displayName*/)
+{
+    modules_.push_back(module.name());
+    {
+        CommandLineHelpContext context(bashFile_.get(),
+                                       eHelpOutputFormat_CompletionBash, NULL);
+        std::string            displayName(tag);
+        std::replace(displayName.begin(), displayName.end(), '-', '_');
+        context.setModuleDisplayName(displayName);
+        module.writeHelp(context);
+    }
+    {
+        CommandLineHelpContext context(cshFile_.get(),
+                                       eHelpOutputFormat_CompletionCsh, NULL);
+        module.writeHelp(context);
+    }
+    {
+        CommandLineHelpContext context(zshFile_.get(),
+                                       eHelpOutputFormat_CompletionZsh, NULL);
+        module.writeHelp(context);
+    }
+}
+
+void HelpExportCompletion::finishModuleExport()
+{
+    const char *const programName = ProgramInfo::getInstance().programName().c_str();
+
+    // TODO: Move all the actual completion stuff into shellcompletions.cpp.
+    bashFile_->writeLine("_gmx_compl() {");
+    bashFile_->writeLine("local i c m");
+    bashFile_->writeLine("COMPREPLY=()");
+    bashFile_->writeLine("unset COMP_WORDS[0]");
+    bashFile_->writeLine("for ((i=1;i<COMP_CWORD;++i)) ; do");
+    bashFile_->writeLine("if [[ \"${COMP_WORDS[i]}\" != -* ]]; then break ; fi");
+    bashFile_->writeLine("unset COMP_WORDS[i]");
+    bashFile_->writeLine("done");
+    bashFile_->writeLine("if (( i == COMP_CWORD )); then");
+    bashFile_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
+    std::string gmxCompletions("-h -quiet -version -nocopyright");
+    for (std::vector<std::string>::const_iterator i = modules_.begin();
+         i != modules_.end(); ++i)
+    {
+        gmxCompletions.append(" ");
+        gmxCompletions.append(*i);
+    }
+    bashFile_->writeLine("COMPREPLY=( $(compgen -W '" + gmxCompletions + "' -- $c) )");
+    bashFile_->writeLine("return 0");
+    bashFile_->writeLine("fi");
+    bashFile_->writeLine("m=${COMP_WORDS[i]}");
+    bashFile_->writeLine("COMP_WORDS=( \"${COMP_WORDS[@]}\" )");
+    bashFile_->writeLine("COMP_CWORD=$((COMP_CWORD-i))");
+    bashFile_->writeLine("case \"$m\" in");
+    for (std::vector<std::string>::const_iterator i = modules_.begin();
+         i != modules_.end(); ++i)
+    {
+        const char *const name = i->c_str();
+        bashFile_->writeLine(formatString("%s) _gmx_%s_compl ;;", name, name));
+    }
+    bashFile_->writeLine("esac }");
+    bashFile_->writeLine(formatString("complete -F _gmx_compl %s", programName));
+    bashFile_->close();
+
+    cshFile_->close();
+
+    zshFile_->close();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -700,6 +811,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         else if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml(*impl_));
+        }
+        else if (exportFormat == "completion")
+        {
+            exporter.reset(new HelpExportCompletion);
         }
         else
         {
