@@ -8,6 +8,10 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.bash DESTINATION ${BIN_INSTAL
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.zsh  DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/GMXRC.csh  DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 
+add_custom_target(completion
+    gmx -quiet help -export completion
+    COMMENT "Generation command-line completions for programs"
+    VERBATIM)
 file(GLOB EXTRA_SCRIPTS completion.*)
 install(FILES ${EXTRA_SCRIPTS} DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
 

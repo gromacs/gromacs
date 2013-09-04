@@ -56,10 +56,13 @@ class File;
 //! \libinternal Output format for help writing.
 enum HelpOutputFormat
 {
-    eHelpOutputFormat_Console,  //!< Plain text directly on the console.
-    eHelpOutputFormat_Man,      //!< Man page.
-    eHelpOutputFormat_Html,     //!< Html output for online manual.
-    eHelpOutputFormat_NR        //!< Used for the number of output formats.
+    eHelpOutputFormat_Console,          //!< Plain text directly on the console.
+    eHelpOutputFormat_Man,              //!< Man page.
+    eHelpOutputFormat_Html,             //!< Html output for online manual.
+    eHelpOutputFormat_CompletionBash,   //!< Command-line completion for bash.
+    eHelpOutputFormat_CompletionCsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_CompletionZsh,    //!< Command-line completion for csh.
+    eHelpOutputFormat_NR                //!< Used for the number of output formats.
 };
 //! \endcond
 
