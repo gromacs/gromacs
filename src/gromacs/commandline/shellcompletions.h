@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,11 +37,51 @@
 #ifndef GMX_COMMANDLINE_SHELLCOMPLETIONS_H
 #define GMX_COMMANDLINE_SHELLCOMPLETIONS_H
 
+#include <string>
+#include <vector>
+
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
+#include "gromacs/utility/common.h"
 
-void write_completions(const char *type, const char *program,
-                       int nfile,  t_filenm *fnm,
-                       int npargs, t_pargs *pa);
+namespace gmx
+{
+
+class CommandLineHelpContext;
+class File;
+class Options;
+
+enum ShellCompletionFormat
+{
+    eShellCompletionFormat_Bash
+};
+
+class ShellCompletionWriter
+{
+    public:
+        typedef std::vector<std::string> ModuleNameList;
+
+        ShellCompletionWriter(const std::string     &binaryName,
+                              ShellCompletionFormat  format);
+        ~ShellCompletionWriter();
+
+        File *outputFile();
+
+        void startCompletions();
+        void writeLegacyModuleCompletions(const char *moduleName,
+                                          int nfile,  t_filenm *fnm,
+                                          int npargs, t_pargs *pa);
+        void writeModuleCompletions(const char    *moduleName,
+                                    const Options &options);
+        void writeWrapperCompletions(const ModuleNameList &modules);
+        void finishCompletions();
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+};
+
+} // namespace gmx
 
 #endif
