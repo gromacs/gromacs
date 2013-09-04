@@ -90,14 +90,9 @@ setenv MANPATH ${GMXMAN}:${MANPATH}
 setenv GMXFONT	10x20
 
 # Read completions if we understand it (i.e. have tcsh)
-if { complete >& /dev/null } then
-  if ( -f $GMXBIN/completion.csh ) source $GMXBIN/completion.csh
-endif
-
-
-
-
-
-
-
-
+# Currently disabled, since the completions don't work with the new
+# gmx binary with subcommands.
+# Contributions to get the functionality back are welcome.
+#if { complete >& /dev/null } then
+#  if ( -f $GMXBIN/completion.csh ) source $GMXBIN/completion.csh
+#endif

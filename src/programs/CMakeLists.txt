@@ -72,12 +72,40 @@ else()
         OUTPUT_NAME "gmx${GMX_BINARY_SUFFIX}"
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-    configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
-    set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
+    ########################
+    # Completion generation
+
+    set(COMPLETION_DIR ${CMAKE_CURRENT_SOURCE_DIR}/completion)
+    if(SOURCE_IS_SOURCE_DISTRIBUTION)
+        # Make sure source package contains the completions.
+        if(NOT EXISTS "${COMPLETION_DIR}/gmx-completion.bash")
+            message(FATAL_ERROR "Shell completions are missing from source package.")
+        endif()
+    endif()
+    file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/completion)
+    add_custom_target(completion
+        gmx -quiet help -export completion
+        COMMENT "Generating command-line completions for programs"
+        WORKING_DIRECTORY completion
+        VERBATIM)
+    # Using GMX_BUILD_HELP here is somewhat confusing, but the conditions when
+    # this can be done are exactly the same (ability to run the compiled
+    # binaries).
+    if (GMX_BUILD_HELP)
+        set_target_properties(completion PROPERTIES EXCLUDE_FROM_ALL OFF)
+        # TODO: Add clean rules for the generated files.
+        set(COMPLETION_DIR ${CMAKE_CURRENT_BINARY_DIR}/completion)
+    endif()
+    if (SOURCE_IS_SOURCE_DISTRIBUTION OR GMX_BUILD_HELP)
+        install(DIRECTORY ${COMPLETION_DIR}/
+                DESTINATION ${BIN_INSTALL_DIR} COMPONENT runtime)
+    endif()
 
     install(TARGETS gmx
             RUNTIME DESTINATION ${BIN_INSTALL_DIR})
     if (GMX_SYMLINK_OLD_BINARY_NAMES)
+        configure_file(CreateLinks.cmake.cmakein CreateLinks.cmake @ONLY)
+        set(CREATE_LINKS_SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateLinks.cmake)
         install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
     endif ()
 

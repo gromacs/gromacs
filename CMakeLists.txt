@@ -115,7 +115,7 @@ set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_SOURCE_DIR}/COPYING")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_SOURCE_DIR}/admin/InstallInfo.txt")
 set(CPACK_SOURCE_IGNORE_FILES "\\\\.isreposource$;\\\\.git/;\\\\.gitignore$")
 set(CPACK_PROJECT_CONFIG_FILE "${CMAKE_SOURCE_DIR}/CPackInit.cmake")
-set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final")
+set(CPACK_SOURCE_INSTALLED_DIRECTORIES "${CMAKE_SOURCE_DIR};/;${CMAKE_BINARY_DIR}/src/programs/completion;src/programs/completion;${CMAKE_BINARY_DIR}/share/man/man1;share/man/man1;${CMAKE_BINARY_DIR}/share/man/man7;share/man/man7;${CMAKE_BINARY_DIR}/share/html/final;share/html/final")
 set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
@@ -860,6 +860,17 @@ if(GMX_FAHCORE)
       "Path to swindirect.h")
   include_directories(${COREWRAP_INCLUDE_DIR})
 endif(GMX_FAHCORE)
+
+option(GMX_BUILD_HELP "Build man pages and HTML help automatically (requires that compiled binaries can be executed on the build host)" OFF)
+mark_as_advanced(GMX_BUILD_HELP)
+if (GMX_BUILD_HELP AND SOURCE_IS_SOURCE_DISTRIBUTION AND
+    "${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
+
+    message(FATAL_ERROR
+        "Rebuilding HTML and man pages it not supported for in-source "
+        "builds from a source distribution. "
+        "Set GMX_BUILD_HELP=OFF or do an out-of-source build to proceed.")
+endif()
 
 # # # # # # # # # # NO MORE TESTS AFTER THIS LINE! # # # # # # # # # # #
 # these are set after everything else

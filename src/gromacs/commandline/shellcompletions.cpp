@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -37,298 +37,162 @@
 #include "gromacs/commandline/shellcompletions.h"
 
 #include <cstdio>
-#include <cstring>
 
+#include <string>
+
+#include <boost/scoped_ptr.hpp>
+
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/smalloc.h"
-
-// Shell types for completion.
-enum {
-    eshellCSH, eshellBASH, eshellZSH
-};
 
 // TODO: Don't duplicate this from filenm.c/futil.c.
 #define NZEXT 2
 static const char *z_ext[NZEXT] = { ".gz", ".Z" };
 
-static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
+static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[])
 {
-    switch (shell)
+    for (int i = 0; i < nf; i++)
     {
-        case eshellCSH:
-            for (int i = 0; i < nf; i++)
+        fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
+        const int ftp          = tfn[i].ftp;
+        const int genericCount = ftp2generic_count(ftp);
+        if (genericCount > 0)
+        {
+            fprintf(fp, "+(");
+            const int *const genericTypes = ftp2generic_list(ftp);
+            for (int j = 0; j < genericCount; j++)
             {
-                fprintf(fp, " \"n/%s/f:*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
+                if (j > 0)
                 {
-                    fprintf(fp, "{");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, ",");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, "}");
+                    fprintf(fp, "|");
                 }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "{");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, ",%s", z_ext[j]);
-                }
-                fprintf(fp, "}/\"");
+                fprintf(fp, "%s", ftp2ext(genericTypes[j]));
             }
-            break;
-        case eshellBASH:
-            for (int i = 0; i < nf; i++)
+            fprintf(fp, ")");
+        }
+        else
+        {
+            fprintf(fp, "%s", ftp2ext(ftp));
+        }
+        fprintf(fp, "*(");
+        for (int j = 0; j < NZEXT; j++)
+        {
+            if (j > 0)
             {
-                fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
-                {
-                    fprintf(fp, "+(");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "*(");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    if (j > 0)
-                    {
-                        fprintf(fp, "|");
-                    }
-                    fprintf(fp, "%s", z_ext[j]);
-                }
-                fprintf(fp, ")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
+                fprintf(fp, "|");
             }
-            break;
-        case eshellZSH:
-            for (int i = 0; i < nf; i++)
-            {
-                fprintf(fp, "- 'c[-1,%s]' -g '*.", tfn[i].opt);
-                const int ftp          = tfn[i].ftp;
-                const int genericCount = ftp2generic_count(ftp);
-                if (genericCount > 0)
-                {
-                    fprintf(fp, "(");
-                    const int *const genericTypes = ftp2generic_list(ftp);
-                    for (int j = 0; j < genericCount; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", ftp2ext(ftp));
-                }
-                fprintf(fp, "(");
-                for (int j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, "|%s", z_ext[j]);
-                }
-                fprintf(fp, ") *(/)' ");
-            }
-            break;
+            fprintf(fp, "%s", z_ext[j]);
+        }
+        fprintf(fp, ")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
     }
 }
 
 static void pr_opts(FILE *fp,
                     int nfile,  t_filenm *fnm,
-                    int npargs, t_pargs pa[], int shell)
+                    int npargs, t_pargs pa[])
 {
-    switch (shell)
+    fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W '");
+    for (int i = 0; i < nfile; i++)
     {
-        case eshellCSH:
-            fprintf(fp, " \"c/-/(");
-            for (int i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " %s", fnm[i].opt+1);
-            }
-            for (int i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etBOOL && *(pa[i].u.b))
-                {
-                    fprintf(fp, " no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " %s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, ")/\"");
-            break;
-        case eshellBASH:
-            fprintf(fp, "if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W '");
-            for (int i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " -%s", fnm[i].opt+1);
-            }
-            for (int i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etBOOL && *(pa[i].u.b))
-                {
-                    fprintf(fp, " -no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " -%s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, "' -- $c)); return 0; fi\n");
-            break;
-        case eshellZSH:
-            fprintf(fp, " -x 's[-]' -s \"");
-            for (int i = 0; i < nfile; i++)
-            {
-                fprintf(fp, " %s", fnm[i].opt+1);
-            }
-            for (int i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etBOOL && *(pa[i].u.b))
-                {
-                    fprintf(fp, " no%s", pa[i].option+1);
-                }
-                else
-                {
-                    fprintf(fp, " %s", pa[i].option+1);
-                }
-            }
-            fprintf(fp, "\" ");
-            break;
+        fprintf(fp, " -%s", fnm[i].opt+1);
     }
+    for (int i = 0; i < npargs; i++)
+    {
+        if (pa[i].type == etBOOL && *(pa[i].u.b))
+        {
+            fprintf(fp, " -no%s", pa[i].option+1);
+        }
+        else
+        {
+            fprintf(fp, " -%s", pa[i].option+1);
+        }
+    }
+    fprintf(fp, "' -- $c)); return 0; fi\n");
 }
 
-static void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell)
+static void pr_enums(FILE *fp, int npargs, t_pargs pa[])
 {
-    int i, j;
-
-    switch (shell)
+    for (int i = 0; i < npargs; i++)
     {
-        case eshellCSH:
-            for (i = 0; i < npargs; i++)
+        if (pa[i].type == etENUM)
+        {
+            fprintf(fp, "%s) COMPREPLY=( $(compgen -W '", pa[i].option);
+            for (int j = 1; pa[i].u.c[j]; j++)
             {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, " \"n/%s/(", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, ")/\"");
-                }
+                fprintf(fp, " %s", pa[i].u.c[j]);
             }
-            break;
-        case eshellBASH:
-            for (i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, "%s) COMPREPLY=( $(compgen -W '", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, " ' -- $c ));;\n");
-                }
-            }
-            break;
-        case eshellZSH:
-            for (i = 0; i < npargs; i++)
-            {
-                if (pa[i].type == etENUM)
-                {
-                    fprintf(fp, "- 'c[-1,%s]' -s \"", pa[i].option);
-                    for (j = 1; pa[i].u.c[j]; j++)
-                    {
-                        fprintf(fp, " %s", pa[i].u.c[j]);
-                    }
-                    fprintf(fp, "\" ");
-                }
-            }
-            break;
+            fprintf(fp, " ' -- $c ));;\n");
+        }
     }
 }
 
 static void write_bashcompl(FILE *out,
+                            const char *moduleName,
                             int nfile,  t_filenm *fnm,
                             int npargs, t_pargs *pa)
 {
     /* Advanced bash completions are handled by shell functions.
      * p and c hold the previous and current word on the command line.
      * We need to use extended globbing, so write it in each completion file */
-    fprintf(out, "shopt -s extglob\n");
-    fprintf(out, "_%s_compl() {\nlocal p c\n", ShortProgram());
+    fprintf(out, "_%s_compl() {\n", moduleName);
+    fprintf(out, "local p c\n");
     fprintf(out, "COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}\n");
-    pr_opts(out, nfile, fnm, npargs, pa, eshellBASH);
+    pr_opts(out, nfile, fnm, npargs, pa);
     fprintf(out, "case \"$p\" in\n");
 
-    pr_enums(out, npargs, pa, eshellBASH);
-    pr_fopts(out, nfile, fnm, eshellBASH);
-    fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
+    pr_enums(out, npargs, pa);
+    pr_fopts(out, nfile, fnm);
+    fprintf(out, "esac }\n");
 }
 
-static void write_cshcompl(FILE *out,
-                           int nfile,  t_filenm *fnm,
-                           int npargs, t_pargs *pa)
+namespace gmx
 {
-    fprintf(out, "complete %s", ShortProgram());
-    pr_enums(out, npargs, pa, eshellCSH);
-    pr_fopts(out, nfile, fnm, eshellCSH);
-    pr_opts(out, nfile, fnm, npargs, pa, eshellCSH);
-    fprintf(out, "\n");
+
+class ShellCompletionWriter::Impl
+{
+    public:
+        Impl(const std::string &binaryName, ShellCompletionFormat /*format*/)
+            : binaryName_(binaryName)
+        {
+        }
+
+        std::string             binaryName_;
+        boost::scoped_ptr<File> file_;
+};
+
+ShellCompletionWriter::ShellCompletionWriter(const std::string     &binaryName,
+                                             ShellCompletionFormat  format)
+    : impl_(new Impl(binaryName, format))
+{
 }
 
-static void write_zshcompl(FILE *out,
-                           int nfile,  t_filenm *fnm,
-                           int npargs, t_pargs *pa)
+ShellCompletionWriter::~ShellCompletionWriter()
 {
-    fprintf(out, "compctl ");
-
-    /* start with options, since they are always present */
-    pr_opts(out, nfile, fnm, npargs, pa, eshellZSH);
-    pr_enums(out, npargs, pa, eshellZSH);
-    pr_fopts(out, nfile, fnm, eshellZSH);
-    fprintf(out, "-- %s\n", ShortProgram());
 }
 
-void write_completions(const char *type, const char *program,
-                       int nfile,  t_filenm *fnm,
-                       int npargs, t_pargs *pa)
+File *ShellCompletionWriter::outputFile()
 {
-    char     buf[256];
-    sprintf(buf, "%s.%s", program, type);
-    FILE    *out = gmx_fio_fopen(buf, "w");
+    return impl_->file_.get();
+}
 
+void ShellCompletionWriter::startCompletions()
+{
+    impl_->file_.reset(new File(impl_->binaryName_ + "-completion.bash", "w"));
+    impl_->file_->writeLine("shopt -s extglob");
+}
+
+void ShellCompletionWriter::writeLegacyModuleCompletions(
+        const char *moduleName,
+        int nfile,  t_filenm *fnm,
+        int npargs, t_pargs *pa)
+{
     int      npar;
     t_pargs *par;
 
@@ -344,20 +208,64 @@ void write_completions(const char *type, const char *program,
         }
     }
 
-    if (strcmp(type, "completion-zsh") == 0)
-    {
-        write_zshcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(type, "completion-bash") == 0)
-    {
-        write_bashcompl(out, nfile, fnm, npar, par);
-    }
-    if (strcmp(type, "completion-csh") == 0)
-    {
-        write_cshcompl(out, nfile, fnm, npar, par);
-    }
+    write_bashcompl(impl_->file_->handle(), moduleName, nfile, fnm, npar, par);
 
     sfree(par);
-
-    gmx_fio_fclose(out);
 }
+
+void ShellCompletionWriter::writeModuleCompletions(
+        const char    *moduleName,
+        const Options  & /*options*/)
+{
+    // TODO: Implement.
+    impl_->file_->writeLine(formatString("_%s_compl() {\nCOMPREPLY=()\n}\n", moduleName));
+}
+
+void ShellCompletionWriter::writeWrapperCompletions(
+        const ModuleNameList &modules)
+{
+    impl_->file_->writeLine("_" + impl_->binaryName_ + "_compl() {");
+    impl_->file_->writeLine("local i c m");
+    impl_->file_->writeLine("COMPREPLY=()");
+    impl_->file_->writeLine("unset COMP_WORDS[0]");
+    impl_->file_->writeLine("for ((i=1;i<COMP_CWORD;++i)) ; do");
+    impl_->file_->writeLine("if [[ \"${COMP_WORDS[i]}\" != -* ]]; then break ; fi");
+    impl_->file_->writeLine("unset COMP_WORDS[i]");
+    impl_->file_->writeLine("done");
+    impl_->file_->writeLine("if (( i == COMP_CWORD )); then");
+    impl_->file_->writeLine("c=${COMP_WORDS[COMP_CWORD]}");
+    // TODO: Get rid of these hard-coded options.
+    std::string completions("-h -quiet -version -nocopyright");
+    for (ModuleNameList::const_iterator i = modules.begin();
+         i != modules.end(); ++i)
+    {
+        completions.append(" ");
+        completions.append(*i);
+    }
+    impl_->file_->writeLine("COMPREPLY=( $(compgen -W '" + completions + "' -- $c) )");
+    impl_->file_->writeLine("return 0");
+    impl_->file_->writeLine("fi");
+    impl_->file_->writeLine("m=${COMP_WORDS[i]}");
+    impl_->file_->writeLine("COMP_WORDS=( \"${COMP_WORDS[@]}\" )");
+    impl_->file_->writeLine("COMP_CWORD=$((COMP_CWORD-i))");
+    impl_->file_->writeLine("case \"$m\" in");
+    const char *const binaryName = impl_->binaryName_.c_str();
+    for (ModuleNameList::const_iterator i = modules.begin();
+         i != modules.end(); ++i)
+    {
+        const char *const name = i->c_str();
+        impl_->file_->writeLine(formatString("%s) _%s_%s_compl ;;", name,
+                                             binaryName, name));
+    }
+    impl_->file_->writeLine("esac }");
+    impl_->file_->writeLine(formatString("complete -F _%s_compl %s",
+                                         binaryName, binaryName));
+}
+
+void ShellCompletionWriter::finishCompletions()
+{
+    impl_->file_->close();
+    impl_->file_.reset();
+}
+
+} // namespace gmx
