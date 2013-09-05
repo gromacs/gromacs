@@ -256,6 +256,65 @@ class HelpExportInterface
                                       const CommandLineModuleInterface &module) = 0;
 };
 
+/********************************************************************
+ * HelpExportHtml
+ */
+
+/*! \internal \brief
+ * Implements export for HTML help.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportHtml : public HelpExportInterface
+{
+    public:
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+};
+
+void HelpExportHtml::exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module)
+{
+    File file(tag + ".html", "w");
+
+    file.writeLine("<HTML>");
+    file.writeLine("<HEAD>");
+    file.writeLine(formatString("<TITLE>%s</TITLE>", tag.c_str()));
+    file.writeLine("<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">");
+    file.writeLine("<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">");
+    file.writeLine("<TABLE WIDTH=\"98%%\" NOBORDER><TR>");
+    file.writeLine("<TD WIDTH=400><TABLE WIDTH=400 NOBORDER>");
+    file.writeLine("<TD WIDTH=116>");
+    file.writeLine("<A HREF=\"http://www.gromacs.org/\">"
+                   "<IMG SRC=\"../images/gmxlogo_small.png\" BORDER=0>"
+                   "</A>");
+    file.writeLine("</TD>");
+    file.writeLine(formatString("<TD ALIGN=LEFT VALIGN=TOP WIDTH=280>"
+                                "<BR><H2>%s</H2>", tag.c_str()));
+    file.writeLine("<FONT SIZE=-1><A HREF=\"../online.html\">Main Table of Contents</A></FONT>");
+    file.writeLine("</TD>");
+    file.writeLine("</TABLE></TD>");
+    file.writeLine("<TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM>");
+    file.writeLine(formatString("<P><B>%s</B>", GromacsVersion()));
+    file.writeLine("</TD>");
+    file.writeLine("</TR></TABLE>");
+    file.writeLine("<HR>");
+
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Html);
+    module.writeHelp(context);
+
+    file.writeLine("<P>");
+    file.writeLine("<HR>");
+    file.writeLine("<DIV ALIGN=RIGHT><FONT SIZE=\"-1\">");
+    file.writeLine("<A HREF=\"http://www.gromacs.org\">http://www.gromacs.org</A><BR>");
+    file.writeLine("<A HREF=\"mailto:gromacs@gromacs.org\">gromacs@gromacs.org</A>");
+    file.writeLine("</FONT></DIV>");
+    file.writeLine("</BODY>");
+    file.writeLine("</HTML>");
+
+    file.close();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -328,6 +387,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     if (!exportFormat.empty())
     {
         boost::scoped_ptr<HelpExportInterface> exporter;
+        if (exportFormat == "html")
+        {
+            exporter.reset(new HelpExportHtml);
+        }
+        else
         {
             GMX_THROW(NotImplementedError("This help format is not implemented"));
         }
@@ -452,6 +516,9 @@ class CMainCommandLineModule : public CommandLineModuleInterface
                 const char *type;
                 switch (format)
                 {
+                    case eHelpOutputFormat_Html:
+                        type = "html";
+                        break;
                     default:
                         GMX_THROW(NotImplementedError(
                                           "Command-line help is not implemented for this output format"));
