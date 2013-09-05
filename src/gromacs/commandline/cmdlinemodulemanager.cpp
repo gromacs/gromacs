@@ -245,6 +245,14 @@ class HelpExportInterface
         virtual ~HelpExportInterface() {};
 
         /*! \brief
+         * Called once before exporting individual modules.
+         *
+         * Can, e.g., open shared output files (e.g., if the output is written
+         * into a single file, or if a separate index is required) and write
+         * headers into them.
+         */
+        virtual void startModuleExport() = 0;
+        /*! \brief
          * Called to export the help for each module.
          *
          * \param[in] tag     Unique tag for the module (gmx-something).
@@ -252,6 +260,13 @@ class HelpExportInterface
          */
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module) = 0;
+        /*! \brief
+         * Called after all modules have been exported.
+         *
+         * Can close files opened in startModuleExport(), write footers to them
+         * etc.
+         */
+        virtual void finishModuleExport() = 0;
 };
 
 /********************************************************************
@@ -266,8 +281,10 @@ class HelpExportInterface
 class HelpExportMan : public HelpExportInterface
 {
     public:
+        virtual void startModuleExport() {}
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module);
+        virtual void finishModuleExport() {}
 };
 
 void HelpExportMan::exportModuleHelp(const std::string                &tag,
@@ -295,8 +312,100 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
     file.writeLine(".BR gromacs(7)");
     file.writeLine();
     file.writeLine("More information about \\fBGROMACS\\fR is available at <\\fIhttp://www.gromacs.org/\\fR>.");
+}
 
+/********************************************************************
+ * HelpExportHtml
+ */
+
+/*! \internal \brief
+ * Implements export for HTML help.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportHtml : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport();
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport();
+
+    private:
+        void writeHtmlHeader(File *file, const std::string &title) const;
+        void writeHtmlFooter(File *file) const;
+
+        boost::scoped_ptr<File>  byNameFile_;
+};
+
+void HelpExportHtml::startModuleExport()
+{
+    byNameFile_.reset(new File("byname.html", "w"));
+    writeHtmlHeader(byNameFile_.get(), "GROMACS Programs by Name");
+    byNameFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
+}
+
+void HelpExportHtml::exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module)
+{
+    File file(tag + ".html", "w");
+    writeHtmlHeader(&file, tag);
+
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Html);
+    std::string            displayName(tag);
+    std::replace(displayName.begin(), displayName.end(), '-', ' ');
+    context.setModuleDisplayName(displayName);
+    module.writeHelp(context);
+
+    writeHtmlFooter(&file);
     file.close();
+
+    byNameFile_->writeLine(formatString("<a href=\"%s.html\">%s</a> - %s<br>",
+                                        tag.c_str(), displayName.c_str(),
+                                        module.shortDescription()));
+}
+
+void HelpExportHtml::finishModuleExport()
+{
+    writeHtmlFooter(byNameFile_.get());
+    byNameFile_->close();
+}
+
+void HelpExportHtml::writeHtmlHeader(File *file, const std::string &title) const
+{
+    file->writeLine("<HTML>");
+    file->writeLine("<HEAD>");
+    file->writeLine(formatString("<TITLE>%s</TITLE>", title.c_str()));
+    file->writeLine("<LINK rel=stylesheet href=\"../online/style.css\" type=\"text/css\">");
+    file->writeLine("<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">");
+    file->writeLine("<TABLE WIDTH=\"98%%\" NOBORDER><TR>");
+    file->writeLine("<TD WIDTH=400><TABLE WIDTH=400 NOBORDER>");
+    file->writeLine("<TD WIDTH=116>");
+    file->writeLine("<A HREF=\"http://www.gromacs.org/\">"
+                    "<IMG SRC=\"../images/gmxlogo_small.jpg\" BORDER=0>"
+                    "</A>");
+    file->writeLine("</TD>");
+    file->writeLine(formatString("<TD ALIGN=LEFT VALIGN=TOP WIDTH=280>"
+                                 "<BR><H2>%s</H2>", title.c_str()));
+    file->writeLine("<FONT SIZE=-1><A HREF=\"../online.html\">Main Table of Contents</A></FONT>");
+    file->writeLine("</TD>");
+    file->writeLine("</TABLE></TD>");
+    file->writeLine("<TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM>");
+    file->writeLine(formatString("<P><B>%s</B>", GromacsVersion()));
+    file->writeLine("</TD>");
+    file->writeLine("</TR></TABLE>");
+    file->writeLine("<HR>");
+}
+
+void HelpExportHtml::writeHtmlFooter(File *file) const
+{
+    file->writeLine("<P>");
+    file->writeLine("<HR>");
+    file->writeLine("<DIV ALIGN=RIGHT><FONT SIZE=\"-1\">");
+    file->writeLine("<A HREF=\"http://www.gromacs.org\">http://www.gromacs.org</A><BR>");
+    file->writeLine("</FONT></DIV>");
+    file->writeLine("</BODY>");
+    file->writeLine("</HTML>");
 }
 
 }   // namespace
@@ -399,6 +508,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         {
             exporter.reset(new HelpExportMan);
         }
+        else if (exportFormat == "html")
+        {
+            exporter.reset(new HelpExportHtml);
+        }
         else
         {
             GMX_THROW(NotImplementedError("This help format is not implemented"));
@@ -455,6 +568,7 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
     const char *const program =
         ProgramInfo::getInstance().invariantProgramName().c_str();
 
+    exporter->startModuleExport();
     CommandLineModuleMap::const_iterator module;
     for (module = modules_.begin(); module != modules_.end(); ++module)
     {
@@ -465,6 +579,7 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
             exporter->exportModuleHelp(tag, *module->second);
         }
     }
+    exporter->finishModuleExport();
 }
 
 namespace
@@ -536,6 +651,9 @@ class CMainCommandLineModule : public CommandLineModuleInterface
                     break;
                 case eHelpOutputFormat_Man:
                     type = "nroff";
+                    break;
+                case eHelpOutputFormat_Html:
+                    type = "html";
                     break;
                 default:
                     GMX_THROW(NotImplementedError(

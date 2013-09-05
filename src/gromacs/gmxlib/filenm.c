@@ -239,7 +239,7 @@ const char *ftp2ext(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
     {
-        return deffile[ftp].ext + 1;
+        return deffile[ftp].ext[0] != '\0' ? deffile[ftp].ext + 1 : "";
     }
     else
     {
