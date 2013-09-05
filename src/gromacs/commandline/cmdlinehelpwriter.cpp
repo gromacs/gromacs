@@ -43,6 +43,7 @@
 
 #include <string>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -532,11 +533,12 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
     return *this;
 }
 
-void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
+void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
 {
+    const HelpWriterContext                     &writerContext = context.writerContext();
     boost::scoped_ptr<OptionsFormatterInterface> formatter;
     CommonFormatterData common(impl_->timeUnit_.c_str());
-    switch (context.outputFormat())
+    switch (writerContext.outputFormat())
     {
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
@@ -547,12 +549,12 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
             GMX_THROW(NotImplementedError(
                               "Command-line help is not implemented for this output format"));
     }
-    OptionsFilter filter(context, formatter.get());
+    OptionsFilter filter(writerContext, formatter.get());
     filter.setShowHidden(impl_->bShowHidden_);
 
     if (impl_->bShowDescriptions_)
     {
-        File &file = context.outputFile();
+        File &file = writerContext.outputFile();
         file.writeLine("DESCRIPTION");
         file.writeLine("-----------");
         file.writeLine();

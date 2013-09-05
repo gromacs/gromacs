@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,7 +50,7 @@ namespace gmx
 {
 
 class CommandLineModuleManager;
-class HelpWriterContext;
+class CommandLineHelpContext;
 class TrajectoryAnalysisModule;
 
 /*! \brief
@@ -146,7 +146,7 @@ class TrajectoryAnalysisCommandLineRunner
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          */
-        void writeHelp(const HelpWriterContext &context);
+        void writeHelp(const CommandLineHelpContext &context);
 
     private:
         //! Smart pointer type for managing a trajectory analysis module.

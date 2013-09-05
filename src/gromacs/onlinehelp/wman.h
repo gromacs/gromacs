@@ -41,7 +41,7 @@
 extern "C" {
 #endif
 
-void write_man(FILE *out, const char *mantp, const char *program,
+void write_man(const char *mantp, const char *program,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,
