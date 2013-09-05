@@ -32,12 +32,6 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <time.h>
-
 #include <string>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
@@ -304,30 +298,6 @@ const t_sandr_const sandrHTML[] = {
 };
 #define NSRHTML asize(sandrHTML)
 
-
-static char *mydate(char buf[], int maxsize)
-{
-    const char *mon[] = {
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    };
-    const char *day[] = { "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" };
-    time_t      now;
-    struct tm   tm;
-
-    time(&now);
-#ifdef GMX_NATIVE_WINDOWS
-    /* Native windows */
-    localtime_s(&tm, &now);
-#else
-    localtime_r(&now, &tm);
-#endif
-
-    sprintf(buf, "%s %d %s %d", day[tm.tm_wday], tm.tm_mday,
-            mon[tm.tm_mon], tm.tm_year+1900);
-
-    return buf;
-}
 
 /* Data structure for saved HTML links */
 typedef struct t_linkdata {
@@ -786,20 +756,6 @@ static void write_htmlman(FILE *out,
     int  i;
     char tmp[255];
 
-    fprintf(out, "<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n", program);
-    fprintf(out, "<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
-    fprintf(out, "<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">\n");
-    fprintf(out, "<TABLE WIDTH=\"98%%\" NOBORDER >\n<TR><TD WIDTH=400>\n");
-    fprintf(out, "<TABLE WIDTH=400 NOBORDER>\n<TD WIDTH=116>\n");
-    fprintf(out, "<a href=\"http://www.gromacs.org/\">"
-            "<img SRC=\"../images/gmxlogo_small.png\""
-            "BORDER=0 </a></td>\n");
-    fprintf(out, "<td ALIGN=LEFT VALIGN=TOP WIDTH=280>"
-            "<br><h2>%s</h2>", program);
-    fprintf(out, "<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
-    fprintf(out, "<br></td>\n</TABLE></TD><TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM><p><B>%s<br>\n", GromacsVersion());
-    fprintf(out, "%s</B></td></tr></TABLE>\n<HR>\n", mydate(tmp, 255));
-
     if (nldesc > 0)
     {
         fprintf(out, "<H3>Description</H3>\n<p>\n");
@@ -851,14 +807,6 @@ static void write_htmlman(FILE *out,
         }
         fprintf(out, "</UL>\n");
     }
-    fprintf(out, "<P>\n");
-    fprintf(out, "<hr>\n<div ALIGN=RIGHT>\n");
-    fprintf(out, "<font size=\"-1\"><a href=\"http://www.gromacs.org\">"
-            "http://www.gromacs.org</a></font><br>\n");
-    fprintf(out, "<font size=\"-1\"><a href=\"mailto:gromacs@gromacs.org\">"
-            "gromacs@gromacs.org</a></font><br>\n");
-    fprintf(out, "</div>\n");
-    fprintf(out, "</BODY>\n");
 }
 
 static void pr_opts(FILE *fp,
