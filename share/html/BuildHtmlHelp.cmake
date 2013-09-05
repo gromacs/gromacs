@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -32,23 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-add_subdirectory(html)
-add_subdirectory(man)
-add_subdirectory(template)
-
-install(FILES README.tutor README_FreeEnergyModifications.txt
-    DESTINATION ${DATA_INSTALL_DIR}
-    COMPONENT data)
-install(DIRECTORY top
-    DESTINATION ${DATA_INSTALL_DIR}/top
-    COMPONENT data
-    PATTERN "*~" EXCLUDE)
-
-install(DIRECTORY . DESTINATION ${DATA_INSTALL_DIR}
-  COMPONENT data
-  PATTERN "Makefile*" EXCLUDE
-  PATTERN "CMake*" EXCLUDE
-  PATTERN "cmake*" EXCLUDE
-  PATTERN "*~" EXCLUDE
-  PATTERN "template" EXCLUDE
-)
+file(GLOB TOP_LEVEL_FILES ${SOURCE_HTML_DIR}/*.html)
+file(COPY ${TOP_LEVEL_FILES} DESTINATION .)
+file(COPY ${SOURCE_HTML_DIR}/images DESTINATION .)
+file(COPY ${SOURCE_HTML_DIR}/online DESTINATION .)
