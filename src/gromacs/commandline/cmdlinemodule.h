@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -46,7 +46,7 @@
 namespace gmx
 {
 
-class HelpWriterContext;
+class CommandLineHelpContext;
 
 /*! \brief
  * Module that can be run from command line using CommandLineModuleManager.
@@ -86,7 +86,7 @@ class CommandLineModuleInterface
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
          */
-        virtual void writeHelp(const HelpWriterContext &context) const = 0;
+        virtual void writeHelp(const CommandLineHelpContext &context) const = 0;
 };
 
 } // namespace gmx

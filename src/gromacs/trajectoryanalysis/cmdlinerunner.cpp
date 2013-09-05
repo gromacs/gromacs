@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,6 +50,7 @@
 #include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
@@ -115,8 +116,8 @@ TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
     TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
     if (flags != 0)
     {
-        HelpWriterContext context(&File::standardError(),
-                                  eHelpOutputFormat_Console);
+        CommandLineHelpContext context(&File::standardError(),
+                                       eHelpOutputFormat_Console);
         CommandLineHelpWriter(options)
             .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
             .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
@@ -209,7 +210,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = impl_->module_;
 
-    SelectionCollection  selections;
+    SelectionCollection       selections;
     selections.setDebugLevel(impl_->debugLevel_);
 
     TrajectoryAnalysisSettings      settings;
@@ -280,7 +281,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
 
 void
-TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
+TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &context)
 {
     // TODO: This method duplicates some code from run() and Impl::printHelp().
     // See how to best refactor it to share the common code.
@@ -340,7 +341,7 @@ class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
         virtual const char *shortDescription() const { return description_; };
 
         virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        virtual void writeHelp(const CommandLineHelpContext &context) const;
 
     private:
         const char             *name_;
@@ -359,8 +360,13 @@ int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
 }
 
 void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
-        const HelpWriterContext &context) const
+        const CommandLineHelpContext &context) const
 {
+    // TODO: Implement #969.
+    if (context.writerContext().outputFormat() != eHelpOutputFormat_Console)
+    {
+        return;
+    }
     TrajectoryAnalysisModulePointer     module(factory_());
     TrajectoryAnalysisCommandLineRunner runner(module.get());
     runner.writeHelp(context);

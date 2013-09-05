@@ -48,6 +48,7 @@
 
 #include <gmock/gmock.h>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/utility/programinfo.h"
@@ -81,7 +82,7 @@ class MockModule : public gmx::CommandLineModuleInterface
         virtual const char *shortDescription() const { return descr_; }
 
         MOCK_METHOD2(run, int(int argc, char *argv[]));
-        MOCK_CONST_METHOD1(writeHelp, void(const gmx::HelpWriterContext &context));
+        MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
     private:
         const char             *name_;
