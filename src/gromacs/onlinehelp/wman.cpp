@@ -40,8 +40,10 @@
 
 #include <string>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_fatal.h"
@@ -794,20 +796,6 @@ static void write_htmlman(FILE *out,
     int  i;
     char tmp[255];
 
-    fprintf(out, "<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n", program);
-    fprintf(out, "<LINK rel=stylesheet href=\"style.css\" type=\"text/css\">\n");
-    fprintf(out, "<BODY text=\"#000000\" bgcolor=\"#FFFFFF\" link=\"#0000FF\" vlink=\"#990000\" alink=\"#FF0000\">\n");
-    fprintf(out, "<TABLE WIDTH=\"98%%\" NOBORDER >\n<TR><TD WIDTH=400>\n");
-    fprintf(out, "<TABLE WIDTH=400 NOBORDER>\n<TD WIDTH=116>\n");
-    fprintf(out, "<a href=\"http://www.gromacs.org/\">"
-            "<img SRC=\"../images/gmxlogo_small.png\""
-            "BORDER=0 </a></td>\n");
-    fprintf(out, "<td ALIGN=LEFT VALIGN=TOP WIDTH=280>"
-            "<br><h2>%s</h2>", program);
-    fprintf(out, "<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
-    fprintf(out, "<br></td>\n</TABLE></TD><TD WIDTH=\"*\" ALIGN=RIGHT VALIGN=BOTTOM><p><B>%s<br>\n", GromacsVersion());
-    fprintf(out, "%s</B></td></tr></TABLE>\n<HR>\n", mydate(tmp, 255));
-
     if (nldesc > 0)
     {
         fprintf(out, "<H3>Description</H3>\n<p>\n");
@@ -859,14 +847,6 @@ static void write_htmlman(FILE *out,
         }
         fprintf(out, "</UL>\n");
     }
-    fprintf(out, "<P>\n");
-    fprintf(out, "<hr>\n<div ALIGN=RIGHT>\n");
-    fprintf(out, "<font size=\"-1\"><a href=\"http://www.gromacs.org\">"
-            "http://www.gromacs.org</a></font><br>\n");
-    fprintf(out, "<font size=\"-1\"><a href=\"mailto:gromacs@gromacs.org\">"
-            "gromacs@gromacs.org</a></font><br>\n");
-    fprintf(out, "</div>\n");
-    fprintf(out, "</BODY>\n");
 }
 
 static void pr_opts(FILE *fp,
@@ -979,7 +959,7 @@ static void write_bashcompl(FILE *out,
     fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
 }
 
-void write_man(FILE *out, const char *mantp,
+void write_man(const char *mantp,
                const char *program,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
@@ -987,7 +967,6 @@ void write_man(FILE *out, const char *mantp,
                int nbug, const char **bugs,
                gmx_bool bHidden)
 {
-    const char *pr;
     int         i, npar;
     t_pargs    *par;
 
@@ -1018,29 +997,41 @@ void write_man(FILE *out, const char *mantp,
         }
     }
 
-    if ((pr = strrchr(program, DIR_SEPARATOR)) == NULL)
+    const gmx::CommandLineHelpContext *context
+        = gmx::GlobalCommandLineHelpContext::get();
+    bool  bFileOpened = false;
+    FILE *out;
+    if (context != NULL)
     {
-        pr = program;
+        out = context->writerContext().outputFile().handle();
+    }
+    else if (strcmp(mantp, "help") == 0)
+    {
+        out = stderr;
     }
     else
     {
-        pr += 1;
+        char buf[256];
+        sprintf(buf, "%s.%s", program, mantp);
+        out         = gmx_fio_fopen(buf, "w");
+        bFileOpened = true;
     }
+
     if (strcmp(mantp, "tex") == 0)
     {
-        write_texman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_texman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "nroff") == 0)
     {
-        write_nroffman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_nroffman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "help") == 0)
     {
-        write_ttyman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "html") == 0)
     {
-        write_htmlman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_htmlman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "completion-zsh") == 0)
     {
@@ -1053,6 +1044,11 @@ void write_man(FILE *out, const char *mantp,
     if (strcmp(mantp, "completion-csh") == 0)
     {
         write_cshcompl(out, nfile, fnm, npar, par);
+    }
+
+    if (bFileOpened)
+    {
+        gmx_fio_fclose(out);
     }
 
     if (!bHidden)

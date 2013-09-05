@@ -47,9 +47,12 @@
 #include <string>
 #include <utility>
 
+#include <boost/scoped_ptr.hpp>
+
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/network.h"
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlineparser.h"
 #include "gromacs/onlinehelp/helpformat.h"
@@ -224,8 +227,34 @@ class ModuleHelpTopic : public HelpTopicInterface
 
 void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
 {
-    module_.writeHelp(context);
+    CommandLineHelpContext newContext(&context.outputFile(),
+                                      context.outputFormat());
+    module_.writeHelp(newContext);
 }
+
+/********************************************************************
+ * HelpExportInterface
+ */
+
+/*! \internal \brief
+ * Callbacks for exporting help information for command-line modules.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportInterface
+{
+    public:
+        virtual ~HelpExportInterface() {};
+
+        /*! \brief
+         * Called to export the help for each module.
+         *
+         * \param[in] tag     Unique tag for the module (gmx-something).
+         * \param[in] module  Module for which the help should be exported.
+         */
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module) = 0;
+};
 
 }   // namespace
 
@@ -267,16 +296,19 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         }
 
         virtual int run(int argc, char *argv[]);
-        virtual void writeHelp(const HelpWriterContext &context) const;
+        virtual void writeHelp(const CommandLineHelpContext &context) const;
 
     private:
-        CompositeHelpTopicPointer   rootTopic_;
+        void exportHelp(HelpExportInterface *exporter) const;
+
+        boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        const CommandLineModuleMap       &modules_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
 CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules))
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules)
 {
 }
 
@@ -287,6 +319,22 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
+    const char *const exportFormats[] = { "man", "html", "completion" };
+    std::string       exportFormat;
+    Options           options(NULL, NULL);
+    options.addOption(StringOption("export").store(&exportFormat)
+                          .enumValue(exportFormats));
+    CommandLineParser(&options).parse(&argc, argv);
+    if (!exportFormat.empty())
+    {
+        boost::scoped_ptr<HelpExportInterface> exporter;
+        {
+            GMX_THROW(NotImplementedError("This help format is not implemented"));
+        }
+        exportHelp(exporter.get());
+        return 0;
+    }
+
     HelpWriterContext context(&File::standardOutput(),
                               eHelpOutputFormat_Console);
     HelpManager       helpManager(*rootTopic_, context);
@@ -306,11 +354,36 @@ int CommandLineHelpModule::run(int argc, char *argv[])
     return 0;
 }
 
-void CommandLineHelpModule::writeHelp(const HelpWriterContext &context) const
+void CommandLineHelpModule::writeHelp(const CommandLineHelpContext &context) const
 {
-    context.writeTextBlock(
+    const HelpWriterContext &writerContext = context.writerContext();
+    // TODO: Implement.
+    if (writerContext.outputFormat() != eHelpOutputFormat_Console)
+    {
+        return;
+    }
+    writerContext.writeTextBlock(
             "Usage: [PROGRAM] help [<command>|<topic> [<subtopic> [...]]]");
     // TODO: More information.
+}
+
+void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
+{
+    // TODO: Would be nicer to have the file names supplied by the build system
+    // and/or export a list of files from here.
+    const char *const program =
+        ProgramInfo::getInstance().invariantProgramName().c_str();
+
+    CommandLineModuleMap::const_iterator module;
+    for (module = modules_.begin(); module != modules_.end(); ++module)
+    {
+        if (module->second->shortDescription() != NULL)
+        {
+            const char *const moduleName = module->first.c_str();
+            std::string       tag(formatString("%s-%s", program, moduleName));
+            exporter->exportModuleHelp(tag, *module->second);
+        }
+    }
 }
 
 namespace
@@ -362,18 +435,33 @@ class CMainCommandLineModule : public CommandLineModuleInterface
         {
             return mainFunction_(argc, argv);
         }
-        virtual void writeHelp(const HelpWriterContext &context) const
+        virtual void writeHelp(const CommandLineHelpContext &context) const
         {
-            if (context.outputFormat() != eHelpOutputFormat_Console)
-            {
-                GMX_THROW(NotImplementedError(
-                                  "Command-line help is not implemented for this output format"));
-            }
-            char *argv[2];
+            const HelpOutputFormat format = context.writerContext().outputFormat();
+            char                  *argv[3];
+            int                    argc = 1;
             // TODO: The constness should not be cast away.
             argv[0] = const_cast<char *>(name_);
-            argv[1] = const_cast<char *>("-h");
-            mainFunction_(2, argv);
+            if (format == eHelpOutputFormat_Console)
+            {
+                argv[1] = const_cast<char *>("-h");
+                argc    = 2;
+            }
+            else
+            {
+                const char *type;
+                switch (format)
+                {
+                    default:
+                        GMX_THROW(NotImplementedError(
+                                          "Command-line help is not implemented for this output format"));
+                }
+                argv[1] = const_cast<char *>("-man");
+                argv[2] = const_cast<char *>(type);
+                argc    = 3;
+            }
+            GlobalCommandLineHelpContext global(context);
+            mainFunction_(argc, argv);
         }
 
     private:
