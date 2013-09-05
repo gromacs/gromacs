@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,6 +44,7 @@
 #include <cctype>
 
 #include <algorithm>
+#include <string>
 
 #include "gromacs/legacyheaders/smalloc.h"
 
@@ -108,13 +109,6 @@ class HelpWriterContext::Impl
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
     : impl_(new Impl(file, format))
 {
-    if (format != eHelpOutputFormat_Console)
-    {
-        // TODO: Implement once the situation with Redmine issue #969 is more
-        // clear.
-        GMX_THROW(NotImplementedError(
-                          "This output format is not implemented"));
-    }
 }
 
 HelpWriterContext::~HelpWriterContext()
@@ -133,6 +127,13 @@ File &HelpWriterContext::outputFile() const
 
 std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     char            *resultStr = check_tty(text.c_str());
     scoped_ptr_sfree resultGuard(resultStr);
     return std::string(resultStr);
@@ -140,6 +141,13 @@ std::string HelpWriterContext::substituteMarkup(const std::string &text) const
 
 void HelpWriterContext::writeTitle(const std::string &title) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     File &file = outputFile();
     file.writeLine(toUpperCase(title));
     file.writeLine();
@@ -147,6 +155,13 @@ void HelpWriterContext::writeTitle(const std::string &title) const
 
 void HelpWriterContext::writeTextBlock(const std::string &text) const
 {
+    if (outputFormat() != eHelpOutputFormat_Console)
+    {
+        // TODO: Implement once the situation with Redmine issue #969 is more
+        // clear.
+        GMX_THROW(NotImplementedError(
+                          "This output format is not implemented"));
+    }
     TextLineWrapper wrapper;
     wrapper.settings().setLineLength(78);
     const char     *program = ProgramInfo::getInstance().programName().c_str();

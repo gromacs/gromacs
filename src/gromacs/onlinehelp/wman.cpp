@@ -40,8 +40,10 @@
 
 #include <string>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
 
 #include "gmx_fatal.h"
@@ -979,7 +981,7 @@ static void write_bashcompl(FILE *out,
     fprintf(out, "esac }\ncomplete -F _%s_compl %s\n", ShortProgram(), ShortProgram());
 }
 
-void write_man(FILE *out, const char *mantp,
+void write_man(const char *mantp,
                const char *program,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
@@ -987,7 +989,6 @@ void write_man(FILE *out, const char *mantp,
                int nbug, const char **bugs,
                gmx_bool bHidden)
 {
-    const char *pr;
     int         i, npar;
     t_pargs    *par;
 
@@ -995,9 +996,25 @@ void write_man(FILE *out, const char *mantp,
 
     links = init_linkdata();
 
-    /* Don't write hidden options to completions, it just
-     * makes the options more complicated for normal users
-     */
+    const gmx::CommandLineHelpContext *context
+        = gmx::GlobalCommandLineHelpContext::get();
+    bool  bFileOpened = false;
+    FILE *out;
+    if (context != NULL)
+    {
+        out = context->writerContext().outputFile().handle();
+    }
+    else if (strcmp(mantp, "help") == 0)
+    {
+        out = stderr;
+    }
+    else
+    {
+        char buf[256];
+        sprintf(buf, "%s.%s", program, mantp);
+        out         = gmx_fio_fopen(buf, "w");
+        bFileOpened = true;
+    }
 
     if (bHidden)
     {
@@ -1018,29 +1035,21 @@ void write_man(FILE *out, const char *mantp,
         }
     }
 
-    if ((pr = strrchr(program, DIR_SEPARATOR)) == NULL)
-    {
-        pr = program;
-    }
-    else
-    {
-        pr += 1;
-    }
     if (strcmp(mantp, "tex") == 0)
     {
-        write_texman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_texman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "nroff") == 0)
     {
-        write_nroffman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_nroffman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "help") == 0)
     {
-        write_ttyman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "html") == 0)
     {
-        write_htmlman(out, pr, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_htmlman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
     }
     if (strcmp(mantp, "completion-zsh") == 0)
     {
@@ -1053,6 +1062,11 @@ void write_man(FILE *out, const char *mantp,
     if (strcmp(mantp, "completion-csh") == 0)
     {
         write_cshcompl(out, nfile, fnm, npar, par);
+    }
+
+    if (bFileOpened)
+    {
+        gmx_fio_fclose(out);
     }
 
     if (!bHidden)

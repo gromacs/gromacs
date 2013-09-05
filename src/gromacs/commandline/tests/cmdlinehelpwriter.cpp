@@ -49,8 +49,8 @@
 
 #include "gromacs/legacyheaders/types/simple.h"
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/options/options.h"
@@ -76,9 +76,9 @@ class CommandLineHelpWriterTest : public ::gmx::test::StringTestBase
 
 void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
-    std::string            filename = tempFiles_.getTemporaryFilePath("helptext.txt");
-    gmx::File              file(filename, "w");
-    gmx::HelpWriterContext context(&file, gmx::eHelpOutputFormat_Console);
+    std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
+    gmx::File                   file(filename, "w");
+    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console);
     writer->writeHelp(context);
     file.close();
 
