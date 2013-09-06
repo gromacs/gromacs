@@ -28,6 +28,10 @@
 #include "types/commrec.h"
 #include "mdrun.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* This module defines wrappers for OpenMP API functions and enables compiling
  * code even when OpenMP is turned off in the build system.
  * Therefore, OpenMP API functions should always be used through these wrappers
@@ -55,5 +59,9 @@ void gmx_omp_set_num_threads(int num_threads);
 /*! Check for externally set thread affinity to avoid conflicts with GROMACS internal setting. */
 void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
                                    gmx_hw_opt_t *hw_opt);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* GMX_OMP_H */
