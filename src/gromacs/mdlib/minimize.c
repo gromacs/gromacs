@@ -75,6 +75,7 @@
 #include "pme.h"
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
+#include "md_logging.h"
 
 
 #include "gromacs/linearalgebra/mtxio.h"
@@ -136,25 +137,25 @@ static void warn_step(FILE *fp, real ftol, gmx_bool bLastStep, gmx_bool bConstra
     if (bLastStep)
     {
         sprintf(buffer,
-                "\nEnergy minimization reached the maximum number"
-                "of steps before the forces reached the requested"
+                "\nEnergy minimization reached the maximum number "
+                "of steps before the forces reached the requested "
                 "precision Fmax < %g.\n", ftol);
     }
     else
     {
         sprintf(buffer,
-                "\nEnergy minimization has stopped, but the forces have"
-                "not converged to the requested precision Fmax < %g (which"
-                "may not be possible for your system). It stopped"
-                "because the algorithm tried to make a new step whose size"
-                "was too small, or there was no change in the energy since"
-                "last step. Either way, we regard the minimization as"
-                "converged to within the available machine precision,"
+                "\nEnergy minimization has stopped, but the forces have "
+                "not converged to the requested precision Fmax < %g (which "
+                "may not be possible for your system). It stopped "
+                "because the algorithm tried to make a new step whose size "
+                "was too small, or there was no change in the energy since "
+                "last step. Either way, we regard the minimization as "
+                "converged to within the available machine precision, "
                 "given your starting configuration and EM parameters.\n%s%s",
                 ftol,
                 sizeof(real) < sizeof(double) ?
-                "\nDouble precision normally gives you higher accuracy, but"
-                "this is often not needed for preparing to run molecular"
+                "\nDouble precision normally gives you higher accuracy, but "
+                "this is often not needed for preparing to run molecular "
                 "dynamics.\n" :
                 "",
                 bConstrain ?
@@ -2607,7 +2608,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     rvec                 mu_tot;
     rvec                *fneg, *dfdx;
     gmx_bool             bSparse; /* use sparse matrix storage format */
-    size_t               sz;
+    size_t               sz=0;
     gmx_sparsematrix_t * sparse_matrix           = NULL;
     real           *     full_matrix             = NULL;
     em_state_t       *   state_work;
@@ -2655,32 +2656,35 @@ double do_nm(FILE *fplog, t_commrec *cr,
      */
     if (EEL_FULL(fr->eeltype) || fr->rlist == 0.0)
     {
-        fprintf(stderr, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
+        md_print_info(cr, fplog, "Non-cutoff electrostatics used, forcing full Hessian format.\n");
         bSparse = FALSE;
     }
     else if (top_global->natoms < 1000)
     {
-        fprintf(stderr, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
+        md_print_info(cr, fplog, "Small system size (N=%d), using full Hessian format.\n", top_global->natoms);
         bSparse = FALSE;
     }
     else
     {
-        fprintf(stderr, "Using compressed symmetric sparse Hessian format.\n");
+        md_print_info(cr, fplog, "Using compressed symmetric sparse Hessian format.\n");
         bSparse = TRUE;
     }
 
-    sz = DIM*top_global->natoms;
-
-    fprintf(stderr, "Allocating Hessian memory...\n\n");
-
-    if (bSparse)
+    if (MASTER(cr))
     {
-        sparse_matrix = gmx_sparsematrix_init(sz);
-        sparse_matrix->compressed_symmetric = TRUE;
-    }
-    else
-    {
-        snew(full_matrix, sz*sz);
+        sz = DIM*top_global->natoms;
+
+        fprintf(stderr, "Allocating Hessian memory...\n\n");
+
+        if (bSparse)
+        {
+            sparse_matrix = gmx_sparsematrix_init(sz);
+            sparse_matrix->compressed_symmetric = TRUE;
+        }
+        else
+        {
+            snew(full_matrix, sz*sz);
+        }
     }
 
     /* Initial values */
@@ -2719,16 +2723,14 @@ double do_nm(FILE *fplog, t_commrec *cr,
     /* if forces are not small, warn user */
     get_state_f_norm_max(cr, &(inputrec->opts), mdatoms, state_work);
 
-    if (MASTER(cr))
+    md_print_info(cr, fplog, "Maximum force:%12.5e\n", state_work->fmax);
+    if (state_work->fmax > 1.0e-3)
     {
-        fprintf(stderr, "Maximum force:%12.5e\n", state_work->fmax);
-        if (state_work->fmax > 1.0e-3)
-        {
-            fprintf(stderr, "Maximum force probably not small enough to");
-            fprintf(stderr, " ensure that you are in an \nenergy well. ");
-            fprintf(stderr, "Be aware that negative eigenvalues may occur");
-            fprintf(stderr, " when the\nresulting matrix is diagonalized.\n");
-        }
+        md_print_info(cr, fplog,
+                      "The force is probably not small enough to "
+                      "ensure that you are at a minimum.\n"
+                      "Be aware that negative eigenvalues may occur\n"
+                      "when the resulting matrix is diagonalized.\n\n");
     }
 
     /***********************************************************

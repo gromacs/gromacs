@@ -35,64 +35,6 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
-
-#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
-#define UNROLLJ    GMX_SIMD_WIDTH_HERE
-
-/* The stride of all the atom data arrays is max(UNROLLI,UNROLLJ) */
-#if GMX_SIMD_WIDTH_HERE >= UNROLLI
-#define STRIDE     GMX_SIMD_WIDTH_HERE
-#else
-#define STRIDE     UNROLLI
-#endif
-
-#if GMX_SIMD_WIDTH_HERE == 2
-#define SUM_SIMD(x)  (x[0]+x[1])
-#else
-#if GMX_SIMD_WIDTH_HERE == 4
-#define SUM_SIMD(x)  SUM_SIMD4(x)
-#else
-#if GMX_SIMD_WIDTH_HERE == 8
-#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
-#else
-#error "unsupported kernel configuration"
-#endif
-#endif
-#endif
-
-
-/* Decide if we should use the FDV0 table layout */
-#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
-/* With full AVX-256 SIMD, half SIMD-width table loads are optimal */
-#if GMX_SIMD_WIDTH_HERE/2 == 4
-#define TAB_FDV0
-#endif
-#else
-/* We use the FDV0 table layout when we can use aligned table loads */
-#if GMX_SIMD_WIDTH_HERE == 4
-#define TAB_FDV0
-#endif
-#endif
-
-/* Decide the stride for the 2 LJ parameters */
-#ifdef GMX_X86_SSE2
-#ifdef GMX_DOUBLE
-#define NBFP_STRIDE  2
-#else
-#define NBFP_STRIDE  4
-#endif
-#else
-#if GMX_SIMD_WIDTH_HERE > 4
-#define NBFP_STRIDE  4
-#else
-#define NBFP_STRIDE  GMX_SIMD_WIDTH_HERE
-#endif
-#endif
-
-
-#include "nbnxn_kernel_simd_utils.h"
-
 /* All functionality defines are set here, except for:
  * CALC_ENERGIES, ENERGY_GROUPS which are defined before.
  * CHECK_EXCLS, which is set just before including the inner loop contents.
@@ -181,7 +123,6 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
     const real         *nbfp0, *nbfp1, *nbfp2 = NULL, *nbfp3 = NULL;
     real                facel;
     real               *nbfp_ptr;
-    int                 nbfp_stride;
     int                 n, ci, ci_sh;
     int                 ish, ish3;
     gmx_bool            do_LJ, half_LJ, do_coul;
@@ -234,12 +175,8 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
     gmx_mm_pb  diagonal_mask1_S0, diagonal_mask1_S1, diagonal_mask1_S2, diagonal_mask1_S3;
 #endif
 
-    unsigned   *excl_filter;
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    gmx_epi32  filter_S0, filter_S1, filter_S2, filter_S3;
-#else
-    gmx_mm_pr  filter_S0, filter_S1, filter_S2, filter_S3;
-#endif
+    unsigned      *exclusion_filter;
+    gmx_exclfilter filter_S0, filter_S1, filter_S2, filter_S3;
 
     gmx_mm_pr  zero_S = gmx_set1_pr(0);
 
@@ -260,18 +197,11 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #ifndef TAB_FDV0
     const real *tab_coul_V;
 #endif
-#if GMX_SIMD_WIDTH_HERE >= 8 || (defined GMX_DOUBLE && GMX_SIMD_WIDTH_HERE >= 4)
-#define STORE_TABLE_INDICES
-#endif
-#ifdef STORE_TABLE_INDICES
-    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0;
-    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1;
-    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2;
-    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3;
-#else
-    /* Table indices not used, but a function requires the argument */
-    int        *ti0 = NULL, *ti1 = NULL, *ti2 = NULL, *ti3 = NULL;
-#endif
+    /* Thread-local working buffers for force and potential lookups */
+    int        ti0_array[2*GMX_SIMD_WIDTH_HERE-1], *ti0 = NULL;
+    int        ti1_array[2*GMX_SIMD_WIDTH_HERE-1], *ti1 = NULL;
+    int        ti2_array[2*GMX_SIMD_WIDTH_HERE-1], *ti2 = NULL;
+    int        ti3_array[2*GMX_SIMD_WIDTH_HERE-1], *ti3 = NULL;
 #ifdef CALC_ENERGIES
     gmx_mm_pr  mhalfsp_S;
 #endif
@@ -342,16 +272,7 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
     ljc = nbat->lj_comb;
 #else
     /* No combination rule used */
-#if NBFP_STRIDE == 2
-    nbfp_ptr    = nbat->nbfp;
-#else
-#if NBFP_STRIDE == 4
-    nbfp_ptr    = nbat->nbfp_s4;
-#else
-#error "Only NBFP_STRIDE 2 and 4 are currently supported"
-#endif
-#endif
-    nbfp_stride = NBFP_STRIDE;
+    nbfp_ptr    = (4 == nbfp_stride) ? nbat->nbfp_s4 : nbat->nbfp;
 #endif
 
     /* Load j-i for the first i */
@@ -391,46 +312,32 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #endif
 #endif
 
-    /* Load masks for topology exclusion masking */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-#define FILTER_STRIDE  (GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE)
-#else
-#ifdef GMX_DOUBLE
-#define FILTER_STRIDE  2
-#else
-#define FILTER_STRIDE  1
-#endif
-#endif
-#if FILTER_STRIDE == 1
-    excl_filter = nbat->simd_exclusion_filter1;
-#else
-    excl_filter = nbat->simd_exclusion_filter2;
-#endif
+    /* Load masks for topology exclusion masking. filter_stride is
+       static const, so the conditional will be optimized away. */
+    if (1 == filter_stride)
+    {
+        exclusion_filter = nbat->simd_exclusion_filter1;
+    }
+    else /* (2 == filter_stride) */
+    {
+        exclusion_filter = nbat->simd_exclusion_filter2;
+    }
+
     /* Here we cast the exclusion filters from unsigned * to int * or real *.
      * Since we only check bits, the actual value they represent does not
      * matter, as long as both filter and mask data are treated the same way.
      */
-#ifdef GMX_SIMD_HAVE_CHECKBITMASK_EPI32
-    filter_S0 = gmx_load_si((int *)excl_filter + 0*UNROLLJ*FILTER_STRIDE);
-    filter_S1 = gmx_load_si((int *)excl_filter + 1*UNROLLJ*FILTER_STRIDE);
-    filter_S2 = gmx_load_si((int *)excl_filter + 2*UNROLLJ*FILTER_STRIDE);
-    filter_S3 = gmx_load_si((int *)excl_filter + 3*UNROLLJ*FILTER_STRIDE);
-#else
-    filter_S0 = gmx_load_pr((real *)excl_filter + 0*UNROLLJ);
-    filter_S1 = gmx_load_pr((real *)excl_filter + 1*UNROLLJ);
-    filter_S2 = gmx_load_pr((real *)excl_filter + 2*UNROLLJ);
-    filter_S3 = gmx_load_pr((real *)excl_filter + 3*UNROLLJ);
-#endif
-#undef FILTER_STRIDE
+    filter_S0    = gmx_load_exclusion_filter(exclusion_filter + 0*UNROLLJ*filter_stride);
+    filter_S1    = gmx_load_exclusion_filter(exclusion_filter + 1*UNROLLJ*filter_stride);
+    filter_S2    = gmx_load_exclusion_filter(exclusion_filter + 2*UNROLLJ*filter_stride);
+    filter_S3    = gmx_load_exclusion_filter(exclusion_filter + 3*UNROLLJ*filter_stride);
 
 #ifdef CALC_COUL_TAB
-#ifdef STORE_TABLE_INDICES
     /* Generate aligned table index pointers */
-    ti0 = gmx_simd_align_int(ti0_array);
-    ti1 = gmx_simd_align_int(ti1_array);
-    ti2 = gmx_simd_align_int(ti2_array);
-    ti3 = gmx_simd_align_int(ti3_array);
-#endif
+    ti0 = prepare_table_load_buffer(ti0_array);
+    ti1 = prepare_table_load_buffer(ti1_array);
+    ti2 = prepare_table_load_buffer(ti2_array);
+    ti3 = prepare_table_load_buffer(ti3_array);
 
     invtsp_S  = gmx_set1_pr(ic->tabq_scale);
 #ifdef CALC_ENERGIES
@@ -829,14 +736,4 @@ NBK_FUNC_NAME(nbnxn_kernel_simd_4xn, energrp)
 #undef gmx_store_pr4
 #endif
 
-#undef STORE_TABLE_INDICES
-
 #undef CALC_SHIFTFORCES
-
-#undef UNROLLI
-#undef UNROLLJ
-#undef STRIDE
-#undef TAB_FDV0
-#undef NBFP_STRIDE
-
-#undef GMX_USE_HALF_WIDTH_SIMD_HERE

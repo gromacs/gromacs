@@ -45,6 +45,9 @@
  *   energy group pair energy storage
  */
 
+#define gmx_exclfilter gmx_epi32
+static const int filter_stride = GMX_SIMD_EPI32_WIDTH/GMX_SIMD_WIDTH_HERE;
+
 /* Transpose 2 double precision registers */
 static gmx_inline void
 gmx_mm_transpose2_op_pd(__m128d in0, __m128d in1,
@@ -106,7 +109,7 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
 
     for (p = 0; p < UNROLLJ; p++)
     {
-        clj_S[p] = _mm_load_pd(nbfp+type[aj+p]*NBFP_STRIDE);
+        clj_S[p] = _mm_load_pd(nbfp+type[aj+p]*nbfp_stride);
     }
     gmx_mm_transpose2_op_pd(clj_S[0], clj_S[1], c6_S, c12_S);
 }
@@ -121,9 +124,10 @@ load_lj_pair_params(const real *nbfp, const int *type, int aj,
  * This is only faster when we use FDV0 formatted tables, where we also need
  * to multiple the index by 4, which can be done by a SIMD bit shift.
  * With single precision AVX, 8 extracts are much slower than 1 store.
- * Because of this, the load_table_f macro always takes the ti parameter,
- * but it is only used with AVX.
- */
+ * Because of this, the load_table_f function always takes the ti
+ * parameter, which should contain a buffer that is aligned with
+ * prepare_table_load_buffer(), but it is only used with full-width
+ * AVX_256. */
 
 static gmx_inline void
 load_table_f(const real *tab_coul_F, gmx_epi32 ti_S, int *ti,
@@ -168,6 +172,24 @@ load_table_f_v(const real *tab_coul_F, const real *tab_coul_V,
 
     /* Shuffle the energy table entries to a single register */
     *ctabv_S = _mm_shuffle_pd(ctab_S[2], ctab_S[3], _MM_SHUFFLE2(0, 0));
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load1_exclfilter(int e)
+{
+    return _mm_set1_epi32(e);
+}
+
+static gmx_inline gmx_exclfilter
+gmx_load_exclusion_filter(const unsigned *i)
+{
+    return _mm_load_si128((__m128i *) i);
+}
+
+static gmx_inline gmx_mm_pb
+gmx_checkbitmask_pb(gmx_exclfilter m0, gmx_exclfilter m1)
+{
+    return gmx_mm_castsi128_pd(_mm_cmpeq_epi32(_mm_andnot_si128(m0, m1), _mm_setzero_si128()));
 }
 
 #endif /* _nbnxn_kernel_simd_utils_x86_s128d_h_ */

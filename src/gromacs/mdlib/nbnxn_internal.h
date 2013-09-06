@@ -70,6 +70,25 @@ extern "C" {
 #endif
 
 
+/* Pair search box lower and upper corner in x,y,z.
+ * Store this in 4 iso 3 reals, which is useful with SSE.
+ * To avoid complicating the code we also use 4 without SSE.
+ */
+#define NNBSBB_C         4
+/* Pair search box lower and upper bound in z only. */
+#define NNBSBB_D         2
+/* Pair search box lower and upper corner x,y,z indices, entry 3 is unused */
+#define BB_X  0
+#define BB_Y  1
+#define BB_Z  2
+
+/* Bounding box for a nbnxn atom cluster */
+typedef struct {
+    float lower[NNBSBB_C];
+    float upper[NNBSBB_C];
+} nbnxn_bb_t;
+
+
 /* A pair-search grid struct for one domain decomposition zone */
 typedef struct {
     rvec     c0;               /* The lower corner of the (local) grid        */
@@ -97,17 +116,18 @@ typedef struct {
     int     *cxy_ind;          /* Grid (super)cell index, offset from cell0   */
     int      cxy_nalloc;       /* Allocation size for cxy_na and cxy_ind      */
 
-    int     *nsubc;            /* The number of sub cells for each super cell */
-    float   *bbcz;             /* Bounding boxes in z for the super cells     */
-    float   *bb;               /* 3D bounding boxes for the sub cells         */
-    float   *bbj;              /* 3D j-b.boxes for SSE-double or AVX-single   */
-    int     *flags;            /* Flag for the super cells                    */
-    int      nc_nalloc;        /* Allocation size for the pointers above      */
+    int        *nsubc;         /* The number of sub cells for each super cell */
+    float      *bbcz;          /* Bounding boxes in z for the super cells     */
+    nbnxn_bb_t *bb;            /* 3D bounding boxes for the sub cells         */
+    nbnxn_bb_t *bbj;           /* 3D j-b.boxes for SSE-double or AVX-single   */
+    float      *pbb;           /* 3D b. boxes in xxxx format per super cell   */
+    int        *flags;         /* Flag for the super cells                    */
+    int         nc_nalloc;     /* Allocation size for the pointers above      */
 
-    float   *bbcz_simple;      /* bbcz for simple grid converted from super   */
-    float   *bb_simple;        /* bb for simple grid converted from super     */
-    int     *flags_simple;     /* flags for simple grid converted from super  */
-    int      nc_nalloc_simple; /* Allocation size for the pointers above   */
+    float      *bbcz_simple;   /* bbcz for simple grid converted from super   */
+    nbnxn_bb_t *bb_simple;     /* bb for simple grid converted from super     */
+    int        *flags_simple;  /* flags for simple grid converted from super  */
+    int         nc_nalloc_simple; /* Allocation size for the pointers above   */
 
     int      nsubc_tot;        /* Total number of subcell, used for printing  */
 } nbnxn_grid_t;
@@ -132,10 +152,11 @@ typedef struct nbnxn_x_ci_simd_2xnn {
 
 /* Working data for the actual i-supercell during pair search */
 typedef struct nbnxn_list_work {
-    gmx_cache_protect_t     cp0;   /* Protect cache between threads               */
+    gmx_cache_protect_t     cp0;    /* Protect cache between threads               */
 
-    float                  *bb_ci; /* The bounding boxes, pbc shifted, for each cluster */
-    real                   *x_ci;  /* The coordinates, pbc shifted, for each atom       */
+    nbnxn_bb_t             *bb_ci;  /* The bounding boxes, pbc shifted, for each cluster */
+    float                  *pbb_ci; /* As bb_ci, but in xxxx packed format               */
+    real                   *x_ci;   /* The coordinates, pbc shifted, for each atom       */
 #ifdef GMX_NBNXN_SIMD
     nbnxn_x_ci_simd_4xn_t  *x_ci_simd_4xn;
     nbnxn_x_ci_simd_2xnn_t *x_ci_simd_2xnn;
