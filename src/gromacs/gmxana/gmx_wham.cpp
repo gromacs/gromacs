@@ -62,7 +62,7 @@
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/utility/cstringutil.h"
 #include "gromacs/fileio/xvgr.h"
-
+#include "gromacs/utility/gmxomp.h"
 #include "gromacs/utility/fatalerror.h"
 
 //! longest file names allowed in input files
@@ -871,7 +871,6 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
                 else
                 {
                     U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-
                 }
                 contrib1                 = profile[k]*exp(-U/(8.314e-3*opt->Temperature));
                 contrib2                 = window[i].N[j]*exp(-U/(8.314e-3*opt->Temperature) + window[i].z[j]);
@@ -913,53 +912,60 @@ void setup_acc_wham(double *profile, t_UmbrellaWindow * window, int nWindows,
 void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
                   t_UmbrellaOptions *opt, gmx_bool bExact)
 {
-    int    i, k, j;
-    double num, ztot_half, ztot, distance, min = opt->min, dz = opt->dz;
-    double denom, U = 0, temp = 0, invg;
+    int    i;
+    double ztot_half, ztot, min = opt->min, dz = opt->dz;
 
     ztot      = opt->max-opt->min;
     ztot_half = ztot/2;
 
-    for (i = 0; i < opt->bins; ++i)
+    #pragma omp parallel \
+    shared(i,opt,nWindows,window,dz,min,bExact,ztot,ztot_half,profile)
     {
-        num = denom = 0.;
-        for (j = 0; j < nWindows; ++j)
+        int    j, k;
+        double num, denom, invg, temp = 0, distance, U = 0;
+
+        #pragma omp for
+        for (i = 0; i < opt->bins; ++i)
         {
-            for (k = 0; k < window[j].nPull; ++k)
+            num = denom = 0.;
+            for (j = 0; j < nWindows; ++j)
             {
-                invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
-                temp = (1.0*i+0.5)*dz+min;
-                num += invg*window[j].Histo[k][i];
+                for (k = 0; k < window[j].nPull; ++k)
+                {
+                    invg = 1.0/window[j].g[k] * window[j].bsWeight[k];
+                    temp = (1.0*i+0.5)*dz+min;
+                    num += invg*window[j].Histo[k][i];
 
-                if (!(bExact || window[j].bContrib[k][i]))
-                {
-                    continue;
-                }
-                distance = temp - window[j].pos[k];   /* distance to umbrella center */
-                if (opt->bCycl)
-                {                                     /* in cyclic wham:             */
-                    if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                    if (!(bExact || window[j].bContrib[k][i]))
                     {
-                        distance -= ztot;
+                        continue;
                     }
-                    else if (distance < -ztot_half)
-                    {
-                        distance += ztot;
+                    distance = temp - window[j].pos[k];   /* distance to umbrella center */
+                    if (opt->bCycl)
+                    {                                     /* in cyclic wham:             */
+                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                        {
+                            distance -= ztot;
+                        }
+                        else if (distance < -ztot_half)
+                        {
+                            distance += ztot;
+                        }
                     }
-                }
 
-                if (!opt->bTab)
-                {
-                    U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                    if (!opt->bTab)
+                    {
+                        U = 0.5*window[j].k[k]*sqr(distance);       /* harmonic potential assumed. */
+                    }
+                    else
+                    {
+                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                    }
+                    denom += invg*window[j].N[k]*exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
                 }
-                else
-                {
-                    U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-                }
-                denom += invg*window[j].N[k]*exp(-U/(8.314e-3*opt->Temperature) + window[j].z[k]);
             }
+            profile[i] = num/denom;
         }
-        profile[i] = num/denom;
     }
 }
 
@@ -967,67 +973,87 @@ void calc_profile(double *profile, t_UmbrellaWindow * window, int nWindows,
 double calc_z(double * profile, t_UmbrellaWindow * window, int nWindows,
               t_UmbrellaOptions *opt, gmx_bool bExact)
 {
-    int    i, j, k;
-    double U   = 0, min = opt->min, dz = opt->dz, temp, ztot_half, distance, ztot;
-    double MAX = -1e20, total = 0;
+    int    i;
+    double min     = opt->min, dz = opt->dz, ztot_half, ztot;
+    double maxglob = -1e20;
 
     ztot      = opt->max-opt->min;
     ztot_half = ztot/2;
 
-    for (i = 0; i < nWindows; ++i)
+    #pragma omp parallel \
+    shared(i,nWindows,window,bExact,opt,maxglob,dz,min,ztot,ztot_half)
     {
-        for (j = 0; j < window[i].nPull; ++j)
-        {
-            total = 0;
-            for (k = 0; k < window[i].nBin; ++k)
-            {
-                if (!(bExact || window[i].bContrib[j][k]))
-                {
-                    continue;
-                }
-                temp     = (1.0*k+0.5)*dz+min;
-                distance = temp - window[i].pos[j];   /* distance to umbrella center */
-                if (opt->bCycl)
-                {                                     /* in cyclic wham:             */
-                    if (distance > ztot_half)         /*    |distance| < ztot_half   */
-                    {
-                        distance -= ztot;
-                    }
-                    else if (distance < -ztot_half)
-                    {
-                        distance += ztot;
-                    }
-                }
+        double total = 0, temp, distance, U = 0, maxloc = -1e20;
+        int    j, k;
 
-                if (!opt->bTab)
+        #pragma omp for
+        for (i = 0; i < nWindows; ++i)
+        {
+            for (j = 0; j < window[i].nPull; ++j)
+            {
+                total = 0;
+                for (k = 0; k < window[i].nBin; ++k)
                 {
-                    U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                    if (!(bExact || window[i].bContrib[j][k]))
+                    {
+                        continue;
+                    }
+                    temp     = (1.0*k+0.5)*dz+min;
+                    distance = temp - window[i].pos[j];   /* distance to umbrella center */
+                    if (opt->bCycl)
+                    {                                     /* in cyclic wham:             */
+                        if (distance > ztot_half)         /*    |distance| < ztot_half   */
+                        {
+                            distance -= ztot;
+                        }
+                        else if (distance < -ztot_half)
+                        {
+                            distance += ztot;
+                        }
+                    }
+
+                    if (!opt->bTab)
+                    {
+                        U = 0.5*window[i].k[j]*sqr(distance);       /* harmonic potential assumed. */
+                    }
+                    else
+                    {
+                        U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
+                    }
+                    total += profile[k]*exp(-U/(8.314e-3*opt->Temperature));
+                }
+                /* Avoid floating point exception if window is far outside min and max */
+                if (total != 0.0)
+                {
+                    total = -log(total);
                 }
                 else
                 {
-                    U = tabulated_pot(distance, opt);            /* Use tabulated potential     */
-
+                    total = 1000.0;
                 }
-                total += profile[k]*exp(-U/(8.314e-3*opt->Temperature));
+                temp = fabs(total - window[i].z[j]);
+                if (temp > maxloc)
+                {
+                    maxloc = temp;
+                }
+                window[i].z[j] = total;
             }
-            /* Avoid floating point exception if window is far outside min and max */
-            if (total != 0.0)
+        }
+        maxglob = maxloc;
+        /* Now get maximum maxloc from the threads and put in maxglob */
+        if (maxloc > maxglob)
+        {
+            #pragma omp critical
             {
-                total = -log(total);
+                if (maxloc > maxglob)
+                {
+                    maxglob = maxloc;
+                }
             }
-            else
-            {
-                total = 1000.0;
-            }
-            temp = fabs(total - window[i].z[j]);
-            if (temp > MAX)
-            {
-                MAX = temp;
-            }
-            window[i].z[j] = total;
         }
     }
-    return MAX;
+
+    return maxglob;
 }
 
 //! Make PMF symmetric around 0 (useful e.g. for membranes)
@@ -3192,6 +3218,8 @@ int gmx_wham(int argc, char *argv[])
         "reaction coordinate will assumed be be neighbors.[PAR]",
         "Option [TT]-sym[tt] symmetrizes the profile around z=0 before output, ",
         "which may be useful for, e.g. membranes.[PAR]",
+        "PARALLELIZATION[BR]----------------[BR]",
+        "If available, the number of OpenMP threads used by g_wham is controlled with [TT]-nt[tt].[PAR]",
         "AUTOCORRELATIONS[BR]----------------[BR]",
         "With [TT]-ac[tt], [THISMODULE] estimates the integrated autocorrelation ",
         "time (IACT) [GRK]tau[grk] for each umbrella window and weights the respective ",
@@ -3252,10 +3280,14 @@ int gmx_wham(int argc, char *argv[])
     const char              *en_unit[]       = {NULL, "kJ", "kCal", "kT", NULL};
     const char              *en_unit_label[] = {"", "E (kJ mol\\S-1\\N)", "E (kcal mol\\S-1\\N)", "E (kT)", NULL};
     const char              *en_bsMethod[]   = { NULL, "b-hist", "hist", "traj", "traj-gauss", NULL };
-
     static t_UmbrellaOptions opt;
+    static int               nthreads = 1;
 
     t_pargs                  pa[] = {
+#ifdef GMX_OPENMP
+        { "-nt", FALSE, etINT, {&nthreads},
+          "Nr of threads used by g_wham (default = OMP_NUM_THREADS)"},
+#endif
         { "-min", FALSE, etREAL, {&opt.min},
           "Minimum coordinate in profile"},
         { "-max", FALSE, etREAL, {&opt.max},
@@ -3452,6 +3484,13 @@ int gmx_wham(int argc, char *argv[])
     {
         gmx_fatal(FARGS, "Either provide autocorrelation times (ACTs) with file iact-in.dat "
                   "(option -iiact) or define all ACTs with -bs-tau for bootstrapping\n. Not Both.");
+    }
+
+    /* Set # of OpenMP threads */
+    gmx_omp_set_num_threads(nthreads);
+    if (nthreads > 1)
+    {
+        printf("\nNote: Will use %d OpenMP threads.\n\n", gmx_omp_get_max_threads());
     }
 
     /* Reading gmx4 pull output and tpr files */
