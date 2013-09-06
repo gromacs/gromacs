@@ -34,39 +34,107 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef _nbnxn_kernel_sse_utils_h_
-#define _nbnxn_kernel_sse_utils_h_
+#ifndef _nbnxn_kernel_simd_utils_h_
+#define _nbnxn_kernel_simd_utils_h_
 
-/* This files contains all functions/macros for the SIMD kernels
- * which have explicit dependencies on the j-cluster size and/or SIMD-width.
+/*! \brief Provides hardware-specific utility routines for the SIMD kernels.
+ *
+ * Defines all functions, typedefs, constants and macros that have
+ * explicit dependencies on the j-cluster size, precision, or SIMD
+ * width. This includes handling diagonal, Newton and topology
+ * exclusions.
+ *
  * The functionality which depends on the j-cluster size is:
  *   LJ-parameter lookup
  *   force table lookup
  *   energy group pair energy storage
  */
 
+#if !defined GMX_NBNXN_SIMD_2XNN && !defined GMX_NBNXN_SIMD_4XN
+#error "Must define an NBNxN kernel flavour before including NBNxN kernel utility functions"
+#endif
 
-/* Include SIMD architecture specific versions of the 4/5 functions above */
 #ifdef GMX_SIMD_REFERENCE_PLAIN_C
+
 #include "nbnxn_kernel_simd_utils_ref.h"
-#else
+
+#else /* GMX_SIMD_REFERENCE_PLAIN_C */
+
 #ifdef GMX_X86_SSE2
 /* Include x86 SSE2 compatible SIMD functions */
+
+/* Set the stride for the lookup of the two LJ parameters from their
+   (padded) array. Only strides of 2 and 4 are currently supported. */
+#if defined GMX_NBNXN_SIMD_2XNN
+static const int nbfp_stride = 4;
+#elif defined GMX_DOUBLE
+static const int nbfp_stride = 2;
+#else
+static const int nbfp_stride = 4;
+#endif
+
+/* Align a stack-based thread-local working array. Table loads on
+ * full-width AVX_256 use the array, but other implementations do
+ * not. */
+static gmx_inline int *
+prepare_table_load_buffer(const int *array)
+{
 #if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+    return gmx_simd_align_int(array);
+#else
+    return NULL;
+#endif
+}
+
+#if defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE
+
+/* With full AVX-256 SIMD, half SIMD-width table loads are optimal */
+#if GMX_SIMD_WIDTH_HERE == 8
+#define TAB_FDV0
+#endif
+
+/*
+Berk, 2xnn.c had the following code, but I think it is safe to remove now, given the code immediately above.
+
+#if defined GMX_X86_AVX_256 && !defined GMX_DOUBLE
+/ * AVX-256 single precision 2x(4+4) kernel,
+ * we can do half SIMD-width aligned FDV0 table loads.
+ * /
+#define TAB_FDV0
+#endif
+*/
+
 #ifdef GMX_DOUBLE
 #include "nbnxn_kernel_simd_utils_x86_256d.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "nbnxn_kernel_simd_utils_x86_256s.h"
+#endif /* GMX_DOUBLE */
+
+#else  /* defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
+
+/* We use the FDV0 table layout when we can use aligned table loads */
+#if GMX_SIMD_WIDTH_HERE == 4
+#define TAB_FDV0
 #endif
-#else
+
 #ifdef GMX_DOUBLE
 #include "nbnxn_kernel_simd_utils_x86_128d.h"
-#else
+#else  /* GMX_DOUBLE */
 #include "nbnxn_kernel_simd_utils_x86_128s.h"
+#endif /* GMX_DOUBLE */
+
+#endif /* defined GMX_X86_AVX_256 && !defined GMX_USE_HALF_WIDTH_SIMD_HERE */
+
+#else  /* GMX_X86_SSE2 */
+
+#if GMX_SIMD_WIDTH_HERE > 4
+static const int nbfp_stride = 4;
+#else
+static const int nbfp_stride = GMX_SIMD_WIDTH_HERE;
 #endif
-#endif
-#endif
-#endif
+
+#endif /* GMX_X86_SSE2 */
+#endif /* GMX_SIMD_REFERENCE_PLAIN_C */
 
 
 #ifdef UNROLLJ
@@ -118,4 +186,4 @@ add_ener_grp_halves(gmx_mm_pr e_S, real *v0, real *v1, const int *offset_jj)
 }
 #endif
 
-#endif /* _nbnxn_kernel_sse_utils_h_ */
+#endif /* _nbnxn_kernel_simd_utils_h_ */
