@@ -74,6 +74,8 @@ namespace gmx
 //! Container type for mapping module names to module objects.
 typedef std::map<std::string, CommandLineModulePointer> CommandLineModuleMap;
 
+class CommandLineHelpModule;
+
 namespace
 {
 
@@ -189,7 +191,7 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
 }
 
 /********************************************************************
- * ModuleHelpTopic
+ * ModuleHelpTopic declaration
  */
 
 /*! \internal \brief
@@ -205,8 +207,9 @@ class ModuleHelpTopic : public HelpTopicInterface
 {
     public:
         //! Constructs a help topic for a specific module.
-        explicit ModuleHelpTopic(const CommandLineModuleInterface &module)
-            : module_(module)
+        ModuleHelpTopic(const CommandLineModuleInterface &module,
+                        const CommandLineHelpModule      &helpModule)
+            : module_(module), helpModule_(helpModule)
         {
         }
 
@@ -221,16 +224,10 @@ class ModuleHelpTopic : public HelpTopicInterface
 
     private:
         const CommandLineModuleInterface &module_;
+        const CommandLineHelpModule      &helpModule_;
 
         GMX_DISALLOW_COPY_AND_ASSIGN(ModuleHelpTopic);
 };
-
-void ModuleHelpTopic::writeHelp(const HelpWriterContext &context) const
-{
-    CommandLineHelpContext newContext(&context.outputFile(),
-                                      context.outputFormat());
-    module_.writeHelp(newContext);
-}
 
 /********************************************************************
  * HelpExportInterface
@@ -288,6 +285,24 @@ class CommandLineHelpModule : public CommandLineModuleInterface
          * \throws    std::bad_alloc if out of memory.
          */
         void addTopic(HelpTopicPointer topic);
+        //! Sets whether hidden options will be shown in help.
+        void setShowHidden(bool bHidden) { bHidden_ = bHidden; }
+        /*! \brief
+         * Sets an override to show the help for the given module.
+         *
+         * If called, the help module directly prints the help for the given
+         * module when called, skipping any other processing.
+         */
+        void setModuleOverride(const CommandLineModuleInterface &module)
+        {
+            moduleOverride_ = &module;
+        }
+
+        //! Returns the context object for help output.
+        const CommandLineHelpContext &context() const
+        {
+            return *context_;
+        }
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const
@@ -304,11 +319,16 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
         const CommandLineModuleMap       &modules_;
 
+        CommandLineHelpContext           *context_;
+        const CommandLineModuleInterface *moduleOverride_;
+        bool                              bHidden_;
+
         GMX_DISALLOW_COPY_AND_ASSIGN(CommandLineHelpModule);
 };
 
 CommandLineHelpModule::CommandLineHelpModule(const CommandLineModuleMap &modules)
-    : rootTopic_(new RootHelpTopic(modules)), modules_(modules)
+    : rootTopic_(new RootHelpTopic(modules)), modules_(modules),
+      context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
 }
 
@@ -335,9 +355,18 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
-    HelpWriterContext context(&File::standardOutput(),
-                              eHelpOutputFormat_Console);
-    HelpManager       helpManager(*rootTopic_, context);
+    boost::scoped_ptr<CommandLineHelpContext> context(
+            new CommandLineHelpContext(&File::standardOutput(),
+                                       eHelpOutputFormat_Console));
+    context->setShowHidden(bHidden_);
+    context_ = context.get();
+    if (moduleOverride_ != NULL)
+    {
+        ModuleHelpTopic(*moduleOverride_, *this).writeHelp(context->writerContext());
+        return 0;
+    }
+
+    HelpManager       helpManager(*rootTopic_, context->writerContext());
     try
     {
         for (int i = 1; i < argc; ++i)
@@ -390,6 +419,15 @@ namespace
 {
 
 /********************************************************************
+ * ModuleHelpTopic implementation
+ */
+
+void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
+{
+    module_.writeHelp(helpModule_.context());
+}
+
+/********************************************************************
  * CMainCommandLineModule
  */
 
@@ -438,20 +476,22 @@ class CMainCommandLineModule : public CommandLineModuleInterface
         virtual void writeHelp(const CommandLineHelpContext &context) const
         {
             const HelpOutputFormat format = context.writerContext().outputFormat();
-            char                  *argv[2];
-            int                    argc = 1;
-            // TODO: The constness should not be cast away.
-            argv[0] = const_cast<char *>(name_);
+            const char            *type;
             switch (format)
             {
                 case eHelpOutputFormat_Console:
-                    argv[1] = const_cast<char *>("-h");
-                    argc    = 2;
+                    type = "help";
                     break;
                 default:
                     GMX_THROW(NotImplementedError(
                                       "Command-line help is not implemented for this output format"));
             }
+            char *argv[3];
+            int   argc = 3;
+            // TODO: The constness should not be cast away.
+            argv[0] = const_cast<char *>(name_);
+            argv[1] = const_cast<char *>("-man");
+            argv[2] = const_cast<char *>(type);
             GlobalCommandLineHelpContext global(context);
             mainFunction_(argc, argv);
         }
@@ -483,6 +523,21 @@ class CommandLineModuleManager::Impl
          * \param     programInfo  Program information for the running binary.
          */
         explicit Impl(ProgramInfo *programInfo);
+
+        /*! \brief
+         * Helper method that adds a given module to the module manager.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         */
+        void addModule(CommandLineModulePointer module);
+        /*! \brief
+         * Creates the help module if it does not yet exist.
+         *
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * This method should be called before accessing \a helpModule_.
+         */
+        void ensureHelpModuleExists();
 
         /*! \brief
          * Finds a module that matches a name.
@@ -566,6 +621,26 @@ CommandLineModuleManager::Impl::Impl(ProgramInfo *programInfo)
     binaryInfoSettings_.copyright(true);
 }
 
+void CommandLineModuleManager::Impl::addModule(CommandLineModulePointer module)
+{
+    GMX_ASSERT(modules_.find(module->name()) == modules_.end(),
+               "Attempted to register a duplicate module name");
+    ensureHelpModuleExists();
+    HelpTopicPointer helpTopic(new ModuleHelpTopic(*module, *helpModule_));
+    modules_.insert(std::make_pair(std::string(module->name()),
+                                   move(module)));
+    helpModule_->addTopic(move(helpTopic));
+}
+
+void CommandLineModuleManager::Impl::ensureHelpModuleExists()
+{
+    if (helpModule_ == NULL)
+    {
+        helpModule_ = new CommandLineHelpModule(modules_);
+        addModule(CommandLineModulePointer(helpModule_));
+    }
+}
+
 CommandLineModuleMap::const_iterator
 CommandLineModuleManager::Impl::findModuleByName(const std::string &name) const
 {
@@ -606,23 +681,15 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     }
 
     bool bHelp      = false;
+    bool bHidden    = false;
     bool bVersion   = false;
     bool bCopyright = true;
     // TODO: Print the common options into the help.
     // TODO: It would be nice to propagate at least the -quiet option to
     // the modules so that they can also be quiet in response to this.
-    // TODO: Consider handling -h and related options here instead of in the
-    // modules (also -hidden needs to be transfered here to make that work).
-    // That would mean that with -h, all module-specific options would get
-    // ignored.  This means that the help output would not depend on the
-    // command line, but would always show the default values (making it
-    // possible to simplify it further), but also that mdrun -h could not be
-    // used for option validation in g_tune_pme.
     Options options(NULL, NULL);
-    if (module == NULL)
-    {
-        options.addOption(BooleanOption("h").store(&bHelp));
-    }
+    options.addOption(BooleanOption("h").store(&bHelp));
+    options.addOption(BooleanOption("hidden").store(&bHidden));
     options.addOption(BooleanOption("quiet").store(&bQuiet_));
     options.addOption(BooleanOption("version").store(&bVersion));
     options.addOption(BooleanOption("copyright").store(&bCopyright));
@@ -661,10 +728,11 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
             // which path is taken: (*argv)[0] is the module name.
         }
     }
-    else
+    if (module != NULL)
     {
-        // In single-module mode, recognize the common options also after the
-        // module name.
+        // Recognize the common options also after the module name.
+        // TODO: It could be nicer to only recognize -h/-hidden if module is not
+        // null.
         CommandLineParser(&options).skipUnknown(true).parse(argc, *argv);
     }
     options.finish();
@@ -678,10 +746,20 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     }
     // If no module specified and no other action, show the help.
     // Also explicitly specifying -h for the wrapper binary goes here.
-    if (module == NULL)
+    if (module == NULL || bHelp)
     {
-        *argc = 1;
-        return helpModule_;
+        ensureHelpModuleExists();
+        helpModule_->setShowHidden(bHidden);
+        if (module != NULL)
+        {
+            helpModule_->setModuleOverride(*module);
+        }
+        *argc  = 1;
+        module = helpModule_;
+    }
+    if (module == helpModule_)
+    {
+        helpModule_->setShowHidden(bHidden);
     }
     return module;
 }
@@ -706,12 +784,7 @@ void CommandLineModuleManager::setQuiet(bool bQuiet)
 
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
 {
-    GMX_ASSERT(impl_->modules_.find(module->name()) == impl_->modules_.end(),
-               "Attempted to register a duplicate module name");
-    HelpTopicPointer helpTopic(new ModuleHelpTopic(*module));
-    impl_->modules_.insert(std::make_pair(std::string(module->name()),
-                                          move(module)));
-    addHelpTopic(move(helpTopic));
+    impl_->addModule(move(module));
 }
 
 void CommandLineModuleManager::addModuleCMain(
@@ -725,11 +798,7 @@ void CommandLineModuleManager::addModuleCMain(
 
 void CommandLineModuleManager::addHelpTopic(HelpTopicPointer topic)
 {
-    if (impl_->helpModule_ == NULL)
-    {
-        impl_->helpModule_ = new CommandLineHelpModule(impl_->modules_);
-        addModule(CommandLineModulePointer(impl_->helpModule_));
-    }
+    impl_->ensureHelpModuleExists();
     impl_->helpModule_->addTopic(move(topic));
 }
 

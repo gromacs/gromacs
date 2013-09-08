@@ -466,9 +466,8 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            int nbugs, const char **bugs,
                            output_env_t *oenv)
 {
-    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bVerbose = FALSE;
     const char *manstr[] = {
-        NULL, "no", "html", "tex", "nroff", "completion", NULL
+        NULL, "no", "help", "html", "tex", "nroff", "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
@@ -527,12 +526,6 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #define EXTRA_PA 16
 
     t_pargs  pca_pa[] = {
-        { "-h",    FALSE, etBOOL, {&bHelp},
-          "Print help info and quit" },
-        { "-verbose",  FALSE, etBOOL, {&bVerbose},
-          "HIDDENShow options during normal run" },
-        { "-hidden", FALSE, etBOOL, {&bHidden},
-          "HIDDENPrint hidden options" },
         { "-man",  FALSE, etENUM,  {manstr},
           "HIDDENWrite manual and quit" },
         { "-debug", FALSE, etINT, {&debug_level},
@@ -703,7 +696,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    bExit = bHelp || (strcmp(manstr[0], "no") != 0);
+    bExit = (strcmp(manstr[0], "no") != 0);
 
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
@@ -738,36 +731,22 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #endif
 #endif
 
-    if (!(FF(PCA_QUIET)))
-    {
-        if (bHelp)
-        {
-            write_man("help", output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-        }
-        else if (bVerbose)
-        {
-            pr_fns(stderr, nfile, fnm);
-            print_pargs(stderr, npall, all_pa, FALSE);
-        }
-    }
-
-    if (strcmp(manstr[0], "no") != 0)
+    if (strcmp(manstr[0], "no") != 0 && !(FF(PCA_QUIET)))
     {
         if (!strcmp(manstr[0], "completion"))
         {
             /* one file each for csh, bash and zsh if we do completions */
             write_man("completion-zsh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
             write_man("completion-bash", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
             write_man("completion-csh", output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
         }
         else
         {
             write_man(manstr[0], output_env_get_short_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
         }
     }
 

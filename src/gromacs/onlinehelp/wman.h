@@ -45,8 +45,7 @@ void write_man(const char *mantp, const char *program,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,
-               int nbug, const char **bugs,
-               gmx_bool bHidden);
+               int nbug, const char **bugs);
 
 char *fileopt(unsigned long flag, char buf[], int maxsize);
 /* Return a string describing the file type in flag.
