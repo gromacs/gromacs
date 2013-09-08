@@ -1305,7 +1305,9 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
     snew(command, length +  15);
     snew(msg, length + 500);
 
-    fprintf(stdout, "Making shure the benchmarks can be executed ...\n");
+    fprintf(stdout, "Making sure the benchmarks can be executed ...\n");
+    /* FIXME: mdrun -h no longer actually does anything useful.
+     * It unconditionally prints the help, ignoring all other options. */
     sprintf(command, "%s-h -quiet", mdrun_cmd_line);
     ret = gmx_system_call(command);
 

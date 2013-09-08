@@ -492,13 +492,11 @@ class CommandLineHelpWriter::Impl
         std::string             timeUnit_;
         //! Whether to write descriptions to output.
         bool                    bShowDescriptions_;
-        //! Whether to write hidden options to output.
-        bool                    bShowHidden_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
     : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
-      bShowDescriptions_(false), bShowHidden_(false)
+      bShowDescriptions_(false)
 {
 }
 
@@ -513,12 +511,6 @@ CommandLineHelpWriter::CommandLineHelpWriter(const Options &options)
 
 CommandLineHelpWriter::~CommandLineHelpWriter()
 {
-}
-
-CommandLineHelpWriter &CommandLineHelpWriter::setShowHidden(bool bSet)
-{
-    impl_->bShowHidden_ = bSet;
-    return *this;
 }
 
 CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
@@ -550,7 +542,7 @@ void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
                               "Command-line help is not implemented for this output format"));
     }
     OptionsFilter filter(writerContext, formatter.get());
-    filter.setShowHidden(impl_->bShowHidden_);
+    filter.setShowHidden(context.showHidden());
 
     if (impl_->bShowDescriptions_)
     {
