@@ -55,7 +55,6 @@
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
@@ -82,9 +81,6 @@ class TrajectoryAnalysisCommandLineRunner::Impl
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        void printHelp(const Options                        &options,
-                       const TrajectoryAnalysisSettings     &settings,
-                       const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
@@ -104,26 +100,6 @@ TrajectoryAnalysisCommandLineRunner::Impl::Impl(
 
 TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 {
-}
-
-
-void
-TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
-        const Options                        &options,
-        const TrajectoryAnalysisSettings     &settings,
-        const TrajectoryAnalysisRunnerCommon &common)
-{
-    TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
-    if (flags != 0)
-    {
-        CommandLineHelpContext context(&File::standardError(),
-                                       eHelpOutputFormat_Console);
-        CommandLineHelpWriter(options)
-            .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
-            .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
-            .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(context);
-    }
 }
 
 
@@ -151,24 +127,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     {
         CommandLineParser  parser(&options);
-        try
-        {
-            parser.parse(argc, argv);
-        }
-        catch (const UserInputError &ex)
-        {
-            printHelp(options, *settings, *common);
-            throw;
-        }
-        printHelp(options, *settings, *common);
+        // TODO: Print the help if user provides an invalid option?
+        // Or just add a message advicing the user to invoke the help?
+        parser.parse(argc, argv);
         common->scaleTimeOptions(&options);
         options.finish();
     }
 
-    if (!common->optionsFinished(&commonOptions))
-    {
-        return false;
-    }
+    common->optionsFinished(&commonOptions);
     module_->optionsFinished(&moduleOptions, settings);
 
     common->initIndexGroups(selections);
@@ -283,7 +249,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 void
 TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &context)
 {
-    // TODO: This method duplicates some code from run() and Impl::printHelp().
+    // TODO: This method duplicates some code from run().
     // See how to best refactor it to share the common code.
     SelectionCollection             selections;
     TrajectoryAnalysisSettings      settings;
