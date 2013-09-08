@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -67,18 +67,6 @@ class TrajectoryAnalysisRunnerCommon
 {
     public:
         /*! \brief
-         * Flags that define what kind of help should be printed.
-         */
-        enum HelpFlag
-        {
-            efHelpShowOptions           = 1<<0, //!< Show options.
-            efHelpShowHidden            = 1<<1, //!< Show hidden options.
-            efHelpShowDescriptions      = 1<<2  //!< Show detailed description.
-        };
-        //! Combination of \ref HelpFlag values.
-        typedef unsigned long HelpFlags;
-
-        /*! \brief
          * Initializes a new runner helper.
          *
          * \param    settings  Settings object to use.
@@ -98,9 +86,8 @@ class TrajectoryAnalysisRunnerCommon
          * Processes common option values after they have been parsed.
          *
          * \param[in,out] options Options object in which options are stored.
-         * \returns       false if the tool should exit after printing help.
          */
-        bool optionsFinished(Options *options);
+        void optionsFinished(Options *options);
         //! Initialize index groups for selections.
         void initIndexGroups(SelectionCollection *selections);
         //! Free memory allocated for index groups.
@@ -128,8 +115,6 @@ class TrajectoryAnalysisRunnerCommon
          */
         void initFrame();
 
-        //! Returns flags for help printing.
-        HelpFlags helpFlags() const;
         //! Returns true if input data comes from a trajectory.
         bool hasTrajectory() const;
         //! Returns the topology information object.

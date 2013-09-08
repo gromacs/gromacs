@@ -81,9 +81,6 @@ class TrajectoryAnalysisRunnerCommon::Impl
         TrajectoryAnalysisSettings &settings_;
         TopologyInformation         topInfo_;
 
-        bool                        bHelp_;
-        bool                        bShowHidden_;
-        bool                        bVerbose_;
         //! Name of the trajectory file (empty if not provided).
         std::string                 trjfile_;
         //! Name of the topology file (empty if no topology provided).
@@ -107,7 +104,6 @@ class TrajectoryAnalysisRunnerCommon::Impl
 
 TrajectoryAnalysisRunnerCommon::Impl::Impl(TrajectoryAnalysisSettings *settings)
     : settings_(*settings),
-      bHelp_(false), bShowHidden_(false), bVerbose_(false),
       startTime_(0.0), endTime_(0.0), deltaTime_(0.0),
       grps_(NULL),
       bTrajOpen_(false), fr(NULL), gpbc_(NULL), status_(NULL), oenv_(NULL)
@@ -173,16 +169,6 @@ TrajectoryAnalysisRunnerCommon::initOptions(Options *options)
 {
     TrajectoryAnalysisSettings &settings = impl_->settings_;
 
-    // Add options for help.
-    options->addOption(BooleanOption("h").store(&impl_->bHelp_)
-                           .description("Print help and quit"));
-    options->addOption(BooleanOption("hidden").store(&impl_->bShowHidden_)
-                           .hidden()
-                           .description("Show hidden options"));
-    options->addOption(BooleanOption("verbose").store(&impl_->bVerbose_)
-                           .hidden()
-                           .description("Show options during normal run"));
-
     // Add common file name arguments.
     options->addOption(FileNameOption("f")
                            .filetype(eftTrajectory).inputFile()
@@ -236,14 +222,9 @@ TrajectoryAnalysisRunnerCommon::scaleTimeOptions(Options *options)
 }
 
 
-bool
+void
 TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
 {
-    if (impl_->bHelp_)
-    {
-        return false;
-    }
-
     impl_->settings_.impl_->plotSettings.setTimeUnit(
             impl_->settings_.impl_->timeUnitManager.timeUnit());
 
@@ -264,8 +245,6 @@ TrajectoryAnalysisRunnerCommon::optionsFinished(Options *options)
     {
         setTimeValue(TDELTA, impl_->deltaTime_);
     }
-
-    return true;
 }
 
 
@@ -447,27 +426,6 @@ TrajectoryAnalysisRunnerCommon::initFrame()
     }
 }
 
-
-TrajectoryAnalysisRunnerCommon::HelpFlags
-TrajectoryAnalysisRunnerCommon::helpFlags() const
-{
-    HelpFlags flags = 0;
-
-    if (impl_->bVerbose_)
-    {
-        flags |= efHelpShowOptions;
-    }
-    if (impl_->bHelp_)
-    {
-        flags |= efHelpShowOptions;
-        flags |= efHelpShowDescriptions;
-    }
-    if (flags != 0 && impl_->bShowHidden_)
-    {
-        flags |= efHelpShowHidden;
-    }
-    return flags;
-}
 
 bool
 TrajectoryAnalysisRunnerCommon::hasTrajectory() const
