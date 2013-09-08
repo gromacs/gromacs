@@ -76,6 +76,8 @@ class CommandLineHelpContext
          * \throws std::bad_alloc if out of memory.
          */
         void setModuleDisplayName(const std::string &name);
+        //! Sets whether hidden options should be shown in help output.
+        void setShowHidden(bool bHidden);
 
         //! Returns the lower-level context for writing the help.
         const HelpWriterContext &writerContext() const;
@@ -85,6 +87,8 @@ class CommandLineHelpContext
          * Does not throw.
          */
         const char *moduleDisplayName() const;
+        //! Returns whether hidden options should be shown in help output.
+        bool showHidden() const;
 
     private:
         class Impl;

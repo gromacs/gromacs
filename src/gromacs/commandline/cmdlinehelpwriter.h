@@ -69,10 +69,6 @@ class CommandLineHelpWriter
         ~CommandLineHelpWriter();
 
         /*! \brief
-         * Sets whether hidden options are shown in the help.
-         */
-        CommandLineHelpWriter &setShowHidden(bool bShow);
-        /*! \brief
          * Sets whether long descriptions for sections are shown in the help.
          */
         CommandLineHelpWriter &setShowDescriptions(bool bShow);
