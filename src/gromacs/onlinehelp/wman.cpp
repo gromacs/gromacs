@@ -745,7 +745,7 @@ static void write_ttyman(FILE *out,
     }
     if (npargs > 0)
     {
-        print_pargs(out, npargs, pa, FALSE);
+        print_pargs(out, npargs, pa);
     }
 }
 
@@ -986,10 +986,10 @@ void write_man(const char *mantp,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,
-               int nbug, const char **bugs,
-               gmx_bool bHidden)
+               int nbug, const char **bugs)
 {
-    int         i, npar;
+    bool        bHidden = false;
+    int         npar;
     t_pargs    *par;
 
     t_linkdata *links;
@@ -1002,11 +1002,8 @@ void write_man(const char *mantp,
     FILE *out;
     if (context != NULL)
     {
-        out = context->writerContext().outputFile().handle();
-    }
-    else if (strcmp(mantp, "help") == 0)
-    {
-        out = stderr;
+        out     = context->writerContext().outputFile().handle();
+        bHidden = context->showHidden();
     }
     else
     {
@@ -1025,7 +1022,7 @@ void write_man(const char *mantp,
     {
         snew(par, npargs);
         npar = 0;
-        for (i = 0; i < npargs; i++)
+        for (int i = 0; i < npargs; i++)
         {
             if (!is_hidden(&pa[i]))
             {
