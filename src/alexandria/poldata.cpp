@@ -2052,7 +2052,7 @@ static t_eemtype_props eemtype_props[eqgNR] = {
 
 ChargeGenerationModel name2eemtype(const char *name)
 {
-    ChargeGenerationModel i;
+    int i;
   
     for(i=eqgNone; (i<eqgNR); i++) 
     {
@@ -2066,7 +2066,7 @@ ChargeGenerationModel name2eemtype(const char *name)
 
 const char *get_eemtype_name(ChargeGenerationModel eem)
 {
-    ChargeGenerationModel i;
+    int i;
   
     for(i=eqgNone; (i<eqgNR); i++) 
     {
