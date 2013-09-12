@@ -167,12 +167,12 @@ void MolecularComposition::ReplaceAtom(std::string oldatom,std::string newatom)
   
 int MolecularComposition::CountAtoms(std::string atom)
 {
-    AtomNumIterator i;
-    
-    for(i=BeginAtomNum(); (i<EndAtomNum()); i++) 
+    for(AtomNumIterator i = BeginAtomNum(); (i < EndAtomNum()); i++) 
     {
-        if (atom == i->GetAtom())
+        if (atom.compare(i->GetAtom()) == 0)
+        {
             return i->GetNumber();
+        }
     }
     return 0;
 }
