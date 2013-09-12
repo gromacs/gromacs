@@ -62,66 +62,6 @@
 #include "gentop_vsite.hpp"
 #include "gentop_core.hpp"
 
-enum { elgcOK, elgcNOATOMS, elgcNOTOP, elgcNR };
-
-static int lo_gen_composition(alexandria::MolPropIterator mpi,
-                              gmx_poldata_t pd,gmx_atomprop_t aps,
-                              bool *bSpoel,bool *bMiller,bool *bBosque,
-                              double th_toler,double phi_toler)
-{
-    std::string miller;
-    alexandria::CalculationIterator ci;
-    alexandria::CalcAtomIterator cai;
-    alexandria::MolecularComposition mci_bosque("bosque"),mci_spoel("spoel"),mci_miller("miller");
-    alexandria::AtomNumIterator ani;
-    
-    for(ci=mpi->BeginCalculation(); (ci<mpi->EndCalculation()); ci++) 
-    {
-        /* This assumes we have either all atoms or none. 
-         * A consistency check could be
-         * to compare the number of atoms to the formula */
-        for(cai=ci->BeginAtom(); (cai<ci->EndAtom()); cai++)
-        {
-            alexandria::AtomNum anb(cai->GetName(),1),ans(cai->GetObtype(),1);
-            mci_bosque.AddAtom(anb);
-            mci_spoel.AddAtom(ans);
-            
-            const char *ptype = gmx_poldata_atype_to_ptype(pd,cai->GetObtype().c_str());
-            if (NULL != ptype)
-            {
-                const char *miller = gmx_poldata_ptype_to_miller(pd,ptype);
-                
-                if (NULL != miller)
-                {
-                    alexandria::AtomNum anm(miller,1);
-                    mci_miller.AddAtom(anm);
-                }
-            }
-        }
-    }
-    
-    *bSpoel  = mci_spoel.CountAtoms() > 0;
-    *bMiller = mci_miller.CountAtoms() > 0;
-    *bBosque = mci_bosque.CountAtoms() > 0;
-
-    mpi->AddComposition(mci_bosque);
-    mpi->AddComposition(mci_spoel);
-    mpi->AddComposition(mci_miller);
-    
-    
-    if (debug && *bSpoel) 
-    {
-        fprintf(debug,"LO_COMP: ");
-        for(ani = mci_spoel.BeginAtomNum(); (ani < mci_spoel.EndAtomNum()); ani++)
-        {
-            fprintf(debug," %s:%d",ani->GetAtom().c_str(),ani->GetNumber());
-        }
-        fprintf(debug,"\n");
-    }
-    
-    return elgcOK;
-}
-
 void generate_composition(std::vector<alexandria::MolProp>& mp,gmx_poldata_t pd)
 {
     int nOK = 0;
@@ -516,9 +456,13 @@ static bool comp_mp_formula(alexandria::MolProp ma,
     std::string fmb = mb.GetFormula();
   
     if (fma.compare(fmb) < 0)
+    {
         return true;
+    }
     else
+    {
         return comp_mp_molname(ma,mb);
+    }
 }
 
 gmx_atomprop_t my_aps;
@@ -537,14 +481,20 @@ static bool comp_mp_elem(alexandria::MolProp ma,
         (mcib != mb.EndMolecularComposition()))
     {
         if (mcia->CountAtoms(C) < mcib->CountAtoms(C))
+        {
             return true;
-  
+        }
+        
         for(i=1; (i<=109); i++) {
             if (i != 6) {
-                std::string elem(gmx_atomprop_element(my_aps,i));
-                
-                if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
-                    return true;
+                const char *ee = gmx_atomprop_element(my_aps,i);
+                if (NULL != ee)
+                {
+                    std::string elem(ee);
+                    
+                    if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
+                        return true;
+                }
             }
         }
     }
@@ -569,6 +519,13 @@ void MolPropSort(std::vector<alexandria::MolProp> &mp,
                  gmx_molselect_t gms)
 {
     printf("There are %d molprops. Will now sort them.\n",(int)mp.size());
+    for(alexandria::MolPropIterator mpi=mp.begin(); (mpi<mp.end()); mpi++)
+    {
+        if (NULL != debug)
+        {
+            mpi->Dump(debug);
+        }
+    }
     switch(mpsa) {
     case MPSA_MOLNAME:
         std::sort(mp.begin(),mp.end(),comp_mp_molname);
