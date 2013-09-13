@@ -480,20 +480,34 @@ static bool comp_mp_elem(alexandria::MolProp ma,
     if ((mcia != ma.EndMolecularComposition()) &&
         (mcib != mb.EndMolecularComposition()))
     {
-        if (mcia->CountAtoms(C) < mcib->CountAtoms(C))
+        int d = mcia->CountAtoms(C) - mcib->CountAtoms(C);
+        
+        if (d < 0)
         {
             return true;
         }
-        
-        for(i=1; (i<=109); i++) {
-            if (i != 6) {
-                const char *ee = gmx_atomprop_element(my_aps,i);
-                if (NULL != ee)
-                {
-                    std::string elem(ee);
-                    
-                    if (mcia->CountAtoms(elem) < mcib->CountAtoms(elem))
-                        return true;
+        else if (d > 0)
+        {
+            return false;
+        }
+        else
+        {
+            for(i=1; (i<=109); i++) {
+                if (i != 6) {
+                    const char *ee = gmx_atomprop_element(my_aps,i);
+                    if (NULL != ee)
+                    {
+                        std::string elem(ee);
+                        d = mcia->CountAtoms(elem) - mcib->CountAtoms(elem);
+                        if (d == 0)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            return (d < 0);
+                        }
+                    }
                 }
             }
         }

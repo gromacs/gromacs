@@ -532,7 +532,6 @@ static void do_init_mtop(gmx_poldata_t pd,
     
     mtop_->ffparams.atnr = ntype;
     int vdw_type = gmx_poldata_get_vdw_ftype(pd);
-    int comb_rule = gmx_poldata_get_vdw_ftype(pd);
     
     snew(mtop_->ffparams.functype,ntype*ntype);
     snew(mtop_->ffparams.iparams,ntype*ntype);

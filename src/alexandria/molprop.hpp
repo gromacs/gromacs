@@ -912,7 +912,6 @@ public:
                 double *value,double *error,double vec[3],
                 tensor quadrupole);
     
-    
     //! Merge in another object - Low level function
     void MergeLow(Experiment *src);
 

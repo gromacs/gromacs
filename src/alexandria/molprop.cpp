@@ -145,8 +145,10 @@ AtomNumIterator MolecularComposition::SearchAtom(std::string an)
     
     for(ani=BeginAtomNum(); (ani<EndAtomNum()); ani++)
     {
-        if (ani->GetAtom() == an)
+        if (an.compare(ani->GetAtom()) == 0)
+        {
             return ani;
+        }
     }
     return EndAtomNum();
 }
@@ -157,7 +159,7 @@ void MolecularComposition::ReplaceAtom(std::string oldatom,std::string newatom)
     
     for(i=BeginAtomNum(); (i<EndAtomNum()); i++) 
     {
-        if (oldatom == i->GetAtom())
+        if (oldatom.compare(i->GetAtom()) == 0)
         {
             i->SetAtom(newatom);
             break;
@@ -206,8 +208,10 @@ bool MolProp::SearchCategory(std::string catname)
     
     for(i=BeginCategory(); (i < EndCategory()); i++)
     {
-        if (*i == catname)
+        if (catname.compare(*i) == 0)
+        {
             return true;
+        }
     }
     return false;
 }
@@ -218,13 +222,15 @@ void MolProp::DeleteComposition(std::string compname)
     
     for(i=BeginMolecularComposition(); (i<EndMolecularComposition()); i++) 
     {
-        if (i->GetCompName() == compname) 
+        if (compname.compare(i->GetCompName()) == 0) 
         {
             break;
         }
     }
     if (i < EndMolecularComposition())
+    {
         _mol_comp.erase(i);
+    }
 }
 
 void Experiment::Dump(FILE *fp)
@@ -329,8 +335,8 @@ void CalcAtom::AddCharge(AtomicCharge q)
 
     for(aci=BeginQ(); (aci<EndQ()); aci++)
     {
-        if ((aci->GetType() == q.GetType()) &&
-            (aci->GetUnit() == q.GetUnit()) &&
+        if ((aci->GetType().compare(q.GetType()) == 0) &&
+            (aci->GetUnit().compare(q.GetUnit()) == 0) &&
             (aci->GetQ() == q.GetQ()))
             break;
     }
@@ -340,14 +346,12 @@ void CalcAtom::AddCharge(AtomicCharge q)
 
 bool CalcAtom::Equal(CalcAtom ca)
 {
-    if ((_name != ca.GetName()) ||
-        (_obtype != ca.GetObtype()) ||
-        (_x != ca.GetX()) ||
-        (_y != ca.GetY()) ||
-        (_z != ca.GetZ()) ||
-        (_atomid != ca.GetAtomid()))
-        return false;
-    return true;
+    return !((_name.compare(ca.GetName()) != 0) ||
+             (_obtype.compare(ca.GetObtype()) != 0) ||
+             (_x != ca.GetX()) ||
+             (_y != ca.GetY()) ||
+             (_z != ca.GetZ()) ||
+             (_atomid != ca.GetAtomid()));
 }
 
 CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
@@ -356,7 +360,9 @@ CalcAtomIterator Calculation::SearchAtom(CalcAtom ca)
     for(cai=BeginAtom(); (cai<EndAtom()); cai++)
     {
         if (cai->Equal(ca))
+        {
             break;
+        }
     }
     return cai;
 }
@@ -417,40 +423,51 @@ void MolProp::Merge(MolProp& src)
     {
         int smult = src.GetMultiplicity();
         if ((NULL != debug) && (smult != GetMultiplicity()))
+        {
             fprintf(debug,"Not overriding multiplicity to %d when merging since it is %d (%s)\n",
                     smult,GetMultiplicity(),src.GetMolname().c_str());
+        }
     }
     q = GetCharge();
     if (q == 0)
+    {
         SetCharge(src.GetCharge());
+    }
     else
     {
         sq = src.GetCharge();
         if ((NULL != debug) && (sq != q))
+        {
             fprintf(debug,"Not overriding charge to %g when merging since it is %g (%s)\n",
                     sq,q,GetMolname().c_str());
+        }
     }
   
     stmp = src.GetMolname();
     if ((GetMolname().size() == 0) && (stmp.size() != 0))
+    {
         SetMolname(stmp);
-
+    }
     stmp = src.GetIupac();
     if ((GetIupac().size() == 0) && (stmp.size() != 0))
+    {
         SetIupac(stmp);
-  
+    }
     stmp = src.GetCas();
     if ((GetCas().size() == 0) && (stmp.size() != 0))
+    {
         SetCas(stmp);
-      
+    }
     stmp = src.GetCid();
     if ((GetCid().size() == 0) && (stmp.size() != 0))
+    {
         SetCid(stmp);
-      
+    }
     stmp = src.GetInchi();
     if ((GetInchi().size() == 0) && (stmp.size() != 0))
+    {
         SetInchi(stmp);
-  
+    }
     if (NBond() == 0)
     {
         for(alexandria::BondIterator bi=src.BeginBond(); (bi<src.EndBond()); bi++) 
@@ -510,8 +527,10 @@ MolecularCompositionIterator MolProp::SearchMolecularComposition(std::string str
     
     for(i=BeginMolecularComposition(); (i<EndMolecularComposition()); i++) 
     {
-        if (i->GetCompName() == str) 
-            return i;
+        if (i->GetCompName().compare(str) == 0)
+        {
+            break;
+        }
     }
     return i;
 }
@@ -522,7 +541,8 @@ void MolProp::Dump(FILE *fp)
     ExperimentIterator ei;
     CalculationIterator ci;
     
-    if (fp) {
+    if (fp) 
+    {
         fprintf(fp,"formula:      %s\n",GetFormula().c_str());
         fprintf(fp,"molname:      %s\n",GetMolname().c_str());
         fprintf(fp,"iupac:        %s\n",GetIupac().c_str());
@@ -626,16 +646,18 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
     mci = SearchMolecularComposition("bosque");
     if (mci != EndMolecularComposition()) 
     {
-        for(ani=mci->BeginAtomNum(); (ani<mci->EndAtomNum()); ani++)
+        for(ani = mci->BeginAtomNum(); (ani < mci->EndAtomNum()); ani++)
         {
-            catom = ani->GetAtom();
+            catom   = ani->GetAtom();
             cnumber = ani->GetNumber();
             if (gmx_atomprop_query(ap,epropElement,"???",catom.c_str(),&value))
             {
                 an = gmx_nint(value);
                 range_check(an,0,110);
                 if (an > 0)
+                {
                     ncomp[an] += cnumber;
+                }
             }
         }
     }
@@ -659,7 +681,7 @@ bool MolProp::GenerateFormula(gmx_atomprop_t ap)
             ncomp[1] = 0;
         }
     }
-    for(j=110; (j>=1); j--) 
+    for(j=109; (j>=1); j--) 
     {
         if (ncomp[j] > 0)
         {
@@ -699,13 +721,17 @@ bool MolProp::HasComposition(std::string composition)
     {    
         for(mci=BeginMolecularComposition(); !bComp && (mci<EndMolecularComposition()); mci++)
         {
-            if (mci->GetCompName() == composition)
+            if (mci->GetCompName().compare(composition) == 0)
+            {
                 bComp = true;
+            }
         }
     }
     if (debug && !bComp)
+    {
         fprintf(debug,"No composition %s for molecule %s\n",composition.c_str(),
                 GetMolname().c_str());
+    }
               
     return bComp;   
 }
@@ -799,15 +825,23 @@ bool MolProp::GetPropRef(MolPropObservable mpo,iqmType iQM,char *lot,
             expconf   = ei->GetConformation();
             
             if ((NULL == conf) || (strcasecmp(conf,expconf.c_str()) == 0))
+            {
                 done = ei->GetVal(type,mpo,value,error,vec,quadrupole);
+            }
             if (done)
+            {
                 break;
+            }
         }
         if (!done) {
             if (NULL != ref)
+            {
                 *ref = strdup(reference.c_str());
+            }
             if (NULL != mylot)
+            {
                 *mylot = strdup("Experiment");
+            }
         }
     }
     
