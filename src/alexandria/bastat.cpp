@@ -508,8 +508,13 @@ int main(int argc,char *argv[])
             printf("Empty molname for molecule with formula %s\n",mmi.GetFormula().c_str());
             continue;
         }
-        mmi.GenerateTopology(aps,pd,lot,iModel,FALSE,2);
+        immStatus imm = mmi.GenerateTopology(aps,pd,lot,iModel,FALSE,2);
         
+        if (immOK != imm)
+        {
+            printf("Could not make topology for %s\n",mmi.GetMolname().c_str());
+            continue;
+        }
 #define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology_->atoms.atomtype[ii])
         for(i=0; (i<mmi.topology_->atoms.nr); i++)
         {
