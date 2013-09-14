@@ -55,27 +55,24 @@
 
 #include "gromacs/utility/gmxmpi.h"
 
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
+
 static gmx_bool bDebug         = FALSE;
 static char    *fatal_tmp_file = NULL;
 static FILE    *log_file       = NULL;
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi/threads.h"
 static tMPI_Thread_mutex_t debug_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t where_mutex     = TMPI_THREAD_MUTEX_INITIALIZER;
 static tMPI_Thread_mutex_t fatal_tmp_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 gmx_bool bDebugMode(void)
 {
     gmx_bool ret;
-/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_lock(&debug_mutex);
 #endif
     ret = bDebug;
-/*#ifdef GMX_THREAD_MPI*/
 #if 0
     tMPI_Thread_mutex_unlock(&debug_mutex);
 #endif
@@ -97,22 +94,17 @@ void _where(const char *file, int line)
 
     if (bFirst)
     {
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&where_mutex);
         if (bFirst) /* we repeat the check in the locked section because things
                        might have changed */
         {
-#endif
-        if ((temp = getenv("WHERE")) != NULL)
-        {
-            nskip = strtol(temp, NULL, 10);
+            if ((temp = getenv("WHERE")) != NULL)
+            {
+                nskip = strtol(temp, NULL, 10);
+            }
+            bFirst = FALSE;
         }
-        bFirst = FALSE;
-#ifdef GMX_THREAD_MPI
-    }
-    tMPI_Thread_mutex_unlock(&where_mutex);
-#endif
-
+        tMPI_Thread_mutex_unlock(&where_mutex);
     }
 
     if (nskip >= 0)
@@ -219,9 +211,7 @@ static int fatal_errno = 0;
 
 static void quit_gmx(const char *msg)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
     if (fatal_errno == 0)
     {
         if (log_file)
@@ -275,9 +265,7 @@ static void quit_gmx(const char *msg)
     }
 
     exit(fatal_errno);
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 
 /* The function below should be identical to quit_gmx,
@@ -285,9 +273,7 @@ static void quit_gmx(const char *msg)
  */
 static void quit_gmx_noquit(const char *msg)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
     if (!fatal_errno)
     {
         if (log_file)
@@ -324,16 +310,12 @@ static void quit_gmx_noquit(const char *msg)
     }
 #endif
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 
 void _set_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-#endif
     if (fatal_tmp_file == NULL)
     {
         fatal_tmp_file = strdup(fn);
@@ -343,16 +325,12 @@ void _set_fatal_tmp_file(const char *fn, const char *file, int line)
         fprintf(stderr, "BUGWARNING: fatal_tmp_file already set at %s:%d",
                 file, line);
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-#endif
 }
 
 void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-#endif
     if (strcmp(fn, fatal_tmp_file) == 0)
     {
         sfree(fatal_tmp_file);
@@ -363,16 +341,12 @@ void _unset_fatal_tmp_file(const char *fn, const char *file, int line)
         fprintf(stderr, "BUGWARNING: file %s not set as fatal_tmp_file at %s:%d",
                 fn, file, line);
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-#endif
 }
 
 static void clean_fatal_tmp_file()
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&fatal_tmp_mutex);
-#endif
     if (fatal_tmp_file)
     {
         fprintf(stderr, "Cleaning up temporary file %s\n", fatal_tmp_file);
@@ -380,9 +354,7 @@ static void clean_fatal_tmp_file()
         sfree(fatal_tmp_file);
         fatal_tmp_file = NULL;
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&fatal_tmp_mutex);
-#endif
 }
 
 static void parse_printf_args(const char *fmt, va_list *ap, char *msg)
@@ -489,15 +461,9 @@ void gmx_fatal(int f_errno, const char *file, int line, const char *fmt, ...)
 
     va_end(ap);
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-
     fatal_errno = f_errno;
-
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 
     _gmx_error("fatal", msg, file, line);
 }
@@ -540,15 +506,9 @@ void gmx_fatal_collective(int f_errno, const char *file, int line,
 
         va_end(ap);
 
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
-
         fatal_errno = f_errno;
-
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 
         if (bFinalize)
         {
@@ -607,11 +567,9 @@ void _unexpected_eof(const char *fn, int line, const char *srcfn, int srcline)
 FILE *debug           = NULL;
 gmx_bool gmx_debug_at = FALSE;
 
-void init_debug (const int dbglevel, const char *dbgfile)
+void init_debug(const int dbglevel, const char *dbgfile)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
     if (!bDebug) /* another thread hasn't already run this*/
     {
         no_buffers();
@@ -622,9 +580,7 @@ void init_debug (const int dbglevel, const char *dbgfile)
             gmx_debug_at = TRUE;
         }
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 
 #if (defined __sgi && defined USE_SGI_FPE)
@@ -657,9 +613,7 @@ void doexceptions(void)
 
     int onoff, en_mask, abort_action, i;
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
     onoff   = _DEBUG;
     en_mask = _EN_UNDERFL | _EN_OVERFL | _EN_DIVZERO |
         _EN_INVALID | _EN_INT_OVERFL;
@@ -670,9 +624,7 @@ void doexceptions(void)
     {
         signal(hs[i], handle_signals);
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 #endif /* __sgi and FPE */
 
@@ -682,13 +634,9 @@ static void (*gmx_error_handler)(const char *msg) = quit_gmx;
 
 void set_gmx_error_handler(void (*func)(const char *msg))
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&debug_mutex);
-#endif
     gmx_error_handler = func;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&debug_mutex);
-#endif
 }
 
 char *gmx_strerror(const char *key)

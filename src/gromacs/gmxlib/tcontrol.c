@@ -41,9 +41,7 @@
 #include "typedefs.h"
 #include "gmx_fatal.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* The source code in this file should be thread-safe.
          Please keep it that way. */
@@ -60,22 +58,16 @@ static t_timecontrol timecontrol[TNR] = {
     { 0, FALSE }
 };
 
-#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t tc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 gmx_bool bTimeSet(int tcontrol)
 {
     gmx_bool ret;
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
-#endif
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].bSet;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
-#endif
 
     return ret;
 }
@@ -84,26 +76,18 @@ real rTimeValue(int tcontrol)
 {
     real ret;
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
-#endif
     range_check(tcontrol, 0, TNR);
     ret = timecontrol[tcontrol].t;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
-#endif
     return ret;
 }
 
 void setTimeValue(int tcontrol, real value)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&tc_mutex);
-#endif
     range_check(tcontrol, 0, TNR);
     timecontrol[tcontrol].t    = value;
     timecontrol[tcontrol].bSet = TRUE;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&tc_mutex);
-#endif
 }
