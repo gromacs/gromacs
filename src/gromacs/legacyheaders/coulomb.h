@@ -89,12 +89,6 @@ ewald_charge_correction(t_commrec *cr, t_forcerec *fr, real lambda, matrix box,
  * Should only be called on one thread.
  */
 
-/* Routines to set global constants for speeding up the calculation
- * of potentials and forces.
- */
-void
-set_shift_consts(real r1, real rc, rvec box);
-
 #ifdef __cplusplus
 }
 #endif

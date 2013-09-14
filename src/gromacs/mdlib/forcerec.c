@@ -2033,7 +2033,6 @@ void init_forcerec(FILE              *fp,
     real           rtab;
     char          *env;
     double         dbl;
-    rvec           box_size;
     const t_block *cgs;
     gmx_bool       bGenericKernelOnly;
     gmx_bool       bTab, bSep14tab, bNormalnblists;
@@ -2471,18 +2470,6 @@ void init_forcerec(FILE              *fp,
     if (fr->eeltype == eelGRF)
     {
         init_generalized_rf(fp, mtop, ir, fr);
-    }
-    else if (fr->eeltype == eelSHIFT)
-    {
-        for (m = 0; (m < DIM); m++)
-        {
-            box_size[m] = box[m][m];
-        }
-
-        if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
-        {
-            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
-        }
     }
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
