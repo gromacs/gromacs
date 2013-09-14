@@ -51,6 +51,8 @@
 #endif
 
 #ifdef DEBUG
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
+
 static void log_action(int bMal, const char *what, const char *file, int line,
                        int nelem, int size, void *ptr)
 {
@@ -64,9 +66,7 @@ static void log_action(int bMal, const char *what, const char *file, int line,
         bytes = -bytes;
     }
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&gmx_logfile_mtx);
-#endif
 
     /* This total memory count is not correct, since with realloc
      * it adds the whole size again, not just the increment.
@@ -101,9 +101,7 @@ static void log_action(int bMal, const char *what, const char *file, int line,
                what ? what  : NN, bytes/1024.0,
                file ? fname : NN, line, nelem, size);
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&gmx_logfile_mtx);
-#endif
 }
 #endif
 
