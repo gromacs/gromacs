@@ -76,9 +76,7 @@
 #include "gromacs/utility/programinfo.h"
 #include "gromacs/utility/stringutil.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi/threads.h"
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* we keep a linked list of all files opened through pipes (i.e.
    compressed or .gzipped files. This way we can distinguish between them
@@ -92,11 +90,9 @@ typedef struct t_pstack {
 static t_pstack    *pstack      = NULL;
 static gmx_bool     bUnbuffered = FALSE;
 
-#ifdef GMX_THREAD_MPI
 /* this linked list is an intrinsically globally shared object, so we have
    to protect it with mutexes */
 static tMPI_Thread_mutex_t pstack_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 void no_buffers(void)
 {
@@ -107,17 +103,14 @@ void push_ps(FILE *fp)
 {
     t_pstack *ps;
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
     snew(ps, 1);
     ps->fp   = fp;
     ps->prev = pstack;
     pstack   = ps;
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
 }
 
 #ifdef GMX_FAHCORE
@@ -156,9 +149,8 @@ int ffclose(FILE *fp)
 #else
     t_pstack *ps, *tmp;
     int       ret = 0;
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
     ps = pstack;
     if (ps == NULL)
@@ -201,9 +193,8 @@ int ffclose(FILE *fp)
             }
         }
     }
-#ifdef GMX_THREAD_MPI
+
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
     return ret;
 #endif
 }
@@ -215,28 +206,21 @@ int ffclose(FILE *fp)
 
 void frewind(FILE *fp)
 {
-    t_pstack *ps;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
-    ps = pstack;
+    t_pstack *ps = pstack;
     while (ps != NULL)
     {
         if (ps->fp == fp)
         {
             fprintf(stderr, "Cannot rewind compressed file!\n");
-#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
             return;
         }
         ps = ps->prev;
     }
     rewind(fp);
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
 }
 
 int gmx_fseek(FILE *stream, gmx_off_t offset, int whence)
@@ -268,26 +252,19 @@ gmx_off_t gmx_ftell(FILE *stream)
 
 gmx_bool is_pipe(FILE *fp)
 {
-    t_pstack *ps;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&pstack_mutex);
-#endif
 
-    ps = pstack;
+    t_pstack *ps = pstack;
     while (ps != NULL)
     {
         if (ps->fp == fp)
         {
-#ifdef GMX_THREAD_MPI
             tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
             return TRUE;
         }
         ps = ps->prev;
     }
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&pstack_mutex);
-#endif
     return FALSE;
 }
 
