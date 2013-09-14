@@ -53,10 +53,7 @@
 #include "types/membedt.h"
 #include "types/globsig.h"
 
-
-#ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -108,9 +105,9 @@ typedef struct {
  */
 extern gmx_large_int_t     deform_init_init_step_tpx;
 extern matrix              deform_init_box_tpx;
-#ifdef GMX_THREAD_MPI
 extern tMPI_Thread_mutex_t deform_init_box_mutex;
 
+#ifdef GMX_THREAD_MPI
 /* The minimum number of atoms per tMPI thread. With fewer atoms than this,
  * the number of threads will get lowered.
  */

@@ -57,9 +57,7 @@
 #include "gmxfio.h"
 #include "md5.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 #include "gmxfio_int.h"
 
@@ -72,7 +70,6 @@
 static t_fileio *open_files = NULL;
 
 
-#ifdef GMX_THREAD_MPI
 /* this mutex locks the open_files structure so that no two threads can
    modify it.
 
@@ -83,7 +80,6 @@ static t_fileio *open_files = NULL;
    iterating along all open files. All these cases should be rare
    during the simulation. */
 static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 /* These simple lists define the I/O type for these files */
@@ -264,16 +260,12 @@ static void gmx_fio_set_iotype(t_fileio *fio)
    type of access to the fio's elements. */
 void gmx_fio_lock(t_fileio *fio)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Lock_lock(&(fio->mtx));
-#endif
 }
 /* unlock the mutex associated with this fio.  */
 void gmx_fio_unlock(t_fileio *fio)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Lock_unlock(&(fio->mtx));
-#endif
 }
 
 /* make a dummy head element, assuming we locked everything. */
@@ -286,9 +278,7 @@ static void gmx_fio_make_dummy(void)
         open_files->fn   = NULL;
         open_files->next = open_files;
         open_files->prev = open_files;
-#ifdef GMX_THREAD_MPI
         tMPI_Lock_init(&(open_files->mtx));
-#endif
     }
 }
 
@@ -309,10 +299,8 @@ static void gmx_fio_make_dummy(void)
 static void gmx_fio_insert(t_fileio *fio)
 {
     t_fileio *prev;
-#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
     /* now check whether the dummy element has been allocated,
        and allocate it if it hasn't */
     gmx_fio_make_dummy();
@@ -341,10 +329,8 @@ static void gmx_fio_insert(t_fileio *fio)
     gmx_fio_unlock(open_files);
     gmx_fio_unlock(fio);
 
-#ifdef GMX_THREAD_MPI
     /* now unlock the big open_files mutex.  */
     tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
 }
 
 /* remove a t_fileio into the list. We assume the fio is locked, and we leave
@@ -378,10 +364,8 @@ static t_fileio *gmx_fio_get_first(void)
     t_fileio *ret;
     /* first lock the big open_files mutex and the dummy's mutex */
 
-#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
     gmx_fio_make_dummy();
 
     gmx_fio_lock(open_files);
@@ -415,9 +399,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
     if (fio->next == open_files)
     {
         ret = NULL;
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
     }
     else
     {
@@ -432,9 +414,7 @@ static t_fileio *gmx_fio_get_next(t_fileio *fio)
 static void gmx_fio_stop_getting_next(t_fileio *fio)
 {
     gmx_fio_unlock(fio);
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
 }
 
 
@@ -501,9 +481,7 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
     }
 
     snew(fio, 1);
-#ifdef GMX_THREAD_MPI
     tMPI_Lock_init(&(fio->mtx));
-#endif
     bRead      = (newmode[0] == 'r' && newmode[1] != '+');
     bReadWrite = (newmode[1] == '+');
     fio->fp    = NULL;
@@ -617,11 +595,9 @@ int gmx_fio_close(t_fileio *fio)
 {
     int rc = 0;
 
-#ifdef GMX_THREAD_MPI
     /* first lock the big open_files mutex. */
     /* We don't want two processes operating on the list at the same time */
     tMPI_Thread_mutex_lock(&open_file_mutex);
-#endif
 
     gmx_fio_lock(fio);
     /* first remove it from the list */
@@ -632,9 +608,7 @@ int gmx_fio_close(t_fileio *fio)
     sfree(fio->fn);
     sfree(fio);
 
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&open_file_mutex);
-#endif
 
     return rc;
 }
