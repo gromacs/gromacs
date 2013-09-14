@@ -51,27 +51,21 @@
 #include "xvgr.h"
 #include "gmxfio.h"
 
-#ifdef GMX_THREAD_MPI
 #include "thread_mpi/threads.h"
-#endif
 
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x))
 #define p4(x) ((x)*(x)*(x)*(x))
 
 static real                A, A_3, B, B_4, C, c1, c2, c3, c4, c5, c6, One_4pi, FourPi_V, Vol, N0;
-#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t shift_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 void set_shift_consts(real r1, real rc, rvec box)
 {
-#ifdef GMX_THREAD_MPI
     /* at the very least we shouldn't allow multiple threads to set these
        simulataneously */
     tMPI_Thread_mutex_lock(&shift_mutex);
-#endif
     /* A, B and C are recalculated in tables.c */
     if (r1 < rc)
     {
@@ -117,7 +111,5 @@ void set_shift_consts(real r1, real rc, rvec box)
     }
 
     One_4pi = 1.0/(4.0*M_PI);
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&shift_mutex);
-#endif
 }

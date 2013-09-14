@@ -38,10 +38,6 @@
 #endif
 
 /* This file is completely threadsafe - keep it that way! */
-#ifdef GMX_THREAD_MPI
-#include <thread_mpi.h>
-#endif
-
 
 #include <ctype.h>
 #include "sysstuff.h"

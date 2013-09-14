@@ -45,9 +45,7 @@
 #include "macros.h"
 #include <string.h>
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
+#include "gromacs/legacyheaders/thread_mpi/threads.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
@@ -55,22 +53,16 @@
 
 
 static gmx_bool            bOverAllocDD = FALSE;
-#ifdef GMX_THREAD_MPI
 static tMPI_Thread_mutex_t over_alloc_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 void set_over_alloc_dd(gmx_bool set)
 {
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_lock(&over_alloc_mutex);
     /* we just make sure that we don't set this at the same time.
        We don't worry too much about reading this rarely-set variable */
-#endif
     bOverAllocDD = set;
-#ifdef GMX_THREAD_MPI
     tMPI_Thread_mutex_unlock(&over_alloc_mutex);
-#endif
 }
 
 int over_alloc_dd(int n)
