@@ -170,7 +170,8 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
     set(${SRC_VARIABLE}
         thread_mpi/errhandler.c
         thread_mpi/tmpi_malloc.c
-        thread_mpi/atomic.c)
+        thread_mpi/atomic.c
+        thread_mpi/lock.c)
     if (THREAD_PTHREADS)
         list(APPEND ${SRC_VARIABLE} thread_mpi/pthreads.c)
     elseif (THREAD_WINDOWS)
@@ -190,9 +191,8 @@ MACRO(TMPI_GET_SOURCE_LIST SRC_VARIABLE)
              thread_mpi/gather.c        thread_mpi/scatter.c
              thread_mpi/group.c         thread_mpi/tmpi_init.c
              thread_mpi/topology.c      thread_mpi/list.c
-             thread_mpi/type.c          thread_mpi/lock.c
-             thread_mpi/numa_malloc.c   thread_mpi/once.c
-             thread_mpi/scan.c)
+             thread_mpi/type.c          thread_mpi/scan.c
+             thread_mpi/numa_malloc.c   thread_mpi/once.c)
     endif()
 ENDMACRO(TMPI_GET_SOURCE_LIST)
 
