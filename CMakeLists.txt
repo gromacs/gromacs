@@ -7,8 +7,6 @@ set(CMAKE_LEGACY_CYGWIN_WIN32 0) # Remove when CMake >= 2.8.4 is required
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake ${CMAKE_CURRENT_SOURCE_DIR}/cmake/Platform)
 
 project(Gromacs)
-include(Dart)
-mark_as_advanced(DART_ROOT)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -86,6 +84,15 @@ set(CPACK_PACKAGE_CONTACT "gmx-users@gromacs.org")
 
 #must come after all cpack settings!
 include(CPack)
+
+# Set a default valgrind suppression file.
+# This unfortunately needs to duplicate information from CTest to work as
+# expected...
+set(MEMORYCHECK_SUPPRESSIONS_FILE
+    "${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp"
+    CACHE FILEPATH
+    "File that contains suppressions for the memory checker")
+include(CTest)
 
 set(SOURCE_IS_GIT_REPOSITORY OFF)
 set(SOURCE_IS_SOURCE_DISTRIBUTION OFF)
@@ -604,7 +611,6 @@ if (GMX_BUILD_UNITTESTS AND NOT LIBXML2_FOUND)
         "Cannot build unit tests without libxml2. "
         "Either set GMX_BUILD_UNITTESTS=OFF or tell CMake how to find libxml2.")
 endif()
-set(MEMORYCHECK_SUPPRESSIONS_FILE ${CMAKE_SOURCE_DIR}/cmake/legacy_and_external.supp)
 
 ########################################################################
 # Generate development version info for cache
@@ -1261,8 +1267,6 @@ ADD_CUSTOM_TARGET(uninstall
 # Tests                                                                #
 ########################################################################
 
-include(CTest)
-mark_as_advanced(BUILD_TESTING)
 IF(BUILD_TESTING)
     enable_testing()
     #"check" target builds and runs all tests
@@ -1277,4 +1281,3 @@ IF(BUILD_TESTING)
     endif()
     #TODO: Add warning if NOT REGRESSIONTEST_PATH OR NOT GMX_XML that regression/unit tests are not run.
 ENDIF()
-
