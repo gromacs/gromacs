@@ -180,8 +180,9 @@ fi
 # Run uncrustify on the temporary directory
 cd $tmpdir/org
 
-if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist --prefix=../new/ -q ; then
-    echo "Reformatting failed!"
+if ! $UNCRUSTIFY -c $cfg_file -F $tmpdir/filelist --prefix=../new/ >$tmpdir/uncrustify.out 2>&1 ; then
+    echo "Reformatting failed. Check uncrustify output below for errors:"
+    cat $tmpdir/uncrustify.out
     rm -rf $tmpdir
     exit 2
 fi
