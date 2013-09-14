@@ -55,7 +55,7 @@
  */
 #define USE_XDR
 
-
+#include "gromacs/legacyheaders/thread_mpi/lock.h"
 
 /* the reader/writer functions  for t_iotype */
 typedef gmx_bool read_func (t_fileio *fio, void *item, int nitem, int eio,
@@ -94,12 +94,10 @@ struct t_fileio
 
     t_fileio   *next, *prev;           /* next and previous file pointers in the
                                           linked list */
-#ifdef GMX_THREAD_MPI
     tMPI_Lock_t  mtx;                  /* content locking mutex. This is a fast lock
                                           for performance reasons: in some cases every
                                           single byte that gets read/written requires
                                           a lock */
-#endif
 };
 
 

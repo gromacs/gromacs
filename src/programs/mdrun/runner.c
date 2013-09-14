@@ -102,9 +102,7 @@ const gmx_intp_t    integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, 
 
 gmx_large_int_t     deform_init_init_step_tpx;
 matrix              deform_init_box_tpx;
-#ifdef GMX_THREAD_MPI
 tMPI_Thread_mutex_t deform_init_box_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
-#endif
 
 
 #ifdef GMX_THREAD_MPI
@@ -1227,14 +1225,10 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
          * This should be thread safe, since they are only written once
          * and with identical values.
          */
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_lock(&deform_init_box_mutex);
-#endif
         deform_init_init_step_tpx = inputrec->init_step;
         copy_mat(box, deform_init_box_tpx);
-#ifdef GMX_THREAD_MPI
         tMPI_Thread_mutex_unlock(&deform_init_box_mutex);
-#endif
     }
 
     if (opt2bSet("-cpi", nfile, fnm))

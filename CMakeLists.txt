@@ -532,6 +532,7 @@ if(GMX_THREAD_MPI)
     tmpi_enable()
     set(PKG_CFLAGS "${PKG_CFLAGS} -DGMX_THREAD_MPI")
     set(GMX_MPI 1)
+    set(MPI_IN_PLACE_EXISTS 1)
 endif(GMX_THREAD_MPI)
 tmpi_get_source_list(THREAD_MPI_SRC)
 

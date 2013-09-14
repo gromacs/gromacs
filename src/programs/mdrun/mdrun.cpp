@@ -604,7 +604,8 @@ int gmx_mdrun(int argc, char *argv[])
         gmx_bool bParFn = (multidir == NULL);
         init_multisystem(cr, nmultisim, multidir, NFILE, fnm, bParFn);
 #else
-        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library.Please compile GROMACS with MPI support");
+        gmx_fatal(FARGS, "mdrun -multi is not supported with the thread library. "
+                  "Please compile GROMACS with MPI support");
 #endif
     }
 
