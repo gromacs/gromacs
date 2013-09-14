@@ -59,11 +59,8 @@
 #include "string2.h"
 #include "copyrite.h"
 
-#ifdef GMX_THREAD_MPI
-#include "thread_mpi.h"
-#endif
-
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxmpi.h"
 #include "gromacs/utility/programinfo.h"
 
 /* The source code in this file should be thread-safe.
@@ -409,7 +406,7 @@ void init_multisystem(t_commrec *cr, int nsim, char **multidirs,
     MPI_Comm_create(MPI_COMM_WORLD, ms->mpi_group_masters,
                     &ms->mpi_comm_masters);
 
-#if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
+#if !defined(MPI_IN_PLACE_EXISTS)
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(ms->mpb, 1);
     ms->mpb->ibuf        = NULL;
@@ -506,7 +503,7 @@ t_commrec *init_par()
     cr->duty = (DUTY_PP | DUTY_PME);
 
 #ifdef GMX_MPI
-#if !defined(GMX_THREAD_MPI) && !defined(MPI_IN_PLACE_EXISTS)
+#if !defined(MPI_IN_PLACE_EXISTS)
     /* initialize the MPI_IN_PLACE replacement buffers */
     snew(cr->mpb, 1);
     cr->mpb->ibuf        = NULL;
