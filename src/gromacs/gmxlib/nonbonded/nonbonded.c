@@ -417,7 +417,7 @@ static void
 nb_listed_warning_rlimit(const rvec *x, int ai, int aj, int * global_atom_index, real r, real rlimit)
 {
     gmx_warning("Listed nonbonded interaction between particles %d and %d\n"
-                "at distance %.3f which is larger than the table limit %.3f nm.\n\n"
+                "at distance %f which is larger than the table limit %f nm.\n\n"
                 "This is likely either a 1,4 interaction, or a listed interaction inside\n"
                 "a smaller molecule you are decoupling during a free energy calculation.\n"
                 "Since interactions at distances beyond the table cannot be computed,\n"

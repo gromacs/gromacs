@@ -941,7 +941,7 @@ int main(int argc, char *argv[])
     md.Init(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
             J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
             fc_bound,fc_mu,fc_quad,fc_charge,
-            fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
+            fc_esp,1,1,fixchi,bOptHfac,hfac,bPol,bFitZeta);
     md.Read(fp ? fp : (debug ? debug : NULL),
             opt2fn("-f",NFILE,fnm),
             opt2fn_null("-d",NFILE,fnm),

@@ -368,80 +368,17 @@ static void detect_rings(t_params *bonds,int natom,gmx_bool bRing[])
     }
 }
 
-int MyMol::MakeBonds(gmx_poldata_t pd,
-                     gmx_conect gc,
-                     int nbond[],
-                     gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
-                     gmx_bool bMovePlists)
+void MyMol::MakeAngles()
 {
-    t_param  b;
-    int      i,j,nbonds;
-    t_pbc    pbc;
-    rvec     dx;
-    real     dx1,dx11;
-    gmx_bool bBond;
-    char     *elem_i,*elem_j;
-    char     *length_unit;
     t_nextnb nnb;
+    int nbonds;
     t_restp rtp;
-
-    for(i=0; (i<MAXATOMLIST); i++)
-        b.a[i] = -1;
-    for(i=0; (i<MAXFORCEPARAM); i++)
-        b.c[i] = 0.0;
     
-    length_unit = gmx_poldata_get_length_unit(pd);
-    if (bPBC)
-        set_pbc(&pbc,-1,box);
-    for(i=0; (i<topology_->atoms.nr); i++) 
-    {
-        elem_i = gmx_atomprop_element(aps,topology_->atoms.atom[i].atomnumber);
-        for(j=i+1; (j<topology_->atoms.nr); j++) 
-        {
-            elem_j = gmx_atomprop_element(aps,topology_->atoms.atom[j].atomnumber);
-            if (NULL != debug)
-                fprintf(debug,"Testing %s-%d vs. %s-%d\n",elem_i,i,elem_j,j); 
-            if (bPBC)
-                pbc_dx(&pbc,x_[i],x_[j],dx);
-            else
-                rvec_sub(x_[i],x_[j],dx);
-      
-            dx11 = norm(dx);
-            dx1 = gmx2convert(dx11,string2unit(length_unit));
-      
-            if (gc) 
-            {
-                bBond = gmx_conect_exist(gc,i,j);
-            }
-            else 
-            {
-                bBond = gmx_poldata_elem_is_bond(pd,elem_i,elem_j,dx1,tol);
-            }
-            if (bBond) 
-            {
-                b.a[0] = i;
-                b.a[1] = j;
-                b.c[0] = dx11;
-                add_param_to_list (&(plist_[F_BONDS]),&b);
-                nbond[i]++;
-                nbond[j]++;
-            }
-            if (debug) 
-            {
-                if (bBond)
-                    fprintf(debug,"Bonding atoms %s-%d and %s-%d at distance %g\n",
-                            *topology_->atoms.atomname[i],i+1,*topology_->atoms.atomname[j],j+1,dx1);
-                else 
-                    fprintf(debug,"Not bonding  %s-%d and %s-%d at distance %g\n",
-                            *topology_->atoms.atomname[i],i+1,*topology_->atoms.atomname[j],j+1,dx1);
-            }
-        }
-    }
     /* Make Angles and Dihedrals */
     snew(excls,topology_->atoms.nr);
     init_nnb(&nnb,topology_->atoms.nr,nexcl_+2);
     gen_nnb(&nnb,plist_);
-    detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
+    //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
     nbonds = plist_[F_BONDS].nr;
     print_nnb(&nnb,"NNB");
     rtp.bKeepAllGeneratedDihedrals = TRUE;
@@ -451,12 +388,6 @@ int MyMol::MakeBonds(gmx_poldata_t pd,
     gen_pad(&nnb,&(topology_->atoms),&rtp,plist_,excls,NULL,FALSE);
     generate_excls(&nnb,nexcl_,excls);
     done_nnb(&nnb);
-    
-    /* Move the plist_ to the correct function */
-    if (bMovePlists)
-        mv_plists(pd,plist_,true);
-        
-    return nbonds;
 }
 
 static void generate_nbparam(int ftype,int comb,double ci[],double cj[],
@@ -531,6 +462,8 @@ static void do_init_mtop(gmx_poldata_t pd,
     }
     
     mtop_->ffparams.atnr = ntype;
+    mtop_->ffparams.reppow = 12;
+    
     int vdw_type = gmx_poldata_get_vdw_ftype(pd);
     
     snew(mtop_->ffparams.functype,ntype*ntype);
@@ -560,7 +493,6 @@ static void do_init_mtop(gmx_poldata_t pd,
     }
     /* Create a charge group block */
     stupid_fill_block(&(mtop_->moltype[0].cgs),atoms->nr,FALSE);
-    stupid_fill_blocka(&(mtop_->moltype[0].excls),atoms->nr);
     
     mtop_->natoms = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms),atoms->nr,FALSE);
@@ -596,7 +528,8 @@ static void mk_ff_mtop(gmx_mtop_t *mtop_,gmx_poldata_t pd)
         ptr = split(' ',params);
         snew(c[i],MAXFORCEPARAM);
         j=0;
-        while ((j<MAXFORCEPARAM) && (NULL != ptr[j])) {
+        while ((j<MAXFORCEPARAM) && (NULL != ptr[j])) 
+        {
             c[i][j] = atof(ptr[j]);
             sfree(ptr[j]);
             j++;
@@ -608,8 +541,10 @@ static void mk_ff_mtop(gmx_mtop_t *mtop_,gmx_poldata_t pd)
             gmx_fatal(FARGS,"Number of atom types apparently larger than %d",ntype);
     }
     /* Generate nonbonded matrix */
-    for(i=tp=0; (i<ntype); i++) {
-        for(j=0; (j<ntype); j++) {
+    for(i=tp=0; (i<ntype); i++) 
+    {
+        for(j=0; (j<ntype); j++) 
+        {
             mtop_->ffparams.functype[tp] = ftype;
             generate_nbparam(ftype,comb_rule,c[i],c[j],&mtop_->ffparams.iparams[tp]);
             tp++;
@@ -773,11 +708,13 @@ bool MyMol::IsSymmetric(real toler)
 
 static void fill_inputrec(t_inputrec *ir)
 {
+    ir->cutoff_scheme = ecutsGROUP;
     ir->tabext      = 2; /* nm */
     ir->ePBC        = epbcNONE;
     ir->epsilon_r   = 1;
     ir->vdwtype     = evdwCUT;
     ir->coulombtype = eelCUT;
+    ir->eDispCorr   = edispcNO;
     snew(ir->fepvals,1);
 }
 
@@ -965,10 +902,11 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
     immStatus imm = immOK;
     int natom=0,nalloc,ftb;
     t_param b;
-    t_nextnb nnb;
-    t_restp *rtp;
    
-    //printf("Generating topology_ for %s\n",GetMolname().c_str());
+    if (NULL != debug)
+    {
+        fprintf(debug, "Generating topology_ for %s\n",GetMolname().c_str());
+    }
     
     /* Set bts for topology_ output */
     if (NOTSET == (bts[ebtsBONDS]  = gmx_poldata_get_bond_ftype(pd)))
@@ -1038,12 +976,13 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
     if (immOK == imm) 
     {
         /* Make Angles and Dihedrals */
-        snew(excls,natom);
+        MakeAngles();
+        /*        snew(excls,natom);
         init_nnb(&nnb,natom,nexcl_+2);
-        gen_nnb(&nnb,plist_);
+        gen_nnb(&nnb,plist_);*/
         //detect_rings(&plist_[F_BONDS],topology_->atoms.nr,bRing);
         //nbonds = plist_[F_BONDS].nr;
-        print_nnb(&nnb,"NNB");
+        /*        print_nnb(&nnb,"NNB");
         snew(rtp,1);
         rtp->bKeepAllGeneratedDihedrals = TRUE;
         rtp->bRemoveDihedralIfWithImproper = TRUE;
@@ -1053,7 +992,7 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
         gen_pad(&nnb,&(topology_->atoms),rtp,plist_,excls,NULL,FALSE);
         sfree(rtp);
         done_nnb(&nnb);
-        
+        */   
         /* Move the plist_ to the correct function */
         if (true)
         {
@@ -1070,6 +1009,8 @@ immStatus MyMol::GenerateTopology(gmx_atomprop_t ap,
         do_init_mtop(pd,mtop_,molnameptr,&topology_->atoms);
         
         plist_to_mtop(pd,plist_,mtop_);
+        excls_to_blocka(topology_->atoms.nr,excls,
+                        &(mtop_->moltype[0].excls));
         
         ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
     }
@@ -1145,7 +1086,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
         {
             gmx_resp_add_atom_symmetry(gr_,symmetric_charges_);
             gmx_resp_update_atomtypes(gr_,&(topology_->atoms));
-            gmx_resp_summary(stdout,gr_,symmetric_charges_);
+            gmx_resp_summary(debug,gr_,symmetric_charges_);
             gmx_resp_add_atom_coords(gr_,x_);
             
             /* Even if we get the right LoT it may still not have
@@ -1156,7 +1097,7 @@ immStatus MyMol::GenerateCharges(gmx_poldata_t pd,
                                                     NULL);
             if (ci != EndCalculation())
             {
-                printf("There are %d potential points\n",ci->NPotential());
+                //printf("There are %d potential points\n",ci->NPotential());
                 for(ElectrostaticPotentialIterator epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
                 {
                     /* Maybe not convert to gmx ? */
@@ -1218,10 +1159,16 @@ immStatus MyMol::GenerateGromacs(output_env_t oenv,t_commrec *cr)
     fr_ = mk_forcerec();
     init_forcerec(NULL,oenv,fr_,NULL,inputrec_,mtop_,cr,
                   box,FALSE,NULL,NULL,NULL,NULL,NULL,NULL,TRUE,-1);
+    // HACK
+    fr_->nthreads = 1;
+
     init_state(&state_,topology_->atoms.nr,1,1,1,0);
     ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
     md_ = init_mdatoms(NULL,mtop_,FALSE);
-    
+    for(int i = 0; (i < topology_->atoms.nr); i++)
+    {
+        copy_rvec(x_[i], state_.x[i]);
+    }    
     return immOK;
 }
 
@@ -1699,337 +1646,6 @@ immStatus MyMol::GetExpProps(gmx_bool bQM, gmx_bool bZero, char *lot,
     return imm;
 }
    
-immStatus MyMol::Initxx(FILE *fp,
-                        alexandria::GaussAtomProp &gap,
-                      gmx_bool bQM,char *lot,gmx_bool bZero,
-                      gmx_poldata_t pd,gmx_atomprop_t aps,
-                      ChargeGenerationModel iModel,
-                      t_commrec *cr,int *nwarn,
-                      gmx_bool bCharged,const output_env_t oenv,
-                      real th_toler,real ph_toler,
-                      real dip_toler,real hfac,gmx_bool bH14,
-                      gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
-                      int nexcl,gmx_bool bESP,
-                      real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta)
-{
-    int      nalloc=0;
-    int      ftb,i,ia,m,nbond,*nbonds,tatomnumber;
-    immStatus imm=immOK;
-    char     *mylot=NULL,*myref=NULL;
-    rvec     xmin,xmax;
-    tensor   quadrupole;
-    double   value,dv0,dv298,error,vec[3];
-    gentop_vsite_t gvt;
-    real     btol = 0.2;
-    t_pbc    pbc;
-    t_excls  *newexcls=NULL;
-    t_param  b;
-    // This is not good
-    gmx_resp_t gr;
-    
-    ftb = gmx_poldata_get_bond_ftype(pd);
-    if (immTopology_ != immOK)
-    {
-        printf("Sorry, no topology!\n");
-    }
-    
-    if (immOK == imm)
-    {
-        clear_rvec(xmin);
-        clear_rvec(xmax);
-        clear_rvec(coq);
-        tatomnumber = 0;
-        snew(qESP,nalloc);
-        for(i=0; (i<topology_->atoms.nr); i++) 
-        {
-            qESP[i] = topology_->atoms.atom[i].q;
-            for(m=0; (m<DIM); m++)
-            {
-                if (x_[i][m] < xmin[m])
-                    xmin[m] = x_[i][m];
-                else if (x_[i][m] > xmax[m])
-                    xmax[m] = x_[i][m];
-                coq[m] += x_[i][m]*topology_->atoms.atom[i].atomnumber;
-            }
-            tatomnumber += topology_->atoms.atom[i].atomnumber;
-        }
-        if (tatomnumber > 0)
-        {
-            for(m=0; (m<DIM); m++)
-                coq[m] /= tatomnumber;
-            for(i=0; (i<topology_->atoms.nr); i++) 
-                rvec_dec(x_[i],coq);
-        }
-        else
-        {
-            imm = immAtomNumber;
-        }
-    }
-    if (immOK == imm) 
-    {
-        if (!bZero && IsSymmetric(0.01)) 
-        {
-            imm = immZeroDip;
-        }
-    }
-    if (immOK == imm)
-    {   
-        clear_mat(box);
-        for(m=0; (m<DIM); m++)
-            box[m][m] = 2*(xmax[m]-xmin[m]) + 1;
-        nbond = NBond();
-        gvt = gentop_vsite_init(egvtALL);
-        if (nbond > 0) 
-        {
-            alexandria::BondIterator bi;
-            
-            /* Use the bonds stored in molprop */
-            i = 0;
-            for(bi=BeginBond(); (bi<EndBond()); bi++)
-            {
-                b.a[0] = bi->GetAi();
-                b.a[1] = bi->GetAj();
-                add_param_to_list(&(plist_[ftb]),&b),
-                i++;
-            }
-            if (i != nbond)
-                imm = immAtomTypes;
-            else
-            {
-                /* Get exclusions and other stuff */
-            }
-        }
-        else 
-        {
-            double *bondorder;
-            snew(nbonds,nalloc);
-            MakeBonds(pd,(gmx_conect)NULL,nbonds,
-                      TRUE,box,aps,btol,TRUE);
-            mk_ff_mtop(mtop_,pd);
-        
-            /* Setting the atom types: this depends on the bonding */
-            set_pbc(&pbc,epbcNONE,box);
-            snew(bondorder,nbond);
-            
-            /*if ((atype = set_atom_type(NULL,GetMolname().c_str(),symtab_,&(topology_->atoms),
-                                       &(plist_[ftb]),nbonds,bRing,bondorder,
-                                       pd,aps,
-                                       x,&pbc,th_toler,ph_toler,gvt)) == NULL) 
-            {
-                imm = immAtomTypes;
-                }*/
-            sfree(nbonds);
-            sfree(bondorder);
-            //sfree(smnames);
-        }
-    }
-    if (immOK == imm) 
-    {
-        gentop_vsite_generate_special(gvt,FALSE,&(topology_->atoms),&x_,plist_,
-                                      symtab_,atype_,&excls,pd);
-
-        gentop_vsite_done(&gvt);
-        //close_symtab(symtab_);
-
-        eSupp = eSupportLocal;
-        if (!GetPropRef(MPO_DIPOLE,(bQM ? iqmQM : iqmBoth),
-                       lot,NULL,(char *)"elec",
-                       &value,&error,&myref,&mylot,
-                       vec,quadrupole))
-        {
-            if (!bZero)
-                imm = immZeroDip;
-            if (NULL != myref)
-                sfree(myref);
-            if (NULL != mylot)
-                sfree(mylot);
-        }
-        else
-        {
-            dip_exp  = value;
-            dip_err  = error;
-            lot      = mylot;
-            //ref      = myref;
-            for(m=0; (m<DIM); m++)
-            {
-                mu_exp[m] = vec[m];
-            }
-            mu_exp2 = sqr(value);
-            if (error <= 0) {
-                if (debug)
-                    fprintf(debug,"WARNING: Error for %s is %g, assuming it is 10%%.\n",
-                            GetMolname().c_str(),error);
-                (*nwarn)++;
-                error = 0.1*value;
-            }
-            dip_weight = sqr(1.0/error);
-        }
-        if (!GetPropRef(MPO_DIPOLE,iqmQM,
-                       lot,NULL,(char *)"ESP",&value,&error,NULL,NULL,vec,quadrupole))
-        {
-            for(m=0; (m<DIM); m++)
-            {
-                mu_esp[m] = vec[m];
-            }
-        }
-        if (!GetProp(MPO_ENERGY,(bQM ? iqmQM : iqmBoth),
-                     lot,NULL,(char *)"DHf(298.15K)",&value))
-        {
-            Hform = value;
-            Emol = value;
-            for(ia=0; (ia<topology_->atoms.nr); ia++) {
-                if (gap.GetValue(*topology_->atoms.atomname[ia],
-                                  (char *)"exp",(char *)"DHf(0K)",0,&dv0) &&
-                    gap.GetValue(*topology_->atoms.atomname[ia],
-                                  (char *)"exp",(char *)"H(0K)-H(298.15K)",
-                                  298.15,&dv298))
-                {
-                    Emol -= convert2gmx(dv0+dv298,eg2cHartree);
-                }
-                else {
-                    Emol = 0;
-                    break;
-                }
-            }
-            if (ia < topology_->atoms.nr)
-            {
-                imm = immNoData;
-            }
-        }
-        else {
-            imm = immNoData;
-        }
-    }
-    if (immOK == imm)
-    {
-        rvec dx;
-        rvec_sub(mu_esp,mu_exp,dx);
-        if (norm(dx) > dip_toler)
-        {
-            imm = immQMInconsistency;
-        }
-    }
-    if (immOK == imm)
-    {
-        if (bQM)
-        {
-            if (!GetPropRef(MPO_QUADRUPOLE,iqmQM,
-                            lot,NULL,(char *)"elec",&value,&error,
-                            NULL,NULL,vec,quadrupole))
-                imm = immNoQuad;
-            else
-                copy_mat(quadrupole,Q_exp);
-            if (!GetPropRef(MPO_QUADRUPOLE,iqmQM,
-                            lot,NULL,(char *)"ESP",&value,&error,
-                            NULL,NULL,vec,quadrupole))
-                copy_mat(quadrupole,Q_esp);
-        }
-    }
-    if ((immOK == imm) && bESP)
-    {
-        int  xu,vu;
-        
-        //snew(symmetric_charges,nalloc);
-        symmetric_charges_ = symmetrize_charges(TRUE,&topology_->atoms,
-                                                &(plist_[ftb]),pd,aps,(char *)"");
-        
-        gr = gmx_resp_init(iModel,FALSE,0,0,GetCharge(),
-                           0,0,-1,TRUE,watoms,rDecrZeta,FALSE,1,
-                           bFitZeta,TRUE,FALSE,NULL);
-        if (NULL != gr)
-        {
-            alexandria::CalculationIterator ci;
-            alexandria::ElectrostaticPotentialIterator epi;
-            
-            gmx_resp_add_atom_info(gr,&(topology_->atoms),pd);
-            gmx_resp_update_atomtypes(gr,&(topology_->atoms));
-            gmx_resp_add_atom_symmetry(gr,
-                                       symmetric_charges_);
-            gmx_resp_add_atom_coords(gr,x_);
-            ci = GetLot(lot);
-            if (ci != EndCalculation())
-            {
-                for(epi=ci->BeginPotential(); (epi<ci->EndPotential()); epi++)
-                {
-                    /* Maybe not convert to gmx ? */
-                    xu = string2unit(epi->GetXYZunit().c_str());
-                    vu = string2unit(epi->GetVunit().c_str());
-                    if (-1 == xu)
-                        xu = eg2cAngstrom;
-                    if (-1 == vu)
-                        vu = eg2cHartree_e;
-                    gmx_resp_add_point(gr,
-                                       convert2gmx(epi->GetX(),xu),
-                                       convert2gmx(epi->GetY(),xu),
-                                       convert2gmx(epi->GetZ(),xu),
-                                       convert2gmx(epi->GetV(),vu));
-                }
-            }
-        }
-        else
-            imm = immRespInit;                          
-    }
-    else 
-    {
-        gr = NULL;
-    }
-    if (immOK == imm)
-    {
-        if (bPol) {
-            //gmx_vsite_t *vs = init_vsite(mtop_,cr,TRUE);
-            snew(buf,nalloc);
-            snew(newexcls,nalloc);
-            srenew(x_,nalloc);
-            add_shells(pd,nalloc,&(mtop_->moltype[0].atoms),
-                       atype_,plist_,x_,symtab_,
-                       &newexcls);
-            mtop_->natoms = mtop_->moltype[0].atoms.nr;
-            mtop_->molblock[0].natoms_mol = mtop_->natoms;
-            excls_to_blocka(nalloc,newexcls,
-                            &(mtop_->moltype[0].excls));
-            mtop_update_cgs(mtop_);
-            reset_q(&(topology_->atoms));
-            shell_ = init_shell_flexcon(debug,mtop_,0,x_);
-            if (NULL == shell_)
-            {
-                imm = immGenShells;
-            }
-        }
-        else 
-        {
-            shell_ = NULL;
-            excls_to_blocka(nalloc,excls,&(mtop_->moltype[0].excls));
-        }
-    }
-    if (immOK == imm)
-    {
-        plist_to_mtop(pd,plist_,mtop_);
-        snew(f_,nalloc);
-        fr_ = mk_forcerec();
-        init_forcerec(NULL,oenv,fr_,NULL,inputrec_,mtop_,cr,
-                      box,FALSE,NULL,NULL,NULL,NULL,NULL,NULL,TRUE,-1);
-        init_state(&state_,topology_->atoms.nr,1,1,1,0);
-        ltop_ = gmx_mtop_generate_local_top(mtop_,inputrec_);
-        md_ = init_mdatoms(NULL,mtop_,FALSE);
-    }
-    if (immOK != imm) 
-    {
-        qgen_ = NULL; 
-    }
-    if (immOK != imm) 
-    {
-        /* Remove temporary data */
-        if (NULL != fp)
-            fprintf(fp,"Could not add %s because of %s\n",GetMolname().c_str(),
-                    immsg(imm));
-    }
-    else if (NULL != debug)
-    {
-        fprintf(debug,"Succesfully added %s\n",GetMolname().c_str());
-    }
-    return imm;
-}
-
 void MyMol::PrintQPol(FILE *fp,gmx_poldata_t pd)
 {
     int    i,m,np;

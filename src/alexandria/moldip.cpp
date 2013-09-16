@@ -347,7 +347,7 @@ void MolDip::Init(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
                   real J0_0,real Chi0_0,real w_0,
                   real J0_1,real Chi0_1,real w_1,
                   real fc_bound,real fc_mu,real fc_quad,real fc_charge,
-                  real fc_esp,char *fixchi,
+                  real fc_esp,real fc_epot,real fc_force,char *fixchi,
                   gmx_bool bOptHfac,real hfac,
                   gmx_bool bPol,gmx_bool bFitZeta)
 {
@@ -371,8 +371,8 @@ void MolDip::Init(t_commrec *cr,gmx_bool bQM,gmx_bool bGaussianBug,
     _fc[ermsQUAD]   = fc_quad;
     _fc[ermsCHARGE] = fc_charge;
     _fc[ermsESP]    = fc_esp;
-    _fc[ermsForce2] = 1e-4;
-    _fc[ermsEPOT]   = 1;
+    _fc[ermsForce2] = fc_force;
+    _fc[ermsEPOT]   = fc_epot;
     _fixchi     = strdup(fixchi);
     _hfac       = hfac;	  
     _hfac0      = hfac;	  
@@ -492,15 +492,6 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                     imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
                 }
             
-                if (0)
-                    imm = mpnew.Initxx(fp,gap,
-                                       _bQM,lot,bZero,
-                                       _pd,_atomprop,
-                                       _iModel,_cr,&nwarn,bCharged,oenv,
-                                       th_toler,ph_toler,dip_toler,_hfac,bH14,
-                                       bAllDihedrals,bRemoveDoubleDihedrals,nexcl,
-                                       (_fc[ermsESP] > 0),watoms,_decrzeta,
-                                       _bPol,_bFitZeta);
                 if (immOK == imm)
                 {
                     if (dest > 0)
@@ -583,14 +574,6 @@ void MolDip::Read(FILE *fp,const char *fn,const char *pd_fn,
                 imm = mpnew.GetExpProps(_bQM, bZero, lot, gap);
             }
             
-            if (0)
-                imm = mpnew.Initxx(fp,gap,_bQM,lot,bZero,
-                                   _pd,_atomprop,
-                                   _iModel,_cr,&nwarn,bCharged,oenv,
-                                   th_toler,ph_toler,dip_toler,_hfac,
-                                   bH14,bAllDihedrals,bRemoveDoubleDihedrals,
-                                   nexcl,(_fc[ermsESP] > 0),
-                                   watoms,_decrzeta,_bPol,_bFitZeta);
             mpnew.eSupp = eSupportLocal;
             imm_count[imm]++;
             if (immOK == imm)

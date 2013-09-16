@@ -51,7 +51,7 @@ public:
               real J0_0,real Chi0_0,real w_0,
               real J0_1,real Chi0_1,real w_1,
               real fc_bound,real fc_mu,real fc_quad,real fc_charge,
-              real fc_esp,char *fixchi,
+              real fc_esp,real fc_epot,real fc_force,char *fixchi,
               gmx_bool bOptHfac,real hfac,
               gmx_bool bPol,gmx_bool bFitZeta);
     void Read(FILE *fp,const char *fn,const char *pd_fn,

@@ -195,6 +195,8 @@ static void check_support(FILE *fp,
         }
         if (!bSupport)
         {
+            fprintf(stderr, "No force field support for %s\n",
+                    mymol->GetMolname().c_str());
             mymol = mm.erase(mymol);
         }
     }
@@ -920,7 +922,7 @@ double OptParam::CalcDeviation()
     int    j,count;
     int    flags;
     double ener;
-    real   lambda,t = 0;
+    real   t = 0;
     rvec   mu_tot = {0,0,0};
     tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
     t_nrnb   my_nrnb;
@@ -981,14 +983,13 @@ double OptParam::CalcDeviation()
                                         mymol->NAtom(),&bConverged,NULL,NULL);
             }
             else {
-                lambda = 0;
                 do_force(stdout,_cr,mymol->inputrec_,0,
                          &my_nrnb,wcycle,mymol->ltop_,
                          mymol->mtop_,&(mymol->mtop_->groups),
                          mymol->box,mymol->x_,NULL,
                          mymol->f_,force_vir,mymol->md_,
                          &mymol->enerd_,NULL,
-                         &lambda,NULL,
+                         mymol->state_.lambda,NULL,
                          mymol->fr_,
                          NULL,mu_tot,t,NULL,NULL,FALSE,
                          flags);
@@ -1000,10 +1001,22 @@ double OptParam::CalcDeviation()
             mymol->Force2 /= mymol->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc = mymol->enerd_.term[F_EPOT];
+            if ( 0 ) 
+            {
+                for(int ii=0; (ii<F_NRE); ii++)
+                {
+                    printf("ener %-12s = %g\n",interaction_function[ii].name, 
+                           mymol->enerd_.term[ii]);
+                }
+                exit(1);
+            }
             ener = sqr(mymol->Ecalc-mymol->Emol);
             _ener[ermsEPOT] += _fc[ermsEPOT]*ener/_nmol_support;
-            printf("%s Epot %g Force2 %g\n",mymol->GetMolname().c_str(),
-                   mymol->Ecalc,mymol->Force2);
+            if (NULL != debug)
+            {
+                fprintf(debug, "%s ener %g Epot %g Force2 %g\n",mymol->GetMolname().c_str(),ener,
+                        mymol->Ecalc,mymol->Force2);
+            }
         }
     }
     /* Compute E-bounds */
@@ -1149,7 +1162,10 @@ void OptParam::Bayes(FILE *fplog,const char *xvgconv,const char *xvgepot,
         start[j] += ds;
         E[cur] = EnergyFunction(start);
         DE = E[cur]-E[prev];
-        printf("DE = %g ds = %g\n",DE,ds);
+        if (NULL != debug)
+        {
+            fprintf(debug, "DE = %g ds = %g\n",DE,ds);
+        }
         if ((DE < 0) || (exp(-beta*DE) > gmx_rng_uniform_real(rng))) 
         {
             if (NULL != debug) 
@@ -1421,7 +1437,7 @@ int main(int argc, char *argv[])
     static gmx_bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
     static real J0_0=5,Chi0_0=1,w_0=5,step=0.01,hfac=0,rDecrZeta=-1;
     static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
-    static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
+    static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0,fc_epot=1,fc_force=0.001;
     static real factor=0.8;
     static real th_toler=170,ph_toler=5,dip_toler=0.5;
     static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
@@ -1472,6 +1488,10 @@ int main(int argc, char *argv[])
       "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
         { "-fc_bound",    FALSE, etREAL, {&fc_bound},
           "Force constant in the penalty function for going outside the borders given with the above six options." },
+        { "-fc_epot",    FALSE, etREAL, {&fc_epot},
+          "Force constant in the penalty function for the energy term" },
+        { "-fc_force",    FALSE, etREAL, {&fc_force},
+          "Force constant in the penalty function for the force term" },
         { "-step",  FALSE, etREAL, {&step},
           "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
         { "-min_data",  FALSE, etINT, {&minimum_data},
@@ -1547,7 +1567,7 @@ int main(int argc, char *argv[])
     opt.Init(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
              J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
              fc_bound,fc_mu,fc_quad,fc_charge,
-             fc_esp,fixchi,bOptHfac,hfac,bPol,bFitZeta);
+             fc_esp,fc_epot,fc_force,fixchi,bOptHfac,hfac,bPol,bFitZeta);
     opt.Read(fp ? fp : (debug ? debug : NULL),
              opt2fn("-f",NFILE,fnm),
              opt2fn_null("-d",NFILE,fnm),

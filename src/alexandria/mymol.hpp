@@ -45,9 +45,9 @@ private:
     gmx_bool       *bRing;
     //! Gromacs structures
     int            nexcl_;
-    t_excls        *excls;
     int            *symmetric_charges_;
     int            *cgnr_;
+    t_excls        *excls;
     gentop_vsite_t gvt;
     immStatus      immAtoms_,immCharges_,immTopology_;
     std::string    forcefield_;
@@ -64,10 +64,13 @@ private:
     //! Read atoms?
                             
     //! Generate bonds between atoms
-    int MakeBonds(gmx_poldata_t pd,
-                  gmx_conect gc,int nbond[],
+    /*int MakeBonds(gmx_poldata_t pd,
+                  gmx_conect gc,
                   gmx_bool bPBC,matrix box,gmx_atomprop_t aps,real tol,
                   gmx_bool bMovePlists);
+    */
+    //! Generate angles, dihedrals, exclusions etc.
+    void MakeAngles();
                             
 public:
     rvec           *x_,*f_,*buf,mu_exp,mu_calc,mu_esp,coq;
@@ -165,7 +168,7 @@ public:
     void PrintConformation(const char *fn);
     
     //! Routine initiating the internal GROMACS structures
-    immStatus Initxx(FILE *fp,GaussAtomProp &gap,
+    /*immStatus Initxx(FILE *fp,GaussAtomProp &gap,
                    gmx_bool bQM,char *lot,gmx_bool bZero,
                    gmx_poldata_t pd,gmx_atomprop_t aps,
                    ChargeGenerationModel iModel,t_commrec *cr,int *nwarn,
@@ -174,7 +177,7 @@ public:
                    real dip_toler,real hfac,gmx_bool bH14,
                    gmx_bool bAllDihedrals,gmx_bool bRemoveDoubleDihedrals,
                    int nexcl,gmx_bool bESP,
-                   real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);
+                   real watoms,real rDecrZeta,gmx_bool bPol,gmx_bool bFitZeta);*/
     
 };
 

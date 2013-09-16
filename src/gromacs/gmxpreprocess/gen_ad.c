@@ -1045,7 +1045,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
         /* Remove doubles, could occur in 6-rings, such as phenyls,
            maybe one does not want this when fudgeQQ < 1.
          */
-        fprintf(stderr, "Before cleaning: %d pairs\n", npai);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Before cleaning: %d pairs\n", npai);
+        }
         rm2par(pai, &npai, preq);
     }
 
@@ -1057,7 +1060,10 @@ void gen_pad(t_nextnb *nnb, t_atoms *atoms, t_restp rtp[],
 
     if (ndih > 0)
     {
-        fprintf(stderr, "Before cleaning: %d dihedrals\n", ndih);
+        if (NULL != debug)
+        {
+            fprintf(debug, "Before cleaning: %d dihedrals\n", ndih);
+        }
         clean_dih(dih, &ndih, improper, nimproper, atoms,
                   rtp[0].bKeepAllGeneratedDihedrals,
                   rtp[0].bRemoveDihedralIfWithImproper);
