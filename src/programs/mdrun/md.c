@@ -185,7 +185,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     t_graph          *graph = NULL;
     globsig_t         gs;
     gmx_rng_t         mcrng = NULL;
-    gmx_bool          bFFscan;
     gmx_groups_t     *groups;
     gmx_ekindata_t   *ekind, *ekind_save;
     gmx_shellfc_t     shellfc;
@@ -237,7 +236,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
     bIonize  = (Flags & MD_IONIZE);
-    bFFscan  = (Flags & MD_FFSCAN);
     bAppend  = (Flags & MD_APPENDFILES);
     if (Flags & MD_RESETCOUNTERSHALFWAY)
     {
@@ -294,7 +292,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 "If you want less energy communication, set nstlist > 3.\n\n");
     }
 
-    if (bRerunMD || bFFscan)
+    if (bRerunMD)
     {
         ir->nstxtcout = 0;
     }
@@ -643,14 +641,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         bufstate = init_bufstate(state);
     }
-    if (bFFscan)
-    {
-        snew(xcopy, state->natoms);
-        snew(vcopy, state->natoms);
-        copy_rvecn(state->x, xcopy, 0, state->natoms);
-        copy_rvecn(state->v, vcopy, 0, state->natoms);
-        copy_mat(state->box, boxcopy);
-    }
 
     /* need to make an initiation call to get the Trotter variables set, as well as other constants for non-trotter
        temperature control */
@@ -917,17 +907,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* Stop Center of Mass motion */
         bStopCM = (ir->comm_mode != ecmNO && do_per_step(step, ir->nstcomm));
 
-        /* Copy back starting coordinates in case we're doing a forcefield scan */
-        if (bFFscan)
-        {
-            for (ii = 0; (ii < state->natoms); ii++)
-            {
-                copy_rvec(xcopy[ii], state->x[ii]);
-                copy_rvec(vcopy[ii], state->v[ii]);
-            }
-            copy_mat(boxcopy, state->box);
-        }
-
         if (bRerunMD)
         {
             /* for rerun MD always do Neighbour Searching */
@@ -1026,7 +1005,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             }
         }
 
-        if (MASTER(cr) && do_log && !bFFscan)
+        if (MASTER(cr) && do_log)
         {
             print_ebin_header(fplog, step, t, state->lambda[efptFEP]); /* can we improve the information printed here? */
         }
@@ -1055,19 +1034,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         {
             ionize(fplog, oenv, mdatoms, top_global, t, ir, state->x, state->v,
                    mdatoms->start, mdatoms->start+mdatoms->homenr, state->box, cr);
-        }
-
-        /* Update force field in ffscan program */
-        if (bFFscan)
-        {
-            if (update_forcefield(fplog,
-                                  nfile, fnm, fr,
-                                  mdatoms->nr, state->x, state->box))
-            {
-                gmx_finalize_par();
-
-                exit(0);
-            }
         }
 
         /* We write a checkpoint at this MD step when:
@@ -1143,7 +1109,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (shellfc)
         {
             /* Now is the time to relax the shells */
-            count = relax_shell_flexcon(fplog, cr, bVerbose, bFFscan ? step+1 : step,
+            count = relax_shell_flexcon(fplog, cr, bVerbose, step,
                                         ir, bNS, force_flags,
                                         top,
                                         constr, enerd, fcd,
@@ -1266,7 +1232,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        cr, nrnb, wcycle, upd, constr,
                                        TRUE, bCalcVir, vetanew);
 
-                    if (!bOK && !bFFscan)
+                    if (!bOK)
                     {
                         gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                     }
@@ -1496,7 +1462,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             debug_gmx();
             if (bLastStep && step_rel == ir->nsteps &&
                 (Flags & MD_CONFOUT) && MASTER(cr) &&
-                !bRerunMD && !bFFscan)
+                !bRerunMD)
             {
                 /* x and v have been collected in write_traj,
                  * because a checkpoint file will always be written
@@ -1773,7 +1739,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                        FALSE, bCalcVir,
                                        state->veta);
                 }
-                if (!bOK && !bFFscan)
+                if (!bOK)
                 {
                     gmx_fatal(FARGS, "Constraint error: Shake, Lincs or Settle could not solve the constrains");
                 }
@@ -1892,18 +1858,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
 
         /* The coordinates (x) were unshifted in update */
-        if (bFFscan && (shellfc == NULL || bConverged))
-        {
-            if (print_forcefield(fplog, enerd->term, mdatoms->homenr,
-                                 f, NULL, xcopy,
-                                 &(top_global->mols), mdatoms->massT, pres))
-            {
-                gmx_finalize_par();
-
-                fprintf(stderr, "\n");
-                exit(0);
-            }
-        }
         if (!bGStat)
         {
             /* We will not sum ekinh_old,
