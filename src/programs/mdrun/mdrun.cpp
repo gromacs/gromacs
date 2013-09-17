@@ -295,7 +295,7 @@ int gmx_mdrun(int argc, char *argv[])
         "is performed after every exchange.[PAR]",
         "Finally some experimental algorithms can be tested when the",
         "appropriate options have been given. Currently under",
-        "investigation are: polarizability and X-ray bombardments.",
+        "investigation are: polarizability.",
         "[PAR]",
         "The option [TT]-membed[tt] does what used to be g_membed, i.e. embed",
         "a protein into a membrane. The data file should contain the options",
@@ -409,7 +409,6 @@ int gmx_mdrun(int argc, char *argv[])
     gmx_bool        bCompact      = TRUE;
     gmx_bool        bSepPot       = FALSE;
     gmx_bool        bRerunVSite   = FALSE;
-    gmx_bool        bIonize       = FALSE;
     gmx_bool        bConfout      = TRUE;
     gmx_bool        bReproducible = FALSE;
 
@@ -525,8 +524,6 @@ int gmx_mdrun(int argc, char *argv[])
           "Seed for replica exchange, -1 is generate a seed" },
         { "-rerunvsite", FALSE, etBOOL, {&bRerunVSite},
           "HIDDENRecalculate virtual site coordinates with [TT]-rerun[tt]" },
-        { "-ionize",  FALSE, etBOOL, {&bIonize},
-          "Do a simulation including the effect of an X-Ray bombardment on your system" },
         { "-confout", FALSE, etBOOL, {&bConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
         { "-stepout", FALSE, etINT, {&nstepout},
@@ -678,7 +675,6 @@ int gmx_mdrun(int argc, char *argv[])
 
     Flags = opt2bSet("-rerun", NFILE, fnm) ? MD_RERUN : 0;
     Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
-    Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
     Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
     Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
     Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
