@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -186,9 +186,23 @@ replaceAll(const std::string &input, const char *from, const char *to)
 }
 
 std::string
+replaceAll(const std::string &input, const std::string &from,
+           const std::string &to)
+{
+    return replaceInternal(input, from.c_str(), to.c_str(), false);
+}
+
+std::string
 replaceAllWords(const std::string &input, const char *from, const char *to)
 {
     return replaceInternal(input, from, to, true);
+}
+
+std::string
+replaceAllWords(const std::string &input, const std::string &from,
+                const std::string &to)
+{
+    return replaceInternal(input, from.c_str(), to.c_str(), true);
 }
 
 

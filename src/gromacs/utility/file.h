@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -133,8 +133,7 @@ class File
          * \throws     FileIOError on any I/O error.
          *
          * On error or when false is returned, \p line will be empty.
-         * Terminating newline will be present in \p line if it was present in
-         * the file.
+         * Trailing space will be removed from the line.
          * To loop over all lines in the file, use:
          * \code
            std::string line;
@@ -145,6 +144,21 @@ class File
          * \endcode
          */
         bool readLine(std::string *line);
+        /*! \brief
+         * Reads a single line from the file.
+         *
+         * \param[out] line    String to receive the line.
+         * \returns    false if nothing was read because the file ended.
+         * \throws     std::bad_alloc if out of memory.
+         * \throws     FileIOError on any I/O error.
+         *
+         * On error or when false is returned, \p line will be empty.
+         * Works as readLine(), except that terminating newline will be present
+         * in \p line if it was present in the file.
+         *
+         * \see readLine()
+         */
+        bool readLineWithTrailingSpace(std::string *line);
 
         /*! \brief
          * Writes a string to the file.
