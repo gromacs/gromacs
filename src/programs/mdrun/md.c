@@ -62,7 +62,6 @@
 #include "physics.h"
 #include "names.h"
 #include "force.h"
-#include "ionize.h"
 #include "disre.h"
 #include "orires.h"
 #include "pme.h"
@@ -191,7 +190,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               count, nconverged = 0;
     real              timestep = 0;
     double            tcount   = 0;
-    gmx_bool          bIonize  = FALSE;
     gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
@@ -234,7 +232,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     /* Check for special mdrun options */
     bRerunMD = (Flags & MD_RERUN);
-    bIonize  = (Flags & MD_IONIZE);
     bAppend  = (Flags & MD_APPENDFILES);
     if (Flags & MD_RESETCOUNTERSHALFWAY)
     {
@@ -1011,13 +1008,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                             CGLO_RERUNMD | CGLO_GSTAT | CGLO_TEMPERATURE);
         }
         clear_mat(force_vir);
-
-        /* Ionize the atoms if necessary */
-        if (bIonize)
-        {
-            ionize(fplog, oenv, mdatoms, top_global, t, ir, state->x, state->v,
-                   mdatoms->start, mdatoms->start+mdatoms->homenr, state->box, cr);
-        }
 
         /* We write a checkpoint at this MD step when:
          * either at an NS step when we signalled through gs,
@@ -1852,20 +1842,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         else
         {
             enerd->term[F_ECONSERVED] = enerd->term[F_ETOT] + compute_conserved_from_auxiliary(ir, state, &MassQ);
-        }
-        /* Check for excessively large energies */
-        if (bIonize)
-        {
-#ifdef GMX_DOUBLE
-            real etot_max = 1e200;
-#else
-            real etot_max = 1e30;
-#endif
-            if (fabs(enerd->term[F_ETOT]) > etot_max)
-            {
-                fprintf(stderr, "Energy too large (%g), giving up\n",
-                        enerd->term[F_ETOT]);
-            }
         }
         /* #########  END PREPARING EDR OUTPUT  ###########  */
 
