@@ -43,7 +43,7 @@
 #include "mshift.h"
 #include "pbc.h"
 #include "gstat.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "vec.h"
 
 typedef struct {

@@ -36,7 +36,7 @@
 #include "smalloc.h"
 #include "xmlio.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 
 int cmain(int argc,char *argv[])
 {

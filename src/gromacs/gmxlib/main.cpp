@@ -53,9 +53,9 @@
 #include "network.h"
 #include "main.h"
 #include "macros.h"
-#include "futil.h"
-#include "filenm.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "string2.h"
 #include "copyrite.h"
 

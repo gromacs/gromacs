@@ -54,7 +54,7 @@
 
 #include <boost/scoped_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
@@ -123,7 +123,7 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
     // Some places in the existing code expect to have DIR_SEPARATOR in all
     // input paths, but Windows may also give '/' (and does that, e.g., for
     // tests invoked through CTest).
-    // When removing this, remove also the #include "futil.h".
+    // When removing this, remove also the #include "gromacs/fileio/futil.h".
     if (DIR_SEPARATOR == '\\')
     {
         std::replace(fullInvokedProgram_.begin(), fullInvokedProgram_.end(),

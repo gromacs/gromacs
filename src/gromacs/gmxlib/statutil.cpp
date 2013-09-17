@@ -46,10 +46,11 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
 
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
@@ -125,46 +126,6 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
         return FALSE;
     }
 }
-
-int check_times2(real t, real t0, gmx_bool bDouble)
-{
-    int  r;
-
-#ifndef GMX_DOUBLE
-    /* since t is float, we can not use double precision for bRmod */
-    bDouble = FALSE;
-#endif
-
-    r = -1;
-    if ((!bTimeSet(TBEGIN) || (t >= rTimeValue(TBEGIN)))  &&
-        (!bTimeSet(TEND)   || (t <= rTimeValue(TEND))))
-    {
-        if (bTimeSet(TDELTA) && !bRmod_fd(t, t0, rTimeValue(TDELTA), bDouble))
-        {
-            r = -1;
-        }
-        else
-        {
-            r = 0;
-        }
-    }
-    else if (bTimeSet(TEND) && (t >= rTimeValue(TEND)))
-    {
-        r = 1;
-    }
-    if (debug)
-    {
-        fprintf(debug, "t=%g, t0=%g, b=%g, e=%g, dt=%g: r=%d\n",
-                t, t0, rTimeValue(TBEGIN), rTimeValue(TEND), rTimeValue(TDELTA), r);
-    }
-    return r;
-}
-
-int check_times(real t)
-{
-    return check_times2(t, t, FALSE);
-}
-
 
 
 
