@@ -1,5 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
- *
+/*
  *
  *                This source code is part of
  *
@@ -156,7 +155,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
     gmx_bool          do_ene, do_log, do_verbose, bRerunWarnNoV = TRUE,
                       bForceUpdate = FALSE, bCPT;
-    int               mdof_flags;
     gmx_bool          bMasterState;
     int               force_flags, cglo_flags;
     tensor            force_vir, shake_vir, total_vir, tmp_vir, pres;
@@ -175,8 +173,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     df_history_t      df_history;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
-    int               n_xtc    = -1;
-    rvec             *x_xtc    = NULL;
     gmx_enerdata_t   *enerd;
     rvec             *f = NULL;
     gmx_global_stat_t gstat;
@@ -1327,121 +1323,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
             lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, &df_history, step, mcrng, state->v, mdatoms);
         }
-        /* ################## START TRAJECTORY OUTPUT ################# */
 
         /* Now we have the energies and forces corresponding to the
          * coordinates at time t. We must output all of this before
          * the update.
-         * for RerunMD t is read from input trajectory
          */
-        mdof_flags = 0;
-        if (do_per_step(step, ir->nstxout))
-        {
-            mdof_flags |= MDOF_X;
-        }
-        if (do_per_step(step, ir->nstvout))
-        {
-            mdof_flags |= MDOF_V;
-        }
-        if (do_per_step(step, ir->nstfout))
-        {
-            mdof_flags |= MDOF_F;
-        }
-        if (do_per_step(step, ir->nstxtcout))
-        {
-            mdof_flags |= MDOF_XTC;
-        }
-        if (bCPT)
-        {
-            mdof_flags |= MDOF_CPT;
-        }
-        ;
-
-#if defined(GMX_FAHCORE) || defined(GMX_WRITELASTSTEP)
-        if (bLastStep)
-        {
-            /* Enforce writing positions and velocities at end of run */
-            mdof_flags |= (MDOF_X | MDOF_V);
-        }
-#endif
-#ifdef GMX_FAHCORE
-        if (MASTER(cr))
-        {
-            fcReportProgress( ir->nsteps, step );
-        }
-
-        /* sync bCPT and fc record-keeping */
-        if (bCPT && MASTER(cr))
-        {
-            fcRequestCheckPoint();
-        }
-#endif
-
-        if (mdof_flags != 0)
-        {
-            wallcycle_start(wcycle, ewcTRAJ);
-            if (bCPT)
-            {
-                if (state->flags & (1<<estLD_RNG))
-                {
-                    get_stochd_state(upd, state);
-                }
-                if (state->flags  & (1<<estMC_RNG))
-                {
-                    get_mc_state(mcrng, state);
-                }
-                if (MASTER(cr))
-                {
-                    if (bSumEkinhOld)
-                    {
-                        state_global->ekinstate.bUpToDate = FALSE;
-                    }
-                    else
-                    {
-                        update_ekinstate(&state_global->ekinstate, ekind);
-                        state_global->ekinstate.bUpToDate = TRUE;
-                    }
-                    update_energyhistory(&state_global->enerhist, mdebin);
-                    if (ir->efep != efepNO || ir->bSimTemp)
-                    {
-                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                        copy_df_history(&state_global->dfhist, &df_history);
-                    }
-                }
-            }
-            write_traj(fplog, cr, outf, mdof_flags, top_global,
-                       step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
-            if (bCPT)
-            {
-                nchkpt++;
-                bCPT = FALSE;
-            }
-            debug_gmx();
-            if (bLastStep && step_rel == ir->nsteps &&
-                (Flags & MD_CONFOUT) && MASTER(cr) &&
-                !bRerunMD)
-            {
-                /* x and v have been collected in write_traj,
-                 * because a checkpoint file will always be written
-                 * at the last step.
-                 */
-                fprintf(stderr, "\nWriting final coordinates.\n");
-                if (fr->bMolPBC)
-                {
-                    /* Make molecules whole only for confout writing */
-                    do_pbc_mtop(fplog, ir->ePBC, state->box, top_global, state_global->x);
-                }
-                write_sto_conf_mtop(ftp2fn(efSTO, nfile, fnm),
-                                    *top_global->name, top_global,
-                                    state_global->x, state_global->v,
-                                    ir->ePBC, state->box);
-                debug_gmx();
-            }
-            wallcycle_stop(wcycle, ewcTRAJ);
-        }
+        do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
+                              ir, state, state_global, top_global, fr, upd,
+                              outf, mdebin, ekind, df_history, f, f_global,
+                              wcycle, mcrng, &nchkpt,
+                              bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
+                              bSumEkinhOld);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1449,7 +1341,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             copy_mat(state->svir_prev, shake_vir);
             copy_mat(state->fvir_prev, force_vir);
         }
-        /*  ################## END TRAJECTORY OUTPUT ################ */
 
         /* Determine the wallclock run time up till now */
         run_time = gmx_gettime() - (double)runtime->real;
