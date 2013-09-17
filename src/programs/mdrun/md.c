@@ -49,12 +49,12 @@
 #include "vsite.h"
 #include "update.h"
 #include "ns.h"
-#include "trnio.h"
-#include "xtcio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "mdrun.h"
 #include "md_support.h"
 #include "md_logging.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "network.h"
 #include "pull.h"
 #include "xvgr.h"
@@ -89,6 +89,8 @@
 #include "nbnxn_cuda_data_mgmt.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/fileio/trajectory_writing.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_FAHCORE

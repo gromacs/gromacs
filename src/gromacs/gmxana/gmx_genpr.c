@@ -42,8 +42,8 @@
 #include <string.h>
 #include "smalloc.h"
 #include "typedefs.h"
-#include "confio.h"
-#include "futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "vec.h"
 #include "index.h"

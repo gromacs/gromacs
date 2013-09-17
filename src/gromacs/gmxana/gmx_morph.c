@@ -39,12 +39,13 @@
 #include "statutil.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
 #include "gmx_fatal.h"
+#include "gromacs/fileio/trxio.h"
 
 
 static real dointerp(int n, rvec x1[], rvec x2[], rvec xx[],

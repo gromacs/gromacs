@@ -42,13 +42,13 @@
 #include <ctype.h>
 #include <typedefs.h>
 #include <smalloc.h>
-#include <tpxio.h>
+#include "gromacs/fileio/tpxio.h"
 #include <macros.h>
 #include <maths.h>
 #include <atomprop.h>
 #include <names.h>
 #include "manager.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "pbc.h"
 #include "nmol.h"
 #include "copyrite.h"

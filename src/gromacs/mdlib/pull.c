@@ -41,14 +41,14 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "index.h"
 #include "statutil.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "network.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include <string.h>
 #include "smalloc.h"
 #include "pull.h"

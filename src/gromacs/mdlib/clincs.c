@@ -51,7 +51,7 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "mtop_util.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gmx_omp_nthreads.h"
 #include "gmx_omp.h"
 

@@ -41,7 +41,7 @@
 #include <ctype.h>
 #include "string2.h"
 #include "strdb.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "symtab.h"

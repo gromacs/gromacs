@@ -53,7 +53,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "names.h"
 #include "gmx_random.h"
 #include "gmx_ana.h"

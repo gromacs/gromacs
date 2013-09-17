@@ -37,30 +37,16 @@
 #define _sim_util_h
 
 #include "typedefs.h"
-#include "enxio.h"
+#include "../fileio/enxio.h"
 #include "mdebin.h"
 #include "update.h"
 #include "vcm.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "../fileio/mdoutf.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct {
-    t_fileio   *fp_trn;
-    t_fileio   *fp_xtc;
-    int         xtc_prec;
-    ener_file_t fp_ene;
-    const char *fn_cpt;
-    gmx_bool    bKeepAndNumCPT;
-    int         eIntegrator;
-    gmx_bool    bExpanded;
-    int         elamstats;
-    int         simulation_part;
-    FILE       *fp_dhdl;
-    FILE       *fp_field;
-} gmx_mdoutf_t;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
@@ -90,36 +76,6 @@ void global_stat(FILE *log, gmx_global_stat_t gs,
                  gmx_mtop_t *top_global, t_state *state_local,
                  gmx_bool bSumEkinhOld, int flags);
 /* Communicate statistics over cr->mpi_comm_mysim */
-
-gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[],
-                          int mdrun_flags,
-                          const t_commrec *cr, const t_inputrec *ir,
-                          const output_env_t oenv);
-/* Returns a pointer to a data structure with all output file pointers
- * and names required by mdrun.
- */
-
-void done_mdoutf(gmx_mdoutf_t *of);
-/* Close all open output files and free the of pointer */
-
-#define MDOF_X   (1<<0)
-#define MDOF_V   (1<<1)
-#define MDOF_F   (1<<2)
-#define MDOF_XTC (1<<3)
-#define MDOF_CPT (1<<4)
-
-void write_traj(FILE *fplog, t_commrec *cr,
-                gmx_mdoutf_t *of,
-                int mdof_flags,
-                gmx_mtop_t *top_global,
-                gmx_large_int_t step, double t,
-                t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global,
-                int *n_xtc, rvec **x_xtc);
-/* Routine that writes frames to trn, xtc and/or checkpoint.
- * What is written is determined by the mdof_flags defined above.
- * Data is collected to the master node only when necessary.
- */
 
 int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep);
 /* Return TRUE if io should be done */

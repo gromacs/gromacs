@@ -45,9 +45,9 @@
 
 #include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
-#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/xdrf.h"
+#include "gromacs/fileio/xdrf.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
 
 

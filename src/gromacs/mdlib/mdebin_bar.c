@@ -45,8 +45,8 @@
 #include "gmx_fatal.h"
 #include "mdebin.h"
 #include "smalloc.h"
-#include "enxio.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/enxio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "mdebin_bar.h"
 
 /* reset the delta_h list to prepare it for new values */

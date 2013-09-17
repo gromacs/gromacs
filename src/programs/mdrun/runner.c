@@ -70,7 +70,7 @@
 #include "checkpoint.h"
 #include "mtop_util.h"
 #include "sighandler.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "txtdump.h"
 #include "gmx_detect_hardware.h"
 #include "gmx_omp_nthreads.h"

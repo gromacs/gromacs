@@ -39,10 +39,10 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "eigio.h"
-#include "trnio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "statutil.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 
 void read_eigenvectors(const char *file, int *natoms, gmx_bool *bFit,
                        rvec **xref, gmx_bool *bDMR,

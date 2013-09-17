@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "string2.h"
 #include "grompp.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "toputil.h"
 #include "gmx_fatal.h"

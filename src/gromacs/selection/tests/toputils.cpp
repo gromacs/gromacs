@@ -46,7 +46,8 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/string2.h"
-#include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/typedefs.h"
 #include "gromacs/legacyheaders/vec.h"
 

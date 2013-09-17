@@ -47,8 +47,8 @@
 #include "string2.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
-#include "tpxio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/tpxio.h"
 
 #ifdef HAVE_X11
 
