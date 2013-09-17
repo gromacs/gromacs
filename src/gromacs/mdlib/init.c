@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "smalloc.h"
 #include "vec.h"
 #include "main.h"

@@ -37,7 +37,7 @@
 #define _hackblock_h
 
 #include "typedefs.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 

@@ -45,12 +45,12 @@
 #include <ctype.h>
 #include <assert.h>
 
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "macros.h"

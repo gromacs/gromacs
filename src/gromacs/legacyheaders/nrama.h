@@ -39,6 +39,7 @@
 #include "typedefs.h"
 #include "statutil.h"
 #include "mshift.h"
+#include "gromacs/fileio/trxio.h"
 
 #ifdef __cplusplus
 extern "C" {

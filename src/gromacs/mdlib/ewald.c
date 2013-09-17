@@ -42,7 +42,7 @@
 #include "vec.h"
 #include "gmxcomplex.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "physics.h"
 #include "coulomb.h"

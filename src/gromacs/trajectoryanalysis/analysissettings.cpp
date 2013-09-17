@@ -44,6 +44,7 @@
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/vec.h"
+#include "gromacs/fileio/trxio.h"
 
 #include "gromacs/utility/exceptions.h"
 

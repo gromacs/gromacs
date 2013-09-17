@@ -43,11 +43,11 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "string2.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "vec.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "strdb.h"
 
 gmx_bool isword(char c)

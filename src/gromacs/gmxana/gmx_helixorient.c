@@ -47,11 +47,12 @@
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "pbc.h"
 #include "do_fit.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 int gmx_helixorient(int argc, char *argv[])

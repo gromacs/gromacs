@@ -42,7 +42,7 @@
 #include "physics.h"
 #include "typedefs.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "index.h"
@@ -50,7 +50,8 @@
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "rmpbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "nrjac.h"
 #include "gmx_ana.h"
 
