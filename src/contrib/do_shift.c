@@ -47,12 +47,12 @@
 #include "mshift.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "index.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 
 void cat(FILE *out,char *fn,real t)
 {

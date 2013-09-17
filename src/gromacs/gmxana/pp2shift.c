@@ -39,13 +39,13 @@
 #include <stdlib.h>
 #include <math.h>
 #include "typedefs.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "physics.h"
 #include "smalloc.h"
 #include "statutil.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
 

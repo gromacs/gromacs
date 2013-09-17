@@ -48,13 +48,14 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "txtdump.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "gstat.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 typedef struct {

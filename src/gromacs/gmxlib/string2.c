@@ -68,7 +68,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 
 int continuing(char *s)
 {

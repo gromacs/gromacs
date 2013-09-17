@@ -43,7 +43,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "physics.h"
 #include "statutil.h"
 #include "vec.h"

@@ -40,7 +40,7 @@
 #include "macros.h"
 #include "names.h"
 #include "smalloc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "statutil.h"
 #include "writeps.h"
 #include "copyrite.h"

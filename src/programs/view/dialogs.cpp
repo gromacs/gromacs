@@ -47,7 +47,7 @@
 #include "names.h"
 #include "nmol.h"
 #include "manager.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW

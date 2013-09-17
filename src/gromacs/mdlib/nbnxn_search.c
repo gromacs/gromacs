@@ -51,7 +51,7 @@
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "gmx_cyclecounter.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gmx_omp_nthreads.h"
 #include "nrnb.h"
 

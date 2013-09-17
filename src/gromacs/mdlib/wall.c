@@ -45,7 +45,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "force.h"
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "nrnb.h"
 #include "vec.h"
 
