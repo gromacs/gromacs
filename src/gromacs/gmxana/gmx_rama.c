@@ -46,7 +46,7 @@
 #include "xvgr.h"
 #include "physics.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "nrama.h"

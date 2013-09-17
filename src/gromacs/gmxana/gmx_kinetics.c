@@ -46,7 +46,7 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "readinp.h"
 #include "statutil.h"
 #include "txtdump.h"

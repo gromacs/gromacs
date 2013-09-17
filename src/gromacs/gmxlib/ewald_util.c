@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "physics.h"
 #include "txtdump.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "names.h"
 #include "writeps.h"
 #include "macros.h"

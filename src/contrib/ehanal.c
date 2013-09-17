@@ -45,14 +45,14 @@
 #include "statutil.h"
 #include "gmx_fatal.h"
 #include "random.h"
-#include "pdbio.h"
-#include "futil.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/futil.h"
 #include "physics.h"
 #include "xvgr.h"
 #include "vec.h"
 #include "names.h"
 #include "ehdata.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 
 t_histo *init_histo(int np,real minx,real maxx)
 {

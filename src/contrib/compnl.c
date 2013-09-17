@@ -39,11 +39,11 @@
 #include "ns.h"
 #include "smalloc.h"
 #include "wnblist.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "pbc.h"
 #include "vec.h"
 

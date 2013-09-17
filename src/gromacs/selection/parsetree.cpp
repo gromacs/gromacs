@@ -225,7 +225,7 @@
 #include <boost/exception_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/string2.h"
 

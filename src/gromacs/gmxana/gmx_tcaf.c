@@ -38,9 +38,9 @@
 #include <stdio.h>
 
 #include <math.h>
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "macros.h"
 #include "maths.h"
@@ -57,6 +57,7 @@
 #include "xvgr.h"
 #include "pbc.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 #define NK  24

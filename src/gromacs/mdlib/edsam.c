@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "names.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "mvdata.h"
 #include "txtdump.h"
 #include "vec.h"
@@ -55,7 +55,7 @@
 #include "nrjac.h"
 #include "mtop_util.h"
 #include "edsam.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"
 #include "groupcoord.h"
 

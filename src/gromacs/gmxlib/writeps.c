@@ -37,11 +37,11 @@
 #endif
 
 #include <stdio.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "writeps.h"
 #include "smalloc.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 const char *fontnm[efontNR] = {
     "Times-Roman", "Times-Italic",     "Times-Bold",    "Times-BoldItalic",

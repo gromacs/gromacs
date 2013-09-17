@@ -44,7 +44,8 @@
 #include "typedefs.h"
 #include "names.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "string2.h"
 #include "strdb.h"
 #include "vec.h"
@@ -52,8 +53,8 @@
 #include "index.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "futil.h"
-#include "matio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 

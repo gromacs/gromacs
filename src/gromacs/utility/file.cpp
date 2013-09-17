@@ -49,7 +49,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"

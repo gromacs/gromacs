@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "constr.h"
 #include "copyrite.h"
 #include "invblock.h"
@@ -50,11 +50,11 @@
 #include "names.h"
 #include "txtdump.h"
 #include "domdec.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "partdec.h"
 #include "splitter.h"
 #include "mtop_util.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "gmx_omp_nthreads.h"
 

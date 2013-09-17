@@ -43,7 +43,7 @@
 
 #include "gromacs/legacyheaders/checkpoint.h"
 #include "gromacs/legacyheaders/copyrite.h"
-#include "gromacs/legacyheaders/filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "gromacs/legacyheaders/gmx_fatal.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/main.h"

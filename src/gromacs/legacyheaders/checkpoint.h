@@ -38,7 +38,8 @@
 
 
 #include "typedefs.h"
-#include "gmxfio.h"
+#include "../fileio/gmxfio.h"
+#include "../fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

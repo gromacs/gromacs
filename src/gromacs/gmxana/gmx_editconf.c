@@ -40,8 +40,8 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include "pdbio.h"
-#include "confio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/confio.h"
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
@@ -55,7 +55,8 @@
 #include "strdb.h"
 #include "physics.h"
 #include "atomprop.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "pbc.h"
 #include "princ.h"
 #include "txtdump.h"

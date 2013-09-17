@@ -40,7 +40,7 @@
 #include <stdlib.h>
 #include "sysstuff.h"
 #include "princ.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "vec.h"
 #include "smalloc.h"
@@ -50,7 +50,7 @@
 #include "macros.h"
 #include "symtab.h"
 #include "index.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "network.h"
 #include "pbc.h"
 #include "pull.h"
