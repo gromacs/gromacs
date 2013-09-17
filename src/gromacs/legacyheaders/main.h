@@ -39,6 +39,7 @@
 
 #include <stdio.h>
 #include "network.h"
+#include "gromacs/fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

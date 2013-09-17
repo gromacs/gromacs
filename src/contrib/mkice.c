@@ -42,7 +42,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "gmx_fatal.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -50,11 +50,11 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "symtab.h"
 #include "strdb.h"
 #include "atomprop.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 
 #define TET   109.47
 #define DCONS 0.117265878

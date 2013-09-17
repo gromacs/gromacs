@@ -53,8 +53,8 @@
 #include "partdec.h"
 #include "pbc.h"
 #include <stdio.h>
-#include "futil.h"
-#include "pdbio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/pdbio.h"
 
 /***********************************
  *         Grid Routines

@@ -42,7 +42,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <string.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "main.h"
 #include "network.h"
@@ -51,7 +51,7 @@
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #include "gromacs/utility/gmxmpi.h"
 

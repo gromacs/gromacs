@@ -45,7 +45,7 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/filenm.h"
+#include "gromacs/fileio/filenm.h"
 
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"

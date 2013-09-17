@@ -45,7 +45,7 @@
 #include "gmx_fatal.h"
 #include "random.h"
 #include "strdb.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "physics.h"
 #include "ehdata.h"
 

@@ -47,12 +47,13 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "rmpbc.h"
-#include "xtcio.h"
+#include "gromacs/fileio/xtcio.h"
 #include "gmx_ana.h"
 
 

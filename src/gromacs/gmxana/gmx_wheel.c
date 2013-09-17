@@ -48,7 +48,7 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "strdb.h"
 #include "statutil.h"
 #include "pbc.h"
