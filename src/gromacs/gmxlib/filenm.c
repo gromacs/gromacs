@@ -151,7 +151,6 @@ static const t_deffile
     deffile[efNR] =
 {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
-    { eftASC, ".gct", "gct",    "-f", "General coupling stuff"},
     { eftGEN, ".???", "traj", "-f",
       "Trajectory: xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f",
