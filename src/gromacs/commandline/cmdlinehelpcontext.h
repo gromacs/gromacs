@@ -76,6 +76,14 @@ class CommandLineHelpContext
          * \throws std::bad_alloc if out of memory.
          */
         void setModuleDisplayName(const std::string &name);
+        /*! \brief
+         * Sets the links to process in help output.
+         *
+         * A reference to \p links is stored until the CommandLineHelpContext
+         * is destructed.  The caller is responsible for ensuring that the
+         * links object remains valid long enough.
+         */
+        void setLinks(const HelpLinks &links);
         //! Sets whether hidden options should be shown in help output.
         void setShowHidden(bool bHidden);
 

@@ -66,6 +66,45 @@ enum HelpOutputFormat
 //! \endcond
 
 /*! \libinternal \brief
+ * Hyperlink data for writing out help.
+ *
+ * This class is separate from HelpWriterContext to allow constructing the list
+ * of links once and reusing them across multiple help writer contexts.
+ * This is used when exporting all the help from the wrapper binary to avoid
+ * repeatedly constructing the same data structure for each help item.
+ *
+ * \ingroup module_onlinehelp
+ */
+class HelpLinks
+{
+    public:
+        //! Initializes an empty links collection.
+        HelpLinks();
+        ~HelpLinks();
+
+        /*! \brief
+         * Adds a link.
+         *
+         * \param[in] linkName   Name of the link in input text.
+         * \param[in] targetName Hyperlink target.
+         *
+         * Any occurrence of \p linkName in the text passed to markup
+         * substitution methods in HelpWriterContext is made into a hyperlink
+         * to \p targetName if the markup format supports that.
+         */
+        void addLink(const std::string &linkName,
+                     const std::string &targetName);
+
+    private:
+        class Impl;
+
+        PrivateImplPointer<Impl> impl_;
+
+        //! Allows the context to use the links.
+        friend class HelpWriterContext;
+};
+
+/*! \libinternal \brief
  * Context information for writing out help.
  *
  * The purpose of this class is to pass information about the output format to
@@ -90,6 +129,9 @@ class HelpWriterContext
          */
         HelpWriterContext(File *file, HelpOutputFormat format);
         ~HelpWriterContext();
+
+        //! Sets the links to use in this context.
+        void setLinks(const HelpLinks &links);
 
         /*! \brief
          * Returns the active output format.
