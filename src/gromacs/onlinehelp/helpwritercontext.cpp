@@ -166,6 +166,54 @@ std::string toUpperCase(const std::string &text)
 }   // namespace
 
 /********************************************************************
+ * HelpLinks::Impl
+ */
+
+/*! \internal \brief
+ * Private implementation class for HelpLinks.
+ *
+ * \ingroup module_onlinehelp
+ */
+class HelpLinks::Impl
+{
+    public:
+        struct LinkItem
+        {
+            LinkItem(const std::string &linkName,
+                     const std::string &targetName)
+                : linkName(linkName), targetName(targetName)
+            {
+            }
+            std::string         linkName;
+            std::string         targetName;
+        };
+
+        //! Shorthand for a list of links.
+        typedef std::vector<LinkItem> LinkList;
+
+        //! List of links.
+        LinkList        links_;
+};
+
+/********************************************************************
+ * HelpLinks
+ */
+
+HelpLinks::HelpLinks() : impl_(new Impl)
+{
+}
+
+HelpLinks::~HelpLinks()
+{
+}
+
+void HelpLinks::addLink(const std::string &linkName,
+                        const std::string &targetName)
+{
+    impl_->links_.push_back(Impl::LinkItem(linkName, targetName));
+}
+
+/********************************************************************
  * HelpWriterContext::Impl
  */
 
@@ -179,7 +227,7 @@ class HelpWriterContext::Impl
     public:
         //! Initializes the context with the given output file and format.
         explicit Impl(File *file, HelpOutputFormat format)
-            : file_(*file), format_(format)
+            : file_(*file), format_(format), links_(NULL)
         {
         }
 
@@ -199,6 +247,8 @@ class HelpWriterContext::Impl
         File                   &file_;
         //! Output format for the help output.
         HelpOutputFormat        format_;
+        //! Links to use.
+        const HelpLinks        *links_;
 };
 
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
@@ -222,6 +272,46 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
             }
             return wrapper->wrap(result);
         }
+        case eHelpOutputFormat_Man:
+        {
+            {
+                char            *resultStr = check_nroff(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            return wrapper->wrap(result);
+        }
+        case eHelpOutputFormat_Html:
+        {
+            {
+                char            *resultStr = check_html(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            if (links_ != NULL)
+            {
+                HelpLinks::Impl::LinkList::const_iterator link;
+                for (link  = links_->impl_->links_.begin();
+                     link != links_->impl_->links_.end(); ++link)
+                {
+                    std::string replacement
+                        = formatString("<a href=\"%s.html\">%s</a>",
+                                       link->targetName.c_str(),
+                                       link->linkName.c_str());
+                    result = replaceAllWords(result, link->linkName, replacement);
+                }
+            }
+            return wrapper->wrap(result);
+        }
+        case eHelpOutputFormat_Latex:
+        {
+            {
+                char            *resultStr = check_tex(result.c_str());
+                scoped_ptr_sfree resultGuard(resultStr);
+                result = resultStr;
+            }
+            return wrapper->wrap(result);
+        }
         default:
             GMX_THROW(InternalError("Invalid help output format"));
     }
@@ -238,6 +328,11 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
 
 HelpWriterContext::~HelpWriterContext()
 {
+}
+
+void HelpWriterContext::setLinks(const HelpLinks &links)
+{
+    impl_->links_ = &links;
 }
 
 HelpOutputFormat HelpWriterContext::outputFormat() const

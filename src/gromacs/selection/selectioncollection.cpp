@@ -136,7 +136,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
     {
         fprintf(stderr, "> ");
     }
-    if (!infile->readLine(line))
+    if (!infile->readLineWithTrailingSpace(line))
     {
         return false;
     }
@@ -150,7 +150,7 @@ bool promptLine(File *infile, bool bInteractive, std::string *line)
         std::string buffer;
         // Return value ignored, buffer remains empty and works correctly
         // if there is nothing to read.
-        infile->readLine(&buffer);
+        infile->readLineWithTrailingSpace(&buffer);
         line->append(buffer);
     }
     if (endsWith(*line, "\n"))
