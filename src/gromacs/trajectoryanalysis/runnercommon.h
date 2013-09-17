@@ -43,7 +43,7 @@
 #define GMX_TRAJECTORYANALYSIS_RUNNERCOMMON_H
 
 #include "../legacyheaders/types/simple.h"
-#include "../legacyheaders/types/trx.h"
+#include "gromacs/fileio/trx.h"
 
 #include "../utility/common.h"
 

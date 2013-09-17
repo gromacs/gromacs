@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "tpxio.h"
+#include "../fileio/tpxio.h"
 
 #ifdef __cplusplus
 extern "C" {

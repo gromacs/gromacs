@@ -43,7 +43,8 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include <math.h>
 #include "index.h"
 #include "pbc.h"

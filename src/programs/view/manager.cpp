@@ -48,7 +48,7 @@
 #include <atomprop.h>
 #include <names.h>
 #include "manager.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "pbc.h"
 #include "nmol.h"
 #include "copyrite.h"

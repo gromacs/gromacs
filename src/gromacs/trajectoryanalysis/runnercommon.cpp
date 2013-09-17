@@ -51,7 +51,9 @@
 #include "gromacs/legacyheaders/rmpbc.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
-#include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
+#include "gromacs/legacyheaders/statutil.h"
 #include "gromacs/legacyheaders/vec.h"
 
 #include "gromacs/options/basicoptions.h"

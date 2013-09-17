@@ -42,7 +42,7 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "filenm.h"
+#include "../fileio/filenm.h"
 #include "mshift.h"
 #include "edsam.h"
 #include "mdebin.h"
