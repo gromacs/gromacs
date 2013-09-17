@@ -44,15 +44,15 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "readinp.h"
 #include "statutil.h"
 #include "txtdump.h"
 #include "gstat.h"
 #include "xvgr.h"
 #include "physics.h"
-#include "pdbio.h"
-#include "matio.h"
+#include "gromacs/fileio/pdbio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 

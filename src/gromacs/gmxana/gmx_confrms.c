@@ -36,22 +36,22 @@
 #include <config.h>
 #endif
 
-#include "filenm.h"
+#include "gromacs/fileio/filenm.h"
 #include "smalloc.h"
 #include "macros.h"
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
 #include "gmx_fatal.h"
-#include "futil.h"
-#include "confio.h"
-#include "pdbio.h"
+#include "gromacs/fileio/futil.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "txtdump.h"
 #include "do_fit.h"
 #include "viewit.h"

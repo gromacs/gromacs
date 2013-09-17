@@ -39,7 +39,7 @@
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "ebin.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "types/state.h"
 
 #ifdef __cplusplus

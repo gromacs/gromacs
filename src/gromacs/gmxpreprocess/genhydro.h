@@ -36,7 +36,7 @@
 #ifndef _genhydro_h
 #define _genhydro_h
 
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "hackblock.h"
 
 extern int add_h(t_atoms **pdbaptr, rvec *xptr[],

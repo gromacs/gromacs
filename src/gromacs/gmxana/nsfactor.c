@@ -38,7 +38,7 @@
 
 #include <ctype.h>
 #include <string.h>
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_random.h"
 #include "smalloc.h"
 #include "sysstuff.h"

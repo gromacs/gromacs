@@ -45,7 +45,7 @@
 #include "statutil.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -53,9 +53,9 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
-#include "trnio.h"
+#include "gromacs/fileio/trnio.h"
 #include "symtab.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 
 real pot(real x, real qq, real c6, real cn, int npow)
 {

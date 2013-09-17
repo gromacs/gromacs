@@ -41,7 +41,7 @@
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "mshift.h"
 #include "main.h"
 #include "pbc.h"

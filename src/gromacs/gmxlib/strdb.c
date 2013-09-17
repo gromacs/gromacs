@@ -39,7 +39,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
 #include "strdb.h"

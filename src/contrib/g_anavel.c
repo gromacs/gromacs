@@ -42,15 +42,15 @@
 #include "statutil.h"
 #include "random.h"
 #include "names.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "physics.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "copyrite.h"
 #include "xvgr.h"
 #include "string2.h"
 #include "index.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 
 int main(int argc,char *argv[])
 {

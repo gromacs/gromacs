@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"
@@ -54,7 +54,8 @@
 #include "princ.h"
 #include "rmpbc.h"
 #include "txtdump.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gstat.h"
 #include "gmx_ana.h"
 

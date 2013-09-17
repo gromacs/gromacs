@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "vec.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "xvgr.h"
 #include "gmx_fatal.h"
 #include "bondf.h"

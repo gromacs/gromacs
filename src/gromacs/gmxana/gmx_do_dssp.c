@@ -47,13 +47,14 @@
 #include "smalloc.h"
 #include "mshift.h"
 #include "statutil.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "gmx_fatal.h"
 #include "xvgr.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "index.h"
 #include "gstat.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "viewit.h"
 
 
