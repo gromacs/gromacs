@@ -41,8 +41,8 @@
 #include "macros.h"
 #include "vec.h"
 #include "xvgr.h"
-#include "matio.h"
-#include "futil.h"
+#include "gromacs/fileio/matio.h"
+#include "gromacs/fileio/futil.h"
 
 t_mat *init_mat(int n1, gmx_bool b1D)
 {

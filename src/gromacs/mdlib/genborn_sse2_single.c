@@ -43,7 +43,7 @@
 #include "genborn.h"
 #include "vec.h"
 #include "grompp.h"
-#include "pdbio.h"
+#include "gromacs/fileio/pdbio.h"
 #include "names.h"
 #include "physics.h"
 #include "partdec.h"

@@ -40,7 +40,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "maths.h"
 #include "gmx_fatal.h"
 #include "atomprop.h"

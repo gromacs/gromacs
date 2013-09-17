@@ -40,7 +40,7 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "symtab.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "resall.h"
 #include "h_db.h"
 #include "string2.h"
@@ -48,7 +48,7 @@
 #include "gmx_fatal.h"
 #include "ter_db.h"
 #include "toputil.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "fflibutil.h"
 
 

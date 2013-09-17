@@ -41,7 +41,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "sysstuff.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "statutil.h"
 #include "vec.h"
 #include "random.h"
@@ -51,6 +51,7 @@
 #include "names.h"
 #include "sortwater.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 static void rand_rot(int natoms, rvec x[], rvec v[], vec4 xrot[], vec4 vrot[],
                      int *seed, rvec max_rot)

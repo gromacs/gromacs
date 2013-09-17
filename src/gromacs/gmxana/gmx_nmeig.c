@@ -47,7 +47,7 @@
 #include "vec.h"
 #include "pbc.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "mshift.h"

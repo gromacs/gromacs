@@ -43,7 +43,7 @@
 #include "string2.h"
 #include "smalloc.h"
 #include "fgrid.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 
 static const char *type[] = {
     "button", "radiobuttons", "groupbox", "checkbox",

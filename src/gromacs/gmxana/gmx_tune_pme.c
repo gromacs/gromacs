@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "string2.h"
 #include "readinp.h"
 #include "calcgrid.h"

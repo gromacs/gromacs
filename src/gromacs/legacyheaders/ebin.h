@@ -38,7 +38,7 @@
 
 #include "sysstuff.h"
 #include "typedefs.h"
-#include "enxio.h"
+#include "../fileio/enxio.h"
 
 #ifdef __cplusplus
 extern "C" {

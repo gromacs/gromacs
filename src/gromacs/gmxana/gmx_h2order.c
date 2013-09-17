@@ -48,10 +48,11 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "index.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 /****************************************************************************/
