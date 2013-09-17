@@ -97,6 +97,10 @@ void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
     impl_->moduleDisplayName_ = name;
 }
 
+void CommandLineHelpContext::setLinks(const HelpLinks &links)
+{
+    impl_->writerContext_.setLinks(links);
+}
 
 void CommandLineHelpContext::setShowHidden(bool bHidden)
 {

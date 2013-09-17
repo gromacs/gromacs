@@ -51,7 +51,9 @@
 #include <boost/scoped_ptr.hpp>
 
 #include "gromacs/legacyheaders/copyrite.h"
+#include "gromacs/legacyheaders/futil.h"
 #include "gromacs/legacyheaders/network.h"
+#include "gromacs/legacyheaders/smalloc.h"
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinemodule.h"
@@ -326,6 +328,8 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
 class HelpExportHtml : public HelpExportInterface
 {
     public:
+        HelpExportHtml();
+
         virtual void startModuleExport();
         virtual void exportModuleHelp(const std::string                &tag,
                                       const CommandLineModuleInterface &module);
@@ -336,7 +340,23 @@ class HelpExportHtml : public HelpExportInterface
         void writeHtmlFooter(File *file) const;
 
         boost::scoped_ptr<File>  byNameFile_;
+        HelpLinks                links_;
 };
+
+HelpExportHtml::HelpExportHtml()
+{
+    char *linksFilename = low_gmxlibfn("links.dat", FALSE, FALSE);
+    if (linksFilename != NULL)
+    {
+        scoped_ptr_sfree guard(linksFilename);
+        File             linksFile(linksFilename, "r");
+        std::string      line;
+        while (linksFile.readLine(&line))
+        {
+            links_.addLink(line, "../online/" + line);
+        }
+    }
+}
 
 void HelpExportHtml::startModuleExport()
 {
@@ -355,6 +375,7 @@ void HelpExportHtml::exportModuleHelp(const std::string                &tag,
     std::string            displayName(tag);
     std::replace(displayName.begin(), displayName.end(), '-', ' ');
     context.setModuleDisplayName(displayName);
+    context.setLinks(links_);
     module.writeHelp(context);
 
     writeHtmlFooter(&file);

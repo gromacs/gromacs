@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -189,6 +189,20 @@ void File::readBytes(void *buffer, size_t bytes)
 }
 
 bool File::readLine(std::string *line)
+{
+    if (!readLineWithTrailingSpace(line))
+    {
+        return false;
+    }
+    size_t endPos = line->find_last_not_of(" \t\r\n");
+    if (endPos != std::string::npos)
+    {
+        line->resize(endPos + 1);
+    }
+    return true;
+}
+
+bool File::readLineWithTrailingSpace(std::string *line)
 {
     line->clear();
     const size_t bufsize = 256;
