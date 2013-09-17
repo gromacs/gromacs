@@ -363,7 +363,7 @@ typedef struct {
     /* Energy group pair flags */
     int *egp_flags;
 
-    /* xmdrun flexible constraints */
+    /* Shell molecular dynamics flexible constraints */
     real fc_stepsize;
 
     /* Generalized born implicit solvent */

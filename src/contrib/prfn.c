@@ -54,7 +54,7 @@ void pr_texdefs(FILE *fp)
 	  "Name","Ext.","Type","Option","Description");
   fprintf(fp,"\\hline\n");
   for(i=0; (i<efNR); i++)
-    if ( (i!=efGCT) && (i!=efHAT) )
+    if ( (i!=efHAT) )
       pr_def(fp,i);
   fprintf(fp,"\\dline\n");
   fprintf(fp,"\\end{tabularx}\n");

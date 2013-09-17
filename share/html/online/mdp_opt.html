@@ -31,7 +31,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#run"><b>run control</b></A> (integrator, tinit, dt, nsteps, init-step, comm-mode, nstcomm, comm-grps)
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd-fric, ld-seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
-<li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
+<li><a HREF="#shellmd"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-drift, rlist, rlistlong)
@@ -298,7 +298,7 @@ conjugate gradient energy minimization.</dd>
 number is (at least theoretically) more accurate, but slower.</dd>
 </dl>
 
-<A NAME="xmdrun"><br>
+<A NAME="shellmd"><br>
 <hr>
 <h3>Shell Molecular Dynamics<!--QuietIdx-->shell molecular dynamics<!--EQuietIdx--></h3>
 When shells or
@@ -2045,7 +2045,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#ef">E-yt</A><br>
 <A HREF="#ef">E-z</A><br>
 <A HREF="#ef">E-zt </A><br>
-<A HREF="#xmdrun">fcstep</A><br>
+<A HREF="#shellmd">fcstep</A><br>
 <A HREF="#ewald">fourier-nx</A><br>
 <A HREF="#ewald">fourier-ny</A><br>
 <A HREF="#ewald">fourier-nz</A><br>
@@ -2076,7 +2076,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#expanded">mininum-var-min</A><br>
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>
-<A HREF="#xmdrun">niter</A><br>
+<A HREF="#shellmd">niter</A><br>
 <A HREF="#tc">nh-chain-length</A><br>
 <A HREF="#em">nstcgsteep</A><br>
 <A HREF="#out">nstcalcenergy</A><br>

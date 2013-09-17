@@ -61,7 +61,7 @@
 #include "xvgr.h"
 #include "physics.h"
 #include "names.h"
-#include "xmdrun.h"
+#include "force.h"
 #include "ionize.h"
 #include "disre.h"
 #include "orires.h"
@@ -192,7 +192,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     real              timestep = 0;
     double            tcount   = 0;
     gmx_bool          bIonize  = FALSE;
-    gmx_bool          bTCR     = FALSE, bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
+    gmx_bool          bConverged = TRUE, bOK, bSumEkinhOld, bExchanged;
     gmx_bool          bAppend;
     gmx_bool          bResetCountersHalfMaxH = FALSE;
     gmx_bool          bVV, bIterativeCase, bFirstIterate, bTemp, bPres, bTrotter;
@@ -201,7 +201,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               a0, a1, gnx = 0, ii;
     atom_id          *grpindex = NULL;
     char             *grpname;
-    t_coupl_rec      *tcr     = NULL;
     rvec             *xcopy   = NULL, *vcopy = NULL, *cbuf = NULL;
     matrix            boxcopy = {{0}}, lastbox;
     tensor            tmpvir;
@@ -491,22 +490,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (!DOMAINDECOMP(cr))
         {
             set_constraints(constr, top, ir, mdatoms, cr);
-        }
-    }
-
-    /* Check whether we have to GCT stuff */
-    bTCR = ftp2bSet(efGCT, nfile, fnm);
-    if (bTCR)
-    {
-        if (MASTER(cr))
-        {
-            fprintf(stderr, "Will do General Coupling Theory!\n");
-        }
-        gnx = top_global->mols.nr;
-        snew(grpindex, gnx);
-        for (i = 0; (i < gnx); i++)
-        {
-            grpindex[i] = i;
         }
     }
 
@@ -1138,19 +1121,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->lambda, graph,
                      fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
-        }
-
-        if (bTCR)
-        {
-            mu_aver = calc_mu_aver(cr, state->x, mdatoms->chargeA,
-                                   mu_tot, &top_global->mols, mdatoms, gnx, grpindex);
-        }
-
-        if (bTCR && bFirstStep)
-        {
-            tcr = init_coupling(fplog, nfile, fnm, cr, fr, mdatoms, &(top->idef));
-            fprintf(fplog, "Done init_coupling\n");
-            fflush(fplog);
         }
 
         if (bVV && !bStartingFromCpt && !bRerunMD)
@@ -1864,26 +1834,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              * so signal that we still have to do it.
              */
             bSumEkinhOld = TRUE;
-        }
-
-        if (bTCR)
-        {
-            /* Only do GCT when the relaxation of shells (minimization) has converged,
-             * otherwise we might be coupling to bogus energies.
-             * In parallel we must always do this, because the other sims might
-             * update the FF.
-             */
-
-            /* Since this is called with the new coordinates state->x, I assume
-             * we want the new box state->box too. / EL 20040121
-             */
-            do_coupling(fplog, oenv, nfile, fnm, tcr, t, step, enerd->term, fr,
-                        ir, MASTER(cr),
-                        mdatoms, &(top->idef), mu_aver,
-                        top_global->mols.nr, cr,
-                        state->box, total_vir, pres,
-                        mu_tot, state->x, f, bConverged);
-            debug_gmx();
         }
 
         /* #########  BEGIN PREPARING EDR OUTPUT  ###########  */
