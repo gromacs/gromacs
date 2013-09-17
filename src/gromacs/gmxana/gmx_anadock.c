@@ -39,9 +39,9 @@
 #include <config.h>
 #endif
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "string2.h"

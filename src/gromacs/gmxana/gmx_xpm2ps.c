@@ -44,13 +44,14 @@
 #include "macros.h"
 #include "statutil.h"
 #include "writeps.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "viewit.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 #define FUDGE 1.2
 #define DDD   2

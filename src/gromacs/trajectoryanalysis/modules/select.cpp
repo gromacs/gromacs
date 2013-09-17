@@ -49,7 +49,8 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
+#include "gromacs/fileio/trxio.h"
 #include "gromacs/legacyheaders/smalloc.h"
 #include "gromacs/legacyheaders/statutil.h"
 

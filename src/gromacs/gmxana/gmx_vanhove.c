@@ -45,14 +45,15 @@
 #include "macros.h"
 #include "statutil.h"
 #include "maths.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "index.h"
 #include "typedefs.h"
 #include "xvgr.h"
 #include "gstat.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "vec.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_ana.h"
 
 

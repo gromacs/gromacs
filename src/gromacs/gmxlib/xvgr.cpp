@@ -47,14 +47,14 @@
 
 #include "sysstuff.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
 #include "copyrite.h"
 #include "smalloc.h"
 #include "xvgr.h"
 #include "viewit.h"
 #include "vec.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/programinfo.h"

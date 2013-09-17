@@ -40,6 +40,7 @@
 #include "statutil.h"
 #include "mshift.h"
 #include "rmpbc.h"
+#include "index.h"
 
 #ifdef __cplusplus
 extern "C" {

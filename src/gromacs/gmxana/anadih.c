@@ -48,7 +48,8 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "gstat.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
+#include "gromacs/fileio/trxio.h"
 
 void print_one(const output_env_t oenv, const char *base, const char *name,
                const char *title, const char *ylabel, int nf, real time[],

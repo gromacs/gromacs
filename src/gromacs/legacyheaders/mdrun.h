@@ -42,7 +42,7 @@
 #include "network.h"
 #include "sim_util.h"
 #include "tgroup.h"
-#include "filenm.h"
+#include "../fileio/filenm.h"
 #include "mshift.h"
 #include "edsam.h"
 #include "mdebin.h"
@@ -203,36 +203,6 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags);
 /* Driver routine, that calls the different methods */
-
-void
-do_trajectory_writing(FILE           *fplog,
-                      t_commrec      *cr,
-                      int             nfile,
-                      const t_filenm  fnm[],
-                      gmx_large_int_t step,
-                      gmx_large_int_t step_rel,
-                      double          t,
-                      t_inputrec     *ir,
-                      t_state        *state,
-                      t_state        *state_global,
-                      gmx_mtop_t     *top_global,
-                      t_forcerec     *fr,
-                      gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
-                      t_mdebin       *mdebin,
-                      gmx_ekindata_t *ekind,
-                      rvec           *f,
-                      rvec           *f_global,
-                      gmx_wallcycle_t wcycle,
-                      gmx_rng_t       mcrng,
-                      int            *nchkpt,
-                      gmx_bool        bCPT,
-                      gmx_bool        bRerunMD,
-                      gmx_bool        bLastStep,
-                      gmx_bool        bDoConfOut,
-                      gmx_bool        bSumEkinhOld
-                      );
-/* Wrapper routine for trajectory writing */
 
 #ifdef __cplusplus
 }
