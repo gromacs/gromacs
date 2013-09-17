@@ -61,12 +61,6 @@ const char *ftp2defnm(int ftp);
 const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
-void pr_def(FILE *fp, int ftp);
-/* Print definitions for filename ftp */
-
-void pr_defs(FILE *fp);
-/* Print definitions for all filename */
-
 void pr_fns(FILE *fp, int nf, const t_filenm tfn[]);
 /* Print nf file names and types */
 
