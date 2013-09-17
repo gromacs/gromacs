@@ -56,7 +56,8 @@ char *fileopt(unsigned long flag, char buf[], int maxsize);
  */
 
 char *check_tex(const char *s);
-
+char *check_nroff(const char *s);
+char *check_html(const char *s);
 char *check_tty(const char *s);
 
 #ifdef __cplusplus
