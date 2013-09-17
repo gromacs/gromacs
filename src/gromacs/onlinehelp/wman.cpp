@@ -32,24 +32,24 @@
  * And Hey:
  * GROningen Mixture of Alchemy and Childrens' Stories
  */
+#include <cstdio>
+#include <cstring>
+
 #include <string>
 
 #include "gromacs/commandline/cmdlinehelpcontext.h"
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/fileio/gmxfio.h"
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
-#include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "sysstuff.h"
-#include "gromacs/fileio/filenm.h"
-#include "gromacs/fileio/gmxfio.h"
 #include "macros.h"
 #include "statutil.h"
-#include "copyrite.h"
-#include "strdb.h"
 #include "readinp.h"
 
 /* The source code in this file should be thread-safe.
@@ -58,10 +58,6 @@
 
 typedef struct {
     const char *search, *replace;
-} t_sandr_const;
-
-typedef struct {
-    char *search, *replace;
 } t_sandr;
 
 /* The order of these arrays is significant. Text search and replace
@@ -69,7 +65,7 @@ typedef struct {
  * subsequent changes even though the original text might not appear
  * to invoke the latter changes. */
 
-const t_sandr_const sandrTty[] = {
+const t_sandr sandrTty[] = {
     { "[TT]", "" },
     { "[tt]", "" },
     { "[BB]", "" },
@@ -119,7 +115,7 @@ const t_sandr_const sandrTty[] = {
 };
 #define NSRTTY asize(sandrTty)
 
-const t_sandr_const sandrNROFF[] = {
+const t_sandr sandrNROFF[] = {
     { "[TT]", "\\fB " },
     { "[tt]", "\\fR" },
     { "[BB]", "\\fB " },
@@ -175,7 +171,7 @@ const t_sandr_const sandrNROFF[] = {
 };
 #define NSRNROFF asize(sandrNROFF)
 
-const t_sandr_const sandrHTML[] = {
+const t_sandr sandrHTML[] = {
     { "<",    "&lt;" },
     { ">",    "&gt;" },
     { "[TT]", "<tt>" },
@@ -227,37 +223,7 @@ const t_sandr_const sandrHTML[] = {
 };
 #define NSRHTML asize(sandrHTML)
 
-
-/* Data structure for saved HTML links */
-typedef struct t_linkdata {
-    int      nsr;
-    t_sandr *sr;
-} t_linkdata;
-
-static t_linkdata *init_linkdata()
-{
-    t_linkdata *p;
-    snew(p, 1);
-    p->sr  = NULL;
-    p->nsr = 0;
-
-    return p;
-}
-
-static void finish_linkdata(t_linkdata *p)
-{
-    int i;
-
-    for (i = 0; i < p->nsr; i++)
-    {
-        sfree(p->sr[i].search);
-        sfree(p->sr[i].replace);
-    }
-    sfree(p->sr);
-    sfree(p);
-}
-
-static char *repall(const char *s, int nsr, const t_sandr_const sa[])
+static char *repall(const char *s, int nsr, const t_sandr sa[])
 {
     try
     {
@@ -271,66 +237,20 @@ static char *repall(const char *s, int nsr, const t_sandr_const sa[])
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 }
 
-static char *repallww(const char *s, int nsr, const t_sandr sa[])
-{
-    try
-    {
-        std::string result(s);
-        for (int i = 0; i < nsr; ++i)
-        {
-            result = gmx::replaceAllWords(result, sa[i].search, sa[i].replace);
-        }
-        return gmx_strdup(result.c_str());
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-static char *html_xref(char *s, const char *program, t_linkdata *links)
-{
-    char   buf[256], **filestr;
-    int    i, j, n;
-
-    if (links->sr == NULL)
-    {
-        n          = get_file("links.dat", &(filestr));
-        links->nsr = n;
-        snew(links->sr, n);
-        for (i = 0, j = 0; (i < n); i++)
-        {
-            if (!program || (gmx_strcasecmp(program, filestr[i])  != 0))
-            {
-                links->sr[j].search = gmx_strdup(filestr[i]);
-                sprintf(buf, "<a href=\"%s.html\">%s</a>", filestr[i], filestr[i]);
-                links->sr[j].replace = gmx_strdup(buf);
-                j++;
-            }
-        }
-        links->nsr = j;
-        for (i = 0; i < n; i++)
-        {
-            sfree(filestr[i]);
-        }
-        sfree(filestr);
-    }
-    return repallww(s, links->nsr, links->sr);
-}
-
-static char *check_nroff(const char *s)
+char *check_nroff(const char *s)
 {
     return repall(s, NSRNROFF, sandrNROFF);
 }
 
-static char *check_html(const char *s, const char *program, t_linkdata *links)
+char *check_html(const char *s)
 {
-    char *buf;
-
-    buf = repall(s, NSRHTML, sandrHTML);
-    buf = html_xref(buf, program, links);
-
-    return buf;
+    return repall(s, NSRHTML, sandrHTML);
 }
 
-#define NSR(s) check_html(s, program, links)
+std::string check(const char *s, const gmx::HelpWriterContext &context)
+{
+    return context.substituteMarkupAndWrapToString(gmx::TextLineWrapperSettings(), s);
+}
 
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
 char *fileopt(unsigned long flag, char buf[], int maxsize)
@@ -386,8 +306,7 @@ static void write_nroffman(FILE *out,
                            int nfile, t_filenm *fnm,
                            int npargs, t_pargs *pa,
                            int nbug, const char **bugs,
-                           t_linkdata *links)
-
+                           const gmx::HelpWriterContext &context)
 {
     int  i;
     char tmp[256];
@@ -400,8 +319,9 @@ static void write_nroffman(FILE *out,
     {
         for (i = 0; (i < nfile); i++)
         {
-            fprintf(out, ".BI \"%s\" \" %s \"\n", check_nroff(fnm[i].opt),
-                    check_nroff(fnm[i].fns[0]));
+            fprintf(out, ".BI \"%s\" \" %s \"\n",
+                    check(fnm[i].opt, context).c_str(),
+                    check(fnm[i].fns[0], context).c_str());
         }
     }
     if (npargs > 0)
@@ -410,12 +330,14 @@ static void write_nroffman(FILE *out,
         {
             if (pa[i].type == etBOOL)
             {
-                fprintf(out, ".BI \"\\-[no]%s\" \"\"\n", check_nroff(pa[i].option+1));
+                fprintf(out, ".BI \"\\-[no]%s\" \"\"\n",
+                        check(pa[i].option+1, context).c_str());
             }
             else
             {
-                fprintf(out, ".BI \"%s\" \" %s \"\n", check_nroff(pa[i].option),
-                        check_nroff(get_arg_desc(pa[i].type)));
+                fprintf(out, ".BI \"%s\" \" %s \"\n",
+                        check(pa[i].option, context).c_str(),
+                        check(get_arg_desc(pa[i].type), context).c_str());
             }
         }
     }
@@ -426,7 +348,7 @@ static void write_nroffman(FILE *out,
         fprintf(out, ".SH DESCRIPTION\n");
         for (i = 0; (i < nldesc); i++)
         {
-            fprintf(out, "\\&%s\n", check_nroff(desc[i]));
+            fprintf(out, "\\&%s\n", check(desc[i], context).c_str());
         }
     }
 
@@ -437,10 +359,10 @@ static void write_nroffman(FILE *out,
         for (i = 0; (i < nfile); i++)
         {
             fprintf(out, ".BI \"%s\" \" %s\" \n.B %s\n %s \n\n",
-                    check_nroff(fnm[i].opt),
-                    check_nroff(fnm[i].fns[0]),
-                    check_nroff(fileopt(fnm[i].flag, tmp, 255)),
-                    check_nroff(ftp2desc(fnm[i].ftp)));
+                    check(fnm[i].opt, context).c_str(),
+                    check(fnm[i].fns[0], context).c_str(),
+                    check(fileopt(fnm[i].flag, tmp, 255), context).c_str(),
+                    check(ftp2desc(fnm[i].ftp), context).c_str());
         }
     }
 
@@ -453,17 +375,17 @@ static void write_nroffman(FILE *out,
             if (pa[i].type == etBOOL)
             {
                 fprintf(out, ".BI \"\\-[no]%s\"  \"%s\"\n %s\n\n",
-                        check_nroff(pa[i].option+1),
-                        check_nroff(pa_val(&(pa[i]), tmp, 255)),
-                        check_nroff(pa[i].desc));
+                        check(pa[i].option+1, context).c_str(),
+                        check(pa_val(&(pa[i]), tmp, 255), context).c_str(),
+                        check(pa[i].desc, context).c_str());
             }
             else
             {
                 fprintf(out, ".BI \"%s\"  \" %s\" \" %s\" \n %s\n\n",
-                        check_nroff(pa[i].option),
-                        check_nroff(get_arg_desc(pa[i].type)),
-                        check_nroff(pa_val(&(pa[i]), tmp, 255)),
-                        check_nroff(pa[i].desc));
+                        check(pa[i].option, context).c_str(),
+                        check(get_arg_desc(pa[i].type), context).c_str(),
+                        check(pa_val(&(pa[i]), tmp, 255), context).c_str(),
+                        check(pa[i].desc, context).c_str());
             }
         }
     }
@@ -473,7 +395,7 @@ static void write_nroffman(FILE *out,
         fprintf(out, ".SH KNOWN PROBLEMS\n");
         for (i = 0; (i < nbug); i++)
         {
-            fprintf(out, "\\- %s\n\n", check_nroff(bugs[i]));
+            fprintf(out, "\\- %s\n\n", check(bugs[i], context).c_str());
         }
     }
 }
@@ -484,11 +406,10 @@ char *check_tty(const char *s)
 }
 
 static void
-print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
-                    t_linkdata *links, const char *program)
+print_tty_formatted(FILE *out, int nldesc, const char **desc,
+                    const gmx::HelpWriterContext &context)
 {
     char *buf;
-    char *temp;
     int   buflen, i;
 
     buflen = 80*nldesc;
@@ -500,29 +421,27 @@ print_tty_formatted(FILE *out, int nldesc, const char **desc, int indent,
         {
             strcat(buf, " ");
         }
-        temp = check_tty(desc[i]);
-        if (strlen(buf) + strlen(temp) >= (size_t)(buflen-2))
+        std::string temp = check(desc[i], context);
+        if (strlen(buf) + temp.length() >= (size_t)(buflen-2))
         {
-            buflen += strlen(temp);
+            buflen += temp.length();
             srenew(buf, buflen);
         }
-        strcat(buf, temp);
-        sfree(temp);
+        strcat(buf, temp.c_str());
     }
     /* Make lines of at most 79 characters */
-    temp = wrap_lines(buf, 78, indent, FALSE);
+    char *temp = wrap_lines(buf, 78, 0, FALSE);
     fprintf(out, "%s\n", temp);
     sfree(temp);
     sfree(buf);
 }
 
 static void write_ttyman(FILE *out,
-                         const char *program,
                          int nldesc, const char **desc,
                          int nfile, t_filenm *fnm,
                          int npargs, t_pargs *pa,
                          int nbug, const char **bugs,
-                         t_linkdata *links)
+                         const gmx::HelpWriterContext &context)
 {
     int   i;
     char *tmp;
@@ -530,7 +449,7 @@ static void write_ttyman(FILE *out,
     if (nldesc > 0)
     {
         fprintf(out, "DESCRIPTION\n-----------\n");
-        print_tty_formatted(out, nldesc, desc, 0, links, program);
+        print_tty_formatted(out, nldesc, desc, context);
     }
     if (nbug > 0)
     {
@@ -540,7 +459,7 @@ static void write_ttyman(FILE *out,
         {
             snew(tmp, strlen(bugs[i])+3);
             strcpy(tmp, "* ");
-            strcpy(tmp+2, check_tty(bugs[i]));
+            strcpy(tmp+2, check(bugs[i], context).c_str());
             fprintf(out, "%s\n", wrap_lines(tmp, 78, 2, FALSE));
             sfree(tmp);
         }
@@ -557,7 +476,7 @@ static void write_ttyman(FILE *out,
 }
 
 static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
-                          const char *program, t_linkdata *links)
+                          const gmx::HelpWriterContext &context)
 {
     int  i;
     char link[10], tmp[255];
@@ -586,19 +505,18 @@ static void pr_html_files(FILE *out, int nfile, t_filenm fnm[],
                 "<TD> %s </TD>"
                 "</TR>\n",
                 fnm[i].opt, link, fnm[i].fns[0], fileopt(fnm[i].flag, tmp, 255),
-                NSR(ftp2desc(fnm[i].ftp)));
+                check(ftp2desc(fnm[i].ftp), context).c_str());
     }
 
     fprintf(out, "</TABLE>\n");
 }
 
 static void write_htmlman(FILE *out,
-                          const char *program,
                           int nldesc, const char **desc,
                           int nfile, t_filenm *fnm,
                           int npargs, t_pargs *pa,
                           int nbug, const char **bugs,
-                          t_linkdata *links)
+                          const gmx::HelpWriterContext &context)
 {
     int  i;
     char tmp[255];
@@ -608,14 +526,14 @@ static void write_htmlman(FILE *out,
         fprintf(out, "<H3>Description</H3>\n<p>\n");
         for (i = 0; (i < nldesc); i++)
         {
-            fprintf(out, "%s\n", NSR(desc[i]));
+            fprintf(out, "%s\n", check(desc[i], context).c_str());
         }
     }
     if (nfile > 0)
     {
         fprintf(out, "<P>\n");
         fprintf(out, "<H3>Files</H3>\n");
-        pr_html_files(out, nfile, fnm, program, links);
+        pr_html_files(out, nfile, fnm, context);
     }
     if (npargs > 0)
     {
@@ -639,7 +557,8 @@ static void write_htmlman(FILE *out,
                     "<TD> %s </TD>"
                     "</TD>\n",
                     (pa[i].type == etBOOL) ? "-[no]" : "-", pa[i].option+1,
-                    get_arg_desc(pa[i].type), pa_val(&(pa[i]), tmp, 255), NSR(pa[i].desc));
+                    get_arg_desc(pa[i].type), pa_val(&(pa[i]), tmp, 255),
+                    check(pa[i].desc, context).c_str());
         }
         fprintf(out, "</TABLE>\n");
     }
@@ -650,7 +569,7 @@ static void write_htmlman(FILE *out,
         fprintf(out, "<UL>\n");
         for (i = 0; (i < nbug); i++)
         {
-            fprintf(out, "<LI>%s\n", NSR(bugs[i]));
+            fprintf(out, "<LI>%s\n", check(bugs[i], context).c_str());
         }
         fprintf(out, "</UL>\n");
     }
@@ -777,10 +696,6 @@ void write_man(const char *mantp,
     int         npar;
     t_pargs    *par;
 
-    t_linkdata *links;
-
-    links = init_linkdata();
-
     const gmx::CommandLineHelpContext *context
         = gmx::GlobalCommandLineHelpContext::get();
     bool  bFileOpened = false;
@@ -819,16 +734,25 @@ void write_man(const char *mantp,
 
     if (strcmp(mantp, "nroff") == 0)
     {
+        GMX_RELEASE_ASSERT(context != NULL,
+                           "Man page export only implemented with the new context");
         write_nroffman(out, context->moduleDisplayName(), nldesc, desc,
-                       nfile, fnm, npar, par, nbug, bugs, links);
+                       nfile, fnm, npar, par, nbug, bugs,
+                       context->writerContext());
     }
     if (strcmp(mantp, "help") == 0)
     {
-        write_ttyman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        GMX_RELEASE_ASSERT(context != NULL,
+                           "Help export only implemented with the new context");
+        write_ttyman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                     context->writerContext());
     }
     if (strcmp(mantp, "html") == 0)
     {
-        write_htmlman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        GMX_RELEASE_ASSERT(context != NULL,
+                           "HTML export only implemented with the new context");
+        write_htmlman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                      context->writerContext());
     }
     if (strcmp(mantp, "completion-zsh") == 0)
     {
@@ -852,8 +776,6 @@ void write_man(const char *mantp,
     {
         sfree(par);
     }
-
-    finish_linkdata(links);
 }
 
 const char *get_arg_desc(int type)

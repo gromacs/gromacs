@@ -190,6 +190,20 @@ void File::readBytes(void *buffer, size_t bytes)
 
 bool File::readLine(std::string *line)
 {
+    if (!readLineWithTrailingSpace(line))
+    {
+        return false;
+    }
+    size_t endPos = line->find_last_not_of(" \t\r\n");
+    if (endPos != std::string::npos)
+    {
+        line->resize(endPos + 1);
+    }
+    return true;
+}
+
+bool File::readLineWithTrailingSpace(std::string *line)
+{
     line->clear();
     const size_t bufsize = 256;
     std::string  result;

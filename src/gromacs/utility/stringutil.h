@@ -160,6 +160,9 @@ std::string concatenateStrings(const char * const (&sarray)[count])
  */
 std::string replaceAll(const std::string &input,
                        const char *from, const char *to);
+//! \copydoc replaceAll(const std::string &, const char *, const char *)
+std::string replaceAll(const std::string &input,
+                       const std::string &from, const std::string &to);
 /*! \brief
  * Replace whole words with others.
  *
@@ -176,6 +179,9 @@ std::string replaceAll(const std::string &input,
  */
 std::string replaceAllWords(const std::string &input,
                             const char *from, const char *to);
+//! \copydoc replaceAllWords(const std::string &, const char *, const char *)
+std::string replaceAllWords(const std::string &input,
+                            const std::string &from, const std::string &to);
 
 class TextLineWrapper;
 
