@@ -43,16 +43,17 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "smalloc.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "statutil.h"
 #include "names.h"
 #include "macros.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "physics.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "strdb.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 
 static int search_str2(int nstr, char **str, char *key)

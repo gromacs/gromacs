@@ -30,14 +30,14 @@
 #include "pbc.h"
 #include "rmpbc.h"
 #include "copyrite.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "statutil.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
 #include "index.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "gstat.h"
-#include "matio.h"
+#include "gromacs/fileio/matio.h"
 #include "gmx_fatal.h"
 
 

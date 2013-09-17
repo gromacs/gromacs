@@ -43,7 +43,7 @@
 #include "physics.h"
 #include "smalloc.h"
 #include "xvgr.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "names.h"
 #include "gmx_fatal.h"

@@ -45,7 +45,7 @@
 #include <fcntl.h>
 #include "sysstuff.h"
 #include "string2.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "network.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"

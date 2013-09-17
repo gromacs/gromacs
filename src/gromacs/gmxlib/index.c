@@ -41,12 +41,12 @@
 #include <assert.h>
 #include "sysstuff.h"
 #include "strdb.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "names.h"
 #include "string2.h"
 #include "statutil.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "main.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -54,7 +54,7 @@
 #include "macros.h"
 #include "index.h"
 #include "txtdump.h"
-#include "gmxfio.h"
+#include "gromacs/fileio/gmxfio.h"
 
 
 

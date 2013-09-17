@@ -36,6 +36,7 @@
 #define GMX_ONLINEHELP_WMAN_H
 
 #include "readinp.h"
+#include "gromacs/fileio/filenm.h"
 
 #ifdef __cplusplus
 extern "C" {

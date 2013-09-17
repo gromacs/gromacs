@@ -46,9 +46,10 @@
 #include "names.h"
 #include "macros.h"
 #include "gmx_fatal.h"
-#include "enxio.h"
+#include "gromacs/fileio/enxio.h"
 #include "vec.h"
 #include "gmx_ana.h"
+#include "gromacs/fileio/trxio.h"
 
 #define TIME_EXPLICIT 0
 #define TIME_CONTINUE 1

@@ -38,17 +38,18 @@
 
 #include <math.h>
 
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "gmx_fatal.h"
 #include "fitahx.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gstat.h"
 #include "wgms.h"
 #include "hxprops.h"
 #include "macros.h"
 #include "maths.h"
 #include "pbc.h"
-#include "tpxio.h"
+#include "gromacs/fileio/tpxio.h"
+#include "gromacs/fileio/trxio.h"
 #include "physics.h"
 #include "index.h"
 #include "smalloc.h"

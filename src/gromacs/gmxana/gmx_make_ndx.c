@@ -42,11 +42,11 @@
 #include <ctype.h>
 #include "sysstuff.h"
 #include "strdb.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "string2.h"
 #include "statutil.h"
-#include "confio.h"
+#include "gromacs/fileio/confio.h"
 #include "typedefs.h"
 #include "index.h"
 #include "smalloc.h"

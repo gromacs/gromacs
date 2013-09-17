@@ -49,7 +49,7 @@
 
 /* This file is completely threadsafe - keep it that way! */
 
-#include "gromacs/legacyheaders/futil.h"
+#include "gromacs/fileio/futil.h"
 #include "gromacs/legacyheaders/macros.h"
 #include "gromacs/legacyheaders/random.h"
 #include "gromacs/legacyheaders/smalloc.h"

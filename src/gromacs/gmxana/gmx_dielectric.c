@@ -45,7 +45,7 @@
 #include "string2.h"
 #include "gstat.h"
 #include "smalloc.h"
-#include "futil.h"
+#include "gromacs/fileio/futil.h"
 #include "macros.h"
 #include "maths.h"
 #include "xvgr.h"
