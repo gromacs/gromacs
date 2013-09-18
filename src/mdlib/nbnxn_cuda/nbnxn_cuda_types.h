@@ -43,6 +43,14 @@
 #include "types/nbnxn_cuda_types_ext.h"
 #include "../../gmxlib/cuda_tools/cudautils.cuh"
 
+/* CUDA versions from 5.0 above support texture objects. */
+#if CUDA_VERSION >= 5000
+#define TEXOBJ_SUPPORTED
+#else  /* CUDA_VERSION */
+/* This typedef allows us to define only one version of struct cu_nbparam */
+typedef int cudaTextureObject_t;
+#endif /* CUDA_VERSION */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -129,12 +137,15 @@ struct cu_nbparam
     float    rlist_sq;       /* pair-list cut-off                            */
     float    sh_invrc6;      /* LJ potential correction term                 */
 
-    float   *nbfp;           /* nonbonded parameter table with C6/C12 pairs  */
+    /* Non-bonded parameters - accessed through texture memory */
+    float            *nbfp;        /* nonbonded parameter table with C6/C12 pairs  */
+    cudaTextureObject_t nbfp_texobj; /* texture object bound to nbfp                 */
 
-    /* Ewald Coulomb force table */
-    int      coulomb_tab_size;
-    float    coulomb_tab_scale;
-    float   *coulomb_tab;
+    /* Ewald Coulomb force table data - accessed through texture memory */
+    int               coulomb_tab_size;
+    float             coulomb_tab_scale;
+    float            *coulomb_tab;
+    cudaTextureObject_t  coulomb_tab_texobj; /* texture object bound to coulomb_tab   */
 };
 
 /*! Pair list data */
