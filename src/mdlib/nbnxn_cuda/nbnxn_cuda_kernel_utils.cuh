@@ -65,9 +65,25 @@ float interpolate_coulomb_force_r(float r, float scale)
     float   fract2 = normalized - index;
     float   fract1 = 1.0f - fract2;
 
-    return  fract1 * tex1Dfetch(tex_coulomb_tab, index)
-            + fract2 * tex1Dfetch(tex_coulomb_tab, index + 1);
+    return  fract1 * tex1Dfetch(coulomb_tab_texref, index)
+            + fract2 * tex1Dfetch(coulomb_tab_texref, index + 1);
 }
+
+#ifdef TEXOBJ_SUPPORTED
+static inline __device__
+float interpolate_coulomb_force_r(cudaTextureObject_t texobj_coulomb_tab,
+                                  float r, float scale)
+{
+    float   normalized = scale * r;
+    int     index = (int) normalized;
+    float   fract2 = normalized - index;
+    float   fract1 = 1.0f - fract2;
+
+    return  fract1 * tex1Dfetch<float>(texobj_coulomb_tab, index) +
+            fract2 * tex1Dfetch<float>(texobj_coulomb_tab, index + 1);
+}
+#endif
+
 
 /*! Calculate analytical Ewald correction term. */
 static inline __device__

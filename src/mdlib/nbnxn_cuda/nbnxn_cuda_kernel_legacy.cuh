@@ -277,8 +277,8 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _legacy)
                             typei   = atom_types[ai];
 
                             /* LJ 6*C6 and 12*C12 */
-                            c6      = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej));
-                            c12     = tex1Dfetch(tex_nbfp, 2 * (ntypes * typei + typej) + 1);
+                            c6      = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej));
+                            c12     = tex1Dfetch(nbfp_texref, 2 * (ntypes * typei + typej) + 1);
 
                             /* avoid NaN for excluded pairs at r=0 */
                             r2      += (1.0f - int_bit) * NBNXN_AVOID_SING_R2_INC;
