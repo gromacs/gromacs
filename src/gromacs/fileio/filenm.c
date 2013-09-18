@@ -50,8 +50,6 @@
 #include "xdrf.h"
 #include "macros.h"
 
-#include "gromacs/onlinehelp/wman.h"
-
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
@@ -216,7 +214,7 @@ static tMPI_Thread_mutex_t filenm_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 #endif
 
 #define NZEXT 2
-const char *z_ext[NZEXT] =
+static const char *z_ext[NZEXT] =
 { ".gz", ".Z" };
 
 void set_default_file_name(const char *name)
@@ -366,154 +364,6 @@ const char *ftp2defnm(int ftp)
 #endif
 
     return buf;
-}
-
-void pr_fns(FILE *fp, int nf, const t_filenm tfn[])
-{
-    int    i, f;
-    size_t j;
-    char   buf[256], *wbuf, opt_buf[32];
-#define OPTLEN 4
-#define NAMELEN 14
-    fprintf(fp, "%6s %12s  %-12s %s\n", "Option", "Filename", "Type",
-            "Description");
-    fprintf(fp,
-            "------------------------------------------------------------\n");
-    for (i = 0; (i < nf); i++)
-    {
-        for (f = 0; (f < tfn[i].nfiles); f++)
-        {
-            sprintf(buf, "%4s %14s  %-12s ", (f == 0) ? tfn[i].opt : "",
-                    tfn[i].fns[f], (f == 0) ? fileopt(tfn[i].flag, opt_buf, 32)
-                    : "");
-            if (f < tfn[i].nfiles - 1)
-            {
-                fprintf(fp, "%s\n", buf);
-            }
-        }
-        if (tfn[i].nfiles > 0)
-        {
-            strcat(buf, deffile[tfn[i].ftp].descr);
-            if ((strlen(tfn[i].opt) > OPTLEN)
-                && (strlen(tfn[i].opt) <= ((OPTLEN + NAMELEN)
-                                           - strlen(tfn[i].fns[tfn[i].nfiles - 1]))))
-            {
-                for (j = strlen(tfn[i].opt); j < strlen(buf)
-                     - (strlen(tfn[i].opt) - OPTLEN) + 1; j++)
-                {
-                    buf[j] = buf[j + strlen(tfn[i].opt) - OPTLEN];
-                }
-            }
-            wbuf = wrap_lines(buf, 78, 35, FALSE);
-            fprintf(fp, "%s\n", wbuf);
-            sfree(wbuf);
-        }
-    }
-    fprintf(fp, "\n");
-    fflush(fp);
-}
-
-void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
-{
-    int i, j;
-
-    switch (shell)
-    {
-        case eshellCSH:
-            for (i = 0; (i < nf); i++)
-            {
-                fprintf(fp, " \"n/%s/f:*.", tfn[i].opt);
-                if (deffile[tfn[i].ftp].ntps)
-                {
-                    fprintf(fp, "{");
-                    for (j = 0; j < deffile[tfn[i].ftp].ntps; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, ",");
-                        }
-                        fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                                + 1);
-                    }
-                    fprintf(fp, "}");
-                }
-                else
-                {
-                    fprintf(fp, "%s", deffile[tfn[i].ftp].ext + 1);
-                }
-                fprintf(fp, "{");
-                for (j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, ",%s", z_ext[j]);
-                }
-                fprintf(fp, "}/\"");
-            }
-            break;
-        case eshellBASH:
-            for (i = 0; (i < nf); i++)
-            {
-                fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
-                if (deffile[tfn[i].ftp].ntps)
-                {
-                    fprintf(fp, "+(");
-                    for (j = 0; j < deffile[tfn[i].ftp].ntps; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                                + 1);
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", deffile[tfn[i].ftp].ext + 1);
-                }
-                fprintf(fp, "*(");
-                for (j = 0; j < NZEXT; j++)
-                {
-                    if (j > 0)
-                    {
-                        fprintf(fp, "|");
-                    }
-                    fprintf(fp, "%s", z_ext[j]);
-                }
-                fprintf(fp, ")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
-            }
-            break;
-        case eshellZSH:
-            for (i = 0; (i < nf); i++)
-            {
-                fprintf(fp, "- 'c[-1,%s]' -g '*.", tfn[i].opt);
-                if (deffile[tfn[i].ftp].ntps)
-                {
-                    fprintf(fp, "(");
-                    for (j = 0; j < deffile[tfn[i].ftp].ntps; j++)
-                    {
-                        if (j > 0)
-                        {
-                            fprintf(fp, "|");
-                        }
-                        fprintf(fp, "%s", deffile[deffile[tfn[i].ftp].tps[j]].ext
-                                + 1);
-                    }
-                    fprintf(fp, ")");
-                }
-                else
-                {
-                    fprintf(fp, "%s", deffile[tfn[i].ftp].ext + 1);
-                }
-                fprintf(fp, "(");
-                for (j = 0; j < NZEXT; j++)
-                {
-                    fprintf(fp, "|%s", z_ext[j]);
-                }
-                fprintf(fp, ") *(/)' ");
-            }
-            break;
-    }
 }
 
 static void check_opts(int nf, t_filenm fnm[])

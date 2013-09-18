@@ -41,219 +41,40 @@
 #include "gromacs/fileio/filenm.h"
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/onlinehelp/wman.h"
-#include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/stringutil.h"
 
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
-#include "macros.h"
 #include "statutil.h"
-#include "readinp.h"
+
+// Shell types, for completion stuff
+enum {
+    eshellCSH, eshellBASH, eshellZSH
+};
+
+// TODO: Don't duplicate this from filenm.c/futil.c.
+#define NZEXT 2
+static const char *z_ext[NZEXT] = { ".gz", ".Z" };
 
 /* The source code in this file should be thread-safe.
-         Please keep it that way. */
+ * Please keep it that way. */
 
-
-typedef struct {
-    const char *search, *replace;
-} t_sandr;
-
-/* The order of these arrays is significant. Text search and replace
- * for each element occurs in order, so earlier changes can induce
- * subsequent changes even though the original text might not appear
- * to invoke the latter changes. */
-
-const t_sandr sandrTty[] = {
-    { "[TT]", "" },
-    { "[tt]", "" },
-    { "[BB]", "" },
-    { "[bb]", "" },
-    { "[IT]", "" },
-    { "[it]", "" },
-    { "[MATH]", "" },
-    { "[math]", "" },
-    { "[CHEVRON]", "<" },
-    { "[chevron]", ">" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
-    { "[INT]", "integral" },
-    { "[FROM]", " from " },
-    { "[from]", "" },
-    { "[TO]", " to " },
-    { "[to]", " of" },
-    { "[int]", "" },
-    { "[SUM]", "sum" },
-    { "[sum]", "" },
-    { "[SUB]", "_" },
-    { "[sub]", "" },
-    { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")" },
-    { "[EXP]", "exp(" },
-    { "[exp]", ")" },
-    { "[LN]", "ln(" },
-    { "[ln]", ")" },
-    { "[LOG]", "log(" },
-    { "[log]", ")" },
-    { "[COS]", "cos(" },
-    { "[cos]", ")" },
-    { "[SIN]", "sin(" },
-    { "[sin]", ")" },
-    { "[TAN]", "tan(" },
-    { "[tan]", ")" },
-    { "[COSH]", "cosh(" },
-    { "[cosh]", ")" },
-    { "[SINH]", "sinh(" },
-    { "[sinh]", ")" },
-    { "[TANH]", "tanh(" },
-    { "[tanh]", ")" },
-    { "[PAR]", "\n\n" },
-    { "[BR]", "\n"},
-    { "[GRK]", "" },
-    { "[grk]", "" }
-};
-#define NSRTTY asize(sandrTty)
-
-const t_sandr sandrNROFF[] = {
-    { "[TT]", "\\fB " },
-    { "[tt]", "\\fR" },
-    { "[BB]", "\\fB " },
-    { "[bb]", "\\fR" },
-    { "[IT]", "\\fI " },
-    { "[it]", "\\fR" },
-    { "[MATH]", "" },
-    { "[math]", "" },
-    { "[CHEVRON]", "<" },
-    { "[chevron]", ">" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
-    { "[INT]", "integral" },
-    { "[FROM]", " from " },
-    { "[from]", "" },
-    { "[TO]", " to " },
-    { "[to]", " of" },
-    { "[int]", "" },
-    { "[SUM]", "sum" },
-    { "[sum]", "" },
-    { "[SUB]", "_" },
-    { "[sub]", "" },
-    { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")", },
-    { "[EXP]", "exp(" },
-    { "[exp]", ")" },
-    { "[LN]", "ln(" },
-    { "[ln]", ")" },
-    { "[LOG]", "log(" },
-    { "[log]", ")" },
-    { "[COS]", "cos(" },
-    { "[cos]", ")" },
-    { "[SIN]", "sin(" },
-    { "[sin]", ")" },
-    { "[TAN]", "tan(" },
-    { "[tan]", ")" },
-    { "[COSH]", "cosh(" },
-    { "[cosh]", ")" },
-    { "[SINH]", "sinh(" },
-    { "[sinh]", ")" },
-    { "[TANH]", "tanh(" },
-    { "[tanh]", ")" },
-    { "[PAR]", "\n\n" },
-    { "\n ",    "\n" },
-    { "<",    "" },
-    { ">",    "" },
-    { "^",    "" },
-    { "#",    "" },
-    { "[BR]", "\n"},
-    { "-",    "\\-"},
-    { "[GRK]", "" },
-    { "[grk]", "" }
-};
-#define NSRNROFF asize(sandrNROFF)
-
-const t_sandr sandrHTML[] = {
-    { "<",    "&lt;" },
-    { ">",    "&gt;" },
-    { "[TT]", "<tt>" },
-    { "[tt]", "</tt>" },
-    { "[BB]", "<b>" },
-    { "[bb]", "</b>" },
-    { "[IT]", "<it>" },
-    { "[it]", "</it>" },
-    { "[MATH]", "" },
-    { "[math]", "" },
-    { "[CHEVRON]", "<" },
-    { "[chevron]", ">" },
-    { "[MAG]", "|" },
-    { "[mag]", "|" },
-    { "[INT]", "integral" },
-    { "[FROM]", " from " },
-    { "[from]", "" },
-    { "[TO]", " to " },
-    { "[to]", " of" },
-    { "[int]", "" },
-    { "[SUM]", "sum" },
-    { "[sum]", "" },
-    { "[SUB]", "_" },
-    { "[sub]", "" },
-    { "[SQRT]", "sqrt(" },
-    { "[sqrt]", ")", },
-    { "[EXP]", "exp(" },
-    { "[exp]", ")" },
-    { "[LN]", "ln(" },
-    { "[ln]", ")" },
-    { "[LOG]", "log(" },
-    { "[log]", ")" },
-    { "[COS]", "cos(" },
-    { "[cos]", ")" },
-    { "[SIN]", "sin(" },
-    { "[sin]", ")" },
-    { "[TAN]", "tan(" },
-    { "[tan]", ")" },
-    { "[COSH]", "cosh(" },
-    { "[cosh]", ")" },
-    { "[SINH]", "sinh(" },
-    { "[sinh]", ")" },
-    { "[TANH]", "tanh(" },
-    { "[tanh]", ")" },
-    { "[PAR]", "<p>" },
-    { "[BR]", "<br>" },
-    { "[GRK]", "&"  },
-    { "[grk]", ";"  }
-};
-#define NSRHTML asize(sandrHTML)
-
-static char *repall(const char *s, int nsr, const t_sandr sa[])
-{
-    try
-    {
-        std::string result(s);
-        for (int i = 0; i < nsr; ++i)
-        {
-            result = gmx::replaceAll(result, sa[i].search, sa[i].replace);
-        }
-        return gmx_strdup(result.c_str());
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-char *check_nroff(const char *s)
-{
-    return repall(s, NSRNROFF, sandrNROFF);
-}
-
-char *check_html(const char *s)
-{
-    return repall(s, NSRHTML, sandrHTML);
-}
-
-std::string check(const char *s, const gmx::HelpWriterContext &context)
+static std::string check(const char *s, const gmx::HelpWriterContext &context)
 {
     return context.substituteMarkupAndWrapToString(gmx::TextLineWrapperSettings(), s);
 }
 
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
-char *fileopt(unsigned long flag, char buf[], int maxsize)
+/* Return a string describing the file type in flag.
+ * flag should the flag field of a filenm struct.
+ * You have to provide a buffer and buffer length in which
+ * the result will be written. The returned pointer is just
+ * a pointer to this buffer.
+ */
+static char *fileopt(unsigned long flag, char buf[], int maxsize)
 {
     char tmp[256];
 
@@ -298,6 +119,186 @@ char *fileopt(unsigned long flag, char buf[], int maxsize)
     sprintf(buf, "%s", tmp);
 
     return buf;
+}
+
+#define OPTLEN 4
+#define NAMELEN 14
+static void pr_fns(FILE *fp, int nf, const t_filenm tfn[])
+{
+    int    i, f;
+    size_t j;
+    char   buf[256], *wbuf, opt_buf[32];
+
+    fprintf(fp, "%6s %12s  %-12s %s\n", "Option", "Filename", "Type",
+            "Description");
+    fprintf(fp,
+            "------------------------------------------------------------\n");
+    for (i = 0; (i < nf); i++)
+    {
+        for (f = 0; (f < tfn[i].nfiles); f++)
+        {
+            sprintf(buf, "%4s %14s  %-12s ", (f == 0) ? tfn[i].opt : "",
+                    tfn[i].fns[f], (f == 0) ? fileopt(tfn[i].flag, opt_buf, 32)
+                    : "");
+            if (f < tfn[i].nfiles - 1)
+            {
+                fprintf(fp, "%s\n", buf);
+            }
+        }
+        if (tfn[i].nfiles > 0)
+        {
+            strcat(buf, ftp2desc(tfn[i].ftp));
+            if ((strlen(tfn[i].opt) > OPTLEN)
+                && (strlen(tfn[i].opt) <= ((OPTLEN + NAMELEN)
+                                           - strlen(tfn[i].fns[tfn[i].nfiles - 1]))))
+            {
+                for (j = strlen(tfn[i].opt); j < strlen(buf)
+                     - (strlen(tfn[i].opt) - OPTLEN) + 1; j++)
+                {
+                    buf[j] = buf[j + strlen(tfn[i].opt) - OPTLEN];
+                }
+            }
+            wbuf = wrap_lines(buf, 78, 35, FALSE);
+            fprintf(fp, "%s\n", wbuf);
+            sfree(wbuf);
+        }
+    }
+    fprintf(fp, "\n");
+    fflush(fp);
+}
+#undef OPTLEN
+#undef NAMELEN
+
+/* name to print in help info for command line arguments
+ * (defined in enum in readinp.h) */
+static const char *get_arg_desc(int type)
+{
+    const char *const argtp[etNR] = {
+        "int", "step", "real", "time", "string", "bool", "vector", "enum"
+    };
+    return argtp[type];
+}
+
+/* Return the value of pa in the provided buffer buf, of size sz.
+ * The return value is also a pointer to buf.
+ */
+static char *pa_val(t_pargs *pa, char buf[], int sz)
+{
+    real r;
+    char buf_str[1256]; buf_str[0] = '\0';
+
+    buf[0] = '\0';
+
+    GMX_RELEASE_ASSERT(sz >= 255, "Buffer must be at least 255 chars");
+
+    switch (pa->type)
+    {
+        case etINT:
+            sprintf(buf, "%-d", *(pa->u.i));
+            break;
+        case etGMX_LARGE_INT:
+            sprintf(buf, gmx_large_int_pfmt, *(pa->u.is));
+            break;
+        case etTIME:
+        case etREAL:
+            r = *(pa->u.r);
+            sprintf(buf_str, "%-6g", r);
+            strcpy(buf, buf_str);
+            break;
+        case etBOOL:
+            sprintf(buf, "%-6s", *(pa->u.b) ? "yes" : "no");
+            break;
+        case etSTR:
+            if (*(pa->u.c))
+            {
+                if (strlen(*(pa->u.c)) >= (size_t)sz)
+                {
+                    gmx_fatal(FARGS, "Argument too long: \"%d\"\n", *(pa->u.c));
+                }
+                else
+                {
+                    strcpy(buf, *(pa->u.c));
+                }
+            }
+            break;
+        case etENUM:
+            strcpy(buf, *(pa->u.c));
+            break;
+        case etRVEC:
+            sprintf(buf, "%g %g %g", (*pa->u.rv)[0],
+                    (*pa->u.rv)[1],
+                    (*pa->u.rv)[2]);
+            break;
+    }
+    return buf;
+}
+
+#define OPTLEN 12
+#define TYPELEN 6
+#define LONGSTR 1024
+static char *pargs_print_line(t_pargs *pa, const gmx::HelpWriterContext &context)
+{
+    char buf[LONGSTR], *buf2, *tmp;
+
+    snew(buf2, LONGSTR+strlen(pa->desc));
+    snew(tmp, LONGSTR+strlen(pa->desc));
+
+    if (pa->type == etBOOL)
+    {
+        sprintf(buf, "-[no]%s", pa->option+1);
+    }
+    else
+    {
+        strcpy(buf, pa->option);
+    }
+    std::string desc = check(pa->desc, context);
+    if ((int)strlen(buf) > ((OPTLEN+TYPELEN)-std::max((int)strlen(get_arg_desc(pa->type)), 4)))
+    {
+        sprintf(buf2, "%s %-6s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1),
+                desc.c_str());
+    }
+    else if (strlen(buf) > OPTLEN)
+    {
+        /* so type can be 3 or 4 char's, this fits in the %4s */
+        sprintf(buf2, "%-14s %-4s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1),
+                desc.c_str());
+    }
+    else
+    {
+        sprintf(buf2, "%-12s %-6s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1),
+                desc.c_str());
+    }
+    sfree(tmp);
+
+    tmp = wrap_lines(buf2, 78, 28, FALSE);
+
+    sfree(buf2);
+
+    return tmp;
+}
+#undef OPTLEN
+#undef TYPELEN
+#undef LONGSTR
+
+static void print_pargs(FILE *fp, int npargs, t_pargs pa[],
+                        const gmx::HelpWriterContext &context)
+{
+    if (npargs > 0)
+    {
+        fprintf(fp, "%-12s %-6s %-6s  %-s\n",
+                "Option", "Type", "Value", "Description");
+        fprintf(fp, "------------------------------------------------------\n");
+        for (int i = 0; i < npargs; i++)
+        {
+            char *wdesc = pargs_print_line(&pa[i], context);
+            fprintf(fp, "%s", wdesc);
+            sfree(wdesc);
+        }
+        fprintf(fp, "\n");
+    }
 }
 
 static void write_nroffman(FILE *out,
@@ -400,11 +401,6 @@ static void write_nroffman(FILE *out,
     }
 }
 
-char *check_tty(const char *s)
-{
-    return repall(s, NSRTTY, sandrTty);
-}
-
 static void
 print_tty_formatted(FILE *out, int nldesc, const char **desc,
                     const gmx::HelpWriterContext &context)
@@ -471,7 +467,7 @@ static void write_ttyman(FILE *out,
     }
     if (npargs > 0)
     {
-        print_pargs(out, npargs, pa);
+        print_pargs(out, npargs, pa, context);
     }
 }
 
@@ -575,6 +571,113 @@ static void write_htmlman(FILE *out,
     }
 }
 
+static void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
+{
+    switch (shell)
+    {
+        case eshellCSH:
+            for (int i = 0; i < nf; i++)
+            {
+                fprintf(fp, " \"n/%s/f:*.", tfn[i].opt);
+                const int ftp          = tfn[i].ftp;
+                const int genericCount = ftp2generic_count(ftp);
+                if (genericCount > 0)
+                {
+                    fprintf(fp, "{");
+                    const int *const genericTypes = ftp2generic_list(ftp);
+                    for (int j = 0; j < genericCount; j++)
+                    {
+                        if (j > 0)
+                        {
+                            fprintf(fp, ",");
+                        }
+                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
+                    }
+                    fprintf(fp, "}");
+                }
+                else
+                {
+                    fprintf(fp, "%s", ftp2ext(ftp));
+                }
+                fprintf(fp, "{");
+                for (int j = 0; j < NZEXT; j++)
+                {
+                    fprintf(fp, ",%s", z_ext[j]);
+                }
+                fprintf(fp, "}/\"");
+            }
+            break;
+        case eshellBASH:
+            for (int i = 0; i < nf; i++)
+            {
+                fprintf(fp, "%s) COMPREPLY=( $(compgen -X '!*.", tfn[i].opt);
+                const int ftp          = tfn[i].ftp;
+                const int genericCount = ftp2generic_count(ftp);
+                if (genericCount > 0)
+                {
+                    fprintf(fp, "+(");
+                    const int *const genericTypes = ftp2generic_list(ftp);
+                    for (int j = 0; j < genericCount; j++)
+                    {
+                        if (j > 0)
+                        {
+                            fprintf(fp, "|");
+                        }
+                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
+                    }
+                    fprintf(fp, ")");
+                }
+                else
+                {
+                    fprintf(fp, "%s", ftp2ext(ftp));
+                }
+                fprintf(fp, "*(");
+                for (int j = 0; j < NZEXT; j++)
+                {
+                    if (j > 0)
+                    {
+                        fprintf(fp, "|");
+                    }
+                    fprintf(fp, "%s", z_ext[j]);
+                }
+                fprintf(fp, ")' -f $c ; compgen -S '/' -X '.*' -d $c ));;\n");
+            }
+            break;
+        case eshellZSH:
+            for (int i = 0; i < nf; i++)
+            {
+                fprintf(fp, "- 'c[-1,%s]' -g '*.", tfn[i].opt);
+                const int ftp          = tfn[i].ftp;
+                const int genericCount = ftp2generic_count(ftp);
+                if (genericCount > 0)
+                {
+                    fprintf(fp, "(");
+                    const int *const genericTypes = ftp2generic_list(ftp);
+                    for (int j = 0; j < genericCount; j++)
+                    {
+                        if (j > 0)
+                        {
+                            fprintf(fp, "|");
+                        }
+                        fprintf(fp, "%s", ftp2ext(genericTypes[j]));
+                    }
+                    fprintf(fp, ")");
+                }
+                else
+                {
+                    fprintf(fp, "%s", ftp2ext(ftp));
+                }
+                fprintf(fp, "(");
+                for (int j = 0; j < NZEXT; j++)
+                {
+                    fprintf(fp, "|%s", z_ext[j]);
+                }
+                fprintf(fp, ") *(/)' ");
+            }
+            break;
+    }
+}
+
 static void pr_opts(FILE *fp,
                     int nfile,  t_filenm *fnm,
                     int npargs, t_pargs pa[], int shell)
@@ -639,6 +742,57 @@ static void pr_opts(FILE *fp,
                 }
             }
             fprintf(fp, "\" ");
+            break;
+    }
+}
+
+static void pr_enums(FILE *fp, int npargs, t_pargs pa[], int shell)
+{
+    int i, j;
+
+    switch (shell)
+    {
+        case eshellCSH:
+            for (i = 0; i < npargs; i++)
+            {
+                if (pa[i].type == etENUM)
+                {
+                    fprintf(fp, " \"n/%s/(", pa[i].option);
+                    for (j = 1; pa[i].u.c[j]; j++)
+                    {
+                        fprintf(fp, " %s", pa[i].u.c[j]);
+                    }
+                    fprintf(fp, ")/\"");
+                }
+            }
+            break;
+        case eshellBASH:
+            for (i = 0; i < npargs; i++)
+            {
+                if (pa[i].type == etENUM)
+                {
+                    fprintf(fp, "%s) COMPREPLY=( $(compgen -W '", pa[i].option);
+                    for (j = 1; pa[i].u.c[j]; j++)
+                    {
+                        fprintf(fp, " %s", pa[i].u.c[j]);
+                    }
+                    fprintf(fp, " ' -- $c ));;\n");
+                }
+            }
+            break;
+        case eshellZSH:
+            for (i = 0; i < npargs; i++)
+            {
+                if (pa[i].type == etENUM)
+                {
+                    fprintf(fp, "- 'c[-1,%s]' -s \"", pa[i].option);
+                    for (j = 1; pa[i].u.c[j]; j++)
+                    {
+                        fprintf(fp, " %s", pa[i].u.c[j]);
+                    }
+                    fprintf(fp, "\" ");
+                }
+            }
             break;
     }
 }
@@ -776,12 +930,4 @@ void write_man(const char *mantp,
     {
         sfree(par);
     }
-}
-
-const char *get_arg_desc(int type)
-{
-    static const char *argtp[etNR] = {
-        "int", "step", "real", "time", "string", "bool", "vector", "enum"
-    };
-    return argtp[type];
 }
