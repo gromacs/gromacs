@@ -47,8 +47,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/smalloc.h"
-
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
@@ -62,6 +60,200 @@ namespace gmx
 
 namespace
 {
+
+struct t_sandr {
+    const char *search;
+    const char *replace;
+};
+
+/* The order of these arrays is significant. Text search and replace
+ * for each element occurs in order, so earlier changes can induce
+ * subsequent changes even though the original text might not appear
+ * to invoke the latter changes. */
+
+//! List of replacements for console output.
+const t_sandr sandrTty[] = {
+    { "[TT]", "" },
+    { "[tt]", "" },
+    { "[BB]", "" },
+    { "[bb]", "" },
+    { "[IT]", "" },
+    { "[it]", "" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")" },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "\n\n" },
+    { "[BR]", "\n"},
+    { "[GRK]", "" },
+    { "[grk]", "" }
+};
+
+//! List of replacements for man page output.
+const t_sandr sandrMan[] = {
+    { "[TT]", "\\fB " },
+    { "[tt]", "\\fR" },
+    { "[BB]", "\\fB " },
+    { "[bb]", "\\fR" },
+    { "[IT]", "\\fI " },
+    { "[it]", "\\fR" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")", },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "\n\n" },
+    { "\n ",    "\n" },
+    { "<",    "" },
+    { ">",    "" },
+    { "^",    "" },
+    { "#",    "" },
+    { "[BR]", "\n"},
+    { "-",    "\\-"},
+    { "[GRK]", "" },
+    { "[grk]", "" }
+};
+
+//! List of replacements for HTML output.
+const t_sandr sandrHtml[] = {
+    { "<",    "&lt;" },
+    { ">",    "&gt;" },
+    { "[TT]", "<tt>" },
+    { "[tt]", "</tt>" },
+    { "[BB]", "<b>" },
+    { "[bb]", "</b>" },
+    { "[IT]", "<it>" },
+    { "[it]", "</it>" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")", },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "<p>" },
+    { "[BR]", "<br>" },
+    { "[GRK]", "&"  },
+    { "[grk]", ";"  }
+};
+
+/*! \internal \brief
+ * Replaces all entries from a list of replacements.
+ *
+ * \ingroup module_onlinehelp
+ */
+std::string repall(const std::string &s, int nsr, const t_sandr sa[])
+{
+    std::string result(s);
+    for (int i = 0; i < nsr; ++i)
+    {
+        result = replaceAll(result, sa[i].search, sa[i].replace);
+    }
+    return result;
+}
+
+/*! \internal \brief
+ * Replaces all entries from a list of replacements.
+ *
+ * \ingroup module_onlinehelp
+ */
+template <size_t nsr>
+std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
+{
+    return repall(s, nsr, sa);
+}
 
 /*! \internal \brief
  * Custom output interface for HelpWriterContext::Impl::processMarkup().
@@ -261,11 +453,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
-            {
-                char            *resultStr = check_tty(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrTty);
             if (wrapper->settings().lineLength() == 0)
             {
                 wrapper->settings().setLineLength(78);
@@ -274,20 +462,12 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         }
         case eHelpOutputFormat_Man:
         {
-            {
-                char            *resultStr = check_nroff(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrMan);
             return wrapper->wrap(result);
         }
         case eHelpOutputFormat_Html:
         {
-            {
-                char            *resultStr = check_html(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrHtml);
             if (links_ != NULL)
             {
                 HelpLinks::Impl::LinkList::const_iterator link;
