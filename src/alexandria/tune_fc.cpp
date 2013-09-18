@@ -1371,7 +1371,7 @@ void OptParam::PrintSpecs(FILE *fp,char *title,
                 sqrt(mi->Force2),
                 (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += sqr(mi->Emol-mi->Ecalc);
-        if (NULL != xfp)
+        if (NULL != xvg)
         {
             fprintf(xfp,"%10g  %10g\n",mi->Hform,
                     mi->Ecalc+mi->Hform-mi->Emol);
