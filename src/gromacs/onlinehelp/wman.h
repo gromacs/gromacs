@@ -38,30 +38,10 @@
 #include "readinp.h"
 #include "gromacs/fileio/filenm.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 void write_man(const char *mantp, const char *program,
                int nldesc, const char **desc,
                int nfile, t_filenm *fnm,
                int npargs, t_pargs *pa,
                int nbug, const char **bugs);
-
-char *fileopt(unsigned long flag, char buf[], int maxsize);
-/* Return a string describing the file type in flag.
- * flag should the flag field of a filenm struct.
- * You have to provide a buffer and buffer length in which
- * the result will be written. The returned pointer is just
- * a pointer to this buffer.
- */
-
-char *check_nroff(const char *s);
-char *check_html(const char *s);
-char *check_tty(const char *s);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif
