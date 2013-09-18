@@ -47,8 +47,6 @@
 #include "xdrf.h"
 #include "macros.h"
 
-#include "gromacs/onlinehelp/wman.h"
-
 #ifdef GMX_THREAD_MPI
 #include "thread_mpi.h"
 #endif
@@ -369,51 +367,6 @@ const char *ftp2defnm(int ftp)
 #endif
 
     return buf;
-}
-
-void pr_fns(FILE *fp, int nf, const t_filenm tfn[])
-{
-    int    i, f;
-    size_t j;
-    char   buf[256], *wbuf, opt_buf[32];
-#define OPTLEN 4
-#define NAMELEN 14
-    fprintf(fp, "%6s %12s  %-12s %s\n", "Option", "Filename", "Type",
-            "Description");
-    fprintf(fp,
-            "------------------------------------------------------------\n");
-    for (i = 0; (i < nf); i++)
-    {
-        for (f = 0; (f < tfn[i].nfiles); f++)
-        {
-            sprintf(buf, "%4s %14s  %-12s ", (f == 0) ? tfn[i].opt : "",
-                    tfn[i].fns[f], (f == 0) ? fileopt(tfn[i].flag, opt_buf, 32)
-                    : "");
-            if (f < tfn[i].nfiles - 1)
-            {
-                fprintf(fp, "%s\n", buf);
-            }
-        }
-        if (tfn[i].nfiles > 0)
-        {
-            strcat(buf, deffile[tfn[i].ftp].descr);
-            if ((strlen(tfn[i].opt) > OPTLEN)
-                && (strlen(tfn[i].opt) <= ((OPTLEN + NAMELEN)
-                                           - strlen(tfn[i].fns[tfn[i].nfiles - 1]))))
-            {
-                for (j = strlen(tfn[i].opt); j < strlen(buf)
-                     - (strlen(tfn[i].opt) - OPTLEN) + 1; j++)
-                {
-                    buf[j] = buf[j + strlen(tfn[i].opt) - OPTLEN];
-                }
-            }
-            wbuf = wrap_lines(buf, 78, 35, FALSE);
-            fprintf(fp, "%s\n", wbuf);
-            sfree(wbuf);
-        }
-    }
-    fprintf(fp, "\n");
-    fflush(fp);
 }
 
 void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell)
