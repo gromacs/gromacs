@@ -47,8 +47,6 @@
 #include <string>
 #include <vector>
 
-#include "gromacs/legacyheaders/smalloc.h"
-
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
@@ -62,6 +60,268 @@ namespace gmx
 
 namespace
 {
+
+struct t_sandr {
+    const char *search;
+    const char *replace;
+};
+
+/* The order of these arrays is significant. Text search and replace
+ * for each element occurs in order, so earlier changes can induce
+ * subsequent changes even though the original text might not appear
+ * to invoke the latter changes. */
+
+//! List of replacements for console output.
+const t_sandr sandrTty[] = {
+    { "[TT]", "" },
+    { "[tt]", "" },
+    { "[BB]", "" },
+    { "[bb]", "" },
+    { "[IT]", "" },
+    { "[it]", "" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")" },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "\n\n" },
+    { "[BR]", "\n"},
+    { "[GRK]", "" },
+    { "[grk]", "" }
+};
+
+//! List of replacements for man page output.
+const t_sandr sandrMan[] = {
+    { "[TT]", "\\fB " },
+    { "[tt]", "\\fR" },
+    { "[BB]", "\\fB " },
+    { "[bb]", "\\fR" },
+    { "[IT]", "\\fI " },
+    { "[it]", "\\fR" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")", },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "\n\n" },
+    { "\n ",    "\n" },
+    { "<",    "" },
+    { ">",    "" },
+    { "^",    "" },
+    { "#",    "" },
+    { "[BR]", "\n"},
+    { "-",    "\\-"},
+    { "[GRK]", "" },
+    { "[grk]", "" }
+};
+
+//! List of replacements for HTML output.
+const t_sandr sandrHtml[] = {
+    { "<",    "&lt;" },
+    { ">",    "&gt;" },
+    { "[TT]", "<tt>" },
+    { "[tt]", "</tt>" },
+    { "[BB]", "<b>" },
+    { "[bb]", "</b>" },
+    { "[IT]", "<it>" },
+    { "[it]", "</it>" },
+    { "[MATH]", "" },
+    { "[math]", "" },
+    { "[CHEVRON]", "<" },
+    { "[chevron]", ">" },
+    { "[MAG]", "|" },
+    { "[mag]", "|" },
+    { "[INT]", "integral" },
+    { "[FROM]", " from " },
+    { "[from]", "" },
+    { "[TO]", " to " },
+    { "[to]", " of" },
+    { "[int]", "" },
+    { "[SUM]", "sum" },
+    { "[sum]", "" },
+    { "[SUB]", "_" },
+    { "[sub]", "" },
+    { "[SQRT]", "sqrt(" },
+    { "[sqrt]", ")", },
+    { "[EXP]", "exp(" },
+    { "[exp]", ")" },
+    { "[LN]", "ln(" },
+    { "[ln]", ")" },
+    { "[LOG]", "log(" },
+    { "[log]", ")" },
+    { "[COS]", "cos(" },
+    { "[cos]", ")" },
+    { "[SIN]", "sin(" },
+    { "[sin]", ")" },
+    { "[TAN]", "tan(" },
+    { "[tan]", ")" },
+    { "[COSH]", "cosh(" },
+    { "[cosh]", ")" },
+    { "[SINH]", "sinh(" },
+    { "[sinh]", ")" },
+    { "[TANH]", "tanh(" },
+    { "[tanh]", ")" },
+    { "[PAR]", "<p>" },
+    { "[BR]", "<br>" },
+    { "[GRK]", "&"  },
+    { "[grk]", ";"  }
+};
+
+//! List of replacements for LaTeX output.
+const t_sandr sandrLatex[] = {
+    { "[TT]", "{\\tt " },
+    { "[tt]", "}"      },
+    { "[BB]", "{\\bf " },
+    { "[bb]", "}"      },
+    { "[IT]", "{\\em " },
+    { "[it]", "}"      },
+    { "[PAR]", "\n\n"   },
+    /* Escaping underscore for LaTeX is no longer necessary, and it breaks
+     * text searching and the index if you do. */
+    /*
+       { "_",    "\\_"    },
+     */
+    { "$",    "\\$"    },
+    { "<=",   "\\ensuremath{\\leq{}}"},
+    { ">=",   "\\ensuremath{\\geq{}}"},
+    { "<",    "\\textless{}" },
+    { ">",    "\\textgreater{}" },
+    { "^",    "\\^{}"    },
+    { "\\^{}t", "\\ensuremath{^t}" },
+    { "\\^{}a", "\\ensuremath{^a}" },
+    { "\\^{}b", "\\ensuremath{^b}" },
+    { "\\^{}2", "\\ensuremath{^2}" },
+    { "\\^{}3", "\\ensuremath{^3}" },
+    { "\\^{}6", "\\ensuremath{^6}" },
+    { "#",    "\\#"    },
+    { "[BR]", "\\\\"   },
+    { "%",    "\\%"    },
+    { "&",    "\\&"    },
+    /* The next couple of lines allow true Greek symbols to be written to the
+       manual, which makes it look pretty */
+    { "[GRK]", "\\ensuremath{\\" },
+    { "[grk]", "}" },
+    { "[MATH]", "\\ensuremath{" },
+    { "[math]", "}" },
+    { "[CHEVRON]", "\\ensuremath{<}" },
+    { "[chevron]", "\\ensuremath{>}" },
+    { "[MAG]", "\\ensuremath{|}" },
+    { "[mag]", "\\ensuremath{|}" },
+    { "[INT]", "\\ensuremath{\\int" },
+    { "[FROM]", "_" },
+    { "[from]", "" },
+    { "[TO]", "^" },
+    { "[to]", "" },
+    { "[int]", "}" },
+    { "[SUM]", "\\ensuremath{\\sum" },
+    { "[sum]", "}" },
+    { "[SUB]", "\\ensuremath{_{" },
+    { "[sub]", "}}" },
+    { "[SQRT]", "\\ensuremath{\\sqrt{" },
+    { "[sqrt]", "}}" },
+    { "[EXP]", "\\ensuremath{\\exp{(" },
+    { "[exp]", ")}}" },
+    { "[LN]", "\\ensuremath{\\ln{(" },
+    { "[ln]", ")}}" },
+    { "[LOG]", "\\ensuremath{\\log{(" },
+    { "[log]", ")}}" },
+    { "[COS]", "\\ensuremath{\\cos{(" },
+    { "[cos]", ")}}" },
+    { "[SIN]", "\\ensuremath{\\sin{(" },
+    { "[sin]", ")}}" },
+    { "[TAN]", "\\ensuremath{\\tan{(" },
+    { "[tan]", ")}}" },
+    { "[COSH]", "\\ensuremath{\\cosh{(" },
+    { "[cosh]", ")}}" },
+    { "[SINH]", "\\ensuremath{\\sinh{(" },
+    { "[sinh]", ")}}" },
+    { "[TANH]", "\\ensuremath{\\tanh{(" },
+    { "[tanh]", ")}}" }
+};
+
+/*! \internal \brief
+ * Replaces all entries from a list of replacements.
+ *
+ * \ingroup module_onlinehelp
+ */
+std::string repall(const std::string &s, int nsr, const t_sandr sa[])
+{
+    std::string result(s);
+    for (int i = 0; i < nsr; ++i)
+    {
+        result = replaceAll(result, sa[i].search, sa[i].replace);
+    }
+    return result;
+}
+
+//! \copydoc repall(const std::string &, int, const t_sandr[])
+template <size_t nsr>
+std::string repall(const std::string &s, const t_sandr (&sa)[nsr])
+{
+    return repall(s, nsr, sa);
+}
 
 /*! \internal \brief
  * Custom output interface for HelpWriterContext::Impl::processMarkup().
@@ -261,11 +521,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     {
         case eHelpOutputFormat_Console:
         {
-            {
-                char            *resultStr = check_tty(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrTty);
             if (wrapper->settings().lineLength() == 0)
             {
                 wrapper->settings().setLineLength(78);
@@ -274,20 +530,12 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         }
         case eHelpOutputFormat_Man:
         {
-            {
-                char            *resultStr = check_nroff(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrMan);
             return wrapper->wrap(result);
         }
         case eHelpOutputFormat_Html:
         {
-            {
-                char            *resultStr = check_html(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrHtml);
             if (links_ != NULL)
             {
                 HelpLinks::Impl::LinkList::const_iterator link;
@@ -305,11 +553,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         }
         case eHelpOutputFormat_Latex:
         {
-            {
-                char            *resultStr = check_tex(result.c_str());
-                scoped_ptr_sfree resultGuard(resultStr);
-                result = resultStr;
-            }
+            result = repall(result, sandrLatex);
             return wrapper->wrap(result);
         }
         default:
