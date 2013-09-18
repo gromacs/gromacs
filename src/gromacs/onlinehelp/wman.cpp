@@ -456,17 +456,14 @@ char *fileopt(unsigned long flag, char buf[], int maxsize)
     return buf;
 }
 
-static void write_texman(FILE *out, const char *program,
+static void write_texman(FILE *out,
                          int nldesc, const char **desc,
                          int nfile, t_filenm *fnm,
                          int npargs, t_pargs *pa,
-                         int nbug, const char **bugs,
-                         t_linkdata *links)
+                         int nbug, const char **bugs)
 {
     int  i;
     char tmp[256];
-
-    fprintf(out, "\\section{\\normindex{%s}}\\label{%s}\n\n", check_tex(program), check_tex(program));
 
     if (nldesc > 0)
     {
@@ -530,7 +527,6 @@ static void write_texman(FILE *out, const char *program,
         }
         fprintf(out, "\\end{itemize}\n");
     }
-/*   fprintf(out,"\n\\newpage\n"); */
 }
 
 static void write_nroffman(FILE *out,
@@ -972,7 +968,7 @@ void write_man(const char *mantp,
 
     if (strcmp(mantp, "tex") == 0)
     {
-        write_texman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
+        write_texman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs);
     }
     if (strcmp(mantp, "nroff") == 0)
     {
