@@ -68,78 +68,6 @@ typedef struct {
  * subsequent changes even though the original text might not appear
  * to invoke the latter changes. */
 
-const t_sandr_const sandrTeX[] = {
-    { "[TT]", "{\\tt " },
-    { "[tt]", "}"      },
-    { "[BB]", "{\\bf " },
-    { "[bb]", "}"      },
-    { "[IT]", "{\\em " },
-    { "[it]", "}"      },
-    { "[PAR]", "\n\n"   },
-    /* Escaping underscore for LaTeX is no longer necessary, and it breaks
-     * text searching and the index if you do. */
-    /*
-       { "_",    "\\_"    },
-     */
-    { "$",    "\\$"    },
-    { "<=",   "\\ensuremath{\\leq{}}"},
-    { ">=",   "\\ensuremath{\\geq{}}"},
-    { "<",    "\\textless{}" },
-    { ">",    "\\textgreater{}" },
-    { "^",    "\\^{}"    },
-    { "\\^{}t", "\\ensuremath{^t}" },
-    { "\\^{}a", "\\ensuremath{^a}" },
-    { "\\^{}b", "\\ensuremath{^b}" },
-    { "\\^{}2", "\\ensuremath{^2}" },
-    { "\\^{}3", "\\ensuremath{^3}" },
-    { "\\^{}6", "\\ensuremath{^6}" },
-    { "#",    "\\#"    },
-    { "[BR]", "\\\\"   },
-    { "%",    "\\%"    },
-    { "&",    "\\&"    },
-    /* The next couple of lines allow true Greek symbols to be written to the
-       manual, which makes it look pretty */
-    { "[GRK]", "\\ensuremath{\\" },
-    { "[grk]", "}" },
-    { "[MATH]", "\\ensuremath{" },
-    { "[math]", "}" },
-    { "[CHEVRON]", "\\ensuremath{<}" },
-    { "[chevron]", "\\ensuremath{>}" },
-    { "[MAG]", "\\ensuremath{|}" },
-    { "[mag]", "\\ensuremath{|}" },
-    { "[INT]", "\\ensuremath{\\int" },
-    { "[FROM]", "_" },
-    { "[from]", "" },
-    { "[TO]", "^" },
-    { "[to]", "" },
-    { "[int]", "}" },
-    { "[SUM]", "\\ensuremath{\\sum" },
-    { "[sum]", "}" },
-    { "[SUB]", "\\ensuremath{_{" },
-    { "[sub]", "}}" },
-    { "[SQRT]", "\\ensuremath{\\sqrt{" },
-    { "[sqrt]", "}}" },
-    { "[EXP]", "\\ensuremath{\\exp{(" },
-    { "[exp]", ")}}" },
-    { "[LN]", "\\ensuremath{\\ln{(" },
-    { "[ln]", ")}}" },
-    { "[LOG]", "\\ensuremath{\\log{(" },
-    { "[log]", ")}}" },
-    { "[COS]", "\\ensuremath{\\cos{(" },
-    { "[cos]", ")}}" },
-    { "[SIN]", "\\ensuremath{\\sin{(" },
-    { "[sin]", ")}}" },
-    { "[TAN]", "\\ensuremath{\\tan{(" },
-    { "[tan]", ")}}" },
-    { "[COSH]", "\\ensuremath{\\cosh{(" },
-    { "[cosh]", ")}}" },
-    { "[SINH]", "\\ensuremath{\\sinh{(" },
-    { "[sinh]", ")}}" },
-    { "[TANH]", "\\ensuremath{\\tanh{(" },
-    { "[tanh]", ")}}" }
-};
-#define NSRTEX asize(sandrTeX)
-
 const t_sandr_const sandrTty[] = {
     { "[TT]", "" },
     { "[tt]", "" },
@@ -386,11 +314,6 @@ static char *html_xref(char *s, const char *program, t_linkdata *links)
     return repallww(s, links->nsr, links->sr);
 }
 
-char *check_tex(const char *s)
-{
-    return repall(s, NSRTEX, sandrTeX);
-}
-
 static char *check_nroff(const char *s)
 {
     return repall(s, NSRNROFF, sandrNROFF);
@@ -454,83 +377,6 @@ char *fileopt(unsigned long flag, char buf[], int maxsize)
     sprintf(buf, "%s", tmp);
 
     return buf;
-}
-
-static void write_texman(FILE *out, const char *program,
-                         int nldesc, const char **desc,
-                         int nfile, t_filenm *fnm,
-                         int npargs, t_pargs *pa,
-                         int nbug, const char **bugs,
-                         t_linkdata *links)
-{
-    int  i;
-    char tmp[256];
-
-    fprintf(out, "\\section{\\normindex{%s}}\\label{%s}\n\n", check_tex(program), check_tex(program));
-
-    if (nldesc > 0)
-    {
-        for (i = 0; (i < nldesc); i++)
-        {
-            fprintf(out, "%s\n", check_tex(desc[i]));
-        }
-    }
-
-    if (nfile > 0)
-    {
-        fprintf(out, "\\vspace{-2ex}\\begin{tabbing}\n");
-        fprintf(out, "\n{\\normalsize \\bf Files}\\nopagebreak\\\\\n");
-        fprintf(out, "{\\tt ~~~~~~~} \\= {\\tt ~~~~~~~~~~~~~~} \\= "
-                "~~~~~~~~~~~~~~~~~~~~~~ \\= \\nopagebreak\\kill\n");
-        for (i = 0; (i < nfile); i++)
-        {
-            fprintf(out, "\\>{\\tt %s} \\'\\> {\\tt %s} \\' %s \\> "
-                    "\\parbox[t]{0.55\\linewidth}{%s} \\\\\n",
-                    check_tex(fnm[i].opt), check_tex(fnm[i].fns[0]),
-                    check_tex(fileopt(fnm[i].flag, tmp, 255)),
-                    check_tex(ftp2desc(fnm[i].ftp)));
-        }
-        fprintf(out, "\\end{tabbing}\\vspace{-4ex}\n");
-    }
-    if (npargs > 0)
-    {
-        fprintf(out, "\\vspace{-2ex}\\begin{tabbing}\n");
-        fprintf(out, "\n{\\normalsize \\bf Other options}\\nopagebreak\\\\\n");
-        fprintf(out, "{\\tt ~~~~~~~~~~} \\= vector \\= "
-                "{\\tt ~~~~~~~} \\= \\nopagebreak\\kill\n");
-        for (i = 0; (i < npargs); i++)
-        {
-            if (strlen(check_tex(pa_val(&(pa[i]), tmp, 255))) <= 8)
-            {
-                fprintf(out, "\\> {\\tt %s} \\'\\> %s \\'\\> {\\tt %s} \\' "
-                        "\\parbox[t]{0.68\\linewidth}{%s}\\\\\n",
-                        check_tex(pa[i].option), get_arg_desc(pa[i].type),
-                        check_tex(pa_val(&(pa[i]), tmp, 255)),
-                        check_tex(pa[i].desc));
-            }
-            else
-            {
-                fprintf(out, "\\> {\\tt %s} \\'\\> %s \\'\\>\\\\\n"
-                        "\\> \\'\\> \\'\\> {\\tt %s} \\' "
-                        "\\parbox[t]{0.7\\linewidth}{%s}\\\\\n",
-                        check_tex(pa[i].option), get_arg_desc(pa[i].type),
-                        check_tex(pa_val(&(pa[i]), tmp, 255)),
-                        check_tex(pa[i].desc));
-            }
-        }
-        fprintf(out, "\\end{tabbing}\\vspace{-4ex}\n");
-    }
-    if (nbug > 0)
-    {
-        fprintf(out, "\n");
-        fprintf(out, "\\begin{itemize}\n");
-        for (i = 0; (i < nbug); i++)
-        {
-            fprintf(out, "\\item %s\n", check_tex(bugs[i]));
-        }
-        fprintf(out, "\\end{itemize}\n");
-    }
-/*   fprintf(out,"\n\\newpage\n"); */
 }
 
 static void write_nroffman(FILE *out,
@@ -970,10 +816,6 @@ void write_man(const char *mantp,
         }
     }
 
-    if (strcmp(mantp, "tex") == 0)
-    {
-        write_texman(out, program, nldesc, desc, nfile, fnm, npar, par, nbug, bugs, links);
-    }
     if (strcmp(mantp, "nroff") == 0)
     {
         write_nroffman(out, context->moduleDisplayName(), nldesc, desc,

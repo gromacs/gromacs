@@ -467,7 +467,7 @@ gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
                            output_env_t *oenv)
 {
     const char *manstr[] = {
-        NULL, "no", "help", "html", "tex", "nroff", "completion", NULL
+        NULL, "no", "help", "html", "nroff", "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
