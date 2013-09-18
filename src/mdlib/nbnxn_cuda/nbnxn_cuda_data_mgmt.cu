@@ -110,7 +110,8 @@ static void nbnxn_cuda_clear_e_fshift(nbnxn_cuda_ptr_t cu_nb);
     and the table GPU array. If called with an already allocated table,
     it just re-uploads the table.
  */
-static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
+static void init_ewald_coulomb_force_table(cu_nbparam_t          *nbp,
+                                           const cuda_dev_info_t *dev_info)
 {
     float       *ftmp, *coul_tab;
     int         tabsize;
@@ -137,10 +138,32 @@ static void init_ewald_coulomb_force_table(cu_nbparam_t *nbp)
 
         nbp->coulomb_tab = coul_tab;
 
-        cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
-        stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
-                               coul_tab, &cd, tabsize*sizeof(*coul_tab));
-        CU_RET_ERR(stat, "cudaBindTexture on coul_tab failed");
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (dev_info->prop.major >= 3)
+        {
+            cudaResourceDesc rd;
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                  = cudaResourceTypeLinear;
+            rd.res.linear.devPtr        = nbp->coulomb_tab;
+            rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+            rd.res.linear.desc.x        = 32;
+            rd.res.linear.sizeInBytes   = tabsize*sizeof(*coul_tab);
+
+            cudaTextureDesc td;
+            memset(&td, 0, sizeof(td));
+            td.readMode                 = cudaReadModeElementType;
+            stat = cudaCreateTextureObject(&nbp->coulomb_tab_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on coulomb_tab_texobj failed");
+        }
+        else
+#endif
+        {
+            cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_coulomb_tab_texref(),
+                                   coul_tab, &cd, tabsize*sizeof(*coul_tab));
+            CU_RET_ERR(stat, "cudaBindTexture on coulomb_tab_texref failed");
+        }
     }
 
     cu_copy_H2D(coul_tab, ftmp, tabsize*sizeof(*coul_tab));
@@ -279,7 +302,7 @@ static void init_nbparam(cu_nbparam_t *nbp,
     nbp->coulomb_tab = NULL;
     if (nbp->eeltype == eelCuEWALD_TAB || nbp->eeltype == eelCuEWALD_TAB_TWIN)
     {
-        init_ewald_coulomb_force_table(nbp);
+        init_ewald_coulomb_force_table(nbp, dev_info);
     }
 
     nnbfp = 2*ntypes*ntypes;
@@ -287,10 +310,32 @@ static void init_nbparam(cu_nbparam_t *nbp,
     CU_RET_ERR(stat, "cudaMalloc failed on nbp->nbfp");
     cu_copy_H2D(nbp->nbfp, nbat->nbfp, nnbfp*sizeof(*nbp->nbfp));
 
-    cudaChannelFormatDesc cd   = cudaCreateChannelDesc<float>();
-    stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
-                           nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
-    CU_RET_ERR(stat, "cudaBindTexture on nbfp failed");
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (dev_info->prop.major >= 3)
+        {
+            cudaResourceDesc rd;
+            memset(&rd, 0, sizeof(rd));
+            rd.resType                  = cudaResourceTypeLinear;
+            rd.res.linear.devPtr        = nbp->nbfp;
+            rd.res.linear.desc.f        = cudaChannelFormatKindFloat;
+            rd.res.linear.desc.x        = 32;
+            rd.res.linear.sizeInBytes   = nnbfp*sizeof(*nbp->nbfp);
+
+            cudaTextureDesc td;
+            memset(&td, 0, sizeof(td));
+            td.readMode                 = cudaReadModeElementType;
+            stat = cudaCreateTextureObject(&nbp->nbfp_texobj, &rd, &td, NULL);
+            CU_RET_ERR(stat, "cudaCreateTextureObject on nbfp_texobj failed");
+        }
+        else
+#endif
+        {
+            cudaChannelFormatDesc cd = cudaCreateChannelDesc<float>();
+            stat = cudaBindTexture(NULL, &nbnxn_cuda_get_nbfp_texref(),
+                                   nbp->nbfp, &cd, nnbfp*sizeof(*nbp->nbfp));
+            CU_RET_ERR(stat, "cudaBindTexture on nbfp_texref failed");
+        }
 }
 
 /*! Re-generate the GPU Ewald force table, resets rlist, and update the
@@ -307,7 +352,7 @@ void nbnxn_cuda_pme_loadbal_update_param(nbnxn_cuda_ptr_t cu_nb,
     nbp->eeltype        = pick_ewald_kernel_type(ic->rcoulomb != ic->rvdw,
                                                  cu_nb->dev_info);
 
-    init_ewald_coulomb_force_table(cu_nb->nbparam);
+    init_ewald_coulomb_force_table(cu_nb->nbparam, cu_nb->dev_info);
 }
 
 /*! Initializes the pair list data structure. */
@@ -848,9 +893,21 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
 
     if (nbparam->eeltype == eelCuEWALD_TAB || nbparam->eeltype == eelCuEWALD_TAB_TWIN)
     {
-      stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
-      CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
-      cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
+
+#ifdef TEXOBJ_SUPPORTED
+        /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+        if (cu_nb->dev_info->prop.major >= 3)
+        {
+            stat = cudaDestroyTextureObject(nbparam->coulomb_tab_texobj);
+            CU_RET_ERR(stat, "cudaDestroyTextureObject on coulomb_tab_texobj failed");
+        }
+        else
+#endif
+        {
+            stat = cudaUnbindTexture(nbnxn_cuda_get_coulomb_tab_texref());
+            CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab_texref failed");
+        }
+        cu_free_buffered(nbparam->coulomb_tab, &nbparam->coulomb_tab_size);
     }
 
     stat = cudaEventDestroy(cu_nb->nonlocal_done);
@@ -893,8 +950,19 @@ void nbnxn_cuda_free(FILE *fplog, nbnxn_cuda_ptr_t cu_nb)
         }
     }
 
-    stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
-    CU_RET_ERR(stat, "cudaUnbindTexture on coulomb_tab failed");
+#ifdef TEXOBJ_SUPPORTED
+    /* Only device CC >= 3.0 (Kepler and later) support texture objects */
+    if (cu_nb->dev_info->prop.major >= 3)
+    {
+        stat = cudaDestroyTextureObject(nbparam->nbfp_texobj);
+        CU_RET_ERR(stat, "cudaDestroyTextureObject on nbfp_texobj failed");
+    }
+    else
+#endif
+    {
+        stat = cudaUnbindTexture(nbnxn_cuda_get_nbfp_texref());
+        CU_RET_ERR(stat, "cudaUnbindTexture on nbfp_texref failed");
+    }
     cu_free_buffered(nbparam->nbfp);
 
     stat = cudaFree(atdat->shift_vec);
