@@ -61,12 +61,15 @@
 #include "nbnxn_cuda.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
+#if defined TEXOBJ_SUPPORTED && __CUDA_ARCH__ > 300
+#define USE_TEXOBJ
+#endif
 
 /*! Texture reference for nonbonded parameters; bound to cu_nbparam_t.nbfp*/
-texture<float, 1, cudaReadModeElementType> tex_nbfp;
+texture<float, 1, cudaReadModeElementType> nbfp_texref;
 
 /*! Texture reference for Ewald coulomb force table; bound to cu_nbparam_t.coulomb_tab */
-texture<float, 1, cudaReadModeElementType> tex_coulomb_tab;
+texture<float, 1, cudaReadModeElementType> coulomb_tab_texref;
 
 /* Convenience defines */
 #define NCL_PER_SUPERCL         (NBNXN_GPU_NCLUSTER_PER_SUPERCLUSTER)
@@ -662,13 +665,13 @@ void nbnxn_cuda_wait_gpu(nbnxn_cuda_ptr_t cu_nb,
 /*! Return the reference to the nbfp texture. */
 const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_nbfp_texref()
 {
-    return tex_nbfp;
+    return nbfp_texref;
 }
 
 /*! Return the reference to the coulomb_tab. */
 const struct texture<float, 1, cudaReadModeElementType>& nbnxn_cuda_get_coulomb_tab_texref()
 {
-    return tex_coulomb_tab;
+    return coulomb_tab_texref;
 }
 
 /*! Set up the cache configuration for the non-bonded kernels,
