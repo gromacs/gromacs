@@ -440,11 +440,12 @@ static void do_init_mtop(gmx_poldata_t pd,
     mtop_->nmoltype = 1;
     snew(mtop_->moltype,mtop_->nmoltype);
     mtop_->moltype[0].name = molname;
-    mtop_->nmolblock = 1;
+    mtop_->nmolblock       = 1;
     snew(mtop_->molblock,mtop_->nmolblock);
-    mtop_->molblock[0].nmol = 1;
-    mtop_->molblock[0].type = 0;
+    mtop_->molblock[0].nmol       = 1;
+    mtop_->molblock[0].type       = 0;
     mtop_->molblock[0].natoms_mol = atoms->nr;
+    
     //! Count the number of types in this molecule, at least 1 assuming there is one atom
     int ntype = 1;
     for(int i=1; (i<atoms->nr); i++)
@@ -461,13 +462,14 @@ static void do_init_mtop(gmx_poldata_t pd,
         }
     }
     
-    mtop_->ffparams.atnr = ntype;
+    mtop_->ffparams.atnr   = ntype;
+    mtop_->ffparams.ntypes = ntype*ntype;
     mtop_->ffparams.reppow = 12;
     
     int vdw_type = gmx_poldata_get_vdw_ftype(pd);
     
-    snew(mtop_->ffparams.functype,ntype*ntype);
-    snew(mtop_->ffparams.iparams,ntype*ntype);
+    snew(mtop_->ffparams.functype, mtop_->ffparams.ntypes);
+    snew(mtop_->ffparams.iparams, mtop_->ffparams.ntypes);
     for(int i=0; (i<ntype); i++)
     {
         for(int j=0; (j<ntype); j++)
@@ -477,6 +479,8 @@ static void do_init_mtop(gmx_poldata_t pd,
             switch (vdw_type)
             {
             case F_LJ:
+                //! NOTE  get the real parameters from the pd here
+                //! May need to set the atomtypes properly too.
                 mtop_->ffparams.iparams[idx].lj.c6  = 0;
                 mtop_->ffparams.iparams[idx].lj.c12 = 0;
                 break;
@@ -491,68 +495,12 @@ static void do_init_mtop(gmx_poldata_t pd,
             }
         }
     }
+
     /* Create a charge group block */
     stupid_fill_block(&(mtop_->moltype[0].cgs),atoms->nr,FALSE);
     
     mtop_->natoms = atoms->nr;
     init_t_atoms(&(mtop_->moltype[0].atoms),atoms->nr,FALSE);
-}
-
-static void mk_ff_mtop(gmx_mtop_t *mtop_,gmx_poldata_t pd)
-{
-    int i,j,tp,ftype,comb_rule,ntype;
-    char **ptr;
-    char *params;
-    double **c;
-
-    ntype = gmx_poldata_get_natypes(pd);
-    
-    if (ntype <= 0)
-    {
-        gmx_incons("Number of atomtypes less than 1 in mk_ff_mtop");
-    } 
-    mtop_->ffparams.reppow=12;
-    mtop_->ffparams.atnr=ntype;
-    mtop_->ffparams.fudgeQQ=gmx_poldata_get_fudgeQQ(pd);
-    mtop_->ffparams.ntypes=ntype*ntype;
-    snew(mtop_->ffparams.functype,ntype*ntype);
-    snew(mtop_->ffparams.iparams,ntype*ntype);
-    
-    comb_rule = gmx_poldata_get_comb_rule(pd);
-    ftype = gmx_poldata_get_vdw_ftype(pd);
-    
-    /* Derive table of Van der Waals force field parameters */
-    snew(c,ntype);
-    i = 0;
-    while (1 == gmx_poldata_get_atype(pd,NULL,NULL,NULL,NULL,NULL,&params)) {
-        ptr = split(' ',params);
-        snew(c[i],MAXFORCEPARAM);
-        j=0;
-        while ((j<MAXFORCEPARAM) && (NULL != ptr[j])) 
-        {
-            c[i][j] = atof(ptr[j]);
-            sfree(ptr[j]);
-            j++;
-        }
-        sfree(ptr);
-        sfree(params);
-        i++;
-        if (i > ntype)
-            gmx_fatal(FARGS,"Number of atom types apparently larger than %d",ntype);
-    }
-    /* Generate nonbonded matrix */
-    for(i=tp=0; (i<ntype); i++) 
-    {
-        for(j=0; (j<ntype); j++) 
-        {
-            mtop_->ffparams.functype[tp] = ftype;
-            generate_nbparam(ftype,comb_rule,c[i],c[j],&mtop_->ffparams.iparams[tp]);
-            tp++;
-        }
-    }
-    for(i=0; (i<ntype); i++) 
-        sfree(c[i]);
-    sfree(c);
 }
 
 static void excls_to_blocka(int natom,t_excls excls[],t_blocka *blocka)
@@ -583,19 +531,20 @@ static void excls_to_blocka(int natom,t_excls excls[],t_blocka *blocka)
 static void plist_to_mtop(gmx_poldata_t pd,t_params plist_[],gmx_mtop_t *mtop_)
 {
     double fudgeLJ;
+    double reppow = 12.0;
     int n = 0;
     
     /* Generate pairs */
     fudgeLJ = gmx_poldata_get_fudgeLJ(pd);
 
-    int nfptot = 0;
+    int nfptot = mtop_->ffparams.ntypes;
     for(int i=0; (i<F_NRE); i++)
     {
         nfptot += plist_[i].nr*NRFPA(i);
     }
-    snew(mtop_->ffparams.functype, nfptot);
-    snew(mtop_->ffparams.iparams, nfptot);
-
+    srenew(mtop_->ffparams.functype, nfptot);
+    srenew(mtop_->ffparams.iparams, nfptot);
+    
     for(int i=0; (i<F_NRE); i++)
     {
         int nra = NRAL(i);
@@ -627,7 +576,7 @@ static void plist_to_mtop(gmx_poldata_t pd,t_params plist_[],gmx_mtop_t *mtop_)
             {
                 c[l] = 0;
             }
-            n = enter_params(&mtop_->ffparams,i,c,0,12,n,TRUE);
+            n = enter_params(&mtop_->ffparams,i,c,0,reppow,n,TRUE);
             mtop_->moltype[0].ilist[i].iatoms[k++] = n;
             for(l=0; (l<nra); l++)
             {
@@ -1797,7 +1746,8 @@ void MyMol::UpdateIdef(gmx_poldata_t pd,bool bOpt[])
                 if (NULL != params)
                     sfree(params);
             }
-            else {
+            else 
+            {
                 gmx_fatal(FARGS,"There are no parameters for angle %s-%s-%s in the force field",aai,aaj,aak);
             }
         }

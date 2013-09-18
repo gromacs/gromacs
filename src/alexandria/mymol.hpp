@@ -42,7 +42,6 @@ namespace alexandria {
 class MyMol : public MolProp 
 {
 private:
-    gmx_bool       *bRing;
     //! Gromacs structures
     int            nexcl_;
     int            *symmetric_charges_;

@@ -8,7 +8,7 @@
  *          GROningen MAchine for Chemical Simulations
  * 
  *                        VERSION 4.0.99
-r * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
@@ -401,7 +401,8 @@ public:
                double *chi2,
                output_env_t oenv);
     void PrintSpecs(FILE *fp,char *title,
-                    const char *xvg,output_env_t oenv);
+                    const char *xvg,output_env_t oenv,
+                    bool bCheckOutliers);
 };
 
 OptParam::OptParam()
@@ -997,8 +998,10 @@ double OptParam::CalcDeviation()
             debug = dbcopy;
             mymol->Force2 = 0;
             for(j=0; (j<mymol->NAtom()); j++)
+            {
                 mymol->Force2 += iprod(mymol->f_[j],mymol->f_[j]);
-            mymol->Force2 /= mymol->NAtom();
+            }
+                mymol->Force2 /= mymol->NAtom();
             _ener[ermsForce2] += _fc[ermsForce2]*mymol->Force2;
             mymol->Ecalc = mymol->enerd_.term[F_EPOT];
             if ( 0 ) 
@@ -1341,7 +1344,8 @@ static void print_moldip_mols(FILE *fp,std::vector<alexandria::MyMol> mol,
 }
 
 void OptParam::PrintSpecs(FILE *fp,char *title,
-                          const char *xvg,output_env_t oenv)
+                          const char *xvg,output_env_t oenv,
+                          bool bCheckOutliers)
 {
     FILE *xfp;
     int i;
@@ -1353,18 +1357,21 @@ void OptParam::PrintSpecs(FILE *fp,char *title,
                        oenv);
     }
     fprintf(fp,"%s\n",title);
-    fprintf(fp,"Nr.   %-30s %10s %10s %10s %10s\n",
-            "Molecule","DHf@298K","Emol@0K","Calc-Exp","rms F");
+    fprintf(fp,"Nr.   %-30s %10s %10s %10s %10s %10s\n",
+            "Molecule","DHf@298K","Emol@0K","Calc-Exp","rms F", "Outlier?");
     msd = 0;
     i = 0;
     for(std::vector<alexandria::MyMol>::iterator mi=_mymol.begin(); (mi < _mymol.end()); mi++,i++) 
     {
-        fprintf(fp,"%-5d %-30s %10g %10g %10g %10g\n",i,mi->GetMolname().c_str(),
-                mi->Hform,mi->Emol,
-                mi->Emol-mi->Ecalc,
-                sqrt(mi->Force2));
+        real DeltaE = mi->Ecalc - mi->Emol;
+        fprintf(fp,"%-5d %-30s %10g %10g %10g %10g %-10s\n",
+                i,
+                mi->GetMolname().c_str(),
+                mi->Hform, mi->Emol, DeltaE,
+                sqrt(mi->Force2),
+                (bCheckOutliers && (fabs(DeltaE) > 1000)) ? "XXX" : "");
         msd += sqr(mi->Emol-mi->Ecalc);
-        if (NULL != xvg)
+        if (NULL != xfp)
         {
             fprintf(xfp,"%10g  %10g\n",mi->Hform,
                     mi->Ecalc+mi->Hform-mi->Emol);
@@ -1587,8 +1594,8 @@ int main(int argc, char *argv[])
                 omt,factor);
              
     print_moldip_mols(fp,opt._mymol,FALSE,FALSE);
-    opt.PrintSpecs(fp,(char *)"Before optimization",NULL,oenv);
     omt = analyze_idef(fp,opt._mymol,opt._pd,bOpt);
+    opt.PrintSpecs(fp,(char *)"Before optimization",NULL,oenv,false);
 
     opt.Optimize(MASTER(cr) ? stderr : NULL,fp,
                  maxiter,nrun,step,seed,
@@ -1599,7 +1606,7 @@ int main(int argc, char *argv[])
                  temperature);
     done_opt_mask(&omt);
     print_moldip_mols(fp,opt._mymol,TRUE,FALSE);
-    opt.PrintSpecs(fp,(char *)"After optimization",opt2fn("-x",NFILE,fnm),oenv);
+    opt.PrintSpecs(fp,(char *)"After optimization",opt2fn("-x",NFILE,fnm),oenv,true);
     
     gmx_poldata_write(opt2fn("-o",NFILE,fnm),opt._pd,compress);
     
