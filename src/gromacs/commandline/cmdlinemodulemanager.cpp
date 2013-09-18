@@ -408,6 +408,53 @@ void HelpExportHtml::writeHtmlFooter(File *file) const
     file->writeLine("</HTML>");
 }
 
+/********************************************************************
+ * HelpExportLatex
+ */
+
+/*! \internal \brief
+ * Implements export for LaTeX help.
+ *
+ * \ingroup module_commandline
+ */
+class HelpExportLatex : public HelpExportInterface
+{
+    public:
+        virtual void startModuleExport();
+        virtual void exportModuleHelp(const std::string                &tag,
+                                      const CommandLineModuleInterface &module);
+        virtual void finishModuleExport();
+
+    private:
+        boost::scoped_ptr<File>  listFile_;
+};
+
+void HelpExportLatex::startModuleExport()
+{
+    listFile_.reset(new File("progman/all.tex", "w"));
+}
+
+void HelpExportLatex::exportModuleHelp(const std::string                &tag,
+                                       const CommandLineModuleInterface &module)
+{
+    File file("progman/" + tag + ".tex", "w");
+    file.writeLine(formatString("\\section{\\normindex{%s}}\\label{%s}",
+                                tag.c_str(), tag.c_str()));
+    file.writeLine();
+
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Latex);
+    module.writeHelp(context);
+
+    file.close();
+
+    listFile_->writeLine(formatString("\\input{progman/%s}", tag.c_str()));
+}
+
+void HelpExportLatex::finishModuleExport()
+{
+    listFile_->close();
+}
+
 }   // namespace
 
 /********************************************************************
@@ -495,7 +542,7 @@ void CommandLineHelpModule::addTopic(HelpTopicPointer topic)
 
 int CommandLineHelpModule::run(int argc, char *argv[])
 {
-    const char *const exportFormats[] = { "man", "html", "completion" };
+    const char *const exportFormats[] = { "man", "html", "tex", "completion" };
     std::string       exportFormat;
     Options           options(NULL, NULL);
     options.addOption(StringOption("export").store(&exportFormat)
@@ -511,6 +558,10 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         else if (exportFormat == "html")
         {
             exporter.reset(new HelpExportHtml);
+        }
+        else if (exportFormat == "tex")
+        {
+            exporter.reset(new HelpExportLatex);
         }
         else
         {
@@ -654,6 +705,9 @@ class CMainCommandLineModule : public CommandLineModuleInterface
                     break;
                 case eHelpOutputFormat_Html:
                     type = "html";
+                    break;
+                case eHelpOutputFormat_Latex:
+                    type = "tex";
                     break;
                 default:
                     GMX_THROW(NotImplementedError(
