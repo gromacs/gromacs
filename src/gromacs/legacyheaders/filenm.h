@@ -70,12 +70,6 @@ const char *ftp2defnm(int ftp);
 const char *ftp2ftype(int ftp);
 /* Return Binary or ASCII depending on file type */
 
-void pr_fns(FILE *fp, int nf, const t_filenm tfn[]);
-/* Print nf file names and types */
-
-void pr_fopts(FILE *fp, int nf, const t_filenm tfn[], int shell);
-/* prints file options in tcsh 'complete' format */
-
 void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
                      gmx_bool bKeep, gmx_bool bReadNode);
 /* Parse command line for file names. When bKeep is set args are
