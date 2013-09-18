@@ -255,11 +255,6 @@ enum {
     edispcNO, edispcEnerPres, edispcEner, edispcAllEnerPres, edispcAllEner, edispcNR
 };
 
-/* Shell types, for completion stuff */
-enum {
-    eshellCSH, eshellBASH, eshellZSH, eshellNR
-};
-
 /* Center of mass motion selection */
 enum {
     ecmLINEAR, ecmANGULAR, ecmNO, ecmNR
