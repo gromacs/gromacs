@@ -55,8 +55,6 @@ char *fileopt(unsigned long flag, char buf[], int maxsize);
  * a pointer to this buffer.
  */
 
-char *check_tex(const char *s);
-
 char *check_tty(const char *s);
 
 #ifdef __cplusplus
