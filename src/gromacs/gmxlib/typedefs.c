@@ -624,10 +624,6 @@ void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainle
 
 void done_state(t_state *state)
 {
-    if (state->nosehoover_xi)
-    {
-        sfree(state->nosehoover_xi);
-    }
     if (state->x)
     {
         sfree(state->x);
