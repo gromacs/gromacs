@@ -70,8 +70,8 @@ class CommandLineHelpContext::Impl
 {
     public:
         //! Creates the implementation class and the low-level context.
-        Impl(File *file, HelpOutputFormat format)
-            : writerContext_(file, format), moduleDisplayName_("gmx"),
+        Impl(File *file, HelpOutputFormat format, const HelpLinks *links)
+            : writerContext_(file, format, links), moduleDisplayName_("gmx"),
               bHidden_(false)
         {
         }
@@ -85,8 +85,8 @@ class CommandLineHelpContext::Impl
 };
 
 CommandLineHelpContext::CommandLineHelpContext(
-        File *file, HelpOutputFormat format)
-    : impl_(new Impl(file, format))
+        File *file, HelpOutputFormat format, const HelpLinks *links)
+    : impl_(new Impl(file, format, links))
 {
 }
 
@@ -97,11 +97,6 @@ CommandLineHelpContext::~CommandLineHelpContext()
 void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
 {
     impl_->moduleDisplayName_ = name;
-}
-
-void CommandLineHelpContext::setLinks(const HelpLinks &links)
-{
-    impl_->writerContext_.setLinks(links);
 }
 
 void CommandLineHelpContext::setShowHidden(bool bHidden)

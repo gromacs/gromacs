@@ -47,8 +47,9 @@
 #include <string>
 #include <vector>
 
+#include <boost/shared_ptr.hpp>
+
 #include "gromacs/onlinehelp/helpformat.h"
-#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
@@ -417,9 +418,38 @@ void HelpLinks::addLink(const std::string &linkName,
 class HelpWriterContext::Impl
 {
     public:
-        //! Initializes the context with the given output file and format.
-        explicit Impl(File *file, HelpOutputFormat format)
-            : file_(*file), format_(format), links_(NULL)
+        /*! \internal \brief
+         * Shared, non-modifiable state for context objects.
+         *
+         * Contents of this structure are shared between all context objects
+         * that are created from a common parent.
+         * This state should not be modified after construction.
+         *
+         * \ingroup module_onlinehelp
+         */
+        struct SharedState
+        {
+            //! Initializes the state with the given parameters.
+            SharedState(File *file, HelpOutputFormat format,
+                        const HelpLinks *links)
+                : file_(*file), format_(format), links_(links)
+            {
+            }
+
+            //! Output file to which the help is written.
+            File                   &file_;
+            //! Output format for the help output.
+            HelpOutputFormat        format_;
+            //! Links to use.
+            const HelpLinks        *links_;
+        };
+
+        //! Smart pointer type for managing the shared state.
+        typedef boost::shared_ptr<const SharedState> StatePointer;
+
+        //! Initializes the context with the given state.
+        explicit Impl(const StatePointer &state)
+            : state_(state)
         {
         }
 
@@ -435,12 +465,11 @@ class HelpWriterContext::Impl
         void processMarkup(const std::string &text,
                            WrapperInterface  *wrapper) const;
 
-        //! Output file to which the help is written.
-        File                   &file_;
-        //! Output format for the help output.
-        HelpOutputFormat        format_;
-        //! Links to use.
-        const HelpLinks        *links_;
+        //! Constant state shared by all child context objects.
+        StatePointer            state_;
+
+    private:
+        GMX_DISALLOW_ASSIGN(Impl);
 };
 
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
@@ -449,7 +478,7 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
     const char *program = ProgramInfo::getInstance().programName().c_str();
     std::string result(text);
     result = replaceAll(result, "[PROGRAM]", program);
-    switch (format_)
+    switch (state_->format_)
     {
         case eHelpOutputFormat_Console:
         {
@@ -468,11 +497,11 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         case eHelpOutputFormat_Html:
         {
             result = repall(result, sandrHtml);
-            if (links_ != NULL)
+            if (state_->links_ != NULL)
             {
                 HelpLinks::Impl::LinkList::const_iterator link;
-                for (link  = links_->impl_->links_.begin();
-                     link != links_->impl_->links_.end(); ++link)
+                for (link  = state_->links_->impl_->links_.begin();
+                     link != state_->links_->impl_->links_.end(); ++link)
                 {
                     std::string replacement
                         = formatString("<a href=\"%s.html\">%s</a>",
@@ -493,7 +522,23 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
  */
 
 HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format)
-    : impl_(new Impl(file, format))
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, NULL))))
+{
+}
+
+HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format,
+                                     const HelpLinks *links)
+    : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links))))
+{
+}
+
+HelpWriterContext::HelpWriterContext(Impl *impl)
+    : impl_(impl)
+{
+}
+
+HelpWriterContext::HelpWriterContext(const HelpWriterContext &other)
+    : impl_(new Impl(*other.impl_))
 {
 }
 
@@ -501,19 +546,14 @@ HelpWriterContext::~HelpWriterContext()
 {
 }
 
-void HelpWriterContext::setLinks(const HelpLinks &links)
-{
-    impl_->links_ = &links;
-}
-
 HelpOutputFormat HelpWriterContext::outputFormat() const
 {
-    return impl_->format_;
+    return impl_->state_->format_;
 }
 
 File &HelpWriterContext::outputFile() const
 {
-    return impl_->file_;
+    return impl_->state_->file_;
 }
 
 std::string
