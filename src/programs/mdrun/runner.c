@@ -383,7 +383,7 @@ static int get_nthreads_mpi(const gmx_hw_info_t *hwinfo,
 
     if (inputrec->eI == eiNM || EI_TPI(inputrec->eI))
     {
-        /* Steps are divided over the nodes iso splitting the atoms */
+        /* Dims/steps are divided over the nodes iso splitting the atoms */
         min_atoms_per_mpi_thread = 0;
     }
     else
@@ -1309,7 +1309,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         cr->duty      = (DUTY_PP | DUTY_PME);
         npme_major    = 1;
         npme_minor    = 1;
-        if (!EI_TPI(inputrec->eI))
+        /* NM and TPI perform single node energy calculations in parallel */
+        if (!(inputrec->eI == eiNM || EI_TPI(inputrec->eI)))
         {
             npme_major = cr->nnodes;
         }

@@ -113,7 +113,7 @@ make_cluster_list_simd_4xn(const nbnxn_grid_t *gridj,
                            int *ndistc)
 {
     const nbnxn_x_ci_simd_4xn_t *work;
-    const float                 *bb_ci;
+    const nbnxn_bb_t            *bb_ci;
 
     gmx_mm_pr                    jx_SSE, jy_SSE, jz_SSE;
 

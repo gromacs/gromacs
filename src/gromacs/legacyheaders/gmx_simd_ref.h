@@ -236,9 +236,14 @@ gmx_simd_ref_blendzero_pr(gmx_simd_ref_pr a, gmx_simd_ref_pb b)
 }
 
 /* Note that this reference implementation rounds away from zero,
- * whereas most SIMD intrinsics will round to nearest even.
- * Since this function is only used for periodic image calculations,
- * the rounding of mantissas close to 0.5 is irrelevant.
+ * whereas most SIMD intrinsics will round to nearest even. Since this
+ * function is only used for periodic image calculations, the rounding
+ * of mantissas close to 0.5 is irrelevant, except in testing. This
+ * could be fixed by using rint/rintf, but the bigger problem is that
+ * MSVC does not support full C99, and none of the round or rint
+ * functions are defined. It's much easier to approximately implement
+ * round() than rint(), so we do that and hope we never get bitten in
+ * testing. (Thanks, Microsoft.)
  */
 static gmx_inline gmx_simd_ref_pr
 gmx_simd_ref_round_pr(gmx_simd_ref_pr a)
@@ -248,7 +253,12 @@ gmx_simd_ref_round_pr(gmx_simd_ref_pr a)
 
     for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
     {
-#ifdef GMX_DOUBLE
+#ifdef _MSC_VER
+        int temp = (a.r[i] >= 0.)
+            ? (a.r[i] + 0.5)
+            : (a.r[i] - 0.5);
+        b.r[i] = (real) temp;
+#elif defined GMX_DOUBLE
         b.r[i] = round(a.r[i]);
 #else
         b.r[i] = roundf(a.r[i]);
@@ -400,60 +410,6 @@ gmx_simd_ref_store_pb(real *dest, gmx_simd_ref_pb src)
         dest[i] = src.r[i];
     }
 };
-
-
-/* For topology exclusion pair checking we need: ((a & b) ? True : False)
- * when we do a bit-wise and between a and b.
- * When integer SIMD operations are present, we use gmx_checkbitmask_epi32(a, b)
- * Otherwise we do all operations, except for the set1, in reals.
- */
-
-/* Integer set and cast are only used for nbnxn exclusion masks */
-static gmx_inline gmx_simd_ref_epi32
-gmx_simd_ref_set1_epi32(int src)
-{
-    gmx_simd_ref_epi32 a;
-    int                i;
-
-    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
-    {
-        a.r[i] = src;
-    }
-
-    return a;
-}
-
-static gmx_inline gmx_simd_ref_epi32
-gmx_simd_ref_load_si(const int *src)
-{
-    gmx_simd_ref_epi32 a;
-    int                i;
-
-    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
-    {
-        a.r[i] = src[i];
-    }
-
-    return a;
-}
-
-/* If the same bit is set in both input masks, return TRUE, else FALSE.
- * This function is only called with a single bit set in b.
- */
-static gmx_inline gmx_simd_ref_pb
-gmx_simd_ref_checkbitmask_epi32(gmx_simd_ref_epi32 a, gmx_simd_ref_epi32 b)
-{
-    gmx_simd_ref_pb c;
-    int             i;
-
-    for (i = 0; i < GMX_SIMD_REF_WIDTH; i++)
-    {
-        c.r[i] = ((a.r[i] & b.r[i]) != 0);
-    }
-
-    return c;
-}
-
 
 /* Conversions only used for PME table lookup */
 static gmx_inline gmx_simd_ref_epi32
