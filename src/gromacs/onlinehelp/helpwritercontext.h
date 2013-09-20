@@ -110,9 +110,10 @@ class HelpLinks
  * The purpose of this class is to pass information about the output format to
  * methods that write help, and to abstract away most of the details of
  * different output formats.
- * Additionally, it can keep other context information, although it currently
- * does not.  Such additional context information would be useful for
- * formatting links/references to other help topics.
+ *
+ * The state of a context object (excluding the fact that the output file is
+ * written to) does not change after initial construction of the object.
+ * Copying creates a context object that shares state with the source.
  *
  * TODO: This class will need additional work as part of Redmine issue #969.
  *
@@ -128,10 +129,20 @@ class HelpWriterContext
          * \throws std::bad_alloc if out of memory.
          */
         HelpWriterContext(File *file, HelpOutputFormat format);
+        /*! \brief
+         * Initializes a context with the given output file, format and links.
+         *
+         * \throws std::bad_alloc if out of memory.
+         *
+         * A reference to \p links is stored until the HelpWriterContext
+         * is destructed.  The caller is responsible for ensuring that the
+         * links object remains valid long enough.
+         */
+        HelpWriterContext(File *file, HelpOutputFormat format,
+                          const HelpLinks *links);
+        //! Creates a copy of the context.
+        HelpWriterContext(const HelpWriterContext &other);
         ~HelpWriterContext();
-
-        //! Sets the links to use in this context.
-        void setLinks(const HelpLinks &links);
 
         /*! \brief
          * Returns the active output format.
@@ -213,7 +224,18 @@ class HelpWriterContext
     private:
         class Impl;
 
+        /*! \brief
+         * Constructs a context object with the given implementation class.
+         *
+         * \param[in] impl  Implementation object.
+         *
+         * Does not throw.
+         */
+        explicit HelpWriterContext(Impl *impl);
+
         PrivateImplPointer<Impl> impl_;
+
+        GMX_DISALLOW_ASSIGN(HelpWriterContext);
 };
 
 } // namespace gmx

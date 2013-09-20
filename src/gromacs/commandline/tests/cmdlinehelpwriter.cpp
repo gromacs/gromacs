@@ -81,7 +81,7 @@ void CommandLineHelpWriterTest::checkHelp(gmx::CommandLineHelpWriter *writer)
 {
     std::string                 filename = tempFiles_.getTemporaryFilePath("helptext.txt");
     gmx::File                   file(filename, "w");
-    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console);
+    gmx::CommandLineHelpContext context(&file, gmx::eHelpOutputFormat_Console, NULL);
     context.setShowHidden(bHidden_);
     writer->writeHelp(context);
     file.close();
