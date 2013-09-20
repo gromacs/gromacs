@@ -304,7 +304,7 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
                                 module.shortDescription()));
     file.writeLine();
 
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Man);
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Man, NULL);
     std::string            displayName(tag);
     std::replace(displayName.begin(), displayName.end(), '-', ' ');
     context.setModuleDisplayName(displayName);
@@ -371,11 +371,10 @@ void HelpExportHtml::exportModuleHelp(const std::string                &tag,
     File file(tag + ".html", "w");
     writeHtmlHeader(&file, tag);
 
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Html);
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Html, &links_);
     std::string            displayName(tag);
     std::replace(displayName.begin(), displayName.end(), '-', ' ');
     context.setModuleDisplayName(displayName);
-    context.setLinks(links_);
     module.writeHelp(context);
 
     writeHtmlFooter(&file);
@@ -543,7 +542,7 @@ int CommandLineHelpModule::run(int argc, char *argv[])
 
     boost::scoped_ptr<CommandLineHelpContext> context(
             new CommandLineHelpContext(&File::standardOutput(),
-                                       eHelpOutputFormat_Console));
+                                       eHelpOutputFormat_Console, NULL));
     context->setShowHidden(bHidden_);
     context_ = context.get();
     if (moduleOverride_ != NULL)
