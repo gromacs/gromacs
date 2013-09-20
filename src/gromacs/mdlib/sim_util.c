@@ -89,8 +89,8 @@
 #include "nbnxn_atomdata.h"
 #include "nbnxn_search.h"
 #include "nbnxn_kernels/nbnxn_kernel_ref.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_4xn.h"
-#include "nbnxn_kernels/nbnxn_kernel_simd_2xnn.h"
+#include "nbnxn_kernels/simd_4xn/nbnxn_kernel_simd_4xn.h"
+#include "nbnxn_kernels/simd_2xnn/nbnxn_kernel_simd_2xnn.h"
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #include "gromacs/utility/gmxmpi.h"
