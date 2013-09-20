@@ -140,7 +140,7 @@ void printHelp(const Options &options)
                  "\nYou can use the following GROMACS-specific command-line flags\n"
                  "to control the behavior of the tests:\n\n");
     CommandLineHelpContext context(&File::standardError(),
-                                   eHelpOutputFormat_Console);
+                                   eHelpOutputFormat_Console, NULL);
     CommandLineHelpWriter(options).writeHelp(context);
 }
 
