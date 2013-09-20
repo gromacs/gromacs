@@ -44,15 +44,16 @@
 #include "nonbonded.h"
 #include "nb_kernel.h"
 #include "nrnb.h"
+#include "nb_free_energy.h"
 
 void
-gmx_nb_free_energy_kernel(t_nblist *                nlist,
-                          rvec *                    xx,
-                          rvec *                    ff,
-                          t_forcerec *              fr,
-                          t_mdatoms *               mdatoms,
-                          nb_kernel_data_t *        kernel_data,
-                          t_nrnb *                  nrnb)
+gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
+                          rvec * gmx_restrict              xx,
+                          rvec * gmx_restrict              ff,
+                          t_forcerec * gmx_restrict        fr,
+                          const t_mdatoms * gmx_restrict   mdatoms,
+                          nb_kernel_data_t * gmx_restrict  kernel_data,
+                          t_nrnb * gmx_restrict            nrnb)
 {
 
 #define  STATE_A  0
@@ -76,32 +77,32 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          sigma6[NSTATES], alpha_vdw_eff, alpha_coul_eff, sigma2_def, sigma2_min;
     real          rp, rpm2, rC, rV, rinvC, rpinvC, rinvV, rpinvV;
     real          sigma2[NSTATES], sigma_pow[NSTATES], sigma_powm2[NSTATES], rs, rs2;
-    int           do_coultab, do_vdwtab, do_tab, tab_elemsize;
+    int           do_tab, tab_elemsize;
     int           n0, n1C, n1V, nnn;
     real          Y, F, G, H, Fp, Geps, Heps2, epsC, eps2C, epsV, eps2V, VV, FF;
     int           icoul, ivdw;
     int           nri;
-    int *         iinr;
-    int *         jindex;
-    int *         jjnr;
-    int *         shift;
-    int *         gid;
-    int *         typeA;
-    int *         typeB;
+    const int *   iinr;
+    const int *   jindex;
+    const int *   jjnr;
+    const int *   shift;
+    const int *   gid;
+    const int *   typeA;
+    const int *   typeB;
     int           ntype;
-    real *        shiftvec;
+    const real *  shiftvec;
     real          dvdl_part;
     real *        fshift;
     real          tabscale;
-    real *        VFtab;
-    real *        x;
+    const real *  VFtab;
+    const real *  x;
     real *        f;
     real          facel, krf, crf;
-    real *        chargeA;
-    real *        chargeB;
+    const real *  chargeA;
+    const real *  chargeB;
     real          sigma6_min, sigma6_def, lam_power, sc_power, sc_r_power;
     real          alpha_coul, alpha_vdw, lambda_coul, lambda_vdw, ewc;
-    real *        nbfp;
+    const real *  nbfp;
     real *        dvdl;
     real *        Vv;
     real *        Vc;
@@ -109,15 +110,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     real          rcoulomb, rvdw, sh_invrc6;
     gmx_bool      bExactElecCutoff, bExactVdwCutoff;
     real          rcutoff, rcutoff2, rswitch, d, d2, swV3, swV4, swV5, swF2, swF3, swF4, sw, dsw, rinvcorr;
+    const real *  tab_ewald_F;
+    const real *  tab_ewald_V;
+    real          tab_ewald_scale, tab_ewald_halfsp;
 
     x                   = xx[0];
     f                   = ff[0];
 
     fshift              = fr->fshift[0];
-    Vc                  = kernel_data->energygrp_elec;
-    Vv                  = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
 
     nri                 = nlist->nri;
     iinr                = nlist->iinr;
@@ -135,10 +135,14 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
     ewc                 = fr->ewaldcoeff;
+    Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
     ntype               = fr->ntype;
     nbfp                = fr->nbfp;
+    Vv                  = kernel_data->energygrp_vdw;
+    tabscale            = kernel_data->table_elec_vdw->scale;
+    VFtab               = kernel_data->table_elec_vdw->data;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
     dvdl                = kernel_data->dvdl;
@@ -153,6 +157,12 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     rcoulomb            = fr->rcoulomb;
     rvdw                = fr->rvdw;
     sh_invrc6           = fr->ic->sh_invrc6;
+
+    /* Ewald (PME) reciprocal force and energy quadratic spline tables */
+    tab_ewald_F         = fr->ic->tabq_coul_F;
+    tab_ewald_V         = fr->ic->tabq_coul_V;
+    tab_ewald_scale     = fr->ic->tabq_scale;
+    tab_ewald_halfsp    = 0.5/tab_ewald_scale;
 
     if (fr->coulomb_modifier == eintmodPOTSWITCH || fr->vdw_modifier == eintmodPOTSWITCH)
     {
@@ -216,10 +226,8 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
 
     /* Ewald (not PME) table is special (icoul==enbcoulFEWALD) */
 
-    do_coultab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE);
-    do_vdwtab  = (ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
-
-    do_tab = do_coultab || do_vdwtab;
+    do_tab = (icoul == GMX_NBKERNEL_ELEC_CUBICSPLINETABLE ||
+              ivdw == GMX_NBKERNEL_VDW_CUBICSPLINETABLE);
 
     /* we always use the combined table here */
     tab_elemsize = 12;
@@ -527,27 +535,20 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
             if (icoul == GMX_NBKERNEL_ELEC_EWALD &&
                 !(bExactElecCutoff && r >= rcoulomb))
             {
-                /* because we compute the softcore normally,
-                   we have to remove the ewald short range portion. Done outside of
-                   the states loop because this part doesn't depend on the scaled R */
+                /* Because we compute the soft-core normally,
+                 * we have to remove the Ewald short range portion.
+                 * Done outside of the states loop because this part
+                 * doesn't depend on the scaled R.
+                 */
+                real rs, frac, f_lr;
+                int  ri;
 
-#ifdef GMX_DOUBLE
-                /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
-#define         R_ERF_R_INACC 0.006
-#else
-                /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
-#define         R_ERF_R_INACC 0.1
-#endif
-                if (ewc*r > R_ERF_R_INACC)
-                {
-                    VV    = gmx_erf(ewc*r)*rinv;
-                    FF    = rinv*rinv*(VV - ewc*M_2_SQRTPI*exp(-ewc*ewc*rsq));
-                }
-                else
-                {
-                    VV    = ewc*M_2_SQRTPI;
-                    FF    = ewc*ewc*ewc*M_2_SQRTPI*(2.0/3.0 - 0.4*ewc*ewc*rsq);
-                }
+                rs     = rsq*rinv*tab_ewald_scale;
+                ri     = (int)rs;
+                frac   = rs - ri;
+                f_lr   = (1 - frac)*tab_ewald_F[ri] + frac*tab_ewald_F[ri+1];
+                FF     = f_lr*rinv;
+                VV     = tab_ewald_V[ri] - tab_ewald_halfsp*frac*(tab_ewald_F[ri] + f_lr);
 
                 for (i = 0; i < NSTATES; i++)
                 {
