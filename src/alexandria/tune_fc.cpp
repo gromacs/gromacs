@@ -218,10 +218,15 @@ static opt_mask_t *analyze_idef(FILE *fp,
     fprintf(fp,"In the total data set of %d molecules we have:\n",(int)mm.size());
     snew(omt,1);
     for(bt=0; (bt<ebtsNR); bt++)
+    {
         ntot[bt] = 0;
-    for(bt=0; (bt<=ebtsIDIHS); bt++) {
-        if (bOpt[bt]) {
-            switch (bt) {
+    }
+    for(bt=0; (bt<=ebtsIDIHS); bt++) 
+    {
+        if (bOpt[bt]) 
+        {
+            switch (bt) 
+            {
             case ebtsBONDS:
                 omt->nb[bt] = gmx_poldata_get_ngt_bond(pd);
                 ft = gmx_poldata_get_bond_ftype(pd);
@@ -252,18 +257,26 @@ static opt_mask_t *analyze_idef(FILE *fp,
                     aj  = mymol->ltop_->idef.il[ft].iatoms[i+2];
                     aai = (char *)gmx_poldata_atype_to_btype(pd,*mymol->topology_->atoms.atomtype[ai]);
                     aaj = (char *)gmx_poldata_atype_to_btype(pd,*mymol->topology_->atoms.atomtype[aj]);
-                    
+                    char buf[STRLEN];
                     gt = 0;
                     switch (bt) {
                     case ebtsBONDS:
                         gt = gmx_poldata_search_bond(pd,aai,aaj,NULL,
                                                      NULL,NULL,NULL,&params);
+                        if (gt > 0)
+                        {
+                            sprintf(buf,"%s-%s",aai,aaj);
+                        }
                         break;
                     case ebtsANGLES:
                         ak  = mymol->ltop_->idef.il[ft].iatoms[i+3];
                         aak = (char *)gmx_poldata_atype_to_btype(pd,*mymol->topology_->atoms.atomtype[ak]);
                         gt  = gmx_poldata_search_angle(pd,aai,aaj,aak,NULL,
                                                       NULL,NULL,&params);
+                        if (gt > 0)
+                        {
+                            sprintf(buf,"%s-%s-%s",aai,aaj,aak);
+                        }
                         break;
                     case ebtsPDIHS:
                     case ebtsIDIHS:
@@ -274,6 +287,10 @@ static opt_mask_t *analyze_idef(FILE *fp,
                         gt  = gmx_poldata_search_dihedral(pd,(bt == ebtsPDIHS) ? egdPDIHS : egdIDIHS,
                                                           aai,aaj,aak,aal,
                                                           NULL,NULL,NULL,&params);
+                        if (gt > 0)
+                        {
+                            sprintf(buf,"%s-%s-%s-%s",aai,aaj,aak,aal);
+                        }
                         break;                              
                     }
                     if (gt > 0) 
@@ -281,8 +298,7 @@ static opt_mask_t *analyze_idef(FILE *fp,
                         omt->ngtb[bt][gt-1]++;
                         if (NULL == omt->cgt[bt][gt-1]) 
                         {
-                            snew(omt->cgt[bt][gt-1],strlen(aai)+strlen(aaj)+2);
-                            sprintf(omt->cgt[bt][gt-1],"%s-%s",aai,aaj);
+                            omt->cgt[bt][gt-1] = strdup(buf);
                         }
                         if (NULL != params)
                         {
@@ -292,9 +308,11 @@ static opt_mask_t *analyze_idef(FILE *fp,
                 }
             }
         }
-        for(i=0; (i<omt->nb[bt]); i++) {
-            if (omt->ngtb[bt][i] > 0) {
-                fprintf(fp,"%-8s  %6d  %-20s  %d\n",btsnames[bt],i,
+        for(i=0; (i<omt->nb[bt]); i++) 
+        {
+            if (omt->ngtb[bt][i] > 0) 
+            {
+                fprintf(fp,"%-8s  %6d  %-20s  %d\n", btsnames[bt], i,
                         omt->cgt[bt][i],omt->ngtb[bt][i]);
                 sfree(omt->cgt[bt][i]);
                 ntot[bt]++;
@@ -303,8 +321,12 @@ static opt_mask_t *analyze_idef(FILE *fp,
         sfree(omt->cgt[bt]);
     }
     for(bt=0; (bt<ebtsNR); bt++) 
+    {
         if (bOpt[bt])
+        {
             fprintf(fp,"%-8s %d of %4d types\n",btsnames[bt],ntot[bt],omt->nb[bt]);
+        }
+    }
             
     return omt;
 }

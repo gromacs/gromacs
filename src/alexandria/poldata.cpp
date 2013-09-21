@@ -907,26 +907,42 @@ double *gmx_poldata_elem_get_bondorders(gmx_poldata_t pd,char *elem1,char *elem2
     if ((NULL == elem1) || (NULL == elem2))
         return 0;
     nbo = 0;
-    for(i=0; (i<pd->ngt_bond); i++) {
-        if (0 == strlen(pd->gt_bond[i].elem1)) {
+    for(i=0; (i<pd->ngt_bond); i++) 
+    {
+        if (0 == strlen(pd->gt_bond[i].elem1)) 
+        {
             for(j=0; (j<pd->nalexandria); j++) 
+            {
                 if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                {
                     strcpy(pd->gt_bond[i].elem1,pd->alexandria[j].elem);
+                }
+            }
         }
-        if (0 == strlen(pd->gt_bond[i].elem2)) {
+        if (0 == strlen(pd->gt_bond[i].elem2)) 
+        {
             for(j=0; (j<pd->nalexandria); j++) 
+            {
                 if (strcmp(pd->alexandria[j].type,pd->gt_bond[i].atom2) == 0)
+                {
                     strcpy(pd->gt_bond[i].elem2,pd->alexandria[j].elem);
+                }
+            }
         }
         ba1 = pd->gt_bond[i].elem1;
         ba2 = pd->gt_bond[i].elem2;
         if (((strcmp(ba1,elem1) == 0) && (strcmp(ba2,elem2) == 0)) ||
-            ((strcmp(ba1,elem2) == 0) && (strcmp(ba2,elem1) == 0))) {
+            ((strcmp(ba1,elem2) == 0) && (strcmp(ba2,elem1) == 0))) 
+        {
             dev = fabs((pd->gt_bond[i].length - distance)/pd->gt_bond[i].length);
-            if (dev < toler) {
-                for(k=0; (k<nbo); k++) {
+            if (dev < toler) 
+            {
+                for(k=0; (k<nbo); k++) 
+                {
                     if (pd->gt_bond[i].bondorder == bo[k])
+                    {
                         break;
+                    }
                 }
                 if (k == nbo) 
                 {
