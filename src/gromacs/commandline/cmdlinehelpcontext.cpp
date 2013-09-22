@@ -90,12 +90,19 @@ CommandLineHelpContext::CommandLineHelpContext(
 {
 }
 
+CommandLineHelpContext::CommandLineHelpContext(
+        const CommandLineHelpContext &other)
+    : impl_(new Impl(*other.impl_))
+{
+}
+
 CommandLineHelpContext::~CommandLineHelpContext()
 {
 }
 
 void CommandLineHelpContext::setModuleDisplayName(const std::string &name)
 {
+    impl_->writerContext_.setReplacement("[THISMODULE]", "[TT]" + name + "[tt]");
     impl_->moduleDisplayName_ = name;
 }
 

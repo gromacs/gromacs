@@ -70,7 +70,9 @@ struct t_sandr {
 /* The order of these arrays is significant. Text search and replace
  * for each element occurs in order, so earlier changes can induce
  * subsequent changes even though the original text might not appear
- * to invoke the latter changes. */
+ * to invoke the latter changes.
+ * TODO: Get rid of this behavior. It makes it very difficult to manage
+ * replacements coming from multiple sources (e.g., hyperlinks).*/
 
 //! List of replacements for console output.
 const t_sandr sandrTty[] = {
@@ -343,7 +345,7 @@ class WrapperToVector : public WrapperInterface
 };
 
 /*! \internal \brief
- * Make the string uppercase.
+ * Makes the string uppercase.
  *
  * \param[in] text  Input text.
  * \returns   \p text with all characters transformed to uppercase.
@@ -373,26 +375,33 @@ class HelpLinks::Impl
         struct LinkItem
         {
             LinkItem(const std::string &linkName,
-                     const std::string &targetName)
-                : linkName(linkName), targetName(targetName)
+                     const std::string &replacement)
+                : linkName(linkName), replacement(replacement)
             {
             }
             std::string         linkName;
-            std::string         targetName;
+            std::string         replacement;
         };
 
         //! Shorthand for a list of links.
         typedef std::vector<LinkItem> LinkList;
 
+        //! Initializes empty links with the given format.
+        explicit Impl(HelpOutputFormat format) : format_(format)
+        {
+        }
+
         //! List of links.
-        LinkList        links_;
+        LinkList          links_;
+        //! Output format for which the links are formatted.
+        HelpOutputFormat  format_;
 };
 
 /********************************************************************
  * HelpLinks
  */
 
-HelpLinks::HelpLinks() : impl_(new Impl)
+HelpLinks::HelpLinks(HelpOutputFormat format) : impl_(new Impl(format))
 {
 }
 
@@ -401,9 +410,27 @@ HelpLinks::~HelpLinks()
 }
 
 void HelpLinks::addLink(const std::string &linkName,
-                        const std::string &targetName)
+                        const std::string &targetName,
+                        const std::string &displayName)
 {
-    impl_->links_.push_back(Impl::LinkItem(linkName, targetName));
+    std::string replacement;
+    switch (impl_->format_)
+    {
+        case eHelpOutputFormat_Console:
+            replacement = repall(displayName, sandrTty);
+            break;
+        case eHelpOutputFormat_Man:
+            replacement = repall(displayName, sandrMan);
+            break;
+        case eHelpOutputFormat_Html:
+            replacement = formatString(
+                        "<a href=\"%s.html\">%s</a>", targetName.c_str(),
+                        repall(displayName, sandrHtml).c_str());
+            break;
+        default:
+            GMX_RELEASE_ASSERT(false, "Output format not implemented for links");
+    }
+    impl_->links_.push_back(Impl::LinkItem(linkName, replacement));
 }
 
 /********************************************************************
@@ -444,14 +471,40 @@ class HelpWriterContext::Impl
             const HelpLinks        *links_;
         };
 
+        struct ReplaceItem
+        {
+            ReplaceItem(const std::string &search,
+                        const std::string &replace)
+                : search(search), replace(replace)
+            {
+            }
+            std::string         search;
+            std::string         replace;
+        };
+
         //! Smart pointer type for managing the shared state.
         typedef boost::shared_ptr<const SharedState> StatePointer;
+        //! Shorthand for a list of markup/other replacements.
+        typedef std::vector<ReplaceItem> ReplaceList;
 
         //! Initializes the context with the given state.
         explicit Impl(const StatePointer &state)
             : state_(state)
         {
+            initDefaultReplacements();
         }
+
+        //! Initializes default replacements for the chosen output format.
+        void initDefaultReplacements();
+        //! Adds a new replacement.
+        void addReplacement(const std::string &search,
+                            const std::string &replace)
+        {
+            replacements_.push_back(ReplaceItem(search, replace));
+        }
+
+        //! Replaces links in a given string.
+        std::string replaceLinks(const std::string &input) const;
 
         /*! \brief
          * Process markup and wrap lines within a block of text.
@@ -467,22 +520,49 @@ class HelpWriterContext::Impl
 
         //! Constant state shared by all child context objects.
         StatePointer            state_;
+        //! List of markup/other replacements.
+        ReplaceList             replacements_;
 
     private:
         GMX_DISALLOW_ASSIGN(Impl);
 };
 
+void HelpWriterContext::Impl::initDefaultReplacements()
+{
+    const char *program = ProgramInfo::getInstance().programName().c_str();
+    addReplacement("[PROGRAM]", program);
+}
+
+std::string HelpWriterContext::Impl::replaceLinks(const std::string &input) const
+{
+    std::string result(input);
+    if (state_->links_ != NULL)
+    {
+        HelpLinks::Impl::LinkList::const_iterator link;
+        for (link  = state_->links_->impl_->links_.begin();
+             link != state_->links_->impl_->links_.end(); ++link)
+        {
+            result = replaceAllWords(result, link->linkName, link->replacement);
+        }
+    }
+    return result;
+}
+
 void HelpWriterContext::Impl::processMarkup(const std::string &text,
                                             WrapperInterface  *wrapper) const
 {
-    const char *program = ProgramInfo::getInstance().programName().c_str();
     std::string result(text);
-    result = replaceAll(result, "[PROGRAM]", program);
+    for (ReplaceList::const_iterator i = replacements_.begin();
+         i != replacements_.end(); ++i)
+    {
+        result = replaceAll(result, i->search, i->replace);
+    }
     switch (state_->format_)
     {
         case eHelpOutputFormat_Console:
         {
             result = repall(result, sandrTty);
+            result = replaceLinks(result);
             if (wrapper->settings().lineLength() == 0)
             {
                 wrapper->settings().setLineLength(78);
@@ -491,25 +571,15 @@ void HelpWriterContext::Impl::processMarkup(const std::string &text,
         }
         case eHelpOutputFormat_Man:
         {
+            // Needs to be done first to avoid '-' -> '\-' messing up the links.
+            result = replaceLinks(result);
             result = repall(result, sandrMan);
             return wrapper->wrap(result);
         }
         case eHelpOutputFormat_Html:
         {
             result = repall(result, sandrHtml);
-            if (state_->links_ != NULL)
-            {
-                HelpLinks::Impl::LinkList::const_iterator link;
-                for (link  = state_->links_->impl_->links_.begin();
-                     link != state_->links_->impl_->links_.end(); ++link)
-                {
-                    std::string replacement
-                        = formatString("<a href=\"%s.html\">%s</a>",
-                                       link->targetName.c_str(),
-                                       link->linkName.c_str());
-                    result = replaceAllWords(result, link->linkName, replacement);
-                }
-            }
+            result = replaceLinks(result);
             return wrapper->wrap(result);
         }
         default:
@@ -530,6 +600,11 @@ HelpWriterContext::HelpWriterContext(File *file, HelpOutputFormat format,
                                      const HelpLinks *links)
     : impl_(new Impl(Impl::StatePointer(new Impl::SharedState(file, format, links))))
 {
+    if (links != NULL)
+    {
+        GMX_RELEASE_ASSERT(links->impl_->format_ == format,
+                           "Links must have the same output format as the context");
+    }
 }
 
 HelpWriterContext::HelpWriterContext(Impl *impl)
@@ -544,6 +619,12 @@ HelpWriterContext::HelpWriterContext(const HelpWriterContext &other)
 
 HelpWriterContext::~HelpWriterContext()
 {
+}
+
+void HelpWriterContext::setReplacement(const std::string &search,
+                                       const std::string &replace)
+{
+    impl_->addReplacement(search, replace);
 }
 
 HelpOutputFormat HelpWriterContext::outputFormat() const
