@@ -84,14 +84,34 @@ class MockModule : public gmx::CommandLineModuleInterface
         MOCK_METHOD2(run, int(int argc, char *argv[]));
         MOCK_CONST_METHOD1(writeHelp, void(const gmx::CommandLineHelpContext &context));
 
+        //! Sets the expected display name for writeHelp() calls.
+        void setExpectedDisplayName(const char *expected)
+        {
+            expectedDisplayName_ = expected;
+        }
+
     private:
+        //! Checks the context passed to writeHelp().
+        void checkHelpContext(const gmx::CommandLineHelpContext &context) const;
+
         const char             *name_;
         const char             *descr_;
+        std::string             expectedDisplayName_;
 };
 
 MockModule::MockModule(const char *name, const char *description)
     : name_(name), descr_(description)
 {
+    using ::testing::_;
+    using ::testing::Invoke;
+    using ::testing::WithArg;
+    ON_CALL(*this, writeHelp(_))
+        .WillByDefault(WithArg<0>(Invoke(this, &MockModule::checkHelpContext)));
+}
+
+void MockModule::checkHelpContext(const gmx::CommandLineHelpContext &context) const
+{
+    EXPECT_EQ(expectedDisplayName_, context.moduleDisplayName());
 }
 
 /********************************************************************
@@ -101,7 +121,7 @@ MockModule::MockModule(const char *name, const char *description)
 class CommandLineModuleManagerTest : public ::testing::Test
 {
     public:
-        void initManager(const CommandLine &args);
+        void initManager(const CommandLine &args, const char *realBinaryName);
         MockModule    &addModule(const char *name, const char *description);
         MockHelpTopic &addHelpTopic(const char *name, const char *title);
 
@@ -112,10 +132,11 @@ class CommandLineModuleManagerTest : public ::testing::Test
         boost::scoped_ptr<gmx::CommandLineModuleManager> manager_;
 };
 
-void CommandLineModuleManagerTest::initManager(const CommandLine &args)
+void CommandLineModuleManagerTest::initManager(
+        const CommandLine &args, const char *realBinaryName)
 {
     manager_.reset();
-    programInfo_.reset(new gmx::ProgramInfo("g_test", args.argc(), args.argv()));
+    programInfo_.reset(new gmx::ProgramInfo(realBinaryName, args.argc(), args.argv()));
     manager_.reset(new gmx::CommandLineModuleManager(programInfo_.get()));
     manager_->setQuiet(true);
 }
@@ -143,10 +164,10 @@ CommandLineModuleManagerTest::addHelpTopic(const char *name, const char *title)
 TEST_F(CommandLineModuleManagerTest, RunsModule)
 {
     const char *const cmdline[] = {
-        "g_test", "module", "-flag", "yes"
+        "test", "module", "-flag", "yes"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -162,14 +183,15 @@ TEST_F(CommandLineModuleManagerTest, RunsModule)
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 {
     const char *const cmdline[] = {
-        "g_test", "help", "module"
+        "test", "help", "module"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
+    mod1.setExpectedDisplayName("test module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -178,14 +200,49 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelp)
 TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 {
     const char *const cmdline[] = {
-        "g_test", "module", "-h"
+        "test", "module", "-h"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
     EXPECT_CALL(mod1, writeHelp(_));
+    mod1.setExpectedDisplayName("test module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSymLink)
+{
+    const char *const cmdline[] = {
+        "g_module", "-h"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    initManager(args, "test");
+    MockModule       &mod1 = addModule("module", "First module");
+    addModule("other", "Second module");
+    using ::testing::_;
+    EXPECT_CALL(mod1, writeHelp(_));
+    mod1.setExpectedDisplayName("test module");
+    int rc = 0;
+    ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
+    ASSERT_EQ(0, rc);
+}
+
+TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashHWithSingleModule)
+{
+    const char *const cmdline[] = {
+        "g_module", "-h"
+    };
+    CommandLine       args(CommandLine::create(cmdline));
+    initManager(args, "g_module");
+    MockModule        mod(NULL, NULL);
+    manager().setSingleModule(&mod);
+    using ::testing::_;
+    EXPECT_CALL(mod, writeHelp(_));
+    mod.setExpectedDisplayName("g_module");
     int rc = 0;
     ASSERT_NO_THROW_GMX(rc = manager().run(args.argc(), args.argv()));
     ASSERT_EQ(0, rc);
@@ -194,10 +251,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleHelpWithDashH)
 TEST_F(CommandLineModuleManagerTest, PrintsHelpOnTopic)
 {
     const char *const cmdline[] = {
-        "g_test", "help", "topic"
+        "test", "help", "topic"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     addModule("module", "First module");
     MockHelpTopic &topic = addHelpTopic("topic", "Test topic");
     using ::testing::_;
@@ -213,7 +270,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryName)
         "g_module", "-flag", "yes"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -232,7 +289,7 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
         "/usr/local/gromacs/bin/g_module" GMX_BINARY_SUFFIX ".exe", "-flag", "yes"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("module", "First module");
     addModule("other", "Second module");
     using ::testing::_;
@@ -248,10 +305,10 @@ TEST_F(CommandLineModuleManagerTest, RunsModuleBasedOnBinaryNameWithPathAndSuffi
 TEST_F(CommandLineModuleManagerTest, HandlesConflictingBinaryAndModuleNames)
 {
     const char *const cmdline[] = {
-        "g_test", "test", "-flag", "yes"
+        "test", "test", "-flag", "yes"
     };
     CommandLine       args(CommandLine::create(cmdline));
-    initManager(args);
+    initManager(args, "test");
     MockModule       &mod1 = addModule("test", "Test module");
     addModule("other", "Second module");
     using ::testing::_;
