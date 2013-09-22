@@ -73,27 +73,37 @@ enum HelpOutputFormat
  * This is used when exporting all the help from the wrapper binary to avoid
  * repeatedly constructing the same data structure for each help item.
  *
+ * While the links are in principle independent of the output format, the
+ * constructor takes the output format to be able to preformat the links,
+ * avoiding repeated processing during markup substitution.  Could be hidden
+ * behind the scenes in HelpWriterContext, but that would complicate the
+ * implementation.
+ *
  * \ingroup module_onlinehelp
  */
 class HelpLinks
 {
     public:
-        //! Initializes an empty links collection.
-        HelpLinks();
+        /*! \brief
+         * Initializes an empty links collection for the given output format.
+         */
+        explicit HelpLinks(HelpOutputFormat format);
         ~HelpLinks();
 
         /*! \brief
          * Adds a link.
          *
-         * \param[in] linkName   Name of the link in input text.
-         * \param[in] targetName Hyperlink target.
+         * \param[in] linkName     Name of the link in input text.
+         * \param[in] targetName   Hyperlink target.
+         * \param[in] displayName  Text to show as the link.
          *
          * Any occurrence of \p linkName in the text passed to markup
          * substitution methods in HelpWriterContext is made into a hyperlink
          * to \p targetName if the markup format supports that.
          */
         void addLink(const std::string &linkName,
-                     const std::string &targetName);
+                     const std::string &targetName,
+                     const std::string &displayName);
 
     private:
         class Impl;
@@ -143,6 +153,21 @@ class HelpWriterContext
         //! Creates a copy of the context.
         HelpWriterContext(const HelpWriterContext &other);
         ~HelpWriterContext();
+
+        /*! \brief
+         * Adds a string replacement for markup subsitution.
+         *
+         * \param[in] search   Text to replace in input.
+         * \param[in] replace  Text that each occurrence of \p search is
+         *     replaced with.
+         * \throws std::bad_alloc if out of memory.
+         *
+         * \todo
+         * Improve semantics if the same \p search item is set multiple
+         * times.
+         */
+        void setReplacement(const std::string &search,
+                            const std::string &replace);
 
         /*! \brief
          * Returns the active output format.
