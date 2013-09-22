@@ -548,7 +548,7 @@ static void print_top_heavy_H(FILE *out, real mHmult)
 void print_top_comment(FILE       *out,
                        const char *filename,
                        const char *ffdir,
-                       gmx_bool bITP,
+                       gmx_bool    bITP,
                        const char *remark)
 {
     char  ffdir_parent[STRLEN];
@@ -567,8 +567,10 @@ void print_top_comment(FILE       *out,
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
 
     if ((NULL != remark) && (strlen(remark) > 0))
-        fprintf(out,"; %s\n",remark);
-    
+    {
+        fprintf(out, "; %s\n", remark);
+    }
+
     if (strchr(ffdir, '/') == NULL)
     {
         fprintf(out, ";\tForce field was read from the standard Gromacs share directory.\n;\n\n");
@@ -598,12 +600,12 @@ void print_top_comment(FILE       *out,
 }
 
 void print_top_header(FILE *out, const char *filename,
-                      const char *title, gmx_bool bITP, const char *ffdir, real mHmult,
+                      gmx_bool bITP, const char *ffdir, real mHmult,
                       const char *remark)
 {
     const char *p;
 
-    print_top_comment(out, filename, title, ffdir, bITP, remark);
+    print_top_comment(out, filename, ffdir, bITP, remark);
 
     print_top_heavy_H(out, mHmult);
     fprintf(out, "; Include forcefield parameters\n");
@@ -1536,19 +1538,19 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
              gmx_bool bDeuterate, gmx_bool bChargeGroups, gmx_bool bCmap,
              gmx_bool bRenumRes, gmx_bool bRTPresname)
 {
-    t_params plist[F_NRE];
-    t_excls  *excls;
-    t_nextnb nnb;
-    int      *cgnr;
-    int      *vsite_type;
-    int      i,nmissat;
-    int      bts[ebtsNR];
+    t_params          plist[F_NRE];
+    t_excls          *excls;
+    t_nextnb          nnb;
+    int              *cgnr;
+    int              *vsite_type;
+    int               i, nmissat;
+    int               bts[ebtsNR];
     gmx_residuetype_t rt;
-    
+
     init_plist(plist);
     gmx_residuetype_init(&rt);
-    
-    if (debug) 
+
+    if (debug)
     {
         print_resall(debug, atoms->nres, restp, atype);
         dump_hb(debug, atoms->nres, hb);
@@ -1565,27 +1567,27 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
                bAllowMissing);
 
     nmissat = name2type(atoms, &cgnr, atype, restp, rt);
-    if (nmissat) 
+    if (nmissat)
     {
         if (bAllowMissing)
         {
-            fprintf(stderr,"There were %d missing atoms in molecule %s\n",
-                    nmissat,molname);
+            fprintf(stderr, "There were %d missing atoms in molecule %s\n",
+                    nmissat, molname);
         }
         else
         {
-            gmx_fatal(FARGS,"There were %d missing atoms in molecule %s, if you want to use this incomplete topology anyhow, use the option -missing",
-                      nmissat,molname);
+            gmx_fatal(FARGS, "There were %d missing atoms in molecule %s, if you want to use this incomplete topology anyhow, use the option -missing",
+                      nmissat, molname);
         }
     }
-    
+
     /* Cleanup bonds (sort and rm doubles) */
     clean_bonds(&(plist[F_BONDS]));
 
     snew(vsite_type, atoms->nr);
-    for(i = 0; i < atoms->nr; i++)
+    for (i = 0; i < atoms->nr; i++)
     {
-        vsite_type[i]=NOTSET;
+        vsite_type[i] = NOTSET;
     }
     if (bVsites)
     {

@@ -1,12 +1,12 @@
 /*
  * $Id: tune_dip.c,v 1.39 2009/04/12 21:24:26 spoel Exp $
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 4.0.99
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
@@ -96,279 +96,298 @@
 #include "mymol.hpp"
 #include "moldip.hpp"
 
-static void print_stats(FILE *fp,const char *prop,gmx_stats_t lsq,gmx_bool bHeader,
-                        char *xaxis,char *yaxis)
+static void print_stats(FILE *fp, const char *prop, gmx_stats_t lsq, gmx_bool bHeader,
+                        char *xaxis, char *yaxis)
 {
-    real a,da,b,db,chi2,rmsd,Rfit;
+    real a, da, b, db, chi2, rmsd, Rfit;
     int  n;
-    
+
     if (bHeader)
     {
-        fprintf(fp,"Fitting data to y = ax+b, where x = %s and y = %s\n",
-                xaxis,yaxis);
-        fprintf(fp,"%-12s %5s %13s %13s %8s %8s\n",
-                "Property","N","a","b","R","RMSD");
-        fprintf(fp,"---------------------------------------------------------------\n");
+        fprintf(fp, "Fitting data to y = ax+b, where x = %s and y = %s\n",
+                xaxis, yaxis);
+        fprintf(fp, "%-12s %5s %13s %13s %8s %8s\n",
+                "Property", "N", "a", "b", "R", "RMSD");
+        fprintf(fp, "---------------------------------------------------------------\n");
     }
-    gmx_stats_get_ab(lsq,elsqWEIGHT_NONE,&a,&b,&da,&db,&chi2,&Rfit);
-    gmx_stats_get_rmsd(lsq,&rmsd);
-    gmx_stats_get_npoints(lsq,&n);
-    fprintf(fp,"%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
-            prop,n,a,da,b,db,Rfit*100,rmsd);
+    gmx_stats_get_ab(lsq, elsqWEIGHT_NONE, &a, &b, &da, &db, &chi2, &Rfit);
+    gmx_stats_get_rmsd(lsq, &rmsd);
+    gmx_stats_get_npoints(lsq, &n);
+    fprintf(fp, "%-12s %5d %6.3f(%5.3f) %6.3f(%5.3f) %7.2f%% %8.4f\n",
+            prop, n, a, da, b, db, Rfit*100, rmsd);
 }
 
-static void print_lsq_set(FILE *fp,gmx_stats_t lsq)
+static void print_lsq_set(FILE *fp, gmx_stats_t lsq)
 {
-    real   x,y;
-    
-    fprintf(fp,"@type xy\n");
-    while (gmx_stats_get_point(lsq,&x,&y,NULL,NULL,0) == estatsOK)
+    real   x, y;
+
+    fprintf(fp, "@type xy\n");
+    while (gmx_stats_get_point(lsq, &x, &y, NULL, NULL, 0) == estatsOK)
     {
-        fprintf(fp,"%10g  %10g\n",x,y);
+        fprintf(fp, "%10g  %10g\n", x, y);
     }
-    fprintf(fp,"&\n");
+    fprintf(fp, "&\n");
 }
 
-static void print_quad(FILE *fp,tensor Q_exp,tensor Q_calc,char *calc_name,
+static void print_quad(FILE *fp, tensor Q_exp, tensor Q_calc, char *calc_name,
                        real q_toler)
 {
     tensor dQ;
-    real delta;
-    if (NULL != calc_name) 
+    real   delta;
+    if (NULL != calc_name)
     {
-        m_sub(Q_exp,Q_calc,dQ);
+        m_sub(Q_exp, Q_calc, dQ);
         delta = sqrt(sqr(dQ[XX][XX])+sqr(dQ[XX][YY])+sqr(dQ[XX][ZZ])+
                      sqr(dQ[YY][YY])+sqr(dQ[YY][ZZ]));
         fprintf(fp,
                 "%-4s (%6.2f %6.2f %6.2f) Dev: (%6.2f %6.2f %6.2f) Delta: %6.2f %s\n"
                 "     (%6s %6.2f %6.2f)      (%6s %6.2f %6.2f)\n",
                 calc_name,
-                Q_calc[XX][XX],Q_calc[XX][YY],Q_calc[XX][ZZ],
-                dQ[XX][XX],dQ[XX][YY],dQ[XX][ZZ],delta,(delta > q_toler) ? "YYY" : "",
-                "",Q_calc[YY][YY],Q_calc[YY][ZZ],
-                "",dQ[YY][YY],dQ[YY][ZZ]);
+                Q_calc[XX][XX], Q_calc[XX][YY], Q_calc[XX][ZZ],
+                dQ[XX][XX], dQ[XX][YY], dQ[XX][ZZ], delta, (delta > q_toler) ? "YYY" : "",
+                "", Q_calc[YY][YY], Q_calc[YY][ZZ],
+                "", dQ[YY][YY], dQ[YY][ZZ]);
     }
     else
     {
-        fprintf(fp,"Quadrupole analysis (5 independent components only)\n");
+        fprintf(fp, "Quadrupole analysis (5 independent components only)\n");
         fprintf(fp,
                 "Exp  (%6.2f %6.2f %6.2f)\n"
                 "     (%6s %6.2f %6.2f)\n",
-                Q_exp[XX][XX],Q_exp[XX][YY],Q_exp[XX][ZZ],
-                "",Q_exp[YY][YY],Q_exp[YY][ZZ]);
+                Q_exp[XX][XX], Q_exp[XX][YY], Q_exp[XX][ZZ],
+                "", Q_exp[YY][YY], Q_exp[YY][ZZ]);
     }
 }
 
-static void print_dip(FILE *fp,rvec mu_exp,rvec mu_calc,char *calc_name,
+static void print_dip(FILE *fp, rvec mu_exp, rvec mu_calc, char *calc_name,
                       real toler)
 {
     rvec dmu;
-    real ndmu,cosa;
+    real ndmu, cosa;
     char ebuf[32];
-    
-    if (NULL != calc_name) 
+
+    if (NULL != calc_name)
     {
-        rvec_sub(mu_exp,mu_calc,dmu);
+        rvec_sub(mu_exp, mu_calc, dmu);
         ndmu = norm(dmu);
-        cosa = cos_angle(mu_exp,mu_calc);
+        cosa = cos_angle(mu_exp, mu_calc);
         if (ndmu > toler)
-            sprintf(ebuf,"XXX");
+        {
+            sprintf(ebuf, "XXX");
+        }
         else if (fabs(cosa) < 0.1)
-            sprintf(ebuf,"YYY");
+        {
+            sprintf(ebuf, "YYY");
+        }
         else
+        {
             ebuf[0] = '\0';
-        fprintf(fp,"%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
+        }
+        fprintf(fp, "%-4s (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f Dev: (%6.2f,%6.2f,%6.2f) |%5.2f|%s\n",
                 calc_name,
-                mu_calc[XX],mu_calc[YY],mu_calc[ZZ],norm(mu_calc),
-                dmu[XX],dmu[YY],dmu[ZZ],ndmu,ebuf);
+                mu_calc[XX], mu_calc[YY], mu_calc[ZZ], norm(mu_calc),
+                dmu[XX], dmu[YY], dmu[ZZ], ndmu, ebuf);
     }
     else
     {
-        fprintf(fp,"Dipole analysis\n");
-        fprintf(fp,"Exp  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
-                mu_exp[XX],mu_exp[YY],mu_exp[ZZ],norm(mu_exp));
+        fprintf(fp, "Dipole analysis\n");
+        fprintf(fp, "Exp  (%6.2f,%6.2f,%6.2f) |Mu| = %5.2f\n",
+                mu_exp[XX], mu_exp[YY], mu_exp[ZZ], norm(mu_exp));
     }
 }
 
-static void xvgr_symbolize(FILE *xvgf,int nsym,const char *leg[],
+static void xvgr_symbolize(FILE *xvgf, int nsym, const char *leg[],
                            const output_env_t oenv)
 {
     int i;
 
-    xvgr_legend(xvgf,nsym,leg,oenv);
-    for(i=0; (i<nsym); i++)
+    xvgr_legend(xvgf, nsym, leg, oenv);
+    for (i = 0; (i < nsym); i++)
     {
-        xvgr_line_props(xvgf,i,elNone,ecBlack+i,oenv);
-        fprintf(xvgf,"@ s%d symbol %d\n",i,i+1);
-    }        
+        xvgr_line_props(xvgf, i, elNone, ecBlack+i, oenv);
+        fprintf(xvgf, "@ s%d symbol %d\n", i, i+1);
+    }
 }
 
-static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
-                       const char *cdiff,const char *mudiff,const char *Qdiff,
+static void print_mols(FILE *fp, const char *xvgfn, const char *qhisto,
+                       const char *cdiff, const char *mudiff, const char *Qdiff,
                        const char *espdiff,
                        std::vector<alexandria::MyMol> mol,
                        real hfac,
-                       real dip_toler,real quad_toler,real q_toler,output_env_t oenv)
+                       real dip_toler, real quad_toler, real q_toler, output_env_t oenv)
 {
-    FILE   *xvgf,*qdiff,*mud,*tdiff,*hh,*espd;
-    double d2=0;
-    real   rms,sigma,aver,error,qq,chi2,espx,espy,espdx,espdy,wtot;
-    int    j,k,n,nout,nlsqt=0,mm,nn;
-    char   *resnm,*atomnm;
-    const  char **atomtypes=NULL;
-    enum { eprEEM, eprESP, eprNR };
-    gmx_stats_t lsq_q,lsq_mu[eprNR],lsq_quad[eprNR],*lsqt=NULL,lsq_esp;
-    const char *eprnm[eprNR] = { "EEM", "ESP" };
+    FILE         *xvgf, *qdiff, *mud, *tdiff, *hh, *espd;
+    double        d2 = 0;
+    real          rms, sigma, aver, error, qq, chi2, espx, espy, espdx, espdy, wtot;
+    int           j, k, n, nout, nlsqt = 0, mm, nn;
+    char         *resnm, *atomnm;
+    const  char **atomtypes = NULL;
+    enum {
+        eprEEM, eprESP, eprNR
+    };
+    gmx_stats_t             lsq_q, lsq_mu[eprNR], lsq_quad[eprNR], *lsqt = NULL, lsq_esp;
+    const char             *eprnm[eprNR] = { "EEM", "ESP" };
     gmx_mtop_atomloop_all_t aloop;
-    t_atom *atom;     
-    int    at_global,resnr;
-    
-   
-    xvgf  = xvgropen(xvgfn,"Correlation between dipoles",
-                     "Experimental","Predicted",oenv);
-    xvgr_symbolize(xvgf,2,eprnm,oenv);
+    t_atom                 *atom;
+    int                     at_global, resnr;
+
+
+    xvgf  = xvgropen(xvgfn, "Correlation between dipoles",
+                     "Experimental", "Predicted", oenv);
+    xvgr_symbolize(xvgf, 2, eprnm, oenv);
     lsq_q       = gmx_stats_init();
     lsq_quad[0] = gmx_stats_init();
     lsq_quad[1] = gmx_stats_init();
     lsq_mu[0]   = gmx_stats_init();
     lsq_mu[1]   = gmx_stats_init();
     lsq_esp     = gmx_stats_init();
-    n=0;
-    for(std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi<mol.end()); mi++)
+    n           = 0;
+    for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
     {
-        if (mi->eSupp != eSupportNo) {
-            fprintf(fp,"Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
-                    n+1, 
+        if (mi->eSupp != eSupportNo)
+        {
+            fprintf(fp, "Molecule %d: %s. Qtot: %d, Multiplicity %d\n",
+                    n+1,
                     mi->GetMolname().c_str(),
                     mi->GetCharge(),
                     mi->GetMultiplicity());
-            
-            print_dip(fp,mi->mu_exp,NULL,NULL,dip_toler);
-            print_dip(fp,mi->mu_exp,mi->mu_calc,(char *)"EEM",dip_toler);
-            print_dip(fp,mi->mu_exp,mi->mu_esp,(char *)"ESP",dip_toler);
-            
-            print_quad(fp,mi->Q_exp,NULL,NULL,quad_toler);
-            print_quad(fp,mi->Q_exp,mi->Q_calc,(char *)"EEM",quad_toler);
-            print_quad(fp,mi->Q_exp,mi->Q_esp,(char *)"ESP",quad_toler);
-            chi2 = gmx_resp_get_rms(mi->gr_,&wtot);
-            fprintf(fp,"ESP chi2 %g Hartree/e wtot = %g\n",chi2,wtot);
-            gmx_resp_pot_lsq(mi->gr_,lsq_esp);
-            while (estatsOK == gmx_stats_get_point(lsq_esp,&espx,&espy,
-                                                   &espdx,&espdy,5))
+
+            print_dip(fp, mi->mu_exp, NULL, NULL, dip_toler);
+            print_dip(fp, mi->mu_exp, mi->mu_calc, (char *)"EEM", dip_toler);
+            print_dip(fp, mi->mu_exp, mi->mu_esp, (char *)"ESP", dip_toler);
+
+            print_quad(fp, mi->Q_exp, NULL, NULL, quad_toler);
+            print_quad(fp, mi->Q_exp, mi->Q_calc, (char *)"EEM", quad_toler);
+            print_quad(fp, mi->Q_exp, mi->Q_esp, (char *)"ESP", quad_toler);
+            chi2 = gmx_resp_get_rms(mi->gr_, &wtot);
+            fprintf(fp, "ESP chi2 %g Hartree/e wtot = %g\n", chi2, wtot);
+            gmx_resp_pot_lsq(mi->gr_, lsq_esp);
+            while (estatsOK == gmx_stats_get_point(lsq_esp, &espx, &espy,
+                                                   &espdx, &espdy, 5))
             {
-                fprintf(fp,"ESP outlier: EEM = %g, should be %g\n",espy,espx);
+                fprintf(fp, "ESP outlier: EEM = %g, should be %g\n", espy, espx);
             }
-            
-            fprintf(xvgf,"%10g  %10g\n",mi->dip_exp,mi->dip_calc);
-            for(mm=0; (mm<DIM); mm++) {
-                gmx_stats_add_point(lsq_mu[0],mi->mu_exp[mm],mi->mu_calc[mm],0,0);
-                gmx_stats_add_point(lsq_mu[1],mi->mu_exp[mm],mi->mu_esp[mm],0,0);
-                if (0) {
-                    for(nn=mm; (nn<DIM); nn++) {
-                        if (mm < ZZ) {
-                            gmx_stats_add_point(lsq_quad[0],mi->Q_exp[mm][nn],
-                                                mi->Q_calc[mm][nn],0,0);
-                            gmx_stats_add_point(lsq_quad[1],mi->Q_exp[mm][nn],
-                                                mi->Q_esp[mm][nn],0,0);
+
+            fprintf(xvgf, "%10g  %10g\n", mi->dip_exp, mi->dip_calc);
+            for (mm = 0; (mm < DIM); mm++)
+            {
+                gmx_stats_add_point(lsq_mu[0], mi->mu_exp[mm], mi->mu_calc[mm], 0, 0);
+                gmx_stats_add_point(lsq_mu[1], mi->mu_exp[mm], mi->mu_esp[mm], 0, 0);
+                if (0)
+                {
+                    for (nn = mm; (nn < DIM); nn++)
+                    {
+                        if (mm < ZZ)
+                        {
+                            gmx_stats_add_point(lsq_quad[0], mi->Q_exp[mm][nn],
+                                                mi->Q_calc[mm][nn], 0, 0);
+                            gmx_stats_add_point(lsq_quad[1], mi->Q_exp[mm][nn],
+                                                mi->Q_esp[mm][nn], 0, 0);
                         }
                     }
                 }
-                else {
+                else
+                {
                     /* Ignore off-diagonal components */
-                    gmx_stats_add_point(lsq_quad[0],mi->Q_exp[mm][mm],
-                                        mi->Q_calc[mm][mm],0,0);
-                    gmx_stats_add_point(lsq_quad[1],mi->Q_exp[mm][mm],
-                                        mi->Q_esp[mm][mm],0,0);
-                 
+                    gmx_stats_add_point(lsq_quad[0], mi->Q_exp[mm][mm],
+                                        mi->Q_calc[mm][mm], 0, 0);
+                    gmx_stats_add_point(lsq_quad[1], mi->Q_exp[mm][mm],
+                                        mi->Q_esp[mm][mm], 0, 0);
+
                 }
             }
 
             d2 += sqr(mi->dip_exp-mi->dip_calc);
-            fprintf(fp,"Atom   Type      q_EEM     q_ESP       x       y       z\n");
+            fprintf(fp, "Atom   Type      q_EEM     q_ESP       x       y       z\n");
             aloop = gmx_mtop_atomloop_all_init(mi->mtop_);
-            j = 0;
-            while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
-                gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);
-                for(k=0; (k<nlsqt); k++) 
-                    if (strcmp(atomtypes[k],*(mi->topology_->atoms.atomtype[j])) == 0)
-                        break;
-                if (k == nlsqt) 
+            j     = 0;
+            while (gmx_mtop_atomloop_all_next(aloop, &at_global, &atom))
+            {
+                gmx_mtop_atomloop_all_names(aloop, &atomnm, &resnr, &resnm);
+                for (k = 0; (k < nlsqt); k++)
                 {
-                    srenew(lsqt,++nlsqt);
-                    srenew(atomtypes,nlsqt);
+                    if (strcmp(atomtypes[k], *(mi->topology_->atoms.atomtype[j])) == 0)
+                    {
+                        break;
+                    }
+                }
+                if (k == nlsqt)
+                {
+                    srenew(lsqt, ++nlsqt);
+                    srenew(atomtypes, nlsqt);
                     atomtypes[k] = strdup(*(mi->topology_->atoms.atomtype[j]));
-                    lsqt[k] = gmx_stats_init();
+                    lsqt[k]      = gmx_stats_init();
                 }
                 qq = atom->q;
-                fprintf(fp,"%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
-                        atomnm,j+1,
-                        *(mi->topology_->atoms.atomtype[j]),qq,mi->qESP[j],
-                        mi->x_[j][XX],mi->x_[j][YY],mi->x_[j][ZZ],
+                fprintf(fp, "%-2s%3d  %-5s  %8.4f  %8.4f%8.3f%8.3f%8.3f %s\n",
+                        atomnm, j+1,
+                        *(mi->topology_->atoms.atomtype[j]), qq, mi->qESP[j],
+                        mi->x_[j][XX], mi->x_[j][YY], mi->x_[j][ZZ],
                         fabs(qq-mi->qESP[j]) > q_toler ? "ZZZ" : "");
-                gmx_stats_add_point(lsqt[k],mi->qESP[j],atom->q,0,0);
-                gmx_stats_add_point(lsq_q,mi->qESP[j],atom->q,0,0);
+                gmx_stats_add_point(lsqt[k], mi->qESP[j], atom->q, 0, 0);
+                gmx_stats_add_point(lsq_q, mi->qESP[j], atom->q, 0, 0);
                 j++;
             }
-            gmx_assert(j,mi->topology_->atoms.nr);
-            fprintf(fp,"\n");
+            gmx_assert(j, mi->topology_->atoms.nr);
+            fprintf(fp, "\n");
             n++;
         }
     }
     fclose(xvgf);
 
-    print_stats(fp,(char *)"dipoles",lsq_mu[0],TRUE,(char *)"Elec",(char *)"EEM");
-    print_stats(fp,(char *)"quadrupoles",lsq_quad[0],FALSE,(char *)"Elec",(char *)"EEM");
-    print_stats(fp,(char *)"charges",lsq_q,FALSE,(char *)"ESP",(char *)"EEM");
-    print_stats(fp,(char *)"esp",lsq_esp,FALSE,(char *)"Elec",(char *)"EEM");
-    fprintf(fp,"\n");
-    
-    print_stats(fp,(char *)"dipoles",lsq_mu[1],TRUE,(char *)"Elec",(char *)"ESP");
-    print_stats(fp,(char *)"quadrupoles",lsq_quad[1],FALSE,(char *)"Elec",(char *)"ESP");
+    print_stats(fp, (char *)"dipoles", lsq_mu[0], TRUE, (char *)"Elec", (char *)"EEM");
+    print_stats(fp, (char *)"quadrupoles", lsq_quad[0], FALSE, (char *)"Elec", (char *)"EEM");
+    print_stats(fp, (char *)"charges", lsq_q, FALSE, (char *)"ESP", (char *)"EEM");
+    print_stats(fp, (char *)"esp", lsq_esp, FALSE, (char *)"Elec", (char *)"EEM");
+    fprintf(fp, "\n");
 
-    mud = xvgropen(mudiff,"Correlation between Mu Elec and others",
-                   "muElec","mu",oenv);
-    xvgr_symbolize(mud,2,eprnm,oenv);
-    print_lsq_set(mud,lsq_mu[0]);
-    print_lsq_set(mud,lsq_mu[1]);
+    print_stats(fp, (char *)"dipoles", lsq_mu[1], TRUE, (char *)"Elec", (char *)"ESP");
+    print_stats(fp, (char *)"quadrupoles", lsq_quad[1], FALSE, (char *)"Elec", (char *)"ESP");
+
+    mud = xvgropen(mudiff, "Correlation between Mu Elec and others",
+                   "muElec", "mu", oenv);
+    xvgr_symbolize(mud, 2, eprnm, oenv);
+    print_lsq_set(mud, lsq_mu[0]);
+    print_lsq_set(mud, lsq_mu[1]);
     fclose(mud);
-    
-    espd = xvgropen(espdiff,"Correlation between Esp Elec and others",
-                   "ESP (Hartree/e)","ESP (Hartree/e)",oenv);
-    xvgr_symbolize(espd,2,eprnm,oenv);
-    print_lsq_set(espd,lsq_esp);
+
+    espd = xvgropen(espdiff, "Correlation between Esp Elec and others",
+                    "ESP (Hartree/e)", "ESP (Hartree/e)", oenv);
+    xvgr_symbolize(espd, 2, eprnm, oenv);
+    print_lsq_set(espd, lsq_esp);
     fclose(espd);
-    
-    tdiff = xvgropen(Qdiff,"Correlation between Theta Elec and others",
-                     "thetaElec","theta",oenv);
-    xvgr_symbolize(tdiff,2,eprnm,oenv);
-    print_lsq_set(tdiff,lsq_quad[0]);
-    print_lsq_set(tdiff,lsq_quad[1]);
+
+    tdiff = xvgropen(Qdiff, "Correlation between Theta Elec and others",
+                     "thetaElec", "theta", oenv);
+    xvgr_symbolize(tdiff, 2, eprnm, oenv);
+    print_lsq_set(tdiff, lsq_quad[0]);
+    print_lsq_set(tdiff, lsq_quad[1]);
     fclose(tdiff);
-    qdiff = xvgropen(cdiff,"Correlation between ESP and EEM","qESP","qEEM",oenv);
-    xvgr_legend(qdiff,nlsqt,atomtypes,oenv);
-    xvgr_symbolize(qdiff,nlsqt,atomtypes,oenv);
-    hh = xvgropen(qhisto,"Histogram for charges","q (e)","a.u.",oenv);
-    xvgr_legend(hh,nlsqt,atomtypes,oenv);
-    fprintf(fp,"\nDeviations of the charges separated per atomtype:\n");
-    for(k=0; (k<nlsqt); k++) 
+    qdiff = xvgropen(cdiff, "Correlation between ESP and EEM", "qESP", "qEEM", oenv);
+    xvgr_legend(qdiff, nlsqt, atomtypes, oenv);
+    xvgr_symbolize(qdiff, nlsqt, atomtypes, oenv);
+    hh = xvgropen(qhisto, "Histogram for charges", "q (e)", "a.u.", oenv);
+    xvgr_legend(hh, nlsqt, atomtypes, oenv);
+    fprintf(fp, "\nDeviations of the charges separated per atomtype:\n");
+    for (k = 0; (k < nlsqt); k++)
     {
-        int N;
-        real *x,*y;
-        
-        print_stats(fp,atomtypes[k],lsqt[k],(k == 0),(char *)"ESP",
+        int   N;
+        real *x, *y;
+
+        print_stats(fp, atomtypes[k], lsqt[k], (k == 0), (char *)"ESP",
                     (char *)"EEM");
-        print_lsq_set(qdiff,lsqt[k]);
-        if (gmx_stats_get_npoints(lsqt[k],&N) == estatsOK) 
+        print_lsq_set(qdiff, lsqt[k]);
+        if (gmx_stats_get_npoints(lsqt[k], &N) == estatsOK)
         {
             N = N/4;
-            if (gmx_stats_make_histogram(lsqt[k],0,&N,ehistoY,0,&x,&y) == estatsOK)
+            if (gmx_stats_make_histogram(lsqt[k], 0, &N, ehistoY, 0, &x, &y) == estatsOK)
             {
-                fprintf(hh,"@type xy\n");
-                for(int i=0; (i<N); i++)
+                fprintf(hh, "@type xy\n");
+                for (int i = 0; (i < N); i++)
                 {
-                    fprintf(hh,"%10g  %10g\n",x[i],y[i]);
+                    fprintf(hh, "%10g  %10g\n", x[i], y[i]);
                 }
-                fprintf(hh,"&\n");
+                fprintf(hh, "&\n");
                 sfree(x);
                 sfree(y);
             }
@@ -376,38 +395,43 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
     }
     fclose(qdiff);
     fclose(hh);
-        
+
     rms = sqrt(d2/n);
-    fprintf(fp,"RMSD = %.3f D\n",rms);
-    fprintf(fp,"hfac = %g\n",hfac);
-    gmx_stats_get_ase(lsq_mu[0],&aver,&sigma,&error);
+    fprintf(fp, "RMSD = %.3f D\n", rms);
+    fprintf(fp, "hfac = %g\n", hfac);
+    gmx_stats_get_ase(lsq_mu[0], &aver, &sigma, &error);
     sigma = rms;
     nout  = 0;
-    fprintf(fp,"Overview of outliers (> %.3f off)\n",2*sigma);
-    fprintf(fp,"----------------------------------\n");
-    fprintf(fp,"%-20s  %12s  %12s  %12s\n",
-            "Name","Predicted","Experimental","Mu-Deviation");
-    for(std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi<mol.end()); mi++)
+    fprintf(fp, "Overview of outliers (> %.3f off)\n", 2*sigma);
+    fprintf(fp, "----------------------------------\n");
+    fprintf(fp, "%-20s  %12s  %12s  %12s\n",
+            "Name", "Predicted", "Experimental", "Mu-Deviation");
+    for (std::vector<alexandria::MyMol>::iterator mi = mol.begin(); (mi < mol.end()); mi++)
     {
         rvec dmu;
-        rvec_sub(mi->mu_exp,mi->mu_calc,dmu);
+        rvec_sub(mi->mu_exp, mi->mu_calc, dmu);
         if ((mi->eSupp != eSupportNo) &&
-            (mi->dip_exp > sigma) && 
-            (norm(dmu) > 2*sigma)) {
-            fprintf(fp,"%-20s  %12.3f  %12.3f  %12.3f\n",
+            (mi->dip_exp > sigma) &&
+            (norm(dmu) > 2*sigma))
+        {
+            fprintf(fp, "%-20s  %12.3f  %12.3f  %12.3f\n",
                     mi->GetMolname().c_str(),
-                    mi->dip_calc,mi->dip_exp,
+                    mi->dip_calc, mi->dip_exp,
                     mi->dip_calc-mi->dip_exp);
-            nout ++;
+            nout++;
         }
     }
     if (nout)
+    {
         printf("There were %d outliers. See at the very bottom of the log file\n",
                nout);
+    }
     else
+    {
         printf("No outliers! Well done.\n");
-    do_view(oenv,xvgfn,NULL);
-  
+    }
+    do_view(oenv, xvgfn, NULL);
+
     gmx_stats_done(lsq_q);
     gmx_stats_done(lsq_quad[0]);
     gmx_stats_done(lsq_quad[1]);
@@ -420,337 +444,409 @@ static void print_mols(FILE *fp,const char *xvgfn,const char *qhisto,
     sfree(lsq_mu[1]);
 }
 
-static double dipole_function(void *params,double v[])
+static double dipole_function(void *params, double v[])
 {
     alexandria::MolDip *md = (alexandria::MolDip *) params;
-    int      j,k,zz,nzeta;
-    double   chi0,z,J0,bounds=0;
-    char *name;
-    char     *qstr,*rowstr;
-    char     zstr[STRLEN],buf[STRLEN];
-    
-#define HARMONIC(x,xmin,xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
-  
+    int                 j, k, zz, nzeta;
+    double              chi0, z, J0, bounds = 0;
+    char               *name;
+    char               *qstr, *rowstr;
+    char                zstr[STRLEN], buf[STRLEN];
+
+#define HARMONIC(x, xmin, xmax) (x < xmin) ? (sqr(x-xmin)) : ((x > xmax) ? (sqr(x-xmax)) : 0)
+
     /* Set parameters in eem record. There is a penalty if parameters
      * go out of bounds as well.
      */
-    k=0;
+    k = 0;
     while ((name = opt_index_count(md->_ic)) != NULL)
     {
-        J0 = v[k++];
-        bounds += HARMONIC(J0,md->_J0_0,md->_J0_1);
-        if (strcasecmp(name,md->_fixchi) != 0) 
+        J0      = v[k++];
+        bounds += HARMONIC(J0, md->_J0_0, md->_J0_1);
+        if (strcasecmp(name, md->_fixchi) != 0)
         {
-            chi0 = v[k++];
-            bounds += HARMONIC(chi0,md->_Chi0_0,md->_Chi0_1);
+            chi0    = v[k++];
+            bounds += HARMONIC(chi0, md->_Chi0_0, md->_Chi0_1);
         }
-        else 
-            chi0 = gmx_poldata_get_chi0(md->_pd,md->_iModel,name);
-    
-        qstr = gmx_poldata_get_qstr(md->_pd,md->_iModel,name);
-        rowstr = gmx_poldata_get_rowstr(md->_pd,md->_iModel,name);
-        nzeta = gmx_poldata_get_nzeta(md->_pd,md->_iModel,name);
-        zstr[0] = '\0';
-        for(zz=0; (zz<nzeta); zz++) 
+        else
         {
-            z = gmx_poldata_get_zeta(md->_pd,md->_iModel,name,zz);
+            chi0 = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+        }
+
+        qstr    = gmx_poldata_get_qstr(md->_pd, md->_iModel, name);
+        rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name);
+        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+        zstr[0] = '\0';
+        for (zz = 0; (zz < nzeta); zz++)
+        {
+            z = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
             if ((0 != z) && (md->_bFitZeta))
             {
-                z = v[k++];
-                bounds += HARMONIC(z,md->_w_0,md->_w_1);
+                z       = v[k++];
+                bounds += HARMONIC(z, md->_w_0, md->_w_1);
             }
-            sprintf(buf,"  %g",z);
-            strcat(zstr,buf);
+            sprintf(buf, "  %g", z);
+            strcat(zstr, buf);
         }
-        gmx_poldata_set_eemprops(md->_pd,md->_iModel,name,J0,chi0,
-                                 zstr,qstr,rowstr);
+        gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J0, chi0,
+                                 zstr, qstr, rowstr);
     }
-    if (md->_bOptHfac) 
+    if (md->_bOptHfac)
     {
         md->_hfac = v[k++];
-        if (md->_hfac >  md->_hfac0) 
+        if (md->_hfac >  md->_hfac0)
+        {
             bounds += 100*sqr(md->_hfac - md->_hfac0);
+        }
         else if (md->_hfac < -md->_hfac0)
+        {
             bounds += 100*sqr(md->_hfac + md->_hfac0);
+        }
     }
-    for(j=0; (j<ermsNR); j++)
+    for (j = 0; (j < ermsNR); j++)
+    {
         md->_ener[j] = 0;
+    }
     md->CalcDeviation();
-  
+
     /* This contribution is not scaled with force constant because
      * it are essential to charge generation convergence and can hence
      * not be left out of the optimization.
      */
     md->_ener[ermsBOUNDS] += bounds;
     md->_ener[ermsTOT]    += bounds;
-    
+
     return md->_ener[ermsTOT];
 }
 
-static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng,
+static real guess_new_param(real x, real step, real x0, real x1, gmx_rng_t rng,
                             gmx_bool bRandom)
 {
     real r = gmx_rng_uniform_real(rng);
-  
-    if (bRandom) 
+
+    if (bRandom)
+    {
         x = x0+(x1-x0)*r;
+    }
     else
+    {
         x = x*(1-step+2*step*r);
+    }
 
     if (x < x0)
+    {
         return x0;
+    }
     else if (x > x1)
+    {
         return x1;
+    }
     else
+    {
         return x;
+    }
 }
 
-static int guess_all_param(FILE *fplog,alexandria::MolDip *md,
-                           int run,int iter,real stepsize,
-                           gmx_bool bRandom,gmx_rng_t rng,
-                           double orig_param[],double test_param[])
+static int guess_all_param(FILE *fplog, alexandria::MolDip *md,
+                           int run, int iter, real stepsize,
+                           gmx_bool bRandom, gmx_rng_t rng,
+                           double orig_param[], double test_param[])
 {
-    double J00,xxx,chi0,zeta;
-    char   *name,*qstr,*rowstr;
-    char   zstr[STRLEN],buf[STRLEN];
+    double     J00, xxx, chi0, zeta;
+    char      *name, *qstr, *rowstr;
+    char       zstr[STRLEN], buf[STRLEN];
     gmx_bool   bStart = (/*(run == 0) &&*/ (iter == 0));
     gmx_bool   bRand  = bRandom && (iter == 0);
-    int    zz,nzeta,k = 0;
-    
-    fprintf(fplog,"%-5s %10s %10s %10s Run/Iter %d/%d - %s randomization\n","Name",
-            "J00","chi0","zeta",run,iter,
+    int        zz, nzeta, k = 0;
+
+    fprintf(fplog, "%-5s %10s %10s %10s Run/Iter %d/%d - %s randomization\n", "Name",
+            "J00", "chi0", "zeta", run, iter,
             bRand ? "Complete" : (bStart ? "Initial" : "Limited"));
-    while ((name = opt_index_count(md->_ic)) != NULL) 
+    while ((name = opt_index_count(md->_ic)) != NULL)
     {
         if (bStart)
         {
-            J00 = gmx_poldata_get_j00(md->_pd,md->_iModel,name);
-            xxx = guess_new_param(J00,stepsize,md->_J0_0,md->_J0_1,rng,bRand);
+            J00 = gmx_poldata_get_j00(md->_pd, md->_iModel, name);
+            xxx = guess_new_param(J00, stepsize, md->_J0_0, md->_J0_1, rng, bRand);
             if (bRand)
+            {
                 orig_param[k] = xxx;
+            }
             else
+            {
                 orig_param[k] = J00;
+            }
             J00 = xxx;
         }
-        else 
-            J00 = guess_new_param(orig_param[k],stepsize,md->_J0_0,md->_J0_1,rng,bRand);
+        else
+        {
+            J00 = guess_new_param(orig_param[k], stepsize, md->_J0_0, md->_J0_1, rng, bRand);
+        }
         test_param[k++] = J00;
-        
-        chi0 = gmx_poldata_get_chi0(md->_pd,md->_iModel,name);
-        if (strcasecmp(name,md->_fixchi) != 0) 
+
+        chi0 = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+        if (strcasecmp(name, md->_fixchi) != 0)
         {
             if (bStart)
             {
-                xxx = guess_new_param(chi0,stepsize,md->_Chi0_0,md->_Chi0_1,rng,bRand);
+                xxx = guess_new_param(chi0, stepsize, md->_Chi0_0, md->_Chi0_1, rng, bRand);
                 if (bRand)
+                {
                     orig_param[k] = xxx;
+                }
                 else
+                {
                     orig_param[k] = chi0;
+                }
                 chi0 = xxx;
             }
-            else 
-                chi0 = guess_new_param(orig_param[k],stepsize,md->_Chi0_0,md->_Chi0_1,rng,bRand);
+            else
+            {
+                chi0 = guess_new_param(orig_param[k], stepsize, md->_Chi0_0, md->_Chi0_1, rng, bRand);
+            }
             test_param[k++] = chi0;
         }
-        if ((qstr = gmx_poldata_get_qstr(md->_pd,md->_iModel,name)) == NULL)
-            gmx_fatal(FARGS,"No qstr for atom %s model %d\n",name,md->_iModel);
-        if ((rowstr = gmx_poldata_get_rowstr(md->_pd,md->_iModel,name)) == NULL)
-            gmx_fatal(FARGS,"No rowstr for atom %s model %d\n",name,md->_iModel);
-        nzeta   = gmx_poldata_get_nzeta(md->_pd,md->_iModel,name);
-        zstr[0] = '\0';
-        for(zz=0; (zz<nzeta); zz++) 
+        if ((qstr = gmx_poldata_get_qstr(md->_pd, md->_iModel, name)) == NULL)
         {
-            zeta = gmx_poldata_get_zeta(md->_pd,md->_iModel,name,zz);
+            gmx_fatal(FARGS, "No qstr for atom %s model %d\n", name, md->_iModel);
+        }
+        if ((rowstr = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name)) == NULL)
+        {
+            gmx_fatal(FARGS, "No rowstr for atom %s model %d\n", name, md->_iModel);
+        }
+        nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+        zstr[0] = '\0';
+        for (zz = 0; (zz < nzeta); zz++)
+        {
+            zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
             if ((md->_bFitZeta) && (0 != zeta))
             {
                 if (bStart)
                 {
-                    xxx = guess_new_param(zeta,stepsize,md->_w_0,md->_w_1,rng,bRand);
+                    xxx           = guess_new_param(zeta, stepsize, md->_w_0, md->_w_1, rng, bRand);
                     orig_param[k] = (bRand) ? xxx : zeta;
-                    zeta = xxx;
+                    zeta          = xxx;
                 }
-                else 
-                    zeta = guess_new_param(orig_param[k],stepsize,md->_w_0,md->_w_1,rng,bRand);
-                test_param[k++] = zeta;            
+                else
+                {
+                    zeta = guess_new_param(orig_param[k], stepsize, md->_w_0, md->_w_1, rng, bRand);
+                }
+                test_param[k++] = zeta;
             }
-            sprintf(buf,"  %10g",zeta);
-            strcat(zstr,buf);
+            sprintf(buf, "  %10g", zeta);
+            strcat(zstr, buf);
         }
-        gmx_poldata_set_eemprops(md->_pd,md->_iModel,name,J00,chi0,
-                                 zstr,qstr,rowstr);
-        fprintf(fplog,"%-5s %10g %10g %10s\n",name,J00,chi0,zstr);
+        gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J00, chi0,
+                                 zstr, qstr, rowstr);
+        fprintf(fplog, "%-5s %10g %10g %10s\n", name, J00, chi0, zstr);
     }
-    fprintf(fplog,"\n");
+    fprintf(fplog, "\n");
     fflush(fplog);
-    if (md->_bOptHfac) 
+    if (md->_bOptHfac)
+    {
         test_param[k++] = md->_hfac;
+    }
     return k;
 }
 
-static void optimize_moldip(FILE *fp,FILE *fplog,const char *convfn,
-                            alexandria::MolDip *md,int maxiter,real tol,
-                            int nrun,real stepsize,int seed,
-                            gmx_bool bRandom,output_env_t oenv)
+static void optimize_moldip(FILE *fp, FILE *fplog, const char *convfn,
+                            alexandria::MolDip *md, int maxiter, real tol,
+                            int nrun, real stepsize, int seed,
+                            gmx_bool bRandom, output_env_t oenv)
 {
-    FILE   *cfp=NULL;
-    double chi2,chi2_min;
-    int    nzeta,zz;
-    int    i,k,n,nparam;
-    double *test_param,*orig_param,*best_param,*start;
-    gmx_bool   bMinimum=FALSE;
-    double J00,chi0,zeta;
-    char   *name,*qstr,*rowstr;
-    char   zstr[STRLEN],buf[STRLEN];
-    gmx_rng_t rng;
-  
-    if (MASTER(md->_cr)) 
+    FILE      *cfp = NULL;
+    double     chi2, chi2_min;
+    int        nzeta, zz;
+    int        i, k, n, nparam;
+    double    *test_param, *orig_param, *best_param, *start;
+    gmx_bool   bMinimum = FALSE;
+    double     J00, chi0, zeta;
+    char      *name, *qstr, *rowstr;
+    char       zstr[STRLEN], buf[STRLEN];
+    gmx_rng_t  rng;
+
+    if (MASTER(md->_cr))
     {
         rng = gmx_rng_init(seed);
-  
+
         nparam = 0;
-        while ((name = opt_index_count(md->_ic)) != NULL) 
+        while ((name = opt_index_count(md->_ic)) != NULL)
         {
             /* One parameter for J00 and one for chi0 */
             nparam++;
-            if (strcasecmp(name,md->_fixchi) != 0) 
-                nparam++;
-            if (md->_bFitZeta) 
+            if (strcasecmp(name, md->_fixchi) != 0)
             {
-                nzeta  = gmx_poldata_get_nzeta(md->_pd,md->_iModel,name);
-                for(i=0; (i<nzeta); i++)
+                nparam++;
+            }
+            if (md->_bFitZeta)
+            {
+                nzeta  = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+                for (i = 0; (i < nzeta); i++)
                 {
-                    zeta = gmx_poldata_get_zeta(md->_pd,md->_iModel,name,i);
+                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, i);
                     if (zeta > 0)
+                    {
                         nparam++;
+                    }
                 }
             }
         }
         /* Check whether we have to optimize the fudge factor for J00 H */
         if (md->_hfac != 0)
-            nparam++;
-        snew(test_param,nparam+1);
-        snew(orig_param,nparam+1);
-        snew(best_param,nparam+1);
-        
-        /* Starting point */
-        snew(start,nparam);
-        
-        /* Monitor convergence graphically */
-        if (NULL != convfn) 
         {
-            cfp = xvgropen(convfn,"Convergence","Value","Iter",oenv);
+            nparam++;
         }
-        chi2_min = GMX_REAL_MAX; 
-        for(n=0; (n<nrun); n++) {    
-            if ((NULL != fp) && (0 == n)) {
-                fprintf(fp,"\nStarting run %d out of %d\n",n+1,nrun);
-                fprintf(fp,"%5s %8s %8s %8s %8s %8s %8s %8s\n",
-                        "Run","d2","Total","Bounds",
-                        "Dipole","Quad.","Charge","ESP");
+        snew(test_param, nparam+1);
+        snew(orig_param, nparam+1);
+        snew(best_param, nparam+1);
+
+        /* Starting point */
+        snew(start, nparam);
+
+        /* Monitor convergence graphically */
+        if (NULL != convfn)
+        {
+            cfp = xvgropen(convfn, "Convergence", "Value", "Iter", oenv);
+        }
+        chi2_min = GMX_REAL_MAX;
+        for (n = 0; (n < nrun); n++)
+        {
+            if ((NULL != fp) && (0 == n))
+            {
+                fprintf(fp, "\nStarting run %d out of %d\n", n+1, nrun);
+                fprintf(fp, "%5s %8s %8s %8s %8s %8s %8s %8s\n",
+                        "Run", "d2", "Total", "Bounds",
+                        "Dipole", "Quad.", "Charge", "ESP");
             }
             if (NULL != cfp)
+            {
                 fflush(cfp);
-                    
-            k = guess_all_param(fplog,md,n,0,stepsize,bRandom,rng,
-                                orig_param,test_param);
+            }
+
+            k = guess_all_param(fplog, md, n, 0, stepsize, bRandom, rng,
+                                orig_param, test_param);
             if (k != nparam)
-                gmx_fatal(FARGS,"Inconsistency in guess_all_param: k = %d, should be %d",k,nparam);
-            for(k=0; (k<nparam); k++) 
+            {
+                gmx_fatal(FARGS, "Inconsistency in guess_all_param: k = %d, should be %d", k, nparam);
+            }
+            for (k = 0; (k < nparam); k++)
             {
                 start[k] = test_param[k];
             }
-                
-            nmsimplex(cfp,(void *)md,dipole_function,start,nparam,
-                      tol,1,maxiter,&chi2);
-                
-            if (chi2 < chi2_min) {
+
+            nmsimplex(cfp, (void *)md, dipole_function, start, nparam,
+                      tol, 1, maxiter, &chi2);
+
+            if (chi2 < chi2_min)
+            {
                 bMinimum = TRUE;
                 /* Print convergence if needed */
-                if (NULL != cfp) 
-                    fprintf(cfp,"%5d  ",n*maxiter);
-                for(k=0; (k<nparam); k++)
+                if (NULL != cfp)
+                {
+                    fprintf(cfp, "%5d  ", n*maxiter);
+                }
+                for (k = 0; (k < nparam); k++)
                 {
                     best_param[k] = start[k];
                     if (NULL != cfp)
-                        fprintf(cfp," %10g",best_param[k]);
+                    {
+                        fprintf(cfp, " %10g", best_param[k]);
+                    }
                 }
                 if (NULL != cfp)
-                    fprintf(cfp,"\n");
+                {
+                    fprintf(cfp, "\n");
+                }
                 chi2_min   = chi2;
             }
-            
-            if (fp) 
-                fprintf(fp,"%5d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
-                        n,chi2,
+
+            if (fp)
+            {
+                fprintf(fp, "%5d %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f %8.3f\n",
+                        n, chi2,
                         sqrt(md->_ener[ermsTOT]),
                         sqrt(md->_ener[ermsBOUNDS]),
                         sqrt(md->_ener[ermsMU]),
                         sqrt(md->_ener[ermsQUAD]),
                         sqrt(md->_ener[ermsCHARGE]),
                         sqrt(md->_ener[ermsESP]));
+            }
         }
-        
-        if (bMinimum) {
-            for(k=0; (k<nparam); k++)
+
+        if (bMinimum)
+        {
+            for (k = 0; (k < nparam); k++)
+            {
                 start[k] = best_param[k];
+            }
             k = 0;
-            while ((name = opt_index_count(md->_ic)) != NULL) 
+            while ((name = opt_index_count(md->_ic)) != NULL)
             {
                 J00    = start[k++];
-                chi0   = gmx_poldata_get_chi0(md->_pd,md->_iModel,name);
-                if (strcasecmp(name,md->_fixchi) != 0) 
-                    chi0 = start[k++];
-                qstr   = gmx_poldata_get_qstr(md->_pd,md->_iModel,name);
-                rowstr = gmx_poldata_get_rowstr(md->_pd,md->_iModel,name);
-                nzeta  = gmx_poldata_get_nzeta(md->_pd,md->_iModel,name);
-                zstr[0] = '\0';
-                for(zz=0; (zz<nzeta); zz++)
+                chi0   = gmx_poldata_get_chi0(md->_pd, md->_iModel, name);
+                if (strcasecmp(name, md->_fixchi) != 0)
                 {
-                    zeta = gmx_poldata_get_zeta(md->_pd,md->_iModel,name,zz);
-                    if ((0 != zeta) && md->_bFitZeta)
-                        zeta = start[k++];
-                    sprintf(buf," %g",zeta);
-                    strcat(zstr,buf);
+                    chi0 = start[k++];
                 }
-                gmx_poldata_set_eemprops(md->_pd,md->_iModel,name,J00,chi0,
-                                         zstr,qstr,rowstr);
+                qstr    = gmx_poldata_get_qstr(md->_pd, md->_iModel, name);
+                rowstr  = gmx_poldata_get_rowstr(md->_pd, md->_iModel, name);
+                nzeta   = gmx_poldata_get_nzeta(md->_pd, md->_iModel, name);
+                zstr[0] = '\0';
+                for (zz = 0; (zz < nzeta); zz++)
+                {
+                    zeta = gmx_poldata_get_zeta(md->_pd, md->_iModel, name, zz);
+                    if ((0 != zeta) && md->_bFitZeta)
+                    {
+                        zeta = start[k++];
+                    }
+                    sprintf(buf, " %g", zeta);
+                    strcat(zstr, buf);
+                }
+                gmx_poldata_set_eemprops(md->_pd, md->_iModel, name, J00, chi0,
+                                         zstr, qstr, rowstr);
             }
-            if (md->_bOptHfac) 
+            if (md->_bOptHfac)
+            {
                 md->_hfac = start[k++];
-            gmx_assert(k,nparam);
-            
+            }
+            gmx_assert(k, nparam);
+
             md->CalcDeviation();
-            chi2  = sqrt(md->_ener[ermsTOT]);
+            chi2        = sqrt(md->_ener[ermsTOT]);
             md->_bFinal = TRUE;
             md->CalcDeviation();
             if (fplog)
             {
-                fprintf(fplog,"\nMinimum value for RMSD during optimization: %.3f.\n",chi2);
+                fprintf(fplog, "\nMinimum value for RMSD during optimization: %.3f.\n", chi2);
             }
         }
         md->_bDone = TRUE;
         md->CalcDeviation();
-        
+
         if (NULL != cfp)
+        {
             fclose(cfp);
+        }
     }
-    else 
+    else
     {
         /* Slave calculators */
-        do {
+        do
+        {
             md->CalcDeviation();
-        } while (!md->_bDone);
+        }
+        while (!md->_bDone);
     }
 }
 
-static real quality_of_fit(real chi2,int N)
+static real quality_of_fit(real chi2, int N)
 {
     return -1;
 }
 
 int main(int argc, char *argv[])
 {
-    static const char *desc[] = {
+    static const char    *desc[] = {
         "tune_dip read a series of molecules and corresponding experimental",
         "dipole moments from a file, and tunes parameters in an algorithm",
         "until the experimental dipole moments are reproduced by the",
@@ -787,12 +883,12 @@ int main(int argc, char *argv[])
         "and you should ideally have a line for each molecule in the molecule database",
         "([TT]-f[tt] option). Missing molecules will be ignored."
     };
-  
-    t_filenm fnm[] = {
+
+    t_filenm              fnm[] = {
         { efDAT, "-f", "allmols",    ffREAD  },
         { efDAT, "-d", "gentop",     ffOPTRD },
         { efDAT, "-o", "tunedip",    ffWRITE },
-        { efDAT, "-sel", "molselect",ffREAD },
+        { efDAT, "-sel", "molselect", ffREAD },
         { efLOG, "-g", "charges",    ffWRITE },
         { efXVG, "-x", "dipcorr",    ffWRITE },
         { efXVG, "-qhisto", "q_histo",    ffWRITE },
@@ -803,21 +899,21 @@ int main(int argc, char *argv[])
         { efXVG, "-conv", "convergence", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static int  nrun=1,maxiter=100,reinit=0,seed=1993;
-    static int  minimum_data=3,compress=1;
-    static real tol=1e-3,stol=1e-6,watoms=1;
-    static gmx_bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bOptHfac=FALSE,bQM=FALSE,bCharged=TRUE,bGaussianBug=TRUE,bPol=FALSE,bFitZeta=TRUE;
-    static real J0_0=5,Chi0_0=1,w_0=5,step=0.01,hfac=0,rDecrZeta=-1;
-    static real J0_1=30,Chi0_1=30,w_1=50,epsr=1;
-    static real fc_mu=1,fc_bound=1,fc_quad=1,fc_charge=0,fc_esp=0;
-    static real th_toler=170,ph_toler=5,dip_toler=0.5,quad_toler=5,q_toler=0.25;
-    static char *opt_elem = NULL,*const_elem=NULL,*fixchi=(char *)"H";
-    static char *lot = (char *)"B3LYP/aug-cc-pVTZ";
-    static char *qgen[] = { NULL,(char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
-    t_pargs pa[] = {
+    static int            nrun         = 1, maxiter = 100, reinit = 0, seed = 1993;
+    static int            minimum_data = 3, compress = 1;
+    static real           tol          = 1e-3, stol = 1e-6, watoms = 1;
+    static gmx_bool       bRandom      = FALSE, bZero = TRUE, bWeighted = TRUE, bOptHfac = FALSE, bQM = FALSE, bCharged = TRUE, bGaussianBug = TRUE, bPol = FALSE, bFitZeta = TRUE;
+    static real           J0_0         = 5, Chi0_0 = 1, w_0 = 5, step = 0.01, hfac = 0, rDecrZeta = -1;
+    static real           J0_1         = 30, Chi0_1 = 30, w_1 = 50, epsr = 1;
+    static real           fc_mu        = 1, fc_bound = 1, fc_quad = 1, fc_charge = 0, fc_esp = 0;
+    static real           th_toler     = 170, ph_toler = 5, dip_toler = 0.5, quad_toler = 5, q_toler = 0.25;
+    static char          *opt_elem     = NULL, *const_elem = NULL, *fixchi = (char *)"H";
+    static char          *lot          = (char *)"B3LYP/aug-cc-pVTZ";
+    static char          *qgen[]       = { NULL, (char *)"AXp", (char *)"AXs", (char *)"AXg", NULL };
+    t_pargs               pa[]         = {
         { "-tol",   FALSE, etREAL, {&tol},
           "Tolerance for convergence in optimization" },
-        { "-maxiter",FALSE, etINT, {&maxiter},
+        { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for optimization" },
         { "-reinit", FALSE, etINT, {&reinit},
           "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
@@ -828,8 +924,8 @@ int main(int argc, char *argv[])
         { "-qm",     FALSE, etBOOL, {&bQM},
           "Use only quantum chemistry results (from the levels of theory below) in order to fit the parameters. If not set, experimental values will be used as reference with optional quantum chemistry results, in case no experimental results are available" },
         { "-lot",    FALSE, etSTR,  {&lot},
-      "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
-        { "-charged",FALSE, etBOOL, {&bCharged},
+          "Use this method and level of theory when selecting coordinates and charges. Multiple levels can be specified which will be used in the order given, e.g.  B3LYP/aug-cc-pVTZ:HF/6-311G**" },
+        { "-charged", FALSE, etBOOL, {&bCharged},
           "Use charged molecules in the parameter tuning as well" },
         { "-qgen",   FALSE, etENUM, {qgen},
           "Algorithm used for charge generation" },
@@ -900,77 +996,84 @@ int main(int argc, char *argv[])
         { "-bgaussquad", FALSE, etBOOL, {&bGaussianBug},
           "[HIDDEN]Work around a bug in the off-diagonal quadrupole components in Gaussian" }
     };
-    alexandria::MolDip md;
-    FILE      *fp;
+    alexandria::MolDip    md;
+    FILE                 *fp;
     ChargeGenerationModel iModel;
-    t_commrec *cr;
-    output_env_t oenv;
-    gmx_molselect_t gms;
-    time_t    my_t;
-    char      pukestr[STRLEN];
+    t_commrec            *cr;
+    output_env_t          oenv;
+    gmx_molselect_t       gms;
+    time_t                my_t;
+    char                  pukestr[STRLEN];
 
-    cr = init_par(&argc,&argv);
+    cr = init_par();
+
+    parse_common_args(&argc, argv, PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
+                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+
+    if (qgen[0])
+    {
+        iModel = name2eemtype(qgen[0]);
+    }
+    else
+    {
+        iModel = eqgNone;
+    }
 
     if (MASTER(cr))
-        CopyRight(stdout,argv[0]);
-
-    parse_common_args(&argc,argv,PCA_CAN_VIEW | (MASTER(cr) ? 0 : PCA_QUIET),
-                      NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL,&oenv);
-
-    if (qgen[0]) 
-        iModel = name2eemtype(qgen[0]);
-    else
-        iModel = eqgNone;
-    
-    if (MASTER(cr)) {
-        fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
+    {
+        fp = ffopen(opt2fn("-g", NFILE, fnm), "w");
 
         time(&my_t);
-        fprintf(fp,"# This file was created %s",ctime(&my_t));
-        fprintf(fp,"# by the following command:\n# %s\n#\n",command_line());
-        fprintf(fp,"# %s is part of G R O M A C S:\n#\n",ShortProgram());
-        bromacs(pukestr,99);
-        fprintf(fp,"# %s\n#\n",pukestr);
+        fprintf(fp, "# This file was created %s", ctime(&my_t));
+        fprintf(fp, "# %s is part of G R O M A C S:\n#\n", ShortProgram());
+        bromacs(pukestr, 99);
+        fprintf(fp, "# %s\n#\n", pukestr);
     }
     else
-        fp = NULL;
-    if (MASTER(cr)) 
-        gms = gmx_molselect_init(opt2fn("-sel",NFILE,fnm));
-    else
-        gms = NULL;
-    md.Init(cr,bQM,bGaussianBug,iModel,rDecrZeta,epsr,
-            J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-            fc_bound,fc_mu,fc_quad,fc_charge,
-            fc_esp,1,1,fixchi,bOptHfac,hfac,bPol,bFitZeta);
-    md.Read(fp ? fp : (debug ? debug : NULL),
-            opt2fn("-f",NFILE,fnm),
-            opt2fn_null("-d",NFILE,fnm),
-            minimum_data,bZero,
-            opt_elem,const_elem,
-            lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
-            TRUE,TRUE,TRUE,watoms,TRUE);
-    
-    optimize_moldip(MASTER(cr) ? stderr : NULL,fp,opt2fn_null("-conv",NFILE,fnm),
-                    &md,maxiter,tol,nrun,step,seed,
-                    bRandom,oenv);
-    if (MASTER(cr)) 
     {
-        print_mols(fp,opt2fn("-x",NFILE,fnm),opt2fn("-qhisto",NFILE,fnm),
-                   opt2fn("-qdiff",NFILE,fnm),opt2fn("-mudiff",NFILE,fnm),
-                   opt2fn("-thetadiff",NFILE,fnm),opt2fn("-espdiff",NFILE,fnm),
-                   md._mymol,md._hfac,
-                   dip_toler,quad_toler,q_toler,oenv);
-  
-        ffclose(fp);
-  
-        gmx_poldata_write(opt2fn("-o",NFILE,fnm),md._pd,compress);
-  
-        thanx(stdout);
+        fp = NULL;
     }
-    
+    if (MASTER(cr))
+    {
+        gms = gmx_molselect_init(opt2fn("-sel", NFILE, fnm));
+    }
+    else
+    {
+        gms = NULL;
+    }
+    md.Init(cr, bQM, bGaussianBug, iModel, rDecrZeta, epsr,
+            J0_0, Chi0_0, w_0, J0_1, Chi0_1, w_1,
+            fc_bound, fc_mu, fc_quad, fc_charge,
+            fc_esp, 1, 1, fixchi, bOptHfac, hfac, bPol, bFitZeta);
+    md.Read(fp ? fp : (debug ? debug : NULL),
+            opt2fn("-f", NFILE, fnm),
+            opt2fn_null("-d", NFILE, fnm),
+            minimum_data, bZero,
+            opt_elem, const_elem,
+            lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
+            TRUE, TRUE, TRUE, watoms, TRUE);
+
+    optimize_moldip(MASTER(cr) ? stderr : NULL, fp, opt2fn_null("-conv", NFILE, fnm),
+                    &md, maxiter, tol, nrun, step, seed,
+                    bRandom, oenv);
+    if (MASTER(cr))
+    {
+        print_mols(fp, opt2fn("-x", NFILE, fnm), opt2fn("-qhisto", NFILE, fnm),
+                   opt2fn("-qdiff", NFILE, fnm), opt2fn("-mudiff", NFILE, fnm),
+                   opt2fn("-thetadiff", NFILE, fnm), opt2fn("-espdiff", NFILE, fnm),
+                   md._mymol, md._hfac,
+                   dip_toler, quad_toler, q_toler, oenv);
+
+        ffclose(fp);
+
+        gmx_poldata_write(opt2fn("-o", NFILE, fnm), md._pd, compress);
+    }
+
 #ifdef GMX_MPI
     if (gmx_mpi_initialized())
+    {
         gmx_finalize_par();
+    }
 #endif
 
     return 0;

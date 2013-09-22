@@ -1,12 +1,12 @@
 /*
  * $Id: gentop.c,v 1.26 2009/05/20 10:48:03 spoel Exp $
- * 
+ *
  *                This source code is part of
- * 
+ *
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
- * 
+ *
  *                        VERSION 4.0.99
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
@@ -17,19 +17,19 @@
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
  * of the License, or (at your option) any later version.
- * 
+ *
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
  * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- * 
+ *
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- * 
+ *
  * For more info, check our website at http://www.gromacs.org
- * 
+ *
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
@@ -79,41 +79,57 @@
 static int get_option(const char **opts)
 {
     int val = 0;
-  
+
     if (!opts)
+    {
         return NOTSET;
+    }
     if (opts[val] != NULL)
-        for(val=1; (opts[val] != NULL); val++)
-            if (strcasecmp(opts[0],opts[val]) == 0)
+    {
+        for (val = 1; (opts[val] != NULL); val++)
+        {
+            if (strcasecmp(opts[0], opts[val]) == 0)
+            {
                 break;
+            }
+        }
+    }
     if (opts[val] == NULL)
+    {
         val = 0;
+    }
     else
+    {
         val--;
-    
+    }
+
     return val;
 }
 
-static void clean_pdb_names(t_atoms *atoms,t_symtab *tab)
+static void clean_pdb_names(t_atoms *atoms, t_symtab *tab)
 {
-    int  i,changed;
-    char *ptr,buf[128];
-  
-    for(i=0; (i<atoms->nr); i++) {
+    int   i, changed;
+    char *ptr, buf[128];
+
+    for (i = 0; (i < atoms->nr); i++)
+    {
         changed = 0;
-        strncpy(buf,*(atoms->atomname[i]),sizeof(buf));
-        while ((ptr = strchr(buf,' ')) != NULL) {
-            *ptr = '_';
+        strncpy(buf, *(atoms->atomname[i]), sizeof(buf));
+        while ((ptr = strchr(buf, ' ')) != NULL)
+        {
+            *ptr    = '_';
             changed = 1;
         }
         if (changed)
-            atoms->atomname[i] = put_symtab(tab,buf);
+        {
+            atoms->atomname[i] = put_symtab(tab, buf);
+        }
     }
 }
 
 int main(int argc, char *argv[])
 {
-    static const char *desc[] = {
+    static const char               *desc[] = {
         "gentop generates a topology from molecular coordinates",
         "either from a file, from a database, or from a gaussian log file.",
         "The program assumes all hydrogens are present when defining",
@@ -140,24 +156,24 @@ int main(int argc, char *argv[])
         "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
         "information about file formats. The default forcefield is Alexandria",
         "but selection can be made interactive, using the [TT]-ff select[tt] option.",
-        "one of the short names above on the command line instead.[PAR]" 
+        "one of the short names above on the command line instead.[PAR]"
     };
-    const char *bugs[] = {
+    const char                      *bugs[] = {
         "No force constants for impropers are generated"
     };
-    output_env_t oenv;
-    gmx_atomprop_t aps;
-    gmx_poldata_t  pd;
-    int        ePBC;
-    gmx_bool   bRTP,bTOP;
-    char       forcefield[STRLEN],ffdir[STRLEN];
-    char       ffname[STRLEN],gentopdat[STRLEN];
+    output_env_t                     oenv;
+    gmx_atomprop_t                   aps;
+    gmx_poldata_t                    pd;
+    int                              ePBC;
+    gmx_bool                         bRTP, bTOP;
+    char                             forcefield[STRLEN], ffdir[STRLEN];
+    char                             ffname[STRLEN], gentopdat[STRLEN];
     std::vector<alexandria::MolProp> mps;
-    alexandria::MolPropIterator mpi;
-    alexandria::MyMol mymol;
-    immStatus imm;
-    
-    t_filenm fnm[] = {
+    alexandria::MolPropIterator      mpi;
+    alexandria::MyMol                mymol;
+    immStatus       imm;
+
+    t_filenm        fnm[] = {
         { efSTX, "-f",    "conf", ffOPTRD },
         { efTOP, "-o",    "out",  ffOPTWR },
         { efITP, "-oi",   "out",  ffOPTWR },
@@ -178,38 +194,40 @@ int main(int argc, char *argv[])
         { efPDB, "-pdbdiff", "pdbdiff", ffOPTWR }
     };
 #define NFILE asize(fnm)
-    static real kb = 4e5,kt = 400,kp = 5;
-    static real btol=0.2,qtol=1e-10,zmin=5,zmax=100,delta_z=-1;
-    static real hfac=0,qweight=1e-3,bhyper=0.1;
-    static real th_toler=170,ph_toler=5,watoms=0,spacing=0.1;
-    static real dbox=0.370424,penalty_fac=1,epsr=1;
-    static int  nexcl = 2;
-    static int  maxiter=25000,maxcycle=1;
-    static int  nmol=1;
-    static real rDecrZeta = -1;
-    static gmx_bool bBabel=
+    static real     kb        = 4e5, kt = 400, kp = 5;
+    static real     btol      = 0.2, qtol = 1e-10, zmin = 5, zmax = 100, delta_z = -1;
+    static real     hfac      = 0, qweight = 1e-3, bhyper = 0.1;
+    static real     th_toler  = 170, ph_toler = 5, watoms = 0, spacing = 0.1;
+    static real     dbox      = 0.370424, penalty_fac = 1, epsr = 1;
+    static int      nexcl     = 2;
+    static int      maxiter   = 25000, maxcycle = 1;
+    static int      nmol      = 1;
+    static real     rDecrZeta = -1;
+    static gmx_bool bBabel    =
 #ifdef HAVE_LIBOPENBABEL2
         TRUE;
 #else
         FALSE;
 #endif
-    static gmx_bool bRemoveDih=FALSE,bQsym=TRUE,bZatype=TRUE,bFitCube=FALSE;
-    static gmx_bool bParam=FALSE,bH14=TRUE,bRound=TRUE,bITP,bAddShells=FALSE;
-    static gmx_bool bPairs = TRUE, bPBC = TRUE;
-    static gmx_bool bUsePDBcharge = FALSE,bVerbose=FALSE,bAXpRESP=FALSE;
-    static gmx_bool bCONECT=FALSE,bRandZeta=FALSE,bRandQ=TRUE,bFitZeta=TRUE,bEntropy=FALSE;
-    static gmx_bool bGenVSites=FALSE,bSkipVSites=TRUE;
-    static char *molnm = (char *)"",*iupac = (char *)"",*dbname = (char *)"", *symm_string = (char *)"",*conf=(char *)"minimum",*basis=(char *)"";
-    static int maxpot = 0;
-    static const char *cqgen[] = { NULL, "None", 
-                                   "AXp", "AXs", "AXg", "ESP", "RESP", 
-                                   "Yang", "Bultinck", "Rappe", NULL };
+    static gmx_bool    bRemoveDih    = FALSE, bQsym = TRUE, bZatype = TRUE, bFitCube = FALSE;
+    static gmx_bool    bParam        = FALSE, bH14 = TRUE, bRound = TRUE, bITP, bAddShells = FALSE;
+    static gmx_bool    bPairs        = TRUE, bPBC = TRUE;
+    static gmx_bool    bUsePDBcharge = FALSE, bVerbose = FALSE, bAXpRESP = FALSE;
+    static gmx_bool    bCONECT       = FALSE, bRandZeta = FALSE, bRandQ = TRUE, bFitZeta = TRUE, bEntropy = FALSE;
+    static gmx_bool    bGenVSites    = FALSE, bSkipVSites = TRUE;
+    static char       *molnm         = (char *)"", *iupac = (char *)"", *dbname = (char *)"", *symm_string = (char *)"", *conf = (char *)"minimum", *basis = (char *)"";
+    static int         maxpot        = 0;
+    static const char *cqgen[]       = {
+        NULL, "None",
+        "AXp", "AXs", "AXg", "ESP", "RESP",
+        "Yang", "Bultinck", "Rappe", NULL
+    };
     static const char *dihopt[] = { NULL, "No", "Single", "All", NULL };
-    static const char *cgopt[] = { NULL, "Atom", "Group", "Neutral", NULL };
-    static const char *lot = "B3LYP/aug-cc-pVTZ";
-    static const char *dzatoms = "";
-    static const char *ff = "alexandria";
-    t_pargs pa[] = {
+    static const char *cgopt[]  = { NULL, "Atom", "Group", "Neutral", NULL };
+    static const char *lot      = "B3LYP/aug-cc-pVTZ";
+    static const char *dzatoms  = "";
+    static const char *ff       = "alexandria";
+    t_pargs            pa[]     = {
         { "-v",      FALSE, etBOOL, {&bVerbose},
           "Generate verbose output in the top file and on terminal." },
         { "-ff",     FALSE, etSTR,  {&ff},
@@ -224,11 +242,11 @@ int main(int argc, char *argv[])
 #endif
         { "-nexcl", FALSE, etINT,  {&nexcl},
           "Number of exclusions" },
-        { "-H14",    FALSE, etBOOL, {&bH14}, 
+        { "-H14",    FALSE, etBOOL, {&bH14},
           "HIDDENUse 3rd neighbour interactions for hydrogen atoms" },
-        { "-dih",    FALSE, etSTR,  {dihopt}, 
+        { "-dih",    FALSE, etSTR,  {dihopt},
           "Which proper dihedrals to generate: none, one per rotatable bond, or all possible." },
-        { "-remdih", FALSE, etBOOL, {&bRemoveDih}, 
+        { "-remdih", FALSE, etBOOL, {&bRemoveDih},
           "HIDDENRemove dihedrals on the same bond as an improper" },
         { "-pairs",  FALSE, etBOOL, {&bPairs},
           "Output 1-4 interactions (pairs) in topology file" },
@@ -260,7 +278,7 @@ int main(int argc, char *argv[])
           "Spacing of grid points for computing the potential (not used when a reference file is read)." },
         { "-dbox", FALSE, etREAL, {&dbox},
           "HIDDENExtra space around the molecule when generating an ESP output file with the [TT]-pot[tt] option. The strange default value corresponds to 0.7 a.u. that is sometimes used in other programs." },
-        { "-axpresp", FALSE, etBOOL, {&bAXpRESP}, 
+        { "-axpresp", FALSE, etBOOL, {&bAXpRESP},
           "Turn on RESP features for AXp fitting" },
         { "-qweight", FALSE, etREAL, {&qweight},
           "Restraining force constant for the RESP algorithm (AXp only, and with [TT]-axpresp[tt])." },
@@ -302,7 +320,7 @@ int main(int argc, char *argv[])
           "Add shell particles to the topology" },
         { "-qtol",   FALSE, etREAL, {&qtol},
           "Tolerance for assigning charge generation algorithm" },
-        { "-maxiter",FALSE, etINT, {&maxiter},
+        { "-maxiter", FALSE, etINT, {&maxiter},
           "Max number of iterations for charge generation algorithm" },
         { "-maxcycle", FALSE, etINT, {&maxcycle},
           "Max number of tries for optimizing the charges. The trial with lowest chi2 will be used for generating a topology. Will be turned off if randzeta is No." },
@@ -316,7 +334,7 @@ int main(int argc, char *argv[])
           "HIDDENOption for assembling charge groups: based on Atom (default, does not change the atom order), Group (e.g. CH3 groups are kept together), or Neutral sections (try to find groups that together are neutral). If the order of atoms is changed an index file is written in order to facilitate changing the order in old files." },
         { "-nmolsort", FALSE, etINT, {&nmol},
           "HIDDENNumber of molecules to output to the index file in case of sorting. This is a convenience option to reorder trajectories for use with a new force field." },
-        { "-th_toler",FALSE, etREAL, {&th_toler},
+        { "-th_toler", FALSE, etREAL, {&th_toler},
           "HIDDENIf bond angles are larger than this value the group will be treated as a linear one and a virtual site will be created to keep the group linear" },
         { "-ph_toler", FALSE, etREAL, {&ph_toler},
           "HIDDENIf dihedral angles are less than this (in absolute value) the atoms will be treated as a planar group with an improper dihedral being added to keep the group planar" },
@@ -327,113 +345,135 @@ int main(int argc, char *argv[])
         { "-kp",    FALSE, etREAL, {&kp},
           "HIDDENDihedral angle force constant (kJ/mol/rad^2)" }
     };
-  
-    CopyRight(stdout,argv[0]);
 
-    parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
-                      asize(desc),desc,asize(bugs),bugs,&oenv);
-    
+    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                      asize(desc), desc, asize(bugs), bugs, &oenv);
+
     /* Force field selection, interactive or direct */
-    choose_ff(strcmp(ff,"select") == 0 ? NULL : ff,
-              forcefield,sizeof(forcefield),
-              ffdir,sizeof(ffdir));
+    choose_ff(strcmp(ff, "select") == 0 ? NULL : ff,
+              forcefield, sizeof(forcefield),
+              ffdir, sizeof(ffdir));
 
-    if (strlen(forcefield) > 0) 
+    if (strlen(forcefield) > 0)
     {
-        strcpy(ffname,forcefield);
+        strcpy(ffname, forcefield);
         ffname[0] = toupper(ffname[0]);
-    } 
-    else 
-    {
-        gmx_fatal(FARGS,"Empty forcefield string");
-    }
-    if ( 0 ) 
-    {
-        sprintf(gentopdat,"%s/gentop.dat",ffdir);
-        printf("\nUsing the %s force field file %s\n\n",
-               ffname,gentopdat);
-    }
-    
-    /* Check the options */
-    bRTP = opt2bSet("-r",NFILE,fnm);
-    bITP = opt2bSet("-oi",NFILE,fnm);
-    bTOP = TRUE;
-  
-    if (!bRandZeta)
-        maxcycle = 1;
-        
-    if (!bRTP && !bTOP)
-        gmx_fatal(FARGS,"Specify at least one output file");
-  
-    if ((btol < 0) || (btol > 1)) 
-        gmx_fatal(FARGS,"Bond tolerance should be between 0 and 1 (not %g)",btol);
-    if ((qtol < 0) || (qtol > 1)) 
-        gmx_fatal(FARGS,"Charge tolerance should be between 0 and 1 (not %g)",qtol);
-
-    /* Check command line options of type enum */
-    eDih edih = (eDih) get_option(dihopt);
-    eChargeGroup ecg = (eChargeGroup) get_option(cgopt);
-    ChargeGenerationModel iModel;
-    if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
-        gmx_fatal(FARGS,"Invalid model %s. How could you!\n",cqgen[0]);
-    
-    /* Read standard atom properties */
-    aps = gmx_atomprop_init();
-  
-    /* Read polarization stuff */
-    if ((pd = gmx_poldata_read(opt2fn_null("-d",NFILE,fnm),aps)) == NULL)
-        gmx_fatal(FARGS,"Can not read the force field information. File missing or incorrect.");
-    if (bVerbose)
-        printf("Reading force field information. There are %d atomtypes.\n",
-               gmx_poldata_get_natypes(pd));
-  
-    ePBC = epbcNONE;
-
-    if (strlen(dbname) > 0) 
-    {
-        if (bVerbose)
-            printf("Reading molecule database.\n");
-        MolPropRead(opt2fn_null("-mpdb",NFILE,fnm),mps);
-        
-        for(mpi=mps.begin(); (mpi<mps.end()); mpi++)
-        {
-            if (strcasecmp(dbname,mpi->GetMolname().c_str()) == 0)
-                break;
-        }
-        if (mpi == mps.end())
-            gmx_fatal(FARGS,"Molecule %s not found in database",dbname);
     }
     else
     {
-        alexandria::MolProp mp;
+        gmx_fatal(FARGS, "Empty forcefield string");
+    }
+    if (0)
+    {
+        sprintf(gentopdat, "%s/gentop.dat", ffdir);
+        printf("\nUsing the %s force field file %s\n\n",
+               ffname, gentopdat);
+    }
+
+    /* Check the options */
+    bRTP = opt2bSet("-r", NFILE, fnm);
+    bITP = opt2bSet("-oi", NFILE, fnm);
+    bTOP = TRUE;
+
+    if (!bRandZeta)
+    {
+        maxcycle = 1;
+    }
+
+    if (!bRTP && !bTOP)
+    {
+        gmx_fatal(FARGS, "Specify at least one output file");
+    }
+
+    if ((btol < 0) || (btol > 1))
+    {
+        gmx_fatal(FARGS, "Bond tolerance should be between 0 and 1 (not %g)", btol);
+    }
+    if ((qtol < 0) || (qtol > 1))
+    {
+        gmx_fatal(FARGS, "Charge tolerance should be between 0 and 1 (not %g)", qtol);
+    }
+
+    /* Check command line options of type enum */
+    eDih                  edih = (eDih) get_option(dihopt);
+    eChargeGroup          ecg  = (eChargeGroup) get_option(cgopt);
+    ChargeGenerationModel iModel;
+    if ((iModel = name2eemtype(cqgen[0])) == eqgNR)
+    {
+        gmx_fatal(FARGS, "Invalid model %s. How could you!\n", cqgen[0]);
+    }
+
+    /* Read standard atom properties */
+    aps = gmx_atomprop_init();
+
+    /* Read polarization stuff */
+    if ((pd = gmx_poldata_read(opt2fn_null("-d", NFILE, fnm), aps)) == NULL)
+    {
+        gmx_fatal(FARGS, "Can not read the force field information. File missing or incorrect.");
+    }
+    if (bVerbose)
+    {
+        printf("Reading force field information. There are %d atomtypes.\n",
+               gmx_poldata_get_natypes(pd));
+    }
+
+    ePBC = epbcNONE;
+
+    if (strlen(dbname) > 0)
+    {
+        if (bVerbose)
+        {
+            printf("Reading molecule database.\n");
+        }
+        MolPropRead(opt2fn_null("-mpdb", NFILE, fnm), mps);
+
+        for (mpi = mps.begin(); (mpi < mps.end()); mpi++)
+        {
+            if (strcasecmp(dbname, mpi->GetMolname().c_str()) == 0)
+            {
+                break;
+            }
+        }
+        if (mpi == mps.end())
+        {
+            gmx_fatal(FARGS, "Molecule %s not found in database", dbname);
+        }
+    }
+    else
+    {
+        alexandria::MolProp       mp;
         alexandria::GaussAtomProp gap;
-        const char *fn;
-        
-        if (opt2bSet("-g03",NFILE,fnm))
-            fn = opt2fn("-g03",NFILE,fnm);
+        const char               *fn;
+
+        if (opt2bSet("-g03", NFILE, fnm))
+        {
+            fn = opt2fn("-g03", NFILE, fnm);
+        }
         else
-            fn = opt2fn("-f",NFILE,fnm);
-    
-        ReadGauss(fn,mp,gap,bBabel,aps,pd,molnm,iupac,conf,basis,
-                  maxpot,bVerbose,gmx_poldata_get_force_field(pd));
+        {
+            fn = opt2fn("-f", NFILE, fnm);
+        }
+
+        ReadGauss(fn, mp, gap, bBabel, aps, pd, molnm, iupac, conf, basis,
+                  maxpot, bVerbose, gmx_poldata_get_force_field(pd));
         mps.push_back(mp);
         mpi = mps.begin();
     }
-    
-    bQsym = bQsym || (opt2parg_bSet("-symm",asize(pa),pa));
-    
+
+    bQsym = bQsym || (opt2parg_bSet("-symm", asize(pa), pa));
+
     mymol.Merge(*mpi);
     mymol.SetForceField(forcefield);
-    
-    imm = mymol.GenerateTopology(aps,pd,lot,iModel,bAddShells,nexcl);
-    
+
+    imm = mymol.GenerateTopology(aps, pd, lot, iModel, bAddShells, nexcl);
+
     if (immOK == imm)
     {
-        mymol.gr_ = gmx_resp_init(iModel,bAXpRESP,qweight,bhyper,mymol.GetCharge(),
-                                 zmin,zmax,delta_z,
-                                 bZatype,watoms,rDecrZeta,bRandZeta,bRandQ,
-                                 penalty_fac,bFitZeta,
-                                 bEntropy,dzatoms);
+        mymol.gr_ = gmx_resp_init(iModel, bAXpRESP, qweight, bhyper, mymol.GetCharge(),
+                                  zmin, zmax, delta_z,
+                                  bZatype, watoms, rDecrZeta, bRandZeta, bRandQ,
+                                  penalty_fac, bFitZeta,
+                                  bEntropy, dzatoms);
         if (NULL == mymol.gr_)
         {
             imm = immRespInit;
@@ -442,59 +482,57 @@ int main(int argc, char *argv[])
 
     if (immOK == imm)
     {
-        imm = mymol.GenerateCharges(pd,aps,iModel,hfac,epsr,
-                                    lot,TRUE,NULL);
+        imm = mymol.GenerateCharges(pd, aps, iModel, hfac, epsr,
+                                    lot, TRUE, NULL);
     }
     if (immOK == imm)
     {
-         mymol.GenerateCube(iModel,
-                            pd,
-                            spacing,
-                            opt2fn_null("-ref",NFILE,fnm),
-                            opt2fn_null("-pc",NFILE,fnm),
-                            opt2fn_null("-pdbdiff",NFILE,fnm),
-                            opt2fn_null("-pot",NFILE,fnm),
-                            opt2fn_null("-rho",NFILE,fnm),
-                            opt2fn_null("-his",NFILE,fnm),
-                            opt2fn_null("-diff",NFILE,fnm),
-                            opt2fn_null("-diffhist",NFILE,fnm),
-                            oenv);
+        mymol.GenerateCube(iModel,
+                           pd,
+                           spacing,
+                           opt2fn_null("-ref", NFILE, fnm),
+                           opt2fn_null("-pc", NFILE, fnm),
+                           opt2fn_null("-pdbdiff", NFILE, fnm),
+                           opt2fn_null("-pot", NFILE, fnm),
+                           opt2fn_null("-rho", NFILE, fnm),
+                           opt2fn_null("-his", NFILE, fnm),
+                           opt2fn_null("-diff", NFILE, fnm),
+                           opt2fn_null("-diffhist", NFILE, fnm),
+                           oenv);
     }
     if (immOK == imm)
     {
-        mymol.GenerateVsitesShells(pd,bGenVSites,bAddShells,bPairs,edih);
+        mymol.GenerateVsitesShells(pd, bGenVSites, bAddShells, bPairs, edih);
     }
     if (immOK == imm)
     {
-        mymol.GenerateChargeGroups(ecg,bUsePDBcharge,
-                                   opt2fn("-n",NFILE,fnm),nmol);
+        mymol.GenerateChargeGroups(ecg, bUsePDBcharge,
+                                   opt2fn("-n", NFILE, fnm), nmol);
     }
 
-    
+
     if (immOK == imm)
     {
-        if (bTOP) 
-        {    
-            mymol.PrintTopology(bITP ? ftp2fn(efITP,NFILE,fnm) :
-                                ftp2fn(efTOP,NFILE,fnm),
-                                iModel,bVerbose);
+        if (bTOP)
+        {
+            mymol.PrintTopology(bITP ? ftp2fn(efITP, NFILE, fnm) :
+                                ftp2fn(efTOP, NFILE, fnm),
+                                iModel, bVerbose);
         }
-        else if (bRTP) 
+        else if (bRTP)
         {
             /* Write force field component */
-            mymol.PrintRTPEntry((char *)ftp2fn(efRTP,NFILE,fnm));
+            mymol.PrintRTPEntry((char *)ftp2fn(efRTP, NFILE, fnm));
         }
-        mymol.PrintConformation(opt2fn("-c",NFILE,fnm));
+        mymol.PrintConformation(opt2fn("-c", NFILE, fnm));
 
         //! Print final information for the user.
-        mymol.PrintQPol(stdout,pd);
+        mymol.PrintQPol(stdout, pd);
     }
     else
     {
-        printf("\nWARNING: %s ended prematurely due to \"%s\"\n",ShortProgram(),alexandria::immsg(imm));
+        printf("\nWARNING: %s ended prematurely due to \"%s\"\n", ShortProgram(), alexandria::immsg(imm));
     }
-    
-    thanx(stderr);
-  
+
     return 0;
 }
