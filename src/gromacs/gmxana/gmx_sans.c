@@ -158,8 +158,11 @@ int gmx_sans(int argc, char *argv[])
 
     nthreads = gmx_omp_get_max_threads();
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* check that binwidth not smaller than smallers distance */
     check_binwidth(binwidth);
@@ -234,7 +237,7 @@ int gmx_sans(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, top->atoms.nr);
         gmx_rmpbc(gpbc, top->atoms.nr, box, x);
     }
 
@@ -339,7 +342,7 @@ int gmx_sans(int argc, char *argv[])
         sfree(sqframecurrent->s);
         sfree(sqframecurrent);
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize histo */
@@ -371,7 +374,6 @@ int gmx_sans(int argc, char *argv[])
     sfree(sq);
 
     please_cite(stdout, "Garmay2012");
-    thanx(stderr);
 
     return 0;
 }

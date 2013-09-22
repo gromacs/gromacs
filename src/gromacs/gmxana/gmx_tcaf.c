@@ -39,7 +39,6 @@
 
 #include <math.h>
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
@@ -130,7 +129,7 @@ static void process_tcaf(int nframes, real dt, int nkc, real **tc, rvec *kfac,
 
     low_do_autocorr(fn_tca, oenv, "Transverse Current Autocorrelation Functions",
                     nframes, ntc, ncorr, tc, dt, eacNormal,
-                    1, FALSE, FALSE, FALSE, 0, 0, 0, 0);
+                    1, FALSE, FALSE, FALSE, 0, 0, 0);
     do_view(oenv, fn_tca, "-nxy");
 
     fp = xvgropen(fn_tc, "Transverse Current Autocorrelation Functions",
@@ -335,8 +334,11 @@ int gmx_tcaf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bTop = read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, NULL, NULL, box,
                          TRUE);
@@ -487,8 +489,6 @@ int gmx_tcaf(int argc, char *argv[])
                  opt2fn("-oa", NFILE, fnm), opt2fn("-o", NFILE, fnm),
                  opt2fn("-of", NFILE, fnm), opt2fn_null("-oc", NFILE, fnm),
                  opt2fn("-ov", NFILE, fnm), oenv);
-
-    thanx(stderr);
 
     return 0;
 }

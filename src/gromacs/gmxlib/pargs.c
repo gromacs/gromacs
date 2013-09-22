@@ -49,7 +49,8 @@
 #include "string2.h"
 #include "vec.h"
 #include "macros.h"
-#include "wman.h"
+
+#include "gromacs/onlinehelp/wman.h"
 
 /* The source code in this file should be thread-safe.
       Please keep it that way. */
@@ -351,7 +352,7 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
 #define OPTLEN 12
 #define TYPELEN 6
 #define LONGSTR 1024
-char *pargs_print_line(t_pargs *pa, gmx_bool bLeadingSpace)
+static char *pargs_print_line(t_pargs *pa)
 {
     char buf[LONGSTR], *buf2, *tmp, *desc;
 
@@ -369,22 +370,19 @@ char *pargs_print_line(t_pargs *pa, gmx_bool bLeadingSpace)
     desc = check_tty(pa->desc);
     if (strlen(buf) > ((OPTLEN+TYPELEN)-max(strlen(get_arg_desc(pa->type)), 4)))
     {
-        sprintf(buf2, "%s%s %-6s %-6s  %-s\n",
-                bLeadingSpace ? " " : "", buf,
-                get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1), desc);
+        sprintf(buf2, "%s %-6s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1), desc);
     }
     else if (strlen(buf) > OPTLEN)
     {
         /* so type can be 3 or 4 char's, this fits in the %4s */
-        sprintf(buf2, "%s%-14s %-4s %-6s  %-s\n",
-                bLeadingSpace ? " " : "", buf, get_arg_desc(pa->type),
-                pa_val(pa, tmp, LONGSTR-1), desc);
+        sprintf(buf2, "%-14s %-4s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1), desc);
     }
     else
     {
-        sprintf(buf2, "%s%-12s %-6s %-6s  %-s\n",
-                bLeadingSpace ? " " : "", buf, get_arg_desc(pa->type),
-                pa_val(pa, tmp, LONGSTR-1), desc);
+        sprintf(buf2, "%-12s %-6s %-6s  %-s\n",
+                buf, get_arg_desc(pa->type), pa_val(pa, tmp, LONGSTR-1), desc);
     }
     sfree(desc);
     sfree(tmp);
@@ -396,39 +394,23 @@ char *pargs_print_line(t_pargs *pa, gmx_bool bLeadingSpace)
     return tmp;
 }
 
-void print_pargs(FILE *fp, int npargs, t_pargs pa[], gmx_bool bLeadingSpace)
+void print_pargs(FILE *fp, int npargs, t_pargs pa[])
 {
-    gmx_bool bShowHidden;
     char     buf[32], buf2[256], tmp[256];
     char    *wdesc;
     int      i;
 
-    /* Cannot call opt2parg_bSet here, because it crashes when the option
-     * is not in the list (mdrun)
-     */
-    bShowHidden = FALSE;
-    for (i = 0; (i < npargs); i++)
-    {
-        if ((strcmp(pa[i].option, "-hidden") == 0) && (pa[i].bSet))
-        {
-            bShowHidden = TRUE;
-        }
-    }
 
     if (npargs > 0)
     {
-        fprintf(fp, "%s%-12s %-6s %-6s  %-s\n",
-                bLeadingSpace ? " " : "", "Option", "Type", "Value", "Description");
-        fprintf(fp, "%s------------------------------------------------------\n",
-                bLeadingSpace ? " " : "");
+        fprintf(fp, "%-12s %-6s %-6s  %-s\n",
+                "Option", "Type", "Value", "Description");
+        fprintf(fp, "------------------------------------------------------\n");
         for (i = 0; (i < npargs); i++)
         {
-            if (bShowHidden || !is_hidden(&pa[i]))
-            {
-                wdesc = pargs_print_line(&pa[i], bLeadingSpace);
-                fprintf(fp, "%s", wdesc);
-                sfree(wdesc);
-            }
+            wdesc = pargs_print_line(&pa[i]);
+            fprintf(fp, "%s", wdesc);
+            sfree(wdesc);
         }
         fprintf(fp, "\n");
     }

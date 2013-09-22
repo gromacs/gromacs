@@ -102,7 +102,6 @@ AbstractTrajectoryAnalysisModuleTestFixture::Impl::Impl(
     : parent_(*parent), bDatasetsIncluded_(false)
 {
     cmdline_.append("module");
-    cmdline_.append("-quiet");
 }
 
 TrajectoryAnalysisModule &
@@ -215,7 +214,6 @@ AbstractTrajectoryAnalysisModuleTestFixture::runTest(const CommandLine &args)
     }
 
     TrajectoryAnalysisCommandLineRunner runner(&module);
-    runner.setPrintCopyright(false);
     int rc = 0;
     EXPECT_NO_THROW_GMX(rc = runner.run(impl_->cmdline_.argc(), impl_->cmdline_.argv()));
     EXPECT_EQ(0, rc);

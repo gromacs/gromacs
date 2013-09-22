@@ -72,7 +72,7 @@ namespace
 template <typename ValueType>
 void expandVector(size_t length, std::vector<ValueType> *values)
 {
-    if (length > 0 && values->size() > 0 && values->size() != length)
+    if (length > 0 && !values->empty() && values->size() != length)
     {
         if (values->size() != 1)
         {

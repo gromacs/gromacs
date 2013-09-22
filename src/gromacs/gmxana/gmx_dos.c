@@ -58,7 +58,7 @@
 #include "xvgr.h"
 #include "correl.h"
 #include "gmx_ana.h"
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 
 enum {
     VACF, MVACF, DOS, DOS_SOLID, DOS_DIFF, DOS_CP, DOS_S, DOS_A, DOS_E, DOS_NR
@@ -319,9 +319,12 @@ int gmx_dos(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc,
-                      asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc,
+                           asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     beta = 1/(Temp*BOLTZ);
     if (bDump)
@@ -407,7 +410,7 @@ int gmx_dos(int argc, char *argv[])
                gnx, nframes);
     }
     low_do_autocorr(NULL, oenv, NULL, nframes, gnx, nframes, c1, dt, eacNormal, 0, FALSE,
-                    FALSE, FALSE, -1, -1, 0, 0);
+                    FALSE, FALSE, -1, -1, 0);
     snew(dos, DOS_NR);
     for (j = 0; (j < DOS_NR); j++)
     {
@@ -580,8 +583,6 @@ int gmx_dos(int argc, char *argv[])
     gmx_fio_fclose(fplog);
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

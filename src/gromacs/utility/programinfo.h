@@ -96,7 +96,7 @@ class ProgramInfo
          *
          * Does not throw. Terminates the program on out-of-memory error.
          */
-        static const ProgramInfo &init(int argc, const char *const argv[]);
+        static ProgramInfo &init(int argc, const char *const argv[]);
         /*! \brief
          * Initializes global program information with explicit binary name.
          *
@@ -112,8 +112,8 @@ class ProgramInfo
          *
          * Does not throw. Terminates the program on out-of-memory error.
          */
-        static const ProgramInfo &init(const char *realBinaryName,
-                                       int argc, const char *const argv[]);
+        static ProgramInfo &init(const char *realBinaryName,
+                                 int argc, const char *const argv[]);
 
         /*! \brief
          * Constructs an empty program info objects.
@@ -153,6 +153,17 @@ class ProgramInfo
         ~ProgramInfo();
 
         /*! \brief
+         * Sets a display name for the binary.
+         *
+         * \throws std::bad_alloc if out of memory.
+         * \throws tMPI::system_error on thread synchronization errors.
+         *
+         * This is used with the wrapper binary to add the name of the invoked
+         * module to the name of the binary shown.
+         */
+        void setDisplayName(const std::string &name);
+
+        /*! \brief
          * Returns the real name of the binary.
          *
          * The returned value is comparable to invariantProgramName(), i.e., it
@@ -182,6 +193,15 @@ class ProgramInfo
          * Does not throw.
          */
         const std::string &invariantProgramName() const;
+        /*! \brief
+         * Returns a display name of the current module.
+         *
+         * \throws  tMPI::system_error on thread synchronization errors.
+         *
+         * The returned value equals programName(), unless a separate display
+         * name has been set with setDisplayName().
+         */
+        const std::string &displayName() const;
         /*! \brief
          * Returns the full command line used to invoke the binary.
          *

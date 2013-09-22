@@ -653,14 +653,14 @@ static void pd_collect_state(const t_commrec *cr, t_state *state)
         fprintf(debug, "Collecting state before exchange\n");
     }
     shift = cr->nnodes - cr->npmenodes - 1;
-    move_rvecs(cr, FALSE, FALSE, GMX_LEFT, GMX_RIGHT, state->x, NULL, shift, NULL);
+    move_rvecs(cr, FALSE, FALSE, state->x, NULL, shift, NULL);
     if (state->v)
     {
-        move_rvecs(cr, FALSE, FALSE, GMX_LEFT, GMX_RIGHT, state->v, NULL, shift, NULL);
+        move_rvecs(cr, FALSE, FALSE, state->v, NULL, shift, NULL);
     }
     if (state->sd_X)
     {
-        move_rvecs(cr, FALSE, FALSE, GMX_LEFT, GMX_RIGHT, state->sd_X, NULL, shift, NULL);
+        move_rvecs(cr, FALSE, FALSE, state->sd_X, NULL, shift, NULL);
     }
 }
 

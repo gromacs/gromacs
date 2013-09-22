@@ -237,6 +237,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/messagestringcollector.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "parsetree.h"
@@ -271,8 +272,20 @@ _gmx_selparser_error(yyscan_t scanner, const char *fmt, ...)
 }
 
 bool
-_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception & /*ex*/)
+_gmx_selparser_handle_exception(yyscan_t scanner, const std::exception &ex)
 {
+    if (dynamic_cast<const gmx::UserInputError *>(&ex) != NULL)
+    {
+        // TODO: Consider whether also the non-interactive parser should
+        // postpone the exception such that the whole selection can be added as
+        // context.
+        if (_gmx_sel_is_lexer_interactive(scanner))
+        {
+            // TODO: Handle exceptions that printing the message may produce.
+            gmx::formatExceptionMessageToFile(stderr, ex);
+            return true;
+        }
+    }
     _gmx_sel_lexer_set_exception(scanner, boost::current_exception());
     return false;
 }
@@ -903,8 +916,7 @@ _gmx_sel_init_const_position(real x, real y, real z)
 /*!
  * \param[in] name  Name of an index group to search for.
  * \param[in] scanner Scanner data structure.
- * \returns   The created constant selection element, or NULL if no matching
- *     index group found.
+ * \returns   The created selection element.
  *
  * See gmx_ana_indexgrps_find() for information on how \p name is matched
  * against the index groups.
@@ -912,67 +924,42 @@ _gmx_sel_init_const_position(real x, real y, real z)
 SelectionTreeElementPointer
 _gmx_sel_init_group_by_name(const char *name, yyscan_t scanner)
 {
-    gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
 
-    if (!_gmx_sel_lexer_has_groups_set(scanner))
-    {
-        SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
-        _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-        sel->setName(name);
-        sel->u.gref.name = strdup(name);
-        sel->u.gref.id   = -1;
-        return sel;
-    }
-    if (!grps)
-    {
-        _gmx_selparser_error(scanner, "No index groups set; cannot match 'group %s'", name);
-        return SelectionTreeElementPointer();
-    }
-    SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_CONST));
+    SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-    std::string                 foundName;
-    if (!gmx_ana_indexgrps_find(&sel->u.cgrp, &foundName, grps, name))
+    sel->setName(gmx::formatString("group \"%s\"", name));
+    sel->u.gref.name = strdup(name);
+    sel->u.gref.id   = -1;
+
+    if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        _gmx_selparser_error(scanner, "Cannot match 'group %s'", name);
-        return SelectionTreeElementPointer();
+        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
+        sel->resolveIndexGroupReference(grps);
     }
-    sel->setName(foundName);
+
     return sel;
 }
 
 /*!
  * \param[in] id    Zero-based index number of the group to extract.
  * \param[in] scanner Scanner data structure.
- * \returns   The created constant selection element, or NULL if no matching
- *     index group found.
+ * \returns   The created selection element.
  */
 SelectionTreeElementPointer
 _gmx_sel_init_group_by_id(int id, yyscan_t scanner)
 {
-    gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
-
-    if (!_gmx_sel_lexer_has_groups_set(scanner))
-    {
-        SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
-        _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-        sel->u.gref.name = NULL;
-        sel->u.gref.id   = id;
-        return sel;
-    }
-    if (!grps)
-    {
-        _gmx_selparser_error(scanner, "No index groups set; cannot match 'group %d'", id);
-        return SelectionTreeElementPointer();
-    }
-    SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_CONST));
+    SelectionTreeElementPointer sel(new SelectionTreeElement(SEL_GROUPREF));
     _gmx_selelem_set_vtype(sel, GROUP_VALUE);
-    std::string                 foundName;
-    if (!gmx_ana_indexgrps_extract(&sel->u.cgrp, &foundName, grps, id))
+    sel->setName(gmx::formatString("group %d", id));
+    sel->u.gref.name = NULL;
+    sel->u.gref.id   = id;
+
+    if (_gmx_sel_lexer_has_groups_set(scanner))
     {
-        _gmx_selparser_error(scanner, "Cannot match 'group %d'", id);
-        return SelectionTreeElementPointer();
+        gmx_ana_indexgrps_t *grps = _gmx_sel_lexer_indexgrps(scanner);
+        sel->resolveIndexGroupReference(grps);
     }
-    sel->setName(foundName);
+
     return sel;
 }
 
@@ -1038,35 +1025,7 @@ _gmx_sel_init_selection(const char                        *name,
     /* Update the flags */
     _gmx_selelem_update_flags(root, scanner);
 
-    /* If there is no name provided by the user, check whether the actual
-     * selection given was from an external group, and if so, use the name
-     * of the external group. */
-    if (root->name().empty())
-    {
-        SelectionTreeElementPointer child = root->child;
-        while (child->type == SEL_MODIFIER)
-        {
-            if (!child->child || child->child->type != SEL_SUBEXPRREF
-                || !child->child->child)
-            {
-                break;
-            }
-            child = child->child->child;
-        }
-        if (child->type == SEL_EXPRESSION
-            && child->child && child->child->type == SEL_SUBEXPRREF
-            && child->child->child
-            && child->child->child->type == SEL_CONST
-            && child->child->child->v.type == GROUP_VALUE)
-        {
-            root->setName(child->child->child->name());
-        }
-    }
-    /* If there still is no name, use the selection string */
-    if (root->name().empty())
-    {
-        root->setName(_gmx_sel_lexer_pselstr(scanner));
-    }
+    root->fillNameIfMissing(_gmx_sel_lexer_pselstr(scanner));
 
     /* Print out some information if the parser is interactive */
     if (_gmx_sel_is_lexer_interactive(scanner))

@@ -44,7 +44,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "statutil.h"
@@ -205,7 +204,7 @@ static void do_bonds(FILE *log, const char *fn, const char *fbond,
             fprintf(outd, "\n");
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     if (fdist)
@@ -325,9 +324,12 @@ int gmx_bond(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     if (bAverDist)
     {
@@ -364,8 +366,6 @@ int gmx_bond(int argc, char *argv[])
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-d", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

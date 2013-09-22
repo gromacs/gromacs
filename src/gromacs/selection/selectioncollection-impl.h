@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -111,7 +111,7 @@ struct gmx_ana_selcollection_t
 namespace gmx
 {
 
-class MessageStringCollector;
+class ExceptionInitializer;
 
 /*! \internal \brief
  * Private implemention class for SelectionCollection.
@@ -140,18 +140,16 @@ class SelectionCollection::Impl
          *
          * \param[in]    root    Root of selection tree to process.
          * \param        errors  Object for reporting any error messages.
+         * \throws std::bad_alloc if out of memory.
          *
          * Recursively searches the selection tree for unresolved external
          * references.  If one is found, finds the referenced group in
          * \a grps_ and replaces the reference with a constant element that
          * contains the atoms from the referenced group.  Any failures to
          * resolve references are reported to \p errors.
-         *
-         * Does not throw currently, but this is subject to change when more
-         * underlying code is converted to C++.
          */
         void resolveExternalGroups(const gmx::SelectionTreeElementPointer &root,
-                                   MessageStringCollector                 *errors);
+                                   ExceptionInitializer                   *errors);
 
         //! Internal data, used for interfacing with old C code.
         gmx_ana_selcollection_t sc_;

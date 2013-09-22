@@ -42,7 +42,6 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "copyrite.h"
 #include "gmxfio.h"
 #include "tpxio.h"
 #include "trnio.h"
@@ -508,8 +507,11 @@ int gmx_trjcat(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
-                      asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_TIME_UNIT, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bIndex = ftp2bSet(efNDX, NFILE, fnm);
     bDeMux = ftp2bSet(efXVG, NFILE, fnm);
@@ -897,7 +899,6 @@ int gmx_trjcat(int argc, char *argv[])
         fprintf(stderr, "\nLast frame written was %d, time %f %s\n",
                 frame, output_env_conv_time(oenv, last_ok_t), output_env_get_time_unit(oenv));
     }
-    thanx(stderr);
 
     return 0;
 }

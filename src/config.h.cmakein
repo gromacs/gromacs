@@ -108,6 +108,9 @@
 /* IBM QPX was selected as CPU acceleration type (e.g. BlueGene/Q) */
 #cmakedefine GMX_CPU_ACCELERATION_IBM_QPX
 
+/* Fujitsu Sparc64 HPC-ACE SIMD acceleration */
+#cmakedefine GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+
 /* String for CPU acceleration choice (for writing to log files and stdout) */
 #define GMX_CPU_ACCELERATION_STRING "@GMX_CPU_ACCELERATION@"
 
@@ -148,6 +151,9 @@
 /* Use (modified) Mopac 7 for QM-MM calculations */
 #cmakedefine GMX_QMMM_MOPAC
 
+/* Use ORCA for QM-MM calculations */
+#cmakedefine GMX_QMMM_ORCA
+
 /* Use the GROMACS software 1/sqrt(x) */
 #cmakedefine GMX_SOFTWARE_INVSQRT
 
@@ -166,7 +172,7 @@
 /* Define when Windows threads are used */
 #cmakedefine THREAD_WINDOWS
 
-/* Define when thread-MPI atomic operations are available */
+/* Define native atomic operations are found */
 #cmakedefine TMPI_ATOMICS
 
 /* Define for busy wait option  */
@@ -175,14 +181,23 @@
 /* Define for copy buffer option */
 #cmakedefine TMPI_COPY_BUFFER
 
+/* Define for tmpi warnings option */
+#cmakedefine TMPI_WARNINGS
+
 /* Define for profiling option */
 #cmakedefine TMPI_PROFILE
 
-/* Define for Linux pthread_setaffinity */
+/* Define for Linux pthread_setaffinity_np */
 #cmakedefine HAVE_PTHREAD_SETAFFINITY
 
-/* Define for sysconf() */
-#cmakedefine HAVE_SYSCONF
+/* Define for Windows NUMA-aware allocator functions*/
+#cmakedefine TMPI_WINDOWS_NUMA_API
+
+/* Define for GetSystemInfo() */
+#cmakedefine HAVE_SYSTEM_INFO
+
+/* Define for X-Windows */
+#cmakedefine HAVE_X11
 
 /* Enable x86 gcc inline assembly */
 #cmakedefine GMX_X86_GCC_INLINE_ASM
@@ -217,9 +232,6 @@
 /* Have io.h (windows)*/
 #cmakedefine HAVE_IO_H
 
-/* Define to 1 if you have the strdup() function. */
-#cmakedefine HAVE_STRDUP
-
 /* Define to 1 if you have the posix_memalign() function. */
 #cmakedefine HAVE_POSIX_MEMALIGN
 
@@ -231,9 +243,6 @@
 
 /* Define to 1 if you have the gettimeofday() function. */
 #cmakedefine HAVE_GETTIMEOFDAY
-
-/* Define to 1 if you have the cbrt() function. */
-#cmakedefine HAVE_CBRT
 
 /* Define to 1 if you have the isfinite() function. */
 #cmakedefine HAVE_ISFINITE
@@ -273,9 +282,6 @@
 
 /* Define to 1 if yo have the <pwd.h> header file. */
 #cmakedefine HAVE_PWD_H
-
-/* Define to 1 if yo have the <pthread.h> header file. */
-#cmakedefine HAVE_PTHREAD_H
 
 /* Define to 1 if yo have the <dirent.h> header file. */
 #cmakedefine HAVE_DIRENT_H

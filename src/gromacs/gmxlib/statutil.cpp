@@ -41,18 +41,17 @@
 #include <cmath>
 #include <cstdlib>
 
-#include "copyrite.h"
 #include "sysstuff.h"
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "statutil.h"
-#include "wman.h"
 #include "tpxio.h"
 #include "gmx_fatal.h"
 #include "network.h"
 #include "gmxfio.h"
 
+#include "gromacs/onlinehelp/wman.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/programinfo.h"
@@ -91,6 +90,7 @@ const char *ShortProgram(void)
 {
     try
     {
+        // TODO: Use the display name once it doesn't break anything.
         return gmx::ProgramInfo::getInstance().programName().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
@@ -103,22 +103,6 @@ const char *Program(void)
         return gmx::ProgramInfo::getInstance().programNameWithPath().c_str();
     }
     GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-const char *command_line(void)
-{
-    try
-    {
-        return gmx::ProgramInfo::getInstance().commandLine().c_str();
-    }
-    GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR;
-}
-
-void set_program_name(const char *argvzero)
-{
-    // The negative argc is a hack to make the ProgramInfo overridable in
-    // parse_common_args(), where the full command-line is known.
-    gmx::ProgramInfo::init(-1, &argvzero);
 }
 
 /* utility functions */
@@ -142,7 +126,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble)
     }
 }
 
-int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
+int check_times2(real t, real t0, gmx_bool bDouble)
 {
     int  r;
 
@@ -178,7 +162,7 @@ int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble)
 
 int check_times(real t)
 {
-    return check_times2(t, t, t, t, FALSE);
+    return check_times2(t, t, FALSE);
 }
 
 
@@ -388,25 +372,6 @@ static void pdesc(char *desc)
     }
 }
 
-static FILE *man_file(const output_env_t oenv, const char *mantp)
-{
-    FILE       *fp;
-    char        buf[256];
-    const char *pr = output_env_get_short_program_name(oenv);
-
-    if (strcmp(mantp, "ascii") != 0)
-    {
-        sprintf(buf, "%s.%s", pr, mantp);
-    }
-    else
-    {
-        sprintf(buf, "%s.txt", pr);
-    }
-    fp = gmx_fio_fopen(buf, "w");
-
-    return fp;
-}
-
 static int add_parg(int npargs, t_pargs *pa, t_pargs *pa_add)
 {
     memcpy(&(pa[npargs]), pa_add, sizeof(*pa_add));
@@ -495,16 +460,14 @@ static char *mk_desc(t_pargs *pa, const char *time_unit_str)
 }
 
 
-void parse_common_args(int *argc, char *argv[], unsigned long Flags,
-                       int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                       int ndesc, const char **desc,
-                       int nbugs, const char **bugs,
-                       output_env_t *oenv)
+gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                           int ndesc, const char **desc,
+                           int nbugs, const char **bugs,
+                           output_env_t *oenv)
 {
-    gmx_bool    bHelp    = FALSE, bHidden = FALSE, bQuiet = FALSE, bVersion = FALSE;
     const char *manstr[] = {
-        NULL, "no", "html", "tex", "nroff", "ascii",
-        "completion", "py", "xml", "wiki", NULL
+        NULL, "no", "help", "html", "tex", "nroff", "completion", NULL
     };
     /* This array should match the order of the enum in oenv.h */
     const char *xvg_format[] = { NULL, "xmgrace", "xmgr", "none", NULL };
@@ -513,7 +476,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         NULL, "fs", "ps", "ns", "us", "ms", "s",
         NULL
     };
-    int         nicelevel = 0, debug_level = 0, verbose_level = 0;
+    int         nicelevel = 0, debug_level = 0;
     char       *deffnm    = NULL;
     real        tbegin    = 0, tend = 0, tdelta = 0;
     gmx_bool    bView     = FALSE;
@@ -563,26 +526,17 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #define EXTRA_PA 16
 
     t_pargs  pca_pa[] = {
-        { "-h",    FALSE, etBOOL, {&bHelp},
-          "Print help info and quit" },
-        { "-version",  FALSE, etBOOL, {&bVersion},
-          "Print version info and quit" },
-        { "-verb",    FALSE,  etINT, {&verbose_level},
-          "HIDDENLevel of verbosity for this program" },
-        { "-hidden", FALSE, etBOOL, {&bHidden},
-          "HIDDENPrint hidden options" },
-        { "-quiet", FALSE, etBOOL, {&bQuiet},
-          "HIDDENDo not print help info" },
         { "-man",  FALSE, etENUM,  {manstr},
           "HIDDENWrite manual and quit" },
         { "-debug", FALSE, etINT, {&debug_level},
           "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
     };
 #define NPCA_PA asize(pca_pa)
-    FILE    *fp;
-    gmx_bool bPrint, bExit, bXvgr;
+    gmx_bool bExit, bXvgr;
     int      i, j, k, npall, max_pa;
 
+    // Handle the flags argument, which is a bit field
+    // The FF macro returns whether or not the bit is set
 #define FF(arg) ((Flags & arg) == arg)
 
     /* Check for double arguments */
@@ -610,12 +564,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         }
     }
     debug_gmx();
-    gmx::ProgramInfo::init(*argc, argv);
-
-    /* Handle the flags argument, which is a bit field
-     * The FF macro returns whether or not the bit is set
-     */
-    bPrint        = !FF(PCA_SILENT);
 
     /* Check ALL the flags ... */
     max_pa = NPCA_PA + EXTRA_PA + npargs+1;
@@ -706,14 +654,7 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 
     /* set program name, command line, and default values for output options */
     output_env_init(oenv, *argc, argv, (time_unit_t)nenum(time_units), bView,
-                    (xvg_format_t)nenum(xvg_format), verbose_level, debug_level);
-
-    if (bVersion)
-    {
-        printf("Program: %s\n", output_env_get_program_name(*oenv));
-        gmx_print_version_info(stdout);
-        exit(0);
-    }
+                    (xvg_format_t)nenum(xvg_format), 0, debug_level);
 
     if (FF(PCA_CAN_SET_DEFFNM) && (deffnm != NULL))
     {
@@ -755,7 +696,10 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
         all_pa[i].desc = mk_desc(&(all_pa[i]), output_env_get_time_unit(*oenv));
     }
 
-    bExit = bHelp || (strcmp(manstr[0], "no") != 0);
+    // To satisfy clang.
+    GMX_ASSERT(manstr[0] != NULL,
+               "Enum option default assignment should have changed this");
+    bExit = (strcmp(manstr[0], "no") != 0);
 
 #if (defined __sgi && USE_SGI_FPE)
     doexceptions();
@@ -790,45 +734,22 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
 #endif
 #endif
 
-    if (!(FF(PCA_QUIET) || bQuiet ))
-    {
-        if (bHelp)
-        {
-            write_man(stderr, "help", output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-        }
-        else if (bPrint)
-        {
-            pr_fns(stderr, nfile, fnm);
-            print_pargs(stderr, npall, all_pa, FALSE);
-        }
-    }
-
-    if (strcmp(manstr[0], "no") != 0)
+    if (strcmp(manstr[0], "no") != 0 && !(FF(PCA_QUIET)))
     {
         if (!strcmp(manstr[0], "completion"))
         {
             /* one file each for csh, bash and zsh if we do completions */
-            fp = man_file(*oenv, "completion-zsh");
-
-            write_man(fp, "completion-zsh", output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
-            fp = man_file(*oenv, "completion-bash");
-            write_man(fp, "completion-bash", output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
-            fp = man_file(*oenv, "completion-csh");
-            write_man(fp, "completion-csh", output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
+            write_man("completion-zsh", output_env_get_short_program_name(*oenv),
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            write_man("completion-bash", output_env_get_short_program_name(*oenv),
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
+            write_man("completion-csh", output_env_get_short_program_name(*oenv),
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
         }
         else
         {
-            fp = man_file(*oenv, manstr[0]);
-            write_man(fp, manstr[0], output_env_get_program_name(*oenv),
-                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs, bHidden);
-            gmx_fio_fclose(fp);
+            write_man(manstr[0], output_env_get_short_program_name(*oenv),
+                      ndesc, desc, nfile, fnm, npall, all_pa, nbugs, bugs);
         }
     }
 
@@ -872,11 +793,6 @@ void parse_common_args(int *argc, char *argv[], unsigned long Flags,
             gmx_cmd(argv[1]);
         }
     }
-    if (bExit)
-    {
-        gmx_finalize_par();
-
-        exit(0);
-    }
+    return !bExit;
 #undef FF
 }

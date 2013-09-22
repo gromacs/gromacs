@@ -1683,7 +1683,7 @@ void do_bootstrapping(const char *fnres, const char* fnprof, const char *fnhist,
             {
                 bExact = TRUE;
             }
-            if (((i%opt->stepchange) == 0 || i == 1) && !i == 0)
+            if (((i%opt->stepchange) == 0 || i == 1) && i != 0)
             {
                 printf("\t%4d) Maximum change %e\n", i, maxchange);
             }
@@ -2528,8 +2528,7 @@ void read_tpr_pullxf_files(char **fnTprs, char **fnPull, int nfiles,
  * Note: Here we consider tau[int] := int_0^inf ACF(t) as the integrated autocorrelation times.
  * The factor `g := 1 + 2*tau[int]` subsequently enters the uncertainty.
  */
-void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt,
-                                        const char* fn)
+void readIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins, const char* fn)
 {
     int      nlines, ny, i, ig;
     double **iact;
@@ -2787,7 +2786,7 @@ void calcIntegratedAutocorrelationTimes(t_UmbrellaWindow *window, int nwins,
 /*! \brief
  * compute average and sigma of each umbrella histogram
  */
-void averageSigma(t_UmbrellaWindow *window, int nwins, t_UmbrellaOptions *opt)
+void averageSigma(t_UmbrellaWindow *window, int nwins)
 {
     int  i, ig, ntot, k;
     real av, sum2, sig, diff, *ztime, nSamplesIndep;
@@ -2942,8 +2941,7 @@ void  checkReactionCoordinateCovered(t_UmbrellaWindow *window, int nwins,
  *
  * This speeds up the convergence by roughly a factor of 2
  */
-void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt,
-                           char *fn)
+void guessPotByIntegration(t_UmbrellaWindow *window, int nWindows, t_UmbrellaOptions *opt)
 {
     int    i, j, ig, bins = opt->bins, nHist, winmin, groupmin;
     double dz, min = opt->min, *pot, pos, hispos, dist, diff, fAv, distmin, *f;
@@ -3404,8 +3402,11 @@ int gmx_wham(int argc, char *argv[])
     opt.stepchange            = 100;
     opt.stepUpdateContrib     = 100;
 
-    parse_common_args(&argc, argv, PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &opt.oenv))
+    {
+        return 0;
+    }
 
     opt.unit     = nenum(en_unit);
     opt.bsMethod = nenum(en_bsMethod);
@@ -3552,7 +3553,7 @@ int gmx_wham(int argc, char *argv[])
     /* Integrated autocorrelation times provided ? */
     if (opt.bTauIntGiven)
     {
-        readIntegratedAutocorrelationTimes(window, nwins, &opt, opt2fn("-iiact", NFILE, fnm));
+        readIntegratedAutocorrelationTimes(window, nwins, opt2fn("-iiact", NFILE, fnm));
     }
 
     /* Compute integrated autocorrelation times */
@@ -3565,13 +3566,13 @@ int gmx_wham(int argc, char *argv[])
        (maybe required for bootstrapping. If not, this is fast anyhow) */
     if (opt.nBootStrap && opt.bsMethod == bsMethod_trajGauss)
     {
-        averageSigma(window, nwins, &opt);
+        averageSigma(window, nwins);
     }
 
     /* Get initial potential by simple integration */
     if (opt.bInitPotByIntegration)
     {
-        guessPotByIntegration(window, nwins, &opt, 0);
+        guessPotByIntegration(window, nwins, &opt);
     }
 
     /* Check if complete reaction coordinate is covered */
@@ -3597,7 +3598,7 @@ int gmx_wham(int argc, char *argv[])
             printf("Switched to exact iteration in iteration %d\n", i);
         }
         calc_profile(profile, window, nwins, &opt, bExact);
-        if (((i%opt.stepchange) == 0 || i == 1) && !i == 0)
+        if (((i%opt.stepchange) == 0 || i == 1) && i != 0)
         {
             printf("\t%4d) Maximum change %e\n", i, maxchange);
         }
@@ -3653,6 +3654,5 @@ int gmx_wham(int argc, char *argv[])
     printf("\nIn case you use results from g_wham for a publication, please cite:\n");
     please_cite(stdout, "Hub2010");
 
-    thanx(stderr);
     return 0;
 }

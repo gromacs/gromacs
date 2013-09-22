@@ -267,9 +267,12 @@ int gmx_rms(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW
-                      | PCA_BE_NICE, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW
+                           | PCA_BE_NICE, NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL,
+                           &oenv))
+    {
+        return 0;
+    }
     /* parse enumerated options: */
     ewhat = nenum(what);
     if (ewhat == ewRho || ewhat == ewRhoSc)
@@ -462,7 +465,7 @@ int gmx_rms(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, top.atoms.nr);
         gmx_rmpbc(gpbc, top.atoms.nr, box, xp);
     }
     if (bReset)
@@ -712,7 +715,7 @@ int gmx_rms(int argc, char *argv[])
             }
         }
     }
-    while (read_next_x(oenv, status, &t, natoms_trx, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     if (bFile2)
@@ -780,7 +783,7 @@ int gmx_rms(int argc, char *argv[])
                 srenew(time2, maxframe2);
             }
         }
-        while (read_next_x(oenv, status, &t, natoms_trx2, x, box));
+        while (read_next_x(oenv, status, &t, x, box));
         close_trj(status);
     }
     else
@@ -1214,8 +1217,6 @@ int gmx_rms(int argc, char *argv[])
     do_view(oenv, opt2fn_null("-m", NFILE, fnm), NULL);
     do_view(oenv, opt2fn_null("-bm", NFILE, fnm), NULL);
     do_view(oenv, opt2fn_null("-dist", NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

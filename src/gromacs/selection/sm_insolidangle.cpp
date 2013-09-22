@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -331,10 +331,20 @@ gmx_ana_selmethod_t sm_insolidangle = {
 static void *
 init_data_insolidangle(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_insolidangle *data;
+    t_methoddata_insolidangle *data = new t_methoddata_insolidangle();
+    data->angcut        = 5.0;
+    data->cfrac         = 0.0;
 
-    snew(data, 1);
-    data->angcut     = 5.0;
+    data->distccut      = 0.0;
+    data->targetbinsize = 0.0;
+
+    data->ntbins        = 0;
+    data->tbinsize      = 0.0;
+    data->tbin          = NULL;
+    data->maxbins       = 0;
+    data->nbins         = 0;
+    data->bin           = NULL;
+
     param[0].val.u.p = &data->center;
     param[1].val.u.p = &data->span;
     param[2].val.u.r = &data->angcut;
@@ -406,7 +416,7 @@ free_data_insolidangle(void *data)
     }
     free_surface_points(d);
     sfree(d->bin);
-    sfree(d);
+    delete d;
 }
 
 /*!
@@ -427,7 +437,7 @@ init_frame_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc, void *data)
 
     free_surface_points(d);
     clear_surface_points(d);
-    for (i = 0; i < d->span.nr; ++i)
+    for (i = 0; i < d->span.count(); ++i)
     {
         if (pbc)
         {
@@ -480,14 +490,12 @@ static void
 evaluate_insolidangle(t_topology *top, t_trxframe *fr, t_pbc *pbc,
                       gmx_ana_pos_t *pos, gmx_ana_selvalue_t *out, void *data)
 {
-    int                        b;
-
     out->u.g->isize = 0;
-    for (b = 0; b < pos->nr; ++b)
+    for (int b = 0; b < pos->count(); ++b)
     {
         if (accept_insolidangle(pos->x[b], pbc, data))
         {
-            gmx_ana_pos_append(NULL, out->u.g, pos, b, 0);
+            gmx_ana_pos_add_to_group(out->u.g, pos, b);
         }
     }
 }

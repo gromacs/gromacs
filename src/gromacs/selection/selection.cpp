@@ -41,6 +41,7 @@
  */
 #include "selection.h"
 
+#include "nbsearch.h"
 #include "position.h"
 #include "selelem.h"
 #include "selvalue.h"
@@ -51,6 +52,10 @@ namespace gmx
 namespace internal
 {
 
+/********************************************************************
+ * SelectionData
+ */
+
 SelectionData::SelectionData(SelectionTreeElement *elem,
                              const char           *selstr)
     : name_(elem->name()), selectionText_(selstr),
@@ -58,8 +63,6 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
       coveredFraction_(1.0), averageCoveredFraction_(1.0),
       bDynamic_(false), bDynamicCoveredFraction_(false)
 {
-    gmx_ana_pos_clear(&rawPositions_);
-
     if (elem->child->type == SEL_CONST)
     {
         // TODO: This is not exception-safe if any called function throws.
@@ -102,7 +105,6 @@ SelectionData::SelectionData(SelectionTreeElement *elem,
 
 SelectionData::~SelectionData()
 {
-    gmx_ana_pos_deinit(&rawPositions_);
 }
 
 
@@ -148,13 +150,13 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
     GMX_ASSERT(top != NULL, "Should not have been called with NULL topology");
     masses->clear();
     charges->clear();
-    for (int b = 0; b < pos.nr; ++b)
+    for (int b = 0; b < pos.count(); ++b)
     {
         real mass   = 0.0;
         real charge = 0.0;
         for (int i = pos.m.mapb.index[b]; i < pos.m.mapb.index[b+1]; ++i)
         {
-            int index = pos.g->index[i];
+            const int index = pos.m.mapb.a[i];
             mass   += top->atoms.atom[index].m;
             charge += top->atoms.atom[index].q;
         }
@@ -164,6 +166,13 @@ void computeMassesAndCharges(const t_topology *top, const gmx_ana_pos_t &pos,
 }
 
 }       // namespace
+
+void
+SelectionData::refreshName()
+{
+    rootElement_.fillNameIfMissing(selectionText_.c_str());
+    name_ = rootElement_.name();
+}
 
 void
 SelectionData::initializeMassesAndCharges(const t_topology *top)
@@ -222,14 +231,23 @@ SelectionData::restoreOriginalPositions(const t_topology *top)
     if (isDynamic())
     {
         gmx_ana_pos_t &p = rawPositions_;
-        gmx_ana_index_copy(p.g, rootElement().v.u.g, false);
-        gmx_ana_indexmap_update(&p.m, p.g, hasFlag(gmx::efSelection_DynamicMask));
-        p.nr = p.m.nr;
+        gmx_ana_indexmap_update(&p.m, rootElement().v.u.g,
+                                hasFlag(gmx::efSelection_DynamicMask));
         refreshMassesAndCharges(top);
     }
 }
 
 }   // namespace internal
+
+/********************************************************************
+ * Selection
+ */
+
+Selection::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(data().rawPositions_.x,
+                                         data().rawPositions_.count());
+}
 
 
 void
@@ -251,7 +269,9 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
     fprintf(fp, "  ");
     printInfo(fp);
     fprintf(fp, "    Group ");
-    gmx_ana_index_dump(fp, p.g, nmaxind);
+    gmx_ana_index_t g;
+    gmx_ana_index_set(&g, p.m.mapb.nra, p.m.mapb.a, 0);
+    gmx_ana_index_dump(fp, &g, nmaxind);
 
     fprintf(fp, "    Block (size=%d):", p.m.mapb.nr);
     if (!p.m.mapb.index)
@@ -316,6 +336,18 @@ Selection::printDebugInfo(FILE *fp, int nmaxind) const
         }
     }
     fprintf(fp, "\n");
+}
+
+
+/********************************************************************
+ * SelectionPosition
+ */
+
+SelectionPosition::operator AnalysisNeighborhoodPositions() const
+{
+    return AnalysisNeighborhoodPositions(sel_->rawPositions_.x,
+                                         sel_->rawPositions_.count())
+               .selectSingleFromArray(i_);
 }
 
 } // namespace gmx

@@ -60,6 +60,7 @@
 #include <config.h>
 #endif
 
+#include "gromacs/fft/parallel_3dfft.h"
 #include "gromacs/utility/gmxmpi.h"
 
 #include <stdio.h>
@@ -78,20 +79,27 @@
 #include "network.h"
 #include "physics.h"
 #include "nrnb.h"
-#include "copyrite.h"
 #include "gmx_wallcycle.h"
-#include "gmx_parallel_3dfft.h"
 #include "pdbio.h"
 #include "gmx_cyclecounter.h"
 #include "gmx_omp.h"
 #include "macros.h"
 
-/* Single precision, with SSE2 or higher available */
+
+/* Include the SIMD macro file and then check for support */
+#include "gmx_simd_macros.h"
+#if defined GMX_HAVE_SIMD_MACROS && defined GMX_SIMD_HAVE_EXP
+/* Turn on SIMD intrinsics for PME solve */
+#define PME_SIMD
+#endif
+
+/* SIMD spread+gather only in single precision with SSE2 or higher available.
+ * We might want to switch to use gmx_simd_macros.h, but this is somewhat
+ * complicated, as we use unaligned and/or 4-wide only loads.
+ */
 #if defined(GMX_X86_SSE2) && !defined(GMX_DOUBLE)
-
-#include "gmx_x86_simd_single.h"
-
-#define PME_SSE
+#define PME_SSE_SPREAD_GATHER
+#include <emmintrin.h>
 /* Some old AMD processors could have problems with unaligned loads+stores */
 #ifndef GMX_FAHCORE
 #define PME_SSE_UNALIGNED
@@ -223,7 +231,7 @@ typedef struct {
 
 
 typedef struct {
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
     /* Masks for SSE aligned spreading and gathering */
     __m128 mask_SSE0[6], mask_SSE1[6];
 #else
@@ -263,7 +271,8 @@ typedef struct gmx_pme {
     MPI_Datatype  rvec_mpi;      /* the pme vector's MPI type */
 #endif
 
-    int        nthread;       /* The number of threads doing PME */
+    gmx_bool   bUseThreads;   /* Does any of the PME ranks have nthread>1 ?  */
+    int        nthread;       /* The number of threads doing PME on our rank */
 
     gmx_bool   bPPnode;       /* Node also does particle-particle forces */
     gmx_bool   bFEP;          /* Compute Free energy contribution */
@@ -1413,51 +1422,6 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 }
 
-static void clear_grid(int nx, int ny, int nz, real *grid,
-                       ivec fs, int *flag,
-                       int fx, int fy, int fz,
-                       int order)
-{
-    int nc, ncz;
-    int fsx, fsy, fsz, gx, gy, gz, g0x, g0y, x, y, z;
-    int flind;
-
-    nc  = 2 + (order - 2)/FLBS;
-    ncz = 2 + (order - 2)/FLBSZ;
-
-    for (fsx = fx; fsx < fx+nc; fsx++)
-    {
-        for (fsy = fy; fsy < fy+nc; fsy++)
-        {
-            for (fsz = fz; fsz < fz+ncz; fsz++)
-            {
-                flind = (fsx*fs[YY] + fsy)*fs[ZZ] + fsz;
-                if (flag[flind] == 0)
-                {
-                    gx  = fsx*FLBS;
-                    gy  = fsy*FLBS;
-                    gz  = fsz*FLBSZ;
-                    g0x = (gx*ny + gy)*nz + gz;
-                    for (x = 0; x < FLBS; x++)
-                    {
-                        g0y = g0x;
-                        for (y = 0; y < FLBS; y++)
-                        {
-                            for (z = 0; z < FLBSZ; z++)
-                            {
-                                grid[g0y+z] = 0;
-                            }
-                            g0y += nz;
-                        }
-                        g0x += ny*nz;
-                    }
-
-                    flag[flind] = 1;
-                }
-            }
-        }
-    }
-}
 
 /* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
 #define DO_BSPLINE(order)                            \
@@ -1535,7 +1499,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
             switch (order)
             {
                 case 4:
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
 #ifdef PME_SSE_UNALIGNED
 #define PME_SPREAD_SSE_ORDER4
 #else
@@ -1548,7 +1512,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
 #endif
                     break;
                 case 5:
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
 #define PME_SPREAD_SSE_ALIGNED
 #define PME_ORDER 5
 #include "pme_sse_single.h"
@@ -1566,7 +1530,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
 
 static void set_grid_alignment(int *pmegrid_nz, int pme_order)
 {
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
     if (pme_order == 5
 #ifndef PME_SSE_UNALIGNED
         || pme_order == 4
@@ -1579,9 +1543,9 @@ static void set_grid_alignment(int *pmegrid_nz, int pme_order)
 #endif
 }
 
-static void set_gridsize_alignment(int *gridsize, int pme_order)
+static void set_gridsize_alignment(int gmx_unused *gridsize, int gmx_unused pme_order)
 {
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
 #ifndef PME_SSE_UNALIGNED
     if (pme_order == 4)
     {
@@ -1703,6 +1667,7 @@ static void make_subgrid_division(const ivec n, int ovl, int nthread,
 static void pmegrids_init(pmegrids_t *grids,
                           int nx, int ny, int nz, int nz_base,
                           int pme_order,
+                          gmx_bool bUseThreads,
                           int nthread,
                           int overlap_x,
                           int overlap_y)
@@ -1725,7 +1690,7 @@ static void pmegrids_init(pmegrids_t *grids,
 
     make_subgrid_division(n_base, pme_order-1, grids->nthread, grids->nc);
 
-    if (grids->nthread > 1)
+    if (bUseThreads)
     {
         ivec nst;
         int gridsize;
@@ -1774,6 +1739,10 @@ static void pmegrids_init(pmegrids_t *grids,
                 }
             }
         }
+    }
+    else
+    {
+        grids->grid_th = NULL;
     }
 
     snew(grids->g2t, DIM);
@@ -1853,15 +1822,21 @@ static void realloc_work(pme_work_t *work, int nkx)
         srenew(work->mhy, work->nalloc);
         srenew(work->mhz, work->nalloc);
         srenew(work->m2, work->nalloc);
-        /* Allocate an aligned pointer for SSE operations, including 3 extra
-         * elements at the end since SSE operates on 4 elements at a time.
+        /* Allocate an aligned pointer for SIMD operations, including extra
+         * elements at the end for padding.
          */
+#ifdef PME_SIMD
+#define ALIGN_HERE  GMX_SIMD_WIDTH_HERE
+#else
+/* We can use any alignment, apart from 0, so we use 4 */
+#define ALIGN_HERE  4
+#endif
         sfree_aligned(work->denom);
         sfree_aligned(work->tmp1);
         sfree_aligned(work->eterm);
-        snew_aligned(work->denom, work->nalloc+3, 16);
-        snew_aligned(work->tmp1, work->nalloc+3, 16);
-        snew_aligned(work->eterm, work->nalloc+3, 16);
+        snew_aligned(work->denom, work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
+        snew_aligned(work->tmp1,  work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
+        snew_aligned(work->eterm, work->nalloc+ALIGN_HERE, ALIGN_HERE*sizeof(real));
         srenew(work->m2inv, work->nalloc);
     }
 }
@@ -1880,27 +1855,26 @@ static void free_work(pme_work_t *work)
 }
 
 
-#ifdef PME_SSE
-/* Calculate exponentials through SSE in float precision */
+#ifdef PME_SIMD
+/* Calculate exponentials through SIMD */
 inline static void calc_exponentials(int start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
-        const __m128 two = _mm_set_ps(2.0f, 2.0f, 2.0f, 2.0f);
-        __m128 f_sse;
-        __m128 lu;
-        __m128 tmp_d1, d_inv, tmp_r, tmp_e;
+        const gmx_mm_pr two = gmx_set1_pr(2.0);
+        gmx_mm_pr f_simd;
+        gmx_mm_pr lu;
+        gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
-        f_sse = _mm_load1_ps(&f);
-        for (kx = 0; kx < end; kx += 4)
+        f_simd = gmx_load1_pr(&f);
+        for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
         {
-            tmp_d1   = _mm_load_ps(d_aligned+kx);
-            lu       = _mm_rcp_ps(tmp_d1);
-            d_inv    = _mm_mul_ps(lu, _mm_sub_ps(two, _mm_mul_ps(lu, tmp_d1)));
-            tmp_r    = _mm_load_ps(r_aligned+kx);
-            tmp_r    = gmx_mm_exp_ps(tmp_r);
-            tmp_e    = _mm_mul_ps(f_sse, d_inv);
-            tmp_e    = _mm_mul_ps(tmp_e, tmp_r);
-            _mm_store_ps(e_aligned+kx, tmp_e);
+            tmp_d1   = gmx_load_pr(d_aligned+kx);
+            d_inv    = gmx_inv_pr(tmp_d1);
+            tmp_r    = gmx_load_pr(r_aligned+kx);
+            tmp_r    = gmx_exp_pr(tmp_r);
+            tmp_e    = gmx_mul_pr(f_simd, d_inv);
+            tmp_e    = gmx_mul_pr(tmp_e, tmp_r);
+            gmx_store_pr(e_aligned+kx, tmp_e);
         }
     }
 }
@@ -2297,7 +2271,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
             switch (order)
             {
                 case 4:
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
 #ifdef PME_SSE_UNALIGNED
 #define PME_GATHER_F_SSE_ORDER4
 #else
@@ -2310,7 +2284,7 @@ static void gather_f_bsplines(gmx_pme_t pme, real *grid,
 #endif
                     break;
                 case 5:
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
 #define PME_GATHER_F_SSE_ALIGNED
 #define PME_ORDER 5
 #include "pme_sse_single.h"
@@ -2738,7 +2712,7 @@ static double pme_load_imbalance(gmx_pme_t pme)
     return (n1 + n2 + 3*n3)/(double)(6*pme->nkx*pme->nky*pme->nkz);
 }
 
-static void init_atomcomm(gmx_pme_t pme, pme_atomcomm_t *atc, t_commrec *cr,
+static void init_atomcomm(gmx_pme_t pme, pme_atomcomm_t *atc,
                           int dimind, gmx_bool bSpread)
 {
     int nk, k, s, thread;
@@ -2987,7 +2961,7 @@ static pme_spline_work_t *make_pme_spline_work(int order)
 {
     pme_spline_work_t *work;
 
-#ifdef PME_SSE
+#ifdef PME_SSE_SPREAD_GATHER
     float  tmp[8];
     __m128 zero_SSE;
     int    of, i;
@@ -3018,29 +2992,59 @@ static pme_spline_work_t *make_pme_spline_work(int order)
     return work;
 }
 
-static void
-gmx_pme_check_grid_restrictions(FILE *fplog, char dim, int nnodes, int *nk)
+void gmx_pme_check_restrictions(int pme_order,
+                                int nkx, int nky, int nkz,
+                                int nnodes_major,
+                                int nnodes_minor,
+                                gmx_bool bUseThreads,
+                                gmx_bool bFatal,
+                                gmx_bool *bValidSettings)
 {
-    int nk_new;
-
-    if (*nk % nnodes != 0)
+    if (pme_order > PME_ORDER_MAX)
     {
-        nk_new = nnodes*(*nk/nnodes + 1);
-
-        if (2*nk_new >= 3*(*nk))
+        if (!bFatal)
         {
-            gmx_fatal(FARGS, "The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). The grid size would have to be increased by more than 50%% to make the grid divisible. Change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).",
-                      dim, *nk, dim, nnodes, dim);
+            *bValidSettings = FALSE;
+            return;
         }
-
-        if (fplog != NULL)
-        {
-            fprintf(fplog, "\nNOTE: The PME grid size in dim %c (%d) is not divisble by the number of nodes doing PME in dim %c (%d). Increasing the PME grid size in dim %c to %d. This will increase the accuracy and will not decrease the performance significantly on this number of nodes. For optimal performance change the total number of nodes or the number of domain decomposition cells in x or the PME grid %c dimension (and the cut-off).\n\n",
-                    dim, *nk, dim, nnodes, dim, nk_new, dim);
-        }
-
-        *nk = nk_new;
+        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
+                  pme_order, PME_ORDER_MAX);
     }
+
+    if (nkx <= pme_order*(nnodes_major > 1 ? 2 : 1) ||
+        nky <= pme_order*(nnodes_minor > 1 ? 2 : 1) ||
+        nkz <= pme_order)
+    {
+        if (!bFatal)
+        {
+            *bValidSettings = FALSE;
+            return;
+        }
+        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order",
+                  pme_order);
+    }
+
+    /* Check for a limitation of the (current) sum_fftgrid_dd code.
+     * We only allow multiple communication pulses in dim 1, not in dim 0.
+     */
+    if (bUseThreads && (nkx < nnodes_major*pme_order &&
+                        nkx != nnodes_major*(pme_order - 1)))
+    {
+        if (!bFatal)
+        {
+            *bValidSettings = FALSE;
+            return;
+        }
+        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x should be >= pme_order (%d) or = pmeorder-1. To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
+                  nkx/(double)nnodes_major, pme_order);
+    }
+
+    if (bValidSettings != NULL)
+    {
+        *bValidSettings = TRUE;
+    }
+
+    return;
 }
 
 int gmx_pme_init(gmx_pme_t *         pmedata,
@@ -3055,7 +3059,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 {
     gmx_pme_t pme = NULL;
 
-    pme_atomcomm_t *atc;
+    int  use_threads, sum_use_threads;
     ivec ndata;
 
     if (debug)
@@ -3155,6 +3159,21 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
 
     pme->nthread = nthread;
 
+    /* Check if any of the PME MPI ranks uses threads */
+    use_threads = (pme->nthread > 1 ? 1 : 0);
+#ifdef GMX_MPI
+    if (pme->nnodes > 1)
+    {
+        MPI_Allreduce(&use_threads, &sum_use_threads, 1, MPI_INT,
+                      MPI_SUM, pme->mpi_comm);
+    }
+    else
+#endif
+    {
+        sum_use_threads = use_threads;
+    }
+    pme->bUseThreads = (sum_use_threads > 0);
+
     if (ir->ePBC == epbcSCREW)
     {
         gmx_fatal(FARGS, "pme does not (yet) work with pbc = screw");
@@ -3168,37 +3187,14 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     pme->pme_order   = ir->pme_order;
     pme->epsilon_r   = ir->epsilon_r;
 
-    if (pme->pme_order > PME_ORDER_MAX)
-    {
-        gmx_fatal(FARGS, "pme_order (%d) is larger than the maximum allowed value (%d). Modify and recompile the code if you really need such a high order.",
-                  pme->pme_order, PME_ORDER_MAX);
-    }
-
-    /* Currently pme.c supports only the fft5d FFT code.
-     * Therefore the grid always needs to be divisible by nnodes.
-     * When the old 1D code is also supported again, change this check.
-     *
-     * This check should be done before calling gmx_pme_init
-     * and fplog should be passed iso stderr.
-     *
-       if (pme->ndecompdim >= 2)
-     */
-    if (pme->ndecompdim >= 1)
-    {
-        /*
-           gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
-                                        'x',nnodes_major,&pme->nkx);
-           gmx_pme_check_grid_restrictions(pme->nodeid==0 ? stderr : NULL,
-                                        'y',nnodes_minor,&pme->nky);
-         */
-    }
-
-    if (pme->nkx <= pme->pme_order*(pme->nnodes_major > 1 ? 2 : 1) ||
-        pme->nky <= pme->pme_order*(pme->nnodes_minor > 1 ? 2 : 1) ||
-        pme->nkz <= pme->pme_order)
-    {
-        gmx_fatal(FARGS, "The PME grid sizes need to be larger than pme_order (%d) and for dimensions with domain decomposition larger than 2*pme_order", pme->pme_order);
-    }
+    /* If we violate restrictions, generate a fatal error here */
+    gmx_pme_check_restrictions(pme->pme_order,
+                               pme->nkx, pme->nky, pme->nkz,
+                               pme->nnodes_major,
+                               pme->nnodes_minor,
+                               pme->bUseThreads,
+                               TRUE,
+                               NULL);
 
     if (pme->nnodes > 1)
     {
@@ -3256,14 +3252,12 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                       pme->nky,
                       (div_round_up(pme->nkx, pme->nnodes_major)+pme->pme_order+1)*pme->nkz);
 
-    /* Check for a limitation of the (current) sum_fftgrid_dd code.
-     * We only allow multiple communication pulses in dim 1, not in dim 0.
+    /* Double-check for a limitation of the (current) sum_fftgrid_dd code.
+     * Note that gmx_pme_check_restrictions checked for this already.
      */
-    if (pme->nthread > 1 && (pme->overlap[0].noverlap_nodes > 1 ||
-                             pme->nkx < pme->nnodes_major*pme->pme_order))
+    if (pme->bUseThreads && pme->overlap[0].noverlap_nodes > 1)
     {
-        gmx_fatal(FARGS, "The number of PME grid lines per node along x is %g. But when using OpenMP threads, the number of grid lines per node along x and should be >= pme_order (%d). To resolve this issue, use less nodes along x (and possibly more along y and/or z) by specifying -dd manually.",
-                  pme->nkx/(double)pme->nnodes_major, pme->pme_order);
+        gmx_incons("More than one communication pulse required for grid overlap communication along the major dimension while using threads");
     }
 
     snew(pme->bsp_mod[XX], pme->nkx);
@@ -3302,6 +3296,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                   pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
                   pme->pmegrid_nz_base,
                   pme->pme_order,
+                  pme->bUseThreads,
                   pme->nthread,
                   pme->overlap[0].s2g1[pme->nodeid_major]-pme->overlap[0].s2g0[pme->nodeid_major+1],
                   pme->overlap[1].s2g1[pme->nodeid_minor]-pme->overlap[1].s2g0[pme->nodeid_minor+1]);
@@ -3316,7 +3311,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     gmx_parallel_3dfft_init(&pme->pfft_setupA, ndata,
                             &pme->fftgridA, &pme->cfftgridA,
                             pme->mpi_comm_d,
-                            pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                             bReproducible, pme->nthread);
 
     if (bFreeEnergy)
@@ -3325,6 +3319,7 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
                       pme->pmegrid_nx, pme->pmegrid_ny, pme->pmegrid_nz,
                       pme->pmegrid_nz_base,
                       pme->pme_order,
+                      pme->bUseThreads,
                       pme->nthread,
                       pme->nkx % pme->nnodes_major != 0,
                       pme->nky % pme->nnodes_minor != 0);
@@ -3332,7 +3327,6 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
         gmx_parallel_3dfft_init(&pme->pfft_setupB, ndata,
                                 &pme->fftgridB, &pme->cfftgridB,
                                 pme->mpi_comm_d,
-                                pme->overlap[0].s2g0, pme->overlap[1].s2g0,
                                 bReproducible, pme->nthread);
     }
     else
@@ -3354,10 +3348,10 @@ int gmx_pme_init(gmx_pme_t *         pmedata,
     }
 
     /* Use atc[0] for spreading */
-    init_atomcomm(pme, &pme->atc[0], cr, nnodes_major > 1 ? 0 : 1, TRUE);
+    init_atomcomm(pme, &pme->atc[0], nnodes_major > 1 ? 0 : 1, TRUE);
     if (pme->ndecompdim >= 2)
     {
-        init_atomcomm(pme, &pme->atc[1], cr, 1, FALSE);
+        init_atomcomm(pme, &pme->atc[1], 1, FALSE);
     }
 
     if (pme->nnodes == 1)
@@ -3398,7 +3392,7 @@ static void reuse_pmegrids(const pmegrids_t *old, pmegrids_t *new)
     sfree_aligned(new->grid.grid);
     new->grid.grid = old->grid.grid;
 
-    if (new->nthread > 1 && new->nthread == old->nthread)
+    if (new->grid_th != NULL && new->nthread == old->nthread)
     {
         sfree_aligned(new->grid_all);
         for (t = 0; t < new->nthread; t++)
@@ -3929,22 +3923,34 @@ static void spread_on_grid(gmx_pme_t pme,
     for (thread = 0; thread < nthread; thread++)
     {
         splinedata_t *spline;
-        pmegrid_t *grid;
+        pmegrid_t *grid = NULL;
 
         /* make local bsplines  */
-        if (grids == NULL || grids->nthread == 1)
+        if (grids == NULL || !pme->bUseThreads)
         {
             spline = &atc->spline[0];
 
             spline->n = atc->n;
 
-            grid = &grids->grid;
+            if (bSpread)
+            {
+                grid = &grids->grid;
+            }
         }
         else
         {
             spline = &atc->spline[thread];
 
-            make_thread_local_ind(atc, thread, spline);
+            if (grids->nthread == 1)
+            {
+                /* One thread, we operate on all charges */
+                spline->n = atc->n;
+            }
+            else
+            {
+                /* Get the indices our thread should operate on */
+                make_thread_local_ind(atc, thread, spline);
+            }
 
             grid = &grids->grid_th[thread];
         }
@@ -3963,7 +3969,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #endif
             spread_q_bsplines_thread(grid, atc, spline, pme->spline_work);
 
-            if (grids->nthread > 1)
+            if (pme->bUseThreads)
             {
                 copy_local_grid(pme, grids, thread, fftgrid);
             }
@@ -3978,7 +3984,7 @@ static void spread_on_grid(gmx_pme_t pme,
     cs2 += (double)c2;
 #endif
 
-    if (bSpread && grids->nthread > 1)
+    if (bSpread && pme->bUseThreads)
     {
 #ifdef PME_TIME_THREADS
         c3 = omp_cyc_start();
@@ -3998,7 +4004,10 @@ static void spread_on_grid(gmx_pme_t pme,
 
         if (pme->nnodes > 1)
         {
-            /* Communicate the overlapping part of the fftgrid */
+            /* Communicate the overlapping part of the fftgrid.
+             * For this communication call we need to check pme->bUseThreads
+             * to have all ranks communicate here, regardless of pme->nthread.
+             */
             sum_fftgrid_dd(pme, fftgrid);
         }
     }
@@ -4093,13 +4102,14 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
     /* We only use the A-charges grid */
     grid = &pme->pmegridA;
 
+    /* Only calculate the spline coefficients, don't actually spread */
     spread_on_grid(pme, atc, NULL, TRUE, FALSE, pme->fftgridA);
 
     *V = gather_energy_bsplines(pme, grid->grid.grid, atc);
 }
 
 
-static void reset_pmeonly_counters(t_commrec *cr, gmx_wallcycle_t wcycle,
+static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4154,7 +4164,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                real ewaldcoeff,  gmx_bool bGatherOnly,
+                real ewaldcoeff,
                 t_inputrec *ir)
 {
     int npmedata;
@@ -4209,7 +4219,7 @@ int gmx_pmeonly(gmx_pme_t pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(cr, wcycle, nrnb, ir, step);
+                reset_pmeonly_counters(wcycle, nrnb, ir, step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -4408,7 +4418,7 @@ int gmx_pme_do(gmx_pme_t pme,
             inc_nrnb(nrnb, eNR_SPREADQBSP,
                      pme->pme_order*pme->pme_order*pme->pme_order*atc->n);
 
-            if (pme->nthread == 1)
+            if (!pme->bUseThreads)
             {
                 wrap_periodic_pmegrid(pme, grid);
 
@@ -4446,7 +4456,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_REAL_TO_COMPLEX,
-                                           fftgrid, cfftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);
@@ -4480,7 +4490,7 @@ int gmx_pme_do(gmx_pme_t pme,
                     wallcycle_start(wcycle, ewcPME_FFT);
                 }
                 gmx_parallel_3dfft_execute(pfft_setup, GMX_FFT_COMPLEX_TO_REAL,
-                                           cfftgrid, fftgrid, thread, wcycle);
+                                           thread, wcycle);
                 if (thread == 0)
                 {
                     wallcycle_stop(wcycle, ewcPME_FFT);

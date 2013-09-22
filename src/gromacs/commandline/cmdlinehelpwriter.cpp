@@ -43,6 +43,7 @@
 
 #include <string>
 
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/onlinehelp/helpformat.h"
 #include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/basicoptions.h"
@@ -491,13 +492,11 @@ class CommandLineHelpWriter::Impl
         std::string             timeUnit_;
         //! Whether to write descriptions to output.
         bool                    bShowDescriptions_;
-        //! Whether to write hidden options to output.
-        bool                    bShowHidden_;
 };
 
 CommandLineHelpWriter::Impl::Impl(const Options &options)
     : options_(options), timeUnit_(TimeUnitManager().timeUnitAsString()),
-      bShowDescriptions_(false), bShowHidden_(false)
+      bShowDescriptions_(false)
 {
 }
 
@@ -514,12 +513,6 @@ CommandLineHelpWriter::~CommandLineHelpWriter()
 {
 }
 
-CommandLineHelpWriter &CommandLineHelpWriter::setShowHidden(bool bSet)
-{
-    impl_->bShowHidden_ = bSet;
-    return *this;
-}
-
 CommandLineHelpWriter &CommandLineHelpWriter::setShowDescriptions(bool bSet)
 {
     impl_->bShowDescriptions_ = bSet;
@@ -532,11 +525,12 @@ CommandLineHelpWriter &CommandLineHelpWriter::setTimeUnitString(const char *time
     return *this;
 }
 
-void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
+void CommandLineHelpWriter::writeHelp(const CommandLineHelpContext &context)
 {
     boost::scoped_ptr<OptionsFormatterInterface> formatter;
-    CommonFormatterData common(impl_->timeUnit_.c_str());
-    switch (context.outputFormat())
+    const HelpWriterContext                     &writerContext = context.writerContext();
+    CommonFormatterData                          common(impl_->timeUnit_.c_str());
+    switch (writerContext.outputFormat())
     {
         case eHelpOutputFormat_Console:
             formatter.reset(new OptionsConsoleFormatter(common));
@@ -547,12 +541,12 @@ void CommandLineHelpWriter::writeHelp(const HelpWriterContext &context)
             GMX_THROW(NotImplementedError(
                               "Command-line help is not implemented for this output format"));
     }
-    OptionsFilter filter(context, formatter.get());
-    filter.setShowHidden(impl_->bShowHidden_);
+    OptionsFilter filter(writerContext, formatter.get());
+    filter.setShowHidden(context.showHidden());
 
     if (impl_->bShowDescriptions_)
     {
-        File &file = context.outputFile();
+        File &file = writerContext.outputFile();
         file.writeLine("DESCRIPTION");
         file.writeLine("-----------");
         file.writeLine();

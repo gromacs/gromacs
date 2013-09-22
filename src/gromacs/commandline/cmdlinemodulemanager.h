@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -62,22 +62,21 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  *
  * Typical usage:
  * \code
-   int
-   main(int argc, char *argv[])
+   int main(int argc, char *argv[])
    {
-       const gmx::ProgramInfo &programInfo =
-           gmx::ProgramInfo::init("gmx", argc, argv);
-       CopyRight(stderr, argv[0]);
+       gmx::ProgramInfo &programInfo = gmx::init("gmx", &argc, &argv);
        try
        {
-           gmx::CommandLineModuleManager manager(programInfo);
+           gmx::CommandLineModuleManager manager(&programInfo);
            // <register all necessary modules>
-           return manager.run(argc, argv);
+           int rc = manager.run(argc, argv);
+           gmx::finalize();
+           return rc;
        }
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return 1;
+           return gmx::processExceptionAtExit(ex);
        }
    }
  * \endcode
@@ -88,17 +87,99 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
 class CommandLineModuleManager
 {
     public:
+        //! Function pointer type for a C main function.
+        typedef int (*CMainFunction)(int argc, char *argv[]);
+
+        /*! \brief
+         * Implements a main() method that runs a single module.
+         *
+         * \param argc   \c argc passed to main().
+         * \param argv   \c argv passed to main().
+         * \param module Module to run.
+         *
+         * This method allows for uniform behavior for binaries that only
+         * contain a single module without duplicating any of the
+         * implementation from CommandLineModuleManager (startup headers,
+         * common options etc.).
+         *
+         * The signature assumes that \p module construction does not throw
+         * (because otherwise the caller would need to duplicate all the
+         * exception handling code).  It is possible to move the construction
+         * inside the try/catch in this method using an indirection similar to
+         * TrajectoryAnalysisCommandLineRunner::runAsMain(), but until that is
+         * necessary, the current approach leads to simpler code.
+         *
+         * Usage:
+         * \code
+           int main(int argc, char *argv[])
+           {
+               CustomCommandLineModule module;
+               return gmx::CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+           }
+         * \endcode
+         *
+         * Does not throw.  All exceptions are caught and handled internally.
+         */
+        static int runAsMainSingleModule(int argc, char *argv[],
+                                         CommandLineModuleInterface *module);
+        /*! \brief
+         * Implements a main() method that runs a given function.
+         *
+         * \param argc         \c argc passed to main().
+         * \param argv         \c argv passed to main().
+         * \param mainFunction The main()-like method to wrap.
+         *
+         * This method creates a dummy command-line module that does its
+         * processing by calling \p mainFunction; see addModuleCMain() for
+         * details.  It then runs this module with runAsMainSingleModule().
+         * This allows the resulting executable to handle common options and do
+         * other common actions (e.g., startup headers) without duplicate code
+         * in the main methods.
+         *
+         * Usage:
+         * \code
+           int my_main(int argc, char *argv[])
+           {
+               // <...>
+           }
+
+           int main(int argc, char *argv[])
+           {
+               return gmx::CommandLineModuleManager::runAsMainCMain(argc, argv, &my_main);
+           }
+         * \endcode
+         *
+         * Does not throw.  All exceptions are caught and handled internally.
+         */
+        static int runAsMainCMain(int argc, char *argv[],
+                                  CMainFunction mainFunction);
+
         /*! \brief
          * Initializes a command-line module manager.
          *
-         * \param[in] programInfo  Program information for the running binary.
+         * \param     programInfo  Program information for the running binary.
          * \throws    std::bad_alloc if out of memory.
          *
          * The binary name is used to detect when the binary is run through a
          * symlink, and automatically invoke a matching module in such a case.
+         *
+         * \p programInfo is non-const to allow the manager to amend it based
+         * on the actual module that is getting executed.
          */
-        explicit CommandLineModuleManager(const ProgramInfo &programInfo);
+        explicit CommandLineModuleManager(ProgramInfo *programInfo);
         ~CommandLineModuleManager();
+
+        /*! \brief
+         * Sets the module manager to quiet mode: don't print anything.
+         *
+         * \param[in] bQuiet  Whether the module manager should remain silent.
+         *
+         * Normally, the module manager prints out some information to stderr
+         * before it starts the module and after it finishes.  This removes
+         * that output, which is useful in particular for unit tests so that
+         * they don't spam stderr.
+         */
+        void setQuiet(bool bQuiet);
 
         /*! \brief
          * Adds a given module to this manager.
@@ -114,6 +195,25 @@ class CommandLineModuleManager
          * \see registerModule()
          */
         void addModule(CommandLineModulePointer module);
+        /*! \brief
+         * Adds a module that runs a given main()-like function.
+         *
+         * \param[in] name             Name for the module.
+         * \param[in] shortDescription One-line description for the module.
+         * \param[in] mainFunction     Main function to wrap.
+         * \throws    std::bad_alloc if out of memory.
+         *
+         * There is normally no need to call this method outside the Gromacs
+         * library.  User code usually wants to use runAsMainCMain().
+         *
+         * \p name and \p shortDescription should be string constants, or the
+         * caller should otherwise ensure that they stay in scope for the
+         * duration the CommandLineModuleManager object exists.
+         * \p mainFunction should call parse_common_args() to process its
+         * command-line arguments.
+         */
+        void addModuleCMain(const char *name, const char *shortDescription,
+                            CMainFunction mainFunction);
         /*! \brief
          * Registers a module of a certain type to this manager.
          *

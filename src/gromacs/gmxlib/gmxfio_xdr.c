@@ -88,7 +88,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
     double          d = 0;
     float           f = 0;
 
-    gmx_fio_check_nitem(fio, eio, nitem, srcfile, line);
+    gmx_fio_check_nitem(eio, nitem, srcfile, line);
     switch (eio)
     {
         case eioREAL:
@@ -158,7 +158,7 @@ static gmx_bool do_xdr(t_fileio *fio, void *item, int nitem, int eio,
             {
                 sdum = *(gmx_large_int_t *) item;
             }
-            res = xdr_gmx_large_int(fio->xdr, &sdum, NULL);
+            res = xdr_gmx_large_int(fio->xdr, &sdum);
             if (item)
             {
                 *(gmx_large_int_t *) item = sdum;

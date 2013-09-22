@@ -13,19 +13,16 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomnr 1 to 4 and bar</String>
-      <String Name="Name">atomnr 1 to 4 and bar</String>
       <String Name="Text">atomnr 1 to 4 and bar</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">atomnr 2 to 6 and y &lt; 3 and bar2</String>
-      <String Name="Name">atomnr 2 to 6 and y &lt; 3 and bar2</String>
       <String Name="Text">atomnr 2 to 6 and y &lt; 3 and bar2</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection3">
       <String Name="Input">atomnr 6 to 10 and not foo</String>
-      <String Name="Name">atomnr 6 to 10 and not foo</String>
       <String Name="Text">atomnr 6 to 10 and not foo</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

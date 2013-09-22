@@ -39,7 +39,6 @@
 #include "macros.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
@@ -50,7 +49,7 @@
 
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         atom_id index[], rvec xref, gmx_bool bPBC, matrix box)
+                         atom_id index[], rvec xref, gmx_bool bPBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -190,8 +189,11 @@ int gmx_sorient(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     two_pi = 2/M_PI;
 
@@ -270,7 +272,7 @@ int gmx_sorient(int argc, char *argv[])
     if (bTPS)
     {
         /* make molecules whole again */
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     /* start analysis of trajectory */
     do
@@ -289,7 +291,7 @@ int gmx_sorient(int argc, char *argv[])
         {
             if (bCom)
             {
-                calc_com_pbc(nrefat, &top, x, &pbc, index[0], xref, bPBC, box);
+                calc_com_pbc(nrefat, &top, x, &pbc, index[0], xref, bPBC);
             }
             else
             {
@@ -356,7 +358,7 @@ int gmx_sorient(int argc, char *argv[])
         nf++;
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     /* clean up */
     sfree(x);
@@ -458,8 +460,6 @@ int gmx_sorient(int argc, char *argv[])
     do_view(oenv, opt2fn("-no", NFILE, fnm), NULL);
     do_view(oenv, opt2fn("-ro", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn("-co", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

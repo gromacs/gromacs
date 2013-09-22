@@ -883,7 +883,7 @@ static void set_chargesum(FILE *log, t_forcerec *fr, const gmx_mtop_t *mtop)
     }
 }
 
-void update_forcerec(FILE *log, t_forcerec *fr, matrix box)
+void update_forcerec(t_forcerec *fr, matrix box)
 {
     if (fr->eeltype == eelGRF)
     {
@@ -1399,8 +1399,7 @@ static void make_adress_tf_tables(FILE *fp, const output_env_t oenv,
 
 }
 
-gmx_bool can_use_allvsall(const t_inputrec *ir, const gmx_mtop_t *mtop,
-                          gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
+gmx_bool can_use_allvsall(const t_inputrec *ir, gmx_bool bPrintNote, t_commrec *cr, FILE *fp)
 {
     gmx_bool bAllvsAll;
 
@@ -1473,12 +1472,9 @@ static void init_forcerec_f_threads(t_forcerec *fr, int nenergrp)
 }
 
 
-static void pick_nbnxn_kernel_cpu(FILE             *fp,
-                                  const t_commrec  *cr,
-                                  const gmx_cpuid_t cpuid_info,
-                                  const t_inputrec *ir,
-                                  int              *kernel_type,
-                                  int              *ewald_excl)
+static void pick_nbnxn_kernel_cpu(const t_inputrec gmx_unused *ir,
+                                  int                         *kernel_type,
+                                  int                         *ewald_excl)
 {
     *kernel_type = nbnxnk4x4_PlainC;
     *ewald_excl  = ewaldexclTable;
@@ -1547,42 +1543,49 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
     const char *returnvalue = NULL;
     switch (kernel_type)
     {
-        case nbnxnkNotSet: returnvalue     = "not set"; break;
-        case nbnxnk4x4_PlainC: returnvalue = "plain C"; break;
-#ifndef GMX_NBNXN_SIMD
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "not available"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "not available"; break;
-#else
+        case nbnxnkNotSet:
+            returnvalue = "not set";
+            break;
+        case nbnxnk4x4_PlainC:
+            returnvalue = "plain C";
+            break;
+        case nbnxnk4xN_SIMD_4xN:
+        case nbnxnk4xN_SIMD_2xNN:
+#ifdef GMX_NBNXN_SIMD
 #ifdef GMX_X86_SSE2
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-            /* x86 SIMD intrinsics can be converted to either SSE or AVX depending
-             * on compiler flags. As we use nearly identical intrinsics, using an AVX
-             * compiler flag without an AVX macro effectively results in AVX kernels.
+            /* We have x86 SSE2 compatible SIMD */
+#ifdef GMX_X86_AVX_128_FMA
+            returnvalue = "AVX-128-FMA";
+#else
+#if defined GMX_X86_AVX_256 || defined __AVX__
+            /* x86 SIMD intrinsics can be converted to SSE or AVX depending
+             * on compiler flags. As we use nearly identical intrinsics,
+             * compiling for AVX without an AVX macros effectively results
+             * in AVX kernels.
              * For gcc we check for __AVX__
              * At least a check for icc should be added (if there is a macro)
              */
-#if !(defined GMX_X86_AVX_128_FMA || defined __AVX__)
-#ifndef GMX_X86_SSE4_1
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE2"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE2"; break;
+#if defined GMX_X86_AVX_256 && !defined GMX_NBNXN_HALF_WIDTH_SIMD
+            returnvalue = "AVX-256";
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SSE4.1"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SSE4.1"; break;
+            returnvalue = "AVX-128";
 #endif
 #else
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-128"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-128"; break;
+#ifdef GMX_X86_SSE4_1
+            returnvalue  = "SSE4.1";
+#else
+            returnvalue  = "SSE2";
 #endif
 #endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "AVX-256"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "AVX-256"; break;
 #endif
-#else   /* not GMX_X86_SSE2 */
-        case nbnxnk4xN_SIMD_4xN: returnvalue  = "SIMD"; break;
-        case nbnxnk4xN_SIMD_2xNN: returnvalue = "SIMD"; break;
-#endif
-#endif
+#else /* GMX_X86_SSE2 */
+            /* not GMX_X86_SSE2, but other SIMD */
+            returnvalue  = "SIMD";
+#endif /* GMX_X86_SSE2 */
+#else /* GMX_NBNXN_SIMD */
+            returnvalue = "not available";
+#endif /* GMX_NBNXN_SIMD */
+            break;
         case nbnxnk8x8x8_CUDA: returnvalue   = "CUDA"; break;
         case nbnxnk8x8x8_PlainC: returnvalue = "plain C"; break;
 
@@ -1597,7 +1600,6 @@ const char *lookup_nbnxn_kernel_name(int kernel_type)
 
 static void pick_nbnxn_kernel(FILE                *fp,
                               const t_commrec     *cr,
-                              const gmx_hw_info_t *hwinfo,
                               gmx_bool             use_cpu_acceleration,
                               gmx_bool             bUseGPU,
                               gmx_bool             bEmulateGPU,
@@ -1629,8 +1631,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     {
         if (use_cpu_acceleration)
         {
-            pick_nbnxn_kernel_cpu(fp, cr, hwinfo->cpuid_info, ir,
-                                  kernel_type, ewald_excl);
+            pick_nbnxn_kernel_cpu(ir, kernel_type, ewald_excl);
         }
         else
         {
@@ -1647,8 +1648,7 @@ static void pick_nbnxn_kernel(FILE                *fp,
     }
 }
 
-static void pick_nbnxn_resources(FILE                *fp,
-                                 const t_commrec     *cr,
+static void pick_nbnxn_resources(const t_commrec     *cr,
                                  const gmx_hw_info_t *hwinfo,
                                  gmx_bool             bDoNonbonded,
                                  gmx_bool            *bUseGPU,
@@ -1861,7 +1861,7 @@ void init_interaction_const(FILE                 *fp,
 
     if (fr->nbv != NULL && fr->nbv->bUseGPU)
     {
-        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv);
+        nbnxn_cuda_init_const(fr->nbv->cu_nbv, ic, fr->nbv->grp);
     }
 
     bUsesSimpleTables = uses_simple_tables(fr->cutoff_scheme, fr->nbv, -1);
@@ -1885,7 +1885,7 @@ static void init_nb_verlet(FILE                *fp,
 
     snew(nbv, 1);
 
-    pick_nbnxn_resources(fp, cr, fr->hwinfo,
+    pick_nbnxn_resources(cr, fr->hwinfo,
                          fr->bNonbonded,
                          &nbv->bUseGPU,
                          &bEmulateGPU);
@@ -1901,9 +1901,8 @@ static void init_nb_verlet(FILE                *fp,
 
         if (i == 0) /* local */
         {
-            pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                              nbv->bUseGPU, bEmulateGPU,
-                              ir,
+            pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                              nbv->bUseGPU, bEmulateGPU, ir,
                               &nbv->grp[i].kernel_type,
                               &nbv->grp[i].ewald_excl,
                               fr->bNonbonded);
@@ -1913,9 +1912,8 @@ static void init_nb_verlet(FILE                *fp,
             if (nbpu_opt != NULL && strcmp(nbpu_opt, "gpu_cpu") == 0)
             {
                 /* Use GPU for local, select a CPU kernel for non-local */
-                pick_nbnxn_kernel(fp, cr, fr->hwinfo, fr->use_cpu_acceleration,
-                                  FALSE, FALSE,
-                                  ir,
+                pick_nbnxn_kernel(fp, cr, fr->use_cpu_acceleration,
+                                  FALSE, FALSE, ir,
                                   &nbv->grp[i].kernel_type,
                                   &nbv->grp[i].ewald_excl,
                                   fr->bNonbonded);
@@ -2023,7 +2021,6 @@ void init_forcerec(FILE              *fp,
                    const gmx_mtop_t  *mtop,
                    const t_commrec   *cr,
                    matrix             box,
-                   gmx_bool           bMolEpot,
                    const char        *gentop,
                    const char        *tabfn,
                    const char        *tabafn,
@@ -2050,9 +2047,7 @@ void init_forcerec(FILE              *fp,
          * In mdrun, hwinfo has already been set before calling init_forcerec.
          * Here we ignore GPUs, as tools will not use them anyhow.
          */
-        snew(fr->hwinfo, 1);
-        gmx_detect_hardware(fp, fr->hwinfo, cr,
-                            FALSE, FALSE, NULL);
+        fr->hwinfo = gmx_detect_hardware(fp, cr, FALSE, FALSE, NULL);
     }
 
     /* By default we turn acceleration on, but it might be turned off further down... */
@@ -2208,10 +2203,29 @@ void init_forcerec(FILE              *fp,
     fr->bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
 
     /* Check if we can/should do all-vs-all kernels */
-    fr->bAllvsAll       = can_use_allvsall(ir, mtop, FALSE, NULL, NULL);
+    fr->bAllvsAll       = can_use_allvsall(ir, FALSE, NULL, NULL);
     fr->AllvsAll_work   = NULL;
     fr->AllvsAll_workgb = NULL;
 
+    /* All-vs-all kernels have not been implemented in 4.6, and
+     * the SIMD group kernels are also buggy in this case. Non-accelerated
+     * group kernels are OK. See Redmine #1249. */
+    if (fr->bAllvsAll)
+    {
+        fr->bAllvsAll            = FALSE;
+        fr->use_cpu_acceleration = FALSE;
+        if (fp != NULL)
+        {
+            fprintf(fp,
+                    "\nYour simulation settings would have triggered the efficient all-vs-all\n"
+                    "kernels in GROMACS 4.5, but these have not been implemented in GROMACS\n"
+                    "4.6. Also, we can't use the accelerated SIMD kernels here because\n"
+                    "of an unfixed bug. The reference C kernels are correct, though, so\n"
+                    "we are proceeding by disabling all CPU architecture-specific\n"
+                    "(e.g. SSE2/SSE4/AVX) routines. If performance is important, please\n"
+                    "use GROMACS 4.5.7 or try cutoff-scheme = Verlet.\n\n");
+        }
+    }
 
     /* Neighbour searching stuff */
     fr->cutoff_scheme = ir->cutoff_scheme;
@@ -2436,7 +2450,7 @@ void init_forcerec(FILE              *fp,
             }
         }
         fr->ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
-        init_ewald_tab(&(fr->ewald_table), cr, ir, fp);
+        init_ewald_tab(&(fr->ewald_table), ir, fp);
         if (fp)
         {
             fprintf(fp, "Using a Gaussian width (1/beta) of %g nm for Ewald\n",
@@ -2468,7 +2482,7 @@ void init_forcerec(FILE              *fp,
 
         if ((fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
         {
-            set_shift_consts(fp, fr->rcoulomb_switch, fr->rcoulomb, box_size, fr);
+            set_shift_consts(fr->rcoulomb_switch, fr->rcoulomb, box_size);
         }
     }
 
@@ -2590,9 +2604,9 @@ void init_forcerec(FILE              *fp,
 #endif
 
         fr->gbtabr = 100;
-        fr->gbtab  = make_gb_table(fp, oenv, fr, tabpfn, fr->gbtabscale);
+        fr->gbtab  = make_gb_table(oenv, fr);
 
-        init_gb(&fr->born, cr, fr, ir, mtop, ir->rgbradii, ir->gb_algorithm);
+        init_gb(&fr->born, cr, fr, ir, mtop, ir->gb_algorithm);
 
         /* Copy local gb data (for dd, this is done in dd_partition_system) */
         if (!DOMAINDECOMP(cr))
@@ -2845,11 +2859,11 @@ void init_forcerec(FILE              *fp,
     fr->timesteps = 0;
 
     /* Initialize neighbor search */
-    init_ns(fp, cr, &fr->ns, fr, mtop, box);
+    init_ns(fp, cr, &fr->ns, fr, mtop);
 
     if (cr->duty & DUTY_PP)
     {
-        gmx_nonbonded_setup(fp, fr, bGenericKernelOnly);
+        gmx_nonbonded_setup(fr, bGenericKernelOnly);
         /*
            if (ir->bAdress)
             {
@@ -2885,7 +2899,7 @@ void init_forcerec(FILE              *fp,
 #define pr_int(fp, i)  fprintf((fp), "%s: %d\n",#i, i)
 #define pr_bool(fp, b) fprintf((fp), "%s: %s\n",#b, bool_names[b])
 
-void pr_forcerec(FILE *fp, t_forcerec *fr, t_commrec *cr)
+void pr_forcerec(FILE *fp, t_forcerec *fr)
 {
     int i;
 

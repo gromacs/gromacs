@@ -38,6 +38,11 @@
 
 #include "grompp.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 typedef struct tagDirStack {
     directive           d;
     struct tagDirStack *prev;
@@ -61,6 +66,10 @@ void DS_Push (DirStack **DS, directive d);
 int  DS_Search (DirStack *DS, directive d);
 
 int  DS_Check_Order (DirStack *DS, directive d);
+
+#ifdef __cplusplus
+}
+#endif
 
 #ifdef __cplusplus
 }

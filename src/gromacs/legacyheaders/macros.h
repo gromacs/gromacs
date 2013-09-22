@@ -66,6 +66,6 @@
 #endif
 
 /* This macro calculates the size of a array */
-#define asize(a) (sizeof(a)/sizeof((a)[0]))
+#define asize(a) ((int)(sizeof(a)/sizeof((a)[0])))
 
 #endif  /* _macros_h */

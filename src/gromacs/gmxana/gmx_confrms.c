@@ -42,7 +42,6 @@
 #include <math.h>
 #include "typedefs.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include "string2.h"
@@ -124,9 +123,9 @@ int debug_strcmp(char s1[], char s2[])
     return strcmp(s1, s2);
 }
 
-int find_next_match_atoms_in_res(int *i1, int isize1, atom_id index1[],
+int find_next_match_atoms_in_res(int *i1, atom_id index1[],
                                  int m1, char **atnms1[],
-                                 int *i2, int isize2, atom_id index2[],
+                                 int *i2, atom_id index2[],
                                  int m2, char **atnms2[])
 {
     int      dx, dy, dmax, cmp;
@@ -389,8 +388,8 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, *isize1, index1, m1, atnms1,
-                                                 &i2, *isize2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
+                                                 &i2, index2, m2, atnms2);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
@@ -426,8 +425,8 @@ void find_matching_names(int *isize1, atom_id index1[], t_atoms *atoms1,
             {
                 fprintf(debug, " [%d<%d %d<%d]", i1, m1, i2, m2);
             }
-            atcmp = find_next_match_atoms_in_res(&i1, *isize1, index1, m1, atnms1,
-                                                 &i2, *isize2, index2, m2, atnms2);
+            atcmp = find_next_match_atoms_in_res(&i1, index1, m1, atnms1,
+                                                 &i2, index2, m2, atnms2);
             if (debug)
             {
                 fprintf(debug, " -> %d %d %s-%s", i1, i2,
@@ -554,8 +553,11 @@ int gmx_confrms(int argc, char *argv[])
     real    *msds;
 
 
-    parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     matchndxfile = opt2fn_null("-no", NFILE, fnm);
     conf1file    = ftp2fn(efTPS, NFILE, fnm);
     conf2file    = ftp2fn(efSTX, NFILE, fnm);
@@ -832,8 +834,6 @@ int gmx_confrms(int argc, char *argv[])
     }
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

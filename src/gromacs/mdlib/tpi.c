@@ -44,7 +44,6 @@
 #include "string2.h"
 #include "network.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -116,22 +115,22 @@ static void realloc_bins(double **bin, int *nbin, int nbin_new)
 
 double do_tpi(FILE *fplog, t_commrec *cr,
               int nfile, const t_filenm fnm[],
-              const output_env_t oenv, gmx_bool bVerbose, gmx_bool bCompact,
-              int nstglobalcomm,
-              gmx_vsite_t *vsite, gmx_constr_t constr,
-              int stepout,
+              const output_env_t oenv, gmx_bool bVerbose, gmx_bool gmx_unused bCompact,
+              int gmx_unused nstglobalcomm,
+              gmx_vsite_t gmx_unused *vsite, gmx_constr_t gmx_unused constr,
+              int gmx_unused stepout,
               t_inputrec *inputrec,
               gmx_mtop_t *top_global, t_fcdata *fcd,
               t_state *state,
               t_mdatoms *mdatoms,
               t_nrnb *nrnb, gmx_wallcycle_t wcycle,
-              gmx_edsam_t ed,
+              gmx_edsam_t gmx_unused ed,
               t_forcerec *fr,
-              int repl_ex_nst, int repl_ex_nex, int repl_ex_seed,
-              gmx_membed_t membed,
-              real cpt_period, real max_hours,
-              const char *deviceOptions,
-              unsigned long Flags,
+              int gmx_unused repl_ex_nst, int gmx_unused repl_ex_nex, int gmx_unused repl_ex_seed,
+              gmx_membed_t gmx_unused membed,
+              real gmx_unused cpt_period, real gmx_unused max_hours,
+              const char gmx_unused *deviceOptions,
+              unsigned long gmx_unused Flags,
               gmx_runtime_t *runtime)
 {
     const char     *TPI = "Test Particle Insertion";
@@ -609,7 +608,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
                 /* Make do_force do a single node force calculation */
                 cr->nnodes = 1;
                 do_force(fplog, cr, inputrec,
-                         step, nrnb, wcycle, top, top_global, &top_global->groups,
+                         step, nrnb, wcycle, top, &top_global->groups,
                          state->box, state->x, &state->hist,
                          f, force_vir, mdatoms, enerd, fcd,
                          state->lambda,

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -125,12 +125,20 @@ AnalysisData::~AnalysisData()
 
 
 void
-AnalysisData::setColumnCount(int ncol)
+AnalysisData::setDataSetCount(int dataSetCount)
 {
-    GMX_RELEASE_ASSERT(ncol > 0, "Number of columns must be positive");
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data dimensionality after creating handles");
-    AbstractAnalysisData::setColumnCount(ncol);
+    AbstractAnalysisData::setDataSetCount(dataSetCount);
+}
+
+
+void
+AnalysisData::setColumnCount(int dataSet, int columnCount)
+{
+    GMX_RELEASE_ASSERT(impl_->handles_.empty(),
+                       "Cannot change data dimensionality after creating handles");
+    AbstractAnalysisData::setColumnCount(dataSet, columnCount);
 }
 
 
@@ -140,7 +148,13 @@ AnalysisData::setMultipoint(bool bMultipoint)
     GMX_RELEASE_ASSERT(impl_->handles_.empty(),
                        "Cannot change data type after creating handles");
     AbstractAnalysisData::setMultipoint(bMultipoint);
-    impl_->storage_.setMultipoint(bMultipoint);
+}
+
+
+int
+AnalysisData::frameCount() const
+{
+    return impl_->storage_.frameCount();
 }
 
 
@@ -151,13 +165,7 @@ AnalysisData::startData(const AnalysisDataParallelOptions &opt)
                        "Too many calls to startData() compared to provided options");
     if (impl_->handles_.empty())
     {
-        notifyDataStart();
-        impl_->storage_.setParallelOptions(opt);
-        impl_->storage_.startDataStorage(this);
-    }
-    else if (isMultipoint())
-    {
-        GMX_THROW(NotImplementedError("Parallelism not supported for multipoint data"));
+        impl_->storage_.startParallelDataStorage(this, &moduleManager(), opt);
     }
 
     Impl::HandlePointer handle(new internal::AnalysisDataHandleImpl(this));
@@ -185,7 +193,7 @@ AnalysisData::finishData(AnalysisDataHandle handle)
 
     if (impl_->handles_.empty())
     {
-        notifyDataFinish();
+        impl_->storage_.finishDataStorage();
     }
 }
 
@@ -228,6 +236,16 @@ AnalysisDataHandle::startFrame(int index, real x, real dx)
                        "startFrame() called twice without calling finishFrame()");
     impl_->currentFrame_ =
         &impl_->data_.impl_->storage_.startFrame(index, x, dx);
+}
+
+
+void
+AnalysisDataHandle::selectDataSet(int index)
+{
+    GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
+    GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
+                       "selectDataSet() called without calling startFrame()");
+    impl_->currentFrame_->selectDataSet(index);
 }
 
 
@@ -282,9 +300,9 @@ AnalysisDataHandle::finishFrame()
     GMX_RELEASE_ASSERT(impl_ != NULL, "Invalid data handle used");
     GMX_RELEASE_ASSERT(impl_->currentFrame_ != NULL,
                        "finishFrame() called without calling startFrame()");
-    int index = impl_->currentFrame_->frameIndex();
+    AnalysisDataStorageFrame *frame = impl_->currentFrame_;
     impl_->currentFrame_ = NULL;
-    impl_->data_.impl_->storage_.finishFrame(index);
+    frame->finishFrame();
 }
 
 

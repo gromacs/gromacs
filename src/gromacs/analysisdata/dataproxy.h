@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -79,9 +79,14 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         AnalysisDataProxy(int firstColumn, int columnSpan,
                           AbstractAnalysisData *data);
 
+        virtual int frameCount() const;
+
         virtual int flags() const;
 
         virtual void dataStarted(AbstractAnalysisData *data);
+        virtual bool parallelDataStarted(
+            AbstractAnalysisData              *data,
+            const AnalysisDataParallelOptions &options);
         virtual void frameStarted(const AnalysisDataFrameHeader &frame);
         virtual void pointsAdded(const AnalysisDataPointSetRef &points);
         virtual void frameFinished(const AnalysisDataFrameHeader &header);
@@ -94,6 +99,7 @@ class AnalysisDataProxy : public AbstractAnalysisData,
         AbstractAnalysisData   &source_;
         int                     firstColumn_;
         int                     columnSpan_;
+        bool                    bParallel_;
 
         // Copy and assign disallowed by base.
 };

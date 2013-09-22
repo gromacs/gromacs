@@ -284,7 +284,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
                      tensor pres, rvec mu_tot, gmx_constr_t constr,
                      globsig_t *gs, gmx_bool bInterSimGS,
                      matrix box, gmx_mtop_t *top_global, real *pcurr,
-                     int natoms, gmx_bool *bSumEkinhOld, int flags)
+                     gmx_bool *bSumEkinhOld, int flags)
 {
     int      i, gsi;
     real     gs_buf[eglsNR];
@@ -292,7 +292,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     gmx_bool bEner, bPres, bTemp, bVV;
     gmx_bool bRerunMD, bStopCM, bGStat, bIterate,
              bFirstIterate, bReadEkin, bEkinAveVel, bScaleEkin, bConstrain;
-    real     ekin, temp, prescorr, enercorr, dvdlcorr;
+    real     ekin, temp, prescorr, enercorr, dvdlcorr, dvdl_ekin;
 
     /* translate CGLO flags to gmx_booleans */
     bRerunMD = flags & CGLO_RERUNMD;
@@ -345,7 +345,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM)
     {
-        calc_vcm_grp(fplog, mdatoms->start, mdatoms->homenr, mdatoms,
+        calc_vcm_grp(mdatoms->start, mdatoms->homenr, mdatoms,
                      state->x, state->v, vcm);
     }
 
@@ -425,7 +425,7 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
     if (bStopCM)
     {
         check_cm_grp(fplog, vcm, ir, 1);
-        do_stopcm_grp(fplog, mdatoms->start, mdatoms->homenr, mdatoms->cVCM,
+        do_stopcm_grp(mdatoms->start, mdatoms->homenr, mdatoms->cVCM,
                       state->x, state->v, vcm);
         inc_nrnb(nrnb, eNR_STOPCM, mdatoms->homenr);
     }
@@ -447,8 +447,9 @@ void compute_globals(FILE *fplog, gmx_global_stat_t gstat, t_commrec *cr, t_inpu
            bSaveEkinOld: If TRUE (in the case of iteration = bIterate is TRUE), we don't reset the ekinscale_nhc.
            If FALSE, we go ahead and erase over it.
          */
-        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &(enerd->term[F_DKDL]),
-                                       bEkinAveVel, bIterate, bScaleEkin);
+        enerd->term[F_TEMP] = sum_ekin(&(ir->opts), ekind, &dvdl_ekin,
+                                       bEkinAveVel, bScaleEkin);
+        enerd->dvdl_lin[efptMASS] = (double) dvdl_ekin;
 
         enerd->term[F_EKIN] = trace(ekind->ekin);
     }

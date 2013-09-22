@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "vec.h"
 #include "index.h"
 #include "macros.h"
@@ -177,9 +176,12 @@ int gmx_polystat(int argc, char *argv[])
     char       **legp, buf[STRLEN];
     gmx_rmpbc_t  gpbc = NULL;
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     snew(top, 1);
     ePBC = read_tpx_top(ftp2fn(efTPX, NFILE, fnm),
@@ -284,7 +286,7 @@ int gmx_polystat(int argc, char *argv[])
     sum_gyro_tot = 0;
     sum_pers_tot = 0;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
 
     do
     {
@@ -457,7 +459,7 @@ int gmx_polystat(int argc, char *argv[])
 
         frame++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -522,8 +524,6 @@ int gmx_polystat(int argc, char *argv[])
     {
         do_view(oenv, opt2fn("-p", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

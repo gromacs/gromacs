@@ -770,7 +770,7 @@ create_simple_base(gmx_ana_poscalc_t *pc)
     base  = pc->coll->createCalculation(pc->type, flags);
     set_poscalc_maxindex(base, &pc->gmax, true);
 
-    snew(base->p, 1);
+    base->p = new gmx_ana_pos_t();
 
     pc->sbase = base;
     pc->coll->removeCalculation(base);
@@ -1043,7 +1043,7 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
     {
         gmx_ana_indexmap_set_static(&p->m, &pc->b);
     }
-    gmx_ana_pos_reserve(p, p->m.nr, 0);
+    gmx_ana_pos_reserve(p, p->m.mapb.nr, 0);
     if (pc->flags & POS_VELOCITIES)
     {
         gmx_ana_pos_reserve_velocities(p);
@@ -1052,8 +1052,6 @@ gmx_ana_poscalc_init_pos(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p)
     {
         gmx_ana_pos_reserve_forces(p);
     }
-    gmx_ana_pos_set_nr(p, p->m.nr);
-    gmx_ana_pos_set_evalgrp(p, &pc->gmax);
 }
 
 /*!
@@ -1088,10 +1086,7 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
     {
         gmx_ana_index_deinit(&pc->gmax);
     }
-    if (pc->p)
-    {
-        gmx_ana_pos_free(pc->p);
-    }
+    delete pc->p;
     if (pc->sbase)
     {
         gmx_ana_poscalc_free(pc->sbase);
@@ -1108,7 +1103,8 @@ gmx_ana_poscalc_free(gmx_ana_poscalc_t *pc)
 bool
 gmx_ana_poscalc_requires_top(gmx_ana_poscalc_t *pc)
 {
-    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL)
+    if ((pc->flags & POS_MASS) || pc->type == POS_RES || pc->type == POS_MOL
+        || ((pc->flags & POS_FORCES) && pc->type != POS_ATOM))
     {
         return true;
     }
@@ -1148,13 +1144,11 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
     {
         g = &pc->gmax;
     }
-    gmx_ana_pos_set_evalgrp(p, g);
 
     /* Update the index map */
     if (pc->flags & POS_DYNAMIC)
     {
         gmx_ana_indexmap_update(&p->m, g, false);
-        p->nr = p->m.nr;
     }
     else if (pc->flags & POS_MASKONLY)
     {
@@ -1176,14 +1170,14 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
          * loop instead of in the beginning. */
         if (pc->flags & POS_DYNAMIC)
         {
-            for (bi = 0; bi < p->nr; ++bi)
+            for (bi = 0; bi < p->count(); ++bi)
             {
                 bj = pc->baseid[p->m.refid[bi]];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
             }
             if (p->v)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[p->m.refid[bi]];
                     copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
@@ -1191,7 +1185,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
             if (p->f)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[p->m.refid[bi]];
                     copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
@@ -1200,14 +1194,14 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
         }
         else
         {
-            for (bi = 0; bi < p->nr; ++bi)
+            for (bi = 0; bi < p->count(); ++bi)
             {
                 bj = pc->baseid[bi];
                 copy_rvec(pc->sbase->p->x[bj], p->x[bi]);
             }
             if (p->v)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[bi];
                     copy_rvec(pc->sbase->p->v[bj], p->v[bi]);
@@ -1215,7 +1209,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
             }
             if (p->f)
             {
-                for (bi = 0; bi < p->nr; ++bi)
+                for (bi = 0; bi < p->count(); ++bi)
                 {
                     bj = pc->baseid[bi];
                     copy_rvec(pc->sbase->p->f[bj], p->f[bi]);
@@ -1302,7 +1296,7 @@ gmx_ana_poscalc_update(gmx_ana_poscalc_t *pc, gmx_ana_pos_t *p,
                 }
                 if (p->f && fr->bF)
                 {
-                    gmx_calc_comg_blocka(top, fr->f, &pc->b, bMass, p->f);
+                    gmx_calc_comg_f_blocka(top, fr->f, &pc->b, bMass, p->f);
                 }
                 break;
         }

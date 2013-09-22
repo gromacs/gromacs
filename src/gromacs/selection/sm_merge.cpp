@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -56,8 +56,6 @@ typedef struct
     gmx_ana_pos_t    p1;
     /** Other input positions. */
     gmx_ana_pos_t    p2;
-    /** Group to store the output atom indices. */
-    gmx_ana_index_t  g;
     /** Stride for merging (\c stride values from \c p1 for each in \c p2). */
     int              stride;
 } t_methoddata_merge;
@@ -160,9 +158,7 @@ gmx_ana_selmethod_t sm_plus = {
 static void *
 init_data_merge(int npar, gmx_ana_selparam_t *param)
 {
-    t_methoddata_merge *data;
-
-    snew(data, 1);
+    t_methoddata_merge *data = new t_methoddata_merge();
     data->stride     = 0;
     param[0].val.u.p = &data->p1;
     param[1].val.u.p = &data->p2;
@@ -192,17 +188,12 @@ init_merge(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     /* If no stride given, deduce it from the input sizes */
     if (d->stride == 0)
     {
-        d->stride = d->p1.nr / d->p2.nr;
+        d->stride = d->p1.count() / d->p2.count();
     }
-    if (d->p1.nr != d->stride*d->p2.nr)
+    if (d->p1.count() != d->stride*d->p2.count())
     {
         GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
-    /* We access the m.b.nra field instead of g->isize in the position
-     * data structures to handle cases where g is NULL
-     * (this occurs with constant positions. */
-    gmx_ana_index_reserve(&d->g, d->p1.m.b.nra + d->p2.m.b.nra);
-    d->g.isize = d->p1.m.b.nra + d->p2.m.b.nra;
 }
 
 /*! \brief
@@ -226,18 +217,10 @@ init_output_common(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     {
         out->u.p->m.type = d->p1.m.type;
     }
-    gmx_ana_pos_reserve(out->u.p, d->p1.nr + d->p2.nr, d->g.isize);
-    if (d->p1.v)
-    {
-        gmx_ana_pos_reserve_velocities(out->u.p);
-    }
-    if (d->p1.f)
-    {
-        gmx_ana_pos_reserve_forces(out->u.p);
-    }
-    gmx_ana_pos_set_evalgrp(out->u.p, &d->g);
+    gmx_ana_pos_reserve_for_append(out->u.p, d->p1.count() + d->p2.count(),
+                                   d->p1.m.b.nra + d->p2.m.b.nra,
+                                   d->p1.v != NULL, d->p1.f != NULL);
     gmx_ana_pos_empty_init(out->u.p);
-    d->g.isize = 0;
 }
 
 /*!
@@ -252,13 +235,13 @@ init_output_merge(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     int                 i, j;
 
     init_output_common(top, out, data);
-    for (i = 0; i < d->p2.nr; ++i)
+    for (i = 0; i < d->p2.count(); ++i)
     {
         for (j = 0; j < d->stride; ++j)
         {
-            gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, d->stride*i+j);
+            gmx_ana_pos_append_init(out->u.p, &d->p1, d->stride * i + j);
         }
-        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
+        gmx_ana_pos_append_init(out->u.p, &d->p2, i);
     }
 }
 
@@ -274,13 +257,13 @@ init_output_plus(t_topology *top, gmx_ana_selvalue_t *out, void *data)
     int                 i;
 
     init_output_common(top, out, data);
-    for (i = 0; i < d->p1.nr; ++i)
+    for (i = 0; i < d->p1.count(); ++i)
     {
-        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p1, i);
+        gmx_ana_pos_append_init(out->u.p, &d->p1, i);
     }
-    for (i = 0; i < d->p2.nr; ++i)
+    for (i = 0; i < d->p2.count(); ++i)
     {
-        gmx_ana_pos_append_init(out->u.p, &d->g, &d->p2, i);
+        gmx_ana_pos_append_init(out->u.p, &d->p2, i);
     }
 }
 
@@ -293,9 +276,7 @@ static void
 free_data_merge(void *data)
 {
     t_methoddata_merge *d = (t_methoddata_merge *)data;
-
-    gmx_ana_index_deinit(&d->g);
-    sfree(d);
+    delete d;
 }
 
 /*!
@@ -314,13 +295,12 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                 i, j;
     int                 refid;
 
-    if (d->p1.nr != d->stride*d->p2.nr)
+    if (d->p1.count() != d->stride*d->p2.count())
     {
         GMX_THROW(gmx::InconsistentInputError("The number of positions to be merged are not compatible"));
     }
-    d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
-    for (i = 0; i < d->p2.nr; ++i)
+    for (i = 0; i < d->p2.count(); ++i)
     {
         for (j = 0; j < d->stride; ++j)
         {
@@ -329,10 +309,10 @@ evaluate_merge(t_topology *top, t_trxframe *fr, t_pbc *pbc,
             {
                 refid = (d->stride+1) * (refid / d->stride) + (refid % d->stride);
             }
-            gmx_ana_pos_append(out->u.p, &d->g, &d->p1, d->stride*i+j, refid);
+            gmx_ana_pos_append(out->u.p, &d->p1, d->stride*i+j, refid);
         }
-        refid = (d->stride+1)*d->p2.m.refid[i]+d->stride;
-        gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
+        refid = (d->stride+1)*d->p2.m.refid[i] + d->stride;
+        gmx_ana_pos_append(out->u.p, &d->p2, i, refid);
     }
     gmx_ana_pos_append_finish(out->u.p);
 }
@@ -353,21 +333,20 @@ evaluate_plus(t_topology *top, t_trxframe *fr, t_pbc *pbc,
     int                 i;
     int                 refid;
 
-    d->g.isize = 0;
     gmx_ana_pos_empty(out->u.p);
-    for (i = 0; i < d->p1.nr; ++i)
+    for (i = 0; i < d->p1.count(); ++i)
     {
         refid = d->p1.m.refid[i];
-        gmx_ana_pos_append(out->u.p, &d->g, &d->p1, i, refid);
+        gmx_ana_pos_append(out->u.p, &d->p1, i, refid);
     }
-    for (i = 0; i < d->p2.nr; ++i)
+    for (i = 0; i < d->p2.count(); ++i)
     {
         refid = d->p2.m.refid[i];
         if (refid != -1)
         {
             refid += d->p1.m.b.nr;
         }
-        gmx_ana_pos_append(out->u.p, &d->g, &d->p2, i, refid);
+        gmx_ana_pos_append(out->u.p, &d->p2, i, refid);
     }
     gmx_ana_pos_append_finish(out->u.p);
 }

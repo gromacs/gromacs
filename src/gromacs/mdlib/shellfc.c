@@ -41,6 +41,7 @@
 #include "gmx_fatal.h"
 #include "vec.h"
 #include "txtdump.h"
+#include "force.h"
 #include "mdrun.h"
 #include "partdec.h"
 #include "mdatoms.h"
@@ -51,7 +52,6 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "physics.h"
-#include "copyrite.h"
 #include "shellfc.h"
 #include "mtop_util.h"
 #include "chargegroup.h"
@@ -640,7 +640,7 @@ static void do_1pos3(rvec xnew, rvec xold, rvec f, rvec step)
     xnew[ZZ] = zo+dz;
 }
 
-static void directional_sd(FILE *log, rvec xold[], rvec xnew[], rvec acc_dir[],
+static void directional_sd(rvec xold[], rvec xnew[], rvec acc_dir[],
                            int start, int homenr, real step)
 {
     int  i;
@@ -651,7 +651,7 @@ static void directional_sd(FILE *log, rvec xold[], rvec xnew[], rvec acc_dir[],
     }
 }
 
-static void shell_pos_sd(FILE *log, rvec xcur[], rvec xnew[], rvec f[],
+static void shell_pos_sd(rvec xcur[], rvec xnew[], rvec f[],
                          int ns, t_shell s[], int count)
 {
     const real step_scale_min       = 0.8,
@@ -917,9 +917,7 @@ static void init_adir(FILE *log, gmx_shellfc_t shfc,
 int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         gmx_large_int_t mdstep, t_inputrec *inputrec,
                         gmx_bool bDoNS, int force_flags,
-                        gmx_bool bStopCM,
                         gmx_localtop_t *top,
-                        gmx_mtop_t* mtop,
                         gmx_constr_t constr,
                         gmx_enerdata_t *enerd, t_fcdata *fcd,
                         t_state *state, rvec f[],
@@ -932,7 +930,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                         t_forcerec *fr,
                         gmx_bool bBornRadii,
                         double t, rvec mu_tot,
-                        int natoms, gmx_bool *bConverged,
+                        gmx_bool *bConverged,
                         gmx_vsite_t *vsite,
                         FILE *fp_field)
 {
@@ -1062,7 +1060,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         pr_rvecs(debug, 0, "x b4 do_force", state->x + start, homenr);
     }
-    do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, mtop, groups,
+    do_force(fplog, cr, inputrec, mdstep, nrnb, wcycle, top, groups,
              state->box, state->x, &state->hist,
              force[Min], force_vir, md, enerd, fcd,
              state->lambda, graph,
@@ -1133,7 +1131,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
     {
         if (vsite)
         {
-            construct_vsites(fplog, vsite, pos[Min], nrnb, inputrec->delta_t, state->v,
+            construct_vsites(vsite, pos[Min], inputrec->delta_t, state->v,
                              idef->iparams, idef->il,
                              fr->ePBC, fr->bMolPBC, graph, cr, state->box);
         }
@@ -1145,12 +1143,12 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
                       x_old-start, state->x, pos[Min], force[Min], acc_dir-start,
                       fr->bMolPBC, state->box, state->lambda, &dum, nrnb);
 
-            directional_sd(fplog, pos[Min], pos[Try], acc_dir-start, start, end,
+            directional_sd(pos[Min], pos[Try], acc_dir-start, start, end,
                            fr->fc_stepsize);
         }
 
         /* New positions, Steepest descent */
-        shell_pos_sd(fplog, pos[Min], pos[Try], force[Min], nshell, shell, count);
+        shell_pos_sd(pos[Min], pos[Try], force[Min], nshell, shell, count);
 
         /* do_force expected the charge groups to be in the box */
         if (graph)
@@ -1165,7 +1163,7 @@ int relax_shell_flexcon(FILE *fplog, t_commrec *cr, gmx_bool bVerbose,
         }
         /* Try the new positions */
         do_force(fplog, cr, inputrec, 1, nrnb, wcycle,
-                 top, mtop, groups, state->box, pos[Try], &state->hist,
+                 top, groups, state->box, pos[Try], &state->hist,
                  force[Try], force_vir,
                  md, enerd, fcd, state->lambda, graph,
                  fr, vsite, mu_tot, t, fp_field, NULL, bBornRadii,

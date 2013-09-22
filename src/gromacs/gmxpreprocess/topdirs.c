@@ -46,6 +46,49 @@
 #include "gmx_fatal.h"
 #include "topdirs.h"
 
+/* Must correspond to the directive enum in grompp.h */
+static const char *directive_names[d_maxdir+1] = {
+    "defaults",
+    "atomtypes",
+    "bondtypes",
+    "constrainttypes",
+    "pairtypes",
+    "angletypes",
+    "dihedraltypes",
+    "nonbond_params",
+    "implicit_genborn_params",
+    "implicit_surface_params",
+    "cmaptypes",
+    /* All the directives above can not appear after moleculetype */
+    "moleculetype",
+    "atoms",
+    "virtual_sites2",
+    "virtual_sites3",
+    "virtual_sites4",
+    "virtual_sitesn",
+    "bonds",
+    "exclusions",
+    "pairs",
+    "pairs_nb",
+    "angles",
+    "dihedrals",
+    "constraints",
+    "settles",
+    "polarization",
+    "water_polarization",
+    "thole_polarization",
+    "system",
+    "molecules",
+    "position_restraints",
+    "angle_restraints",
+    "angle_restraints_z",
+    "distance_restraints",
+    "orientation_restraints",
+    "dihedral_restraints",
+    "cmap",
+    "invalid"
+};
+
 int ifunc_index(directive d, int type)
 {
     switch (d)
@@ -248,11 +291,11 @@ const char *dir2str (directive d)
 {
     if (d < d_maxdir)
     {
-        return ds[d];
+        return directive_names[d];
     }
     else
     {
-        return ds[d_maxdir];
+        return directive_names[d_maxdir];
     }
 }
 

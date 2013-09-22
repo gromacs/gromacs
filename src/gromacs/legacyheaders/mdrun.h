@@ -44,7 +44,6 @@
 #include "tgroup.h"
 #include "filenm.h"
 #include "mshift.h"
-#include "force.h"
 #include "edsam.h"
 #include "mdebin.h"
 #include "vcm.h"
@@ -67,7 +66,6 @@ extern "C" {
 #define MD_IONIZE         (1<<3)
 #define MD_RERUN          (1<<4)
 #define MD_RERUN_VSITE    (1<<5)
-#define MD_FFSCAN         (1<<6)
 #define MD_SEPPOT         (1<<7)
 #define MD_PARTDEC        (1<<9)
 #define MD_DDBONDCHECK    (1<<10)
@@ -189,7 +187,7 @@ void set_state_entries(t_state *state, const t_inputrec *ir, int nnodes);
 
 /* Broadcast the data for a simulation, and allocate node-specific settings
    such as rng generators. */
-void init_parallel(FILE *log, t_commrec *cr, t_inputrec *inputrec,
+void init_parallel(t_commrec *cr, t_inputrec *inputrec,
                    gmx_mtop_t *mtop);
 
 int mdrunner(gmx_hw_opt_t *hw_opt,
@@ -199,7 +197,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              real rdd, real rconstr, const char *dddlb_opt, real dlb_scale,
              const char *ddcsx, const char *ddcsy, const char *ddcsz,
              const char *nbpu_opt,
-             int nsteps_cmdline, int nstepout, int resetstep,
+             gmx_large_int_t nsteps_cmdline, int nstepout, int resetstep,
              int nmultisim, int repl_ex_nst, int repl_ex_nex,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags);

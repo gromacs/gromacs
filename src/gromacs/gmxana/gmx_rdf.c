@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "pbc.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
@@ -431,7 +430,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
     invvol_sum = 0;
     if (bPBC && (NULL != top))
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
 
     do
@@ -614,7 +613,7 @@ static void do_rdf(const char *fnNDX, const char *fnTPS, const char *fnTRX,
         }
         nframes++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
 
     if (bPBC && (NULL != top))
@@ -907,8 +906,11 @@ int gmx_rdf(int argc, char *argv[])
         { efXVG, "-hq", "hq",     ffOPTWR },
     };
 #define NFILE asize(fnm)
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (bCM || closet[0][0] != 'n' || rdft[0][0] == 'm' || rdft[0][6] == 'm')
     {
@@ -944,8 +946,6 @@ int gmx_rdf(int argc, char *argv[])
            opt2fn_null("-hq", NFILE, fnm),
            bCM, closet[0], rdft, bXY, bPBC, bNormalize, cutoff, binwidth, fade, ngroups,
            oenv);
-
-    thanx(stderr);
 
     return 0;
 }

@@ -41,6 +41,11 @@
 #include "gpp_atomtype.h"
 #include "hackblock.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 /* stuff for pdb2gmx */
 
 extern void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
@@ -51,5 +56,9 @@ extern void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
 
 extern void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,
                       gmx_bool bDeuterate);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif  /* _gen_vsite_h */

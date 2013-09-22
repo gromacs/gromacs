@@ -51,19 +51,67 @@
 
 #ifdef GMX_NBNXN_SIMD_4XN
 
+#ifdef GMX_NBNXN_HALF_WIDTH_SIMD
+#define GMX_USE_HALF_WIDTH_SIMD_HERE
+#endif
+#include "gmx_simd_macros.h"
+#include "gmx_simd_vec.h"
+
 #include "nbnxn_kernel_simd_4xn.h"
 
-/* Include all flavors of the SSE or AVX 4xN kernel loops */
+#if !(GMX_SIMD_WIDTH_HERE == 2 || GMX_SIMD_WIDTH_HERE == 4 || GMX_SIMD_WIDTH_HERE == 8)
+#error "unsupported SIMD width"
+#endif
 
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
+#define SUM_SIMD4(x) (x[0]+x[1]+x[2]+x[3])
+
+#define UNROLLI    NBNXN_CPU_CLUSTER_I_SIZE
+#define UNROLLJ    GMX_SIMD_WIDTH_HERE
+
+/* The stride of all the atom data arrays is max(UNROLLI,UNROLLJ) */
+#if GMX_SIMD_WIDTH_HERE >= UNROLLI
+#define STRIDE     GMX_SIMD_WIDTH_HERE
 #else
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
+#define STRIDE     UNROLLI
+#endif
+
+#if GMX_SIMD_WIDTH_HERE == 2
+#define SUM_SIMD(x)  (x[0]+x[1])
 #else
-#error "unsupported GMX_NBNXN_SIMD_BITWIDTH"
+#if GMX_SIMD_WIDTH_HERE == 4
+#define SUM_SIMD(x)  SUM_SIMD4(x)
+#else
+#if GMX_SIMD_WIDTH_HERE == 8
+#define SUM_SIMD(x)  (x[0]+x[1]+x[2]+x[3]+x[4]+x[5]+x[6]+x[7])
+#else
+#error "unsupported kernel configuration"
 #endif
 #endif
+#endif
+
+
+#include "nbnxn_kernel_simd_utils.h"
+
+static inline void
+gmx_load_simd_4xn_interactions(int            excl,
+                               gmx_exclfilter filter_S0,
+                               gmx_exclfilter filter_S1,
+                               gmx_exclfilter filter_S2,
+                               gmx_exclfilter filter_S3,
+                               gmx_mm_pb     *interact_S0,
+                               gmx_mm_pb     *interact_S1,
+                               gmx_mm_pb     *interact_S2,
+                               gmx_mm_pb     *interact_S3)
+{
+    /* Load integer interaction mask */
+    gmx_exclfilter mask_pr_S = gmx_load1_exclfilter(excl);
+    *interact_S0  = gmx_checkbitmask_pb(mask_pr_S, filter_S0);
+    *interact_S1  = gmx_checkbitmask_pb(mask_pr_S, filter_S1);
+    *interact_S2  = gmx_checkbitmask_pb(mask_pr_S, filter_S2);
+    *interact_S3  = gmx_checkbitmask_pb(mask_pr_S, filter_S3);
+}
+
+/* Include all flavors of the SSE or AVX 4xN kernel loops */
 
 /* Analytical reaction-field kernels */
 #define CALC_COUL_RF
@@ -151,8 +199,8 @@ static void reduce_group_energies(int ng, int ng_2log,
                                   const real *VSvdw, const real *VSc,
                                   real *Vvdw, real *Vc)
 {
-    const int simd_width   = GMX_SIMD_WIDTH_HERE;
-    const int unrollj_half = GMX_SIMD_WIDTH_HERE/2;
+    const int unrollj      = GMX_SIMD_WIDTH_HERE;
+    const int unrollj_half = unrollj/2;
     int       ng_p2, i, j, j0, j1, c, s;
 
     ng_p2 = (1<<ng_2log);
@@ -172,14 +220,14 @@ static void reduce_group_energies(int ng, int ng_2log,
         {
             for (j0 = 0; j0 < ng; j0++)
             {
-                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*simd_width;
+                c = ((i*ng + j1)*ng_p2 + j0)*unrollj_half*unrollj;
                 for (s = 0; s < unrollj_half; s++)
                 {
                     Vvdw[i*ng+j0] += VSvdw[c+0];
                     Vvdw[i*ng+j1] += VSvdw[c+1];
                     Vc  [i*ng+j0] += VSc  [c+0];
                     Vc  [i*ng+j1] += VSc  [c+1];
-                    c             += simd_width + 2;
+                    c             += unrollj + 2;
                 }
             }
         }

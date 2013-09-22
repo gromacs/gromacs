@@ -65,8 +65,7 @@ static void init_grptcstat(int ngtc, t_grp_tcstat tcstat[])
     }
 }
 
-static void init_grpstat(FILE *log,
-                         gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
+static void init_grpstat(gmx_mtop_t *mtop, int ngacc, t_grp_acc gstat[])
 {
     gmx_groups_t           *groups;
     gmx_mtop_atomloop_all_t aloop;
@@ -92,7 +91,7 @@ static void init_grpstat(FILE *log,
     }
 }
 
-void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
+void init_ekindata(FILE gmx_unused *log, gmx_mtop_t *mtop, t_grpopts *opts,
                    gmx_ekindata_t *ekind)
 {
     int i;
@@ -127,20 +126,29 @@ void init_ekindata(FILE *log, gmx_mtop_t *mtop, t_grpopts *opts,
 
     snew(ekind->ekin_work_alloc, nthread);
     snew(ekind->ekin_work, nthread);
+    snew(ekind->dekindl_work, nthread);
 #pragma omp parallel for num_threads(nthread) schedule(static)
     for (thread = 0; thread < nthread; thread++)
     {
-        /* Allocate 2 elements extra on both sides,
-         * so in single precision we have 2*3*3*4=72 bytes buffer
-         * on both sides to avoid cache pollution.
+#define EKIN_WORK_BUFFER_SIZE 2
+        /* Allocate 2 extra elements on both sides, so in single
+         * precision we have
+         * EKIN_WORK_BUFFER_SIZE*DIM*DIM*sizeof(real) = 72/144 bytes
+         * buffer on both sides to avoid cache pollution.
          */
-        snew(ekind->ekin_work_alloc[thread], ekind->ngtc+4);
-        ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + 2;
+        snew(ekind->ekin_work_alloc[thread], ekind->ngtc+2*EKIN_WORK_BUFFER_SIZE);
+        ekind->ekin_work[thread] = ekind->ekin_work_alloc[thread] + EKIN_WORK_BUFFER_SIZE;
+        /* Nasty hack so we can have the per-thread accumulation
+         * variable for dekindl in the same thread-local cache lines
+         * as the per-thread accumulation tensors for ekin[fh],
+         * because they are accumulated in the same loop. */
+        ekind->dekindl_work[thread] = &(ekind->ekin_work[thread][ekind->ngtc][0][0]);
+#undef EKIN_WORK_BUFFER_SIZE
     }
 
     ekind->ngacc = opts->ngacc;
     snew(ekind->grpstat, opts->ngacc);
-    init_grpstat(log, mtop, opts->ngacc, ekind->grpstat);
+    init_grpstat(mtop, opts->ngacc, ekind->grpstat);
 }
 
 void accumulate_u(t_commrec *cr, t_grpopts *opts, gmx_ekindata_t *ekind)
@@ -227,7 +235,7 @@ void update_ekindata(int start, int homenr, gmx_ekindata_t *ekind,
 }
 
 real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
-              gmx_bool bEkinAveVel, gmx_bool bSaveEkinOld, gmx_bool bScaleEkin)
+              gmx_bool bEkinAveVel, gmx_bool bScaleEkin)
 {
     int           i, j, m, ngtc;
     real          T, ek;
@@ -264,7 +272,6 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
                 }
             }
             else
-
             {
                 /* Calculate the full step Ekin as the average of the half steps */
                 for (j = 0; (j < DIM); j++)
@@ -305,7 +312,14 @@ real sum_ekin(t_grpopts *opts, gmx_ekindata_t *ekind, real *dekindlambda,
     }
     if (dekindlambda)
     {
-        *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+        if (bEkinAveVel)
+        {
+            *dekindlambda = ekind->dekindl;
+        }
+        else
+        {
+            *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
+        }
     }
     return T;
 }

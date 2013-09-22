@@ -41,7 +41,6 @@
 #include "macros.h"
 #include <math.h>
 #include "xvgr.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "vec.h"
@@ -136,8 +135,11 @@ int gmx_dist(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bCutoff    = opt2parg_bSet("-dist", NPA, pa);
     cut2       = cut*cut;
@@ -208,7 +210,7 @@ int gmx_dist(int argc, char *argv[])
         pbc = NULL;
     }
 
-    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     do
     {
         /* initialisation for correct distance calculations */
@@ -304,7 +306,7 @@ int gmx_dist(int argc, char *argv[])
 
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     gmx_rmpbc_done(gpbc);
 
     if (!bCutoff)
@@ -343,6 +345,5 @@ int gmx_dist(int argc, char *argv[])
         ffclose(fp);
     }
 
-    thanx(stderr);
     return 0;
 }

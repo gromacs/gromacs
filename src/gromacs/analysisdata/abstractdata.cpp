@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,12 +43,13 @@
 
 #include <vector>
 
+#include "gromacs/analysisdata/dataframe.h"
 #include "gromacs/analysisdata/datamodule.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/uniqueptr.h"
 
-#include "dataframe.h"
 #include "dataproxy.h"
 
 namespace gmx
@@ -66,81 +67,20 @@ namespace gmx
 class AbstractAnalysisData::Impl
 {
     public:
-        //! Shorthand for list of modules added to the data.
-        typedef std::vector<AnalysisDataModulePointer> ModuleList;
-
         Impl();
 
-        /*! \brief
-         * Present data already added to the data object to a module.
-         *
-         * \param[in] data   Data object to read data from.
-         * \param[in] module Module to present the data to.
-         * \throws    APIError if \p module is not compatible with the data
-         *      object.
-         * \throws    APIError if all data is not available through
-         *      getDataFrame().
-         * \throws    unspecified Any exception thrown by \p module in its data
-         *      notification methods.
-         *
-         * Uses getDataFrame() in \p data to access all data in the object, and
-         * calls the notification functions in \p module as if the module had
-         * been registered to the data object when the data was added.
-         */
-        void presentData(AbstractAnalysisData        *data,
-                         AnalysisDataModuleInterface *module);
-
-        //! List of modules added to the data.
-        ModuleList              modules_;
-        //! true if all modules support missing data.
-        bool                    bAllowMissing_;
-        //! Whether notifyDataStart() has been called.
-        mutable bool            bDataStart_;
-        //! Whether new data is being added.
-        mutable bool            bInData_;
-        //! Whether data for a frame is being added.
-        mutable bool            bInFrame_;
-        //! Index of the currently active frame.
-        mutable int             currIndex_;
-        /*! \brief
-         * Total number of frames in the data.
-         *
-         * The counter is incremented in notifyFrameFinish().
-         */
-        int                     nframes_;
+        //! Column counts for each data set in the data.
+        std::vector<int>           columnCounts_;
+        //! Whether the data is multipoint.
+        bool                       bMultipoint_;
+        //! Manager for the added modules.
+        AnalysisDataModuleManager  modules_;
 };
 
 AbstractAnalysisData::Impl::Impl()
-    : bAllowMissing_(true), bDataStart_(false), bInData_(false), bInFrame_(false),
-      currIndex_(-1), nframes_(0)
+    : bMultipoint_(false)
 {
-}
-
-void
-AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
-                                        AnalysisDataModuleInterface *module)
-{
-    module->dataStarted(data);
-    bool bCheckMissing = bAllowMissing_
-        && !(module->flags() & AnalysisDataModuleInterface::efAllowMissing);
-    for (int i = 0; i < data->frameCount(); ++i)
-    {
-        AnalysisDataFrameRef frame = data->getDataFrame(i);
-        GMX_RELEASE_ASSERT(frame.isValid(), "Invalid data frame returned");
-        // TODO: Check all frames before doing anything for slightly better
-        // exception behavior.
-        if (bCheckMissing && !frame.allPresent())
-        {
-            GMX_THROW(APIError("Missing data not supported by a module"));
-        }
-        module->frameStarted(frame.header());
-        module->pointsAdded(frame.points());
-        module->frameFinished(frame.header());
-    }
-    if (!bInData_)
-    {
-        module->dataFinished();
-    }
+    columnCounts_.push_back(0);
 }
 
 
@@ -149,7 +89,7 @@ AbstractAnalysisData::Impl::presentData(AbstractAnalysisData        *data,
  */
 /*! \cond libapi */
 AbstractAnalysisData::AbstractAnalysisData()
-    : impl_(new Impl()), columnCount_(0), bMultiPoint_(false)
+    : impl_(new Impl())
 {
 }
 //! \endcond
@@ -158,11 +98,32 @@ AbstractAnalysisData::~AbstractAnalysisData()
 {
 }
 
+bool
+AbstractAnalysisData::isMultipoint() const
+{
+    return impl_->bMultipoint_;
+}
 
 int
-AbstractAnalysisData::frameCount() const
+AbstractAnalysisData::dataSetCount() const
 {
-    return impl_->nframes_;
+    return impl_->columnCounts_.size();
+}
+
+int
+AbstractAnalysisData::columnCount(int dataSet) const
+{
+    GMX_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+               "Out of range data set index");
+    return impl_->columnCounts_[dataSet];
+}
+
+int
+AbstractAnalysisData::columnCount() const
+{
+    GMX_ASSERT(dataSetCount() == 1,
+               "Convenience method not available for multiple data sets");
+    return columnCount(0);
 }
 
 
@@ -204,24 +165,7 @@ AbstractAnalysisData::requestStorage(int nframes)
 void
 AbstractAnalysisData::addModule(AnalysisDataModulePointer module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
-    {
-        GMX_THROW(APIError("Data module not compatible with data object properties"));
-    }
-
-    if (impl_->bDataStart_)
-    {
-        GMX_RELEASE_ASSERT(!impl_->bInFrame_,
-                           "Cannot add data modules in mid-frame");
-        impl_->presentData(this, module.get());
-    }
-    if (!(module->flags() & AnalysisDataModuleInterface::efAllowMissing))
-    {
-        impl_->bAllowMissing_ = false;
-    }
-    impl_->modules_.push_back(module);
+    impl_->modules_.addModule(this, module);
 }
 
 
@@ -229,13 +173,8 @@ void
 AbstractAnalysisData::addColumnModule(int col, int span,
                                       AnalysisDataModulePointer module)
 {
-    GMX_RELEASE_ASSERT(col >= 0 && span >= 1 && col + span <= columnCount_,
+    GMX_RELEASE_ASSERT(col >= 0 && span >= 1,
                        "Invalid columns specified for a column module");
-    if (impl_->bDataStart_)
-    {
-        GMX_THROW(NotImplementedError("Cannot add column modules after data"));
-    }
-
     boost::shared_ptr<AnalysisDataProxy> proxy(
             new AnalysisDataProxy(col, span, this));
     proxy->addModule(module);
@@ -246,141 +185,55 @@ AbstractAnalysisData::addColumnModule(int col, int span,
 void
 AbstractAnalysisData::applyModule(AnalysisDataModuleInterface *module)
 {
-    if ((columnCount() > 1 && !(module->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
-        || (isMultipoint() && !(module->flags() & AnalysisDataModuleInterface::efAllowMultipoint))
-        || (!isMultipoint() && (module->flags() & AnalysisDataModuleInterface::efOnlyMultipoint)))
-    {
-        GMX_THROW(APIError("Data module not compatible with data object properties"));
-    }
-    GMX_RELEASE_ASSERT(impl_->bDataStart_ && !impl_->bInData_,
-                       "Data module can only be applied to ready data");
-
-    impl_->presentData(this, module);
+    impl_->modules_.applyModule(this, module);
 }
 
 /*! \cond libapi */
 void
-AbstractAnalysisData::setColumnCount(int columnCount)
+AbstractAnalysisData::setDataSetCount(int dataSetCount)
 {
+    GMX_RELEASE_ASSERT(dataSetCount > 0, "Invalid data column count");
+    impl_->modules_.dataPropertyAboutToChange(
+            AnalysisDataModuleManager::eMultipleDataSets, dataSetCount > 1);
+    impl_->columnCounts_.resize(dataSetCount);
+}
+
+void
+AbstractAnalysisData::setColumnCount(int dataSet, int columnCount)
+{
+    GMX_RELEASE_ASSERT(dataSet >= 0 && dataSet < dataSetCount(),
+                       "Out of range data set index");
     GMX_RELEASE_ASSERT(columnCount > 0, "Invalid data column count");
-    GMX_RELEASE_ASSERT(columnCount_ == 0 || impl_->modules_.empty(),
-                       "Data column count cannot be changed after modules are added");
-    GMX_RELEASE_ASSERT(!impl_->bDataStart_,
-                       "Data column count cannot be changed after data has been added");
-    columnCount_ = columnCount;
-}
 
-
-void
-AbstractAnalysisData::setMultipoint(bool multipoint)
-{
-    GMX_RELEASE_ASSERT(impl_->modules_.empty(),
-                       "Data type cannot be changed after modules are added");
-    GMX_RELEASE_ASSERT(!impl_->bDataStart_,
-                       "Data type cannot be changed after data has been added");
-    bMultiPoint_ = multipoint;
-}
-
-
-/*! \internal
- * This method is not const because the dataStarted() methods of the attached
- * modules can request storage of the data.
- */
-void
-AbstractAnalysisData::notifyDataStart()
-{
-    GMX_RELEASE_ASSERT(!impl_->bDataStart_,
-                       "notifyDataStart() called more than once");
-    GMX_RELEASE_ASSERT(columnCount_ > 0, "Data column count is not set");
-    impl_->bDataStart_ = impl_->bInData_ = true;
-
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
+    bool bMultipleColumns = columnCount > 1;
+    for (int i = 0; i < dataSetCount() && !bMultipleColumns; ++i)
     {
-        if (columnCount_ > 1 && !((*i)->flags() & AnalysisDataModuleInterface::efAllowMulticolumn))
+        if (i != dataSet && this->columnCount(i) > 1)
         {
-            GMX_THROW(APIError("Data module not compatible with data object properties"));
+            bMultipleColumns = true;
         }
-        (*i)->dataStarted(this);
     }
+    impl_->modules_.dataPropertyAboutToChange(
+            AnalysisDataModuleManager::eMultipleColumns, bMultipleColumns);
+    impl_->columnCounts_[dataSet] = columnCount;
 }
 
-
 void
-AbstractAnalysisData::notifyFrameStart(const AnalysisDataFrameHeader &header) const
+AbstractAnalysisData::setMultipoint(bool bMultipoint)
 {
-    GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
-    GMX_ASSERT(!impl_->bInFrame_,
-               "notifyFrameStart() called while inside a frame");
-    GMX_ASSERT(header.index() == impl_->nframes_,
-               "Out of order frames");
-    impl_->bInFrame_  = true;
-    impl_->currIndex_ = header.index();
-
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
-    {
-        (*i)->frameStarted(header);
-    }
+    impl_->modules_.dataPropertyAboutToChange(
+            AnalysisDataModuleManager::eMultipoint, bMultipoint);
+    impl_->bMultipoint_ = bMultipoint;
 }
 
-
-void
-AbstractAnalysisData::notifyPointsAdd(const AnalysisDataPointSetRef &points) const
+AnalysisDataModuleManager &AbstractAnalysisData::moduleManager()
 {
-    GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
-    GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
-    GMX_ASSERT(points.lastColumn() < columnCount(), "Invalid columns");
-    GMX_ASSERT(points.frameIndex() == impl_->currIndex_,
-               "Points do not correspond to current frame");
-    if (!impl_->bAllowMissing_ && !points.allPresent())
-    {
-        GMX_THROW(APIError("Missing data not supported by a module"));
-    }
-
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
-    {
-        (*i)->pointsAdded(points);
-    }
+    return impl_->modules_;
 }
 
-
-void
-AbstractAnalysisData::notifyFrameFinish(const AnalysisDataFrameHeader &header)
+const AnalysisDataModuleManager &AbstractAnalysisData::moduleManager() const
 {
-    GMX_ASSERT(impl_->bInData_, "notifyDataStart() not called");
-    GMX_ASSERT(impl_->bInFrame_, "notifyFrameStart() not called");
-    GMX_ASSERT(header.index() == impl_->currIndex_,
-               "Header does not correspond to current frame");
-    impl_->bInFrame_  = false;
-    impl_->currIndex_ = -1;
-
-    // Increment the counter before notifications to allow frame access from
-    // modules.
-    ++impl_->nframes_;
-
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
-    {
-        (*i)->frameFinished(header);
-    }
-}
-
-
-void
-AbstractAnalysisData::notifyDataFinish() const
-{
-    GMX_RELEASE_ASSERT(impl_->bInData_, "notifyDataStart() not called");
-    GMX_RELEASE_ASSERT(!impl_->bInFrame_,
-                       "notifyDataFinish() called while inside a frame");
-    impl_->bInData_ = false;
-
-    Impl::ModuleList::const_iterator i;
-    for (i = impl_->modules_.begin(); i != impl_->modules_.end(); ++i)
-    {
-        (*i)->dataFinished();
-    }
+    return impl_->modules_;
 }
 //! \endcond
 

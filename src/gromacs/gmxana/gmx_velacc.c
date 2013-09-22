@@ -39,7 +39,6 @@
 #include <math.h>
 
 #include "confio.h"
-#include "copyrite.h"
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
@@ -57,7 +56,7 @@
 #include "strdb.h"
 #include "xvgr.h"
 #include "gmx_ana.h"
-#include "gmx_fft.h"
+#include "gromacs/fft/fft.h"
 
 static void index_atom2mol(int *n, atom_id *index, t_block *mols)
 {
@@ -235,8 +234,11 @@ int gmx_velacc(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     if (bMol || bMass)
     {
@@ -363,8 +365,6 @@ int gmx_velacc(int argc, char *argv[])
     {
         fprintf(stderr, "Not enough frames in trajectory - no output generated.\n");
     }
-
-    thanx(stderr);
 
     return 0;
 }

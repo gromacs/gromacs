@@ -64,12 +64,6 @@
 #include "corewrap.h"
 #endif
 
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
-
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 #define CPTSTRLEN 1024
@@ -283,7 +277,7 @@ static void do_cpt_step_err(XDR *xd, const char *desc, gmx_large_int_t *i, FILE 
     bool_t res = 0;
     char   buf[STEPSTRSIZE];
 
-    res = xdr_gmx_large_int(xd, i, "reading checkpoint file");
+    res = xdr_gmx_large_int(xd, i);
     if (res == 0)
     {
         cp_error();
@@ -309,7 +303,7 @@ static void do_cpt_double_err(XDR *xd, const char *desc, double *f, FILE *list)
     }
 }
 
-static void do_cpt_real_err(XDR *xd, const char *desc, real *f)
+static void do_cpt_real_err(XDR *xd, real *f)
 {
     bool_t res = 0;
 
@@ -332,7 +326,7 @@ static void do_cpt_n_rvecs_err(XDR *xd, const char *desc, int n, rvec f[], FILE 
     {
         for (j = 0; j < DIM; j++)
         {
-            do_cpt_real_err(xd, desc, &f[i][j]);
+            do_cpt_real_err(xd, &f[i][j]);
         }
     }
 
@@ -949,7 +943,7 @@ static void do_cpt_header(XDR *xd, gmx_bool bRead, int *file_version,
     }
 }
 
-static int do_cpt_footer(XDR *xd, gmx_bool bRead, int file_version)
+static int do_cpt_footer(XDR *xd, int file_version)
 {
     bool_t res = 0;
     int    magic;
@@ -971,8 +965,7 @@ static int do_cpt_footer(XDR *xd, gmx_bool bRead, int file_version)
     return 0;
 }
 
-static int do_cpt_state(XDR *xd, gmx_bool bRead,
-                        int fflags, t_state *state,
+static int do_cpt_state(XDR *xd, int fflags, t_state *state,
                         gmx_bool bReadRNG, FILE *list)
 {
     int    sflags;
@@ -1042,8 +1035,7 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
-static int do_cpt_ekinstate(XDR *xd, gmx_bool bRead,
-                            int fflags, ekinstate_t *ekins,
+static int do_cpt_ekinstate(XDR *xd, int fflags, ekinstate_t *ekins,
                             FILE *list)
 {
     int  i;
@@ -1178,7 +1170,7 @@ static int do_cpt_enerhist(XDR *xd, gmx_bool bRead,
     return ret;
 }
 
-static int do_cpt_df_hist(XDR *xd, gmx_bool bRead, int fflags, df_history_t *dfhist, FILE *list)
+static int do_cpt_df_hist(XDR *xd, int fflags, df_history_t *dfhist, FILE *list)
 {
     int  i, nlambda;
     int  ret;
@@ -1532,10 +1524,10 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
     sfree(bhost);
     sfree(fprog);
 
-    if ((do_cpt_state(gmx_fio_getxdr(fp), FALSE, state->flags, state, TRUE, NULL) < 0)        ||
-        (do_cpt_ekinstate(gmx_fio_getxdr(fp), FALSE, flags_eks, &state->ekinstate, NULL) < 0) ||
+    if ((do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, TRUE, NULL) < 0)        ||
+        (do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL) < 0) ||
         (do_cpt_enerhist(gmx_fio_getxdr(fp), FALSE, flags_enh, &state->enerhist, NULL) < 0)  ||
-        (do_cpt_df_hist(gmx_fio_getxdr(fp), FALSE, flags_dfh, &state->dfhist, NULL) < 0)  ||
+        (do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL) < 0)  ||
         (do_cpt_EDstate(gmx_fio_getxdr(fp), FALSE, &state->edsamstate, NULL) < 0)      ||
         (do_cpt_files(gmx_fio_getxdr(fp), FALSE, &outputfiles, &noutputfiles, NULL,
                       file_version) < 0))
@@ -1543,7 +1535,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
         gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of disk space?");
     }
 
-    do_cpt_footer(gmx_fio_getxdr(fp), FALSE, file_version);
+    do_cpt_footer(gmx_fio_getxdr(fp), file_version);
 
     /* we really, REALLY, want to make sure to physically write the checkpoint,
        and all the files it depends on, out to disk. Because we've
@@ -1948,15 +1940,14 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
                         cr, bPartDecomp, nppnodes_f, npmenodes_f, dd_nc, dd_nc_f);
         }
     }
-    ret             = do_cpt_state(gmx_fio_getxdr(fp), TRUE, fflags, state, *bReadRNG, NULL);
+    ret             = do_cpt_state(gmx_fio_getxdr(fp), fflags, state, *bReadRNG, NULL);
     *init_fep_state = state->fep_state;  /* there should be a better way to do this than setting it here.
                                             Investigate for 5.0. */
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), TRUE,
-                           flags_eks, &state->ekinstate, NULL);
+    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL);
     if (ret)
     {
         cp_error();
@@ -1990,8 +1981,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         state->enerhist.nsum_sim = *step;
     }
 
-    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), TRUE,
-                         flags_dfh, &state->dfhist, NULL);
+    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL);
     if (ret)
     {
         cp_error();
@@ -2003,7 +1993,7 @@ static void read_checkpoint(const char *fn, FILE **pfplog,
         cp_error();
     }
 
-    ret = do_cpt_footer(gmx_fio_getxdr(fp), TRUE, file_version);
+    ret = do_cpt_footer(gmx_fio_getxdr(fp), file_version);
     if (ret)
     {
         cp_error();
@@ -2218,13 +2208,12 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
                   &(state->dfhist.nlambda), &state->flags, &flags_eks, &flags_enh, &flags_dfh,
                   &state->edsamstate.nED, NULL);
     ret =
-        do_cpt_state(gmx_fio_getxdr(fp), TRUE, state->flags, state, bReadRNG, NULL);
+        do_cpt_state(gmx_fio_getxdr(fp), state->flags, state, bReadRNG, NULL);
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), TRUE,
-                           flags_eks, &state->ekinstate, NULL);
+    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state->ekinstate, NULL);
     if (ret)
     {
         cp_error();
@@ -2235,8 +2224,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
     {
         cp_error();
     }
-    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), TRUE,
-                         flags_dfh, &state->dfhist, NULL);
+    ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state->dfhist, NULL);
     if (ret)
     {
         cp_error();
@@ -2262,7 +2250,7 @@ static void read_checkpoint_data(t_fileio *fp, int *simulation_part,
         cp_error();
     }
 
-    ret = do_cpt_footer(gmx_fio_getxdr(fp), TRUE, file_version);
+    ret = do_cpt_footer(gmx_fio_getxdr(fp), file_version);
     if (ret)
     {
         cp_error();
@@ -2359,13 +2347,12 @@ void list_checkpoint(const char *fn, FILE *out)
                   &state.natoms, &state.ngtc, &state.nnhpres, &state.nhchainlength,
                   &(state.dfhist.nlambda), &state.flags,
                   &flags_eks, &flags_enh, &flags_dfh, &state.edsamstate.nED, out);
-    ret = do_cpt_state(gmx_fio_getxdr(fp), TRUE, state.flags, &state, TRUE, out);
+    ret = do_cpt_state(gmx_fio_getxdr(fp), state.flags, &state, TRUE, out);
     if (ret)
     {
         cp_error();
     }
-    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), TRUE,
-                           flags_eks, &state.ekinstate, out);
+    ret = do_cpt_ekinstate(gmx_fio_getxdr(fp), flags_eks, &state.ekinstate, out);
     if (ret)
     {
         cp_error();
@@ -2376,8 +2363,7 @@ void list_checkpoint(const char *fn, FILE *out)
     if (ret == 0)
     {
         init_df_history(&state.dfhist, state.dfhist.nlambda, 0); /* reinitialize state with correct sizes */
-        ret = do_cpt_df_hist(gmx_fio_getxdr(fp), TRUE,
-                             flags_dfh, &state.dfhist, out);
+        ret = do_cpt_df_hist(gmx_fio_getxdr(fp), flags_dfh, &state.dfhist, out);
     }
 
     if (ret == 0)
@@ -2392,7 +2378,7 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        ret = do_cpt_footer(gmx_fio_getxdr(fp), TRUE, file_version);
+        ret = do_cpt_footer(gmx_fio_getxdr(fp), file_version);
     }
 
     if (ret)

@@ -50,7 +50,6 @@ t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
 
 void init_QMMMrec(t_commrec  *cr,
-                  matrix      box,
                   gmx_mtop_t *mtop,
                   t_inputrec *ir,
                   t_forcerec *fr);
@@ -77,8 +76,7 @@ void update_QMMMrec(t_commrec      *cr,
 
 real calculate_QMMM(t_commrec *cr,
                     rvec x[], rvec f[],
-                    t_forcerec *fr,
-                    t_mdatoms *md);
+                    t_forcerec *fr);
 
 /* QMMM computes the QM forces. This routine makes either function
  * calls to gmx QM routines (derived from MOPAC7 (semi-emp.) and MPQC

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -66,7 +66,7 @@ namespace gmx
  * accessed before it is available.
  *
  * \todo
- * Add methods to take full advantage of AnalysisDataValue features.
+ * Add support for multiple data sets.
  *
  * \inlibraryapi
  * \ingroup module_analysisdata
@@ -75,6 +75,11 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
 {
     public:
         virtual ~AbstractAnalysisArrayData();
+
+        virtual int frameCount() const
+        {
+            return bReady_ ? rowCount_ : 0;
+        }
 
         /*! \brief
          * Returns the number of rows in the data array.
@@ -96,12 +101,12 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
             return xstart() + row * xstep();
         }
         //! Returns a given array element.
-        real value(int row, int col) const
+        const AnalysisDataValue &value(int row, int col) const
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col].value();
+            return value_[row * columnCount() + col];
         }
 
     protected:
@@ -154,25 +159,12 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
          */
         void setXAxis(real start, real step);
         //! Returns a reference to a given array element.
-        real &value(int row, int col)
+        AnalysisDataValue &value(int row, int col)
         {
             GMX_ASSERT(row >= 0 && row < rowCount(), "Row index out of range");
             GMX_ASSERT(col >= 0 && col < columnCount(), "Column index out of range");
             GMX_ASSERT(isAllocated(), "Data array not allocated");
-            return value_[row * columnCount() + col].value();
-        }
-        /*! \brief
-         * Sets the value of an element in the array.
-         *
-         * \param[in] row  Zero-based row index for the value.
-         * \param[in] col  Zero-based column index for the value.
-         * \param[in] val  Value to set in the given location.
-         *
-         * Does not throw.
-         */
-        void setValue(int row, int col, real val)
-        {
-            value(row, col) = val;
+            return value_[row * columnCount() + col];
         }
         /*! \brief
          * Notifies modules of the data.
@@ -203,6 +195,7 @@ class AbstractAnalysisArrayData : public AbstractAnalysisData
         virtual bool requestStorageInternal(int nframes);
 
         int                            rowCount_;
+        AnalysisDataPointSetInfo       pointSetInfo_;
         std::vector<AnalysisDataValue> value_;
         real                           xstart_;
         real                           xstep_;
@@ -245,7 +238,6 @@ class AnalysisArrayData : public AbstractAnalysisArrayData
         using AbstractAnalysisArrayData::allocateValues;
         using AbstractAnalysisArrayData::setXAxis;
         using AbstractAnalysisArrayData::value;
-        using AbstractAnalysisArrayData::setValue;
         using AbstractAnalysisArrayData::valuesReady;
 
         // Copy and assign disallowed by base.

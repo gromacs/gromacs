@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 4.6
+set VER		= 4.6.3
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -51,13 +51,12 @@ cat > $HTMLIDX << EOD
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
-GROMACS 4.6<br>
+GROMACS $VER<br>
 Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION 4.6<br>
-Sat 19 Jan 2013</B></td>
+<B>VERSION $VER</B></td>
 </tr>
 </table>
 
@@ -135,13 +134,16 @@ echo "-------------------------------------------"
 
 cd $dir
 
+setenv GMX_MAXBACKUP -1
 foreach program ( $PROGRAMS )
-  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) ) then
+  if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "demux.pl" ) ) then
     echo -n "$program "
     cd $HTMLOL
     $GMXBINDIR/$program -quiet -man html >& /dev/null
+    cd ..
     endif
   endif
 end
+echo
 
 #last line

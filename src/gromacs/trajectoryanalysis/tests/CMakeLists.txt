@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2010,2012, by the GROMACS development team, led by
+# Copyright (c) 2010,2012,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -35,6 +35,8 @@
 gmx_add_unit_test(TrajectoryAnalysisUnitTests trajectoryanalysis-test
                   moduletest.cpp
                   angle.cpp
+                  distance.cpp
+                  freevolume.cpp
                   select.cpp)
 
 add_executable(test_selection test_selection.cpp)

@@ -40,7 +40,6 @@
 #include "smalloc.h"
 #include "macros.h"
 #include "confio.h"
-#include "copyrite.h"
 #include "xvgr.h"
 #include "index.h"
 #include "do_fit.h"
@@ -121,9 +120,12 @@ int gmx_morph(int argc, char *argv[])
     gmx_bool         bRMS;
     output_env_t     oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
     get_stx_coordnum (opt2fn("-f1", NFILE, fnm), &nat1);
     get_stx_coordnum (opt2fn("-f2", NFILE, fnm), &nat2);
     if (nat1 != nat2)
@@ -196,8 +198,6 @@ int gmx_morph(int argc, char *argv[])
         ffclose(fp);
         do_view(oenv, opt2fn("-or", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

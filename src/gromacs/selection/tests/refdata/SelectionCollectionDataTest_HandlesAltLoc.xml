@@ -4,13 +4,11 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">altloc " "</String>
-      <String Name="Name">altloc " "</String>
       <String Name="Text">altloc " "</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">altloc A</String>
-      <String Name="Name">altloc A</String>
       <String Name="Text">altloc A</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>

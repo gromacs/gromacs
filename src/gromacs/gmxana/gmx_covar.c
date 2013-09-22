@@ -51,7 +51,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -69,11 +68,6 @@
 #include "string2.h"
 
 #include "gromacs/linearalgebra/eigensolver.h"
-
-/* Portable version of ctime_r implemented in src/gmxlib/string2.c, but we do not want it declared in public installed headers */
-char *
-gmx_ctime_r(const time_t *clock, char *buf, int n);
-
 
 int gmx_covar(int argc, char *argv[])
 {
@@ -168,8 +162,11 @@ int gmx_covar(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     clear_mat(zerobox);
 
@@ -258,7 +255,7 @@ int gmx_covar(int argc, char *argv[])
     /* Prepare reference frame */
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, atoms->nr);
         gmx_rmpbc(gpbc, atoms->nr, box, xref);
     }
     if (bFit)
@@ -300,7 +297,7 @@ int gmx_covar(int argc, char *argv[])
             rvec_inc(xav[i], xread[index[i]]);
         }
     }
-    while (read_next_x(oenv, status, &t, nat, xread, box));
+    while (read_next_x(oenv, status, &t, xread, box));
     close_trj(status);
 
     inv_nframes = 1.0/nframes0;
@@ -366,7 +363,7 @@ int gmx_covar(int argc, char *argv[])
             }
         }
     }
-    while (read_next_x(oenv, status, &t, nat, xread, box) &&
+    while (read_next_x(oenv, status, &t, xread, box) &&
            (bRef || nframes < nframes0));
     close_trj(status);
     gmx_rmpbc_done(gpbc);
@@ -652,8 +649,6 @@ int gmx_covar(int argc, char *argv[])
     ffclose(out);
 
     fprintf(stderr, "Wrote the log to %s\n", logfile);
-
-    thanx(stderr);
 
     return 0;
 }

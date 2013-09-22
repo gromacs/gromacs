@@ -7,13 +7,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection1">
       <String Name="Input">resname RA and value &lt;= 4</String>
-      <String Name="Name">resname RA and value &lt;= 4</String>
       <String Name="Text">resname RA and value &lt;= 4</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">resname RA RB and x &lt; 3 and value &lt;= 4</String>
-      <String Name="Name">resname RA RB and x &lt; 3 and value &lt;= 4</String>
       <String Name="Text">resname RA RB and x &lt; 3 and value &lt;= 4</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
@@ -22,13 +20,11 @@
     </ParsedVariable>
     <ParsedSelection Name="Selection3">
       <String Name="Input">resname RA and index &lt; 3</String>
-      <String Name="Name">resname RA and index &lt; 3</String>
       <String Name="Text">resname RA and index &lt; 3</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection4">
       <String Name="Input">resname RB and y &lt; 3 and index &lt; 6</String>
-      <String Name="Name">resname RB and y &lt; 3 and index &lt; 6</String>
       <String Name="Text">resname RB and y &lt; 3 and index &lt; 6</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

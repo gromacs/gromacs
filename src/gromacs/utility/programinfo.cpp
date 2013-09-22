@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -58,6 +58,7 @@
 #include "gromacs/legacyheaders/thread_mpi/mutex.h"
 
 #include "gromacs/utility/exceptions.h"
+#include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
 #include "gromacs/utility/stringutil.h"
 
@@ -66,12 +67,25 @@ namespace gmx
 
 namespace
 {
+
 //! Mutex for updates to the global program info objects.
 tMPI::mutex                    g_programInfoMutex;
-//! Partially filled program info, needed to support set_program_name().
-boost::scoped_ptr<ProgramInfo> g_partialProgramInfo;
 //! Global program info; stores the object initialized with ProgramInfo::init().
 boost::scoped_ptr<ProgramInfo> g_programInfo;
+
+/*! \brief
+ * Quotes a string if it contains spaces.
+ */
+std::string quoteIfNecessary(const char *str)
+{
+    const bool bSpaces = (std::strchr(str, ' ') != NULL);
+    if (bSpaces)
+    {
+        return formatString("'%s'", str);
+    }
+    return str;
+}
+
 }   // namespace
 
 /********************************************************************
@@ -84,11 +98,13 @@ class ProgramInfo::Impl
         Impl();
         Impl(const char *realBinaryName, int argc, const char *const argv[]);
 
-        std::string realBinaryName_;
-        std::string fullInvokedProgram_;
-        std::string programName_;
-        std::string invariantProgramName_;
-        std::string commandLine_;
+        std::string             realBinaryName_;
+        std::string             fullInvokedProgram_;
+        std::string             programName_;
+        std::string             invariantProgramName_;
+        std::string             commandLine_;
+        std::string             displayName_;
+        mutable tMPI::mutex     displayNameMutex_;
 };
 
 ProgramInfo::Impl::Impl()
@@ -124,23 +140,11 @@ ProgramInfo::Impl::Impl(const char *realBinaryName,
         realBinaryName_ = invariantProgramName_;
     }
 
-    for (int i = 0; i < argc; ++i)
+    commandLine_ = quoteIfNecessary(programName_.c_str());
+    for (int i = 1; i < argc; ++i)
     {
-        if (i > 0)
-        {
-            commandLine_.append(" ");
-        }
-        const char *arg     = argv[i];
-        bool        bSpaces = (std::strchr(arg, ' ') != NULL);
-        if (bSpaces)
-        {
-            commandLine_.append("'");
-        }
-        commandLine_.append(arg);
-        if (bSpaces)
-        {
-            commandLine_.append("'");
-        }
+        commandLine_.append(" ");
+        commandLine_.append(quoteIfNecessary(argv[i]));
     }
 }
 
@@ -154,10 +158,6 @@ const ProgramInfo &ProgramInfo::getInstance()
     tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
     if (g_programInfo.get() == NULL)
     {
-        if (g_partialProgramInfo.get() != NULL)
-        {
-            return *g_partialProgramInfo;
-        }
         static ProgramInfo fallbackInfo;
         return fallbackInfo;
     }
@@ -165,31 +165,20 @@ const ProgramInfo &ProgramInfo::getInstance()
 }
 
 // static
-const ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
+ProgramInfo &ProgramInfo::init(int argc, const char *const argv[])
 {
     return init(NULL, argc, argv);
 }
 
 // static
-const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
-                                     int argc, const char *const argv[])
+ProgramInfo &ProgramInfo::init(const char *realBinaryName,
+                               int argc, const char *const argv[])
 {
     try
     {
         tMPI::lock_guard<tMPI::mutex> lock(g_programInfoMutex);
         if (g_programInfo.get() == NULL)
         {
-            // TODO: Remove this hack with negative argc once there is no need for
-            // set_program_name().
-            if (argc < 0)
-            {
-                if (g_partialProgramInfo.get() == NULL)
-                {
-                    g_partialProgramInfo.reset(
-                            new ProgramInfo(realBinaryName, -argc, argv));
-                }
-                return *g_partialProgramInfo;
-            }
             g_programInfo.reset(new ProgramInfo(realBinaryName, argc, argv));
         }
         return *g_programInfo;
@@ -197,7 +186,7 @@ const ProgramInfo &ProgramInfo::init(const char *realBinaryName,
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
-        std::exit(1);
+        std::exit(processExceptionAtExit(ex));
     }
 }
 
@@ -226,6 +215,14 @@ ProgramInfo::~ProgramInfo()
 {
 }
 
+void ProgramInfo::setDisplayName(const std::string &name)
+{
+    tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
+    GMX_RELEASE_ASSERT(impl_->displayName_.empty(),
+                       "Can only set display name once");
+    impl_->displayName_ = name;
+}
+
 const std::string &ProgramInfo::realBinaryName() const
 {
     return impl_->realBinaryName_;
@@ -244,6 +241,14 @@ const std::string &ProgramInfo::programName() const
 const std::string &ProgramInfo::invariantProgramName() const
 {
     return impl_->invariantProgramName_;
+}
+
+const std::string &ProgramInfo::displayName() const
+{
+    tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
+    return impl_->displayName_.empty()
+        ? impl_->programName_
+        : impl_->displayName_;
 }
 
 const std::string &ProgramInfo::commandLine() const

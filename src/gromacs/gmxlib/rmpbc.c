@@ -101,8 +101,7 @@ static t_graph *gmx_rmpbc_get_graph(gmx_rmpbc_t gpbc, int ePBC, int natoms)
     return gr->gr;
 }
 
-gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms,
-                           matrix box)
+gmx_rmpbc_t gmx_rmpbc_init(t_idef *idef, int ePBC, int natoms)
 {
     gmx_rmpbc_t gpbc;
 
@@ -138,6 +137,7 @@ void gmx_rmpbc_done(gmx_rmpbc_t gpbc)
         for (i = 0; i < gpbc->ngraph; i++)
         {
             done_graph(gpbc->graph[i].gr);
+            sfree(gpbc->graph[i].gr);
         }
         if (gpbc->graph != NULL)
         {

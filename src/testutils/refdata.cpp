@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -43,15 +43,15 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 
-#include <new>
 #include <string>
 
 #include <gtest/gtest.h>
 #include <libxml/parser.h>
 #include <libxml/xmlmemory.h>
 
+#include "gromacs/options/basicoptions.h"
+#include "gromacs/options/options.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
 #include "gromacs/utility/path.h"
@@ -76,7 +76,8 @@ class TestReferenceDataEnvironment : public ::testing::Environment
 };
 
 //! Global reference data mode set with gmx::test::setReferenceDataMode().
-gmx::test::ReferenceDataMode g_referenceDataMode = gmx::test::erefdataCompare;
+// TODO: Make this a real enum; requires solving a TODO in StringOption.
+int g_referenceDataMode = gmx::test::erefdataCompare;
 
 } // namespace
 
@@ -87,7 +88,7 @@ namespace test
 
 ReferenceDataMode getReferenceDataMode()
 {
-    return g_referenceDataMode;
+    return static_cast<ReferenceDataMode>(g_referenceDataMode);
 }
 
 void setReferenceDataMode(ReferenceDataMode mode)
@@ -100,34 +101,16 @@ std::string getReferenceDataPath()
     return TestFileManager::getInputFilePath("refdata");
 }
 
-void initReferenceData(int *argc, char **argv)
+void initReferenceData(Options *options)
 {
-    int i, newi;
-
-    for (i = newi = 1; i < *argc; ++i, ++newi)
-    {
-        argv[newi] = argv[i];
-        if (!std::strcmp(argv[i], "--create-ref-data"))
-        {
-            setReferenceDataMode(erefdataCreateMissing);
-            --newi;
-        }
-        else if (!std::strcmp(argv[i], "--update-ref-data"))
-        {
-            setReferenceDataMode(erefdataUpdateAll);
-            --newi;
-        }
-    }
-    *argc = newi;
-    try
-    {
-        ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
-    }
-    catch (const std::bad_alloc &)
-    {
-        std::fprintf(stderr, "Out of memory\n");
-        std::exit(1);
-    }
+    // Needs to correspond to the enum order in refdata.h.
+    const char *const refDataEnum[] = { "check", "create", "update" };
+    options->addOption(
+            StringOption("ref-data").enumValue(refDataEnum)
+                .defaultEnumIndex(0)
+                .storeEnumIndex(&g_referenceDataMode)
+                .description("Operation mode for tests that use reference data"));
+    ::testing::AddGlobalTestEnvironment(new TestReferenceDataEnvironment);
 }
 
 /********************************************************************
@@ -323,6 +306,8 @@ class TestReferenceChecker::Impl
          * \param[in]  name   Type of node to find.
          * \param[in]  id     Unique identifier of the node (can be NULL, in
          *      which case the next node without an id is matched).
+         * \param[out] bFound Whether the node was found (false if the node was
+         *      created in write mode).
          * \returns Matching node, or NULL if no matching node found
          *      (NULL is never returned in write mode).
          * \throws  TestException if node creation fails in write mode.
@@ -332,7 +317,8 @@ class TestReferenceChecker::Impl
          * read mode and creates a new node in write mode.  If the creation
          * fails in write mode, throws.
          */
-        xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id);
+        xmlNodePtr findOrCreateNode(const xmlChar *name, const char *id,
+                                    bool *bFound);
         /*! \brief
          * Helper method for checking a reference data value.
          *
@@ -389,16 +375,18 @@ class TestReferenceChecker::Impl
          */
         xmlNodePtr              currNode_;
         /*! \brief
-         * Points to a child of \a currNode_ where the next search should start.
+         * Points to a child of \a currNode_ that was last found.
          *
-         * On initialization, points to the first child of \a currNode_.  After
-         * every check, is updated to point to the node following the one
-         * found, with possible wrapping.
+         * On initialization, is initialized to NULL.  After every check, is
+         * updated to point to the node that was used for the check.
+         * Subsequent checks start the search for the matching node on this
+         * node.
          *
-         * Is NULL if and only if \a currNode_ contains no children.
+         * Is NULL if \a currNode_ contains no children or if no checks have
+         * yet been made.
          * Otherwise, always points to a direct child of \a currNode_.
          */
-        xmlNodePtr              nextSearchNode_;
+        xmlNodePtr              prevFoundNode_;
         /*! \brief
          * Whether the reference data is being written (true) or compared
          * (false).
@@ -431,15 +419,14 @@ const char * const    TestReferenceChecker::Impl::cSequenceLengthName =
 
 
 TestReferenceChecker::Impl::Impl(bool bWrite)
-    : currNode_(NULL), nextSearchNode_(NULL), bWrite_(bWrite), seqIndex_(0)
+    : currNode_(NULL), prevFoundNode_(NULL), bWrite_(bWrite), seqIndex_(0)
 {
 }
 
 
 TestReferenceChecker::Impl::Impl(const std::string &path, xmlNodePtr rootNode,
                                  bool bWrite)
-    : path_(path + "/"), currNode_(rootNode),
-      nextSearchNode_(rootNode->xmlChildrenNode),
+    : path_(path + "/"), currNode_(rootNode), prevFoundNode_(NULL),
       bWrite_(bWrite), seqIndex_(0)
 {
 }
@@ -463,11 +450,40 @@ TestReferenceChecker::Impl::appendPath(const char *id) const
 xmlNodePtr
 TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
 {
-    const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
-    xmlNodePtr     node  = nextSearchNode_;
-    if (node == NULL)
+    if (currNode_ == NULL || currNode_->children == NULL)
     {
         return NULL;
+    }
+    const xmlChar *xmlId = reinterpret_cast<const xmlChar *>(id);
+    xmlNodePtr     node  = prevFoundNode_;
+    bool           bWrap = true;
+    if (node != NULL)
+    {
+        if (id == NULL)
+        {
+            xmlChar *refId = xmlGetProp(node, cIdAttrName);
+            if (refId == NULL)
+            {
+                if (name == NULL || xmlStrcmp(node->name, name) == 0)
+                {
+                    bWrap = false;
+                    node  = node->next;
+                    if (node == NULL)
+                    {
+                        return NULL;
+                    }
+                }
+            }
+            else
+            {
+                xmlFree(refId);
+            }
+        }
+    }
+    else
+    {
+        node  = currNode_->children;
+        bWrap = false;
     }
     do
     {
@@ -489,20 +505,28 @@ TestReferenceChecker::Impl::findNode(const xmlChar *name, const char *id) const
             }
         }
         node = node->next;
-        if (node == NULL && nextSearchNode_ != currNode_->xmlChildrenNode)
+        if (bWrap && node == NULL)
         {
-            node = currNode_->xmlChildrenNode;
+            node = currNode_->children;
         }
     }
-    while (node != NULL && node != nextSearchNode_);
+    while (node != NULL && node != prevFoundNode_);
     return NULL;
 }
 
 
 xmlNodePtr
-TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id)
+TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name,
+                                             const char    *id,
+                                             bool          *bFound)
 {
+    *bFound = false;
     xmlNodePtr node = findNode(name, id);
+    if (node != NULL)
+    {
+        *bFound        = true;
+        prevFoundNode_ = node;
+    }
     if (node == NULL)
     {
         if (bWrite_)
@@ -522,24 +546,12 @@ TestReferenceChecker::Impl::findOrCreateNode(const xmlChar *name, const char *id
             {
                 GMX_THROW(TestException("XML node creation failed"));
             }
+            prevFoundNode_ = node;
         }
         else
         {
-            node = NULL;
+            ADD_FAILURE() << "Reference data item not found";
         }
-    }
-    else
-    {
-        nextSearchNode_ = node->next;
-        if (nextSearchNode_ == NULL)
-        {
-            nextSearchNode_ = currNode_->xmlChildrenNode;
-        }
-    }
-    if (node == NULL)
-    {
-        GMX_RELEASE_ASSERT(!bWrite_, "Node creation failed without exception");
-        ADD_FAILURE() << "Reference data item not found";
     }
     seqIndex_ = (id == NULL) ? seqIndex_+1 : 0;
 
@@ -551,16 +563,15 @@ std::string
 TestReferenceChecker::Impl::processItem(const xmlChar *name, const char *id,
                                         const char *value, bool *bFound)
 {
-    *bFound = false;
-    xmlNodePtr node = findOrCreateNode(name, id);
+    xmlNodePtr node = findOrCreateNode(name, id, bFound);
     if (node == NULL)
     {
         return std::string();
     }
-    *bFound = true;
-    if (bWrite_)
+    if (bWrite_ && !*bFound)
     {
         xmlNodeAddContent(node, reinterpret_cast<const xmlChar *>(value));
+        *bFound = true;
         return std::string(value);
     }
     else
@@ -678,14 +689,14 @@ bool TestReferenceChecker::checkPresent(bool bPresent, const char *id)
     bool       bFound = (node != NULL);
     if (bFound != bPresent)
     {
-        ADD_FAILURE() << "Mismatch while checking reference data item'"
+        ADD_FAILURE() << "Mismatch while checking reference data item '"
         << impl_->appendPath(id) << "'\n"
         << "Expected: " << (bPresent ? "it is present.\n" : "it is absent.\n")
         << "  Actual: " << (bFound ? "it is present." : "it is absent.");
     }
     if (bFound && bPresent)
     {
-        impl_->nextSearchNode_ = node;
+        impl_->prevFoundNode_ = node;
         return true;
     }
     return false;
@@ -700,7 +711,8 @@ TestReferenceChecker TestReferenceChecker::checkCompound(const char *type, const
         return TestReferenceChecker(new Impl(isWriteMode()));
     }
     const xmlChar *xmlNodeName = reinterpret_cast<const xmlChar *>(type);
-    xmlNodePtr     newNode     = impl_->findOrCreateNode(xmlNodeName, id);
+    bool           bFound;
+    xmlNodePtr     newNode     = impl_->findOrCreateNode(xmlNodeName, id, &bFound);
     if (newNode == NULL)
     {
         return TestReferenceChecker(new Impl(isWriteMode()));
@@ -759,7 +771,8 @@ void TestReferenceChecker::checkStringBlock(const std::string &value,
         return;
     }
     SCOPED_TRACE(impl_->traceString(id));
-    xmlNodePtr node = impl_->findOrCreateNode(Impl::cStringNodeName, id);
+    bool       bFound;
+    xmlNodePtr node = impl_->findOrCreateNode(Impl::cStringNodeName, id, &bFound);
     if (node == NULL)
     {
         return;
@@ -767,7 +780,7 @@ void TestReferenceChecker::checkStringBlock(const std::string &value,
     // An extra newline is written in the beginning to make lines align
     // in the output xml (otherwise, the first line would be off by the length
     // of the starting CDATA tag).
-    if (isWriteMode())
+    if (isWriteMode() && !bFound)
     {
         std::string    adjustedValue = "\n" + value;
         const xmlChar *xmlValue

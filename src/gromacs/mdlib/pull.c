@@ -222,7 +222,6 @@ static FILE *open_pull_out(const char *fn, t_pull *pull, const output_env_t oenv
 
 /* Apply forces in a mass weighted fashion */
 static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
-                             gmx_ga2la_t ga2la,
                              dvec f_pull, int sign, rvec *f)
 {
     int    i, ii, m, start, end;
@@ -250,8 +249,7 @@ static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
-                         rvec *f)
+static void apply_forces(t_pull * pull, t_mdatoms * md, rvec *f)
 {
     int        i;
     t_pullgrp *pgrp;
@@ -259,16 +257,16 @@ static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t ga2la,
     for (i = 1; i < pull->ngrp+1; i++)
     {
         pgrp = &(pull->grp[i]);
-        apply_forces_grp(pgrp, md, ga2la, pgrp->f, 1, f);
+        apply_forces_grp(pgrp, md, pgrp->f, 1, f);
         if (pull->grp[0].nat)
         {
             if (PULL_CYL(pull))
             {
-                apply_forces_grp(&(pull->dyna[i]), md, ga2la, pgrp->f, -1, f);
+                apply_forces_grp(&(pull->dyna[i]), md, pgrp->f, -1, f);
             }
             else
             {
-                apply_forces_grp(&(pull->grp[0]), md, ga2la, pgrp->f, -1, f);
+                apply_forces_grp(&(pull->grp[0]), md, pgrp->f, -1, f);
             }
         }
     }
@@ -443,7 +441,7 @@ void clear_pull_forces(t_pull *pull)
 }
 
 /* Apply constraint using SHAKE */
-static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+static void do_constraint(t_pull *pull, t_pbc *pbc,
                           rvec *x, rvec *v,
                           gmx_bool bMaster, tensor vir,
                           double dt, double t)
@@ -1003,7 +1001,7 @@ real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
                 &V, pull->bVirial && MASTER(cr) ? vir : NULL, &dVdl);
 
     /* Distribute forces over pulled groups */
-    apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
+    apply_forces(pull, md, f);
 
     if (MASTER(cr))
     {
@@ -1019,7 +1017,7 @@ void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 {
     pull_calc_coms(cr, pull, md, pbc, t, x, xp);
 
-    do_constraint(pull, md, pbc, xp, v, pull->bVirial && MASTER(cr), vir, dt, t);
+    do_constraint(pull, pbc, xp, v, pull->bVirial && MASTER(cr), vir, dt, t);
 }
 
 static void make_local_pull_group(gmx_ga2la_t ga2la,
@@ -1407,7 +1405,7 @@ void init_pull(FILE *fplog, t_inputrec *ir, int nfile, const t_filenm fnm[],
     }
 }
 
-void finish_pull(FILE *fplog, t_pull *pull)
+void finish_pull(t_pull *pull)
 {
     if (pull->out_x)
     {

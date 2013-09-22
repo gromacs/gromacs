@@ -525,7 +525,7 @@ static double getLogIndex(const int i, const t_gemParams *params)
 extern t_gemParams *init_gemParams(const double sigma, const double D,
                                    const real *t, const int len, const int nFitPoints,
                                    const real begFit, const real endFit,
-                                   const real ballistic, const int nBalExp, const gmx_bool bDt)
+                                   const real ballistic, const int nBalExp)
 {
     double       tDelta;
     t_gemParams *p;

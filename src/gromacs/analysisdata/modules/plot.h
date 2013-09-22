@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -54,6 +54,7 @@
 namespace gmx
 {
 
+class AnalysisDataValue;
 class Options;
 class SelectionCollection;
 
@@ -124,19 +125,22 @@ class AnalysisDataPlotSettings
  * straightforward plotting).
  *
  * By default, the data is written into an xvgr file, according to the
- * options read from the Options object given to the constructor.
+ * options read from the AnalysisDataPlotSettings object given to the
+ * constructor.
  * For non-xvgr data, it's possible to skip all headers by calling
  * setPlainOutput().
  *
- * Multipoint data is supported, in which case all the points are written to
- * the output, in the order in which they are added to the data.  A single
- * output line corresponds to a single frame.  In most cases with multipoint
- * data, setPlainOutput() should be called since the output does not make sense
- * as an xvgr file, but this is not enforced.
+ * A single output line corresponds to a single frame.  In most cases with
+ * multipoint data, setPlainOutput() should be called since the output does not
+ * make sense as an xvgr file, but this is not enforced.
+ *
+ * Multipoint data and multiple data sets are both supported, in which case all
+ * the points are written to the output, in the order in which they are added
+ * to the data.
  *
  * \ingroup module_analysisdata
  */
-class AbstractPlotModule : public AnalysisDataModuleInterface
+class AbstractPlotModule : public AnalysisDataModuleSerial
 {
     public:
         virtual ~AbstractPlotModule();
@@ -159,6 +163,10 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          * methods have any effect on the output.
          */
         void setPlainOutput(bool bPlain);
+        /*! \brief
+         * Plot errors as a separate output column after each value column.
+         */
+        void setErrorsAsSeparateColumn(bool bSeparate);
         /*! \brief
          * Omit the X coordinates from the output.
          *
@@ -202,6 +210,8 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          * together.
          */
         void appendLegend(const char *setname);
+        //! \copydoc appendLegend(const char *)
+        void appendLegend(const std::string &setname);
         /*! \brief
          * Set field width and precision for X value output.
          */
@@ -237,7 +247,7 @@ class AbstractPlotModule : public AnalysisDataModuleInterface
          *
          * Must not be called if isFileOpen() returns false.
          */
-        void writeValue(real value) const;
+        void writeValue(const AnalysisDataValue &value) const;
         //! \endcond
 
     private:

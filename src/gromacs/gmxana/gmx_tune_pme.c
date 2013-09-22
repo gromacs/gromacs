@@ -1305,7 +1305,9 @@ static void make_sure_it_runs(char *mdrun_cmd_line, int length, FILE *fp)
     snew(command, length +  15);
     snew(msg, length + 500);
 
-    fprintf(stdout, "Making shure the benchmarks can be executed ...\n");
+    fprintf(stdout, "Making sure the benchmarks can be executed ...\n");
+    /* FIXME: mdrun -h no longer actually does anything useful.
+     * It unconditionally prints the help, ignoring all other options. */
     sprintf(command, "%s-h -quiet", mdrun_cmd_line);
     ret = gmx_system_call(command);
 
@@ -2227,16 +2229,16 @@ int gmx_tune_pme(int argc, char *argv[])
           "HIDDENReset the cycle counters after half the number of steps or halfway [TT]-maxh[tt] (launch only)" }
     };
 
-
 #define NFILE asize(fnm)
-
-    CopyRight(stderr, argv[0]);
 
     seconds = gettime();
 
-    parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc,
-                      0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc,
+                           0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     /* Store the remaining unparsed command line entries in a string which
      * is then attached to the mdrun command line */
@@ -2277,7 +2279,16 @@ int gmx_tune_pme(int argc, char *argv[])
     }
     else
     {
-        sprintf(bbuf, " -np %d ", nnodes);
+        /* This string will be used for MPI runs and will appear after the
+         * mpirun command. */
+        if (strcmp(procstring[0], "none") != 0)
+        {
+            sprintf(bbuf, " %s %d ", procstring[0], nnodes);
+        }
+        else
+        {
+            sprintf(bbuf, " ");
+        }
     }
 
     cmd_np = bbuf;

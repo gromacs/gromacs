@@ -39,7 +39,6 @@
 #include "typedefs.h"
 #include "macros.h"
 #include "statutil.h"
-#include "copyrite.h"
 
 /*
  * This program is needed to create the files:
@@ -103,10 +102,11 @@ gmx_options(int argc, char *argv[])
     };
 
     output_env_t oenv = NULL;
-    parse_common_args(&argc, argv, 0,
-                      0, NULL, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv);
-
-    thanx(stderr);
+    if (!parse_common_args(&argc, argv, 0,
+                           0, NULL, 0, NULL, asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     return 0;
 }

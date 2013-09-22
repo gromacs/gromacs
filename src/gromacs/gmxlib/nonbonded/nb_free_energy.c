@@ -135,14 +135,10 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
     krf                 = fr->k_rf;
     crf                 = fr->c_rf;
     ewc                 = fr->ewaldcoeff;
-    Vc                  = kernel_data->energygrp_elec;
     typeA               = mdatoms->typeA;
     typeB               = mdatoms->typeB;
     ntype               = fr->ntype;
     nbfp                = fr->nbfp;
-    Vv                  = kernel_data->energygrp_vdw;
-    tabscale            = kernel_data->table_elec_vdw->scale;
-    VFtab               = kernel_data->table_elec_vdw->data;
     lambda_coul         = kernel_data->lambda[efptCOUL];
     lambda_vdw          = kernel_data->lambda[efptVDW];
     dvdl                = kernel_data->dvdl;
@@ -412,9 +408,17 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 FscalC[i]  = -qq[i]*tabscale*FF*rC*rpinvC;
                                 break;
 
-                            default:
+                            case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
+                                gmx_fatal(FARGS, "Free energy and GB not implemented.\n");
+                                break;
+
+                            case GMX_NBKERNEL_ELEC_NONE:
                                 FscalC[i]  = 0.0;
                                 Vcoul[i]   = 0.0;
+                                break;
+
+                            default:
+                                gmx_incons("Invalid icoul in free energy kernel");
                                 break;
                         }
 
@@ -490,9 +494,13 @@ gmx_nb_free_energy_kernel(t_nblist *                nlist,
                                 FscalV[i] -= c12[i]*tabscale*FF*rV*rpinvV;
                                 break;
 
-                            default:
+                            case GMX_NBKERNEL_VDW_NONE:
                                 Vvdw[i]    = 0.0;
                                 FscalV[i]  = 0.0;
+                                break;
+
+                            default:
+                                gmx_incons("Invalid ivdw in free energy kernel");
                                 break;
                         }
 

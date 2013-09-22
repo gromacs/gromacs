@@ -48,7 +48,6 @@
 #include "rmpbc.h"
 #include "statutil.h"
 #include "xvgr.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "tpxio.h"
@@ -507,9 +506,12 @@ int gmx_clustsize(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fnNDX   = ftp2fn_null(efNDX, NFILE, fnm);
     rgblo.r = rlo[XX], rgblo.g = rlo[YY], rgblo.b = rlo[ZZ];
@@ -528,8 +530,6 @@ int gmx_clustsize(int argc, char *argv[])
                opt2fn("-temp", NFILE, fnm), opt2fn("-mcn", NFILE, fnm),
                bMol, bPBC, fnTPR,
                cutoff, nskip, nlevels, rgblo, rgbhi, ndf, oenv);
-
-    thanx(stderr);
 
     return 0;
 }

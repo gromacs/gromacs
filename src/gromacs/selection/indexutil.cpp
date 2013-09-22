@@ -138,22 +138,22 @@ gmx_ana_indexgrps_init(gmx_ana_indexgrps_t **g, t_topology *top,
     }
     catch (...)
     {
-        done_blocka(block);
-        sfree(block);
         for (int i = 0; i < block->nr; ++i)
         {
             sfree(names[i]);
         }
         sfree(names);
+        done_blocka(block);
+        sfree(block);
         throw;
     }
-    done_blocka(block);
-    sfree(block);
     for (int i = 0; i < block->nr; ++i)
     {
         sfree(names[i]);
     }
     sfree(names);
+    done_blocka(block);
+    sfree(block);
 }
 
 /*!
@@ -957,6 +957,8 @@ gmx_ana_index_has_full_ablocks(gmx_ana_index_t *g, t_blocka *b)
  * \returns   true if \p g consists of one or more complete elements of type
  *   \p type, false otherwise.
  *
+ * \p g is assumed to be sorted, otherwise may return false negatives.
+ *
  * If \p type is \ref INDEX_ATOM, the return value is always true.
  * If \p type is \ref INDEX_UNKNOWN or \ref INDEX_ALL, the return value is
  * always false.
@@ -965,6 +967,7 @@ bool
 gmx_ana_index_has_complete_elems(gmx_ana_index_t *g, e_index_t type,
                                  t_topology *top)
 {
+    // TODO: Consider whether unsorted groups need to be supported better.
     switch (type)
     {
         case INDEX_UNKNOWN:
@@ -1021,12 +1024,14 @@ void
 gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
 {
     m->type              = INDEX_UNKNOWN;
-    m->nr                = 0;
     m->refid             = NULL;
     m->mapid             = NULL;
     m->mapb.nr           = 0;
     m->mapb.index        = NULL;
     m->mapb.nalloc_index = 0;
+    m->mapb.nra          = 0;
+    m->mapb.a            = NULL;
+    m->mapb.nalloc_a     = 0;
     m->orgid             = NULL;
     m->b.nr              = 0;
     m->b.index           = NULL;
@@ -1035,7 +1040,6 @@ gmx_ana_indexmap_clear(gmx_ana_indexmap_t *m)
     m->b.nalloc_index    = 0;
     m->b.nalloc_a        = 0;
     m->bStatic           = true;
-    m->bMapStatic        = true;
 }
 
 /*!
@@ -1086,8 +1090,7 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     m->type   = type;
     gmx_ana_index_make_block(&m->b, top, g, type, false);
     gmx_ana_indexmap_reserve(m, m->b.nr, m->b.nra);
-    m->nr = m->b.nr;
-    for (i = mi = 0; i < m->nr; ++i)
+    for (i = mi = 0; i < m->b.nr; ++i)
     {
         ii = (type == INDEX_UNKNOWN ? 0 : m->b.a[m->b.index[i]]);
         switch (type)
@@ -1111,15 +1114,16 @@ gmx_ana_indexmap_init(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 break;
         }
     }
-    for (i = 0; i < m->nr; ++i)
+    for (i = 0; i < m->b.nr; ++i)
     {
         m->refid[i] = i;
         m->mapid[i] = m->orgid[i];
     }
-    m->mapb.nr = m->nr;
-    std::memcpy(m->mapb.index, m->b.index, (m->nr+1)*sizeof(*(m->mapb.index)));
-    m->bStatic    = true;
-    m->bMapStatic = true;
+    m->mapb.nr  = m->b.nr;
+    m->mapb.nra = m->b.nra;
+    m->mapb.a   = m->b.a;
+    std::memcpy(m->mapb.index, m->b.index, (m->b.nr+1)*sizeof(*(m->mapb.index)));
+    m->bStatic  = true;
 }
 
 /*!
@@ -1141,16 +1145,18 @@ void
 gmx_ana_indexmap_set_static(gmx_ana_indexmap_t *m, t_blocka *b)
 {
     sfree(m->mapid);
-    m->mapid = m->orgid;
-    sfree(m->b.index);
-    m->b.nalloc_index = 0;
-    m->b.index        = b->index;
     sfree(m->mapb.index);
-    m->mapb.nalloc_index = 0;
-    m->mapb.index        = m->b.index;
+    sfree(m->b.index);
     sfree(m->b.a);
-    m->b.nalloc_a = 0;
-    m->b.a        = b->a;
+    m->mapb.nalloc_index = 0;
+    m->mapb.nalloc_a     = 0;
+    m->b.nalloc_index    = 0;
+    m->b.nalloc_a        = 0;
+    m->mapid             = m->orgid;
+    m->mapb.index        = b->index;
+    m->mapb.a            = b->a;
+    m->b.index           = b->index;
+    m->b.a               = b->a;
 }
 
 /*!
@@ -1175,13 +1181,49 @@ gmx_ana_indexmap_copy(gmx_ana_indexmap_t *dest, gmx_ana_indexmap_t *src, bool bF
         std::memcpy(dest->b.index,    src->b.index,   (dest->b.nr+1)*sizeof(*dest->b.index));
         std::memcpy(dest->b.a,        src->b.a,        dest->b.nra*sizeof(*dest->b.a));
     }
-    dest->nr         = src->nr;
     dest->mapb.nr    = src->mapb.nr;
-    std::memcpy(dest->refid,      src->refid,      dest->nr*sizeof(*dest->refid));
-    std::memcpy(dest->mapid,      src->mapid,      dest->nr*sizeof(*dest->mapid));
+    dest->mapb.nra   = src->mapb.nra;
+    if (src->mapb.nalloc_a > 0)
+    {
+        if (bFirst)
+        {
+            snew(dest->mapb.a, src->mapb.nalloc_a);
+            dest->mapb.nalloc_a = src->mapb.nalloc_a;
+        }
+        std::memcpy(dest->mapb.a, src->mapb.a, dest->mapb.nra*sizeof(*dest->mapb.a));
+    }
+    else
+    {
+        dest->mapb.a = src->mapb.a;
+    }
+    std::memcpy(dest->refid,      src->refid,      dest->mapb.nr*sizeof(*dest->refid));
+    std::memcpy(dest->mapid,      src->mapid,      dest->mapb.nr*sizeof(*dest->mapid));
     std::memcpy(dest->mapb.index, src->mapb.index, (dest->mapb.nr+1)*sizeof(*dest->mapb.index));
-    dest->bStatic    = src->bStatic;
-    dest->bMapStatic = src->bMapStatic;
+    dest->bStatic = src->bStatic;
+}
+
+/*! \brief
+ * Helper function to set the source atoms in an index map.
+ *
+ * \param[in,out] m     Mapping structure.
+ * \param[in]     isize Number of atoms in the \p index array.
+ * \param[in]     index List of atoms.
+ */
+static void
+set_atoms(gmx_ana_indexmap_t *m, int isize, int *index)
+{
+    m->mapb.nra = isize;
+    if (m->mapb.nalloc_a == 0)
+    {
+        m->mapb.a = index;
+    }
+    else
+    {
+        for (int i = 0; i < isize; ++i)
+        {
+            m->mapb.a[i] = index[i];
+        }
+    }
 }
 
 /*!
@@ -1199,7 +1241,6 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                         bool bMaskOnly)
 {
     int  i, j, bi, bj;
-    bool bStatic;
 
     /* Process the simple cases first */
     if (m->type == INDEX_UNKNOWN && m->b.nra == 0)
@@ -1208,6 +1249,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     }
     if (m->type == INDEX_ALL)
     {
+        set_atoms(m, g->isize, g->index);
         if (m->b.nr > 0)
         {
             m->mapb.index[1] = g->isize;
@@ -1215,8 +1257,9 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         return;
     }
     /* Reset the reference IDs and mapping if necessary */
-    bStatic = (g->isize == m->b.nra && m->nr == m->b.nr);
-    if (bStatic || bMaskOnly)
+    const bool bToFull  = (g->isize == m->b.nra);
+    const bool bWasFull = (m->mapb.nra == m->b.nra);
+    if (bToFull || bMaskOnly)
     {
         if (!m->bStatic)
         {
@@ -1225,7 +1268,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
                 m->refid[bj] = bj;
             }
         }
-        if (!m->bMapStatic)
+        if (!bWasFull)
         {
             for (bj = 0; bj < m->b.nr; ++bj)
             {
@@ -1235,11 +1278,12 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
             {
                 m->mapb.index[bj] = m->b.index[bj];
             }
-            m->bMapStatic = true;
         }
+        set_atoms(m, m->b.nra, m->b.a);
+        m->mapb.nr = m->b.nr;
     }
     /* Exit immediately if the group is static */
-    if (bStatic)
+    if (bToFull)
     {
         m->bStatic = true;
         return;
@@ -1247,7 +1291,6 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
 
     if (bMaskOnly)
     {
-        m->nr = m->b.nr;
         for (i = j = bj = 0; i < g->isize; ++i, ++j)
         {
             /* Find the next atom in the block */
@@ -1274,6 +1317,7 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
     }
     else
     {
+        set_atoms(m, g->isize, g->index);
         for (i = j = bi = 0, bj = -1; i < g->isize; ++i)
         {
             /* Find the next atom in the block */
@@ -1297,10 +1341,8 @@ gmx_ana_indexmap_update(gmx_ana_indexmap_t *m, gmx_ana_index_t *g,
         }
         /* Update the number of blocks */
         m->mapb.index[bi] = g->isize;
-        m->nr             = bi;
-        m->bMapStatic     = false;
+        m->mapb.nr        = bi;
     }
-    m->mapb.nr = m->nr;
     m->bStatic = false;
 }
 
@@ -1322,6 +1364,10 @@ gmx_ana_indexmap_deinit(gmx_ana_indexmap_t *m)
     if (m->mapb.nalloc_index > 0)
     {
         sfree(m->mapb.index);
+    }
+    if (m->mapb.nalloc_a > 0)
+    {
+        sfree(m->mapb.a);
     }
     sfree(m->orgid);
     if (m->b.nalloc_index > 0)

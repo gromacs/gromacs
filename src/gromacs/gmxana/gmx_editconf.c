@@ -45,7 +45,6 @@
 #include "symtab.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "string2.h"
 #include "strdb.h"
@@ -746,8 +745,11 @@ int gmx_editconf(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
-                      asize(desc), desc, asize(bugs), bugs, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW, NFILE, fnm, NPA, pa,
+                           asize(desc), desc, asize(bugs), bugs, &oenv))
+    {
+        return 0;
+    }
 
     bIndex     = opt2bSet("-n", NFILE, fnm) || bNDEF;
     bMead      = opt2bSet("-mead", NFILE, fnm);
@@ -1339,8 +1341,6 @@ int gmx_editconf(int argc, char *argv[])
     gmx_atomprop_destroy(aps);
 
     do_view(oenv, outfile, NULL);
-
-    thanx(stderr);
 
     return 0;
 }

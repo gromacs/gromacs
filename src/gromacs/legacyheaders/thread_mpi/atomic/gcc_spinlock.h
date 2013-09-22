@@ -42,13 +42,12 @@
 
 typedef struct tMPI_Spinlock
 {
-    volatile unsigned int  lock /*__attribute__ ((aligned(64)))*/;
+    volatile unsigned int lock /*__attribute__ ((aligned(64)))*/;
 } tMPI_Spinlock_t;
 
-
-
-
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
+
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 
 
 
@@ -83,18 +82,18 @@ static inline int tMPI_Spinlock_trylock(tMPI_Spinlock_t *x)
 }
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *  x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     __sync_lock_release(&(x->lock));
 }
 
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *  x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     __sync_synchronize();
     return ( x->lock == 1 );
 }
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     do
     {

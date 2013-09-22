@@ -155,7 +155,7 @@ int main(int argc,char *argv[])
 	    nframe,nmax+1,t_x,t_y,profile,0,tmax,
 	    rgblo,rgbhi,&nlevels);
   
-  thanx(stderr);
+  gmx_thanx(stderr);
   
   return 0;
 }

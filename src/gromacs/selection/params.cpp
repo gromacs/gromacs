@@ -495,8 +495,8 @@ parse_values_varnum(const SelectionParserValueList    &values,
     if (param->val.type == POS_VALUE)
     {
         gmx_ana_pos_reserve(param->val.u.p, valueCount, 0);
-        gmx_ana_pos_set_nr(param->val.u.p, valueCount);
         gmx_ana_indexmap_init(&param->val.u.p->m, NULL, NULL, INDEX_UNKNOWN);
+        gmx_ana_pos_set_nr(param->val.u.p, valueCount);
     }
     else
     {

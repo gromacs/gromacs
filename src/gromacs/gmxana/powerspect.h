@@ -39,10 +39,19 @@
 #include "typedefs.h"
 #include "interf.h"
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 extern void powerspectavg(real ***interface, int t, int xbins, int ybins,
                           char **outfiles);
 
 extern void powerspectavg_intf(t_interf ***if1, t_interf ***if2, int t,
                                int xbins, int ybins, char **outfiles);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

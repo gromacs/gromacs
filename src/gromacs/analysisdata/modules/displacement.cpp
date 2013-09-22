@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,6 +45,7 @@
 #include "gromacs/legacyheaders/maths.h"
 
 #include "gromacs/analysisdata/dataframe.h"
+#include "gromacs/analysisdata/datamodulemanager.h"
 #include "gromacs/analysisdata/modules/histogram.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
@@ -100,7 +101,7 @@ class AnalysisDataDisplacementModule::Impl
 
 AnalysisDataDisplacementModule::Impl::Impl()
     : nmax(0), tmax(0.0), ndim(3),
-      bFirst(true), t0(0.0), dt(0.0), t(0.0),
+      bFirst(true), t0(0.0), dt(0.0), t(0.0), ci(0),
       max_store(-1), nstored(0), oldval(NULL),
       histm(NULL)
 {
@@ -178,7 +179,7 @@ AnalysisDataDisplacementModule::dataStarted(AbstractAnalysisData *data)
 
     int ncol = _impl->nmax / _impl->ndim + 1;
     _impl->currValues_.reserve(ncol);
-    setColumnCount(ncol);
+    setColumnCount(0, ncol);
 }
 
 
@@ -264,10 +265,10 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             _impl->histm->init(histogramFromBins(0, _impl->max_store / _impl->nmax,
                                                  _impl->dt).integerBins());
         }
-        notifyDataStart();
+        moduleManager().notifyDataStart(this);
     }
     AnalysisDataFrameHeader header(_impl->nstored - 2, _impl->t, 0);
-    notifyFrameStart(header);
+    moduleManager().notifyFrameStart(header);
 
     for (i = _impl->ci - _impl->nmax, step = 1;
          step < _impl->nstored && i != _impl->ci;
@@ -292,10 +293,10 @@ AnalysisDataDisplacementModule::frameFinished(const AnalysisDataFrameHeader & /*
             }
             _impl->currValues_.push_back(AnalysisDataValue(dist2));
         }
-        notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
+        moduleManager().notifyPointsAdd(AnalysisDataPointSetRef(header, _impl->currValues_));
     }
 
-    notifyFrameFinish(header);
+    moduleManager().notifyFrameFinish(header);
 }
 
 
@@ -304,7 +305,7 @@ AnalysisDataDisplacementModule::dataFinished()
 {
     if (_impl->nstored >= 2)
     {
-        notifyDataFinish();
+        moduleManager().notifyDataFinish();
     }
 }
 

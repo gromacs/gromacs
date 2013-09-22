@@ -76,7 +76,6 @@
 #include "xvgr.h"
 #include "trnio.h"
 #include "xtcio.h"
-#include "copyrite.h"
 #include "gmx_random.h"
 #include "domdec.h"
 #include "partdec.h"
@@ -85,7 +84,7 @@
 
 #include "gromacs/utility/gmxmpi.h"
 
-void GenerateGibbsProbabilities(real *ene, real *p_k, real *pks, int minfep, int maxfep)
+void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep, int maxfep)
 {
 
     int  i;
@@ -113,7 +112,7 @@ void GenerateGibbsProbabilities(real *ene, real *p_k, real *pks, int minfep, int
     }
 }
 
-void GenerateWeightedGibbsProbabilities(real *ene, real *p_k, real *pks, int nlim, real *nvals, real delta)
+void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
 {
 
     int   i;
@@ -358,11 +357,13 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     int      i, k, n, nz, indexi, indexk, min_n, max_n, nlam, totali;
     int      n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
     real     omega_m1_0, omega_p1_m1, omega_m1_p1, omega_p1_0, clam_osum;
-    real     de, de_function, dr, denom, maxdr, pks = 0;
+    real     de, de_function, dr, denom, maxdr;
     real     min_val, cnval, zero_sum_weights;
     real    *omegam_array, *weightsm_array, *omegap_array, *weightsp_array, *varm_array, *varp_array, *dwp_array, *dwm_array;
     real     clam_varm, clam_varp, clam_weightsm, clam_weightsp, clam_minvar;
-    real    *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg, *p_k;
+    real    *lam_weights, *lam_minvar_corr, *lam_variance, *lam_dg;
+    double  *p_k;
+    double  pks = 0;
     real    *numweighted_lamee, *logfrac;
     int     *nonzero;
     real     chi_m1_0, chi_p1_0, chi_m2_0, chi_p2_0, chi_p1_m1, chi_p2_m1, chi_m1_p1, chi_m2_p1;
@@ -403,7 +404,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
             GenerateGibbsProbabilities(weighted_lamee, p_k, &pks, 0, nlim-1);
             for (i = 0; i < nlim; i++)
             {
-                dfhist->wl_histo[i] += p_k[i];
+                dfhist->wl_histo[i] += (real)p_k[i];
             }
 
             /* then increment weights (uses count) */
@@ -412,14 +413,14 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 
             for (i = 0; i < nlim; i++)
             {
-                dfhist->sum_weights[i] -= dfhist->wl_delta*p_k[i];
+                dfhist->sum_weights[i] -= dfhist->wl_delta*(real)p_k[i];
             }
             /* Alternate definition, using logarithms. Shouldn't make very much difference! */
             /*
                real di;
                for (i=0;i<nlim;i++)
                {
-                di = 1+dfhist->wl_delta*p_k[i];
+                di = (real)1.0 + dfhist->wl_delta*(real)p_k[i];
                 dfhist->sum_weights[i] -= log(di);
                }
              */
@@ -723,14 +724,15 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
     return FALSE;
 }
 
-static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, real *p_k, gmx_rng_t rng)
+static int ChooseNewLambda(int nlim, t_expanded *expand, df_history_t *dfhist, int fep_state, real *weighted_lamee, double *p_k, gmx_rng_t rng)
 {
     /* Choose new lambda value, and update transition matrix */
 
     int      i, ifep, jfep, minfep, maxfep, lamnew, lamtrial, starting_fep_state;
-    real     r1, r2, pks, de_old, de_new, de, trialprob, tprob = 0;
+    real     r1, r2, de_old, de_new, de, trialprob, tprob = 0;
     real   **Tij;
-    real    *propose, *accept, *remainder;
+    double  *propose, *accept, *remainder;
+    double   pks;
     real     sum, pnorm;
     gmx_bool bRestricted;
 
@@ -907,9 +909,9 @@ static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t
             if (lamnew > maxfep)
             {
                 /* it's possible some rounding is failing */
-                if (remainder[fep_state] < 2.0e-15)
+                if (gmx_within_tol(remainder[fep_state],0,50*GMX_DOUBLE_EPS))
                 {
-                    /* probably numerical rounding error -- no state other than the original has weight */
+                    /* numerical rounding error -- no state other than the original has weight */
                     lamnew = fep_state;
                 }
                 else
@@ -1197,7 +1199,8 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
                                     gmx_large_int_t step, gmx_rng_t mcrng,
                                     rvec *v, t_mdatoms *mdatoms)
 {
-    real       *pfep_lamee, *p_k, *scaled_lamee, *weighted_lamee;
+    real       *pfep_lamee, *scaled_lamee, *weighted_lamee;
+    double     *p_k;
     int         i, nlam, nlim, lamnew, totalsamples;
     real        oneovert, maxscaled = 0, maxweighted = 0;
     t_expanded *expand;
@@ -1316,7 +1319,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
         }
     }
 
-    lamnew = ChooseNewLambda(log, nlim, expand, dfhist, nlam, weighted_lamee, p_k, mcrng);
+    lamnew = ChooseNewLambda(nlim, expand, dfhist, nlam, weighted_lamee, p_k, mcrng);
     /* if using simulated tempering, we need to adjust the temperatures */
     if (ir->bSimTemp && (lamnew != nlam)) /* only need to change the temperatures if we change the state */
     {
@@ -1423,6 +1426,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
             }
         }
     }
+    sfree(pfep_lamee);
     sfree(scaled_lamee);
     sfree(weighted_lamee);
     sfree(p_k);

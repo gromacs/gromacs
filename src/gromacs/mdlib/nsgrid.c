@@ -473,7 +473,7 @@ static void set_grid_ncg(t_grid *grid, int ncg)
 
 void grid_first(FILE *fplog, t_grid *grid,
                 gmx_domdec_t *dd, const gmx_ddbox_t *ddbox,
-                int ePBC, matrix box, rvec izones_x0, rvec izones_x1,
+                matrix box, rvec izones_x0, rvec izones_x1,
                 real rlistlong, real grid_density)
 {
     int    i, m;
@@ -543,7 +543,7 @@ static void calc_bor(int cg0, int cg1, int ncg, int CG0[2], int CG1[2])
 
 }
 
-void calc_elemnr(FILE *fplog, t_grid *grid, int cg0, int cg1, int ncg)
+void calc_elemnr(t_grid *grid, int cg0, int cg1, int ncg)
 {
     int     CG0[2], CG1[2];
     int    *cell_index = grid->cell_index;
@@ -604,7 +604,7 @@ void calc_ptrs(t_grid *grid)
     }
 }
 
-void grid_last(FILE *log, t_grid *grid, int cg0, int cg1, int ncg)
+void grid_last(t_grid *grid, int cg0, int cg1, int ncg)
 {
     int     CG0[2], CG1[2];
     int     i, m;
@@ -639,8 +639,7 @@ void grid_last(FILE *log, t_grid *grid, int cg0, int cg1, int ncg)
     }
 }
 
-void fill_grid(FILE *log,
-               gmx_domdec_zones_t *dd_zones,
+void fill_grid(gmx_domdec_zones_t *dd_zones,
                t_grid *grid, int ncg_tot,
                int cg0, int cg1, rvec cg_cm[])
 {
@@ -815,7 +814,7 @@ void fill_grid(FILE *log,
 
 }
 
-void check_grid(FILE *log, t_grid *grid)
+void check_grid(t_grid *grid)
 {
     int ix, iy, iz, ci, cci, nra;
 
@@ -910,8 +909,8 @@ void mv_grid(t_commrec *cr, t_grid *grid)
         nr    = cgindex[next+1] - start;
         gmx_rx(cr, GMX_RIGHT, &(ci[start]), nr*sizeof(*ci));
 
-        gmx_tx_wait(cr, GMX_LEFT);
-        gmx_rx_wait(cr, GMX_RIGHT);
+        gmx_tx_wait(cr);
+        gmx_rx_wait(cr);
 
         cur = next;
     }

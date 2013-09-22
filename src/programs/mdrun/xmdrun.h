@@ -153,26 +153,4 @@ extern real calc_mu_aver(t_commrec *cr, rvec x[], real q[], rvec mu,
                          t_block *mols, t_mdatoms *md, int gnx, atom_id grpindex[]);
 /* Compute average dipole */
 
-/********************************************************************/
-/* Force field scanning stuff */
-typedef struct {
-    real     tol, f_max, npow, epot, fac_epot, fac_pres, fac_msf, pres;
-    int      molsize, nmol;
-    gmx_bool bComb, bVerbose, bLogEps;
-} t_ffscan;
-
-
-extern gmx_bool update_forcefield(FILE *fplog,
-                                  int nfile, const t_filenm fnm[], t_forcerec *fr,
-                                  int natoms, rvec x[], matrix box);
-/* Modify the parameters. Return TRUE when the scan is finished. */
-
-extern gmx_bool print_forcefield(FILE *fp, real ener[], int natoms, rvec f[],
-                                 rvec fshake[], rvec x[], t_block *mols, real mass[],
-                                 tensor pres);
-/* Print results. Return TRUE when the scan is finished. */
-
-extern void set_ffvars(t_ffscan *ff);
-/* Set variables for force scanning */
-
 #endif  /* _xmdrun_h */

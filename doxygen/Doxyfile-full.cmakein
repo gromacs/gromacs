@@ -4,7 +4,7 @@ MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 PREDEFINED            += F77_FUNC(name,NAME)=name
 
-ENABLED_SECTIONS       = libapi internal
+ENABLED_SECTIONS      += libapi internal
 INTERNAL_DOCS          = YES
 EXTRACT_STATIC         = YES
 EXTRACT_LOCAL_CLASSES  = YES

@@ -179,9 +179,12 @@ int gmx_g_angle(int argc, char *argv[])
 
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
-                      &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, asize(bugs), bugs,
+                           &oenv))
+    {
+        return 0;
+    }
 
     mult   = 4;
     maxang = 360.0;
@@ -465,8 +468,6 @@ int gmx_g_angle(int argc, char *argv[])
     {
         do_view(oenv, opt2fn("-ov", NFILE, fnm), "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

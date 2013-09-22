@@ -86,25 +86,22 @@ extern "C"
 } /* Avoids screwing up auto-indentation */
 #endif
 
+/* first check for gcc/icc platforms.
+   Some compatible compilers, like icc on linux+mac will take this path,
+   too */
+#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && \
+    (!defined(__xlc__)) && (!defined(TMPI_TEST_NO_ATOMICS)) )
+
 #ifdef __GNUC__
 #define TMPI_GCC_VERSION (__GNUC__ * 10000 \
                           + __GNUC_MINOR__ * 100 \
                           + __GNUC_PATCHLEVEL__)
 #endif
 
-
-/* first check for gcc/icc platforms.
-   Some compatible compilers, like icc on linux+mac will take this path,
-   too */
-#if ( (defined(__GNUC__) || defined(__PATHSCALE__) || defined(__PGI)) && (!defined(__xlc__)) )
-
-
-
 /* now check specifically for several architectures: */
 #if ((defined(i386) || defined(__x86_64__)) && !defined(__OPEN64__))
 /* first x86: */
 #include "atomic/gcc_x86.h"
-/*#include "atomic/gcc.h"*/
 
 #elif (defined(__ia64__))
 /* then ia64: */
@@ -114,6 +111,11 @@ extern "C"
 /*#elif (defined(__powerpc__) || (defined(__ppc__)) )*/
 /*#include "atomic/gcc_ppc.h"*/
 
+#elif defined(__FUJITSU) && ( defined(__sparc_v9__) || defined (__sparcv9) )
+
+/* Fujitsu FX10 SPARC compiler */
+#include "atomic/fujitsu_sparc64.h"
+
 #else
 /* otherwise, there's a generic gcc intrinsics version: */
 #include "atomic/gcc.h"
@@ -121,28 +123,36 @@ extern "C"
 #endif /* end of check for gcc specific architectures */
 
 /* not gcc: */
-#elif (defined(_MSC_VER) && (_MSC_VER >= 1200))
+#elif (defined(_MSC_VER) && (_MSC_VER >= 1200) && \
+    (!defined(TMPI_TEST_NO_ATOMICS)) )
+
 /* Microsoft Visual C on x86, define taken from FFTW who got it from
    Morten Nissov. icc on windows will take this path.  */
 #include "atomic/msvc.h"
 
 #elif ( (defined(__IBM_GCC_ASM) || defined(__IBM_STDCPP_ASM))  && \
-    (defined(__powerpc__) || defined(__ppc__)))
+    (defined(__powerpc__) || defined(__ppc__)) && \
+    (!defined(TMPI_TEST_NO_ATOMICS)) )
 
 /* PowerPC using xlC intrinsics.  */
 
 #include "atomic/xlc_ppc.h"
 
-#elif defined(__xlC__)  || defined(__xlc__)
+#elif ( ( defined(__xlC__)  || defined(__xlc__) ) && \
+    (!defined(TMPI_TEST_NO_ATOMICS)) )
 /* IBM xlC compiler */
 #include "atomic/xlc_ppc.h"
 
 
-#elif defined (__sun) && (defined(__sparcv9) || defined(__sparc))
+#elif (defined (__sun) && (defined(__sparcv9) || defined(__sparc)) && \
+    (!defined(TMPI_TEST_NO_ATOMICS)) )
 /* Solaris on SPARC (Sun C Compiler, Solaris Studio) */
 #include "atomic/suncc-sparc.h"
 
+#elif defined(__FUJITSU) && defined(__sparc__)
 
+/* Fujitsu FX10 SPARC compiler requires gcc compatibility with -Xg */
+#error Atomics support for Fujitsu FX10 compiler requires -Xg (gcc compatibility)
 
 
 #else
@@ -152,9 +162,10 @@ extern "C"
 #error No atomic operations implemented for this cpu/compiler combination.
 #endif
 
+#ifndef DOXYGEN
 /** Indicates that no support for atomic operations is present. */
 #define TMPI_NO_ATOMICS
-
+#endif
 
 /** Memory barrier operation
 
@@ -195,11 +206,10 @@ extern "C"
  */
 #define tMPI_Atomic_memory_barrier_rel()
 
-
-
-
-/** System mutex used for locking to guarantee atomicity */
-static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
+#ifndef DOXYGEN
+/* signal that they exist */
+#define TMPI_HAVE_ACQ_REL_BARRIERS
+#endif
 
 /** Atomic operations datatype
  *
@@ -248,6 +258,7 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  *  - PowerPC, using GNU compilers
  *  - PowerPC, using IBM AIX compilers
  *  - PowerPC, using IBM compilers >=7.0 under Linux or Mac OS X.
+ *  - Sparc64, using Fujitsu compilers.
  *
  * \see
  * - tMPI_Atomic_get
@@ -258,7 +269,7 @@ static tMPI_Thread_mutex_t tMPI_Atomic_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
  */
 typedef struct tMPI_Atomic
 {
-    int value;  /**< The atomic value. */
+    int value; /**< The atomic value.*/
 }
 tMPI_Atomic_t;
 
@@ -274,7 +285,7 @@ tMPI_Atomic_t;
  */
 typedef struct tMPI_Atomic_ptr
 {
-    void* value;  /**< The atomic pointer value. */
+    void *value; /**< The atomic pointer. */
 }
 tMPI_Atomic_ptr_t;
 
@@ -298,13 +309,7 @@ tMPI_Atomic_ptr_t;
  * - tMPI_Spinlock_trylock
  * - tMPI_Spinlock_wait
  */
-typedef struct
-{
-#ifndef DOXYGEN
-    tMPI_Thread_mutex_t lock; /* we don't want this documented */
-#endif
-} tMPI_Spinlock_t;
-/*#define tMPI_Spinlock_t     tMPI_Thread_mutex_t*/
+typedef struct tMPI_Spinlock *tMPI_Spinlock_t;
 
 /*! \def TMPI_SPINLOCK_INITIALIZER
  * \brief Spinlock static initializer
@@ -318,7 +323,7 @@ typedef struct
  *
  *  \hideinitializer
  */
-#  define TMPI_SPINLOCK_INITIALIZER   { TMPI_THREAD_MUTEX_INITIALIZER }
+#define TMPI_SPINLOCK_INITIALIZER   { NULL }
 
 /* Since mutexes guarantee memory barriers this works fine */
 /** Return value of an atomic integer
@@ -331,11 +336,8 @@ typedef struct
  *
  *  \hideinitializer
  */
-#ifdef DOXYGEN
-static inline int tMPI_Atomic_get(tMPI_Atomic_t &a);
-#else
-#define tMPI_Atomic_get(a)   ((a)->value)
-#endif
+TMPI_EXPORT
+int tMPI_Atomic_get(const tMPI_Atomic_t *a);
 
 /** Write value to an atomic integer
  *
@@ -348,13 +350,7 @@ static inline int tMPI_Atomic_get(tMPI_Atomic_t &a);
  *  \hideinitializer
  */
 TMPI_EXPORT
-static inline void tMPI_Atomic_set(tMPI_Atomic_t *a, int i)
-{
-    /* Mutexes here are necessary to guarantee memory visibility */
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    a->value = i;
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-}
+void tMPI_Atomic_set(tMPI_Atomic_t *a, int i);
 
 
 /** Return value of an atomic pointer
@@ -367,11 +363,8 @@ static inline void tMPI_Atomic_set(tMPI_Atomic_t *a, int i)
  *
  *  \hideinitializer
  */
-#ifdef DOXYGEN
-static inline void* tMPI_Atomic_ptr_get(tMPI_Atomic_ptr_t &a);
-#else
-#define tMPI_Atomic_ptr_get(a)   ((a)->value)
-#endif
+TMPI_EXPORT
+void* tMPI_Atomic_ptr_get(const tMPI_Atomic_ptr_t *a);
 
 
 
@@ -387,14 +380,7 @@ static inline void* tMPI_Atomic_ptr_get(tMPI_Atomic_ptr_t &a);
  *  \hideinitializer
  */
 TMPI_EXPORT
-static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *a, void *p)
-{
-    /* Mutexes here are necessary to guarantee memory visibility */
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    a->value = (void*)p;
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-}
-
+void tMPI_Atomic_ptr_set(tMPI_Atomic_ptr_t *a, void *p);
 
 /** Add integer to atomic variable
  *
@@ -407,15 +393,10 @@ static inline void tMPI_Atomic_ptr_set(tMPI_Atomic_t *a, void *p)
  *  \return The new value (after summation).
  */
 TMPI_EXPORT
-static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
-{
-    int t;
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    t        = a->value + i;
-    a->value = t;
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-    return t;
-}
+int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i);
+#ifndef DOXYGEN
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
+#endif
 
 
 
@@ -435,16 +416,10 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
  *  \return    The value of the atomic variable before addition.
  */
 TMPI_EXPORT
-static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
-{
-    int old_value;
-
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    old_value  = a->value;
-    a->value   = old_value + i;
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-    return old_value;
-}
+int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i);
+#ifndef DOXYGEN
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
+#endif
 
 
 
@@ -477,19 +452,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
  *   \note   The exchange occured if the return value is identical to \a old.
  */
 TMPI_EXPORT
-static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
-{
-    int t = 0;
-
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    if (a->value == old_val)
-    {
-        a->value = new_val;
-        t        = 1;
-    }
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-    return t;
-}
+int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val);
 
 
 
@@ -515,20 +478,38 @@ static inline int tMPI_Atomic_cas(tMPI_Atomic_t *a, int old_val, int new_val)
  *   \note   The exchange occured if the return value is identical to \a old.
  */
 TMPI_EXPORT
-static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
-                                      void *new_val)
-{
-    int t = 0;
+int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
+                        void *new_val);
 
-    tMPI_Thread_mutex_lock(&tMPI_Atomic_mutex);
-    if (a->value == old_val)
-    {
-        a->value = new_val;
-        t        = 1;
-    }
-    tMPI_Thread_mutex_unlock(&tMPI_Atomic_mutex);
-    return t;
-}
+/** Atomic swap operation.
+
+   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
+   Note: This has no good assembly counterparts on many architectures, so
+         it might not be faster than a repreated CAS.
+
+   \param a  Pointer to atomic type
+   \param b  Value to swap
+   \return the original value of a
+ */
+TMPI_EXPORT
+int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b);
+
+/** Atomic swap pointer operation.
+
+   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the
+   value of b.
+   Note: This has no good assembly counterparts on many architectures, so
+         it might not be faster than a repreated CAS.
+
+   \param a  Pointer to atomic type
+   \param b  Value to swap
+   \return the original value of a
+ */
+TMPI_EXPORT
+void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b);
+#ifndef DOXYGEN
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
+#endif
 
 
 /** Initialize spinlock
@@ -542,10 +523,10 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t * a, void *old_val,
  *
  *  \hideinitializer
  */
-#ifdef DOXYGEN
-void tMPI_Spinlock_init( tMPI_Spinlock_t &x);
-#else
-#define tMPI_Spinlock_init(x)       tMPI_Thread_mutex_init((x)->lock)
+TMPI_EXPORT
+void tMPI_Spinlock_init( tMPI_Spinlock_t *x);
+#ifndef DOXYGEN
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 #endif
 
 /** Acquire spinlock
@@ -555,11 +536,8 @@ void tMPI_Spinlock_init( tMPI_Spinlock_t &x);
  *
  *  \param x     Spinlock pointer
  */
-#ifdef DOXYGEN
-void tMPI_Spinlock_lock( tMPI_Spinlock_t &x);
-#else
-#define tMPI_Spinlock_lock(x)       tMPI_Thread_mutex_lock((x)->lock)
-#endif
+TMPI_EXPORT
+void tMPI_Spinlock_lock( tMPI_Spinlock_t *x);
 
 
 /** Attempt to acquire spinlock
@@ -572,11 +550,8 @@ void tMPI_Spinlock_lock( tMPI_Spinlock_t &x);
  * \return 0 if the mutex was available so we could lock it,
  *         otherwise a non-zero integer (1) if the lock is busy.
  */
-#ifdef DOXYGEN
-void tMPI_Spinlock_trylock( tMPI_Spinlock_t &x);
-#else
-#define tMPI_Spinlock_trylock(x)    tMPI_Thread_mutex_trylock((x)->lock)
-#endif
+TMPI_EXPORT
+int tMPI_Spinlock_trylock( tMPI_Spinlock_t *x);
 
 /** Release spinlock
  *
@@ -584,11 +559,8 @@ void tMPI_Spinlock_trylock( tMPI_Spinlock_t &x);
  *
  *  Unlocks the spinlock, regardless if which thread locked it.
  */
-#ifdef DOXYGEN
-void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
-#else
-#define tMPI_Spinlock_unlock(x)     tMPI_Thread_mutex_unlock((x)->lock)
-#endif
+TMPI_EXPORT
+void tMPI_Spinlock_unlock( tMPI_Spinlock_t *x);
 
 
 
@@ -601,20 +573,7 @@ void tMPI_Spinlock_unlock( tMPI_Spinlock_t &x);
  *  \return 1 if the spinlock is locked, 0 otherwise.
  */
 TMPI_EXPORT
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
-{
-    if (tMPI_Spinlock_trylock(x) != 0)
-    {
-        /* It was locked */
-        return 1;
-    }
-    else
-    {
-        /* We just locked it */
-        tMPI_Spinlock_unlock(x);
-        return 0;
-    }
-}
+int tMPI_Spinlock_islocked( tMPI_Spinlock_t *x);
 
 /** Wait for a spinlock to become available
  *
@@ -625,76 +584,26 @@ static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
  *  \param x  Spinlock pointer
  */
 TMPI_EXPORT
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
-{
-    tMPI_Spinlock_lock(x);
-    /* Got the lock now, so the waiting is over */
-    tMPI_Spinlock_unlock(x);
-}
+void tMPI_Spinlock_wait(tMPI_Spinlock_t *x);
 
 
-#endif
+#endif /* platform-specific checks */
 
-
-
-/* only do this if there was no better solution */
-#ifndef TMPI_HAVE_SWAP
-/** Atomic swap operation.
-
-   Atomically swaps the data in the tMPI_Atomic_t operand with the value of b.
-   NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
-
-   \param a  Pointer to atomic type
-   \param b  Value to swap
-   \return the original value of a
- */
-TMPI_EXPORT
-static inline int tMPI_Atomic_swap(tMPI_Atomic_t *a, int b)
-{
-    int oldval;
-    do
-    {
-        oldval = (int)(a->value);
-    }
-    while (!tMPI_Atomic_cas(a, oldval, b));
-    return oldval;
-}
-/** Atomic swap pointer operation.
-
-   Atomically swaps the pointer in the tMPI_Atomic_ptr_t operand with the
-   value of b.
-   NOTE: DON'T USE YET! (This has no good asm counterparts on many architectures).
-
-   \param a  Pointer to atomic type
-   \param b  Value to swap
-   \return the original value of a
- */
-TMPI_EXPORT
-static inline void *tMPI_Atomic_ptr_swap(tMPI_Atomic_ptr_t *a, void *b)
-{
-    void *oldval;
-    do
-    {
-        oldval = (void*)(a->value);
-    }
-    while (!tMPI_Atomic_ptr_cas(a, oldval, b));
-    return oldval;
-}
-#endif
-
-/* only define this if there were no separate acquire and release barriers */
-#ifndef TMPI_HAVE_ACQ_REL_BARRIERS
-
-/* if they're not defined explicitly, we just make full barriers out of both */
-#define tMPI_Atomic_memory_barrier_acq tMPI_Atomic_memory_barrier
-#define tMPI_Atomic_memory_barrier_rel tMPI_Atomic_memory_barrier
-
-#endif
+/* now define all the atomics that are not avaible natively. These
+   are done on the assumption that a native CAS does exist. */
+#include "atomic/derived.h"
 
 /* this allows us to use the inline keyword without breaking support for
    some compilers that don't support it: */
 #ifdef inline_defined_in_atomic
 #undef inline
+#endif
+
+#if !defined(TMPI_NO_ATOMICS) && !defined(TMPI_ATOMICS)
+/* Set it here to make sure the user code can check this without having to have
+   a config.h */
+/** Indicates that support for atomic operations is present. */
+#define TMPI_ATOMICS
 #endif
 
 

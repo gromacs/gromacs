@@ -44,7 +44,6 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "index.h"
 #include "macros.h"
 #include "gmx_fatal.h"
@@ -113,8 +112,11 @@ int gmx_rotacf(int argc, char *argv[])
     npargs = asize(pa);
     ppa    = add_acf_pargs(&npargs, pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, npargs, ppa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     rd_index(ftp2fn(efNDX, NFILE, fnm), 1, &isize, &index, &grpname);
 
@@ -150,7 +152,7 @@ int gmx_rotacf(int argc, char *argv[])
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
     snew(x_s, natoms);
 
-    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&(top->idef), ePBC, natoms);
 
     /* Start the loop over frames */
     t1      = t0 = t;
@@ -205,7 +207,7 @@ int gmx_rotacf(int argc, char *argv[])
         /* Increment loop counter */
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
     fprintf(stderr, "\nDone with trajectory\n");
 
@@ -228,8 +230,6 @@ int gmx_rotacf(int argc, char *argv[])
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

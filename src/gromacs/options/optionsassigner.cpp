@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -230,15 +230,24 @@ void OptionsAssigner::startSubSection(const char *name)
 
 void OptionsAssigner::startOption(const char *name)
 {
+    if (!tryStartOption(name))
+    {
+        GMX_THROW(InvalidInputError("Unknown option"));
+    }
+}
+
+bool OptionsAssigner::tryStartOption(const char *name)
+{
     GMX_RELEASE_ASSERT(impl_->currentOption_ == NULL, "finishOption() not called");
     AbstractOptionStorage *option = impl_->findOption(name);
     if (option == NULL)
     {
-        GMX_THROW(InvalidInputError("Unknown option"));
+        return false;
     }
     option->startSet();
     impl_->currentOption_     = option;
     impl_->currentValueCount_ = 0;
+    return true;
 }
 
 void OptionsAssigner::appendValue(const std::string &value)

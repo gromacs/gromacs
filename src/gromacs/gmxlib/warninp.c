@@ -191,7 +191,7 @@ void done_warning(warninp_t wi, int f_errno, const char *file, int line)
         gmx_fatal(f_errno, file, line,
                   "Too many warnings (%d), %s terminated.\n"
                   "If you are sure all warnings are harmless, use the -maxwarn option.",
-                  wi->nwarn_warn, Program());
+                  wi->nwarn_warn, ShortProgram());
     }
 
     sfree(wi);

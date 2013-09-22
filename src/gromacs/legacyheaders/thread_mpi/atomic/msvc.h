@@ -36,8 +36,6 @@
  */
 
 
-/* Microsoft Visual C on x86, define taken from FFTW who got it from Morten Nissov */
-
 /* we need this for all the data types. We use WIN32_LEAN_AND_MEAN to avoid
       polluting the global namespace. */
 #define WIN32_LEAN_AND_MEAN
@@ -54,23 +52,22 @@
 
 typedef struct tMPI_Atomic
 {
-    LONG volatile      value;     /*!< Volatile, to avoid compiler aliasing */
+    LONG volatile value;          /*!< Volatile, to avoid compiler aliasing */
 } tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    void* volatile      value;     /*!< Volatile, to avoid compiler aliasing */
+    void* volatile value;          /*!< Volatile, to avoid compiler aliasing */
 } tMPI_Atomic_ptr_t;
 
 typedef struct tMPI_Spinlock
 {
-    LONG volatile      lock;      /*!< Volatile, to avoid compiler aliasing */
+    LONG volatile lock;           /*!< Volatile, to avoid compiler aliasing */
 } tMPI_Spinlock_t;
 
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
+
 #define TMPI_SPINLOCK_INITIALIZER   { 0 }
-
-
-#define TMPI_HAVE_SWAP
 
 
 #define tMPI_Atomic_get(a)  ((a)->value)
@@ -83,9 +80,11 @@ typedef struct tMPI_Spinlock
 
 #define tMPI_Atomic_fetch_add(a, i)  \
     InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i))
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 
 #define tMPI_Atomic_add_return(a, i)  \
     ( (i) + InterlockedExchangeAdd((LONG volatile *)(a), (LONG) (i)) )
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
 #define tMPI_Atomic_cas(a, oldval, newval) \
     (InterlockedCompareExchange((LONG volatile *)(a), (LONG) (newval), (LONG) (oldval)) == (LONG)oldval)
@@ -94,6 +93,7 @@ typedef struct tMPI_Spinlock
     (InterlockedCompareExchangePointer(&((a)->value), (PVOID) (newval),  \
                                        (PVOID) (oldval)) == (PVOID)oldval)
 
+#define TMPI_ATOMIC_HAVE_NATIVE_SWAP
 #define tMPI_Atomic_swap(a, b) \
     InterlockedExchange((LONG volatile *)(a), (LONG) (b))
 
@@ -102,7 +102,7 @@ typedef struct tMPI_Spinlock
 
 
 
-static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
@@ -115,19 +115,19 @@ static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *   x)
     InterlockedCompareExchange((LONG volatile *)(x), 1, 0)
 
 
-static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_unlock(tMPI_Spinlock_t *x)
 {
     x->lock = 0;
 }
 
 
-static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *   x)
+static inline int tMPI_Spinlock_islocked(const tMPI_Spinlock_t *x)
 {
     return (*(volatile signed char *)(&(x)->lock) != 0);
 }
 
 
-static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *   x)
+static inline void tMPI_Spinlock_wait(tMPI_Spinlock_t *x)
 {
     while (tMPI_Spinlock_islocked(x))
     {

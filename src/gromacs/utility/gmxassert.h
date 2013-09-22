@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -50,7 +50,8 @@
  * \{
  */
 
-/*! \brief
+/*! \def GMX_RELEASE_ASSERT
+ * \brief
  * Macro for asserts that should also be present in the release version.
  *
  * Regardless of NDEBUG, this macro checks \p condition, and if it is not true,
@@ -60,10 +61,14 @@
  * should only be used in a context where it is safe to throw an exception to
  * keep the option open.
  */
+#ifdef GMX_DISABLE_ASSERTS
+#define GMX_RELEASE_ASSERT(condition, msg)
+#else
 #define GMX_RELEASE_ASSERT(condition, msg) \
     ((void) ((condition) ? (void)0 : \
              ::gmx::internal::assertHandler(#condition, msg, \
                                             BOOST_CURRENT_FUNCTION, __FILE__, __LINE__)))
+#endif
 /*! \def GMX_ASSERT
  * \brief
  * Macro for debug asserts.

@@ -45,7 +45,6 @@
 #include "typedefs.h"
 #include "filenm.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -226,8 +225,11 @@ int gmx_mdmat(int argc, char *argv[])
     output_env_t   oenv;
     gmx_rmpbc_t    gpbc = NULL;
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE, NFILE, fnm,
-                      asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE, NFILE, fnm,
+                           asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fprintf(stderr, "Will truncate at %f nm\n", truncate);
     bCalcN  = opt2bSet("-no", NFILE, fnm);
@@ -304,7 +306,7 @@ int gmx_mdmat(int argc, char *argv[])
     rlo.r = 1.0, rlo.g = 1.0, rlo.b = 1.0;
     rhi.r = 0.0, rhi.g = 0.0, rhi.b = 0.0;
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, trxnat);
 
     if (bFrames)
     {
@@ -339,7 +341,7 @@ int gmx_mdmat(int argc, char *argv[])
                       nres, nres, resnr, resnr, mdmat, 0, truncate, rlo, rhi, &nlevels);
         }
     }
-    while (read_next_x(oenv, status, &t, trxnat, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trj(status);
     gmx_rmpbc_done(gpbc);
@@ -392,8 +394,6 @@ int gmx_mdmat(int argc, char *argv[])
         }
         ffclose(fp);
     }
-
-    thanx(stderr);
 
     return 0;
 }

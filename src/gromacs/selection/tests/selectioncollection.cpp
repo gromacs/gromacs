@@ -41,13 +41,9 @@
  */
 #include <gtest/gtest.h>
 
-#include "gromacs/legacyheaders/smalloc.h"
-#include "gromacs/legacyheaders/statutil.h"
-#include "gromacs/legacyheaders/tpxio.h"
-#include "gromacs/legacyheaders/vec.h"
-
 #include "gromacs/options/basicoptions.h"
 #include "gromacs/options/options.h"
+#include "gromacs/selection/indexutil.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selection.h"
 #include "gromacs/utility/exceptions.h"
@@ -60,6 +56,8 @@
 #include "testutils/testfilemanager.h"
 #include "testutils/testoptions.h"
 
+#include "toputils.h"
+
 namespace
 {
 
@@ -70,8 +68,6 @@ namespace
 class SelectionCollectionTest : public ::testing::Test
 {
     public:
-        static void SetUpTestCase();
-
         static int               s_debugLevel;
 
         SelectionCollectionTest();
@@ -82,73 +78,68 @@ class SelectionCollectionTest : public ::testing::Test
             ASSERT_NO_THROW_GMX(sc_.setTopology(NULL, natoms));
         }
         void loadTopology(const char *filename);
+        void setTopology();
+        void loadIndexGroups(const char *filename);
 
-        gmx::SelectionCollection sc_;
-        gmx::SelectionList       sel_;
-        t_topology              *top_;
-        t_trxframe              *frame_;
+        gmx::test::TopologyManager  topManager_;
+        gmx::SelectionCollection    sc_;
+        gmx::SelectionList          sel_;
+        t_topology                 *top_;
+        t_trxframe                 *frame_;
+        gmx_ana_indexgrps_t        *grps_;
 };
 
 int SelectionCollectionTest::s_debugLevel = 0;
 
-void SelectionCollectionTest::SetUpTestCase()
+GMX_TEST_OPTIONS(SelectionCollectionTestOptions, options)
 {
-    gmx::Options options(NULL, NULL);
-    options.addOption(gmx::IntegerOption("seldebug").store(&s_debugLevel));
-    gmx::test::parseTestOptions(&options);
+    options->addOption(gmx::IntegerOption("seldebug")
+                           .store(&SelectionCollectionTest::s_debugLevel)
+                           .description("Set selection debug level"));
 }
 
-
 SelectionCollectionTest::SelectionCollectionTest()
-    : top_(NULL), frame_(NULL)
+    : top_(NULL), frame_(NULL), grps_(NULL)
 {
+    topManager_.requestFrame();
     sc_.setDebugLevel(s_debugLevel);
     sc_.setReferencePosType("atom");
     sc_.setOutputPosType("atom");
 }
 
-
 SelectionCollectionTest::~SelectionCollectionTest()
 {
-    if (top_ != NULL)
+    if (grps_ != NULL)
     {
-        free_t_atoms(&top_->atoms, TRUE);
-        done_top(top_);
-        sfree(top_);
-    }
-
-    if (frame_ != NULL)
-    {
-        sfree(frame_->x);
-        sfree(frame_);
+        gmx_ana_indexgrps_free(grps_);
     }
 }
-
 
 void
 SelectionCollectionTest::loadTopology(const char *filename)
 {
-    char    title[STRLEN];
-    int     ePBC;
-    rvec   *xtop;
-    matrix  box;
+    topManager_.loadTopology(filename);
+    setTopology();
+}
 
-    snew(top_, 1);
-    read_tps_conf(gmx::test::TestFileManager::getInputFilePath(filename).c_str(),
-                  title, top_, &ePBC, &xtop, NULL, box, FALSE);
-
-    snew(frame_, 1);
-    frame_->flags  = TRX_NEED_X;
-    frame_->natoms = top_->atoms.nr;
-    frame_->bX     = TRUE;
-    snew(frame_->x, frame_->natoms);
-    memcpy(frame_->x, xtop, sizeof(*frame_->x) * frame_->natoms);
-    frame_->bBox   = TRUE;
-    copy_mat(box, frame_->box);
-
-    sfree(xtop);
+void
+SelectionCollectionTest::setTopology()
+{
+    top_   = topManager_.topology();
+    frame_ = topManager_.frame();
 
     ASSERT_NO_THROW_GMX(sc_.setTopology(top_, -1));
+}
+
+void
+SelectionCollectionTest::loadIndexGroups(const char *filename)
+{
+    GMX_RELEASE_ASSERT(grps_ == NULL,
+                       "External groups can only be loaded once");
+    std::string fullpath =
+        gmx::test::TestFileManager::getInputFilePath(filename);
+    gmx_ana_indexgrps_init(&grps_, NULL, fullpath.c_str());
+    sc_.setIndexGroups(grps_);
 }
 
 
@@ -167,6 +158,7 @@ class SelectionCollectionDataTest : public SelectionCollectionTest
             efTestPositionMapping       = 1<<3,
             efTestPositionMasses        = 1<<4,
             efTestPositionCharges       = 1<<5,
+            efTestSelectionNames        = 1<<6,
             efDontTestCompiledAtoms     = 1<<8
         };
         typedef gmx::FlagsTemplate<TestFlag> TestFlags;
@@ -298,7 +290,10 @@ SelectionCollectionDataTest::runParser(const char *const *selections,
             TestReferenceChecker selcompound(
                     compound.checkCompound("ParsedSelection", id.c_str()));
             selcompound.checkString(selections[i], "Input");
-            selcompound.checkString(sel_[count_].name(), "Name");
+            if (flags_.test(efTestSelectionNames))
+            {
+                selcompound.checkString(sel_[count_].name(), "Name");
+            }
             selcompound.checkString(sel_[count_].selectionText(), "Text");
             selcompound.checkBoolean(sel_[count_].isDynamic(), "Dynamic");
             ++count_;
@@ -330,6 +325,10 @@ SelectionCollectionDataTest::checkCompiled()
         std::string          id = gmx::formatString("Selection%d", static_cast<int>(i + 1));
         TestReferenceChecker selcompound(
                 compound.checkCompound("Selection", id.c_str()));
+        if (flags_.test(efTestSelectionNames))
+        {
+            selcompound.checkString(sel_[i].name(), "Name");
+        }
         if (!flags_.test(efDontTestCompiledAtoms))
         {
             checkSelection(&selcompound, sel_[i], flags_ & mask);
@@ -364,10 +363,7 @@ void
 SelectionCollectionDataTest::runEvaluateFinal()
 {
     ASSERT_NO_THROW_GMX(sc_.evaluateFinal(framenr_));
-    if (!checker_.isWriteMode())
-    {
-        checkCompiled();
-    }
+    checkCompiled();
 }
 
 
@@ -480,11 +476,48 @@ TEST_F(SelectionCollectionTest, HandlesHelpKeywordInInvalidContext)
 
 // TODO: Tests for more parser errors
 
-TEST_F(SelectionCollectionTest, RecoversFromUnknownGroupReference)
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser1)
+{
+    ASSERT_NO_THROW_GMX(sc_.setIndexGroups(NULL));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceParser2)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"foo\""), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("4"), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed1)
 {
     ASSERT_NO_THROW_GMX(sc_.parseFromString("group \"foo\""));
     ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
-    EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InvalidInputError);
+    EXPECT_THROW_GMX(sc_.setIndexGroups(NULL), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnknownGroupReferenceDelayed2)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 4; group \"foo\""));
+    ASSERT_NO_FATAL_FAILURE(setAtomCount(10));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReference)
+{
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    EXPECT_THROW_GMX(sc_.parseFromString("group \"GrpUnsorted\""),
+                     gmx::InconsistentInputError);
+    EXPECT_THROW_GMX(sc_.parseFromString("2"), gmx::InconsistentInputError);
+}
+
+TEST_F(SelectionCollectionTest, HandlesUnsortedGroupReferenceDelayed)
+{
+    ASSERT_NO_THROW_GMX(sc_.parseFromString("group 2; group \"GrpUnsorted\""));
+    EXPECT_THROW_GMX(loadIndexGroups("simple.ndx"), gmx::InconsistentInputError);
     EXPECT_THROW_GMX(sc_.compile(), gmx::APIError);
 }
 
@@ -575,7 +608,17 @@ TEST_F(SelectionCollectionDataTest, HandlesResIndex)
     runTest("simple.pdb", selections);
 }
 
-// TODO: Add test for "molindex"
+TEST_F(SelectionCollectionDataTest, HandlesMolIndex)
+{
+    static const char * const selections[] = {
+        "molindex 1 4",
+        "molecule 2 3 5"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    topManager_.initUniformMolecules(3);
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesAtomname)
 {
@@ -597,7 +640,18 @@ TEST_F(SelectionCollectionDataTest, HandlesPdbAtomname)
     runTest("simple.pdb", selections);
 }
 
-// TODO: Add test for atomtype
+
+TEST_F(SelectionCollectionDataTest, HandlesAtomtype)
+{
+    static const char * const selections[] = {
+        "atomtype CA"
+    };
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    const char *const types[] = { "CA", "SA", "SB" };
+    topManager_.initAtomTypes(types);
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
 
 TEST_F(SelectionCollectionDataTest, HandlesChain)
 {
@@ -849,6 +903,46 @@ TEST_F(SelectionCollectionDataTest, ComputesMassesAndChargesWithoutTopology)
  * Tests for selection syntactic constructs
  */
 
+TEST_F(SelectionCollectionDataTest, HandlesSelectionNames)
+{
+    static const char * const selections[] = {
+        "\"GroupSelection\" group \"GrpA\"",
+        "\"DynamicSelection\" x < 5",
+        "y < 3"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest(10, selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelections)
+{
+    static const char * const selections[] = {
+        "group \"GrpA\"",
+        "GrpB",
+        "1",
+        "group \"GrpB\" and resname RB"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    runTest("simple.gro", selections);
+}
+
+TEST_F(SelectionCollectionDataTest, HandlesIndexGroupsInSelectionsDelayed)
+{
+    static const char * const selections[] = {
+        "group \"GrpA\"",
+        "GrpB",
+        "1",
+        "group \"GrpB\" and resname RB"
+    };
+    setFlags(TestFlags() | efTestSelectionNames);
+    ASSERT_NO_FATAL_FAILURE(runParser(selections));
+    ASSERT_NO_FATAL_FAILURE(loadTopology("simple.gro"));
+    ASSERT_NO_THROW_GMX(loadIndexGroups("simple.ndx"));
+    ASSERT_NO_FATAL_FAILURE(runCompiler());
+}
+
 TEST_F(SelectionCollectionDataTest, HandlesConstantPositions)
 {
     static const char * const selections[] = {
@@ -919,7 +1013,7 @@ TEST_F(SelectionCollectionDataTest, HandlesDynamicAtomValuedParameters)
 {
     static const char * const selections[] = {
         "same residue as (atomnr 3 5 13 or y > 5)",
-        "(resnr 1 3 5 or x > 10) and same residue as (atomnr 3 5 13 or y > 5)"
+        "(resnr 1 3 5 or x > 10) and same residue as (atomnr 3 5 13 or z > 5)"
     };
     setFlags(TestFlags() | efTestEvaluation);
     runTest("simple.gro", selections);

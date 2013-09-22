@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,9 +52,6 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         virtual void initAnalysis(const TrajectoryAnalysisSettings &settings,
                                   const TopologyInformation        &top);
 
-        virtual TrajectoryAnalysisModuleDataPointer startFrames(
-            const AnalysisDataParallelOptions &opt,
-            const SelectionCollection         &selections);
         virtual void analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                   TrajectoryAnalysisModuleData *pdata);
 
@@ -69,42 +66,10 @@ class AnalysisTemplate : public TrajectoryAnalysisModule
         Selection                        refsel_;
         SelectionList                    sel_;
 
+        AnalysisNeighborhood             nb_;
+
         AnalysisData                     data_;
         AnalysisDataAverageModulePointer avem_;
-};
-
-/*! \brief
- * Frame-local data needed in analysis.
- */
-class AnalysisTemplate::ModuleData : public TrajectoryAnalysisModuleData
-{
-    public:
-        /*! \brief
-         * Initializes frame-local data.
-         *
-         * \param[in] module     Analysis module to use for data objects.
-         * \param[in] opt        Data parallelization options.
-         * \param[in] selections Thread-local selection collection.
-         * \param[in] cutoff     Cutoff distance for the search
-         *   (<=0 stands for no cutoff).
-         * \param[in] posCount   Maximum number of reference particles.
-         */
-        ModuleData(TrajectoryAnalysisModule *module,
-                   const AnalysisDataParallelOptions &opt,
-                   const SelectionCollection &selections,
-                   double cutoff, int posCount)
-            : TrajectoryAnalysisModuleData(module, opt, selections),
-              nb_(cutoff, posCount)
-        {
-        }
-
-        virtual void finish()
-        {
-            finishDataHandles();
-        }
-
-        //! Neighborhood search data for distance calculation.
-        NeighborhoodSearch      nb_;
 };
 
 
@@ -161,7 +126,9 @@ void
 AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
                                const TopologyInformation         & /*top*/)
 {
-    data_.setColumnCount(sel_.size());
+    nb_.setCutoff(cutoff_);
+
+    data_.setColumnCount(0, sel_.size());
 
     avem_.reset(new AnalysisDataAverageModule());
     data_.addModule(avem_);
@@ -179,24 +146,14 @@ AnalysisTemplate::initAnalysis(const TrajectoryAnalysisSettings &settings,
 }
 
 
-TrajectoryAnalysisModuleDataPointer
-AnalysisTemplate::startFrames(const AnalysisDataParallelOptions &opt,
-                              const SelectionCollection         &selections)
-{
-    return TrajectoryAnalysisModuleDataPointer(
-            new ModuleData(this, opt, selections, cutoff_, refsel_.posCount()));
-}
-
-
 void
 AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                                TrajectoryAnalysisModuleData *pdata)
 {
-    AnalysisDataHandle  dh     = pdata->dataHandle(data_);
-    NeighborhoodSearch &nb     = static_cast<ModuleData *>(pdata)->nb_;
-    const Selection    &refsel = pdata->parallelSelection(refsel_);
+    AnalysisDataHandle         dh     = pdata->dataHandle(data_);
+    const Selection           &refsel = pdata->parallelSelection(refsel_);
 
-    nb.init(pbc, refsel.positions());
+    AnalysisNeighborhoodSearch nbsearch = nb_.initSearch(pbc, refsel);
     dh.startFrame(frnr, fr.time);
     for (size_t g = 0; g < sel_.size(); ++g)
     {
@@ -206,7 +163,7 @@ AnalysisTemplate::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
         for (int i = 0; i < nr; ++i)
         {
             SelectionPosition p = sel.position(i);
-            frave += nb.minimumDistance(p.x());
+            frave += nbsearch.minimumDistance(p.x());
         }
         frave /= nr;
         dh.setPoint(g, frave);
@@ -228,7 +185,7 @@ AnalysisTemplate::writeOutput()
     for (size_t g = 0; g < sel_.size(); ++g)
     {
         fprintf(stderr, "Average mean distance for '%s': %.3f nm\n",
-                sel_[g].name(), avem_->average(g));
+                sel_[g].name(), avem_->average(0, g));
     }
 }
 
@@ -238,16 +195,5 @@ AnalysisTemplate::writeOutput()
 int
 main(int argc, char *argv[])
 {
-    ProgramInfo::init(argc, argv);
-    try
-    {
-        AnalysisTemplate                    module;
-        TrajectoryAnalysisCommandLineRunner runner(&module);
-        return runner.run(argc, argv);
-    }
-    catch (const std::exception &ex)
-    {
-        gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
-    }
+    return gmx::TrajectoryAnalysisCommandLineRunner::runAsMain<AnalysisTemplate>(argc, argv);
 }

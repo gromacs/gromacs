@@ -683,7 +683,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
 
 static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
                             int nrfound, int *ats, real bond_cc, real bond_ch,
-                            real xcom, real ycom, gmx_bool bDoZ)
+                            real xcom, gmx_bool bDoZ)
 {
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum {
@@ -781,7 +781,7 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
                           int nrfound, int *ats, t_vsitetop *vsitetop, int nvsitetop)
 {
     real bond_cc, bond_ch;
-    real xcom, ycom, mtot;
+    real xcom, mtot;
     int  i;
     /* these MUST correspond to the atnms array in do_vsite_aromatics! */
     enum {
@@ -818,17 +818,15 @@ static int gen_vsites_phe(t_atoms *at, int *vsite_type[], t_params plist[],
     x[atHZ]  = x[atCZ]+bond_ch;
     y[atHZ]  = 0;
 
-    xcom = ycom = mtot = 0;
+    xcom = mtot = 0;
     for (i = 0; i < atNR; i++)
     {
         xcom += x[i]*at->atom[ats[i]].m;
-        ycom += y[i]*at->atom[ats[i]].m;
         mtot += at->atom[ats[i]].m;
     }
     xcom /= mtot;
-    ycom /= mtot;
 
-    return gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, TRUE);
+    return gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, TRUE);
 }
 
 static void calc_vsite3_param(real xd, real yd, real xi, real yi, real xj, real yj,
@@ -1082,6 +1080,8 @@ static int gen_vsites_trp(gpp_atomtype_t atype, rvec *newx[],
         (*newatom)      [atM[j]].type   = (*newatom)[atM[j]].typeB = tpM;
         (*newatom)      [atM[j]].ptype  = eptAtom;
         (*newatom)      [atM[j]].resind = at->atom[i0].resind;
+        (*newatom)      [atM[j]].elem[0] = 'M';
+        (*newatom)      [atM[j]].elem[1] = '\0';
         (*newvsite_type)[atM[j]]        = NOTSET;
         (*newcgnr)      [atM[j]]        = (*cgnr)[i0];
     }
@@ -1139,7 +1139,7 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     int  nvsite, i, i0, j, atM, tpM;
     real dCGCE, dCEOH, dCGM, tmp1, a, b;
     real bond_cc, bond_ch, bond_co, bond_oh, angle_coh;
-    real xcom, ycom, mtot;
+    real xcom, mtot;
     real vmass, vdist, mM;
     rvec r1;
     char name[10];
@@ -1190,19 +1190,17 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     xi[atOH]  = xi[atCZ]+bond_co;
     yi[atOH]  = 0;
 
-    xcom = ycom = mtot = 0;
+    xcom = mtot = 0;
     for (i = 0; i < atOH; i++)
     {
         xcom += xi[i]*at->atom[ats[i]].m;
-        ycom += yi[i]*at->atom[ats[i]].m;
         mtot += at->atom[ats[i]].m;
     }
     xcom /= mtot;
-    ycom /= mtot;
 
     /* first do 6 ring as default,
        except CZ (we'll do that different) and HZ (we don't have that): */
-    nvsite = gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, ycom, FALSE);
+    nvsite = gen_vsites_6ring(at, vsite_type, plist, nrfound, ats, bond_cc, bond_ch, xcom, FALSE);
 
     /* then construct CZ from the 2nd triangle */
     /* vsite3 construction: r_d = r_i + a r_ij + b r_ik */
@@ -1266,6 +1264,8 @@ static int gen_vsites_tyr(gpp_atomtype_t atype, rvec *newx[],
     (*newatom)      [atM].type   = (*newatom)[atM].typeB = tpM;
     (*newatom)      [atM].ptype  = eptAtom;
     (*newatom)      [atM].resind = at->atom[i0].resind;
+    (*newatom)      [atM].elem[0] = 'M';
+    (*newatom)      [atM].elem[1] = '\0';
     (*newvsite_type)[atM]        = NOTSET;
     (*newcgnr)      [atM]        = (*cgnr)[i0];
     /* renumber cgnr: */
@@ -1994,6 +1994,8 @@ void do_vsites(int nrtp, t_restp rtp[], gpp_atomtype_t atype,
                         newatom[ni0+j].type   = newatom[ni0+j].typeB = tpM;
                         newatom[ni0+j].ptype  = eptAtom;
                         newatom[ni0+j].resind = at->atom[i0].resind;
+                        newatom[ni0+j].elem[0] = 'M';
+                        newatom[ni0+j].elem[1] = '\0';
                         newvsite_type[ni0+j]  = NOTSET;
                         newcgnr[ni0+j]        = (*cgnr)[i0];
                     }

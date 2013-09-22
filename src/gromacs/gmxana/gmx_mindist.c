@@ -47,7 +47,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -65,7 +64,7 @@ static void periodic_dist(matrix box, rvec x[], int n, atom_id index[],
     real sqr_box, r2min, r2max, r2;
     rvec shift[NSHIFT], d0, d;
 
-    sqr_box = sqr(min(box[XX][XX], min(box[YY][YY], box[ZZ][ZZ])));
+    sqr_box = sqr(min(norm(box[XX]), min(norm(box[YY]), norm(box[ZZ]))));
 
     s = 0;
     for (sz = -1; sz <= 1; sz++)
@@ -150,7 +149,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
 
     if (NULL != top)
     {
-        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top->idef, ePBC, natoms);
     }
 
     bFirst = TRUE;
@@ -177,7 +176,7 @@ static void periodic_mindist_plot(const char *trxfn, const char *outfn,
                 output_env_conv_time(oenv, t), rmin, rmax, norm(box[0]), norm(box[1]), norm(box[2]));
         bFirst = FALSE;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     if (NULL != top)
     {
@@ -530,7 +529,7 @@ void dist_plot(const char *fn, const char *afile, const char *dfile,
             fprintf(respertime, "\n");
         }
     }
-    while (read_next_x(oenv, status, &t, natoms, x0, box));
+    while (read_next_x(oenv, status, &t, x0, box));
 
     close_trj(status);
     ffclose(dist);
@@ -599,7 +598,7 @@ int find_residues(t_atoms *atoms, int n, atom_id index[], atom_id **resindex)
     return nres;
 }
 
-void dump_res(FILE *out, int nres, atom_id *resindex, int n, atom_id index[])
+void dump_res(FILE *out, int nres, atom_id *resindex, atom_id index[])
 {
     int i, j;
 
@@ -694,9 +693,12 @@ int gmx_mindist(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_VIEW | PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     trxfnm  = ftp2fn(efTRX, NFILE, fnm);
     ndxfnm  = ftp2fn_null(efNDX, NFILE, fnm);
@@ -769,7 +771,7 @@ int gmx_mindist(int argc, char *argv[])
                              gnx[0], index[0], &residues);
         if (debug)
         {
-            dump_res(debug, nres, residues, gnx[0], index[0]);
+            dump_res(debug, nres, residues, index[0]);
         }
     }
 
@@ -790,8 +792,6 @@ int gmx_mindist(int argc, char *argv[])
     {
         do_view(oenv, numfnm, "-nxy");
     }
-
-    thanx(stderr);
 
     return 0;
 }

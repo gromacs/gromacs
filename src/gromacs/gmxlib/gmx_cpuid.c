@@ -50,7 +50,10 @@
  * in a single file, but to avoid repeated ifdefs we set the overall architecture here.
  */
 #if defined (__i386__) || defined (__x86_64__) || defined (_M_IX86) || defined (_M_X64)
+/* OK, it is x86, but can we execute cpuid? */
+#if defined(GMX_X86_GCC_INLINE_ASM) || ( defined(_MSC_VER) && ( (_MSC_VER > 1500) || (_MSC_VER==1500 & _MSC_FULL_VER >= 150030729)))
 #    define GMX_CPUID_X86
+#endif
 #endif
 
 /* Global constant character strings corresponding to our enumerated types */
@@ -60,7 +63,20 @@ gmx_cpuid_vendor_string[GMX_CPUID_NVENDORS] =
     "CannotDetect",
     "Unknown",
     "GenuineIntel",
-    "AuthenticAMD"
+    "AuthenticAMD",
+    "Fujitsu",
+    "IBM"
+};
+
+const char *
+gmx_cpuid_vendor_string_alternative[GMX_CPUID_NVENDORS] =
+{
+    "CannotDetect",
+    "Unknown",
+    "GenuineIntel",
+    "AuthenticAMD",
+    "Fujitsu",
+    "ibm" /* Used on BlueGene/Q */
 };
 
 const char *
@@ -111,7 +127,9 @@ gmx_cpuid_acceleration_string[GMX_CPUID_NACCELERATIONS] =
     "SSE2",
     "SSE4.1",
     "AVX_128_FMA",
-    "AVX_256"
+    "AVX_256",
+    "Sparc64 HPC-ACE",
+    "IBM_QPX"
 };
 
 /* Max length of brand string */
@@ -209,6 +227,14 @@ enum gmx_cpuid_acceleration
 static const
 enum gmx_cpuid_acceleration
     compiled_acc = GMX_CPUID_ACCELERATION_X86_SSE2;
+#elif defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE
+static const
+enum gmx_cpuid_acceleration
+    compiled_acc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+#elif defined GMX_CPU_ACCELERATION_IBM_QPX
+static const
+enum gmx_cpuid_acceleration
+    compiled_acc = GMX_CPUID_ACCELERATION_IBM_QPX;
 #else
 static const
 enum gmx_cpuid_acceleration
@@ -447,8 +473,9 @@ cpuid_renumber_elements(int *data, int n)
  * reserved for that part.
  * This routine does internal renumbering so we get continuous indices, and also
  * decodes the actual number of packages,cores-per-package and hwthreads-per-core.
+ * Returns: 0 on success, non-zero on failure.
  */
-static void
+static int
 cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwthread_bits)
 {
     int i, idx;
@@ -473,14 +500,25 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
     cpuid->ncores_per_package   = cpuid_renumber_elements(cpuid->core_id, cpuid->nproc);
     cpuid->nhwthreads_per_core  = cpuid_renumber_elements(cpuid->hwthread_id, cpuid->nproc);
 
+    /* now check for consistency */
+    if ( (cpuid->npackages * cpuid->ncores_per_package *
+          cpuid->nhwthreads_per_core) != cpuid->nproc )
+    {
+        /* the packages/cores-per-package/hwthreads-per-core counts are
+           inconsistent. */
+        return -1;
+    }
+
     /* Create a locality order array, i.e. first all resources in package0, which in turn
      * are sorted so we first have all resources in core0, where threads are sorted in order, etc.
      */
+
     for (i = 0; i < cpuid->nproc; i++)
     {
         idx = (cpuid->package_id[i]*cpuid->ncores_per_package + cpuid->core_id[i])*cpuid->nhwthreads_per_core + cpuid->hwthread_id[i];
         cpuid->locality_order[idx] = i;
     }
+    return 0;
 }
 
 
@@ -488,7 +526,7 @@ cpuid_x86_decode_apic_id(gmx_cpuid_t cpuid, int *apic_id, int core_bits, int hwt
 static int
 cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 {
-    int                       max_stdfn, max_extfn;
+    int                       max_stdfn, max_extfn, ret;
     unsigned int              eax, ebx, ecx, edx;
     int                       hwthread_bits, core_bits;
     int *                     apic_id;
@@ -569,8 +607,9 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
                 ;
             }
         }
-        cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, hwthread_bits);
-        cpuid->have_cpu_topology = 1;
+        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
+                                       hwthread_bits);
+        cpuid->have_cpu_topology = (ret == 0);
 #endif
     }
     return 0;
@@ -580,7 +619,7 @@ cpuid_check_amd_x86(gmx_cpuid_t                cpuid)
 static int
 cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 {
-    unsigned int              max_stdfn, max_extfn;
+    unsigned int              max_stdfn, max_extfn, ret;
     unsigned int              eax, ebx, ecx, edx;
     unsigned int              max_logical_cores, max_physical_cores;
     int                       hwthread_bits, core_bits;
@@ -672,8 +711,9 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
         hwthread_bits    = eax & 0x1F;
         execute_x86cpuid(0xB, 1, &eax, &ebx, &ecx, &edx);
         core_bits        = (eax & 0x1F) - hwthread_bits;
-        cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, hwthread_bits);
-        cpuid->have_cpu_topology = 1;
+        ret = cpuid_x86_decode_apic_id(cpuid, apic_id, core_bits, 
+                                       hwthread_bits);
+        cpuid->have_cpu_topology = (ret == 0);
 #endif
     }
     return 0;
@@ -681,6 +721,48 @@ cpuid_check_intel_x86(gmx_cpuid_t                cpuid)
 #endif /* GMX_CPUID_X86 */
 
 
+
+
+static void
+chomp_substring_before_colon(const char *in, char *s, int maxlength)
+{
+    char *p;
+    strncpy(s,in,maxlength);
+    p = strchr(s,':');
+    if(p!=NULL)
+    {
+        *p='\0';
+        while(isspace(*(--p)) && (p>=s))
+        {
+            *p='\0';
+        }
+    }
+    else
+    {
+        *s='\0';
+    }
+}
+
+static void
+chomp_substring_after_colon(const char *in, char *s, int maxlength)
+{
+    char *p;
+    if( (p = strchr(in,':'))!=NULL)
+    {
+        p++;
+        while(isspace(*p)) p++;
+        strncpy(s,p,maxlength);
+        p = s+strlen(s);
+        while(isspace(*(--p)) && (p>=s))
+        {
+            *p='\0';
+        }
+    }
+    else
+    {
+        *s='\0';
+    }
+}
 
 /* Try to find the vendor of the current CPU, so we know what specific
  * detection routine to call.
@@ -692,6 +774,8 @@ cpuid_check_vendor(void)
     /* Register data used on x86 */
     unsigned int               eax, ebx, ecx, edx;
     char                       vendorstring[13];
+    FILE *                     fp;
+    char                       buffer[255],before_colon[255], after_colon[255];
 
     /* Set default first */
     vendor = GMX_CPUID_VENDOR_UNKNOWN;
@@ -712,8 +796,35 @@ cpuid_check_vendor(void)
             vendor = i;
         }
     }
-#else
-    vendor = GMX_CPUID_VENDOR_UNKNOWN;
+#elif defined(__linux__) || defined(__linux)
+    /* General Linux. Try to get CPU vendor from /proc/cpuinfo */
+    if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+    {
+        while( (vendor == GMX_CPUID_VENDOR_UNKNOWN) && (fgets(buffer,sizeof(buffer),fp) != NULL))
+        {
+            chomp_substring_before_colon(buffer,before_colon,sizeof(before_colon));
+            /* Intel/AMD use "vendor_id", IBM "vendor"(?) or "model". Fujitsu "manufacture". Add others if you have them! */
+            if( !strcmp(before_colon,"vendor_id")
+                || !strcmp(before_colon,"vendor")
+                || !strcmp(before_colon,"manufacture")
+                || !strcmp(before_colon,"model"))
+            {
+                chomp_substring_after_colon(buffer,after_colon,sizeof(after_colon));
+                for(i=GMX_CPUID_VENDOR_UNKNOWN; i<GMX_CPUID_NVENDORS; i++)
+                {
+                    /* Be liberal and accept if we find the vendor
+                     * string (or alternative string) anywhere. Using
+                     * strcasestr() would be non-portable. */
+                    if(strstr(after_colon,gmx_cpuid_vendor_string[i])
+                       || strstr(after_colon,gmx_cpuid_vendor_string_alternative[i]))
+                    {
+                        vendor = i;
+                    }
+                }
+            }
+        }
+    }
+    fclose(fp);
 #endif
 
     return vendor;
@@ -780,6 +891,9 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
 {
     gmx_cpuid_t cpuid;
     int         i;
+    FILE *      fp;
+    char        buffer[255],buffer2[255];
+    int         found_brand;
 
     cpuid = malloc(sizeof(*cpuid));
 
@@ -789,6 +903,7 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
     {
         cpuid->feature[i] = 0;
     }
+
     cpuid->have_cpu_topology   = 0;
     cpuid->nproc               = 0;
     cpuid->npackages           = 0;
@@ -812,20 +927,37 @@ gmx_cpuid_init               (gmx_cpuid_t *              pcpuid)
             break;
 #endif
         default:
-            /* Could not find vendor */
-            strncpy(cpuid->brand, "Unknown CPU brand", GMX_CPUID_BRAND_MAXLEN);
+            /* Default value */
+            strncpy(cpuid->brand,"Unknown CPU brand",GMX_CPUID_BRAND_MAXLEN);
+#if defined(__linux__) || defined(__linux)
+            /* General Linux. Try to get CPU type from /proc/cpuinfo */
+            if( (fp = fopen("/proc/cpuinfo","r")) != NULL)
+            {
+                found_brand = 0;
+                while( (found_brand==0) && (fgets(buffer,sizeof(buffer),fp) !=NULL))
+                {
+                    chomp_substring_before_colon(buffer,buffer2,sizeof(buffer2));
+                    /* Intel uses "model name", Fujitsu and IBM "cpu". */
+                    if( !strcmp(buffer2,"model name") || !strcmp(buffer2,"cpu"))
+                    {
+                        chomp_substring_after_colon(buffer,cpuid->brand,GMX_CPUID_BRAND_MAXLEN);
+                        found_brand = 1;
+                    }
+                }
+            }
+            fclose(fp);
+#endif
             cpuid->family         = 0;
             cpuid->model          = 0;
             cpuid->stepping       = 0;
-
-            for (i = 0; i < GMX_CPUID_NFEATURES; i++)
+            
+            for(i=0; i<GMX_CPUID_NFEATURES; i++)
             {
-                cpuid->feature[i] = 0;
+                cpuid->feature[i]=0;
             }
             cpuid->feature[GMX_CPUID_FEATURE_CANNOTDETECT] = 1;
             break;
     }
-
     return 0;
 }
 
@@ -936,7 +1068,20 @@ gmx_cpuid_acceleration_suggest  (gmx_cpuid_t                 cpuid)
             tmpacc = GMX_CPUID_ACCELERATION_X86_SSE2;
         }
     }
-
+    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_FUJITSU)
+    {
+        if(strstr(gmx_cpuid_brand(cpuid),"SPARC64"))
+        {
+            tmpacc = GMX_CPUID_ACCELERATION_SPARC64_HPC_ACE;
+        }
+    }
+    else if(gmx_cpuid_vendor(cpuid)==GMX_CPUID_VENDOR_IBM)
+    {
+        if(strstr(gmx_cpuid_brand(cpuid),"A2"))
+        {
+            tmpacc = GMX_CPUID_ACCELERATION_IBM_QPX;
+        }
+    }
     return tmpacc;
 }
 
@@ -985,7 +1130,6 @@ gmx_cpuid_acceleration_check(gmx_cpuid_t   cpuid,
     }
     return rc;
 }
-
 
 
 #ifdef GMX_CPUID_STANDALONE

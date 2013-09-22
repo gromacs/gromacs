@@ -96,6 +96,9 @@
 #if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
 #    include "nb_kernel_avx_256_double/nb_kernel_avx_256_double.h"
 #endif
+#if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+#    include "nb_kernel_sparc64_hpc_ace_double/nb_kernel_sparc64_hpc_ace_double.h"
+#endif
 
 
 #ifdef GMX_THREAD_MPI
@@ -105,8 +108,7 @@ static gmx_bool            nonbonded_setup_done  = FALSE;
 
 
 void
-gmx_nonbonded_setup(FILE *         fplog,
-                    t_forcerec *   fr,
+gmx_nonbonded_setup(t_forcerec *   fr,
                     gmx_bool       bGenericKernelOnly)
 {
 #ifdef GMX_THREAD_MPI
@@ -148,6 +150,9 @@ gmx_nonbonded_setup(FILE *         fplog,
 #endif
 #if (defined GMX_CPU_ACCELERATION_X86_AVX_256 && defined GMX_DOUBLE)
                 nb_kernel_list_add_kernels(kernellist_avx_256_double, kernellist_avx_256_double_size);
+#endif
+#if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+                nb_kernel_list_add_kernels(kernellist_sparc64_hpc_ace_double, kernellist_sparc64_hpc_ace_double_size);
 #endif
                 ; /* empty statement to avoid a completely empty block */
             }
@@ -214,6 +219,10 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
         /* No padding - see comment above */
         { "sse4_1_double", 1 },
 #endif
+#if (defined GMX_CPU_ACCELERATION_SPARC64_HPC_ACE && defined GMX_DOUBLE)
+        /* No padding - see comment above */
+        { "sparc64_hpc_ace_double", 1 },
+#endif
         { "c", 1 },
     };
     int              narch = asize(arch_and_padding);
@@ -224,7 +233,7 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
         /* We typically call this setup routine before starting timers,
          * but if that has not been done for whatever reason we do it now.
          */
-        gmx_nonbonded_setup(NULL, NULL, FALSE);
+        gmx_nonbonded_setup(NULL, FALSE);
     }
 
     /* Not used yet */
@@ -303,9 +312,9 @@ gmx_nonbonded_set_kernel_pointers(FILE *log, t_nblist *nl)
     return;
 }
 
-void do_nonbonded(t_commrec *cr, t_forcerec *fr,
+void do_nonbonded(t_forcerec *fr,
                   rvec x[], rvec f_shortrange[], rvec f_longrange[], t_mdatoms *mdatoms, t_blocka *excl,
-                  gmx_grppairener_t *grppener, rvec box_size,
+                  gmx_grppairener_t *grppener,
                   t_nrnb *nrnb, real *lambda, real *dvdl,
                   int nls, int eNL, int flags)
 {
@@ -323,6 +332,7 @@ void do_nonbonded(t_commrec *cr, t_forcerec *fr,
 
     if (fr->bAllvsAll)
     {
+        gmx_incons("All-vs-all kernels have not been implemented in version 4.6");
         return;
     }
 

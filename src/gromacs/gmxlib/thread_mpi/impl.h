@@ -488,7 +488,7 @@ struct tmpi_global
     int                     Nalloc_usertypes;
 
     /* spinlock/mutex for manipulating tmpi_user_types */
-    tMPI_Spinlock_t  datatype_lock;
+    tMPI_Spinlock_t datatype_lock;
 
     /* Lock to prevent multiple threads manipulating the linked list of comm
        structures.*/
@@ -739,9 +739,9 @@ int tMPI_Comm_seek_rank(tMPI_Comm comm, struct tmpi_thread *th);
 int tMPI_Comm_N(tMPI_Comm comm);
 
 /* allocate a comm object, making space for N threads */
-tMPI_Comm tMPI_Comm_alloc(tMPI_Comm parent, int N);
+int tMPI_Comm_alloc(tMPI_Comm *newcomm, tMPI_Comm parent, int N);
 /* de-allocate a comm object */
-void tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock);
+int tMPI_Comm_destroy(tMPI_Comm comm, tmpi_bool do_link_lock);
 /* allocate a group object */
 tMPI_Group tMPI_Group_alloc(void);
 
@@ -756,13 +756,13 @@ void tMPI_Cart_destroy(struct cart_topol *top);
 
 
 /* initialize a free envelope list with N envelopes */
-void tMPI_Free_env_list_init(struct free_envelope_list *evl, int N);
+int tMPI_Free_env_list_init(struct free_envelope_list *evl, int N);
 /* destroy a free envelope list */
 void tMPI_Free_env_list_destroy(struct free_envelope_list *evl);
 
 
 /* initialize a send envelope list */
-void tMPI_Send_env_list_init(struct send_envelope_list *evl, int N);
+int tMPI_Send_env_list_init(struct send_envelope_list *evl, int N);
 /* destroy a send envelope list */
 void tMPI_Send_env_list_destroy(struct send_envelope_list *evl);
 
@@ -772,7 +772,7 @@ void tMPI_Send_env_list_destroy(struct send_envelope_list *evl);
 
 
 /* initialize a recv envelope list */
-void tMPI_Recv_env_list_init(struct recv_envelope_list *evl);
+int tMPI_Recv_env_list_init(struct recv_envelope_list *evl);
 /* destroy a recv envelope list */
 void tMPI_Recv_env_list_destroy(struct recv_envelope_list *evl);
 
@@ -780,7 +780,7 @@ void tMPI_Recv_env_list_destroy(struct recv_envelope_list *evl);
 
 
 /* initialize request list */
-void tMPI_Req_list_init(struct req_list *rl, int N_reqs);
+int tMPI_Req_list_init(struct req_list *rl, int N_reqs);
 /* destroy request list */
 void tMPI_Req_list_destroy(struct req_list *rl);
 
@@ -790,19 +790,19 @@ void tMPI_Req_list_destroy(struct req_list *rl);
 
 
 /* initialize a coll env structure */
-void tMPI_Coll_env_init(struct coll_env *mev, int N);
+int tMPI_Coll_env_init(struct coll_env *mev, int N);
 /* destroy a coll env structure */
 void tMPI_Coll_env_destroy(struct coll_env *mev);
 
 /* initialize a coll sync structure */
-void tMPI_Coll_sync_init(struct coll_sync *msc, int N);
+int tMPI_Coll_sync_init(struct coll_sync *msc, int N);
 /* destroy a coll sync structure */
 void tMPI_Coll_sync_destroy(struct coll_sync *msc);
 
 #ifdef USE_COLLECTIVE_COPY_BUFFER
 /* initialize a copy_buffer_list */
-void tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs,
-                                size_t size);
+int tMPI_Copy_buffer_list_init(struct copy_buffer_list *cbl, int Nbufs,
+                               size_t size);
 /* initialize a copy_buffer_list */
 void tMPI_Copy_buffer_list_destroy(struct copy_buffer_list *cbl);
 /* get a copy buffer from a list */
@@ -811,7 +811,7 @@ struct copy_buffer *tMPI_Copy_buffer_list_get(struct copy_buffer_list *cbl);
 void tMPI_Copy_buffer_list_return(struct copy_buffer_list *cbl,
                                   struct copy_buffer      *cb);
 /* initialize a copy buffer */
-void tMPI_Copy_buffer_init(struct copy_buffer *cb, size_t size);
+int tMPI_Copy_buffer_init(struct copy_buffer *cb, size_t size);
 void tMPI_Copy_buffer_destroy(struct copy_buffer *cb);
 #endif
 

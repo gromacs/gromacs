@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -45,15 +45,16 @@
 #include "config.h"
 #endif
 
-#include "gromacs/legacyheaders/copyrite.h"
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/rmpbc.h"
 #include "gromacs/legacyheaders/statutil.h"
 
 #include "gromacs/analysisdata/paralleloptions.h"
+#include "gromacs/commandline/cmdlinehelpcontext.h"
 #include "gromacs/commandline/cmdlinehelpwriter.h"
+#include "gromacs/commandline/cmdlinemodule.h"
+#include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/commandline/cmdlineparser.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
 #include "gromacs/options/options.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/selection/selectionoptionmanager.h"
@@ -63,6 +64,7 @@
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/programinfo.h"
 
 namespace gmx
 {
@@ -74,12 +76,11 @@ namespace gmx
 class TrajectoryAnalysisCommandLineRunner::Impl
 {
     public:
+        class RunnerCommandLineModule;
+
         Impl(TrajectoryAnalysisModule *module);
         ~Impl();
 
-        void printHelp(const Options                        &options,
-                       const TrajectoryAnalysisSettings     &settings,
-                       const TrajectoryAnalysisRunnerCommon &common);
         bool parseOptions(TrajectoryAnalysisSettings *settings,
                           TrajectoryAnalysisRunnerCommon *common,
                           SelectionCollection *selections,
@@ -87,39 +88,18 @@ class TrajectoryAnalysisCommandLineRunner::Impl
 
         TrajectoryAnalysisModule *module_;
         int                       debugLevel_;
-        bool                      bPrintCopyright_;
 };
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::Impl(
         TrajectoryAnalysisModule *module)
-    : module_(module), debugLevel_(0), bPrintCopyright_(true)
+    : module_(module), debugLevel_(0)
 {
 }
 
 
 TrajectoryAnalysisCommandLineRunner::Impl::~Impl()
 {
-}
-
-
-void
-TrajectoryAnalysisCommandLineRunner::Impl::printHelp(
-        const Options                        &options,
-        const TrajectoryAnalysisSettings     &settings,
-        const TrajectoryAnalysisRunnerCommon &common)
-{
-    TrajectoryAnalysisRunnerCommon::HelpFlags flags = common.helpFlags();
-    if (flags != 0)
-    {
-        HelpWriterContext context(&File::standardError(),
-                                  eHelpOutputFormat_Console);
-        CommandLineHelpWriter(options)
-            .setShowDescriptions(flags & TrajectoryAnalysisRunnerCommon::efHelpShowDescriptions)
-            .setShowHidden(flags & TrajectoryAnalysisRunnerCommon::efHelpShowHidden)
-            .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
-            .writeHelp(context);
-    }
 }
 
 
@@ -147,24 +127,14 @@ TrajectoryAnalysisCommandLineRunner::Impl::parseOptions(
 
     {
         CommandLineParser  parser(&options);
-        try
-        {
-            parser.parse(argc, argv);
-        }
-        catch (const UserInputError &ex)
-        {
-            printHelp(options, *settings, *common);
-            throw;
-        }
-        printHelp(options, *settings, *common);
+        // TODO: Print the help if user provides an invalid option?
+        // Or just add a message advising the user to invoke the help?
+        parser.parse(argc, argv);
         common->scaleTimeOptions(&options);
         options.finish();
     }
 
-    if (!common->optionsFinished(&commonOptions))
-    {
-        return false;
-    }
+    common->optionsFinished(&commonOptions);
     module_->optionsFinished(&moduleOptions, settings);
 
     common->initIndexGroups(selections);
@@ -195,13 +165,6 @@ TrajectoryAnalysisCommandLineRunner::~TrajectoryAnalysisCommandLineRunner()
 
 
 void
-TrajectoryAnalysisCommandLineRunner::setPrintCopyright(bool bPrint)
-{
-    impl_->bPrintCopyright_ = bPrint;
-}
-
-
-void
 TrajectoryAnalysisCommandLineRunner::setSelectionDebugLevel(int debuglevel)
 {
     impl_->debugLevel_ = 1;
@@ -213,12 +176,7 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 {
     TrajectoryAnalysisModule *module = impl_->module_;
 
-    if (impl_->bPrintCopyright_)
-    {
-        CopyRight(stderr, argv[0]);
-    }
-
-    SelectionCollection  selections;
+    SelectionCollection       selections;
     selections.setDebugLevel(impl_->debugLevel_);
 
     TrajectoryAnalysisSettings      settings;
@@ -289,9 +247,9 @@ TrajectoryAnalysisCommandLineRunner::run(int argc, char *argv[])
 
 
 void
-TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
+TrajectoryAnalysisCommandLineRunner::writeHelp(const CommandLineHelpContext &context)
 {
-    // TODO: This method duplicates some code from run() and Impl::printHelp().
+    // TODO: This method duplicates some code from run().
     // See how to best refactor it to share the common code.
     SelectionCollection             selections;
     TrajectoryAnalysisSettings      settings;
@@ -317,6 +275,87 @@ TrajectoryAnalysisCommandLineRunner::writeHelp(const HelpWriterContext &context)
         .setShowDescriptions(true)
         .setTimeUnitString(settings.timeUnitManager().timeUnitAsString())
         .writeHelp(context);
+}
+
+
+/*! \internal \brief
+ * Command line module for a trajectory analysis module.
+ *
+ * \ingroup module_trajectoryanalysis
+ */
+class TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule
+    : public CommandLineModuleInterface
+{
+    public:
+        /*! \brief
+         * Constructs a module.
+         *
+         * \param[in] name         Name for the module.
+         * \param[in] description  One-line description for the module.
+         * \param[in] factory      Factory method to create the analysis module.
+         *
+         * Does not throw.  This is important for correct implementation of
+         * runAsMain().
+         */
+        RunnerCommandLineModule(const char *name, const char *description,
+                                ModuleFactoryMethod factory)
+            : name_(name), description_(description), factory_(factory)
+        {
+        }
+
+        virtual const char *name() const { return name_; }
+        virtual const char *shortDescription() const { return description_; };
+
+        virtual int run(int argc, char *argv[]);
+        virtual void writeHelp(const CommandLineHelpContext &context) const;
+
+    private:
+        const char             *name_;
+        const char             *description_;
+        ModuleFactoryMethod     factory_;
+
+        GMX_DISALLOW_COPY_AND_ASSIGN(RunnerCommandLineModule);
+};
+
+int TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::run(
+        int argc, char *argv[])
+{
+    TrajectoryAnalysisModulePointer     module(factory_());
+    TrajectoryAnalysisCommandLineRunner runner(module.get());
+    return runner.run(argc, argv);
+}
+
+void TrajectoryAnalysisCommandLineRunner::Impl::RunnerCommandLineModule::writeHelp(
+        const CommandLineHelpContext &context) const
+{
+    // TODO: Implement #969.
+    if (context.writerContext().outputFormat() != eHelpOutputFormat_Console)
+    {
+        return;
+    }
+    TrajectoryAnalysisModulePointer     module(factory_());
+    TrajectoryAnalysisCommandLineRunner runner(module.get());
+    runner.writeHelp(context);
+}
+
+// static
+int
+TrajectoryAnalysisCommandLineRunner::runAsMain(
+        int argc, char *argv[], ModuleFactoryMethod factory)
+{
+    Impl::RunnerCommandLineModule module(NULL, NULL, factory);
+    return CommandLineModuleManager::runAsMainSingleModule(argc, argv, &module);
+}
+
+// static
+void
+TrajectoryAnalysisCommandLineRunner::registerModule(
+        CommandLineModuleManager *manager, const char *name,
+        const char *description, ModuleFactoryMethod factory)
+{
+    CommandLineModulePointer module(
+            new Impl::RunnerCommandLineModule(name, description, factory));
+    manager->addModule(move(module));
 }
 
 } // namespace gmx

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -56,29 +56,98 @@ namespace test
 {
 
 /*! \libinternal \brief
+ * Provides additional options for the test executable.
+ *
+ * Typically not used directly in test code, but through the
+ * GMX_TEST_OPTIONS macro.
+ *
+ * \inlibraryapi
+ * \ingroup module_testutils
+ */
+class TestOptionsProvider
+{
+    public:
+        /*! \brief
+         * Initializes the options from this provider.
+         *
+         * \param   options  The options need to be added here.
+         */
+        virtual void initOptions(Options *options) = 0;
+
+    protected:
+        virtual ~TestOptionsProvider() {}
+};
+
+/*! \libinternal \brief
+ * Registers a test option provider with the test framework.
+ *
+ * \param[in] name     Name of the options provider (for ordering).
+ * \param[in] provider The provider to register.
+ * \throws  std::bad_alloc     if out of memory.
+ * \throws  tMPI::system_error on mutex failures.
+ *
+ * Typically not used directly in test code, but through the
+ * GMX_TEST_OPTIONS macro.
+ *
+ * This gets called from constructors for global variables, so ideally
+ * it would not throw to avoid unhandled exceptions.  But since this
+ * is only test code, it is not worth the effort to try to remove those
+ * rare exceptions (mutex failures and out-of-memory from STL).
+ *
+ * \ingroup module_testutils
+ */
+void registerTestOptions(const char *name, TestOptionsProvider *provider);
+
+/*! \libinternal \brief
+ * Macro to add additional command-line options for the test binary.
+ *
+ * Typical usage:
+ * \code
+   namespace
+   {
+
+   bool g_optionValue = false;
+
+   GMX_TEST_OPTIONS(MyTestOptions, options)
+   {
+       options->addOption(BooleanOption("-flag").store(g_optionValue)
+                              .description("My description"));
+   }
+
+   } // namespace
+ * \endcode
+ *
+ * One macro invocation per an added option, with more of the implementation
+ * details hidden inside the macro, could be nicer.  But that requires more
+ * elaborate macro machinery, so it is probably not worth the effort and
+ * complexity.
+ *
+ * \ingroup module_testutils
+ */
+#define GMX_TEST_OPTIONS(name, options) \
+    class name : public ::gmx::test::TestOptionsProvider \
+    { \
+        public: \
+            name() \
+            { \
+                ::gmx::test::registerTestOptions(#name, this); \
+            } \
+            virtual void initOptions(::gmx::Options *options); \
+    }; \
+    \
+    static name s_##name##Instance; \
+    \
+    void name::initOptions(::gmx::Options *options)
+
+/*! \libinternal \brief
  * Initializes the test utilities library.
  *
  * Does not throw.  Terminates the program with a non-zero error code if an
  * error occurs.
  *
- * This function is automatically called by test_main_gtest.cpp and
- * test_main_gmock.cpp.
+ * This function is automatically called by unittest_main.cpp.
  */
-void initTestUtils(const char *dataPath, int *argc, char *argv[]);
-/*! \libinternal \brief
- * Parses given options from the command line.
- *
- * \param[in] options  Definition of options to parse.
- * \throws  std::bad_alloc if out of memory.
- * \throws  TestException if an error occurs in the parsing.
- *
- * This can be used from test or test fixture setup functions to initialize
- * local variables.  Although this means that the parameters are potentially
- * parsed multiple times, the performance impact should not be significant.
- *
- * \inlibraryapi
- */
-void parseTestOptions(Options *options);
+void initTestUtils(const char *dataPath, int *argc, char ***argv);
 
 } // namespace test
 } // namespace gmx

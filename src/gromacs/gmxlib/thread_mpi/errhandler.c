@@ -77,6 +77,7 @@ static const char *tmpi_errmsg[] =
 {
     "No error",
     "malloc failure in tMPI (out of memory)",
+    "I/O or system error",
     "tMPI Initialization error",
     "tMPI Finalize error",
     "Invalid tMPI_Group",
@@ -96,6 +97,10 @@ static const char *tmpi_errmsg[] =
     "Invalid reduce operator",
     "Out of receive envelopes: this shouldn't happen (probably a bug).",
     "Out of receive requests: this shouldn't happen (probably a bug).",
+    "Out of copy buffers: this shouldn't happen (probably a bug).",
+    "Copy buffer size too small: this shouldn't happen (probably a bug).",
+    "Error in MPI_Status",
+    "Error getting/setting processor layout/affinity",
     "Transmission failure",
     "Unknown tMPI error"
 };
@@ -125,11 +130,29 @@ int tMPI_Error_string(int errorcode, char *strn, size_t *resultlen)
         errorcode = TMPI_ERR_UNKNOWN;
     }
 
+    if (errorcode != TMPI_ERR_IO)
+    {
 #if !(defined( _WIN32 ) || defined( _WIN64 ) )
-    strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
+        strncpy(strn, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
 #else
-    strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode], TMPI_MAX_ERROR_STRING);
+        strncpy_s(strn, TMPI_MAX_ERROR_STRING, tmpi_errmsg[errorcode],
+                  TMPI_MAX_ERROR_STRING);
 #endif
+    }
+    else
+    {
+#if !(defined( _WIN32 ) || defined( _WIN64 ) )
+        snprintf(strn, TMPI_MAX_ERROR_STRING,
+                 "%s: %s", tmpi_errmsg[errorcode], strerror(errno));
+#else
+        char buf[TMPI_MAX_ERROR_STRING];
+
+        strerror_s(buf, TMPI_MAX_ERROR_STRING-1, errno);
+        _snprintf_s(strn, TMPI_MAX_ERROR_STRING, _TRUNCATE,
+                    "%s: %s", tmpi_errmsg[errorcode], buf);
+#endif
+
+    }
     *resultlen = strlen(strn);
     return TMPI_SUCCESS;
 }
@@ -147,7 +170,7 @@ int tMPI_Create_errhandler(tMPI_Errhandler_fn *function,
     if (!*errhandler)
     {
         fprintf(stderr, "tMPI fatal error (%s), bailing out\n",
-                tmpi_errmsg[TMPI_ERR_MALLOC]);
+                tmpi_errmsg[TMPI_ERR_NO_MEM]);
         abort();
     }
     (*errhandler)->err = 0;

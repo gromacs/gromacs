@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2012, by the GROMACS development team, led by
+# Copyright (c) 2012,2013, by the GROMACS development team, led by
 # David van der Spoel, Berk Hess, Erik Lindahl, and including many
 # others, as listed in the AUTHORS file in the top-level source
 # directory and at http://www.gromacs.org.
@@ -38,10 +38,10 @@ set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${COMMANDLINE_SOURCES} PARENT_SCOPE
 set(COMMANDLINE_PUBLIC_HEADERS
     cmdlinehelpwriter.h
     cmdlineparser.h)
-install(FILES ${COMMANDLINE_PUBLIC_HEADERS}
-        DESTINATION ${INCL_INSTALL_DIR}/gromacs/commandline
-        COMPONENT development)
+gmx_install_headers(commandline ${COMMANDLINE_PUBLIC_HEADERS})
 
-if (BUILD_TESTING)
+# mdrun build does not include the selection machinery, which is used in the
+# tests
+if (BUILD_TESTING AND NOT GMX_BUILD_MDRUN_ONLY)
     add_subdirectory(tests)
-endif (BUILD_TESTING)
+endif()

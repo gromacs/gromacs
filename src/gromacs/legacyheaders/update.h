@@ -40,7 +40,6 @@
 #include "mshift.h"
 #include "tgroup.h"
 #include "network.h"
-#include "force.h"
 #include "pull.h"
 #include "gmx_random.h"
 #include "maths.h"
@@ -53,7 +52,7 @@ extern "C" {
 typedef struct gmx_update *gmx_update_t;
 
 /* Initialize the stochastic dynamics struct */
-gmx_update_t init_update(FILE *fplog, t_inputrec *ir);
+gmx_update_t init_update(t_inputrec *ir);
 
 /* Store the random state from sd in state */
 void get_stochd_state(gmx_update_t sd, t_state *state);
@@ -67,12 +66,10 @@ void set_stochd_state(gmx_update_t sd, t_state *state);
 void set_deform_reference_box(gmx_update_t upd,
                               gmx_large_int_t step, matrix box);
 
-void update_tcouple(FILE             *fplog,
-                    gmx_large_int_t   step,
+void update_tcouple(gmx_large_int_t   step,
                     t_inputrec       *inputrec,
                     t_state          *state,
                     gmx_ekindata_t   *ekind,
-                    gmx_wallcycle_t   wcycle,
                     gmx_update_t      upd,
                     t_extmass        *MassQ,
                     t_mdatoms        *md
@@ -84,8 +81,6 @@ void update_pcouple(FILE             *fplog,
                     t_state          *state,
                     matrix            pcoupl_mu,
                     matrix            M,
-                    gmx_wallcycle_t   wcycle,
-                    gmx_update_t      upd,
                     gmx_bool          bInitStep);
 
 void update_coords(FILE             *fplog,
@@ -100,7 +95,6 @@ void update_coords(FILE             *fplog,
                    t_fcdata         *fcd,
                    gmx_ekindata_t   *ekind,
                    matrix            M,
-                   gmx_wallcycle_t   wcycle,
                    gmx_update_t      upd,
                    gmx_bool          bInitStep,
                    int               bUpdatePart,
@@ -125,13 +119,11 @@ void update_constraints(FILE             *fplog,
                         rvec              force[], /* forces on home particles */
                         t_idef           *idef,
                         tensor            vir_part,
-                        tensor            vir,
                         t_commrec        *cr,
                         t_nrnb           *nrnb,
                         gmx_wallcycle_t   wcycle,
                         gmx_update_t      upd,
                         gmx_constr_t      constr,
-                        gmx_bool          bInitStep,
                         gmx_bool          bFirstHalf,
                         gmx_bool          bCalcVir,
                         real              vetanew);
@@ -143,15 +135,11 @@ void update_box(FILE             *fplog,
                 t_inputrec       *inputrec, /* input record and box stuff	*/
                 t_mdatoms        *md,
                 t_state          *state,
-                t_graph          *graph,
                 rvec              force[], /* forces on home particles */
                 matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
-                gmx_wallcycle_t   wcycle,
-                gmx_update_t      upd,
-                gmx_bool          bInitStep,
-                gmx_bool          bFirstHalf);
+                gmx_update_t      upd);
 /* Return TRUE if OK, FALSE in case of Shake Error */
 
 void calc_ke_part(t_state *state, t_grpopts *opts, t_mdatoms *md,

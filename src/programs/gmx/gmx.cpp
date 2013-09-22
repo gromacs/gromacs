@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -37,35 +37,31 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-#include "gromacs/legacyheaders/copyrite.h"
-
 #include "gromacs/commandline/cmdlinemodulemanager.h"
 #include "gromacs/selection/selectioncollection.h"
 #include "gromacs/trajectoryanalysis/modules.h"
 #include "gromacs/utility/exceptions.h"
-#include "gromacs/utility/programinfo.h"
+#include "gromacs/utility/init.h"
 
 #include "legacymodules.h"
 
 int
 main(int argc, char *argv[])
 {
-    const gmx::ProgramInfo &info =
-        gmx::ProgramInfo::init("gmx", argc, argv);
-    // TODO: With the addition of ProgramInfo above, this no longer needs to
-    // be here, so think where it would best go.
-    CopyRight(stderr, argv[0]);
+    gmx::ProgramInfo &info = gmx::init("gmx", &argc, &argv);
     try
     {
-        gmx::CommandLineModuleManager manager(info);
+        gmx::CommandLineModuleManager manager(&info);
         registerTrajectoryAnalysisModules(&manager);
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
-        return manager.run(argc, argv);
+        int rc = manager.run(argc, argv);
+        gmx::finalize();
+        return rc;
     }
     catch (const std::exception &ex)
     {
         gmx::printFatalErrorMessage(stderr, ex);
-        return 1;
+        return gmx::processExceptionAtExit(ex);
     }
 }

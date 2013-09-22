@@ -48,7 +48,6 @@
 #include "macros.h"
 #include "gmx_fatal.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "txtdump.h"
@@ -178,8 +177,11 @@ int gmx_lie(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, NPA, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     fp = open_enx(ftp2fn(efEDR, NFILE, fnm), "r");
     do_enxnms(fp, &nre, &enm);
@@ -211,8 +213,6 @@ int gmx_lie(int argc, char *argv[])
     }
 
     do_view(oenv, ftp2fn(efXVG, NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -48,6 +48,7 @@
 #include "../analysismodule.h"
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/analysisdata/modules/lifetime.h"
 #include "gromacs/selection/selection.h"
 
 namespace gmx
@@ -81,30 +82,32 @@ class Select : public TrajectoryAnalysisModule
         virtual void writeOutput();
 
     private:
-        SelectionList                    sel_;
-        SelectionOptionInfo             *selOpt_;
+        SelectionList                       sel_;
+        SelectionOptionInfo                *selOpt_;
 
-        std::string                      fnSize_;
-        std::string                      fnFrac_;
-        std::string                      fnIndex_;
-        std::string                      fnNdx_;
-        std::string                      fnMask_;
-        std::string                      fnOccupancy_;
-        std::string                      fnPDB_;
-        bool                             bDump_;
-        bool                             bTotNorm_;
-        bool                             bFracNorm_;
-        bool                             bResInd_;
-        std::string                      resNumberType_;
-        std::string                      pdbAtoms_;
+        std::string                         fnSize_;
+        std::string                         fnFrac_;
+        std::string                         fnIndex_;
+        std::string                         fnNdx_;
+        std::string                         fnMask_;
+        std::string                         fnOccupancy_;
+        std::string                         fnPDB_;
+        std::string                         fnLifetime_;
+        bool                                bTotNorm_;
+        bool                                bFracNorm_;
+        bool                                bResInd_;
+        bool                                bCumulativeLifetimes_;
+        std::string                         resNumberType_;
+        std::string                         pdbAtoms_;
 
-        const TopologyInformation       *top_;
-        std::vector<int>                 totsize_;
-        AnalysisData                     sdata_;
-        AnalysisData                     cdata_;
-        AnalysisData                     idata_;
-        AnalysisData                     mdata_;
-        AnalysisDataAverageModulePointer occupancyModule_;
+        const TopologyInformation          *top_;
+        std::vector<int>                    totsize_;
+        AnalysisData                        sdata_;
+        AnalysisData                        cdata_;
+        AnalysisData                        idata_;
+        AnalysisData                        mdata_;
+        AnalysisDataAverageModulePointer    occupancyModule_;
+        AnalysisDataLifetimeModulePointer   lifetimeModule_;
 };
 
 } // namespace analysismodules

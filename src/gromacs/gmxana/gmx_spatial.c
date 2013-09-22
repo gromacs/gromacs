@@ -42,7 +42,6 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
-#include "copyrite.h"
 #include "statutil.h"
 #include "tpxio.h"
 #include <math.h>
@@ -165,8 +164,11 @@ int gmx_spatial(int argc, char *argv[])
 
     /* This is the routine responsible for adding default options,
      * calling the X/motif interface, etc. */
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     read_tps_conf(ftp2fn(efTPS, NFILE, fnm), title, &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree(xtop);
@@ -245,7 +247,7 @@ int gmx_spatial(int argc, char *argv[])
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
     /* This is the main loop over frames */
     do
@@ -464,8 +466,6 @@ int gmx_spatial(int argc, char *argv[])
         printf("grid.cube contains counts per frame in all %ld cubes\n", numcu);
         printf("Raw data: average %le, min %le, max %le\n", 1.0/norm, (double)min/(double)numfr, (double)max/(double)numfr);
     }
-
-    thanx(stderr);
 
     return 0;
 }

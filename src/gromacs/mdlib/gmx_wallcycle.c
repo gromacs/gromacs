@@ -88,7 +88,8 @@ typedef struct gmx_wallcycle
     double           *cycles_sum;
 } gmx_wallcycle_t_t;
 
-/* Each name should not exceed 19 characters */
+/* Each name should not exceed 19 printing characters
+   (ie. terminating null can be twentieth) */
 static const char *wcn[ewcNR] =
 {
     "Run", "Step", "PP during PME", "Domain decomp.", "DD comm. load",
@@ -545,7 +546,7 @@ static void print_cycles(FILE *fplog, double c2t, const char *name,
             /* nthreads=-1 signals total run time, no correction required */
             wallt = c*c2t;
         }
-        fprintf(fplog, " %-19s %4d %4s %10s  %10.3f %12.3f   %5.1f\n",
+        fprintf(fplog, " %-19.19s %4d %4s %10s  %10.3f %12.3f   %5.1f\n",
                 name, nnodes, thstr, num, wallt, c*1e-9, 100*c/tot);
     }
 }
@@ -600,13 +601,16 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     if (npme > 0)
     {
         npp = nnodes - npme;
+
+        nth_tot = npp*nth_pp + npme*nth_pme;
     }
     else
     {
         npp  = nnodes;
         npme = nnodes;
+
+        nth_tot = npp*nth_pp;
     }
-    nth_tot = npp*nth_pp + npme*nth_pme;
 
     tot = cycles[ewcRUN];
 
@@ -642,10 +646,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
         {
             for (j = 0; j < ewcNR; j++)
             {
-                snprintf(buf, 9, "%-9s", wcn[i]);
-                buf[9] = ' ';
-                snprintf(buf+10, 9, "%-9s", wcn[j]);
-                buf[19] = '\0';
+                snprintf(buf, 20, "%-9.9s %-9.9s", wcn[i], wcn[j]);
                 print_cycles(fplog, c2t, buf, nth_tot,
                              is_pme_counter(i) ? npme : npp,
                              is_pme_counter(i) ? nth_pme : nth_pp,

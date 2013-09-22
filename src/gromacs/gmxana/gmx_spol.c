@@ -39,7 +39,6 @@
 #include "macros.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "gstat.h"
 #include "vec.h"
 #include "xvgr.h"
@@ -51,7 +50,7 @@
 
 
 static void calc_com_pbc(int nrefat, t_topology *top, rvec x[], t_pbc *pbc,
-                         atom_id index[], rvec xref, int ePBC, matrix box)
+                         atom_id index[], rvec xref, int ePBC)
 {
     const real tol = 1e-4;
     gmx_bool   bChanged;
@@ -208,8 +207,11 @@ int gmx_spol(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     snew(top, 1);
     snew(ir, 1);
@@ -263,7 +265,7 @@ int gmx_spol(int argc, char *argv[])
     molindex = top->mols.index;
     atom     = top->atoms.atom;
 
-    gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top->idef, ir->ePBC, natoms);
 
     /* start analysis of trajectory */
     do
@@ -274,7 +276,7 @@ int gmx_spol(int argc, char *argv[])
         set_pbc(&pbc, ir->ePBC, box);
         if (bCom)
         {
-            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC, box);
+            calc_com_pbc(nrefat, top, x, &pbc, index[0], xref, ir->ePBC);
         }
 
         for (m = 0; m < isize[1]; m++)
@@ -343,7 +345,7 @@ int gmx_spol(int argc, char *argv[])
         nf++;
 
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -378,8 +380,6 @@ int gmx_spol(int argc, char *argv[])
     ffclose(fp);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
-
-    thanx(stderr);
 
     return 0;
 }

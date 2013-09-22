@@ -83,7 +83,10 @@ tMPI_Atomic_t;
 
 typedef struct tMPI_Atomic_ptr
 {
-    volatile char* volatile* value __attribute__ ((aligned(64)));  /*!< Volatile, to avoid compiler aliasing */
+    /* volatile char* volatile is not a bug, but means a volatile pointer
+       to a volatile value. This is needed for older versions of
+       xlc. */
+    volatile char* volatile value __attribute__ ((aligned(64)));  /*!< Volatile, to avoid compiler aliasing */
 }
 tMPI_Atomic_ptr_t;
 
@@ -93,6 +96,7 @@ typedef struct tMPI_Spinlock
     volatile int lock __attribute__ ((aligned(64)));
 }
 tMPI_Spinlock_t;
+#define TMPI_ATOMIC_HAVE_NATIVE_SPINLOCK
 
 
 
@@ -138,8 +142,8 @@ static inline int tMPI_Atomic_ptr_cas(tMPI_Atomic_ptr_t *a, void* oldval,
                                       void* newval)
 {
     int ret;
-    volatile char* volatile* oldv = oldval;
-    volatile char* volatile* newv = newval;
+    volatile char* volatile oldv = (char*)oldval;
+    volatile char* volatile newv = (char*)newval;
 
     __fence(); /* this one needs to be here to avoid ptr. aliasing issues */
     __eieio();
@@ -189,6 +193,7 @@ static inline int tMPI_Atomic_add_return(tMPI_Atomic_t *a, int i)
     return t;
 #endif
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_ADD_RETURN
 
 
 
@@ -226,6 +231,7 @@ static inline int tMPI_Atomic_fetch_add(tMPI_Atomic_t *a, int i)
     return (t - i);
 #endif
 }
+#define TMPI_ATOMIC_HAVE_NATIVE_FETCH_ADD
 
 
 static inline void tMPI_Spinlock_init(tMPI_Spinlock_t *x)

@@ -84,7 +84,8 @@ typedef std::vector<boost::exception_ptr> NestedExceptionList;
  * \todo
  * With the exception of the reason string, information added with this class
  * is not currently accessible through any public API, except for calling
- * printFatalErrorMessage().  This is not implemented as there is no current
+ * printFatalErrorMessage(), formatExceptionMessageToString() or
+ * formatExceptionMessageToFile().  This is not implemented as there is not yet
  * need for it, and it is not clear what would be the best alternative for the
  * access.  It should be possible to refactor the internal implementation to
  * suit the needs of such external access without requiring changes in code
@@ -185,7 +186,8 @@ class GromacsException : public std::exception, public boost::exception
          * \todo
          * The added information is currently not accessible through what(),
          * nor through any other means except for calling
-         * printFatalErrorMessage(). See ExceptionInitializer for more
+         * printFatalErrorMessage(), formatExceptionMessageToString() or
+         * formatExceptionMessageToFile(). See ExceptionInitializer for more
          * discussion.
          */
         void prependContext(const std::string &context);
@@ -396,7 +398,7 @@ class NotImplementedError : public APIError
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo::init(argc, argv);
+       gmx::init(&argc, &argv);
        try
        {
            // The actual code for the program
@@ -405,7 +407,7 @@ class NotImplementedError : public APIError
        catch (const std::exception &ex)
        {
            gmx::printFatalErrorMessage(stderr, ex);
-           return 1;
+           return gmx::processExceptionAtExit(ex);
        }
    }
  * \endcode
@@ -417,12 +419,32 @@ void printFatalErrorMessage(FILE *fp, const std::exception &ex);
  * \param[in] ex  Exception to format.
  * \returns   Formatted string containing details of \p ex.
  * \throws    std::bad_alloc if out of memory.
- *
- * Currently, the output format is useful mainly for tests and debugging
- * purposes; additional flags for controlling the format can be added if other
- * uses for the function arise.
  */
-std::string formatException(const std::exception &ex);
+std::string formatExceptionMessageToString(const std::exception &ex);
+/*! \brief
+ * Formats an error message for reporting an exception.
+ *
+ * \param     fp  File to write the message to.
+ * \param[in] ex  Exception to format.
+ * \throws    std::bad_alloc if out of memory.
+ */
+void formatExceptionMessageToFile(FILE *fp, const std::exception &ex);
+/*! \brief
+ * Handles an exception that is causing the program to terminate.
+ *
+ * \param[in] ex  Exception that is the cause for terminating the program.
+ * \returns   Return code to return from main().
+ *
+ * This method should be called as the last thing before terminating the
+ * program because of an exception.  It exists to terminate the program as
+ * gracefully as possible in the case of MPI processing (but the current
+ * implementation always calls MPI_Abort()).
+ *
+ * See printFatalErrorMessage() for example usage.
+ *
+ * Does not throw.
+ */
+int processExceptionAtExit(const std::exception &ex);
 
 /*! \brief
  * Converts an exception into a return code.
@@ -459,7 +481,7 @@ int translateException(const std::exception &ex);
 #define GMX_CATCH_ALL_AND_EXIT_WITH_FATAL_ERROR \
     catch (const std::exception &ex) { \
         ::gmx::printFatalErrorMessage(stderr, ex); \
-        std::exit(1); \
+        ::std::exit(::gmx::processExceptionAtExit(ex)); \
     }
 //! \endcond
 

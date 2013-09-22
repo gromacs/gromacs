@@ -81,15 +81,11 @@ typedef struct t_trxstatus t_trxstatus;
    global informaion, their existence in a multi-threaded environment is not
    a real problem. */
 
-/* Return the name of the program */
-const char *command_line(void);
-
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library
  * directory from its location!
  */
 const char *Program(void);
-void set_program_name(const char *argvzero);
 /* Id. without leading directory */
 const char *ShortProgram(void);
 
@@ -157,7 +153,7 @@ gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 #define bRmod(a, b, c) bRmod_fd(a, b, c, FALSE)
 #endif
 
-int check_times2(real t, real t0, real tp, real tpp, gmx_bool bDouble);
+int check_times2(real t, real t0, gmx_bool bDouble);
 /* This routine checkes if the read-in time is correct or not;
  * returns -1 if t<tbegin or t MOD dt = t0,
  *          0 if tbegin <= t <=tend+margin,
@@ -222,8 +218,7 @@ int read_first_x(const output_env_t oenv, t_trxstatus **status,
  * The integer in status should be passed to calls of read_next_x
  */
 
-gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
-                     int natoms, rvec x[], matrix box);
+gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t, rvec x[], matrix box);
 /* Read coordinates and box from a trajectory file. Return TRUE when all well,
  * or FALSE when end of file (or last frame requested by user).
  * status is the integer set in read_first_x.
@@ -257,8 +252,6 @@ t_topology *read_top(const char *fn, int *ePBC);
 /* set time unit for output */
 #define PCA_KEEP_ARGS      (1<<8)
 /* keep parsed args in argv (doesn't make sense without NOEXIT_ON_ARGS) */
-#define PCA_SILENT         (1<<9)
-/* don't print options by default */
 #define PCA_CAN_SET_DEFFNM (1<<10)
 /* does something for non-master mdrun nodes */
 #define PCA_NOEXIT_ON_ARGS (1<<11)
@@ -299,11 +292,11 @@ int nenum(const char *const enumc[]);
  * array must be terminated by a NULL pointer
  */
 
-void parse_common_args(int *argc, char *argv[], unsigned long Flags,
-                       int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
-                       int ndesc, const char **desc,
-                       int nbugs, const char **bugs,
-                       output_env_t *oenv);
+gmx_bool parse_common_args(int *argc, char *argv[], unsigned long Flags,
+                           int nfile, t_filenm fnm[], int npargs, t_pargs *pa,
+                           int ndesc, const char **desc,
+                           int nbugs, const char **bugs,
+                           output_env_t *oenv);
 /* Get arguments from the arg-list. The arguments extracted
  * are removed from the list. If manual is NULL a default message is displayed
  * when errors are encountered. The Flags argument, when non-0 enables

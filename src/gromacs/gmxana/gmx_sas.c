@@ -468,7 +468,7 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
 
     if (bPBC)
     {
-        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+        gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
     }
 
     nfr = 0;
@@ -585,7 +585,7 @@ void sas_plot(int nfile, t_filenm fnm[], real solsize, int ndots,
         }
         nfr++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     if (bPBC)
     {
@@ -756,8 +756,11 @@ int gmx_sas(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     if (solsize < 0)
     {
         solsize = 1e-3;
@@ -777,8 +780,6 @@ int gmx_sas(int argc, char *argv[])
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-or", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn_null("-oa", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

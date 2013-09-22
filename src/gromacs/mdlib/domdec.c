@@ -1984,7 +1984,7 @@ static void write_dd_grid_pdb(const char *fn, gmx_large_int_t step,
                         cx[ZZ] = grid_r[i*2+z][ZZ];
                         mvmul(tric, cx, r);
                         fprintf(out, format, "ATOM", a++, "CA", "GLY", ' ', 1+i,
-                                10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
+                                ' ', 10*r[XX], 10*r[YY], 10*r[ZZ], 1.0, vol);
                     }
                 }
             }
@@ -2295,6 +2295,21 @@ static int dd_simnode2pmenode(t_commrec *cr, int sim_nodeid)
     return pmenode;
 }
 
+void get_pme_nnodes(const gmx_domdec_t *dd,
+                    int *npmenodes_x, int *npmenodes_y)
+{
+    if (dd != NULL)
+    {
+        *npmenodes_x = dd->comm->npmenodes_x;
+        *npmenodes_y = dd->comm->npmenodes_y;
+    }
+    else
+    {
+        *npmenodes_x = 1;
+        *npmenodes_y = 1;
+    }
+}
+
 gmx_bool gmx_pmeonlynode(t_commrec *cr, int sim_nodeid)
 {
     gmx_bool bPMEOnlyNode;
@@ -2422,6 +2437,8 @@ static void set_zones_ncg_home(gmx_domdec_t *dd)
     {
         zones->cg_range[i] = dd->ncg_home;
     }
+    /* zone_ncg1[0] should always be equal to ncg_home */
+    dd->comm->zone_ncg1[0] = dd->ncg_home;
 }
 
 static void rebuild_cgindex(gmx_domdec_t *dd,
@@ -4543,7 +4560,7 @@ static void calc_cg_move(FILE *fplog, gmx_large_int_t step,
 static void dd_redistribute_cg(FILE *fplog, gmx_large_int_t step,
                                gmx_domdec_t *dd, ivec tric_dir,
                                t_state *state, rvec **f,
-                               t_forcerec *fr, t_mdatoms *md,
+                               t_forcerec *fr,
                                gmx_bool bCompact,
                                t_nrnb *nrnb,
                                int *ncg_stay_home,
@@ -6638,7 +6655,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         {
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(fplog, dd, mtop, ir, x, box,
+                dd_bonded_cg_distance(fplog, mtop, ir, x, box,
                                       Flags & MD_DDBONDCHECK, &r_2b, &r_mb);
             }
             gmx_bcast(sizeof(r_2b), &r_2b, cr);
@@ -6740,7 +6757,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog, t_commrec *cr,
         limit = dd_choose_grid(fplog, cr, dd, ir, mtop, box, ddbox,
                                comm->eDLB != edlbNO, dlb_scale,
                                comm->cellsize_limit, comm->cutoff,
-                               comm->bInterCGBondeds, comm->bInterCGMultiBody);
+                               comm->bInterCGBondeds);
 
         if (dd->nc[XX] == 0)
         {
@@ -7003,14 +7020,14 @@ static char *init_bLocalCG(gmx_mtop_t *mtop)
 
 void dd_init_bondeds(FILE *fplog,
                      gmx_domdec_t *dd, gmx_mtop_t *mtop,
-                     gmx_vsite_t *vsite, gmx_constr_t constr,
+                     gmx_vsite_t *vsite,
                      t_inputrec *ir, gmx_bool bBCheck, cginfo_mb_t *cginfo_mb)
 {
     gmx_domdec_comm_t *comm;
     gmx_bool           bBondComm;
     int                d;
 
-    dd_make_reverse_top(fplog, dd, mtop, vsite, constr, ir, bBCheck);
+    dd_make_reverse_top(fplog, dd, mtop, vsite, ir, bBCheck);
 
     comm = dd->comm;
 
@@ -7268,8 +7285,7 @@ gmx_bool dd_bonded_molpbc(gmx_domdec_t *dd, int ePBC)
 }
 
 void set_dd_parameters(FILE *fplog, gmx_domdec_t *dd, real dlb_scale,
-                       t_inputrec *ir, t_forcerec *fr,
-                       gmx_ddbox_t *ddbox)
+                       t_inputrec *ir, gmx_ddbox_t *ddbox)
 {
     gmx_domdec_comm_t *comm;
     int                natoms_tot;
@@ -8882,8 +8898,7 @@ static int dd_sort_order_nbnxn(gmx_domdec_t *dd, t_forcerec *fr)
     return ncg_new;
 }
 
-static void dd_sort_state(gmx_domdec_t *dd, int ePBC,
-                          rvec *cgcm, t_forcerec *fr, t_state *state,
+static void dd_sort_state(gmx_domdec_t *dd, rvec *cgcm, t_forcerec *fr, t_state *state,
                           int ncg_home_old)
 {
     gmx_domdec_sort_t *sort;
@@ -9144,7 +9159,7 @@ void dd_partition_system(FILE                *fplog,
     t_block           *cgs_gl;
     gmx_large_int_t    step_pcoupl;
     rvec               cell_ns_x0, cell_ns_x1;
-    int                i, j, n, cg0 = 0, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
+    int                i, j, n, ncgindex_set, ncg_home_old = -1, ncg_moved, nat_f_novirsum;
     gmx_bool           bBoxChanged, bNStGlobalComm, bDoDLB, bCheckDLB, bTurnOnDLB, bLogLoad;
     gmx_bool           bRedist, bSortCG, bResortAll;
     ivec               ncells_old = {0, 0, 0}, ncells_new = {0, 0, 0}, np;
@@ -9279,6 +9294,7 @@ void dd_partition_system(FILE                *fplog,
     {
         /* Clear the old state */
         clear_dd_indices(dd, 0, 0);
+        ncgindex_set = 0;
 
         set_ddbox(dd, bMasterState, cr, ir, state_global->box,
                   TRUE, cgs_gl, state_global->x, &ddbox);
@@ -9303,8 +9319,6 @@ void dd_partition_system(FILE                *fplog,
         inc_nrnb(nrnb, eNR_CGCM, dd->nat_home);
 
         dd_set_cginfo(dd->index_gl, 0, dd->ncg_home, fr, comm->bLocalCG);
-
-        cg0 = 0;
     }
     else if (state_local->ddp_count != dd->ddp_count)
     {
@@ -9324,6 +9338,7 @@ void dd_partition_system(FILE                *fplog,
         /* Build the new indices */
         rebuild_cgindex(dd, cgs_gl->index, state_local);
         make_dd_indices(dd, cgs_gl->index, 0);
+        ncgindex_set = dd->ncg_home;
 
         if (fr->cutoff_scheme == ecutsGROUP)
         {
@@ -9347,6 +9362,7 @@ void dd_partition_system(FILE                *fplog,
 
         /* Clear the non-home indices */
         clear_dd_indices(dd, dd->ncg_home, dd->nat_home);
+        ncgindex_set = 0;
 
         /* Avoid global communication for dim's without pbc and -gcom */
         if (!bNStGlobalComm)
@@ -9391,8 +9407,8 @@ void dd_partition_system(FILE                *fplog,
         wallcycle_sub_start(wcycle, ewcsDD_REDIST);
 
         dd_redistribute_cg(fplog, step, dd, ddbox.tric_dir,
-                           state_local, f, fr, mdatoms,
-                           !bSortCG, nrnb, &cg0, &ncg_moved);
+                           state_local, f, fr,
+                           !bSortCG, nrnb, &ncgindex_set, &ncg_moved);
 
         wallcycle_sub_stop(wcycle, ewcsDD_REDIST);
     }
@@ -9412,7 +9428,7 @@ void dd_partition_system(FILE                *fplog,
     {
         case ecutsGROUP:
             copy_ivec(fr->ns.grid->n, ncells_old);
-            grid_first(fplog, fr->ns.grid, dd, &ddbox, fr->ePBC,
+            grid_first(fplog, fr->ns.grid, dd, &ddbox,
                        state_local->box, cell_ns_x0, cell_ns_x1,
                        fr->rlistlong, grid_density);
             break;
@@ -9460,7 +9476,7 @@ void dd_partition_system(FILE                *fplog,
                 nbnxn_get_ncells(fr->nbv->nbs, &ncells_new[XX], &ncells_new[YY]);
                 break;
             case ecutsGROUP:
-                fill_grid(fplog, &comm->zones, fr->ns.grid, dd->ncg_home,
+                fill_grid(&comm->zones, fr->ns.grid, dd->ncg_home,
                           0, dd->ncg_home, fr->cg_cm);
 
                 copy_ivec(fr->ns.grid->n, ncells_new);
@@ -9486,11 +9502,11 @@ void dd_partition_system(FILE                *fplog,
             fprintf(debug, "Step %s, sorting the %d home charge groups\n",
                     gmx_step_str(step, sbuf), dd->ncg_home);
         }
-        dd_sort_state(dd, ir->ePBC, fr->cg_cm, fr, state_local,
+        dd_sort_state(dd, fr->cg_cm, fr, state_local,
                       bResortAll ? -1 : ncg_home_old);
         /* Rebuild all the indices */
-        cg0 = 0;
         ga2la_clear(dd->ga2la);
+        ncgindex_set = 0;
 
         wallcycle_sub_stop(wcycle, ewcsDD_GRID);
     }
@@ -9501,7 +9517,7 @@ void dd_partition_system(FILE                *fplog,
     setup_dd_communication(dd, state_local->box, &ddbox, fr, state_local, f);
 
     /* Set the indices */
-    make_dd_indices(dd, cgs_gl->index, cg0);
+    make_dd_indices(dd, cgs_gl->index, ncgindex_set);
 
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(&comm->zones);
@@ -9526,7 +9542,7 @@ void dd_partition_system(FILE                *fplog,
     {
         np[dd->dim[i]] = comm->cd[i].np;
     }
-    dd_make_local_top(fplog, dd, &comm->zones, dd->npbcdim, state_local->box,
+    dd_make_local_top(dd, &comm->zones, dd->npbcdim, state_local->box,
                       comm->cellsize_min, np,
                       fr,
                       fr->cutoff_scheme == ecutsGROUP ? fr->cg_cm : state_local->x,

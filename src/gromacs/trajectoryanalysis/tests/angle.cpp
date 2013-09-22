@@ -143,4 +143,33 @@ TEST_F(AngleModuleTest, ComputesVectorTimeZeroAngles)
     runTest(CommandLine::create(cmdline));
 }
 
+TEST_F(AngleModuleTest, ComputesMultipleAngles)
+{
+    const char *const cmdline[] = {
+        "angle",
+        "-g1", "vector",
+        "-group1",
+        "resname RV1 RV2 and name A1 A2",
+        "resname RV3 RV4 and name A1 A2",
+        "-g2", "plane",
+        "-group2",
+        "resname RP1 RP2 and name A1 A2 A3",
+        "resname RP1 RP2 and name A1 A2 A3",
+        "-binw", "60"
+    };
+    setTopology("angle.gro");
+    runTest(CommandLine::create(cmdline));
+}
+
+TEST_F(AngleModuleTest, HandlesDynamicSelections)
+{
+    const char *const cmdline[] = {
+        "angle",
+        "-g1", "angle", "-group1", "resname RA1 RA2 and name A1 A2 A3 and z < 0.5",
+        "-binw", "60"
+    };
+    setTopology("angle.gro");
+    runTest(CommandLine::create(cmdline));
+}
+
 } // namespace

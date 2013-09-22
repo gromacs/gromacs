@@ -188,10 +188,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
         md->bEInd[i] = FALSE;
     }
 
-    /* Even though the OpenMM build has moved to contrib, it's not
-     * practical to move/remove this code fragment, because of the
-     * fundamental mess that is the GROMACS library structure. */
-#ifndef GMX_OPENMM
     for (i = 0; i < F_NRE; i++)
     {
         md->bEner[i] = FALSE;
@@ -303,13 +299,6 @@ t_mdebin *init_mdebin(ener_file_t       fp_ene,
             md->bEner[i] = (gmx_mtop_ftype_count(mtop, i) > 0);
         }
     }
-#else
-    /* OpenMM always produces only the following 4 energy terms */
-    md->bEner[F_EPOT] = TRUE;
-    md->bEner[F_EKIN] = TRUE;
-    md->bEner[F_ETOT] = TRUE;
-    md->bEner[F_TEMP] = TRUE;
-#endif
 
     /* for adress simulations, most energy terms are not meaningfull, and thus disabled*/
     if (ir->bAdress && !debug)
@@ -1090,7 +1079,7 @@ void upd_mdebin(t_mdebin       *md,
         add_ebin(md->ebin, md->ivcos, 1, &(ekind->cosacc.vcos), bSum);
         /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
         tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
-                 *dens*vol*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
+                 *dens*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
         add_ebin(md->ebin, md->ivisc, 1, &tmp, bSum);
     }
     if (md->nE > 1)

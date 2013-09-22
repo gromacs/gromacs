@@ -34,31 +34,42 @@
 
 set(LIBGROMACS_SOURCES)
 
-add_subdirectory(legacyheaders)
+function (gmx_install_headers DESTINATION)
+    if (NOT GMX_BUILD_MDRUN_ONLY)
+        if (DESTINATION)
+            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs/${DESTINATION})
+        else()
+            set(DESTINATION ${INCL_INSTALL_DIR}/gromacs)
+        endif()
+        install(FILES ${ARGN} DESTINATION ${DESTINATION} COMPONENT development)
+    endif()
+endfunction ()
+
 add_subdirectory(gmxlib)
 add_subdirectory(mdlib)
 add_subdirectory(gmxpreprocess)
-add_subdirectory(gmxana)
-add_subdirectory(analysisdata)
 add_subdirectory(commandline)
+add_subdirectory(fft)
 add_subdirectory(linearalgebra)
 add_subdirectory(onlinehelp)
 add_subdirectory(options)
-add_subdirectory(selection)
-add_subdirectory(trajectoryanalysis)
 add_subdirectory(utility)
 add_subdirectory(coulombintegrals)
 
-file(GLOB LIBGROMACS_HEADERS *.h)
-install(FILES ${LIBGROMACS_HEADERS} DESTINATION ${INCL_INSTALL_DIR}/gromacs
-        COMPONENT development)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    add_subdirectory(legacyheaders)
+    add_subdirectory(gmxana)
+    add_subdirectory(analysisdata)
+    add_subdirectory(selection)
+    add_subdirectory(trajectoryanalysis)
+endif ()
 
 list(APPEND LIBGROMACS_SOURCES ${GMXLIB_SOURCES} ${MDLIB_SOURCES})
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/version.h.cmakein ${CMAKE_CURRENT_BINARY_DIR}/version.h)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/version.h
-    DESTINATION ${INCL_INSTALL_DIR}/gromacs
-    COMPONENT development)
+file(GLOB LIBGROMACS_HEADERS *.h)
+configure_file(version.h.cmakein version.h)
+gmx_install_headers("" ${LIBGROMACS_HEADERS})
+gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 
 # Add target that generates gitversion.c every time make is run
 # if git version info is requested
@@ -107,21 +118,28 @@ endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
-                      ${FFT_LIBRARIES} ${XML_LIBRARIES} ${GSL_LIBRARIES}
+                      ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
+                      ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
 set_target_properties(libgromacs PROPERTIES
                       OUTPUT_NAME "gromacs${GMX_LIBS_SUFFIX}"
                       SOVERSION ${SOVERSION} INSTALL_NAME_DIR "${LIB_INSTALL_DIR}"
                       COMPILE_FLAGS "${OpenMP_C_FLAGS}")
 
-install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+# Only install the library in mdrun-only mode if it is actually necessary
+# for the binary
+if (NOT GMX_BUILD_MDRUN_ONLY OR BUILD_SHARED_LIBS)
+    install(TARGETS libgromacs DESTINATION ${LIB_INSTALL_DIR} COMPONENT libraries)
+endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
-               ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
-        DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
-        RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
-        COMPONENT development)
+if (NOT GMX_BUILD_MDRUN_ONLY)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/libgromacs.pc.cmakein
+                   ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc @ONLY)
+    install(FILES ${CMAKE_CURRENT_BINARY_DIR}/libgromacs.pc
+            DESTINATION ${LIB_INSTALL_DIR}/pkgconfig
+            RENAME "libgromacs${GMX_LIBS_SUFFIX}.pc"
+            COMPONENT development)
+endif()
 
 if (INSTALL_CUDART_LIB) #can be set manual by user
     if (GMX_GPU)

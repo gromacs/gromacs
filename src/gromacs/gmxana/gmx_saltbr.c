@@ -44,7 +44,6 @@
 #include "typedefs.h"
 #include "filenm.h"
 #include "statutil.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "gmx_fatal.h"
 #include "smalloc.h"
@@ -98,7 +97,7 @@ static t_charge *mk_charge(t_atoms *atoms, t_block *cgs, int *nncg)
                cg[i].label, cg[i].q);
         for (j = cgs->index[cg[i].cg]; (j < cgs->index[cg[i].cg+1]); j++)
         {
-            printf(" %4u", j);
+            printf(" %4d", j);
         }
         printf("\n");
     }
@@ -183,8 +182,11 @@ int gmx_saltbr(int argc, char *argv[])
     matrix             box;
     output_env_t       oenv;
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     top = read_top(ftp2fn(efTPX, NFILE, fnm), &ePBC);
     cg  = mk_charge(&top->atoms, &(top->cgs), &ncg);
@@ -223,7 +225,7 @@ int gmx_saltbr(int argc, char *argv[])
 
         teller++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     fprintf(stderr, "\n");
     close_trj(status);
 
@@ -331,7 +333,6 @@ int gmx_saltbr(int argc, char *argv[])
             }
         }
     }
-    thanx(stderr);
 
     return 0;
 }

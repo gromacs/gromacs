@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -164,8 +163,11 @@ int gmx_densmap(int argc, char *argv[])
 
     npargs = asize(pa);
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, npargs, pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     bXmin   = opt2parg_bSet("-xmin", npargs, pa);
     bXmax   = opt2parg_bSet("-xmax", npargs, pa);
@@ -365,7 +367,7 @@ int gmx_densmap(int argc, char *argv[])
         }
         nfr++;
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
     close_trj(status);
 
     /* normalize gridpoints */
@@ -523,8 +525,6 @@ int gmx_densmap(int argc, char *argv[])
                   n1, n2, tickx, tickz, grid, dmin, maxgrid, rlo, rhi, &nlev);
         ffclose(fp);
     }
-
-    thanx(stderr);
 
     do_view(oenv, opt2fn("-o", NFILE, fnm), NULL);
 

@@ -51,10 +51,10 @@ struct coll_env *tMPI_Get_cev(tMPI_Comm comm, int myrank, int *synct);
    synct       = the multicast sync number
    dest        = -1 for all theads, or a specific rank number.
  */
-void tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
-                     int tag, tMPI_Datatype datatype,
-                     size_t bufsize, void *buf, int n_remaining,
-                     int synct, int dest);
+int tMPI_Post_multi(struct coll_env *cev, int myrank, int index,
+                    int tag, tMPI_Datatype datatype,
+                    size_t bufsize, void *buf, int n_remaining,
+                    int synct, int dest);
 
 /* transfer data from cev->met[rank] to recvbuf */
 void tMPI_Mult_recv(tMPI_Comm comm, struct coll_env *cev, int rank,

@@ -3,7 +3,7 @@
 % latexmlpost --destination installguide.xhtml --format=xhtml installguide.xml
 %
 % Crude hack to remove ugly symbols:
-% sed -e 's/Â§//g' -i installguide.xhtml
+% sed -e 's/[Â§]//g' -i installguide.xhtml
 %
 % Strip off header for pasting into the website at
 % http://www.gromacs.org/Documentation/Installation_Instructions:
@@ -28,7 +28,6 @@
 \newcommand{\threadmpi}{ThreadMPI}
 \newcommand{\openmpi}{OpenMPI}
 \newcommand{\openmp}{OpenMP}
-\newcommand{\openmm}{OpenMM}
 \newcommand{\lammpi}{LAM/MPI}
 \newcommand{\mpich}{MPICH}
 \newcommand{\cmake}{CMake}
@@ -70,8 +69,8 @@ see the documentation at
 \end{enumerate}
 Or, as a sequence of commands to execute:
 \begin{verbatim}
-tar xfz gromacs-4.6.1.tar.gz
-cd gromacs-4.6.1
+tar xfz gromacs-4.6.3.tar.gz
+cd gromacs-4.6.3
 mkdir build
 cd build
 cmake .. -DGMX_BUILD_OWN_FFTW=ON
@@ -144,17 +143,6 @@ If you wish to use the excellent new native GPU support in \gromacs,
 \cudaversion{} software development kit is required, and the latest
 version is strongly encouraged. \nvidia{} GPUs with at least \nvidia{} compute
 capability 2.0 are required, e.g. Fermi or Kepler cards.
-
-The GPU support from \gromacs{} version 4.5 using \openmm{}
-\url{https://simtk.org/home/openmm} is still contained in the code,
-but in the ``user contributions'' section (\verb+src/contrib+). You
-will need to edit \verb+src/contrib/CMakeLists.txt+ to enable it. It
-also requires \cuda{}, and remains the only hardware-based
-acceleration available for implicit solvent simulations in
-\gromacs{} at the moment. However, the long-term plan is to enable 
-this functionality in core Gromacs, and not have the OpenMM
-interface supported by the \gromacs team. Right now there are
-some build issues for OpenMM.
 
 If you wish to run in parallel on multiple machines across a network,
 you will need to have
@@ -255,18 +243,28 @@ support has been compiled into \fftw{}, so you need to set this at compile time.
 
 \subsubsection{\mkl{}}
 
-Using \mkl{} requires a set of linker flags that \gromacs{} is not
-able to detect for you, so setting up optimal linking is tricky at the
-moment. You will need to consult your compiler documentation and
-use \verb+CMAKE_C_FLAGS+ and \verb+-DCMAKE_EXE_LINKER_FLAGS+
-accordingly.
+Using \mkl{} with icc 11 or higher is very simple. Set up your
+compiler environment correctly, perhaps with a command like
+\verb+source /path/to/compilervars.sh intel64+ (or consult your local
+documentation). Then set \verb+-DGMX_FFT_LIBRARY=mkl+ when you run
+\cmake{}. In this case, \gromacs{} will also use \mkl{} for \blas{}
+and \lapack{} (see \hyperref{linear-algebra}{here}).
+
+Otherwise, you can configure \mkl{} by setting
+\verb+-DGMX_FFT_LIBRARY=mkl
+-DMKL_LIBRARIES="/full/path/to/libone.so;/full/path/to/libtwo.so"
+-DMKL_INCLUDE_DIR="/full/path/to/mkl/include"+,
+where the full list (and order!) of libraries you require are found in
+Intel's \mkl{} documentation for your system.
 
 \subsection{Optional build components}
 
 \begin{itemize}
-\item Hardware-optimized \blas{} and \lapack{} libraries are useful for
-  a few of the \gromacs{} utilities focused on normal modes and matrix manipulation, 
-  but they does not provide any benefits for normal simulations.
+\item Hardware-optimized \blas{} and \lapack{} libraries are useful
+  for a few of the \gromacs{} utilities focused on normal modes and
+  matrix manipulation, but they do not provide any benefits for normal
+  simulations. Configuring these are discussed
+  \hyperlink{linear-algebra}{here}.
 \item The built-in \gromacs{} trajectory viewer \verb+ngmx+ requires
   X11 and Motif/Lesstif libraries and header files. Generally, the
   \gromacs{} team rather recommends you use third-party software for
@@ -308,8 +306,8 @@ line is the name of the directory containing the
 example, download the source tarball and use
 % TODO: keep up to date with new releases!
 \begin{verbatim}
-$ tar xfz gromacs-4.6.1.tgz
-$ cd gromacs-4.6.1
+$ tar xfz gromacs-4.6.3.tgz
+$ cd gromacs-4.6.3
 $ mkdir build-cmake
 $ cd build-cmake
 $ cmake ..
@@ -423,6 +421,28 @@ and its relatives.
 
 See also: \url{http://cmake.org/Wiki/CMake_Useful_Variables#Environment_Variables}
 
+\subsection{Linear algebra libraries}\hypertarget{linear-algebra}
+As mentioned above, sometimes vendor \blas{} and \lapack{} libraries
+can provide performance enhancements for \gromacs{} when doing
+normal-mode analysis or covariance analysis. For simplicity, the text
+below will refer only to \blas{}, but the same options are available
+for \lapack{}. By default, CMake will search for \blas{}, use it if it
+is found, and otherwise fall back on a version of \blas{} internal to
+\gromacs{}. The \cmake{} option \verb+GMX_EXTERNAL_BLAS+ will be set
+accordingly. The internal versions are fine for normal use. If you
+need to specify a non-standard path to search, use
+\verb+-DCMAKE_PREFIX_PATH=/path/to/search+. If you need to specify a
+library with a non-standard name (e.g. ESSL on AIX), then set
+\verb+-DGMX_BLAS_USER=/path/to/reach/lib/libwhatever.a+.
+
+If you are using Intel's \mkl{} for \fft{}, then the \blas{} and
+\lapack{} it provides are used automatically. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
+
+On Apple platforms where the Accelerate Framework is available, these
+will be automatically used for \blas{} and \lapack{}. This could be
+over-ridden with \verb+GMX_BLAS_USER+, etc.
+
 \subsection{Native GPU acceleration}
 If you have the \cuda{} Software Development Kit installed, you can
 use \cmake{} with:
@@ -482,7 +502,7 @@ cmake .. -DGMX_DEFAULT_SUFFIX=OFF -DGMX_BINARY_SUFFIX=_mod -DGMX_LIBS_SUFFIX=_mo
 \end{verbatim}
 
 Thus the names of all binaries and libraries will be appended with
-"_mod."
+"\_mod."
 
 \subsection{Building \gromacs{}}
 
@@ -695,9 +715,10 @@ routines - it is rare for this to be a bottleneck.
 
 \begin{verbatim}
 cmake .. -DCMAKE_TOOLCHAIN_FILE=BlueGeneQ-static-XL-C \
-         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix
-make mdrun
-make install-mdrun
+         -DCMAKE_PREFIX_PATH=/your/fftw/installation/prefix \
+         -DGMX_BUILD_MDRUN_ONLY=ON
+make
+make install
 \end{verbatim}
 It is possible to configure and make the remaining \gromacs{} tools
 with the compute node toolchain, but as none of those tools are

@@ -59,13 +59,13 @@
  */
 void
 {KERNEL_NAME}
-                    (t_nblist * gmx_restrict                nlist,
-                     rvec * gmx_restrict                    xx,
-                     rvec * gmx_restrict                    ff,
-                     t_forcerec * gmx_restrict              fr,
-                     t_mdatoms * gmx_restrict               mdatoms,
-                     nb_kernel_data_t * gmx_restrict        kernel_data,
-                     t_nrnb * gmx_restrict                  nrnb)
+                    (t_nblist                    * gmx_restrict       nlist,
+                     rvec                        * gmx_restrict          xx,
+                     rvec                        * gmx_restrict          ff,
+                     t_forcerec                  * gmx_restrict          fr,
+                     t_mdatoms                   * gmx_restrict     mdatoms,
+                     nb_kernel_data_t gmx_unused * gmx_restrict kernel_data,
+                     t_nrnb                      * gmx_restrict        nrnb)
 {
     /* ## Not all variables are used for all kernels, but any optimizing compiler fixes that, */
     /* ## so there is no point in going to extremes to exclude variables that are not needed. */

@@ -39,7 +39,6 @@
 #include "3dview.h"
 #include "statutil.h"
 #include "smalloc.h"
-#include "copyrite.h"
 #include "index.h"
 #include "confio.h"
 #include "gmx_fatal.h"
@@ -51,13 +50,13 @@
 
 
 static void rot_conf(t_atoms *atoms, rvec x[], rvec v[], real trans, real angle,
-                     rvec head, rvec tail, matrix box, int isize, atom_id index[],
+                     rvec head, rvec tail, int isize, atom_id index[],
                      rvec xout[], rvec vout[])
 {
-    rvec     arrow, center, xcm;
+    rvec     arrow, xcm;
     real     theta, phi, arrow_len;
-    mat4     Rx, Ry, Rz, Rinvy, Rinvz, Mtot, Tcm, Tinvcm, Tx;
-    mat4     temp1, temp2, temp3, temp4, temp21, temp43;
+    mat4     Rx, Ry, Rz, Rinvy, Rinvz, Mtot;
+    mat4     temp1, temp2, temp3;
     vec4     xv;
     int      i, j, ai;
 
@@ -200,8 +199,11 @@ int gmx_dyndom(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, 0, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     get_stx_coordnum (opt2fn("-f", NFILE, fnm), &natoms);
     init_t_atoms(&atoms, natoms, TRUE);
@@ -230,7 +232,7 @@ int gmx_dyndom(int argc, char *argv[])
         trans = trans0*0.1*angle/maxangle;
         printf("Frame: %2d (label %c), angle: %8.3f deg., trans: %8.3f nm\n",
                i, label, angle, trans);
-        rot_conf(&atoms, x, v, trans, angle, head, tail, box, isize, index, xout, vout);
+        rot_conf(&atoms, x, v, trans, angle, head, tail, isize, index, xout, vout);
 
         if (label > 'Z')
         {
@@ -244,8 +246,6 @@ int gmx_dyndom(int argc, char *argv[])
         write_trx(status, atoms.nr, index_all, &atoms, i, angle, box, xout, vout, NULL);
     }
     close_trx(status);
-
-    thanx(stderr);
 
     return 0;
 }

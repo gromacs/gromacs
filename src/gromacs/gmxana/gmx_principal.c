@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
@@ -116,9 +115,12 @@ int gmx_principal(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv,
-                      PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv,
+                           PCA_CAN_TIME | PCA_TIME_UNIT | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     axis1 = ffopen(opt2fn("-a1", NFILE, fnm), "w");
     axis2 = ffopen(opt2fn("-a2", NFILE, fnm), "w");
@@ -131,7 +133,7 @@ int gmx_principal(int argc, char *argv[])
 
     natoms = read_first_x(oenv, &status, ftp2fn(efTRX, NFILE, fnm), &t, &x, box);
 
-    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms, box);
+    gpbc = gmx_rmpbc_init(&top.idef, ePBC, natoms);
 
     do
     {
@@ -144,7 +146,7 @@ int gmx_principal(int argc, char *argv[])
         fprintf(axis3, "%15.10f     %15.10f  %15.10f  %15.10f\n", t, axes[XX][ZZ], axes[YY][ZZ], axes[ZZ][ZZ]);
         fprintf(fmoi,  "%15.10f     %15.10f  %15.10f  %15.10f\n", t, moi[XX], moi[YY], moi[ZZ]);
     }
-    while (read_next_x(oenv, status, &t, natoms, x, box));
+    while (read_next_x(oenv, status, &t, x, box));
 
     gmx_rmpbc_done(gpbc);
 
@@ -154,8 +156,6 @@ int gmx_principal(int argc, char *argv[])
     ffclose(axis2);
     ffclose(axis3);
     ffclose(fmoi);
-
-    thanx(stderr);
 
     return 0;
 }

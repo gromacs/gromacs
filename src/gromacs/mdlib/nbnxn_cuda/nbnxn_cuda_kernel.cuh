@@ -46,6 +46,11 @@
 #define IATYPE_SHMEM
 #endif
 
+#if defined EL_EWALD_ANA || defined EL_EWALD_TAB
+/* Note: convenience macro, needs to be undef-ed at the end of the file. */
+#define EL_EWALD_ANY
+#endif
+
 /*
    Kernel launch parameters:
     - #blocks   = #pair lists, blockId = pair list Id
@@ -92,8 +97,12 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_RF
     float two_k_rf              = nbparam.two_k_rf;
 #endif
-#ifdef EL_EWALD
+#ifdef EL_EWALD_TAB
     float coulomb_tab_scale     = nbparam.coulomb_tab_scale;
+#endif
+#ifdef EL_EWALD_ANA
+    float beta2                 = nbparam.ewald_beta*nbparam.ewald_beta;
+    float beta3                 = nbparam.ewald_beta*nbparam.ewald_beta*nbparam.ewald_beta;
 #endif
 #ifdef PRUNE_NBL
     float rlist_sq              = nbparam.rlist_sq;
@@ -101,7 +110,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 
 #ifdef CALC_ENERGIES
     float lj_shift    = nbparam.sh_invrc6;
-#ifdef EL_EWALD
+#ifdef EL_EWALD_ANY
     float beta        = nbparam.ewald_beta;
     float ewald_shift = nbparam.sh_ewald;
 #else
@@ -182,7 +191,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
     E_lj = 0.0f;
     E_el = 0.0f;
 
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_ANY || defined EL_RF
     if (nb_sci.shift == CENTRAL && pl_cj4[cij4_start].cj[0] == sci*NCL_PER_SUPERCL)
     {
         /* we have the diagonal: add the charge self interaction energy term */
@@ -253,7 +262,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                     fcj_buf = make_float3(0.0f);
 
                     /* The PME and RF kernels don't unroll with CUDA <v4.1. */
-#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD || defined EL_RF))
+#if !defined PRUNE_NBL && !(CUDA_VERSION < 4010 && (defined EL_EWALD_ANY || defined EL_RF))
 #pragma unroll 8
 #endif
                     for(i = 0; i < NCL_PER_SUPERCL; i++)
@@ -286,7 +295,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                             int_bit = (wexcl & mask_ji) ? 1.0f : 0.0f;
 
                             /* cutoff & exclusion check */
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_ANY || defined EL_RF
                             if (r2 < rcoulomb_sq *
                                 (nb_sci.shift != CENTRAL || ci != cj || tidxj > tidxi))
 #else
@@ -311,7 +320,7 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
                                 inv_r   = rsqrt(r2);
                                 inv_r2  = inv_r * inv_r;
                                 inv_r6  = inv_r2 * inv_r2 * inv_r2;
-#if defined EL_EWALD || defined EL_RF
+#if defined EL_EWALD_ANY || defined EL_RF
                                 /* We could mask inv_r2, but with Ewald
                                  * masking both inv_r6 and F_invr is faster */
                                 inv_r6  *= int_bit;
@@ -342,9 +351,11 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_RF
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 * inv_r - two_k_rf);
 #endif
-#ifdef EL_EWALD
+#if defined EL_EWALD_ANA
+                                F_invr  += qi * qj_f * (int_bit*inv_r2*inv_r + pmecorrF(beta2*r2)*beta3);
+#elif defined EL_EWALD_TAB
                                 F_invr  += qi * qj_f * (int_bit*inv_r2 - interpolate_coulomb_force_r(r2 * inv_r, coulomb_tab_scale)) * inv_r;
-#endif
+#endif /* EL_EWALD_ANA/TAB */
 
 #ifdef CALC_ENERGIES
 #ifdef EL_CUTOFF
@@ -353,10 +364,10 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #ifdef EL_RF
                                 E_el    += qi * qj_f * (int_bit*inv_r + 0.5f * two_k_rf * r2 - c_rf);
 #endif
-#ifdef EL_EWALD
+#ifdef EL_EWALD_ANY
                                 /* 1.0f - erff is faster than erfcf */
                                 E_el    += qi * qj_f * (inv_r * (int_bit - erff(r2 * inv_r * beta)) - int_bit * ewald_shift);
-#endif
+#endif /* EL_EWALD_ANY */
 #endif
                                 f_ij    = rv * F_invr;
 
@@ -437,3 +448,5 @@ __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn)
 #endif
 #endif
 }
+
+#undef EL_EWALD_ANY

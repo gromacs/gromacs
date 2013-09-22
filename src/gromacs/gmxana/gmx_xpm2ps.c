@@ -40,7 +40,6 @@
 #include <stdlib.h>
 #include <math.h>
 #include "string2.h"
-#include "copyrite.h"
 #include "typedefs.h"
 #include "macros.h"
 #include "statutil.h"
@@ -118,7 +117,7 @@ void get_params(const char *mpin, const char *mpout, t_psrec *psr)
 
     if (mpin != NULL)
     {
-        inp = read_inpfile(mpin, &ninp, NULL, wi);
+        inp = read_inpfile(mpin, &ninp, wi);
     }
     else
     {
@@ -1485,9 +1484,12 @@ int gmx_xpm2ps(int argc, char *argv[])
     };
 #define NFILE asize(fnm)
 
-    parse_common_args(&argc, argv, PCA_CAN_VIEW,
-                      NFILE, fnm, NPA, pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_VIEW,
+                           NFILE, fnm, NPA, pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     etitle   = nenum(title);
     elegend  = nenum(legend);
@@ -1610,8 +1612,6 @@ int gmx_xpm2ps(int argc, char *argv[])
     }
 
     view_all(oenv, NFILE, fnm);
-
-    thanx(stderr);
 
     return 0;
 }

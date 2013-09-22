@@ -48,7 +48,6 @@
 #include "vec.h"
 #include "xvgr.h"
 #include "pbc.h"
-#include "copyrite.h"
 #include "futil.h"
 #include "strdb.h"
 #include "statutil.h"
@@ -157,7 +156,7 @@ void wheel(const char *fn, int nres, char *resnm[], int r0, real rot0, char *tit
     ps_close(out);
 }
 
-void wheel2(const char *fn, int nres, char *resnm[], int r0, real rot0, char *title)
+void wheel2(const char *fn, int nres, char *resnm[], real rot0, char *title)
 {
     const real fontsize  = 14;
     const real gray      = 0.9;
@@ -250,8 +249,11 @@ int gmx_wheel(int argc, char *argv[])
     int    i, nres;
     char **resnm;
 
-    parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
-                      asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_BE_NICE, NFILE, fnm, asize(pa), pa,
+                           asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
 
     for (i = 1; (i < argc); i++)
     {
@@ -288,10 +290,8 @@ int gmx_wheel(int argc, char *argv[])
     }
     else
     {
-        wheel2(ftp2fn(efEPS, NFILE, fnm), nres, resnm, r0, rot0, title);
+        wheel2(ftp2fn(efEPS, NFILE, fnm), nres, resnm, rot0, title);
     }
-
-    thanx(stderr);
 
     return 0;
 }

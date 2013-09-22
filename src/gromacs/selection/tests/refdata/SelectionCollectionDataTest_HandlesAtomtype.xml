@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="referencedata.xsl"?>
+<ReferenceData>
+  <ParsedSelections Name="Parsed">
+    <ParsedSelection Name="Selection1">
+      <String Name="Input">atomtype CA</String>
+      <String Name="Text">atomtype CA</String>
+      <Bool Name="Dynamic">false</Bool>
+    </ParsedSelection>
+  </ParsedSelections>
+  <CompiledSelections Name="Compiled">
+    <Selection Name="Selection1">
+      <Sequence Name="Atoms">
+        <Int Name="Length">5</Int>
+        <Int>0</Int>
+        <Int>3</Int>
+        <Int>6</Int>
+        <Int>9</Int>
+        <Int>12</Int>
+      </Sequence>
+    </Selection>
+  </CompiledSelections>
+</ReferenceData>

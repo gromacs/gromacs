@@ -105,22 +105,24 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "The type of the angle is specified with [TT]-g1[tt] and [TT]-g2[tt].",
         "If [TT]-g1[tt] is [TT]angle[tt] or [TT]dihedral[tt], [TT]-g2[tt]",
         "should not be specified.",
-        "In this case, [TT]-group1[tt] should specify one selection,",
-        "and it should contain triplets or quartets of positions that define",
+        "In this case, [TT]-group1[tt] should specify one or more selections,",
+        "and each should contain triplets or quartets of positions that define",
         "the angles to be calculated.[PAR]",
         "If [TT]-g1[tt] is [TT]vector[tt] or [TT]plane[tt], [TT]-group1[tt]",
-        "should specify a selection that has either pairs ([TT]vector[tt])",
+        "should specify selections that contain either pairs ([TT]vector[tt])",
         "or triplets ([TT]plane[tt]) of positions. For vectors, the positions",
         "set the endpoints of the vector, and for planes, the three positions",
         "are used to calculate the normal of the plane. In both cases,",
         "[TT]-g2[tt] specifies the other vector to use (see below).[PAR]",
         "With [TT]-g2 vector[tt] or [TT]-g2 plane[tt], [TT]-group2[tt] should",
-        "specify another set of vectors. Both selections should specify the",
-        "same number of vectors.[PAR]",
-        "With [TT]-g2 sphnorm[tt], [TT]-group2[tt] should specify a single",
-        "position that is the center of the sphere. The second vector is then",
-        "calculated as the vector from the center to the midpoint of the",
-        "positions specified by [TT]-group1[tt].[PAR]",
+        "specify another set of vectors. [TT]-group1[tt] and [TT]-group2[tt]",
+        "should specify the same number of selections, and for each selection",
+        "in [TT]-group1[tt], the corresponding selection in [TT]-group2[tt]",
+        "should specify the same number of vectors.[PAR]",
+        "With [TT]-g2 sphnorm[tt], each selection in [TT]-group2[tt] should",
+        "specify a single position that is the center of the sphere.",
+        "The second vector is calculated as the vector from the center to the",
+        "midpoint of the positions specified by [TT]-group1[tt].[PAR]",
         "With [TT]-g2 z[tt], [TT]-group2[tt] is not necessary, and angles",
         "between the first vectors and the positive Z axis are calculated.[PAR]",
         "With [TT]-g2 t0[tt], [TT]-group2[tt] is not necessary, and angles",
@@ -130,13 +132,9 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "for each frame.",
         "[TT]-oall[tt] writes all the individual angles.",
         "[TT]-oh[tt] writes a histogram of the angles. The bin width can be",
-        "set with [TT]-binw[tt]."
-        /* TODO: Consider if the dump option is necessary and how to best
-         * implement it.
-           "[TT]-od[tt] can be used to dump all the individual angles,",
-           "each on a separate line. This format is better suited for",
-           "further processing, e.g., if angles from multiple runs are needed."
-         */
+        "set with [TT]-binw[tt].",
+        "For [TT]-oav[tt] and [TT]-oh[tt], separate average/histogram is",
+        "computed for each selection in [TT]-group1[tt]."
     };
     static const char *const cGroup1TypeEnum[] =
     { "angle", "dihedral", "vector", "plane" };
@@ -164,17 +162,13 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
     options->addOption(DoubleOption("binw").store(&binWidth_)
                            .description("Binwidth for -oh in degrees"));
 
-    // TODO: Allow multiple angles to be computed in one invocation.
-    // Most of the code already supports it, but requires a solution for
-    // Redmine issue #1010.
-    // TODO: Consider what is the best way to support dynamic selections.
-    // Again, most of the code already supports it, but it needs to be
-    // considered how should -oall work, and additional checks should be added.
     sel1info_ = options->addOption(SelectionOption("group1")
-                                       .required().onlyStatic().storeVector(&sel1_)
+                                       .required().dynamicMask().storeVector(&sel1_)
+                                       .multiValue()
                                        .description("First analysis/vector selection"));
     sel2info_ = options->addOption(SelectionOption("group2")
-                                       .onlyStatic().storeVector(&sel2_)
+                                       .dynamicMask().storeVector(&sel2_)
+                                       .multiValue()
                                        .description("Second analysis/vector selection"));
 }
 
@@ -240,8 +234,8 @@ Angle::checkSelections(const SelectionList &sel1,
 
     for (size_t g = 0; g < sel1.size(); ++g)
     {
-        int na1 = sel1[g].posCount();
-        int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
+        const int na1 = sel1[g].posCount();
+        const int na2 = (natoms2_ > 0) ? sel2[g].posCount() : 0;
         if (natoms1_ > 1 && na1 % natoms1_ != 0)
         {
             GMX_THROW(InconsistentInputError(formatString(
@@ -264,6 +258,30 @@ Angle::checkSelections(const SelectionList &sel1,
             GMX_THROW(InconsistentInputError(
                               "The second group should contain a single position with -g2 sphnorm"));
         }
+        if (sel1[g].isDynamic() || (natoms2_ > 0 && sel2[g].isDynamic()))
+        {
+            for (int i = 0, j = 0; i < na1; i += natoms1_, j += natoms2_)
+            {
+                const bool bSelected = sel1[g].position(i).selected();
+                bool       bOk       = true;
+                for (int k = 1; k < natoms1_ && bOk; ++k)
+                {
+                    bOk = (sel1[g].position(i+k).selected() == bSelected);
+                }
+                for (int k = 1; k < natoms2_ && bOk; ++k)
+                {
+                    bOk = (sel2[g].position(j+k).selected() == bSelected);
+                }
+                if (!bOk)
+                {
+                    std::string message =
+                        formatString("Dynamic selection %d does not select "
+                                     "a consistent set of angles over the frames",
+                                     static_cast<int>(g + 1));
+                    GMX_THROW(InconsistentInputError(message));
+                }
+            }
+        }
     }
 }
 
@@ -274,7 +292,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
 {
     checkSelections(sel1_, sel2_);
 
-    angles_.setColumnCount(sel1_[0].posCount() / natoms1_);
+    // checkSelections() ensures that both selection lists have the same size.
+    angles_.setDataSetCount(sel1_.size());
+    for (size_t i = 0; i < sel1_.size(); ++i)
+    {
+        angles_.setColumnCount(i, sel1_[i].posCount() / natoms1_);
+    }
     double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
                                .binWidth(binWidth_).includeAll());
@@ -296,7 +319,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Average angle");
         plotm->setXAxisIsTime();
         plotm->setYLabel("Angle (degrees)");
-        // TODO: Add legends
+        // TODO: Consider adding information about the second selection,
+        // and/or a subtitle describing what kind of angle this is.
+        for (size_t g = 0; g < sel1_.size(); ++g)
+        {
+            plotm->appendLegend(sel1_[g].name());
+        }
         averageModule_->addModule(plotm);
     }
 
@@ -320,7 +348,12 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
         plotm->setTitle("Angle histogram");
         plotm->setXLabel("Angle (degrees)");
         plotm->setYLabel("Probability");
-        // TODO: Add legends
+        // TODO: Consider adding information about the second selection,
+        // and/or a subtitle describing what kind of angle this is.
+        for (size_t g = 0; g < sel1_.size(); ++g)
+        {
+            plotm->appendLegend(sel1_[g].name());
+        }
         histogramModule_->averager().addModule(plotm);
     }
 }
@@ -407,12 +440,16 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 copy_rvec(sel2_[g].position(0).x(), c2);
                 break;
         }
+        dh.selectDataSet(g);
         for (int i = 0, j = 0, n = 0;
              i < sel1[g].posCount();
              i += natoms1_, j += natoms2_, ++n)
         {
             rvec x[4];
             real angle;
+            // checkSelections() ensures that this reflects all the involved
+            // positions.
+            bool bPresent = sel1[g].position(i).selected();
             copy_pos(sel1, natoms1_, g, i, x);
             switch (g1type_[0])
             {
@@ -493,24 +530,7 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
             }
-            /* TODO: Should we also calculate distances like g_sgangle?
-             * Could be better to leave that for a separate tool.
-               real dist = 0.0;
-               if (bDumpDist_)
-               {
-                if (pbc)
-                {
-                    rvec dx;
-                    pbc_dx(pbc, c2, c1, dx);
-                    dist = norm(dx);
-                }
-                else
-                {
-                    dist = sqrt(distance2(c1, c2));
-                }
-               }
-             */
-            dh.setPoint(n, angle * RAD2DEG);
+            dh.setPoint(n, angle * RAD2DEG, bPresent);
         }
     }
     dh.finishFrame();

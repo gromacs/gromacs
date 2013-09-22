@@ -657,29 +657,53 @@ void nbnxn_atomdata_init(FILE *fp,
 #ifdef GMX_NBNXN_SIMD
     if (simple)
     {
-        /* Set the diagonal cluster pair exclusion mask setup data.
+        /* Set the diagonal cluster pair interaction mask setup data.
          * In the kernel we check 0 < j - i to generate the masks.
-         * Here we store j - i for generating the mask for the first i,
+         * Here we store j - i for generating the mask for the first i (i=0);
          * we substract 0.5 to avoid rounding issues.
-         * In the kernel we can subtract 1 to generate the subsequent mask.
+         * In the kernel we can subtract 1 to generate the mask for the next i.
          */
-        const int simd_width = GMX_NBNXN_SIMD_BITWIDTH/(sizeof(real)*8);
-        int       simd_4xn_diag_size, j;
+        const int simd_width = GMX_SIMD_WIDTH_HERE;
+        int       simd_4xn_diag_ind_size, simd_interaction_size, j;
 
-        simd_4xn_diag_size = max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
-        snew_aligned(nbat->simd_4xn_diag, simd_4xn_diag_size, NBNXN_MEM_ALIGN);
-        for (j = 0; j < simd_4xn_diag_size; j++)
+        simd_4xn_diag_ind_size = max(NBNXN_CPU_CLUSTER_I_SIZE, simd_width);
+        snew_aligned(nbat->simd_4xn_diagonal_j_minus_i,
+                     simd_4xn_diag_ind_size, NBNXN_MEM_ALIGN);
+        for (j = 0; j < simd_4xn_diag_ind_size; j++)
         {
-            nbat->simd_4xn_diag[j] = j - 0.5;
+            nbat->simd_4xn_diagonal_j_minus_i[j] = j - 0.5;
         }
 
-        snew_aligned(nbat->simd_2xnn_diag, simd_width, NBNXN_MEM_ALIGN);
+        snew_aligned(nbat->simd_2xnn_diagonal_j_minus_i,
+                     simd_width, NBNXN_MEM_ALIGN);
         for (j = 0; j < simd_width/2; j++)
         {
             /* The j-cluster size is half the SIMD width */
-            nbat->simd_2xnn_diag[j]              = j - 0.5;
+            nbat->simd_2xnn_diagonal_j_minus_i[j]              = j - 0.5;
             /* The next half of the SIMD width is for i + 1 */
-            nbat->simd_2xnn_diag[simd_width/2+j] = j - 1 - 0.5;
+            nbat->simd_2xnn_diagonal_j_minus_i[simd_width/2+j] = j - 1 - 0.5;
+        }
+
+        /* We use up to 32 bits for exclusion masking.
+         * The same masks are used for the 4xN and 2x(N+N) kernels.
+         * The masks are read either into epi32 SIMD registers or into
+         * real SIMD registers (together with a cast).
+         * In single precision this means the real and epi32 SIMD registers
+         * are of equal size.
+         * In double precision the epi32 registers can be smaller than
+         * the real registers, so depending on the architecture, we might
+         * need to use two, identical, 32-bit masks per real.
+         */
+        simd_interaction_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
+        snew_aligned(nbat->simd_exclusion_filter1, simd_interaction_size,   NBNXN_MEM_ALIGN);
+        snew_aligned(nbat->simd_exclusion_filter2, simd_interaction_size*2, NBNXN_MEM_ALIGN);
+        
+        for (j = 0; j < simd_interaction_size; j++)
+        {
+            /* Set the consecutive bits for filters pair exclusions masks */
+            nbat->simd_exclusion_filter1[j]       = (1U << j);
+            nbat->simd_exclusion_filter2[j*2 + 0] = (1U << j);
+            nbat->simd_exclusion_filter2[j*2 + 1] = (1U << j);
         }
     }
 #endif
@@ -1066,14 +1090,6 @@ nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
 /* The SIMD width here is actually independent of that in the kernels,
  * but we use the same width for simplicity (usually optimal anyhow).
  */
-#if GMX_NBNXN_SIMD_BITWIDTH == 128
-#define GMX_MM128_HERE
-#endif
-#if GMX_NBNXN_SIMD_BITWIDTH == 256
-#define GMX_MM256_HERE
-#endif
-#include "gmx_simd_macros.h"
-
     int       i, s;
     gmx_mm_pr dest_SSE, src_SSE;
 
@@ -1103,9 +1119,6 @@ nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
             gmx_store_pr(dest+i, dest_SSE);
         }
     }
-
-#undef GMX_MM128_HERE
-#undef GMX_MM256_HERE
 #endif
 }
 

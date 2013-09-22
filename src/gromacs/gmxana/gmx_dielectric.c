@@ -299,8 +299,11 @@ int gmx_dielectric(int argc, char *argv[])
           "Number of points for smoothing" }
     };
 
-    parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
-                      NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv);
+    if (!parse_common_args(&argc, argv, PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
+                           NFILE, fnm, asize(pa), pa, asize(desc), desc, 0, NULL, &oenv))
+    {
+        return 0;
+    }
     please_cite(stdout, "Spoel98a");
     printf("WARNING: non-polarizable models can never yield an infinite\n"
            "dielectric constant that is different from 1. This is incorrect\n"
@@ -415,8 +418,6 @@ int gmx_dielectric(int argc, char *argv[])
     do_view(oenv, opt2fn("-o", NFILE, fnm), "-nxy");
     do_view(oenv, opt2fn("-c", NFILE, fnm), NULL);
     do_view(oenv, opt2fn("-d", NFILE, fnm), "-nxy");
-
-    thanx(stderr);
 
     return 0;
 }

@@ -4,19 +4,16 @@
   <ParsedSelections Name="Parsed">
     <ParsedSelection Name="Selection1">
       <String Name="Input">atomnr 1 to 3 8 to 9</String>
-      <String Name="Name">atomnr 1 to 3 8 to 9</String>
       <String Name="Text">atomnr 1 to 3 8 to 9</String>
       <Bool Name="Dynamic">false</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection2">
       <String Name="Input">y &gt; 2</String>
-      <String Name="Name">y &gt; 2</String>
       <String Name="Text">y &gt; 2</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>
     <ParsedSelection Name="Selection3">
       <String Name="Input">cog of (y &gt; 2)</String>
-      <String Name="Name">cog of (y &gt; 2)</String>
       <String Name="Text">cog of (y &gt; 2)</String>
       <Bool Name="Dynamic">true</Bool>
     </ParsedSelection>

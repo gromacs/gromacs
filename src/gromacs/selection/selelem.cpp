@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -49,6 +49,7 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 #include "gromacs/utility/gmxassert.h"
+#include "gromacs/utility/stringutil.h"
 
 #include "keywords.h"
 #include "mempool.h"
@@ -173,12 +174,6 @@ void SelectionTreeElement::freeValues()
                     sfree(v.u.s[i]);
                 }
                 break;
-            case POS_VALUE:
-                for (int i = 0; i < n; ++i)
-                {
-                    gmx_ana_pos_deinit(&v.u.p[i]);
-                }
-                break;
             case GROUP_VALUE:
                 for (int i = 0; i < n; ++i)
                 {
@@ -189,9 +184,16 @@ void SelectionTreeElement::freeValues()
                 break;
         }
     }
-    if (flags & SEL_ALLOCVAL)
+    if (v.nalloc > 0)
     {
-        sfree(v.u.ptr);
+        if (v.type == POS_VALUE)
+        {
+            delete [] v.u.p;
+        }
+        else
+        {
+            sfree(v.u.ptr);
+        }
     }
     _gmx_selvalue_setstore(&v, NULL);
     if (type == SEL_SUBEXPRREF && u.param)
@@ -209,11 +211,8 @@ SelectionTreeElement::freeExpressionData()
         u.expr.mdata  = NULL;
         u.expr.method = NULL;
         /* Free position data */
-        if (u.expr.pos)
-        {
-            gmx_ana_pos_free(u.expr.pos);
-            u.expr.pos = NULL;
-        }
+        delete u.expr.pos;
+        u.expr.pos = NULL;
         /* Free position calculation data */
         if (u.expr.pc)
         {
@@ -290,6 +289,99 @@ void SelectionTreeElement::mempoolRelease()
     }
 }
 
+void SelectionTreeElement::fillNameIfMissing(const char *selectionText)
+{
+    GMX_RELEASE_ASSERT(type == SEL_ROOT,
+                       "Should not be called for non-root elements");
+    if (name().empty())
+    {
+        // Check whether the actual selection given was from an external group,
+        // and if so, use the name of the external group.
+        SelectionTreeElementPointer child = this->child;
+        while (child->type == SEL_MODIFIER)
+        {
+            if (!child->child || child->child->type != SEL_SUBEXPRREF
+                || !child->child->child)
+            {
+                break;
+            }
+            child = child->child->child;
+        }
+        if (child->type == SEL_EXPRESSION
+            && child->child && child->child->type == SEL_SUBEXPRREF
+            && child->child->child)
+        {
+            if (child->child->child->type == SEL_CONST
+                && child->child->child->v.type == GROUP_VALUE)
+            {
+                setName(child->child->child->name());
+                return;
+            }
+            // If the group reference is still unresolved, leave the name empty
+            // and fill it later.
+            if (child->child->child->type == SEL_GROUPREF)
+            {
+                return;
+            }
+        }
+        // If there still is no name, use the selection string.
+        setName(selectionText);
+    }
+}
+
+void SelectionTreeElement::resolveIndexGroupReference(gmx_ana_indexgrps_t *grps)
+{
+    GMX_RELEASE_ASSERT(type == SEL_GROUPREF,
+                       "Should only be called for index group reference elements");
+    if (grps == NULL)
+    {
+        std::string message = formatString(
+                    "Cannot match '%s', because index groups are not available.",
+                    name().c_str());
+        GMX_THROW(InconsistentInputError(message));
+    }
+
+    gmx_ana_index_t foundGroup;
+    std::string     foundName;
+    if (u.gref.name != NULL)
+    {
+        if (!gmx_ana_indexgrps_find(&foundGroup, &foundName, grps, u.gref.name))
+        {
+            std::string message = formatString(
+                        "Cannot match '%s', because no such index group can be found.",
+                        name().c_str());
+            GMX_THROW(InconsistentInputError(message));
+        }
+    }
+    else
+    {
+        if (!gmx_ana_indexgrps_extract(&foundGroup, &foundName, grps, u.gref.id))
+        {
+            std::string message = formatString(
+                        "Cannot match '%s', because no such index group can be found.",
+                        name().c_str());
+            GMX_THROW(InconsistentInputError(message));
+        }
+    }
+
+    if (!gmx_ana_index_check_sorted(&foundGroup))
+    {
+        gmx_ana_index_deinit(&foundGroup);
+        std::string message = formatString(
+                    "Group '%s' ('%s') cannot be used in selections, "
+                    "because atom indices in it are not sorted and/or "
+                    "it contains duplicate atoms.",
+                    foundName.c_str(), name().c_str());
+        GMX_THROW(InconsistentInputError(message));
+    }
+
+    sfree(u.gref.name);
+    type = SEL_CONST;
+    gmx_ana_index_set(&u.cgrp, foundGroup.isize, foundGroup.index,
+                      foundGroup.nalloc_index);
+    setName(foundName);
+}
+
 } // namespace gmx
 
 /*!
@@ -357,9 +449,10 @@ _gmx_selelem_free_method(gmx_ana_selmethod_t *method, void *mdata)
                 }
                 else if (param->val.type == POS_VALUE)
                 {
-                    for (j = 0; j < param->val.nr; ++j)
+                    if (param->val.nalloc > 0)
                     {
-                        gmx_ana_pos_deinit(&param->val.u.p[j]);
+                        delete[] param->val.u.p;
+                        _gmx_selvalue_setstore(&param->val, NULL);
                     }
                 }
 
