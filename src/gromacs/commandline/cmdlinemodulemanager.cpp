@@ -350,11 +350,14 @@ class HelpExportInterface
         /*! \brief
          * Called to export the help for each module.
          *
-         * \param[in] tag     Unique tag for the module (gmx-something).
-         * \param[in] module  Module for which the help should be exported.
+         * \param[in] module      Module for which the help should be exported.
+         * \param[in] tag         Unique tag for the module (gmx-something).
+         * \param[in] displayName Display name for the module (gmx something).
          */
-        virtual void exportModuleHelp(const std::string                &tag,
-                                      const CommandLineModuleInterface &module) = 0;
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName) = 0;
         /*! \brief
          * Called after all modules have been exported.
          *
@@ -386,6 +389,38 @@ class HelpExportInterface
         virtual void finishModuleGroupExport() = 0;
 };
 
+/*! \internal \brief
+ * Adds hyperlinks to modules within this binary.
+ *
+ * \param[in,out] links   Links are added here.
+ * \param[in]     modules Modules in the current binary.
+ * \throws        std::bad_alloc if out of memory.
+ *
+ * Initializes a HelpLinks object with links to modules defined in \p modules.
+ *
+ * \ingroup module_commandline
+ */
+void initProgramLinks(HelpLinks *links, const CommandLineModuleMap &modules)
+{
+    // TODO: Use the local ProgramInfo reference from CommandLineModuleManager
+    // (to do this nicely requires reordering the code in the file).
+    const char *const                    program =
+        ProgramInfo::getInstance().realBinaryName().c_str();
+    CommandLineModuleMap::const_iterator module;
+    for (module = modules.begin(); module != modules.end(); ++module)
+    {
+        if (module->second->shortDescription() != NULL)
+        {
+            std::string linkName("[gmx-" + module->first + "]");
+            std::string targetName(
+                    formatString("%s-%s", program, module->first.c_str()));
+            std::string displayName(
+                    formatString("[TT]%s %s[tt]", program, module->first.c_str()));
+            links->addLink(linkName, targetName, displayName);
+        }
+    }
+}
+
 /********************************************************************
  * HelpExportMan
  */
@@ -398,9 +433,18 @@ class HelpExportInterface
 class HelpExportMan : public HelpExportInterface
 {
     public:
+        //! Initializes man page exporter.
+        explicit HelpExportMan(const CommandLineModuleMap &modules)
+            : links_(eHelpOutputFormat_Man)
+        {
+            initProgramLinks(&links_, modules);
+        }
+
         virtual void startModuleExport() {}
-        virtual void exportModuleHelp(const std::string                &tag,
-                                      const CommandLineModuleInterface &module);
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName);
         virtual void finishModuleExport() {}
 
         virtual void startModuleGroupExport() {}
@@ -409,11 +453,13 @@ class HelpExportMan : public HelpExportInterface
         virtual void finishModuleGroupExport() {}
 
     private:
-        boost::scoped_ptr<File> indexFile_;
+        HelpLinks  links_;
 };
 
-void HelpExportMan::exportModuleHelp(const std::string                &tag,
-                                     const CommandLineModuleInterface &module)
+void HelpExportMan::exportModuleHelp(
+        const CommandLineModuleInterface &module,
+        const std::string                &tag,
+        const std::string                &displayName)
 {
     File file("man1/" + tag + ".1", "w");
 
@@ -427,9 +473,7 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
                                 module.shortDescription()));
     file.writeLine();
 
-    CommandLineHelpContext context(&file, eHelpOutputFormat_Man, NULL);
-    std::string            displayName(tag);
-    std::replace(displayName.begin(), displayName.end(), '-', ' ');
+    CommandLineHelpContext context(&file, eHelpOutputFormat_Man, &links_);
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
@@ -451,11 +495,14 @@ void HelpExportMan::exportModuleHelp(const std::string                &tag,
 class HelpExportHtml : public HelpExportInterface
 {
     public:
-        HelpExportHtml();
+        //! Initializes HTML exporter.
+        explicit HelpExportHtml(const CommandLineModuleMap &modules);
 
         virtual void startModuleExport();
-        virtual void exportModuleHelp(const std::string                &tag,
-                                      const CommandLineModuleInterface &module);
+        virtual void exportModuleHelp(
+            const CommandLineModuleInterface &module,
+            const std::string                &tag,
+            const std::string                &displayName);
         virtual void finishModuleExport();
 
         virtual void startModuleGroupExport();
@@ -471,8 +518,10 @@ class HelpExportHtml : public HelpExportInterface
         HelpLinks                links_;
 };
 
-HelpExportHtml::HelpExportHtml()
+HelpExportHtml::HelpExportHtml(const CommandLineModuleMap &modules)
+    : links_(eHelpOutputFormat_Html)
 {
+    initProgramLinks(&links_, modules);
     char *linksFilename = low_gmxlibfn("links.dat", FALSE, FALSE);
     if (linksFilename != NULL)
     {
@@ -481,7 +530,7 @@ HelpExportHtml::HelpExportHtml()
         std::string      line;
         while (linksFile.readLine(&line))
         {
-            links_.addLink(line, "../online/" + line);
+            links_.addLink(line, "../online/" + line, line);
         }
     }
 }
@@ -493,15 +542,15 @@ void HelpExportHtml::startModuleExport()
     indexFile_->writeLine("<H3>GROMACS Programs Alphabetically</H3>");
 }
 
-void HelpExportHtml::exportModuleHelp(const std::string                &tag,
-                                      const CommandLineModuleInterface &module)
+void HelpExportHtml::exportModuleHelp(
+        const CommandLineModuleInterface &module,
+        const std::string                &tag,
+        const std::string                &displayName)
 {
     File file(tag + ".html", "w");
-    writeHtmlHeader(&file, tag);
+    writeHtmlHeader(&file, displayName);
 
     CommandLineHelpContext context(&file, eHelpOutputFormat_Html, &links_);
-    std::string            displayName(tag);
-    std::replace(displayName.begin(), displayName.end(), '-', ' ');
     context.setModuleDisplayName(displayName);
     module.writeHelp(context);
 
@@ -607,11 +656,13 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         /*! \brief
          * Creates a command-line help module.
          *
+         * \param[in] programInfo Information about the running binary.
          * \param[in] modules  List of modules for to use for module listings.
          * \param[in] groups   List of module groups.
          * \throws    std::bad_alloc if out of memory.
          */
-        CommandLineHelpModule(const CommandLineModuleMap       &modules,
+        CommandLineHelpModule(const ProgramInfo                &programInfo,
+                              const CommandLineModuleMap       &modules,
                               const CommandLineModuleGroupList &groups);
 
         /*! \brief
@@ -639,6 +690,11 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         {
             return *context_;
         }
+        //! Returns the program info object for the running binary.
+        const ProgramInfo &programInfo() const
+        {
+            return programInfo_;
+        }
 
         virtual const char *name() const { return "help"; }
         virtual const char *shortDescription() const
@@ -653,6 +709,7 @@ class CommandLineHelpModule : public CommandLineModuleInterface
         void exportHelp(HelpExportInterface *exporter) const;
 
         boost::scoped_ptr<RootHelpTopic>  rootTopic_;
+        const ProgramInfo                &programInfo_;
         const CommandLineModuleMap       &modules_;
         const CommandLineModuleGroupList &groups_;
 
@@ -664,9 +721,11 @@ class CommandLineHelpModule : public CommandLineModuleInterface
 };
 
 CommandLineHelpModule::CommandLineHelpModule(
+        const ProgramInfo                &programInfo,
         const CommandLineModuleMap       &modules,
         const CommandLineModuleGroupList &groups)
-    : rootTopic_(new RootHelpTopic(modules)), modules_(modules), groups_(groups),
+    : rootTopic_(new RootHelpTopic(modules)), programInfo_(programInfo),
+      modules_(modules), groups_(groups),
       context_(NULL), moduleOverride_(NULL), bHidden_(false)
 {
 }
@@ -689,11 +748,11 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         boost::scoped_ptr<HelpExportInterface> exporter;
         if (exportFormat == "man")
         {
-            exporter.reset(new HelpExportMan);
+            exporter.reset(new HelpExportMan(modules_));
         }
         else if (exportFormat == "html")
         {
-            exporter.reset(new HelpExportHtml);
+            exporter.reset(new HelpExportHtml(modules_));
         }
         else
         {
@@ -703,16 +762,19 @@ int CommandLineHelpModule::run(int argc, char *argv[])
         return 0;
     }
 
+    HelpLinks                                 links(eHelpOutputFormat_Console);
+    initProgramLinks(&links, modules_);
     boost::scoped_ptr<CommandLineHelpContext> context(
             new CommandLineHelpContext(&File::standardOutput(),
-                                       eHelpOutputFormat_Console, NULL));
+                                       eHelpOutputFormat_Console, &links));
     context->setShowHidden(bHidden_);
-    context_ = context.get();
     if (moduleOverride_ != NULL)
     {
-        ModuleHelpTopic(*moduleOverride_, *this).writeHelp(context->writerContext());
+        context->setModuleDisplayName(programInfo_.displayName());
+        moduleOverride_->writeHelp(*context);
         return 0;
     }
+    context_ = context.get();
 
     HelpManager       helpManager(*rootTopic_, context->writerContext());
     try
@@ -748,8 +810,7 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
 {
     // TODO: Would be nicer to have the file names supplied by the build system
     // and/or export a list of files from here.
-    const char *const program =
-        ProgramInfo::getInstance().invariantProgramName().c_str();
+    const char *const program = programInfo_.realBinaryName().c_str();
 
     exporter->startModuleExport();
     CommandLineModuleMap::const_iterator module;
@@ -759,7 +820,9 @@ void CommandLineHelpModule::exportHelp(HelpExportInterface *exporter) const
         {
             const char *const moduleName = module->first.c_str();
             std::string       tag(formatString("%s-%s", program, moduleName));
-            exporter->exportModuleHelp(tag, *module->second);
+            std::string       displayName(tag);
+            std::replace(displayName.begin(), displayName.end(), '-', ' ');
+            exporter->exportModuleHelp(*module->second, tag, displayName);
         }
     }
     exporter->finishModuleExport();
@@ -782,7 +845,11 @@ namespace
 
 void ModuleHelpTopic::writeHelp(const HelpWriterContext & /*context*/) const
 {
-    module_.writeHelp(helpModule_.context());
+    CommandLineHelpContext context(helpModule_.context());
+    const char *const      program =
+        helpModule_.programInfo().realBinaryName().c_str();
+    context.setModuleDisplayName(formatString("%s %s", program, module_.name()));
+    module_.writeHelp(context);
 }
 
 /********************************************************************
@@ -1009,7 +1076,8 @@ void CommandLineModuleManager::Impl::ensureHelpModuleExists()
 {
     if (helpModule_ == NULL)
     {
-        helpModule_ = new CommandLineHelpModule(modules_, moduleGroups_);
+        helpModule_ = new CommandLineHelpModule(programInfo_, modules_,
+                                                moduleGroups_);
         addModule(CommandLineModulePointer(helpModule_));
     }
 }
@@ -1097,8 +1165,6 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
                 GMX_THROW(InvalidInputError(message));
             }
             module = moduleIter->second.get();
-            programInfo_.setDisplayName(
-                    programInfo_.realBinaryName() + "-" + moduleIter->first);
             *argc -= argcForWrapper;
             *argv += argcForWrapper;
             // After this point, argc and argv are the same independent of
@@ -1107,6 +1173,11 @@ CommandLineModuleManager::Impl::processCommonOptions(int *argc, char ***argv)
     }
     if (module != NULL)
     {
+        if (singleModule_ == NULL)
+        {
+            programInfo_.setDisplayName(
+                    programInfo_.realBinaryName() + " " + module->name());
+        }
         // Recognize the common options also after the module name.
         // TODO: It could be nicer to only recognize -h/-hidden if module is not
         // null.
@@ -1156,6 +1227,11 @@ CommandLineModuleManager::~CommandLineModuleManager()
 void CommandLineModuleManager::setQuiet(bool bQuiet)
 {
     impl_->bQuiet_ = bQuiet;
+}
+
+void CommandLineModuleManager::setSingleModule(CommandLineModuleInterface *module)
+{
+    impl_->singleModule_ = module;
 }
 
 void CommandLineModuleManager::addModule(CommandLineModulePointer module)
@@ -1235,7 +1311,7 @@ int CommandLineModuleManager::runAsMainSingleModule(
     try
     {
         CommandLineModuleManager manager(&programInfo);
-        manager.impl_->singleModule_ = module;
+        manager.setSingleModule(module);
         int rc = manager.run(argc, argv);
         gmx::finalize();
         return rc;
