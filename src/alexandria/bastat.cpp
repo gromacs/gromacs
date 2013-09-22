@@ -154,7 +154,8 @@ void add_bond(FILE *fplog,const char *molname,t_bonds *b,const char *a1,const ch
             break;
         }
     }
-    if (i == b->nbond) {
+    if (i == b->nbond) 
+    {
         b->nbond++;
         srenew(b->bond,b->nbond);
         if (strcmp(a1,a2) < 0) 
@@ -172,17 +173,20 @@ void add_bond(FILE *fplog,const char *molname,t_bonds *b,const char *a1,const ch
         snew(b->bond[i].histo,b->bond[i].nhisto);
         b->bond[i].lsq = gmx_stats_init();
     }
-    if (index >= b->bond[i].nhisto) {
+    if (index >= b->bond[i].nhisto) 
+    {
         srenew(b->bond[i].histo,index+100);
         for(j=b->bond[i].nhisto; (j<index+100); j++)
+        {
             b->bond[i].histo[j] = 0;
+        }
         b->bond[i].nhisto = index+100;
     }
     gmx_stats_add_point(b->bond[i].lsq,0,blen,0,0);
     b->bond[i].histo[index]++;
     if (NULL != fplog) 
     {
-        fprintf(fplog,"%s bond-%s-%s %g %d\n",molname,a1,a2,blen,order);
+        fprintf(fplog,"%s bond-%s-%s-%d %g\n",molname,a1,a2,order,blen);
     }
 }
 
