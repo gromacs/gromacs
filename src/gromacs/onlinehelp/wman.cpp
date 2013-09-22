@@ -57,6 +57,11 @@ static std::string check(const char *s, const gmx::HelpWriterContext &context)
     return context.substituteMarkupAndWrapToString(gmx::TextLineWrapperSettings(), s);
 }
 
+static std::string check(const char *s, const gmx::CommandLineHelpContext &context)
+{
+    return check(s, context.writerContext());
+}
+
 #define FLAG_SET(flag, mask) ((flag &mask) == mask)
 /* Return a string describing the file type in flag.
  * flag should the flag field of a filenm struct.
@@ -368,18 +373,17 @@ static void write_texman(FILE *out,
 }
 
 static void write_nroffman(FILE *out,
-                           const char *program,
                            int nldesc, const char **desc,
                            int nfile, t_filenm *fnm,
                            int npargs, t_pargs *pa,
                            int nbug, const char **bugs,
-                           const gmx::HelpWriterContext &context)
+                           const gmx::CommandLineHelpContext &context)
 {
     int  i;
     char tmp[256];
 
     fprintf(out, ".SH SYNOPSIS\n");
-    fprintf(out, "\\f3%s\\fP\n", program);
+    fprintf(out, "\\f3%s\\fP\n", context.moduleDisplayName());
 
     /* command line arguments */
     if (nfile > 0)
@@ -856,9 +860,8 @@ void write_man(const char *mantp,
     {
         GMX_RELEASE_ASSERT(context != NULL,
                            "Man page export only implemented with the new context");
-        write_nroffman(out, context->moduleDisplayName(), nldesc, desc,
-                       nfile, fnm, npar, par, nbug, bugs,
-                       context->writerContext());
+        write_nroffman(out, nldesc, desc, nfile, fnm, npar, par, nbug, bugs,
+                       *context);
     }
     if (strcmp(mantp, "help") == 0)
     {

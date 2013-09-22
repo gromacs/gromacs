@@ -71,7 +71,7 @@ static void add_contact_time(int **ccount, int *ccount_nalloc, int t)
 int gmx_dist(int argc, char *argv[])
 {
     const char  *desc[] = {
-        "[TT]g_dist[tt] can calculate the distance between the centers of mass of two",
+        "[THISMODULE] can calculate the distance between the centers of mass of two",
         "groups of atoms as a function of time. The total distance and its",
         "[IT]x[it]-, [IT]y[it]-, and [IT]z[it]-components are plotted.[PAR]",
         "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
@@ -85,8 +85,8 @@ int gmx_dist(int argc, char *argv[])
         "should be whole (e.g. by preprocessing with [TT]trjconv -pbc[tt]) or a matching",
         "topology should be provided. The [TT]-intra[tt] switch will only give",
         "meaningful results for intramolecular and not intermolecular distances.[PAR]",
-        "Other programs that calculate distances are [TT]g_mindist[tt]",
-        "and [TT]g_bond[tt]."
+        "Other programs that calculate distances are [gmx-mindist]",
+        "and [gmx-bond]."
     };
 
     t_topology  *top = NULL;

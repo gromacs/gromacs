@@ -182,6 +182,24 @@ class CommandLineModuleManager
         void setQuiet(bool bQuiet);
 
         /*! \brief
+         * Makes the manager always run a single module.
+         *
+         * \param     module  Module to run.
+         *
+         * This method disables all mechanisms for selecting a module, and
+         * directly passes all command-line arguments to \p module.
+         * Help argumes are an exception: these are still recognized by the
+         * manager and translated into a call to
+         * CommandLineModuleInterface::writeHelp().
+         *
+         * This is public mainly for unit testing purposes; for other code,
+         * runAsMainSingleModule() typically provides the desired
+         * functionality.
+         *
+         * Does not throw.
+         */
+        void setSingleModule(CommandLineModuleInterface *module);
+        /*! \brief
          * Adds a given module to this manager.
          *
          * \param   module  Module to add.

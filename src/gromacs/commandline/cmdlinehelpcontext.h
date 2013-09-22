@@ -57,6 +57,11 @@ namespace gmx
  * onlinehelp module is not exposed to extra features of the command-line help
  * export.
  *
+ * Copying a context works like with HelpWriterContext: the output file and
+ * most state is shared.  However, setModuleDisplayName() and setShowHidden()
+ * can be set independently for the child context.  Defaults for these options
+ * are inherited from the parent.
+ *
  * \ingroup module_commandline
  */
 class CommandLineHelpContext
@@ -69,6 +74,8 @@ class CommandLineHelpContext
          */
         CommandLineHelpContext(File *file, HelpOutputFormat format,
                                const HelpLinks *links);
+        //! Creates a copy of the context.
+        explicit CommandLineHelpContext(const CommandLineHelpContext &other);
         ~CommandLineHelpContext();
 
         /*! \brief
@@ -95,6 +102,8 @@ class CommandLineHelpContext
         class Impl;
 
         PrivateImplPointer<Impl> impl_;
+
+        GMX_DISALLOW_ASSIGN(CommandLineHelpContext);
 };
 
 /*! \libinternal \brief
