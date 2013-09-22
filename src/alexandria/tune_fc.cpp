@@ -107,13 +107,14 @@ typedef struct {
 static void check_support(FILE *fp,
                           std::vector<alexandria::MyMol>& mm,
                           gmx_poldata_t pd,
-                          bool bOpt[])
+                          bool bOpt[],
+                          gmx_molselect_t gms)
 {
     int nsupp = (int) mm.size();
     
     for(std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); mymol++)
     {
-        bool bSupport = true;
+        bool bSupport = (gmx_molselect_status(gms,mymol->GetIupac().c_str()) == imsTrain);
         
         for(int bt=0; bSupport && (bt<=ebtsIDIHS); bt++) 
         {
@@ -606,12 +607,13 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
                     ctest[gti] = strdup(buf);
                 }
             }
-            else {
-                gmx_fatal(FARGS,"There are no parameters for bond %s-%s in the force field, atoms %s-%s",
+            else 
+            {
+                gmx_fatal(FARGS,"No parameters for bond %s-%s in the force field, atoms %s-%s mol %s",
                           aai,aaj,
                           *mymol->topology_->atoms.atomtype[ai],
-                          *mymol->topology_->atoms.atomtype[aj]
-                          );
+                          *mymol->topology_->atoms.atomtype[aj],
+                          mymol->GetIupac().c_str());
             }
         }
         x[j] = mymol->Emol;
@@ -1572,7 +1574,8 @@ int main(int argc, char *argv[])
     else
         iModel = eqgNone;
     
-    if (MASTER(cr)) {
+    if (MASTER(cr)) 
+    {
         fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
 
         time(&my_t);
@@ -1605,7 +1608,7 @@ int main(int argc, char *argv[])
              lot,bCharged,oenv,gms,th_toler,ph_toler,dip_toler,
              TRUE,TRUE,TRUE,watoms,FALSE);
 
-    check_support(fp, opt._mymol, opt._pd, bOpt);
+    check_support(fp, opt._mymol, opt._pd, bOpt, gms);
              
     omt = analyze_idef(fp,
                        opt._mymol,
