@@ -551,7 +551,10 @@ int main(int argc,char *argv[])
             
             if (immOK != imm)
             {
-                printf("Could not make topology for %s\n",mmi.GetMolname().c_str());
+                if (NULL != debug)
+                {
+                    fprintf(debug, "Could not make topology for %s\n",mmi.GetMolname().c_str());
+                }
                 continue;
             }
 #define ATP(ii) gmx_poldata_atype_to_btype(pd,*mmi.topology_->atoms.atomtype[ii])
@@ -559,8 +562,11 @@ int main(int argc,char *argv[])
             {
                 if (NULL == ATP(i))
                 {
-                    printf("No bond-type support for atom %s in %s\n",
-                           *mmi.topology_->atoms.atomtype[i],mmi.GetMolname().c_str());
+                    if (NULL != debug)
+                    {
+                        fprintf(debug, "No bond-type support for atom %s in %s\n",
+                                *mmi.topology_->atoms.atomtype[i],mmi.GetMolname().c_str());
+                    }
                     break;
                 }
             }    
