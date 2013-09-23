@@ -39,10 +39,10 @@
  */
 #include "legacymodules.h"
 
+#include <cstdio>
+
 #include "gromacs/commandline/cmdlinemodule.h"
 #include "gromacs/commandline/cmdlinemodulemanager.h"
-#include "gromacs/onlinehelp/helpwritercontext.h"
-#include "gromacs/utility/exceptions.h"
 
 #include "gromacs/gmxana/gmx_ana.h"
 
@@ -66,6 +66,54 @@ namespace
 {
 
 /*! \brief
+ * Command line module that provides information about obsolescence.
+ *
+ * Prints a message directing the user to a wiki page describing replacement
+ * options.
+ */
+class ObsoleteToolModule : public gmx::CommandLineModuleInterface
+{
+    public:
+        //! Creates an obsolete tool module for a tool with the given name.
+        explicit ObsoleteToolModule(const char *name)
+            : name_(name)
+        {
+        }
+
+        virtual const char *name() const
+        {
+            return name_;
+        }
+        virtual const char *shortDescription() const
+        {
+            return NULL;
+        }
+
+        virtual int run(int /*argc*/, char * /*argv*/[])
+        {
+            printMessage();
+            return 0;
+        }
+        virtual void writeHelp(const gmx::CommandLineHelpContext & /*context*/) const
+        {
+            printMessage();
+        }
+
+    private:
+        void printMessage() const
+        {
+            std::fprintf(stderr,
+                         "This tool has been removed from Gromacs 5.0. Please see\n"
+                         "  http://www.gromacs.org/Documentation/How-tos/Tool_Changes_for_5.0\n"
+                         "for ideas how to perform the same tasks with the "
+                         "new tools.\n");
+        }
+
+        const char             *name_;
+
+};
+
+/*! \brief
  * Convenience function for creating and registering a module.
  *
  * \param[in] manager          Module manager to which to register the module.
@@ -78,6 +126,19 @@ void registerModule(gmx::CommandLineModuleManager                *manager,
                     const char *name, const char *shortDescription)
 {
     manager->addModuleCMain(name, shortDescription, mainFunction);
+}
+
+/*! \brief
+ * Convenience function for registering a module for an obsolete tool.
+ *
+ * \param[in] manager          Module manager to which to register the module.
+ * \param[in] name             Name for the obsolete tool.
+ */
+void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
+                          const char                    *name)
+{
+    gmx::CommandLineModulePointer module(new ObsoleteToolModule(name));
+    manager->addModule(move(module));
 }
 
 } // namespace
@@ -144,8 +205,10 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Calculate distributions and correlations for angles and dihedrals");
     registerModule(manager, &gmx_bar, "bar",
                    "Calculate free energy difference estimates through Bennett's acceptance ratio");
-    registerModule(manager, &gmx_bond, "bond",
-                   "Calculate distances between atoms and bond length distributions");
+    registerObsoleteTool(manager, "bond");
+    registerObsoleteTool(manager, "dist");
+    registerObsoleteTool(manager, "sgangle");
+
     registerModule(manager, &gmx_bundle, "bundle",
                    "Analyze bundles of axes, e.g., helices");
     registerModule(manager, &gmx_chi, "chi",
@@ -172,8 +235,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute the total dipole plus fluctuations");
     registerModule(manager, &gmx_disre, "disre",
                    "Analyze distance restraints");
-    registerModule(manager, &gmx_dist, "dist",
-                   "Calculate distances between centers of mass of two groups");
     registerModule(manager, &gmx_dos, "dos",
                    "Analyze density of states and properties based on that");
     registerModule(manager, &gmx_dyecoupl, "dyecoupl",
@@ -249,8 +310,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "Compute solvent accessible surface area");
     registerModule(manager, &gmx_saxs, "saxs",
                    "Calculates SAXS structure factors based on Cromer's method");
-    registerModule(manager, &gmx_sgangle, "sgangle",
-                   "Compute the angle and distance between two groups");
     registerModule(manager, &gmx_sham, "sham",
                    "Compute free energies or other histograms from histograms");
     registerModule(manager, &gmx_sigeps, "sigeps",
@@ -279,7 +338,6 @@ void registerLegacyModules(gmx::CommandLineModuleManager *manager)
                    "View a trajectory on an X-Windows terminal");
 
     // TODO: Also include binaries from other directories than src/tools/:
-    //        "g_xrama|Show animated Ramachandran plots");
     //        "mdrun|finds a potential energy minimum and calculates the Hessian");
     //        "mdrun|with -rerun (re)calculates energies for trajectory frames");
 }
