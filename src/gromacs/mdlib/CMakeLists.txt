@@ -1,5 +1,5 @@
 
-file(GLOB MDLIB_SOURCES nbnxn_kernels/*.c *.c *.cpp)
+file(GLOB MDLIB_SOURCES nbnxn_kernels/simd_4xn/*.c nbnxn_kernels/simd_2xnn/*.c nbnxn_kernels/*.c *.c *.cpp)
 set(MDLIB_SOURCES ${MDLIB_SOURCES} PARENT_SCOPE)
 
 if(GMX_GPU)
