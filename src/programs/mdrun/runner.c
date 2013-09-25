@@ -1595,6 +1595,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff, inputrec);
     }
 
+    // TODO remove this, nobody reads runtime.real or runtime.proc after
+    // this point - runtime_end() has already been called!
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
     {
         /* Some timing stats */
