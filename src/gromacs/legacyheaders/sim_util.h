@@ -36,12 +36,12 @@
 #ifndef _sim_util_h
 #define _sim_util_h
 
-#include <time.h>
 #include "typedefs.h"
 #include "enxio.h"
 #include "mdebin.h"
 #include "update.h"
 #include "vcm.h"
+#include "gromacs/legacyheaders/runtime.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -63,26 +63,6 @@ typedef struct {
 } gmx_mdoutf_t;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
-
-/*! /brief Manages measuring wall clock times for simulations */
-typedef struct {
-    double          real;     //!< Seconds since the epoch recorded at the start of the simulation
-    // TODO rename real
-#ifdef GMX_CRAY_XT3
-    double          proc;     //!< Seconds since the start start of the simulation
-#else
-    clock_t         proc;     //!< Seconds since the start start of the simulation
-#endif
-    double          realtime; //!< Total seconds elapsed over the simulation
-    // TODO rename realtime
-    double          proctime; //!< Total seconds elapsed over the simulation
-    // TODO eliminate use of proc and proctime - also eliminates
-    // dependency on clock() and dclock()
-    double          time_per_step; //!< Local variable TODO kill this
-    double          last;          //!< Local variable TODO kill this
-    gmx_large_int_t nsteps_done;   //!< Used by integrators to report the amount of work they did
-} gmx_runtime_t;
-
 
 void do_pbc_first(FILE *log, matrix box, t_forcerec *fr,
                   t_graph *graph, rvec x[]);
@@ -146,27 +126,16 @@ int do_per_step(gmx_large_int_t step, gmx_large_int_t nstep);
 
 /* ROUTINES from sim_util.c */
 
-double gmx_gettime();
-
-void print_time(FILE *out, gmx_runtime_t *runtime,
+void print_time(FILE *out, gmx_runtime_t runtime,
                 gmx_large_int_t step, t_inputrec *ir, t_commrec *cr);
 
-void runtime_start(gmx_runtime_t *runtime);
-
-void runtime_end(gmx_runtime_t *runtime);
-
-void runtime_upd_proc(gmx_runtime_t *runtime);
-/* The processor time should be updated every once in a while,
- * since on 32-bit manchines it loops after 72 minutes.
- */
-
 void print_date_and_time(FILE *log, int pid, const char *title,
-                         const gmx_runtime_t *runtime);
+                         const gmx_runtime_t runtime);
 
 void finish_run(FILE *log, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_runtime_t runtime,
                 wallclock_gpu_t *gputimes,
                 gmx_bool bWriteStat);
 
