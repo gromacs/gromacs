@@ -66,21 +66,9 @@ typedef struct gmx_global_stat *gmx_global_stat_t;
 
 /*! /brief Manages measuring wall clock times for simulations */
 typedef struct {
-    double          real;     //!< Seconds since the epoch recorded at the start of the simulation
-    // TODO rename real
-#ifdef GMX_CRAY_XT3
-    double          proc;     //!< Seconds since the start start of the simulation
-#else
-    clock_t         proc;     //!< Seconds since the start start of the simulation
-#endif
-    double          realtime; //!< Total seconds elapsed over the simulation
-    // TODO rename realtime
-    double          proctime; //!< Total seconds elapsed over the simulation
-    // TODO eliminate use of proc and proctime - also eliminates
-    // dependency on clock() and dclock()
-    double          time_per_step; //!< Local variable TODO kill this
-    double          last;          //!< Local variable TODO kill this
-    gmx_large_int_t nsteps_done;   //!< Used by integrators to report the amount of work they did
+    double          start_time_stamp; //!< Seconds since the epoch recorded at the start of the simulation
+    double          elapsed_run_time; //!< Total seconds elapsed over the simulation
+    gmx_large_int_t nsteps_done;      //!< Used by integrators to report the amount of work they did
 } gmx_runtime_t;
 
 
@@ -155,10 +143,7 @@ void runtime_start(gmx_runtime_t *runtime);
 
 void runtime_end(gmx_runtime_t *runtime);
 
-void runtime_upd_proc(gmx_runtime_t *runtime);
-/* The processor time should be updated every once in a while,
- * since on 32-bit manchines it loops after 72 minutes.
- */
+double runtime_get_elapsed_time(gmx_runtime_t *runtime);
 
 void print_date_and_time(FILE *log, int pid, const char *title,
                          const gmx_runtime_t *runtime);
