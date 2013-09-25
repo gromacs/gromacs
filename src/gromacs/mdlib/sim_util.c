@@ -108,6 +108,11 @@ gmx_gettime()
     struct timeval t;
     double         seconds;
 
+    // TODO later: gettimeofday() is deprecated by POSIX. We could use
+    // clock_gettime in POSIX (which also offers nanosecond resolution
+    // if the hardware supports it), but that requires linking with
+    // -lrt. Maybe a better option will come along before we have to
+    // really change from gettimeofday().
     gettimeofday(&t, NULL);
 
     seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
@@ -122,7 +127,7 @@ gmx_gettime()
 #endif
 }
 
-
+// TODO Remove this. gmx_gettime returns double, so this is now useless
 #define difftime(end, start) ((double)(end)-(double)(start))
 
 void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
@@ -179,6 +184,7 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fflush(out);
 }
 
+// TODO eliminate this
 #ifdef NO_CLOCK
 #define clock() -1
 #endif
