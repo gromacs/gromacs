@@ -944,7 +944,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_wallcycle_t wcycle;
     gmx_bool        bReadRNG, bReadEkin;
     int             list;
-    gmx_runtime_t   runtime;
+    gmx_runtime_t   runtime = NULL;
     int             rc;
     gmx_large_int_t reset_counters;
     gmx_edsam_t     ed           = NULL;
@@ -1576,7 +1576,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       cpt_period, max_hours,
                                       deviceOptions,
                                       Flags,
-                                      &runtime);
+                                      runtime);
 
         if (inputrec->ePull != epullNO)
         {
@@ -1592,7 +1592,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, runtime, ewaldcoeff, inputrec);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1601,7 +1601,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * if rerunMD, don't write last frame again
      */
     finish_run(fplog, cr,
-               inputrec, nrnb, wcycle, &runtime,
+               inputrec, nrnb, wcycle, runtime,
                fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
                nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
@@ -1628,7 +1628,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", &runtime);
+    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", runtime);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && (Flags & MD_APPENDFILES))

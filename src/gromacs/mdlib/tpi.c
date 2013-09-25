@@ -77,6 +77,7 @@
 #include "gmxfio.h"
 #include "pme.h"
 #include "gbutil.h"
+#include "gromacs/legacyheaders/runtime.h"
 
 #ifdef GMX_X86_SSE2
 #include "gmx_x86_sse2.h"
@@ -131,7 +132,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               const char gmx_unused *deviceOptions,
               unsigned long gmx_unused Flags,
-              gmx_runtime_t *runtime)
+              gmx_runtime_t runtime)
 {
     const char     *TPI = "Test Particle Insertion";
     gmx_localtop_t *top;
@@ -833,7 +834,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     sfree(sum_UgembU);
 
-    runtime->nsteps_done = frame*inputrec->nsteps;
+    runtime_set_nsteps_done(runtime, frame*inputrec->nsteps);
 
     return 0;
 }
