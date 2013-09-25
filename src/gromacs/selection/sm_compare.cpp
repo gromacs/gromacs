@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -407,10 +407,6 @@ init_compare(t_topology *top, int npar, gmx_ana_selparam_t *param, void *data)
     /* Store the values */
     n1 = init_comparison_value(&d->left, &param[0]);
     n2 = init_comparison_value(&d->right, &param[3]);
-    if (n1 == 0 || n2 == 0)
-    {
-        GMX_THROW(gmx::InternalError("One of the values for comparison missing"));
-    }
     /* Store the comparison type */
     d->cmpt = comparison_type(d->cmpop);
     if (d->cmpt == CMP_INVALID)

@@ -108,7 +108,10 @@ void SelectionOptionStorage::addSelections(
         {
             GMX_THROW(InvalidInputError("Dynamic selections not supported"));
         }
-        addValue(*i);
+        // Create a copy to allow modifications.
+        Selection sel(*i);
+        sel.data().setFlags(selectionFlags_);
+        addValue(sel);
     }
     if (bFullValue)
     {
@@ -136,11 +139,6 @@ void SelectionOptionStorage::processSetValues(ValueList *values)
     else if (values->size() < static_cast<size_t>(minValueCount()))
     {
         GMX_THROW(InvalidInputError("Too few (valid) values provided"));
-    }
-    ValueList::iterator i;
-    for (i = values->begin(); i != values->end(); ++i)
-    {
-        i->data().setFlags(selectionFlags_);
     }
 }
 

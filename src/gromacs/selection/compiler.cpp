@@ -1809,8 +1809,6 @@ store_param_val(const SelectionTreeElementPointer &sel)
     if (sel->v.type == INT_VALUE || sel->v.type == REAL_VALUE
         || sel->v.type == STR_VALUE)
     {
-        GMX_RELEASE_ASSERT(sel->v.u.ptr != NULL,
-                           "Selection method parameter not properly initialized");
         _gmx_selvalue_setstore(&sel->u.param->val, sel->v.u.ptr);
     }
 }
