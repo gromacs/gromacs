@@ -247,6 +247,7 @@
 #define gmx_sub_pr        _mm_sub_ps
 #define gmx_mul_pr        _mm_mul_ps
 #ifdef GMX_X86_AVX_128_FMA
+#define GMX_SIMD_HAVE_FMA
 #define gmx_madd_pr(a, b, c)   _mm_macc_ps(a, b, c)
 #define gmx_nmsub_pr(a, b, c)  _mm_nmacc_ps(a, b, c)
 #else
@@ -318,6 +319,7 @@ static gmx_inline gmx_mm_pr gmx_masknot_add_pr(gmx_mm_pb a, gmx_mm_pr b, gmx_mm_
 #define gmx_sub_pr        _mm_sub_pd
 #define gmx_mul_pr        _mm_mul_pd
 #ifdef GMX_X86_AVX_128_FMA
+#define GMX_SIMD_HAVE_FMA
 #define gmx_madd_pr(a, b, c)   _mm_macc_pd(a, b, c)
 #define gmx_nmsub_pr(a, b, c)  _mm_nmacc_pd(a, b, c)
 #else

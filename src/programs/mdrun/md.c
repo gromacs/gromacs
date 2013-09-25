@@ -422,7 +422,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             make_local_shells(cr, mdatoms, shellfc);
         }
 
-        init_bonded_thread_force_reduction(fr, &top->idef);
+        setup_bonded_threading(fr, &top->idef);
 
         if (ir->pull && PAR(cr))
         {
