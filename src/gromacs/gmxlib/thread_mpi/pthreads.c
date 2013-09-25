@@ -69,14 +69,12 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-
 #include "thread_mpi/atomic.h"
 #include "thread_mpi/threads.h"
 #include "impl.h"
-
+#include "unused.h"
 
 #include "pthreads.h"
-
 
 /* mutex for initializing mutexes */
 static pthread_mutex_t mutex_init = PTHREAD_MUTEX_INITIALIZER;
@@ -356,7 +354,8 @@ enum tMPI_Thread_setaffinity_support tMPI_Thread_setaffinity_support(void)
 
 
 /* set thread's own affinity to a processor number n */
-int tMPI_Thread_setaffinity_single(tMPI_Thread_t thread, unsigned int nr)
+int tMPI_Thread_setaffinity_single(tMPI_Thread_t tmpi_unused thread,
+                                   unsigned int  tmpi_unused nr)
 {
 #ifdef HAVE_PTHREAD_SETAFFINITY
     int       nt = tMPI_Thread_get_hw_number();
