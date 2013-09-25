@@ -1020,6 +1020,16 @@ TEST_F(SelectionCollectionDataTest, HandlesDynamicAtomValuedParameters)
 }
 
 
+TEST_F(SelectionCollectionDataTest, HandlesEmptySelectionWithUnevaluatedExpressions)
+{
+    static const char * const selections[] = {
+        "none and x > 2",
+        "none and same resname as resnr 2"
+    };
+    runTest("simple.gro", selections);
+}
+
+
 TEST_F(SelectionCollectionDataTest, HandlesNumericComparisons)
 {
     static const char * const selections[] = {
