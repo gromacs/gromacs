@@ -64,18 +64,23 @@ typedef struct {
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
 
+/*! /brief Manages measuring wall clock times for simulations */
 typedef struct {
-    double          real;
+    double          real;     //!< Seconds since the epoch recorded at the start of the simulation
+    // TODO rename real
 #ifdef GMX_CRAY_XT3
-    double          proc;
+    double          proc;     //!< Seconds since the start start of the simulation
 #else
-    clock_t         proc;
+    clock_t         proc;     //!< Seconds since the start start of the simulation
 #endif
-    double          realtime;
-    double          proctime;
-    double          time_per_step;
-    double          last;
-    gmx_large_int_t nsteps_done;
+    double          realtime; //!< Total seconds elapsed over the simulation
+    // TODO rename realtime
+    double          proctime; //!< Total seconds elapsed over the simulation
+    // TODO eliminate use of proc and proctime - also eliminates
+    // dependency on clock() and dclock()
+    double          time_per_step; //!< Local variable TODO kill this
+    double          last;          //!< Local variable TODO kill this
+    gmx_large_int_t nsteps_done;   //!< Used by integrators to report the amount of work they did
 } gmx_runtime_t;
 
 
