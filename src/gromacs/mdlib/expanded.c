@@ -36,16 +36,7 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_CRAY_XT3
-#include <catamount/dclock.h>
-#endif
-
-
 #include <stdio.h>
-#include <time.h>
-#ifdef HAVE_SYS_TIME_H
-#include <sys/time.h>
-#endif
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
