@@ -335,6 +335,7 @@ include(CheckIncludeFileCXX)
 check_include_files(unistd.h     HAVE_UNISTD_H)
 check_include_files(pwd.h        HAVE_PWD_H)
 check_include_files(dirent.h     HAVE_DIRENT_H)
+check_include_files(time.h       HAVE_TIME_H)
 check_include_files(sys/time.h   HAVE_SYS_TIME_H)
 check_include_files(io.h         HAVE_IO_H)
 check_include_files(sched.h      HAVE_SCHED_H)
@@ -363,6 +364,7 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
+check_library_exists(rt clock_gettime "" HAVE_LIBRT)
 
 
 include(CheckTypeSize)
@@ -1057,6 +1059,11 @@ if(GMX_LOAD_PLUGINS)
   endif()
 endif(GMX_LOAD_PLUGINS)
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
+
+# Link real-time library for POSIX timers
+if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_LIBRT)
+    list(APPEND GMX_EXTRA_LIBRARIES rt)
+endif()
 
 # Math and thread libraries must often come after all others when linking...
 if(HAVE_LIBM)
