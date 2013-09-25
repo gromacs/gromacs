@@ -1996,27 +1996,6 @@ static void couple_files_options(int nfile, t_filenm fnm[])
 }
 
 
-static double gettime()
-{
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    gettimeofday(&t, NULL);
-
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-
 #define BENCHSTEPS (1000)
 
 int gmx_tune_pme(int argc, char *argv[])
@@ -2242,7 +2221,7 @@ int gmx_tune_pme(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    seconds = gettime();
+    seconds = gmx_gettime();
 
     if (!parse_common_args(&argc, argv, PCA_NOEXIT_ON_ARGS,
                            NFILE, fnm, asize(pa), pa, asize(desc), desc,
@@ -2480,7 +2459,7 @@ int gmx_tune_pme(int argc, char *argv[])
                      repeats, nnodes, ntprs, bThreads, cmd_mpirun, cmd_np, cmd_mdrun,
                      cmd_args_bench, fnm, NFILE, presteps, cpt_steps);
 
-        fprintf(fp, "\nTuning took%8.1f minutes.\n", (gettime()-seconds)/60.0);
+        fprintf(fp, "\nTuning took%8.1f minutes.\n", (gmx_gettime()-seconds)/60.0);
 
         /* Analyse the results and give a suggestion for optimal settings: */
         bKeepTPR = analyze_data(fp, opt2fn("-p", NFILE, fnm), perfdata, nnodes, ntprs, pmeentries,
