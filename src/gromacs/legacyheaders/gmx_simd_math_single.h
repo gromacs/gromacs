@@ -40,12 +40,25 @@
 static gmx_inline gmx_mm_pr
 gmx_invsqrt_pr(gmx_mm_pr x)
 {
+    /* This is one of the few cases where FMA adds a FLOP, but ends up with
+     * less instructions in total when FMA is available in hardware.
+     * Usually we would not optimize this far, but invsqrt is used often.
+     */
+#ifdef GMX_SIMD_HAVE_FMA
     const gmx_mm_pr half  = gmx_set1_pr(0.5);
     const gmx_mm_pr one   = gmx_set1_pr(1.0);
 
     gmx_mm_pr       lu = gmx_rsqrt_pr(x);
 
     return gmx_madd_pr(gmx_nmsub_pr(x, gmx_mul_pr(lu, lu), one), gmx_mul_pr(lu, half), lu);
+#else
+    const gmx_mm_pr half  = gmx_set1_pr(0.5);
+    const gmx_mm_pr three = gmx_set1_pr(3.0);
+
+    gmx_mm_pr       lu = gmx_rsqrt_pr(x);
+    
+    return gmx_mul_pr(half, gmx_mul_pr(gmx_sub_pr(three, gmx_mul_pr(gmx_mul_pr(lu, lu), x)), lu));
+#endif
 }
 
 

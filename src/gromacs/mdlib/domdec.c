@@ -9652,7 +9652,7 @@ void dd_partition_system(FILE                *fplog,
         make_local_gb(cr, fr->born, ir->gb_algorithm);
     }
 
-    init_bonded_thread_force_reduction(fr, &top_local->idef);
+    setup_bonded_threading(fr, &top_local->idef);
 
     if (!(cr->duty & DUTY_PME))
     {
