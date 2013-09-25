@@ -88,6 +88,7 @@
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/legacyheaders/runtime.h"
 
 #include "adress.h"
 #include "qmmm.h"
@@ -95,38 +96,12 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
-double
-gmx_gettime()
-{
-#ifdef HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    // TODO later: gettimeofday() is deprecated by POSIX. We could use
-    // clock_gettime in POSIX (which also offers nanosecond resolution
-    // if the hardware supports it), but that requires linking with
-    // -lrt. Maybe a better option will come along before we have to
-    // really change from gettimeofday().
-    gettimeofday(&t, NULL);
-
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
+void print_time(FILE *out, gmx_runtime_t runtime, gmx_large_int_t step,
                 t_inputrec *ir, t_commrec gmx_unused *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
-    double dt, time_per_step;
+    double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
 #ifndef GMX_THREAD_MPI
@@ -139,10 +114,9 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     if ((step >= ir->nstlist))
     {
         double seconds_since_epoch = gmx_gettime();
-        dt            = seconds_since_epoch - runtime->start_time_stamp;
-        time_per_step = dt/(step - ir->init_step + 1);
-
-        dt = (ir->nsteps + ir->init_step - step) * time_per_step;
+        elapsed_seconds = seconds_since_epoch - runtime_get_start_time_stamp(runtime);
+        time_per_step   = elapsed_seconds/(step - ir->init_step + 1);
+        dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
         {
@@ -175,29 +149,8 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fflush(out);
 }
 
-void runtime_start(gmx_runtime_t *runtime)
-{
-    runtime->start_time_stamp          = gmx_gettime();
-    runtime->elapsed_run_time          = 0;
-}
-
-void runtime_end(gmx_runtime_t *runtime)
-{
-    double now;
-
-    now = gmx_gettime();
-
-    runtime->elapsed_run_time              = now - runtime->start_time_stamp;
-    runtime->start_time_stamp              = now;
-}
-
-double runtime_get_elapsed_time(gmx_runtime_t *runtime)
-{
-    return gmx_gettime() - runtime->start_time_stamp;
-}
-
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_runtime_t *runtime)
+                         const gmx_runtime_t runtime)
 {
     int    i;
     char   timebuf[STRLEN];
@@ -208,7 +161,7 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
     {
         if (runtime != NULL)
         {
-            tmptime = (time_t) runtime->start_time_stamp;
+            tmptime = (time_t) runtime_get_start_time_stamp(runtime);
             gmx_ctime_r(&tmptime, timebuf, STRLEN);
         }
         else
@@ -2421,7 +2374,7 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_runtime_t runtime,
                 wallclock_gpu_t *gputimes,
                 gmx_bool bWriteStat)
 {
@@ -2429,7 +2382,6 @@ void finish_run(FILE *fplog, t_commrec *cr,
     t_nrnb *nrnb_tot = NULL;
     real    delta_t;
     double  nbfs, mflop;
-    double  elapsed_run_time_over_all_ranks = 0;
     wallcycle_sum(cr, wcycle);
 
     if (cr->nnodes > 1)
@@ -2445,20 +2397,22 @@ void finish_run(FILE *fplog, t_commrec *cr,
         nrnb_tot = nrnb;
     }
 
+    double elapsed_run_time_over_all_ranks = 0;
+    double elapsed_run_time                = runtime_get_elapsed_run_time(runtime);
 #if defined(GMX_MPI) && !defined(GMX_THREAD_MPI)
     if (cr->nnodes > 1)
     {
         /* reduce elapsed_run_time over all MPI ranks in the current simulation */
-        MPI_Allreduce(&runtime->elapsed_run_time,
+        MPI_Allreduce(&elapsed_run_time,
                       &elapsed_run_time_over_all_ranks,
                       1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
     }
     else
-    {
-        elapsed_run_time_over_all_ranks = runtime->elapsed_run_time;
-    }
 #endif
+    {
+        elapsed_run_time_over_all_ranks = elapsed_run_time;
+    }
 
     if (SIMMASTER(cr))
     {
@@ -2503,7 +2457,7 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, runtime->elapsed_run_time,
+        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, runtime_get_elapsed_run_time(runtime),
                         wcycle, gputimes);
 
         if (EI_DYNAMICS(inputrec->eI))
@@ -2518,14 +2472,16 @@ void finish_run(FILE *fplog, t_commrec *cr,
         if (fplog)
         {
             print_perf(fplog, elapsed_run_time_over_all_ranks,
-                       runtime->elapsed_run_time,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+                       runtime_get_elapsed_run_time(runtime),
+                       runtime_get_nsteps_done(runtime),
+                       delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
             print_perf(stderr, elapsed_run_time_over_all_ranks,
-                       runtime->elapsed_run_time,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+                       runtime_get_elapsed_run_time(runtime),
+                       runtime_get_nsteps_done(runtime),
+                       delta_t, nbfs, mflop);
         }
     }
 }

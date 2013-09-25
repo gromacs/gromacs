@@ -138,7 +138,7 @@ typedef double gmx_integrator_t (FILE *log, t_commrec *cr,
                                  real cpt_period, real max_hours,
                                  const char *deviceOptions,
                                  unsigned long Flags,
-                                 gmx_runtime_t *runtime);
+                                 gmx_runtime_t runtime);
 
 /* ROUTINES from md.c */
 
