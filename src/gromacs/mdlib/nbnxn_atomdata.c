@@ -1117,11 +1117,11 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
 }
 
 static void
-nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
-                                 gmx_bool bDestSet,
-                                 real ** gmx_restrict src,
-                                 int nsrc,
-                                 int i0, int i1)
+nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
+                                 gmx_bool gmx_unused bDestSet,
+                                 real gmx_unused ** gmx_restrict src,
+                                 int gmx_unused nsrc,
+                                 int gmx_unused i0, int gmx_unused i1)
 {
 #ifdef GMX_NBNXN_SIMD
 /* The SIMD width here is actually independent of that in the kernels,

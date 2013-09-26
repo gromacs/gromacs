@@ -1111,10 +1111,10 @@ void fill_cell(const nbnxn_search_t nbs,
                const int *atinfo,
                rvec *x,
                int sx, int sy, int sz,
-               nbnxn_bb_t *bb_work_aligned)
+               nbnxn_bb_t gmx_unused *bb_work_aligned)
 {
-    int        na, a;
-    size_t     offset;
+    int         na, a;
+    size_t      offset;
     nbnxn_bb_t *bb_ptr;
 #ifdef NBNXN_BBXXXX
     float      *pbb_ptr;
@@ -2207,7 +2207,6 @@ gmx_simd4_calc_rsq_pr(gmx_simd4_pr x, gmx_simd4_pr y, gmx_simd4_pr z)
 {
     return gmx_simd4_add_pr( gmx_simd4_add_pr( gmx_simd4_mul_pr(x, x), gmx_simd4_mul_pr(y, y) ), gmx_simd4_mul_pr(z, z) );
 }
-#endif
 
 /* 4-wide SIMD function which determines if any atom pair between two cells,
  * both with 8 atoms, is within distance sqrt(rl2).
@@ -2218,7 +2217,6 @@ static gmx_bool subc_in_range_simd4(int na_c,
                                     int csj, int stride, const real *x_j,
                                     real rl2)
 {
-#ifdef NBNXN_SEARCH_SIMD4_FLOAT_X_BB
     gmx_simd4_pr ix_S0, iy_S0, iz_S0;
     gmx_simd4_pr ix_S1, iy_S1, iz_S1;
 
@@ -2310,13 +2308,9 @@ static gmx_bool subc_in_range_simd4(int na_c,
     }
     return FALSE;
 
-#else
-    /* No SIMD4 */
-    gmx_incons("SIMD4 function called without 4-wide SIMD support");
-
-    return TRUE;
-#endif
 }
+#endif
+
 
 /* Returns the j sub-cell for index cj_ind */
 static int nbl_cj(const nbnxn_pairlist_t *nbl, int cj_ind)
@@ -2885,20 +2879,20 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                                        real rl2, float rbb2,
                                        int *ndistc)
 {
-    int          na_c;
-    int          npair;
-    int          cjo, ci1, ci, cj, cj_gl;
-    int          cj4_ind, cj_offset;
-    unsigned     imask;
-    nbnxn_cj4_t *cj4;
+    int               na_c;
+    int               npair;
+    int               cjo, ci1, ci, cj, cj_gl;
+    int               cj4_ind, cj_offset;
+    unsigned          imask;
+    nbnxn_cj4_t      *cj4;
 #ifdef NBNXN_BBXXXX
     const float      *pbb_ci;
 #else
     const nbnxn_bb_t *bb_ci;
 #endif
-    const real  *x_ci;
-    float       *d2l, d2;
-    int          w;
+    const real       *x_ci;
+    float            *d2l, d2;
+    int               w;
 #define PRUNE_LIST_CPU_ONE
 #ifdef PRUNE_LIST_CPU_ONE
     int  ci_last = -1;
@@ -4183,9 +4177,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     gmx_bool bMakeList;
     real shx, shy, shz;
     int  conv_i, cell0_i;
-    const nbnxn_bb_t *bb_i=NULL;
+    const nbnxn_bb_t *bb_i = NULL;
 #ifdef NBNXN_BBXXXX
-    const float *pbb_i=NULL;
+    const float *pbb_i = NULL;
 #endif
     const float *bbcz_i, *bbcz_j;
     const int *flags_i;
