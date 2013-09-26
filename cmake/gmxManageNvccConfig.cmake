@@ -143,8 +143,10 @@ if (NOT DEFINED CUDA_NVCC_FLAGS_SET)
     #   optimized for sm_35 results in lower performance than with sm_30.
     if(CUDA_VERSION VERSION_LESS "4.2")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_20,code=compute_20")
-    else()
+    elseif(CUDA_VERSION VERSION_LESS "5.0")
         set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_30,code=compute_30")
+    else()
+        set(_CUDA_ARCH_STR "-gencode;arch=compute_20,code=sm_20;-gencode;arch=compute_20,code=sm_21;-gencode;arch=compute_30,code=sm_30;-gencode;arch=compute_35,code=sm_35;-gencode;arch=compute_35,code=compute_35")
     endif()
 
     # finally set the damn flags
