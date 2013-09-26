@@ -1445,8 +1445,7 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
 
 
 static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
-                                     pme_atomcomm_t *atc, splinedata_t *spline,
-                                     pme_spline_work_t *work)
+                                     pme_atomcomm_t *atc, splinedata_t *spline)
 {
 
     /* spread charges from home atoms to local grid */
@@ -1528,7 +1527,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     }
 }
 
-static void set_grid_alignment(int *pmegrid_nz, int pme_order)
+static void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 {
 #ifdef PME_SSE_SPREAD_GATHER
     if (pme_order == 5
@@ -2957,7 +2956,7 @@ make_gridindex5_to_localindex(int n, int local_start, int local_range,
     *fraction_shift  = fsh;
 }
 
-static pme_spline_work_t *make_pme_spline_work(int order)
+static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
 {
     pme_spline_work_t *work;
 
@@ -3967,7 +3966,7 @@ static void spread_on_grid(gmx_pme_t pme,
 #ifdef PME_TIME_SPREAD
             ct1a = omp_cyc_start();
 #endif
-            spread_q_bsplines_thread(grid, atc, spline, pme->spline_work);
+            spread_q_bsplines_thread(grid, atc, spline);
 
             if (pme->bUseThreads)
             {

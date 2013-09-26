@@ -1112,10 +1112,10 @@ void fill_cell(const nbnxn_search_t nbs,
                const int *atinfo,
                rvec *x,
                int sx, int sy, int sz,
-               nbnxn_bb_t *bb_work_aligned)
+               nbnxn_bb_t gmx_unused *bb_work_aligned)
 {
-    int        na, a;
-    size_t     offset;
+    int         na, a;
+    size_t      offset;
     nbnxn_bb_t *bb_ptr;
 #ifdef NBNXN_BBXXXX
     float      *pbb_ptr;
@@ -2234,10 +2234,13 @@ gmx_mm_calc_rsq_ps(__m128 x, __m128 y, __m128 z)
  * both with 8 atoms, is within distance sqrt(rl2).
  * Not performance critical, so only uses plain SSE.
  */
-static gmx_bool subc_in_range_sse8(int na_c,
-                                   int si, const real *x_i,
-                                   int csj, int stride, const real *x_j,
-                                   real rl2)
+static gmx_bool subc_in_range_sse8(int gmx_unused         na_c,
+                                   int gmx_unused         si,
+                                   const real gmx_unused *x_i,
+                                   int gmx_unused         csj,
+                                   int gmx_unused         stride,
+                                   const real gmx_unused *x_j,
+                                   real gmx_unused        rl2)
 {
 #ifdef NBNXN_SEARCH_SSE_SINGLE
     __m128 ix_SSE0, iy_SSE0, iz_SSE0;
@@ -2906,20 +2909,20 @@ static void make_cluster_list_supersub(const nbnxn_grid_t *gridi,
                                        real rl2, float rbb2,
                                        int *ndistc)
 {
-    int          na_c;
-    int          npair;
-    int          cjo, ci1, ci, cj, cj_gl;
-    int          cj4_ind, cj_offset;
-    unsigned     imask;
-    nbnxn_cj4_t *cj4;
+    int               na_c;
+    int               npair;
+    int               cjo, ci1, ci, cj, cj_gl;
+    int               cj4_ind, cj_offset;
+    unsigned          imask;
+    nbnxn_cj4_t      *cj4;
 #ifdef NBNXN_BBXXXX
     const float      *pbb_ci;
 #else
     const nbnxn_bb_t *bb_ci;
 #endif
-    const real  *x_ci;
-    float       *d2l, d2;
-    int          w;
+    const real       *x_ci;
+    float            *d2l, d2;
+    int               w;
 #define PRUNE_LIST_CPU_ONE
 #ifdef PRUNE_LIST_CPU_ONE
     int  ci_last = -1;
@@ -4198,9 +4201,9 @@ static void nbnxn_make_pairlist_part(const nbnxn_search_t nbs,
     gmx_bool bMakeList;
     real shx, shy, shz;
     int  conv_i, cell0_i;
-    const nbnxn_bb_t *bb_i=NULL;
+    const nbnxn_bb_t *bb_i = NULL;
 #ifdef NBNXN_BBXXXX
-    const float *pbb_i=NULL;
+    const float *pbb_i = NULL;
 #endif
     const float *bbcz_i, *bbcz_j;
     const int *flags_i;
