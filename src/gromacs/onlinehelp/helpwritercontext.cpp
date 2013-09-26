@@ -63,7 +63,7 @@ namespace gmx
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Custom output interface for HelpWriterContext::Impl::processMarkup().
  *
  * Provides an interface that is used to implement different types of output
@@ -88,7 +88,7 @@ class WrapperInterface
         virtual void wrap(const std::string &text)  = 0;
 };
 
-/*! \internal \brief
+/*! \brief
  * Wraps markup output into a single string.
  *
  * \ingroup module_onlinehelp
@@ -118,7 +118,7 @@ class WrapperToString : public WrapperInterface
         std::string             result_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Wraps markup output into a vector of string (one line per element).
  *
  * \ingroup module_onlinehelp
@@ -149,12 +149,14 @@ class WrapperToVector : public WrapperInterface
         std::vector<std::string> result_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Make the string uppercase.
  *
  * \param[in] text  Input text.
  * \returns   \p text with all characters transformed to uppercase.
  * \throws    std::bad_alloc if out of memory.
+ *
+ * \ingroup module_onlinehelp
  */
 std::string toUpperCase(const std::string &text)
 {
