@@ -77,16 +77,16 @@ reduce_group_energies(int ng, int ng_2log,
 #endif /* {0} */
 
 void
-{5}(nbnxn_pairlist_set_t       *nbl_list,
-{6}const nbnxn_atomdata_t     *nbat,
-{6}const interaction_const_t  *ic,
-{6}int                         ewald_excl,
-{6}rvec                       *shift_vec,
-{6}int                         force_flags,
-{6}int                         clearF,
-{6}real                       *fshift,
-{6}real                       *Vc,
-{6}real                       *Vvdw)
+{5}(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
+{6}const nbnxn_atomdata_t    gmx_unused *nbat,
+{6}const interaction_const_t gmx_unused *ic,
+{6}int                       gmx_unused  ewald_excl,
+{6}rvec                      gmx_unused *shift_vec,
+{6}int                       gmx_unused  force_flags,
+{6}int                       gmx_unused  clearF,
+{6}real                      gmx_unused *fshift,
+{6}real                      gmx_unused *Vc,
+{6}real                      gmx_unused *Vvdw)
 #ifdef {0}
 {{
     int                nnbl;
