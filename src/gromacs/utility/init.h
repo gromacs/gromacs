@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares functions for initializing the GROMACS library.
+ * Declares functions for initializing the Gromacs library.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -67,6 +67,8 @@ class ProgramInfo;
  * See init(int *, char ***) for more information on the general behavior.
  *
  * Does not throw. Terminates the program on out-of-memory error.
+ *
+ * \ingroup module_utility
  */
 ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv);
 /*! \brief
@@ -86,6 +88,8 @@ ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv);
  * array of argument strings. Both are allowed to be NULL.
  *
  * Does not throw. Terminates the program on out-of-memory error.
+ *
+ * \ingroup module_utility
  */
 ProgramInfo &init(int *argc, char ***argv);
 /*! \brief
@@ -95,6 +99,8 @@ ProgramInfo &init(int *argc, char ***argv);
  * support, unless MPI has already been finalized.
  * Thus, it is not possible to reinitialize Gromacs after calling this
  * function.
+ *
+ * \ingroup module_utility
  */
 void finalize();
 
