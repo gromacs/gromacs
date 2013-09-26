@@ -34,20 +34,18 @@
  */
 /*! \file
  * \brief
- * Declares functions for initializing the GROMACS library.
- *
- * Initialization for the GROMACS library.
+ * Declares functions for initializing the \Gromacs library.
  *
  * Currently, only MPI initialization/finalization management is
  * required, and only if external MPI support is enabled.
  *
  * If MPI is already initialized, we should not call MPI_Init() or
- * MPI_Finalize(). This management object permits GROMACS test code to
+ * MPI_Finalize(). This management object permits \Gromacs test code to
  * nest calls to functions that might normally implement a stand-alone
- * MPI-using tool. It also permits GROMACS code to be called from code
+ * MPI-using tool. It also permits \Gromacs code to be called from code
  * that has already initialized MPI and needs that environment to work
- * and persist after GROMACS code returns (e.g. GROMACS tests,
- * external libraries that call GROMACS code).
+ * and persist after \Gromacs code returns (e.g. \Gromacs tests,
+ * external libraries that call \Gromacs code).
  *
  * It does so by maintaining a counter of the number of MPI
  * initializations, and only calling MPI_Init() or MPI_Finalize when
@@ -71,7 +69,7 @@ namespace gmx
 {
 
 /*! \brief
- * Initializes the Gromacs library with explicit binary name.
+ * Initializes the \Gromacs library with explicit binary name.
  *
  * \param[in] realBinaryName  Name of the binary
  *     (without Gromacs binary suffix or .exe on Windows).
@@ -92,26 +90,32 @@ namespace gmx
  * array of argument strings. Both are allowed to be NULL.
  *
  * Does not throw. Terminates the program on out-of-memory error.
+ *
+ * \ingroup module_utility
  */
 ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv);
 /*! \brief
- * Initializes the Gromacs library.
+ * Initializes the \Gromacs library.
  *
  * \param[in] argc  argc value passed to main().
  * \param[in] argv  argv array passed to main().
  * \returns   Reference to initialized program information object.
  *
  * Does not throw. Terminates the program on out-of-memory error.
+ *
+ * \ingroup module_utility
  */
 ProgramInfo &init(int *argc, char ***argv);
 /*! \brief
- * Deinitializes the Gromacs library.
+ * Deinitializes the \Gromacs library.
  *
  * Decrements the initialization counter, and calls MPI_Finalize()
- * if Gromacs is compiled with MPI support and the counter has
- * reached zero. In that case, it is not possible to reinitialize
- * Gromacs after calling this function. Instead, call init at a
- * higher level, and note that calls to init can be nested safely.
+ * if \Gromacs is compiled with MPI support and the counter has
+ * reached zero.  In that case, it is not possible to reinitialize
+ * \Gromacs after calling this function.  Instead, call gmx::init() at
+ * a higher level, and note that calls to init can be nested safely.
+ *
+ * \ingroup module_utility
  */
 void finalize();
 

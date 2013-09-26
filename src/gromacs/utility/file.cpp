@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -69,7 +69,7 @@ class File::Impl
         /*! \brief
          * Initialize a file object with the given handle.
          *
-         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  fp     %File handle to use (may be NULL).
          * \param[in]  bClose Whether this object should close its file handle.
          */
         Impl(FILE *fp, bool bClose);

@@ -68,6 +68,9 @@ namespace gmx
 namespace
 {
 
+//! \addtogroup module_utility
+//! \{
+
 //! Mutex for updates to the global program info objects.
 tMPI::mutex                    g_programInfoMutex;
 //! Global program info; stores the object initialized with ProgramInfo::init().
@@ -85,6 +88,8 @@ std::string quoteIfNecessary(const char *str)
     }
     return str;
 }
+
+//! \}
 
 }   // namespace
 
@@ -247,8 +252,8 @@ const std::string &ProgramInfo::displayName() const
 {
     tMPI::lock_guard<tMPI::mutex> lock(impl_->displayNameMutex_);
     return impl_->displayName_.empty()
-        ? impl_->programName_
-        : impl_->displayName_;
+           ? impl_->programName_
+           : impl_->displayName_;
 }
 
 const std::string &ProgramInfo::commandLine() const
