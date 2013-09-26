@@ -150,15 +150,18 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
     /* turn off internal pinning KMP_AFFINITY != "disabled" */
     if (bKmpAffinitySet && (gmx_strncasecmp(kmp_env, "disabled", 8) != 0))
     {
-        /* TODO: with -pin auto we should only warn when using all cores */
-        md_print_warn(cr, fplog,
-                      "NOTE: KMP_AFFINITY set, will turn off %s internal affinity\n"
-                      "      setting as the two can conflict and cause performance degradation.\n"
-                      "      To keep using the %s internal affinity setting, set the\n"
-                      "      KMP_AFFINITY=disabled environment variable.",
-                      ShortProgram(), ShortProgram());
+        if (hw_opt->thread_affinity == threadaffAUTO ||
+            hw_opt->thread_affinity == threadaffON)
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: KMP_AFFINITY set, will turn off %s internal affinity\n"
+                          "      setting as the two can conflict and cause performance degradation.\n"
+                          "      To use %s's own affinity layout, set the KMP_AFFINITY=disabled\n"
+                          "      environment variable or use the -pin force option.",
+                          ShortProgram(), ShortProgram());
 
-        hw_opt->thread_affinity = threadaffOFF;
+            hw_opt->thread_affinity = threadaffOFF;
+        }
     }
 #endif /* __INTEL_COMPILER */
 
@@ -166,15 +169,18 @@ void gmx_omp_check_thread_affinity(FILE *fplog, const t_commrec *cr,
     /* turn off internal pinning f GOMP_CPU_AFFINITY is set & non-empty */
     if (bGompCpuAffinitySet && gomp_env != NULL && gomp_env != '\0')
     {
-        /* TODO: with -pin auto we should only warn when using all cores */
-        md_print_warn(cr, fplog,
-                      "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
-                      "      setting as the two can conflict and cause performance degradation.\n"
-                      "      To keep using the %s internal affinity setting, unset the\n"
-                      "      GOMP_CPU_AFFINITY environment variable.",
-                      ShortProgram(), ShortProgram());
+        if (hw_opt->thread_affinity == threadaffAUTO ||
+            hw_opt->thread_affinity == threadaffON)
+        {
+            md_print_warn(cr, fplog,
+                          "NOTE: GOMP_CPU_AFFINITY set, will turn off %s internal affinity\n"
+                          "      setting as the two can conflict and cause performance degradation.\n"
+                          "      To use %s's own affinity layout, unset the GOMP_CPU_AFFINITY\n"
+                          "      environment variable or use the -pin force option.",
+                          ShortProgram(), ShortProgram());
 
-        hw_opt->thread_affinity = threadaffOFF;
+            hw_opt->thread_affinity = threadaffOFF;
+        }
     }
 #endif /* __INTEL_COMPILER || __GNUC__ */
 

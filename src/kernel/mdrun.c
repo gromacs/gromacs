@@ -149,9 +149,10 @@ int cmain(int argc, char *argv[])
         "even when no multi-threading is used,",
         "as this usually results in significantly better performance.",
         "If the queuing systems or the OpenMP library pinned threads, we honor",
-        "this and don't pin again, even though the layout may be sub-optimal.",
-        "If you want to have [TT]mdrun[tt] override an already set thread affinity",
-        "or pin threads when using less cores, use [TT]-pin on[tt].",
+        "this and don't override it, even though the layout may be sub-optimal.",
+        "If you want [TT]mdrun[tt] to set thread affinity when not using all cores, ",
+        "use [TT]-pin on[tt]. Overriding external affinities with [TT]mdrun[tt]'s",
+        "own layout is possible with [TT]-pin force[tt]."
         "With SMT (simultaneous multithreading), e.g. Intel Hyper-Threading,",
         "there are multiple logical cores per physical core.",
         "The option [TT]-pinstride[tt] sets the stride in logical cores for",
@@ -439,7 +440,7 @@ int cmain(int argc, char *argv[])
     const char   *dddlb_opt[] =
     { NULL, "auto", "no", "yes", NULL };
     const char   *thread_aff_opt[threadaffNR+1] =
-    { NULL, "auto", "on", "off", NULL };
+    { NULL, "auto", "on", "off", "force", NULL };
     const char   *nbpu_opt[] =
     { NULL, "auto", "cpu", "gpu", "gpu_cpu", NULL };
     real          rdd                   = 0.0, rconstr = 0.0, dlb_scale = 0.8, pforce = -1;
