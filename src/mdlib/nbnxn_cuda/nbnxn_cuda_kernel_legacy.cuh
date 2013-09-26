@@ -56,6 +56,9 @@
 
     Each thread calculates an i force-component taking one pair of i-j atoms.
  */
+#if __CUDA_ARCH__ >= 350
+__launch_bounds__(64,16)
+#endif
 #ifdef PRUNE_NBL
 #ifdef CALC_ENERGIES
 __global__ void NB_KERNEL_FUNC_NAME(k_nbnxn, _ener_prune_legacy)
