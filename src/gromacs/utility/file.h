@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -34,7 +34,7 @@
  */
 /*! \file
  * \brief
- * Declares functions for file handling.
+ * Declares gmx::File.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  * \inpublicapi
@@ -142,7 +142,7 @@ class File
            {
                // ...
            }
-         * \endcode
+           \endcode
          */
         bool readLine(std::string *line);
 
@@ -212,7 +212,7 @@ class File
         /*! \brief
          * Reads contents of a file to a std::string.
          *
-         * \param[in] filename  File to read.
+         * \param[in] filename  Name of the file to read.
          * \returns   The contents of \p filename.
          * \throws    std::bad_alloc if out of memory.
          * \throws    FileIOError on any I/O error.
@@ -223,7 +223,7 @@ class File
         /*! \brief
          * Convenience method for writing a file from a string in a single call.
          *
-         * \param[in] filename  File to read.
+         * \param[in] filename  Name of the file to read.
          * \param[in] text      String to write to \p filename.
          * \throws    FileIOError on any I/O error.
          *
@@ -236,11 +236,11 @@ class File
         /*! \brief
          * Initialize file object from an existing file handle.
          *
-         * \param[in]  fp     File handle to use (may be NULL).
+         * \param[in]  fp     %File handle to use (may be NULL).
          * \param[in]  bClose Whether this object should close its file handle.
          * \throws     std::bad_alloc if out of memory.
          *
-         * Used internally to implement standardError().
+         * Used internally to implement standardOutput() and standardError().
          */
         File(FILE *fp, bool bClose);
 

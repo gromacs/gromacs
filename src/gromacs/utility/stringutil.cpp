@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -144,6 +144,8 @@ namespace
  * \param[in] bWholeWords  Whether to only consider matches to whole words.
  * \returns   \p input with all occurrences of \p from replaced with \p to.
  * \throws    std::bad_alloc if out of memory.
+ *
+ * \ingroup module_utility
  */
 std::string
 replaceInternal(const std::string &input, const char *from, const char *to,
