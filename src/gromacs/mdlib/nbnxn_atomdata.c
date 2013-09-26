@@ -697,7 +697,7 @@ void nbnxn_atomdata_init(FILE *fp,
         simd_interaction_size = NBNXN_CPU_CLUSTER_I_SIZE*simd_width;
         snew_aligned(nbat->simd_exclusion_filter1, simd_interaction_size,   NBNXN_MEM_ALIGN);
         snew_aligned(nbat->simd_exclusion_filter2, simd_interaction_size*2, NBNXN_MEM_ALIGN);
-        
+
         for (j = 0; j < simd_interaction_size; j++)
         {
             /* Set the consecutive bits for filters pair exclusions masks */
@@ -1080,11 +1080,11 @@ nbnxn_atomdata_reduce_reals(real * gmx_restrict dest,
 }
 
 static void
-nbnxn_atomdata_reduce_reals_simd(real * gmx_restrict dest,
-                                 gmx_bool bDestSet,
-                                 real ** gmx_restrict src,
-                                 int nsrc,
-                                 int i0, int i1)
+nbnxn_atomdata_reduce_reals_simd(real gmx_unused * gmx_restrict dest,
+                                 gmx_bool gmx_unused bDestSet,
+                                 real gmx_unused ** gmx_restrict src,
+                                 int gmx_unused nsrc,
+                                 int gmx_unused i0, int gmx_unused i1)
 {
 #ifdef GMX_NBNXN_SIMD
 /* The SIMD width here is actually independent of that in the kernels,
