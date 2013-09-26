@@ -56,22 +56,22 @@
 
 #ifdef CALC_ENERGIES
 void
-nbnxn_kernel_simd_4xn_tab_comb_none_noener(const nbnxn_pairlist_t     *nbl,
-                                           const nbnxn_atomdata_t     *nbat,
-                                           const interaction_const_t  *ic,
-                                           rvec                       *shift_vec,
-                                           real                       *f,
-                                           real                       *fshift,
-                                           real                       *Vvdw,
-                                           real                       *Vc)
+nbnxn_kernel_simd_4xn_tab_comb_none_noener(const nbnxn_pairlist_t    gmx_unused *nbl,
+                                           const nbnxn_atomdata_t    gmx_unused *nbat,
+                                           const interaction_const_t gmx_unused *ic,
+                                           rvec                      gmx_unused *shift_vec,
+                                           real                      gmx_unused *f,
+                                           real                      gmx_unused *fshift,
+                                           real                      gmx_unused *Vvdw,
+                                           real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
 void
-nbnxn_kernel_simd_4xn_tab_comb_none_noener(const nbnxn_pairlist_t     *nbl,
-                                           const nbnxn_atomdata_t     *nbat,
-                                           const interaction_const_t  *ic,
-                                           rvec                       *shift_vec,
-                                           real                       *f,
-                                           real                       *fshift)
+nbnxn_kernel_simd_4xn_tab_comb_none_noener(const nbnxn_pairlist_t    gmx_unused *nbl,
+                                           const nbnxn_atomdata_t    gmx_unused *nbat,
+                                           const interaction_const_t gmx_unused *ic,
+                                           rvec                      gmx_unused *shift_vec,
+                                           real                      gmx_unused *f,
+                                           real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef GMX_NBNXN_SIMD_4XN
 #include "nbnxn_kernel_simd_4xn_outer.h"
