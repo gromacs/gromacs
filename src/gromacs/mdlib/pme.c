@@ -1444,9 +1444,10 @@ unwrap_periodic_pmegrid(gmx_pme_t pme, real *pmegrid)
     }
 
 
-static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
-                                     pme_atomcomm_t *atc, splinedata_t *spline,
-                                     pme_spline_work_t *work)
+static void spread_q_bsplines_thread(pmegrid_t                    *pmegrid,
+                                     pme_atomcomm_t               *atc,
+                                     splinedata_t                 *spline,
+                                     pme_spline_work_t gmx_unused *work)
 {
 
     /* spread charges from home atoms to local grid */
@@ -1528,7 +1529,7 @@ static void spread_q_bsplines_thread(pmegrid_t *pmegrid,
     }
 }
 
-static void set_grid_alignment(int *pmegrid_nz, int pme_order)
+static void set_grid_alignment(int gmx_unused *pmegrid_nz, int gmx_unused pme_order)
 {
 #ifdef PME_SSE_SPREAD_GATHER
     if (pme_order == 5
@@ -1857,7 +1858,7 @@ static void free_work(pme_work_t *work)
 
 #ifdef PME_SIMD
 /* Calculate exponentials through SIMD */
-inline static void calc_exponentials(int start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
+inline static void calc_exponentials(int gmx_unused start, int end, real f, real *d_aligned, real *r_aligned, real *e_aligned)
 {
     {
         const gmx_mm_pr two = gmx_set1_pr(2.0);
@@ -1866,6 +1867,9 @@ inline static void calc_exponentials(int start, int end, real f, real *d_aligned
         gmx_mm_pr tmp_d1, d_inv, tmp_r, tmp_e;
         int kx;
         f_simd = gmx_load1_pr(&f);
+        /* We only need to calculate from start. But since start is 0 or 1
+         * and we want to use aligned loads/stores, we always start from 0.
+         */
         for (kx = 0; kx < end; kx += GMX_SIMD_WIDTH_HERE)
         {
             tmp_d1   = gmx_load_pr(d_aligned+kx);
@@ -1994,6 +1998,7 @@ static int solve_pme_yzx(gmx_pme_t pme, t_complex *grid,
         p0 = grid + iy*local_size[ZZ]*local_size[XX] + iz*local_size[XX];
 
         /* We should skip the k-space point (0,0,0) */
+        /* Note that since here x is the minor index, local_offset[XX]=0 */
         if (local_offset[XX] > 0 || ky > 0 || kz > 0)
         {
             kxstart = local_offset[XX];
@@ -2957,7 +2962,7 @@ make_gridindex5_to_localindex(int n, int local_start, int local_range,
     *fraction_shift  = fsh;
 }
 
-static pme_spline_work_t *make_pme_spline_work(int order)
+static pme_spline_work_t *make_pme_spline_work(int gmx_unused order)
 {
     pme_spline_work_t *work;
 
