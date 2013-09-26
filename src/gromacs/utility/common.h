@@ -60,50 +60,50 @@ namespace internal
  * \ingroup module_utility
  */
 template <typename T>
-void inline ignoreValueHelper(const T &) {}
+void inline ignoreValueHelper(const T &)
+{
+}
 //! \endcond
-} // namespace internal
+}   // namespace internal
 
-/*! \cond libapi */
-/*! \libinternal \brief
+/*! \brief
  * Macro to declare a class non-copyable and non-assignable.
  *
  * For consistency, should appear last in the class declaration.
  *
- * \inlibraryapi
+ * \ingroup module_utility
  */
 #define GMX_DISALLOW_COPY_AND_ASSIGN(ClassName) \
     private: \
-        ClassName(const ClassName &); \
-        ClassName                 &operator=(const ClassName &)
-/*! \libinternal \brief
+        ClassName &operator=(const ClassName &); \
+        ClassName(const ClassName &)
+/*! \brief
  * Macro to declare a class non-assignable.
  *
  * For consistency, should appear last in the class declaration.
  *
- * \inlibraryapi
+ * \ingroup module_utility
  */
 #define GMX_DISALLOW_ASSIGN(ClassName) \
     private: \
         ClassName &operator=(const ClassName &)
-/*! \libinternal \brief
+/*! \brief
  * Macro to explicitly ignore a return value of a call.
  *
  * Mainly meant for ignoring values of functions declared with
- * __attribute__((warn_unused_return)).  Makes it easy to find those places if
+ * `__attribute__((warn_unused_return))`.  Makes it easy to find those places if
  * they need to be fixed, and document the intent in cases where the return
  * value really can be ignored.  It also makes it easy to adapt the approach so
  * that they don't produce warnings.  A cast to void doesn't remove the warning
  * in gcc, while adding a dummy variable can cause warnings about an unused
  * variable.
  *
- * \inlibraryapi
+ * \ingroup module_utility
  */
 #define GMX_IGNORE_RETURN_VALUE(call) \
-    ::gmx::internal::ignoreValueHelper(call)
-//! \endcond
+        ::gmx::internal::ignoreValueHelper(call)
 
-/*! \libinternal \brief
+/*! \brief
  * Helper class to manage a pointer to a private implementation class.
  *
  * This helper provides the following benefits (all but the last could also be
@@ -149,7 +149,8 @@ void inline ignoreValueHelper(const T &) {}
    ExampleClass::~ExampleClass()
    {
    }
- * \endcode
+   \endcode
+ *
  * \inlibraryapi
  * \ingroup module_utility
  */
