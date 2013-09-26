@@ -586,8 +586,7 @@ static gmx_bool analyze_data(
 
 
 /* Get the commands we need to set up the runs from environment variables */
-static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np[],
-                              char *cmd_mdrun[], int repeats)
+static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char *cmd_mdrun[])
 {
     char      *cp;
     FILE      *fp;
@@ -626,7 +625,7 @@ static void get_program_paths(gmx_bool bThreads, char *cmd_mpirun[], char cmd_np
 /* Check that the commands will run mdrun (perhaps via mpirun) by
  * running a very quick test simulation. Requires MPI environment to
  * be available if applicable. */
-static void check_mdrun_works(gmx_bool bThreads,
+static void check_mdrun_works(gmx_bool    bThreads,
                               const char *cmd_mpirun,
                               const char *cmd_np,
                               const char *cmd_mdrun)
@@ -2364,7 +2363,7 @@ int gmx_tune_pme(int argc, char *argv[])
     }
 
     /* Get the commands we need to set up the runs from environment variables */
-    get_program_paths(bThreads, &cmd_mpirun, cmd_np, &cmd_mdrun, repeats);
+    get_program_paths(bThreads, &cmd_mpirun, &cmd_mdrun);
     if (bBenchmark && repeats > 0)
     {
         check_mdrun_works(bThreads, cmd_mpirun, cmd_np, cmd_mdrun);
