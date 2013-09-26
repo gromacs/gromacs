@@ -1592,7 +1592,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, ewaldcoeff, inputrec);
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff, inputrec);
     }
 
     if (EI_DYNAMICS(inputrec->eI) || EI_TPI(inputrec->eI))
