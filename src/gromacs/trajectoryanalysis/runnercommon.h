@@ -55,7 +55,8 @@ class SelectionCollection;
 class TopologyInformation;
 class TrajectoryAnalysisSettings;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Implements common trajectory analysis runner functionality.
  *
  * As there is currently only one runner (TrajectoryAnalysisCommandLineRunner),

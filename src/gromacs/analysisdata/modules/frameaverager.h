@@ -53,7 +53,8 @@ namespace gmx
 
 class AnalysisDataPointSetRef;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Helper class for modules that average values over frames.
  *
  * This class implements common functionality for analysis data modules that

@@ -51,10 +51,13 @@
 #include "gromacs/selection/selmethod.h"
 #include "gromacs/utility/exceptions.h"
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Data structure for distance-based selection method.
  *
  * The same data structure is used by all the distance-based methods.
+ *
+ * \ingroup module_selection
  */
 struct t_methoddata_distance
 {

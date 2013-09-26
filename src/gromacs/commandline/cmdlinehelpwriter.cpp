@@ -67,7 +67,7 @@ namespace
  * OptionsFormatterInterface
  */
 
-/*! \internal \brief
+/*! \brief
  * Interface for output format specific formatting of options.
  *
  * \see OptionsFilter
@@ -97,7 +97,7 @@ class OptionsFormatterInterface
  * OptionsFilter
  */
 
-/*! \internal \brief
+/*! \brief
  * Output format independent processing of options.
  *
  * Together with code in CommandLineHelpWriter::writeHelp(), this class
@@ -237,7 +237,7 @@ class CommonFormatterData
  * OptionsConsoleFormatter
  */
 
-/*! \internal \brief
+/*! \brief
  * Formatter implementation for console help.
  *
  * \ingroup module_commandline
