@@ -17,22 +17,22 @@
 
 #ifdef CALC_ENERGIES
 void
-{5}(const nbnxn_pairlist_t     *nbl,
-{6}const nbnxn_atomdata_t     *nbat,
-{6}const interaction_const_t  *ic,
-{6}rvec                       *shift_vec,
-{6}real                       *f,
-{6}real                       *fshift,
-{6}real                       *Vvdw,
-{6}real                       *Vc)
+{5}(const nbnxn_pairlist_t    gmx_unused *nbl,
+{6}const nbnxn_atomdata_t    gmx_unused *nbat,
+{6}const interaction_const_t gmx_unused *ic,
+{6}rvec                      gmx_unused *shift_vec,
+{6}real                      gmx_unused *f,
+{6}real                      gmx_unused *fshift,
+{6}real                      gmx_unused *Vvdw,
+{6}real                      gmx_unused *Vc)
 #else /* CALC_ENERGIES */
 void
-{5}(const nbnxn_pairlist_t     *nbl,
-{6}const nbnxn_atomdata_t     *nbat,
-{6}const interaction_const_t  *ic,
-{6}rvec                       *shift_vec,
-{6}real                       *f,
-{6}real                       *fshift)
+{5}(const nbnxn_pairlist_t    gmx_unused *nbl,
+{6}const nbnxn_atomdata_t    gmx_unused *nbat,
+{6}const interaction_const_t gmx_unused *ic,
+{6}rvec                      gmx_unused *shift_vec,
+{6}real                      gmx_unused *f,
+{6}real                      gmx_unused *fshift)
 #endif /* CALC_ENERGIES */
 #ifdef {0}
 #include "nbnxn_kernel_simd_4xn_outer.h"
