@@ -457,11 +457,13 @@ class AverageInputData
         AnalysisDataTestInput  data_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Mock object for testing gmx::AbstractAverageHistogram.
  *
  * Exposes necessary methods from gmx::AbstractAverageHistogram to use with
  * gmx::test::AnalysisDataTestFixture::setupArrayData().
+ *
+ * \ingroup module_analysisdata
  */
 class MockAverageHistogram : public gmx::AbstractAverageHistogram
 {

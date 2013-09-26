@@ -51,7 +51,8 @@
 namespace gmx
 {
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal implementation class used to implement column modules.
  *
  * This class serves as a proxy between AbstractAnalysisData and the attached

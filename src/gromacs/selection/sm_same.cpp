@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -52,11 +52,14 @@
 #include "parsetree.h"
 #include "selelem.h"
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Data structure for the \p same selection method.
  *
  * To avoid duplicate initialization code, the same data structure is used
  * for matching both integer and string keywords; hence the unions.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {

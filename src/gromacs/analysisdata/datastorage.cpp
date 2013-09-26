@@ -282,7 +282,8 @@ class AnalysisDataStorageImpl
  * AnalysisDataStorageFrameImpl declaration
  */
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal representation for a single stored frame.
  *
  * It is implemented such that the frame header is always valid, i.e.,

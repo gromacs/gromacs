@@ -200,7 +200,7 @@ AnalysisHistogramSettings::findBin(real y) const
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Represents copies of average histograms.
  *
  * Methods in AbstractAverageHistogram that return new histogram instances
@@ -393,7 +393,8 @@ AbstractAverageHistogram::scaleAllByVector(real factor[])
 namespace internal
 {
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Implements average histogram module that averages per-frame histograms.
  *
  * This class is used for accumulating average histograms in per-frame

@@ -29,7 +29,8 @@
 
 #include "external/fftpack/fftpack.h"
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Contents of the FFTPACK fft datatype.
  *
  * Note that this is one of several possible implementations of gmx_fft_t.

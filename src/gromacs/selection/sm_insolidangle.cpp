@@ -135,10 +135,13 @@
 using std::min;
 using std::max;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * \see \c t_partition
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -148,12 +151,15 @@ typedef struct
     int                 bin;
 } t_partition_item;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * Describes the surface partitioning within one slice along the zenith angle.
  * The slice from azimuthal angle \p p[i].left to \p p[i+1].left belongs to
  * bin \p p[i].bin.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -163,12 +169,15 @@ typedef struct
     t_partition_item   *p;
 } t_partition;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data structure for the \p insolidangle selection method.
  *
  * Contains the reference points that partially cover a certain region on the
  * surface of the unit sphere.
  * If \p n is -1, the whole region described by the bin is covered.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {
@@ -180,10 +189,13 @@ typedef struct
     rvec *x;
 } t_spheresurfacebin;
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Data structure for the \p insolidangle selection method.
  *
  * All angle values are in the units of radians.
+ *
+ * \ingroup module_selection
  */
 typedef struct
 {

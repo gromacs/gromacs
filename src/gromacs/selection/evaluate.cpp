@@ -74,7 +74,7 @@ using gmx::SelectionTreeElementPointer;
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Reserves memory for a selection element from the evaluation memory pool.
  *
  * This class implements RAII semantics for allocating memory for selection
@@ -131,7 +131,7 @@ class MempoolSelelemReserver
         SelectionTreeElementPointer     sel_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Reserves memory for an index group from the evaluation memory pool.
  *
  * This class implements RAII semantics for allocating memory for an index
@@ -181,7 +181,7 @@ class MempoolGroupReserver
         gmx_ana_index_t        *g_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Assigns a temporary value for a selection element.
  *
  * This class implements RAII semantics for temporarily assigning the value

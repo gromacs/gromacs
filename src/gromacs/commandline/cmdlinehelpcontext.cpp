@@ -49,11 +49,13 @@ namespace gmx
 namespace
 {
 
-/*! \internal \brief
+/*! \brief
  * Stores the global context set with GlobalCommandLineHelpContext.
  *
  * This is not protected by a mutex, since it is only used in command-line
  * start-up (i.e., single-threaded context), and is inherently not thread-safe.
+ *
+ * \ingroup module_commandline
  */
 const CommandLineHelpContext *g_globalContext = NULL;
 

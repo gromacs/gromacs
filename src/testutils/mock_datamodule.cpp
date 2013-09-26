@@ -283,7 +283,7 @@ void checkFrame(const AnalysisDataFrameRef       &frame,
     }
 }
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame header against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -315,7 +315,7 @@ class StaticDataFrameHeaderChecker
         const AnalysisDataTestInputFrame *frame_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points against static test input data.
  *
  * This functor is designed to be invoked as a handled for
@@ -366,7 +366,7 @@ class StaticDataPointsChecker
         int                                  n_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for requesting data storage.
  *
  * This functor is designed to be invoked as a handled for
@@ -395,7 +395,7 @@ class DataStorageRequester
         int                     count_;
 };
 
-/*! \internal \brief
+/*! \brief
  * Functor for checking data frame points and storage against static test input
  * data.
  *

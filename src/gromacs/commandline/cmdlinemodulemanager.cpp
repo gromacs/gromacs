@@ -97,7 +97,7 @@ const char *const RootHelpText::text[]  = {
     "Usage: [PROGRAM] <command> [<args>]",
 };
 
-/*! \internal \brief
+/*! \brief
  * Help topic that forms the root of the help tree for the help subcommand.
  *
  * \ingroup module_commandline
@@ -194,7 +194,7 @@ void RootHelpTopic::printModuleList(const HelpWriterContext &context) const
  * ModuleHelpTopic declaration
  */
 
-/*! \internal \brief
+/*! \brief
  * Help topic wrapper for a command-line module.
  *
  * This class implements HelpTopicInterface such that it wraps a
@@ -233,7 +233,7 @@ class ModuleHelpTopic : public HelpTopicInterface
  * HelpExportInterface
  */
 
-/*! \internal \brief
+/*! \brief
  * Callbacks for exporting help information for command-line modules.
  *
  * \ingroup module_commandline
@@ -259,7 +259,8 @@ class HelpExportInterface
  * CommandLineHelpModule
  */
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Command-line module for producing help.
  *
  * This module implements the 'help' subcommand that is automatically added by

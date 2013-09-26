@@ -72,7 +72,8 @@ typedef std::vector<Selection> SelectionList;
 namespace internal
 {
 
-/*! \internal \brief
+/*! \internal
+ * \brief
  * Internal data for a single selection.
  *
  * This class is internal to the selection module, but resides in a public
