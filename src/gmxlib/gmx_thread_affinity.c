@@ -57,6 +57,69 @@
 
 #include "thread_mpi/threads.h"
 
+/* Lock to ensure the nice ordering of the thread affinity debug output. */
+static tMPI_Thread_mutex_t binding_print_lock = TMPI_THREAD_MUTEX_INITIALIZER;
+
+void print_current_proc_thread_binding(FILE     *where,
+                                       const     t_commrec *cr,
+                                       gmx_bool  bAfterOpenmpInit)
+{
+    int   k, nthreads;
+    pid_t pid;
+
+    pid = getpid();
+
+    /* In order to ensure that the output from different tMPI threads does not
+     * get mixed, we create a critical section here using a lock. */
+    tMPI_Thread_mutex_lock(&binding_print_lock);
+    fprintf(where, "Current Process %d ", pid);
+    if (cr)
+    {
+        fprintf(where, "rank %2d ", cr->nodeid);
+    }
+    fprintf(where, "-> ");
+
+    nthreads = bAfterOpenmpInit ? gmx_omp_nthreads_get(emntDefault) : 1;
+
+#pragma omp parallel for ordered \
+    num_threads(nthreads) \
+    schedule(static)
+    for (k = 0; k < nthreads; k++)
+    {
+        int i, j, cpu_count;
+        cpu_set_t mask_thread;
+        /* with OpenMP threads we need to get the per-thread affinity mask here */
+        CPU_ZERO_S(sizeof(cpu_set_t), &mask_thread);
+        if (sched_getaffinity(0, sizeof(cpu_set_t), &mask_thread)  != 0)
+        {
+            fprintf(where, "Error getting affinity");
+        }
+        else
+        {
+            cpu_count = CPU_COUNT_S(sizeof(cpu_set_t), &mask_thread);
+#pragma omp ordered
+            {
+                if (gmx_omp_nthreads_get(emntDefault) > 1)
+                {
+                    fprintf(where, "\n\tthread %2d -> ", gmx_omp_get_thread_num());
+                }
+                for(i = 0, j = 0; j < cpu_count; i++)
+                {
+                    if (CPU_ISSET_S(i, sizeof(cpu_set_t), &mask_thread))
+                    {
+                        fprintf(where, "%d,", i);
+                        ++j;
+                    }
+                }
+            }
+        }
+        fprintf(where, "\t\t%d CPU(s) in the mask", j);
+    }
+    fprintf(where, "\n\n");
+    tMPI_Thread_mutex_unlock(&binding_print_lock);
+}
+
+
 
 static int
 get_thread_affinity_layout(FILE *fplog,
@@ -248,14 +311,14 @@ gmx_set_thread_affinity(FILE                *fplog,
     }
 #endif
 
-    if (hw_opt->thread_affinity == threadaffAUTO &&
-        nthread_node != hwinfo->nthreads_hw_avail)
+    if ((hw_opt->thread_affinity == threadaffAUTO || hw_opt->thread_affinity == threadaffAUTO) &&
+         nthread_node != hwinfo->nthreads_hw_avail)
     {
         if (nthread_node > 1 && nthread_node < hwinfo->nthreads_hw_avail)
         {
             md_print_warn(cr, fplog,
                           "NOTE: The number of threads is not equal to the number of (logical) cores\n"
-                          "      and the -pin option is set to auto: will not pin thread to cores.\n"
+                          "      and the -pin option is set to auto/on: will not pin threads to cores.\n"
                           "      This can lead to significant performance degradation.\n"
                           "      Consider using -pin on (and -pinoffset in case you run multiple jobs).\n");
         }
@@ -361,12 +424,24 @@ gmx_set_thread_affinity(FILE                *fplog,
                           sbuf1, sbuf2);
         }
     }
+
+    if (debug)
+    {
+        fprintf(debug, "=== After setting affinities: ===\n");
+        print_current_proc_thread_binding(debug, cr, TRUE);
+    }
+
     return;
 }
 
-/* Check the process affinity mask and if it is found to be non-zero,
+/* Check the process affinity mask and if it is found to be non-default,
  * will honor it and disable mdrun internal affinity setting.
- * Note that this will only work on Linux as we use a GNU feature.
+ * NOTES:
+ * - We inherently can't distinguish between the cases when no custom affinity
+ *   mask is set and a custom affinity mask with all CPUs present is used.
+ *   Hence, we may override the latter, but this should not be a major issue
+ *   because if the user meant to allow thread migration, she should use -pin off.
+ * - This will only work on Linux as we use a GNU feature.
  */
 void
 gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
@@ -385,6 +460,11 @@ gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
         return;
     }
 
+    /* This is a bit sloppy because with multiple OpenMP threads per rank the
+     * per-thread affinity mask could differ among threads and here we only check
+     * thread #0's mask. However, it is reasonable to assume that if thread #0
+     * has a default affinity mask, the other threads won't have a non-default one.
+     */
     CPU_ZERO(&mask_current);
     if ((ret = sched_getaffinity(0, sizeof(cpu_set_t), &mask_current)) != 0)
     {
@@ -411,30 +491,47 @@ gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
     }
 #endif /* CPU_COUNT */
 
+    if (debug)
+    {
+        print_current_proc_thread_binding(debug, cr, bAfterOpenmpInit);
+    }
+
     bAllSet = TRUE;
     for (i = 0; (i < ncpus && i < CPU_SETSIZE); i++)
     {
         bAllSet = bAllSet && (CPU_ISSET(i, &mask_current) != 0);
     }
 
-    if (!bAllSet)
+    if (bAllSet)
     {
-        if (hw_opt->thread_affinity == threadaffAUTO)
+        if (debug)
         {
-            if (!bAfterOpenmpInit)
+            fprintf(debug, "Default affinity mask found\n");
+        }
+    }
+    else
+    {
+        if (hw_opt->thread_affinity == threadaffAUTO ||
+            hw_opt->thread_affinity == threadaffON)
+        {
+            char stmp[STRLEN];
+
+            stmp[0] = '\0';
+            if (bAfterOpenmpInit)
             {
-                md_print_warn(cr, fplog,
-                              "Non-default thread affinity set, disabling internal thread affinity");
+                sprintf(stmp, ", set probably by the OpenMP library,\n");
             }
-            else
-            {
-                md_print_warn(cr, fplog,
-                              "Non-default thread affinity set probably by the OpenMP library,\n"
-                              "disabling internal thread affinity");
-            }
+
+            md_print_warn(cr, fplog,
+                            "WARNING: Non-default affinity found%s, disabling internal thread affinity setting.\n"
+                            "         Incorrect affinity can cause performance degradation. Make sure that the\n"
+                            "         thread affinity is correct or use the -pin force option to override it\n"
+                            "         with %s's affinity layout.",
+                            stmp, ShortProgram());
+
             hw_opt->thread_affinity = threadaffOFF;
         }
-        else
+        else if (hw_opt->thread_affinity == threadaffFORCE)
         {
             /* Only warn once, at the last check (bAfterOpenmpInit==TRUE) */
             if (bAfterOpenmpInit)
@@ -448,13 +545,6 @@ gmx_check_thread_affinity_set(FILE *fplog, const t_commrec *cr,
         if (debug)
         {
             fprintf(debug, "Non-default affinity mask found\n");
-        }
-    }
-    else
-    {
-        if (debug)
-        {
-            fprintf(debug, "Default affinity mask found\n");
         }
     }
 #endif /* HAVE_SCHED_GETAFFINITY */
