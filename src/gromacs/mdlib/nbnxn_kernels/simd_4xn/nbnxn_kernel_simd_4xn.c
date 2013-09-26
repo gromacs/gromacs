@@ -203,16 +203,16 @@ reduce_group_energies(int ng, int ng_2log,
 #endif /* GMX_NBNXN_SIMD_4XN */
 
 void
-nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t       *nbl_list,
-                      const nbnxn_atomdata_t     *nbat,
-                      const interaction_const_t  *ic,
-                      int                         ewald_excl,
-                      rvec                       *shift_vec,
-                      int                         force_flags,
-                      int                         clearF,
-                      real                       *fshift,
-                      real                       *Vc,
-                      real                       *Vvdw)
+nbnxn_kernel_simd_4xn(nbnxn_pairlist_set_t      gmx_unused *nbl_list,
+                      const nbnxn_atomdata_t    gmx_unused *nbat,
+                      const interaction_const_t gmx_unused *ic,
+                      int                       gmx_unused  ewald_excl,
+                      rvec                      gmx_unused *shift_vec,
+                      int                       gmx_unused  force_flags,
+                      int                       gmx_unused  clearF,
+                      real                      gmx_unused *fshift,
+                      real                      gmx_unused *Vc,
+                      real                      gmx_unused *Vvdw)
 #ifdef GMX_NBNXN_SIMD_4XN
 {
     int                nnbl;
