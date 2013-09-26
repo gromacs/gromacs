@@ -95,7 +95,7 @@ enum {
 
 /* The options for the thread affinity setting, default: auto */
 enum {
-    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffNR
+    threadaffSEL, threadaffAUTO, threadaffON, threadaffOFF, threadaffFORCE, threadaffNR
 };
 
 typedef struct {
