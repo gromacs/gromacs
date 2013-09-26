@@ -1,0 +1,9 @@
+Code-Review+2: Mark Abraham <mark.j.abraham@gmail.com>
+Code-Review+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+1: Alexey Shvetsov <alexxy@omrb.pnpi.spb.ru>
+Verified+2: Jenkins Buildbot
+Submitted-by: Teemu Murtola <teemu.murtola@gmail.com>
+Submitted-at: Thu, 26 Sep 2013 06:56:08 +0200
+Reviewed-on: https://gerrit.gromacs.org/2524
+Project: gromacs
+Branch: refs/heads/master
