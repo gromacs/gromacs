@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,33 +32,69 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use \ref module_testutils.
+ * Declares test fixture for mdrun tests
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
-#include <gtest/gtest.h>
+#ifndef GMX_TESTUTILS_PROGRAM_CALLER_H
+#define GMX_TESTUTILS_PROGRAM_CALLER_H
 
-#include "testutils/testoptions.h"
+#include <string>
+#include "gromacs/options/options.h"
 
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
-#endif
-
-#ifndef TEST_TEMP_PATH
-//! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
-#endif
-
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
+namespace gmx
 {
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
-    return RUN_ALL_TESTS();
-}
+
+namespace test
+{
+
+/*! \internal \brief Class for maintaining options for calling GROMACS
+ *  tools.
+ *
+ * An object of this type can be instantiated directly. Any options
+ * will then need to be defined, and then set, before the tool can
+ * run.
+ *
+ * \todo Example usage:
+ *
+ * Any method in this class may throw std::bad_alloc if out of memory.
+ *
+ * \ingroup module_testutils
+ */
+class ProgramCaller
+{
+    public:
+        //! Constructor
+        ProgramCaller(std::string const &_programName);
+        //! Copy constructor
+        ProgramCaller(ProgramCaller &c);
+        /*! \brief Defines an option for this program
+         *
+         * \param[in] settings  Option description.
+         * \returns   OptionInfo object for the created option (never NULL).
+         * \throws    APIError if invalid option settings are provided.
+         */
+        OptionInfo *addOption(const AbstractOption &settings);
+        /*! \brief Gets a reference to the options
+         *
+         * \throws    none
+         */
+        gmx::Options &getOptions();
+        /*! \brief Gets a const reference to the program name
+         *
+         * \throws    none
+         */
+        std::string const &getProgramName();
+
+    private:
+        std::string const programName_;
+        gmx::Options      options_;
+};
+
+} // namespace test
+} // namespace gmx
+
+#endif
