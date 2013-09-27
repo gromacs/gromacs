@@ -1485,6 +1485,12 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* check consistency of CPU acceleration and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
 
+    if (DOMAINDECOMP(cr))
+    {
+        /* When we share GPUs over ranks, we need to know this for the DLB */
+        dd_setup_dlb_resource_sharing(cr, hwinfo, hw_opt);
+    }
+
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
