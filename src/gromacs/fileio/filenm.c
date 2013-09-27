@@ -791,14 +791,14 @@ void parse_file_args(int *argc, char *argv[], int nf, t_filenm fnm[],
         if (!bKeep)
         {
             /* Remove used entries */
-            for (i = j = 0; (i <= *argc); i++)
+            for (i = j = 0; (i < *argc); i++)
             {
                 if (!bRemove[i])
                 {
                     argv[j++] = argv[i];
                 }
             }
-            (*argc) = j - 1;
+            (*argc) = j;
         }
         sfree(bRemove);
     }
