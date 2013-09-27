@@ -120,7 +120,20 @@ class CommandLine
         void append(const char *arg);
         //! Convenience overload taking a std::string.
         void append(const std::string &arg) { append(arg.c_str()); }
-
+        /*! \brief
+         * Add an option-value pair to the command line.
+         *
+         * \param[in] name   Name of the option to append, which
+         *                   should start with "-".
+         * \param[in] value  Value of the argument to append.
+         */
+        void addOption(const char *name, const char *value);
+        //! Convenience overload taking a std::string.
+        void addOption(const char *name, const std::string &value);
+        //! Overload taking an int.
+        void addOption(const char *name, int value);
+        //! Overload taking a double.
+        void addOption(const char *name, double value);
         //! Returns argc for passing into C-style command-line handling.
         int &argc();
         //! Returns argv for passing into C-style command-line handling.
