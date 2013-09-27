@@ -32,10 +32,23 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMXANA_SOURCES *.c *.cpp)
+set(testname "MdrunTests")
+set(exename "mdrun-tests")
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-if(BUILD_TESTING)
-    add_subdirectory(legacytests)
-endif(BUILD_TESTING)
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    rerun.cpp
+    # files with code for test fixtures
+    moduletest.cpp
+    # pseudo libraries for code for grompp and mdrun
+    $<TARGET_OBJECTS:mdrun_objlib>
+    $<TARGET_OBJECTS:gmx_objlib>
+    )
+gmx_register_integration_test(
+    ${testname}
+    ${exename}
+    )
