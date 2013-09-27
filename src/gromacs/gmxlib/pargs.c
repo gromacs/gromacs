@@ -181,14 +181,14 @@ void get_pargs(int *argc, char *argv[], int nparg, t_pargs pa[], gmx_bool bKeepA
     if (!bKeepArgs)
     {
         /* Remove used entries */
-        for (i = j = 0; (i <= *argc); i++)
+        for (i = j = 0; (i < *argc); i++)
         {
             if (bKeep[i])
             {
                 argv[j++] = argv[i];
             }
         }
-        (*argc) = j-1;
+        (*argc) = j;
     }
     sfree(bKeep);
 }
