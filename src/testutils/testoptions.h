@@ -135,7 +135,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
             virtual void initOptions(::gmx::Options *options); \
     }; \
     \
-    static name s_##name##Instance; \
+    static name s_ ## name ## Instance; \
     \
     void name::initOptions(::gmx::Options *options)
 
@@ -147,7 +147,17 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  *
  * This function is automatically called by unittest_main.cpp.
  */
-void initTestUtils(const char *dataPath, int *argc, char ***argv);
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
+
+/*! \libinternal \brief
+ * Finalizes the test utilities library.
+ *
+ * Does not throw.  Terminates the program with a non-zero error code if an
+ * error occurs.
+ *
+ * This function is automatically called by unittest_main.cpp.
+ */
+void finalizeTestUtils();
 
 } // namespace test
 } // namespace gmx

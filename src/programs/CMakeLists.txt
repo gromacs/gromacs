@@ -35,16 +35,20 @@
 include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
 file(GLOB MDRUN_SOURCES mdrun/*.c mdrun/*.cpp)
+# make an "object library" that we can re-use for multiple targets
+add_library(mdrun_objlib OBJECT ${MDRUN_SOURCES})
+
 if(GMX_X11)
     file(GLOB VIEW_SOURCES view/*.cpp)
 else()
     file(GLOB VIEW_SOURCES view/view.cpp)
 endif()
+add_library(view_objlib OBJECT ${VIEW_SOURCES})
 
 if(GMX_FAHCORE)
-    add_library(fahcore ${MDRUN_SOURCES})
+    add_library(fahcore $<TARGET_OBJECTS:mdrun_objlib>)
 elseif(GMX_BUILD_MDRUN_ONLY)
-    add_executable(mdrun ${MDRUN_SOURCES} mdrun_main.cpp)
+    add_executable(mdrun $<TARGET_OBJECTS:mdrun_objlib> mdrun_main.cpp)
     target_link_libraries(mdrun
         ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
     set_target_properties(mdrun PROPERTIES
@@ -52,8 +56,15 @@ elseif(GMX_BUILD_MDRUN_ONLY)
         COMPILE_FLAGS "${OpenMP_C_FLAGS}")
     install(TARGETS mdrun DESTINATION ${BIN_INSTALL_DIR} COMPONENT mdrun)
 else()
-    file(GLOB GMX_EXECUTABLE_SOURCES gmx/*.c gmx/*.cpp)
-    add_executable(gmx ${GMX_EXECUTABLE_SOURCES} ${MDRUN_SOURCES} ${VIEW_SOURCES})
+    file(GLOB GMX_GENERAL_SOURCES gmx/*.c gmx/*.cpp)
+    file(GLOB GMX_MAIN_SOURCES gmx/gmx.cpp gmx/legacymodules.cpp)
+    list(REMOVE_ITEM GMX_GENERAL_SOURCES ${GMX_MAIN_SOURCES})
+    add_library(gmx_objlib OBJECT ${GMX_GENERAL_SOURCES})
+    add_executable(gmx
+        ${GMX_MAIN_SOURCES}
+        $<TARGET_OBJECTS:gmx_objlib>
+        $<TARGET_OBJECTS:mdrun_objlib>
+        $<TARGET_OBJECTS:view_objlib>)
     target_link_libraries(gmx
         ${GMX_EXTRA_LIBRARIES} libgromacs ${GMX_EXE_LINKER_FLAGS})
     if(GMX_X11)
@@ -88,3 +99,7 @@ else()
         install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
     endif ()
 endif()
+
+if(BUILD_TESTING)
+    add_subdirectory(mdrun/tests)
+endif(BUILD_TESTING)
