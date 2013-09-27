@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,33 +32,63 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use \ref module_testutils.
+ * Declares test fixture for mdrun tests
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
-#include <gtest/gtest.h>
+#ifndef GMX_INTEGRATION_TESTS_ARGSBUILDER_H
+#define GMX_INTEGRATION_TESTS_ARGSBUILDER_H
 
-#include "testutils/testoptions.h"
+#include <string>
+#include <vector>
+#include "gromacs/options/optionsvisitor.h"
+#include "testutils/cmdlinetest.h"
 
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
-#endif
-
-#ifndef TEST_TEMP_PATH
-//! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
-#endif
-
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
+namespace gmx
 {
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
-    return RUN_ALL_TESTS();
-}
+
+namespace test
+{
+
+/*! \internal \brief This class constructs a C-style command line from a gmx::Options object.
+ *
+ * It does so by implementing the Visitor pattern, by inheriting the
+ * gmx::OptionsVisitor interface. This means it can traverse a
+ * gmx::Options data structure and build a CommandLine.
+ *
+ * Does not throw.
+ *
+ * \ingroup module_integration_tests
+ */
+
+class ArgsBuilder : public gmx::OptionsVisitor
+{
+    public:
+        //! Construct an ArgsBuilder for the named program.
+        ArgsBuilder(std::string const &programName);
+        //! Clean up after the GROMACS tool's main().
+        ~ArgsBuilder();
+        //! Visit any (sub)sections of the gmx::Options
+        void visitSubSection(const Options &section);
+        //! Visit an option and pass it to commandLine_
+        void visitOption(const OptionInfo &option);
+        //! Returns argv for passing into C-style command-line handling.
+        int getArgc();
+        //! Returns argv for passing into C-style command-line handling.
+        char **getArgv();
+
+    private:
+        /*! /brief Helps build a command line
+         *
+         * This gets filled during the visiting process.
+         */
+        gmx::test::CommandLine commandLine_;
+};
+
+} // namespace test
+} // namespace gmx
+
+#endif
