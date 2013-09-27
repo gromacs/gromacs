@@ -90,3 +90,7 @@ else()
         install(SCRIPT ${CREATE_LINKS_SCRIPT} COMPONENT links)
     endif ()
 endif()
+
+if(BUILD_TESTING)
+    add_subdirectory(mdrun/tests)
+endif(BUILD_TESTING)
