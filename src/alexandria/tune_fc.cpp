@@ -107,14 +107,13 @@ typedef struct {
 static void check_support(FILE                           *fp,
                           std::vector<alexandria::MyMol> &mm,
                           gmx_poldata_t                   pd,
-                          bool                            bOpt[],
-                          gmx_molselect_t                 gms)
+                          bool                            bOpt[])
 {
     int nsupp = (int) mm.size();
 
-    for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); mymol++)
+    for (std::vector<alexandria::MyMol>::iterator mymol = mm.begin(); (mymol < mm.end()); )
     {
-        bool bSupport = (gmx_molselect_status(gms, mymol->GetIupac().c_str()) == imsTrain);
+        bool bSupport = true;
 
         for (int bt = 0; bSupport && (bt <= ebtsIDIHS); bt++)
         {
@@ -201,6 +200,10 @@ static void check_support(FILE                           *fp,
             fprintf(stderr, "No force field support for %s\n",
                     mymol->GetMolname().c_str());
             mymol = mm.erase(mymol);
+        }
+        else
+        {
+            mymol++;
         }
     }
     printf("%d out of %d molecules have support in the force field.\n",
@@ -649,9 +652,9 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
         fprintf(csv, "\"%s\",", mymol->GetMolname().c_str());
         for (j = 0; (j < nD); j++)
         {
-            fprintf(csv, "\"%g\",", a[i][j]);
+            fprintf(csv, "%g,", a[i][j]);
         }
-        fprintf(csv, "\"%.3f\"\n", x[i]);
+        fprintf(csv, "%.3f\n", x[i]);
         i++;
     }
     fclose(csv);
@@ -659,8 +662,8 @@ void OptParam::GetDissociationEnergy(FILE *fplog)
     matrix_multiply(debug, nMol, nD, a, at, ata);
     if ((row = matrix_invert(debug, nD, ata)) != 0)
     {
-        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
-                  row);
+        gmx_fatal(FARGS, "Matrix inversion failed. Incorrect row = %d, nD = %d.\nThis probably indicates that you do not have sufficient data points, or that some parameters are linearly dependent.",
+                  row, nD);
     }
     a0    = 0;
     niter = 0;
@@ -1682,7 +1685,7 @@ int main(int argc, char *argv[])
              lot, bCharged, oenv, gms, th_toler, ph_toler, dip_toler,
              TRUE, TRUE, TRUE, watoms, FALSE);
 
-    check_support(fp, opt._mymol, opt._pd, bOpt, gms);
+    check_support(fp, opt._mymol, opt._pd, bOpt);
 
     omt = analyze_idef(fp,
                        opt._mymol,
