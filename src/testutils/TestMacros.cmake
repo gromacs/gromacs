@@ -32,20 +32,48 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-function (gmx_add_unit_test NAME EXENAME)
+function (gmx_build_unit_test NAME EXENAME)
     if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         include_directories(${GMOCK_INCLUDE_DIRS})
         add_executable(${EXENAME} ${ARGN} ${TESTUTILS_DIR}/unittest_main.cpp)
         target_link_libraries(${EXENAME} libgromacs ${TESTUTILS_LIBS} ${GMOCK_LIBRARIES} ${GMX_EXE_LINKER_FLAGS})
-        get_target_property(DEFS ${EXENAME} COMPILE_DEFINITIONS)
-        if (NOT DEFS)
-            set(DEFS)
-        endif ()
-        list(APPEND DEFS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}")
-        set_target_properties(${EXENAME} PROPERTIES COMPILE_DEFINITIONS ${DEFS})
+        set(_temporary_files_path "${CMAKE_CURRENT_BINARY_DIR}/Testing/Temporary")
+        file(MAKE_DIRECTORY ${_temporary_files_path})
+
+        # Note that the quotation marks in the next line form part of
+        # the defined symbol, so that the macro replacement in the
+        # source file is as a string.
+        set(EXTRA_COMPILE_DEFINITIONS TEST_DATA_PATH="${CMAKE_CURRENT_SOURCE_DIR}" TEST_TEMP_PATH="${_temporary_files_path}")
+
+        set_property(TARGET ${EXENAME} APPEND PROPERTY COMPILE_DEFINITIONS "${EXTRA_COMPILE_DEFINITIONS}")
+    endif ()
+endfunction ()
+
+function (gmx_register_unit_test NAME EXENAME)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
         add_test(NAME ${NAME}
-                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${EXENAME}.xml)
-        set_tests_properties(${NAME} PROPERTIES LABELS "GTest")
+                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml)
+        set_tests_properties(${NAME} PROPERTIES LABELS "GTest;UnitTest")
         add_dependencies(tests ${EXENAME})
     endif ()
 endfunction ()
+
+function (gmx_register_integration_test NAME EXENAME)
+    if (GMX_BUILD_UNITTESTS AND BUILD_TESTING)
+        # TODO is ${ARGN} still useful? Need to work how how best to manage things like numbers of threads.
+        add_test(NAME ${NAME}
+                 COMMAND ${EXENAME} --gtest_output=xml:${CMAKE_BINARY_DIR}/Testing/Temporary/${NAME}.xml ${ARGN})
+        # TODO consider whether integration tests should be run by the check target
+        set_tests_properties(${testname} PROPERTIES LABELS "IntegrationTest")
+        add_dependencies(tests ${EXENAME})
+
+        # GMX_EXTRA_LIBRARIES might be needed for mdrun integration tests at
+        # some point.
+        # target_link_libraries(${EXENAME} gmxana ${GMX_EXTRA_LIBRARIES})
+    endif ()
+endfunction ()
+
+function (gmx_add_unit_test NAME EXENAME)
+    gmx_build_unit_test(${NAME} ${EXENAME} ${ARGN})
+    gmx_register_unit_test(${NAME} ${EXENAME})
+endfunction()
