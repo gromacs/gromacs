@@ -541,13 +541,11 @@ t_commrec *init_par_threads(const t_commrec *cro)
     {
         gmx_comm("Initializing threads without comm");
     }
-    /* once threads will be used together with MPI, we'll
-       fill the cr structure with distinct data here. This might even work: */
-    cr->sim_nodeid = gmx_setup(0, NULL, &cr->nnodes);
 
-    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-    cr->nodeid           = cr->sim_nodeid;
+    gmx_do_mpi_init(0, NULL);
+    gmx_fill_commrec_from_mpi(cr);
+
+    // TODO cr->duty should not be initialized here
     cr->duty             = (DUTY_PP | DUTY_PME);
 
     return cr;

@@ -64,11 +64,28 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-int gmx_setup(int gmx_unused *argc, char gmx_unused ***argv, int *nnodes)
+void gmx_do_mpi_init(int gmx_unused *argc, char gmx_unused ***argv)
 {
 #ifndef GMX_MPI
-    gmx_call("gmx_setup");
-    return 0;
+    gmx_call("gmx_do_mpi_init");
+#else
+    if (!gmx_mpi_initialized())
+    {
+#ifdef GMX_LIB_MPI
+#ifdef GMX_FAHCORE
+        (void) fah_MPI_Init(argc, argv);
+#else
+        (void) MPI_Init(argc, argv);
+#endif
+#endif
+    }
+#endif
+}
+
+void gmx_fill_commrec_from_mpi(t_commrec *cr)
+{
+#ifndef GMX_MPI
+    gmx_call("gmx_fill_commrec_from_mpi");
 #else
     char   buf[256];
     int    resultlen;             /* actual length of node name      */
@@ -77,16 +94,8 @@ int gmx_setup(int gmx_unused *argc, char gmx_unused ***argv, int *nnodes)
     int    mpi_my_rank;
     char   mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 
-    /* Call the MPI routines */
-#ifdef GMX_LIB_MPI
-#ifdef GMX_FAHCORE
-    (void) fah_MPI_Init(argc, argv);
-#else
-    (void) MPI_Init(argc, argv);
-#endif
-#endif
-    (void) MPI_Comm_size( MPI_COMM_WORLD, &mpi_num_nodes );
-    (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
+    mpi_num_nodes = gmx_node_num();
+    mpi_my_rank   = gmx_node_rank();
     (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
 
 #ifdef GMX_LIB_MPI
@@ -97,9 +106,11 @@ int gmx_setup(int gmx_unused *argc, char gmx_unused ***argv, int *nnodes)
     }
 #endif
 
-    *nnodes = mpi_num_nodes;
-
-    return mpi_my_rank;
+    cr->nnodes           = mpi_num_nodes;
+    cr->nodeid           = mpi_my_rank;
+    cr->sim_nodeid       = mpi_my_rank;
+    cr->mpi_comm_mysim   = MPI_COMM_WORLD;
+    cr->mpi_comm_mygroup = MPI_COMM_WORLD;
 #endif
 }
 
@@ -769,17 +780,16 @@ void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms)
 }
 
 
-void gmx_finalize_par(void)
+void gmx_finalize_mpi(void)
 {
 #ifndef GMX_MPI
     /* Compiled without MPI, no MPI finalizing needed */
     return;
 #else
-    int initialized, finalized;
+    int finalized;
     int ret;
 
-    MPI_Initialized(&initialized);
-    if (!initialized)
+    if (!gmx_mpi_initialized())
     {
         return;
     }
