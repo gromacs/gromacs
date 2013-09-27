@@ -100,8 +100,8 @@ ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
     // in CommandLineModuleManager.
     t_commrec cr;
     std::memset(&cr, 0, sizeof(cr));
-    cr.nodeid = gmx_setup(argc, argv, &cr.nnodes);
-    cr.mpi_comm_mygroup = MPI_COMM_WORLD;
+    gmx_do_mpi_init(argc, argv);
+    gmx_fill_commrec_from_mpi(&cr);
     if (PAR(&cr))
     {
         broadcastArguments(&cr, argc, argv);
@@ -117,7 +117,7 @@ ProgramInfo &init(int *argc, char ***argv)
 
 void finalize()
 {
-    gmx_finalize_par();
+    gmx_finalize_mpi();
 }
 
 } // namespace gmx

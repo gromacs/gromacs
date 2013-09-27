@@ -53,8 +53,11 @@
 extern "C" {
 #endif
 
-int gmx_setup(int *argc, char ***argv, int *nnodes);
-/* Initializes the parallel communication, return the ID of the node */
+void gmx_do_mpi_init(int *argc, char ***argv);
+/* Initializes the MPI parallel communication */
+
+void gmx_fill_commrec_from_mpi(t_commrec *cr);
+/* Continues t_commrec construction */
 
 int gmx_node_num(void);
 /* return the number of nodes in the ring */
@@ -121,7 +124,7 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 void gmx_abort(int nodeid, int nnodes, int errorno);
 /* Abort the parallel run */
 
-void gmx_finalize_par(void);
+void gmx_finalize_mpi(void);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE
