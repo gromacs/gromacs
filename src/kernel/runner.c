@@ -1443,6 +1443,17 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     /* check consistency of CPU acceleration and number of GPUs selected */
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt, bUseGPU);
 
+    if (DOMAINDECOMP(cr) && bUseGPU && (cr->duty & DUTY_PP))
+    {
+        /* TODO: get this number for one unique definition (but 32 is a lot!) */
+        const int max_gpu_count_per_node = 32;
+
+        /* TODO: gmx_node_num() is not robust, we need to improve it! */
+        dd_setup_dd_dlb_gpu_sharing(cr->dd,
+                                    gmx_node_num()*max_gpu_count_per_node +
+                                    get_gpu_device_id(&hwinfo->gpu_info, &hw_opt->gpu_opt, cr->nodeid));
+    }
+
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
