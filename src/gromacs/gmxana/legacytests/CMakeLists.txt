@@ -2,9 +2,9 @@
 # This file is part of the GROMACS molecular simulation package.
 #
 # Copyright (c) 2013, by the GROMACS development team, led by
-# Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
-# and including many others, as listed in the AUTHORS file in the
-# top-level source directory and at http://www.gromacs.org.
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
 #
 # GROMACS is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public License
@@ -32,10 +32,24 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMXANA_SOURCES *.c *.cpp)
+set(testname "LegacyToolTests")
+set(exename "legacy-tool-tests")
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
 
-if(BUILD_TESTING)
-    add_subdirectory(legacytests)
-endif(BUILD_TESTING)
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for test fixtures
+    gmx_traj_tests.cpp
+    # files for code for gmx
+    ${actual_sources}
+    )
+gmx_register_integration_test(
+    ${testname}
+    ${exename}
+    # Command line arguments specifying the execution context for the
+    # call to the program under test.
+#    -nt 1
+#    -ntomp 1
+    )
