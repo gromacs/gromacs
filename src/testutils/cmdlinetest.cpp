@@ -43,6 +43,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <sstream>
 
 #include <new>
 #include <vector>
@@ -136,6 +137,46 @@ void CommandLine::append(const char *arg)
     impl_->argv_.push_back(newArg);
     impl_->argv_.push_back(NULL);
     impl_->argc_ = static_cast<int>(newSize);
+}
+
+namespace {
+
+//! Helper function for converting values to strings
+template <typename T>
+std::string value2string(T value)
+{
+    std::stringstream ss;
+    ss << value;
+    return ss.str();
+}
+
+}
+
+void CommandLine::addOption(const char *name,
+                            const char *value)
+{
+    append(name);
+    append(value);
+}
+
+void CommandLine::addOption(const char        *name,
+                            const std::string &value)
+{
+    addOption(name, value.c_str());
+}
+
+void CommandLine::addOption(const char *name,
+                            int         value)
+{
+    append(name);
+    append(value2string(value));
+}
+
+void CommandLine::addOption(const char *name,
+                            double      value)
+{
+    append(name);
+    append(value2string(value));
 }
 
 int &CommandLine::argc()
