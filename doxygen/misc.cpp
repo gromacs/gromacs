@@ -37,6 +37,12 @@ A separate page describes the responsibilities of these modules:
 */
 
 /*!
+\defgroup group_mdrun Modules for simulation functionality
+\brief
+Modules used in running simulations with mdrun
+*/
+
+/*!
 \namespace gmx
 \brief
 Generic \Gromacs namespace.
