@@ -66,6 +66,10 @@
  * \brief
  * Modules used in analysis tools.
  */
+/*! \defgroup group_mdrun Modules for simulation functionality
+ * \brief
+ * Modules used in running simulations with mdrun
+ */
 /*! \namespace gmx
  * \brief
  * Generic Gromacs namespace.
