@@ -63,6 +63,7 @@
 
 #include "refdata.h"
 #include "testfilemanager.h"
+#include "mpi-printer.h"
 
 namespace gmx
 {
@@ -73,15 +74,14 @@ namespace
 {
 
 /*! \internal \brief
- * Global test environment for freeing up libxml2 internal buffers.
+ * Global test environment if/when needed
  */
 class GromacsTestEnvironment : public ::testing::Environment
 {
     public:
-        //! Calls MPI_Finalize() if necessary.
+        //! Nothing to do here at the moment
         virtual void TearDown()
         {
-            gmx::finalize();
         }
 };
 
@@ -151,7 +151,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider)
     TestOptionsRegistry::getInstance().add(name, provider);
 }
 
-void initTestUtils(const char *dataPath, int *argc, char ***argv)
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv)
 {
     try
     {
@@ -160,6 +160,10 @@ void initTestUtils(const char *dataPath, int *argc, char ***argv)
         if (dataPath != NULL)
         {
             TestFileManager::setInputDataDirectory(dataPath);
+        }
+        if (tempPath != NULL)
+        {
+            TestFileManager::setOutputTempDirectory(tempPath);
         }
         bool    bHelp = false;
         Options options(NULL, NULL);
@@ -189,12 +193,23 @@ void initTestUtils(const char *dataPath, int *argc, char ***argv)
         }
         setFatalErrorHandler(NULL);
         ::testing::AddGlobalTestEnvironment(new GromacsTestEnvironment);
+#ifdef GMX_LIB_MPI
+        MPIEventForward::Insert();
+#endif
     }
     catch (const std::exception &ex)
     {
         printFatalErrorMessage(stderr, ex);
         std::exit(processExceptionAtExit(ex));
     }
+}
+
+void finalizeTestUtils()
+{
+#ifdef GMX_LIB_MPI
+    MPIEventForward::Remove();
+#endif
+    gmx::finalize();
 }
 
 } // namespace test
