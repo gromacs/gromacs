@@ -149,6 +149,14 @@ void change_dd_dlb_cutoff_limit(t_commrec *cr);
  */
 
 GMX_LIBMD_EXPORT
+void dd_setup_dd_dlb_gpu_sharing(gmx_domdec_t *dd, int gpu_id);
+/* When domains (PP MPI ranks) share a GPU, the individual GPU wait times
+ * are meaningless, as it depends on the order in which tasks on the same
+ * GPU finish. Therefore there wait times need to be averaged over the ranks
+ * sharing the same GPU. This function sets up the communication for that.
+ */
+
+GMX_LIBMD_EXPORT
 void setup_dd_grid(FILE *fplog, gmx_domdec_t *dd);
 
 void dd_collect_vec(gmx_domdec_t *dd,
@@ -159,7 +167,7 @@ void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local, t_state *state);
 
 enum {
-    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr
+    ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclWaitGPU, ddCyclPME, ddCyclNr
 };
 
 GMX_LIBMD_EXPORT
