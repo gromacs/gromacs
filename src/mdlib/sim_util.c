@@ -766,12 +766,13 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
     matrix              boxs;
     rvec                vzero, box_diag;
     real                e, v, dvdl;
-    float               cycles_pme, cycles_force;
+    float               cycles_pme, cycles_force, cycles_wait_gpu;
     nonbonded_verlet_t *nbv;
 
-    cycles_force   = 0;
-    nbv            = fr->nbv;
-    nb_kernel_type = fr->nbv->grp[0].kernel_type;
+    cycles_force    = 0;
+    cycles_wait_gpu = 0;
+    nbv             = fr->nbv;
+    nb_kernel_type  = fr->nbv->grp[0].kernel_type;
 
     start  = mdatoms->start;
     homenr = mdatoms->homenr;
@@ -1284,13 +1285,17 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         {
             if (bUseGPU)
             {
+                float cycles_tmp;
+
                 wallcycle_start(wcycle, ewcWAIT_GPU_NB_NL);
                 nbnxn_cuda_wait_gpu(nbv->cu_nbv,
                                     nbv->grp[eintNonlocal].nbat,
                                     flags, eatNonlocal,
                                     enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                     fr->fshift);
-                cycles_force += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_tmp       = wallcycle_stop(wcycle, ewcWAIT_GPU_NB_NL);
+                cycles_wait_gpu += cycles_tmp;
+                cycles_force    += cycles_tmp;
             }
             else
             {
@@ -1356,7 +1361,7 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
                                 flags, eatLocal,
                                 enerd->grpp.ener[egLJSR], enerd->grpp.ener[egCOULSR],
                                 fr->fshift);
-            wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
+            cycles_wait_gpu += wallcycle_stop(wcycle, ewcWAIT_GPU_NB_L);
 
             /* now clear the GPU outputs while we finish the step on the CPU */
 
@@ -1390,6 +1395,10 @@ void do_force_cutsVERLET(FILE *fplog, t_commrec *cr,
         if (wcycle)
         {
             dd_cycles_add(cr->dd, cycles_force-cycles_pme, ddCyclF);
+            if (bUseGPU)
+            {
+                dd_cycles_add(cr->dd, cycles_wait_gpu, ddCyclWaitGPU);
+            }
         }
     }
 
