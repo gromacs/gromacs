@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,33 +32,45 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
+/*! \internal \file
  * \brief
- * main() for unit tests that use \ref module_testutils.
+ * Implements classes in programcaller.h.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  * \ingroup module_testutils
  */
-#include <gtest/gtest.h>
+#include "gromacs/options/optionsassigner.h"
+#include "programcaller.h"
+#include "argsbuilder.h"
 
-#include "testutils/testoptions.h"
-
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
-#endif
-
-#ifndef TEST_TEMP_PATH
-//! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
-#endif
-
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
+namespace gmx
 {
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
-    return RUN_ALL_TESTS();
+namespace test
+{
+
+ProgramCaller::ProgramCaller(std::string const &programName)
+    : programName_(programName),
+      options_(programName.c_str(), "options to use when constructing a call to a GROMACS tool")
+{
 }
+
+gmx::OptionInfo*
+ProgramCaller::addOption(const AbstractOption &settings)
+{
+    return options_.addOption(settings);
+}
+
+gmx::Options &
+ProgramCaller::getOptions()
+{
+    return options_;
+}
+
+std::string const &
+ProgramCaller::getProgramName()
+{
+    return programName_;
+}
+
+} // namespace test
+} // namespace gmx

@@ -232,7 +232,7 @@ void OptionsAssigner::startOption(const char *name)
 {
     if (!tryStartOption(name))
     {
-        GMX_THROW(InvalidInputError("Unknown option"));
+        GMX_THROW(InvalidInputError("Unknown option " + std::string(name)));
     }
 }
 
