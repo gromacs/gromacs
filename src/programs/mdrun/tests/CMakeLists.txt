@@ -32,10 +32,35 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB GMXANA_SOURCES *.c *.cpp)
+set(testname "MdrunTests")
+set(exename "mdrun-tests")
 
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${GMXANA_SOURCES} PARENT_SCOPE)
+set(mdrun_dir "${CMAKE_CURRENT_SOURCE_DIR}/..")
+file(GLOB MDRUN_SOURCES ${mdrun_dir}/*.c ${mdrun_dir}/*.cpp)
+file(GLOB MDRUN_SOURCES ../*.c ../*.cpp)
+set(gmx_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../gmx")
+file(GLOB GMX_EXECUTABLE_SOURCES ${gmx_dir}/grompp.c ${gmx_dir}/convparm.c ${gmx_dir}/tomorse.c)
+list(APPEND actual_sources ${MDRUN_SOURCES})
+list(APPEND actual_sources ${GMX_EXECUTABLE_SOURCES})
 
-if(BUILD_TESTING)
-    add_subdirectory(legacytests)
-endif(BUILD_TESTING)
+include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
+
+# TODO By design, multiple tools might be run when using MPI, so
+# finalization with gmx::finalize() should be avoided until the end of
+# all tests in an executable. The only way to ensure it is called is
+# to use a different main() function from the unit tests. We could do
+# that, but can probably cope without finalization, too.
+gmx_build_unit_test(
+    ${testname}
+    ${exename}
+    # files with code for tests
+    rerun.cpp
+    # files with code for test fixtures
+    moduletest.cpp
+    # files for code for grompp and mdrun
+    ${actual_sources}
+    )
+gmx_register_integration_test(
+    ${testname}
+    ${exename}
+    )
