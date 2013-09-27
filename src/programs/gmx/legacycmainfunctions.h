@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,35 +32,26 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \libinternal \file
- * \brief
- * main() for unit tests that use \ref module_testutils.
+/*! \internal \brief Declares C-style main functions as used in
+ * remaining 4.x-style GROMACS tools
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_testutils
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
  */
-#include <gtest/gtest.h>
 
-#include "testutils/testoptions.h"
+#ifndef GMX_LEGACYCMAINFUNCTIONS_H
+#define GMX_LEGACYCMAINFUNCTIONS_H
 
-#ifndef TEST_DATA_PATH
-//! Path to test input data directory (needs to be set by the build system).
-#define TEST_DATA_PATH 0
-#endif
-
-#ifndef TEST_TEMP_PATH
-//! Path to test output temporary directory (needs to be set by the build system).
-#define TEST_TEMP_PATH 0
-#endif
-
-/*! \brief
- * Initializes unit testing for \ref module_testutils.
- */
-int main(int argc, char *argv[])
+extern "C"
 {
-    // Calls ::testing::InitGoogleMock()
-    ::gmx::test::initTestUtils(TEST_DATA_PATH, TEST_TEMP_PATH, &argc, &argv);
-    int errcode = RUN_ALL_TESTS();
-    ::gmx::test::finalizeTestUtils();
-    return errcode;
+
+int gmx_gmxcheck(int argc, char *argv[]);
+int gmx_gmxdump(int argc, char *argv[]);
+int gmx_grompp(int argc, char *argv[]);
+int gmx_pdb2gmx(int argc, char *argv[]);
+int gmx_protonate(int argc, char *argv[]);
+int gmx_tpbconv(int argc, char *argv[]);
+int gmx_x2top(int argc, char *argv[]);
+
 }
+
+#endif
