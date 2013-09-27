@@ -1368,6 +1368,18 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_check_hw_runconf_consistency(fplog, hwinfo, cr, hw_opt->nthreads_tmpi,
                                      minf.bUseGPU);
 
+    /* With thread-MPI we can't use minf.bUseGPU here, so we use hwinfo */
+    if (DOMAINDECOMP(cr) && hwinfo->bCanUseGPU && (cr->duty & DUTY_PP))
+    {
+        /* TODO: get this number for one unique definition (but 32 is a lot!) */
+        const int max_gpu_count_per_node = 32;
+
+        /* TODO: gmx_node_num() is not robust, we need to improve it! */
+        dd_setup_dd_dlb_gpu_sharing(cr->dd,
+                                    gmx_node_num()*max_gpu_count_per_node +
+                                    get_gpu_device_id(&hwinfo->gpu_info, cr->nodeid));
+    }
+
     /* getting number of PP/PME threads
        PME: env variable should be read only on one node to make sure it is
        identical everywhere;
