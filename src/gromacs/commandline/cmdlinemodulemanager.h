@@ -96,6 +96,7 @@ class CommandLineModuleManager
          * \param argc   \c argc passed to main().
          * \param argv   \c argv passed to main().
          * \param module Module to run.
+         * \param bDoFinalize Whether to call finalization routines (e.g. for MPI)
          *
          * This method allows for uniform behavior for binaries that only
          * contain a single module without duplicating any of the
@@ -121,13 +122,15 @@ class CommandLineModuleManager
          * Does not throw.  All exceptions are caught and handled internally.
          */
         static int runAsMainSingleModule(int argc, char *argv[],
-                                         CommandLineModuleInterface *module);
+                                         CommandLineModuleInterface *module,
+                                         bool bDoFinalize = true);
         /*! \brief
          * Implements a main() method that runs a given function.
          *
          * \param argc         \c argc passed to main().
          * \param argv         \c argv passed to main().
          * \param mainFunction The main()-like method to wrap.
+         * \param bDoFinalize Whether to call finalization routines (e.g. for MPI)
          *
          * This method creates a dummy command-line module that does its
          * processing by calling \p mainFunction; see addModuleCMain() for
@@ -152,7 +155,8 @@ class CommandLineModuleManager
          * Does not throw.  All exceptions are caught and handled internally.
          */
         static int runAsMainCMain(int argc, char *argv[],
-                                  CMainFunction mainFunction);
+                                  CMainFunction mainFunction,
+                                  bool bDoFinalize = true);
 
         /*! \brief
          * Initializes a command-line module manager.

@@ -844,7 +844,8 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 
 // static
 int CommandLineModuleManager::runAsMainSingleModule(
-        int argc, char *argv[], CommandLineModuleInterface *module)
+        int argc, char *argv[], CommandLineModuleInterface *module,
+        bool bDoFinalize)
 {
     ProgramInfo &programInfo = gmx::init(&argc, &argv);
     try
@@ -852,7 +853,10 @@ int CommandLineModuleManager::runAsMainSingleModule(
         CommandLineModuleManager manager(&programInfo);
         manager.impl_->singleModule_ = module;
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        if (bDoFinalize)
+        {
+            gmx::finalize();
+        }
         return rc;
     }
     catch (const std::exception &ex)
@@ -864,10 +868,11 @@ int CommandLineModuleManager::runAsMainSingleModule(
 
 // static
 int CommandLineModuleManager::runAsMainCMain(
-        int argc, char *argv[], CMainFunction mainFunction)
+        int argc, char *argv[], CMainFunction mainFunction,
+        bool bDoFinalize)
 {
     CMainCommandLineModule module(argv[0], NULL, mainFunction);
-    return runAsMainSingleModule(argc, argv, &module);
+    return runAsMainSingleModule(argc, argv, &module, bDoFinalize);
 }
 
 } // namespace gmx

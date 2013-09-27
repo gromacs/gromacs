@@ -54,7 +54,7 @@
 #include "readir.h"
 #include "symtab.h"
 #include "names.h"
-#include "grompp.h"
+#include "gromacs/legacyheaders/grompp.h"
 #include "random.h"
 #include "vec.h"
 #include "futil.h"
