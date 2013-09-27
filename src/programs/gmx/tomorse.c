@@ -42,7 +42,6 @@
 #include <ctype.h>
 #include "typedefs.h"
 #include "string2.h"
-#include "grompp.h"
 #include "futil.h"
 #include "smalloc.h"
 #include "toputil.h"

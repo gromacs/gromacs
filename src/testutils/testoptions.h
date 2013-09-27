@@ -147,7 +147,7 @@ void registerTestOptions(const char *name, TestOptionsProvider *provider);
  *
  * This function is automatically called by unittest_main.cpp.
  */
-void initTestUtils(const char *dataPath, int *argc, char ***argv);
+void initTestUtils(const char *dataPath, const char *tempPath, int *argc, char ***argv);
 
 } // namespace test
 } // namespace gmx
