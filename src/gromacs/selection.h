@@ -68,15 +68,6 @@
  * It should be considered whether they should be moved somewhere else.
  * \endif
  *
- * \if internal
- * Implementation details of different parts of the module are discussed on
- * separate pages:
- *   - \ref page_module_selection_custom
- *   - \ref page_module_selection_parser
- *   - \ref page_module_selection_compiler
- *   - \ref page_module_selection_insolidangle
- * \endif
- *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
 /*! \file

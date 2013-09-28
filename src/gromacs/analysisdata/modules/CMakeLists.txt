@@ -36,5 +36,6 @@ set(ANALYSISDATA_MODULES_PUBLIC_HEADERS
     average.h
     displacement.h
     histogram.h
+    lifetime.h
     plot.h)
 gmx_install_headers(analysisdata/modules ${ANALYSISDATA_MODULES_PUBLIC_HEADERS})
