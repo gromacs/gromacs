@@ -69,6 +69,11 @@ void gmx_fill_commrec_from_mpi(t_commrec *cr)
 #ifndef GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
 #else
+    if (!gmx_mpi_initialized())
+    {
+        gmx_comm("MPI has not been initialized properly");
+    }
+
     cr->nnodes           = gmx_node_num();
     cr->nodeid           = gmx_node_rank();
     cr->sim_nodeid       = cr->nodeid;
@@ -85,14 +90,8 @@ t_commrec *init_commrec()
     snew(cr, 1);
 
 #ifdef GMX_LIB_MPI
-    if (!gmx_mpi_initialized())
-    {
-        gmx_comm("MPI has not been initialized properly");
-    }
-
     gmx_fill_commrec_from_mpi(cr);
 #else
-    /* These should never be accessed */
     cr->mpi_comm_mysim   = NULL;
     cr->mpi_comm_mygroup = NULL;
     cr->nnodes           = 1;
@@ -100,7 +99,7 @@ t_commrec *init_commrec()
     cr->nodeid           = cr->sim_nodeid;
 #endif
 
-    // TODO this should be initialized elsewhere
+    // TODO cr->duty should not be initialized here
     cr->duty = (DUTY_PP | DUTY_PME);
 
 #if defined GMX_LIB_MPI && !defined MPI_IN_PLACE_EXISTS
@@ -119,10 +118,9 @@ t_commrec *init_commrec()
     return cr;
 }
 
-t_commrec *init_par_threads(const t_commrec *cro)
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro)
 {
 #ifdef GMX_THREAD_MPI
-    int        initialized;
     t_commrec *cr;
 
     /* make a thread-specific commrec */
@@ -132,13 +130,6 @@ t_commrec *init_par_threads(const t_commrec *cro)
     *cr = *cro;
 
     /* and we start setting our own thread-specific values for things */
-    MPI_Initialized(&initialized);
-    if (!initialized)
-    {
-        gmx_comm("Initializing threads without comm");
-    }
-
-    /* No need to do MPI_Init() for thread-MPI. */
     gmx_fill_commrec_from_mpi(cr);
 
     // TODO cr->duty should not be initialized here
