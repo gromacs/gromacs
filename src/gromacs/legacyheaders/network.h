@@ -56,6 +56,19 @@ extern "C" {
 void gmx_do_mpi_init(int *argc, char ***argv);
 /* Initializes the MPI parallel communication */
 
+t_commrec *init_commrec(void);
+/* Allocate, initialize and return the commrec. */
+
+t_commrec *init_par_threads(const t_commrec *cro);
+/* Initialize communication records for thread-parallel simulations.
+   Must be called on all threads before any communication takes place by
+   the individual threads. Copies the original commrec to
+   thread-local versions (a small memory leak results because we don't
+   deallocate the old shared version).  */
+
+void gmx_finalize_mpi(void);
+/* Finish the parallel run in an ordered manner */
+
 void gmx_fill_commrec_from_mpi(t_commrec *cr);
 /* Continues t_commrec construction */
 
@@ -123,9 +136,6 @@ void gmx_sumd_sim(int nr, double r[], const gmx_multisim_t *ms);
 
 void gmx_abort(int nodeid, int nnodes, int errorno);
 /* Abort the parallel run */
-
-void gmx_finalize_mpi(void);
-/* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE
 #define gmx_sum_comm  gmx_sumd_comm
