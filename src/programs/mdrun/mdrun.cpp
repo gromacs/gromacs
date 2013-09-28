@@ -545,7 +545,7 @@ int gmx_mdrun(int argc, char *argv[])
     char          **multidir = NULL;
 
 
-    cr = init_par();
+    cr = init_commrec();
 
     PCA_Flags = (PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET));
 
