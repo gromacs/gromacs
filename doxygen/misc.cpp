@@ -66,6 +66,9 @@ Modules with generic utility functions.
 \defgroup group_analysismodules Analysis Modules
 \brief
 Modules used in analysis tools.
+
+A separate page describes the responsibilities of these modules:
+\ref page_analysisframework
 */
 
 /*!
@@ -109,4 +112,26 @@ Source code directory for building executables.
 \dir share
 \brief
 Directory that contains installed data files.
+ */
+
+/*!
+\dir share/template
+\brief
+Template code for writing analysis programs.
+ */
+
+/*!
+\file share/template/template.cpp
+\brief
+Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
+ */
+
+/*!
+\example template.cpp
+\brief
+Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
  */
