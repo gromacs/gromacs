@@ -9,7 +9,7 @@
  *                        VERSION 3.2.0
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2013, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -712,7 +712,7 @@ void chk_enx(const char *fn)
 int gmx_gmxcheck(int argc, char *argv[])
 {
     const char     *desc[] = {
-        "[TT]gmxcheck[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
+        "[TT]gmx check[tt] reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
         "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
         "or an index file ([TT].ndx[tt])",
         "and prints out useful information about them.[PAR]",
@@ -728,7 +728,7 @@ int gmx_gmxcheck(int argc, char *argv[])
         "the program will check whether the bond lengths defined in the tpr",
         "file are indeed correct in the trajectory. If not you may have",
         "non-matching files due to e.g. deshuffling or due to problems with",
-        "virtual sites. With these flags, [TT]gmxcheck[tt] provides a quick check for such problems.[PAR]",
+        "virtual sites. With these flags, [TT]gmx check[tt] provides a quick check for such problems.[PAR]",
         "The program can compare two run input ([TT].tpr[tt], [TT].tpb[tt] or",
         "[TT].tpa[tt]) files",
         "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",

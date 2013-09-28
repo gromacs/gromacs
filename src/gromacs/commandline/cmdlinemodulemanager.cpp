@@ -662,6 +662,10 @@ CommandLineModuleManager::Impl::findModuleFromBinaryName(
     {
         binaryName.erase(0, 2);
     }
+    if (binaryName.compare(0, 3, "gmx") == 0)
+    {
+        binaryName.erase(0, 3);
+    }
     return findModuleByName(binaryName);
 }
 
