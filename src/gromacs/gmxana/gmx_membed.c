@@ -142,7 +142,7 @@ int gmx_membed(int argc, char *argv[])
         { "-start",   FALSE, etBOOL, {&bStart},
           "Call mdrun with membed options" },
         { "-stepout", FALSE, etINT, {&nstepout},
-          "HIDDENFrequency of writing the remaining runtime" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
         { "-v",       FALSE, etBOOL, {&bVerbose},
           "Be loud and noisy" },
         { "-mdrun_path", FALSE, etSTR, {&mdrun_path},

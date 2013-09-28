@@ -38,10 +38,6 @@
 #endif
 
 #include <stdio.h>
-#include <time.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
 #ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
 #endif
@@ -91,6 +87,7 @@
 #include "nbnxn_kernels/nbnxn_kernel_gpu_ref.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #include "adress.h"
 #include "qmmm.h"
@@ -98,55 +95,15 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
-double
-gmx_gettime()
-{
-#if _POSIX_TIMERS > 0
-    /* Mac and Windows do not support this */
-    struct timespec t;
-    double          seconds;
-
-    clock_gettime(CLOCK_REALTIME, &t);
-    seconds = (double) t.tv_sec + 1e-9*(double)t.tv_nsec;
-    return seconds;
-#elif defined HAVE_GETTIMEOFDAY
-    struct timeval t;
-    double         seconds;
-
-    gettimeofday(&t, NULL);
-    seconds = (double) t.tv_sec + 1e-6*(double)t.tv_usec;
-
-    return seconds;
-#else
-    double  seconds;
-
-    seconds = time(NULL);
-
-    return seconds;
-#endif
-}
-
-double
-gmx_gettime_per_thread()
-{
-#if _POSIX_THREAD_CPUTIME > 0
-    struct timespec t;
-    double          seconds;
-
-    clock_gettime(CLOCK_THREAD_CPUTIME_ID, &t);
-    seconds = (double) t.tv_sec + 1e-9*(double)t.tv_nsec;
-    return seconds;
-#else
-    return gmx_gettime();
-#endif
-}
-
-void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
-                t_inputrec *ir, t_commrec gmx_unused *cr)
+void print_time(FILE                     *out,
+                gmx_walltime_accounting_t walltime_accounting,
+                gmx_large_int_t           step,
+                t_inputrec               *ir,
+                t_commrec gmx_unused     *cr)
 {
     time_t finish;
     char   timebuf[STRLEN];
-    double dt, time_per_step;
+    double dt, elapsed_seconds, time_per_step;
     char   buf[48];
 
 #ifndef GMX_THREAD_MPI
@@ -159,10 +116,9 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     if ((step >= ir->nstlist))
     {
         double seconds_since_epoch = gmx_gettime();
-        dt            = seconds_since_epoch - runtime->start_time_stamp;
-        time_per_step = dt/(step - ir->init_step + 1);
-
-        dt = (ir->nsteps + ir->init_step - step) * time_per_step;
+        elapsed_seconds = seconds_since_epoch - walltime_accounting_get_start_time_stamp(walltime_accounting);
+        time_per_step   = elapsed_seconds/(step - ir->init_step + 1);
+        dt              = (ir->nsteps + ir->init_step - step) * time_per_step;
 
         if (ir->nsteps >= 0)
         {
@@ -176,7 +132,7 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
             }
             else
             {
-                fprintf(out, ", remaining runtime: %5d s          ", (int)dt);
+                fprintf(out, ", remaining wall clock time: %5d s          ", (int)dt);
             }
         }
         else
@@ -195,31 +151,8 @@ void print_time(FILE *out, gmx_runtime_t *runtime, gmx_large_int_t step,
     fflush(out);
 }
 
-void runtime_start(gmx_runtime_t *runtime)
-{
-    runtime->start_time_stamp            = gmx_gettime();
-    runtime->start_time_stamp_per_thread = gmx_gettime_per_thread();
-    runtime->elapsed_run_time            = 0;
-}
-
-void runtime_end(gmx_runtime_t *runtime)
-{
-    double now, now_per_thread;
-
-    now            = gmx_gettime();
-    now_per_thread = gmx_gettime_per_thread();
-
-    runtime->elapsed_run_time            = now - runtime->start_time_stamp;
-    runtime->elapsed_run_time_per_thread = now_per_thread - runtime->start_time_stamp_per_thread;
-}
-
-double runtime_get_elapsed_time(gmx_runtime_t *runtime)
-{
-    return gmx_gettime() - runtime->start_time_stamp;
-}
-
 void print_date_and_time(FILE *fplog, int nodeid, const char *title,
-                         const gmx_runtime_t *runtime)
+                         const gmx_walltime_accounting_t walltime_accounting)
 {
     int    i;
     char   timebuf[STRLEN];
@@ -228,9 +161,9 @@ void print_date_and_time(FILE *fplog, int nodeid, const char *title,
 
     if (fplog)
     {
-        if (runtime != NULL)
+        if (walltime_accounting != NULL)
         {
-            tmptime = (time_t) runtime->start_time_stamp;
+            tmptime = (time_t) walltime_accounting_get_start_time_stamp(walltime_accounting);
             gmx_ctime_r(&tmptime, timebuf, STRLEN);
         }
         else
@@ -2443,7 +2376,7 @@ void do_pbc_mtop(FILE *fplog, int ePBC, matrix box,
 void finish_run(FILE *fplog, t_commrec *cr,
                 t_inputrec *inputrec,
                 t_nrnb nrnb[], gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_walltime_accounting_t walltime_accounting,
                 wallclock_gpu_t *gputimes,
                 gmx_bool bWriteStat)
 {
@@ -2451,8 +2384,10 @@ void finish_run(FILE *fplog, t_commrec *cr,
     t_nrnb *nrnb_tot = NULL;
     real    delta_t;
     double  nbfs, mflop;
-    double  elapsed_run_time_over_all_ranks            = 0;
-    double  elapsed_run_time_per_thread_over_all_ranks = 0;
+    double  elapsed_time,
+            elapsed_time_over_all_ranks,
+            elapsed_time_over_all_threads,
+            elapsed_time_over_all_threads_over_all_ranks;
     wallcycle_sum(cr, wcycle);
 
     if (cr->nnodes > 1)
@@ -2468,27 +2403,27 @@ void finish_run(FILE *fplog, t_commrec *cr,
         nrnb_tot = nrnb;
     }
 
+    elapsed_time                                 = walltime_accounting_get_elapsed_time(walltime_accounting);
+    elapsed_time_over_all_ranks                  = elapsed_time;
+    elapsed_time_over_all_threads                = walltime_accounting_get_elapsed_time_over_all_threads(walltime_accounting);
+    elapsed_time_over_all_threads_over_all_ranks = elapsed_time_over_all_threads;
 #ifdef GMX_MPI
     if (cr->nnodes > 1)
     {
-        /* reduce elapsed_run_time over all MPI ranks in the current simulation */
-        MPI_Allreduce(&runtime->elapsed_run_time,
-                      &elapsed_run_time_over_all_ranks,
+        /* reduce elapsed_time over all MPI ranks in the current simulation */
+        MPI_Allreduce(&elapsed_time,
+                      &elapsed_time_over_all_ranks,
                       1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
-        elapsed_run_time_over_all_ranks /= cr->nnodes;
-        /* reduce elapsed_run_time_per_thread over all MPI ranks in the current simulation */
-        MPI_Allreduce(&runtime->elapsed_run_time_per_thread,
-                      &elapsed_run_time_per_thread_over_all_ranks,
+        elapsed_time_over_all_ranks /= cr->nnodes;
+        /* Reduce elapsed_time_over_all_threads over all MPI ranks in the
+         * current simulation. */
+        MPI_Allreduce(&elapsed_time_over_all_threads,
+                      &elapsed_time_over_all_threads_over_all_ranks,
                       1, MPI_DOUBLE, MPI_SUM,
                       cr->mpi_comm_mysim);
     }
-    else
 #endif
-    {
-        elapsed_run_time_over_all_ranks            = runtime->elapsed_run_time;
-        elapsed_run_time_per_thread_over_all_ranks = runtime->elapsed_run_time_per_thread;
-    }
 
     if (SIMMASTER(cr))
     {
@@ -2533,7 +2468,8 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
     if (SIMMASTER(cr))
     {
-        wallcycle_print(fplog, cr->nnodes, cr->npmenodes, runtime->elapsed_run_time,
+        wallcycle_print(fplog, cr->nnodes, cr->npmenodes,
+                        elapsed_time_over_all_ranks,
                         wcycle, gputimes);
 
         if (EI_DYNAMICS(inputrec->eI))
@@ -2547,15 +2483,17 @@ void finish_run(FILE *fplog, t_commrec *cr,
 
         if (fplog)
         {
-            print_perf(fplog, elapsed_run_time_per_thread_over_all_ranks,
-                       elapsed_run_time_over_all_ranks,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(fplog, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
         if (bWriteStat)
         {
-            print_perf(stderr, elapsed_run_time_per_thread_over_all_ranks,
-                       elapsed_run_time_over_all_ranks,
-                       runtime->nsteps_done, delta_t, nbfs, mflop);
+            print_perf(stderr, elapsed_time_over_all_threads_over_all_ranks,
+                       elapsed_time_over_all_ranks,
+                       walltime_accounting_get_nsteps_done(walltime_accounting),
+                       delta_t, nbfs, mflop);
         }
     }
 }

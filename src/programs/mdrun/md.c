@@ -90,6 +90,7 @@
 #include "nbnxn_cuda_data_mgmt.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -99,7 +100,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                                gmx_large_int_t step,
                                gmx_large_int_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
-                               gmx_runtime_t *runtime,
+                               gmx_walltime_accounting_t walltime_accounting,
                                nbnxn_cuda_ptr_t cu_nbv)
 {
     char sbuf[STEPSTRSIZE];
@@ -124,8 +125,8 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
     ir->nsteps    -= *step_rel;
     *step_rel      = 0;
     wallcycle_start(wcycle, ewcRUN);
-    runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Restarted time", runtime);
+    walltime_accounting_start(walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Restarted time", walltime_accounting);
 }
 
 double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
@@ -143,11 +144,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              real cpt_period, real max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     gmx_mdoutf_t   *outf;
     gmx_large_int_t step, step_rel;
-    double          elapsed_run_time;
+    double          elapsed_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
     gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
@@ -680,8 +681,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     /* Set and write start time */
-    runtime_start(runtime);
-    print_date_and_time(fplog, cr->nodeid, "Started mdrun", runtime);
+    walltime_accounting_start(walltime_accounting);
+    print_date_and_time(fplog, cr->nodeid, "Started mdrun", walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
     if (fplog)
     {
@@ -1451,7 +1452,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
 
-        elapsed_run_time = runtime_get_elapsed_time(runtime);
+        elapsed_time = walltime_accounting_get_current_elapsed_time(walltime_accounting);
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
@@ -1488,7 +1489,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             handled_stop_condition = (int)gmx_get_stop_condition();
         }
         else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-                 (max_hours > 0 && elapsed_run_time > max_hours*60.0*60.0*0.99) &&
+                 (max_hours > 0 && elapsed_time > max_hours*60.0*60.0*0.99) &&
                  gs.sig[eglsSTOPCOND] == 0 && gs.set[eglsSTOPCOND] == 0)
         {
             /* Signal to terminate the run */
@@ -1501,7 +1502,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
 
         if (bResetCountersHalfMaxH && MASTER(cr) &&
-            elapsed_run_time > max_hours*60.0*60.0*0.495)
+            elapsed_time > max_hours*60.0*60.0*0.495)
         {
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
@@ -1538,7 +1539,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         if (MASTER(cr) && ((bGStat || !PAR(cr)) &&
                            cpt_period >= 0 &&
                            (cpt_period == 0 ||
-                            elapsed_run_time >= nchkpt*cpt_period*60.0)) &&
+                            elapsed_time >= nchkpt*cpt_period*60.0)) &&
             gs.set[eglsCHKPT] == 0)
         {
             gs.sig[eglsCHKPT] = 1;
@@ -1899,14 +1900,14 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
             }
         }
-        /* Remaining runtime */
+        /* Print the remaining wall clock time for the run */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {
             if (shellfc)
             {
                 fprintf(stderr, "\n");
             }
-            print_time(stderr, runtime, step, ir, cr);
+            print_time(stderr, walltime_accounting, step, ir, cr);
         }
 
         /* Replica exchange */
@@ -2033,7 +2034,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.set[eglsRESETCOUNTERS] != 0)
         {
             /* Reset all the counters related to performance over the run */
-            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, runtime,
+            reset_all_counters(fplog, cr, step, &step_rel, ir, wcycle, nrnb, walltime_accounting,
                                fr->nbv != NULL && fr->nbv->bUseGPU ? fr->nbv->cu_nbv : NULL);
             wcycle_set_reset_counters(wcycle, -1);
             if (!(cr->duty & DUTY_PME))
@@ -2042,7 +2043,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 gmx_pme_send_resetcounters(cr, step);
             }
             /* Correct max_hours for the elapsed time */
-            max_hours                -= elapsed_run_time/(60.0*60.0);
+            max_hours                -= elapsed_time/(60.0*60.0);
             bResetCountersHalfMaxH    = FALSE;
             gs.set[eglsRESETCOUNTERS] = 0;
         }
@@ -2051,8 +2052,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     /* End of main MD loop */
     debug_gmx();
 
-    /* Stop the time */
-    runtime_end(runtime);
+    /* Stop measuring walltime */
+    walltime_accounting_end(walltime_accounting);
 
     if (bRerunMD && MASTER(cr))
     {
@@ -2103,7 +2104,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         print_replica_exchange_statistics(fplog, repl_ex);
     }
 
-    runtime->nsteps_done = step_rel;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step_rel);
 
     return 0;
 }
