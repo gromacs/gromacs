@@ -58,7 +58,7 @@
 #include "gmx_ana.h"
 #include "names.h"
 #include "perf_est.h"
-#include "sim_util.h"
+#include "gromacs/legacyheaders/runtime.h"
 
 
 /* Enum for situations that can occur during log file parsing, the
