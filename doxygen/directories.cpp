@@ -126,3 +126,21 @@ Doxygen documentation file for directories in the source tree.
 \dir share
 \brief Directory that contains installed data files.
  */
+/*!
+\dir share/template
+\brief Template code for writing analysis programs.
+ */
+
+/*!
+\file share/template/template.cpp
+\brief Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
+ */
+
+/*!
+\example template.cpp
+\brief Template code for writing analysis programs.
+
+See \ref page_analysistemplate for more information.
+ */
