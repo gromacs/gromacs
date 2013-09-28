@@ -23,7 +23,7 @@
    fun:malloc
    fun:ompi_proc_all
    ...
-   fun:gmx_finalize_mpi
+   fun:gmx::finalize
 }
 {
    MPI_Init/Addr4
