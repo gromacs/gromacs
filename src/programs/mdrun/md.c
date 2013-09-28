@@ -90,6 +90,7 @@
 #include "nbnxn_cuda_data_mgmt.h"
 
 #include "gromacs/utility/gmxmpi.h"
+#include "gromacs/legacyheaders/runtime.h"
 
 #ifdef GMX_FAHCORE
 #include "corewrap.h"
@@ -99,7 +100,7 @@ static void reset_all_counters(FILE *fplog, t_commrec *cr,
                                gmx_large_int_t step,
                                gmx_large_int_t *step_rel, t_inputrec *ir,
                                gmx_wallcycle_t wcycle, t_nrnb *nrnb,
-                               gmx_runtime_t *runtime,
+                               gmx_runtime_t runtime,
                                nbnxn_cuda_ptr_t cu_nbv)
 {
     char sbuf[STEPSTRSIZE];
@@ -143,7 +144,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              real cpt_period, real max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long Flags,
-             gmx_runtime_t *runtime)
+             gmx_runtime_t runtime)
 {
     gmx_mdoutf_t   *outf;
     gmx_large_int_t step, step_rel;
@@ -1451,7 +1452,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         /*  ################## END TRAJECTORY OUTPUT ################ */
 
-        elapsed_run_time = runtime_get_elapsed_time(runtime);
+        elapsed_run_time = runtime_get_current_elapsed_run_time(runtime);
 
         /* Check whether everything is still allright */
         if (((int)gmx_get_stop_condition() > handled_stop_condition)
@@ -2103,7 +2104,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         print_replica_exchange_statistics(fplog, repl_ex);
     }
 
-    runtime->nsteps_done = step_rel;
+    runtime_set_nsteps_done(runtime, step_rel);
 
     return 0;
 }
