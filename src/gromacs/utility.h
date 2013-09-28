@@ -143,18 +143,6 @@
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
  */
-/*! \dir src/gromacs/utility
- * \brief
- * Low-level utilities for error handling and other tasks.
- *
- * \ingroup module_utility
- */
-/*! \dir src/gromacs/utility/tests
- * \brief
- * Unit tests for low-level utilities.
- *
- * \ingroup module_utility
- */
 /*! \file
  * \brief
  * Public API convenience header for low-level utilities.
