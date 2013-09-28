@@ -1121,7 +1121,7 @@ int gmx_pme_error(int argc, char *argv[])
 
 #define NFILE asize(fnm)
 
-    cr = init_par();
+    cr = init_commrec();
 #ifdef GMX_LIB_MPI
     MPI_Barrier(MPI_COMM_WORLD);
 #endif
