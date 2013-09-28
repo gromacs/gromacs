@@ -94,13 +94,19 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
 {
 #ifdef GMX_LIB_MPI
+#ifdef GMX_FAHCORE
+    (void) fah_MPI_Init(argc, argv);
+#else
+    (void) MPI_Init(argc, argv);
+#endif
+
     // TODO: Rewrite this to not use t_commrec once there is clarity on
     // the approach for MPI in C++ code.
     // TODO: Consider whether the argument broadcast would better be done
     // in CommandLineModuleManager.
     t_commrec cr;
     std::memset(&cr, 0, sizeof(cr));
-    gmx_do_mpi_init(argc, argv);
+
     gmx_fill_commrec_from_mpi(&cr);
     if (PAR(&cr))
     {
@@ -117,7 +123,34 @@ ProgramInfo &init(int *argc, char ***argv)
 
 void finalize()
 {
-    gmx_finalize_mpi();
+#ifndef GMX_MPI
+    /* Compiled without MPI, no MPI finalizing needed */
+    return;
+#else
+    int finalized;
+
+    if (!gmx_mpi_initialized())
+    {
+        return;
+    }
+    /* just as a check; we don't want to finalize twice */
+    MPI_Finalized(&finalized);
+    if (finalized)
+    {
+        return;
+    }
+
+    /* We sync the processes here to try to avoid problems
+     * with buggy MPI implementations that could cause
+     * unfinished processes to terminate.
+     */
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    /* Apparently certain mpich implementations cause problems
+     * with MPI_Finalize. In that case comment out MPI_Finalize.
+     */
+    MPI_Finalize();
+#endif
 }
 
 } // namespace gmx

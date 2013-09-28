@@ -64,53 +64,89 @@ gmx_bool gmx_mpi_initialized(void)
 #endif
 }
 
-void gmx_do_mpi_init(int gmx_unused *argc, char gmx_unused ***argv)
-{
-#ifndef GMX_MPI
-    gmx_call("gmx_do_mpi_init");
-#else
-    if (!gmx_mpi_initialized())
-    {
-#ifdef GMX_LIB_MPI
-#ifdef GMX_FAHCORE
-        (void) fah_MPI_Init(argc, argv);
-#else
-        (void) MPI_Init(argc, argv);
-#endif
-#endif
-    }
-#endif
-}
-
 void gmx_fill_commrec_from_mpi(t_commrec *cr)
 {
 #ifndef GMX_MPI
     gmx_call("gmx_fill_commrec_from_mpi");
 #else
-    char   buf[256];
-    int    resultlen;             /* actual length of node name      */
-    int    i, flag;
-    int    mpi_num_nodes;
-    int    mpi_my_rank;
-    char   mpi_hostname[MPI_MAX_PROCESSOR_NAME];
-
-    mpi_num_nodes = gmx_node_num();
-    mpi_my_rank   = gmx_node_rank();
-    (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
-
-#ifdef GMX_LIB_MPI
-    if (debug)
-    {
-        fprintf(debug, "NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
-                mpi_num_nodes, mpi_my_rank, mpi_hostname);
-    }
-#endif
-
-    cr->nnodes           = mpi_num_nodes;
-    cr->nodeid           = mpi_my_rank;
-    cr->sim_nodeid       = mpi_my_rank;
+    cr->nnodes           = gmx_node_num();
+    cr->nodeid           = gmx_node_rank();
+    cr->sim_nodeid       = cr->nodeid;
     cr->mpi_comm_mysim   = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = MPI_COMM_WORLD;
+
+#endif
+}
+
+t_commrec *init_commrec()
+{
+    t_commrec    *cr;
+
+    snew(cr, 1);
+
+#ifdef GMX_LIB_MPI
+    if (!gmx_mpi_initialized())
+    {
+        gmx_comm("MPI has not been initialized properly");
+    }
+
+    gmx_fill_commrec_from_mpi(cr);
+#else
+    /* These should never be accessed */
+    cr->mpi_comm_mysim   = NULL;
+    cr->mpi_comm_mygroup = NULL;
+    cr->nnodes           = 1;
+    cr->sim_nodeid       = 0;
+    cr->nodeid           = cr->sim_nodeid;
+#endif
+
+    // TODO this should be initialized elsewhere
+    cr->duty = (DUTY_PP | DUTY_PME);
+
+#if defined GMX_LIB_MPI && !defined MPI_IN_PLACE_EXISTS
+    /* initialize the MPI_IN_PLACE replacement buffers */
+    snew(cr->mpb, 1);
+    cr->mpb->ibuf        = NULL;
+    cr->mpb->libuf       = NULL;
+    cr->mpb->fbuf        = NULL;
+    cr->mpb->dbuf        = NULL;
+    cr->mpb->ibuf_alloc  = 0;
+    cr->mpb->libuf_alloc = 0;
+    cr->mpb->fbuf_alloc  = 0;
+    cr->mpb->dbuf_alloc  = 0;
+#endif
+
+    return cr;
+}
+
+t_commrec *init_par_threads(const t_commrec *cro)
+{
+#ifdef GMX_THREAD_MPI
+    int        initialized;
+    t_commrec *cr;
+
+    /* make a thread-specific commrec */
+    snew(cr, 1);
+    /* now copy the whole thing, so settings like the number of PME nodes
+       get propagated. */
+    *cr = *cro;
+
+    /* and we start setting our own thread-specific values for things */
+    MPI_Initialized(&initialized);
+    if (!initialized)
+    {
+        gmx_comm("Initializing threads without comm");
+    }
+
+    /* No need to do MPI_Init() for thread-MPI. */
+    gmx_fill_commrec_from_mpi(cr);
+
+    // TODO cr->duty should not be initialized here
+    cr->duty             = (DUTY_PP | DUTY_PME);
+
+    return cr;
+#else
+    return NULL;
 #endif
 }
 
@@ -776,57 +812,5 @@ void gmx_sumli_sim(int nr, gmx_large_int_t r[], const gmx_multisim_t *ms)
         r[i] = ms->mpb->libuf[i];
     }
 #endif
-#endif
-}
-
-
-void gmx_finalize_mpi(void)
-{
-#ifndef GMX_MPI
-    /* Compiled without MPI, no MPI finalizing needed */
-    return;
-#else
-    int finalized;
-    int ret;
-
-    if (!gmx_mpi_initialized())
-    {
-        return;
-    }
-    /* just as a check; we don't want to finalize twice */
-    MPI_Finalized(&finalized);
-    if (finalized)
-    {
-        return;
-    }
-
-    /* We sync the processes here to try to avoid problems
-     * with buggy MPI implementations that could cause
-     * unfinished processes to terminate.
-     */
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    /*
-       if (DOMAINDECOMP(cr)) {
-       if (cr->npmenodes > 0 || cr->dd->bCartesian)
-        MPI_Comm_free(&cr->mpi_comm_mygroup);
-       if (cr->dd->bCartesian)
-        MPI_Comm_free(&cr->mpi_comm_mysim);
-       }
-     */
-
-    /* Apparently certain mpich implementations cause problems
-     * with MPI_Finalize. In that case comment out MPI_Finalize.
-     */
-    if (debug)
-    {
-        fprintf(debug, "Will call MPI_Finalize now\n");
-    }
-
-    ret = MPI_Finalize();
-    if (debug)
-    {
-        fprintf(debug, "Return code from MPI_Finalize = %d\n", ret);
-    }
 #endif
 }
