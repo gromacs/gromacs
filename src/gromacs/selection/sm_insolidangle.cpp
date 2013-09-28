@@ -32,7 +32,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \page page_module_selection_insolidangle Selection method: insolidangle
+/*! \internal
+ * \page page_module_selection_insolidangle Selection method: insolidangle
  *
  * This method selects a subset of particles that are located in a solid
  * angle defined by a center and a set of points.
@@ -41,8 +42,6 @@
  * So there's such a cone for each position, and a
  * point is in the solid angle if it lies within any of these cones.
  * The width of the cones can be adjusted.
- *
- * \internal
  *
  * The method is implemented by partitioning the surface of the unit sphere
  * into bins using the polar coordinates \f$(\theta, \phi)\f$.
