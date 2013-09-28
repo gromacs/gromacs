@@ -161,7 +161,7 @@ static void mdrunner_start_fn(void *arg)
 
     fnm = dup_tfn(mc.nfile, mc.fnm);
 
-    cr = init_par_threads(mc.cr);
+    cr = reinitialize_commrec_for_this_thread(mc.cr);
 
     if (MASTER(cr))
     {
@@ -256,8 +256,7 @@ static t_commrec *mdrunner_start_threads(gmx_hw_opt_t *hw_opt,
         return NULL;
     }
 
-    /* make a new comm_rec to reflect the new situation */
-    crn = init_par_threads(cr);
+    crn = reinitialize_commrec_for_this_thread(cr);
     return crn;
 }
 

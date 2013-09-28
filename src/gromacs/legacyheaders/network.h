@@ -56,7 +56,7 @@ extern "C" {
 t_commrec *init_commrec(void);
 /* Allocate, initialize and return the commrec. */
 
-t_commrec *init_par_threads(const t_commrec *cro);
+t_commrec *reinitialize_commrec_for_this_thread(const t_commrec *cro);
 /* Initialize communication records for thread-parallel simulations.
    Must be called on all threads before any communication takes place by
    the individual threads. Copies the original commrec to
