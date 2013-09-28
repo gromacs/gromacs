@@ -77,7 +77,7 @@ if (DOXYGEN_FOUND)
     add_custom_target(doc-user
         ${CMAKE_COMMAND} -DDOCTYPE=user -P RunDoxygen.cmake
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-        COMMENT "Generating user documentation with Doxygen" VERBATIM)
+        COMMENT "Generating public API documentation with Doxygen" VERBATIM)
     add_custom_target(doc-all)
     add_dependencies(doc-all doc-full doc-lib doc-user)
 endif (DOXYGEN_FOUND)
