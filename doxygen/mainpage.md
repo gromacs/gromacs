@@ -49,6 +49,9 @@ give an overview of some of the topics that are documented:
  - \subpage page_codelayout <br/>
    This is a good place to start to understand how to
    navigate the code and the documentation.
+ - \subpage page_analysisframework <br/>
+   Provides an overview of the framework that the \Gromacs library provides for
+   writing (trajectory) analysis tools.
 \if libapi
  - \subpage thread_mpi <br/>
    This code is used internally for threading support, and also provides a
