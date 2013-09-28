@@ -918,7 +918,7 @@ static char **read_topol(const char *infile, const char *outfile,
                             break;
 
                         case d_vsitesn:
-                            push_vsitesn(d, plist, &(mi0->atoms), pline, wi);
+                            push_vsitesn(d, mi0->plist, &(mi0->atoms), pline, wi);
                             break;
                         case d_exclusions:
                             assert(block2);
