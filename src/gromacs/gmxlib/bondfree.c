@@ -4266,10 +4266,16 @@ void calc_bonds(FILE *fplog, const gmx_multisim_t *ms,
     }
     if (idef->il[F_DISRES].nr)
     {
-        calc_disres_R_6(ms, idef->il[F_DISRES].nr,
+        calc_disres_R_6(idef->il[F_DISRES].nr,
                         idef->il[F_DISRES].iatoms,
                         idef->iparams, (const rvec*)x, pbc_null,
                         fcd, hist);
+#ifdef GMX_MPI
+        if (fcd->disres.nsystems > 1)
+        {
+            gmx_sum_sim(2*fcd->disres.nres, fcd->disres.Rt_6, ms);
+        }
+#endif
     }
 
 #pragma omp parallel for num_threads(fr->nthreads) schedule(static)

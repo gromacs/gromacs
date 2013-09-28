@@ -256,8 +256,7 @@ void init_disres(FILE *fplog, const gmx_mtop_t *mtop,
     }
 }
 
-void calc_disres_R_6(const gmx_multisim_t *ms,
-                     int nfa, const t_iatom forceatoms[], const t_iparams ip[],
+void calc_disres_R_6(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
                      const rvec x[], const t_pbc *pbc,
                      t_fcdata *fcd, history_t *hist)
 {
@@ -360,13 +359,6 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 
         res++;
     }
-
-#ifdef GMX_MPI
-    if (dd->nsystems > 1)
-    {
-        gmx_sum_sim(2*dd->nres, Rt_6, ms);
-    }
-#endif
 }
 
 real ta_disres(int nfa, const t_iatom forceatoms[], const t_iparams ip[],
