@@ -80,6 +80,7 @@
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/timing/runtime.h"
 
 typedef struct {
     t_state  s;
@@ -102,7 +103,7 @@ static em_state_t *init_em_state()
     return ems;
 }
 
-static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
+static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t runtime,
                            gmx_wallcycle_t wcycle,
                            const char *name)
 {
@@ -115,7 +116,7 @@ static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
 
     wallcycle_start(wcycle, ewcRUN);
 }
-static void em_time_end(gmx_runtime_t  *runtime,
+static void em_time_end(gmx_runtime_t   runtime,
                         gmx_wallcycle_t wcycle)
 {
     wallcycle_stop(wcycle, ewcRUN);
@@ -463,7 +464,7 @@ void init_em(FILE *fplog, const char *title,
 }
 
 static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
-                      gmx_runtime_t *runtime, gmx_wallcycle_t wcycle)
+                      gmx_runtime_t runtime, gmx_wallcycle_t wcycle)
 {
     if (!(cr->duty & DUTY_PME))
     {
@@ -967,7 +968,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_runtime_t runtime)
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
 
@@ -1557,7 +1558,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
     finish_em(cr, outf, runtime, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    runtime_set_nsteps_done(runtime, step);
 
     return 0;
 } /* That's all folks */
@@ -1581,7 +1582,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_runtime_t runtime)
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
@@ -2339,7 +2340,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     finish_em(cr, outf, runtime, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    runtime_set_nsteps_done(runtime, step);
 
     return 0;
 } /* That's all folks */
@@ -2363,7 +2364,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char  gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_runtime_t runtime)
 {
     const char       *SD = "Steepest Descents";
     em_state_t       *s_min, *s_try;
@@ -2566,7 +2567,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
     /* To print the actual number of steps we needed somewhere */
     inputrec->nsteps = count;
 
-    runtime->nsteps_done = count;
+    runtime_set_nsteps_done(runtime, count);
 
     return 0;
 } /* That's all folks */
@@ -2590,7 +2591,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_runtime_t runtime)
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t        *outf;
@@ -2859,7 +2860,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
 
     finish_em(cr, outf, runtime, wcycle);
 
-    runtime->nsteps_done = natoms*2;
+    runtime_set_nsteps_done(runtime, natoms*2);
 
     return 0;
 }
