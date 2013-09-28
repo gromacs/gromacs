@@ -77,6 +77,7 @@
 #include "gmxfio.h"
 #include "pme.h"
 #include "gbutil.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 #ifdef GMX_X86_SSE2
 #include "gmx_x86_sse2.h"
@@ -131,7 +132,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
               real gmx_unused cpt_period, real gmx_unused max_hours,
               const char gmx_unused *deviceOptions,
               unsigned long gmx_unused Flags,
-              gmx_runtime_t *runtime)
+              gmx_walltime_accounting_t walltime_accounting)
 {
     const char     *TPI = "Test Particle Insertion";
     gmx_localtop_t *top;
@@ -254,9 +255,10 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     snew(f, top_global->natoms);
 
     /* Print to log file  */
-    runtime_start(runtime);
+    walltime_accounting_start(walltime_accounting);
     print_date_and_time(fplog, cr->nodeid,
-                        "Started Test Particle Insertion", runtime);
+                        "Started Test Particle Insertion",
+                        walltime_accounting);
     wallcycle_start(wcycle, ewcRUN);
 
     /* The last charge group is the group to be inserted */
@@ -786,7 +788,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
         bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
     } /* End of the loop  */
-    runtime_end(runtime);
+    walltime_accounting_end(walltime_accounting);
 
     close_trj(status);
 
@@ -833,7 +835,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
 
     sfree(sum_UgembU);
 
-    runtime->nsteps_done = frame*inputrec->nsteps;
+    walltime_accounting_set_nsteps_done(walltime_accounting, frame*inputrec->nsteps);
 
     return 0;
 }

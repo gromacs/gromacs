@@ -364,7 +364,7 @@ check_function_exists(sqrtf             HAVE_SQRTF)
 
 include(CheckLibraryExists)
 check_library_exists(m sqrt "" HAVE_LIBM)
-check_library_exists(rt clock_gettime "" HAVE_LIBRT)
+check_library_exists(rt clock_gettime "" HAVE_CLOCK_GETTIME)
 
 
 include(CheckTypeSize)
@@ -1060,8 +1060,9 @@ if(GMX_LOAD_PLUGINS)
 endif(GMX_LOAD_PLUGINS)
 set(VMD_QUIETLY TRUE CACHE INTERNAL "")
 
-# Link real-time library for POSIX timers
-if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_LIBRT)
+# Link real-time library for POSIX timers. The check for clock_gettime
+# confirms the linkability of rt.
+if(HAVE_TIME_H AND HAVE_UNISTD_H AND HAVE_CLOCK_GETTIME)
     list(APPEND GMX_EXTRA_LIBRARIES rt)
 endif()
 
