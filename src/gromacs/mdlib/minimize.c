@@ -80,6 +80,7 @@
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
+#include "gromacs/timing/walltime_accounting.h"
 
 typedef struct {
     t_state  s;
@@ -102,25 +103,27 @@ static em_state_t *init_em_state()
     return ems;
 }
 
-static void print_em_start(FILE *fplog, t_commrec *cr, gmx_runtime_t *runtime,
-                           gmx_wallcycle_t wcycle,
-                           const char *name)
+static void print_em_start(FILE                     *fplog,
+                           t_commrec                *cr,
+                           gmx_walltime_accounting_t walltime_accounting,
+                           gmx_wallcycle_t           wcycle,
+                           const char               *name)
 {
     char buf[STRLEN];
 
-    runtime_start(runtime);
+    walltime_accounting_start(walltime_accounting);
 
     sprintf(buf, "Started %s", name);
     print_date_and_time(fplog, cr->nodeid, buf, NULL);
 
     wallcycle_start(wcycle, ewcRUN);
 }
-static void em_time_end(gmx_runtime_t  *runtime,
-                        gmx_wallcycle_t wcycle)
+static void em_time_end(gmx_walltime_accounting_t walltime_accounting,
+                        gmx_wallcycle_t           wcycle)
 {
     wallcycle_stop(wcycle, ewcRUN);
 
-    runtime_end(runtime);
+    walltime_accounting_end(walltime_accounting);
 }
 
 static void sp_header(FILE *out, const char *minimizer, real ftol, int nsteps)
@@ -463,7 +466,8 @@ void init_em(FILE *fplog, const char *title,
 }
 
 static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
-                      gmx_runtime_t *runtime, gmx_wallcycle_t wcycle)
+                      gmx_walltime_accounting_t walltime_accounting,
+                      gmx_wallcycle_t wcycle)
 {
     if (!(cr->duty & DUTY_PME))
     {
@@ -473,7 +477,7 @@ static void finish_em(t_commrec *cr, gmx_mdoutf_t *outf,
 
     done_mdoutf(outf);
 
-    em_time_end(runtime, wcycle);
+    em_time_end(walltime_accounting, wcycle);
 }
 
 static void swap_em_state(em_state_t *ems1, em_state_t *ems2)
@@ -967,7 +971,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     const char       *CG = "Polak-Ribiere Conjugate Gradients";
 
@@ -1008,7 +1012,7 @@ double do_cg(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, CG);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, CG);
 
     /* Max number of steps */
     number_steps = inputrec->nsteps;
@@ -1554,10 +1558,10 @@ double do_cg(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
 } /* That's all folks */
@@ -1581,7 +1585,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_walltime_accounting_t walltime_accounting)
 {
     static const char *LBFGS = "Low-Memory BFGS Minimizer";
     em_state_t         ems;
@@ -1677,7 +1681,7 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
     end   = mdatoms->homenr + start;
 
     /* Print to log file */
-    print_em_start(fplog, cr, runtime, wcycle, LBFGS);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, LBFGS);
 
     do_log = do_ene = do_x = do_f = TRUE;
 
@@ -2336,10 +2340,10 @@ double do_lbfgs(FILE *fplog, t_commrec *cr,
         fprintf(fplog, "\nPerformed %d energy evaluations in total.\n", neval);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
-    runtime->nsteps_done = step;
+    walltime_accounting_set_nsteps_done(walltime_accounting, step);
 
     return 0;
 } /* That's all folks */
@@ -2363,7 +2367,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
                 real gmx_unused cpt_period, real gmx_unused max_hours,
                 const char  gmx_unused *deviceOptions,
                 unsigned long gmx_unused Flags,
-                gmx_runtime_t *runtime)
+                gmx_walltime_accounting_t walltime_accounting)
 {
     const char       *SD = "Steepest Descents";
     em_state_t       *s_min, *s_try;
@@ -2396,7 +2400,7 @@ double do_steep(FILE *fplog, t_commrec *cr,
             nfile, fnm, &outf, &mdebin);
 
     /* Print to log file  */
-    print_em_start(fplog, cr, runtime, wcycle, SD);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, SD);
 
     /* Set variables for stepsize (in nm). This is the largest
      * step that we are going to make in any direction.
@@ -2561,12 +2565,12 @@ double do_steep(FILE *fplog, t_commrec *cr,
                         s_min->epot, s_min->fmax, s_min->a_fmax, fnormn);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
     /* To print the actual number of steps we needed somewhere */
     inputrec->nsteps = count;
 
-    runtime->nsteps_done = count;
+    walltime_accounting_set_nsteps_done(walltime_accounting, count);
 
     return 0;
 } /* That's all folks */
@@ -2590,7 +2594,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
              real gmx_unused cpt_period, real gmx_unused max_hours,
              const char gmx_unused *deviceOptions,
              unsigned long gmx_unused Flags,
-             gmx_runtime_t *runtime)
+             gmx_walltime_accounting_t walltime_accounting)
 {
     const char          *NM = "Normal Mode Analysis";
     gmx_mdoutf_t        *outf;
@@ -2698,7 +2702,7 @@ double do_nm(FILE *fplog, t_commrec *cr,
     where();
 
     /* Write start time and temperature */
-    print_em_start(fplog, cr, runtime, wcycle, NM);
+    print_em_start(fplog, cr, walltime_accounting, wcycle, NM);
 
     /* fudge nr of steps to nr of atoms */
     inputrec->nsteps = natoms*2;
@@ -2857,9 +2861,9 @@ double do_nm(FILE *fplog, t_commrec *cr,
         gmx_mtxio_write(ftp2fn(efMTX, nfile, fnm), sz, sz, full_matrix, sparse_matrix);
     }
 
-    finish_em(cr, outf, runtime, wcycle);
+    finish_em(cr, outf, walltime_accounting, wcycle);
 
-    runtime->nsteps_done = natoms*2;
+    walltime_accounting_set_nsteps_done(walltime_accounting, natoms*2);
 
     return 0;
 }

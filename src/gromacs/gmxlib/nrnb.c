@@ -387,7 +387,7 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
                 gmx_large_int_t nsteps, real delta_t,
                 double nbfs, double mflop)
 {
-    real runtime;
+    real wallclocktime;
 
     fprintf(out, "\n");
 
@@ -404,15 +404,15 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
         }
         if (delta_t > 0)
         {
-            mflop   = mflop/time_per_node;
-            runtime = nsteps*delta_t;
+            mflop         = mflop/time_per_node;
+            wallclocktime = nsteps*delta_t;
 
             if (getenv("GMX_DETAILED_PERF_STATS") == NULL)
             {
                 fprintf(out, "%12s %12s %12s\n",
                         "", "(ns/day)", "(hour/ns)");
                 fprintf(out, "%12s %12.3f %12.3f\n", "Performance:",
-                        runtime*24*3.6/time_per_node, 1000*time_per_node/(3600*runtime));
+                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
             }
             else
             {
@@ -421,7 +421,7 @@ void print_perf(FILE *out, double time_per_thread, double time_per_node,
                         "(ns/day)", "(hour/ns)");
                 fprintf(out, "%12s %12.3f %12.3f %12.3f %12.3f\n", "Performance:",
                         nbfs/time_per_node, (mflop > 1000) ? (mflop/1000) : mflop,
-                        runtime*24*3.6/time_per_node, 1000*time_per_node/(3600*runtime));
+                        wallclocktime*24*3.6/time_per_node, 1000*time_per_node/(3600*wallclocktime));
             }
         }
         else

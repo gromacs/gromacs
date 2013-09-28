@@ -921,38 +921,38 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
              int repl_ex_seed, real pforce, real cpt_period, real max_hours,
              const char *deviceOptions, unsigned long Flags)
 {
-    gmx_bool        bForceUseGPU, bTryUseGPU;
-    double          nodetime = 0, realtime;
-    t_inputrec     *inputrec;
-    t_state        *state = NULL;
-    matrix          box;
-    gmx_ddbox_t     ddbox = {0};
-    int             npme_major, npme_minor;
-    real            tmpr1, tmpr2;
-    t_nrnb         *nrnb;
-    gmx_mtop_t     *mtop       = NULL;
-    t_mdatoms      *mdatoms    = NULL;
-    t_forcerec     *fr         = NULL;
-    t_fcdata       *fcd        = NULL;
-    real            ewaldcoeff = 0;
-    gmx_pme_t      *pmedata    = NULL;
-    gmx_vsite_t    *vsite      = NULL;
-    gmx_constr_t    constr;
-    int             i, m, nChargePerturbed = -1, status, nalloc;
-    char           *gro;
-    gmx_wallcycle_t wcycle;
-    gmx_bool        bReadRNG, bReadEkin;
-    int             list;
-    gmx_runtime_t   runtime;
-    int             rc;
-    gmx_large_int_t reset_counters;
-    gmx_edsam_t     ed           = NULL;
-    t_commrec      *cr_old       = cr;
-    int             nthreads_pme = 1;
-    int             nthreads_pp  = 1;
-    gmx_membed_t    membed       = NULL;
-    gmx_hw_info_t  *hwinfo       = NULL;
-    master_inf_t    minf         = {-1, FALSE};
+    gmx_bool                  bForceUseGPU, bTryUseGPU;
+    double                    nodetime = 0, realtime;
+    t_inputrec               *inputrec;
+    t_state                  *state = NULL;
+    matrix                    box;
+    gmx_ddbox_t               ddbox = {0};
+    int                       npme_major, npme_minor;
+    real                      tmpr1, tmpr2;
+    t_nrnb                   *nrnb;
+    gmx_mtop_t               *mtop       = NULL;
+    t_mdatoms                *mdatoms    = NULL;
+    t_forcerec               *fr         = NULL;
+    t_fcdata                 *fcd        = NULL;
+    real                      ewaldcoeff = 0;
+    gmx_pme_t                *pmedata    = NULL;
+    gmx_vsite_t              *vsite      = NULL;
+    gmx_constr_t              constr;
+    int                       i, m, nChargePerturbed = -1, status, nalloc;
+    char                     *gro;
+    gmx_wallcycle_t           wcycle;
+    gmx_bool                  bReadRNG, bReadEkin;
+    int                       list;
+    gmx_walltime_accounting_t walltime_accounting = NULL;
+    int                       rc;
+    gmx_large_int_t           reset_counters;
+    gmx_edsam_t               ed           = NULL;
+    t_commrec                *cr_old       = cr;
+    int                       nthreads_pme = 1;
+    int                       nthreads_pp  = 1;
+    gmx_membed_t              membed       = NULL;
+    gmx_hw_info_t            *hwinfo       = NULL;
+    master_inf_t              minf         = {-1, FALSE};
 
     /* CAUTION: threads may be started later on in this function, so
        cr doesn't reflect the final parallel state right now */
@@ -1536,6 +1536,9 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
 
     if (cr->duty & DUTY_PP)
     {
+        /* Assumes uniform use of the number of OpenMP threads */
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntDefault));
+
         if (inputrec->ePull != epullNO)
         {
             /* Initialize pull code */
@@ -1575,7 +1578,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
                                       cpt_period, max_hours,
                                       deviceOptions,
                                       Flags,
-                                      &runtime);
+                                      walltime_accounting);
 
         if (inputrec->ePull != epullNO)
         {
@@ -1591,7 +1594,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     else
     {
         /* do PME only */
-        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, &runtime, ewaldcoeff, inputrec);
+        walltime_accounting = walltime_accounting_init(gmx_omp_nthreads_get(emntPME));
+        gmx_pmeonly(*pmedata, cr, nrnb, wcycle, walltime_accounting, ewaldcoeff, inputrec);
     }
 
     wallcycle_stop(wcycle, ewcRUN);
@@ -1600,7 +1604,7 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
      * if rerunMD, don't write last frame again
      */
     finish_run(fplog, cr,
-               inputrec, nrnb, wcycle, &runtime,
+               inputrec, nrnb, wcycle, walltime_accounting,
                fr != NULL && fr->nbv != NULL && fr->nbv->bUseGPU ?
                nbnxn_cuda_get_timings(fr->nbv->cu_nbv) : NULL,
                EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
@@ -1627,7 +1631,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
     gmx_hardware_info_free(hwinfo);
 
     /* Does what it says */
-    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", &runtime);
+    print_date_and_time(fplog, cr->nodeid, "Finished mdrun", walltime_accounting);
+    walltime_accounting_destroy(walltime_accounting);
 
     /* Close logfile already here if we were appending to it */
     if (MASTER(cr) && (Flags & MD_APPENDFILES))

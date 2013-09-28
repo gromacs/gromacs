@@ -527,7 +527,7 @@ int gmx_mdrun(int argc, char *argv[])
         { "-confout", FALSE, etBOOL, {&bConfout},
           "HIDDENWrite the last configuration with [TT]-c[tt] and force checkpointing at the last step" },
         { "-stepout", FALSE, etINT, {&nstepout},
-          "HIDDENFrequency of writing the remaining runtime" },
+          "HIDDENFrequency of writing the remaining wall clock time for the run" },
         { "-resetstep", FALSE, etINT, {&resetstep},
           "HIDDENReset cycle counters after these many time steps" },
         { "-resethway", FALSE, etBOOL, {&bResetCountersHalfWay},
