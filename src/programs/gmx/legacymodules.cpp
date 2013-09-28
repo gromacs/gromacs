@@ -146,9 +146,9 @@ void registerObsoleteTool(gmx::CommandLineModuleManager *manager,
 void registerLegacyModules(gmx::CommandLineModuleManager *manager)
 {
     // Modules from this directory (were in src/kernel/).
-    registerModule(manager, &gmx_gmxcheck, "gmxcheck",
+    registerModule(manager, &gmx_gmxcheck, "check",
                    "Check and compare files");
-    registerModule(manager, &gmx_gmxdump, "gmxdump",
+    registerModule(manager, &gmx_gmxdump, "dump",
                    "Make binary files human readable");
     registerModule(manager, &gmx_grompp, "grompp",
                    "Make a run input file");
