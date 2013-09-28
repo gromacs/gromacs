@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2009,2010,2012, by the GROMACS development team, led by
+ * Copyright (c) 2009,2010,2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -32,51 +32,81 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \internal \file
- * \brief
- * Dummy header for Doxygen documentation.
- *
- * This file just holds the main page for doxygen.  When, at some point in the
- * future, there is an obvious location for this documentation, we should
- * move it there.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+
+/*!
+\internal \file
+\brief
+Doxygen documentation file for group declarations etc.
+
+\author Teemu Murtola <teemu.murtola@gmail.com>
+*/
+
+/*!
+\defgroup group_publicapi Public API
+\brief
+Classes and other symbols that are publicly accessible from user code.
+*/
+
+/*!
+\defgroup group_libraryapi Library API
+\brief
+Classes and other symbols that are publicly accessible within the Gromacs
+library.
+
+\see group_publicapi
+*/
+
+/*!
+\defgroup group_utilitymodules Utility Modules
+\brief
+Modules with generic utility functions.
+*/
+
+/*!
+\defgroup group_analysismodules Analysis Modules
+\brief
+Modules used in analysis tools.
+*/
+
+/*!
+\namespace gmx
+\brief
+Generic Gromacs namespace.
+
+\inpublicapi
+*/
+
+/*!
+\internal \namespace gmx::internal
+\brief
+Internal Gromacs namespace.
+
+This namespace is used to contain some implementation-specific functions and
+classes.  These are not meant for direct user access, but typically reside
+in public headers because of implementation reasons.
+*/
+
+/*!
+\dir src
+\brief
+Main source code directory.
  */
-/*! \mainpage Gromacs
- * GROMACS is a versatile package to perform molecular dynamics, i.e. simulate
- * the Newtonian equations of motion for systems with hundreds, to millions
- * of particles.
+
+/*!
+\dir src/gromacs
+\brief
+Source code directory for building the `libgromacs` library.
  */
-/*! \defgroup group_publicapi Public API
- * \brief
- * Classes and other symbols that are publicly accessible from user code.
+
+/*!
+\libinternal
+\dir src/programs
+\brief
+Source code directory for building executables.
  */
-/*! \defgroup group_libraryapi Library API
- * \brief
- * Classes and other symbols that are publicly accessible within the Gromacs
- * library.
- *
- * \see group_publicapi
- */
-/*! \defgroup group_utilitymodules Utility Modules
- * \brief
- * Modules with generic utility functions.
- */
-/*! \defgroup group_analysismodules Analysis Modules
- * \brief
- * Modules used in analysis tools.
- */
-/*! \namespace gmx
- * \brief
- * Generic Gromacs namespace.
- *
- * \inpublicapi
- */
-/*! \internal \namespace gmx::internal
- * \brief
- * Internal Gromacs namespace.
- *
- * This namespace is used to contain some implementation-specific functions and
- * classes.  These are not meant for direct user access, but typically reside
- * in public headers because of implementation reasons.
+
+/*!
+\dir share
+\brief
+Directory that contains installed data files.
  */
