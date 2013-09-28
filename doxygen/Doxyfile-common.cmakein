@@ -1,5 +1,5 @@
 PROJECT_NAME           = @CMAKE_PROJECT_NAME@
-PROJECT_NUMBER         = @PROJECT_VERSION@
+@INCLUDE               = Doxyfile-version
 LAYOUT_FILE            = @CMAKE_CURRENT_SOURCE_DIR@/DoxygenLayout.xml
 INPUT                  = @CMAKE_SOURCE_DIR@/src \
                          @CMAKE_SOURCE_DIR@/share/template

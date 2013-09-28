@@ -1,23 +1,56 @@
-# Generate Gromacs development build version information.
 #
-# The script generates version information for a build from a development
+# This file is part of the GROMACS molecular simulation package.
+#
+# Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+# David van der Spoel, Berk Hess, Erik Lindahl, and including many
+# others, as listed in the AUTHORS file in the top-level source
+# directory and at http://www.gromacs.org.
+#
+# GROMACS is free software; you can redistribute it and/or
+# modify it under the terms of the GNU Lesser General Public License
+# as published by the Free Software Foundation; either version 2.1
+# of the License, or (at your option) any later version.
+#
+# GROMACS is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public
+# License along with GROMACS; if not, see
+# http://www.gnu.org/licenses, or write to the Free Software Foundation,
+# Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+#
+# If you want to redistribute modifications to GROMACS, please
+# consider that scientific software is very special. Version
+# control is crucial - bugs must be traceable. We will be happy to
+# consider code for inclusion in the official distribution, but
+# derived work must not be called official GROMACS. Details are found
+# in the README & COPYING files - if they are missing, get the
+# official version at http://www.gromacs.org.
+#
+# To help us fund GROMACS development, we humbly ask that you cite
+# the research papers on the package. Check out http://www.gromacs.org.
+# Generate Gromacs development build version information.
+
+# This script generates version information for a build from a development
 # source tree based on git repository information.
 # It is assumed that by default the script is run in cmake script mode.
 # If *not* called in script mode but used in generating cache variables,
 # GEN_VERSION_INFO_INTERNAL has to be set ON.
 #
 # The following variables have to be previously defined:
-# GIT_EXECUTABLE        - path to git binary
-# GIT_VERSION           - git version (if not defined it's assumed that >=1.5.3)
-# PROJECT_VERSION       - hard-coded version string (generated info is appended)
-# PROJECT_SOURCE_DIR    - top level source directory (which has to be in git)
-# VERSION_C_CMAKEIN     - path to the gitversion.c.cmakein file
-# VERSION_C_OUT         - path to the gitversion.c output file
+# GIT_EXECUTABLE         - path to git binary (must be >=1.5.3)
+# PROJECT_VERSION        - hard-coded version string (generated info is appended)
+# PROJECT_SOURCE_DIR     - top level source directory (which has to be in git)
+# VERSION_CMAKEIN        - path to an input template file
+# VERSION_OUT            - path to the output file
+# VERSION_NO_REMOTE_HASH - if set, GMX_GIT_REMOTE_HASH is not generated
 #
 # Output:
-# i)  Script mode: gitversion.c configured from the input gitversion.c.cmakein
+# i)  Script mode: VERSION_OUT is configured from the input VERSION_CMAKEIN
 # using the variables listed below.
-# ii) Cache variable mode: the varables below are set in cache.
+# ii) Cache variable mode: the variables below are set in cache.
 #
 # GMX_PROJECT_VERSION_STR   - version string
 # GMX_GIT_HEAD_HASH         - git hash of current local HEAD
@@ -25,6 +58,7 @@
 #                             main Gromacs repository
 #
 # Szilard Pall (pszilard@cbr.su.se)
+# Teemu Murtola (teemu.murtola@gmail.com)
 
 if("${PROJECT_VERSION}" STREQUAL "")
     message(FATAL_ERROR "PROJECT_VERSION undefined!")
@@ -42,9 +76,8 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/.git")
     message(FATAL_ERROR "Project source directory ${PROJECT_SOURCE_DIR} not in git")
 endif()
 
-# if git executable exists and it's compatible version
-# build the development version string
-if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION VERSION_LESS "1.5.3")
+# If git executable exists, build the development version string.
+if(EXISTS "${GIT_EXECUTABLE}")
     # refresh git index
     execute_process(COMMAND ${GIT_EXECUTABLE} update-index -q --refresh
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
@@ -96,20 +129,27 @@ if(EXISTS "${GIT_EXECUTABLE}" AND NOT GIT_VERSION VERSION_LESS "1.5.3")
     # compile the version string suffix
     set(VERSION_STR_SUFFIX "${HEAD_DATE}-${HEAD_HASH_SHORT}${DIRTY_STR}")
 
-    # find the names of remotes that are located on the official gromacs
-    # git/gerrit servers
-    execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
-                    "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-        OUTPUT_VARIABLE GMX_REMOTES
-        ERROR_VARIABLE EXEC_ERR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
+    if (DEFINED VERSION_NO_REMOTE_HASH)
+        set(GMX_REMOTES "")
+    else()
+        # find the names of remotes that are located on the official gromacs
+        # git/gerrit servers
+        execute_process(COMMAND ${GIT_EXECUTABLE} config --get-regexp
+                        "remote\\..*\\.url" "\\.gromacs\\.org[:/].*gromacs(\\.git)?$"
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+            OUTPUT_VARIABLE GMX_REMOTES
+            ERROR_VARIABLE EXEC_ERR
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+    endif()
+
     # if there are remotes from the gromacs git servers, try to find ancestor
     # commits of the current HEAD from this remote;
     # otherwise, label the build "unknown"
     if("${GMX_REMOTES}" STREQUAL "")
-        set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
+        if (NOT DEFINED VERSION_NO_REMOTE_HASH)
+            set(VERSION_STR_SUFFIX "${VERSION_STR_SUFFIX}-unknown")
+        endif()
         set(GMX_GIT_REMOTE_HASH "unknown")
     else()
         string(REPLACE "\n" ";" GMX_REMOTES ${GMX_REMOTES})
@@ -172,7 +212,7 @@ else()
 endif()
 
 # if we're generating cache variables set these
-# otherwise it's assumed that it's called in script mode to generate gitversion.c
+# otherwise it's assumed that it's called in script mode to generate a file
 if(GEN_VERSION_INFO_INTERNAL)
     set(GMX_PROJECT_VERSION_STR ${GMX_PROJECT_VERSION_STR}
         CACHE STRING "Gromacs version string" FORCE)
@@ -182,12 +222,12 @@ if(GEN_VERSION_INFO_INTERNAL)
         CACHE STRING "Commmit object of the nearest ancestor present in the Gromacs git repository" FORCE)
     mark_as_advanced(GMX_GIT_HEAD_HASH GMX_GIT_REMOTE_HASH)
 else()
-    if("${VERSION_C_CMAKEIN}" STREQUAL "")
-        message(FATAL_ERROR "Missing input parameter VERSION_C_CMAKEIN!")
+    if("${VERSION_CMAKEIN}" STREQUAL "")
+        message(FATAL_ERROR "Missing input parameter VERSION_CMAKEIN!")
     endif()
-    if("${VERSION_C_OUT}" STREQUAL "")
-        message(FATAL_ERROR "Missing input parameter VERSION_C_OUT!")
+    if("${VERSION_OUT}" STREQUAL "")
+        message(FATAL_ERROR "Missing input parameter VERSION_OUT!")
     endif()
-    # generate gitversion.c
-    configure_file(${VERSION_C_CMAKEIN} ${VERSION_C_OUT})
+    # Generate the output file.
+    configure_file(${VERSION_CMAKEIN} ${VERSION_OUT})
 endif()

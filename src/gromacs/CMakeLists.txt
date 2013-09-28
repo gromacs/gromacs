@@ -75,14 +75,13 @@ gmx_install_headers("" ${CMAKE_CURRENT_BINARY_DIR}/version.h)
 # ignores set_source_file_properties from subdirectories.
 if (GMX_GIT_VERSION_INFO)
     set(GENERATED_VERSION_FILE ${CMAKE_CURRENT_BINARY_DIR}/utility/gitversion.c)
-    add_custom_target(gmx_version ALL
+    add_custom_target(gmx-version ALL
             COMMAND ${CMAKE_COMMAND}
                 -D GIT_EXECUTABLE="${GIT_EXECUTABLE}"
-                -D GIT_VERSION="${GIT_VERSION}"
                 -D PROJECT_VERSION="${PROJECT_VERSION}"
                 -D PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}"
-                -D VERSION_C_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
-                -D VERSION_C_OUT=${GENERATED_VERSION_FILE}
+                -D VERSION_CMAKEIN="${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein"
+                -D VERSION_OUT=${GENERATED_VERSION_FILE}
                 -P ${CMAKE_SOURCE_DIR}/cmake/gmxGenerateVersionInfo.cmake
             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
             DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/utility/gitversion.c.cmakein
@@ -102,7 +101,7 @@ endif()
 
 add_library(libgromacs ${LIBGROMACS_SOURCES})
 if (GMX_GIT_VERSION_INFO)
-    add_dependencies(libgromacs gmx_version)
+    add_dependencies(libgromacs gmx-version)
 endif ()
 
 if(GMX_BUILD_OWN_FFTW)
