@@ -4110,7 +4110,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
-                                   gmx_runtime_t *runtime,
+                                   gmx_walltime_accounting_t walltime_accounting,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4125,7 +4125,7 @@ static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
     }
     ir->init_step = step;
     wallcycle_start(wcycle, ewcRUN);
-    runtime_start(runtime);
+    walltime_accounting_start(walltime_accounting);
 }
 
 
@@ -4166,7 +4166,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_walltime_accounting_t walltime_accounting,
                 real ewaldcoeff,
                 t_inputrec *ir)
 {
@@ -4222,7 +4222,7 @@ int gmx_pmeonly(gmx_pme_t pme,
             if (ret == pmerecvqxRESETCOUNTERS)
             {
                 /* Reset the cycle and flop counters */
-                reset_pmeonly_counters(wcycle, runtime, nrnb, ir, step);
+                reset_pmeonly_counters(wcycle, walltime_accounting, nrnb, ir, step);
             }
         }
         while (ret == pmerecvqxSWITCHGRID || ret == pmerecvqxRESETCOUNTERS);
@@ -4238,7 +4238,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         if (count == 0)
         {
             wallcycle_start(wcycle, ewcRUN);
-            runtime_start(runtime);
+            walltime_accounting_start(walltime_accounting);
         }
 
         wallcycle_start(wcycle, ewcPMEMESH);
@@ -4260,7 +4260,7 @@ int gmx_pmeonly(gmx_pme_t pme,
     } /***** end of quasi-loop, we stop with the break above */
     while (TRUE);
 
-    runtime_end(runtime);
+    walltime_accounting_end(walltime_accounting);
 
     return 0;
 }
