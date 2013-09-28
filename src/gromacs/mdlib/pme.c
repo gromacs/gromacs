@@ -4110,7 +4110,7 @@ void gmx_pme_calc_energy(gmx_pme_t pme, int n, rvec *x, real *q, real *V)
 
 
 static void reset_pmeonly_counters(gmx_wallcycle_t wcycle,
-                                   gmx_runtime_t *runtime,
+                                   gmx_runtime_t runtime,
                                    t_nrnb *nrnb, t_inputrec *ir,
                                    gmx_large_int_t step)
 {
@@ -4166,7 +4166,7 @@ static void gmx_pmeonly_switch(int *npmedata, gmx_pme_t **pmedata,
 int gmx_pmeonly(gmx_pme_t pme,
                 t_commrec *cr,    t_nrnb *nrnb,
                 gmx_wallcycle_t wcycle,
-                gmx_runtime_t *runtime,
+                gmx_runtime_t runtime,
                 real ewaldcoeff,
                 t_inputrec *ir)
 {
