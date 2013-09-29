@@ -401,7 +401,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                 /* reaction-field */
                                 Vcoul[i]   = qq[i]*(rinvC+krf*rC*rC-crf);
-                                FscalC[i]  = qq[i]*(rinvC*rpinvC-2.0*krf);
+                                FscalC[i]  = qq[i]*(rinvC*rpinvC-2.0*krf/rpm2);
                                 break;
 
                             case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
