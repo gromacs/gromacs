@@ -395,13 +395,13 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             case GMX_NBKERNEL_ELEC_EWALD:
                                 /* simple cutoff (yes, ewald is done all on direct space for free energy) */
                                 Vcoul[i]   = qq[i]*rinvC;
-                                FscalC[i]  = Vcoul[i]*rpinvC;
+                                FscalC[i]  = Vcoul[i];
                                 break;
 
                             case GMX_NBKERNEL_ELEC_REACTIONFIELD:
                                 /* reaction-field */
-                                Vcoul[i]   = qq[i]*(rinvC+krf*rC*rC-crf);
-                                FscalC[i]  = qq[i]*(rinvC*rpinvC-2.0*krf);
+                                Vcoul[i]   = qq[i]*(rinvC + krf*rC*rC-crf);
+                                FscalC[i]  = qq[i]*(rinvC - 2.0*krf*rC*rC);
                                 break;
 
                             case GMX_NBKERNEL_ELEC_CUBICSPLINETABLE:
@@ -415,7 +415,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 VV         = Y+epsC*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vcoul[i]   = qq[i]*VV;
-                                FscalC[i]  = -qq[i]*tabscale*FF*rC*rpinvC;
+                                FscalC[i]  = -qq[i]*tabscale*FF*rC;
                                 break;
 
                             case GMX_NBKERNEL_ELEC_GENERALIZEDBORN:
@@ -469,9 +469,9 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 }
                                 else
                                 {
-                                    Vvdw[i]          = Vvdw12*(1.0/12.0)-Vvdw6*(1.0/6.0);
+                                    Vvdw[i]          = Vvdw12*(1.0/12.0) - Vvdw6*(1.0/6.0);
                                 }
-                                FscalV[i]        = (Vvdw12-Vvdw6)*rpinvV;
+                                FscalV[i]        = Vvdw12 - Vvdw6;
                                 break;
 
                             case GMX_NBKERNEL_VDW_BUCKINGHAM:
@@ -490,7 +490,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 VV         = Y+epsV*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vvdw[i]   += c6[i]*VV;
-                                FscalV[i] -= c6[i]*tabscale*FF*rV*rpinvV;
+                                FscalV[i] -= c6[i]*tabscale*FF*rV;
 
                                 /* repulsion */
                                 Y          = VFtab[nnn+4];
@@ -501,7 +501,7 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                                 VV         = Y+epsV*Fp;
                                 FF         = Fp+Geps+2.0*Heps2;
                                 Vvdw[i]   += c12[i]*VV;
-                                FscalV[i] -= c12[i]*tabscale*FF*rV*rpinvV;
+                                FscalV[i] -= c12[i]*tabscale*FF*rV;
                                 break;
 
                             case GMX_NBKERNEL_VDW_NONE:
@@ -529,6 +529,14 @@ gmx_nb_free_energy_kernel(const t_nblist * gmx_restrict    nlist,
                             Vvdw[i]          = (rV < rvdw) ? Vvdw[i] : 0.0;
                         }
                     }
+
+                    /* FscalC (and FscalV) now contain: dV/drC * rC
+                     * Now we multiply by rC^-p, so it will be: dV/drC * rC^1-p
+                     * Further down we first multiply by r^p-2 and then by
+                     * the vector r, which in total gives: dV/drC * (r/rC)^1-p
+                     */
+                    FscalC[i] *= rpinvC;
+                    FscalV[i] *= rpinvV;
                 }
             }
 
