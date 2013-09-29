@@ -1132,11 +1132,11 @@ void fft5d_execute(fft5d_plan plan, int thread, fft5d_time times)
 #ifdef GMX_MPI
                 if ((s == 0 && !(plan->flags&FFT5D_ORDER_YZ)) || (s == 1 && (plan->flags&FFT5D_ORDER_YZ)))
                 {
-                    MPI_Alltoall(lout2, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, lout3, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall((real *)lout2, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*pM[s]*K[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
                 else
                 {
-                    MPI_Alltoall(lout2, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, lout3, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
+                    MPI_Alltoall((real *)lout2, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, (real *)lout3, N[s]*M[s]*pK[s]*sizeof(t_complex)/sizeof(real), GMX_MPI_REAL, cart[s]);
                 }
 #else
                 gmx_incons("fft5d MPI call without MPI configuration");
