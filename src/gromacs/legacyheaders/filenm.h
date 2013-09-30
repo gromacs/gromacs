@@ -52,6 +52,15 @@ const char *ftp2ext_generic(int ftp);
 /* Return extension for filetype, and a generic name for generic types
    (e.g. trx)*/
 
+const char *ftp2dotext(int ftp);
+/* Return extension for filetype with a leading dot */
+
+int ftp2generic_count(int ftp);
+/* Return the number of filetypes for a generic filetype */
+
+const int *ftp2generic_list(int ftp);
+/* Return the list of filetypes for a generic filetype */
+
 const char *ftp2desc(int ftp);
 /* Return description for file type */
 

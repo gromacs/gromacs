@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2012, by the GROMACS development team, led by
+ * Copyright (c) 2012,2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -44,6 +44,8 @@
 
 #include <string>
 #include <vector>
+
+#include "gromacs/legacyheaders/filenm.h"
 
 #include "gromacs/utility/file.h"
 #include "gromacs/utility/stringutil.h"
@@ -151,12 +153,10 @@ class FileTypeRegistry
         //! Initializes the file type registry.
         FileTypeRegistry();
 
+        //! Registers a file type that corresponds to a ftp in filenm.h.
+        void registerType(OptionFileType type, int ftp);
         //! Registers a file type with a single extension.
         void registerType(OptionFileType type, const char *extension);
-        //! Registers a file type with multiple extensions.
-        template <size_t count>
-        void registerType(OptionFileType type,
-                          const char     *const (&extensions)[count]);
 
         std::vector<FileTypeHandler> filetypes_;
 };
@@ -180,18 +180,33 @@ FileTypeRegistry::handlerForType(OptionFileType type) const
 FileTypeRegistry::FileTypeRegistry()
 {
     filetypes_.resize(eftOptionFileType_NR);
-    const char *const topExtensions[] = {
-        ".tpr", ".tpb", ".tpa", ".gro", ".g96", ".pdb", ".brk", ".ent"
-    };
-    const char *const trajExtensions[] = {
-        ".xtc", ".trr", ".trj", ".cpt", ".gro", ".g96", ".g87", ".pdb"
-    };
-    registerType(eftTopology,    topExtensions);
-    registerType(eftTrajectory,  trajExtensions);
-    registerType(eftPDB,         ".pdb");
-    registerType(eftIndex,       ".ndx");
-    registerType(eftPlot,        ".xvg");
-    registerType(eftGenericData, ".dat");
+    registerType(eftTopology,    efTPS);
+    registerType(eftTrajectory,  efTRX);
+    registerType(eftPDB,         efPDB);
+    registerType(eftIndex,       efNDX);
+    registerType(eftPlot,        efXVG);
+    registerType(eftGenericData, efDAT);
+}
+
+void FileTypeRegistry::registerType(OptionFileType type, int ftp)
+{
+    GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
+                       "Invalid file type");
+    const int genericTypeCount = ftp2generic_count(ftp);
+    if (genericTypeCount > 0)
+    {
+        const int *const genericTypes = ftp2generic_list(ftp);
+        filetypes_[type].extensions_.clear();
+        filetypes_[type].extensions_.reserve(genericTypeCount);
+        for (int i = 0; i < genericTypeCount; ++i)
+        {
+            filetypes_[type].extensions_.push_back(ftp2dotext(genericTypes[i]));
+        }
+    }
+    else
+    {
+        registerType(type, ftp2dotext(ftp));
+    }
 }
 
 void FileTypeRegistry::registerType(OptionFileType type,
@@ -200,15 +215,6 @@ void FileTypeRegistry::registerType(OptionFileType type,
     GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
                        "Invalid file type");
     filetypes_[type].extensions_.assign(1, extension);
-}
-
-template <size_t count>
-void FileTypeRegistry::registerType(OptionFileType type,
-                                    const char     *const (&extensions)[count])
-{
-    GMX_RELEASE_ASSERT(type >= 0 && static_cast<size_t>(type) < filetypes_.size(),
-                       "Invalid file type");
-    filetypes_[type].extensions_.assign(extensions, extensions + count);
 }
 
 /*! \brief
