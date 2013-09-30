@@ -275,6 +275,42 @@ const char *ftp2ext_generic(int ftp)
     }
 }
 
+const char *ftp2ext_with_dot(int ftp)
+{
+    if ((0 <= ftp) && (ftp < efNR))
+    {
+        return deffile[ftp].ext;
+    }
+    else
+    {
+        return "unknown";
+    }
+}
+
+int ftp2generic_count(int ftp)
+{
+    if ((0 <= ftp) && (ftp < efNR))
+    {
+        return deffile[ftp].ntps;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+const int *ftp2generic_list(int ftp)
+{
+    if ((0 <= ftp) && (ftp < efNR))
+    {
+        return deffile[ftp].tps;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 const char *ftp2desc(int ftp)
 {
     if ((0 <= ftp) && (ftp < efNR))
