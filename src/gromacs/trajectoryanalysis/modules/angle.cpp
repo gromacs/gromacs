@@ -43,6 +43,7 @@
 
 #include "gromacs/legacyheaders/pbc.h"
 #include "gromacs/legacyheaders/vec.h"
+#include "gromacs/legacyheaders/bondf.h"
 
 #include "gromacs/analysisdata/analysisdata.h"
 #include "gromacs/analysisdata/modules/plot.h"
@@ -119,6 +120,8 @@ Angle::initOptions(Options *options, TrajectoryAnalysisSettings * /*settings*/)
         "should specify the same number of selections, and for each selection",
         "in [TT]-group1[tt], the corresponding selection in [TT]-group2[tt]",
         "should specify the same number of vectors.[PAR]",
+        "When both [TT]-g1 plane[tt] and [TT]-g2 plane[tt] the dihedral angle",
+        "between the planes will be computed.[PAR]",
         "With [TT]-g2 sphnorm[tt], each selection in [TT]-group2[tt] should",
         "specify a single position that is the center of the sphere.",
         "The second vector is calculated as the vector from the center to the",
@@ -298,7 +301,13 @@ Angle::initAnalysis(const TrajectoryAnalysisSettings &settings,
     {
         angles_.setColumnCount(i, sel1_[i].posCount() / natoms1_);
     }
-    double histogramMin = (g1type_ == "dihedral" ? -180.0 : 0);
+    double histogramMin = 0;
+
+    if ((g1type_ == "dihedral") || 
+        ((g1type_ == "plane") && (g2type_ == "plane")))
+    {
+        histogramMin = -180.0;
+    }
     histogramModule_->init(histogramFromRange(histogramMin, 180.0)
                                .binWidth(binWidth_).includeAll());
 
@@ -369,6 +378,21 @@ copy_pos(const SelectionList &sel, int natoms, int g, int first, rvec x[])
     }
 }
 
+
+//! Helper method to calculate a center of mass from two or three positions.
+static void
+calc_com(int natoms, rvec x[], rvec xcom)
+{
+    clear_rvec(xcom);
+    for(int i=0; (i < natoms); i++)
+    {
+        for(int m = 0; (m < DIM); m++)
+        {
+            xcom[m] += x[i][m];
+        }
+    }
+    svmul(1.0/natoms, xcom, xcom);
+}
 
 //! Helper method to calculate a vector from two or three positions.
 static void
@@ -525,7 +549,24 @@ Angle::analyzeFrame(int frnr, const t_trxframe &fr, t_pbc *pbc,
                         default:
                             GMX_THROW(InternalError("invalid -g2 value"));
                     }
-                    angle = gmx_angle(v1, v2);
+                    if ((g1type_[0] == 'p') && (g2type_[0] == 'p'))
+                    {
+                        //! Angle between two planes is a dihedral angle
+                        rvec x1, x2, r_ij, r_kj, r_kl, m, n;
+                        real sign;
+                        int t1, t2, t3;
+                        rvec_add(c1, v1, x1);
+                        rvec_add(c2, v2, x2);
+                        angle = dih_angle(x1, c1, c2, x2,
+                                          pbc,
+                                          r_ij, r_kj, r_kl, m, n,
+                                          &sign,
+                                          &t1, &t2, &t3);
+                    }
+                    else
+                    {
+                        angle = gmx_angle(v1, v2);
+                    }
                     break;
                 default:
                     GMX_THROW(InternalError("invalid -g1 value"));
