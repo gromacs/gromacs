@@ -46,6 +46,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "statutil.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -493,7 +494,7 @@ int gmx_trjcat(int argc, char *argv[])
     atom_id     *index = NULL, imax;
     char        *grpname;
     real       **val = NULL, *t = NULL, dt_remd;
-    int          n, nset;
+    int          n, nset, ftpout;
     gmx_bool     bOK;
     gmx_off_t    fpos;
     output_env_t oenv;
@@ -645,7 +646,15 @@ int gmx_trjcat(int argc, char *argv[])
 
         if (n_append == -1)
         {
-            trxout = open_trx(out_file, "w");
+            ftpout = fn2ftp(out_file);
+            if(ftpout == efTNG)
+            {
+                gmx_file("Can not open TNG files yet.");
+            }
+            else
+            {
+                trxout = open_trx(out_file, "w");
+            }
             memset(&frout, 0, sizeof(frout));
         }
         else

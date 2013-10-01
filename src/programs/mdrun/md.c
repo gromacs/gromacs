@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -148,7 +150,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              unsigned long Flags,
              gmx_walltime_accounting_t walltime_accounting)
 {
-    gmx_mdoutf_t   *outf;
+    gmx_mdoutf_t    outf = NULL;
     gmx_large_int_t step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
@@ -1079,7 +1081,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         nrnb, wcycle, graph, groups,
                                         shellfc, fr, bBornRadii, t, mu_tot,
                                         &bConverged, vsite,
-                                        outf->fp_field);
+                                        mdoutf_get_fp_field(outf));
             tcount += count;
 
             if (bConverged)
@@ -1098,7 +1100,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                     fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
@@ -1323,12 +1325,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * coordinates at time t. We must output all of this before
          * the update.
          */
-        do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
-                              ir, state, state_global, top_global, fr, upd,
-                              outf, mdebin, ekind, f, f_global,
-                              wcycle, mcrng, &nchkpt,
-                              bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
-                              bSumEkinhOld);
+        do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
+                                 ir, state, state_global, top_global, fr, upd,
+                                 outf, mdebin, ekind, f, f_global,
+                                 wcycle, mcrng, &nchkpt,
+                                 bCPT, bRerunMD, bLastStep, (Flags & MD_CONFOUT),
+                                 bSumEkinhOld);
 
         /* kludge -- virial is lost with restart for NPT control. Must restart */
         if (bStartingFromCpt && bVV)
@@ -1759,7 +1761,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 do_dr  = do_per_step(step, ir->nstdisreout);
                 do_or  = do_per_step(step, ir->nstorireout);
 
-                print_ebin(outf->fp_ene, do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
                            step, t,
                            eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
             }
@@ -1952,13 +1954,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
-            print_ebin(outf->fp_ene, FALSE, FALSE, FALSE, fplog, step, t,
+            print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
         }
     }
 
     done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
