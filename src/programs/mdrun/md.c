@@ -1968,10 +1968,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             print_ebin(outf->fp_ene, FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
         }
+#ifdef GMX_USE_TNG
+        /* TNG: STUB */
+        /* Make sure TNG is closed only by the master node. */
+/*        if (outf->tng != NULL)
+        {
+            tng_util_trajectory_close(&outf->tng);
+        }*/
+#endif
     }
 
     done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)

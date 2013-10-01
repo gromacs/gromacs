@@ -33,46 +33,28 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_FILEIO_MDOUTF_H
-#define GMX_FILEIO_MDOUTF_H
+#ifndef GMX_FILEIO_TNG_IO_H
+#define GMX_FILEIO_TNG_IO_H
 
-#include "filenm.h"
-#include <stdio.h>
-#include "../legacyheaders/types/simple.h"
-#include "enxio.h"
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/types/enums.h"
+#include "gromacs/legacyheaders/types/inputrec.h"
+#include "gromacs/legacyheaders/domdec.h"
+#ifdef GMX_USE_TNG
+#include "external/tng_io/include/tng_io.h"
+#endif
 
-typedef struct {
-    t_fileio   *fp_trn;
-    t_fileio   *fp_xtc;
-    int         xtc_prec;
-    ener_file_t fp_ene;
-    const char *fn_cpt;
-    gmx_bool    bKeepAndNumCPT;
-    int         eIntegrator;
-    gmx_bool    bExpanded;
-    int         elamstats;
-    int         simulation_part;
-    FILE       *fp_dhdl;
-    FILE       *fp_field;
-} gmx_mdoutf_t;
+#ifdef GMX_USE_TNG
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop);
+/* Routine that sets molecular data in a TNG trajectory based on mtop */
+void init_tng_writing_frequency(tng_trajectory_t tng, t_inputrec *ir);
+/* Set output frequency and number of frames per frame set */
+#endif
 
-gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[],
-                          int mdrun_flags,
-                          const t_commrec *cr, const t_inputrec *ir,
-                          const gmx_mtop_t *mtop,
-                          const output_env_t oenv);
-/* Returns a pointer to a data structure with all output file pointers
- * and names required by mdrun.
- */
+#ifdef GMX_USE_TNG
+void fwrite_tng(tng_trajectory_t tng, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+/* Write a frame to a TNG file fp, box, x, v, f may be NULL */
+#endif
 
-void done_mdoutf(gmx_mdoutf_t *of);
-/* Close all open output files and free the of pointer */
 
-#define MDOF_X   (1<<0)
-#define MDOF_V   (1<<1)
-#define MDOF_F   (1<<2)
-#define MDOF_XTC (1<<3)
-#define MDOF_CPT (1<<4)
-
-#endif /* GMX_FILEIO_MDOUTF_H */
+#endif /* GMX_FILEIO_TNG_IO_H */

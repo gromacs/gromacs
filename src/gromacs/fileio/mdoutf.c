@@ -42,6 +42,7 @@
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
+                          const gmx_mtop_t *mtop,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
@@ -68,6 +69,18 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
         of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
 
         sprintf(filemode, bAppendFiles ? "a+" : "w+");
+
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/* Initialize topology and then set writing frequency. */
+/*    if (MASTER(cr) && (*outf)->tng)
+    {
+        init_tng_top((*outf)->tng, mtop);
+
+        *//* Writing frequency must be set after adding the TNG topology. *//*
+        init_tng_writing_frequency((*outf)->tng, ir);
+    }*/
+#endif
 
         if ((EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
 #ifndef GMX_FAHCORE
