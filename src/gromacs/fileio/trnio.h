@@ -55,6 +55,9 @@
 
 #include "../legacyheaders/typedefs.h"
 #include "gmxfio.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -109,6 +112,12 @@ gmx_bool is_trn(FILE *fp);
 void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
                 rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
 /* Write a trn frame to file fp, box, x, v, f may be NULL */
+
+#ifdef GMX_USE_TNG
+void fwrite_tng(tng_trajectory_t tng, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f);
+/* Write a frame to a TNG file fp, box, x, v, f may be NULL */
+#endif
 
 gmx_bool fread_htrn(t_fileio *fio, t_trnheader *sh,
                     rvec *box, rvec *x, rvec *v, rvec *f);

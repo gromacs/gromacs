@@ -47,6 +47,9 @@
 #include "futil.h"
 #include "trnio.h"
 #include "gmxfio.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#endif
 
 #define BUFSIZE     128
 #define GROMACS_MAGIC   1993
@@ -205,6 +208,56 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     return bOK;
 }
 
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/*static gmx_bool do_htng(tng_trajectory_t tng, gmx_bool bRead, t_trnheader *sh,
+                        rvec *box, rvec *x, rvec *v, rvec *f)
+{
+    gmx_bool bOK;
+    tng_function_status stat;
+    int64_t n_particles;
+
+    bOK = TRUE;
+
+    *//* FIXME: The box shape has to be written with a stride length of the
+     * lowest common denominator of the other written data. *//*
+
+    *//* FIXME: Only writing floats *//*
+
+    if (sh->box_size != 0)
+    {
+        stat = tng_util_box_shape_write(tng, sh->step, (float *)box);
+        bOK = bOK && stat == TNG_SUCCESS;
+    }
+    if (sh->vir_size != 0)
+    {
+        *//* FIXME: Not implemented yet *//*
+    }
+    if (sh->pres_size != 0)
+    {
+        *//* FIXME: Not implemented yet *//*
+    }
+    if (sh->x_size != 0)
+    {
+        stat = tng_util_pos_write(tng, sh->step, (float *)x);
+        bOK = bOK && stat == TNG_SUCCESS;
+    }
+    if (sh->v_size != 0)
+    {
+        stat = tng_util_vel_write(tng, sh->step, (float *)v);
+        bOK = bOK && stat == TNG_SUCCESS;
+    }
+    if (sh->f_size != 0)
+    {
+        stat = tng_util_force_write(tng, sh->step, (float *)f);
+        bOK = bOK && stat == TNG_SUCCESS;
+    }
+
+    return bOK;
+}*/
+#endif
+
+
 static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
                        rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
@@ -258,6 +311,58 @@ static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *
     return bOK;
 }
 
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/*static gmx_bool do_tng(tng_trajectory_t tng, gmx_bool bRead, int *step, real *t, real *lambda,
+                       rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
+{
+    t_trnheader *sh;
+    gmx_bool     bOK;
+
+    snew(sh, 1);
+    if (!bRead)
+    {
+        sh->box_size = (box) ? sizeof(matrix) : 0;
+        sh->x_size   = ((x) ? (*natoms*sizeof(x[0])) : 0);
+        sh->v_size   = ((v) ? (*natoms*sizeof(v[0])) : 0);
+        sh->f_size   = ((f) ? (*natoms*sizeof(f[0])) : 0);
+        sh->natoms   = *natoms;
+        sh->step     = *step;
+        sh->nre      = 0;
+        sh->t        = *t;
+        sh->lambda   = *lambda;
+    }
+    *//* FIXME: Reading does not work yet. *//*
+    if (bRead)
+    {
+        *natoms = sh->natoms;
+        *step   = sh->step;
+        *t      = sh->t;
+        *lambda = sh->lambda;
+        if (sh->ir_size)
+        {
+            gmx_file("inputrec in trn file");
+        }
+        if (sh->e_size)
+        {
+            gmx_file("energies in trn file");
+        }
+        if (sh->top_size)
+        {
+            gmx_file("topology in trn file");
+        }
+        if (sh->sym_size)
+        {
+            gmx_file("symbol table in trn file");
+        }
+    }
+    bOK = do_htng(tng, bRead, sh, box, x, v, f);
+
+    sfree(sh);
+
+    return bOK;
+}*/
+#endif
 /************************************************************
  *
  *  The following routines are the exported ones
@@ -311,6 +416,17 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
     }
 }
 
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/*void fwrite_tng(tng_trajectory_t tng, int step, real t, real lambda,
+                rvec *box, int natoms, rvec *x, rvec *v, rvec *f)
+{
+    if (do_tng(tng, FALSE, &step, &t, &lambda, box, &natoms, x, v, f) == FALSE)
+    {
+        gmx_file("Cannot write TNG trajectory frame; maybe you are out of disk space?");
+    }
+}*/
+#endif
 
 gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
                    rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)

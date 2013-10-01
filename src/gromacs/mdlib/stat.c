@@ -69,6 +69,10 @@
 #include "md_support.h"
 #include "mdrun.h"
 #include "sim_util.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#include "copyrite.h"
+#endif
 
 typedef struct gmx_global_stat
 {

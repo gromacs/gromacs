@@ -43,6 +43,9 @@
 #include "update.h"
 #include "vcm.h"
 #include "../fileio/mdoutf.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -147,6 +150,13 @@ void init_md(FILE *fplog,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
+
+#ifdef GMX_USE_TNG
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop);
+/* Routine that sets molecular data in a TNG trajectory based on mtop */
+void init_tng_writing_frequency(tng_trajectory_t tng, t_inputrec *ir);
+/* Set output frequency and number of frames per frame set */
+#endif
 
 #ifdef __cplusplus
 }
