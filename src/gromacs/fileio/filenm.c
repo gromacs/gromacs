@@ -72,6 +72,10 @@
 enum
 {
     eftASC, eftBIN, eftXDR, eftGEN, eftNR
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/*    , eftTNG */
+#endif
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -82,7 +86,7 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
 };
 #define NTRXS asize(trxs)
 
@@ -162,6 +166,8 @@ static const t_deffile
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
     { eftXDR, ".xtc", "traj", NULL,
       "Compressed trajectory (portable xdr format)" },
+    { eftBIN, ".tng", "traj", NULL,
+      "Trajectory file (tng format)" },
     { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
