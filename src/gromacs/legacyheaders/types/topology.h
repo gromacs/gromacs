@@ -32,6 +32,8 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef GMX_LEGACYHEADERS_TOPOLOGY_H
+#define GMX_LEGACYHEADERS_TOPOLOGY_H
 
 #include "atoms.h"
 #include "idef.h"
@@ -122,4 +124,6 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
