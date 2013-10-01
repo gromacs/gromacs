@@ -125,6 +125,7 @@ set_source_files_properties(selection/scanner.cpp PROPERTIES COMPILE_FLAGS "${_s
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
                       ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_TNG_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
@@ -164,3 +165,19 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
         message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
 endif ()
+
+if(GMX_USE_TNG)
+    # Only a few files need to know where and what TNG is, so we don't
+    # need to add to the global include-file search path
+    foreach(file ${FILEIO_FILES}
+            # TODO consolidate these
+            fileio/tngio.cpp
+            fileio/tngio_for_tools.cpp
+            fileio/trxio.c
+            # TODO enable getting rid of these next ones
+            fileio/mdoutf.c
+            gmxana/gmx_trjconv.c
+            )
+        set_source_files_properties(${file} PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/../external/tng_io/include")
+    endforeach()
+endif()
