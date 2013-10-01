@@ -34,68 +34,47 @@
  */
 /*! \internal \file
  * \brief
- * Implements classes in integrationtests.h.
+ * Tests for file I/O routines
  *
  * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_testutils
+ * \ingroup module_fileio
  */
-#include "integrationtests.h"
+#include <gtest/gtest.h>
+#include <string>
 
-#include "testoptions.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/options/filenameoption.h"
-#include "gromacs/utility/file.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include "../tngio.h"
+#include "../tngio_for_tools.h"
+#include "testutils/testfilemanager.h"
+#include "gromacs/utility/path.h"
 
-namespace gmx
-{
-namespace test
+namespace
 {
 
-/********************************************************************
- * IntegrationTestFixture
- */
-
-std::string IntegrationTestFixture::s_maxBackup("-1");
-
-GMX_TEST_OPTIONS(IntegrationTestOptions, options)
+class TngTest : public ::testing::Test
 {
-    options->addOption(StringOption("max-backup")
-                           .store(&IntegrationTestFixture::s_maxBackup)
-                           .description("Maximum number of backup files of old test output to write (-1 prevents backups being created)"));
+    public:
+        TngTest()
+        {
+        }
+        gmx::test::TestFileManager      fileManager_;
+};
+
+TEST_F(TngTest, CanOpenTngFile)
+{
+    tng_trajectory_t tng;
+    // TODO Mock or adapt gmx_fatal so that the error path is not
+    // fatal. Or work out how to use assertions properly in the
+    // general case. Then, cure cancer.
+    tng_open(fileManager_.getInputFilePath("spc2-traj.tng").c_str(),
+             'r',
+             &tng);
+    tng_close(&tng);
 }
 
-IntegrationTestFixture::IntegrationTestFixture()
+TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
 {
-    // TODO fix this when we have an encapsulation layer for handling
-    // environment variables
-#ifdef GMX_NATIVE_WINDOWS
-    _putenv_s("GMX_MAXBACKUP", s_maxBackup.c_str());
-#else
-    setenv("GMX_MAXBACKUP", s_maxBackup.c_str(), true);
-#endif
+    tng_trajectory_t tng = NULL;
+    tng_close(&tng);
 }
 
-IntegrationTestFixture::~IntegrationTestFixture()
-{
-}
-
-void
-IntegrationTestFixture::redirectStringToStdin(const char* theString)
-{
-    std::string fakeStdin("fake-stdin");
-    gmx::File::writeFileFromString(fakeStdin, theString);
-    if (NULL == std::freopen(fakeStdin.c_str(), "r", stdin))
-    {
-        GMX_THROW_WITH_ERRNO(FileIOError("Failed to redirect a string to stdin"),
-                             "freopen",
-                             errno);
-    }
-}
-
-} // namespace test
-} // namespace gmx
+} // namespace

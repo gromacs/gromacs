@@ -49,33 +49,33 @@
 #include "gromacs/timing/wallcycle.h"
 
 void
-do_trajectory_writing(FILE           *fplog,
-                      t_commrec      *cr,
-                      int             nfile,
-                      const t_filenm  fnm[],
-                      gmx_large_int_t step,
-                      gmx_large_int_t step_rel,
-                      double          t,
-                      t_inputrec     *ir,
-                      t_state        *state,
-                      t_state        *state_global,
-                      gmx_mtop_t     *top_global,
-                      t_forcerec     *fr,
-                      gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
-                      t_mdebin       *mdebin,
-                      gmx_ekindata_t *ekind,
-                      rvec           *f,
-                      rvec           *f_global,
-                      gmx_wallcycle_t wcycle,
-                      gmx_rng_t       mcrng,
-                      int            *nchkpt,
-                      gmx_bool        bCPT,
-                      gmx_bool        bRerunMD,
-                      gmx_bool        bLastStep,
-                      gmx_bool        bDoConfOut,
-                      gmx_bool        bSumEkinhOld
-                      )
+do_md_trajectory_writing(FILE           *fplog,
+                         t_commrec      *cr,
+                         int             nfile,
+                         const t_filenm  fnm[],
+                         gmx_large_int_t step,
+                         gmx_large_int_t step_rel,
+                         double          t,
+                         t_inputrec     *ir,
+                         t_state        *state,
+                         t_state        *state_global,
+                         gmx_mtop_t     *top_global,
+                         t_forcerec     *fr,
+                         gmx_update_t    upd,
+                         gmx_mdoutf_t    outf,
+                         t_mdebin       *mdebin,
+                         gmx_ekindata_t *ekind,
+                         rvec           *f,
+                         rvec           *f_global,
+                         gmx_wallcycle_t wcycle,
+                         gmx_rng_t       mcrng,
+                         int            *nchkpt,
+                         gmx_bool        bCPT,
+                         gmx_bool        bRerunMD,
+                         gmx_bool        bLastStep,
+                         gmx_bool        bDoConfOut,
+                         gmx_bool        bSumEkinhOld
+                         )
 {
     int   mdof_flags;
     int   n_xtc    = -1;
@@ -151,8 +151,8 @@ do_trajectory_writing(FILE           *fplog,
                 update_energyhistory(&state_global->enerhist, mdebin);
             }
         }
-        write_traj(fplog, cr, outf, mdof_flags, top_global,
-                   step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
+        mdoutf_write_to_trajectory_files(fplog, cr, outf, mdof_flags, top_global,
+                                         step, t, state, state_global, f, f_global, &n_xtc, &x_xtc);
         if (bCPT)
         {
             (*nchkpt)++;
@@ -163,7 +163,7 @@ do_trajectory_writing(FILE           *fplog,
             bDoConfOut && MASTER(cr) &&
             !bRerunMD)
         {
-            /* x and v have been collected in write_traj,
+            /* x and v have been collected in mdoutf_write_to_trajectory_files,
              * because a checkpoint file will always be written
              * at the last step.
              */
