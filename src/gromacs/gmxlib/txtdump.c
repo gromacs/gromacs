@@ -298,6 +298,42 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
 }
 
 
+void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim)
+{
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+    int         i, j;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i][j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
+    }
+}
+
 void pr_reals(FILE *fp, int indent, const char *title, real *vec, int n)
 {
     int i;
@@ -327,6 +363,42 @@ void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
             fprintf(fp, "  %10g", vec[i]);
         }
         (void) fprintf(fp, "\n");
+    }
+}
+
+void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, int dim)
+{
+    int         i, j;
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i * dim  + j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
     }
 }
 
@@ -763,11 +835,11 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PI("nstfout", ir->nstfout);
         PI("nstcalcenergy", ir->nstcalcenergy);
         PI("nstenergy", ir->nstenergy);
-        PI("nstxtcout", ir->nstxtcout);
+        PI("nstxout_compressed", ir->nstxout_compressed);
         PR("init-t", ir->init_t);
         PR("delta-t", ir->delta_t);
 
-        PR("xtcprec", ir->xtcprec);
+        PR("x_compression_precision", ir->x_compression_precision);
         PR("fourierspacing", ir->fourier_spacing);
         PI("nkx", ir->nkx);
         PI("nky", ir->nky);

@@ -91,6 +91,8 @@ class MdrunTestFixture : public IntegrationTestFixture
         void useEmptyMdpFile();
         //! Use a string as -f input to grompp
         void useStringAsMdpFile(const char *mdpString);
+        //! Use a string as -f input to grompp
+        void useStringAsMdpFile(const std::string &mdpString);
         //! Use a string as -n input to grompp
         void useStringAsNdxFile(const char *ndxString);
         //! Use a standard .top and .gro file as input to grompp
@@ -118,8 +120,8 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
-        std::string trrFileName;
-        std::string xtcFileName;
+        std::string fullPrecisionTrajectoryFileName;
+        std::string reducedPrecisionTrajectoryFileName;
         std::string ndxFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
