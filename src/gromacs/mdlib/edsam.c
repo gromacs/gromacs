@@ -58,6 +58,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "xvgr.h"
 #include "groupcoord.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 
 /* We use the same defines as in mvdata.c here */

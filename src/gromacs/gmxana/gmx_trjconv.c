@@ -46,6 +46,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "statutil.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -1278,6 +1279,13 @@ int gmx_trjconv(int argc, char *argv[])
             }
             switch (ftp)
             {
+                case efTNG:
+                    // TODO Does appending to a TNG file even make sense?
+                    trjconv_prepare_tng_writing(out_file,
+                                                filemode[0],
+                                                status,
+                                                natoms);
+                    break;
                 case efXTC:
                 case efG87:
                 case efTRR:
@@ -1296,6 +1304,8 @@ int gmx_trjconv(int argc, char *argv[])
                         out = ffopen(out_file, filemode);
                     }
                     break;
+                default:
+                    gmx_incons("Illegal output file format");
             }
 
             bCopy = FALSE;
@@ -1690,6 +1700,11 @@ int gmx_trjconv(int argc, char *argv[])
 
                         switch (ftp)
                         {
+                            case efTNG:
+                                write_tng_frame(status, &frout);
+                                // TODO work how to read and write lambda
+                                // TODO support more functionality like below
+                                break;
                             case efTRJ:
                             case efTRR:
                             case efG87:

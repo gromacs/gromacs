@@ -98,6 +98,16 @@ int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
  * atoms can be NULL for file types which don't need atom names.
  */
 
+void trjconv_prepare_tng_writing(const char     *filename,
+                                 char            filemode,
+                                 t_trxstatus    *status,
+                                 int             natoms);
+/* TODO */
+
+void write_tng_frame(t_trxstatus *status,
+                     t_trxframe  *fr);
+/* TODO */
+
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
