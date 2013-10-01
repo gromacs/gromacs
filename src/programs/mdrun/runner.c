@@ -1408,12 +1408,13 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr         = mk_forcerec();
         fr->hwinfo = hwinfo;
         init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box,
-                      opt2fn("-table", nfile, fnm),
-                      opt2fn("-tabletf", nfile, fnm),
-                      opt2fn("-tablep", nfile, fnm),
-                      opt2fn("-tableb", nfile, fnm),
-                      nbpu_opt,
-                      FALSE, pforce);
+                      nbpu_opt, nfile, fnm,
+                      /* opt2fn("-table", nfile, fnm),
+                         opt2fn("-tabletf", nfile, fnm),
+                         opt2fn("-tablep", nfile, fnm),
+                         opt2fn("-tableb", nfile, fnm),
+                         opt2fn_null("-waxs_debye",nfile,fnm), */
+                      FALSE,pforce);
 
         /* version for PCA_NOT_READ_NODE (see md.c) */
         /*init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
