@@ -154,6 +154,9 @@
 /* Use our own instead of system XDR libraries */
 #cmakedefine GMX_INTERNAL_XDR
 
+/* Compile to use TNG library */
+#cmakedefine GMX_USE_TNG
+
 /* Use MPI (with mpicc) for parallelization */
 #cmakedefine GMX_LIB_MPI
 
