@@ -205,6 +205,7 @@ static gmx_bool do_htrn(t_fileio *fio, t_trnheader *sh,
     return bOK;
 }
 
+
 static gmx_bool do_trn(t_fileio *fio, gmx_bool bRead, int *step, real *t, real *lambda,
                        rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
 {
@@ -310,7 +311,6 @@ void fwrite_trn(t_fileio *fio, int step, real t, real lambda,
         gmx_file("Cannot write trajectory frame; maybe you are out of disk space?");
     }
 }
-
 
 gmx_bool fread_trn(t_fileio *fio, int *step, real *t, real *lambda,
                    rvec *box, int *natoms, rvec *x, rvec *v, rvec *f)
