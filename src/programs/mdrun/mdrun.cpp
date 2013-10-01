@@ -382,7 +382,7 @@ int gmx_mdrun(int argc, char *argv[])
     t_filenm      fnm[] = {
         { efTPX, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
-        { efXTC, "-x",      NULL,       ffOPTWR },
+        { efCOMPRESSED, "-x",      NULL,       ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
         { efCPT, "-cpo",    NULL,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },

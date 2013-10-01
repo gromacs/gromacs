@@ -44,6 +44,7 @@
 #include "pdbio.h"
 #include "../legacyheaders/oenv.h"
 #include "gmxfio.h"
+#include "../../external/tng_io/include/tng_io_fwd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,6 +99,23 @@ int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
  * atoms can be NULL for file types which don't need atom names.
  */
 
+void trjconv_prepare_tng_writing(const char     *filename,
+                                 char            filemode,
+                                 t_trxstatus   **in,
+                                 t_trxstatus   **out,
+                                 int             natoms);
+/* TODO */
+
+t_trxstatus *trjcat_prepare_tng_writing(const char     *filename,
+                                        char            filemode,
+                                        char          **infiles,
+                                        int             nfile_in);
+/* TODO */
+
+void write_tng_frame(t_trxstatus *status,
+                     t_trxframe  *fr);
+/* TODO */
+
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
@@ -106,9 +124,11 @@ void close_trx(t_trxstatus *status);
 t_trxstatus *open_trx(const char *outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
-/* get a fileio from a trxstatus */
 t_fileio *trx_get_fileio(t_trxstatus *status);
+/* get a fileio from a trxstatus */
 
+tng_trajectory_t trx_get_tng(t_trxstatus *status);
+/* get a tng trajectory container from a trxstatus */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
