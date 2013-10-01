@@ -149,6 +149,7 @@ const t_interaction_function interaction_function[F_NRE] =
     def_bonded  ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ, angresz       ),
     def_bonded  ("DIHRES",   "Dih. Rest.",      4, 3, 3,  eNR_DIHRES, dihres        ),
     def_nofc    ("DIHRESVIOL",  "Dih. Rest. Viol."                                     ), /* obsolete */
+    def_bonded  ("WAXS_DEBYE", "WAXS Debye",     2, 2, 0,  eNR_WAXS_DEBYE, unimplemented ),
     def_shkcb   ("CONSTR",   "Constraint",      2, 1, 1                             ),
     def_shk     ("CONSTRNC", "Constr. No Conn.", 2, 1, 1                             ),
     def_shkcb   ("SETTLE",   "Settle",          3, 2, 0                             ),
