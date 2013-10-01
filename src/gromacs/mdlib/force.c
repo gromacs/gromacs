@@ -63,8 +63,8 @@
 #include "partdec.h"
 #include "qmmm.h"
 #include "gmx_omp_nthreads.h"
-
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/waxsdebye/waxs_debye_force_c.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
@@ -434,6 +434,23 @@ void do_force_lowlevel(FILE       *fplog,   gmx_large_int_t step,
     }
 
     where();
+
+    /* Do WAXS refinement if requested. */
+    if (NULL != fr->wdf)
+    {
+        enerd->term[F_WAXS_DEBYE] =
+            waxs_debye_force_calc(fplog,
+                                  fr->wdf,
+                                  idef->il[F_WAXS_DEBYE].nr,
+                                  idef->il[F_WAXS_DEBYE].iatoms,
+                                  idef->iparams,
+                                  x,
+                                  f,
+                                  &pbc,
+                                  cr,
+                                  nrnb);
+        waxs_debye_force_update_alpha(fr->wdf);
+    }
 
     *cycles_pme = 0;
     if (EEL_FULL(fr->eeltype))
@@ -941,12 +958,12 @@ void reset_enerdata(t_forcerec *fr, gmx_bool bNS,
     }
     /* Initialize the dVdlambda term with the long range contribution */
     /* Initialize the dvdl term with the long range contribution */
-    enerd->term[F_DVDL]            = 0.0;
-    enerd->term[F_DVDL_COUL]       = 0.0;
-    enerd->term[F_DVDL_VDW]        = 0.0;
-    enerd->term[F_DVDL_BONDED]     = 0.0;
-    enerd->term[F_DVDL_RESTRAINT]  = 0.0;
-    enerd->term[F_DKDL]            = 0.0;
+    enerd->term[F_DVDL]           = 0.0;
+    enerd->term[F_DVDL_COUL]      = 0.0;
+    enerd->term[F_DVDL_VDW]       = 0.0;
+    enerd->term[F_DVDL_BONDED]    = 0.0;
+    enerd->term[F_DVDL_RESTRAINT] = 0.0;
+    enerd->term[F_DKDL]           = 0.0;
     if (enerd->n_lambda > 0)
     {
         for (i = 0; i < enerd->n_lambda; i++)

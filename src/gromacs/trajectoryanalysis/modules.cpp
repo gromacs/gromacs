@@ -47,6 +47,7 @@
 #include "modules/distance.h"
 #include "modules/freevolume.h"
 #include "modules/select.h"
+#include "modules/waxsdebye.h"
 
 namespace gmx
 {
@@ -83,6 +84,7 @@ void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
     registerModule<DistanceInfo>(manager);
     registerModule<FreeVolumeInfo>(manager);
     registerModule<SelectInfo>(manager);
+    registerModule<WaxsDebye>(manager);
 }
 
 } // namespace gmx
