@@ -50,6 +50,10 @@ double convert2gmx(double x, int unit)
             return x;
         case eg2cBohr:
             return x*BOHR2NM;
+        case eg2c1_Angstrom:
+            return x/A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x/CAL2JOULE;
         case eg2cHartree:
@@ -82,6 +86,10 @@ double gmx2convert(double x, int unit)
             return x;
         case eg2cBohr:
             return x/BOHR2NM;
+        case eg2c1_Angstrom:
+            return x*A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x*CAL2JOULE;
         case eg2cHartree:
@@ -106,12 +114,14 @@ double gmx2convert(double x, int unit)
 
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Bohr", "Kcal_Mole",
+    "Angstrom", "Nm", "Bohr",
+    "1/Angstrom", "1/Nm",
+    "Kcal_Mole",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
     "Debye", "Electron", "Buckingham"
 };
 
-int string2unit(char *string)
+int string2unit(const char *string)
 {
     int i;
 
