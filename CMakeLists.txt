@@ -40,7 +40,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "0")
 
 # The numerical gromacs version. It is 40600 for 4.6.0.
 # The #define GMX_VERSION in gmx_header_config_h is set to this value.
-math(EXPR NUM_VERSION 
+math(EXPR NUM_VERSION
     "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
 if(CPACK_PACKAGE_VERSION_PATCH)
     math(EXPR NUM_VERSION
@@ -194,6 +194,8 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
+
+option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
 option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
 mark_as_advanced(GMX_GIT_VERSION_INFO)
@@ -429,7 +431,7 @@ option(BUILD_SHARED_LIBS "Enable shared libraries (can be problematic e.g. with 
 if (UNIX)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static archives (it will only work if static versions of external dependencies are available and found)")
-elseif (WIN32 and NOT CYGWIN)
+elseif (WIN32 AND NOT CYGWIN)
     set(GMX_PREFER_STATIC_LIBS_DESCRIPTION
         "When finding libraries prefer static system libraries (MT instead of MD)")
 endif()
@@ -1106,7 +1108,7 @@ endif()
 if(NOT GMX_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
     #or because it was only partially detected (e.g. only for C but not C++ compiler)
-    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_C_FLAGS CACHE)
     unset(OpenMP_CXX_FLAGS CACHE)
 else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
@@ -1223,6 +1225,25 @@ else()
                 COMPONENT development)
     endif ()
 endif()
+
+if(GMX_USE_TNG)
+    find_package(ZLIB)
+    add_definitions(-DGMX_USE_TNG)
+    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
+    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
+    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+    set(TNG_USE_OPENMP ${GMX_OPENMP} CACHE BOOL "Try to use the OpenMP library (if available) with TNG")
+    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
+    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    set(GMX_TNG_LIBRARIES tng_io)
+endif()
+mark_as_advanced(TNG_BUILD_FORTRAN)
+mark_as_advanced(TNG_BUILD_EXAMPLES)
+mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
+mark_as_advanced(TNG_USE_OPENMP)
+mark_as_advanced(TNG_BUILD_DOCUMENTATION)
+mark_as_advanced(TNG_BUILD_TEST)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
