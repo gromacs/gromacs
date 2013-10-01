@@ -272,6 +272,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->bham.b = old[1];
             newparam->bham.c = old[2];
             break;
+        case F_WAXS_DEBYE:
+            newparam->waxs_debye.tpi = gmx_nint(old[0]);
+            newparam->waxs_debye.tpj = gmx_nint(old[1]);
+            break;
         case F_LJ14:
             set_ljparams(comb, reppow, old[0], old[1], &newparam->lj14.c6A, &newparam->lj14.c12A);
             set_ljparams(comb, reppow, old[2], old[3], &newparam->lj14.c6B, &newparam->lj14.c12B);
