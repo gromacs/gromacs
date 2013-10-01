@@ -66,12 +66,12 @@ double compute_io(t_inputrec *ir, int natoms, gmx_groups_t *groups,
     nstx   = div_nsteps(nsteps, ir->nstxout);
     nstv   = div_nsteps(nsteps, ir->nstvout);
     nstf   = div_nsteps(nsteps, ir->nstfout);
-    nstxtc = div_nsteps(nsteps, ir->nstxtcout);
-    if (ir->nstxtcout > 0)
+    nstxtc = div_nsteps(nsteps, ir->nstxout_compressed);
+    if (ir->nstxout_compressed > 0)
     {
         for (i = 0; i < natoms; i++)
         {
-            if (groups->grpnr[egcXTC] == NULL || groups->grpnr[egcXTC][i] == 0)
+            if (groups->grpnr[egcCompressedX] == NULL || groups->grpnr[egcCompressedX][i] == 0)
             {
                 nxtcatoms++;
             }

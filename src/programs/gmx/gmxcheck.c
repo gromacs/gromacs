@@ -285,7 +285,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     t_count          count;
     t_fr_time        first, last;
     int              j = -1, new_natoms, natoms;
-    gmx_off_t        fpos;
     real             rdum, tt, old_t1, old_t2, prec;
     gmx_bool         bShowTimestep = TRUE, bOK, newline = FALSE;
     t_trxstatus     *status;
@@ -307,7 +306,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     j      =  0;
     old_t2 = -2.0;
     old_t1 = -1.0;
-    fpos   = 0;
 
     count.bStep   = 0;
     count.bTime   = 0;
@@ -382,8 +380,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 
         old_t2 = old_t1;
         old_t1 = fr.time;
-        /*if (fpos && ((j<10 || j%10==0)))
-           fprintf(stderr," byte: %10lu",(unsigned long)fpos);*/
         j++;
         new_natoms = fr.natoms;
 #define INC(s, n, f, l, item) if (s.item != 0) { if (n.item == 0) { first.item = fr.time; } last.item = fr.time; n.item++; \
@@ -396,7 +392,6 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
         INC(fr, count, first, last, bF);
         INC(fr, count, first, last, bBox);
 #undef INC
-        fpos = gmx_fio_ftell(trx_get_fileio(status));
     }
     while (read_next_frame(oenv, status, &fr));
 

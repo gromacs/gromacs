@@ -43,6 +43,7 @@
 #include "typedefs.h"
 #include "network.h"
 #include "sim_util.h"
+#include "../timing/walltime_accounting.h"
 #include "tgroup.h"
 #include "../fileio/filenm.h"
 #include "mshift.h"
