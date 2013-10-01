@@ -1533,11 +1533,8 @@ int mdrunner(gmx_hw_opt_t *hw_opt,
         fr->hwinfo  = hwinfo;
         fr->gpu_opt = &hw_opt->gpu_opt;
         init_forcerec(fplog, oenv, fr, fcd, inputrec, mtop, cr, box,
-                      opt2fn("-table", nfile, fnm),
-                      opt2fn("-tabletf", nfile, fnm),
-                      opt2fn("-tablep", nfile, fnm),
-                      opt2fn("-tableb", nfile, fnm),
                       nbpu_opt,
+                      nfile, fnm,
                       FALSE,
                       pforce);
 
