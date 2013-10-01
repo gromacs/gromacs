@@ -90,7 +90,8 @@ enum tpxv {
     tpxv_Use64BitRandomSeed,                                 /**< change ld_seed from int to gmx_int64_t */
     tpxv_RestrictedBendingAndCombinedAngleTorsionPotentials, /**< potentials for supporting coarse-grained force fields */
     tpxv_InteractiveMolecularDynamics,                       /**< interactive molecular dynamics (IMD) */
-    tpxv_RemoveObsoleteParameters1                           /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_RemoveObsoleteParameters1,                          /**< remove optimize_fft, dihre_fc, nstcheckpoint */
+    tpxv_WAXS_Debye,                                         /**< add support for WAXS-Debye code options */
 };
 
 /*! \brief Version number of the file format written to run input
@@ -104,8 +105,7 @@ enum tpxv {
  *
  * When developing a feature branch that needs to change the run input
  * file format, change tpx_tag instead. */
-static const int tpx_version = tpxv_RemoveObsoleteParameters1;
-
+static const int tpx_version = tpxv_WAXS_Debye;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -219,6 +219,8 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
+    { tpxv_WAXS_Debye, F_WAXS_DEBYE        }
+
 };
 #define NFTUPD asize(ftupd)
 
@@ -762,6 +764,14 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
     }
 }
 
+static void do_waxs(t_fileio *fio, t_waxs_refine *waxs)
+{
+    gmx_fio_do_int(fio, waxs->waxs_type);
+    gmx_fio_do_real(fio, waxs->kwaxs);
+    gmx_fio_do_int(fio, waxs->nstout);
+    gmx_fio_do_real(fio, waxs->debye_alpha_min);
+    gmx_fio_do_real(fio, waxs->debye_alpha_max);
+}
 
 static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
 {
@@ -1802,6 +1812,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         }
         /* end of QMMM stuff */
     }
+
+    if (file_version >= tpxv_WAXS_Debye)
+    {
+        do_waxs(fio, &ir->waxs);
+    }
 }
 
 
@@ -1961,6 +1976,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->thole.alpha1);
             gmx_fio_do_real(fio, iparams->thole.alpha2);
             gmx_fio_do_real(fio, iparams->thole.rfac);
+            break;
+        case F_WAXS_DEBYE:
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpi);
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpj);
             break;
         case F_LJ:
             gmx_fio_do_real(fio, iparams->lj.c6);
@@ -3705,7 +3724,7 @@ int read_tpx_top(const char *fn,
 
     ePBC = read_tpx(fn, ir, box, natoms, x, v, f, &mtop);
 
-    *top = gmx_mtop_t_to_t_topology(&mtop);
+    *top = gmx_mtop_t_to_t_topology(&mtop, TRUE);
 
     return ePBC;
 }
@@ -3770,7 +3789,7 @@ gmx_bool read_tps_conf(const char *infile, char *title, t_topology *top, int *eP
         snew(mtop, 1);
         *ePBC = read_tpx(infile, NULL, box, &natoms,
                          (x == NULL) ? NULL : *x, (v == NULL) ? NULL : *v, NULL, mtop);
-        *top = gmx_mtop_t_to_t_topology(mtop);
+        *top = gmx_mtop_t_to_t_topology(mtop, TRUE);
         /* In this case we need to throw away the group data too */
         done_gmx_groups_t(&mtop->groups);
         sfree(mtop);
