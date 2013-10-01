@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -34,57 +34,41 @@
  */
 /*! \internal \file
  * \brief
- * Implements registerTrajectoryAnalysisModules().
+ * Declares trajectory analysis module for distance calculations.
  *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
+ * \author David van der Spoel <david.vanderspoel@icm.uu.se>
  * \ingroup module_trajectoryanalysis
  */
-#include "gromacs/trajectoryanalysis/modules.h"
+#ifndef GMX_TRAJECTORYANALYSIS_MODULES_WAXSDEBYE_H
+#define GMX_TRAJECTORYANALYSIS_MODULES_WAXSDEBYE_H
 
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
-
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/select.h"
-#include "modules/waxsdebye.h"
+#include <string>
+#include "gromacs/legacyheaders/gmx_random.h"
+#include "gromacs/legacyheaders/vsite.h"
+#include "../analysismodule.h"
+#include "gromacs/selection/nbsearch.h"
+#include "gromacs/selection/indexutil.h"
+#include "gromacs/analysisdata/analysisdata.h"
+#include "gromacs/analysisdata/modules/average.h"
+#include "gromacs/selection/selection.h"
+#include "gromacs/waxsdebye/waxs_debye_force.h"
 
 namespace gmx
 {
 
-namespace
+namespace analysismodules
 {
 
-/*! \brief
- * Convenience method for registering a command-line module for trajectory
- * analysis.
- *
- * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
- *
- * \p ModuleInfo should have static public members
- * `const char name[]`, `const char shortDescription[]`, and
- * `gmx::TrajectoryAnalysisModulePointer create()`.
- *
- * \ingroup module_trajectoryanalysis
- */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager)
+class WaxsDebyeInfo
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
-}
+    public:
+        static const char name[];
+        static const char shortDescription[];
+        static TrajectoryAnalysisModulePointer create();
+};
 
-}   // namespace
-
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
-{
-    using namespace gmx::analysismodules;
-    registerModule<AngleInfo>(manager);
-    registerModule<DistanceInfo>(manager);
-    registerModule<FreeVolumeInfo>(manager);
-    registerModule<SelectInfo>(manager);
-    registerModule<WaxsDebyeInfo>(manager);
-}
+} // namespace analysismodules
 
 } // namespace gmx
+
+#endif
