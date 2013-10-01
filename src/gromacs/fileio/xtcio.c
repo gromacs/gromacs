@@ -209,6 +209,14 @@ int write_xtc(t_fileio *fio,
     gmx_bool bDum;
     int      bOK;
 
+    if (!fio)
+    {
+        /* This means the fio object is not being used, e.g. because
+           we are actually writing TNG output. We still have to return
+           a pseudo-success value, to keep some callers happy. */
+        return 1;
+    }
+
     xd = gmx_fio_getxdr(fio);
     /* write magic number and xtc identidier */
     if (xtc_header(xd, &magic_number, &natoms, &step, &time, FALSE, &bDum) == 0)

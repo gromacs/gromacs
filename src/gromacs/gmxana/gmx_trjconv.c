@@ -50,6 +50,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -549,6 +550,45 @@ void do_trunc(const char *fn, real t0)
 }
 #endif
 
+/*! \brief Read a full molecular topology if useful and available.
+ *
+ * If the input trajectory file is not in TNG format, and the output
+ * file is in TNG format, then we want to try to read a full topology
+ * (if available), so that we can write molecule information to the
+ * output file. The full topology provides better molecule information
+ * than is available from the normal t_topology data used by GROMACS
+ * tools.
+ *
+ * Also, the t_topology is only read under (different) particular
+ * conditions. If both apply, then a .tpr file might be read
+ * twice. Trying to fix this redundancy while trjconv is still an
+ * all-purpose tool does not seem worthwhile.
+ *
+ * Because of the way prepare_tng_writing is implemented, the case
+ * where the input TNG file has no molecule information will never
+ * lead to an output TNG file having molecule information. Since
+ * molecule information will generally be present if the input TNG
+ * file was written by a GROMACS tool, this seems like reasonable
+ * behaviour. */
+static gmx_mtop_t *read_mtop_for_tng(const char *tps_file,
+                                     const char *input_file,
+                                     const char *output_file)
+{
+    gmx_mtop_t *mtop = NULL;
+
+    if (fn2bTPX(tps_file) &&
+        efTNG != fn2ftp(input_file) &&
+        efTNG == fn2ftp(output_file))
+    {
+        int temp_natoms = -1;
+        snew(mtop, 1);
+        read_tpx(tps_file, NULL, NULL, &temp_natoms,
+                 NULL, NULL, NULL, mtop);
+    }
+
+    return mtop;
+}
+
 int gmx_trjconv(int argc, char *argv[])
 {
     const char *desc[] = {
@@ -826,7 +866,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     FILE            *out    = NULL;
     t_trxstatus     *trxout = NULL;
-    t_trxstatus     *status;
+    t_trxstatus     *trxin;
     int              ftp, ftpin = 0, file_nr;
     t_trxframe       fr, frout;
     int              flags;
@@ -836,6 +876,7 @@ int gmx_trjconv(int argc, char *argv[])
     int              m, i, d, frame, outframe, natoms, nout, ncent, nre, newstep = 0, model_nr;
 #define SKIP 10
     t_topology       top;
+    gmx_mtop_t      *mtop  = NULL;
     gmx_conect       gc    = NULL;
     int              ePBC  = -1;
     t_atoms         *atoms = NULL, useatoms;
@@ -1052,6 +1093,8 @@ int gmx_trjconv(int argc, char *argv[])
         {
         }
 
+        mtop = read_mtop_for_tng(top_file, in_file, out_file);
+
         /* Determine whether to read a topology */
         bTPS = (ftp2bSet(efTPS, NFILE, fnm) ||
                 bRmPBC || bReset || bPBCcomMol || bCluster ||
@@ -1147,12 +1190,12 @@ int gmx_trjconv(int argc, char *argv[])
         else
         {
             /* no index file, so read natoms from TRX */
-            if (!read_first_frame(oenv, &status, in_file, &fr, TRX_DONT_SKIP))
+            if (!read_first_frame(oenv, &trxin, in_file, &fr, TRX_DONT_SKIP))
             {
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(status);
+            close_trj(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1239,7 +1282,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* open trx file for reading */
-        bHaveFirstFrame = read_first_frame(oenv, &status, in_file, &fr, flags);
+        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
             fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
@@ -1283,6 +1326,17 @@ int gmx_trjconv(int argc, char *argv[])
             }
             switch (ftp)
             {
+                case efTNG:
+                    trjtools_prepare_tng_writing(out_file,
+                                                 filemode[0],
+                                                 trxin,
+                                                 &trxout,
+                                                 NULL,
+                                                 natoms,
+                                                 mtop,
+                                                 NULL,
+                                                 NULL);
+                    break;
                 case efXTC:
                 case efG87:
                 case efTRR:
@@ -1301,6 +1355,8 @@ int gmx_trjconv(int argc, char *argv[])
                         out = ffopen(out_file, filemode);
                     }
                     break;
+                default:
+                    gmx_incons("Illegal output file format");
             }
 
             bCopy = FALSE;
@@ -1695,6 +1751,11 @@ int gmx_trjconv(int argc, char *argv[])
 
                         switch (ftp)
                         {
+                            case efTNG:
+                                write_tng_frame(trxout, &frout);
+                                // TODO work how to read and write lambda
+                                // TODO support more functionality like below
+                                break;
                             case efTRJ:
                             case efTRR:
                             case efG87:
@@ -1835,7 +1896,7 @@ int gmx_trjconv(int argc, char *argv[])
                     }
                 }
                 frame++;
-                bHaveNextFrame = read_next_frame(oenv, status, &fr);
+                bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
         }
@@ -1847,7 +1908,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(status);
+        close_trj(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
@@ -1874,6 +1935,8 @@ int gmx_trjconv(int argc, char *argv[])
             }
         }
     }
+
+    sfree(mtop);
 
     do_view(oenv, out_file, NULL);
 

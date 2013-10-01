@@ -878,7 +878,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
     gmx_fio_do_int(fio, ir->nstvout);
     gmx_fio_do_int(fio, ir->nstfout);
     gmx_fio_do_int(fio, ir->nstenergy);
-    gmx_fio_do_int(fio, ir->nstxtcout);
+    gmx_fio_do_int(fio, ir->nstxout_compressed);
     if (file_version >= 59)
     {
         gmx_fio_do_double(fio, ir->init_t);
@@ -891,7 +891,7 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         gmx_fio_do_real(fio, rdum);
         ir->delta_t = rdum;
     }
-    gmx_fio_do_real(fio, ir->xtcprec);
+    gmx_fio_do_real(fio, ir->x_compression_precision);
     if (file_version < 19)
     {
         gmx_fio_do_int(fio, idum);
