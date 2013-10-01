@@ -4122,7 +4122,8 @@ static gmx_inline gmx_bool ftype_is_bonded_potential(int ftype)
 {
     return
         (interaction_function[ftype].flags & IF_BOND) &&
-        !(ftype == F_CONNBONDS || ftype == F_POSRES || ftype == F_FBPOSRES) &&
+        !(ftype == F_CONNBONDS || ftype == F_POSRES ||
+          ftype == F_FBPOSRES || ftype == F_WAXS_DEBYE) &&
         (ftype < F_GB12 || ftype > F_GB14);
 }
 

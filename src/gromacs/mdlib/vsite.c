@@ -281,6 +281,10 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
     n3 = 3*ip[ia[0]].vsiten.n;
     av = ia[1];
     ai = ia[2];
+    if (NULL != debug)
+    {
+        fprintf(debug, "constr_vsiten av = %d n = %d\n", av, n3/3);
+    }
     copy_rvec(x[ai], x1);
     clear_dvec(dsum);
     for (i = 3; i < n3; i += 3)
@@ -1853,7 +1857,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     int      ftype;
     t_iatom *iat;
     t_ilist *il_th;
-    int      nral1, inc, i, j;
+    int      nral1, i, j;
 
     if (vsite->nthreads == 1)
     {
@@ -1869,7 +1873,7 @@ void split_vsites_over_threads(const t_ilist   *ilist,
     /* Master threads does the (potential) overlap vsites */
     prepare_vsite_thread(ilist, &vsite->tdata[vsite->nthreads]);
 
-    /* The current way of distributing the vsites over threads in primitive.
+    /* The current way of distributing the vsites over threads is primitive.
      * We divide the atom range 0 - natoms_in_vsite uniformly over threads,
      * without taking into account how the vsites are distributed.
      * Without domain decomposition we bLimitRange=TRUE and we at least
@@ -1881,8 +1885,8 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         vsite_atom_range = -1;
         for (ftype = 0; ftype < F_NRE; ftype++)
         {
-            if ((interaction_function[ftype].flags & IF_VSITE) &&
-                ftype != F_VSITEN)
+            if ((interaction_function[ftype].flags & IF_VSITE) /*&&
+                                                                  ftype != F_VSITEN*/)
             {
                 nral1 = 1 + NRAL(ftype);
                 iat   = ilist[ftype].iatoms;
@@ -1902,10 +1906,9 @@ void split_vsites_over_threads(const t_ilist   *ilist,
         vsite_atom_range = mdatoms->homenr;
     }
     natperthread = (vsite_atom_range + vsite->nthreads - 1)/vsite->nthreads;
-
     if (debug)
     {
-        fprintf(debug, "virtual site thread dist: natoms %d, range %d, natperthread %d\n", mdatoms->nr, vsite_atom_range, natperthread);
+        fprintf(debug, "virtual site thread dist: natoms %d, range %d, natperthread %d nthreads %d\n", mdatoms->nr, vsite_atom_range, natperthread, vsite->nthreads);
     }
 
     /* To simplify the vsite assignment, we make an index which tells us
@@ -1938,15 +1941,17 @@ void split_vsites_over_threads(const t_ilist   *ilist,
 
     for (ftype = 0; ftype < F_NRE; ftype++)
     {
-        if ((interaction_function[ftype].flags & IF_VSITE) &&
-            ftype != F_VSITEN)
+        if ((interaction_function[ftype].flags & IF_VSITE) /*&&
+                                                              ftype != F_VSITEN*/)
         {
             nral1 = 1 + NRAL(ftype);
-            inc   = nral1;
             iat   = ilist[ftype].iatoms;
             for (i = 0; i < ilist[ftype].nr; )
             {
+                /* Initial guess for appropriate */
                 th = iat[1+i]/natperthread;
+
+
                 /* We would like to assign this vsite the thread th,
                  * but it might depend on atoms outside the atom range of th
                  * or on another vsite not assigned to thread th.
@@ -1963,28 +1968,55 @@ void split_vsites_over_threads(const t_ilist   *ilist,
                             th = vsite->nthreads;
                         }
                     }
+                    /* Copy this vsite to the thread data struct of thread th */
+                    il_th = &vsite->tdata[th].ilist[ftype];
+                    for (j = i; j < i+nral1; j++)
+                    {
+                        il_th->iatoms[il_th->nr++] = iat[j];
+                    }
+                    /* Update this vsite's thread index entry */
+                    th_ind[iat[1+i]] = th;
+
+                    i += nral1;
                 }
                 else
                 {
-                    inc = iat[i];
-                    for (j = i+2; j < i+inc; j += 3)
+                    /* Layout in the iatoms for VSITEN is
+                     * type ai aj type ai aj
+                     */
+                    int ai0 = iat[i+1];
+                    int j   = i;
+                    int k;
+                    do
                     {
+                        if (th_ind[iat[j+1]] != th)
+                        {
+                            th = vsite->nthreads;
+                        }
+                        j += nral1;
+                    }
+                    while ((j+1 < ilist[ftype].nr) && (iat[j+1] == ai0));
+
+                    /* Copy this vsite to the thread data struct of thread th */
+                    il_th = &vsite->tdata[th].ilist[ftype];
+                    for (k = i; (k < j); k++)
+                    {
+                        il_th->iatoms[il_th->nr++] = iat[k];
+                    }
+
+                    /*inc = iat[i];
+                       for (j = i+2; j < i+inc; j += 3)
+                       {
                         if (th_ind[iat[j]] != th)
                         {
                             th = vsite->nthreads;
                         }
-                    }
-                }
-                /* Copy this vsite to the thread data struct of thread th */
-                il_th = &vsite->tdata[th].ilist[ftype];
-                for (j = i; j < i+inc; j++)
-                {
-                    il_th->iatoms[il_th->nr++] = iat[j];
-                }
-                /* Update this vsite's thread index entry */
-                th_ind[iat[1+i]] = th;
+                        }*/
+                    /* Update this vsite's thread index entry */
+                    th_ind[iat[1+i]] = th;
 
-                i += inc;
+                    i = j;
+                }
             }
         }
     }
