@@ -47,7 +47,7 @@
 #include "../legacyheaders/mdebin.h"
 
 void
-do_trajectory_writing(FILE           *fplog,
+do_md_trajectory_writing(FILE           *fplog,
                       t_commrec      *cr,
                       int             nfile,
                       const t_filenm  fnm[],
@@ -60,7 +60,7 @@ do_trajectory_writing(FILE           *fplog,
                       gmx_mtop_t     *top_global,
                       t_forcerec     *fr,
                       gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
+                      gmx_mdoutf_t    outf,
                       t_mdebin       *mdebin,
                       gmx_ekindata_t *ekind,
                       rvec           *f,
@@ -74,19 +74,7 @@ do_trajectory_writing(FILE           *fplog,
                       gmx_bool        bDoConfOut,
                       gmx_bool        bSumEkinhOld
                       );
-/* Wrapper routine for trajectory writing */
+/* TODO more docs Wrapper routine for trajectory writing  - does communication */
 
-void write_traj(FILE *fplog, t_commrec *cr,
-                gmx_mdoutf_t *of,
-                int mdof_flags,
-                gmx_mtop_t *top_global,
-                gmx_large_int_t step, double t,
-                t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global,
-                int *n_xtc, rvec **x_xtc);
-/* Routine that writes frames to trn, xtc and/or checkpoint.
- * What is written is determined by the mdof_flags defined above.
- * Data is collected to the master node only when necessary.
- */
 
 #endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */

@@ -32,29 +32,8 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB FILEIO_SOURCES *.cpp *.c)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
-
-set(FILEIO_PUBLIC_HEADERS
-    confio.h
-    enxio.h
-    filenm.h
-    futil.h
-    gmx_system_xdr.h
-    gmxfio.h
-    matio.h
-    mdoutf.h
-    pdbio.h
-    tpxio.h
-    trajectory_writing.h
-    trnio.h
-    trx.h
-    trxio.h
-    xdrf.h
-    xtcio.h
-    )
-gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
-
-if (BUILD_TESTING)
-     add_subdirectory(tests)
-endif (BUILD_TESTING)
+if(GMX_USE_TNG)
+    gmx_add_unit_test(FileIOTests fileio-test
+        tngio.cpp)
+    set_source_files_properties(tngio.cpp PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/../../../external/tng_io/include")
+endif()
