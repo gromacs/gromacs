@@ -298,6 +298,42 @@ void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n)
 }
 
 
+void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim)
+{
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+    int         i, j;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i][j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
+    }
+}
+
 void pr_reals(FILE *fp, int indent, const char *title, real *vec, int n)
 {
     int i;
@@ -327,6 +363,42 @@ void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n)
             fprintf(fp, "  %10g", vec[i]);
         }
         (void) fprintf(fp, "\n");
+    }
+}
+
+void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, int dim)
+{
+    int i, j;
+    const char *fshort = "%12.5e";
+    const char *flong  = "%15.8e";
+    const char *format;
+
+    if (getenv("LONGFORMAT") != NULL)
+    {
+        format = flong;
+    }
+    else
+    {
+        format = fshort;
+    }
+
+    if (available(fp, vec, indent, title))
+    {
+        indent = pr_title_nxn(fp, indent, title, n, dim);
+        for (i = 0; i < n; i++)
+        {
+            (void) pr_indent(fp, indent);
+            (void) fprintf(fp, "%s[%5d]={", title, i);
+            for (j = 0; j < dim; j++)
+            {
+                if (j != 0)
+                {
+                    (void) fprintf(fp, ", ");
+                }
+                (void) fprintf(fp, format, vec[i * dim  + j]);
+            }
+            (void) fprintf(fp, "}\n");
+        }
     }
 }
 
