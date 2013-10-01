@@ -159,6 +159,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Flat-bottom posres",            50  },
     { "Angle Restr.",                  191 },
     { "Angle Restr. Z",                164 },
+    { "WAXS Debye",                    52  },
     { "Morse Potent.",                 83  },
     { "Cubic Bonds",                   54  },
     { "Walls",                         31  },
