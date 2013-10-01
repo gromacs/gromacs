@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2013, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -34,57 +34,25 @@
  */
 /*! \internal \file
  * \brief
- * Implements registerTrajectoryAnalysisModules().
+ * Implements test helper routines from toputils.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_trajectoryanalysis
+ * \ingroup module_selection
  */
-#include "gromacs/trajectoryanalysis/modules.h"
+#include <cstring>
 
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
-
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/select.h"
-#include "modules/waxsdebye.h"
-
-namespace gmx
-{
+#include "gromacs/waxsdebye/scattering_factors.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace
 {
 
-/*! \brief
- * Convenience method for registering a command-line module for trajectory
- * analysis.
- *
- * \tparam ModuleInfo  Info about trajectory analysis module to wrap.
- *
- * \p ModuleInfo should have static public members
- * `const char name[]`, `const char shortDescription[]`, and
- * `gmx::TrajectoryAnalysisModulePointer create()`.
- *
- * \ingroup module_trajectoryanalysis
- */
-template <class ModuleInfo>
-void registerModule(CommandLineModuleManager *manager)
+TEST_F(ScatteringFactorTableTest, FileIO)
 {
-    TrajectoryAnalysisCommandLineRunner::registerModule(
-            manager, ModuleInfo::name, ModuleInfo::shortDescription,
-            &ModuleInfo::create);
+    gmx::ScatteringFactorTable sft;
+
+    sft.read("sfactor_martini_ds.xml");
+    sft.write("sfactor_martini_ds.out");
 }
 
-}   // namespace
-
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
-{
-    using namespace gmx::analysismodules;
-    registerModule<AngleInfo>(manager);
-    registerModule<DistanceInfo>(manager);
-    registerModule<FreeVolumeInfo>(manager);
-    registerModule<SelectInfo>(manager);
-    registerModule<WaxsDebyeInfo>(manager);
-}
-
-} // namespace gmx
+} // anonymous namespace

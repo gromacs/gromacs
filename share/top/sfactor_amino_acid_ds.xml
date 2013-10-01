@@ -1,0 +1,1005 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Gromacs xmlns:gmx="http://www.gromacs.org/schemas">
+  <ScatteringFactors Source="photons" Type="Fourier" ForceField="any" DisplacedSolvent="true" Reference="">
+    <ScatteringFactor Residue="ALA" Atom="MW" Identifier="1">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+   -0.077131
+      </p1>
+      <p2 Unit="Electron">
+    0.110485
+      </p2>
+      <p3 Unit="Electron">
+    0.006732
+      </p3>
+      <a0 Unit="Electron">
+     10.0369
+      </a0>
+      <a1 Unit="Electron">
+    -1.00738
+      </a1>
+      <a2 Unit="Electron">
+    0.014144
+      </a2>
+      <a3 Unit="Electron">
+    0.003289
+      </a3>
+      <a4 Unit="Electron">
+    0.001033
+      </a4>
+      <a5 Unit="Electron">
+    0.000425
+      </a5>
+      <b1 Unit="Electron">
+    0.230973
+      </b1>
+      <b2 Unit="Electron">
+   -0.047073
+      </b2>
+      <b3 Unit="Electron">
+   -0.014767
+      </b3>
+      <b4 Unit="Electron">
+   -0.005628
+      </b4>
+      <b5 Unit="Electron">
+    -0.00271
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ARG" Atom="MW" Identifier="2">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+      1.7942
+      </p1>
+      <p2 Unit="Electron">
+    -6.17165
+      </p2>
+      <p3 Unit="Electron">
+   -0.029179
+      </p3>
+      <a0 Unit="Electron">
+     22.1034
+      </a0>
+      <a1 Unit="Electron">
+    0.610649
+      </a1>
+      <a2 Unit="Electron">
+    0.681457
+      </a2>
+      <a3 Unit="Electron">
+    -0.06196
+      </a3>
+      <a4 Unit="Electron">
+   -0.005407
+      </a4>
+      <a5 Unit="Electron">
+    0.001438
+      </a5>
+      <b1 Unit="Electron">
+    -1.64245
+      </b1>
+      <b2 Unit="Electron">
+    0.567518
+      </b2>
+      <b3 Unit="Electron">
+    0.061688
+      </b3>
+      <b4 Unit="Electron">
+    0.011269
+      </b4>
+      <b5 Unit="Electron">
+    0.010606
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASN" Atom="MW" Identifier="3">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     1.54154
+      </p1>
+      <p2 Unit="Electron">
+    -5.08777
+      </p2>
+      <p3 Unit="Electron">
+   -0.006765
+      </p3>
+      <a0 Unit="Electron">
+     19.0898
+      </a0>
+      <a1 Unit="Electron">
+    0.994788
+      </a1>
+      <a2 Unit="Electron">
+   -0.085698
+      </a2>
+      <a3 Unit="Electron">
+    -0.00311
+      </a3>
+      <a4 Unit="Electron">
+   -0.001265
+      </a4>
+      <a5 Unit="Electron">
+   -0.000394
+      </a5>
+      <b1 Unit="Electron">
+    0.209128
+      </b1>
+      <b2 Unit="Electron">
+   -0.079249
+      </b2>
+      <b3 Unit="Electron">
+   -0.003251
+      </b3>
+      <b4 Unit="Electron">
+   -0.002259
+      </b4>
+      <b5 Unit="Electron">
+   -0.001071
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASP" Atom="MW" Identifier="4">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     1.45498
+      </p1>
+      <p2 Unit="Electron">
+    -4.86043
+      </p2>
+      <p3 Unit="Electron">
+   -0.007248
+      </p3>
+      <a0 Unit="Electron">
+     19.1723
+      </a0>
+      <a1 Unit="Electron">
+     1.09161
+      </a1>
+      <a2 Unit="Electron">
+    -0.08659
+      </a2>
+      <a3 Unit="Electron">
+    -0.00363
+      </a3>
+      <a4 Unit="Electron">
+   -0.001384
+      </a4>
+      <a5 Unit="Electron">
+   -0.000453
+      </a5>
+      <b1 Unit="Electron">
+    0.177349
+      </b1>
+      <b2 Unit="Electron">
+   -0.071425
+      </b2>
+      <b3 Unit="Electron">
+   -0.001835
+      </b3>
+      <b4 Unit="Electron">
+   -0.001564
+      </b4>
+      <b5 Unit="Electron">
+   -0.000753
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="CYS" Atom="MW" Identifier="5">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    0.947842
+      </p1>
+      <p2 Unit="Electron">
+    -3.01003
+      </p2>
+      <p3 Unit="Electron">
+    -0.00324
+      </p3>
+      <a0 Unit="Electron">
+     18.2278
+      </a0>
+      <a1 Unit="Electron">
+    0.714342
+      </a1>
+      <a2 Unit="Electron">
+   -0.041398
+      </a2>
+      <a3 Unit="Electron">
+   -0.002547
+      </a3>
+      <a4 Unit="Electron">
+   -0.000661
+      </a4>
+      <a5 Unit="Electron">
+   -0.000216
+      </a5>
+      <b1 Unit="Electron">
+     0.33818
+      </b1>
+      <b2 Unit="Electron">
+   -0.109625
+      </b2>
+      <b3 Unit="Electron">
+   -0.011532
+      </b3>
+      <b4 Unit="Electron">
+   -0.004928
+      </b4>
+      <b5 Unit="Electron">
+   -0.002393
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLN" Atom="MW" Identifier="6">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     1.05235
+      </p1>
+      <p2 Unit="Electron">
+     -3.8901
+      </p2>
+      <p3 Unit="Electron">
+   -0.011696
+      </p3>
+      <a0 Unit="Electron">
+     18.2608
+      </a0>
+      <a1 Unit="Electron">
+    0.953155
+      </a1>
+      <a2 Unit="Electron">
+   -0.163676
+      </a2>
+      <a3 Unit="Electron">
+   -0.005782
+      </a3>
+      <a4 Unit="Electron">
+    0.000882
+      </a4>
+      <a5 Unit="Electron">
+   -0.000327
+      </a5>
+      <b1 Unit="Electron">
+    -1.00579
+      </b1>
+      <b2 Unit="Electron">
+    0.330696
+      </b2>
+      <b3 Unit="Electron">
+    0.027942
+      </b3>
+      <b4 Unit="Electron">
+    0.016934
+      </b4>
+      <b5 Unit="Electron">
+    0.007561
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLU" Atom="MW" Identifier="7">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     0.98331
+      </p1>
+      <p2 Unit="Electron">
+     -3.7089
+      </p2>
+      <p3 Unit="Electron">
+   -0.012487
+      </p3>
+      <a0 Unit="Electron">
+     18.3784
+      </a0>
+      <a1 Unit="Electron">
+     1.02294
+      </a1>
+      <a2 Unit="Electron">
+   -0.156349
+      </a2>
+      <a3 Unit="Electron">
+   -0.007452
+      </a3>
+      <a4 Unit="Electron">
+    0.000911
+      </a4>
+      <a5 Unit="Electron">
+   -0.000417
+      </a5>
+      <b1 Unit="Electron">
+    -1.08145
+      </b1>
+      <b2 Unit="Electron">
+    0.353461
+      </b2>
+      <b3 Unit="Electron">
+    0.030616
+      </b3>
+      <b4 Unit="Electron">
+    0.018137
+      </b4>
+      <b5 Unit="Electron">
+    0.008222
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLY" Atom="MW" Identifier="8">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    -0.10709
+      </p1>
+      <p2 Unit="Electron">
+   -0.099831
+      </p2>
+      <p3 Unit="Electron">
+    0.001692
+      </p3>
+      <a0 Unit="Electron">
+     10.2903
+      </a0>
+      <a1 Unit="Electron">
+   -0.316668
+      </a1>
+      <a2 Unit="Electron">
+    0.002335
+      </a2>
+      <a3 Unit="Electron">
+    0.000498
+      </a3>
+      <a4 Unit="Electron">
+    0.000157
+      </a4>
+      <a5 Unit="Electron">
+     6.2e-05
+      </a5>
+      <b1 Unit="Electron">
+    0.038948
+      </b1>
+      <b2 Unit="Electron">
+   -0.009804
+      </b2>
+      <b3 Unit="Electron">
+   -0.002097
+      </b3>
+      <b4 Unit="Electron">
+   -0.000797
+      </b4>
+      <b5 Unit="Electron">
+   -0.000386
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="HIS" Atom="MW" Identifier="9">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     1.03615
+      </p1>
+      <p2 Unit="Electron">
+     -4.2845
+      </p2>
+      <p3 Unit="Electron">
+   -0.008459
+      </p3>
+      <a0 Unit="Electron">
+     20.6214
+      </a0>
+      <a1 Unit="Electron">
+    0.985614
+      </a1>
+      <a2 Unit="Electron">
+    -0.17188
+      </a2>
+      <a3 Unit="Electron">
+    0.008759
+      </a3>
+      <a4 Unit="Electron">
+    0.000402
+      </a4>
+      <a5 Unit="Electron">
+     7.6e-05
+      </a5>
+      <b1 Unit="Electron">
+   -0.445333
+      </b1>
+      <b2 Unit="Electron">
+    0.170566
+      </b2>
+      <b3 Unit="Electron">
+    0.006217
+      </b3>
+      <b4 Unit="Electron">
+    0.005679
+      </b4>
+      <b5 Unit="Electron">
+    0.002308
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ILE" Atom="MW" Identifier="10">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+   -0.885604
+      </p1>
+      <p2 Unit="Electron">
+     2.78011
+      </p2>
+      <p3 Unit="Electron">
+    0.032878
+      </p3>
+      <a0 Unit="Electron">
+     8.28073
+      </a0>
+      <a1 Unit="Electron">
+    -1.76433
+      </a1>
+      <a2 Unit="Electron">
+   -0.208694
+      </a2>
+      <a3 Unit="Electron">
+   -0.044226
+      </a3>
+      <a4 Unit="Electron">
+   -0.009668
+      </a4>
+      <a5 Unit="Electron">
+    -0.00256
+      </a5>
+      <b1 Unit="Electron">
+     1.41969
+      </b1>
+      <b2 Unit="Electron">
+   -0.298743
+      </b2>
+      <b3 Unit="Electron">
+   -0.080432
+      </b3>
+      <b4 Unit="Electron">
+   -0.035715
+      </b4>
+      <b5 Unit="Electron">
+   -0.018089
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LEU" Atom="MW" Identifier="11">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    -1.62604
+      </p1>
+      <p2 Unit="Electron">
+     4.30268
+      </p2>
+      <p3 Unit="Electron">
+    0.034481
+      </p3>
+      <a0 Unit="Electron">
+     7.85597
+      </a0>
+      <a1 Unit="Electron">
+    -1.15329
+      </a1>
+      <a2 Unit="Electron">
+   -0.374715
+      </a2>
+      <a3 Unit="Electron">
+   -0.056974
+      </a3>
+      <a4 Unit="Electron">
+   -0.013189
+      </a4>
+      <a5 Unit="Electron">
+   -0.004157
+      </a5>
+      <b1 Unit="Electron">
+     1.36916
+      </b1>
+      <b2 Unit="Electron">
+   -0.328797
+      </b2>
+      <b3 Unit="Electron">
+   -0.062199
+      </b3>
+      <b4 Unit="Electron">
+   -0.033399
+      </b4>
+      <b5 Unit="Electron">
+   -0.016528
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LYS" Atom="MW" Identifier="12">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+   -0.660471
+      </p1>
+      <p2 Unit="Electron">
+     1.45609
+      </p2>
+      <p3 Unit="Electron">
+    0.000234
+      </p3>
+      <a0 Unit="Electron">
+     11.3247
+      </a0>
+      <a1 Unit="Electron">
+   -0.471746
+      </a1>
+      <a2 Unit="Electron">
+    0.135239
+      </a2>
+      <a3 Unit="Electron">
+   -0.006721
+      </a3>
+      <a4 Unit="Electron">
+   -0.000966
+      </a4>
+      <a5 Unit="Electron">
+      -3e-05
+      </a5>
+      <b1 Unit="Electron">
+   -0.358581
+      </b1>
+      <b2 Unit="Electron">
+    0.177175
+      </b2>
+      <b3 Unit="Electron">
+   -0.009296
+      </b3>
+      <b4 Unit="Electron">
+    -0.00017
+      </b4>
+      <b5 Unit="Electron">
+    0.000932
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="MET" Atom="MW" Identifier="13">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    -0.53501
+      </p1>
+      <p2 Unit="Electron">
+    0.560522
+      </p2>
+      <p3 Unit="Electron">
+    0.000663
+      </p3>
+      <a0 Unit="Electron">
+     16.2336
+      </a0>
+      <a1 Unit="Electron">
+    0.623931
+      </a1>
+      <a2 Unit="Electron">
+   -0.328475
+      </a2>
+      <a3 Unit="Electron">
+   -0.002799
+      </a3>
+      <a4 Unit="Electron">
+   -0.002699
+      </a4>
+      <a5 Unit="Electron">
+   -0.000986
+      </a5>
+      <b1 Unit="Electron">
+    -0.45307
+      </b1>
+      <b2 Unit="Electron">
+    0.130377
+      </b2>
+      <b3 Unit="Electron">
+    0.010638
+      </b3>
+      <b4 Unit="Electron">
+    0.009942
+      </b4>
+      <b5 Unit="Electron">
+    0.004339
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PHE" Atom="MW" Identifier="14">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    -1.08844
+      </p1>
+      <p2 Unit="Electron">
+     2.77339
+      </p2>
+      <p3 Unit="Electron">
+    0.026883
+      </p3>
+      <a0 Unit="Electron">
+     10.6525
+      </a0>
+      <a1 Unit="Electron">
+   -0.939548
+      </a1>
+      <a2 Unit="Electron">
+   -0.431115
+      </a2>
+      <a3 Unit="Electron">
+   -0.017106
+      </a3>
+      <a4 Unit="Electron">
+   -0.006165
+      </a4>
+      <a5 Unit="Electron">
+   -0.001393
+      </a5>
+      <b1 Unit="Electron">
+    0.706081
+      </b1>
+      <b2 Unit="Electron">
+   -0.026534
+      </b2>
+      <b3 Unit="Electron">
+   -0.079811
+      </b3>
+      <b4 Unit="Electron">
+    -0.02737
+      </b4>
+      <b5 Unit="Electron">
+   -0.013481
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PRO" Atom="MW" Identifier="15">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+   -0.619857
+      </p1>
+      <p2 Unit="Electron">
+     1.48184
+      </p2>
+      <p3 Unit="Electron">
+    0.015105
+      </p3>
+      <a0 Unit="Electron">
+     10.3014
+      </a0>
+      <a1 Unit="Electron">
+    -1.63423
+      </a1>
+      <a2 Unit="Electron">
+   -0.027113
+      </a2>
+      <a3 Unit="Electron">
+   -0.002997
+      </a3>
+      <a4 Unit="Electron">
+   -0.000124
+      </a4>
+      <a5 Unit="Electron">
+    0.000147
+      </a5>
+      <b1 Unit="Electron">
+    0.559671
+      </b1>
+      <b2 Unit="Electron">
+   -0.127046
+      </b2>
+      <b3 Unit="Electron">
+    -0.03445
+      </b3>
+      <b4 Unit="Electron">
+   -0.013118
+      </b4>
+      <b5 Unit="Electron">
+   -0.006104
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="SER" Atom="MW" Identifier="16">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+     1.05695
+      </p1>
+      <p2 Unit="Electron">
+    -3.03204
+      </p2>
+      <p3 Unit="Electron">
+    0.001397
+      </p3>
+      <a0 Unit="Electron">
+     14.3392
+      </a0>
+      <a1 Unit="Electron">
+   -0.402935
+      </a1>
+      <a2 Unit="Electron">
+    0.053291
+      </a2>
+      <a3 Unit="Electron">
+    0.004854
+      </a3>
+      <a4 Unit="Electron">
+    0.001149
+      </a4>
+      <a5 Unit="Electron">
+    0.000463
+      </a5>
+      <b1 Unit="Electron">
+    0.416079
+      </b1>
+      <b2 Unit="Electron">
+   -0.092846
+      </b2>
+      <b3 Unit="Electron">
+   -0.024647
+      </b3>
+      <b4 Unit="Electron">
+   -0.009194
+      </b4>
+      <b5 Unit="Electron">
+   -0.004489
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="THR" Atom="MW" Identifier="17">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    0.952685
+      </p1>
+      <p2 Unit="Electron">
+    -2.56917
+      </p2>
+      <p3 Unit="Electron">
+    0.007218
+      </p3>
+      <a0 Unit="Electron">
+      13.967
+      </a0>
+      <a1 Unit="Electron">
+   -0.963889
+      </a1>
+      <a2 Unit="Electron">
+    0.055089
+      </a2>
+      <a3 Unit="Electron">
+    0.002324
+      </a3>
+      <a4 Unit="Electron">
+    0.000803
+      </a4>
+      <a5 Unit="Electron">
+    0.000483
+      </a5>
+      <b1 Unit="Electron">
+    0.735374
+      </b1>
+      <b2 Unit="Electron">
+   -0.175258
+      </b2>
+      <b3 Unit="Electron">
+    -0.04366
+      </b3>
+      <b4 Unit="Electron">
+   -0.015225
+      </b4>
+      <b5 Unit="Electron">
+   -0.007349
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Atom="MW" Identifier="18">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    -0.30196
+      </p1>
+      <p2 Unit="Electron">
+    0.073606
+      </p2>
+      <p3 Unit="Electron">
+    0.012768
+      </p3>
+      <a0 Unit="Electron">
+     16.0088
+      </a0>
+      <a1 Unit="Electron">
+   -0.030177
+      </a1>
+      <a2 Unit="Electron">
+   -0.290622
+      </a2>
+      <a3 Unit="Electron">
+   -0.019573
+      </a3>
+      <a4 Unit="Electron">
+   -0.002148
+      </a4>
+      <a5 Unit="Electron">
+   -0.001062
+      </a5>
+      <b1 Unit="Electron">
+    0.212128
+      </b1>
+      <b2 Unit="Electron">
+    0.157874
+      </b2>
+      <b3 Unit="Electron">
+   -0.093696
+      </b3>
+      <b4 Unit="Electron">
+   -0.017773
+      </b4>
+      <b5 Unit="Electron">
+   -0.007613
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TYR" Atom="MW" Identifier="19">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+    0.098287
+      </p1>
+      <p2 Unit="Electron">
+   -0.519665
+      </p2>
+      <p3 Unit="Electron">
+   -0.003484
+      </p3>
+      <a0 Unit="Electron">
+     14.5067
+      </a0>
+      <a1 Unit="Electron">
+   -0.516642
+      </a1>
+      <a2 Unit="Electron">
+    0.177318
+      </a2>
+      <a3 Unit="Electron">
+   -0.013549
+      </a3>
+      <a4 Unit="Electron">
+     0.00054
+      </a4>
+      <a5 Unit="Electron">
+    0.000695
+      </a5>
+      <b1 Unit="Electron">
+   -0.432957
+      </b1>
+      <b2 Unit="Electron">
+    0.147471
+      </b2>
+      <b3 Unit="Electron">
+    0.017268
+      </b3>
+      <b4 Unit="Electron">
+     0.00506
+      </b4>
+      <b5 Unit="Electron">
+    0.002655
+      </b5>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="VAL" Atom="MW" Identifier="20">
+      <q0 Unit="1/Angstrom">
+           0
+      </q0>
+      <q1 Unit="1/Angstrom">
+           2
+      </q1>
+      <p1 Unit="Electron">
+   -0.397601
+      </p1>
+      <p2 Unit="Electron">
+     1.44373
+      </p2>
+      <p3 Unit="Electron">
+    0.021334
+      </p3>
+      <a0 Unit="Electron">
+     8.98138
+      </a0>
+      <a1 Unit="Electron">
+    -1.76044
+      </a1>
+      <a2 Unit="Electron">
+   -0.029616
+      </a2>
+      <a3 Unit="Electron">
+   -0.014366
+      </a3>
+      <a4 Unit="Electron">
+   -0.002594
+      </a4>
+      <a5 Unit="Electron">
+   -0.000233
+      </a5>
+      <b1 Unit="Electron">
+     1.05134
+      </b1>
+      <b2 Unit="Electron">
+   -0.223639
+      </b2>
+      <b3 Unit="Electron">
+    -0.06752
+      </b3>
+      <b4 Unit="Electron">
+   -0.025393
+      </b4>
+      <b5 Unit="Electron">
+   -0.012159
+      </b5>
+    </ScatteringFactor>
+  </ScatteringFactors>
+</Gromacs>

@@ -63,6 +63,7 @@ enum {
     efCUB,
     efXPM,
     efRND,
+    efXML,
     efNR
 };
 

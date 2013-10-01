@@ -185,6 +185,7 @@ FileTypeRegistry::FileTypeRegistry()
     registerType(eftPDB,         efPDB);
     registerType(eftIndex,       efNDX);
     registerType(eftPlot,        efXVG);
+    registerType(eftXML,         efXML);
     registerType(eftGenericData, efDAT);
 }
 
