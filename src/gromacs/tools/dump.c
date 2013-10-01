@@ -100,7 +100,7 @@ static void list_tpx(const char *fn, gmx_bool bShowNumbers, const char *mdpfn,
     {
         if (bSysTop)
         {
-            top = gmx_mtop_t_to_t_topology(&mtop);
+            top = gmx_mtop_t_to_t_topology(&mtop, TRUE);
         }
 
         if (available(stdout, &tpx, 0, fn))
