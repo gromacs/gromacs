@@ -80,6 +80,7 @@
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/timing/wallcycle.h"
 #include "gromacs/timing/walltime_accounting.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 #ifdef GMX_X86_SSE2
 #include "gmx_x86_sse2.h"

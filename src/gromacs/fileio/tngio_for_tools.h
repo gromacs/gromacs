@@ -33,54 +33,49 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_FILEIO_MDOUTF_H
-#define GMX_FILEIO_MDOUTF_H
+#ifndef GMX_FILEIO_TNGIO_FOR_TOOLS_H
+#define GMX_FILEIO_TNGIO_FOR_TOOLS_H
 
-#include "filenm.h"
-#include <stdio.h>
-#include "../legacyheaders/types/simple.h"
-#include "enxio.h"
-#include "gmxfio.h"
-#include "../../external/tng_io/include/tng_io.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "trxio.h"
 
-// TODO encapsulate this data structure - none of its clients need to
-// know, and the TNG dependency is silly
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
+}
+#endif
 
-typedef struct {
-    t_fileio         *fp_trn;
-    t_fileio         *fp_xtc;
-    tng_trajectory_t  tng;
-    tng_trajectory_t  tng_low_prec;
-    int               xtc_prec;
-    ener_file_t       fp_ene;
-    const char       *fn_cpt;
-    gmx_bool          bKeepAndNumCPT;
-    int               eIntegrator;
-    gmx_bool          bExpanded;
-    int               elamstats;
-    int               simulation_part;
-    FILE             *fp_dhdl;
-    FILE             *fp_field;
-} gmx_mdoutf_t;
+typedef struct tng_trajectory_output *tng_trajectory_output_t;
 
-gmx_mdoutf_t *init_mdoutf(int                nfile,
-                          const t_filenm     fnm[],
-                          int                mdrun_flags,
-                          const t_commrec   *cr,
-                          const t_inputrec  *ir,
-                          gmx_mtop_t        *mtop,
-                          const output_env_t oenv);
-/* Returns a pointer to a data structure with all output file pointers
- * and names required by mdrun.
- */
+void init_tng_trajectory_output(tng_trajectory_output_t tngptr);
+/* TODO */
 
-void done_mdoutf(gmx_mdoutf_t *of);
-/* Close all open output files and free the of pointer */
+void prepare_tng_writing(const char              *filename,
+                         char                     mode,
+                         tng_trajectory_output_t *tng,
+                         int                      natoms,
+                         gmx_large_int_t          step);
+/* TODO */
 
-#define MDOF_X   (1<<0)
-#define MDOF_V   (1<<1)
-#define MDOF_F   (1<<2)
-#define MDOF_XTC (1<<3)
-#define MDOF_CPT (1<<4)
+void open_tng_for_reading(const char              *fn,
+                          tng_trajectory_output_t *tng);
+/* TODO */
 
-#endif /* GMX_FILEIO_MDOUTF_H */
+void write_tng_from_trxframe(tng_trajectory_output_t tng,
+                             t_trxframe             *frame);
+/* TODO */
+
+void tng_tools_close(tng_trajectory_output_t tng);
+/* TODO */
+
+gmx_bool read_next_tng_frame(tng_trajectory_output_t tng,
+                             t_trxframe             *fr);
+/* Read the first/next TNG frame. */
+
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif
