@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -1813,7 +1813,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         }
         for (j = i+1; (j < nral); j++)
         {
-            if (aa[i] == aa[j])
+            if ((aa[i] == aa[j]) && (ftype != F_WAXS_DEBYE))
             {
                 sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
                 warning(wi, errbuf);
@@ -1872,7 +1872,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_nb_params(F_LJ14, bondtype, at, &param, 3, FALSE, bGenPairs);
         bFoundB = TRUE;
     }
-    else if (ftype == F_LJC_PAIRS_NB)
+    else if ((ftype == F_LJC_PAIRS_NB) || (ftype == F_WAXS_DEBYE))
     {
         /* Defaults are not supported here */
         bFoundA = FALSE;
