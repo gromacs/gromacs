@@ -60,11 +60,13 @@ void pr_ivec(FILE *fp, int indent, const char *title, int vec[], int n, gmx_bool
 void pr_ivecs(FILE *fp, int indent, const char *title, ivec vec[], int n, gmx_bool bShowNumbers);
 void pr_bvec(FILE *fp, int indent, const char *title, gmx_bool vec[], int n, gmx_bool bShowNnumbers);
 void pr_rvec(FILE *fp, int indent, const char *title, real vec[], int n, gmx_bool bShowNumbers);
+void pr_rvecs_of_dim(FILE *fp, int indent, const char *title, rvec vec[], int n, int dim);
 void pr_dvec(FILE *fp, int indent, const char *title, double vec[], int n, gmx_bool bShowNumbers);
 void pr_rvecs(FILE *fp, int indent, const char *title, rvec vec[], int n);
 void pr_rvecs_len(FILE *fp, int indent, const char *title, rvec vec[], int n);
 void pr_reals(FILE *fp, int indent, const char *title, real vec[], int n);
 void pr_doubles(FILE *fp, int indent, const char *title, double *vec, int n);
+void pr_reals_of_dim(FILE *fp, int indent, const char *title, real *vec, int n, int dim);
 void pr_block(FILE *fp, int indent, const char *title, t_block *block, gmx_bool bShowNumbers);
 void pr_blocka(FILE *fp, int indent, const char *title, t_blocka *block, gmx_bool bShowNumbers);
 void pr_ilist(FILE *fp, int indent, const char *title,
