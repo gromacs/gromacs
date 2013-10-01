@@ -1,0 +1,905 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Gromacs xmlns:gmx="http://www.gromacs.org/schemas">
+  <ScatteringFactors Comment="" Reference="Niebling, Björling and Westenhoff, J. Appl. Cryst. 47 (2014) 1190" Source="photons" ForceField="any" DisplacedSolvent="true" Type="Fourier">
+    <ScatteringFactor Residue="ALA" Identifier="1" Atom="BB">
+      <a1 Unit="Electron">-1.00696606361</a1>
+      <b1 Unit="Electron">0.230872788924</b1>
+      <a2 Unit="Electron">0.0141169310035</a2>
+      <b2 Unit="Electron">-0.0470715655393</b2>
+      <a3 Unit="Electron">0.00328099182476</a3>
+      <b3 Unit="Electron">-0.0147585712712</b3>
+      <a4 Unit="Electron">0.0010308700788</a4>
+      <b4 Unit="Electron">-0.00562422287003</b4>
+      <a5 Unit="Electron">0.000424270497804</a5>
+      <b5 Unit="Electron">-0.0027083729965</b5>
+      <p1 Unit="Electron*Nanometer**3">-7.83662554727e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">0.00113865351236</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000673286692709</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.032378855</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ARG" Identifier="2" Atom="SC1">
+      <a1 Unit="Electron">-0.853638035243</a1>
+      <b1 Unit="Electron">-0.162466660568</b1>
+      <a2 Unit="Electron">-0.00222426345103</a2>
+      <b2 Unit="Electron">0.0239809445941</b2>
+      <a3 Unit="Electron">0.00146967657006</a3>
+      <b3 Unit="Electron">0.00953560372939</b3>
+      <a4 Unit="Electron">0.000690920806471</a4>
+      <b4 Unit="Electron">0.00438165798521</b4>
+      <a5 Unit="Electron">0.000332343846366</a5>
+      <b5 Unit="Electron">0.00232844430021</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00232782317683</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0655304299991</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0482509660437</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-1.94333968066</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ARG" Identifier="3" Atom="BB">
+      <a1 Unit="Electron">-0.250816190154</a1>
+      <b1 Unit="Electron">0.0603583026863</b1>
+      <a2 Unit="Electron">0.00525072191023</a2>
+      <b2 Unit="Electron">-0.0142231218643</b2>
+      <a3 Unit="Electron">0.000750582855725</a3>
+      <b3 Unit="Electron">-0.00327205011218</b3>
+      <a4 Unit="Electron">0.000224517919474</a4>
+      <b4 Unit="Electron">-0.00128648777899</b4>
+      <a5 Unit="Electron">8.82262611964e-05</a5>
+      <b5 Unit="Electron">-0.000637678154339</b5>
+      <p1 Unit="Electron*Nanometer**3">9.10832755363e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00677544060358</p2>
+      <p3 Unit="Electron*Nanometer**1">9.3855102179e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9730028139</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ARG" Identifier="4" Atom="SC2">
+      <a1 Unit="Electron">-0.518302813332</a1>
+      <b1 Unit="Electron">0.00342103615231</b1>
+      <a2 Unit="Electron">-0.00360857952168</a2>
+      <b2 Unit="Electron">0.00263235700315</b2>
+      <a3 Unit="Electron">-7.73679119362e-05</a3>
+      <b3 Unit="Electron">-0.000238455190524</b3>
+      <a4 Unit="Electron">2.28367939206e-05</a4>
+      <b4 Unit="Electron">-0.000284642534271</b4>
+      <a5 Unit="Electron">1.66634038925e-05</a5>
+      <b5 Unit="Electron">-0.00018475364568</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000878312892364</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.0354477446917</p2>
+      <p3 Unit="Electron*Nanometer**1">-6.74208319396e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">15.9182077227</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASN" Identifier="5" Atom="SC1">
+      <a1 Unit="Electron">-0.955766877559</a1>
+      <b1 Unit="Electron">-0.012959230585</b1>
+      <a2 Unit="Electron">-0.0139507863145</a2>
+      <b2 Unit="Electron">0.00116634038555</b2>
+      <a3 Unit="Electron">-0.000869457903493</a3>
+      <b3 Unit="Electron">0.000640922458574</b3>
+      <a4 Unit="Electron">-0.000106511905758</a4>
+      <b4 Unit="Electron">0.000383124508064</b4>
+      <a5 Unit="Electron">-2.0135211474e-05</a5>
+      <b5 Unit="Electron">0.000223543712934</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.000420173080064</p1>
+      <p2 Unit="Electron*Nanometer**2">0.00583503873976</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000542492499633</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.2194304652</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASN" Identifier="6" Atom="BB">
+      <a1 Unit="Electron">-0.2158112099</a1>
+      <b1 Unit="Electron">0.0606299128059</b1>
+      <a2 Unit="Electron">0.00537508767819</a2>
+      <b2 Unit="Electron">-0.0145095192856</b2>
+      <a3 Unit="Electron">0.000703967512195</a3>
+      <b3 Unit="Electron">-0.00326350449641</b3>
+      <a4 Unit="Electron">0.000208197411081</a4>
+      <b4 Unit="Electron">-0.0012751744751</b4>
+      <a5 Unit="Electron">8.13354393954e-05</a5>
+      <b5 Unit="Electron">-0.000630624864758</b5>
+      <p1 Unit="Electron*Nanometer**3">8.01812295488e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00649250751201</p2>
+      <p3 Unit="Electron*Nanometer**1">7.89343395979e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9472441449</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASP" Identifier="7" Atom="SC1">
+      <a1 Unit="Electron">-0.907276139257</a1>
+      <b1 Unit="Electron">-0.0238096674337</b1>
+      <a2 Unit="Electron">-0.0164885993971</a2>
+      <b2 Unit="Electron">0.00224187374595</b2>
+      <a3 Unit="Electron">-0.00138737848644</a3>
+      <b3 Unit="Electron">0.00134094145081</b3>
+      <a4 Unit="Electron">-0.000266827965775</a4>
+      <b4 Unit="Electron">0.000727212524528</b4>
+      <a5 Unit="Electron">-8.37181585302e-05</a5>
+      <b5 Unit="Electron">0.000406980132543</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.000506149555289</p1>
+      <p2 Unit="Electron*Nanometer**2">0.00819656045841</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000536266455775</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.4016317036</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ASP" Identifier="8" Atom="BB">
+      <a1 Unit="Electron">-0.206430901136</a1>
+      <b1 Unit="Electron">0.0630106714256</b1>
+      <a2 Unit="Electron">0.00568650389582</a2>
+      <b2 Unit="Electron">-0.01517454202</b2>
+      <a3 Unit="Electron">0.000716976828755</a3>
+      <b3 Unit="Electron">-0.00338480629962</b3>
+      <a4 Unit="Electron">0.000211166704147</a4>
+      <b4 Unit="Electron">-0.00131797464763</b4>
+      <a5 Unit="Electron">8.23883112896e-05</a5>
+      <b5 Unit="Electron">-0.000651060878091</b5>
+      <p1 Unit="Electron*Nanometer**3">7.23480048651e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00621116806835</p2>
+      <p3 Unit="Electron*Nanometer**1">7.80705887493e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.8947182753</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="CYS" Identifier="9" Atom="SC1">
+      <a1 Unit="Electron">-0.676567172873</a1>
+      <b1 Unit="Electron">-0.0574782986658</b1>
+      <a2 Unit="Electron">-0.0132946156739</a2>
+      <b2 Unit="Electron">0.00637729196226</b2>
+      <a3 Unit="Electron">-0.00168124587301</a3>
+      <b3 Unit="Electron">0.0032686800991</b3>
+      <a4 Unit="Electron">-0.000420573650885</a4>
+      <b4 Unit="Electron">0.00166939757956</b4>
+      <a5 Unit="Electron">-0.000153544608461</a5>
+      <b5 Unit="Electron">0.000921991833298</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00143517172943</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0374988009387</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000660493938653</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">8.89092006276</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="CYS" Identifier="10" Atom="BB">
+      <a1 Unit="Electron">-0.285334788087</a1>
+      <b1 Unit="Electron">0.0558718534631</b1>
+      <a2 Unit="Electron">0.00472294560811</a2>
+      <b2 Unit="Electron">-0.0128378742074</b2>
+      <a3 Unit="Electron">0.000776775913451</a3>
+      <b3 Unit="Electron">-0.00305918267487</b3>
+      <a4 Unit="Electron">0.000234060419947</a4>
+      <b4 Unit="Electron">-0.00121720938023</b4>
+      <a5 Unit="Electron">9.23011239327e-05</a5>
+      <b5 Unit="Electron">-0.000605363211183</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000101062585495</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00705509711733</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000106169602176</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9776419437</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLN" Identifier="11" Atom="SC1">
+      <a1 Unit="Electron">-1.37565598427</a1>
+      <b1 Unit="Electron">0.268136382458</b1>
+      <a2 Unit="Electron">-0.0102172669536</a2>
+      <b2 Unit="Electron">-0.055685814226</b2>
+      <a3 Unit="Electron">0.000511553113114</a3>
+      <b3 Unit="Electron">-0.0176521622773</b3>
+      <a4 Unit="Electron">0.000575021203387</a4>
+      <b4 Unit="Electron">-0.00662955600653</b4>
+      <a5 Unit="Electron">0.000312990586858</a5>
+      <b5 Unit="Electron">-0.00310660770816</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.000437853696288</p1>
+      <p2 Unit="Electron*Nanometer**2">0.00985310664804</p2>
+      <p3 Unit="Electron*Nanometer**1">0.00103478709068</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">9.70065656042</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLN" Identifier="12" Atom="BB">
+      <a1 Unit="Electron">-0.226292725246</a1>
+      <b1 Unit="Electron">0.0627402878241</b1>
+      <a2 Unit="Electron">0.00538871989624</a2>
+      <b2 Unit="Electron">-0.0150713530102</b2>
+      <a3 Unit="Electron">0.000707875240731</a3>
+      <b3 Unit="Electron">-0.00336717238435</b3>
+      <a4 Unit="Electron">0.000211866925374</a4>
+      <b4 Unit="Electron">-0.0013143314863</b4>
+      <a5 Unit="Electron">8.30762905303e-05</a5>
+      <b5 Unit="Electron">-0.000650100586162</b5>
+      <p1 Unit="Electron*Nanometer**3">8.38152641761e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00657599960505</p2>
+      <p3 Unit="Electron*Nanometer**1">8.49188426244e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9479496359</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLU" Identifier="13" Atom="SC1">
+      <a1 Unit="Electron">-1.33056496897</a1>
+      <b1 Unit="Electron">0.255525611396</b1>
+      <a2 Unit="Electron">-0.0146215638575</a2>
+      <b2 Unit="Electron">-0.054052609325</b2>
+      <a3 Unit="Electron">-7.96625413933e-06</a3>
+      <b3 Unit="Electron">-0.0168041734999</b3>
+      <a4 Unit="Electron">0.000457655445435</a4>
+      <b4 Unit="Electron">-0.00624334868356</b4>
+      <a5 Unit="Electron">0.000269133083776</a5>
+      <b5 Unit="Electron">-0.00291214096642</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.000507577690433</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0118610307579</p2>
+      <p3 Unit="Electron*Nanometer**1">0.00102922917797</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">9.88803923411</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLU" Identifier="14" Atom="BB">
+      <a1 Unit="Electron">-0.197776011594</a1>
+      <b1 Unit="Electron">0.064548546857</b1>
+      <a2 Unit="Electron">0.00534049632504</a2>
+      <b2 Unit="Electron">-0.0159746597808</b2>
+      <a3 Unit="Electron">0.000622179250054</a3>
+      <b3 Unit="Electron">-0.00340869001737</b3>
+      <a4 Unit="Electron">0.000188118416789</a4>
+      <b4 Unit="Electron">-0.00131556096306</b4>
+      <a5 Unit="Electron">7.36697246551e-05</a5>
+      <b5 Unit="Electron">-0.000648373274286</b5>
+      <p1 Unit="Electron*Nanometer**3">6.01239296013e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.0059322876201</p2>
+      <p3 Unit="Electron*Nanometer**1">7.79071628543e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.8852536239</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="GLY" Identifier="15" Atom="BB">
+      <a1 Unit="Electron">-0.316667641603</a1>
+      <b1 Unit="Electron">0.0389480723774</b1>
+      <a2 Unit="Electron">0.0023352747279</a2>
+      <b2 Unit="Electron">-0.00980436302519</b2>
+      <a3 Unit="Electron">0.000498227178443</a3>
+      <b3 Unit="Electron">-0.00209699572936</b3>
+      <a4 Unit="Electron">0.000156719617344</a4>
+      <b4 Unit="Electron">-0.000797094665262</b4>
+      <a5 Unit="Electron">6.23376484929e-05</a5>
+      <b5 Unit="Electron">-0.000386343417385</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.000107089563289</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.000998311297024</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000169177560494</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.2902930077</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="HIS" Identifier="16" Atom="SC1">
+      <a1 Unit="Electron">-0.303330835478</a1>
+      <b1 Unit="Electron">-0.112603246177</b1>
+      <a2 Unit="Electron">0.00100877204217</a2>
+      <b2 Unit="Electron">0.0166545695831</b2>
+      <a3 Unit="Electron">0.000939721041773</a3>
+      <b3 Unit="Electron">0.00662083133609</b3>
+      <a4 Unit="Electron">0.000383097477708</a4>
+      <b4 Unit="Electron">0.00304213292741</b4>
+      <a5 Unit="Electron">0.000174867908093</a5>
+      <b5 Unit="Electron">0.00161657361126</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.0014022605805</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0382788811404</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0666682308942</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.123246599957</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="HIS" Identifier="17" Atom="BB">
+      <a1 Unit="Electron">-0.224599105723</a1>
+      <b1 Unit="Electron">0.0596980088378</b1>
+      <a2 Unit="Electron">0.00511952708518</a2>
+      <b2 Unit="Electron">-0.0142696360989</b2>
+      <a3 Unit="Electron">0.000697158115032</a3>
+      <b3 Unit="Electron">-0.00320949917917</b3>
+      <a4 Unit="Electron">0.000208484373193</a4>
+      <b4 Unit="Electron">-0.00125687069968</b4>
+      <a5 Unit="Electron">8.16233805655e-05</a5>
+      <b5 Unit="Electron">-0.000622079584546</b5>
+      <p1 Unit="Electron*Nanometer**3">8.08485535998e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00650806682737</p2>
+      <p3 Unit="Electron*Nanometer**1">8.29463893126e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9394249428</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="HIS" Identifier="18" Atom="SC3">
+      <a1 Unit="Electron">-0.251933639684</a1>
+      <b1 Unit="Electron">-0.0234716714037</b1>
+      <a2 Unit="Electron">-0.0061542250886</a2>
+      <b2 Unit="Electron">0.00166807008751</b2>
+      <a3 Unit="Electron">-0.000763499778366</a3>
+      <b3 Unit="Electron">0.00143062802538</b3>
+      <a4 Unit="Electron">-0.0002103531677</a4>
+      <b4 Unit="Electron">0.000753477112707</b4>
+      <a5 Unit="Electron">-8.14404750477e-05</a5>
+      <b5 Unit="Electron">0.000417015638562</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.0006701627714</p1>
+      <p2 Unit="Electron*Nanometer**2">0.01486549864</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000251628882264</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">6.04298992035</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="HIS" Identifier="19" Atom="SC2">
+      <a1 Unit="Electron">-0.267264403984</a1>
+      <b1 Unit="Electron">-0.0307262571581</b1>
+      <a2 Unit="Electron">-0.00675471028434</a2>
+      <b2 Unit="Electron">0.00311091766335</b2>
+      <a3 Unit="Electron">-0.000865695865316</a3>
+      <b3 Unit="Electron">0.00182148217923</b3>
+      <a4 Unit="Electron">-0.000236995334551</a4>
+      <b4 Unit="Electron">0.000922442937081</b4>
+      <a5 Unit="Electron">-9.14393455367e-05</a5>
+      <b5 Unit="Electron">0.000504992542241</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00075301065454</p1>
+      <p2 Unit="Electron*Nanometer**2">0.01744164425</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000278855321501</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">5.6385961087</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ILE" Identifier="20" Atom="SC1">
+      <a1 Unit="Electron">-1.46713181445</a1>
+      <b1 Unit="Electron">-0.0657193422732</b1>
+      <a2 Unit="Electron">0.0215339247609</a2>
+      <b2 Unit="Electron">0.00944168646756</b2>
+      <a3 Unit="Electron">0.00844858143627</a3>
+      <b3 Unit="Electron">0.00376634903563</b3>
+      <a4 Unit="Electron">0.00315757147468</a4>
+      <b4 Unit="Electron">0.00173197969113</b4>
+      <a5 Unit="Electron">0.00139408503088</a5>
+      <b5 Unit="Electron">0.000920674281873</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00256169445903</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0722469020406</p2>
+      <p3 Unit="Electron*Nanometer**1">0.122578863778</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-3.01770869625</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ILE" Identifier="21" Atom="BB">
+      <a1 Unit="Electron">-0.310290827605</a1>
+      <b1 Unit="Electron">0.0578964785289</b1>
+      <a2 Unit="Electron">0.00542238573329</a2>
+      <b2 Unit="Electron">-0.012921891168</b2>
+      <a3 Unit="Electron">0.000890495813114</a3>
+      <b3 Unit="Electron">-0.00322630282641</b3>
+      <a4 Unit="Electron">0.0002655086792</a4>
+      <b4 Unit="Electron">-0.00128968777778</b4>
+      <a5 Unit="Electron">0.000104949866541</a5>
+      <b5 Unit="Electron">-0.000643050457017</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000120715166595</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00751895033359</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000114734059942</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">11.0026035771</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LEU" Identifier="22" Atom="SC1">
+      <a1 Unit="Electron">-1.43347659918</a1>
+      <b1 Unit="Electron">-0.316118637615</b1>
+      <a2 Unit="Electron">0.0224342231829</a2>
+      <b2 Unit="Electron">0.0469991267248</b2>
+      <a3 Unit="Electron">0.00857582958702</a3>
+      <b3 Unit="Electron">0.0186726606711</b3>
+      <a4 Unit="Electron">0.00318977288941</a4>
+      <b4 Unit="Electron">0.00857845197803</b4>
+      <a5 Unit="Electron">0.00140464173156</a5>
+      <b5 Unit="Electron">0.00455827420836</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00241173499141</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0638772081528</p2>
+      <p3 Unit="Electron*Nanometer**1">0.211790844024</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-3.0524303708</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LEU" Identifier="23" Atom="BB">
+      <a1 Unit="Electron">-0.223508440496</a1>
+      <b1 Unit="Electron">0.0625257196103</b1>
+      <a2 Unit="Electron">0.00539345471782</a2>
+      <b2 Unit="Electron">-0.0150445507807</b2>
+      <a3 Unit="Electron">0.000709954340402</a3>
+      <b3 Unit="Electron">-0.00335009440332</b3>
+      <a4 Unit="Electron">0.000212871721363</a4>
+      <b4 Unit="Electron">-0.00130846126654</b4>
+      <a5 Unit="Electron">8.33629526687e-05</a5>
+      <b5 Unit="Electron">-0.000647196342039</b5>
+      <p1 Unit="Electron*Nanometer**3">7.77064960389e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00637033527688</p2>
+      <p3 Unit="Electron*Nanometer**1">8.52595166023e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9090023597</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LYS" Identifier="24" Atom="SC1">
+      <a1 Unit="Electron">-0.846001069314</a1>
+      <b1 Unit="Electron">-0.166039351123</b1>
+      <a2 Unit="Electron">-0.00183746001178</a2>
+      <b2 Unit="Electron">0.0245187364638</b2>
+      <a3 Unit="Electron">0.00154206749939</a3>
+      <b3 Unit="Electron">0.00974896198919</b3>
+      <a4 Unit="Electron">0.00071311804044</a4>
+      <b4 Unit="Electron">0.00447964378731</b4>
+      <a5 Unit="Electron">0.000341183419185</a5>
+      <b5 Unit="Electron">0.00238050303701</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00231364564283</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0650406216751</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0517889493581</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-1.9514759983</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LYS" Identifier="25" Atom="BB">
+      <a1 Unit="Electron">-0.204800159059</a1>
+      <b1 Unit="Electron">0.0641431321248</b1>
+      <a2 Unit="Electron">0.00532019149578</a2>
+      <b2 Unit="Electron">-0.0157232841767</b2>
+      <a3 Unit="Electron">0.000652713944739</a3>
+      <b3 Unit="Electron">-0.00340161411086</b3>
+      <a4 Unit="Electron">0.000196889844979</a4>
+      <b4 Unit="Electron">-0.0013193841237</b4>
+      <a5 Unit="Electron">7.70128383628e-05</a5>
+      <b5 Unit="Electron">-0.000651159661991</b5>
+      <p1 Unit="Electron*Nanometer**3">6.96154493195e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00617948239452</p2>
+      <p3 Unit="Electron*Nanometer**1">7.89365120824e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9045746237</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="LYS" Identifier="26" Atom="SC2">
+      <a1 Unit="Electron">-0.351586558134</a1>
+      <b1 Unit="Electron">-0.05527063648</b1>
+      <a2 Unit="Electron">-0.0118687833125</a2>
+      <b2 Unit="Electron">0.00792743357384</b2>
+      <a3 Unit="Electron">-0.00168024174473</a3>
+      <b3 Unit="Electron">0.0029558242341</b3>
+      <a4 Unit="Electron">-0.000405615738097</a4>
+      <b4 Unit="Electron">0.00145450220744</b4>
+      <a5 Unit="Electron">-0.000143841753604</a5>
+      <b5 Unit="Electron">0.000805019986659</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00121366210773</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0317907663023</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000449664736557</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">3.4362527409</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="MET" Identifier="27" Atom="SC1">
+      <a1 Unit="Electron">-1.89426946614</a1>
+      <b1 Unit="Electron">0.139453945889</b1>
+      <a2 Unit="Electron">-0.0156553477932</a2>
+      <b2 Unit="Electron">-0.0319268972393</b2>
+      <a3 Unit="Electron">-0.00306014093266</a3>
+      <b3 Unit="Electron">-0.00947531984157</b3>
+      <a4 Unit="Electron">-0.000444125425675</a4>
+      <b4 Unit="Electron">-0.00360418875366</b4>
+      <a5 Unit="Electron">-1.72347390034e-06</a5>
+      <b5 Unit="Electron">-0.00160211519351</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00198120690616</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0545750519209</p2>
+      <p3 Unit="Electron*Nanometer**1">0.00163372216484</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">7.76330552574</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="MET" Identifier="28" Atom="BB">
+      <a1 Unit="Electron">-0.21304882947</a1>
+      <b1 Unit="Electron">0.0621750918216</b1>
+      <a2 Unit="Electron">0.00492777299756</a2>
+      <b2 Unit="Electron">-0.0154228720577</b2>
+      <a3 Unit="Electron">0.000591024435687</a3>
+      <b3 Unit="Electron">-0.00327095405889</b3>
+      <a4 Unit="Electron">0.000182275857689</a4>
+      <b4 Unit="Electron">-0.00126425051378</b4>
+      <a5 Unit="Electron">7.17245238687e-05</a5>
+      <b5 Unit="Electron">-0.000623532525727</b5>
+      <p1 Unit="Electron*Nanometer**3">5.8386739539e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00591602513948</p2>
+      <p3 Unit="Electron*Nanometer**1">8.45842869523e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.8785775774</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PHE" Identifier="29" Atom="SC1">
+      <a1 Unit="Electron">-0.740576344187</a1>
+      <b1 Unit="Electron">-0.104233253575</b1>
+      <a2 Unit="Electron">-0.000442933728082</a2>
+      <b2 Unit="Electron">0.0153338326668</b2>
+      <a3 Unit="Electron">0.00162141877912</a3>
+      <b3 Unit="Electron">0.00609962610485</b3>
+      <a4 Unit="Electron">0.000714229007441</a4>
+      <b4 Unit="Electron">0.00280307250067</b4>
+      <a5 Unit="Electron">0.000336065134156</a5>
+      <b5 Unit="Electron">0.00148963005968</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00181611065599</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0501374093179</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0531766886078</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">0.102095871085</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PHE" Identifier="30" Atom="BB">
+      <a1 Unit="Electron">-0.274800587919</a1>
+      <b1 Unit="Electron">0.0602158648603</b1>
+      <a2 Unit="Electron">0.00555686425551</a2>
+      <b2 Unit="Electron">-0.013805094748</b2>
+      <a3 Unit="Electron">0.000830005343964</a3>
+      <b3 Unit="Electron">-0.00331690046671</b3>
+      <a4 Unit="Electron">0.000246292778366</a4>
+      <b4 Unit="Electron">-0.00131236690387</b4>
+      <a5 Unit="Electron">9.70935531908e-05</a5>
+      <b5 Unit="Electron">-0.000652273075451</b5>
+      <p1 Unit="Electron*Nanometer**3">0.00011177746284</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00731072779149</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000100368417044</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">11.0086052422</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PHE" Identifier="31" Atom="SC3">
+      <a1 Unit="Electron">-0.313724658</a1>
+      <b1 Unit="Electron">-0.106777436789</b1>
+      <a2 Unit="Electron">-0.00116051437267</a2>
+      <b2 Unit="Electron">0.0157631532942</b2>
+      <a3 Unit="Electron">0.000458399677247</a3>
+      <b3 Unit="Electron">0.00626783872032</b3>
+      <a4 Unit="Electron">0.000225989872968</a4>
+      <b4 Unit="Electron">0.00288009206437</b4>
+      <a5 Unit="Electron">0.000110068958954</a5>
+      <b5 Unit="Electron">0.00153049897587</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00151592010767</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0424276932869</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0391638671115</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.1099057627</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PHE" Identifier="32" Atom="SC2">
+      <a1 Unit="Electron">-0.313790050858</a1>
+      <b1 Unit="Electron">-0.106774639878</b1>
+      <a2 Unit="Electron">-0.00116215742267</a2>
+      <b2 Unit="Electron">0.0157627422479</b2>
+      <a3 Unit="Electron">0.000458168651318</a3>
+      <b3 Unit="Electron">0.00626767519164</b3>
+      <a4 Unit="Electron">0.000225928674461</a4>
+      <b4 Unit="Electron">0.00288001691295</b4>
+      <a5 Unit="Electron">0.000110046841068</a5>
+      <b5 Unit="Electron">0.00153045903787</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00151586881444</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0424259893718</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0391567095724</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.109838397237</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PRO" Identifier="33" Atom="SC1">
+      <a1 Unit="Electron">-0.850339249294</a1>
+      <b1 Unit="Electron">-0.187188979802</b1>
+      <a2 Unit="Electron">0.00494485595735</a2>
+      <b2 Unit="Electron">0.0277003537182</b2>
+      <a3 Unit="Electron">0.00313380727609</a3>
+      <b3 Unit="Electron">0.0110112969144</b3>
+      <a4 Unit="Electron">0.00124242493503</a4>
+      <b4 Unit="Electron">0.00505938722028</b4>
+      <a5 Unit="Electron">0.000561848047498</a5>
+      <b5 Unit="Electron">0.00268851629065</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00224226877811</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0613488342897</p2>
+      <p3 Unit="Electron*Nanometer**1">0.096523725194</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-1.95652544122</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="PRO" Identifier="34" Atom="BB">
+      <a1 Unit="Electron">-0.21588475679</a1>
+      <b1 Unit="Electron">0.0622198810713</b1>
+      <a2 Unit="Electron">0.00439209547719</a2>
+      <b2 Unit="Electron">-0.0130734037274</b2>
+      <a3 Unit="Electron">0.000961425011444</a3>
+      <b3 Unit="Electron">-0.00353404856162</b3>
+      <a4 Unit="Electron">0.000275925111777</a4>
+      <b4 Unit="Electron">-0.0014432440868</b4>
+      <a5 Unit="Electron">0.000107096077739</a5>
+      <b5 Unit="Electron">-0.000724256797554</b5>
+      <p1 Unit="Electron*Nanometer**3">0.00029061449857</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.0126926866301</p2>
+      <p3 Unit="Electron*Nanometer**1">2.5907793777e-05</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">11.6438336397</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="SER" Identifier="35" Atom="SC1">
+      <a1 Unit="Electron">-0.330876000201</a1>
+      <b1 Unit="Electron">-0.0441449237581</b1>
+      <a2 Unit="Electron">-0.0122803773057</a2>
+      <b2 Unit="Electron">0.00552724409403</b2>
+      <a3 Unit="Electron">-0.0016132239892</a3>
+      <b3 Unit="Electron">0.00225454179851</b3>
+      <a4 Unit="Electron">-0.000363312753494</a4>
+      <b4 Unit="Electron">0.00119123281532</b4>
+      <a5 Unit="Electron">-0.000124028920538</a5>
+      <b5 Unit="Electron">0.000679585742455</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00125677945814</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0340091036608</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000471295603388</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">3.64313409511</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="SER" Identifier="36" Atom="BB">
+      <a1 Unit="Electron">-0.273903038855</a1>
+      <b1 Unit="Electron">0.0566629000797</b1>
+      <a2 Unit="Electron">0.00464760454124</a2>
+      <b2 Unit="Electron">-0.0131835505504</b2>
+      <a3 Unit="Electron">0.000749868976913</a3>
+      <b3 Unit="Electron">-0.00308380646056</b3>
+      <a4 Unit="Electron">0.000225648208251</a4>
+      <b4 Unit="Electron">-0.00122249948173</b4>
+      <a5 Unit="Electron">8.86864613867e-05</a5>
+      <b5 Unit="Electron">-0.000606874844951</b5>
+      <p1 Unit="Electron*Nanometer**3">9.42204454038e-05</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00688663688606</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000102704863281</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.966930217</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="THR" Identifier="37" Atom="SC1">
+      <a1 Unit="Electron">-0.879325859275</a1>
+      <b1 Unit="Electron">0.0480456930023</b1>
+      <a2 Unit="Electron">-0.0487990405972</a2>
+      <b2 Unit="Electron">-0.00107092905013</b2>
+      <a3 Unit="Electron">-0.00948171563166</a3>
+      <b3 Unit="Electron">-0.00509371744208</b3>
+      <a4 Unit="Electron">-0.002241550423</a4>
+      <b4 Unit="Electron">-0.00258396389846</b4>
+      <a5 Unit="Electron">-0.00059837104451</a5>
+      <b5 Unit="Electron">-0.00121885923063</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00163108609186</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0445872508383</p2>
+      <p3 Unit="Electron*Nanometer**1">0.00110674679528</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">3.30633896249</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="THR" Identifier="38" Atom="BB">
+      <a1 Unit="Electron">-0.309360733306</a1>
+      <b1 Unit="Electron">0.0527440572364</b1>
+      <a2 Unit="Electron">0.00436263802145</a2>
+      <b2 Unit="Electron">-0.0118877981896</b2>
+      <a3 Unit="Electron">0.00078822801451</a3>
+      <b3 Unit="Electron">-0.00291116263938</b3>
+      <a4 Unit="Electron">0.000238736040371</a4>
+      <b4 Unit="Electron">-0.00116749299537</b4>
+      <a5 Unit="Electron">9.43663931614e-05</a5>
+      <b5 Unit="Electron">-0.000581996632734</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000107709536742</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00726956293684</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000114518826599</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">11.0005025048</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Identifier="39" Atom="SC4">
+      <a1 Unit="Electron">-0.313001369517</a1>
+      <b1 Unit="Electron">-0.106784466074</b1>
+      <a2 Unit="Electron">-0.00115361621067</a2>
+      <b2 Unit="Electron">0.0157638976744</b2>
+      <a3 Unit="Electron">0.000458330339511</a3>
+      <b3 Unit="Electron">0.00626814833318</b3>
+      <a4 Unit="Electron">0.000225797897893</a4>
+      <b4 Unit="Electron">0.00288023583193</b4>
+      <a5 Unit="Electron">0.000109952939216</a5>
+      <b5 Unit="Electron">0.0015305757011</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00151785583224</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0424943405181</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0390327073542</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.110635322138</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Identifier="40" Atom="SC1">
+      <a1 Unit="Electron">-0.741135097338</a1>
+      <b1 Unit="Electron">-0.0257541497979</b1>
+      <a2 Unit="Electron">-0.0140777866787</a2>
+      <b2 Unit="Electron">0.0210150179885</b2>
+      <a3 Unit="Electron">-0.00790639991343</a3>
+      <b3 Unit="Electron">0.00824534337084</b3>
+      <a4 Unit="Electron">-0.00510878235336</a4>
+      <b4 Unit="Electron">0.00332349931404</b4>
+      <a5 Unit="Electron">-0.00344770944194</a5>
+      <b5 Unit="Electron">0.00130875735603</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00172259442093</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0490668111493</p2>
+      <p3 Unit="Electron*Nanometer**1">0.00195146651292</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">0.864978459341</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Identifier="41" Atom="BB">
+      <a1 Unit="Electron">-0.280033504558</a1>
+      <b1 Unit="Electron">0.0578326764817</b1>
+      <a2 Unit="Electron">0.00505755472326</a2>
+      <b2 Unit="Electron">-0.0132818829507</b2>
+      <a3 Unit="Electron">0.000804464299876</a3>
+      <b3 Unit="Electron">-0.00317187558281</b3>
+      <a4 Unit="Electron">0.000240923457209</a4>
+      <b4 Unit="Electron">-0.0012599646014</b4>
+      <a5 Unit="Electron">9.48807646984e-05</a5>
+      <b5 Unit="Electron">-0.000626520224173</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000104161754041</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00708813140451</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000104130010214</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9628100601</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Identifier="42" Atom="SC3">
+      <a1 Unit="Electron">-0.313301007996</a1>
+      <b1 Unit="Electron">-0.106781933808</b1>
+      <a2 Unit="Electron">-0.00115618081588</a2>
+      <b2 Unit="Electron">0.0157636543577</b2>
+      <a3 Unit="Electron">0.000458427203215</a3>
+      <b3 Unit="Electron">0.00626804552052</b3>
+      <a4 Unit="Electron">0.000225899941367</a4>
+      <b4 Unit="Electron">0.00288018792202</b4>
+      <a5 Unit="Electron">0.00011001032442</a5>
+      <b5 Unit="Electron">0.00153055009631</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.0015170030072</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0424649447579</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0390938065727</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.110333489443</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TRP" Identifier="43" Atom="SC2">
+      <a1 Unit="Electron">-0.593540729946</a1>
+      <b1 Unit="Electron">-0.0678534226379</b1>
+      <a2 Unit="Electron">-0.00798410827227</a2>
+      <b2 Unit="Electron">0.00980301848299</b2>
+      <a3 Unit="Electron">-0.00134859375486</a3>
+      <b3 Unit="Electron">0.00401238463246</b3>
+      <a4 Unit="Electron">-0.000389416740915</a4>
+      <b4 Unit="Electron">0.00184590779564</b4>
+      <a5 Unit="Electron">-0.000149226080229</a5>
+      <b5 Unit="Electron">0.000980020351086</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00113877090811</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0263870901932</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000493737992624</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">6.3426523258</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TYR" Identifier="44" Atom="SC1">
+      <a1 Unit="Electron">-0.741850635189</a1>
+      <b1 Unit="Electron">-0.103328598709</b1>
+      <a2 Unit="Electron">-0.000390030741563</a2>
+      <b2 Unit="Electron">0.0151988160983</b2>
+      <a3 Unit="Electron">0.00163676802581</a3>
+      <b3 Unit="Electron">0.00604600811329</b3>
+      <a4 Unit="Electron">0.000719647134463</a4>
+      <b4 Unit="Electron">0.00277844235378</b4>
+      <a5 Unit="Electron">0.000338399383731</a5>
+      <b5 Unit="Electron">0.0014765430755</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00181244141751</p1>
+      <p2 Unit="Electron*Nanometer**2">0.050047726586</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0532566133758</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">0.103291044519</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TYR" Identifier="45" Atom="BB">
+      <a1 Unit="Electron">-0.299257844955</a1>
+      <b1 Unit="Electron">0.0554323639662</b1>
+      <a2 Unit="Electron">0.00506892154586</a2>
+      <b2 Unit="Electron">-0.0124203316282</b2>
+      <a3 Unit="Electron">0.000848054950874</a3>
+      <b3 Unit="Electron">-0.00308462088111</b3>
+      <a4 Unit="Electron">0.000252156869592</a4>
+      <b4 Unit="Electron">-0.00123230141825</b4>
+      <a5 Unit="Electron">9.94416469294e-05</a5>
+      <b5 Unit="Electron">-0.000613792952709</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000109145895052</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00723402017966</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000110643623508</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">10.9819558918</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TYR" Identifier="46" Atom="SC3">
+      <a1 Unit="Electron">-0.613655245559</a1>
+      <b1 Unit="Electron">-0.0399188546091</b1>
+      <a2 Unit="Electron">-0.0107321540232</a2>
+      <b2 Unit="Electron">0.00500748283348</b2>
+      <a3 Unit="Electron">-0.00132859471399</a3>
+      <b3 Unit="Electron">0.00203575889143</b3>
+      <a4 Unit="Electron">-0.000282651374744</a4>
+      <b4 Unit="Electron">0.00107520570301</b4>
+      <a5 Unit="Electron">-9.0973763298e-05</a5>
+      <b5 Unit="Electron">0.000613534211538</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00117166823083</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0306778088103</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000579138060086</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">5.15228207271</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="TYR" Identifier="47" Atom="SC2">
+      <a1 Unit="Electron">-0.313922263348</a1>
+      <b1 Unit="Electron">-0.106765569905</b1>
+      <a2 Unit="Electron">-0.00116624957518</a2>
+      <b2 Unit="Electron">0.0157613843041</b2>
+      <a3 Unit="Electron">0.000457522761936</a3>
+      <b3 Unit="Electron">0.00626713611965</b3>
+      <a4 Unit="Electron">0.000225745984196</a4>
+      <b4 Unit="Electron">0.00287976930464</b4>
+      <a5 Unit="Electron">0.000109977775895</a5>
+      <b5 Unit="Electron">0.00153032747837</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00151585882755</p1>
+      <p2 Unit="Electron*Nanometer**2">0.042426258609</p2>
+      <p3 Unit="Electron*Nanometer**1">0.0391248895063</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-0.109701137167</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="VAL" Identifier="48" Atom="SC1">
+      <a1 Unit="Electron">-0.840515974359</a1>
+      <b1 Unit="Electron">-0.2216711626</b1>
+      <a2 Unit="Electron">0.0153829263665</a2>
+      <b2 Unit="Electron">0.0328758189418</b2>
+      <a3 Unit="Electron">0.0055464212361</a3>
+      <b3 Unit="Electron">0.0130652475471</b3>
+      <a4 Unit="Electron">0.00204142538731</a4>
+      <b4 Unit="Electron">0.00600274968792</b4>
+      <a5 Unit="Electron">0.000894431376827</a5>
+      <b5 Unit="Electron">0.0031897304911</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00219986338137</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0589823751873</p2>
+      <p3 Unit="Electron*Nanometer**1">0.163218384591</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">-2.70087562543</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="VAL" Identifier="49" Atom="BB">
+      <a1 Unit="Electron">-0.323350662312</a1>
+      <b1 Unit="Electron">0.0572825030059</b1>
+      <a2 Unit="Electron">0.00538382560612</a2>
+      <b2 Unit="Electron">-0.0126542068037</b2>
+      <a3 Unit="Electron">0.000909820478955</a3>
+      <b3 Unit="Electron">-0.00321033455048</b3>
+      <a4 Unit="Electron">0.000271082438765</a4>
+      <b4 Unit="Electron">-0.00128625040106</b4>
+      <a5 Unit="Electron">0.000107276642065</a5>
+      <b5 Unit="Electron">-0.000641783445349</b5>
+      <p1 Unit="Electron*Nanometer**3">0.000125232023547</p1>
+      <p2 Unit="Electron*Nanometer**2">-0.00764467658056</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000119737285509</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">11.0076459526</a0>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="ION" Identifier="50" Atom="CA+">
+      <a1 Unit="Electron">-0.557395953566</a1>
+      <b1 Unit="Electron">-0.0935831555008</b1>
+      <a2 Unit="Electron">-0.00547124430219</a2>
+      <b2 Unit="Electron">0.0128354766821</b2>
+      <a3 Unit="Electron">-0.0010086342394</a3>
+      <b3 Unit="Electron">0.00560677882509</b3>
+      <a4 Unit="Electron">-0.000298315966629</a4>
+      <b4 Unit="Electron">0.00257886848008</b4>
+      <a5 Unit="Electron">-0.000112752025897</a5>
+      <b5 Unit="Electron">0.00136801944216</b5>
+      <p1 Unit="Electron*Nanometer**3">-0.00213147947924</p1>
+      <p2 Unit="Electron*Nanometer**2">0.0625619367784</p2>
+      <p3 Unit="Electron*Nanometer**1">0.000788459958301</p3>
+      <q0 Unit="1/Nanometer">0</q0>
+      <q1 Unit="1/Nanometer">20</q1>
+      <a0 Unit="Electron">7.41548723129</a0>
+    </ScatteringFactor>
+  </ScatteringFactors>
+</Gromacs>

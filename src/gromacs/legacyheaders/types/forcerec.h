@@ -59,7 +59,11 @@ extern "C" {
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
+
 struct nonbonded_verlet_t;
+
+//! Structure to encapsulate a C++ class. Sick isn't it?
+typedef struct waxs_debye_force_c *waxs_debye_force_t;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -489,6 +493,9 @@ typedef struct {
 
     /* Exclusion load distribution over the threads */
     int  *excl_load;
+
+    /* Wide angle X-ray scattering data */
+    waxs_debye_force_t wdf;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
@@ -504,4 +511,5 @@ typedef struct {
 #ifdef __cplusplus
 }
 #endif
+
 #endif

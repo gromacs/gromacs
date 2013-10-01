@@ -2069,6 +2069,20 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("wall-density",  is->wall_density,  NULL);
     RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
 
+    /* WAXS/SAXS Refinement */
+    CCTYPE ("WAXS/SAXS Refinement");
+    CTYPE ("WAXS/SAXS model, force constant and frequency of output");
+    EETYPE("waxs-type",   ir->waxs.waxs_type,   ewaxs_names);
+    RTYPE ("waxs-fc",     ir->waxs.kwaxs, 0);
+    ITYPE ("waxs-nstout", ir->waxs.nstout, 10);
+    CTYPE ("Frequency of calculating and applying the WAXS/SAXS forces");
+    ITYPE ("waxs-nstcalc", ir->waxs.nstcalc, 1);
+    CTYPE ("Mode of alpha calculation, should be 0 (constant) or 1 (scaled to minimize WAXS energy");
+    ITYPE ("debye-alpha-mode", ir->waxs.debye_alpha_mode, 0);
+    CTYPE ("Lower and upper alpha boundary, should be 0 <= alpha_min <= alpha_max <= 1.");
+    RTYPE ("debye-alpha-min", ir->waxs.debye_alpha_min, 1);
+    RTYPE ("debye-alpha-max", ir->waxs.debye_alpha_max, 1);
+
     /* COM pulling */
     CCTYPE("COM PULLING");
     CTYPE("Pull type: no, umbrella, constraint or constant-force");
@@ -4249,6 +4263,31 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 }
             }
         }
+    }
+    /* WAXS/SAXS input */
+    if (ir->waxs.kwaxs < 0)
+    {
+        warning_error(wi, "waxs-fc should be >= 0");
+    }
+    if (ir->waxs.nstout < 0)
+    {
+        warning_error(wi, "waxs-nstout should be >= 0");
+    }
+    if (ir->waxs.debye_alpha_min < 0)
+    {
+        warning_error(wi, "debye-alpha-min should be >= 0");
+    }
+    if (ir->waxs.debye_alpha_max < ir->waxs.debye_alpha_min)
+    {
+        warning_error(wi, "debye-alpha-max should be >= debye_alpha_min");
+    }
+    if (ir->waxs.nstcalc < 1)
+    {
+        warning_error(wi, "waxs-nstcalc should be >= 1");
+    }
+    if ( (ir->waxs.debye_alpha_mode != 0) && (ir->waxs.debye_alpha_mode != 1) )
+    {
+        warning_error(wi, "debye-alpha-mode should be 0 or 1");
     }
 
     check_disre(sys);
