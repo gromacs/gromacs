@@ -64,7 +64,7 @@ typedef gmx_unique_ptr<CommandLineModuleInterface>::type
  * \code
    int main(int argc, char *argv[])
    {
-       gmx::ProgramInfo &programInfo = gmx::init("gmx", &argc, &argv);
+       gmx::ProgramInfo &programInfo = gmx::ProgramInitializer::init("gmx", &argc, &argv);
        try
        {
            gmx::CommandLineModuleManager manager(&programInfo);

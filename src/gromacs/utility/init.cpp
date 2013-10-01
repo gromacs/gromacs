@@ -91,14 +91,30 @@ void broadcastArguments(const t_commrec *cr, int *argc, char ***argv)
 } // namespace
 #endif
 
-ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
+ProgramInfo &ProgramInitializer::init(const char *realBinaryName, int *argc, char ***argv)
 {
 #ifdef GMX_LIB_MPI
+    int isInitialized = 0;
+    MPI_Initialized(&isInitialized);
+    if (isInitialized)
+    {
+        if (0 == _initializationCounter)
+        {
+            // Some other code has already initialized MPI, so bump the counter so that
+            // we know not to finalize MPI ourselves later.
+            _initializationCounter++;
+        }
+    }
+    else
+    {
 #ifdef GMX_FAHCORE
-    (void) fah_MPI_Init(argc, argv);
+        (void) fah_MPI_Init(argc, argv);
 #else
-    (void) MPI_Init(argc, argv);
+        (void) MPI_Init(argc, argv);
 #endif
+    }
+    // Bump the counter to record this initialization event
+    _initializationCounter++;
 
     // TODO: Rewrite this to not use t_commrec once there is clarity on
     // the approach for MPI in C++ code.
@@ -116,41 +132,35 @@ ProgramInfo &init(const char *realBinaryName, int *argc, char ***argv)
     return ProgramInfo::init(realBinaryName, *argc, *argv);
 }
 
-ProgramInfo &init(int *argc, char ***argv)
+ProgramInfo &ProgramInitializer::init(int *argc, char ***argv)
 {
     return init(NULL, argc, argv);
 }
 
-void finalize()
+void ProgramInitializer::finalize()
 {
-#ifndef GMX_MPI
-    /* Compiled without MPI, no MPI finalizing needed */
-    return;
-#else
-    int finalized;
+#ifdef GMX_LIB_MPI
+    assert(0 < _initializationCounter);
+    // Bump the counter to record this finalization event
+    _initializationCounter--;
 
-    if (!gmx_mpi_initialized())
+    if (0 == _initializationCounter)
     {
-        return;
-    }
-    /* just as a check; we don't want to finalize twice */
-    MPI_Finalized(&finalized);
-    if (finalized)
-    {
-        return;
-    }
+        /* We sync the processes here to try to avoid problems
+         * with buggy MPI implementations that could cause
+         * unfinished processes to terminate.
+         */
+        MPI_Barrier(MPI_COMM_WORLD);
 
-    /* We sync the processes here to try to avoid problems
-     * with buggy MPI implementations that could cause
-     * unfinished processes to terminate.
-     */
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    /* Apparently certain mpich implementations cause problems
-     * with MPI_Finalize. In that case comment out MPI_Finalize.
-     */
-    MPI_Finalize();
+        /* Apparently certain mpich implementations cause problems
+         * with MPI_Finalize. In that case comment out MPI_Finalize.
+         */
+        MPI_Finalize();
+    }
 #endif
+    return;
 }
+
+int ProgramInitializer::_initializationCounter = 0;
 
 } // namespace gmx

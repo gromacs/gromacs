@@ -48,7 +48,7 @@
 int
 main(int argc, char *argv[])
 {
-    gmx::ProgramInfo &info = gmx::init("gmx", &argc, &argv);
+    gmx::ProgramInfo &info = gmx::ProgramInitializer::init("gmx", &argc, &argv);
     try
     {
         gmx::CommandLineModuleManager manager(&info);
@@ -56,7 +56,7 @@ main(int argc, char *argv[])
         registerLegacyModules(&manager);
         manager.addHelpTopic(gmx::SelectionCollection::createDefaultHelpTopic());
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::ProgramInitializer::finalize();
         return rc;
     }
     catch (const std::exception &ex)

@@ -846,13 +846,13 @@ int CommandLineModuleManager::run(int argc, char *argv[])
 int CommandLineModuleManager::runAsMainSingleModule(
         int argc, char *argv[], CommandLineModuleInterface *module)
 {
-    ProgramInfo &programInfo = gmx::init(&argc, &argv);
+    ProgramInfo &programInfo = gmx::ProgramInitializer::init(&argc, &argv);
     try
     {
         CommandLineModuleManager manager(&programInfo);
         manager.impl_->singleModule_ = module;
         int rc = manager.run(argc, argv);
-        gmx::finalize();
+        gmx::ProgramInitializer::finalize();
         return rc;
     }
     catch (const std::exception &ex)

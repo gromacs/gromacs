@@ -81,7 +81,7 @@ class GromacsTestEnvironment : public ::testing::Environment
         //! Calls MPI_Finalize() if necessary.
         virtual void TearDown()
         {
-            gmx::finalize();
+            gmx::ProgramInitializer::finalize();
         }
 };
 
@@ -155,7 +155,7 @@ void initTestUtils(const char *dataPath, int *argc, char ***argv)
 {
     try
     {
-        gmx::init(argc, argv);
+        gmx::ProgramInitializer::init(argc, argv);
         ::testing::InitGoogleMock(argc, *argv);
         if (dataPath != NULL)
         {
