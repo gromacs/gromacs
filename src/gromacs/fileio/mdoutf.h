@@ -36,46 +36,60 @@
 #ifndef GMX_FILEIO_MDOUTF_H
 #define GMX_FILEIO_MDOUTF_H
 
-#include "filenm.h"
 #include <stdio.h>
 #include "../legacyheaders/types/simple.h"
+#include "../legacyheaders/types/topology.h"
+#include "../legacyheaders/types/inputrec.h"
+#include "../legacyheaders/types/oenv.h"
+#include "../legacyheaders/network.h"
+#include "filenm.h"
 #include "enxio.h"
-#include "gmxfio.h"
 
-typedef struct {
-    t_fileio     *fp_trn;
-    t_fileio     *fp_xtc;
-    int           xtc_prec;
-    ener_file_t   fp_ene;
-    const char   *fn_cpt;
-    gmx_bool      bKeepAndNumCPT;
-    int           eIntegrator;
-    gmx_bool      bExpanded;
-    int           elamstats;
-    int           simulation_part;
-    FILE         *fp_dhdl;
-    FILE         *fp_field;
-    int           natoms_global;
-    int           natoms_xtc;
-    gmx_groups_t *groups; /* for XTC writing */
-} gmx_mdoutf_t;
+typedef struct gmx_mdoutf *gmx_mdoutf_t;
 
-gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[],
-                          int mdrun_flags,
-                          const t_commrec *cr, const t_inputrec *ir,
-                          gmx_mtop_t *top_global,
-                          const output_env_t oenv);
-/* Returns a pointer to a data structure with all output file pointers
+/*! \brief Allocate and initialize object to manager trajectory writing output
+ *
+ * Returns a pointer to a data structure with all output file pointers
  * and names required by mdrun.
  */
+gmx_mdoutf_t init_mdoutf(int                nfile,
+                         const t_filenm     fnm[],
+                         int                mdrun_flags,
+                         const t_commrec   *cr,
+                         const t_inputrec  *ir,
+                         gmx_mtop_t        *mtop,
+                         const output_env_t oenv);
 
-void done_mdoutf(gmx_mdoutf_t *of);
-/* Close all open output files and free the of pointer */
+/*! \brief Getter for file pointer */
+FILE *mdoutf_get_fp_field(gmx_mdoutf_t of);
 
-#define MDOF_X   (1<<0)
-#define MDOF_V   (1<<1)
-#define MDOF_F   (1<<2)
-#define MDOF_XTC (1<<3)
-#define MDOF_CPT (1<<4)
+/*! \brief Getter for file pointer */
+ener_file_t mdoutf_get_fp_ene(gmx_mdoutf_t of);
+
+/*! \brief Getter for file pointer */
+FILE *mdoutf_get_fp_dhdl(gmx_mdoutf_t of);
+
+/*! \brief Close all open output files and free the of pointer */
+void done_mdoutf(gmx_mdoutf_t of);
+
+/*! \brief Routine that writes trajectory-like frames.
+ *
+ * Writes data to trn, xtc and/or checkpoint. What is written is
+ * determined by the mdof_flags defined below. Data is collected to
+ * the master node only when necessary.
+ */
+void mdoutf_write_to_trajectory_files(FILE *fplog, t_commrec *cr,
+                                      gmx_mdoutf_t of,
+                                      int mdof_flags,
+                                      gmx_mtop_t *top_global,
+                                      gmx_int64_t step, double t,
+                                      t_state *state_local, t_state *state_global,
+                                      rvec *f_local, rvec *f_global);
+
+#define MDOF_X            (1<<0)
+#define MDOF_V            (1<<1)
+#define MDOF_F            (1<<2)
+#define MDOF_X_COMPRESSED (1<<3)
+#define MDOF_CPT          (1<<4)
 
 #endif /* GMX_FILEIO_MDOUTF_H */

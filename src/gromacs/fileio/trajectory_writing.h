@@ -46,45 +46,38 @@
 #include "../legacyheaders/update.h"
 #include "../legacyheaders/mdebin.h"
 
-void
-do_trajectory_writing(FILE           *fplog,
-                      t_commrec      *cr,
-                      int             nfile,
-                      const t_filenm  fnm[],
-                      gmx_int64_t     step,
-                      gmx_int64_t     step_rel,
-                      double          t,
-                      t_inputrec     *ir,
-                      t_state        *state,
-                      t_state        *state_global,
-                      gmx_mtop_t     *top_global,
-                      t_forcerec     *fr,
-                      gmx_update_t    upd,
-                      gmx_mdoutf_t   *outf,
-                      t_mdebin       *mdebin,
-                      gmx_ekindata_t *ekind,
-                      rvec           *f,
-                      rvec           *f_global,
-                      gmx_wallcycle_t wcycle,
-                      gmx_rng_t       mcrng,
-                      int            *nchkpt,
-                      gmx_bool        bCPT,
-                      gmx_bool        bRerunMD,
-                      gmx_bool        bLastStep,
-                      gmx_bool        bDoConfOut,
-                      gmx_bool        bSumEkinhOld
-                      );
-/* Wrapper routine for trajectory writing */
-
-void write_traj(FILE *fplog, t_commrec *cr,
-                gmx_mdoutf_t *of,
-                int mdof_flags,
-                gmx_int64_t step, double t,
-                t_state *state_local, t_state *state_global,
-                rvec *f_local, rvec *f_global);
-/* Routine that writes frames to trn, xtc and/or checkpoint.
- * What is written is determined by the mdof_flags defined above.
- * Data is collected to the master node only when necessary.
+/*! \brief Wrapper routine for writing trajectories during mdrun
+ *
+ * This routine does communication (e.g. collecting distributed coordinates)
  */
+void
+do_md_trajectory_writing(FILE           *fplog,
+                         t_commrec      *cr,
+                         int             nfile,
+                         const t_filenm  fnm[],
+                         gmx_int64_t     step,
+                         gmx_int64_t     step_rel,
+                         double          t,
+                         t_inputrec     *ir,
+                         t_state        *state,
+                         t_state        *state_global,
+                         gmx_mtop_t     *top_global,
+                         t_forcerec     *fr,
+                         gmx_update_t    upd,
+                         gmx_mdoutf_t    outf,
+                         t_mdebin       *mdebin,
+                         gmx_ekindata_t *ekind,
+                         rvec           *f,
+                         rvec           *f_global,
+                         gmx_wallcycle_t wcycle,
+                         gmx_rng_t       mcrng,
+                         int            *nchkpt,
+                         gmx_bool        bCPT,
+                         gmx_bool        bRerunMD,
+                         gmx_bool        bLastStep,
+                         gmx_bool        bDoConfOut,
+                         gmx_bool        bSumEkinhOld
+                         );
+
 
 #endif /* GMX_FILEIO_TRAJECTORY_WRITING_H */
