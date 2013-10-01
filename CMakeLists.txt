@@ -230,6 +230,10 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
 
+# TODO default this to off on Windows until we have time to fix the
+# unknown bug
+option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
+
 option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
 mark_as_advanced(GMX_GIT_VERSION_INFO)
 
@@ -1253,6 +1257,29 @@ else()
                 COMPONENT development)
     endif ()
 endif()
+
+# TODO: This hack is temporary so we get Jenkins feedback over the
+# whole range. Later, Jenkins will be configured to always build with
+# TNG support on
+set(GMX_USE_TNG 1)
+if(GMX_USE_TNG)
+    find_package(ZLIB)
+    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
+    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
+    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+    # TODO reconsider use of OpenMP in TNG if/when trajectory writing is not serial in mdrun
+    set(TNG_USE_OPENMP ${GMX_OPENMP} CACHE BOOL "Try to use the OpenMP library (if available) with TNG")
+    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
+    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    set(GMX_TNG_LIBRARIES tng_io)
+endif()
+mark_as_advanced(TNG_BUILD_FORTRAN)
+mark_as_advanced(TNG_BUILD_EXAMPLES)
+mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
+mark_as_advanced(TNG_USE_OPENMP)
+mark_as_advanced(TNG_BUILD_DOCUMENTATION)
+mark_as_advanced(TNG_BUILD_TEST)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
