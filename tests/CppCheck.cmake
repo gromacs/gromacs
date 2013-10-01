@@ -68,6 +68,8 @@ if (CPPCHECK_EXECUTABLE AND UNIX)
         -DSIZEOF_LONG_LONG_INT=8 -DSIZEOF_INT=4 -DLINUX
         -I src/gromacs/legacyheaders -I src
         -I ${CMAKE_BINARY_DIR}/src -I ${CMAKE_BINARY_DIR}/src/gromacs/utility
+        -I src/external/tng_io/include
+#        -I ${CMAKE_BINARY_DIR}/include # TODO what is this doing?
         --quiet
         ${_outputopt})
     set(_c_flags
