@@ -40,6 +40,7 @@
 #include "nb_verlet.h"
 #include "interaction_const.h"
 #include "hw_info.h"
+#include "waxs_debye_force_c.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -466,6 +467,9 @@ typedef struct {
 
     /* Exclusion load distribution over the threads */
     int  *excl_load;
+
+    /* Wide angle X-ray scattering data */
+    waxs_debye_force_t wdf;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have

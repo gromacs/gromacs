@@ -73,7 +73,7 @@
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 92;
+static const int tpx_version = 93;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -179,7 +179,7 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_VDW,         },
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
-    { 79, F_DVDL_TEMPERATURE  },
+    { 79, F_DVDL_TEMPERATURE  }
 };
 #define NFTUPD asize(ftupd)
 
@@ -628,6 +628,16 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
     }
 }
 
+static void do_waxs(t_fileio *fio, t_waxs_refine *waxs, gmx_bool bRead)
+{
+    gmx_fio_do_int(fio, waxs->waxs_type);
+    gmx_fio_do_real(fio, waxs->kwaxs);
+    gmx_fio_do_int(fio, waxs->nstout);
+    gmx_fio_do_real(fio, waxs->debye_alpha_min);
+    gmx_fio_do_real(fio, waxs->debye_alpha_max);
+    gmx_fio_do_real(fio, waxs->debye_r_min);
+    gmx_fio_do_real(fio, waxs->debye_r_max);
+}
 
 static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
                         int file_version, real *fudgeQQ)
@@ -1562,6 +1572,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         }
         /* end of QMMM stuff */
     }
+    
+    if (file_version >= 93)
+    {
+        do_waxs(fio, &ir->waxs, bRead);
+    }
 }
 
 
@@ -1716,6 +1731,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->thole.alpha1);
             gmx_fio_do_real(fio, iparams->thole.alpha2);
             gmx_fio_do_real(fio, iparams->thole.rfac);
+            break;
+        case F_WAXS_DEBYE:
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpi);
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpj);
             break;
         case F_LJ:
             gmx_fio_do_real(fio, iparams->lj.c6);
