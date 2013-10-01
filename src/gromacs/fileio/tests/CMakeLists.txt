@@ -32,24 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-set(testname "MdrunTests")
-set(exename "mdrun-test")
-
-include_directories(${CMAKE_SOURCE_DIR}/src/gromacs/gmxpreprocess)
-
-gmx_build_unit_test(
-    ${testname}
-    ${exename}
-    # files with code for tests
-    rerun.cpp
-    trajectory_writing.cpp
-    # files with code for test fixtures
-    moduletest.cpp
-    # pseudo libraries for code for grompp and mdrun
-    $<TARGET_OBJECTS:mdrun_objlib>
-    $<TARGET_OBJECTS:gmx_objlib>
-    )
-gmx_register_integration_test(
-    ${testname}
-    ${exename}
-    )
+if(GMX_USE_TNG)
+    gmx_add_unit_test(FileIOTests fileio-test
+        tngio.cpp)
+endif()

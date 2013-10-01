@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2013, by the GROMACS development team, led by
+# Copyright (c) 2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -54,6 +54,15 @@ set(FILEIO_PUBLIC_HEADERS
     )
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 
+# These files include tng_io.h from the TNG library. That header needs to know
+# whether inttypes.h exists or not.
+include(CheckIncludeFiles)
+check_include_file(inttypes.h   HAVE_INTTYPES_H)
+if(HAVE_INTTYPES_H)
+  set_property(SOURCE tngio.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+  set_property(SOURCE tngio_for_tools.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+endif()
+
 if (BUILD_TESTING)
-#    add_subdirectory(tests)
+     add_subdirectory(tests)
 endif (BUILD_TESTING)
