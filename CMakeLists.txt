@@ -40,7 +40,7 @@ SET(CPACK_PACKAGE_VERSION_MINOR "0")
 
 # The numerical gromacs version. It is 40600 for 4.6.0.
 # The #define GMX_VERSION in gmx_header_config_h is set to this value.
-math(EXPR NUM_VERSION 
+math(EXPR NUM_VERSION
     "${CPACK_PACKAGE_VERSION_MAJOR}*10000 + ${CPACK_PACKAGE_VERSION_MINOR}*100")
 if(CPACK_PACKAGE_VERSION_PATCH)
     math(EXPR NUM_VERSION
@@ -198,6 +198,8 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
+
+option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
 option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
 mark_as_advanced(GMX_GIT_VERSION_INFO)
@@ -1112,7 +1114,7 @@ endif()
 if(NOT GMX_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
     #or because it was only partially detected (e.g. only for C but not C++ compiler)
-    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_C_FLAGS CACHE)
     unset(OpenMP_CXX_FLAGS CACHE)
 else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
@@ -1224,6 +1226,21 @@ else()
                 DESTINATION ${INCL_INSTALL_DIR}/gromacs/external/boost
                 COMPONENT development)
     endif ()
+endif()
+
+if(GMX_USE_TNG)
+    find_package(ZLIB)
+    add_definitions(-DGMX_USE_TNG)
+    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include)
+    include_directories(${CMAKE_SOURCE_DIR}/src/external/tng_io/include/compression)
+    set(TNG_BUILD_FORTRAN OFF)
+    set(TNG_BUILD_EXAMPLES OFF)
+    set(TNG_BUILD_COMPRESSION_TESTS OFF)
+    set(TNG_USE_OPENMP ON)
+    set(TNG_BUILD_DOCUMENTATION OFF)
+    set(TNG_BUILD_TEST OFF)
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    set(GMX_TNG_LIBRARIES tng_io)
 endif()
 
 if (GMX_BUILD_FOR_COVERAGE)
