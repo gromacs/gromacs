@@ -90,6 +90,8 @@ class MdrunTestFixture : public IntegrationTestFixture
         void useEmptyMdpFile();
         //! Use an empty .mdp file as input to grompp
         void useStringAsMdpFile(const char *mdpString);
+        //! Use an empty .mdp file as input to grompp
+        void useStringAsMdpFile(const std::string &mdpString);
         //! Use a standard .top and .gro file as input to grompp
         void useTopAndGroFromDatabase(const char *name);
         //! Calls grompp to prepare for the mdrun test
@@ -110,8 +112,8 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
-        std::string trrFileName;
-        std::string xtcFileName;
+        std::string fullPrecisionTrajectoryFileName;
+        std::string reducedPrecisionTrajectoryFileName;
         std::string rerunFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;

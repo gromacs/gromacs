@@ -1,7 +1,7 @@
 #
 # This file is part of the GROMACS molecular simulation package.
 #
-# Copyright (c) 2009,2010,2011,2012,2013, by the GROMACS development team, led by
+# Copyright (c) 2009,2010,2011,2012,2013,2014, by the GROMACS development team, led by
 # Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 # and including many others, as listed in the AUTHORS file in the
 # top-level source directory and at http://www.gromacs.org.
@@ -230,6 +230,8 @@ mark_as_advanced(GMX_LOAD_PLUGINS)
 
 option(GMX_GPU  "Enable GPU acceleration" ON)
 option(GMX_OPENMP "Enable OpenMP-based multithreading" ON)
+
+option(GMX_USE_TNG "Use the TNG library for trajectory I/O" ON)
 
 option(GMX_GIT_VERSION_INFO "Generate git version information" ${SOURCE_IS_GIT_REPOSITORY})
 mark_as_advanced(GMX_GIT_VERSION_INFO)
@@ -880,7 +882,7 @@ endif()
 if(NOT GMX_OPENMP)
     #Unset all OpenMP flags in case OpenMP was disabled either by the user
     #or because it was only partially detected (e.g. only for C but not C++ compiler)
-    unset(OpenMP_C_FLAGS CACHE) 
+    unset(OpenMP_C_FLAGS CACHE)
     unset(OpenMP_CXX_FLAGS CACHE)
 else()
     set(GMX_EXE_LINKER_FLAGS ${GMX_EXE_LINKER_FLAGS} ${OpenMP_LINKER_FLAGS})
@@ -946,6 +948,34 @@ else()
                 COMPONENT development)
     endif ()
 endif()
+
+# TODO The Windows builds are still broken (we are avoiding some
+# unknown bug, perhaps with checkpointing?), because defaulting to
+# .tng output leads to calling null-op implementation functions, so
+# regressiontests will fail on Windows at the post-mdrun stages. We
+# can fix this during the 5.0 beta phase.
+gmx_add_cache_dependency(GMX_USE_TNG BOOL "NOT GMX_NATIVE_WINDOWS" OFF)
+
+# TODO find out why TNG testing defaults to on despite the stuff below
+if(GMX_USE_TNG)
+    find_package(ZLIB)
+    set(TNG_BUILD_FORTRAN OFF CACHE BOOL "Build Fortran compatible TNG library and examples for testing")
+    set(TNG_BUILD_EXAMPLES OFF CACHE BOOL "Build examples showing usage of the TNG API")
+    set(TNG_BUILD_COMPRESSION_TESTS OFF CACHE BOOL "Build tests of the TNG compression library")
+    # TODO reconsider use of OpenMP in TNG if/when trajectory writing is not serial in mdrun
+    set(TNG_USE_OPENMP ${GMX_OPENMP} CACHE BOOL "Try to use the OpenMP library (if available) with TNG")
+    set(TNG_BUILD_DOCUMENTATION OFF CACHE BOOL "Use Doxygen to create the HTML based TNG API documentation")
+    set(TNG_BUILD_TEST OFF CACHE BOOL "Build TNG testing binary.")
+    add_subdirectory(${CMAKE_SOURCE_DIR}/src/external/tng_io)
+    set(GMX_TNG_LIBRARIES tng_io)
+endif()
+mark_as_advanced(TNG_BUILD_FORTRAN)
+mark_as_advanced(TNG_BUILD_EXAMPLES)
+mark_as_advanced(TNG_BUILD_COMPRESSION_TESTS)
+mark_as_advanced(TNG_USE_OPENMP)
+mark_as_advanced(TNG_BUILD_DOCUMENTATION)
+mark_as_advanced(TNG_BUILD_TEST)
+mark_as_advanced(TNG_EXAMPLE_FILES_DIR)
 
 if (GMX_BUILD_FOR_COVERAGE)
     # Code heavy with asserts makes conditional coverage close to useless metric,
