@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2014, by the GROMACS development team, led by
+ * Copyright (c) 2010,2011,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -50,6 +50,10 @@ double convert2gmx(double x, int unit)
             return x;
         case eg2cBohr:
             return x*BOHR2NM;
+        case eg2c1_Angstrom:
+            return x/A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x/CAL2JOULE;
         case eg2cHartree:
@@ -66,6 +70,10 @@ double convert2gmx(double x, int unit)
             return x;
         case eg2cBuckingham:
             return x*A2NM*DEBYE2ENM;
+        case eg2cElectronNanometer1:
+        case eg2cElectronNanometer2:
+        case eg2cElectronNanometer3:
+            return x;
         default:
             fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }
@@ -82,6 +90,10 @@ double gmx2convert(double x, int unit)
             return x;
         case eg2cBohr:
             return x/BOHR2NM;
+        case eg2c1_Angstrom:
+            return x*A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x*CAL2JOULE;
         case eg2cHartree:
@@ -98,6 +110,10 @@ double gmx2convert(double x, int unit)
             return x;
         case eg2cBuckingham:
             return x/(A2NM*DEBYE2ENM);
+        case eg2cElectronNanometer1:
+        case eg2cElectronNanometer2:
+        case eg2cElectronNanometer3:
+            return x;
         default:
             fprintf(stderr, "Unknown unit %d, not converting.\n", unit);
     }
@@ -106,12 +122,17 @@ double gmx2convert(double x, int unit)
 
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Bohr", "Kcal_Mole",
+    "Angstrom", "Nm", "Bohr",
+    "1/Angstrom", "1/Nanometer",
+    "Kcal_Mole",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
-    "Debye", "Electron", "Buckingham"
+    "Debye", "Electron", "Buckingham",
+    "Electron*Nanometer**1",
+    "Electron*Nanometer**2",
+    "Electron*Nanometer**3"
 };
 
-int string2unit(char *string)
+int string2unit(const char *string)
 {
     int i;
 
@@ -122,6 +143,7 @@ int string2unit(char *string)
             return i;
         }
     }
+    printf("Unknown unit %s\n", string);
     return -1;
 }
 
