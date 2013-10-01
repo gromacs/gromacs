@@ -48,6 +48,9 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
+//#include "statutil.h"
 #include "gromacs/commandline/pargs.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -495,7 +498,7 @@ int gmx_trjcat(int argc, char *argv[])
     atom_id     *index = NULL, imax;
     char        *grpname;
     real       **val = NULL, *t = NULL, dt_remd;
-    int          n, nset;
+    int          n, nset, ftpout = -1, prevEndStep = 0, filetype;
     gmx_bool     bOK;
     gmx_off_t    fpos;
     output_env_t oenv;
@@ -615,6 +618,7 @@ int gmx_trjcat(int argc, char *argv[])
          * This has to be done after sorting etc.
          */
         out_file = fnms_out[0];
+        ftpout   = fn2ftp(out_file);
         n_append = -1;
         for (i = 0; ((i < nfile_in) && (n_append == -1)); i++)
         {
@@ -647,7 +651,14 @@ int gmx_trjcat(int argc, char *argv[])
 
         if (n_append == -1)
         {
-            trxout = open_trx(out_file, "w");
+            if (ftpout == efTNG)
+            {
+                trxout = trjcat_prepare_tng_writing(out_file, 'w', fnms, nfile_in);
+            }
+            else
+            {
+                trxout = open_trx(out_file, "w");
+            }
             memset(&frout, 0, sizeof(frout));
         }
         else
@@ -667,10 +678,11 @@ int gmx_trjcat(int argc, char *argv[])
                         "If the trajectories have an overlap and have not been written binary \n"
                         "reproducible this will produce an incorrect trajectory!\n\n");
 
+                filetype = gmx_fio_getftp(stfio);
                 /* Fails if last frame is incomplete
                  * We can't do anything about it without overwriting
                  * */
-                if (gmx_fio_getftp(stfio) == efXTC)
+                if (filetype == efXTC)
                 {
                     lasttime =
                         xdr_xtc_get_last_frame_time(gmx_fio_getfp(stfio),
@@ -681,6 +693,16 @@ int gmx_trjcat(int argc, char *argv[])
                     {
                         gmx_fatal(FARGS, "Error reading last frame. Maybe seek not supported." );
                     }
+                }
+                else if (filetype == efTNG)
+                {
+                    tng_trajectory_t tng = trx_get_tng(status);
+                    if (!tng)
+                    {
+                        gmx_fatal(FARGS, "Error opening TNG file.");
+                    }
+                    lasttime = tng_get_last_frame_time(tng);
+                    fr.time  = lasttime;
                 }
                 else
                 {
@@ -751,6 +773,13 @@ int gmx_trjcat(int argc, char *argv[])
             /* set the next time from the last frame in previous file */
             if (i > 0)
             {
+                /* When writing TNG the step determine which frame to write. Use an
+                 * offset to be able to increase steps properly when changing files. */
+                if (ftpout == efTNG)
+                {
+                    prevEndStep = frout.step;
+                }
+
                 if (frame_out >= 0)
                 {
                     if (cont_type[i] == TIME_CONTINUE)
@@ -827,6 +856,10 @@ int gmx_trjcat(int argc, char *argv[])
                 frout = fr;
                 /* set the new time by adding the correct calculated above */
                 frout.time += t_corr;
+                if (ftpout == efTNG)
+                {
+                    frout.step += prevEndStep;
+                }
                 /* quit if we have reached the end of what should be written */
                 if ((end > 0) && (frout.time > end+GMX_REAL_EPS))
                 {

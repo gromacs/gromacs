@@ -95,22 +95,6 @@ static gmx_bool largest_divisor(int n)
     return ldiv;
 }
 
-static int lcd(int n1, int n2)
-{
-    int d, i;
-
-    d = 1;
-    for (i = 2; (i <= n1 && i <= n2); i++)
-    {
-        if (n1 % i == 0 && n2 % i == 0)
-        {
-            d = i;
-        }
-    }
-
-    return d;
-}
-
 static gmx_bool fits_pme_ratio(int nnodes, int npme, float ratio)
 {
     return ((double)npme/(double)nnodes > 0.95*ratio);
@@ -780,4 +764,20 @@ real dd_choose_grid(FILE *fplog,
     }
 
     return limit;
+}
+
+int lcd(int n1, int n2)
+{
+    int d, i;
+
+    d = 1;
+    for (i = 2; (i <= n1 && i <= n2); i++)
+    {
+        if (n1 % i == 0 && n2 % i == 0)
+        {
+            d = i;
+        }
+    }
+
+    return d;
 }
