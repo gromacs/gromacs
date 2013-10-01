@@ -115,7 +115,7 @@ if(GMX_BUILD_OWN_FFTW)
 endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
-                      ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_EXTRA_LIBRARIES} ${GMX_TNG_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})

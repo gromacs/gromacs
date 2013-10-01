@@ -33,52 +33,49 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-#ifndef GMX_FILEIO_MDOUTF_H
-#define GMX_FILEIO_MDOUTF_H
+#ifndef GMX_FILEIO_TNG_IO_H
+#define GMX_FILEIO_TNG_IO_H
 
-#include "filenm.h"
-#include <stdio.h>
-#include "../legacyheaders/types/simple.h"
-#include "enxio.h"
-#include "gmxfio.h"
+#include "gromacs/legacyheaders/typedefs.h"
 #ifdef GMX_USE_TNG
 #include "external/tng_io/include/tng_io.h"
 #else
 typedef tng_trajectory_t int;
 #endif
 
-typedef struct {
-    t_fileio         *fp_trn;
-    t_fileio         *fp_xtc;
-    tng_trajectory_t  tng;
-    int               xtc_prec;
-    ener_file_t       fp_ene;
-    const char       *fn_cpt;
-    gmx_bool          bKeepAndNumCPT;
-    int               eIntegrator;
-    gmx_bool          bExpanded;
-    int               elamstats;
-    int               simulation_part;
-    FILE             *fp_dhdl;
-    FILE             *fp_field;
-} gmx_mdoutf_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[],
-                          int mdrun_flags,
-                          const t_commrec *cr, const t_inputrec *ir,
-                          const gmx_mtop_t *mtop,
-                          const output_env_t oenv);
-/* Returns a pointer to a data structure with all output file pointers
- * and names required by mdrun.
- */
+void tng_open(const char *filename,
+              char mode,
+              tng_trajectory_t *tng_data_p);
+/* Open a TNG trajectory file */
 
-void done_mdoutf(gmx_mdoutf_t *of);
-/* Close all open output files and free the of pointer */
+void tng_close(tng_trajectory_t *tng);
+/* Finish writing a TNG trajectory file */
 
-#define MDOF_X   (1<<0)
-#define MDOF_V   (1<<1)
-#define MDOF_F   (1<<2)
-#define MDOF_XTC (1<<3)
-#define MDOF_CPT (1<<4)
+void tng_add_top(tng_trajectory_t tng,
+                 const gmx_mtop_t *mtop);
+/* Converts the current topology to TNG molecular data */
 
-#endif /* GMX_FILEIO_MDOUTF_H */
+void tng_set_writing_frequency(tng_trajectory_t tng,
+                               const t_inputrec *ir);
+/* Set output frequency and number of frames per frame set */
+
+void fwrite_tng(tng_trajectory_t tng,
+                int step,
+                real t,
+                real lambda,
+                const rvec *box,
+                int natoms,
+                const rvec *x,
+                const rvec *v,
+                const rvec *f);
+/* Write a frame to a TNG file fp, box, x, v, f may be NULL */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* GMX_FILEIO_TNG_IO_H */

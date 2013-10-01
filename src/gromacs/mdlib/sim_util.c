@@ -2698,7 +2698,7 @@ void init_md(FILE *fplog,
 
     if (nfile != -1)
     {
-        *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, oenv);
+        *outf = init_mdoutf(nfile, fnm, Flags, cr, ir, mtop, oenv);
 
         *mdebin = init_mdebin((Flags & MD_APPENDFILES) ? NULL : (*outf)->fp_ene,
                               mtop, ir, (*outf)->fp_dhdl);
@@ -2716,3 +2716,4 @@ void init_md(FILE *fplog,
 
     debug_gmx();
 }
+
