@@ -41,7 +41,11 @@ extern "C" {
 /* this enum should correspond to the array deffile in gmxlib/filenm.c */
 enum {
     efMDP,
-    efTRX, efTRO, efTRN, efTRR, efTRJ, efXTC, efG87,
+    efTRX, efTRO, efTRN, efTRR, efTRJ, efXTC,
+#ifdef GMX_USE_TNG
+    efTNG,
+#endif
+    efG87,
     efEDR,
     efSTX, efSTO, efGRO, efG96, efPDB, efBRK, efENT, efESP, efPQR, efXYZ,
     efCPT,
