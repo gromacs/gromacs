@@ -203,7 +203,8 @@ static const t_deffile
     { eftASC, ".edi", "sam",    NULL, "ED sampling input"},
     { eftASC, ".cub", "pot",  NULL, "Gaussian cube file" },
     { eftASC, ".xpm", "root", NULL, "X PixMap compatible matrix file" },
-    { eftASC, "", "rundir", NULL, "Run directory" }
+    { eftASC, "", "rundir", NULL, "Run directory" },
+    { eftASC, ".xml", "data", NULL, "eXtensible Markup Language file" }
 };
 
 static char *default_file_name = NULL;
