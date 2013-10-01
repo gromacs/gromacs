@@ -70,6 +70,7 @@
 #include "gromacs/legacyheaders/gmx_omp_nthreads.h"
 #include "gromacs/legacyheaders/gmx_detect_hardware.h"
 #include "gromacs/legacyheaders/inputrec.h"
+#include "gromacs/waxsdebye/waxs_debye_force_c.h"
 
 #include "gromacs/pbcutil/ishift.h"
 #include "gromacs/pbcutil/pbc.h"
@@ -309,7 +310,7 @@ check_solvent_cg(const gmx_moltype_t    *molt,
     j1     = molt->cgs.index[cg0+1];
 
     /* Number of atoms in our molecule */
-    nj     = j1 - j0;
+    nj = j1 - j0;
 
     if (debug)
     {
@@ -762,8 +763,8 @@ static cginfo_mb_t *init_cginfo_mb(FILE *fplog, const gmx_mtop_t *mtop,
                     /* Check VDW and electrostatic interactions */
                     bHaveVDW = bHaveVDW || (type_VDW[molt->atoms.atom[ai].type] ||
                                             type_VDW[molt->atoms.atom[ai].typeB]);
-                    bHaveQ  = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
-                                            molt->atoms.atom[ai].qB != 0);
+                    bHaveQ = bHaveQ    || (molt->atoms.atom[ai].q != 0 ||
+                                           molt->atoms.atom[ai].qB != 0);
 
                     bHavePerturbedAtoms = bHavePerturbedAtoms || (PERTURBED(molt->atoms.atom[ai]) != 0);
 
@@ -2067,11 +2068,11 @@ init_interaction_const(FILE                       *fp,
         ic->k_rf       = 0;
         if (fr->coulomb_modifier == eintmodPOTSHIFT)
         {
-            ic->c_rf   = 1/ic->rcoulomb;
+            ic->c_rf = 1/ic->rcoulomb;
         }
         else
         {
-            ic->c_rf   = 0;
+            ic->c_rf = 0;
         }
     }
 
@@ -2315,11 +2316,9 @@ void init_forcerec(FILE              *fp,
                    const gmx_mtop_t  *mtop,
                    const t_commrec   *cr,
                    matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
                    const char        *nbpu_opt,
+                   int                nfile,
+                   const t_filenm     fnm[],
                    gmx_bool           bNoSolvOpt,
                    real               print_force)
 {
@@ -2333,6 +2332,10 @@ void init_forcerec(FILE              *fp,
     gmx_bool       bFEP_NonBonded;
     t_nblists     *nbl;
     int           *nm_ind, egp_flags;
+    const char    *tabfn  = opt2fn("-table", nfile, fnm);
+    const char    *tabafn = opt2fn("-tabletf", nfile, fnm);
+    const char    *tabpfn = opt2fn("-tablep", nfile, fnm);
+    const char    *tabbfn = opt2fn("-tableb", nfile, fnm);
 
     if (fr->hwinfo == NULL)
     {
@@ -2479,7 +2482,7 @@ void init_forcerec(FILE              *fp,
 
     if (bGenericKernelOnly == TRUE)
     {
-        bNoSolvOpt         = TRUE;
+        bNoSolvOpt = TRUE;
     }
 
     if ( (getenv("GMX_DISABLE_SIMD_KERNELS") != NULL) || (getenv("GMX_NOOPTIMIZEDKERNELS") != NULL) )
@@ -2659,8 +2662,8 @@ void init_forcerec(FILE              *fp,
     }
 
     /* These start out identical to ir, but might be altered if we e.g. tabulate the interaction in the kernel */
-    fr->nbkernel_elec_modifier    = fr->coulomb_modifier;
-    fr->nbkernel_vdw_modifier     = fr->vdw_modifier;
+    fr->nbkernel_elec_modifier = fr->coulomb_modifier;
+    fr->nbkernel_vdw_modifier  = fr->vdw_modifier;
 
     fr->rvdw             = cutoff_inf(ir->rvdw);
     fr->rvdw_switch      = ir->rvdw_switch;
@@ -2677,11 +2680,11 @@ void init_forcerec(FILE              *fp,
         fr->bvdwtab    = ((fr->vdwtype != evdwCUT || !gmx_within_tol(fr->reppow, 12.0, 10*GMX_DOUBLE_EPS))
                           && !EVDW_PME(fr->vdwtype));
         /* We have special kernels for standard Ewald and PME, but the pme-switch ones are tabulated above */
-        fr->bcoultab   = !(fr->eeltype == eelCUT ||
-                           fr->eeltype == eelEWALD ||
-                           fr->eeltype == eelPME ||
-                           fr->eeltype == eelRF ||
-                           fr->eeltype == eelRF_ZERO);
+        fr->bcoultab = !(fr->eeltype == eelCUT ||
+                         fr->eeltype == eelEWALD ||
+                         fr->eeltype == eelPME ||
+                         fr->eeltype == eelRF ||
+                         fr->eeltype == eelRF_ZERO);
 
         /* If the user absolutely wants different switch/shift settings for coul/vdw, it is likely
          * going to be faster to tabulate the interaction than calling the generic kernel.
@@ -3142,7 +3145,6 @@ void init_forcerec(FILE              *fp,
         if (ir->adress->n_tf_grps > 0)
         {
             make_adress_tf_tables(fp, oenv, fr, ir, tabfn, mtop, box);
-
         }
         else
         {
@@ -3251,6 +3253,26 @@ void init_forcerec(FILE              *fp,
     if (ir->eDispCorr != edispcNO)
     {
         calc_enervirdiff(fp, ir->eDispCorr, fr);
+    }
+
+    /* Initiate the waxs data structure if needed */
+    {
+        const char *waxs_ref = opt2fn_null("-waxs_ref", nfile, fnm);
+        if (NULL != waxs_ref)
+        {
+            fr->wdf = waxs_debye_force_init(fp,
+                                            opt2fn_null("-sfac", nfile, fnm),
+                                            waxs_ref,
+                                            opt2fn_null("-waxs_diff", nfile, fnm),
+                                            opt2fn("-waxs_out", nfile, fnm),
+                                            opt2fn("-waxs_alpha", nfile, fnm),
+                                            cr,
+                                            ir);
+        }
+        else
+        {
+            fr->wdf = NULL;
+        }
     }
 }
 
