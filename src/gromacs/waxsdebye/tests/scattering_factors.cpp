@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * David van der Spoel, Berk Hess, Erik Lindahl, and including many
  * others, as listed in the AUTHORS file in the top-level source
  * directory and at http://www.gromacs.org.
@@ -34,56 +34,28 @@
  */
 /*! \internal \file
  * \brief
- * Implements registerTrajectoryAnalysisModules().
+ * Implements test helper routines from toputils.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \ingroup module_trajectoryanalysis
+ * \ingroup module_selection
  */
-#include "gromacs/trajectoryanalysis/modules.h"
+#include <cstring>
 
-#include "gromacs/trajectoryanalysis/cmdlinerunner.h"
+#include "../scattering_factors.h"
+#include "gromacs/legacyheaders/smalloc.h"
+#include "gromacs/legacyheaders/statutil.h"
+#include "gromacs/legacyheaders/string2.h"
+#include "gromacs/legacyheaders/tpxio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "gromacs/legacyheaders/vec.h"
 
-#include "modules/angle.h"
-#include "modules/distance.h"
-#include "modules/freevolume.h"
-#include "modules/select.h"
-#include "modules/waxsdebye.h"
+#include "gromacs/utility/gmxassert.h"
 
 namespace gmx
 {
-
-namespace
+namespace test
 {
 
-/*! \brief
- * Convenience method for registering a command-line module for trajectory
- * analysis.
- *
- * \tparam ModuleType  Trajectory analysis module to wrap.
- *
- * \p ModuleType should be default-constructible, derive from
- * TrajectoryAnalysisModule, and have static public members
- * \c "const char name[]" and \c "const char shortDescription[]".
- *
- * \ingroup module_trajectoryanalysis
- */
-template <class ModuleType>
-void registerModule(CommandLineModuleManager *manager)
-{
-    TrajectoryAnalysisCommandLineRunner::registerModule<ModuleType>(
-            manager, ModuleType::name, ModuleType::shortDescription);
-}
 
-}   // namespace
-
-void registerTrajectoryAnalysisModules(CommandLineModuleManager *manager)
-{
-    using namespace gmx::analysismodules;
-    registerModule<Angle>(manager);
-    registerModule<Distance>(manager);
-    registerModule<FreeVolume>(manager);
-    registerModule<Select>(manager);
-    registerModule<WaxsDebye>(manager);
-}
-
+} // namespace test
 } // namespace gmx
