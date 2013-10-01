@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013,2014, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014,2015, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -270,6 +270,10 @@ assign_param(t_functype ftype, t_iparams *newparam,
             newparam->bham.a = old[0];
             newparam->bham.b = old[1];
             newparam->bham.c = old[2];
+            break;
+        case F_WAXS_DEBYE:
+            newparam->waxs_debye.tpi = gmx_nint(old[0]);
+            newparam->waxs_debye.tpj = gmx_nint(old[1]);
             break;
         case F_LJ14:
             set_ljparams(comb, reppow, old[0], old[1], &newparam->lj14.c6A, &newparam->lj14.c12A);
