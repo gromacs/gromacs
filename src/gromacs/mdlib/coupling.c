@@ -50,6 +50,7 @@
 #include "gmx_random.h"
 #include "update.h"
 #include "mdrun.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 #define NTROTTERPARTS 3
 
