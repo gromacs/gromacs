@@ -1,0 +1,21 @@
+mkdir build
+cd build
+cmake ..
+make
+
+
+Test by running:
+bin/tng_testing
+
+Make a system-wide installation by:
+make install
+(this will require administrative privileges on most systems, i.e. 'sudo make install'
+on a Unix like system with a sudoers file)
+
+
+Useful cmake flags:
+-DTNG_BUILD_DOCUMENTATION=ON to build the API documentation (requires doxygen)
+-DCMAKE_BUILD_TYPE=Debug to compile with debug flags (recommended for
+feedback during development)
+-DTNG_BUILD_FORTRAN=ON to build the Fortran MD simulations example, saving results
+in the TNG format (requires a Fortran compiler allowing cray-pointers).

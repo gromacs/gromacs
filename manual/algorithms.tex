@@ -1,7 +1,7 @@
 %
 % This file is part of the GROMACS molecular simulation package.
 %
-% Copyright (c) 2013, by the GROMACS development team, led by
+% Copyright (c) 2013,2014, by the GROMACS development team, led by
 % Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
 % and including many others, as listed in the AUTHORS file in the
 % top-level source directory and at http://www.gromacs.org.
@@ -326,11 +326,13 @@ systems) to prevent center of mass motion to occur. It makes sense to
 use the same groups for temperature coupling and center of mass motion
 removal.
 
-\item[\swapindex{XTC output}{group}]
-In order to reduce the size of the {\tt .xtc{\index{XTC}}} trajectory file, only a subset
-of all particles can be stored. All XTC groups that are specified
-are saved, the rest is not. If no XTC groups are specified, than all
-atoms are saved to the {\tt .xtc} file.
+\item[\swapindex{Compressed position output}{group}]
+
+In order to further reduce the size of the compressed trajectory file
+({\tt .xtc{\index{XTC}}} or {\tt .tng{\index{TNG}}}), it is possible
+to store only a subset of all particles. All x-compression groups that
+are specified are saved, the rest are not. If no such groups are
+specified, than all atoms are saved to the compressed trajectory file.
 
 \end{description}
 The use of groups in {\gromacs} tools is described in
@@ -3182,7 +3184,7 @@ but differing slightly between the three Born radii models.
 % LocalWords:  GROningen MAchine BIOSON Groningen GROMACS Berendsen der Spoel
 % LocalWords:  Drunen Comp Phys Comm ROck NS FFT pbc EM ifthenelse gmxlite ff
 % LocalWords:  octahedra triclinic Ewald PME PPPM trjconv xy solvated
-% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC kT defunits
+% LocalWords:  boxtypes boxshapes editconf Lennard mdpopt COM XTC TNG kT defunits
 % LocalWords:  Boltzmann's Mueller nb int mdrun chargegroup simplerc prefactor
 % LocalWords:  pme waterloops CH NH CO df com virial integrator Verlet vverlet
 % LocalWords:  integrators ref timepoint timestep timesteps mdp md vv avek NVE
@@ -3192,7 +3194,7 @@ but differing slightly between the three Born radii models.
 % LocalWords:  zy zz se barostat compressibilities MTTK NPT Martyna al isobaric
 % LocalWords:  Tuckerman vir PV fkT iLt iL Liouville NHC Eq baro mu trj mol bc
 % LocalWords:  freezegroup Shannon's polarizability Overhauser barostats iLn KE
-% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et xtc TC rlist
+% LocalWords:  negligibly thermostatted Tobias  rhombic maxwell et xtc tng TC rlist
 % LocalWords:  waals LINCS holonomic plincs lincs unc ang SA Langevin SD amu BD
 % LocalWords:  bfgs Broyden Goldfarb Shanno mkT kJ DFLEXIBLE Nocedal diag nmeig
 % LocalWords:  diagonalization anaeig nmens covanal ddg feia BT dp dq pV dV dA

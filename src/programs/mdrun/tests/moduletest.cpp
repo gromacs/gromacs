@@ -92,7 +92,7 @@ GMX_TEST_OPTIONS(MdrunTestOptions, options)
 MdrunTestFixture::MdrunTestFixture() :
     topFileName(),
     groFileName(),
-    trrFileName(),
+    fullPrecisionTrajectoryFileName(),
     ndxFileName(),
     mdpInputFileName(fileManager_.getTemporaryFilePath("input.mdp")),
     mdpOutputFileName(fileManager_.getTemporaryFilePath("output.mdp")),
@@ -121,6 +121,12 @@ MdrunTestFixture::useEmptyMdpFile()
 
 void
 MdrunTestFixture::useStringAsMdpFile(const char *mdpString)
+{
+    useStringAsMdpFile(std::string(mdpString));
+}
+
+void
+MdrunTestFixture::useStringAsMdpFile(const std::string &mdpString)
 {
     gmx::File::writeFileFromString(mdpInputFileName, mdpString);
 }
@@ -175,8 +181,10 @@ MdrunTestFixture::callMdrun(const CommandLine &callerRef)
 
     caller.addOption("-g", logFileName);
     caller.addOption("-e", edrFileName);
-    caller.addOption("-o", trrFileName);
-    caller.addOption("-x", xtcFileName);
+    caller.addOption("-o", fullPrecisionTrajectoryFileName);
+    caller.addOption("-x", reducedPrecisionTrajectoryFileName);
+
+    caller.addOption("-deffnm", fileManager_.getTemporaryFilePath("state"));
 
 #ifdef GMX_THREAD_MPI
     caller.addOption("-nt", numThreads);
