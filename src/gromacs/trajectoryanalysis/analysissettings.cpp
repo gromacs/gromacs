@@ -165,7 +165,7 @@ TrajectoryAnalysisSettings::setFrameFlags(int frflags)
  */
 
 TopologyInformation::TopologyInformation()
-    : top_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
+    : top_(NULL), mtop_(NULL), bTop_(false), xtop_(NULL), ePBC_(-1)
 {
     clear_mat(boxtop_);
 }
