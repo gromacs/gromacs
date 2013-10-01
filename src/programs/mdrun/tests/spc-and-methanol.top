@@ -1,0 +1,12 @@
+#include "gromos43a1.ff/forcefield.itp"
+#include "gromos43a1.ff/methanol.itp"
+#include "gromos43a1.ff/spc.itp"
+
+[ system ]
+; Name
+spc-and-methanol
+
+[ molecules ]
+; Compound  #mols
+Methanol    1
+SOL         1

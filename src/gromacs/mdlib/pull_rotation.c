@@ -65,6 +65,7 @@
 #include "gromacs/fileio/trnio.h"
 #include "gromacs/timing/cyclecounter.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 static char *RotStr = {"Enforced rotation:"};
 
