@@ -39,6 +39,7 @@
 #include "checkpoint.h"
 #include "trnio.h"
 #include "xtcio.h"
+#include "tngio.h"
 #include "gromacs/legacyheaders/smalloc.h"
 
 static void moveit(t_commrec *cr, rvec xx[])
@@ -194,6 +195,14 @@ void write_traj(FILE *fplog, t_commrec *cr,
                 gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_trn);
+
+            fwrite_tng(of->tng, step, t, state_local->lambda[efptFEP],
+                       state_local->box, top_global->natoms,
+                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? global_v : NULL,
+                       (mdof_flags & MDOF_F) ? f_global : NULL);
+            /* TODO: implement gmx_fio_check_file_position kind of
+               functionality? What does checkpointing really need? */
         }
         if (mdof_flags & MDOF_XTC)
         {
@@ -236,5 +245,6 @@ void write_traj(FILE *fplog, t_commrec *cr,
             }
             gmx_fio_check_file_position(of->fp_xtc);
         }
+        /* TODO: do something XTC-like but write to the TNG ouput file */
     }
 }
