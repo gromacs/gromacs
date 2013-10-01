@@ -69,6 +69,10 @@
 #include "md_support.h"
 #include "mdrun.h"
 #include "sim_util.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#include "copyrite.h"
+#endif
 
 typedef struct gmx_global_stat
 {
@@ -445,7 +449,12 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 {
     gmx_mdoutf_t *of;
     char          filemode[3];
+    char          program_name[256];
     gmx_bool      bAppendFiles;
+#ifdef GMX_USE_TNG
+    int lowcd;
+    int64_t n_frames_per_frame_set;
+#endif
 
     snew(of, 1);
 
@@ -460,8 +469,26 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->elamstats       = ir->expandedvals->elamstats;
     of->simulation_part = ir->simulation_part;
 
+#ifdef GMX_USE_TNG
+    of->tng      = NULL;
+#endif
+
     if (MASTER(cr))
     {
+#ifdef GMX_USE_TNG
+        make_backup(ftp2fn(efTNG, nfile, fnm));
+        if(tng_util_trajectory_open(ftp2fn(efTNG, nfile, fnm), 'w', &of->tng) != TNG_SUCCESS)
+        {
+            tng_util_trajectory_close(&of->tng);
+            gmx_fatal(FARGS, "Could not init TNG.\n");
+        }
+
+        sprintf(program_name, "%s, %s", ShortProgram(), GromacsVersion());
+
+        /* FIXME: Check if we should be appending instead. */
+        tng_first_program_name_set(of->tng, program_name);
+#endif
+
         bAppendFiles = (mdrun_flags & MD_APPENDFILES);
 
         of->bKeepAndNumCPT = (mdrun_flags & MD_KEEPANDNUMCPT);
@@ -695,6 +722,17 @@ void write_traj(FILE *fplog, t_commrec *cr,
                 gmx_file("Cannot write trajectory; maybe you are out of disk space?");
             }
             gmx_fio_check_file_position(of->fp_trn);
+
+#ifdef GMX_USE_TNG
+            if(of->tng)
+            {
+                fwrite_tng(of->tng, step, t, state_local->lambda[efptFEP],
+                        state_local->box, top_global->natoms,
+                        (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                        (mdof_flags & MDOF_V) ? global_v : NULL,
+                        (mdof_flags & MDOF_F) ? f_global : NULL);
+            }
+#endif
         }
         if (mdof_flags & MDOF_XTC)
         {
