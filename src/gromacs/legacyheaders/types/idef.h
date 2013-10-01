@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -116,6 +116,7 @@ enum {
     F_ANGRESZ,
     F_DIHRES,
     F_DIHRESVIOL,
+    F_WAXS_DEBYE,
     F_CONSTR,
     F_CONSTRNC,
     F_SETTLE,
@@ -207,6 +208,9 @@ typedef union
     struct {
         real a, alpha1, alpha2, rfac;
     } thole;
+    struct {
+        int  tpi, tpj;
+    } waxs_debye;
     struct {
         real c6, c12;
     } lj;
