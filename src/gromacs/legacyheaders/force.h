@@ -38,7 +38,8 @@
 #ifndef _force_h
 #define _force_h
 
-
+#include "gromacs/fileio/filenm.h"
+#include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/genborn.h"
 #include "gromacs/legacyheaders/network.h"
 #include "gromacs/legacyheaders/tgroup.h"
@@ -170,11 +171,9 @@ void init_forcerec(FILE              *fplog,
                    const gmx_mtop_t  *mtop,
                    const t_commrec   *cr,
                    matrix             box,
-                   const char        *tabfn,
-                   const char        *tabafn,
-                   const char        *tabpfn,
-                   const char        *tabbfn,
                    const char        *nbpu_opt,
+                   int                nfile,
+                   const t_filenm     fnm[],
                    gmx_bool           bNoSolvOpt,
                    real               print_force);
 /* The Force rec struct must be created with mk_forcerec
