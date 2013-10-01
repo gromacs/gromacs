@@ -71,7 +71,7 @@
 
 enum
 {
-    eftASC, eftBIN, eftXDR, eftGEN, eftNR
+    eftASC, eftBIN, eftXDR, eftTNG, eftGEN, eftNR
 };
 
 /* To support multiple file types with one general (eg TRX) we have
@@ -82,16 +82,25 @@ static const int trxs[] =
 #ifdef USE_XDR
     efXTC, efTRR, efCPT,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
 };
 #define NTRXS asize(trxs)
+
+static const int trcompressed[] =
+{
+    efTNG,
+#ifdef USE_XDR
+    efXTC
+#endif
+};
+#define NTRCOMPRESSED asize(trcompressed)
 
 static const int tros[] =
 {
 #ifdef USE_XDR
     efXTC, efTRR,
 #endif
-    efTRJ, efGRO, efG96, efPDB, efG87
+    efTRJ, efGRO, efG96, efPDB, efG87, efTNG
 };
 #define NTROS asize(tros)
 
@@ -100,7 +109,7 @@ static const int trns[] =
 #ifdef USE_XDR
     efTRR, efCPT,
 #endif
-    efTRJ
+    efTRJ, efTNG
 };
 #define NTRNS asize(trns)
 
@@ -153,15 +162,19 @@ static const t_deffile
 {
     { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters" },
     { eftGEN, ".???", "traj", "-f",
-      "Trajectory: xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
+      "Trajectory: tng xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
     { eftGEN, ".???", "trajout", "-f",
-      "Trajectory: xtc trr trj gro g96 pdb", NTROS, tros },
+      "Trajectory: tng xtc trr trj gro g96 pdb", NTROS, tros },
     { eftGEN, ".???", "traj", NULL,
-      "Full precision trajectory: trr trj cpt", NTRNS, trns },
+      "Full precision trajectory: tng trr trj cpt", NTRNS, trns },
     { eftXDR, ".trr", "traj", NULL, "Trajectory in portable xdr format" },
     { eftBIN, ".trj", "traj", NULL, "Trajectory file (architecture specific)" },
+    { eftGEN, ".???", "traj_comp", NULL,
+      "Compressed trajectory (tng format or portable xdr format): tng xtc", NTRCOMPRESSED, trcompressed},
     { eftXDR, ".xtc", "traj", NULL,
-      "Compressed trajectory (portable xdr format)" },
+      "Compressed trajectory (portable xdr format): xtc" },
+    { eftTNG, ".tng", "traj", NULL,
+      "Trajectory file (tng format)" },
     { eftASC, ".g87", "gtraj", NULL, "Gromos-87 ASCII trajectory format" },
     { eftXDR, ".edr", "ener",   NULL, "Energy file"},
     { eftGEN, ".???", "conf", "-c", "Structure file: gro g96 pdb tpr etc.",
@@ -330,6 +343,8 @@ const char *ftp2ftype(int ftp)
                 return "Binary";
             case eftXDR:
                 return "XDR portable";
+            case eftTNG:
+                return "TNG";
             case eftGEN:
                 return "";
             default:

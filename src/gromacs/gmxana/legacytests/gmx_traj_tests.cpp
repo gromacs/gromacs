@@ -94,6 +94,11 @@ TEST_F(GmxTrajTestCanRead, TRRFile)
     runTest("spc2-traj.trr");
 }
 
+TEST_F(GmxTrajTestCanRead, TNGFile)
+{
+    runTest("spc2-traj.tng");
+}
+
 TEST_F(GmxTrajTestCanRead, XTCFile)
 {
     runTest("spc2-traj.xtc");
