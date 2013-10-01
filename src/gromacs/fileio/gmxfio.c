@@ -84,11 +84,11 @@ static tMPI_Thread_mutex_t open_file_mutex = TMPI_THREAD_MUTEX_INITIALIZER;
 
 /* These simple lists define the I/O type for these files */
 static const int ftpXDR[] =
-{ efTPR, efTRR, efEDR, efXTC, efMTX, efCPT };
+{ efTPR, efTRR, efEDR, efXTC, efTNG, efMTX, efCPT };
 static const int ftpASC[] =
 { efTPA, efGRO, efPDB };
 static const int ftpBIN[] =
-{ efTPB, efTRJ };
+{ efTPB, efTRJ, efTNG };
 #ifdef HAVE_XML
 static const int ftpXML[] =
 {   efXML};
@@ -513,6 +513,10 @@ t_fileio *gmx_fio_open(const char *fn, const char *mode)
                     gmx_open(fn);
                 }
             }
+            if (fn2ftp(fn) == efTNG)
+            {
+                gmx_incons("gmx_fio_open may not be used to open TNG files");
+            }
             /* Open the file */
             fio->fp = ffopen(fn, newmode);
 
@@ -599,6 +603,10 @@ int gmx_fio_close(t_fileio *fio)
     /* We don't want two processes operating on the list at the same time */
     tMPI_Thread_mutex_lock(&open_file_mutex);
 
+    if (fio->iFTP == efTNG)
+    {
+        gmx_incons("gmx_fio_close should not be called on a TNG file");
+    }
     gmx_fio_lock(fio);
     /* first remove it from the list */
     gmx_fio_remove(fio);

@@ -44,6 +44,7 @@
 #include "pdbio.h"
 #include "../legacyheaders/oenv.h"
 #include "gmxfio.h"
+#include "../../external/tng_io/include/tng_io_fwd.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -98,6 +99,30 @@ int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
  * atoms can be NULL for file types which don't need atom names.
  */
 
+void trjtools_prepare_tng_writing(const char     *filename,
+                                  char            filemode,
+                                  t_trxstatus    *in,
+                                  t_trxstatus   **out,
+                                  const char     *infile,
+                                  const int       natoms,
+                                  const atom_id  *index,
+                                  const char     *index_group_name);
+/* Sets up *out for writing TNG. If *in != NULL and contains a TNG trajectory
+ * some data, e.g. molecule system, will be copied over from *in to *out.
+ * If *in == NULL a file name (infile) of a TNG file can be provided instead
+ * and used for copying data to *out.
+ * If there is no TNG input natoms is used to create "implicit atoms" (no atom
+ * or molecular data present). If natoms == -1 the number of atoms are
+ * not known (or there is already a TNG molecule system to copy, in which case
+ * natoms is not required anyhow). If an group of indexed atoms are written
+ * natoms must be the length of index. index_group_name is the name of the
+ * index group.
+ */
+
+void write_tng_frame(t_trxstatus *status,
+                     t_trxframe  *fr);
+/* Write a trxframe to the TNG file in status. */
+
 void close_trx(t_trxstatus *status);
 /* Close trj file as opened with read_first_x, read_frist_frame
  * or open_trx. Identical to close_trj.
@@ -106,9 +131,11 @@ void close_trx(t_trxstatus *status);
 t_trxstatus *open_trx(const char *outfile, const char *filemode);
 /* Open a TRX file and return an allocated status pointer */
 
-/* get a fileio from a trxstatus */
 t_fileio *trx_get_fileio(t_trxstatus *status);
+/* get a fileio from a trxstatus */
 
+tng_trajectory_t trx_get_tng(t_trxstatus *status);
+/* get a tng trajectory container from a trxstatus */
 
 gmx_bool bRmod_fd(double a, double b, double c, gmx_bool bDouble);
 /* Returns TRUE when (a - b) MOD c = 0, using a margin which is slightly
