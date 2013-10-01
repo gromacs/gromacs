@@ -329,6 +329,16 @@ typedef struct {
 } t_adress;
 
 typedef struct {
+    int  waxs_type;         /* Enum should be 0 (No), 1 (Debye) or 2 (Full) */
+    real kwaxs;             /* Force constant for WAXS/SAXS refinement */
+    int  nstout;            /* Number of steps for output */
+    int  nstcalc;           /* Frequency with which to calculate and apply WAXS/SAXS forces */
+    int  debye_alpha_mode;  /* Should be 0 (alpha constant) or 1 (choose alpha to minimize WAXS/SAXS energy) */
+    real debye_alpha_min;   /* Lower border for alpha (should be >= 0) */
+    real debye_alpha_max;   /* Upper border for alpha (should be <= 1) */
+} t_waxs_refine;
+
+typedef struct {
     int             eI;                      /* Integration method                 */
     gmx_int64_t     nsteps;                  /* number of steps to be taken			*/
     int             simulation_part;         /* Used in checkpointing to separate chunks */
@@ -472,6 +482,7 @@ typedef struct {
                                    /* parameter needed for AdResS simulation       */
     gmx_bool        bAdress;       /* Is AdResS enabled ? */
     t_adress       *adress;        /* The data for adress simulations */
+    t_waxs_refine   waxs;          /* Data for WAXS/SAXS refinement */
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX] != 0 || (ir).deform[YY][YY] != 0 || (ir).deform[ZZ][ZZ] != 0 || (ir).deform[YY][XX] != 0 || (ir).deform[ZZ][XX] != 0 || (ir).deform[ZZ][YY] != 0)
