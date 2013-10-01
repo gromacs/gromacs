@@ -1,0 +1,82 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Gromacs xmlns:gmx="http://www.gromacs.org/schemas">
+  <ScatteringFactors Comment="" Reference="Doyle and Turner, Acta Cryst. A24 (1968) 390" Source="photons" ForceField="any" DisplacedSolvent="false" Type="CromerMann">
+    <ScatteringFactor Residue="*" Identifier="1" Atom="C">
+      <a1 Unit="Electron">2.31</a1>
+      <b1 Unit="Angstrom**2">20.843899</b1>
+      <a2 Unit="Electron">1.02</a2>
+      <b2 Unit="Angstrom**2">10.2075</b2>
+      <a3 Unit="Electron">1.5886</a3>
+      <b3 Unit="Angstrom**2">0.5687</b3>
+      <a4 Unit="Electron">0.865</a4>
+      <b4 Unit="Angstrom**2">51.651199</b4>
+      <c Unit="Electron">0.2156</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="2" Atom="H">
+      <a1 Unit="Electron">0.493002</a1>
+      <b1 Unit="Angstrom**2">10.5109</b1>
+      <a2 Unit="Electron">0.322912</a2>
+      <b2 Unit="Angstrom**2">26.1257</b2>
+      <a3 Unit="Electron">0.140191</a3>
+      <b3 Unit="Angstrom**2">3.14236</b3>
+      <a4 Unit="Electron">0.04081</a4>
+      <b4 Unit="Angstrom**2">57.799698</b4>
+      <c Unit="Electron">0.003038</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="3" Atom="Ca">
+      <a1 Unit="Electron">15.6348</a1>
+      <b1 Unit="Angstrom**2">-0.0074</b1>
+      <a2 Unit="Electron">7.9518</a2>
+      <b2 Unit="Angstrom**2">0.6089</b2>
+      <a3 Unit="Electron">8.4372</a3>
+      <b3 Unit="Angstrom**2">10.3116</b3>
+      <a4 Unit="Electron">0.3537</a4>
+      <b4 Unit="Angstrom**2">25.9905</b4>
+      <c Unit="Electron">-14.8751</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="4" Atom="O">
+      <a1 Unit="Electron">3.0485</a1>
+      <b1 Unit="Angstrom**2">13.2771</b1>
+      <a2 Unit="Electron">2.2868</a2>
+      <b2 Unit="Angstrom**2">5.7011</b2>
+      <a3 Unit="Electron">1.5463</a3>
+      <b3 Unit="Angstrom**2">0.3239</b3>
+      <a4 Unit="Electron">0.867</a4>
+      <b4 Unit="Angstrom**2">32.908897</b4>
+      <c Unit="Electron">0.2508</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="5" Atom="N">
+      <a1 Unit="Electron">12.2126</a1>
+      <b1 Unit="Angstrom**2">0.0057</b1>
+      <a2 Unit="Electron">3.1322</a2>
+      <b2 Unit="Angstrom**2">9.8933</b2>
+      <a3 Unit="Electron">2.0125</a3>
+      <b3 Unit="Angstrom**2">28.9975</b3>
+      <a4 Unit="Electron">1.1663</a4>
+      <b4 Unit="Angstrom**2">0.5826</b4>
+      <c Unit="Electron">-11.529</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="6" Atom="P">
+      <a1 Unit="Electron">6.4345</a1>
+      <b1 Unit="Angstrom**2">1.9067</b1>
+      <a2 Unit="Electron">4.1791</a2>
+      <b2 Unit="Angstrom**2">27.157</b2>
+      <a3 Unit="Electron">1.78</a3>
+      <b3 Unit="Angstrom**2">0.526</b3>
+      <a4 Unit="Electron">1.4908</a4>
+      <b4 Unit="Angstrom**2">68.1645</b4>
+      <c Unit="Electron">1.1149</c>
+    </ScatteringFactor>
+    <ScatteringFactor Residue="*" Identifier="7" Atom="S">
+      <a1 Unit="Electron">6.9053</a1>
+      <b1 Unit="Angstrom**2">1.4679</b1>
+      <a2 Unit="Electron">5.2034</a2>
+      <b2 Unit="Angstrom**2">22.2151</b2>
+      <a3 Unit="Electron">1.4379</a3>
+      <b3 Unit="Angstrom**2">0.2536</b3>
+      <a4 Unit="Electron">1.5863</a4>
+      <b4 Unit="Angstrom**2">56.172</b4>
+      <c Unit="Electron">0.8669</c>
+    </ScatteringFactor>
+  </ScatteringFactors>
+</Gromacs>
