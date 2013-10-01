@@ -39,6 +39,7 @@
 #include "checkpoint.h"
 #include "trnio.h"
 #include "xtcio.h"
+#include "tngio.h"
 #include "gromacs/legacyheaders/smalloc.h"
 
 static void moveit(t_commrec *cr, rvec xx[])
@@ -184,16 +185,28 @@ void write_traj(FILE *fplog, t_commrec *cr,
 
         if (mdof_flags & (MDOF_X | MDOF_V | MDOF_F))
         {
-            fwrite_trn(of->fp_trn, step, t, state_local->lambda[efptFEP],
-                       state_local->box, top_global->natoms,
-                       (mdof_flags & MDOF_X) ? state_global->x : NULL,
-                       (mdof_flags & MDOF_V) ? global_v : NULL,
-                       (mdof_flags & MDOF_F) ? f_global : NULL);
-            if (gmx_fio_flush(of->fp_trn) != 0)
+            if (of->fp_trn)
             {
-                gmx_file("Cannot write trajectory; maybe you are out of disk space?");
+                fwrite_trn(of->fp_trn, step, t, state_local->lambda[efptFEP],
+                           state_local->box, top_global->natoms,
+                           (mdof_flags & MDOF_X) ? state_global->x : NULL,
+                           (mdof_flags & MDOF_V) ? global_v : NULL,
+                           (mdof_flags & MDOF_F) ? f_global : NULL);
+                if (gmx_fio_flush(of->fp_trn) != 0)
+                {
+                    gmx_file("Cannot write trajectory; maybe you are out of disk space?");
+                }
+                gmx_fio_check_file_position(of->fp_trn);
             }
-            gmx_fio_check_file_position(of->fp_trn);
+
+            fwrite_tng(of->tng, FALSE, step, t, state_local->lambda[efptFEP],
+                       (const rvec *) state_local->box,
+                       top_global->natoms,
+                       (mdof_flags & MDOF_X) ? (const rvec *) state_global->x : NULL,
+                       (mdof_flags & MDOF_V) ? (const rvec *) global_v : NULL,
+                       (mdof_flags & MDOF_F) ? (const rvec *) f_global : NULL);
+            /* TODO: implement gmx_fio_check_file_position kind of
+               functionality? What does checkpointing really need? */
         }
         if (mdof_flags & MDOF_XTC)
         {
@@ -234,6 +247,16 @@ void write_traj(FILE *fplog, t_commrec *cr,
             {
                 gmx_fatal(FARGS, "XTC error - maybe you are out of disk space?");
             }
+            fwrite_tng(of->tng_low_prec,
+                       TRUE,
+                       step,
+                       t,
+                       state_local->lambda[efptFEP],
+                       (const rvec *) state_local->box,
+                       *n_xtc,
+                       (const rvec *) xxtc,
+                       NULL,
+                       NULL);
             gmx_fio_check_file_position(of->fp_xtc);
         }
     }
