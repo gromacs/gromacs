@@ -1795,7 +1795,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         }
         for (j = i+1; (j < nral); j++)
         {
-            if (aa[i] == aa[j])
+            if ((aa[i] == aa[j]) && (ftype != F_WAXS_DEBYE))
             {
                 sprintf(errbuf, "Duplicate atom index (%d) in %s", aa[i], dir2str(d));
                 warning(wi, errbuf);
@@ -1853,7 +1853,7 @@ void push_bond(directive d, t_params bondtype[], t_params bond[],
         bFoundA = default_nb_params(F_LJ14, bondtype, at, &param, 3, FALSE, bGenPairs);
         bFoundB = TRUE;
     }
-    else if (ftype == F_LJC_PAIRS_NB)
+    else if ((ftype == F_LJC_PAIRS_NB) || (ftype == F_WAXS_DEBYE))
     {
         /* Defaults are not supported here */
         bFoundA = FALSE;
@@ -2514,14 +2514,14 @@ int add_atomtype_decoupled(t_symtab *symtab, gpp_atomtype_t at,
 static void convert_pairs_to_pairsQ(t_params *plist,
                                     real fudgeQQ, t_atoms *atoms)
 {
-    t_param *paramp1,*paramp2,*paramnew;
-    int      i,j,p1nr,p2nr,p2newnr;
+    t_param *paramp1, *paramp2, *paramnew;
+    int      i, j, p1nr, p2nr, p2newnr;
 
     /* Add the pair list to the pairQ list */
-    p1nr = plist[F_LJ14].nr;
-    p2nr = plist[F_LJC14_Q].nr;
+    p1nr    = plist[F_LJ14].nr;
+    p2nr    = plist[F_LJC14_Q].nr;
     p2newnr = p1nr + p2nr;
-    snew(paramnew,p2newnr);
+    snew(paramnew, p2newnr);
 
     paramp1             = plist[F_LJ14].param;
     paramp2             = plist[F_LJC14_Q].param;
@@ -2530,18 +2530,18 @@ static void convert_pairs_to_pairsQ(t_params *plist,
        it may be possible to just ADD the converted F_LJ14 array
        to the old F_LJC14_Q array, but since we have to create
        a new sized memory structure, better just to deep copy it all.
-    */
+     */
 
     for (i = 0; i < p2nr; i++)
     {
         /* Copy over parameters */
-        for (j=0;j<5;j++) /* entries are 0-4 for F_LJC14_Q */
+        for (j = 0; j < 5; j++) /* entries are 0-4 for F_LJC14_Q */
         {
             paramnew[i].c[j] = paramp2[i].c[j];
         }
 
         /* copy over atoms */
-        for (j=0;j<2;j++)
+        for (j = 0; j < 2; j++)
         {
             paramnew[i].a[j] = paramp2[i].a[j];
         }

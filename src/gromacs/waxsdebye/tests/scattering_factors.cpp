@@ -1,10 +1,10 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012, by the GROMACS development team, led by
- * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
- * and including many others, as listed in the AUTHORS file in the
- * top-level source directory and at http://www.gromacs.org.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * David van der Spoel, Berk Hess, Erik Lindahl, and including many
+ * others, as listed in the AUTHORS file in the top-level source
+ * directory and at http://www.gromacs.org.
  *
  * GROMACS is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public License
@@ -32,37 +32,27 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
+/*! \internal \file
  * \brief
- * Defines an enumeration type for specifying file types for options.
+ * Implements test helper routines from toputils.h.
  *
  * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
+ * \ingroup module_selection
  */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#include <cstring>
 
-namespace gmx
+#include "gromacs/waxsdebye/scattering_factors.h"
+#include "gromacs/utility/gmxassert.h"
+
+namespace
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftXML,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+TEST_F(ScatteringFactorTableTest, FileIO)
+{
+    gmx::ScatteringFactorTable sft;
 
-} // namespace gmx
+    sft.read("sfactor_martini_ds.xml");
+    sft.write("sfactor_martini_ds.out");
+}
 
-#endif
+} // anonymous namespace
