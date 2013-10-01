@@ -33,3 +33,4 @@ SH           0.18     1      1.121    0.18    0.96 ; S
 ; masscenters for vsites do not have gbsa parameters
 MNH3         0        0      0        0         0
 MCH3         0        0      0        0         0
+MW           0        0      0        0         0
