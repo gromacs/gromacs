@@ -294,12 +294,17 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
     groups = &top_global->groups;
 
+    /* Since init_md does TNG setup as well it is fair to start
+     * the ewcTRAJ timer.
+     */
+    wallcycle_start(wcycle, ewcTRAJ);
     /* Initial values */
     init_md(fplog, cr, ir, oenv, &t, &t0, state_global->lambda,
             &(state_global->fep_state), lam0,
             nrnb, top_global, &upd,
             nfile, fnm, &outf, &mdebin,
             force_vir, shake_vir, mu_tot, &bSimAnn, &vcm, Flags);
+    wallcycle_stop(wcycle, ewcTRAJ);
 
     clear_mat(total_vir);
     clear_mat(pres);
@@ -2079,10 +2084,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             print_ebin(outf->fp_ene, FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
         }
+
+        done_mdoutf(outf);
     }
-
-    done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)

@@ -76,6 +76,7 @@
 #include "bondf.h"
 #include "gmx_omp_nthreads.h"
 #include "md_logging.h"
+#include "sim_util.h"
 
 
 #include "gromacs/linearalgebra/mtxio.h"
@@ -447,6 +448,13 @@ void init_em(FILE *fplog, const char *title,
     }
 
     *outf = init_mdoutf(nfile, fnm, 0, cr, ir, NULL);
+
+#ifdef GMX_USE_TNG
+    if (MASTER(cr) && (*outf)->tng)
+    {
+        init_tng_top((*outf)->tng, top_global);
+    }
+#endif
 
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
