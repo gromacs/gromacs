@@ -92,7 +92,7 @@ static const int ftpXDR[] =
 static const int ftpASC[] =
 { efTPA, efGRO, efPDB };
 static const int ftpBIN[] =
-{ efTPB, efTRJ };
+{ efTPB, efTRJ, efTNG };
 #ifdef HAVE_XML
 static const int ftpXML[] =
 {   efXML};
