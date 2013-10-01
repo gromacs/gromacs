@@ -2045,6 +2045,39 @@ Here we are defining an energy group {\tt CG} which consists of the coarse-grain
 As discussed above, the coarse-grained interaction is usually tabulated. This requires the {\tt vdw-type} parameter to be set to {\tt user}. In the case where multi-component systems are coarse-grained, an energy group has to be defined for each component. Note that all the energy groups defining coarse-grained representations have to be listed again in {\tt adress_cg_grp_names} to distinguish them from regular energy groups.\\
 The index file has to be updated to have a group CG which includes all the coarse-grained virtual sites. This can be done easily using the {\tt make_ndx} tool of gromacs.
 
+\section{Structural refinement against SAXS/WAXS data}
+
+{\gromacs} can be used for solution-structural refinement by biasing the potential energy landscape towards configurations which reproduce experimental scattering data. Currently this is implemented as a force based on the Debye equation,
+	\begin{equation}
+		S(q) = \sum_i\sum_j f_i^s(q)f_j^s(q) \frac{\sin qr_{ij}}{qr_{ij}} \quad,
+		\label{eqn:debye}
+	\end{equation}
+where $q$ is the magnitude of the scattering vector ($q=4\pi\sin\theta/\lambda$, with $2\theta$ the scattering angle and $\lambda$ the wavelength), $S$ is the excess scattering intensity from the solution compared to the solvent, $f_i^s$ is the scattering factor for particle $i$ corrected for displaced solvent and $r_{ij}=|\mathbf{r}_{ij}|=|\mathbf{r}_i-\mathbf{r}_j|$, with $\mathbf{r}_i$ the coordinate vector for particle $i$. An artificial energy term $U_{waxs}$ is introduced, proportional to the sum-of-squares ($\chi^2$) of deviation from experiment.
+
+	\begin{eqnarray}
+		U_{waxs} &=& \frac{k_\chi}{2}\chi^2 \quad, \\
+		\chi^2 &=& \sum_q\frac{1}{{\sigma_q}^2} \left[ \Delta S_{exp}(q) - \alpha \{S_{calc}(q) - \alpha S_{ref}(q)\} \right]^2 \nonumber \\
+		&=& \sum_q\frac{1}{{\sigma_q}^2} \left[ \Delta S_{exp}(q) - \alpha S_{calc}(q) + \alpha S_{ref}(q) \right]^2 \quad, \label{eqn:debye_chisq}
+	\end{eqnarray}
+
+It is possible to run against absolute intensities (as recorded in a normal SAXS measurement) or against difference scattering corresponding to two states (as often recorded in time-resolved measurements). In the former case $\Delta S_{exp}(q)=0$ and $\alpha=1$ while $S_{ref}(q)$ is the experimental target scattering. In the latter $\Delta S_{exp}(q)$ is the experimental difference curve, $S_{ref}(q)$ is the scattering from the starting structure and $\alpha$ is the fraction of the observed sample which undergoes conformational change. Taking appropriate derivatives of (\ref{eqn:debye_chisq}) gives the force on atom $k$:
+	\begin{equation}
+		\mathbf{F}_k^{scat} = 4\alpha\sum_q\Biggr\{A_q \sum_j
+		f_k^s(q)f_j^s(q) \biggl[ \cos qr_{kj} - \frac{\sin qr_{kj}}{qr_{kj}}\biggr] \frac{\mathbf{r}_{kj}}{{r_{kj}}^2}		
+		\Biggr\} \quad,
+		\label{eqn:debye_force}
+	\end{equation}
+where
+	\begin{equation}
+		A_q = \frac{k_\chi}{{2\sigma_q}^2} \biggl[\Delta S_{exp}(q) - \alpha\left\{ S_{calc}(q)-S_{ref}(q) \right\}\biggr] \quad.
+	\end{equation}
+
+	Calculating these forces amounts to evaluating two double sums over all scatterers, an $N^2$ problem which can be made computationally cheaper by considering, for example, entire amino acid residues as coarse-grained scatterers~\cite{Niebling2014}. This can be accomplished by using  virtual sites (see section \ref{sec:vsitetop}), which can be set up using the {\tt gmx genrestr} utility.
+	
+	To further accelerate refinement, the slowly varying SAXS/WAXS forces can be calculated and applied less often than other forces, using a multiple time step algorithm (see section \ref{sec:twinrange}). The period of calculating these forces is controlled by the mdp option {\tt waxs-nstcalc}.
+	
+	For difference scattering measurements, the quantity $\alpha$ reflects the experimental conversion efficiency. An independent estimate is required to fit the data. The SAXS/WAXS refinement code optionally minimizes $\chi^2$ with respect to $\alpha$ using golden-ratio bisection within limits set by the {\tt debye-alpha-min} and {\tt debye-alpha-max} mdp keywords. This behavior is toggled using the {\tt debye-alpha-mode} option.
+
 \section{Using VMD plug-ins for trajectory file I/O}
 \index{VMD plug-ins}\index{trajectory file}{\gromacs} tools are able
 to use the plug-ins found in an existing installation of
