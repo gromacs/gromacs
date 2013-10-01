@@ -809,7 +809,6 @@ static void pr_rot(FILE *fp, int indent, t_rot *rot)
     }
 }
 
-
 static void pr_swap(FILE *fp, int indent, t_swapcoords *swap)
 {
     int  i, j;
@@ -850,6 +849,20 @@ static void pr_imd(FILE *fp, int indent, t_IMD *imd)
     pr_ivec_block(fp, indent, "atom", imd->ind, imd->nat, TRUE);
 }
 
+
+static void pr_waxs(FILE *fp, int indent, t_waxs_refine *waxs)
+{
+    PS("waxs-type", EWAXSTYPE(waxs->waxs_type));
+    if (waxs->waxs_type != eWaxsNO)
+    {
+        PR("waxs-fc", waxs->kwaxs);
+        PI("waxs-nstout", waxs->nstout);
+        PR("debye-alpha-min", waxs->debye_alpha_min);
+        PR("debye-alpha-max", waxs->debye_alpha_max);
+        PR("debye-r-min", waxs->debye_r_min);
+        PR("debye-r-max", waxs->debye_r_max);
+    }
+}
 
 void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
                  gmx_bool bMDPformat)
@@ -1023,6 +1036,8 @@ void pr_inputrec(FILE *fp, int indent, const char *title, t_inputrec *ir,
         PR("wall-density[1]", ir->wall_density[1]);
         PR("wall-ewald-zfac", ir->wall_ewald_zfac);
 
+        pr_waxs(fp, indent, &ir->waxs);
+        
         /* COM PULLING */
         PS("pull", EPULLTYPE(ir->ePull));
         if (ir->ePull != epullNO)
@@ -1376,6 +1391,8 @@ void pr_iparams(FILE *fp, t_functype ftype, t_iparams *iparams)
                 fprintf(fp, ", cbtcA[%d]=%15.8e", i-1, iparams->cbtdihs.cbtcA[i]);
             }
             fprintf(fp, "\n");
+        case F_WAXS_DEBYE:
+            fprintf(fp, "tpi=%d, tpj=%d\n", iparams->waxs_debye.tpi, iparams->waxs_debye.tpj);
             break;
         default:
             gmx_fatal(FARGS, "unknown function type %d (%s) in %s line %d",
