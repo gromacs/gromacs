@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team.
- * Copyright (c) 2013, by the GROMACS development team, led by
+ * Copyright (c) 2013,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -35,6 +35,9 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
+#ifndef _forcerec_h
+#define _forcerec_h
+
 #include "ns.h"
 #include "genborn.h"
 #include "qmmmrec.h"
@@ -53,7 +56,8 @@ extern "C" {
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
 
-
+//! Structure to encapsulate a C++ class. Sick isn't it?
+typedef struct waxs_debye_force_c *waxs_debye_force_t;
 
 /* Structure describing the data in a single table */
 typedef struct
@@ -475,6 +479,9 @@ typedef struct {
 
     /* Exclusion load distribution over the threads */
     int  *excl_load;
+
+    /* Wide angle X-ray scattering data */
+    waxs_debye_force_t wdf;
 } t_forcerec;
 
 /* Important: Starting with Gromacs-4.6, the values of c6 and c12 in the nbfp array have
@@ -489,4 +496,6 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif
