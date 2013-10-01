@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,40 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+#ifndef _xml_util_h
+#define _xml_util_h
 
-namespace gmx
-{
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftXML,
-    eftGenericData,
-    eftOptionFileType_NR
-};
+#include <stdio.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include "gromacs/utility/fatalerror.h"
 
-} // namespace gmx
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern int find_elem(char *name, int nr, const char *names[]);
+
+extern void add_xml_int(xmlNodePtr ptr, const char *name, int val);
+
+extern void add_xml_double(xmlNodePtr ptr, const char *name, double val);
+
+extern void add_xml_char(xmlNodePtr ptr, const char *name, const char *val);
+
+extern xmlNodePtr add_xml_child(xmlNodePtr parent, const char *type);
+
+extern xmlNodePtr add_xml_child_char(xmlNodePtr parent, const char *type, const char *val);
+
+extern xmlNodePtr add_xml_child_double(xmlNodePtr parent, const char *type, double val);
+
+extern xmlNodePtr add_xml_child_int(xmlNodePtr parent, const char *type, int val);
+
+extern xmlNodePtr add_xml_comment(xmlDocPtr doc,
+                                  xmlNodePtr prev, char *comment);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

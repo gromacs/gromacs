@@ -376,7 +376,7 @@ int gmx_nmeig(int argc, char *argv[])
         nharm  = 0;
         nvsite = 0;
     }
-    top = gmx_mtop_t_to_t_topology(&mtop);
+    top = gmx_mtop_t_to_t_topology(&mtop, TRUE);
 
     bM   = TRUE;
     ndim = DIM*natoms;
