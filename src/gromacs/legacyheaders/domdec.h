@@ -288,6 +288,8 @@ real dd_choose_grid(FILE *fplog,
  * On the master node returns the actual cellsize limit used.
  */
 
+int lcd(int n1, int n2);
+/* Returns the lowest common denominator of two integers. */
 
 /* In domdec_box.c */
 
