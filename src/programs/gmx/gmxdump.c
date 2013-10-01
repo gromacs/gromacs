@@ -56,10 +56,15 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
@@ -328,6 +333,95 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     close_xtc(xd);
 }
 
+void list_tng(const char *fn, gmx_bool bXVG)
+{
+    tng_trajectory_t tng;
+    int nframe, indent;
+    char buf[256], block_name[256];
+    int64_t i, *block_ids = NULL, n_values_per_frame, n_atoms, step, ndatablocks;
+    int64_t pos_block_id = TNG_TRAJ_POSITIONS;
+    double frame_time;
+    real prec, *values = NULL;
+    gmx_bool   bOK;
+    rvec      *data;
+
+    open_tng_for_reading(fn, &tng);
+    print_tng_molecule_system(tng, stdout);
+
+    nframe = 0;
+    bOK = get_tng_data_block_types_of_next_frame(tng, -1,
+                                                 bXVG ? 1 : 0,
+                                                 bXVG ? &pos_block_id : NULL,
+                                                 &step, &ndatablocks,
+                                                 &block_ids);
+    do
+    {
+        for(i = 0; i < ndatablocks; i++)
+        {
+            get_tng_data_next_frame_of_block_type(tng, block_ids[i], &values,
+                                                  &step, &frame_time,
+                                                  &n_values_per_frame, &n_atoms,
+                                                  &prec,
+                                                  block_name, 256, &bOK);
+            if(!bOK)
+            {
+                fprintf(stderr, "\nWARNING: Incomplete frame at time %g\n", frame_time);
+            }
+            if (bXVG)
+            {
+                int64_t j;
+                int d;
+
+                if(i == 0)
+                {
+                    fprintf(stdout, "%g", (real)frame_time);
+                }
+                for (j = 0; j < n_atoms; j++)
+                {
+                    for (d = 0; d < DIM; d++)
+                    {
+                        fprintf(stdout, " %g", values[j * DIM + d]);
+                    }
+                }
+                fprintf(stdout, "\n");
+            }
+            else
+            {
+                if(i == 0)
+                {
+                    sprintf(buf, "%s frame %d", fn, nframe);
+                    indent = 0;
+                    indent = pr_title(stdout, indent, buf);
+                    pr_indent(stdout, indent);
+                    /* TODO: Print prec as well */
+                    fprintf(stdout, "natoms=%10d  step=%10d  time=%12.7e",
+                            (int)n_atoms, (int)step, frame_time);
+                    if(prec > 0)
+                    {
+                        fprintf(stdout, "  prec=%10g", prec);
+                    }
+                    fprintf(stdout,"\n");
+                }
+                pr_reals_of_dim(stdout, indent, block_name, values, (int)n_atoms, (int)n_values_per_frame);
+            }
+        }
+        nframe++;
+    } while(get_tng_data_block_types_of_next_frame(tng, step,
+                                                   bXVG ? 1 : 0,
+                                                   bXVG ? &pos_block_id : NULL,
+                                                   &step,
+                                                   &ndatablocks,
+                                                   &block_ids));
+
+    if(block_ids)
+    {
+        sfree(block_ids);
+    }
+
+
+    tng_tools_close(&tng);
+}
+
 void list_trx(const char *fn, gmx_bool bXVG)
 {
     int ftp;
@@ -340,6 +434,10 @@ void list_trx(const char *fn, gmx_bool bXVG)
     else if ((ftp == efTRR) || (ftp == efTRJ))
     {
         list_trn(fn);
+    }
+    else if (ftp == efTNG)
+    {
+        list_tng(fn, bXVG);
     }
     else
     {
