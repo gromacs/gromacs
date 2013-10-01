@@ -34,6 +34,8 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
+#ifndef GMX_LEGACYHEADERS_TOPOLOGY_H
+#define GMX_LEGACYHEADERS_TOPOLOGY_H
 
 #include "atoms.h"
 #include "idef.h"
@@ -124,4 +126,6 @@ typedef struct {
 
 #ifdef __cplusplus
 }
+#endif
+
 #endif

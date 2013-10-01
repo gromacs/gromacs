@@ -39,6 +39,7 @@
 
 
 #include "simple.h"
+#include "enums.h"
 #include "../sysstuff.h"
 
 #ifdef __cplusplus
