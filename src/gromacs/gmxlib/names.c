@@ -121,6 +121,10 @@ const char *epcoupltype_names[epctNR+1] = {
     "Isotropic", "Semiisotropic", "Anisotropic", "Surface-Tension", NULL
 };
 
+const char *ewaxs_names[eWaxsNR+1] = {
+    "No", "Debye", "Full", NULL
+};
+
 const char *erefscaling_names[erscNR+1] = {
     "No", "All", "COM", NULL
 };

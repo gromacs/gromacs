@@ -1697,7 +1697,7 @@ void read_stx_conf(const char *infile, char *title, t_atoms *atoms,
             done_atom(atoms);
 
             *atoms = gmx_mtop_global_atoms(mtop);
-            top    = gmx_mtop_t_to_t_topology(mtop);
+            top    = gmx_mtop_t_to_t_topology(mtop, TRUE);
             tpx_make_chain_identifiers(atoms, &top.mols);
 
             sfree(mtop);
