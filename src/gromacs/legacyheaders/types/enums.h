@@ -75,6 +75,11 @@ enum {
     epctSURFACETENSION, epctNR
 };
 
+/* For WAXS/SAXS refinement */
+enum {
+    eWaxsNO, eWaxsDebye, eWaxsFull, eWaxsNR
+};
+
 enum {
     erscNO, erscALL, erscCOM, erscNR
 };
