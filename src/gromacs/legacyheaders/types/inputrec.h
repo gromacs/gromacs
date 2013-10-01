@@ -39,6 +39,7 @@
 
 
 #include "simple.h"
+#include "enums.h"
 #include "../sysstuff.h"
 
 #ifdef __cplusplus
@@ -309,10 +310,10 @@ typedef struct {
     int             nstvout;                /* id. for V					*/
     int             nstfout;                /* id. for F					*/
     int             nstenergy;              /* number of steps after which energies printed */
-    int             nstxtcout;              /* id. for compressed trj (.xtc)		*/
+    int             nstxout_compressed;     /* id. for compressed trj (.xtc,.tng)           */
     double          init_t;                 /* initial time (ps)              */
     double          delta_t;                /* time step (ps)				*/
-    real            xtcprec;                /* precision of xtc file                        */
+    real            x_compression_precision;  /* precision of x in compressed trajectory file */
     real            fourier_spacing;        /* requested fourier_spacing, when nk? not set  */
     int             nkx, nky, nkz;          /* number of k vectors in each spatial dimension*/
                                             /* for fourier methods for long range electrost.*/

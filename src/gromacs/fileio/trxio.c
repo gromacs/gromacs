@@ -53,6 +53,7 @@
 #include "trxio.h"
 #include "tpxio.h"
 #include "trnio.h"
+#include "tngio_for_tools.h"
 #include "names.h"
 #include "vec.h"
 #include "futil.h"
@@ -76,15 +77,16 @@ typedef enum {
 
 struct t_trxstatus
 {
-    int             __frame;
-    t_trxframe     *xframe;
-    int             nxframe;
-    t_fileio       *fio;
-    eFileFormat     eFF;
-    int             NATOMS;
-    double          DT, BOX[3];
-    gmx_bool        bReadBox;
-    char           *persistent_line; /* Persistent line for reading g96 trajectories */
+    int                     __frame;
+    t_trxframe             *xframe;
+    int                     nxframe;
+    t_fileio               *fio;
+    tng_trajectory_t        tng;
+    eFileFormat             eFF;
+    int                     NATOMS;
+    double                  DT, BOX[3];
+    gmx_bool                bReadBox;
+    char                   *persistent_line; /* Persistent line for reading g96 trajectories */
 };
 
 /* utility functions */
@@ -161,6 +163,7 @@ static void status_init(t_trxstatus *status)
     status->fio             = NULL;
     status->__frame         = -1;
     status->persistent_line = NULL;
+    status->tng             = NULL;
 }
 
 
@@ -224,40 +227,43 @@ t_fileio *trx_get_fileio(t_trxstatus *status)
     return status->fio;
 }
 
-
+tng_trajectory_t trx_get_tng(t_trxstatus *status)
+{
+    return status->tng;
+}
 
 void clear_trxframe(t_trxframe *fr, gmx_bool bFirst)
 {
-    fr->not_ok  = 0;
-    fr->bTitle  = FALSE;
-    fr->bStep   = FALSE;
-    fr->bTime   = FALSE;
-    fr->bLambda = FALSE;
+    fr->not_ok    = 0;
+    fr->bTitle    = FALSE;
+    fr->bStep     = FALSE;
+    fr->bTime     = FALSE;
+    fr->bLambda   = FALSE;
     fr->bFepState = FALSE;
-    fr->bAtoms  = FALSE;
-    fr->bPrec   = FALSE;
-    fr->bX      = FALSE;
-    fr->bV      = FALSE;
-    fr->bF      = FALSE;
-    fr->bBox    = FALSE;
+    fr->bAtoms    = FALSE;
+    fr->bPrec     = FALSE;
+    fr->bX        = FALSE;
+    fr->bV        = FALSE;
+    fr->bF        = FALSE;
+    fr->bBox      = FALSE;
     if (bFirst)
     {
-        fr->flags   = 0;
-        fr->bDouble = FALSE;
-        fr->natoms  = -1;
-        fr->t0      = 0;
-        fr->tpf     = 0;
-        fr->tppf    = 0;
-        fr->title   = NULL;
-        fr->step    = 0;
-        fr->time    = 0;
-        fr->lambda  = 0;
+        fr->flags     = 0;
+        fr->bDouble   = FALSE;
+        fr->natoms    = -1;
+        fr->t0        = 0;
+        fr->tpf       = 0;
+        fr->tppf      = 0;
+        fr->title     = NULL;
+        fr->step      = 0;
+        fr->time      = 0;
+        fr->lambda    = 0;
         fr->fep_state = 0;
-        fr->atoms   = NULL;
-        fr->prec    = 0;
-        fr->x       = NULL;
-        fr->v       = NULL;
-        fr->f       = NULL;
+        fr->atoms     = NULL;
+        fr->prec      = 0;
+        fr->x         = NULL;
+        fr->v         = NULL;
+        fr->f         = NULL;
         clear_mat(fr->box);
         fr->bPBC   = FALSE;
         fr->ePBC   = -1;
@@ -406,6 +412,63 @@ int write_trxframe_indexed(t_trxstatus *status, t_trxframe *fr, int nind,
     return 0;
 }
 
+void trjconv_prepare_tng_writing(const char     *filename,
+                                 char            filemode,
+                                 t_trxstatus   **in,
+                                 t_trxstatus   **out,
+                                 int             natoms)
+{
+    if (*out == NULL)
+    {
+        snew((*out), 1);
+    }
+    status_init(*out);
+
+    prepare_tng_writing(filename,
+                        filemode,
+                        &(*in)->tng,
+                        &(*out)->tng,
+                        natoms);
+}
+
+t_trxstatus *trjcat_prepare_tng_writing(const char     *filename,
+                                        char            filemode,
+                                        char          **infiles,
+                                        int             nfile_in)
+{
+    t_trxstatus *stat;
+    int          i;
+
+    if (filemode != 'w' && filemode != 'a')
+    {
+        gmx_fatal(FARGS, "Sorry, can only prepare for TNG output.");
+    }
+
+    snew(stat, 1);
+    status_init(stat);
+
+    for (i = 0; i < nfile_in; i++)
+    {
+        if (efTNG == fn2ftp(infiles[i]))
+        {
+            tng_trajectory_t tng_in;
+            open_tng_for_reading(infiles[i], &tng_in);
+
+            prepare_tng_writing(filename, filemode, &tng_in, &stat->tng, -1);
+
+            return stat;
+        }
+    }
+
+    return NULL;
+}
+
+void write_tng_frame(t_trxstatus *status,
+                     t_trxframe  *frame)
+{
+    write_tng_from_trxframe(status->tng, frame);
+}
+
 int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
 {
     char title[STRLEN];
@@ -418,6 +481,14 @@ int write_trxframe(t_trxstatus *status, t_trxframe *fr, gmx_conect gc)
     else
     {
         prec = 1000.0;
+    }
+
+    if (status->tng)
+    {
+        tng_set_compression_precision(status->tng, prec);
+        write_tng_frame(status, fr);
+
+        return 0;
     }
 
     switch (gmx_fio_getftp(status->fio))
@@ -506,7 +577,14 @@ int write_trx(t_trxstatus *status, int nind, const atom_id *ind, t_atoms *atoms,
 
 void close_trx(t_trxstatus *status)
 {
-    gmx_fio_close(status->fio);
+    if (status->tng)
+    {
+        tng_tools_close(&status->tng);
+    }
+    else
+    {
+        gmx_fio_close(status->fio);
+    }
     sfree(status);
 }
 
@@ -869,6 +947,7 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
     int      ct;
     gmx_bool bOK, bRet, bMissingData = FALSE, bSkip = FALSE;
     int      dummy = 0;
+    int      ftp;
 
     bRet = FALSE;
     pt   = fr->time;
@@ -879,7 +958,16 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
         fr->tppf = fr->tpf;
         fr->tpf  = fr->time;
 
-        switch (gmx_fio_getftp(status->fio))
+        if (status->tng)
+        {
+            /* Special treatment for TNG files */
+            ftp = efTNG;
+        }
+        else
+        {
+            ftp = gmx_fio_getftp(status->fio);
+        }
+        switch (ftp)
         {
             case efTRJ:
             case efTRR:
@@ -930,6 +1018,9 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
                        but from bOK from read_next_xtc this can't be distinguished */
                     fr->not_ok = DATA_NOT_OK;
                 }
+                break;
+            case efTNG:
+                bRet = read_next_tng_frame(status->tng, fr, NULL);
                 break;
             case efPDB:
                 bRet = pdb_next_x(status, gmx_fio_getfp(status->fio), fr);
@@ -990,9 +1081,11 @@ gmx_bool read_next_frame(const output_env_t oenv, t_trxstatus *status, t_trxfram
 int read_first_frame(const output_env_t oenv, t_trxstatus **status,
                      const char *fn, t_trxframe *fr, int flags)
 {
-    t_fileio *fio;
-    gmx_bool  bFirst, bOK;
-    int       dummy = 0;
+    t_fileio      *fio;
+    gmx_bool       bFirst, bOK;
+    int            dummy = 0;
+    int            ftp   = fn2ftp(fn);
+    gmx_int64_t   *tng_ids;
 
     clear_trxframe(fr, TRUE);
     fr->flags = flags;
@@ -1005,8 +1098,16 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
     (*status)->nxframe = 1;
     initcount(*status);
 
-    fio = (*status)->fio = gmx_fio_open(fn, "r");
-    switch (gmx_fio_getftp(fio))
+    if (efTNG == ftp)
+    {
+        /* Special treatment for TNG files */
+        open_tng_for_reading(fn, &(*status)->tng);
+    }
+    else
+    {
+        fio = (*status)->fio = gmx_fio_open(fn, "r");
+    }
+    switch (ftp)
     {
         case efTRJ:
         case efTRR:
@@ -1072,6 +1173,20 @@ int read_first_frame(const output_env_t oenv, t_trxstatus **status,
                 fr->bTime = TRUE;
                 fr->bX    = TRUE;
                 fr->bBox  = TRUE;
+                printcount(*status, oenv, fr->time, FALSE);
+            }
+            bFirst = FALSE;
+            break;
+        case efTNG:
+            fr->step = -1;
+            if (!read_next_tng_frame((*status)->tng, fr, NULL))
+            {
+                fr->not_ok = DATA_NOT_OK;
+                fr->natoms = 0;
+                printincomp(*status, fr);
+            }
+            else
+            {
                 printcount(*status, oenv, fr->time, FALSE);
             }
             bFirst = FALSE;
@@ -1166,7 +1281,16 @@ gmx_bool read_next_x(const output_env_t oenv, t_trxstatus *status, real *t,
 
 void close_trj(t_trxstatus *status)
 {
-    gmx_fio_close(status->fio);
+    if (status->tng)
+    {
+        /* Special treatment for TNG files */
+        tng_tools_close(&status->tng);
+    }
+    else
+    {
+        gmx_fio_close(status->fio);
+    }
+
     /* The memory in status->xframe is lost here,
      * but the read_first_x/read_next_x functions are deprecated anyhow.
      * read_first_frame/read_next_frame and close_trx should be used.
