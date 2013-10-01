@@ -3,7 +3,7 @@
  *
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2008, The GROMACS development team.
- * Copyright (c) 2011, by the GROMACS development team, led by
+ * Copyright (c) 2011,2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -48,6 +48,10 @@ double convert2gmx(double x, int unit)
             return x;
         case eg2cBohr:
             return x*BOHR2NM;
+        case eg2c1_Angstrom:
+            return x/A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x/CAL2JOULE;
         case eg2cHartree:
@@ -80,6 +84,10 @@ double gmx2convert(double x, int unit)
             return x;
         case eg2cBohr:
             return x/BOHR2NM;
+        case eg2c1_Angstrom:
+            return x*A2NM;
+        case eg2c1_Nm:
+            return x;
         case eg2cKcal_Mole:
             return x*CAL2JOULE;
         case eg2cHartree:
@@ -104,12 +112,14 @@ double gmx2convert(double x, int unit)
 
 /* This has to have the same order as the enums. */
 static const char *eg2c_names[eg2cNR] = {
-    "Angstrom", "Nm", "Bohr", "Kcal_Mole",
+    "Angstrom", "Nm", "Bohr",
+    "1/Angstrom", "1/Nm",
+    "Kcal_Mole",
     "Hartree", "Hartree_e", "Angstrom3", "Coulomb",
     "Debye", "Electron", "Buckingham"
 };
 
-int string2unit(char *string)
+int string2unit(const char *string)
 {
     int i;
 
