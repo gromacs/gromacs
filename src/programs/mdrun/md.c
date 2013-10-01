@@ -148,7 +148,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              unsigned long Flags,
              gmx_walltime_accounting_t walltime_accounting)
 {
-    gmx_mdoutf_t   *outf;
+    gmx_mdoutf_t    outf = NULL;
     gmx_large_int_t step, step_rel;
     double          elapsed_time;
     double          t, t0, lam0[efptNR];
@@ -1083,7 +1083,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                         nrnb, wcycle, graph, groups,
                                         shellfc, fr, bBornRadii, t, mu_tot,
                                         &bConverged, vsite,
-                                        outf->fp_field);
+                                        mdoutf_get_fp_field(outf));
             tcount += count;
 
             if (bConverged)
@@ -1102,7 +1102,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                      state->box, state->x, &state->hist,
                      f, force_vir, mdatoms, enerd, fcd,
                      state->lambda, graph,
-                     fr, vsite, mu_tot, t, outf->fp_field, ed, bBornRadii,
+                     fr, vsite, mu_tot, t, mdoutf_get_fp_field(outf), ed, bBornRadii,
                      (bNS ? GMX_FORCE_NS : 0) | force_flags);
         }
 
@@ -1327,7 +1327,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
          * coordinates at time t. We must output all of this before
          * the update.
          */
-        do_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
+        do_md_trajectory_writing(fplog, cr, nfile, fnm, step, step_rel, t,
                               ir, state, state_global, top_global, fr, upd,
                               outf, mdebin, ekind, f, f_global,
                               wcycle, mcrng, &nchkpt,
@@ -1763,7 +1763,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                 do_dr  = do_per_step(step, ir->nstdisreout);
                 do_or  = do_per_step(step, ir->nstorireout);
 
-                print_ebin(outf->fp_ene, do_ene, do_dr, do_or, do_log ? fplog : NULL,
+                print_ebin(mdoutf_get_fp_ene(outf), do_ene, do_dr, do_or, do_log ? fplog : NULL,
                            step, t,
                            eprNORMAL, bCompact, mdebin, fcd, groups, &(ir->opts));
             }
@@ -1956,13 +1956,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         if (ir->nstcalcenergy > 0 && !bRerunMD)
         {
-            print_ebin(outf->fp_ene, FALSE, FALSE, FALSE, fplog, step, t,
+            print_ebin(mdoutf_get_fp_ene(outf), FALSE, FALSE, FALSE, fplog, step, t,
                        eprAVER, FALSE, mdebin, fcd, groups, &(ir->opts));
         }
     }
 
     done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)

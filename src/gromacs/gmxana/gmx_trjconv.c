@@ -46,6 +46,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "statutil.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -821,7 +822,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     FILE            *out    = NULL;
     t_trxstatus     *trxout = NULL;
-    t_trxstatus     *status;
+    t_trxstatus     *trxin;
     int              ftp, ftpin = 0, file_nr;
     t_trxframe       fr, frout;
     int              flags;
@@ -1142,12 +1143,12 @@ int gmx_trjconv(int argc, char *argv[])
         else
         {
             /* no index file, so read natoms from TRX */
-            if (!read_first_frame(oenv, &status, in_file, &fr, TRX_DONT_SKIP))
+            if (!read_first_frame(oenv, &trxin, in_file, &fr, TRX_DONT_SKIP))
             {
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(status);
+            close_trj(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1234,7 +1235,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* open trx file for reading */
-        bHaveFirstFrame = read_first_frame(oenv, &status, in_file, &fr, flags);
+        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
             fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
@@ -1278,6 +1279,14 @@ int gmx_trjconv(int argc, char *argv[])
             }
             switch (ftp)
             {
+                case efTNG:
+                    // TODO Does appending to a TNG file even make sense?
+                    trjconv_prepare_tng_writing(out_file,
+                                                filemode[0],
+                                                &trxin,
+                                                &trxout,
+                                                natoms);
+                    break;
                 case efXTC:
                 case efG87:
                 case efTRR:
@@ -1296,6 +1305,8 @@ int gmx_trjconv(int argc, char *argv[])
                         out = ffopen(out_file, filemode);
                     }
                     break;
+                default:
+                    gmx_incons("Illegal output file format");
             }
 
             bCopy = FALSE;
@@ -1690,6 +1701,11 @@ int gmx_trjconv(int argc, char *argv[])
 
                         switch (ftp)
                         {
+                            case efTNG:
+                                write_tng_frame(trxout, &frout);
+                                // TODO work how to read and write lambda
+                                // TODO support more functionality like below
+                                break;
                             case efTRJ:
                             case efTRR:
                             case efG87:
@@ -1830,7 +1846,7 @@ int gmx_trjconv(int argc, char *argv[])
                     }
                 }
                 frame++;
-                bHaveNextFrame = read_next_frame(oenv, status, &fr);
+                bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
         }
@@ -1842,7 +1858,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(status);
+        close_trj(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
