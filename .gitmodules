@@ -1,0 +1,3 @@
+[submodule "src/external/tng_io"]
+	path = src/external/tng_io
+	url = git://git.gromacs.org/tng.git

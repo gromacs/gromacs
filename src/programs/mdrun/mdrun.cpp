@@ -366,6 +366,7 @@ int gmx_mdrun(int argc, char *argv[])
         { efTPX, NULL,      NULL,       ffREAD },
         { efTRN, "-o",      NULL,       ffWRITE },
         { efXTC, "-x",      NULL,       ffOPTWR },
+        { efTNG, "-tng",    NULL,       ffOPTWR },
         { efCPT, "-cpi",    NULL,       ffOPTRD },
         { efCPT, "-cpo",    NULL,       ffOPTWR },
         { efSTO, "-c",      "confout",  ffWRITE },
