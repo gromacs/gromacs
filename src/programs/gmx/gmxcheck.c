@@ -293,6 +293,7 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
     gmx_localtop_t  *top = NULL;
     t_state          state;
     t_inputrec       ir;
+    t_fileio        *fio;
 
     if (tpr)
     {
@@ -335,6 +336,8 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
 
     read_first_frame(oenv, &status, fn, &fr, TRX_READ_X | TRX_READ_V | TRX_READ_F);
 
+    fio  = trx_get_fileio(status);
+
     do
     {
         if (j == 0)
@@ -352,7 +355,9 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
                     old_t1, natoms, new_natoms);
             newline = FALSE;
         }
-        if (j >= 2)
+        /* TNG frames can come irregularly. It is not enough to just check the time
+         * difference between two frames. */
+        if (j >= 2 && fio)
         {
             if (fabs((fr.time-old_t1)-(old_t1-old_t2)) >
                 0.1*(fabs(fr.time-old_t1)+fabs(old_t1-old_t2)) )
@@ -396,7 +401,10 @@ void chk_trj(const output_env_t oenv, const char *fn, const char *tpr, real tol)
         INC(fr, count, first, last, bF);
         INC(fr, count, first, last, bBox);
 #undef INC
-        fpos = gmx_fio_ftell(trx_get_fileio(status));
+        if (fio)
+        {
+            fpos = gmx_fio_ftell(trx_get_fileio(status));
+        }
     }
     while (read_next_frame(oenv, status, &fr));
 
