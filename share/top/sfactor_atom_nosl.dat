@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE sfactors.dtd PUBLIC "sfactors.dtd" "sfactors.dtd">
+<sfactors type="CromerMann" force_field="any" solvent_layer="off">
+  <sfactor residue="*" atom="H" type="1" parameters="  0.493  0.323  0.14  0.041  10.511  26.126  3.142  57.8  0.003"/>
+  <sfactor residue="*" atom="He" type="2" parameters="  0.873  0.631  0.311  0.178  9.104  3.357  22.928  0.982  0.006"/>
+  <sfactor residue="*" atom="Li" type="3" parameters="  1.128  0.751  0.618  0.465  3.955  1.052  85.391  168.261  0.038"/>
+  <sfactor residue="*" atom="Be" type="4" parameters="  1.592  1.128  0.539  0.703  43.643  1.862  103.483  0.542  0.038"/>
+  <sfactor residue="*" atom="B" type="5" parameters="  2.055  1.333  1.098  0.707  23.219  1.021  60.35  0.14  -0.193"/>
+  <sfactor residue="*" atom="C" type="6" parameters="  2.31  1.02  1.589  0.865  20.844  10.208  0.569  51.651  0.216"/>
+  <sfactor residue="*" atom="N" type="7" parameters="  12.213  3.132  2.013  1.166  0.006  9.893  28.997  0.583  -11.529"/>
+  <sfactor residue="*" atom="O" type="8" parameters="  3.049  2.287  1.546  0.867  13.277  5.701  0.324  32.909  0.251"/>
+  <sfactor residue="*" atom="F" type="9" parameters="  3.539  2.641  1.517  1.024  10.283  4.294  0.262  26.148  0.278"/>
+  <sfactor residue="*" atom="Ne" type="10" parameters="  3.955  3.112  1.455  1.125  8.404  3.426  0.231  21.718  0.352"/>
+  <sfactor residue="*" atom="Na" type="11" parameters="  4.763  3.174  1.267  1.113  3.285  8.842  0.314  129.424  0.676"/>
+  <sfactor residue="*" atom="Mg" type="12" parameters="  5.42  2.174  1.227  2.307  2.828  79.261  0.381  7.194  0.858"/>
+  <sfactor residue="*" atom="Al" type="13" parameters="  6.42  1.9  1.594  1.965  3.039  0.743  31.547  85.089  1.115"/>
+  <sfactor residue="*" atom="Si" type="14" parameters="  6.292  3.035  1.989  1.541  2.439  32.334  0.678  81.694  1.141"/>
+  <sfactor residue="*" atom="P" type="15" parameters="  6.435  4.179  1.78  1.491  1.907  27.157  0.526  68.164  1.115"/>
+  <sfactor residue="*" atom="S" type="16" parameters="  6.905  5.203  1.438  1.586  1.468  22.215  0.254  56.172  0.867"/>
+  <sfactor residue="*" atom="Cl" type="17" parameters="  11.46  7.196  6.256  1.645  0.01  1.166  18.519  47.778  -9.557"/>
+  <sfactor residue="*" atom="Ar" type="18" parameters="  7.484  6.772  0.654  1.644  0.907  14.841  43.898  33.393  1.444"/>
+  <sfactor residue="*" atom="K" type="19" parameters="  8.219  7.44  1.052  0.866  12.795  0.775  213.187  41.684  1.423"/>
+  <sfactor residue="*" atom="Ca" type="20" parameters="  8.627  7.387  1.59  1.021  10.442  0.66  85.748  178.437  1.375"/>
+  <sfactor residue="*" atom="Se" type="34" parameters="  17.001  5.82  3.973  4.354  2.41  0.273  15.237  43.816  2.841"/>
+  <sfactor residue="*" atom="Br" type="35" parameters="  17.179  5.236  5.638  3.985  2.172  16.58  0.261  41.433  2.956"/>
+  <sfactor residue="*" atom="Kr" type="36" parameters="  17.355  6.729  5.549  3.537  1.938  16.562  0.226  39.397  2.825"/>
+  <sfactor residue="*" atom="Rb" type="37" parameters="  17.178  9.644  5.14  1.529  1.789  17.315  0.275  164.934  3.487"/>
+  <sfactor residue="*" atom="I" type="53" parameters="  20.147  18.995  7.514  2.273  4.347  0.381  27.766  66.878  4.071"/>
+  <sfactor residue="*" atom="Xe" type="54" parameters="  20.293  19.03  8.977  1.99  3.928  0.344  26.466  64.266  3.712"/>
+</sfactors>
