@@ -116,7 +116,7 @@ void init_md(FILE *fplog,
              t_nrnb *nrnb, gmx_mtop_t *mtop,
              gmx_update_t *upd,
              int nfile, const t_filenm fnm[],
-             gmx_mdoutf_t **outf, t_mdebin **mdebin,
+             gmx_mdoutf_t *outf, t_mdebin **mdebin,
              tensor force_vir, tensor shake_vir,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);

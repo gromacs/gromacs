@@ -56,5 +56,5 @@ set(FILEIO_PUBLIC_HEADERS
 gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
 
 if (BUILD_TESTING)
-#    add_subdirectory(tests)
+#     add_subdirectory(tests)
 endif (BUILD_TESTING)

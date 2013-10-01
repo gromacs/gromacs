@@ -65,6 +65,7 @@
 #include "gmx_omp_nthreads.h"
 
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 void ns(FILE              *fp,
         t_forcerec        *fr,
