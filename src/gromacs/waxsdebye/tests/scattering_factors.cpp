@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2010,2011,2012,2014, by the GROMACS development team, led by
+ * Copyright (c) 2014, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,37 +32,68 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-/*! \file
- * \brief
- * Defines an enumeration type for specifying file types for options.
- *
- * \author Teemu Murtola <teemu.murtola@gmail.com>
- * \inpublicapi
- * \ingroup module_options
- */
-#ifndef GMX_OPTIONS_OPTIONFILETYPE_HPP
-#define GMX_OPTIONS_OPTIONFILETYPE_HPP
+
+
+#include <gtest/gtest.h>
+#include <testutils/refdata.h>
+#include <testutils/testasserts.h>
+#include <testutils/testfilemanager.h>
 
 namespace gmx
 {
 
-/*! \brief
- * Purpose of file(s) provided through an option.
- *
- * \ingroup module_options
- */
-enum OptionFileType {
-    eftUnknown,
-    eftTopology,
-    eftTrajectory,
-    eftPDB,
-    eftIndex,
-    eftPlot,
-    eftXML,
-    eftGenericData,
-    eftOptionFileType_NR
+namespace test
+{
+
+class TestClassTest : public ::testing::Test
+{
+    protected:
+
+        TestClassTest( )
+        {
+
+        }
+        ~TestClassTest( )
+        {
+        }
+
+        //static init, only run once
+        static void SetUpTestCase()
+        {
+
+        }
+
+        //static destroy, only runed onecs
+        static void TearDownTestCase()
+        {
+
+        }
+
+
+        //init runed every test
+        void SetUp( )
+        {
+
+        }
+        //destroy runed every test
+        void TearDown( )
+        {
+
+        }
+
 };
 
-} // namespace gmx
 
-#endif
+//test (TestClassTest,testName) TestClassTest is the name of the class
+// testName is the name of the test
+TEST_F (TestClassTest, testName) {
+    //...
+    gmx::test::TestReferenceData    data(gmx::test::erefdataCompare);
+    gmx::test::TestReferenceChecker checker(data.rootChecker());
+    //...
+}
+
+
+}
+
+}

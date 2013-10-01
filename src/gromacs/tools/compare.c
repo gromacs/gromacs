@@ -995,8 +995,8 @@ void comp_tpx(const char *fn1, const char *fn2,
          * We should implement direct mtop comparison,
          * but it might be useful to keep t_topology comparison as an option.
          */
-        top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
-        top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
+        top[0] = gmx_mtop_t_to_t_topology(&mtop[0], TRUE);
+        top[1] = gmx_mtop_t_to_t_topology(&mtop[1], TRUE);
         cmp_top(stdout, &top[0], &top[1], ftol, abstol);
         cmp_groups(stdout, &mtop[0].groups, &mtop[1].groups,
                    mtop[0].natoms, mtop[1].natoms);
@@ -1018,7 +1018,7 @@ void comp_tpx(const char *fn1, const char *fn2,
              * We should implement direct mtop comparison,
              * but it might be useful to keep t_topology comparison as an option.
              */
-            top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
+            top[0] = gmx_mtop_t_to_t_topology(&mtop[0], TRUE);
             cmp_top(stdout, &top[0], NULL, ftol, abstol);
         }
     }

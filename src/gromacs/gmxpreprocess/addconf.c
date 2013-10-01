@@ -302,7 +302,7 @@ static void do_nsgrid(FILE *fp, gmx_bool bVerbose,
     snew(ir->fepvals, 1);
     printf("Neighborsearching with a cut-off of %g\n", rlong);
     init_forcerec(stdout, oenv, fr, NULL, ir, mtop, cr, box,
-                  NULL, NULL, NULL, NULL, NULL, TRUE, -1);
+                  NULL, 0, NULL, TRUE, -1);
     if (debug)
     {
         pr_forcerec(debug, fr);
