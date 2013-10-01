@@ -42,7 +42,8 @@ gmx_build_unit_test(
     ${exename}
     # files with code for tests
     rerun.cpp
-    xtc_output.cpp
+    trajectory_writing.cpp
+    compressed_x_output.cpp
     # files with code for test fixtures
     moduletest.cpp
     # pseudo libraries for code for grompp and mdrun

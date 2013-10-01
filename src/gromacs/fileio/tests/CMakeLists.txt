@@ -32,37 +32,7 @@
 # To help us fund GROMACS development, we humbly ask that you cite
 # the research papers on the package. Check out http://www.gromacs.org.
 
-file(GLOB FILEIO_SOURCES *.cpp *.c)
-set(LIBGROMACS_SOURCES ${LIBGROMACS_SOURCES} ${FILEIO_SOURCES} PARENT_SCOPE)
-
-set(FILEIO_PUBLIC_HEADERS
-    confio.h
-    enxio.h
-    filenm.h
-    futil.h
-    gmxfio.h
-    matio.h
-    mdoutf.h
-    pdbio.h
-    tpxio.h
-    trajectory_writing.h
-    trnio.h
-    trx.h
-    trxio.h
-    xdr_datatype.h
-    xtcio.h
-    )
-gmx_install_headers(fileio ${FILEIO_PUBLIC_HEADERS})
-
-# These files include tng_io.h from the TNG library. That header needs to know
-# whether inttypes.h exists or not.
-include(CheckIncludeFiles)
-check_include_file(inttypes.h   HAVE_INTTYPES_H)
-if(HAVE_INTTYPES_H)
-  set_property(SOURCE tngio.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
-  set_property(SOURCE tngio_for_tools.cpp APPEND PROPERTY COMPILE_DEFINITIONS USE_STD_INTTYPES_H)
+if(GMX_USE_TNG)
+    gmx_add_unit_test(FileIOTests fileio-test
+        tngio.cpp)
 endif()
-
-if (BUILD_TESTING)
-     add_subdirectory(tests)
-endif (BUILD_TESTING)

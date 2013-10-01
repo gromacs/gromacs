@@ -60,6 +60,11 @@
 #include "tpxio.h"
 #include "trnio.h"
 #include "futil.h"
+#include "tngio_for_tools.h"
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
 
 #include "gromacs/linearalgebra/mtxio.h"
 #include "gromacs/linearalgebra/sparsematrix.h"
@@ -328,6 +333,60 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     close_xtc(xd);
 }
 
+/* Callback used by list_tng_for_gmx_dump. */
+void list_tng_inner(const char *fn,
+                    gmx_bool bFirstFrame,
+                    gmx_bool bXVG,
+                    real *values,
+                    gmx_int64_t step, 
+                    double frame_time,
+                    gmx_int64_t n_values_per_frame,
+                    gmx_int64_t n_atoms,
+                    real prec,
+                    gmx_int64_t nframe,
+                    char *block_name)
+{
+    char                 buf[256];
+    int                  indent = 0;
+
+    if (bXVG)
+    {
+        gmx_int64_t j;
+        int         d;
+
+        if (bFirstFrame)
+        {
+            fprintf(stdout, "%g", (real)frame_time);
+        }
+        for (j = 0; j < n_atoms; j++)
+        {
+            for (d = 0; d < DIM; d++)
+            {
+                fprintf(stdout, " %g", values[j * DIM + d]);
+            }
+        }
+        fprintf(stdout, "\n");
+    }
+    else
+    {
+        if (bFirstFrame)
+        {
+            sprintf(buf, "%s frame %" GMX_PRId64, fn, nframe);
+            indent = 0;
+            indent = pr_title(stdout, indent, buf);
+            pr_indent(stdout, indent);
+            fprintf(stdout, "natoms=%10" GMX_PRId64 "  step=%10" GMX_PRId64 "  time=%12.7e",
+                    n_atoms, step, frame_time);
+            if (prec > 0)
+            {
+                fprintf(stdout, "  prec=%10g", prec);
+            }
+            fprintf(stdout, "\n");
+        }
+        pr_reals_of_dim(stdout, indent, block_name, values, n_atoms, n_values_per_frame);
+    }
+}
+
 void list_trx(const char *fn, gmx_bool bXVG)
 {
     int ftp;
@@ -340,6 +399,10 @@ void list_trx(const char *fn, gmx_bool bXVG)
     else if ((ftp == efTRR) || (ftp == efTRJ))
     {
         list_trn(fn);
+    }
+    else if (ftp == efTNG)
+    {
+        list_tng_for_gmx_dump(fn, bXVG);
     }
     else
     {

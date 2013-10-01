@@ -1,7 +1,7 @@
 /*
  * This file is part of the GROMACS molecular simulation package.
  *
- * Copyright (c) 2014, by the GROMACS development team, led by
+ * Copyright (c) 2013, by the GROMACS development team, led by
  * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
  * and including many others, as listed in the AUTHORS file in the
  * top-level source directory and at http://www.gromacs.org.
@@ -32,39 +32,46 @@
  * To help us fund GROMACS development, we humbly ask that you cite
  * the research papers on the package. Check out http://www.gromacs.org.
  */
-#ifndef GMX_FILEIO_DUMP_H
-#define GMX_FILEIO_DUMP_H
-
-#include "gromacs/legacyheaders/types/simple.h"
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-#if 0
-}
-#endif
-
-/*! \brief Implements 'gmx dump' */
-int gmx_dump(int argc, char *argv[]);
-
-/*! \brief Callback used by list_tng_for_gmx_dump.
+/*! \internal \file
+ * \brief
+ * Tests for file I/O routines
  *
- * This keeps TNG-related stuff in a TNG-related file, and
- * dumping-related stuff in the dumping file. */
-void list_tng_inner(const char *fn,
-                    gmx_bool bFirstFrame,
-                    gmx_bool bXVG,
-                    real *values,
-                    gmx_int64_t step, 
-                    double frame_time,
-                    gmx_int64_t n_values_per_frame,
-                    gmx_int64_t n_atoms,
-                    real prec,
-                    gmx_int64_t nframe,
-                    char *block_name);
+ * \author Mark Abraham <mark.j.abraham@gmail.com>
+ * \ingroup module_fileio
+ */
+#include <gtest/gtest.h>
+#include <string>
 
-#ifdef __cplusplus
+#include "../tngio.h"
+#include "../tngio_for_tools.h"
+#include "testutils/testfilemanager.h"
+#include "gromacs/utility/path.h"
+
+namespace
+{
+
+class TngTest : public ::testing::Test
+{
+    public:
+        TngTest()
+        {
+        }
+        gmx::test::TestFileManager      fileManager_;
+};
+
+TEST_F(TngTest, CanOpenTngFile)
+{
+    tng_trajectory_t tng;
+    gmx_tng_open(fileManager_.getInputFilePath("spc2-traj.tng").c_str(),
+                 'r',
+                 &tng);
+    gmx_tng_close(&tng);
 }
-#endif
 
-#endif
+TEST_F(TngTest, CloseBeforeOpenIsNotFatal)
+{
+    tng_trajectory_t tng = NULL;
+    gmx_tng_close(&tng);
+}
+
+} // namespace

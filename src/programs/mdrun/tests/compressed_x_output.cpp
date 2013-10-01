@@ -45,35 +45,34 @@
 #include <string>
 #include "gromacs/options/filenameoption.h"
 #include "gromacs/fileio/check.h"
-#include "programs/gmx/legacycmainfunctions.h"
 #include "testutils/cmdlinetest.h"
 
 namespace
 {
 
 //! Test fixture for mdrun -x
-class XtcOutputTest : public gmx::test::MdrunTestFixture,
+class CompressedXOutputTest : public gmx::test::MdrunTestFixture,
                       public testing::WithParamInterface<const char*>
 {
 };
 
 /* Among other things, this test ensures mdrun can write a compressed trajectory. */
-TEST_P(XtcOutputTest, ExitsNormally)
+TEST_P(CompressedXOutputTest, ExitsNormally)
 {
     std::string mdpFile("cutoff-scheme = Group\n"
                         "nsteps = 1\n"
-                        "nstxtcout = 1\n");
+                        "nstxout-compressed = 1\n");
     mdpFile += GetParam();
     useStringAsMdpFile(mdpFile.c_str());
     useTopGroAndNdxFromDatabase("spc2");
     ASSERT_EQ(0, callGrompp());
 
-    xtcFileName = fileManager_.getTemporaryFilePath(".xtc");
+    reducedPrecisionTrajectoryFileName = fileManager_.getTemporaryFilePath(".xtc");
     ASSERT_EQ(0, callMdrun());
 
     ::gmx::test::CommandLine checkCaller;
     checkCaller.append("check");
-    checkCaller.addOption("-f", xtcFileName);
+    checkCaller.addOption("-f", reducedPrecisionTrajectoryFileName);
     ASSERT_EQ(0, gmx_check(checkCaller.argc(), checkCaller.argv()));
 }
 
@@ -86,21 +85,21 @@ TEST_P(XtcOutputTest, ExitsNormally)
 #pragma warning( disable : 177 )
 #endif
 
-INSTANTIATE_TEST_CASE_P(WithDifferentMdpOptions, XtcOutputTest,
+INSTANTIATE_TEST_CASE_P(WithDifferentMdpOptions, CompressedXOutputTest,
                             ::testing::Values
-                            ( // Test writing the whole system to XTC via
+                            ( // Test writing the whole system via
                               // the default behaviour
                             "",
 
-                            // Test writing the whole system to XTC
+                            // Test writing the whole system
                             // explicitly
-                            "xtc-grps = System\n",
+                            "compressed-x-grps = System\n",
 
-                            // Test writing part of the system to XTC.
+                            // Test writing only part of the system.
                             // It would be nice to check that this test
                             // writes 3 atoms and the others write 6, but
-                            // that's not yet easy
-                            "xtc-grps = SecondWaterMolecule\n"
+                            // that's not yet easy.
+                            "compressed-x-grps = SecondWaterMolecule\n"
                             ));
 
 } // namespace
