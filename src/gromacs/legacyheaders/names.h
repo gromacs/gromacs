@@ -53,6 +53,7 @@ extern const char *epbc_names[epbcNR+1];
 extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];
 extern const char *epcoupltype_names[epctNR+1];
+extern const char *ewaxs_names[eWaxsNR+1];
 extern const char *erefscaling_names[erscNR+1];
 extern const char *ecutscheme_names[ecutsNR+1];
 extern const char *ens_names[ensNR+1];
@@ -119,6 +120,7 @@ extern const char *gmx_nbkernel_vdw_names[GMX_NBKERNEL_VDW_NR+1];
 #define EPCOUPLTYPE(e) ENUM_NAME(e, epcNR, epcoupl_names)
 #define EPCOUPLTYPETYPE(e) ENUM_NAME(e, epctNR, epcoupltype_names)
 #define EREFSCALINGTYPE(e) ENUM_NAME(e, erscNR, erefscaling_names)
+#define EWAXSTYPE(e)   ENUM_NAME(e, eWaxsNR, ewaxs_names)
 #define EBLOCKS(e)     ENUM_NAME(e, ebNR, eblock_names)
 #define EPARAM(e)      ENUM_NAME(e, epNR, eparam_names)
 #define INTMODIFIER(e) ENUM_NAME(e, eintmodNR, eintmod_names)
