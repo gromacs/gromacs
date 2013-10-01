@@ -593,7 +593,7 @@ void check_ir(const char *mdparin, t_inputrec *ir, t_gromppopts *opts,
 
         sprintf(err_buf, "Can only use expanded ensemble with md-vv for now; should be supported for other integrators in 5.0");
         CHECK(!(EI_VV(ir->eI)) && (ir->efep == efepEXPANDED));
-        
+
         sprintf(err_buf, "Free-energy not implemented for Ewald");
         CHECK(ir->coulombtype == eelEWALD);
 
@@ -1950,6 +1950,19 @@ void get_ir(const char *mdparin, const char *mdparout,
     STYPE ("wall-atomtype", wall_atomtype, NULL);
     STYPE ("wall-density",  wall_density,  NULL);
     RTYPE ("wall-ewald-zfac", ir->wall_ewald_zfac, 3);
+
+    /* WAXS/SAXS Refinement */
+    CCTYPE ("WAXS/SAXS Refinement");
+    CTYPE ("WAXS/SAXS model, force constant and frequency of output");
+    EETYPE("waxs-type",   ir->waxs.waxs_type,   ewaxs_names);
+    RTYPE ("waxs-fc",     ir->waxs.kwaxs, 0);
+    ITYPE ("waxs-nstout", ir->waxs.nstout, 10);
+    CTYPE ("Lower and upper alpha boundary, should be 0 <= alpha_min <= alpha_max <= 1.");
+    RTYPE ("debye-alpha-min", ir->waxs.debye_alpha_min, 0);
+    RTYPE ("debye-alpha-max", ir->waxs.debye_alpha_max, 0);
+    CTYPE ("Lower and upper distance boundary, should be 0 <= rmin <= rmax.");
+    RTYPE ("debye-r-min", ir->waxs.debye_r_min, 0);
+    RTYPE ("debye-r-max", ir->waxs.debye_r_max, 0);
 
     /* COM pulling */
     CCTYPE("COM PULLING");
@@ -3721,6 +3734,35 @@ void triple_check(const char *mdparin, t_inputrec *ir, gmx_mtop_t *sys,
                 }
             }
         }
+    }
+    /* WAXS/SAXS input */
+    if (ir->waxs.kwaxs < 0)
+    {
+        warning_error(wi, "waxs-fc should be >= 0");
+    }
+    if (ir->waxs.nstout < 0)
+    {
+        warning_error(wi, "waxs-nstout should be >= 0");
+    }
+    if (ir->waxs.debye_r_min < 0)
+    {
+        warning_error(wi, "debye-r-min should be >= 0");
+    }
+    if (ir->waxs.debye_r_max < ir->waxs.debye_r_min)
+    {
+        warning_error(wi, "debye-r-max should be >= debye_r_min");
+    }
+    if (ir->waxs.debye_alpha_min < 0)
+    {
+        warning_error(wi, "debye-alpha-min should be >= 0");
+    }
+    if (ir->waxs.debye_alpha_max < ir->waxs.debye_alpha_min)
+    {
+        warning_error(wi, "debye-alpha-max should be >= debye_alpha_min");
+    }
+    if (ir->waxs.debye_alpha_max > 1)
+    {
+        warning_error(wi, "debye-alpha-max should be <= 1");
     }
 
     check_disre(sys);
