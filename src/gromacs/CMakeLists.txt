@@ -134,7 +134,7 @@ if(GMX_BUILD_OWN_FFTW)
 endif()
 
 target_link_libraries(libgromacs ${GMX_GPU_LIBRARIES}
-                      ${GMX_EXTRA_LIBRARIES}
+                      ${GMX_EXTRA_LIBRARIES} ${GMX_TNG_LIBRARIES}
                       ${FFT_LIBRARIES} ${LINEAR_ALGEBRA_LIBRARIES}
                       ${XML_LIBRARIES} ${GSL_LIBRARIES}
                       ${THREAD_LIB} ${GMX_SHARED_LINKER_FLAGS})
@@ -173,3 +173,9 @@ if (INSTALL_CUDART_LIB) #can be set manual by user
         message(WARNING "INSTALL_CUDART_LIB only makes sense with GMX_GPU")
     endif()
 endif ()
+
+if(GMX_USE_TNG)
+    # Only this file needs to know where and what TNG is, so we don't
+    # need to add to the global include-file search path
+    set_source_files_properties(fileio/tngio.cpp PROPERTIES COMPILE_FLAGS "-I${CMAKE_CURRENT_SOURCE_DIR}/../external/tng_io/include")
+endif()
