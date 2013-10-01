@@ -20,7 +20,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#shellmd"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
 <li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
-<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxtcout, xtc-precision, xtc-grps, energygrps)
+<li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstcalcenergy, nstenergy, nstxout-compressed, x-compression-precision, x-compressed-grps, energygrps)
 <li><A HREF="#nl"><b>neighbor searching</b></A> (cutoff-scheme, nstlist, nstcalclr, ns-type, pbc, periodic-molecules, verlet-buffer-tolerance, rlist, rlistlong)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, coulomb-modifier, rcoulomb-switch, rcoulomb, epsilon-r, epsilon-rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, vdw-modifier, rvdw-switch, rvdw, DispCorr)
@@ -326,18 +326,18 @@ Try several values!</dd>
 <h3>Output control</h3>
 <dl>
 <dt><b>nstxout: (0) [steps]</b></dt>
-<dd>frequency to write coordinates to output 
+<dd>number of steps that elapse between writing coordinates to output
 <!--Idx-->trajectory file<!--EIdx-->, the last coordinates are always written</dd>
 <dt><b>nstvout: (0) [steps]</b></dt>
-<dd>frequency  to write velocities to output trajectory,
+<dd>number of steps that elapse between writing velocities to output trajectory,
 the last velocities are always written</dd>
 <dt><b>nstfout: (0) [steps]</b></dt>
-<dd>frequency to write forces to output trajectory.</dd>
+<dd>number of steps that elapse between writing forces to output trajectory.</dd>
 <dt><b>nstlog: (1000) [steps]</b></dt>
-<dd>frequency to write energies to <!--Idx-->log file<!--EIdx-->,
+<dd>number of steps that elapse between writing energies to the <!--Idx-->log file<!--EIdx-->,
 the last energies are always written</dd>
 <dt><b>nstcalcenergy: (100)</b></dt>
-<dd>frequency for calculating the energies, 0 is never.
+<dd>number of steps that elapse between calculating the energies, 0 is never.
 This option is only relevant with dynamics.
 With a twin-range cut-off setup <b>nstcalcenergy</b> should be equal to
 or a multiple of <b>nstlist</b>.
@@ -346,20 +346,20 @@ because calculating energies requires global communication between all
 processes which can become a bottleneck at high parallelization.
 </dd>
 <dt><b>nstenergy: (1000) [steps]</b></dt>
-<dd>frequency to write energies to energy file,
+<dd>number of steps that else between writing energies to energy file,
 the last energies are always written,
 should be a multiple of <b>nstcalcenergy</b>.
 Note that the exact sums and fluctuations over all MD steps
 modulo <b>nstcalcenergy</b> are stored in the energy file,
 so <tt>g_energy</tt> can report exact
 energy averages and fluctuations also when <b>nstenergy</b><tt>&gt;1</tt></dd>
-<dt><b>nstxtcout: (0) [steps]</b></dt>
-<dd>frequency to write coordinates to xtc trajectory</dd>
-<dt><b>xtc-precision: (1000) [real]</b></dt>
-<dd>precision to write to xtc trajectory</dd>
-<dt><b>xtc-grps:</b></dt>
-<dd>group(s) to write to xtc trajectory, default the whole system is written
-(if <b>nstxtcout</b> &gt; 0)</dd>
+<dt><b>nstxout-compressed: (0) [steps]</b></dt>
+<dd>number of steps that elapse between writing position coordinates using lossy compression</dd>
+<dt><b>x-compression-precision: (1000) [real]</b></dt>
+<dd>precision with which to write to the compressed trajectory file</dd>
+<dt><b>x-compressed-grps:</b></dt>
+<dd>group(s) to write to the compressed trajectory file, by default the whole system is written
+(if <b>nstxout-compressed</b> &gt; 0)</dd>
 <dt><b>energygrps:</b></dt>
 <dd>group(s) to write to energy file</dd>
 </dl>
@@ -2118,7 +2118,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#tc">nsttcouple</A><br>
 <A HREF="#out">nstvout</A><br>
 <A HREF="#out">nstxout</A><br>
-<A HREF="#out">nstxtcout</A><br>
+<A HREF="#out">nstxout-compressed</A><br>
 <A HREF="#expanded">nst-transition-matrix</A><br>
 <A HREF="#nl">ns-type</A><br>
 <A HREF="#wall">nwall</A><br>
@@ -2173,8 +2173,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#vdw">vdwtype</A><br>
 <A HREF="#vdw">vdw-modifier</A><br>
 <A HREF="#nl">verlet-buffer-tolerance</A><br>
-<A HREF="#out">xtc-grps</A><br>
-<A HREF="#out">xtc-precision</A><br>
+<A HREF="#out">x-compressed-grps</A><br>
+<A HREF="#out">x-compression-precision</A><br>
 <A HREF="#sa">zero-temp-time</A><br>
 <A HREF="#walls">wall-atomtype</A><br>
 <A HREF="#walls">wall-density</A><br>
