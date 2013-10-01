@@ -33,39 +33,48 @@
  * the research papers on the package. Check out http://www.gromacs.org.
  */
 
-/*! \internal \file
- * \brief
- * Tests for the mdrun -rerun functionality
- *
- * \author Mark Abraham <mark.j.abraham@gmail.com>
- * \ingroup module_mdrun
- */
-#include <gtest/gtest.h>
-#include "moduletest.h"
-#include "gromacs/options/filenameoption.h"
+#ifndef GMX_FILEIO_TNGIO_FOR_TOOLS_H
+#define GMX_FILEIO_TNGIO_FOR_TOOLS_H
 
-namespace
-{
+#include "tngio.h"
+#include "gromacs/legacyheaders/typedefs.h"
+#include "trxio.h"
 
-//! Test fixture for mdrun -rerun
-typedef gmx::test::MdrunTestFixture RerunTest;
-
-/* Among other things, this test ensures mdrun can read a trajectory. */
-TEST_F(RerunTest, RerunExitsNormally)
-{
-    useEmptyMdpFile();
-    useTopAndGroFromDatabase("spc2");
-    EXPECT_EQ(0, callGrompp());
-
-    rerunFileName = fileManager_.getInputFilePath("spc2.trr");
-    ASSERT_EQ(0, callMdrun());
+#ifdef __cplusplus
+extern "C" {
+#endif
+#if 0
 }
+#endif
 
-/*! \todo Add other tests for mdrun -rerun, e.g.
- *
- * - RerunReproducesRunWhenRunOnlyWroteEnergiesOnNeighborSearchSteps
- *   (e.g. do such a run, do a rerun, call gmxcheck)
- * - TpiExitsNormally (since it uses the -rerun machinery)
- */
+void prepare_tng_writing(const char              *filename,
+                         char                     mode,
+                         tng_trajectory_t        *in,
+                         tng_trajectory_t        *out,
+                         int                      natoms);
+/* TODO */
 
-} // namespace
+void open_tng_for_reading(const char              *fn,
+                          tng_trajectory_t        *input);
+/* TODO */
+
+void write_tng_from_trxframe(tng_trajectory_t        output,
+                             t_trxframe             *frame);
+/* TODO */
+
+void tng_tools_close(tng_trajectory_t *tng);
+/* TODO */
+
+gmx_bool read_next_tng_frame(tng_trajectory_t        input,
+                             t_trxframe             *fr);
+/* Read the first/next TNG frame. */
+
+void print_tng_molecule_system(tng_trajectory_t input,
+                               FILE *stream);
+/* Print the molecule system to stream */
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

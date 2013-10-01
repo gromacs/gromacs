@@ -1,36 +1,38 @@
 /*
+ * This file is part of the GROMACS molecular simulation package.
  *
- *                This source code is part of
- *
- *                 G   R   O   M   A   C   S
- *
- *          GROningen MAchine for Chemical Simulations
- *
- *                        VERSION 3.2.0
- * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
- * check out http://www.gromacs.org for more information.
-
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
+ * Copyright (c) 2001-2004, The GROMACS development team.
+ * Copyright (c) 2013, by the GROMACS development team, led by
+ * Mark Abraham, David van der Spoel, Berk Hess, and Erik Lindahl,
+ * and including many others, as listed in the AUTHORS file in the
+ * top-level source directory and at http://www.gromacs.org.
+ *
+ * GROMACS is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either version 2.1
  * of the License, or (at your option) any later version.
  *
- * If you want to redistribute modifications, please consider that
- * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
- * inclusion in the official distribution, but derived work must not
- * be called official GROMACS. Details are found in the README & COPYING
- * files - if they are missing, get the official version at www.gromacs.org.
+ * GROMACS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with GROMACS; if not, see
+ * http://www.gnu.org/licenses, or write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA.
+ *
+ * If you want to redistribute modifications to GROMACS, please
+ * consider that scientific software is very special. Version
+ * control is crucial - bugs must be traceable. We will be happy to
+ * consider code for inclusion in the official distribution, but
+ * derived work must not be called official GROMACS. Details are found
+ * in the README & COPYING files - if they are missing, get the
+ * official version at http://www.gromacs.org.
  *
  * To help us fund GROMACS development, we humbly ask that you cite
- * the papers on the package - you can find them in the top README file.
- *
- * For more info, check our website at http://www.gromacs.org
- *
- * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * the research papers on the package. Check out http://www.gromacs.org.
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -46,6 +48,7 @@
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "statutil.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/fileio/pdbio.h"
@@ -821,7 +824,7 @@ int gmx_trjconv(int argc, char *argv[])
 
     FILE            *out    = NULL;
     t_trxstatus     *trxout = NULL;
-    t_trxstatus     *status;
+    t_trxstatus     *trxin;
     int              ftp, ftpin = 0, file_nr;
     t_trxframe       fr, frout;
     int              flags;
@@ -1142,12 +1145,12 @@ int gmx_trjconv(int argc, char *argv[])
         else
         {
             /* no index file, so read natoms from TRX */
-            if (!read_first_frame(oenv, &status, in_file, &fr, TRX_DONT_SKIP))
+            if (!read_first_frame(oenv, &trxin, in_file, &fr, TRX_DONT_SKIP))
             {
                 gmx_fatal(FARGS, "Could not read a frame from %s", in_file);
             }
             natoms = fr.natoms;
-            close_trj(status);
+            close_trj(trxin);
             sfree(fr.x);
             snew(index, natoms);
             for (i = 0; i < natoms; i++)
@@ -1234,7 +1237,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
 
         /* open trx file for reading */
-        bHaveFirstFrame = read_first_frame(oenv, &status, in_file, &fr, flags);
+        bHaveFirstFrame = read_first_frame(oenv, &trxin, in_file, &fr, flags);
         if (fr.bPrec)
         {
             fprintf(stderr, "\nPrecision of %s is %g (nm)\n", in_file, 1/fr.prec);
@@ -1278,6 +1281,14 @@ int gmx_trjconv(int argc, char *argv[])
             }
             switch (ftp)
             {
+                case efTNG:
+                    // TODO Does appending to a TNG file even make sense?
+                    trjconv_prepare_tng_writing(out_file,
+                                                filemode[0],
+                                                &trxin,
+                                                &trxout,
+                                                natoms);
+                    break;
                 case efXTC:
                 case efG87:
                 case efTRR:
@@ -1296,6 +1307,8 @@ int gmx_trjconv(int argc, char *argv[])
                         out = ffopen(out_file, filemode);
                     }
                     break;
+                default:
+                    gmx_incons("Illegal output file format");
             }
 
             bCopy = FALSE;
@@ -1690,6 +1703,11 @@ int gmx_trjconv(int argc, char *argv[])
 
                         switch (ftp)
                         {
+                            case efTNG:
+                                write_tng_frame(trxout, &frout);
+                                // TODO work how to read and write lambda
+                                // TODO support more functionality like below
+                                break;
                             case efTRJ:
                             case efTRR:
                             case efG87:
@@ -1830,7 +1848,7 @@ int gmx_trjconv(int argc, char *argv[])
                     }
                 }
                 frame++;
-                bHaveNextFrame = read_next_frame(oenv, status, &fr);
+                bHaveNextFrame = read_next_frame(oenv, trxin, &fr);
             }
             while (!(bTDump && bDumpFrame) && bHaveNextFrame);
         }
@@ -1842,7 +1860,7 @@ int gmx_trjconv(int argc, char *argv[])
         }
         fprintf(stderr, "\n");
 
-        close_trj(status);
+        close_trj(trxin);
         sfree(outf_base);
 
         if (bRmPBC)
