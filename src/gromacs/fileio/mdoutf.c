@@ -37,11 +37,13 @@
 #include "gromacs/legacyheaders/xvgr.h"
 #include "trnio.h"
 #include "xtcio.h"
+#include "tngio.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/smalloc.h"
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
+                          const gmx_mtop_t *mtop,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
@@ -53,6 +55,7 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
     of->fp_trn   = NULL;
     of->fp_ene   = NULL;
     of->fp_xtc   = NULL;
+    of->tng      = NULL;
     of->fp_dhdl  = NULL;
     of->fp_field = NULL;
 
@@ -80,6 +83,11 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
             )
         {
             of->fp_trn = open_trn(ftp2fn(efTRN, nfile, fnm), filemode);
+
+            /* Initialize topology and then set writing frequency. */
+            tng_open(ftp2fn(efTNG, nfile, fnm), filemode[0], &of->tng);
+            tng_add_top(of->tng, mtop);
+            tng_set_writing_frequency(of->tng, ir);
         }
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxtcout > 0)
@@ -148,6 +156,10 @@ void done_mdoutf(gmx_mdoutf_t *of)
     if (of->fp_field != NULL)
     {
         gmx_fio_fclose(of->fp_field);
+    }
+    if (of->tng)
+    {
+        tng_close(&of->tng);
     }
 
     sfree(of);
