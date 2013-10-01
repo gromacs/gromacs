@@ -42,24 +42,30 @@
 #include "mdebin.h"
 #include "update.h"
 #include "vcm.h"
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 typedef struct {
-    t_fileio   *fp_trn;
-    t_fileio   *fp_xtc;
-    int         xtc_prec;
-    ener_file_t fp_ene;
-    const char *fn_cpt;
-    gmx_bool    bKeepAndNumCPT;
-    int         eIntegrator;
-    gmx_bool    bExpanded;
-    int         elamstats;
-    int         simulation_part;
-    FILE       *fp_dhdl;
-    FILE       *fp_field;
+    t_fileio        *fp_trn;
+    t_fileio        *fp_xtc;
+    int              xtc_prec;
+    ener_file_t      fp_ene;
+    const char      *fn_cpt;
+    gmx_bool         bKeepAndNumCPT;
+    int              eIntegrator;
+    gmx_bool         bExpanded;
+    int              elamstats;
+    int              simulation_part;
+    FILE            *fp_dhdl;
+    FILE            *fp_field;
+#ifdef GMX_USE_TNG
+    tng_trajectory_t tng;
+#endif
 } gmx_mdoutf_t;
 
 typedef struct gmx_global_stat *gmx_global_stat_t;
@@ -191,6 +197,11 @@ void init_md(FILE *fplog,
              rvec mu_tot,
              gmx_bool *bSimAnn, t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
+
+#ifdef GMX_USE_TNG
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop);
+/* Routine that sets molecular data in a TNG trajectory based on mtop */
+#endif
 
 #ifdef __cplusplus
 }
