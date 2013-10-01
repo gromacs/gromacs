@@ -269,10 +269,10 @@ gmx_mtop_generate_local_top(const struct gmx_mtop_t *mtop, const t_inputrec *ir)
 
 
 /* Converts a gmx_mtop_t struct to t_topology.
- * All memory relating only to mtop will be freed.
+ * All memory relating only to mtop will be freed if bFreeMemory is TRUE.
  */
 struct t_topology
-gmx_mtop_t_to_t_topology(struct gmx_mtop_t *mtop);
+gmx_mtop_t_to_t_topology(struct gmx_mtop_t *mtop, gmx_bool bFreeMemory);
 
 #ifdef __cplusplus
 }

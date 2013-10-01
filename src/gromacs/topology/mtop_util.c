@@ -1149,7 +1149,7 @@ gmx_localtop_t *gmx_mtop_generate_local_top(const gmx_mtop_t *mtop,
     return top;
 }
 
-t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
+t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop, gmx_bool bFreeMemory)
 {
     int            mt, mb;
     gmx_localtop_t ltop;
@@ -1166,23 +1166,25 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
     top.mols      = mtop->mols;
     top.symtab    = mtop->symtab;
 
-    /* We only need to free the moltype and molblock data,
-     * all other pointers have been copied to top.
-     *
-     * Well, except for the group data, but we can't free those, because they
-     * are used somewhere even after a call to this function.
-     */
-    for (mt = 0; mt < mtop->nmoltype; mt++)
+    if (bFreeMemory)
     {
-        done_moltype(&mtop->moltype[mt]);
-    }
-    sfree(mtop->moltype);
+        /* We only need to free the moltype and molblock data,
+         * all other pointers have been copied to top.
+         *
+         * Well, except for the group data, but we can't free those, because they
+         * are used somewhere even after a call to this function.
+         */
+        for (mt = 0; mt < mtop->nmoltype; mt++)
+        {
+            done_moltype(&mtop->moltype[mt]);
+        }
+        sfree(mtop->moltype);
 
-    for (mb = 0; mb < mtop->nmolblock; mb++)
-    {
-        done_molblock(&mtop->molblock[mb]);
+        for (mb = 0; mb < mtop->nmolblock; mb++)
+        {
+            done_molblock(&mtop->molblock[mb]);
+        }
+        sfree(mtop->molblock);
     }
-    sfree(mtop->molblock);
-
     return top;
 }
