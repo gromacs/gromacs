@@ -94,6 +94,11 @@ TEST_F(GmxTrajTestNoFatalError, TRRFile)
     runTest("spc2-traj.trr");
 }
 
+TEST_F(GmxTrajTestNoFatalError, TNGFile)
+{
+    runTest("spc2-traj.tng");
+}
+
 TEST_F(GmxTrajTestNoFatalError, XTCFile)
 {
     runTest("spc2-traj.xtc");
