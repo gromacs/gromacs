@@ -144,7 +144,7 @@ const char *ecomb_names[eCOMB_NR+1] = {
 
 const char *gtypes[egcNR+1] = {
     "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-    "User1", "User2", "VCM", "XTC", "Or. Res. Fit", "QMMM", NULL
+    "User1", "User2", "VCM", "Compressed X", "Or. Res. Fit", "QMMM", NULL
 };
 
 const char *esimtemp_names[esimtempNR+1] = {
