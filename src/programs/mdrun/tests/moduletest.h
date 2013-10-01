@@ -110,8 +110,8 @@ class MdrunTestFixture : public IntegrationTestFixture
          */
         std::string topFileName;
         std::string groFileName;
-        std::string trrFileName;
-        std::string xtcFileName;
+        std::string fullPrecisionTrajectoryFileName;
+        std::string reducedPrecisionTrajectoryFileName;
         std::string rerunFileName;
         std::string mdpInputFileName;
         std::string mdpOutputFileName;
