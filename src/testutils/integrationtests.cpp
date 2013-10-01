@@ -41,12 +41,13 @@
  */
 #include "integrationtests.h"
 
-#include "testutils/testoptions.h"
-#include "gromacs/utility/stringutil.h"
-#include "gromacs/utility/exceptions.h"
-#include "gromacs/options/options.h"
-#include "gromacs/options/basicoptions.h"
-#include "gromacs/utility/file.h"
+#include "testoptions.h"
+#include "../utility/stringutil.h"
+#include "../utility/exceptions.h"
+#include "../options/options.h"
+#include "../options/basicoptions.h"
+#include "../options/filenameoption.h"
+#include "../utility/file.h"
 #include <stdlib.h>
 #include <stdio.h>
 
