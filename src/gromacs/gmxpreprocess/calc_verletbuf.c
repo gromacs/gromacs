@@ -205,7 +205,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
         {
             il = &moltype->ilist[ft];
 
-            for (i = 0; i < il->nr; i += 1+NRAL(ft))
+            for (i = 0; i < il->nr; )
             {
                 const t_iparams *ip;
                 real             cam[5] = {0}, inv_mass, m_aj;
@@ -217,7 +217,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
 
                 if (ft != F_VSITEN)
                 {
-                    for (j = 1; j < NRAL(ft); j++)
+                    for (j = 1; j < NRAL(ft); j++, i++)
                     {
                         cam[j] = moltype->atoms.atom[il->iatoms[i+1+j]].m;
                         if (cam[j] == 0)
@@ -232,6 +232,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                                       il->iatoms[i+1+j]+1);
                         }
                     }
+                    i += 1+NRAL(ft);
                 }
 
                 switch (ft)
@@ -247,10 +248,10 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                     case F_VSITEN:
                         /* Exact */
                         inv_mass = 0;
-                        for (j = 0; j < 3*ip->vsiten.n; j += 3)
+                        for (j = 0; j < ip->vsiten.n; j++)
                         {
-                            aj    = il->iatoms[i+j+2];
-                            coeff = ip[il->iatoms[i+j]].vsiten.a;
+                            aj    = il->iatoms[i+3*j+2];
+                            coeff = ip->vsiten.a;
                             if (moltype->atoms.atom[aj].ptype == eptVSite)
                             {
                                 m_aj = vsite_m[aj];
@@ -265,6 +266,7 @@ static void get_vsite_masses(const gmx_moltype_t  *moltype,
                             }
                             inv_mass += coeff*coeff/m_aj;
                         }
+                        i          += 3*ip->vsiten.n;
                         vsite_m[a1] = 1/inv_mass;
                         /* Correct for loop increment of i */
                         i += j - 1 - NRAL(ft);
