@@ -77,7 +77,7 @@ typedef struct t_inputrec_strings
 {
     char tcgrps[STRLEN], tau_t[STRLEN], ref_t[STRLEN],
          acc[STRLEN], accgrps[STRLEN], freeze[STRLEN], frdim[STRLEN],
-         energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], xtc_grps[STRLEN],
+         energy[STRLEN], user1[STRLEN], user2[STRLEN], vcm[STRLEN], x_compressed_groups[STRLEN],
          couple_moltype[STRLEN], orirefitgrp[STRLEN], egptable[STRLEN], egpexcl[STRLEN],
          wall_atomtype[STRLEN], wall_density[STRLEN], deform[STRLEN], QMMM[STRLEN];
     char   fep_lambda[efptNR][STRLEN];
@@ -1747,6 +1747,9 @@ void get_ir(const char *mdparin, const char *mdparout,
     REPL_TYPE("unconstrained-start", "continuation");
     REPL_TYPE("foreign-lambda", "fep-lambdas");
     REPL_TYPE("verlet-buffer-drift", "verlet-buffer-tolerance");
+    REPL_TYPE("nstxtcout", "nstxout-compressed");
+    REPL_TYPE("xtc-grps", "compressed-x-grps");
+    REPL_TYPE("xtc-precision", "compressed-x-precision");
 
     CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
     CTYPE ("Preprocessor information: use cpp syntax.");
@@ -1805,11 +1808,12 @@ void get_ir(const char *mdparin, const char *mdparout,
     ITYPE ("nstcalcenergy", ir->nstcalcenergy, 100);
     ITYPE ("nstenergy",   ir->nstenergy,  1000);
     CTYPE ("Output frequency and precision for .xtc file");
-    ITYPE ("nstxtcout",   ir->nstxtcout,  0);
-    RTYPE ("xtc-precision", ir->xtcprec,   1000.0);
-    CTYPE ("This selects the subset of atoms for the .xtc file. You can");
-    CTYPE ("select multiple groups. By default all atoms will be written.");
-    STYPE ("xtc-grps",    is->xtc_grps,       NULL);
+    ITYPE ("nstxout-compressed", ir->nstxout_compressed,  0);
+    RTYPE ("compressed-x-precision", ir->x_compression_precision, 1000.0);
+    CTYPE ("This selects the subset of atoms for the compressed");
+    CTYPE ("trajectory file. You can select multiple groups. By");
+    CTYPE ("default, all atoms will be written.");
+    STYPE ("compressed-x-grps", is->x_compressed_groups, NULL);
     CTYPE ("Selection of energy groups");
     STYPE ("energygrps",  is->energy,         NULL);
 
@@ -3320,8 +3324,8 @@ void do_index(const char* mdparin, const char *ndx,
     nuser = str_nelem(is->user2, MAXPTR, ptr1);
     do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcUser2,
                  restnm, egrptpALL_GENREST, bVerbose, wi);
-    nuser = str_nelem(is->xtc_grps, MAXPTR, ptr1);
-    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcXTC,
+    nuser = str_nelem(is->x_compressed_groups, MAXPTR, ptr1);
+    do_numbering(natoms, groups, nuser, ptr1, grps, gnames, egcCompressedX,
                  restnm, egrptpONE, bVerbose, wi);
     nofg = str_nelem(is->orirefitgrp, MAXPTR, ptr1);
     do_numbering(natoms, groups, nofg, ptr1, grps, gnames, egcORFIT,
