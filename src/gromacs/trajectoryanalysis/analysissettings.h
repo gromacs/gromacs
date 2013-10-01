@@ -48,6 +48,7 @@
 #include "../utility/common.h"
 
 struct t_topology;
+struct gmx_mtop_t;
 
 namespace gmx
 {
@@ -249,6 +250,8 @@ class TopologyInformation
         bool hasFullTopology() const { return bTop_; }
         //! Returns the loaded topology, or NULL if not loaded.
         t_topology *topology() const { return top_; }
+        //! Returns the loaded mtop, or NULL if not loaded.
+        gmx_mtop_t *gmx_mtop() const { return mtop_; }
         //! Returns the ePBC field from the topology.
         int ePBC() const { return ePBC_; }
         /*! \brief
@@ -274,6 +277,8 @@ class TopologyInformation
 
         //! The topology structure, or NULL if no topology loaded.
         t_topology          *top_;
+        //! The mtop structure, or NULL if no mtop loaded.
+        gmx_mtop_t          *mtop_;
         //! true if full tpx file was loaded, false otherwise.
         bool                 bTop_;
         //! Coordinates from the topology (can be NULL).

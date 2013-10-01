@@ -44,6 +44,7 @@ wall-density, wall-ewald-zfac)
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
 <li><A HREF="#gbsa"><b>Implicit solvent</b></A> (implicit-solvent, gb-algorithm, nstgbradii, rgbradii, gb-epsilon-solvent, gb-saltconc, gb-obc-alpha, gb-obc-beta, gb-obc-gamma, gb-dielectric-offset, sa-algorithm, sa-surface-tension)   
 <li><A HREF="#adress"><b>AdResS settings</b></A> (adress, adress_type, adress_const_wf, adress_ex_width, adress_hy_width, adress_ex_forcecap, adress_interface_correction, adress_site, adress_reference_coords, adress_tf_grp_names, adress_cg_grp_names)
+<li><A HREF="#waxs"><b>S/WAXS refinement</b></A> (waxs-type, waxs-fc, waxs-nstout, debye-alpha-min, debye-alpha-max, debye-r-min, debye-r-max)
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1-grps, user2-grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
 <li><A HREF="#idx"><b>Index</b></A>
 </ul>
@@ -2020,6 +2021,35 @@ no non-polar calculations are done.
 <dd>Cap the force in the hybrid region, useful for big molecules. 0 disables force capping.</dd>
 </dl>
 
+<A NAME="waxs"><br>
+<hr>
+<h3>SAXS/WAXS refinement</h3>
+
+<dl>
+<dt><b>waxs-type: (Off)</b></dt>
+<dd><dl compact>
+<dt><b>Off</b></dt>
+<dd>Don't refine against SAXS/WAXS data.</dd>
+<dt><b>Debye</b></dt>
+<dd>Calculate scattering intensities and refinement forces using the Debye equation.</dd>
+<dt><b>Full</b></dt>
+<dd>(Not implemented)</dd>
+</dl></dd>
+<dt><b>waxs-fc: (0.0)</b></dt>
+<dd>Coupling constant for SAXS/WAXS refinement.</dd>
+<dt><b>waxs-nstout: (10)</b></dt>
+<dd>Frequency with which to write calculated scattering intensities to file.</dd>
+<dt><b>debye-alpha-min: (0.0)</b></dt>
+<dd>Minimum value for the difference-WAXS conversion factor <b>alpha</b>.</dd>
+<dt><b>debye-alpha-max: (0.0)</b></dt>
+<dd>Maximum value for the difference-WAXS conversion factor <b>alpha</b>.</dd>
+<dt><b>debye-r-min: (0.0)</b></dt>
+<dd>Lower cutoff distance for including the cross-term between two scatterers.</dd>
+<dt><b>debye-r-max: (0.0)</b></dt>
+<dd>Upper cutoff distance for including the cross-term between two scatterers.</dd>
+
+</dl>
+
 <A NAME="user"><br>
 <hr>
 <h3>User defined thingies</h3>
@@ -2062,6 +2092,10 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#free">couple-lambda1</A><br>
 <A HREF="#free">couple-moltype</A><br>
 <A HREF="#nl">cutoff-scheme</A><br>
+<A HREF="#waxs">debye-alpha-min</A><br>
+<A HREF="#waxs">debye-alpha-max</A><br>
+<A HREF="#waxs">debye-r-min</A><br>
+<A HREF="#waxs">debye-r-max</A><br>
 <A HREF="#pp">define</A><br>
 <A HREF="#neq">deform</A><br>
 <A HREF="#free">delta-lambda</A><br>
@@ -2196,6 +2230,9 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#walls">wall-ewald-zfac</A><br>
 <A HREF="#walls">wall-r-linpot</A><br>
 <A HREF="#walls">wall-type</A><br>
+<A HREF="#waxs">waxs-type</A><br>
+<A HREF="#waxs">waxs-fc</A><br>
+<A HREF="#waxs">waxs-nstout</A><br>
 <A HREF="#expanded">weight-equil-count-ratio</A><br>
 <A HREF="#expanded">weight-equil-number-all-lambda</A><br>
 <A HREF="#expanded">weight-equil-number-samples</A><br>
