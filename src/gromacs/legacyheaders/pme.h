@@ -39,7 +39,8 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "gmxcomplex.h"
-#include "sim_util.h"
+#include "../timing/walltime_accounting.h"
+#include "../legacyheaders/network.h"
 
 #ifdef __cplusplus
 extern "C" {

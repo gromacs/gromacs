@@ -69,6 +69,7 @@
 #include "gromacs/fileio/confio.h"
 #include "gromacs/fileio/futil.h"
 #include "gromacs/timing/wallcycle.h"
+#include "gromacs/legacyheaders/sim_util.h"
 
 /*For debugging, start at v(-dt/2) for velolcity verlet -- uncomment next line */
 /*#define STARTFROMDT2*/

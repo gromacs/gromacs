@@ -37,11 +37,14 @@
 #include "gromacs/legacyheaders/xvgr.h"
 #include "trnio.h"
 #include "xtcio.h"
+#include "tngio.h"
+#include "tng_io.h"
 #include "gromacs/legacyheaders/mdrun.h"
 #include "gromacs/legacyheaders/smalloc.h"
 
 gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
                           const t_commrec *cr, const t_inputrec *ir,
+                          gmx_mtop_t *mtop,
                           const output_env_t oenv)
 {
     gmx_mdoutf_t *of;
@@ -50,11 +53,13 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 
     snew(of, 1);
 
-    of->fp_trn   = NULL;
-    of->fp_ene   = NULL;
-    of->fp_xtc   = NULL;
-    of->fp_dhdl  = NULL;
-    of->fp_field = NULL;
+    of->fp_trn       = NULL;
+    of->fp_ene       = NULL;
+    of->fp_xtc       = NULL;
+    of->tng          = NULL;
+    of->tng_low_prec = NULL;
+    of->fp_dhdl      = NULL;
+    of->fp_field     = NULL;
 
     of->eIntegrator     = ir->eI;
     of->bExpanded       = ir->bExpanded;
@@ -79,13 +84,42 @@ gmx_mdoutf_t *init_mdoutf(int nfile, const t_filenm fnm[], int mdrun_flags,
 #endif
             )
         {
-            of->fp_trn = open_trn(ftp2fn(efTRN, nfile, fnm), filemode);
+            const char *filename;
+            filename = ftp2fn(efTRN, nfile, fnm);
+            switch (fn2ftp(filename))
+            {
+                case efTRR:
+                case efTRN:
+                    of->fp_trn = open_trn(filename, filemode);
+                    break;
+                case efTNG:
+                    /* Initialize topology and then set writing frequency. */
+                    tng_open(filename, filemode[0], &of->tng);
+                    tng_prepare_md_writing(of->tng, mtop, ir);
+                    break;
+                default:
+                    gmx_incons("Invalid full precision file format");
+            }
         }
         if (EI_DYNAMICS(ir->eI) &&
             ir->nstxtcout > 0)
         {
-            of->fp_xtc   = open_xtc(ftp2fn(efXTC, nfile, fnm), filemode);
-            of->xtc_prec = ir->xtcprec;
+            const char *filename;
+            filename = ftp2fn(efCOMPRESSED, nfile, fnm);
+            switch (fn2ftp(filename))
+            {
+                case efXTC:
+                    of->fp_xtc   = open_xtc(filename, filemode);
+                    of->xtc_prec = ir->xtcprec;
+                    break;
+                case efTNG:
+                    /* Initialize topology and then set writing frequency. */
+                    tng_open(filename, filemode[0], &of->tng_low_prec);
+                    tng_prepare_low_prec_writing(of->tng_low_prec, mtop, ir);
+                    break;
+                default:
+                    gmx_incons("Invalid reduced precision file format");
+            }
         }
         if (EI_DYNAMICS(ir->eI) || EI_ENERGY_MINIMIZATION(ir->eI))
         {
@@ -148,6 +182,16 @@ void done_mdoutf(gmx_mdoutf_t *of)
     if (of->fp_field != NULL)
     {
         gmx_fio_fclose(of->fp_field);
+    }
+    /* We have to check that of->tng and of->tng_low_prec are set because
+     * tng_close returns a NULL pointer. */
+    if (of->tng)
+    {
+        tng_close(&of->tng);
+    }
+    if (of->tng_low_prec)
+    {
+        tng_close(&of->tng_low_prec);
     }
 
     sfree(of);
