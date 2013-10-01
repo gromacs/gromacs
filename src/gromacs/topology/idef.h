@@ -118,6 +118,7 @@ enum {
     F_ANGRESZ,
     F_DIHRES,
     F_DIHRESVIOL,
+    F_WAXS_DEBYE,
     F_CONSTR,
     F_CONSTRNC,
     F_SETTLE,
@@ -203,6 +204,9 @@ typedef union t_iparams
     struct {
         real a, alpha1, alpha2, rfac;
     } thole;
+    struct {
+        int  tpi, tpj;
+    } waxs_debye;
     struct {
         real c6, c12;
     } lj;
