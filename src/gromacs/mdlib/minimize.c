@@ -448,6 +448,16 @@ void init_em(FILE *fplog, const char *title,
 
     *outf = init_mdoutf(nfile, fnm, 0, cr, ir, NULL);
 
+#ifdef GMX_USE_TNG
+    if (MASTER(cr) && (*outf)->tng)
+    {
+        init_tng_top((*outf)->tng, top_global);
+
+        /* Writing frequency must be set after adding the TNG topology. */
+        init_tng_writing_frequency((*outf)->tng, ir);
+    }
+#endif
+
     snew(*enerd, 1);
     init_enerdata(top_global->groups.grps[egcENER].nr, ir->fepvals->n_lambda,
                   *enerd);
