@@ -1961,7 +1961,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     }
 
     done_mdoutf(outf);
-
     debug_gmx();
 
     if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
