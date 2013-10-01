@@ -101,6 +101,10 @@
 #include "nbnxn_cuda_data_mgmt.h"
 #include "nbnxn_cuda/nbnxn_cuda.h"
 
+#ifdef GMX_USE_TNG
+#include "tng_io.h"
+#endif
+
 double
 gmx_gettime()
 {
@@ -2704,6 +2708,18 @@ void init_md(FILE *fplog,
                               mtop, ir, (*outf)->fp_dhdl);
     }
 
+#ifdef GMX_USE_TNG
+/* TNG: STUB */
+/* Initialize topology and then set writing frequency. */
+/*    if (MASTER(cr) && (*outf)->tng)
+    {
+        init_tng_top((*outf)->tng, mtop);
+
+        *//* Writing frequency must be set after adding the TNG topology. *//*
+        init_tng_writing_frequency((*outf)->tng, ir);
+    }*/
+#endif
+
     if (ir->bAdress)
     {
         please_cite(fplog, "Fritsch12");
@@ -2716,3 +2732,117 @@ void init_md(FILE *fplog,
 
     debug_gmx();
 }
+
+#ifdef GMX_USE_TNG
+void init_tng_top(tng_trajectory_t tng, gmx_mtop_t *mtop)
+/* This function converts the current topology to TNG molecular data */
+{
+    int mol_it, at_it;
+    char chain_name[2];
+    gmx_moltype_t *mol_type;
+    t_atoms *atoms;
+    t_atom *at;
+    t_resinfo *resin;
+    tng_molecule_t tng_mol;
+    tng_chain_t tng_chain;
+    tng_residue_t tng_res;
+    tng_atom_t tng_atom;
+
+    for (mol_it = 0; mol_it < mtop->nmoltype; mol_it++)
+    {
+        mol_type = &mtop->moltype[mol_it];
+
+        /* Add a molecule to the TNG trajectory with the same name as the
+         * current molecule. */
+        tng_molecule_add(tng, *mol_type->name, &tng_mol);
+
+        atoms = &mol_type->atoms;
+
+        /* FIXME: The TNG atoms should contain mass and atomB info (for free
+         * energy calculations */
+        for (at_it = 0; at_it < atoms->nr; at_it++)
+        {
+            at = &atoms->atom[at_it];
+            /* FIXME: Currently the TNG API can only add atoms belonging to a
+             * residue and chain. */
+            if (atoms->nres > 0)
+            {
+                resin = &atoms->resinfo[at->resind];
+                chain_name[0] = resin->chainid;
+                chain_name[1] = 0;
+                if (tng_molecule_chain_find (tng, tng_mol, chain_name,
+                                             (int64_t)-1, &tng_chain) !=
+                   TNG_SUCCESS)
+                {
+                    tng_molecule_chain_add (tng, tng_mol, chain_name,
+                                            &tng_chain);
+                }
+
+                /* FIXME: When TNG supports both residue index and residue
+                 * number the latter should be used. */
+                if (tng_chain_residue_find(tng, tng_chain, *resin->name,
+                                           at->resind + 1, &tng_res)
+                    != TNG_SUCCESS)
+                {
+                    tng_chain_residue_add(tng, tng_chain, *resin->name, &tng_res);
+                }
+                tng_residue_atom_add(tng, tng_res, *(atoms->atomname[at_it]), *(atoms->atomtype[at_it]), &tng_atom);
+            }
+        }
+        tng_molecule_cnt_set(tng, tng_mol, mtop->molblock[mol_it].nmol);
+    }
+}
+
+void init_tng_writing_frequency(tng_trajectory_t tng, t_inputrec *ir)
+{
+    int lowcd;
+    int64_t n_frames_per_frame_set;
+
+    /* Set the number of frames per frame set to contain at least 100
+     * of the lowest common denominator of the writing frequency of
+     * positions and velocities.
+     * FIXME: Forces should also be taken into account.
+     */
+    if(ir->nstxout && ir->nstvout)
+    {
+        lowcd = lcd(ir->nstxout, ir->nstvout);
+    }
+    else if(ir->nstxout)
+    {
+        lowcd = ir->nstxout;
+    }
+    else
+    {
+        lowcd = ir->nstvout;
+    }
+    if (lowcd <= 0)
+    {
+        lowcd = 1;
+    }
+    n_frames_per_frame_set = lowcd * 100;
+    if (n_frames_per_frame_set > ir->nsteps)
+    {
+        n_frames_per_frame_set = ir->nsteps;
+    }
+
+    tng_num_frames_per_frame_set_set(tng, n_frames_per_frame_set);
+
+    if(ir->nstxout)
+    {
+        tng_util_pos_write_frequency_set(tng, ir->nstxout);
+    }
+    if(ir->nstvout)
+    {
+        tng_util_vel_write_frequency_set(tng, ir->nstvout);
+    }
+    if(ir->nstfout)
+    {
+        tng_util_force_write_frequency_set(tng, ir->nstfout);
+    }
+    if(ir->nstxout || ir->nstvout || ir->nstfout)
+    {
+        tng_util_box_shape_write_frequency_set(tng, lowcd);
+    }
+}
+
+#endif
