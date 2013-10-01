@@ -110,7 +110,7 @@ enum
     eNR_RB,                   eNR_FOURDIH,              eNR_TABDIHS,
     eNR_DISRES,               eNR_ORIRES,               eNR_DIHRES,
     eNR_POSRES,               eNR_FBPOSRES,
-    eNR_ANGRES,               eNR_ANGRESZ,
+    eNR_ANGRES,               eNR_ANGRESZ,              eNR_WAXS_DEBYE,
     eNR_MORSE,                eNR_CUBICBONDS,           eNR_WALLS,
     eNR_POLARIZE,             eNR_ANHARM_POL,
     eNR_WPOL,                 eNR_THOLE,                eNR_VIRIAL,
