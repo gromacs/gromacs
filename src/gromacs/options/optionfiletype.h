@@ -58,6 +58,7 @@ enum OptionFileType {
     eftPDB,
     eftIndex,
     eftPlot,
+    eftXML,
     eftGenericData,
     eftOptionFileType_NR
 };
