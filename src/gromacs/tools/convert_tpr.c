@@ -266,7 +266,7 @@ static void reduce_topology_x(int gnx, atom_id index[],
     atom_id     *invindex;
     int          i;
 
-    top      = gmx_mtop_t_to_t_topology(mtop);
+    top      = gmx_mtop_t_to_t_topology(mtop, TRUE);
     bKeep    = bKeepIt(gnx, top.atoms.nr, index);
     invindex = invind(gnx, top.atoms.nr, index);
 
