@@ -831,7 +831,7 @@ int gmx_disre(int argc, char *argv[])
     fr      = mk_forcerec();
     fprintf(fplog, "Made forcerec\n");
     init_forcerec(fplog, oenv, fr, NULL, &ir, &mtop, cr, box,
-                  NULL, NULL, NULL, NULL, NULL, FALSE, -1);
+                  NULL, 0, NULL, FALSE, -1);
     init_nrnb(&nrnb);
     if (ir.ePBC != epbcNONE)
     {
