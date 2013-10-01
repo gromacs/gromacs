@@ -68,17 +68,18 @@
  */
 static const char *tpx_tag = TPX_TAG_RELEASE;
 
-
 /* The tpx_version number should be increased whenever the file format changes!
  *
  * The following comment section helps to keep track of which feature has been
- * added in which version.
+ * added in which version. In addition, rather than just putting numbers all over
+ * the place please add a define.
  *
  * version  feature added
  *    96    support for ion/water position swaps (computational electrophysiology)
+ *    97    implementation of WAXS/SAXS refinement in MD
  */
-static const int tpx_version = 96;
-
+static const int tpx_version = 97;
+#define TPX_WAXS 97
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * or the HEADER of the tpx format.
@@ -186,6 +187,8 @@ static const t_ftupd ftupd[] = {
     { 79, F_DVDL_BONDED,      },
     { 79, F_DVDL_RESTRAINT    },
     { 79, F_DVDL_TEMPERATURE  },
+    { TPX_WAXS, F_WAXS_DEBYE        }
+
 };
 #define NFTUPD asize(ftupd)
 
@@ -719,6 +722,16 @@ static void do_rot(t_fileio *fio, t_rot *rot, gmx_bool bRead)
     }
 }
 
+static void do_waxs(t_fileio *fio, t_waxs_refine *waxs)
+{
+    gmx_fio_do_int(fio, waxs->waxs_type);
+    gmx_fio_do_real(fio, waxs->kwaxs);
+    gmx_fio_do_int(fio, waxs->nstout);
+    gmx_fio_do_real(fio, waxs->debye_alpha_min);
+    gmx_fio_do_real(fio, waxs->debye_alpha_max);
+    gmx_fio_do_real(fio, waxs->debye_r_min);
+    gmx_fio_do_real(fio, waxs->debye_r_max);
+}
 
 static void do_swapcoords(t_fileio *fio, t_swapcoords *swap, gmx_bool bRead)
 {
@@ -1732,6 +1745,11 @@ static void do_inputrec(t_fileio *fio, t_inputrec *ir, gmx_bool bRead,
         }
         /* end of QMMM stuff */
     }
+
+    if (file_version >= TPX_WAXS)
+    {
+        do_waxs(fio, &ir->waxs);
+    }
 }
 
 
@@ -1886,6 +1904,10 @@ void do_iparams(t_fileio *fio, t_functype ftype, t_iparams *iparams,
             gmx_fio_do_real(fio, iparams->thole.alpha1);
             gmx_fio_do_real(fio, iparams->thole.alpha2);
             gmx_fio_do_real(fio, iparams->thole.rfac);
+            break;
+        case F_WAXS_DEBYE:
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpi);
+            gmx_fio_do_int(fio, iparams->waxs_debye.tpj);
             break;
         case F_LJ:
             gmx_fio_do_real(fio, iparams->lj.c6);
