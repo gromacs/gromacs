@@ -54,6 +54,7 @@
 #include "gromacs/fileio/gmxfio.h"
 #include "gromacs/fileio/tpxio.h"
 #include "gromacs/fileio/trnio.h"
+#include "gromacs/fileio/tngio_for_tools.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
@@ -326,6 +327,18 @@ void list_xtc(const char *fn, gmx_bool bXVG)
     close_xtc(xd);
 }
 
+void list_tng(const char *fn, gmx_bool bXVG)
+{
+    tng_trajectory_t tng;
+    gmx_bool   bOK;
+    (void) bXVG;
+
+    open_tng_for_reading(fn, &tng);
+    print_tng_molecule_system(tng, stdout);
+
+    tng_tools_close(&tng);
+}
+
 void list_trx(const char *fn, gmx_bool bXVG)
 {
     int ftp;
@@ -338,6 +351,10 @@ void list_trx(const char *fn, gmx_bool bXVG)
     else if ((ftp == efTRR) || (ftp == efTRJ))
     {
         list_trn(fn);
+    }
+    else if (ftp == efTNG)
+    {
+        list_tng(fn, bXVG);
     }
     else
     {
