@@ -92,7 +92,30 @@
 #include "tmpi.h"
 #endif
 
-void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep, int maxfep)
+
+static void init_df_history_weights(df_history_t *dfhist, t_expanded *expand, int nlim)
+{
+    int i;
+    dfhist->wl_delta = expand->init_wl_delta;
+    for (i = 0; i < nlim; i++)
+    {
+        dfhist->sum_weights[i] = expand->init_lambda_weights[i];
+        dfhist->sum_dg[i]      = expand->init_lambda_weights[i];
+    }
+}
+
+/* Eventually should contain all the functions needed to initialize expanded ensemble
+   before the md loop starts */
+extern void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist)
+{
+    *mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
+    if (!bStateFromCP)
+    {
+        init_df_history_weights(dfhist,ir->expandedvals,ir->fepvals->n_lambda);
+    }
+}
+
+static void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep, int maxfep)
 {
 
     int  i;
@@ -120,7 +143,7 @@ void GenerateGibbsProbabilities(real *ene, double *p_k, double *pks, int minfep,
     }
 }
 
-void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
+static void GenerateWeightedGibbsProbabilities(real *ene, double *p_k, double *pks, int nlim, real *nvals, real delta)
 {
 
     int   i;
@@ -362,7 +385,7 @@ static gmx_bool UpdateWeights(int nlim, t_expanded *expand, df_history_t *dfhist
 {
     real     maxdiff = 0.000000001;
     gmx_bool bSufficientSamples;
-    int      i, k, n, nz, indexi, indexk, min_n, max_n, nlam, totali;
+    int      i, k, n, nz, indexi, indexk, min_n, max_n, totali;
     int      n0, np1, nm1, nval, min_nvalm, min_nvalp, maxc;
     real     omega_m1_0, omega_p1_m1, omega_m1_p1, omega_p1_0, clam_osum;
     real     de, de_function, dr, denom, maxdr;
@@ -1022,7 +1045,7 @@ static int ChooseNewLambda(FILE *log, int nlim, t_expanded *expand, df_history_t
 
 /* print out the weights to the log, along with current state */
 extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                                      int nlam, int frequency, gmx_large_int_t step)
+                                      int fep_state, int frequency, gmx_large_int_t step)
 {
     int         nlim, i, ifep, jfep;
     real        dw, dg, dv, dm, Tprint;
@@ -1116,7 +1139,7 @@ extern void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *
             {
                 fprintf(outfile, " %10.5f %10.5f", dfhist->sum_weights[ifep], dw);
             }
-            if (ifep == nlam)
+            if (ifep == fep_state)
             {
                 fprintf(outfile, " <<\n");
             }
@@ -1203,13 +1226,15 @@ extern void set_mc_state(gmx_rng_t rng, t_state *state)
 }
 
 extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                                    t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                                    t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                                     gmx_large_int_t step, gmx_rng_t mcrng,
                                     rvec *v, t_mdatoms *mdatoms)
+/* Note that the state variable is only needed for simulated tempering, not
+   Hamiltonian expanded ensemble.  May be able to remove it after integrator refactoring. */
 {
     real       *pfep_lamee, *scaled_lamee, *weighted_lamee;
     double     *p_k;
-    int         i, nlam, nlim, lamnew, totalsamples;
+    int         i, nlim, lamnew, totalsamples;
     real        oneovert, maxscaled = 0, maxweighted = 0;
     t_expanded *expand;
     t_simtemp  *simtemp;
@@ -1219,26 +1244,14 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
     expand  = ir->expandedvals;
     simtemp = ir->simtempvals;
     nlim    = ir->fepvals->n_lambda;
-    nlam    = state->fep_state;
 
     snew(scaled_lamee, nlim);
     snew(weighted_lamee, nlim);
     snew(pfep_lamee, nlim);
     snew(p_k, nlim);
 
-    if (expand->bInit_weights)                    /* if initialized weights, we need to fill them in */
-    {
-        dfhist->wl_delta = expand->init_wl_delta; /* MRS -- this would fit better somewhere else? */
-        for (i = 0; i < nlim; i++)
-        {
-            dfhist->sum_weights[i] = expand->init_lambda_weights[i];
-            dfhist->sum_dg[i]      = expand->init_lambda_weights[i];
-        }
-        expand->bInit_weights = FALSE;
-    }
-
     /* update the count at the current lambda*/
-    dfhist->n_at_lam[nlam]++;
+    dfhist->n_at_lam[fep_state]++;
 
     /* need to calculate the PV term somewhere, but not needed here? Not until there's a lambda state that's
        pressure controlled.*/
@@ -1263,7 +1276,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
             {
                 /* Note -- this assumes no mass changes, since kinetic energy is not added  . . . */
                 scaled_lamee[i] = (enerd->enerpart_lambda[i+1]-enerd->enerpart_lambda[0])/(simtemp->temperatures[i]*BOLTZ)
-                    + enerd->term[F_EPOT]*(1.0/(simtemp->temperatures[i])- 1.0/(simtemp->temperatures[nlam]))/BOLTZ;
+                    + enerd->term[F_EPOT]*(1.0/(simtemp->temperatures[i])- 1.0/(simtemp->temperatures[fep_state]))/BOLTZ;
             }
             else
             {
@@ -1282,7 +1295,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
         {
             for (i = 0; i < nlim; i++)
             {
-                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/simtemp->temperatures[i] - 1.0/simtemp->temperatures[nlam])/BOLTZ;
+                scaled_lamee[i] = enerd->term[F_EPOT]*(1.0/simtemp->temperatures[i] - 1.0/simtemp->temperatures[fep_state])/BOLTZ;
             }
         }
     }
@@ -1318,7 +1331,7 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
 
     /* update weights - we decide whether or not to actually do this inside */
 
-    bDoneEquilibrating = UpdateWeights(nlim, expand, dfhist, nlam, scaled_lamee, weighted_lamee, step);
+    bDoneEquilibrating = UpdateWeights(nlim, expand, dfhist, fep_state, scaled_lamee, weighted_lamee, step);
     if (bDoneEquilibrating)
     {
         if (log)
@@ -1327,9 +1340,9 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
         }
     }
 
-    lamnew = ChooseNewLambda(log, nlim, expand, dfhist, nlam, weighted_lamee, p_k, mcrng);
+    lamnew = ChooseNewLambda(log, nlim, expand, dfhist, fep_state, weighted_lamee, p_k, mcrng);
     /* if using simulated tempering, we need to adjust the temperatures */
-    if (ir->bSimTemp && (lamnew != nlam)) /* only need to change the temperatures if we change the state */
+    if (ir->bSimTemp && (lamnew != fep_state)) /* only need to change the temperatures if we change the state */
     {
         int   i, j, n, d;
         real *buf_ngtc;

@@ -178,14 +178,17 @@ gmx_integrator_t do_tpi;
 void init_npt_masses(t_inputrec *ir, t_state *state, t_extmass *MassQ, gmx_bool bInit);
 
 GMX_LIBMD_EXPORT
+void init_expanded_ensemble(gmx_bool bStateFromCP, t_inputrec *ir, gmx_rng_t *mcrng, df_history_t *dfhist);
+
+GMX_LIBMD_EXPORT
 int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *enerd,
-                             t_state *state, t_extmass *MassQ, df_history_t *dfhist,
+                             t_state *state, t_extmass *MassQ, int fep_state, df_history_t *dfhist,
                              gmx_large_int_t step, gmx_rng_t mcrng,
                              rvec *v, t_mdatoms *mdatoms);
 
 GMX_LIBMD_EXPORT
 void PrintFreeEnergyInfoToFile(FILE *outfile, t_lambda *fep, t_expanded *expand, t_simtemp *simtemp, df_history_t *dfhist,
-                               int nlam, int frequency, gmx_large_int_t step);
+                               int fep_state, int frequency, gmx_large_int_t step);
 
 GMX_LIBMD_EXPORT
 void get_mc_state(gmx_rng_t rng, t_state *state);
