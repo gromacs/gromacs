@@ -156,7 +156,7 @@ enum {
 /* free energy history variable names  */
 const char *edfh_names[edfhNR] =
 {
-    "bEquilibrated", "N_at_state", "Wang-Landau_Histogram", "Wang-Landau-delta", "Weights", "Free Energies", "minvar", "variance",
+    "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
@@ -1013,6 +1013,12 @@ static int do_cpt_state(XDR *xd, gmx_bool bRead,
         rng_p  = NULL;
         rngi_p = NULL;
     }
+
+    if (bRead) /* we need to allocate space for dfhist if we are reading */
+    {
+        init_df_history(&state->dfhist,state->dfhist.nlambda);
+    }
+
     /* We want the MC_RNG the same across all the notes for now -- lambda MC is global */
 
     sflags = state->flags;
@@ -2395,7 +2401,6 @@ void list_checkpoint(const char *fn, FILE *out)
 
     if (ret == 0)
     {
-        init_df_history(&state.dfhist, state.dfhist.nlambda, 0); /* reinitialize state with correct sizes */
         ret = do_cpt_df_hist(gmx_fio_getxdr(fp), TRUE,
                              flags_dfh, &state.dfhist, out);
     }

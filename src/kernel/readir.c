@@ -1518,17 +1518,12 @@ static void do_fep_params(t_inputrec *ir, char fep_lambda[][STRLEN], char weight
     parse_n_real(weights, &nweights, &(expand->init_lambda_weights));
     if (nweights == 0)
     {
-        expand->bInit_weights = FALSE;
         snew(expand->init_lambda_weights, fep->n_lambda); /* initialize to zero */
     }
     else if (nweights != fep->n_lambda)
     {
         gmx_fatal(FARGS, "Number of weights (%d) is not equal to number of lambda values (%d)",
                   nweights, fep->n_lambda);
-    }
-    else
-    {
-        expand->bInit_weights = TRUE;
     }
     if ((expand->nstexpanded < 0) && (ir->efep != efepNO))
     {
