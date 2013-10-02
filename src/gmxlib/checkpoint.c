@@ -150,13 +150,13 @@ const char *eenh_names[eenhNR] =
 
 /* free energy history variables -- need to be preserved over checkpoint */
 enum {
-    edfhBEQUIL, edfhNATLAMBDA, edfhWLHISTO, edfhWLDELTA, edfhSUMWEIGHTS, edfhSUMDG, edfhSUMMINVAR, edfhSUMVAR,
+    edfhBEQUIL, edfhBINITWGHTS, edfhNATLAMBDA, edfhWLHISTO, edfhWLDELTA, edfhSUMWEIGHTS, edfhSUMDG, edfhSUMMINVAR, edfhSUMVAR,
     edfhACCUMP, edfhACCUMM, edfhACCUMP2, edfhACCUMM2, edfhTIJ, edfhTIJEMP, edfhNR
 };
 /* free energy history variable names  */
 const char *edfh_names[edfhNR] =
 {
-    "bEquilibrated", "N_at_state", "Wang-Landau_Histogram", "Wang-Landau-delta", "Weights", "Free Energies", "minvar", "variance",
+    "bEquilibrated", "bUncheckedInitWeights", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
@@ -1209,6 +1209,7 @@ static int do_cpt_df_hist(XDR *xd, gmx_bool bRead, int fflags, df_history_t *dfh
             switch (i)
             {
                 case edfhBEQUIL:       ret = do_cpte_int(xd, cptpEDFH, i, fflags, &dfhist->bEquil, list); break;
+                case edfhBINITWGHTS:   ret = do_cpte_int(xd, cptpEDFH, i, fflags, &dfhist->bUncheckedInitWeights, list); break;
                 case edfhNATLAMBDA:    ret = do_cpte_ints(xd, cptpEDFH, i, fflags, nlambda, &dfhist->n_at_lam, list); break;
                 case edfhWLHISTO:      ret = do_cpte_reals(xd, cptpEDFH, i, fflags, nlambda, &dfhist->wl_histo, list); break;
                 case edfhWLDELTA:      ret = do_cpte_real(xd, cptpEDFH, i, fflags, &dfhist->wl_delta, list); break;
@@ -1501,7 +1502,7 @@ void write_checkpoint(const char *fn, gmx_bool bNumberAndKeep,
 
     if (bExpanded)
     {
-        flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
+        flags_dfh = ((1<<edfhBEQUIL) | (1<<edfhBINITWGHTS) | (1<<edfhNATLAMBDA) | (1<<edfhSUMWEIGHTS) |  (1<<edfhSUMDG)  |
                      (1<<edfhTIJ) | (1<<edfhTIJEMP));
         if (EWL(elamstats))
         {

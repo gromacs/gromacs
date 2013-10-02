@@ -889,6 +889,7 @@ extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
     int i;
 
     dfhist->bEquil   = 0;
+    dfhist->bUncheckedInitWeights = TRUE;
     dfhist->nlambda  = nlambda;
     dfhist->wl_delta = wl_delta;
     snew(dfhist->sum_weights, dfhist->nlambda);
@@ -929,6 +930,7 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
     init_df_history(df_dest, df_source->nlambda, df_source->wl_delta);
     df_dest->nlambda = df_source->nlambda;
     df_dest->bEquil  = df_source->bEquil;
+    df_dest->bUncheckedInitWeights  = df_source->bUncheckedInitWeights;
     for (i = 0; i < df_dest->nlambda; i++)
     {
         df_dest->sum_weights[i]  = df_source->sum_weights[i];

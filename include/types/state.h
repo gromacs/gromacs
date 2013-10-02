@@ -124,7 +124,8 @@ typedef struct
 {
     int      nlambda;        /* total number of lambda states - for history*/
 
-    gmx_bool bEquil;         /* reached equilibration */
+    gmx_bool bEquil;         /* Have we reached equilibration */
+    gmx_bool bUncheckedInitWeights;  /* Have we not yet checked whether weights need to be initialized? */
     int     *n_at_lam;       /* number of points observed at each lambda */
     real    *wl_histo;       /* histogram for WL flatness determination */
     real     wl_delta;       /* current wang-landau delta */

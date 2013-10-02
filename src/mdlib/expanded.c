@@ -1226,15 +1226,22 @@ extern int ExpandedEnsembleDynamics(FILE *log, t_inputrec *ir, gmx_enerdata_t *e
     snew(pfep_lamee, nlim);
     snew(p_k, nlim);
 
-    if (expand->bInit_weights)                    /* if initialized weights, we need to fill them in */
+    if (dfhist->bUncheckedInitWeights)        /* Have we checked if the weights need to be initialized?
+                                                  If not, we need to check if they need to be
+                                                  filled in.  This section could eventually be
+                                                  moved somewhere with initialization of method,
+                                                  but there doesn't appear to be an appropriate place yet. */
     {
-        dfhist->wl_delta = expand->init_wl_delta; /* MRS -- this would fit better somewhere else? */
-        for (i = 0; i < nlim; i++)
+        if (expand->bInit_weights)
         {
-            dfhist->sum_weights[i] = expand->init_lambda_weights[i];
-            dfhist->sum_dg[i]      = expand->init_lambda_weights[i];
+            dfhist->wl_delta = expand->init_wl_delta;
+            for (i = 0; i < nlim; i++)
+            {
+                dfhist->sum_weights[i] = expand->init_lambda_weights[i];
+                dfhist->sum_dg[i]      = expand->init_lambda_weights[i];
+            }
         }
-        expand->bInit_weights = FALSE;
+        dfhist->bUncheckedInitWeights = FALSE;
     }
 
     /* update the count at the current lambda*/
