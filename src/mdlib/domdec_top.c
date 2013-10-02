@@ -1942,6 +1942,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
         }
         snew(state_local->ld_rngi, 1);
     }
+    init_df_history(&state_local->dfhist,state_local->dfhist.nlambda,0);
 }
 
 static void check_link(t_blocka *link, int cg_gl, int cg_gl_j)
