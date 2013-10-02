@@ -364,7 +364,7 @@ int gmx_vanhove(int argc, char *argv[])
                     for (i = 0; i < isize; i++)
                     {
                         d2  = distance2(sx[f][i], sx[ff][i]);
-                        bin = (int)(sqrt(d2)*invbin);
+                        bin = (int)(sqrt(d2)*invbin + 0.5);
                         if (bin >= nalloc)
                         {
                             nallocn = 10*(bin/10) + 11;
