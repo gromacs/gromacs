@@ -902,12 +902,8 @@ extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
     snew(dfhist->Tij, dfhist->nlambda);
     snew(dfhist->Tij_empirical, dfhist->nlambda);
 
-    for (i = 0; i < dfhist->nlambda; i++)
-    {
-        snew(dfhist->Tij[i], dfhist->nlambda);
-        snew(dfhist->Tij_empirical[i], dfhist->nlambda);
-    }
-
+    /* allocate accumulators for various transition matrix
+       free energy methods here */
     snew(dfhist->accum_p, dfhist->nlambda);
     snew(dfhist->accum_m, dfhist->nlambda);
     snew(dfhist->accum_p2, dfhist->nlambda);
@@ -915,6 +911,8 @@ extern void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta)
 
     for (i = 0; i < dfhist->nlambda; i++)
     {
+        snew(dfhist->Tij[i], dfhist->nlambda);
+        snew(dfhist->Tij_empirical[i], dfhist->nlambda);
         snew((dfhist->accum_p)[i], dfhist->nlambda);
         snew((dfhist->accum_m)[i], dfhist->nlambda);
         snew((dfhist->accum_p2)[i], dfhist->nlambda);
@@ -937,16 +935,16 @@ extern void copy_df_history(df_history_t *df_dest, df_history_t *df_source)
         df_dest->sum_variance[i] = df_source->sum_variance[i];
         df_dest->n_at_lam[i]     = df_source->n_at_lam[i];
         df_dest->wl_histo[i]     = df_source->wl_histo[i];
-        df_dest->accum_p[i]      = df_source->accum_p[i];
-        df_dest->accum_m[i]      = df_source->accum_m[i];
-        df_dest->accum_p2[i]     = df_source->accum_p2[i];
-        df_dest->accum_m2[i]     = df_source->accum_m2[i];
     }
 
     for (i = 0; i < df_dest->nlambda; i++)
     {
         for (j = 0; j < df_dest->nlambda; j++)
         {
+            df_dest->accum_p[i][j]      = df_source->accum_p[i][j];
+            df_dest->accum_m[i][j]      = df_source->accum_m[i][j];
+            df_dest->accum_p2[i][j]     = df_source->accum_p2[i][j];
+            df_dest->accum_m2[i][j]     = df_source->accum_m2[i][j];
             df_dest->Tij[i][j]            = df_source->Tij[i][j];
             df_dest->Tij_empirical[i][j]  = df_source->Tij_empirical[i][j];
         }

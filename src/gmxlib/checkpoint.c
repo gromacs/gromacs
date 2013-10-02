@@ -156,7 +156,7 @@ enum {
 /* free energy history variable names  */
 const char *edfh_names[edfhNR] =
 {
-    "bEquilibrated", "N_at_state", "Wang-Landau_Histogram", "Wang-Landau-delta", "Weights", "Free Energies", "minvar", "variance",
+    "bEquilibrated", "N_at_state", "Wang-Landau Histogram", "Wang-Landau Delta", "Weights", "Free Energies", "minvar", "variance",
     "accumulated_plus", "accumulated_minus", "accumulated_plus_2",  "accumulated_minus_2", "Tij", "Tij_empirical"
 };
 
