@@ -69,13 +69,23 @@
  */
 typedef struct
 {
-    real     mass; /* mass */
-    int      type; /* type (used for LJ parameters) */
-    real     q;    /* charge */
-    int      con;  /* constrained: 0, else 1, if 1, use #DOF=2 iso 3 */
-    int      n;    /* total #atoms of this type in the system */
-} verletbuf_atomtype_t;
+    real     mass;     /* mass */
+    int      type;     /* type (used for LJ parameters) */
+    real     q;        /* charge */
+    gmx_bool bConstr;  /* constrained, if TRUE, use #DOF=2 iso 3 */
+    real     con_mass; /* mass of heaviest atom connected by constraints */
+    real     con_len;  /* constraint length to the heaviest atom */
+} atom_nonbonded_kinetic_prop_t;
 
+/* Struct for unique atom type for calculating the energy drift.
+ * The atom displacement depends on mass and constraints.
+ * The energy jump for given distance depend on LJ type and q.
+ */
+typedef struct
+{
+    atom_nonbonded_kinetic_prop_t prop; /* non-bonded and kinetic atom prop. */
+    int                           n;    /* #atoms of this type in the system */
+} verletbuf_atomtype_t;
 
 void verletbuf_get_list_setup(gmx_bool                bGPU,
                               verletbuf_list_setup_t *list_setup)
@@ -100,13 +110,26 @@ void verletbuf_get_list_setup(gmx_bool                bGPU,
     }
 }
 
+static gmx_bool
+atom_nonbonded_kinetic_prop_equal(const atom_nonbonded_kinetic_prop_t *prop1,
+                                  const atom_nonbonded_kinetic_prop_t *prop2)
+{
+    return (prop1->mass     == prop2->mass &&
+            prop1->type     == prop2->type &&
+            prop1->q        == prop2->q &&
+            prop1->bConstr  == prop2->bConstr &&
+            prop1->con_mass == prop2->con_mass &&
+            prop1->con_len  == prop2->con_len);
+}
+
 static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
-                   real mass, int type, real q, int con, int nmol)
+                   const atom_nonbonded_kinetic_prop_t *prop,
+                   int nmol)
 {
     verletbuf_atomtype_t *att;
-    int                   natt, i;
+    int                     natt, i;
 
-    if (mass == 0)
+    if (prop->mass == 0)
     {
         /* Ignore massless particles */
         return;
@@ -116,11 +139,7 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     natt = *natt_p;
 
     i = 0;
-    while (i < natt &&
-           !(mass == att[i].mass &&
-             type == att[i].type &&
-             q    == att[i].q &&
-             con  == att[i].con))
+    while (i < natt && !atom_nonbonded_kinetic_prop_equal(prop, &att[i].prop))
     {
         i++;
     }
@@ -133,10 +152,7 @@ static void add_at(verletbuf_atomtype_t **att_p, int *natt_p,
     {
         (*natt_p)++;
         srenew(*att_p, *natt_p);
-        (*att_p)[i].mass = mass;
-        (*att_p)[i].type = type;
-        (*att_p)[i].q    = q;
-        (*att_p)[i].con  = con;
+        (*att_p)[i].prop = *prop;
         (*att_p)[i].n    = nmol;
     }
 }
@@ -146,14 +162,14 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
                                         int                   *natt_p,
                                         int                   *n_nonlin_vsite)
 {
-    verletbuf_atomtype_t *att;
-    int                   natt;
-    int                   mb, nmol, ft, i, j, a1, a2, a3, a;
-    const t_atoms        *atoms;
-    const t_ilist        *il;
-    const t_atom         *at;
-    const t_iparams      *ip;
-    real                 *con_m, *vsite_m, cam[5];
+    verletbuf_atomtype_t          *att;
+    int                            natt;
+    int                            mb, nmol, ft, i, j, a1, a2, a3, a;
+    const t_atoms                 *atoms;
+    const t_ilist                 *il;
+    const t_iparams               *ip;
+    atom_nonbonded_kinetic_prop_t *prop;
+    real                          *vsite_m, cam[5];
 
     att  = NULL;
     natt = 0;
@@ -169,8 +185,11 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
 
-        /* Check for constraints, as they affect the kinetic energy */
-        snew(con_m, atoms->nr);
+        /* Check for constraints, as they affect the kinetic energy.
+         * For virtual sites we need the masses and geometry of
+         * the constructing atoms to determine their velocity distribution.
+         */
+        snew(prop, atoms->nr);
         snew(vsite_m, atoms->nr);
 
         for (ft = F_CONSTR; ft <= F_CONSTRNC; ft++)
@@ -179,10 +198,19 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
             for (i = 0; i < il->nr; i += 1+NRAL(ft))
             {
+                ip         = &mtop->ffparams.iparams[il->iatoms[i]];
                 a1         = il->iatoms[i+1];
                 a2         = il->iatoms[i+2];
-                con_m[a1] += atoms->atom[a2].m;
-                con_m[a2] += atoms->atom[a1].m;
+                if (atoms->atom[a2].m > prop[a1].con_mass)
+                {
+                    prop[a1].con_mass = atoms->atom[a2].m;
+                    prop[a1].con_len  = ip->constr.dA;
+                }
+                if (atoms->atom[a1].m > prop[a2].con_mass)
+                {
+                    prop[a2].con_mass = atoms->atom[a1].m;
+                    prop[a2].con_len  = ip->constr.dA;
+                }
             }
         }
 
@@ -190,12 +218,22 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (i = 0; i < il->nr; i += 1+NRAL(F_SETTLE))
         {
+            ip         = &mtop->ffparams.iparams[il->iatoms[i]];
             a1         = il->iatoms[i+1];
             a2         = il->iatoms[i+2];
             a3         = il->iatoms[i+3];
-            con_m[a1] += atoms->atom[a2].m + atoms->atom[a3].m;
-            con_m[a2] += atoms->atom[a1].m + atoms->atom[a3].m;
-            con_m[a3] += atoms->atom[a1].m + atoms->atom[a2].m;
+            /* Usually the mass of a1 (usually oxygen) is larger than a2/a3.
+             * If this is not the case, we overestimate the displacement,
+             * which leads to a larger buffer (ok since this is an exotic case).
+             */
+            prop[a1].con_mass = atoms->atom[a2].m;
+            prop[a1].con_len  = ip->settle.doh;
+
+            prop[a2].con_mass = atoms->atom[a1].m;
+            prop[a2].con_len  = ip->settle.doh;
+
+            prop[a3].con_mass = atoms->atom[a1].m;
+            prop[a3].con_len  = ip->settle.doh;
         }
 
         /* Check for virtual sites, determine mass from constructing atoms */
@@ -268,25 +306,33 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
 
         for (a = 0; a < atoms->nr; a++)
         {
-            at = &atoms->atom[a];
-            /* We consider an atom constrained, #DOF=2, when it is
-             * connected with constraints to one or more atoms with
-             * total mass larger than 1.5 that of the atom itself.
+            prop[a].mass    = atoms->atom[a].m;
+            prop[a].type    = atoms->atom[a].type;
+            prop[a].q       = atoms->atom[a].q;
+             /* We consider an atom constrained, #DOF=2, when it is
+             * connected with constraints to (at least one) atom with
+             * a mass of more than 0.4x its own mass. This is not a critical
+             * parameter, since with roughly equal masses the unconstrained
+             * and constrained displacement will not differ much (and both
+             * overestimate the displacement).
              */
-            add_at(&att, &natt,
-                   at->m, at->type, at->q, con_m[a] > 1.5*at->m, nmol);
+            prop[a].bConstr = (prop[a].con_mass > 0.4*prop[a].mass);
+
+            add_at(&att, &natt, &prop[a], nmol);
         }
 
         sfree(vsite_m);
-        sfree(con_m);
+        sfree(prop);
     }
 
     if (gmx_debug_at)
     {
         for (a = 0; a < natt; a++)
         {
-            fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d n %d\n",
-                    a, att[a].mass, att[a].type, att[a].q, att[a].con, att[a].n);
+            fprintf(debug, "type %d: m %5.2f t %d q %6.3f con %d con_m %5.3f con_l %5.3f n %d\n",
+                    a, att[a].prop.mass, att[a].prop.type, att[a].prop.q,
+                    att[a].prop.bConstr, att[a].prop.con_mass, att[a].prop.con_len, 
+                    att[a].n);
         }
     }
 
@@ -294,8 +340,101 @@ static void get_verlet_buffer_atomtypes(const gmx_mtop_t      *mtop,
     *natt_p = natt;
 }
 
-static void approx_2dof(real s2, real x,
-                        real *shift, real *scale)
+/* This function computes two components of the estimate of the variance
+ * in the displacement of one atom in a system of two constrained atoms.
+ * Returns in sigma2_2d the variance due to rotation of the constrained
+ * atom around the atom to which it constrained.
+ * Returns in sigma2_3d the variance due to displacement of the COM
+ * of the whole system of the two constrained atoms.
+ *
+ * Note that we only take a single constraint (the one to the heaviest atom)
+ * into account. If an atom has multiple constraints, this will result in
+ * an overestimate of the displacement, which gives a larger drift and buffer.
+ */
+static void constrained_atom_sigma2(real kT_fac,
+                                    const atom_nonbonded_kinetic_prop_t *prop,
+                                    real *sigma2_2d,
+                                    real *sigma2_3d)
+{
+    real sigma2_rot;
+    real com_dist;
+    real sigma2_rel;
+    real scale;
+
+    /* Here we decompose the motion of a constrained atom into two
+     * components: rotation around the COM and translation of the COM.
+     */
+
+    /* Determine the variance for the displacement of the rotational mode */
+    sigma2_rot = kT_fac/(prop->mass*(prop->mass + prop->con_mass)/prop->con_mass);
+
+    /* The distance from the atom to the COM, i.e. the rotational arm */
+    com_dist = prop->con_len*prop->con_mass/(prop->mass + prop->con_mass);
+
+    /* The variance relative to the arm */
+    sigma2_rel = sigma2_rot/(com_dist*com_dist);
+    /* At 6 the scaling formula has slope 0,
+     * so we keep sigma2_2d constant after that.
+     */
+    if (sigma2_rel < 6)
+    {
+        /* A constrained atom rotates around the atom it is constrained to.
+         * This results in a smaller linear displacement than for a free atom.
+         * For a perfectly circular displacement, this lowers the displacement
+         * by: 1/arcsin(arc_length)
+         * and arcsin(x) = 1 + x^2/6 + ...
+         * For sigma2_rel<<1 the displacement distribution is erfc
+         * (exact formula is provided below). For larger sigma, it is clear
+         * that the displacement can't be larger than 2*com_dist.
+         * It turns out that the distribution becomes nearly uniform.
+         * For intermediate sigma2_rel, scaling down sigma with the third
+         * order expansion of arcsin with argument sigma_rel turns out
+         * to give a very good approximation of the distribution and variance.
+         * Even for larger values, the variance is only slightly overestimated.
+         * Note that the most relevant displacements are in the long tail.
+         * This rotation approximation always overestimates the tail (which
+         * runs to infinity, whereas it should be <= 2*com_dist).
+         * Thus we always overestimate the drift and the buffer size.
+         */
+        scale      = 1/(1 + sigma2_rel/6);
+        *sigma2_2d = sigma2_rot*scale*scale;
+    }
+    else
+    {
+        /* sigma_2d is set to the maximum given by the scaling above.
+         * For large sigma2 the real displacement distribution is close
+         * to uniform over -2*con_len to 2*com_dist.
+         * Our erfc with sigma_2d=sqrt(1.5)*com_dist (which means the sigma
+         * of the erfc output distribution is con_dist) overestimates
+         * the variance and additionally has a long tail. This means
+         * we have a (safe) overestimation of the drift.
+         */
+        *sigma2_2d = 1.5*com_dist*com_dist;
+    }
+
+    /* The constrained atom also moves (in 3D) with the COM of both atoms */
+    *sigma2_3d = kT_fac/(prop->mass + prop->con_mass);
+}
+
+static void get_atom_sigma2(real kT_fac,
+                            const atom_nonbonded_kinetic_prop_t *prop,
+                            real *sigma2_2d,
+                            real *sigma2_3d)
+{
+    if (prop->bConstr)
+    {
+        /* Complicated constraint calculation in a separate function */
+        constrained_atom_sigma2(kT_fac, prop, sigma2_2d, sigma2_3d);
+    }
+    else
+    {
+        /* Unconstrained atom: trivial */
+        *sigma2_2d = 0;
+        *sigma2_3d = kT_fac/prop->mass;
+    }
+}
+
+static void approx_2dof(real s2, real x, real *shift, real *scale)
 {
     /* A particle with 1 DOF constrained has 2 DOFs instead of 3.
      * This code is also used for particles with multiple constraints,
@@ -323,7 +462,7 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
 {
     double drift_tot, pot1, pot2, pot;
     int    i, j;
-    real   s2i, s2j, s2, s;
+    real   s2i_2d, s2i_3d, s2j_2d, s2j_3d, s2, s;
     int    ti, tj;
     real   md, dd;
     real   sc_fac, rsh;
@@ -334,13 +473,16 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
     /* Loop over the different atom type pairs */
     for (i = 0; i < natt; i++)
     {
-        s2i = kT_fac/att[i].mass;
-        ti  = att[i].type;
+        get_atom_sigma2(kT_fac, &att[i].prop, &s2i_2d, &s2i_3d);
+        ti = att[i].prop.type;
 
         for (j = i; j < natt; j++)
         {
-            s2j = kT_fac/att[j].mass;
-            tj  = att[j].type;
+            get_atom_sigma2(kT_fac, &att[j].prop, &s2j_2d, &s2j_3d);
+            tj = att[j].prop.type;
+
+            /* Add up the up to four independent variances */
+            s2 = s2i_2d + s2i_3d + s2j_2d + s2j_3d; 
 
             /* Note that attractive and repulsive potentials for individual
              * pairs will partially cancel.
@@ -349,27 +491,27 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
             md =
                 md_ljd*ffp->iparams[ti*ffp->atnr+tj].lj.c6 +
                 md_ljr*ffp->iparams[ti*ffp->atnr+tj].lj.c12 +
-                md_el*att[i].q*att[j].q;
+                md_el*att[i].prop.q*att[j].prop.q;
 
             /* d2V/dr2 at the cut-off for Coulomb, we neglect LJ */
-            dd = dd_el*att[i].q*att[j].q;
-
-            s2  = s2i + s2j;
+            dd = dd_el*att[i].prop.q*att[j].prop.q;
 
             rsh    = r_buffer;
             sc_fac = 1.0;
             /* For constraints: adapt r and scaling for the Gaussian */
-            if (att[i].con)
+            if (att[i].prop.bConstr)
             {
                 real sh, sc;
-                approx_2dof(s2i, r_buffer*s2i/s2, &sh, &sc);
+
+                approx_2dof(s2i_2d, r_buffer*s2i_2d/s2, &sh, &sc);
                 rsh    += sh;
                 sc_fac *= sc;
             }
-            if (att[j].con)
+            if (att[j].prop.bConstr)
             {
                 real sh, sc;
-                approx_2dof(s2j, r_buffer*s2j/s2, &sh, &sc);
+
+                approx_2dof(s2j_2d, r_buffer*s2j_2d/s2, &sh, &sc);
                 rsh    += sh;
                 sc_fac *= sc;
             }
@@ -397,9 +539,11 @@ static real ener_drift(const verletbuf_atomtype_t *att, int natt,
 
             if (gmx_debug_at)
             {
-                fprintf(debug, "n %d %d d s %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
-                        att[i].n, att[j].n, sqrt(s2i), sqrt(s2j),
-                        att[i].con+att[j].con,
+                fprintf(debug, "n %d %d d s %.3f %.3f %.3f %.3f con %d md %8.1e dd %8.1e pot1 %8.1e pot2 %8.1e pot %8.1e\n",
+                        att[i].n, att[j].n,
+                        sqrt(s2i_2d), sqrt(s2i_3d),
+                        sqrt(s2j_2d), sqrt(s2j_3d),
+                        att[i].prop.bConstr+att[j].prop.bConstr,
                         md, dd, pot1, pot2, pot);
             }
 
@@ -482,11 +626,11 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
                              int *n_nonlin_vsite,
                              real *rlist)
 {
-    double                resolution;
-    char                 *env;
+    double                  resolution;
+    char                   *env;
 
-    real                  particle_distance;
-    real                  nb_clust_frac_pairs_not_in_list_at_cutoff;
+    real                    particle_distance;
+    real                    nb_clust_frac_pairs_not_in_list_at_cutoff;
 
     verletbuf_atomtype_t *att  = NULL;
     int                   natt = -1, i;
@@ -631,7 +775,7 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
              */
             for (i = 0; i < natt; i++)
             {
-                att[i].mass = 1;
+                att[i].prop.mass = 1;
             }
         }
         else
@@ -654,10 +798,10 @@ void calc_verlet_buffer_size(const gmx_mtop_t *mtop, real boxvol,
         kT_fac = BOLTZ*ir->opts.ref_t[0]*sqr((ir->nstlist-1)*ir->delta_t);
     }
 
-    mass_min = att[0].mass;
+    mass_min = att[0].prop.mass;
     for (i = 1; i < natt; i++)
     {
-        mass_min = min(mass_min, att[i].mass);
+        mass_min = min(mass_min, att[i].prop.mass);
     }
 
     if (debug)
