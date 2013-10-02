@@ -181,7 +181,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     int               nchkpt  = 1;
     gmx_localtop_t   *top;
     t_mdebin         *mdebin = NULL;
-    df_history_t      df_history;
     t_state          *state    = NULL;
     rvec             *f_global = NULL;
     int               n_xtc    = -1;
@@ -335,8 +334,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     {
         mcrng = gmx_rng_init(ir->expandedvals->lmc_seed);
     }
-    /* copy the state into df_history */
-    copy_df_history(&df_history, &state_global->dfhist);
 
     /* Kinetic energy data */
     snew(ekind, 1);
@@ -460,6 +457,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     else
     {
         bStateFromCP = FALSE;
+    }
+
+    if ((!bStateFromCP) && (ir->bExpanded))
+    {
+        init_df_history_weights(&state->dfhist,ir->expandedvals,ir->fepvals->n_lambda);
     }
 
     if (MASTER(cr))
@@ -858,7 +860,8 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             set_current_lambdas(step, ir->fepvals, bRerunMD, &rerun_fr, state_global, state, lam0);
             bDoDHDL      = do_per_step(step, ir->fepvals->nstdhdl);
             bDoFEP       = (do_per_step(step, nstfep) && (ir->efep != efepNO));
-            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded) && (ir->bExpanded) && (step > 0));
+            bDoExpanded  = (do_per_step(step, ir->expandedvals->nstexpanded)
+                            && (ir->bExpanded) && (step > 0) && (!bStartingFromCpt));
         }
 
         if (bSimAnn)
@@ -1415,7 +1418,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                statistics, but if performing simulated tempering, we
                do update the velocities and the tau_t. */
 
-            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, &df_history, step, mcrng, state->v, mdatoms);
+            lamnew = ExpandedEnsembleDynamics(fplog, ir, enerd, state, &MassQ, state->fep_state, &state->dfhist, step, mcrng, state->v, mdatoms);
+            /* history is maintained in state->dfhist, but state_global is output */
+            copy_df_history(&state_global->dfhist,&state->dfhist);
         }
         /* ################## START TRAJECTORY OUTPUT ################# */
 
@@ -1494,14 +1499,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                         state_global->ekinstate.bUpToDate = TRUE;
                     }
                     update_energyhistory(&state_global->enerhist, mdebin);
-                    if (ir->efep != efepNO || ir->bSimTemp)
-                    {
-                        state_global->fep_state = state->fep_state; /* MRS: seems kludgy. The code should be
-                                                                       structured so this isn't necessary.
-                                                                       Note this reassignment is only necessary
-                                                                       for single threads.*/
-                        copy_df_history(&state_global->dfhist, &df_history);
-                    }
                 }
             }
             write_traj(fplog, cr, outf, mdof_flags, top_global,
@@ -2004,7 +2001,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             {
                 /* only needed if doing expanded ensemble */
                 PrintFreeEnergyInfoToFile(fplog, ir->fepvals, ir->expandedvals, ir->bSimTemp ? ir->simtempvals : NULL,
-                                          &df_history, state->fep_state, ir->nstlog, step);
+                                          &state_global->dfhist, state->fep_state, ir->nstlog, step);
             }
             if (!(bStartingFromCpt && (EI_VV(ir->eI))))
             {
@@ -2043,13 +2040,11 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         }
         if (bDoExpanded)
         {
-            /* Have to do this part after outputting the logfile and the edr file */
+            /* Have to do this part _after_ outputting the logfile and the edr file */
+            /* Gets written into the state at the beginning of next loop*/
             state->fep_state = lamnew;
-            for (i = 0; i < efptNR; i++)
-            {
-                state_global->lambda[i] = ir->fepvals->all_lambda[i][lamnew];
-            }
         }
+
         /* Remaining runtime */
         if (MULTIMASTER(cr) && (do_verbose || gmx_got_usr_signal()) && !bPMETuneRunning)
         {
