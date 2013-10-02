@@ -152,7 +152,9 @@ void init_gtc_state(t_state *state, int ngtc, int nnhpres, int nhchainlength);
 GMX_LIBGMX_EXPORT
 void init_state(t_state *state, int natoms, int ngtc, int nnhpres, int nhchainlength, int nlambda);
 GMX_LIBGMX_EXPORT
-void init_df_history(df_history_t *dfhist, int nlambda, real wl_delta);
+void init_df_history(df_history_t *dfhist, int nlambda);
+GMX_LIBGMX_EXPORT
+void done_df_history(df_history_t *dfhist);
 GMX_LIBGMX_EXPORT
 void copy_df_history(df_history_t * df_dest, df_history_t *df_source);
 
