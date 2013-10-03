@@ -57,9 +57,6 @@
 /* Work around broken calloc() */
 #cmakedefine GMX_BROKEN_CALLOC
 
-/* Enable special hacks for Cray XT3 */
-#cmakedefine GMX_CRAY_XT3
-
 /* Do not optimize FFTW setups (not needed with SSE FFT kernels) */
 #cmakedefine GMX_DISABLE_FFTW_MEASURE
 
