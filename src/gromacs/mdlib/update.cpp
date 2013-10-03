@@ -1254,7 +1254,7 @@ void set_deform_reference_box(gmx_update_t upd, gmx_int64_t step, matrix box)
 }
 
 static void deform(gmx_update_t upd,
-                   int start, int homenr, rvec x[], matrix box, matrix *scale_tot,
+                   int start, int homenr, rvec x[], matrix box,
                    const t_inputrec *ir, gmx_int64_t step)
 {
     matrix bnew, invbox, mu;
@@ -1301,13 +1301,6 @@ static void deform(gmx_update_t upd,
         x[i][XX] = mu[XX][XX]*x[i][XX]+mu[YY][XX]*x[i][YY]+mu[ZZ][XX]*x[i][ZZ];
         x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
         x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
-    }
-    if (scale_tot != NULL)
-    {
-        /* The transposes of the scaling matrices are stored,
-         * so we need to do matrix multiplication in the inverse order.
-         */
-        mmul_ur0(*scale_tot, mu, *scale_tot);
     }
 }
 
@@ -1775,7 +1768,6 @@ void update_box(FILE             *fplog,
                 t_mdatoms        *md,
                 t_state          *state,
                 rvec              force[],   /* forces on home particles */
-                matrix           *scale_tot,
                 matrix            pcoupl_mu,
                 t_nrnb           *nrnb,
                 gmx_update_t      upd)
@@ -1848,17 +1840,9 @@ void update_box(FILE             *fplog,
             break;
     }
 
-    if ((!(IR_NPT_TROTTER(inputrec) || IR_NPH_TROTTER(inputrec))) && scale_tot)
-    {
-        /* The transposes of the scaling matrices are stored,
-         * therefore we need to reverse the order in the multiplication.
-         */
-        mmul_ur0(*scale_tot, pcoupl_mu, *scale_tot);
-    }
-
     if (DEFORM(*inputrec))
     {
-        deform(upd, start, homenr, state->x, state->box, scale_tot, inputrec, step);
+        deform(upd, start, homenr, state->x, state->box, inputrec, step);
     }
     where();
     dump_it_all(fplog, "After update",
