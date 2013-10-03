@@ -54,7 +54,7 @@
 #include "gromacs/utility/smalloc.h"
 
 /* Is the signal in one simulation independent of other simulations? */
-gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
+gmx_bool gs_simlocal[eglsNR] = { FALSE, FALSE, TRUE };
 
 /* check which of the multisim simulations has the shortest number of
    steps and return that number of nsteps */

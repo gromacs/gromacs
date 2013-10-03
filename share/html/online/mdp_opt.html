@@ -407,23 +407,8 @@ affect the accuracy of your simulation and it can not be chosen freely.
 <dd>The neighbor list is only constructed once and never updated.
 This is mainly useful for vacuum simulations in which all particles
 see each other.</dd>
-<dt><b>-1</b></dt>
-<dd>Automated update frequency, only supported with <b>cutoff-scheme</b>=<b>group</b>.
-This can only be used with switched, shifted or user potentials where
-the cut-off can be smaller than <b>rlist</b>. One then has a buffer
-of size <b>rlist</b> minus the longest cut-off.
-The neighbor list is only updated when one or more particles have moved further
-than half the buffer size from the center of geometry of their charge group
-as determined at the previous neighbor search.
-Coordinate scaling due to pressure coupling or the <b>deform</b> option
-is taken into account.
-This option guarantees that their are no cut-off artifacts,
-but for larger systems this can come at a high computational cost,
-since the neighbor list update frequency will be determined
-by just one or two particles moving slightly beyond the half buffer length
-(which does not necessarily imply that the neighbor list is invalid),
-while 99.99% of the particles are fine.
-</dd>
+<dt><b>&lt;0</b></dt>
+<dd>Unused</dd>
 </dl></dd>
 
 <dt><b>nstcalclr: (-1) [steps]</b></dt>

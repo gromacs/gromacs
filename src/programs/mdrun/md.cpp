@@ -74,7 +74,6 @@
 #include "pme_loadbal.h"
 #include "bondf.h"
 #include "membed.h"
-#include "types/nlistheuristics.h"
 #include "types/iteratedconstraints.h"
 #include "nbnxn_cuda_data_mgmt.h"
 
@@ -169,7 +168,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     t_vcm            *vcm;
     t_state          *bufstate = NULL;
     matrix            pcoupl_mu, M;
-    gmx_nlheur_t      nlh;
     t_trxframe        rerun_fr;
     gmx_repl_ex_t     repl_ex = NULL;
     int               nchkpt  = 1;
@@ -729,8 +727,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     step     = ir->init_step;
     step_rel = 0;
 
-    init_nlistheuristics(&nlh, bGStatEveryStep, step);
-
     if (MULTISIM(cr) && (repl_ex_nst <= 0 ))
     {
         /* check how many steps are left in other sims */
@@ -860,13 +856,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             /* Determine whether or not to do Neighbour Searching and LR */
             bNStList = (ir->nstlist > 0  && step % ir->nstlist == 0);
 
-            bNS = (bFirstStep || bExchanged || bNeedRepartition || bNStList || bDoFEP ||
-                   (ir->nstlist == -1 && nlh.nabnsb > 0));
-
-            if (bNS && ir->nstlist == -1)
-            {
-                set_nlistheuristics(&nlh, bFirstStep || bExchanged || bNeedRepartition || bDoFEP, step);
-            }
+            bNS = (bFirstStep || bExchanged || bNStList || bDoFEP);
         }
 
         /* check whether we should stop because another simulation has
@@ -1007,8 +997,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         /* Do we need global communication ? */
         bGStat = (bCalcVir || bCalcEner || bStopCM ||
-                  do_per_step(step, nstglobalcomm) || (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)) ||
-                  (ir->nstlist == -1 && !bRerunMD && step >= nlh.step_nscheck));
+                  do_per_step(step, nstglobalcomm) || (bVV && IR_NVT_TROTTER(ir) && do_per_step(step-1, nstglobalcomm)));
 
         do_ene = (do_per_step(step, ir->nstenergy) || bLastStep);
 
@@ -1370,31 +1359,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             gs.sig[eglsRESETCOUNTERS] = 1;
         }
 
-        if (ir->nstlist == -1 && !bRerunMD)
-        {
-            /* When bGStatEveryStep=FALSE, global_stat is only called
-             * when we check the atom displacements, not at NS steps.
-             * This means that also the bonded interaction count check is not
-             * performed immediately after NS. Therefore a few MD steps could
-             * be performed with missing interactions.
-             * But wrong energies are never written to file,
-             * since energies are only written after global_stat
-             * has been called.
-             */
-            if (step >= nlh.step_nscheck)
-            {
-                nlh.nabnsb = natoms_beyond_ns_buffer(ir, fr, &top->cgs,
-                                                     nlh.scale_tot, state->x);
-            }
-            else
-            {
-                /* This is not necessarily true,
-                 * but step_nscheck is determined quite conservatively.
-                 */
-                nlh.nabnsb = 0;
-            }
-        }
-
         /* In parallel we only have to check for checkpointing in steps
          * where we do global communication,
          *  otherwise the other nodes don't know.
@@ -1626,10 +1590,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
              */
             if (bGStat || (!EI_VV(ir->eI) && do_per_step(step+1, nstglobalcomm)))
             {
-                if (ir->nstlist == -1 && bFirstIterate)
-                {
-                    gs.sig[eglsNABNSB] = nlh.nabnsb;
-                }
                 compute_globals(fplog, gstat, cr, ir, fr, ekind, state, state_global, mdatoms, nrnb, vcm,
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,
@@ -1647,11 +1607,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 | (bFirstIterate ? CGLO_FIRSTITERATE : 0)
                                 | CGLO_CONSTRAINT
                                 );
-                if (ir->nstlist == -1 && bFirstIterate)
-                {
-                    nlh.nabnsb         = gs.set[eglsNABNSB];
-                    gs.set[eglsNABNSB] = 0;
-                }
             }
             /* bIterate is set to keep it from eliminating the old ekin kinetic energy terms */
             /* #############  END CALC EKIN AND PRESSURE ################# */
@@ -1676,7 +1631,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             sum_dhdl(enerd, state->lambda, ir->fepvals);
         }
         update_box(fplog, step, ir, mdatoms, state, f,
-                   ir->nstlist == -1 ? &nlh.scale_tot : NULL, pcoupl_mu, nrnb, upd);
+                   NULL, pcoupl_mu, nrnb, upd);
 
         /* ################# END UPDATE STEP 2 ################# */
         /* #### We now have r(t+dt) and v(t+dt/2)  ############# */
@@ -1964,12 +1919,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     done_mdoutf(outf);
     debug_gmx();
-
-    if (ir->nstlist == -1 && nlh.nns > 0 && fplog)
-    {
-        fprintf(fplog, "Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n", nlh.s1/nlh.nns, sqrt(nlh.s2/nlh.nns - sqr(nlh.s1/nlh.nns)));
-        fprintf(fplog, "Average number of atoms that crossed the half buffer length: %.1f\n\n", nlh.ab/nlh.nns);
-    }
 
     if (pme_loadbal != NULL)
     {
