@@ -91,7 +91,7 @@ gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
                                     gmx_large_int_t  nsteps);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame);
+                         gmx_bool *bLastStep);
 
 /* get the conserved energy associated with the ensemble type*/
 real compute_conserved_from_auxiliary(t_inputrec *ir, t_state *state,

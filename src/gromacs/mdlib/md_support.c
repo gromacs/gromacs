@@ -731,14 +731,19 @@ void check_ir_old_tpx_versions(t_commrec *cr, FILE *fplog,
 }
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
-                         gmx_bool *bNotLastFrame)
+                         gmx_bool *bLastStep)
 {
     gmx_bool bAlloc;
     rvec    *xp, *vp;
 
     bAlloc = (fr->natoms == 0);
 
-    if (MASTER(cr) && !*bNotLastFrame)
+    // TODO This communication is being abused to signal that it is
+    // time to stop the rerun because only MASTER(cr) knows that the
+    // file reading failed. Along with that signal goes a possibly
+    // relevant subset of fr. Once particle decomposition is removed,
+    // investigate whether the bcast of fr is needed here (or at all).
+    if (MASTER(cr) && *bLastStep)
     {
         fr->natoms = -1;
     }
@@ -748,9 +753,9 @@ void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
     fr->x = xp;
     fr->v = vp;
 
-    *bNotLastFrame = (fr->natoms >= 0);
+    *bLastStep = fr->natoms < 0;
 
-    if (*bNotLastFrame && PARTDECOMP(cr))
+    if (!*bLastStep && PARTDECOMP(cr))
     {
         /* x and v are the only variable size quantities stored in trr
          * that are required for rerun (f is not needed).

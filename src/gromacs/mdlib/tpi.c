@@ -142,7 +142,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     double          embU, sum_embU, *sum_UgembU, V, V_all, VembU_all;
     t_trxstatus    *status;
     t_trxframe      rerun_fr;
-    gmx_bool        bDispCorr, bCharge, bRFExcl, bNotLastFrame, bStateChanged, bNS, bOurStep;
+    gmx_bool        bDispCorr, bCharge, bRFExcl, bLastStep, bStateChanged, bNS, bOurStep;
     tensor          force_vir, shake_vir, vir, pres;
     int             cg_tp, a_tp0, a_tp1, ngid, gid_tp, nener, e;
     rvec           *x_mol;
@@ -423,8 +423,8 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     nbin    = 10;
     snew(bin, nbin);
 
-    bNotLastFrame = read_first_frame(oenv, &status, opt2fn("-rerun", nfile, fnm),
-                                     &rerun_fr, TRX_NEED_X);
+    bLastStep = !read_first_frame(oenv, &status, opt2fn("-rerun", nfile, fnm),
+                                  &rerun_fr, TRX_NEED_X);
     frame = 0;
 
     if (rerun_fr.natoms - (bCavity ? nat_cavity : 0) !=
@@ -444,7 +444,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
     gmx_mm_check_and_reset_overflow();
 #endif
 
-    while (bNotLastFrame)
+    while (!bLastStep)
     {
         lambda = rerun_fr.lambda;
         t      = rerun_fr.time;
@@ -784,7 +784,7 @@ double do_tpi(FILE *fplog, t_commrec *cr,
             fflush(fp_tpi);
         }
 
-        bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
+        bLastStep = !read_next_frame(oenv, status, &rerun_fr);
     } /* End of the loop  */
     runtime_end(runtime);
 

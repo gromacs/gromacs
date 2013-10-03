@@ -150,7 +150,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     double          run_time;
     double          t, t0, lam0[efptNR];
     gmx_bool        bGStatEveryStep, bGStat, bCalcVir, bCalcEner;
-    gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD, bNotLastFrame = FALSE,
+    gmx_bool        bNS, bNStList, bSimAnn, bStopCM, bRerunMD,
                     bFirstStep, bStateFromCP, bStateFromTPX, bInitStep, bLastStep,
                     bBornRadii, bStartingFromCpt;
     gmx_bool          bDoDHDL = FALSE, bDoFEP = FALSE, bDoExpanded = FALSE;
@@ -705,6 +705,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
      *
      ************************************************************/
 
+    bLastStep = FALSE;
     /* if rerunMD then read coordinates and velocities from input trajectory */
     if (bRerunMD)
     {
@@ -716,9 +717,9 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
         rerun_fr.natoms = 0;
         if (MASTER(cr))
         {
-            bNotLastFrame = read_first_frame(oenv, &status,
-                                             opt2fn("-rerun", nfile, fnm),
-                                             &rerun_fr, TRX_NEED_X | TRX_READ_V);
+            bLastStep = !read_first_frame(oenv, &status,
+                                          opt2fn("-rerun", nfile, fnm),
+                                          &rerun_fr, TRX_NEED_X | TRX_READ_V);
             if (rerun_fr.natoms != top_global->natoms)
             {
                 gmx_fatal(FARGS,
@@ -741,7 +742,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
         if (PAR(cr))
         {
-            rerun_parallel_comm(cr, &rerun_fr, &bNotLastFrame);
+            rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
         }
 
         if (ir->ePBC != epbcNONE)
@@ -759,7 +760,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     bStateFromTPX    = !bStateFromCP;
     bInitStep        = bFirstStep && (bStateFromTPX || bVV);
     bStartingFromCpt = (Flags & MD_STARTFROMCPT) && bInitStep;
-    bLastStep        = FALSE;
     bSumEkinhOld     = FALSE;
     bExchanged       = FALSE;
 
@@ -781,9 +781,10 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
 
     /* and stop now if we should */
-    bLastStep = (bRerunMD || (ir->nsteps >= 0 && step_rel > ir->nsteps) ||
-                 ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
-    while (!bLastStep || (bRerunMD && bNotLastFrame))
+    bLastStep = bLastStep ||
+        ((ir->nsteps >= 0 && step_rel > ir->nsteps) ||
+         ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
+    while (!bLastStep)
     {
 
         wallcycle_start(wcycle, ewcSTEP);
@@ -1965,12 +1966,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (MASTER(cr))
             {
                 /* read next frame from input trajectory */
-                bNotLastFrame = read_next_frame(oenv, status, &rerun_fr);
+                bLastStep = !read_next_frame(oenv, status, &rerun_fr);
             }
 
             if (PAR(cr))
             {
-                rerun_parallel_comm(cr, &rerun_fr, &bNotLastFrame);
+                rerun_parallel_comm(cr, &rerun_fr, &bLastStep);
             }
         }
 
