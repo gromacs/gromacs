@@ -53,45 +53,46 @@
 /* Is the signal in one simulation independent of other simulations? */
 gmx_bool gs_simlocal[eglsNR] = { TRUE, FALSE, FALSE, TRUE };
 
-/* check which of the multisim simulations has the shortest number of
-   steps and return that number of nsteps */
-gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
-                                    gmx_large_int_t  nsteps)
+gmx_large_int_t get_multisim_minimum_nsteps(const t_commrec *cr,
+                                            gmx_large_int_t  nsteps)
 {
-    gmx_large_int_t steps_out;
+    gmx_large_int_t minimum_nsteps;
 
     if MASTER(cr)
     {
         gmx_large_int_t *buf;
         int              s;
 
+        // TODO implement this sanely: set nsteps to INT_MAX if it is
+        // negative, then do an MPI_Allreduce with MPI_MIN, then set
+        // minimum_nsteps to -1 if it equals INT_MAX
         snew(buf, cr->ms->nsim);
 
         buf[cr->ms->sim] = nsteps;
         gmx_sumli_sim(cr->ms->nsim, buf, cr->ms);
 
-        steps_out = -1;
+        minimum_nsteps = -1;
         for (s = 0; s < cr->ms->nsim; s++)
         {
             /* find the smallest positive number */
-            if (buf[s] >= 0 && ((steps_out < 0) || (buf[s] < steps_out)) )
+            if (buf[s] >= 0 && ((minimum_nsteps < 0) || (buf[s] < minimum_nsteps)) )
             {
-                steps_out = buf[s];
+                minimum_nsteps = buf[s];
             }
         }
         sfree(buf);
 
         /* if we're the limiting simulation, don't do anything */
-        if (steps_out >= 0 && steps_out < nsteps)
+        if (minimum_nsteps >= 0 && minimum_nsteps < nsteps)
         {
             char strbuf[255];
             snprintf(strbuf, 255, "Will stop simulation %%d after %s steps (another simulation will end then).\n", gmx_large_int_pfmt);
-            fprintf(stderr, strbuf, cr->ms->sim, steps_out);
+            fprintf(stderr, strbuf, cr->ms->sim, minimum_nsteps);
         }
     }
     /* broadcast to non-masters */
-    gmx_bcast(sizeof(gmx_large_int_t), &steps_out, cr);
-    return steps_out;
+    gmx_bcast(sizeof(gmx_large_int_t), &minimum_nsteps, cr);
+    return minimum_nsteps;
 }
 
 int multisim_min(const gmx_multisim_t *ms, int nmin, int n)

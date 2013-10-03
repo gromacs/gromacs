@@ -85,10 +85,10 @@ void check_nst_param(FILE *fplog, t_commrec *cr,
                      const char *desc_nst, int nst,
                      const char *desc_p, int *p);
 
-/* check which of the multisim simulations has the shortest number of
-   steps and return that number of nsteps */
-gmx_large_int_t get_multisim_nsteps(const t_commrec *cr,
-                                    gmx_large_int_t  nsteps);
+/* Check which of the multisim simulations has the shortest positive
+ * number of steps and return that number of nsteps */
+gmx_large_int_t get_multisim_minimum_nsteps(const t_commrec *cr,
+                                            gmx_large_int_t  nsteps);
 
 void rerun_parallel_comm(t_commrec *cr, t_trxframe *fr,
                          gmx_bool *bLastStep);

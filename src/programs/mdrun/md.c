@@ -217,9 +217,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
     char              sbuf[STEPSTRSIZE], sbuf2[STEPSTRSIZE];
     int               handled_stop_condition = gmx_stop_cond_none; /* compare to get_stop_condition*/
     gmx_iterate_t     iterate;
-    gmx_large_int_t   multisim_nsteps = -1;                        /* number of steps to do  before first multisim
-                                                                      simulation stops. If equal to zero, don't
-                                                                      communicate any more between multisims.*/
     /* PME load balancing data for GPU kernels */
     pme_load_balancing_t pme_loadbal = NULL;
     double               cycles_pmes;
@@ -775,15 +772,12 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
 
     if (MULTISIM(cr) && (repl_ex_nst <= 0 ))
     {
-        /* check how many steps are left in other sims */
-        multisim_nsteps = get_multisim_nsteps(cr, ir->nsteps);
+        ir->nsteps = get_multisim_minimum_nsteps(cr, ir->nsteps);
     }
 
 
     /* and stop now if we should */
-    bLastStep = bLastStep ||
-        ((ir->nsteps >= 0 && step_rel > ir->nsteps) ||
-         ((multisim_nsteps >= 0) && (step_rel >= multisim_nsteps )));
+    bLastStep = bLastStep || (ir->nsteps >= 0 && step_rel > ir->nsteps);
     while (!bLastStep)
     {
 
@@ -905,27 +899,6 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
             if (bNS && ir->nstlist == -1)
             {
                 set_nlistheuristics(&nlh, bFirstStep || bExchanged || bDoFEP, step);
-            }
-        }
-
-        /* check whether we should stop because another simulation has
-           stopped. */
-        if (MULTISIM(cr))
-        {
-            if ( (multisim_nsteps >= 0) &&  (step_rel >= multisim_nsteps)  &&
-                 (multisim_nsteps != ir->nsteps) )
-            {
-                if (bNS)
-                {
-                    if (MASTER(cr))
-                    {
-                        fprintf(stderr,
-                                "Stopping simulation %d because another one has finished\n",
-                                cr->ms->sim);
-                    }
-                    bLastStep         = TRUE;
-                    gs.sig[eglsCHKPT] = 1;
-                }
             }
         }
 
@@ -1771,8 +1744,7 @@ double do_md(FILE *fplog, t_commrec *cr, int nfile, const t_filenm fnm[],
                                 wcycle, enerd, force_vir, shake_vir, total_vir, pres, mu_tot,
                                 constr,
                                 bFirstIterate ? &gs : NULL,
-                                (step_rel % gs.nstms == 0) &&
-                                (multisim_nsteps < 0 || (step_rel < multisim_nsteps)),
+                                (step_rel % gs.nstms == 0) && !bLastStep,
                                 lastbox,
                                 top_global, &pcurr, &bSumEkinhOld,
                                 cglo_flags
