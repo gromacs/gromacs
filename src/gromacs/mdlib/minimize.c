@@ -689,7 +689,6 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
 {
     real     t;
     gmx_bool bNS;
-    int      nabnsb;
     tensor   force_vir, shake_vir, ekin;
     real     dvdl_constr, prescorr, enercorr, dvdlcorr;
     real     terminate = 0;
@@ -709,15 +708,6 @@ static void evaluate_energy(FILE *fplog, t_commrec *cr,
         if (inputrec->nstlist > 0)
         {
             bNS = TRUE;
-        }
-        else if (inputrec->nstlist == -1)
-        {
-            nabnsb = natoms_beyond_ns_buffer(inputrec, fr, &top->cgs, NULL, ems->s.x);
-            if (PAR(cr))
-            {
-                gmx_sumi(1, &nabnsb, cr);
-            }
-            bNS = (nabnsb > 0);
         }
     }
 

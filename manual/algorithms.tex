@@ -778,19 +778,6 @@ list cut-off (there are several ways to do this in {\gromacs}, see
 \secref{mod_nb_int}). One then has a buffer with the size equal to the
 neighbor list cut-off less the longest interaction cut-off.
 
-With the
-group cut-off scheme, one can also choose to let {\tt mdrun} only
-update the neighbor list when required. That is when one or more
-particles have moved more than half the buffer size from the center of
-geometry of the \swapindex{charge}{group} to which they belong (see
-\secref{chargegroup}), as determined at the previous neighbor search.
-This option guarantees that there are no cut-off artifacts.  {\bf
-  Note} that for larger systems this comes at a high computational
-cost, since the neighbor list update frequency will be determined by
-just one or two particles moving slightly beyond the half buffer
-length (which not even necessarily implies that the neighbor list is
-invalid), while 99.99\% of the particles are fine.
-
 } % Brace matches ifthenelse test for gmxlite
 
 \subsubsection{Simple search\swapindexquiet{simple}{search}}

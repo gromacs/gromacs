@@ -52,7 +52,7 @@ extern "C" {
    data). This means that the only meaningful values are positive,
    negative or zero. */
 enum {
-    eglsNABNSB, eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
+    eglsCHKPT, eglsSTOPCOND, eglsRESETCOUNTERS, eglsNR
 };
 
 typedef struct {
